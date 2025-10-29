@@ -22,11 +22,11 @@ export function Price({
     : amount.toLocaleString('en-US');
 
   return (
-    <span className={cn('inline-flex items-center gap-2', className)}>
+    <span className={cn('inline-flex items-center gap-3', className)}>
       <span className="tabular-nums">{formattedAmount}</span>
       <svg
         viewBox="0 0 1124.14 1256.39"
-        className={cn('inline-block fill-primary-600 dark:fill-primary-400', symbolClassName)}
+        className={cn('inline-block fill-primary-600 dark:fill-primary-400 ms-1', symbolClassName)}
         aria-label="SAR"
       >
         <path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/>
