@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useToast } from '@/components/ui/use-toast';
 import { Mail, Phone, ArrowLeft, Moon, Sun, Languages, CheckCircle } from 'lucide-react';
 
 // Social auth icons (same as login/signup)
@@ -35,9 +37,12 @@ export default function ForgotPasswordPage() {
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const { theme, setTheme } = useTheme();
+  const { resetPassword } = useAuth();
+  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [resetMethod, setResetMethod] = useState<'email' | 'phone'>('email');
   const [resetSent, setResetSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -52,14 +57,72 @@ export default function ForgotPasswordPage() {
   const handleSendReset = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // TODO: Implement password reset logic
-    if (resetMethod === 'email') {
-      console.log('Sending reset link to email:', formData.email);
-    } else {
-      console.log('Sending reset OTP to phone:', formData.phone);
+    if (resetMethod === 'email' && !formData.email) {
+      toast({
+        title: t('auth.validation.emailRequired') || 'Email required',
+        description: 'Please enter your email address',
+        variant: 'destructive',
+      });
+      return;
     }
 
-    setResetSent(true);
+    if (resetMethod === 'phone' && !formData.phone) {
+      toast({
+        title: t('auth.validation.phoneRequired') || 'Phone required',
+        description: 'Please enter your phone number',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (resetMethod === 'email') {
+        const { error } = await resetPassword(formData.email);
+
+        if (error) {
+          throw error;
+        }
+
+        toast({
+          title: t('auth.resetSent') || 'Reset link sent!',
+          description: t('auth.checkEmail') || 'Please check your email for the password reset link',
+          variant: 'default',
+        });
+
+        setResetSent(true);
+      } else {
+        // Phone reset is not directly supported by Supabase auth.resetPasswordForEmail
+        // You'd need to implement a custom OTP system for phone reset
+        toast({
+          title: t('auth.phoneResetNotSupported') || 'Phone reset coming soon',
+          description: 'Phone-based password reset is not yet available. Please use email.',
+          variant: 'default',
+        });
+      }
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+
+      // Translate common Supabase error messages
+      let errorMessage = t('auth.somethingWrong') || 'Failed to send reset link. Please try again.';
+
+      if (error.message?.includes('User not found') || error.message?.includes('not found')) {
+        errorMessage = locale === 'ar' ? 'البريد الإلكتروني غير مسجل' : 'Email not registered';
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = locale === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email address';
+      } else if (error.message?.includes('rate limit')) {
+        errorMessage = locale === 'ar' ? 'تم تجاوز الحد المسموح. الرجاء المحاولة لاحقاً' : 'Too many attempts. Please try again later';
+      }
+
+      toast({
+        title: t('auth.resetError') || 'Reset failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -206,16 +269,19 @@ export default function ForgotPasswordPage() {
                 {/* Send Reset Button */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg"
+                  disabled={isLoading}
+                  className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ color: '#ffffff' }}
                 >
                   <span style={{
                     textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
                     color: '#ffffff'
                   }}>
-                    {resetMethod === 'email'
-                      ? (locale === 'ar' ? 'إرسال رابط إعادة التعيين' : 'Send Reset Link')
-                      : (locale === 'ar' ? 'إرسال رمز التحقق' : 'Send Verification Code')}
+                    {isLoading
+                      ? (locale === 'ar' ? 'جاري الإرسال...' : 'Sending...')
+                      : resetMethod === 'email'
+                        ? (locale === 'ar' ? 'إرسال رابط إعادة التعيين' : 'Send Reset Link')
+                        : (locale === 'ar' ? 'إرسال رمز التحقق' : 'Send Verification Code')}
                   </span>
                 </button>
 

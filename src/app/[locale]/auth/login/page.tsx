@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useToast } from '@/components/ui/use-toast';
 import { Mail, Lock, Eye, EyeOff, Moon, Sun, Languages, Phone, ArrowLeft } from 'lucide-react';
 
 // Social auth icons
@@ -36,8 +38,11 @@ export default function LoginPage() {
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const { theme, setTheme } = useTheme();
+  const { signInWithEmail, signInWithPhone, signInWithOAuth } = useAuth();
+  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [isLoading, setIsLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -60,21 +65,112 @@ export default function LoginPage() {
     setOtpSent(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleOAuthLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+    setIsLoading(true);
+    try {
+      const { error } = await signInWithOAuth(provider);
+
+      if (error) {
+        throw error;
+      }
+
+      // OAuth will redirect to callback, so no need to handle success here
+    } catch (error: any) {
+      console.error(`${provider} login error:`, error);
+
+      // Translate common OAuth error messages
+      let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
+
+      if (error.message?.includes('popup') || error.message?.includes('window')) {
+        errorMessage = locale === 'ar' ? 'تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة' : 'Popup was blocked. Please allow popups';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = locale === 'ar' ? 'خطأ في الاتصال بالشبكة' : 'Network connection error';
+      }
+
+      toast({
+        title: t('auth.loginError') || 'Login failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (authMethod === 'phone' && !otpSent) {
-      alert('Please send OTP first');
+      toast({
+        title: t('auth.otpRequired') || 'OTP Required',
+        description: 'Please send OTP first',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (authMethod === 'phone' && !formData.otp) {
-      alert('Please enter OTP');
+      toast({
+        title: t('auth.otpRequired') || 'OTP Required',
+        description: 'Please enter OTP',
+        variant: 'destructive',
+      });
       return;
     }
 
-    // TODO: Implement authentication logic
-    console.log('Login:', { method: authMethod, ...formData });
+    setIsLoading(true);
+
+    try {
+      let result;
+
+      if (authMethod === 'email') {
+        if (!formData.email || !formData.password) {
+          throw new Error('Email and password are required');
+        }
+        result = await signInWithEmail(formData.email, formData.password);
+      } else {
+        if (!formData.phone || !formData.otp) {
+          throw new Error('Phone and OTP are required');
+        }
+        // For phone auth with OTP, we need to use password field with OTP
+        // This is a simplified implementation - in production, you'd verify OTP separately
+        result = await signInWithPhone(formData.phone, formData.otp);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // Show success message
+      toast({
+        title: t('auth.loginSuccess') || 'Welcome back!',
+        description: t('auth.loginSuccessDesc') || 'You have successfully logged in',
+        variant: 'default',
+      });
+
+      // Redirect to home page
+      router.push(`/${locale}`);
+    } catch (error: any) {
+      console.error('Login error:', error);
+
+      // Translate common Supabase error messages
+      let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
+
+      if (error.message?.includes('Invalid login credentials') || error.message?.includes('invalid_credentials')) {
+        errorMessage = locale === 'ar' ? 'بيانات الدخول غير صحيحة' : 'Invalid login credentials';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = locale === 'ar' ? 'الرجاء تأكيد بريدك الإلكتروني أولاً' : 'Please confirm your email first';
+      } else if (error.message?.includes('User not found')) {
+        errorMessage = locale === 'ar' ? 'المستخدم غير موجود' : 'User not found';
+      }
+
+      toast({
+        title: t('auth.loginError') || 'Login failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -311,14 +407,15 @@ export default function LoginPage() {
             {/* Sign In Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg"
+              disabled={isLoading}
+              className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ color: '#ffffff' }}
             >
               <span style={{
                 textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
                 color: '#ffffff'
               }}>
-                {t('auth.signIn')}
+                {isLoading ? (t('auth.signingIn') || 'Signing in...') : t('auth.signIn')}
               </span>
             </button>
 
@@ -346,22 +443,20 @@ export default function LoginPage() {
             </div>
 
             {/* Social Login Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm"
+                onClick={() => handleOAuthLogin('google')}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <GoogleIcon />
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm text-gray-900 dark:text-white"
-              >
-                <GitHubIcon />
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm"
+                onClick={() => handleOAuthLogin('facebook')}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FacebookIcon />
               </button>

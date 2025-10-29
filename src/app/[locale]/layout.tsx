@@ -4,6 +4,7 @@ import { SimpleIntlProvider } from '@/lib/simple-intl-provider';
 const locales = ['ar', 'en'] as const;
 import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { ThemeProvider } from '../providers/theme-provider';
+import { AuthProvider } from '@/lib/auth/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 
 // English font
@@ -40,14 +41,16 @@ export default async function LocaleLayout({
   }
 
   // Load messages directly
-  const [common, landing] = await Promise.all([
+  const [common, landing, auth] = await Promise.all([
     import(`../../../messages/${locale}/common.json`),
     import(`../../../messages/${locale}/landing.json`),
+    import(`../../../messages/${locale}/auth.json`),
   ]);
 
   const messages = {
     ...common.default,
     ...landing.default,
+    ...auth.default,
   };
 
   return (
@@ -85,8 +88,10 @@ export default async function LocaleLayout({
             storageKey="tawveeri-theme"
             disableTransitionOnChange={false}
           >
-            {children}
-            <Toaster />
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
           </ThemeProvider>
         </SimpleIntlProvider>
       </body>

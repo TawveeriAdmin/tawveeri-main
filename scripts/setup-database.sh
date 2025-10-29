@@ -46,7 +46,7 @@ echo -e "${YELLOW}📋 Setup Steps:${NC}"
 echo "  1. Create database schema"
 echo "  2. Apply Row-Level Security (RLS) policies"
 echo "  3. Seed initial data"
-echo "  4. Create admin user"
+echo "  4. Create admin user in Supabase Auth"
 echo ""
 read -p "Continue with setup? (y/n) " -n 1 -r
 echo ""
@@ -88,7 +88,7 @@ fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 3/3: Seeding Initial Data"
+echo "Step 3/4: Seeding Initial Data"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -102,6 +102,21 @@ else
 fi
 
 echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 4/4: Creating Admin User in Supabase Auth"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+node scripts/create-admin-user.js
+
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Admin user created successfully${NC}"
+else
+    echo -e "${RED}❌ Failed to create admin user${NC}"
+    exit 1
+fi
+
+echo ""
 echo "═════════════════════════════════════════════════════"
 echo -e "${GREEN}✨ Database Setup Completed Successfully!${NC}"
 echo "═════════════════════════════════════════════════════"
@@ -110,17 +125,12 @@ echo "📊 Database Summary:"
 echo "  • Schema created with all tables and relationships"
 echo "  • Row-Level Security (RLS) policies applied"
 echo "  • Sample data seeded (stores, products, prices)"
+echo "  • Admin user created in Supabase Auth"
 echo ""
 echo "👤 Admin Account:"
 echo "  Email: jfr3sam@gmail.com"
 echo "  Password: E1s2a3m4@"
-echo ""
-echo -e "${YELLOW}⚠️  Important: You need to create the admin user in Supabase Auth${NC}"
-echo "  1. Go to: https://app.supabase.com/project/_/auth/users"
-echo "  2. Click 'Add user'"
-echo "  3. Email: jfr3sam@gmail.com"
-echo "  4. Password: E1s2a3m4@"
-echo "  5. Confirm email: Yes"
+echo "  Status: ✅ Ready to use"
 echo ""
 echo "🚀 Next Steps:"
 echo "  1. Verify your .env.local has all required variables"

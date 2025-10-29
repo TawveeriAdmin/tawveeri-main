@@ -14,7 +14,8 @@
     "db:setup": "./scripts/setup-database.sh",
     "db:schema": "psql $SUPABASE_DB_URL -f scripts/database/01-schema.sql",
     "db:policies": "psql $SUPABASE_DB_URL -f scripts/database/02-rls-policies.sql",
-    "db:seed": "psql $SUPABASE_DB_URL -f scripts/database/03-seed-data.sql"
+    "db:seed": "psql $SUPABASE_DB_URL -f scripts/database/03-seed-data.sql",
+    "db:create-admin": "node scripts/create-admin-user.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

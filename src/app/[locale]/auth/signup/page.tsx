@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useToast } from '@/components/ui/use-toast';
 import { Mail, Lock, Eye, EyeOff, User, Moon, Sun, Languages, Phone, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { validateEmail, validatePhone, validatePassword, validatePasswordMatch, validateFullName, validateOtp } from '@/lib/auth-validation';
 
@@ -35,9 +37,13 @@ export default function SignupPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { signUp, signInWithOAuth } = useAuth();
+  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [isLoading, setIsLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -145,7 +151,38 @@ export default function SignupPage() {
     setOtpSent(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleOAuthSignup = async (provider: 'google' | 'facebook' | 'apple') => {
+    setIsLoading(true);
+    try {
+      const { error } = await signInWithOAuth(provider);
+
+      if (error) {
+        throw error;
+      }
+
+      // OAuth will redirect to callback, so no need to handle success here
+    } catch (error: any) {
+      console.error(`${provider} signup error:`, error);
+
+      // Translate common OAuth error messages
+      let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
+
+      if (error.message?.includes('popup') || error.message?.includes('window')) {
+        errorMessage = locale === 'ar' ? 'تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة' : 'Popup was blocked. Please allow popups';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = locale === 'ar' ? 'خطأ في الاتصال بالشبكة' : 'Network connection error';
+      }
+
+      toast({
+        title: t('auth.oauthError') || 'Authentication failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Mark all fields as touched to show validation errors
@@ -214,8 +251,61 @@ export default function SignupPage() {
       return;
     }
 
-    console.log('Sign up:', formData);
-    // TODO: Implement actual signup logic
+    // All validation passed, proceed with signup
+    setIsLoading(true);
+
+    try {
+      const signupParams = {
+        full_name: formData.fullName,
+        password: formData.password,
+        preferred_language: locale as 'ar' | 'en',
+        ...(authMethod === 'email'
+          ? { email: formData.email }
+          : { phone: formData.phone }
+        ),
+      };
+
+      const { data, error } = await signUp(signupParams);
+
+      if (error) {
+        throw error;
+      }
+
+      // Show success message
+      toast({
+        title: t('auth.signupSuccess') || 'Account created successfully',
+        description: authMethod === 'email'
+          ? t('auth.checkEmail') || 'Please check your email to verify your account'
+          : t('auth.checkPhone') || 'Please check your phone for verification',
+        variant: 'default',
+      });
+
+      // Redirect to home page or dashboard
+      router.push(`/${locale}`);
+    } catch (error: any) {
+      console.error('Signup error:', error);
+
+      // Translate common Supabase error messages
+      let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
+
+      if (error.message?.includes('User already registered')) {
+        errorMessage = locale === 'ar' ? 'المستخدم مسجل مسبقاً' : 'User already registered';
+      } else if (error.message?.includes('Email already exists') || error.message?.includes('already been registered')) {
+        errorMessage = locale === 'ar' ? 'البريد الإلكتروني مسجل مسبقاً' : 'Email already registered';
+      } else if (error.message?.includes('Password should be at least')) {
+        errorMessage = locale === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password should be at least 6 characters';
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = locale === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email address';
+      }
+
+      toast({
+        title: t('auth.signupError') || 'Signup failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Helper component for error messages
@@ -536,14 +626,15 @@ export default function SignupPage() {
             {/* Sign Up Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg"
+              disabled={isLoading}
+              className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ color: '#ffffff' }}
             >
               <span style={{
                 textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
                 color: '#ffffff'
               }}>
-                {t('auth.signUp')}
+                {isLoading ? (t('auth.signingUp') || 'Signing up...') : t('auth.signUp')}
               </span>
             </button>
 
@@ -571,22 +662,20 @@ export default function SignupPage() {
             </div>
 
             {/* Social Sign Up Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm"
+                onClick={() => handleOAuthSignup('google')}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <GoogleIcon />
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm text-gray-900 dark:text-white"
-              >
-                <GitHubIcon />
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm"
+                onClick={() => handleOAuthSignup('facebook')}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FacebookIcon />
               </button>

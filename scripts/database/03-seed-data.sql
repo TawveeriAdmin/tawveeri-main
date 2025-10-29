@@ -360,23 +360,8 @@ WHERE p.slug = 'samsung-qled-65-4k';
 -- ============================================================================
 -- Email: jfr3sam@gmail.com
 -- Password: E1s2a3m4@
--- Note: This user needs to be created through Supabase Auth separately
--- This creates the corresponding user profile in the users table
-
-INSERT INTO users (
-    email, full_name, role, auth_provider, email_verified, preferred_language
-) VALUES
-(
-    'jfr3sam@gmail.com',
-    'System Administrator',
-    'admin',
-    'email',
-    true,
-    'ar'
-)
-ON CONFLICT (email) DO UPDATE SET
-    role = 'admin',
-    email_verified = true;
+-- Note: The admin user will be created in Supabase Auth by the setup script
+-- The user profile will be automatically created with the correct auth ID
 
 -- ============================================================================
 -- UPDATE STORE STATISTICS
