@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile data from database
-  const fetchUserProfile = async (userId: string) => {
+  // Fetch user profile data from database, create if doesn't exist
+  const fetchUserProfile = async (userId: string, userEmail?: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -64,11 +64,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If user profile doesn't exist, create it
+        if (error.code === 'PGRST116') {
+          console.log('User profile not found, creating...');
+
+          const { data: newProfile, error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: userId,
+              email: userEmail,
+              role: 'customer',
+              auth_provider: 'email',
+              email_verified: true,
+            })
+            .select('role, full_name, avatar_url, preferred_language')
+            .single();
+
+          if (insertError) {
+            console.error('Error creating user profile:', insertError);
+            return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar' };
+          }
+
+          return newProfile;
+        }
+        throw error;
+      }
+
       return data;
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      return null;
+      // Return default profile to prevent app from breaking
+      return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar' };
     }
   };
 
@@ -79,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
 
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
+        const profile = await fetchUserProfile(session.user.id, session.user.email);
         setUser({ ...session.user, ...profile } as AuthUser);
       }
 
@@ -93,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
 
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
+        const profile = await fetchUserProfile(session.user.id, session.user.email);
         setUser({ ...session.user, ...profile } as AuthUser);
       } else {
         setUser(null);
@@ -369,7 +396,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(data.session);
       if (data.session?.user) {
-        const profile = await fetchUserProfile(data.session.user.id);
+        const profile = await fetchUserProfile(data.session.user.id, data.session.user.email);
         setUser({ ...data.session.user, ...profile } as AuthUser);
       }
     } catch (error) {
