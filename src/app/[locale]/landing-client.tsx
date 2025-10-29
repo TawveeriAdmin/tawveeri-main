@@ -6,6 +6,7 @@ import { useParams, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Languages } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Price } from '@/components/ui/price';
 import {
   Search,
   TrendingUp,
@@ -775,7 +776,7 @@ export default function LandingPageClient() {
                 <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-success-100 dark:bg-success-900/30 rounded-full border border-success-200 dark:border-success-800">
                   <Percent className="w-4 h-4 text-success-600 dark:text-success-400" />
                   <span className="text-sm font-bold text-success-700 dark:text-success-300">
-                    {t('testimonials.saved')} {testimonial.saved}
+                    {t('testimonials.saved')} <Price amount={parseFloat(testimonial.saved.replace(',', ''))} className="inline text-sm font-bold" symbolClassName="w-3 h-3 inline" />
                   </span>
                 </div>
               </div>
