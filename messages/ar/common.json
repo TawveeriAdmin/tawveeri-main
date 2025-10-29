@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "توفيري",
+    "initial": "ت"
+  },
+  "nav": {
+    "products": "المنتجات",
+    "deals": "العروض",
+    "compare": "مقارنة",
+    "features": "المميزات",
+    "howItWorks": "كيف يعمل",
+    "stores": "المتاجر",
+    "testimonials": "الآراء",
+    "login": "تسجيل الدخول",
+    "startFree": "ابدأ مجاناً"
+  },
+  "button": {
+    "view": "عرض في المتجر",
+    "search": "بحث",
+    "browseProducts": "استكشف المنتجات",
+    "howItWorks": "كيف يعمل؟",
+    "startSavingNow": "ابدأ التوفير الآن",
+    "startFreeNow": "ابدأ مجاناً الآن",
+    "browseProductsShort": "تصفح المنتجات",
+    "subscribe": "اشترك"
+  },
+  "price": {
+    "best": "أفضل سعر",
+    "save": "وفر",
+    "sar": "ر.س"
+  },
+  "store": {
+    "extra": "اكسترا",
+    "jarir": "مكتبة جرير",
+    "noon": "نون"
+  },
+  "delivery": {
+    "free": "توصيل مجاني"
+  },
+  "warranty": "الضمان",
+  "rating": "التقييم",
+  "footer": {
+    "description": "منصة مقارنة الأسعار الأولى والأفضل في المملكة العربية السعودية. وفّر المال واتخذ قرارات ذكية.",
+    "quickLinks": "روابط سريعة",
+    "products": "المنتجات",
+    "stores": "المتاجر",
+    "deals": "العروض",
+    "about": "من نحن",
+    "support": "الدعم",
+    "helpCenter": "مركز المساعدة",
+    "contact": "اتصل بنا",
+    "privacy": "سياسة الخصوصية",
+    "terms": "الشروط والأحكام",
+    "newsletter": "اشترك في النشرة",
+    "newsletterDescription": "احصل على أفضل العروض مباشرة في بريدك",
+    "emailPlaceholder": "بريدك الإلكتروني",
+    "copyright": "© 2025 توفيري. جميع الحقوق محفوظة."
+  }
+}

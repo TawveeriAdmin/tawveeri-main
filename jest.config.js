@@ -30,6 +30,7 @@ const customJestConfig = {
       lines: 70,
     },
   },
+  testTimeout: 10000, // 10 seconds for database tests
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

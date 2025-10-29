@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "Tawveeri",
+    "initial": "T"
+  },
+  "nav": {
+    "products": "Products",
+    "deals": "Deals",
+    "compare": "Compare",
+    "features": "Features",
+    "howItWorks": "How it Works",
+    "stores": "Stores",
+    "testimonials": "Testimonials",
+    "login": "Login",
+    "startFree": "Start Free"
+  },
+  "button": {
+    "view": "View at Store",
+    "search": "Search",
+    "browseProducts": "Browse Products",
+    "howItWorks": "How it Works?",
+    "startSavingNow": "Start Saving Now",
+    "startFreeNow": "Start Free Now",
+    "browseProductsShort": "Browse Products",
+    "subscribe": "Subscribe"
+  },
+  "price": {
+    "best": "Best Price",
+    "save": "Save",
+    "sar": "SAR"
+  },
+  "store": {
+    "extra": "Extra",
+    "jarir": "Jarir",
+    "noon": "Noon"
+  },
+  "delivery": {
+    "free": "Free Delivery"
+  },
+  "warranty": "Warranty",
+  "rating": "Rating",
+  "footer": {
+    "description": "The #1 price comparison platform in Saudi Arabia. Save money and make smart decisions.",
+    "quickLinks": "Quick Links",
+    "products": "Products",
+    "stores": "Stores",
+    "deals": "Deals",
+    "about": "About",
+    "support": "Support",
+    "helpCenter": "Help Center",
+    "contact": "Contact",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "newsletter": "Newsletter",
+    "newsletterDescription": "Get best deals directly in your inbox",
+    "emailPlaceholder": "Your email",
+    "copyright": "© 2025 Tawveeri. All rights reserved."
+  }
+}

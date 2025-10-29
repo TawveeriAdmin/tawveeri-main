@@ -1,0 +1,666 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useTranslations } from '@/lib/simple-intl-provider';
+import { useTheme } from 'next-themes';
+import { Mail, Lock, Eye, EyeOff, User, Moon, Sun, Languages, Phone, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { validateEmail, validatePhone, validatePassword, validatePasswordMatch, validateFullName, validateOtp } from '@/lib/auth-validation';
+
+// Social auth icons (same as login page)
+const GoogleIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  </svg>
+);
+
+const GitHubIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.430.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+  </svg>
+);
+
+export default function SignupPage() {
+  const t = useTranslations();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'ar';
+  const isRTL = locale === 'ar';
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    otp: '',
+    agreeToTerms: false,
+  });
+
+  // Validation errors
+  const [errors, setErrors] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    otp: '',
+    terms: '',
+  });
+
+  // Touched fields (for showing errors only after user interaction)
+  const [touched, setTouched] = useState({
+    fullName: false,
+    email: false,
+    phone: false,
+    password: false,
+    confirmPassword: false,
+    otp: false,
+  });
+
+  // Fix hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Real-time validation for full name
+  useEffect(() => {
+    if (touched.fullName) {
+      const result = validateFullName(formData.fullName);
+      setErrors(prev => ({ ...prev, fullName: result.isValid ? '' : result.message || '' }));
+    }
+  }, [formData.fullName, touched.fullName]);
+
+  // Real-time validation for email
+  useEffect(() => {
+    if (touched.email && authMethod === 'email') {
+      const result = validateEmail(formData.email);
+      setErrors(prev => ({ ...prev, email: result.isValid ? '' : result.message || '' }));
+    }
+  }, [formData.email, touched.email, authMethod]);
+
+  // Real-time validation for phone
+  useEffect(() => {
+    if (touched.phone && authMethod === 'phone') {
+      const result = validatePhone(formData.phone);
+      setErrors(prev => ({ ...prev, phone: result.isValid ? '' : result.message || '' }));
+    }
+  }, [formData.phone, touched.phone, authMethod]);
+
+  // Real-time validation for password (validate while typing, no need for touch)
+  useEffect(() => {
+    if (authMethod === 'email' && formData.password) {
+      const result = validatePassword(formData.password);
+      setErrors(prev => ({ ...prev, password: result.isValid ? '' : result.message || '' }));
+    } else if (authMethod === 'email' && !formData.password) {
+      setErrors(prev => ({ ...prev, password: '' }));
+    }
+  }, [formData.password, authMethod]);
+
+  // Real-time validation for password confirmation (validate while typing)
+  useEffect(() => {
+    if (authMethod === 'email' && formData.confirmPassword) {
+      const result = validatePasswordMatch(formData.password, formData.confirmPassword);
+      setErrors(prev => ({ ...prev, confirmPassword: result.isValid ? '' : result.message || '' }));
+    } else if (authMethod === 'email' && !formData.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: '' }));
+    }
+  }, [formData.password, formData.confirmPassword, authMethod]);
+
+  // Real-time validation for OTP
+  useEffect(() => {
+    if (touched.otp && authMethod === 'phone' && otpSent) {
+      const result = validateOtp(formData.otp);
+      setErrors(prev => ({ ...prev, otp: result.isValid ? '' : result.message || '' }));
+    }
+  }, [formData.otp, touched.otp, authMethod, otpSent]);
+
+  const handleSendOtp = async () => {
+    // Validate phone before sending OTP
+    setTouched(prev => ({ ...prev, phone: true }));
+    const phoneValidation = validatePhone(formData.phone);
+
+    if (!phoneValidation.isValid) {
+      setErrors(prev => ({ ...prev, phone: phoneValidation.message || '' }));
+      return;
+    }
+
+    // TODO: Implement OTP sending logic
+    console.log('Sending OTP to:', formData.phone);
+    setOtpSent(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Mark all fields as touched to show validation errors
+    setTouched({
+      fullName: true,
+      email: true,
+      phone: true,
+      password: true,
+      confirmPassword: true,
+      otp: true,
+    });
+
+    // Validate full name
+    const fullNameValidation = validateFullName(formData.fullName);
+    if (!fullNameValidation.isValid) {
+      setErrors(prev => ({ ...prev, fullName: fullNameValidation.message || '' }));
+      return;
+    }
+
+    if (authMethod === 'email') {
+      // Validate email
+      const emailValidation = validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        setErrors(prev => ({ ...prev, email: emailValidation.message || '' }));
+        return;
+      }
+
+      // Validate password
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.isValid) {
+        setErrors(prev => ({ ...prev, password: passwordValidation.message || '' }));
+        return;
+      }
+
+      // Validate password match
+      const passwordMatchValidation = validatePasswordMatch(formData.password, formData.confirmPassword);
+      if (!passwordMatchValidation.isValid) {
+        setErrors(prev => ({ ...prev, confirmPassword: passwordMatchValidation.message || '' }));
+        return;
+      }
+    } else {
+      // Validate phone
+      const phoneValidation = validatePhone(formData.phone);
+      if (!phoneValidation.isValid) {
+        setErrors(prev => ({ ...prev, phone: phoneValidation.message || '' }));
+        return;
+      }
+
+      // Check if OTP was sent
+      if (!otpSent) {
+        setErrors(prev => ({ ...prev, phone: 'Please send OTP first' }));
+        return;
+      }
+
+      // Validate OTP
+      const otpValidation = validateOtp(formData.otp);
+      if (!otpValidation.isValid) {
+        setErrors(prev => ({ ...prev, otp: otpValidation.message || '' }));
+        return;
+      }
+    }
+
+    // Validate terms agreement
+    if (!formData.agreeToTerms) {
+      setErrors(prev => ({ ...prev, terms: 'termsRequired' }));
+      return;
+    }
+
+    console.log('Sign up:', formData);
+    // TODO: Implement actual signup logic
+  };
+
+  // Helper component for error messages
+  const ErrorMessage = ({ message }: { message: string }) => {
+    if (!message) return null;
+
+    return (
+      <div className="flex items-center gap-1.5 mt-1.5 text-sm text-warning-600 dark:text-warning-400">
+        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <span>{t(`auth.validation.${message}`)}</span>
+      </div>
+    );
+  };
+
+  // Helper component for success messages
+  const SuccessMessage = ({ message }: { message: string }) => {
+    if (!message) return null;
+
+    return (
+      <div className="flex items-center gap-1.5 mt-1.5 text-sm text-success-600 dark:text-success-400">
+        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+        <span>{t(`auth.validation.${message}`)}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-screen flex overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Left Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-gray-900 transition-colors duration-300 overflow-y-auto">
+        <div className="w-full max-w-md space-y-8 py-8">
+          {/* Header with Logo, Back Button, Theme & Language Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Back Button */}
+              <Link
+                href={`/${locale}`}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 group"
+                aria-label={t('auth.backToHome')}
+              >
+                <ArrowLeft className={`w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+              </Link>
+
+              {/* Logo */}
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-800 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                {t('app.initial')}
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+                {t('app.name')}
+              </span>
+            </div>
+
+            {/* Theme & Language Toggle */}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+                aria-label="Toggle theme"
+              >
+                {mounted && (
+                  theme === 'dark' ? (
+                    <Sun className="w-5 h-5 text-featured-500" />
+                  ) : (
+                    <Moon className="w-5 h-5 text-primary-600" />
+                  )
+                )}
+              </button>
+
+              {/* Language Toggle */}
+              <Link
+                href={locale === 'ar' ? '/en/auth/signup' : '/ar/auth/signup'}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+                aria-label="Toggle language"
+              >
+                <Languages className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Sign Up Header */}
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              {t('auth.signUp')}
+            </h1>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email/Phone Tabs */}
+            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setAuthMethod('email')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
+                  authMethod === 'email'
+                    ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <Mail className="w-4 h-4" />
+                {t('auth.emailTab')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMethod('phone')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
+                  authMethod === 'phone'
+                    ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <Phone className="w-4 h-4" />
+                {t('auth.phoneTab')}
+              </button>
+            </div>
+
+            {/* Full Name Field */}
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                {t('auth.fullName')}
+              </label>
+              <div className="relative">
+                <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                  <User className="w-5 h-5" />
+                </div>
+                <input
+                  id="fullName"
+                  type="text"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, fullName: true }))}
+                  placeholder={t('auth.fullNamePlaceholder')}
+                  className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.fullName && touched.fullName ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.fullName && touched.fullName ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                />
+              </div>
+              {touched.fullName && <ErrorMessage message={errors.fullName} />}
+            </div>
+
+            {/* Email or Phone Field (conditional) */}
+            {authMethod === 'email' ? (
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                  {t('auth.emailAddress')}
+                </label>
+                <div className="relative">
+                  <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <input
+                    id="email"
+                    type="text"
+                    autoComplete="email"
+                    inputMode="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                    placeholder={t('auth.emailPlaceholder')}
+                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.email && touched.email ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.email && touched.email ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                  />
+                </div>
+                {touched.email && <ErrorMessage message={errors.email} />}
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                  {t('auth.phoneNumber')}
+                </label>
+                <div className="relative">
+                  <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                    placeholder={t('auth.phonePlaceholder')}
+                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.phone && touched.phone ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.phone && touched.phone ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                  />
+                </div>
+                {touched.phone && <ErrorMessage message={errors.phone} />}
+              </div>
+            )}
+
+            {/* Password Fields (Email) or OTP Field (Phone) */}
+            {authMethod === 'email' ? (
+              <>
+                {/* Password Field */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    {t('auth.password')}
+                  </label>
+                  <div className="relative">
+                    <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                      placeholder={t('auth.passwordPlaceholder')}
+                      className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.password && formData.password ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.password && formData.password ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {formData.password && <ErrorMessage message={errors.password} />}
+                </div>
+
+                {/* Confirm Password Field */}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    {t('auth.confirmPassword')}
+                  </label>
+                  <div className="relative">
+                    <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      onBlur={() => setTouched(prev => ({ ...prev, confirmPassword: true }))}
+                      placeholder={t('auth.passwordPlaceholder')}
+                      className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.confirmPassword && formData.confirmPassword ? 'border-warning-500 dark:border-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'border-success-500 dark:border-success-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.confirmPassword && formData.confirmPassword ? 'focus:ring-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'focus:ring-success-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {formData.confirmPassword && errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} />}
+                  {formData.confirmPassword && !errors.confirmPassword && <SuccessMessage message="passwordMatch" />}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Send OTP Button */}
+                {!otpSent && (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={!formData.phone}
+                    className="w-full py-3.5 bg-gradient-to-r from-success-600 to-success-700 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-success-600/30 transform hover:scale-[1.02] transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ color: '#ffffff' }}
+                  >
+                    <span style={{
+                      textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
+                      color: '#ffffff'
+                    }}>
+                      Send OTP
+                    </span>
+                  </button>
+                )}
+
+                {/* OTP Field */}
+                {otpSent && (
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                      Enter OTP
+                    </label>
+                    <div className="relative">
+                      <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <input
+                        id="otp"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={formData.otp}
+                        onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/[^0-9]/g, '') })}
+                        onBlur={() => setTouched(prev => ({ ...prev, otp: true }))}
+                        placeholder="123456"
+                        maxLength={6}
+                        className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.otp && touched.otp ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.otp && touched.otp ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono`}
+                      />
+                    </div>
+                    {touched.otp && <ErrorMessage message={errors.otp} />}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                      Didn't receive OTP? <button type="button" onClick={handleSendOtp} className="text-primary-600 dark:text-primary-400 hover:underline font-semibold">Resend</button>
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Terms Agreement */}
+            <div>
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="agreeToTerms"
+                  checked={formData.agreeToTerms}
+                  onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+                  className="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 focus:ring-2"
+                />
+                <label htmlFor="agreeToTerms" className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {t('auth.termsAgreement')}
+                </label>
+              </div>
+              {errors.terms && <ErrorMessage message={errors.terms} />}
+            </div>
+
+            {/* Sign Up Button */}
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-[1.02] transition-all duration-300 shadow-lg"
+              style={{ color: '#ffffff' }}
+            >
+              <span style={{
+                textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
+                color: '#ffffff'
+              }}>
+                {t('auth.signUp')}
+              </span>
+            </button>
+
+            {/* Sign In Link */}
+            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+              {t('auth.hasAccount')}{' '}
+              <Link
+                href={`/${locale}/auth/login`}
+                className="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+              >
+                {t('auth.signInLink')}
+              </Link>
+            </p>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                  {t('auth.orContinueWith')}
+                </span>
+              </div>
+            </div>
+
+            {/* Social Sign Up Buttons */}
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm"
+              >
+                <GoogleIcon />
+              </button>
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm text-gray-900 dark:text-white"
+              >
+                <GitHubIcon />
+              </button>
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm"
+              >
+                <FacebookIcon />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Right Side - Branding (same as login) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 dark:from-black dark:via-gray-950 dark:to-gray-900 items-center justify-center p-12 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-transparent rounded-full blur-3xl"></div>
+          </div>
+          <div className="absolute bottom-0 left-0 w-96 h-96">
+            <div className="absolute inset-0 bg-gradient-to-tr from-success-500 to-transparent rounded-full blur-3xl"></div>
+          </div>
+        </div>
+
+        {/* Large Logo */}
+        <div className="absolute top-12 left-12 right-12">
+          <div className="w-32 h-32 bg-gradient-to-br from-gray-700 to-gray-800 rounded-3xl flex items-center justify-center shadow-2xl">
+            <div className="text-6xl font-black text-primary-400/30">
+              {t('app.initial')}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 max-w-lg space-y-8">
+          {/* Brand Name */}
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>{t('app.name')}</h2>
+            <h1 className="text-5xl font-bold leading-tight mb-6" style={{ color: '#ffffff' }}>
+              {t('auth.welcome')}
+            </h1>
+            <p className="text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
+              {t('auth.welcomeDescription')}
+            </p>
+            <p className="text-sm mt-4" style={{ color: '#9ca3af' }}>
+              {t('auth.joinMessage')}
+            </p>
+          </div>
+
+          {/* Feature Card */}
+          <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-3xl p-8 border border-gray-700/50 shadow-2xl">
+            <h3 className="text-2xl font-bold mb-4" style={{ color: '#ffffff' }}>
+              {t('auth.ctaTitle')}
+            </h3>
+            <p className="text-base mb-6" style={{ color: '#d1d5db' }}>
+              {t('auth.ctaDescription')}
+            </p>
+
+            {/* Avatar Group */}
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
+                  A
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-success-500 to-success-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
+                  M
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-featured-500 to-featured-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
+                  S
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning-500 to-warning-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
+                  +
+                </div>
+              </div>
+              <span className="text-sm" style={{ color: '#9ca3af' }}>{t('auth.stats.users')}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

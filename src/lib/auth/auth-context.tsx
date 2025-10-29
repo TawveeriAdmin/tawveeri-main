@@ -1,0 +1,404 @@
+'use client';
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User, Session, AuthError } from '@supabase/supabase-js';
+import { supabase } from '@/lib/database';
+import { UserRole } from '@/lib/database/types';
+import { createAuditLog } from './audit';
+import { createNotification } from './notifications';
+
+interface AuthUser extends User {
+  role?: UserRole;
+  full_name?: string;
+  avatar_url?: string;
+  preferred_language?: string;
+}
+
+interface AuthContextType {
+  user: AuthUser | null;
+  session: Session | null;
+  loading: boolean;
+  signUp: (params: SignUpParams) => Promise<AuthResponse>;
+  signInWithEmail: (email: string, password: string) => Promise<AuthResponse>;
+  signInWithPhone: (phone: string, password: string) => Promise<AuthResponse>;
+  signInWithOAuth: (provider: 'google' | 'facebook' | 'apple') => Promise<AuthResponse>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<AuthResponse>;
+  updatePassword: (newPassword: string) => Promise<AuthResponse>;
+  updateProfile: (data: ProfileUpdateData) => Promise<AuthResponse>;
+  refreshSession: () => Promise<void>;
+}
+
+interface SignUpParams {
+  email?: string;
+  phone?: string;
+  password: string;
+  full_name?: string;
+  preferred_language?: 'ar' | 'en';
+}
+
+interface ProfileUpdateData {
+  full_name?: string;
+  avatar_url?: string;
+  preferred_language?: 'ar' | 'en';
+}
+
+interface AuthResponse {
+  data?: any;
+  error?: AuthError | Error | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user profile data from database
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('role, full_name, avatar_url, preferred_language')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+  };
+
+  // Initialize auth state
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setUser({ ...session.user, ...profile } as AuthUser);
+      }
+
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setUser({ ...session.user, ...profile } as AuthUser);
+      } else {
+        setUser(null);
+      }
+
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Sign up with email or phone
+  const signUp = async (params: SignUpParams): Promise<AuthResponse> => {
+    try {
+      const { email, phone, password, full_name, preferred_language } = params;
+
+      // Sign up with Supabase Auth
+      const authData = email
+        ? { email, password }
+        : { phone: phone!, password };
+
+      const { data, error } = await supabase.auth.signUp(authData);
+
+      if (error) throw error;
+
+      // Create user profile in database
+      if (data.user) {
+        const { error: profileError } = await supabase.from('users').insert({
+          id: data.user.id,
+          email: email || null,
+          phone: phone || null,
+          full_name: full_name || null,
+          preferred_language: preferred_language || 'ar',
+          role: 'customer',
+          auth_provider: email ? 'email' : 'phone',
+        });
+
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+        }
+
+        // Create welcome notification
+        await createNotification({
+          user_id: data.user.id,
+          type: 'system',
+          title_ar: 'مرحباً بك في توفيري',
+          title_en: 'Welcome to Tawveeri',
+          message_ar: 'نحن سعداء بانضمامك إلينا',
+          message_en: 'We are happy to have you join us',
+        });
+
+        // Audit log
+        await createAuditLog({
+          user_id: data.user.id,
+          action: 'user_signup',
+          entity_type: 'user',
+          entity_id: data.user.id,
+          details: {
+            method: email ? 'email' : 'phone',
+            full_name,
+          },
+        });
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Sign in with email
+  const signInWithEmail = async (
+    email: string,
+    password: string
+  ): Promise<AuthResponse> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Update last login
+        await supabase
+          .from('users')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', data.user.id);
+
+        // Audit log
+        await createAuditLog({
+          user_id: data.user.id,
+          action: 'user_login',
+          entity_type: 'user',
+          entity_id: data.user.id,
+          details: { method: 'email' },
+        });
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Sign in with phone
+  const signInWithPhone = async (
+    phone: string,
+    password: string
+  ): Promise<AuthResponse> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        phone,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Update last login
+        await supabase
+          .from('users')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', data.user.id);
+
+        // Audit log
+        await createAuditLog({
+          user_id: data.user.id,
+          action: 'user_login',
+          entity_type: 'user',
+          entity_id: data.user.id,
+          details: { method: 'phone' },
+        });
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Sign in with OAuth (Google, Facebook, Apple)
+  const signInWithOAuth = async (
+    provider: 'google' | 'facebook' | 'apple'
+  ): Promise<AuthResponse> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Sign out
+  const signOut = async () => {
+    try {
+      if (user) {
+        // Audit log before signing out
+        await createAuditLog({
+          user_id: user.id,
+          action: 'user_logout',
+          entity_type: 'user',
+          entity_id: user.id,
+        });
+      }
+
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email: string): Promise<AuthResponse> => {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+      });
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Update password
+  const updatePassword = async (newPassword: string): Promise<AuthResponse> => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      if (user) {
+        // Audit log
+        await createAuditLog({
+          user_id: user.id,
+          action: 'password_changed',
+          entity_type: 'user',
+          entity_id: user.id,
+        });
+
+        // Notification
+        await createNotification({
+          user_id: user.id,
+          type: 'system',
+          title_ar: 'تم تغيير كلمة المرور',
+          title_en: 'Password Changed',
+          message_ar: 'تم تغيير كلمة المرور الخاصة بك بنجاح',
+          message_en: 'Your password has been changed successfully',
+        });
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Update user profile
+  const updateProfile = async (
+    profileData: ProfileUpdateData
+  ): Promise<AuthResponse> => {
+    try {
+      if (!user) throw new Error('No user logged in');
+
+      const { data, error } = await supabase
+        .from('users')
+        .update(profileData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local user state
+      setUser({ ...user, ...data } as AuthUser);
+
+      // Audit log
+      await createAuditLog({
+        user_id: user.id,
+        action: 'profile_updated',
+        entity_type: 'user',
+        entity_id: user.id,
+        details: profileData,
+      });
+
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Refresh session
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+
+      setSession(data.session);
+      if (data.session?.user) {
+        const profile = await fetchUserProfile(data.session.user.id);
+        setUser({ ...data.session.user, ...profile } as AuthUser);
+      }
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+    }
+  };
+
+  const value = {
+    user,
+    session,
+    loading,
+    signUp,
+    signInWithEmail,
+    signInWithPhone,
+    signInWithOAuth,
+    signOut,
+    resetPassword,
+    updatePassword,
+    updateProfile,
+    refreshSession,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

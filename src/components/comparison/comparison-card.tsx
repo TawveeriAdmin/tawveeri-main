@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, Truck, ShieldCheck } from 'lucide-react';
-import { useLocale } from '@/app/providers/locale-provider';
+import { useLocale } from 'next-intl';
 import { formatPrice, calculateSavings } from '@/lib/utils';
 
 interface ComparisonCardProps {

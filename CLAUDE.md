@@ -185,7 +185,35 @@ formatCompactNumber(1000000)  // "1.0M"
 
 ## Design System Quick Reference
 
-### Colors (defined in globals.css)
+### ⚠️ CRITICAL: Color Usage Rules
+
+**READ THIS BEFORE USING ANY COLORS!**
+
+This project uses Tailwind CSS v4, which has STRICT color requirements:
+
+1. **ONLY use colors defined in `@theme` section of `src/app/globals.css`**
+2. **NEVER use undefined colors** - they will render as dark OKLCH colors even in light mode
+3. **ALL gradient colors must be defined** - `from-*`, `via-*`, `to-*` ALL need to be in `@theme`
+4. **Before using a color, verify it exists in `@theme`**
+
+**Defined Colors** (safe to use):
+- `white`, `black`
+- `gray` (50-950)
+- `blue` (50-950)
+- `green` (50-950)
+- `amber` (50-950)
+- `primary` (50-950) - Trust Blue (brand)
+- `success` (50-950) - Emerald Green
+- `warning` (50-950) - Red
+- `featured` (50-950) - Amber
+
+**Undefined Colors** (DO NOT USE):
+- ❌ purple, pink, indigo, violet, rose, cyan, teal, lime, etc.
+- ❌ If you need a new color, add the FULL scale (50-950) to `@theme` first
+
+**See [COLOR_GUIDE.md](./COLOR_GUIDE.md) for complete documentation.**
+
+### Color Examples
 - Primary: `bg-primary-600`, `text-primary-600`, `border-primary-600`
 - Success: `bg-success-600`, `text-success-600`, `border-success-600`
 - Warning: `bg-warning-600`, `text-warning-600`, `border-warning-600`
@@ -242,6 +270,103 @@ formatCompactNumber(1000000)  // "1.0M"
 - Always use the `cn()` utility for conditional classes
 - Ensure dark mode support with `dark:` prefix
 - Use `tabular-nums` for all price displays
+
+### Dark/Light Mode Best Practices ⚠️ CRITICAL
+
+**THE GOLDEN RULE**: ALWAYS provide BOTH light and dark variants for colors. NEVER use dark colors without the `dark:` prefix.
+
+#### Common Mistakes to AVOID:
+
+❌ **WRONG** - Dark color applied to both themes:
+```tsx
+<div className="bg-primary-600">  {/* Dark blue in BOTH themes! */}
+<div className="bg-gray-900">     {/* Dark gray in BOTH themes! */}
+<div className="text-white">      {/* White text in BOTH themes - invisible on white backgrounds! */}
+```
+
+✅ **RIGHT** - Light variant for light mode, dark variant for dark mode:
+```tsx
+<div className="bg-primary-50 dark:bg-primary-600">     {/* Light blue → Dark blue */}
+<div className="bg-gray-50 dark:bg-gray-900">          {/* Light gray → Dark gray */}
+<div className="text-gray-900 dark:text-white">        {/* Dark text → White text */}
+```
+
+#### Color Intensity Guidelines:
+
+**Light Mode** should use:
+- Backgrounds: `white`, `gray-50`, `gray-100` for solid colors
+- Gradients: `primary-50`, `success-50`, `featured-50` for colored backgrounds
+- Text: `gray-900`, `gray-800`, `gray-700` for body text
+- Borders: `gray-200`, `gray-300`
+
+**Dark Mode** should use:
+- Backgrounds: `gray-900`, `gray-950`, `black` for solid colors
+- Gradients: `primary-600`, `success-600`, `featured-600` for colored backgrounds
+- Text: `white`, `gray-100`, `gray-300` for body text
+- Borders: `gray-700`, `gray-800`
+
+#### Section-by-Section Checklist:
+
+When creating ANY new section, verify:
+1. ✅ Background has light variant: `bg-white dark:bg-gray-900`
+2. ✅ All text has proper contrast: `text-gray-900 dark:text-white`
+3. ✅ All borders have variants: `border-gray-200 dark:border-gray-800`
+4. ✅ Buttons have proper backgrounds and text colors for both modes
+5. ✅ Icons have proper colors: `text-primary-600 dark:text-primary-400`
+6. ✅ Hover states work in both modes
+7. ✅ Gradients use appropriate intensities
+
+#### Real-World Examples:
+
+**Stats/Hero Section with Colored Background:**
+```tsx
+<section className="bg-gradient-to-r from-primary-50 via-success-50 to-primary-50 dark:from-primary-600 dark:via-success-600 dark:to-primary-600">
+  <h2 className="text-gray-900 dark:text-white">Title</h2>
+  <p className="text-gray-700 dark:text-white/90">Description</p>
+  <button className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
+    Action
+  </button>
+</section>
+```
+
+**Footer with Light/Dark Backgrounds:**
+```tsx
+<footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+  <h4 className="text-gray-900 dark:text-white">Section Title</h4>
+  <p className="text-gray-600 dark:text-gray-400">Description</p>
+  <a className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+    Link
+  </a>
+</footer>
+```
+
+**Form Inputs:**
+```tsx
+<input className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500" />
+```
+
+#### Testing Your Work:
+
+Before considering any page/component complete:
+1. Test in **LIGHT mode** - Should be BRIGHT with white/light backgrounds
+2. Test in **DARK mode** - Should be DARK with dark backgrounds
+3. Toggle between modes rapidly - All content should remain readable
+4. Check ALL sections - Header, hero, features, stats, CTA, footer, etc.
+
+#### Quick Color Reference Table:
+
+| Element Type | Light Mode | Dark Mode |
+|-------------|------------|-----------|
+| Page backgrounds | `white`, `gray-50` | `gray-900`, `gray-950` |
+| Card backgrounds | `white`, `gray-50` | `gray-800`, `gray-900` |
+| Colored section backgrounds | `-50` colors | `-600` colors |
+| Body text | `gray-900`, `gray-700` | `white`, `gray-300` |
+| Secondary text | `gray-600` | `gray-400` |
+| Borders | `gray-200`, `gray-300` | `gray-700`, `gray-800` |
+| Form inputs | `white` | `gray-800` |
+| Buttons (primary) | `primary-600` bg, `white` text | Same or inverse |
+
+**REMEMBER**: When in doubt, ALWAYS specify both variants: `lightValue dark:darkValue`
 
 ### Performance
 - Next.js 15 uses Turbopack in development

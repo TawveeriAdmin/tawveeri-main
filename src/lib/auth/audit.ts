@@ -1,0 +1,320 @@
+/**
+ * Audit Logging System
+ * Tracks all important system activities for admin review
+ */
+
+import { supabase } from '@/lib/database';
+
+export interface AuditLogParams {
+  user_id?: string | null;
+  action: string;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  details?: Record<string, any> | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+}
+
+/**
+ * Create an audit log entry
+ */
+export async function createAuditLog(params: AuditLogParams) {
+  try {
+    const { error } = await supabase.from('admin_logs').insert({
+      user_id: params.user_id || null,
+      action: params.action,
+      entity_type: params.entity_type || null,
+      entity_id: params.entity_id || null,
+      details: params.details || null,
+      ip_address: params.ip_address || null,
+      user_agent: params.user_agent || null,
+    });
+
+    if (error) {
+      console.error('Error creating audit log:', error);
+    }
+  } catch (error) {
+    console.error('Error in createAuditLog:', error);
+  }
+}
+
+/**
+ * Get audit logs with filters
+ */
+export async function getAuditLogs(filters?: {
+  user_id?: string;
+  action?: string;
+  entity_type?: string;
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  try {
+    let query = supabase
+      .from('admin_logs')
+      .select(
+        `
+        *,
+        users (
+          email,
+          full_name,
+          role
+        )
+      `,
+        { count: 'exact' }
+      )
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (filters?.user_id) {
+      query = query.eq('user_id', filters.user_id);
+    }
+
+    if (filters?.action) {
+      query = query.eq('action', filters.action);
+    }
+
+    if (filters?.entity_type) {
+      query = query.eq('entity_type', filters.entity_type);
+    }
+
+    if (filters?.start_date) {
+      query = query.gte('created_at', filters.start_date);
+    }
+
+    if (filters?.end_date) {
+      query = query.lte('created_at', filters.end_date);
+    }
+
+    // Pagination
+    const limit = filters?.limit || 50;
+    const offset = filters?.offset || 0;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      data: data || [],
+      count: count || 0,
+      error: null,
+    };
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    return {
+      data: [],
+      count: 0,
+      error: error as Error,
+    };
+  }
+}
+
+/**
+ * Get audit logs for a specific user
+ */
+export async function getUserAuditLogs(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+) {
+  return getAuditLogs({ user_id: userId, limit, offset });
+}
+
+/**
+ * Get audit logs for a specific action type
+ */
+export async function getAuditLogsByAction(
+  action: string,
+  limit: number = 50,
+  offset: number = 0
+) {
+  return getAuditLogs({ action, limit, offset });
+}
+
+/**
+ * Get recent audit logs (last 24 hours)
+ */
+export async function getRecentAuditLogs(limit: number = 100) {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  return getAuditLogs({
+    start_date: yesterday.toISOString(),
+    limit,
+  });
+}
+
+/**
+ * Common audit log actions
+ */
+export const AUDIT_ACTIONS = {
+  // Authentication
+  USER_SIGNUP: 'user_signup',
+  USER_LOGIN: 'user_login',
+  USER_LOGOUT: 'user_logout',
+  PASSWORD_CHANGED: 'password_changed',
+  PASSWORD_RESET_REQUESTED: 'password_reset_requested',
+  EMAIL_VERIFIED: 'email_verified',
+  PHONE_VERIFIED: 'phone_verified',
+
+  // Profile
+  PROFILE_UPDATED: 'profile_updated',
+  AVATAR_UPDATED: 'avatar_updated',
+
+  // Products
+  PRODUCT_CREATED: 'product_created',
+  PRODUCT_UPDATED: 'product_updated',
+  PRODUCT_DELETED: 'product_deleted',
+  PRODUCT_VIEWED: 'product_viewed',
+
+  // Stores
+  STORE_CREATED: 'store_created',
+  STORE_UPDATED: 'store_updated',
+  STORE_DELETED: 'store_deleted',
+
+  // Wishlist
+  PRODUCT_ADDED_TO_WISHLIST: 'product_added_to_wishlist',
+  PRODUCT_REMOVED_FROM_WISHLIST: 'product_removed_from_wishlist',
+
+  // Price Alerts
+  PRICE_ALERT_CREATED: 'price_alert_created',
+  PRICE_ALERT_DELETED: 'price_alert_deleted',
+
+  // Reviews
+  REVIEW_CREATED: 'review_created',
+  REVIEW_UPDATED: 'review_updated',
+  REVIEW_DELETED: 'review_deleted',
+
+  // Admin
+  USER_ROLE_CHANGED: 'user_role_changed',
+  USER_SUSPENDED: 'user_suspended',
+  USER_ACTIVATED: 'user_activated',
+
+  // System
+  SYSTEM_ERROR: 'system_error',
+  SECURITY_ALERT: 'security_alert',
+} as const;
+
+/**
+ * Helper to log authentication events
+ */
+export async function logAuthEvent(
+  userId: string,
+  action: string,
+  details?: Record<string, any>
+) {
+  return createAuditLog({
+    user_id: userId,
+    action,
+    entity_type: 'user',
+    entity_id: userId,
+    details,
+  });
+}
+
+/**
+ * Helper to log product events
+ */
+export async function logProductEvent(
+  userId: string | null,
+  action: string,
+  productId: string,
+  details?: Record<string, any>
+) {
+  return createAuditLog({
+    user_id: userId,
+    action,
+    entity_type: 'product',
+    entity_id: productId,
+    details,
+  });
+}
+
+/**
+ * Helper to log store events
+ */
+export async function logStoreEvent(
+  userId: string | null,
+  action: string,
+  storeId: string,
+  details?: Record<string, any>
+) {
+  return createAuditLog({
+    user_id: userId,
+    action,
+    entity_type: 'store',
+    entity_id: storeId,
+    details,
+  });
+}
+
+/**
+ * Export audit logs (for admin download)
+ */
+export async function exportAuditLogs(
+  filters?: {
+    start_date?: string;
+    end_date?: string;
+    action?: string;
+  },
+  format: 'json' | 'csv' = 'json'
+) {
+  try {
+    const { data, error } = await getAuditLogs({
+      ...filters,
+      limit: 10000, // Large limit for export
+    });
+
+    if (error) throw error;
+
+    if (format === 'csv') {
+      // Convert to CSV
+      return convertToCSV(data);
+    }
+
+    return JSON.stringify(data, null, 2);
+  } catch (error) {
+    console.error('Error exporting audit logs:', error);
+    throw error;
+  }
+}
+
+/**
+ * Convert audit logs to CSV format
+ */
+function convertToCSV(data: any[]): string {
+  if (data.length === 0) return '';
+
+  const headers = [
+    'Timestamp',
+    'User ID',
+    'User Email',
+    'Action',
+    'Entity Type',
+    'Entity ID',
+    'IP Address',
+    'Details',
+  ];
+
+  const rows = data.map((log) => [
+    log.created_at,
+    log.user_id || '',
+    log.users?.email || '',
+    log.action,
+    log.entity_type || '',
+    log.entity_id || '',
+    log.ip_address || '',
+    JSON.stringify(log.details || {}),
+  ]);
+
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    ),
+  ].join('\n');
+
+  return csv;
+}

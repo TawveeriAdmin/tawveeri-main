@@ -51,3 +51,15 @@ themes_v3 tree
 
 system Admin: jfr3sam@gmail.com 
 pass: E1s2a3m4@
+
+
+now, lets start the auth system:
+    phone number login 
+    email login 
+    social login 
+
+We must have in app notifications and email notifications and full audit logs for the admin 
+
+
+the current theme system is broken!!! you must recreate it from scratch and make sure the
+  proper color for each them!!!
