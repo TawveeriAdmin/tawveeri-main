@@ -48,3 +48,6 @@ themes_v3 tree
 └── theme-preview.html
 
 1 directory, 5 files
+
+system Admin: jfr3sam@gmail.com 
+pass: E1s2a3m4@
