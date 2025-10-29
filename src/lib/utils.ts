@@ -1,0 +1,56 @@
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+/**
+ * Format price for display
+ * @param price - The price value
+ * @param locale - The locale (ar or en)
+ * @returns Formatted price string
+ */
+export function formatPrice(price: number, locale: 'ar' | 'en' = 'ar'): string {
+  const formatted = price.toLocaleString('en-US');
+  return locale === 'ar' ? `${formatted} ر.س` : `SAR ${formatted}`;
+}
+
+/**
+ * Calculate savings amount
+ * @param original - Original price
+ * @param current - Current price
+ * @returns Savings amount
+ */
+export function calculateSavings(original: number, current: number): number {
+  return Math.max(0, original - current);
+}
+
+/**
+ * Calculate savings percentage
+ * @param original - Original price
+ * @param current - Current price
+ * @returns Savings percentage
+ */
+export function calculateSavingsPercentage(
+  original: number,
+  current: number
+): number {
+  if (original <= 0) return 0;
+  return Math.round(((original - current) / original) * 100);
+}
+
+/**
+ * Format large numbers with K, M suffixes
+ * @param num - The number to format
+ * @returns Formatted string
+ */
+export function formatCompactNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+}

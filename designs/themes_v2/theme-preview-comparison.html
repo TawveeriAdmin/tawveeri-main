@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tawveeri Price Comparison Theme - توفيري</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #71717a;
+            font-size: 1.1rem;
+        }
+
+        .tagline {
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .theme-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        @media (max-width: 1024px) {
+            .theme-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .theme-section {
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-section h2 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* Light Theme */
+        .light-theme {
+            background: #ffffff;
+            color: #18181b;
+        }
+
+        /* Dark Theme */
+        .dark-theme {
+            background: #09090b;
+            color: #fafafa;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .color-box {
+            border-radius: 10px;
+            padding: 20px 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+
+        .color-box:hover {
+            transform: translateY(-2px);
+        }
+
+        .color-label {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        /* Price Comparison Card */
+        .comparison-card {
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .light-theme .comparison-card {
+            background: #ffffff;
+            border: 2px solid #e4e4e7;
+        }
+
+        .light-theme .comparison-card.best-price {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .dark-theme .comparison-card {
+            background: #18181b;
+            border: 2px solid #27272a;
+        }
+
+        .dark-theme .comparison-card.best-price {
+            border-color: #22c55e;
+            background: #14532d;
+        }
+
+        .store-name {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .current-price {
+            font-size: 2rem;
+            font-weight: 700;
+            font-feature-settings: 'tnum';
+        }
+
+        .light-theme .current-price {
+            color: #18181b;
+        }
+
+        .dark-theme .current-price {
+            color: #fafafa;
+        }
+
+        .original-price {
+            font-size: 1.1rem;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .savings-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .light-theme .savings-badge {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .dark-theme .savings-badge {
+            background: #14532d;
+            color: #86efac;
+        }
+
+        .best-price-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .light-theme .best-price-badge {
+            background: #22c55e;
+            color: white;
+        }
+
+        .dark-theme .best-price-badge {
+            background: #22c55e;
+            color: white;
+        }
+
+        .deal-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            animation: pulse 2s infinite;
+        }
+
+        .light-theme .deal-badge {
+            background: #f97316;
+            color: white;
+        }
+
+        .dark-theme .deal-badge {
+            background: #f97316;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .cta-button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .light-theme .cta-button {
+            background: #2563eb;
+            color: white;
+        }
+
+        .dark-theme .cta-button {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        .light-theme .comparison-table {
+            border: 1px solid #e4e4e7;
+        }
+
+        .light-theme .comparison-table th {
+            background: #f4f4f5;
+            font-weight: 600;
+        }
+
+        .light-theme .comparison-table tr:not(:last-child) {
+            border-bottom: 1px solid #e4e4e7;
+        }
+
+        .dark-theme .comparison-table {
+            border: 1px solid #27272a;
+        }
+
+        .dark-theme .comparison-table th {
+            background: #18181b;
+            font-weight: 600;
+        }
+
+        .dark-theme .comparison-table tr:not(:last-child) {
+            border-bottom: 1px solid #27272a;
+        }
+
+        .highlight-row {
+            font-weight: 600;
+        }
+
+        .light-theme .highlight-row {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .dark-theme .highlight-row {
+            background: #14532d;
+            color: #86efac;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 30px 0 15px 0;
+        }
+
+        /* Color Purpose Section */
+        .color-purposes {
+            margin-top: 60px;
+            padding: 30px;
+            border-radius: 16px;
+        }
+
+        .light-theme .color-purposes {
+            background: #f4f4f5;
+        }
+
+        .dark-theme .color-purposes {
+            background: #18181b;
+        }
+
+        .purpose-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .purpose-card {
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .light-theme .purpose-card {
+            background: white;
+            border: 1px solid #e4e4e7;
+        }
+
+        .dark-theme .purpose-card {
+            background: #09090b;
+            border: 1px solid #27272a;
+        }
+
+        .purpose-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .purpose-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .purpose-desc {
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tawveeri Design System</h1>
+        <p class="subtitle">توفيري - Price Comparison Platform Theme</p>
+        <p class="tagline" style="color: #22c55e;">💰 Find the Best Deals. Save Money. Shop Smart.</p>
+
+        <div class="theme-container">
+            <!-- LIGHT THEME -->
+            <div class="theme-section light-theme">
+                <h2>☀️ Light Theme</h2>
+                
+                <div class="section-title">Core Colors</div>
+                <div class="color-grid">
+                    <div class="color-box" style="background: #2563eb; color: white;">
+                        <div>Trust Blue</div>
+                        <div class="color-label">#2563eb</div>
+                    </div>
+                    <div class="color-box" style="background: #22c55e; color: white;">
+                        <div>Savings Green</div>
+                        <div class="color-label">#22c55e</div>
+                    </div>
+                    <div class="color-box" style="background: #f97316; color: white;">
+                        <div>Deal Orange</div>
+                        <div class="color-label">#f97316</div>
+                    </div>
+                    <div class="color-box" style="background: #eab308; color: #422006;">
+                        <div>Featured</div>
+                        <div class="color-label">#eab308</div>
+                    </div>
+                </div>
+
+                <div class="section-title">Price Comparison Cards</div>
+                
+                <!-- Best Price Card -->
+                <div class="comparison-card best-price">
+                    <div class="best-price-badge">✓ Best Price</div>
+                    <div class="store-name">Extra Store</div>
+                    <div class="price-row">
+                        <div class="current-price">3,299 SAR</div>
+                        <div class="original-price">3,799 SAR</div>
+                    </div>
+                    <div class="savings-badge">
+                        💰 Save 500 SAR
+                    </div>
+                    <br><br>
+                    <button class="cta-button">View at Extra →</button>
+                </div>
+
+                <!-- Regular Card with Deal -->
+                <div class="comparison-card">
+                    <div class="deal-badge">🔥 Hot Deal</div>
+                    <div class="store-name">Jarir Bookstore</div>
+                    <div class="price-row">
+                        <div class="current-price">3,399 SAR</div>
+                        <div class="original-price">3,999 SAR</div>
+                    </div>
+                    <div class="savings-badge">
+                        💰 Save 600 SAR
+                    </div>
+                    <br><br>
+                    <button class="cta-button">View at Jarir →</button>
+                </div>
+
+                <div class="section-title">Quick Comparison Table</div>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Store</th>
+                            <th>Price</th>
+                            <th>Savings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="highlight-row">
+                            <td>Extra</td>
+                            <td>3,299 SAR</td>
+                            <td>500 SAR</td>
+                        </tr>
+                        <tr>
+                            <td>Jarir</td>
+                            <td>3,399 SAR</td>
+                            <td>600 SAR</td>
+                        </tr>
+                        <tr>
+                            <td>Noon</td>
+                            <td>3,499 SAR</td>
+                            <td>300 SAR</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- DARK THEME -->
+            <div class="theme-section dark-theme">
+                <h2>🌙 Dark Theme</h2>
+                
+                <div class="section-title">Core Colors</div>
+                <div class="color-grid">
+                    <div class="color-box" style="background: #3b82f6; color: white;">
+                        <div>Trust Blue</div>
+                        <div class="color-label">#3b82f6</div>
+                    </div>
+                    <div class="color-box" style="background: #22c55e; color: white;">
+                        <div>Savings Green</div>
+                        <div class="color-label">#22c55e</div>
+                    </div>
+                    <div class="color-box" style="background: #f97316; color: white;">
+                        <div>Deal Orange</div>
+                        <div class="color-label">#f97316</div>
+                    </div>
+                    <div class="color-box" style="background: #eab308; color: #09090b;">
+                        <div>Featured</div>
+                        <div class="color-label">#eab308</div>
+                    </div>
+                </div>
+
+                <div class="section-title">Price Comparison Cards</div>
+                
+                <!-- Best Price Card -->
+                <div class="comparison-card best-price">
+                    <div class="best-price-badge">✓ Best Price</div>
+                    <div class="store-name">Extra Store</div>
+                    <div class="price-row">
+                        <div class="current-price">3,299 SAR</div>
+                        <div class="original-price">3,799 SAR</div>
+                    </div>
+                    <div class="savings-badge">
+                        💰 Save 500 SAR
+                    </div>
+                    <br><br>
+                    <button class="cta-button">View at Extra →</button>
+                </div>
+
+                <!-- Regular Card with Deal -->
+                <div class="comparison-card">
+                    <div class="deal-badge">🔥 Hot Deal</div>
+                    <div class="store-name">Jarir Bookstore</div>
+                    <div class="price-row">
+                        <div class="current-price">3,399 SAR</div>
+                        <div class="original-price">3,999 SAR</div>
+                    </div>
+                    <div class="savings-badge">
+                        💰 Save 600 SAR
+                    </div>
+                    <br><br>
+                    <button class="cta-button">View at Jarir →</button>
+                </div>
+
+                <div class="section-title">Quick Comparison Table</div>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Store</th>
+                            <th>Price</th>
+                            <th>Savings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="highlight-row">
+                            <td>Extra</td>
+                            <td>3,299 SAR</td>
+                            <td>500 SAR</td>
+                        </tr>
+                        <tr>
+                            <td>Jarir</td>
+                            <td>3,399 SAR</td>
+                            <td>600 SAR</td>
+                        </tr>
+                        <tr>
+                            <td>Noon</td>
+                            <td>3,499 SAR</td>
+                            <td>300 SAR</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Color Purpose Section -->
+        <div class="color-purposes light-theme">
+            <h2 style="text-align: center; margin-bottom: 10px;">🎯 Design for Price Comparison</h2>
+            <p style="text-align: center; margin-bottom: 30px; opacity: 0.8;">Each color serves a specific purpose in helping users save money</p>
+            
+            <div class="purpose-grid">
+                <div class="purpose-card">
+                    <div class="purpose-icon">🔵</div>
+                    <div class="purpose-title" style="color: #2563eb;">Trust Blue</div>
+                    <p class="purpose-desc">Primary color for CTAs, links, and navigation. Builds confidence in purchase decisions.</p>
+                </div>
+                
+                <div class="purpose-card">
+                    <div class="purpose-icon">💚</div>
+                    <div class="purpose-title" style="color: #22c55e;">Savings Green</div>
+                    <p class="purpose-desc">THE MOST IMPORTANT. Highlights best prices, savings amounts, and deals. Universally recognized for money-saving.</p>
+                </div>
+                
+                <div class="purpose-card">
+                    <div class="purpose-icon">🟠</div>
+                    <div class="purpose-title" style="color: #f97316;">Urgency Orange</div>
+                    <p class="purpose-desc">Hot deals, limited time offers, and deal of the day. Creates sense of urgency to act.</p>
+                </div>
+                
+                <div class="purpose-card">
+                    <div class="purpose-icon">🟡</div>
+                    <div class="purpose-title" style="color: #eab308;">Featured Amber</div>
+                    <p class="purpose-desc">Premium store placements, featured listings. Used for Phase 2 monetization.</p>
+                </div>
+                
+                <div class="purpose-card">
+                    <div class="purpose-icon">⚪</div>
+                    <div class="purpose-title">Clean Neutrals</div>
+                    <p class="purpose-desc">Background and text colors. Ensures prices and specs are easily scannable in tables.</p>
+                </div>
+                
+                <div class="purpose-card">
+                    <div class="purpose-icon">🔴</div>
+                    <div class="purpose-title" style="color: #ef4444;">Alert Red</div>
+                    <p class="purpose-desc">Out of stock, errors, price increases. Negative states that require attention.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Design Principles -->
+        <div style="margin-top: 60px; padding: 40px; background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%); border-radius: 16px;">
+            <h2 style="margin-bottom: 20px; font-size: 2rem; text-align: center;">💡 Design Principles</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-top: 30px;">
+                <div>
+                    <h4 style="margin-bottom: 12px; color: #2563eb; font-size: 1.2rem;">💰 Savings-First</h4>
+                    <p style="color: #52525b; font-size: 1rem; line-height: 1.6;">Green highlights best deals. Users instantly see where to save money.</p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 12px; color: #2563eb; font-size: 1.2rem;">👀 Scannable</h4>
+                    <p style="color: #52525b; font-size: 1rem; line-height: 1.6;">Clear price hierarchy. Tabular numbers. Easy comparison tables.</p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 12px; color: #2563eb; font-size: 1.2rem;">✅ Trustworthy</h4>
+                    <p style="color: #52525b; font-size: 1rem; line-height: 1.6;">Professional blue builds confidence. Users trust price accuracy.</p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 12px; color: #2563eb; font-size: 1.2rem;">⚡ Action-Driven</h4>
+                    <p style="color: #52525b; font-size: 1rem; line-height: 1.6;">Clear CTAs. Urgency badges. Direct paths to stores.</p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 12px; color: #2563eb; font-size: 1.2rem;">📊 Data-Focused</h4>
+                    <p style="color: #52525b; font-size: 1rem; line-height: 1.6;">Clean tables. Consistent spacing. Perfect for comparing specs.</p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 12px; color: #2563eb; font-size: 1.2rem;">🌍 Localized</h4>
+                    <p style="color: #52525b; font-size: 1rem; line-height: 1.6;">Optimized for Arabic RTL and English LTR with proper fonts.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

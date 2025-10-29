@@ -1,0 +1,50 @@
+=====================================================
+Please analyze the attached project files thoroughly. Your analysis should include:
+
+1. **Project Structure**: Identify the overall architecture, folder organization, and key entry points
+2. **Core Functionality**: Understand what the code does, its main features, and business logic
+3. **Technical Stack**: Note frameworks, libraries, dependencies, and design patterns used
+4. **Code Relationships**: Map how files, modules, and components interact with each other
+5. **Key Components**: Identify critical files, functions, classes, and their purposes
+6. **Code Quality**: Observe naming conventions, coding style, and any notable patterns or issues
+
+Create a mental model of this codebase so you can efficiently assist with:
+- Debugging and troubleshooting
+- Adding new features or modifications
+- Refactoring and optimization
+- Documentation and explanation
+- Best practice recommendations
+
+If anything is unclear or you need additional context about the project's purpose, dependencies, or environment, please ask.
+
+=====================================================
+Analyze the attached ZIP files and their contents. Build a clear understanding of the project structure, code, dependencies, and relationships between components. Summarize the purpose of each major part and how they fit together. The goal is to establish full context of the project so you can accurately and efficiently perform future tasks related to these files when requested.
+
+=====================================================
+please provide me with the code of each file separately
+
+=====================================================
+please provide me with the final, updated and complete code of each of the updated files
+
+=====================================================
+
+I want to create and setup this application "Tawveeri",
+  "توفيري" nextjs 16 application and radix-ui, the Arabic language should be the default langauge, I want you to make sure your setup ensure that Arabic RTL and English is LTR without me having it modify evey part of my app,
+
+App Name:
+    - EN: Tawveeri
+    - AR: توفيري
+Icons: Lucide
+Arabic Font: IBM Plex Sans Arabic
+English Font: IBM Plex Sans
+UI: radix-ui - must use our themes and support the languages (Arabic-RTL & English-LTR)
+
+themes_v3 tree                                     
+.
+├── DESIGN-SYSTEM.md
+├── globals-final.css
+├── tailwind.config.ts
+├── theme-config.ts
+└── theme-preview.html
+
+1 directory, 5 files

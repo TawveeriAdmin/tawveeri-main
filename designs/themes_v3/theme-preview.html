@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tawveeri Professional Theme - توفيري</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            line-height: 1.6;
+            background: #F9FAFB;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
+            color: white;
+            border-radius: 20px;
+            margin-bottom: 60px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .hero .tagline {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 50px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #111827;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2rem; }
+        }
+
+        /* Color Swatches */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .color-swatch {
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            font-weight: 600;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-label {
+            margin-top: 10px;
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .color-hex {
+            font-size: 0.75rem;
+            font-family: monospace;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Product Card */
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+        }
+
+        .product-body {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .product-brand {
+            font-size: 0.875rem;
+            color: #6B7280;
+            margin-bottom: 12px;
+        }
+
+        .product-specs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .spec-badge {
+            padding: 4px 8px;
+            background: #F3F4F6;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: #4B5563;
+        }
+
+        /* Comparison Card */
+        .comparison-card {
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .comparison-card:hover {
+            border-color: #D1D5DB;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .comparison-card.best-price {
+            border-color: #059669;
+            background: linear-gradient(to bottom, #ECFDF5 0%, #FFFFFF 100%);
+        }
+
+        .store-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .store-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .store-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.875rem;
+            color: #F59E0B;
+        }
+
+        .price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .current-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #111827;
+            font-feature-settings: 'tnum';
+            letter-spacing: -0.02em;
+        }
+
+        .original-price {
+            font-size: 1.25rem;
+            color: #9CA3AF;
+            text-decoration: line-through;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-best-price {
+            background: #059669;
+            color: white;
+        }
+
+        .badge-savings {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-hot-deal {
+            background: #DC2626;
+            color: white;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+
+        .badge-featured {
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #F59E0B;
+        }
+
+        .badge-in-stock {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-low-stock {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .badge-verified {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: #1E40AF;
+            color: white;
+            box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #1E3A8A;
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+        }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+            box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+        }
+
+        .btn-success:hover {
+            background: #047857;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid #1E40AF;
+            color: #1E40AF;
+        }
+
+        .btn-outline:hover {
+            background: #EFF6FF;
+        }
+
+        .btn-large {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1.125rem;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .comparison-table thead {
+            background: #F9FAFB;
+        }
+
+        .comparison-table th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        .comparison-table td {
+            padding: 16px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table tr.best-price {
+            background: linear-gradient(to right, #ECFDF5 0%, #FFFFFF 100%);
+        }
+
+        .comparison-table tr.best-price td {
+            font-weight: 600;
+            color: #065F46;
+        }
+
+        .comparison-table tr:hover {
+            background: #F9FAFB;
+        }
+
+        .comparison-table tr.best-price:hover {
+            background: linear-gradient(to right, #D1FAE5 0%, #F9FAFB 100%);
+        }
+
+        /* Stats Card */
+        .stats-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .stats-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .stats-label {
+            font-size: 1rem;
+            color: #6B7280;
+        }
+
+        .stats-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .stats-trend.up {
+            color: #059669;
+        }
+
+        .stats-trend.down {
+            color: #DC2626;
+        }
+
+        /* Feature Box */
+        .feature-box {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            font-size: 1rem;
+            color: #6B7280;
+            line-height: 1.6;
+        }
+
+        /* Dark Mode Styles */
+        body.dark {
+            background: #111827;
+            color: #F9FAFB;
+        }
+
+        body.dark .section-title {
+            color: #F9FAFB;
+        }
+
+        body.dark .product-card,
+        body.dark .comparison-card,
+        body.dark .stats-card,
+        body.dark .feature-box {
+            background: #1F2937;
+            border-color: #374151;
+        }
+
+        body.dark .comparison-card.best-price {
+            background: linear-gradient(to bottom, #064e3b 0%, #1F2937 100%);
+        }
+
+        body.dark .product-image {
+            background: linear-gradient(135deg, #374151 0%, #1F2937 100%);
+        }
+
+        body.dark .product-title,
+        body.dark .store-name,
+        body.dark .current-price,
+        body.dark .stats-value,
+        body.dark .feature-title {
+            color: #F9FAFB;
+        }
+
+        body.dark .product-brand,
+        body.dark .stats-label,
+        body.dark .feature-desc {
+            color: #D1D5DB;
+        }
+
+        body.dark .comparison-table {
+            background: #1F2937;
+        }
+
+        body.dark .comparison-table thead {
+            background: #111827;
+        }
+
+        body.dark .comparison-table th {
+            color: #F9FAFB;
+            border-bottom-color: #374151;
+        }
+
+        body.dark .comparison-table td {
+            border-bottom-color: #374151;
+        }
+
+        body.dark .comparison-table tr:hover {
+            background: #111827;
+        }
+
+        body.dark .comparison-table tr.best-price {
+            background: linear-gradient(to right, #064e3b 0%, #1F2937 100%);
+        }
+
+        body.dark .comparison-table tr.best-price:hover {
+            background: linear-gradient(to right, #065f46 0%, #111827 100%);
+        }
+
+        body.dark .spec-badge {
+            background: #374151;
+            color: #D1D5DB;
+        }
+
+        body.dark .theme-toggle {
+            background: #1F2937;
+            color: #F9FAFB;
+            border-color: #374151;
+        }
+
+        /* Price History Chart */
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        body.dark .chart-container {
+            background: #1F2937;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        body.dark .chart-title {
+            color: #F9FAFB;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.875rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        /* Mockup of chart */
+        .chart-mockup {
+            height: 200px;
+            background: linear-gradient(180deg, #D1FAE5 0%, #FFFFFF 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.dark .chart-mockup {
+            background: linear-gradient(180deg, #064e3b 0%, #1F2937 100%);
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span> Toggle Dark Mode
+    </button>
+
+    <div class="hero">
+        <h1>Tawveeri Design System</h1>
+        <div class="subtitle">توفيري - Professional Price Comparison Theme</div>
+        <div class="tagline">Polish • Professional • Purposeful</div>
+    </div>
+
+    <div class="container">
+        <!-- Color Palette -->
+        <section>
+            <h2 class="section-title">🎨 Core Color Palette</h2>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: #1E40AF; color: white;">
+                    <div>Trust Blue</div>
+                    <div class="color-label">Primary</div>
+                    <div class="color-hex">#1E40AF</div>
+                </div>
+                <div class="color-swatch" style="background: #059669; color: white;">
+                    <div>Emerald</div>
+                    <div class="color-label">Savings</div>
+                    <div class="color-hex">#059669</div>
+                </div>
+                <div class="color-swatch" style="background: #DC2626; color: white;">
+                    <div>True Red</div>
+                    <div class="color-label">Urgency</div>
+                    <div class="color-hex">#DC2626</div>
+                </div>
+                <div class="color-swatch" style="background: #F59E0B; color: white;">
+                    <div>Amber</div>
+                    <div class="color-label">Featured</div>
+                    <div class="color-hex">#F59E0B</div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 1.5rem; margin-bottom: 20px; color: #374151;">Neutral Palette</h3>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: #111827; color: white;">
+                    <div>Gray 900</div>
+                    <div class="color-hex">#111827</div>
+                </div>
+                <div class="color-swatch" style="background: #374151; color: white;">
+                    <div>Gray 700</div>
+                    <div class="color-hex">#374151</div>
+                </div>
+                <div class="color-swatch" style="background: #6B7280; color: white;">
+                    <div>Gray 500</div>
+                    <div class="color-hex">#6B7280</div>
+                </div>
+                <div class="color-swatch" style="background: #D1D5DB; color: #111827;">
+                    <div>Gray 300</div>
+                    <div class="color-hex">#D1D5DB</div>
+                </div>
+                <div class="color-swatch" style="background: #F3F4F6; color: #111827;">
+                    <div>Gray 100</div>
+                    <div class="color-hex">#F3F4F6</div>
+                </div>
+                <div class="color-swatch" style="background: #FFFFFF; color: #111827; border: 2px solid #E5E7EB;">
+                    <div>White</div>
+                    <div class="color-hex">#FFFFFF</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section>
+            <h2 class="section-title">🏷️ Badges & Labels</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background: white; padding: 32px; border-radius: 16px;">
+                <span class="badge badge-best-price">✓ Best Price</span>
+                <span class="badge badge-savings">💰 Save 500 SAR</span>
+                <span class="badge badge-hot-deal">🔥 Hot Deal</span>
+                <span class="badge badge-featured">⭐ Featured Store</span>
+                <span class="badge badge-in-stock">✓ In Stock</span>
+                <span class="badge badge-low-stock">⚠️ Only 2 Left</span>
+                <span class="badge badge-verified">✓ Verified</span>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section>
+            <h2 class="section-title">🔘 Buttons</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; background: white; padding: 32px; border-radius: 16px;">
+                <button class="btn btn-primary">View at Store →</button>
+                <button class="btn btn-success">Compare Prices</button>
+                <button class="btn btn-outline">Add to Wishlist</button>
+                <button class="btn btn-primary btn-large">Shop Now - Save 500 SAR</button>
+            </div>
+        </section>
+
+        <!-- Comparison Cards -->
+        <section>
+            <h2 class="section-title">📊 Price Comparison Cards</h2>
+            <div class="grid-3">
+                <!-- Best Price Card -->
+                <div class="comparison-card best-price">
+                    <div class="store-header">
+                        <div>
+                            <span class="badge badge-best-price" style="margin-bottom: 12px; display: inline-block;">✓ Best Price</span>
+                            <div class="store-name">Extra Store</div>
+                        </div>
+                        <div class="store-rating">
+                            ⭐ 4.8
+                        </div>
+                    </div>
+                    <div class="price-row">
+                        <div class="current-price">3,299</div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.875rem; color: #6B7280;">SAR</span>
+                            <span class="original-price" style="font-size: 1rem;">3,799</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <span class="badge badge-savings">💰 Save 500 SAR</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px; font-size: 0.875rem; color: #6B7280;">
+                        <span>🚚 Free Delivery</span>
+                        <span>•</span>
+                        <span>✓ Warranty</span>
+                    </div>
+                    <button class="btn btn-primary btn-large">View at Extra →</button>
+                </div>
+
+                <!-- Hot Deal Card -->
+                <div class="comparison-card">
+                    <div class="store-header">
+                        <div>
+                            <span class="badge badge-hot-deal" style="margin-bottom: 12px; display: inline-block;">🔥 Hot Deal</span>
+                            <div class="store-name">Jarir Bookstore</div>
+                        </div>
+                        <div class="store-rating">
+                            ⭐ 4.7
+                        </div>
+                    </div>
+                    <div class="price-row">
+                        <div class="current-price">3,399</div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.875rem; color: #6B7280;">SAR</span>
+                            <span class="original-price" style="font-size: 1rem;">3,999</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <span class="badge badge-savings">💰 Save 600 SAR</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px; font-size: 0.875rem; color: #6B7280;">
+                        <span>🚚 25 SAR</span>
+                        <span>•</span>
+                        <span>✓ Warranty</span>
+                    </div>
+                    <button class="btn btn-primary btn-large">View at Jarir →</button>
+                </div>
+
+                <!-- Featured Card -->
+                <div class="comparison-card">
+                    <div class="store-header">
+                        <div>
+                            <span class="badge badge-featured" style="margin-bottom: 12px; display: inline-block;">⭐ Featured</span>
+                            <div class="store-name">Noon</div>
+                        </div>
+                        <div class="store-rating">
+                            ⭐ 4.6
+                        </div>
+                    </div>
+                    <div class="price-row">
+                        <div class="current-price">3,499</div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.875rem; color: #6B7280;">SAR</span>
+                            <span class="original-price" style="font-size: 1rem;">3,799</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <span class="badge badge-savings">💰 Save 300 SAR</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px; font-size: 0.875rem; color: #6B7280;">
+                        <span>🚚 Free Express</span>
+                        <span>•</span>
+                        <span>✓ Extended Warranty</span>
+                    </div>
+                    <button class="btn btn-primary btn-large">View at Noon →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Cards -->
+        <section>
+            <h2 class="section-title">📱 Product Cards</h2>
+            <div class="grid-4">
+                <div class="product-card">
+                    <div class="product-image">📱</div>
+                    <div class="product-body">
+                        <div class="product-title">iPhone 15 Pro Max</div>
+                        <div class="product-brand">Apple</div>
+                        <div class="product-specs">
+                            <span class="spec-badge">256GB</span>
+                            <span class="spec-badge">Blue</span>
+                            <span class="spec-badge">5G</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">3,299 SAR</div>
+                                <span class="badge badge-in-stock" style="font-size: 0.75rem; margin-top: 4px;">In Stock</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">💻</div>
+                    <div class="product-body">
+                        <div class="product-title">MacBook Air M2</div>
+                        <div class="product-brand">Apple</div>
+                        <div class="product-specs">
+                            <span class="spec-badge">8GB RAM</span>
+                            <span class="spec-badge">256GB</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">4,999 SAR</div>
+                                <span class="badge badge-hot-deal" style="font-size: 0.75rem; margin-top: 4px;">Hot Deal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">🖥️</div>
+                    <div class="product-body">
+                        <div class="product-title">Samsung 65" QLED</div>
+                        <div class="product-brand">Samsung</div>
+                        <div class="product-specs">
+                            <span class="spec-badge">4K</span>
+                            <span class="spec-badge">Smart TV</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">5,499 SAR</div>
+                                <span class="badge badge-in-stock" style="font-size: 0.75rem; margin-top: 4px;">In Stock</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">🎧</div>
+                    <div class="product-body">
+                        <div class="product-title">AirPods Pro 2</div>
+                        <div class="product-brand">Apple</div>
+                        <div class="product-specs">
+                            <span class="spec-badge">ANC</span>
+                            <span class="spec-badge">USB-C</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">899 SAR</div>
+                                <span class="badge badge-low-stock" style="font-size: 0.75rem; margin-top: 4px;">Only 2 Left</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Table -->
+        <section>
+            <h2 class="section-title">📋 Comparison Table</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Store</th>
+                        <th>Price</th>
+                        <th>Savings</th>
+                        <th>Delivery</th>
+                        <th>Warranty</th>
+                        <th>Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="best-price">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong>Extra Store</strong>
+                                <span class="badge badge-best-price" style="font-size: 0.75rem;">Best</span>
+                            </div>
+                        </td>
+                        <td><strong>3,299 SAR</strong></td>
+                        <td><strong>500 SAR</strong></td>
+                        <td>Free</td>
+                        <td>2 Years</td>
+                        <td>⭐ 4.8</td>
+                    </tr>
+                    <tr>
+                        <td>Jarir Bookstore</td>
+                        <td>3,399 SAR</td>
+                        <td>400 SAR</td>
+                        <td>25 SAR</td>
+                        <td>1 Year</td>
+                        <td>⭐ 4.7</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                Noon
+                                <span class="badge badge-featured" style="font-size: 0.75rem;">Featured</span>
+                            </div>
+                        </td>
+                        <td>3,499 SAR</td>
+                        <td>300 SAR</td>
+                        <td>Free Express</td>
+                        <td>3 Years</td>
+                        <td>⭐ 4.6</td>
+                    </tr>
+                    <tr>
+                        <td>Amazon.sa</td>
+                        <td>3,599 SAR</td>
+                        <td>200 SAR</td>
+                        <td>Free</td>
+                        <td>1 Year</td>
+                        <td>⭐ 4.5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Stats -->
+        <section>
+            <h2 class="section-title">📈 Statistics & Metrics</h2>
+            <div class="grid-4">
+                <div class="stats-card">
+                    <div class="stats-value">1.2M+</div>
+                    <div class="stats-label">Products Compared</div>
+                    <div class="stats-trend up">↑ 23% this month</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-value">15K+</div>
+                    <div class="stats-label">Daily Users</div>
+                    <div class="stats-trend up">↑ 12% this week</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-value">850M</div>
+                    <div class="stats-label">SAR Saved</div>
+                    <div class="stats-trend up">↑ 31% this month</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-value">4.8</div>
+                    <div class="stats-label">Average Rating</div>
+                    <div class="stats-trend up">↑ 0.2 points</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Price History Chart -->
+        <section>
+            <h2 class="section-title">📊 Price History</h2>
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">iPhone 15 Pro Max - Price Trend</div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #059669;"></div>
+                            <span>Current Price</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #DC2626;"></div>
+                            <span>Highest Price</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-mockup">
+                    <div class="chart-line"></div>
+                </div>
+                <div style="margin-top: 16px; padding: 16px; background: #ECFDF5; border-radius: 8px; display: inline-block;">
+                    <span style="color: #065F46; font-weight: 600;">💰 Price dropped by 500 SAR this month - Best time to buy!</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section>
+            <h2 class="section-title">✨ Platform Features</h2>
+            <div class="grid-3">
+                <div class="feature-box">
+                    <div class="feature-icon">🔍</div>
+                    <div class="feature-title">Smart Search</div>
+                    <div class="feature-desc">Find the best deals across all major stores in seconds. AI-powered recommendations based on your preferences.</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">💰</div>
+                    <div class="feature-title">Price Tracking</div>
+                    <div class="feature-desc">Get instant alerts when prices drop. Track price history and make informed purchase decisions.</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-icon">⭐</div>
+                    <div class="feature-title">Verified Stores</div>
+                    <div class="feature-desc">Shop with confidence. All partner stores are verified and rated by our community.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section>
+            <div style="background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%); padding: 48px; border-radius: 20px; color: white;">
+                <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 24px; text-align: center;">Design Principles</h2>
+                <div class="grid-3">
+                    <div>
+                        <div style="font-size: 2.5rem; margin-bottom: 12px;">🎯</div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">Purpose-Driven</h3>
+                        <p style="opacity: 0.9;">Every element serves the goal: help users save money through clear price comparison.</p>
+                    </div>
+                    <div>
+                        <div style="font-size: 2.5rem; margin-bottom: 12px;">💎</div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">Professional Polish</h3>
+                        <p style="opacity: 0.9;">Sophisticated design that builds trust in financial decisions and price accuracy.</p>
+                    </div>
+                    <div>
+                        <div style="font-size: 2.5rem; margin-bottom: 12px;">⚡</div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">Performance First</h3>
+                        <p style="opacity: 0.9;">Fast, accessible, and optimized for both mobile and desktop experiences.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            icon.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+    </script>
+</body>
+</html>
