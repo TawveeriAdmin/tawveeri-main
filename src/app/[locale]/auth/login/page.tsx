@@ -147,6 +147,13 @@ export default function LoginPage() {
         variant: 'default',
       });
 
+      // Wait a moment for auth state to update, then redirect
+      // This ensures the landing page shows the correct user state
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Refresh the router to ensure auth state is updated
+      router.refresh();
+      
       // Redirect to home page
       router.push(`/${locale}`);
     } catch (error: any) {

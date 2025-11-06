@@ -2,10 +2,20 @@
 
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
-import { useParams, usePathname } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Languages } from 'lucide-react';
+import { Moon, Sun, Languages, User, LogOut, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth/auth-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Price } from '@/components/ui/price';
 import {
   Search,
@@ -32,7 +42,9 @@ export default function LandingPageClient() {
   const t = useTranslations();
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
@@ -129,24 +141,87 @@ export default function LandingPageClient() {
                 </span>
               </button>
 
-              <Link
-                href="/auth/login"
-                className="hidden sm:inline-block px-5 py-2.5 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium"
-              >
-                {t('nav.login')}
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="px-6 py-2.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl hover:shadow-xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 font-bold shadow-lg"
-                style={{ color: '#ffffff' }}
-              >
-                <span className="relative" style={{
-                  textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                  color: '#ffffff'
-                }}>
-                  {t('nav.startFree')}
-                </span>
-              </Link>
+              {/* Show user menu if logged in, otherwise show sign in/get started */}
+              {/* Show loading state briefly to prevent flash of wrong UI */}
+              {authLoading ? (
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+              ) : user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 border border-gray-200 dark:border-gray-600 shadow-sm">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={user.avatar_url || undefined} alt={user.full_name || user.email || ''} />
+                        <AvatarFallback className="bg-primary-600 text-white text-sm">
+                          {user.full_name
+                            ? user.full_name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2)
+                            : user.email?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden sm:inline-block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {user.full_name || user.email?.split('@')[0] || 'User'}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{user.full_name || 'User'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/dashboard`} className="cursor-pointer flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/profile`} className="cursor-pointer flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        await signOut();
+                        router.push(`/${locale}`);
+                      }}
+                      className="cursor-pointer text-red-600 dark:text-red-400 flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Link
+                    href={`/${locale}/auth/login`}
+                    className="hidden sm:inline-block px-5 py-2.5 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium"
+                  >
+                    {t('nav.login')}
+                  </Link>
+                  <Link
+                    href={`/${locale}/auth/signup`}
+                    className="px-6 py-2.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl hover:shadow-xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 font-bold shadow-lg"
+                    style={{ color: '#ffffff' }}
+                  >
+                    <span className="relative" style={{
+                      textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
+                      color: '#ffffff'
+                    }}>
+                      {t('nav.startFree')}
+                    </span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -283,7 +358,7 @@ export default function LandingPageClient() {
               style={{ animation: 'fadeInUp 0.6s ease-out 0.8s backwards' }}
             >
               <Link
-                href="/products"
+                href={`/${locale}/products`}
                 className="group/cta relative px-12 py-5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 overflow-hidden shadow-lg"
                 style={{ color: '#ffffff' }}
               >
@@ -830,18 +905,31 @@ export default function LandingPageClient() {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center pt-4">
+              {!authLoading && user ? (
+                <Link
+                  href={`/${locale}/dashboard`}
+                  className="group relative px-16 py-6 bg-gradient-to-r from-primary-600 to-primary-800 dark:bg-white text-white dark:text-primary-600 rounded-2xl font-black text-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
+                >
+                  <span className="relative z-10 flex items-center gap-3">
+                    Go to Dashboard
+                    <Sparkles className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-success-600 dark:from-primary-50 dark:to-success-50 opacity-0 group-hover:opacity-100 transition duration-300" />
+                </Link>
+              ) : (
+                <Link
+                  href={`/${locale}/auth/signup`}
+                  className="group relative px-16 py-6 bg-gradient-to-r from-primary-600 to-primary-800 dark:bg-white text-white dark:text-primary-600 rounded-2xl font-black text-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
+                >
+                  <span className="relative z-10 flex items-center gap-3">
+                    {t('button.startFreeNow')}
+                    <Sparkles className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-success-600 dark:from-primary-50 dark:to-success-50 opacity-0 group-hover:opacity-100 transition duration-300" />
+                </Link>
+              )}
               <Link
-                href="/auth/signup"
-                className="group relative px-16 py-6 bg-gradient-to-r from-primary-600 to-primary-800 dark:bg-white text-white dark:text-primary-600 rounded-2xl font-black text-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-              >
-                <span className="relative z-10 flex items-center gap-3">
-                  {t('button.startFreeNow')}
-                  <Sparkles className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-success-600 dark:from-primary-50 dark:to-success-50 opacity-0 group-hover:opacity-100 transition duration-300" />
-              </Link>
-              <Link
-                href="/products"
+                href={`/${locale}/products`}
                 className="px-16 py-6 bg-transparent border-3 border-primary-600 dark:border-white text-primary-600 dark:text-white rounded-2xl font-black text-xl hover:bg-primary-600 hover:text-white dark:hover:bg-white dark:hover:text-primary-600 transition-all duration-300 flex items-center gap-3 justify-center hover:scale-105 transform"
               >
                 {t('button.browseProductsShort')}

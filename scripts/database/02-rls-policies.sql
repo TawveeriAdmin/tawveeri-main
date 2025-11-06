@@ -84,6 +84,12 @@ ON users FOR INSERT
 TO authenticated
 WITH CHECK (public.is_admin());
 
+-- Users can insert their own profile (for signup)
+CREATE POLICY "Users can insert own profile"
+ON users FOR INSERT
+TO authenticated
+WITH CHECK (id = auth.uid());
+
 -- Admins can update any user
 CREATE POLICY "Admins can update any user"
 ON users FOR UPDATE
@@ -435,6 +441,12 @@ CREATE POLICY "Admins can insert admin logs"
 ON admin_logs FOR INSERT
 TO authenticated
 WITH CHECK (public.is_admin());
+
+-- Users can insert their own audit logs (for login, signup, etc.)
+CREATE POLICY "Users can insert own audit logs"
+ON admin_logs FOR INSERT
+TO authenticated
+WITH CHECK (user_id = auth.uid() OR user_id IS NULL);
 
 -- ============================================================================
 -- GRANT PERMISSIONS

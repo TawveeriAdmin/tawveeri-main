@@ -17,9 +17,17 @@ export interface AuditLogParams {
 
 /**
  * Create an audit log entry
+ * Note: This function fails silently to prevent blocking user actions
+ * Audit logs are important but not critical for user flow
  */
 export async function createAuditLog(params: AuditLogParams) {
   try {
+    // Validate required fields
+    if (!params.action) {
+      console.warn('createAuditLog: action is required');
+      return;
+    }
+
     const { error } = await supabase.from('admin_logs').insert({
       user_id: params.user_id || null,
       action: params.action,
@@ -31,10 +39,19 @@ export async function createAuditLog(params: AuditLogParams) {
     });
 
     if (error) {
-      console.error('Error creating audit log:', error);
+      // Log error but don't throw - audit logs shouldn't block user actions
+      console.error('Error creating audit log:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        action: params.action,
+        user_id: params.user_id,
+      });
     }
   } catch (error) {
-    console.error('Error in createAuditLog:', error);
+    // Catch any unexpected errors
+    console.error('Unexpected error in createAuditLog:', error);
   }
 }
 

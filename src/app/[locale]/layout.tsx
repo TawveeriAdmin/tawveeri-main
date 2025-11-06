@@ -40,18 +40,39 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  // Load messages directly
-  const [common, landing, auth] = await Promise.all([
-    import(`../../../messages/${locale}/common.json`),
-    import(`../../../messages/${locale}/landing.json`),
-    import(`../../../messages/${locale}/auth.json`),
-  ]);
+  // Load messages directly with error handling
+  let messages: Record<string, any> = {};
+  try {
+    const [common, landing, auth] = await Promise.all([
+      import(`../../../messages/${locale}/common.json`),
+      import(`../../../messages/${locale}/landing.json`),
+      import(`../../../messages/${locale}/auth.json`),
+    ]);
 
-  const messages = {
-    ...common.default,
-    ...landing.default,
-    ...auth.default,
-  };
+    // Ensure all imports succeeded and have default exports
+    if (common?.default && landing?.default && auth?.default) {
+      messages = {
+        ...(common.default || {}),
+        ...(landing.default || {}),
+        ...(auth.default || {}),
+      };
+    } else {
+      console.warn('Some message files failed to load, using partial messages');
+      messages = {
+        ...(common?.default || {}),
+        ...(landing?.default || {}),
+        ...(auth?.default || {}),
+      };
+    }
+  } catch (error) {
+    console.error('Error loading messages:', error);
+    // Fallback to empty messages object to prevent crash
+    messages = {};
+  }
+
+  // Ensure messages is a plain object (serializable) for client-side navigation
+  // This prevents issues with Chrome's strict serialization
+  messages = JSON.parse(JSON.stringify(messages || {}));
 
   return (
     <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning className="">
@@ -79,7 +100,7 @@ export default async function LocaleLayout({
           locale === 'ar' ? 'font-sans-ar' : 'font-sans'
         } antialiased`}
       >
-        <SimpleIntlProvider messages={messages} locale={locale}>
+        <SimpleIntlProvider key={locale} messages={messages} locale={locale}>
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
