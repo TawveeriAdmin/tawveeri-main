@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -35,14 +35,16 @@ export default function LoginPage() {
   const t = useTranslations();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const { theme, setTheme } = useTheme();
-  const { signInWithEmail, signInWithPhone, signInWithOAuth } = useAuth();
+  const { signInWithEmail, signInWithPhone, signInWithOAuth, sendPhoneOtp } = useAuth();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isLoading, setIsLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -60,9 +62,35 @@ export default function LoginPage() {
   }, []);
 
   const handleSendOtp = async () => {
-    // TODO: Implement OTP sending logic
-    console.log('Sending OTP to:', formData.phone);
-    setOtpSent(true);
+    if (!formData.phone) {
+      toast({
+        title: t('auth.validation.phoneRequired') || 'Phone number required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setOtpLoading(true);
+      const { error } = await sendPhoneOtp(formData.phone);
+      if (error) throw error;
+
+      setOtpSent(true);
+      toast({
+        title: t('auth.otpSent') || 'OTP sent',
+        description: t('auth.otpSentDescription') || 'Check your phone for the verification code.',
+        variant: 'default',
+      });
+    } catch (error: any) {
+      console.error('OTP send error:', error);
+      toast({
+        title: t('auth.otpError') || 'Unable to send OTP',
+        description: error?.message || t('auth.somethingWrong') || 'Please try again in a moment.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleOAuthLogin = async (provider: 'google' | 'facebook' | 'apple') => {
@@ -154,8 +182,14 @@ export default function LoginPage() {
       // Refresh the router to ensure auth state is updated
       router.refresh();
       
-      // Redirect to home page
-      router.push(`/${locale}`);
+      // Determine redirect path (defaults to home)
+      const redirectParam = searchParams.get('redirect');
+      const sanitizedRedirect = redirectParam
+        ? `${redirectParam.startsWith('/') ? redirectParam : `/${redirectParam}`}`
+        : '';
+      const targetPath = sanitizedRedirect ? `/${locale}${sanitizedRedirect}` : `/${locale}`;
+
+      router.push(targetPath);
     } catch (error: any) {
       console.error('Login error:', error);
 
@@ -348,7 +382,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={!formData.phone}
+                    disabled={otpLoading || !formData.phone}
                     className="w-full py-3.5 bg-gradient-to-r from-success-600 to-success-700 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-success-600/30 transform hover:scale-[1.02] transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: '#ffffff' }}
                   >
@@ -356,7 +390,7 @@ export default function LoginPage() {
                       textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
                       color: '#ffffff'
                     }}>
-                      Send OTP
+                      {otpLoading ? t('auth.sendingOtp') || 'Sending...' : t('auth.sendOtp') || 'Send OTP'}
                     </span>
                   </button>
                 )}
@@ -383,7 +417,15 @@ export default function LoginPage() {
                       />
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      Didn't receive OTP? <button type="button" onClick={handleSendOtp} className="text-primary-600 dark:text-primary-400 hover:underline font-semibold">Resend</button>
+                      {t('auth.didntReceiveOtp') || "Didn't receive OTP?"}{' '}
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={otpLoading}
+                        className="text-primary-600 dark:text-primary-400 hover:underline font-semibold disabled:opacity-50"
+                      >
+                        {t('auth.resendOtp') || 'Resend'}
+                      </button>
                     </p>
                   </div>
                 )}

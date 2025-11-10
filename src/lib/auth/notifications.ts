@@ -3,7 +3,10 @@
  * Handles both in-app and email notifications
  */
 
-import { supabase } from '@/lib/database';
+import { createServerClient, getSupabaseBrowserClient } from '@/lib/database';
+
+const getSupabase = () =>
+  typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient();
 
 export interface NotificationParams {
   user_id: string;
@@ -40,6 +43,7 @@ export type EmailTemplate =
  */
 export async function createNotification(params: NotificationParams) {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase.from('notifications').insert({
       user_id: params.user_id,
       type: params.type,
@@ -77,6 +81,7 @@ export async function getUserNotifications(
   }
 ) {
   try {
+    const supabase = getSupabase();
     let query = supabase
       .from('notifications')
       .select(
@@ -130,6 +135,7 @@ export async function getUserNotifications(
  */
 export async function getUnreadCount(userId: string) {
   try {
+    const supabase = getSupabase();
     const { count, error } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
@@ -156,6 +162,7 @@ export async function getUnreadCount(userId: string) {
  */
 export async function markNotificationAsRead(notificationId: string) {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -175,6 +182,7 @@ export async function markNotificationAsRead(notificationId: string) {
  */
 export async function markAllAsRead(userId: string) {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -195,6 +203,7 @@ export async function markAllAsRead(userId: string) {
  */
 export async function deleteNotification(notificationId: string) {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('notifications')
       .delete()
@@ -215,6 +224,7 @@ export async function deleteNotification(notificationId: string) {
  */
 export async function sendEmailNotification(params: EmailNotificationParams) {
   try {
+    const supabase = createServerClient();
     // Get user's preferred language or use provided language
     const language = params.user_language || 'ar';
     const subject = language === 'ar' ? params.subject_ar : params.subject_en;

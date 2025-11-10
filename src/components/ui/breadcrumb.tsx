@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,8 +42,9 @@ const BreadcrumbLink = React.forwardRef<
     asChild?: boolean;
   }
 >(({ asChild, className, ...props }, ref) => {
+  const Component = asChild ? Slot : 'a';
   return (
-    <a
+    <Component
       ref={ref}
       className={cn(
         'transition-colors hover:text-gray-900 dark:hover:text-gray-100',

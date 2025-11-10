@@ -1,0 +1,17 @@
+{
+  "title": "Wishlist",
+  "myWishlist": "My Wishlist",
+  "savedProducts": "Saved Products",
+  "noProducts": "No products in your wishlist",
+  "emptyDescription": "Start saving products you love!",
+  "loading": "Loading wishlist...",
+  "error": "Failed to load wishlist",
+  "remove": "Remove",
+  "removeSuccess": "Product removed from wishlist",
+  "addToCompare": "Add to Compare",
+  "viewProduct": "View Product",
+  "signInRequired": "Sign in to view your wishlist",
+  "guestTitle": "Sign in to save your favourite products",
+  "guestDescription": "Create an account to build your wishlist, track prices, and never miss a deal."
+}
+

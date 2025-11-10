@@ -3,11 +3,14 @@
  */
 
 import { getUserProfile, updateUserProfile, getUserStats } from '@/lib/auth/profile';
-import { supabase } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
+
+type GenericRecord = Record<string, any>;
 
 describe('Profile Management', () => {
   let testUserId: string;
   let createdTestUser = false;
+  const supabase = createServerClient();
 
   beforeAll(async () => {
     // Try to get existing admin user
@@ -34,7 +37,8 @@ describe('Profile Management', () => {
         throw error;
       }
 
-      testUserId = data.id;
+      const created = data as GenericRecord;
+      testUserId = created.id;
       createdTestUser = true;
     }
   });
@@ -53,8 +57,9 @@ describe('Profile Management', () => {
       expect(error).toBeNull();
       expect(data).toBeDefined();
       if (data) {
-        expect(data.id).toBe(testUserId);
-        expect(data.role).toBeDefined();
+        const profile = data as GenericRecord;
+        expect(profile.id).toBe(testUserId);
+        expect(profile.role).toBeDefined();
       }
     });
 
@@ -78,8 +83,9 @@ describe('Profile Management', () => {
       expect(error).toBeNull();
       expect(data).toBeDefined();
       if (data) {
-        expect(data.full_name).toBe(updates.full_name);
-        expect(data.preferred_language).toBe(updates.preferred_language);
+        const profile = data as GenericRecord;
+        expect(profile.full_name).toBe(updates.full_name);
+        expect(profile.preferred_language).toBe(updates.preferred_language);
       }
     });
 
@@ -93,7 +99,8 @@ describe('Profile Management', () => {
       expect(error).toBeNull();
       expect(data).toBeDefined();
       if (data) {
-        expect(data.preferred_language).toBe('ar');
+        const profile = data as GenericRecord;
+        expect(profile.preferred_language).toBe('ar');
       }
     });
   });
@@ -105,10 +112,11 @@ describe('Profile Management', () => {
       expect(error).toBeNull();
       expect(data).toBeDefined();
       if (data) {
-        expect(typeof data.wishlist_count).toBe('number');
-        expect(typeof data.price_alerts_count).toBe('number');
-        expect(typeof data.search_count).toBe('number');
-        expect(typeof data.reviews_count).toBe('number');
+        const stats = data as GenericRecord;
+        expect(typeof stats.wishlist_count).toBe('number');
+        expect(typeof stats.price_alerts_count).toBe('number');
+        expect(typeof stats.search_count).toBe('number');
+        expect(typeof stats.reviews_count).toBe('number');
       }
     });
 
@@ -120,18 +128,20 @@ describe('Profile Management', () => {
       }).select().single();
 
       if (newUser) {
-        const { data } = await getUserStats(newUser.id);
+        const newUserRecord = newUser as GenericRecord;
+        const { data } = await getUserStats(newUserRecord.id);
 
         expect(data).toBeDefined();
         if (data) {
-          expect(data.wishlist_count).toBe(0);
-          expect(data.price_alerts_count).toBe(0);
-          expect(data.search_count).toBe(0);
-          expect(data.reviews_count).toBe(0);
+          const stats = data as GenericRecord;
+          expect(stats.wishlist_count).toBe(0);
+          expect(stats.price_alerts_count).toBe(0);
+          expect(stats.search_count).toBe(0);
+          expect(stats.reviews_count).toBe(0);
         }
 
         // Cleanup
-        await supabase.from('users').delete().eq('id', newUser.id);
+        await supabase.from('users').delete().eq('id', newUserRecord.id);
       }
     });
   });

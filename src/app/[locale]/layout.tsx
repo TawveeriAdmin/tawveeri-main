@@ -6,6 +6,7 @@ import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { ThemeProvider } from '../providers/theme-provider';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { Toaster } from '@/components/ui/toaster';
+import { MultiStoreCartProvider } from '@/lib/cart/cart-context';
 
 // English font
 const inter = Inter({
@@ -36,33 +37,52 @@ export default async function LocaleLayout({
   const { locale } = await params;
 
   // Validate locale
-  if (!locales.includes(locale as any)) {
+  if (!locales.includes(locale as (typeof locales)[number])) {
     notFound();
   }
 
   // Load messages directly with error handling
-  let messages: Record<string, any> = {};
+  let messages: Record<string, unknown> = {};
   try {
-    const [common, landing, auth] = await Promise.all([
-      import(`../../../messages/${locale}/common.json`),
-      import(`../../../messages/${locale}/landing.json`),
-      import(`../../../messages/${locale}/auth.json`),
+    const [common, landing, auth, products, dashboard, profile, storesList, deals, product, store, search, wishlist, compare, settings, notifications] = await Promise.allSettled([
+      import(`../../../messages/${locale}/common.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/landing.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/auth.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/products.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/dashboard.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/profile.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/stores.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/deals.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/product.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/store.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/search.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/wishlist.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/compare.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/settings.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/notifications.json`) as Promise<{ default: Record<string, unknown> }>,
     ]);
 
-    // Ensure all imports succeeded and have default exports
-    if (common?.default && landing?.default && auth?.default) {
-      messages = {
-        ...(common.default || {}),
-        ...(landing.default || {}),
-        ...(auth.default || {}),
-      };
-    } else {
-      console.warn('Some message files failed to load, using partial messages');
-      messages = {
-        ...(common?.default || {}),
-        ...(landing?.default || {}),
-        ...(auth?.default || {}),
-      };
+    // Combine all successfully loaded messages
+    messages = {
+      ...(common.status === 'fulfilled' && common.value?.default ? common.value.default : {}),
+      ...(landing.status === 'fulfilled' && landing.value?.default ? landing.value.default : {}),
+      ...(auth.status === 'fulfilled' && auth.value?.default ? auth.value.default : {}),
+      ...(products.status === 'fulfilled' && products.value?.default ? products.value.default : {}),
+      ...(dashboard.status === 'fulfilled' && dashboard.value?.default ? dashboard.value.default : {}),
+      ...(profile.status === 'fulfilled' && profile.value?.default ? profile.value.default : {}),
+      ...(storesList.status === 'fulfilled' && storesList.value?.default ? storesList.value.default : {}),
+      ...(deals.status === 'fulfilled' && deals.value?.default ? deals.value.default : {}),
+      ...(product.status === 'fulfilled' && product.value?.default ? product.value.default : {}),
+      ...(store.status === 'fulfilled' && store.value?.default ? store.value.default : {}),
+      ...(search.status === 'fulfilled' && search.value?.default ? search.value.default : {}),
+      ...(wishlist.status === 'fulfilled' && wishlist.value?.default ? wishlist.value.default : {}),
+      ...(compare.status === 'fulfilled' && compare.value?.default ? compare.value.default : {}),
+      ...(settings.status === 'fulfilled' && settings.value?.default ? settings.value.default : {}),
+      ...(notifications.status === 'fulfilled' && notifications.value?.default ? notifications.value.default : {}),
+    };
+
+    if (Object.keys(messages).length === 0) {
+      console.warn('No messages loaded, using empty messages object');
     }
   } catch (error) {
     console.error('Error loading messages:', error);
@@ -109,10 +129,12 @@ export default async function LocaleLayout({
             storageKey="tawveeri-theme"
             disableTransitionOnChange={false}
           >
-            <AuthProvider>
-              {children}
-              <Toaster />
-            </AuthProvider>
+            <MultiStoreCartProvider>
+              <AuthProvider>
+                {children}
+                <Toaster />
+              </AuthProvider>
+            </MultiStoreCartProvider>
           </ThemeProvider>
         </SimpleIntlProvider>
       </body>

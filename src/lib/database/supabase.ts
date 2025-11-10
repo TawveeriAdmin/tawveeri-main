@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './types';
 
 // Supabase client configuration
@@ -11,22 +13,33 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Create Supabase client with TypeScript support
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-  db: {
-    schema: 'public',
-  },
-  global: {
-    headers: {
-      'x-application-name': 'tawveeri',
-    },
-  },
-});
+let browserClient: SupabaseClient<Database> | null = null;
+
+export const getBrowserClient = () => {
+  if (typeof window === 'undefined') {
+    throw new Error('getBrowserClient must be called in a browser environment.');
+  }
+
+  if (!browserClient) {
+    browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'x-application-name': 'tawveeri',
+        },
+      },
+    });
+  }
+
+  return browserClient;
+};
 
 // Server-side client (for API routes and server components)
 export const createServerClient = () => {
@@ -46,8 +59,19 @@ export const createServerClient = () => {
 
 // Helper function to check connection
 export const checkDatabaseConnection = async () => {
+  const client =
+    typeof window === 'undefined'
+      ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+          db: { schema: 'public' },
+        })
+      : getBrowserClient();
+
   try {
-    const { data, error } = await supabase.from('users').select('count').limit(1);
+    const { data, error } = await client.from('users').select('count').limit(1);
 
     if (error) {
       console.error('Database connection error:', error);

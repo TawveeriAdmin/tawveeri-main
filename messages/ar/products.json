@@ -1,0 +1,26 @@
+{
+  "title": "المنتجات",
+  "subtitle": "تصفح جميع المنتجات",
+  "allProducts": "جميع المنتجات",
+  "noProducts": "لم يتم العثور على منتجات",
+  "loading": "جاري تحميل المنتجات...",
+  "error": "خطأ في تحميل المنتجات",
+  "resultsCount": "منتج موجود",
+  "sortBy": "ترتيب حسب",
+  "sortPriceLow": "أقل سعر",
+  "sortPriceHigh": "أعلى سعر",
+  "sortPopularity": "الأكثر شعبية",
+  "sortRating": "التقييم",
+  "sortNewest": "الأحدث",
+  "filterByCategory": "تصفية حسب الفئة",
+  "allCategories": "جميع الفئات",
+  "categories": {
+    "tv": "تلفزيون",
+    "laptop": "لابتوب",
+    "smartphone": "هاتف ذكي",
+    "tablet": "تابلت",
+    "audio": "أجهزة صوتية",
+    "gaming": "أجهزة ألعاب"
+  }
+}
+

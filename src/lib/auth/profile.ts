@@ -2,9 +2,12 @@
  * User Profile Management Utilities
  */
 
-import { supabase } from '@/lib/database';
 import { createAuditLog } from './audit';
 import { createNotification } from './notifications';
+import { createServerClient, getSupabaseBrowserClient } from '@/lib/database';
+
+const getSupabaseClient = () =>
+  typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient();
 
 export interface UserProfile {
   id: string;
@@ -25,6 +28,7 @@ export interface UserProfile {
  * Get user profile by ID
  */
 export async function getUserProfile(userId: string) {
+  const supabase = getSupabaseClient();
   try {
     const { data, error } = await supabase
       .from('users')
@@ -48,6 +52,7 @@ export async function updateUserProfile(
   userId: string,
   updates: Partial<UserProfile>
 ) {
+  const supabase = getSupabaseClient();
   try {
     const { data, error } = await supabase
       .from('users')
@@ -81,6 +86,7 @@ export async function updateAvatar(
   userId: string,
   file: File
 ): Promise<{ data: string | null; error: Error | null }> {
+  const supabase = getSupabaseClient();
   try {
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -142,6 +148,7 @@ export async function updateAvatar(
  * Delete user avatar
  */
 export async function deleteAvatar(userId: string) {
+  const supabase = getSupabaseClient();
   try {
     // Get current avatar URL
     const { data: user } = await supabase
@@ -187,6 +194,7 @@ export async function deleteAvatar(userId: string) {
  * Change user email
  */
 export async function changeEmail(userId: string, newEmail: string) {
+  const supabase = getSupabaseClient();
   try {
     // Update auth email
     const { data, error } = await supabase.auth.updateUser({
@@ -228,6 +236,7 @@ export async function changeEmail(userId: string, newEmail: string) {
  * Change user phone
  */
 export async function changePhone(userId: string, newPhone: string) {
+  const supabase = getSupabaseClient();
   try {
     // Update auth phone
     const { data, error } = await supabase.auth.updateUser({
@@ -269,6 +278,7 @@ export async function changePhone(userId: string, newPhone: string) {
  * Delete user account
  */
 export async function deleteAccount(userId: string) {
+  const supabase = getSupabaseClient();
   try {
     // Delete user avatar if exists
     await deleteAvatar(userId);
@@ -305,6 +315,7 @@ export async function deleteAccount(userId: string) {
  * Get user statistics
  */
 export async function getUserStats(userId: string) {
+  const supabase = getSupabaseClient();
   try {
     // Get wishlists count
     const { count: wishlistCount } = await supabase
@@ -352,6 +363,7 @@ export async function getUserStats(userId: string) {
  * Verify email OTP
  */
 export async function verifyEmailOTP(email: string, token: string) {
+  const supabase = getSupabaseClient();
   try {
     const { data, error } = await supabase.auth.verifyOtp({
       email,
@@ -382,6 +394,7 @@ export async function verifyEmailOTP(email: string, token: string) {
  * Verify phone OTP
  */
 export async function verifyPhoneOTP(phone: string, token: string) {
+  const supabase = getSupabaseClient();
   try {
     const { data, error } = await supabase.auth.verifyOtp({
       phone,
@@ -418,6 +431,7 @@ export async function verifyPhoneOTP(phone: string, token: string) {
  * Resend email verification
  */
 export async function resendEmailVerification(email: string) {
+  const supabase = getSupabaseClient();
   try {
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -437,6 +451,7 @@ export async function resendEmailVerification(email: string) {
  * Resend phone verification
  */
 export async function resendPhoneVerification(phone: string) {
+  const supabase = getSupabaseClient();
   try {
     const { error } = await supabase.auth.resend({
       type: 'sms',

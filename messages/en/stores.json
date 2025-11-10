@@ -1,0 +1,19 @@
+{
+  "title": "Stores",
+  "subtitle": "Browse all our partner stores",
+  "allStores": "All Stores",
+  "searchPlaceholder": "Search stores...",
+  "sortBy": "Sort by",
+  "sortName": "Name",
+  "sortRating": "Rating",
+  "sortProducts": "Products Count",
+  "noStores": "No stores found",
+  "loading": "Loading stores...",
+  "error": "Failed to load stores. Please try again later.",
+  "rating": "Rating",
+  "productsCount": "products",
+  "viewStore": "View Store",
+  "visitWebsite": "Visit Website",
+  "resultsCount": "stores found"
+}
+

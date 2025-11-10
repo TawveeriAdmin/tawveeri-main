@@ -3,10 +3,11 @@
  */
 
 import { createAuditLog, getAuditLogs, AUDIT_ACTIONS } from '@/lib/auth/audit';
-import { supabase } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 describe('Audit Logging', () => {
   let testUserId: string;
+  const supabase = createServerClient();
 
   beforeAll(async () => {
     // Get a test user ID (using admin from seed data)
@@ -57,8 +58,9 @@ describe('Audit Logging', () => {
 
       expect(error).toBeNull();
       expect(Array.isArray(data)).toBe(true);
-      if (data.length > 0) {
-        expect(data[0].user_id).toBe(testUserId);
+      if (Array.isArray(data) && data.length > 0) {
+        const [first] = data as Array<{ user_id?: string | null }>;
+        expect(first.user_id).toBe(testUserId);
       }
     });
 

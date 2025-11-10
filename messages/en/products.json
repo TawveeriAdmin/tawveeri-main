@@ -1,0 +1,26 @@
+{
+  "title": "Products",
+  "subtitle": "Browse all products",
+  "allProducts": "All Products",
+  "noProducts": "No products found",
+  "loading": "Loading products...",
+  "error": "Error loading products",
+  "resultsCount": "products found",
+  "sortBy": "Sort by",
+  "sortPriceLow": "Lowest Price",
+  "sortPriceHigh": "Highest Price",
+  "sortPopularity": "Popularity",
+  "sortRating": "Rating",
+  "sortNewest": "Newest",
+  "filterByCategory": "Filter by Category",
+  "allCategories": "All Categories",
+  "categories": {
+    "tv": "TV",
+    "laptop": "Laptop",
+    "smartphone": "Smartphone",
+    "tablet": "Tablet",
+    "audio": "Audio Devices",
+    "gaming": "Gaming Devices"
+  }
+}
+

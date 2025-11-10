@@ -1,0 +1,21 @@
+{
+  "title": "مقارنة المنتجات",
+  "compare": "مقارنة",
+  "addProducts": "أضف منتجات للمقارنة",
+  "maxProducts": "يمكنك مقارنة حتى 4 منتجات",
+  "noProducts": "لا توجد منتجات للمقارنة",
+  "emptyDescription": "أضف منتجات لمقارنة أسعارها ومواصفاتها",
+  "remove": "إزالة",
+  "clearAll": "مسح الكل",
+  "specifications": "المواصفات",
+  "price": "السعر",
+  "availability": "التوفر",
+  "stores": "المتاجر المتاحة",
+  "inStock": "متوفر",
+  "outOfStock": "غير متوفر",
+  "limitedStock": "محدود المخزون",
+  "bestPrice": "أفضل سعر",
+  "viewProduct": "عرض المنتج",
+  "addMore": "إضافة المزيد"
+}
+

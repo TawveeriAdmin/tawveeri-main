@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import type { CookieMethodsServerDeprecated } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAuditLog } from '@/lib/auth/audit';
 import createIntlMiddleware from 'next-intl/middleware';
@@ -53,23 +54,23 @@ export async function middleware(request: NextRequest) {
   }
 
   // For protected routes, add auth checks
+  const cookies: CookieMethodsServerDeprecated = {
+    get(name: string) {
+      return request.cookies.get(name)?.value;
+    },
+    set(name: string, value: string, options = {}) {
+      response.cookies.set(name, value, options);
+    },
+    remove(name: string, options = {}) {
+      response.cookies.set(name, '', { ...options, maxAge: 0 });
+    },
+  };
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({ name, value, ...options });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({ name, value: '', ...options });
-          response.cookies.set({ name, value: '', ...options });
-        },
-      },
+      cookies,
     }
   );
 
@@ -80,7 +81,7 @@ export async function middleware(request: NextRequest) {
 
   // Extract current locale from URL
   const locale = request.nextUrl.pathname.split('/')[1];
-  const validLocale = locales.includes(locale as any) ? locale : defaultLocale;
+  const validLocale = locales.includes(locale as (typeof locales)[number]) ? locale : defaultLocale;
 
   // Redirect to login if accessing protected route without session
   if (isProtectedRoute && !session) {

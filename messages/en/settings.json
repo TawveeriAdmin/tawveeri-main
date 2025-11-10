@@ -1,0 +1,31 @@
+{
+  "settings": {
+    "title": "Account Settings",
+    "description": "Manage how we communicate with you and how your information is used.",
+    "notifications": "Notification Preferences",
+    "privacy": "Privacy Settings",
+    "preferences": "Preferences",
+    "dataManagement": "Data Management",
+    "emailNotifications": "Email notifications",
+    "smsNotifications": "SMS notifications",
+    "pushNotifications": "Push notifications",
+    "priceAlerts": "Price drop alerts",
+    "stockAlerts": "Back in stock alerts",
+    "dealAlerts": "Deal alerts",
+    "profileVisibility": "Public profile",
+    "searchHistory": "Share search history",
+    "language": "Language",
+    "theme": "Theme",
+    "savePreferences": "Save preferences",
+    "saving": "Saving...",
+    "saved": "Settings saved",
+    "exportData": "Export my data",
+    "exporting": "Exporting...",
+    "dataExported": "Data exported successfully",
+    "dataExportFailed": "Failed to export data",
+    "deleteAccount": "Delete account",
+    "deleteAccountDescription": "This action cannot be undone.",
+    "confirmDelete": "Yes, delete my account",
+    "cancel": "Cancel"
+  }
+}

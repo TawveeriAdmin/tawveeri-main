@@ -974,9 +974,9 @@ export default function LandingPageClient() {
               </h4>
               <ul className="space-y-3 text-gray-600 dark:text-gray-400">
                 {[
-                  { href: '/products', label: t('footer.products') },
-                  { href: '/stores', label: t('footer.stores') },
-                  { href: '/deals', label: t('footer.deals') },
+                  { href: `/${locale}/products`, label: t('footer.products') },
+                  { href: `/${locale}/stores`, label: t('footer.stores') },
+                  { href: `/${locale}/deals`, label: t('footer.deals') },
                   { href: '/about', label: t('footer.about') },
                 ].map((link) => (
                   <li key={link.href}>

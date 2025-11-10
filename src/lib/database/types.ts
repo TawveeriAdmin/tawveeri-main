@@ -3,10 +3,10 @@
 
 export type UserRole = 'admin' | 'customer' | 'store' | 'guest';
 export type AuthProvider = 'email' | 'phone' | 'google' | 'facebook' | 'apple';
-export type ProductCategory = 'tv' | 'laptop' | 'smartphone' | 'tablet' | 'audio' | 'camera' | 'gaming' | 'accessories';
+export type ProductCategory = string;
 export type AvailabilityStatus = 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
 export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'refunded';
-export type NotificationType = 'price_drop' | 'back_in_stock' | 'deal_alert' | 'system';
+export type NotificationType = 'price_drop' | 'back_in_stock' | 'deal_alert' | 'deal' | 'system' | 'account';
 export type StoreStatus = 'active' | 'pending' | 'suspended' | 'inactive';
 
 export interface Database {
@@ -64,6 +64,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       stores: {
         Row: {
@@ -159,6 +160,7 @@ export interface Database {
           updated_at?: string;
           created_by?: string | null;
         };
+        Relationships: [];
       };
       products: {
         Row: {
@@ -174,7 +176,7 @@ export interface Database {
           description_en: string | null;
           image_urls: string[] | null;
           video_url: string | null;
-          specifications: Record<string, any> | null;
+          specifications: Record<string, unknown> | null;
           view_count: number;
           save_count: number;
           comparison_count: number;
@@ -195,7 +197,7 @@ export interface Database {
           description_en?: string | null;
           image_urls?: string[] | null;
           video_url?: string | null;
-          specifications?: Record<string, any> | null;
+          specifications?: Record<string, unknown> | null;
           view_count?: number;
           save_count?: number;
           comparison_count?: number;
@@ -216,7 +218,7 @@ export interface Database {
           description_en?: string | null;
           image_urls?: string[] | null;
           video_url?: string | null;
-          specifications?: Record<string, any> | null;
+          specifications?: Record<string, unknown> | null;
           view_count?: number;
           save_count?: number;
           comparison_count?: number;
@@ -224,6 +226,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       product_stores: {
         Row: {
@@ -292,6 +295,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       price_history: {
         Row: {
@@ -312,6 +316,7 @@ export interface Database {
           price?: number;
           recorded_at?: string;
         };
+        Relationships: [];
       };
       user_wishlists: {
         Row: {
@@ -335,6 +340,7 @@ export interface Database {
           notes?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       search_history: {
         Row: {
@@ -342,7 +348,7 @@ export interface Database {
           user_id: string | null;
           search_query: string;
           category: ProductCategory | null;
-          filters: Record<string, any> | null;
+          filters: Record<string, unknown> | null;
           results_count: number | null;
           created_at: string;
         };
@@ -351,7 +357,7 @@ export interface Database {
           user_id?: string | null;
           search_query: string;
           category?: ProductCategory | null;
-          filters?: Record<string, any> | null;
+          filters?: Record<string, unknown> | null;
           results_count?: number | null;
           created_at?: string;
         };
@@ -360,10 +366,11 @@ export interface Database {
           user_id?: string | null;
           search_query?: string;
           category?: ProductCategory | null;
-          filters?: Record<string, any> | null;
+          filters?: Record<string, unknown> | null;
           results_count?: number | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       transactions: {
         Row: {
@@ -387,7 +394,7 @@ export interface Database {
           id?: string;
           user_id?: string | null;
           product_store_id: string;
-          amount: number;
+          amount?: number;
           commission_amount?: number | null;
           commission_rate?: number | null;
           status?: TransactionStatus;
@@ -417,6 +424,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       store_reviews: {
         Row: {
@@ -458,6 +466,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -470,7 +479,9 @@ export interface Database {
           message_en: string | null;
           product_id: string | null;
           product_store_id: string | null;
-          data: Record<string, any> | null;
+          store_id: string | null;
+          link: string | null;
+          data: Record<string, unknown> | null;
           is_read: boolean;
           is_sent: boolean;
           sent_at: string | null;
@@ -486,7 +497,9 @@ export interface Database {
           message_en?: string | null;
           product_id?: string | null;
           product_store_id?: string | null;
-          data?: Record<string, any> | null;
+          store_id?: string | null;
+          link?: string | null;
+          data?: Record<string, unknown> | null;
           is_read?: boolean;
           is_sent?: boolean;
           sent_at?: string | null;
@@ -502,12 +515,15 @@ export interface Database {
           message_en?: string | null;
           product_id?: string | null;
           product_store_id?: string | null;
-          data?: Record<string, any> | null;
+          store_id?: string | null;
+          link?: string | null;
+          data?: Record<string, unknown> | null;
           is_read?: boolean;
           is_sent?: boolean;
           sent_at?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       price_alerts: {
         Row: {
@@ -537,6 +553,7 @@ export interface Database {
           notified_at?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       admin_logs: {
         Row: {
@@ -545,7 +562,7 @@ export interface Database {
           action: string;
           entity_type: string | null;
           entity_id: string | null;
-          details: Record<string, any> | null;
+          details: Record<string, unknown> | null;
           ip_address: string | null;
           user_agent: string | null;
           created_at: string;
@@ -556,7 +573,7 @@ export interface Database {
           action: string;
           entity_type?: string | null;
           entity_id?: string | null;
-          details?: Record<string, any> | null;
+          details?: Record<string, unknown> | null;
           ip_address?: string | null;
           user_agent?: string | null;
           created_at?: string;
@@ -567,15 +584,46 @@ export interface Database {
           action?: string;
           entity_type?: string | null;
           entity_id?: string | null;
-          details?: Record<string, any> | null;
+          details?: Record<string, unknown> | null;
           ip_address?: string | null;
           user_agent?: string | null;
           created_at?: string;
         };
+        Relationships: [];
+      };
+      user_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          notification_preferences: Record<string, unknown> | null;
+          privacy_preferences: Record<string, unknown> | null;
+          app_preferences: Record<string, unknown> | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          notification_preferences?: Record<string, unknown> | null;
+          privacy_preferences?: Record<string, unknown> | null;
+          app_preferences?: Record<string, unknown> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          notification_preferences?: Record<string, unknown> | null;
+          privacy_preferences?: Record<string, unknown> | null;
+          app_preferences?: Record<string, unknown> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
-    Views: {};
-    Functions: {};
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
     Enums: {
       user_role: UserRole;
       auth_provider: AuthProvider;
@@ -585,5 +633,6 @@ export interface Database {
       notification_type: NotificationType;
       store_status: StoreStatus;
     };
+    CompositeTypes: Record<string, never>;
   };
 }

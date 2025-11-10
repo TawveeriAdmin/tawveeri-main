@@ -1,0 +1,222 @@
+   
+ 
+Etlaq إطالق     
+ 10-Week Implementation Plan 
+(Functional + Non -Functional 
+Requirements)  
+This file is provided by Etlaq for the execution  and Project’s requirement for  Mohammed 
+Abdul lah.  The file indicates how  the project is going to be built week by week.  
+App Requirements :   
+ 
+Project Overview  
+The platform is a web -based solution that enables customers in Saudi Arabia to compare 
+prices of electronic devices (e.g., laptops, TVs, smartphones) across multiple local and 
+online electronic stores (e.g., Extra, Almanae, Jarir). Customers can search for a speciCic 
+product, Cilter by brand, model, and speciCications, and the platform will return results 
+with prices from different stores. Customers can then be redirected to the store with the 
+lowest or preferred price. Phase 1 focuses on growth and adoption, while Phase 2 
+introduces proCitability through commissions from sales.  
+  
+Functional Requirements  
+• User Registration & Authentication: Allow optional account creation via email, 
+phone, or social login.  
+• Guest Access: Customers can search without creating an account.  
+• Product Search: Search by product category (e.g., TV, Laptop, Smartphone).  
+• Brand & Model Filtering: Narrow down results by brand, model, speciCications.  
+• Advanced Filtering: By size, RAM, storage, resolution, color, etc.  
+• Price Comparison Engine: Compare product prices across integrated stores.  
+• Sort & Filter Results: Sort by lowest price, popularity, rating, or store name.  
+• Store Integration: APIs/web scraping to fetch real -time prices from stores like 
+Extra, Jarir, Almanea.  
+• Redirection to Store: Click -through to redirect customer to the store website with 
+selected product.  
+• Product Detail Page: Display speciCications, images, and available stores with 
+pricing.  
+• Wishlist/Save Products: Users can save products for later viewing.  
+   
+ 
+Etlaq إطالق     
+ • NotiCication System: Alert users when prices drop or when products are back in 
+stock.  
+• Multi -language Support: Arabic and English interfaces.  
+• Currency Handling: Prices displayed in SAR.  
+• Search Suggestions: Auto -suggest products while typing.  
+  • User Reviews & Ratings: Allow customers to rate stores and leave 
+reviews.  
+• Comparison Table: Show side -by-side comparison of speciCications and prices.  
+• Commission Tracking: Track successful redirections and purchases for future 
+monetization.  
+• Analytics Dashboard (Admin): Monitor platform trafCic, top searched items, and 
+store performance.  
+• Store Onboarding Portal: Enable stores to register and provide product feeds 
+directly.  
+• Favorites & Personalized Recommendations: Suggest products based on past 
+searches and saved items.  
+• Mobile Responsiveness: Fully optimized for mobile and desktop browsers.  
+• Future Mobile App Support: Android/iOS applications.  
+• Barcode/QR Code Scanner: Allow scanning devices in -store to compare prices 
+online instantly.  
+• Search by Voice: Voice -enabled search functionality in Arabic and English.  
+• Price History Tracking: Show historical price trends for products.  
+• Daily Deals Section: Highlight best deals and discounts from multiple stores.  
+• Email/SMS Alerts: Send notiCications on new offers or sales.  
+• Comparison Across Stores: Highlight delivery charges, warranty differences, and 
+return policies.  
+• Favorites Sync: Sync saved products across web and mobile app.  
+• Multiple Login Options: Google, Apple ID, Facebook, and email.  
+• AfCiliate Tracking: Unique tracking links for each redirected sale.  
+• Product Availability Checker: Indicate if the product is in stock or out of stock at 
+each store.  
+• Dynamic Search Filters: Based on the selected product category.  
+• Product Videos/Demos: Embedded YouTube or store -provided product videos.  
+• Store Rating System: Aggregate customer ratings of stores.  
+• Smart Recommendations: AI -based suggestions of similar products or better 
+deals.  
+• Coupon Integration: Display available discount codes or offers for each store.  
+   
+ 
+Etlaq إطالق     
+   • Multi -Store Cart (Phase 2+): Ability to add products from multiple stores 
+before redirecting.  
+• Comparison by Delivery Time: Show expected delivery durations alongside 
+prices.  
+• Localized Store Integration: Tie -ins with Saudi -speciCic electronic chains and 
+marketplaces.  
+• Gift Option Integration: Option to send products as gifts with links to stores.  
+• Search History Log: Keep track of previously searched items.  
+• Single Sign -On: OAuth support for corporate or academic accounts (optional).  
+  
+Non-Functional Requirements  
+• Performance: Search results should load in under 3 seconds.  
+• Scalability: Ability to handle 1 million+ users and concurrent searches.  
+• Security: Protect user data with SSL, encryption, and secure login methods.  
+• Reliability: 99.9% uptime with automated monitoring.  
+• Data Accuracy: Ensure store data is refreshed regularly and reliably.  
+• Usability: Simple and intuitive UI for both Arabic and English users.  
+• SEO Optimization: Ensure discoverability on search engines.  
+• Accessibility: WCAG 2.1 compliance for users with disabilities.  
+• Maintainability: Modular codebase for easy updates and new store integrations.  
+• Legal Compliance: Align with Saudi e -commerce and data privacy laws.  
+• Cross -Browser Compatibility: Support Chrome, Safari, Edge, Firefox.  
+• Mobile Optimization: Smooth experience across iOS and Android devices.  
+• Data Backup: Daily automated backups of product data and user preferences.  
+• Monitoring & Logging: Full logging of API requests and error tracking.  
+• Energy EfCiciency: Optimized infrastructure to reduce hosting costs.  
+• Localization: Support Hijri and Gregorian dates, Arabic numerals.  
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   
+ 
+Etlaq إطالق     
+ Week  Tasks / Features  
+Week 1 – Foundation & Setup  Development environment setup  
+Database schema design (Users, Products, 
+Stores, Transactions)  
+Server & API setup  
+Security baseline (SSL, Encryption)  
+Daily backup system + Monitoring & 
+Logging  
+RLS (Row -Level Security) setup for 
+database  
+User roles planning (admin, customer, 
+store)  
+ 
+Week 2 – User Accounts & Access  User registration (Email/Phone/Google)  
+Guest access  
+Account management (profile editing, 
+password reset, delete account)  
+Legal compliance (Saudi data privacy laws)  
+User/Admin/Customer page creation 
+(frontend access layer)  
+ 
+Week 3 – Search & Filtering  Product search by category (TV, Laptop, 
+Smartphone)  
+Filtering by brand, model, RAM, storage, 
+size, resolution, color  
+Dynamic filters (based on category)  
+ 
+Week 4 – Store Integration  Integration with 5 major stores (Extra, 
+Jarir, Almanea, Noon, Amazon.sa)  
+Localized store integration (additional 
+Saudi stores)  
+Store onboarding portal (self -service for 
+stores)  
+Store rating system  
+ 
+Week 5 – Product Experience  Product detail page (images, specs, prices)  
+Product availability checker  
+Product videos/demos  
+Price comparison engine  
+Price history tracking  
+Multi -language support (Arabic/English)  
+Currency support (SAR)  
+ 
+Week 6 – Personalization & Favorites  Wishlist / Save products  
+Favorites sync (cross -device)  
+Search history log  
+Personalized recommendations  
+AI-powered smart recommendations  
+ 
+   
+ 
+Etlaq إطالق     
+ Week 7 – Notifications & Engagement  Notification system (price drop, back in 
+stock)  
+Email/SMS alerts  
+Push notifications (mobile)  
+Daily deals section  
+Coupon integration  
+ 
+Week 8 – Monetization & Analytics  Premium store listings  
+Loyalty program / Cashback  
+Store dashboard (merchant analytics)  
+Admin analytics dashboard (traffic, search 
+logs, user activity)  
+SEO optimization  
+ 
+Week 9 – Advanced Comparison  Comparison tables (specs & prices)  
+Comparison across stores (warranty, 
+shipping, return policies)  
+Delivery time comparison  
+Multi -store cart  
+Gift option integration  
+ 
+Week 10 – Performance, Compliance & 
+Launch  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Mobile app launch (iOS & Android)  
+Mobile optimization (responsive, feature 
+parity)  
+Performance optimization (< 3s search 
+results)  
+Scalability (1M+ users)  
+Reliability (99.9% uptime)  
+Cross -browser compatibility  
+Accessibility compliance (WCAG 2.1)  
+Energy efficiency optimization  
+Legal compliance (Saudi regulations)  
+Localization (Hijri/Gregorian + Arabic 
+numerals)  
+Full Go -Live  
+ 
+ 

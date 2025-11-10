@@ -3,9 +3,10 @@
  * Tests basic database connectivity and operations
  */
 
-import { supabase, checkDatabaseConnection } from '@/lib/database';
+import { createServerClient, checkDatabaseConnection } from '@/lib/database';
 
 describe('Database Connection', () => {
+  const supabase = createServerClient();
   it('should connect to Supabase successfully', async () => {
     const isConnected = await checkDatabaseConnection();
     expect(isConnected).toBe(true);
@@ -36,6 +37,7 @@ describe('Database Connection', () => {
 });
 
 describe('Database Query Operations', () => {
+  const supabase = createServerClient();
   it('should fetch active stores', async () => {
     const { data, error } = await supabase
       .from('stores')
@@ -76,6 +78,7 @@ describe('Database Query Operations', () => {
 });
 
 describe('Database RLS Policies', () => {
+  const supabase = createServerClient();
   it('should allow anonymous access to active stores', async () => {
     // Create anonymous client
     const anonClient = supabase;

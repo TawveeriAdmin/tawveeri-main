@@ -5,8 +5,8 @@
  * This script runs SQL migrations using Node.js without requiring psql
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 require('dotenv').config({ path: '.env.local' });
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 

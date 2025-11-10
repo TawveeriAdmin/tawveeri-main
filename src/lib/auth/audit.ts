@@ -3,7 +3,7 @@
  * Tracks all important system activities for admin review
  */
 
-import { supabase } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 export interface AuditLogParams {
   user_id?: string | null;
@@ -22,6 +22,7 @@ export interface AuditLogParams {
  */
 export async function createAuditLog(params: AuditLogParams) {
   try {
+    const supabase = createServerClient();
     // Validate required fields
     if (!params.action) {
       console.warn('createAuditLog: action is required');
@@ -68,6 +69,8 @@ export async function getAuditLogs(filters?: {
   offset?: number;
 }) {
   try {
+    const supabase = createServerClient();
+
     let query = supabase
       .from('admin_logs')
       .select(

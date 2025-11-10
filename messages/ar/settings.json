@@ -1,0 +1,31 @@
+{
+  "settings": {
+    "title": "إعدادات الحساب",
+    "description": "قم بإدارة طريقة تواصلنا معك وكيفية استخدام معلوماتك.",
+    "notifications": "تفضيلات الإشعارات",
+    "privacy": "إعدادات الخصوصية",
+    "preferences": "التفضيلات",
+    "dataManagement": "إدارة البيانات",
+    "emailNotifications": "إشعارات البريد الإلكتروني",
+    "smsNotifications": "إشعارات الرسائل النصية",
+    "pushNotifications": "الإشعارات الفورية",
+    "priceAlerts": "تنبيهات انخفاض السعر",
+    "stockAlerts": "تنبيهات توفر المنتج",
+    "dealAlerts": "تنبيهات العروض",
+    "profileVisibility": "الملف الشخصي العام",
+    "searchHistory": "مشاركة سجل البحث",
+    "language": "اللغة",
+    "theme": "المظهر",
+    "savePreferences": "حفظ التفضيلات",
+    "saving": "جاري الحفظ...",
+    "saved": "تم حفظ الإعدادات",
+    "exportData": "تصدير بياناتي",
+    "exporting": "جاري التصدير...",
+    "dataExported": "تم تصدير البيانات بنجاح",
+    "dataExportFailed": "فشل تصدير البيانات",
+    "deleteAccount": "حذف الحساب",
+    "deleteAccountDescription": "لا يمكن التراجع عن هذا الإجراء.",
+    "confirmDelete": "نعم، احذف حسابي",
+    "cancel": "إلغاء"
+  }
+}

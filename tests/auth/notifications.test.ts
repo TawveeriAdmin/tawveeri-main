@@ -8,11 +8,12 @@ import {
   getUnreadCount,
   markNotificationAsRead,
 } from '@/lib/auth/notifications';
-import { supabase } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 describe('Notification System', () => {
   let testUserId: string;
   let testNotificationId: string;
+  const supabase = createServerClient();
 
   beforeAll(async () => {
     // Get a test user ID
@@ -86,8 +87,9 @@ describe('Notification System', () => {
 
       expect(error).toBeNull();
       expect(Array.isArray(data)).toBe(true);
-      if (data.length > 0) {
-        expect(data[0].is_read).toBe(false);
+      if (Array.isArray(data) && data.length > 0) {
+        const [first] = data as Array<{ is_read?: boolean }>;
+        expect(first.is_read).toBe(false);
       }
     });
   });

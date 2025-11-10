@@ -3,8 +3,12 @@
  * Tests common query patterns and operations
  */
 
-import { supabase } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 import type { ProductCategory } from '@/lib/database/types';
+
+type GenericRecord = Record<string, any>;
+
+const supabase = createServerClient();
 
 describe('Product Queries', () => {
   it('should search products by brand', async () => {
@@ -15,8 +19,9 @@ describe('Product Queries', () => {
       .eq('is_active', true);
 
     expect(error).toBeNull();
-    if (data) {
-      expect(data.every((p) => p.brand === 'Apple')).toBe(true);
+    if (Array.isArray(data)) {
+      const records = data as GenericRecord[];
+      expect(records.every((p) => p.brand === 'Apple')).toBe(true);
     }
   });
 
@@ -28,8 +33,9 @@ describe('Product Queries', () => {
       .eq('category', category);
 
     expect(error).toBeNull();
-    if (data) {
-      expect(data.every((p) => p.category === category)).toBe(true);
+    if (Array.isArray(data)) {
+      const records = data as GenericRecord[];
+      expect(records.every((p) => p.category === category)).toBe(true);
     }
   });
 
@@ -50,8 +56,9 @@ describe('Product Queries', () => {
 
     expect(error).toBeNull();
     if (data) {
-      expect(data.product_stores).toBeDefined();
-      expect(Array.isArray(data.product_stores)).toBe(true);
+      const record = data as GenericRecord;
+      expect(record.product_stores).toBeDefined();
+      expect(Array.isArray(record.product_stores)).toBe(true);
     }
   });
 
@@ -88,7 +95,8 @@ describe('Price Comparison Queries', () => {
       expect(error).toBeNull();
       expect(data).toBeDefined();
       if (data) {
-        expect(typeof data.current_price).toBe('number');
+        const record = data as GenericRecord;
+        expect(typeof record.current_price).toBe('number');
       }
     }
   });
@@ -127,8 +135,9 @@ describe('Price Comparison Queries', () => {
       .limit(10);
 
     expect(error).toBeNull();
-    if (data) {
-      expect(data.every((ps) => ps.availability === 'in_stock')).toBe(true);
+    if (Array.isArray(data)) {
+      const records = data as GenericRecord[];
+      expect(records.every((ps) => ps.availability === 'in_stock')).toBe(true);
     }
   });
 
@@ -153,8 +162,9 @@ describe('Store Queries', () => {
       .eq('status', 'active');
 
     expect(error).toBeNull();
-    if (data) {
-      expect(data.every((s) => s.is_featured === true)).toBe(true);
+    if (Array.isArray(data)) {
+      const records = data as GenericRecord[];
+      expect(records.every((s) => s.is_featured === true)).toBe(true);
     }
   });
 
@@ -218,9 +228,10 @@ describe('Search and Filter Queries', () => {
       .eq('is_active', true);
 
     expect(error).toBeNull();
-    if (data) {
+    if (Array.isArray(data)) {
+      const records = data as GenericRecord[];
       expect(
-        data.every(
+        records.every(
           (p) =>
             p.category === 'smartphone' && p.brand === 'Apple' && p.is_active
         )
@@ -256,7 +267,7 @@ describe('Pagination Queries', () => {
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
     expect(typeof count).toBe('number');
-    if (data) {
+    if (Array.isArray(data)) {
       expect(data.length).toBeLessThanOrEqual(pageSize);
     }
   });

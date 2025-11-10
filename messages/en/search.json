@@ -1,0 +1,44 @@
+{
+  "title": "Search",
+  "results": "Search Results",
+  "resultsCount": "results found",
+  "noResults": "No results found",
+  "loading": "Searching...",
+  "error": "Failed to search. Please try again.",
+  "sortBy": "Sort by",
+  "sortPriceLow": "Price: Low to High",
+  "sortPriceHigh": "Price: High to Low",
+  "sortPopularity": "Popularity",
+  "sortRating": "Rating",
+  "searchPlaceholder": "Search for products...",
+  "categories": "Categories",
+  "filters": "Filters",
+  "clearFilters": "Clear Filters",
+  "applyFilters": "Apply Filters",
+  "recentSearches": "Recent Searches",
+  "suggestions": "Suggestions",
+  "history": {
+    "title": "Recent Searches",
+    "clear": "Clear",
+    "loading": "Loading history...",
+    "empty": "No recent searches yet.",
+    "loadError": "We couldn't load your search history."
+  },
+  "voice": {
+    "start": "Start voice search",
+    "stop": "Stop",
+    "listening": "Listening...",
+    "noSupport": "Voice search is not supported in this browser."
+  },
+  "barcode": {
+    "start": "Scan barcode or QR",
+    "stop": "Stop scanning",
+    "permission": "We need camera permission to scan barcodes.",
+    "noCamera": "No compatible camera found.",
+    "notFound": "We couldn't find a product matching this code.",
+    "instructions": "Point your camera at a product barcode or QR code to search automatically.",
+    "manualHint": "Or enter a code manually",
+    "noSupport": "Barcode scanning is not supported on this device. Enter the code manually instead."
+  }
+}
+

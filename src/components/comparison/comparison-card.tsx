@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PriceDisplay, Price } from '@/components/ui/price';
 import { Star, Truck, ShieldCheck } from 'lucide-react';
-import { useLocale } from 'next-intl';
+import { useTranslations } from '@/lib/simple-intl-provider';
+import { useParams } from 'next/navigation';
 import { calculateSavings } from '@/lib/utils';
 
 interface ComparisonCardProps {
@@ -19,6 +20,7 @@ interface ComparisonCardProps {
   delivery?: string;
   warranty?: string;
   onViewStore: () => void;
+  locale?: string;
 }
 
 export function ComparisonCard({
@@ -32,8 +34,11 @@ export function ComparisonCard({
   delivery,
   warranty,
   onViewStore,
+  locale: propLocale,
 }: ComparisonCardProps) {
-  const { locale, t } = useLocale();
+  const t = useTranslations();
+  const params = useParams();
+  const locale = propLocale || (params?.locale as string) || 'ar';
   const savings = originalPrice ? calculateSavings(originalPrice, currentPrice) : 0;
 
   return (

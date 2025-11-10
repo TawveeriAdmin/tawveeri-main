@@ -1,0 +1,26 @@
+{
+  "title": "لوحة التحكم",
+  "welcome": "مرحباً بعودتك",
+  "welcomeGuest": "مرحباً",
+  "wishlistCount": "عناصر في قائمة الأمنيات",
+  "recentSearches": "البحوث الأخيرة",
+  "activeAlerts": "تنبيهات الأسعار النشطة",
+  "recentNotifications": "الإشعارات الأخيرة",
+  "guestMessage": "سجل الدخول لفتح جميع المميزات",
+  "signInToUnlock": "سجل الدخول للفتح",
+  "noRecentSearches": "لا توجد بحوث حديثة",
+  "noAlerts": "لا توجد تنبيهات نشطة",
+  "noNotifications": "لا توجد إشعارات جديدة",
+  "viewAll": "عرض الكل",
+  "quickActions": "إجراءات سريعة",
+  "searchProducts": "البحث عن المنتجات",
+  "viewWishlist": "عرض قائمة الأمنيات",
+  "compareProducts": "مقارنة المنتجات",
+  "viewAllNotifications": "عرض جميع الإشعارات",
+  "stats": {
+    "totalSaved": "إجمالي الوفورات",
+    "productsCompared": "المنتجات المقارنة",
+    "alertsActive": "تنبيهات نشطة"
+  }
+}
+

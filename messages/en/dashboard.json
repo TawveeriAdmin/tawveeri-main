@@ -1,0 +1,26 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome back",
+  "welcomeGuest": "Welcome",
+  "wishlistCount": "Items in Wishlist",
+  "recentSearches": "Recent Searches",
+  "activeAlerts": "Active Price Alerts",
+  "recentNotifications": "Recent Notifications",
+  "guestMessage": "Sign in to unlock all features",
+  "signInToUnlock": "Sign in to unlock",
+  "noRecentSearches": "No recent searches",
+  "noAlerts": "No active alerts",
+  "noNotifications": "No new notifications",
+  "viewAll": "View All",
+  "quickActions": "Quick Actions",
+  "searchProducts": "Search Products",
+  "viewWishlist": "View Wishlist",
+  "compareProducts": "Compare Products",
+  "viewAllNotifications": "View All Notifications",
+  "stats": {
+    "totalSaved": "Total Saved",
+    "productsCompared": "Products Compared",
+    "alertsActive": "Active Alerts"
+  }
+}
+

@@ -9,6 +9,9 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Lock, Eye, EyeOff, User, Moon, Sun, Languages, Phone, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { validateEmail, validatePhone, validatePassword, validatePasswordMatch, validateFullName, validateOtp } from '@/lib/auth-validation';
+import { getSupabaseBrowserClient } from '@/lib/database';
+import { createNotification } from '@/lib/auth/notifications';
+import { createAuditLog } from '@/lib/auth/audit';
 
 // Social auth icons (same as login page)
 const GoogleIcon = () => (
@@ -33,17 +36,19 @@ const FacebookIcon = () => (
 );
 
 export default function SignupPage() {
+  const supabase = getSupabaseBrowserClient();
   const t = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { signUp, signInWithOAuth } = useAuth();
+  const { signUp, signInWithOAuth, sendPhoneOtp, signInWithPhone } = useAuth();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isLoading, setIsLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -137,7 +142,6 @@ export default function SignupPage() {
   }, [formData.otp, touched.otp, authMethod, otpSent]);
 
   const handleSendOtp = async () => {
-    // Validate phone before sending OTP
     setTouched(prev => ({ ...prev, phone: true }));
     const phoneValidation = validatePhone(formData.phone);
 
@@ -146,9 +150,28 @@ export default function SignupPage() {
       return;
     }
 
-    // TODO: Implement OTP sending logic
-    console.log('Sending OTP to:', formData.phone);
-    setOtpSent(true);
+    try {
+      setOtpLoading(true);
+      const { error } = await sendPhoneOtp(formData.phone, { shouldCreateUser: true });
+      if (error) throw error;
+
+      setOtpSent(true);
+      setErrors(prev => ({ ...prev, phone: '' }));
+      toast({
+        title: t('auth.otpSent') || 'OTP sent',
+        description: t('auth.otpSentDescription') || 'Enter the code we sent to your phone to continue.',
+        variant: 'default',
+      });
+    } catch (error: any) {
+      console.error('Signup OTP error:', error);
+      toast({
+        title: t('auth.otpError') || 'Unable to send OTP',
+        description: error?.message || t('auth.somethingWrong') || 'Please try again shortly.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleOAuthSignup = async (provider: 'google' | 'facebook' | 'apple') => {
@@ -255,14 +278,63 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      if (authMethod === 'phone') {
+        const { data, error } = await signInWithPhone(formData.phone, formData.otp);
+        if (error) throw error;
+
+        const authUser = data?.user ?? data?.session?.user ?? null;
+
+        if (authUser) {
+          await supabase
+            .from('users')
+            .upsert(
+              {
+                id: authUser.id,
+                phone: formData.phone,
+                full_name: formData.fullName || null,
+                preferred_language: locale as 'ar' | 'en',
+                role: 'customer',
+                auth_provider: 'phone',
+              },
+              { onConflict: 'id' }
+            );
+
+          await createNotification({
+            user_id: authUser.id,
+            type: 'system',
+            title_ar: 'مرحباً بك في توفيري',
+            title_en: 'Welcome to Tawveeri',
+            message_ar: 'نحن سعداء بانضمامك إلينا',
+            message_en: 'We are happy to have you join us',
+          });
+
+          await createAuditLog({
+            user_id: authUser.id,
+            action: 'user_signup',
+            entity_type: 'user',
+            entity_id: authUser.id,
+            details: {
+              method: 'phone',
+              full_name: formData.fullName,
+            },
+          });
+        }
+
+        toast({
+          title: t('auth.signupSuccess') || 'Account created successfully',
+          description: t('auth.phoneVerified') || 'Your phone number has been verified successfully.',
+          variant: 'default',
+        });
+
+        router.push(`/${locale}`);
+        return;
+      }
+
       const signupParams = {
         full_name: formData.fullName,
         password: formData.password,
         preferred_language: locale as 'ar' | 'en',
-        ...(authMethod === 'email'
-          ? { email: formData.email }
-          : { phone: formData.phone }
-        ),
+        email: formData.email,
       };
 
       const { data, error } = await signUp(signupParams);
@@ -271,16 +343,12 @@ export default function SignupPage() {
         throw error;
       }
 
-      // Show success message
       toast({
         title: t('auth.signupSuccess') || 'Account created successfully',
-        description: authMethod === 'email'
-          ? t('auth.checkEmail') || 'Please check your email to verify your account'
-          : t('auth.checkPhone') || 'Please check your phone for verification',
+        description: t('auth.checkEmail') || 'Please check your email to verify your account',
         variant: 'default',
       });
 
-      // Redirect to home page or dashboard
       router.push(`/${locale}`);
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -561,15 +629,17 @@ export default function SignupPage() {
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={!formData.phone}
+                    disabled={otpLoading || !formData.phone}
                     className="w-full py-3.5 bg-gradient-to-r from-success-600 to-success-700 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-success-600/30 transform hover:scale-[1.02] transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: '#ffffff' }}
                   >
-                    <span style={{
-                      textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                      color: '#ffffff'
-                    }}>
-                      Send OTP
+                    <span
+                      style={{
+                        textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {otpLoading ? t('auth.sendingOtp') || 'Sending...' : t('auth.sendOtp') || 'Send OTP'}
                     </span>
                   </button>
                 )}
@@ -599,7 +669,15 @@ export default function SignupPage() {
                     </div>
                     {touched.otp && <ErrorMessage message={errors.otp} />}
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
-                      Didn't receive OTP? <button type="button" onClick={handleSendOtp} className="text-primary-600 dark:text-primary-400 hover:underline font-semibold">Resend</button>
+                      {t('auth.didntReceiveOtp') || "Didn't receive OTP?"}{' '}
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={otpLoading}
+                        className="text-primary-600 dark:text-primary-400 hover:underline font-semibold disabled:opacity-50"
+                      >
+                        {t('auth.resendOtp') || 'Resend'}
+                      </button>
                     </p>
                   </div>
                 )}

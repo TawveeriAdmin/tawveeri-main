@@ -2,7 +2,13 @@
 
 import { createContext, useContext, useMemo } from 'react';
 
-type Messages = Record<string, any>;
+type MessagePrimitive = string | number | boolean;
+type MessageValue = MessagePrimitive | MessageValue[] | { [key: string]: MessageValue };
+type Messages = Record<string, MessageValue>;
+
+const isMessageObject = (value: unknown): value is Record<string, MessageValue> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
 
 const IntlContext = createContext<{ messages: Messages; locale: string }>({
   messages: {},
@@ -15,19 +21,19 @@ export function SimpleIntlProvider({
   locale = 'ar',
 }: {
   children: React.ReactNode;
-  messages?: Messages;
+  messages?: Record<string, unknown>;
   locale?: string;
 }) {
   // Normalize inputs - ensure they're always valid
   const normalizedMessages = useMemo(() => {
     if (!messages || typeof messages !== 'object') {
-      return {};
+      return {} as Messages;
     }
     // Deep clone to ensure it's a plain object (helps with Chrome serialization)
     try {
-      return JSON.parse(JSON.stringify(messages));
+      return JSON.parse(JSON.stringify(messages)) as Messages;
     } catch {
-      return messages;
+      return messages as Messages;
     }
   }, [messages]);
 
@@ -52,7 +58,7 @@ export function SimpleIntlProvider({
   );
 }
 
-export function useTranslations() {
+export function useTranslations(): (key: string) => string {
   const context = useContext(IntlContext);
   
   // Safety check - ensure context exists
@@ -69,16 +75,20 @@ export function useTranslations() {
     }
 
     const keys = key.split('.');
-    let value: any = messages;
+    let value: unknown = messages;
 
     for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
+      if (isMessageObject(value) && k in value) {
         value = value[k];
       } else {
         return key;
       }
     }
 
-    return value || key;
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+
+    return key;
   };
 }

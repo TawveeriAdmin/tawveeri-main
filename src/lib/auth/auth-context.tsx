@@ -1,17 +1,20 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/database';
+import { getSupabaseBrowserClient } from '@/lib/database';
 import { UserRole } from '@/lib/database/types';
 import { createAuditLog } from './audit';
 import { createNotification } from './notifications';
 
-interface AuthUser extends User {
+interface AuthUser extends Omit<User, 'phone'> {
   role?: UserRole;
   full_name?: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   preferred_language?: string;
+  phone?: string | null;
+  email_verified?: boolean;
+  phone_verified?: boolean;
 }
 
 interface AuthContextType {
@@ -20,7 +23,8 @@ interface AuthContextType {
   loading: boolean;
   signUp: (params: SignUpParams) => Promise<AuthResponse>;
   signInWithEmail: (email: string, password: string) => Promise<AuthResponse>;
-  signInWithPhone: (phone: string, password: string) => Promise<AuthResponse>;
+  signInWithPhone: (phone: string, token: string) => Promise<AuthResponse>;
+  sendPhoneOtp: (phone: string, options?: { shouldCreateUser?: boolean }) => Promise<AuthResponse>;
   signInWithOAuth: (provider: 'google' | 'facebook' | 'apple') => Promise<AuthResponse>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<AuthResponse>;
@@ -51,16 +55,40 @@ interface AuthResponse {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const supabase = useMemo(
+    () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
+    []
+  );
+
+  const fallbackValue = useMemo<AuthContextType>(
+    () => ({
+      user: null,
+      session: null,
+      loading: true,
+      signUp: async () => ({ error: new Error('Supabase client not initialized') }),
+      signInWithEmail: async () => ({ error: new Error('Supabase client not initialized') }),
+      signInWithPhone: async () => ({ error: new Error('Supabase client not initialized') }),
+      sendPhoneOtp: async () => ({ error: new Error('Supabase client not initialized') }),
+      signInWithOAuth: async () => ({ error: new Error('Supabase client not initialized') }),
+      signOut: async () => undefined,
+      resetPassword: async () => ({ error: new Error('Supabase client not initialized') }),
+      updatePassword: async () => ({ error: new Error('Supabase client not initialized') }),
+      updateProfile: async () => ({ error: new Error('Supabase client not initialized') }),
+      refreshSession: async () => undefined,
+    }),
+    []
+  );
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch user profile data from database, create if doesn't exist
   const fetchUserProfile = async (userId: string, userEmail?: string) => {
+    if (!supabase) return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar', phone: null, email_verified: false, phone_verified: false };
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('role, full_name, avatar_url, preferred_language')
+        .select('role, full_name, avatar_url, preferred_language, phone, email_verified, phone_verified')
         .eq('id', userId)
         .single();
 
@@ -78,12 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               auth_provider: 'email',
               email_verified: true,
             })
-            .select('role, full_name, avatar_url, preferred_language')
+            .select('role, full_name, avatar_url, preferred_language, phone, email_verified, phone_verified')
             .single();
 
           if (insertError) {
             console.error('Error creating user profile:', insertError);
-            return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar' };
+            return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar', phone: null, email_verified: false, phone_verified: false };
           }
 
           return newProfile;
@@ -95,13 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching user profile:', error);
       // Return default profile to prevent app from breaking
-      return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar' };
+      return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar', phone: null, email_verified: false, phone_verified: false }; 
     }
   };
 
   // Initialize auth state
   useEffect(() => {
-    // Get initial session
+    if (!supabase) return;
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
 
@@ -130,10 +159,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase]);
 
   // Sign up with email or phone
   const signUp = async (params: SignUpParams): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       const { email, phone, password, full_name, preferred_language } = params;
 
@@ -196,6 +228,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -227,32 +262,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Sign in with phone
-  const signInWithPhone = async (
+  const sendPhoneOtp = async (
     phone: string,
-    password: string
+    options?: { shouldCreateUser?: boolean }
   ): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithOtp({
         phone,
-        password,
+        options: {
+          channel: 'sms',
+          shouldCreateUser: options?.shouldCreateUser ?? false,
+        },
       });
 
       if (error) throw error;
 
-      if (data.user) {
+      return { data, error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Sign in or verify with phone OTP
+  const signInWithPhone = async (
+    phone: string,
+    token: string
+  ): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        type: 'sms',
+        phone,
+        token,
+      });
+
+      if (error) throw error;
+
+      const authUser = data.user ?? data.session?.user ?? null;
+
+      if (authUser) {
         // Update last login
         await supabase
           .from('users')
           .update({ last_login_at: new Date().toISOString() })
-          .eq('id', data.user.id);
+          .eq('id', authUser.id);
 
         // Audit log
         await createAuditLog({
-          user_id: data.user.id,
+          user_id: authUser.id,
           action: 'user_login',
           entity_type: 'user',
-          entity_id: data.user.id,
+          entity_id: authUser.id,
           details: { method: 'phone' },
         });
       }
@@ -267,6 +332,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithOAuth = async (
     provider: 'google' | 'facebook' | 'apple'
   ): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -285,6 +353,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign out
   const signOut = async () => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
     try {
       if (user) {
         // Audit log before signing out
@@ -306,6 +378,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Reset password
   const resetPassword = async (email: string): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
@@ -321,6 +396,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Update password
   const updatePassword = async (newPassword: string): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
@@ -358,6 +436,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (
     profileData: ProfileUpdateData
   ): Promise<AuthResponse> => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       if (!user) throw new Error('No user logged in');
 
@@ -390,6 +471,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Refresh session
   const refreshSession = async () => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error) throw error;
@@ -404,6 +489,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  if (!supabase) {
+    return <AuthContext.Provider value={fallbackValue}>{children}</AuthContext.Provider>;
+  }
+
   const value = {
     user,
     session,
@@ -411,6 +500,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signInWithEmail,
     signInWithPhone,
+    sendPhoneOtp,
     signInWithOAuth,
     signOut,
     resetPassword,
@@ -429,3 +519,5 @@ export function useAuth() {
   }
   return context;
 }
+
+export type { AuthUser };

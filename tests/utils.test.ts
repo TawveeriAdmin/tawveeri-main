@@ -3,23 +3,28 @@
  * Tests for common utility functions
  */
 
-import { formatPrice, calculateSavings, calculateSavingsPercentage, formatCompactNumber } from '@/lib/utils';
+import {
+  formatPriceWithCurrency,
+  calculateSavings,
+  calculateSavingsPercentage,
+  formatCompactNumber,
+} from '@/lib/utils';
 
 describe('Price Formatting', () => {
   it('should format price in Arabic', () => {
-    expect(formatPrice(3299, 'ar')).toBe('3,299 ر.س');
+    expect(formatPriceWithCurrency(3299, 'ar')).toBe('3,299 ر.س');
   });
 
   it('should format price in English', () => {
-    expect(formatPrice(3299, 'en')).toBe('SAR 3,299');
+    expect(formatPriceWithCurrency(3299, 'en')).toBe('SAR 3,299');
   });
 
   it('should handle large prices', () => {
-    expect(formatPrice(123456, 'ar')).toBe('123,456 ر.س');
+    expect(formatPriceWithCurrency(123456, 'ar')).toBe('123,456 ر.س');
   });
 
   it('should handle decimal prices', () => {
-    expect(formatPrice(99.99, 'ar')).toBe('99.99 ر.س');
+    expect(formatPriceWithCurrency(99.99, 'ar')).toBe('99.99 ر.س');
   });
 });
 
