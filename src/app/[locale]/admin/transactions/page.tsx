@@ -13,8 +13,11 @@ import {
 } from '@/components/ui/select';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import type { TransactionStatus } from '@/lib/database/types';
+import { Download } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Transaction {
   id: string;
@@ -59,8 +62,10 @@ export default function AdminTransactionsPage({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const limit = 20;
   const isRTL = locale === 'ar';
+  const { toast } = useToast();
 
   useEffect(() => {
     params.then((p) => setLocale(p.locale));
@@ -138,6 +143,77 @@ export default function AdminTransactionsPage({
       console.error('Error loading transactions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (statusFilter && statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+
+      // Fetch CSV from API
+      const response = await fetch(`/api/admin/transactions/export?${params.toString()}`);
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error(isRTL ? 'غير مصرح' : 'Unauthorized');
+        }
+        if (response.status === 404) {
+          throw new Error(isRTL ? 'لا توجد معاملات للتصدير' : 'No transactions to export');
+        }
+        throw new Error(isRTL ? 'فشل تصدير البيانات' : 'Export failed');
+      }
+
+      // Get CSV content
+      const csvContent = await response.text();
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'transactions_export.csv';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: isRTL ? 'نجح التصدير' : 'Export Successful',
+        description: isRTL
+          ? 'تم تصدير المعاملات بنجاح'
+          : 'Transactions exported successfully',
+      });
+    } catch (error) {
+      console.error('Error exporting transactions:', error);
+      toast({
+        title: isRTL ? 'خطأ في التصدير' : 'Export Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : isRTL
+              ? 'حدث خطأ أثناء تصدير المعاملات'
+              : 'An error occurred while exporting transactions',
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -246,6 +322,21 @@ export default function AdminTransactionsPage({
             </SelectContent>
           </Select>
         </div>
+        <Button
+          onClick={handleExport}
+          disabled={exporting || total === 0}
+          variant="outline"
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          {exporting
+            ? isRTL
+              ? 'جاري التصدير...'
+              : 'Exporting...'
+            : isRTL
+              ? 'تصدير CSV'
+              : 'Export CSV'}
+        </Button>
       </div>
 
       {/* Transactions Table */}
