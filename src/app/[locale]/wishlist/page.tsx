@@ -21,7 +21,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { Heart, AlertCircle, Trash2, LogIn } from 'lucide-react';
+import { Heart, AlertCircle, Trash2, LogIn, Edit } from 'lucide-react';
+import { WishlistItemNoteDialog } from '@/components/wishlist/wishlist-item-note-dialog';
+import { decrementSaveCount } from '@/lib/wishlist/utils';
 import type { AvailabilityStatus, Database } from '@/lib/database/types';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
@@ -38,6 +40,8 @@ type WishlistProduct = ProductCardProduct & {
       stores: StoreSummary;
     })
   >;
+  wishlistNote?: string | null;
+  wishlistId?: string;
 };
 
 type WishlistProductRecord = ProductRow & {
@@ -77,79 +81,12 @@ export default function WishlistPage() {
   const [products, setProducts] = useState<WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<WishlistProduct | null>(null);
 
   useEffect(() => {
-    async function fetchWishlist() {
-      if (authLoading) return;
-
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const { data: wishlistItems, error: wishlistError } = await supabase
-          .from('user_wishlists')
-          .select('product_id')
-          .eq('user_id', user.id)
-          .returns<Array<Pick<Database['public']['Tables']['user_wishlists']['Row'], 'product_id'>>>();
-
-        if (wishlistError) throw wishlistError;
-
-        if (!wishlistItems || wishlistItems.length === 0) {
-          setProducts([]);
-          setLoading(false);
-          return;
-        }
-
-        const productIds = wishlistItems.map((item) => item.product_id);
-
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select(
-            `
-            id,
-            name_ar,
-            name_en,
-            slug,
-            category,
-            brand,
-            model,
-            image_urls,
-            product_stores(
-              id,
-              current_price,
-              original_price,
-              availability,
-              stores(
-                id,
-                name_ar,
-                name_en,
-                logo_url
-              )
-            )
-          `
-          )
-          .in('id', productIds)
-          .eq('is_active', true)
-          .returns<WishlistProductRecord[]>();
-
-        if (productsError) throw productsError;
-
-        setProducts((productsData || []).map(mapWishlistProduct));
-      } catch (err) {
-        console.error('Error fetching wishlist:', err);
-        const errorMessage = err instanceof Error ? err.message : t('wishlist.error');
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchWishlist();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, t]);
 
   const handleRemoveFromWishlist = async (productId: string) => {
@@ -163,6 +100,11 @@ export default function WishlistPage() {
         .eq('product_id', productId);
 
       if (error) throw error;
+
+      // Track save_count decrement
+      decrementSaveCount(productId).catch((err) => {
+        console.error('Error tracking save_count:', err);
+      });
 
       setProducts(products.filter((p) => p.id !== productId));
 
@@ -198,6 +140,93 @@ export default function WishlistPage() {
       title: t('product.addedToCart'),
       description: cartItem.storeName,
     });
+  };
+
+  const handleOpenNoteDialog = (product: WishlistProduct) => {
+    setSelectedProduct(product);
+    setNoteDialogOpen(true);
+  };
+
+  const handleNoteUpdated = () => {
+    if (!selectedProduct || !user) return;
+    // Refetch wishlist to get updated note
+    fetchWishlist();
+  };
+
+  const fetchWishlist = async () => {
+    if (authLoading || !user) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: wishlistItems, error: wishlistError } = await supabase
+        .from('user_wishlists')
+        .select('product_id, id, notes')
+        .eq('user_id', user.id)
+        .returns<Array<Pick<Database['public']['Tables']['user_wishlists']['Row'], 'product_id' | 'id' | 'notes'>>>();
+
+      if (wishlistError) throw wishlistError;
+
+      if (!wishlistItems || wishlistItems.length === 0) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      const productIds = wishlistItems.map((item) => item.product_id);
+
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select(
+          `
+          id,
+          name_ar,
+          name_en,
+          slug,
+          category,
+          brand,
+          model,
+          image_urls,
+          product_stores(
+            id,
+            current_price,
+            original_price,
+            availability,
+            stores(
+              id,
+              name_ar,
+              name_en,
+              logo_url
+            )
+          )
+        `
+        )
+        .in('id', productIds)
+        .eq('is_active', true)
+        .returns<WishlistProductRecord[]>();
+
+      if (productsError) throw productsError;
+
+      // Map wishlist notes to products
+      const wishlistMap = new Map(wishlistItems.map((item) => [item.product_id, item]));
+      
+      setProducts((productsData || []).map((product) => {
+        const wishlistItem = wishlistMap.get(product.id);
+        const mapped = mapWishlistProduct(product);
+        return {
+          ...mapped,
+          wishlistNote: wishlistItem?.notes || null,
+          wishlistId: wishlistItem?.id,
+        };
+      }));
+    } catch (err) {
+      console.error('Error fetching wishlist:', err);
+      const errorMessage = err instanceof Error ? err.message : t('wishlist.error');
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -305,27 +334,63 @@ export default function WishlistPage() {
         {/* Products Grid */}
         {!loading && !error && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <div key={product.id} className="relative">
-                <ProductCard
-                  product={product}
-                  locale={locale}
-                  onCompare={handleAddToCompare}
-                  onSave={() => handleRemoveFromWishlist(product.id)}
-                  onAddToCart={handleAddToCart}
-                />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2 z-10"
-                  aria-label={t('wishlist.remove')}
-                  onClick={() => handleRemoveFromWishlist(product.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+            {products.map((product) => {
+              const productName = locale === 'ar' ? product.name_ar : product.name_en;
+              return (
+                <div key={product.id} className="relative">
+                  <ProductCard
+                    product={product}
+                    locale={locale}
+                    onCompare={handleAddToCompare}
+                    onSave={() => handleRemoveFromWishlist(product.id)}
+                    onAddToCart={handleAddToCart}
+                  />
+                  <div className="absolute top-2 right-2 z-10 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-label={locale === 'ar' ? 'إضافة ملاحظة' : 'Add note'}
+                      onClick={() => handleOpenNoteDialog(product)}
+                      title={locale === 'ar' ? 'إضافة ملاحظة' : 'Add note'}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      aria-label={t('wishlist.remove')}
+                      onClick={() => handleRemoveFromWishlist(product.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {product.wishlistNote && (
+                    <div className="absolute bottom-2 left-2 right-2 z-10">
+                      <div className="bg-white dark:bg-gray-800 rounded-md p-2 text-xs border border-gray-200 dark:border-gray-700 max-h-20 overflow-y-auto">
+                        <p className="text-gray-700 dark:text-gray-300 line-clamp-2">
+                          {product.wishlistNote}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+        )}
+
+        {/* Note Dialog */}
+        {selectedProduct && user && (
+          <WishlistItemNoteDialog
+            open={noteDialogOpen}
+            onOpenChange={setNoteDialogOpen}
+            userId={user.id}
+            productId={selectedProduct.id}
+            productName={locale === 'ar' ? selectedProduct.name_ar : selectedProduct.name_en}
+            currentNote={selectedProduct.wishlistNote}
+            locale={locale}
+            onNoteUpdated={handleNoteUpdated}
+          />
         )}
       </div>
     </div>

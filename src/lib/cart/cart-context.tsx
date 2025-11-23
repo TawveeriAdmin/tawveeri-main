@@ -11,11 +11,19 @@ import {
   persistCart,
   removeItemFromCart,
 } from './multi-store-cart';
+import {
+  updateItemQuantity,
+  updateItemNote,
+  updateItemGiftWrapping,
+} from './cart-utils';
 
 interface MultiStoreCartContextValue {
   cart: MultiStoreCart;
   addItem: (item: CartItem) => void;
   removeItem: (storeId: string, productId: string) => void;
+  updateItemQuantity: (storeId: string, productId: string, quantity: number) => void;
+  updateItemNote: (storeId: string, productId: string, note: string) => void;
+  updateItemGiftWrapping: (storeId: string, productId: string, giftWrapping: boolean) => void;
   clear: () => void;
   totalItems: number;
   totalStores: number;
@@ -47,6 +55,22 @@ export function MultiStoreCartProvider({ children }: { children: React.ReactNode
     setCart((prev) => removeItemFromCart(prev, storeId, productId));
   };
 
+  const updateQuantity = (storeId: string, productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(storeId, productId);
+      return;
+    }
+    setCart((prev) => updateItemQuantity(prev, storeId, productId, quantity));
+  };
+
+  const updateNote = (storeId: string, productId: string, note: string) => {
+    setCart((prev) => updateItemNote(prev, storeId, productId, note));
+  };
+
+  const updateGiftWrapping = (storeId: string, productId: string, giftWrapping: boolean) => {
+    setCart((prev) => updateItemGiftWrapping(prev, storeId, productId, giftWrapping));
+  };
+
   const clear = () => {
     setCart(clearCart());
   };
@@ -58,6 +82,9 @@ export function MultiStoreCartProvider({ children }: { children: React.ReactNode
       cart,
       addItem,
       removeItem,
+      updateItemQuantity: updateQuantity,
+      updateItemNote: updateNote,
+      updateItemGiftWrapping: updateGiftWrapping,
       clear,
       totalItems,
       totalStores,

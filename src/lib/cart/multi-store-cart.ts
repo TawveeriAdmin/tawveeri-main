@@ -7,12 +7,17 @@ export interface CartItem {
   price: number;
   quantity: number;
   imageUrl?: string | null;
+  notes?: string;
+  giftWrapping?: boolean;
+  productStoreId?: string; // For tracking
 }
 
 export interface StoreCart {
   storeId: string;
   storeName: string;
   items: CartItem[];
+  deliveryCost?: number;
+  deliveryTimeDays?: number;
 }
 
 export type MultiStoreCart = Record<string, StoreCart>;

@@ -79,7 +79,7 @@ export default function ComparePage() {
     setLoading(false);
   }, []);
 
-  // Fetch products
+  // Fetch products and track comparison_count
   useEffect(() => {
     async function fetchProducts() {
       if (productIds.length === 0) {
@@ -125,6 +125,16 @@ export default function ComparePage() {
         if (queryError) throw queryError;
 
         setProducts((data || []) as Product[]);
+
+        // Track comparison_count for each product (non-blocking)
+        productIds.forEach((productId) => {
+          fetch(`/api/products/${productId}/comparison`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }).catch((err) => {
+            console.error(`Error tracking comparison for product ${productId}:`, err);
+          });
+        });
       } catch (err) {
         console.error('Error fetching comparison products:', err);
         const errorMessage = err instanceof Error ? err.message : locale === 'ar' ? 'خطأ في التحميل' : 'Error loading products';

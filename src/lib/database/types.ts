@@ -9,6 +9,9 @@ export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 export type NotificationType = 'price_drop' | 'back_in_stock' | 'deal_alert' | 'deal' | 'system' | 'account';
 export type StoreStatus = 'active' | 'pending' | 'suspended' | 'inactive';
 
+// Type aliases for common table rows
+export type ProductReview = Database['public']['Tables']['product_reviews']['Row'];
+
 export interface Database {
   public: {
     Tables: {
@@ -180,6 +183,8 @@ export interface Database {
           view_count: number;
           save_count: number;
           comparison_count: number;
+          average_rating: number | null;
+          total_reviews: number | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -201,6 +206,8 @@ export interface Database {
           view_count?: number;
           save_count?: number;
           comparison_count?: number;
+          average_rating?: number | null;
+          total_reviews?: number | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -222,7 +229,45 @@ export interface Database {
           view_count?: number;
           save_count?: number;
           comparison_count?: number;
+          average_rating?: number | null;
+          total_reviews?: number | null;
           is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_reviews: {
+        Row: {
+          id: string;
+          product_id: string;
+          user_id: string;
+          rating: number;
+          review_text: string | null;
+          is_verified_purchase: boolean;
+          helpful_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          user_id: string;
+          rating: number;
+          review_text?: string | null;
+          is_verified_purchase?: boolean;
+          helpful_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          user_id?: string;
+          rating?: number;
+          review_text?: string | null;
+          is_verified_purchase?: boolean;
+          helpful_count?: number;
           created_at?: string;
           updated_at?: string;
         };

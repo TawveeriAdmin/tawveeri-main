@@ -21,6 +21,9 @@ export interface SearchFilters {
   stores: string[];
   availability: AvailabilityStatus[];
   dealsOnly: boolean;
+  freeDeliveryOnly?: boolean;
+  minRating?: number;
+  specifications?: Record<string, unknown>;
   categorySpecific?: Record<string, unknown>;
 }
 
@@ -177,6 +180,8 @@ export function FilterSidebar({
     filters.stores.length > 0 ||
     filters.availability.length > 0 ||
     filters.dealsOnly ||
+    filters.freeDeliveryOnly ||
+    (filters.minRating !== undefined && filters.minRating > 0) ||
     filters.minPrice !== undefined ||
     filters.maxPrice !== undefined;
 
@@ -342,6 +347,56 @@ export function FilterSidebar({
                 <Label htmlFor="deals-only" className="text-sm font-normal cursor-pointer">
                   {locale === 'ar' ? 'عروض فقط' : 'Show deals only'}
                 </Label>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Free Delivery Filter */}
+          <AccordionItem value="delivery">
+            <AccordionTrigger>
+              {locale === 'ar' ? 'التوصيل' : 'Delivery'}
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="free-delivery"
+                  checked={filters.freeDeliveryOnly || false}
+                  onCheckedChange={(checked) =>
+                    onFilterChange({ ...filters, freeDeliveryOnly: checked === true })
+                  }
+                />
+                <Label htmlFor="free-delivery" className="text-sm font-normal cursor-pointer">
+                  {locale === 'ar' ? 'توصيل مجاني فقط' : 'Free delivery only'}
+                </Label>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Rating Filter */}
+          <AccordionItem value="rating">
+            <AccordionTrigger>
+              {locale === 'ar' ? 'التقييم' : 'Rating'}
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2">
+                <Label htmlFor="min-rating">
+                  {locale === 'ar' ? 'الحد الأدنى للتقييم' : 'Minimum Rating'}
+                </Label>
+                <Slider
+                  value={[filters.minRating || 0]}
+                  onValueChange={(values) =>
+                    onFilterChange({ ...filters, minRating: values[0] })
+                  }
+                  min={0}
+                  max={5}
+                  step={0.5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span>0</span>
+                  <span className="font-semibold">{filters.minRating || 0} ⭐</span>
+                  <span>5</span>
+                </div>
               </div>
             </AccordionContent>
           </AccordionItem>

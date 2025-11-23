@@ -11,6 +11,7 @@ import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchBar } from '@/components/search/search-bar';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
+import { SavedSearches } from '@/components/search/saved-searches';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -81,7 +82,64 @@ export default function SearchPage() {
     stores: [],
     availability: [],
     dealsOnly: false,
+    freeDeliveryOnly: false,
+    minRating: undefined,
   });
+
+  // Load filters from URL on mount
+  useEffect(() => {
+    const urlFilters: SearchFilters = {
+      brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
+      stores: searchParams.get('stores')?.split(',').filter(Boolean) || [],
+      availability: (searchParams.get('availability')?.split(',').filter(Boolean) || []) as AvailabilityStatus[],
+      dealsOnly: searchParams.get('deals') === 'true',
+      freeDeliveryOnly: searchParams.get('freeDelivery') === 'true',
+      minRating: searchParams.get('rating') ? parseFloat(searchParams.get('rating') || '0') : undefined,
+    };
+    setFilters(urlFilters);
+  }, []);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (filters.brands.length > 0) {
+      params.set('brands', filters.brands.join(','));
+    } else {
+      params.delete('brands');
+    }
+    if (filters.stores.length > 0) {
+      params.set('stores', filters.stores.join(','));
+    } else {
+      params.delete('stores');
+    }
+    if (filters.availability.length > 0) {
+      params.set('availability', filters.availability.join(','));
+    } else {
+      params.delete('availability');
+    }
+    if (filters.dealsOnly) {
+      params.set('deals', 'true');
+    } else {
+      params.delete('deals');
+    }
+    if (filters.freeDeliveryOnly) {
+      params.set('freeDelivery', 'true');
+    } else {
+      params.delete('freeDelivery');
+    }
+    if (filters.minRating && filters.minRating > 0) {
+      params.set('rating', filters.minRating.toString());
+    } else {
+      params.delete('rating');
+    }
+    router.replace(`/${locale}/search?${params.toString()}`, { scroll: false });
+  }, [filters, locale, router, searchParams]);
+
+  const handleSearchSelect = (query: string, selectedFilters: SearchFilters) => {
+    setSearchQuery(query);
+    setFilters(selectedFilters);
+    setCurrentPage(1);
+  };
 
   // Debounce search query
   useEffect(() => {
@@ -310,7 +368,15 @@ export default function SearchPage() {
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Filter Sidebar */}
             <div className="lg:w-64 flex-shrink-0">
-              <div className="lg:sticky lg:top-4">
+              <div className="lg:sticky lg:top-4 space-y-4">
+                {user && (
+                  <SavedSearches
+                    locale={locale}
+                    currentQuery={debouncedQuery}
+                    currentFilters={filters}
+                    onSearchSelect={handleSearchSelect}
+                  />
+                )}
                 <FilterSidebar
                   filters={filters}
                   onFilterChange={setFilters}

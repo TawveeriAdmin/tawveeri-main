@@ -1,0 +1,151 @@
+'use client';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import type { ProductCategory } from '@/lib/database/types';
+
+interface ProductSpecificationsProps {
+  specifications: Record<string, any>;
+  category: ProductCategory;
+  locale: string;
+}
+
+// Translation mapping for common specification keys
+const specTranslations: Record<string, { ar: string; en: string }> = {
+  storage: { ar: 'سعة التخزين', en: 'Storage' },
+  ram: { ar: 'الذاكرة العشوائية', en: 'RAM' },
+  screen_size: { ar: 'حجم الشاشة', en: 'Screen Size' },
+  color: { ar: 'اللون', en: 'Color' },
+  camera: { ar: 'الكاميرا', en: 'Camera' },
+  battery: { ar: 'البطارية', en: 'Battery' },
+  processor: { ar: 'المعالج', en: 'Processor' },
+  graphics: { ar: 'البطاقة الرسومية', en: 'Graphics' },
+  weight: { ar: 'الوزن', en: 'Weight' },
+  display: { ar: 'الشاشة', en: 'Display' },
+  resolution: { ar: 'دقة الشاشة', en: 'Resolution' },
+  refresh_rate: { ar: 'معدل التحديث', en: 'Refresh Rate' },
+  connectivity: { ar: 'الاتصال', en: 'Connectivity' },
+  ports: { ar: 'المنافذ', en: 'Ports' },
+  operating_system: { ar: 'نظام التشغيل', en: 'Operating System' },
+  os: { ar: 'نظام التشغيل', en: 'OS' },
+  dimensions: { ar: 'الأبعاد', en: 'Dimensions' },
+  warranty: { ar: 'الضمان', en: 'Warranty' },
+  audio: { ar: 'الصوت', en: 'Audio' },
+  network: { ar: 'الشبكة', en: 'Network' },
+};
+
+function formatSpecValue(value: any, locale: string): string {
+  if (value === null || value === undefined) return '-';
+
+  if (typeof value === 'boolean') {
+    return locale === 'ar' ? (value ? 'نعم' : 'لا') : (value ? 'Yes' : 'No');
+  }
+
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value, null, 2);
+  }
+
+  return String(value);
+}
+
+function translateSpecKey(key: string, locale: string): string {
+  const translation = specTranslations[key.toLowerCase()];
+  if (translation) {
+    return locale === 'ar' ? translation.ar : translation.en;
+  }
+  // Return capitalized key if no translation found
+  return key
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+export function ProductSpecifications({
+  specifications,
+  category,
+  locale,
+}: ProductSpecificationsProps) {
+  const isRTL = locale === 'ar';
+
+  if (!specifications || Object.keys(specifications).length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{isRTL ? 'المواصفات' : 'Specifications'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+            {isRTL ? 'لا توجد مواصفات متاحة' : 'No specifications available'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const specEntries = Object.entries(specifications).filter(
+    ([, value]) => value !== null && value !== undefined && value !== ''
+  );
+
+  if (specEntries.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{isRTL ? 'المواصفات' : 'Specifications'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+            {isRTL ? 'لا توجد مواصفات متاحة' : 'No specifications available'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{isRTL ? 'المواصفات' : 'Specifications'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                  {isRTL ? 'المعيار' : 'Specification'}
+                </TableHead>
+                <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                  {isRTL ? 'القيمة' : 'Value'}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {specEntries.map(([key, value]) => (
+                <TableRow key={key}>
+                  <TableCell className="font-medium text-gray-900 dark:text-white">
+                    {translateSpecKey(key, locale)}
+                  </TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-300">
+                    {formatSpecValue(value, locale)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+

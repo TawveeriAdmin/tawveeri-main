@@ -42,6 +42,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 interface StoreDetails {
   id: string;
@@ -477,31 +483,53 @@ export default function StoreDetailPage() {
             <CardHeader>
               <CardTitle>{t('store.storePolicies')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-gray-600 dark:text-gray-300">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-                  <Package className="w-4 h-4" /> {t('store.deliveryInfo')}
-                </h3>
-                <p className="whitespace-pre-line">
-                  {deliveryInfo || t('store.noDeliveryInfo')}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-                  <ShieldCheck className="w-4 h-4" /> {t('store.returnPolicy')}
-                </h3>
-                <p className="whitespace-pre-line">
-                  {returnPolicy || t('store.noReturnPolicy')}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-                  <Store className="w-4 h-4" /> {t('store.warrantyInfo')}
-                </h3>
-                <p className="whitespace-pre-line">
-                  {warrantyInfo || t('store.noWarrantyInfo')}
-                </p>
-              </div>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {deliveryInfo && (
+                  <AccordionItem value="delivery">
+                    <AccordionTrigger className="text-sm font-semibold flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      {t('store.deliveryInfo')}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line pt-2">
+                        {deliveryInfo}
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                {returnPolicy && (
+                  <AccordionItem value="return">
+                    <AccordionTrigger className="text-sm font-semibold flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4" />
+                      {t('store.returnPolicy')}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line pt-2">
+                        {returnPolicy}
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                {warrantyInfo && (
+                  <AccordionItem value="warranty">
+                    <AccordionTrigger className="text-sm font-semibold flex items-center gap-2">
+                      <Store className="w-4 h-4" />
+                      {t('store.warrantyInfo')}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line pt-2">
+                        {warrantyInfo}
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                {!deliveryInfo && !returnPolicy && !warrantyInfo && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                    {t('store.noPoliciesAvailable') || (locale === 'ar' ? 'لا توجد سياسات متاحة' : 'No policies available')}
+                  </p>
+                )}
+              </Accordion>
             </CardContent>
           </Card>
         </div>

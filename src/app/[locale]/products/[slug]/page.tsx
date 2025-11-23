@@ -15,6 +15,8 @@ import type { ProductCardProduct } from '@/components/products/product-card';
 import { PriceHistoryChart } from '@/components/products/price-history-chart';
 import { PriceAlertDialog } from '@/components/products/price-alert-dialog';
 import { GiftOption } from '@/components/products/gift-option';
+import { ImageGalleryModal } from '@/components/products/image-gallery-modal';
+import { ProductVideoPlayer } from '@/components/products/product-video-player';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,9 +26,13 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
+import { ProductReviews } from '@/components/products/product-reviews';
+import { ProductRatingDisplay } from '@/components/products/product-rating-display';
+import { ProductSpecifications } from '@/components/products/product-specifications';
 import {
   Heart,
   BarChart3,
@@ -42,11 +48,14 @@ import {
   ShieldCheck,
   Clock,
   ShoppingCart,
+  Eye,
 } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database } from '@/lib/database/types';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
+import { trackProductClick, generateAffiliateUrl } from '@/lib/transactions/tracking';
+import { incrementSaveCount } from '@/lib/wishlist/utils';
 
 type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
@@ -125,13 +134,45 @@ export default function ProductDetailPage() {
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [priceAlertOpen, setPriceAlertOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>('');
+  const [viewCount, setViewCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setShareUrl(window.location.href);
     }
   }, []);
+
+  // Track product view on page load
+  useEffect(() => {
+    if (!product?.id) return;
+
+    const trackView = async () => {
+      try {
+        const response = await fetch(`/api/products/${product.id}/view`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(user?.id && { 'x-user-id': user.id }),
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setViewCount(data.view_count);
+        }
+      } catch (error) {
+        console.error('Error tracking view:', error);
+        // Set from product data if tracking fails
+        if (product.view_count !== undefined) {
+          setViewCount(product.view_count);
+        }
+      }
+    };
+
+    trackView();
+  }, [product?.id, user?.id]);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -185,16 +226,10 @@ export default function ProductDetailPage() {
           return;
         }
 
-        setProduct(mapProductRecord(productData));
-
-        // Increment view count (non-blocking)
-        supabase
-          .from('products')
-          .update({ view_count: (productData.view_count || 0) + 1 })
-          .eq('id', productData.id)
-          .then(() => {
-            // Silently handle - don't block UI
-          });
+        const mappedProduct = mapProductRecord(productData);
+        setProduct(mappedProduct);
+        setViewCount(mappedProduct.view_count);
+        // View count is now tracked via API route (see useEffect above)
 
         // Fetch related products
         const { data: relatedData } = await supabase
@@ -257,6 +292,11 @@ export default function ProductDetailPage() {
 
       if (error) throw error;
 
+      // Track save_count increment
+      incrementSaveCount(productId).catch((err) => {
+        console.error('Error tracking save_count:', err);
+      });
+
       toast({
         title: locale === 'ar' ? 'تم الحفظ' : 'Saved',
         description: locale === 'ar' ? 'تم حفظ المنتج في قائمة الأمنيات' : 'Product saved to wishlist',
@@ -296,19 +336,31 @@ export default function ProductDetailPage() {
 
   const handleViewAtStore = async (productStore: ProductStore) => {
     try {
-      // Create transaction record for tracking
-      if (user) {
-        await supabase.from('transactions').insert({
-          user_id: user.id,
-          product_store_id: productStore.id,
-          clicked_at: new Date().toISOString(),
-          user_agent: navigator.userAgent,
-          referrer: document.referrer,
-        });
+      // Track click and generate affiliate URL
+      const { data: trackingUrl, error: trackingError } = await generateAffiliateUrl(
+        productStore.id,
+        user?.id
+      );
+
+      if (trackingError) {
+        console.error('Error generating tracking URL:', trackingError);
+        // Fallback to regular URL
+        const url = productStore.affiliate_url || productStore.product_url;
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
       }
 
-      // Open store URL
-      const url = productStore.affiliate_url || productStore.product_url;
+      // Store click_id in sessionStorage for potential conversion tracking
+      if (trackingUrl) {
+        const urlObj = new URL(trackingUrl);
+        const clickId = urlObj.searchParams.get('click_id');
+        if (clickId) {
+          sessionStorage.setItem(`click_${productStore.id}`, clickId);
+        }
+      }
+
+      // Open URL with tracking
+      const url = trackingUrl || productStore.affiliate_url || productStore.product_url;
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err) {
       console.error('Error tracking store click:', err);
@@ -439,7 +491,10 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setGalleryOpen(true)}
+              className="relative aspect-square w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
+            >
               <img
                 src={currentImage}
                 alt={productName}
@@ -449,7 +504,7 @@ export default function ProductDetailPage() {
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
                 }}
               />
-            </div>
+            </button>
             {images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {images.map((img, idx) => (
@@ -484,6 +539,27 @@ export default function ProductDetailPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
                   SKU: {product.sku}
                 </p>
+              )}
+              {/* Rating Display */}
+              {product.average_rating && product.total_reviews && (
+                <div className="mt-3">
+                  <ProductRatingDisplay
+                    rating={product.average_rating}
+                    totalReviews={product.total_reviews}
+                    size="md"
+                  />
+                </div>
+              )}
+              {/* View Count */}
+              {viewCount !== null && viewCount > 0 && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <Eye className="w-4 h-4" />
+                  <span>
+                    {locale === 'ar'
+                      ? `${viewCount.toLocaleString('ar-SA')} مشاهدة`
+                      : `${viewCount.toLocaleString('en-US')} view${viewCount !== 1 ? 's' : ''}`}
+                  </span>
+                </div>
               )}
             </div>
 
@@ -564,56 +640,68 @@ export default function ProductDetailPage() {
 
             {/* Video */}
             {product.video_url && (
-              <div className="aspect-video rounded-lg overflow-hidden">
-                <iframe
-                  src={product.video_url}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
+              <ProductVideoPlayer
+                videoUrl={product.video_url}
+                thumbnailUrl={images[0]}
+                className="mt-6"
+              />
             )}
           </div>
         </div>
 
-        {/* Specifications */}
-        {product.specifications && Object.keys(product.specifications).length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{t('product.specifications')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <AccordionItem key={key} value={key}>
-                    <AccordionTrigger>{key}</AccordionTrigger>
-                    <AccordionContent>
-                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Price History Charts */}
-        {product.product_stores.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {product.product_stores.slice(0, 2).map((productStore) => {
-              const storeName = locale === 'ar' ? productStore.stores.name_ar : productStore.stores.name_en;
-              return (
-                <PriceHistoryChart
-                  key={productStore.id}
-                  productStoreId={productStore.id}
+        {/* Product Details Tabs */}
+        <Tabs defaultValue="specifications" className="mb-8">
+          <TabsList>
+            <TabsTrigger value="specifications">
+              {locale === 'ar' ? 'المواصفات' : 'Specifications'}
+            </TabsTrigger>
+            <TabsTrigger value="reviews">
+              {locale === 'ar' ? 'التقييمات' : 'Reviews'} ({product.total_reviews || 0})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="specifications" className="space-y-6">
+            {/* Specifications */}
+            <ProductSpecifications
+              specifications={product.specifications || {}}
+              category={product.category}
+              locale={locale}
+            />
+
+            {/* Price History Charts */}
+            {product.product_stores.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {product.product_stores.slice(0, 2).map((productStore) => {
+                  const storeName = locale === 'ar' ? productStore.stores.name_ar : productStore.stores.name_en;
+                  return (
+                    <PriceHistoryChart
+                      key={productStore.id}
+                      productStoreId={productStore.id}
+                      productName={productName}
+                      storeName={storeName}
+                      locale={locale}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="reviews">
+            <Card>
+              <CardContent className="pt-6">
+                <ProductReviews
+                  productId={product.id}
                   productName={productName}
-                  storeName={storeName}
+                  averageRating={product.average_rating || 0}
+                  totalReviews={product.total_reviews || 0}
                   locale={locale}
                 />
-              );
-            })}
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Available Stores */}
         <Card className="mb-8">
@@ -752,14 +840,23 @@ export default function ProductDetailPage() {
       </div>
 
       {product && (
-        <PriceAlertDialog
-          open={priceAlertOpen}
-          onOpenChange={setPriceAlertOpen}
-          productId={product.id}
-          productName={productName}
-          currentPrice={bestPriceStore?.current_price ?? null}
-          locale={locale}
-        />
+        <>
+          <PriceAlertDialog
+            open={priceAlertOpen}
+            onOpenChange={setPriceAlertOpen}
+            productId={product.id}
+            productName={productName}
+            currentPrice={bestPriceStore?.current_price ?? null}
+            locale={locale}
+          />
+          <ImageGalleryModal
+            images={images}
+            initialIndex={currentImageIndex}
+            isOpen={galleryOpen}
+            onClose={() => setGalleryOpen(false)}
+            locale={locale}
+          />
+        </>
       )}
     </div>
   );
