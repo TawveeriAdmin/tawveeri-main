@@ -59,7 +59,6 @@ export default function AdminProductsPage({
   const router = useRouter();
   const { toast } = useToast();
   const limit = 20;
-  const isRTL = locale === 'ar';
 
   useEffect(() => {
     params.then((p) => setLocale(p.locale));
@@ -121,8 +120,8 @@ export default function AdminProductsPage({
     } catch (error) {
       console.error('Error loading products:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل تحميل المنتجات' : 'Failed to load products',
+        title: t('admin.products.error'),
+        description: t('admin.products.loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -143,8 +142,8 @@ export default function AdminProductsPage({
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Deleted',
-        description: isRTL ? 'تم حذف المنتج بنجاح' : 'Product deleted successfully',
+        title: t('admin.products.deleted'),
+        description: t('admin.products.productDeleted'),
       });
 
       setDeleteDialogOpen(false);
@@ -153,8 +152,8 @@ export default function AdminProductsPage({
     } catch (error) {
       console.error('Error deleting product:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حذف المنتج' : 'Failed to delete product',
+        title: t('admin.products.error'),
+        description: t('admin.products.deleteError'),
         variant: 'destructive',
       });
     }
@@ -171,44 +170,44 @@ export default function AdminProductsPage({
   const columns: Column<Product>[] = [
     {
       key: 'name',
-      label: isRTL ? 'الاسم' : 'Name',
-      render: (product) => (isRTL ? product.name_ar : product.name_en),
+      label: t('admin.products.name'),
+      render: (product) => (locale === 'ar' ? product.name_ar : product.name_en),
     },
     {
       key: 'category',
-      label: isRTL ? 'الفئة' : 'Category',
+      label: t('admin.products.category'),
       render: (product) => (
         <span className="capitalize">{product.category}</span>
       ),
     },
     {
       key: 'brand',
-      label: isRTL ? 'العلامة التجارية' : 'Brand',
+      label: t('admin.products.brand'),
       render: (product) => product.brand,
     },
     {
       key: 'stores_count',
-      label: isRTL ? 'المتاجر' : 'Stores',
+      label: t('admin.products.stores'),
       render: (product) => product.stores_count || 0,
     },
     {
       key: 'view_count',
-      label: isRTL ? 'المشاهدات' : 'Views',
+      label: t('admin.products.views'),
       render: (product) => product.view_count.toLocaleString(),
     },
     {
       key: 'save_count',
-      label: isRTL ? 'الحفظ' : 'Saves',
+      label: t('admin.products.saves'),
       render: (product) => product.save_count.toLocaleString(),
     },
     {
       key: 'created_at',
-      label: isRTL ? 'تاريخ الإنشاء' : 'Created Date',
+      label: t('admin.products.createdDate'),
       render: (product) => new Date(product.created_at).toLocaleDateString(),
     },
     {
       key: 'actions',
-      label: isRTL ? 'الإجراءات' : 'Actions',
+      label: t('admin.products.actions'),
       render: (product) => (
         <div className="flex items-center gap-2">
           <Button
@@ -240,10 +239,10 @@ export default function AdminProductsPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'إدارة المنتجات' : 'Product Management'}
+          {t('admin.products.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'عرض وإدارة جميع المنتجات' : 'View and manage all products'}
+          {t('admin.products.subtitle')}
         </p>
       </div>
 
@@ -251,17 +250,17 @@ export default function AdminProductsPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-4">
           <Input
-            placeholder={isRTL ? 'بحث...' : 'Search...'}
+            placeholder={t('admin.products.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع الفئات' : 'All Categories'} />
+              <SelectValue placeholder={t('admin.products.allCategories')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع الفئات' : 'All Categories'}</SelectItem>
+              <SelectItem value="all">{t('admin.products.allCategories')}</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
@@ -271,10 +270,10 @@ export default function AdminProductsPage({
           </Select>
           <Select value={brandFilter} onValueChange={setBrandFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع العلامات' : 'All Brands'} />
+              <SelectValue placeholder={t('admin.products.allBrands')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع العلامات' : 'All Brands'}</SelectItem>
+              <SelectItem value="all">{t('admin.products.allBrands')}</SelectItem>
               {brands.map((brand) => (
                 <SelectItem key={brand} value={brand}>
                   {brand}
@@ -303,18 +302,18 @@ export default function AdminProductsPage({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isRTL ? 'تأكيد الحذف' : 'Confirm Deletion'}
+              {t('admin.products.confirmDelete')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isRTL
-                ? `هل أنت متأكد من حذف ${productToDelete ? (isRTL ? productToDelete.name_ar : productToDelete.name_en) : 'هذا المنتج'}؟ لا يمكن التراجع عن هذا الإجراء.`
-                : `Are you sure you want to delete ${productToDelete ? (isRTL ? productToDelete.name_ar : productToDelete.name_en) : 'this product'}? This action cannot be undone.`}
+              {t('admin.products.confirmDeleteDesc', { 
+                name: productToDelete ? (locale === 'ar' ? productToDelete.name_ar : productToDelete.name_en) : t('admin.products.product') 
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('admin.products.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isRTL ? 'حذف' : 'Delete'}
+              {t('admin.products.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -63,7 +63,7 @@ export function PriceHistoryChart({
         setPriceHistory((data || []) as PricePoint[]);
       } catch (err) {
         console.error('Error fetching price history:', err);
-        setError(err instanceof Error ? err.message : locale === 'ar' ? 'خطأ في التحميل' : 'Error loading');
+        setError(err instanceof Error ? err.message : t('products.priceHistory.errorLoading'));
       } finally {
         setLoading(false);
       }
@@ -91,15 +91,15 @@ export function PriceHistoryChart({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{t('product.priceHistory')}</CardTitle>
+          <CardTitle>{t('products.priceHistory.title')}</CardTitle>
           <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30">{locale === 'ar' ? '30 يوم' : '30 Days'}</SelectItem>
-              <SelectItem value="90">{locale === 'ar' ? '90 يوم' : '90 Days'}</SelectItem>
-              <SelectItem value="365">{locale === 'ar' ? 'سنة' : '1 Year'}</SelectItem>
+              <SelectItem value="30">{t('products.priceHistory.30Days')}</SelectItem>
+              <SelectItem value="90">{t('products.priceHistory.90Days')}</SelectItem>
+              <SelectItem value="365">{t('products.priceHistory.1Year')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -115,17 +115,11 @@ export function PriceHistoryChart({
             <span className={priceTrend.isPositive ? 'text-red-600' : priceTrend.diff < 0 ? 'text-green-600' : 'text-gray-400'}>
               {priceTrend.isPositive ? '+' : ''}
               {priceTrend.percentage}%{' '}
-              {locale === 'ar'
-                ? priceTrend.isPositive
-                  ? 'زيادة'
-                  : priceTrend.diff < 0
-                    ? 'انخفاض'
-                    : 'بدون تغيير'
-                : priceTrend.isPositive
-                  ? 'increase'
-                  : priceTrend.diff < 0
-                    ? 'decrease'
-                    : 'no change'}
+              {priceTrend.isPositive
+                ? t('products.priceHistory.increase')
+                : priceTrend.diff < 0
+                  ? t('products.priceHistory.decrease')
+                  : t('products.priceHistory.noChange')}
             </span>
           </div>
         )}
@@ -137,7 +131,7 @@ export function PriceHistoryChart({
           <div className="text-center text-red-600 py-8">{error}</div>
         ) : priceHistory.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            {locale === 'ar' ? 'لا توجد بيانات سعر متاحة' : 'No price data available'}
+            {t('products.priceHistory.noData')}
           </div>
         ) : (
           <div className="space-y-4">
@@ -174,12 +168,12 @@ export function PriceHistoryChart({
             {/* Price Labels */}
             <div className="flex justify-between text-xs text-gray-500">
               <div>
-                <div>{locale === 'ar' ? 'الأدنى' : 'Lowest'}</div>
-                <div className="font-semibold">{minPrice.toLocaleString()} ر.س</div>
+                <div>{t('products.priceHistory.lowest')}</div>
+                <div className="font-semibold">{minPrice.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</div>
               </div>
               <div>
-                <div>{locale === 'ar' ? 'الأعلى' : 'Highest'}</div>
-                <div className="font-semibold">{maxPrice.toLocaleString()} ر.س</div>
+                <div>{t('products.priceHistory.highest')}</div>
+                <div className="font-semibold">{maxPrice.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</div>
               </div>
             </div>
 
@@ -194,7 +188,7 @@ export function PriceHistoryChart({
                       day: 'numeric',
                     })}
                   </span>
-                  <span className="font-semibold">{point.price.toLocaleString()} ر.س</span>
+                  <span className="font-semibold">{point.price.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</span>
                 </div>
               ))}
             </div>

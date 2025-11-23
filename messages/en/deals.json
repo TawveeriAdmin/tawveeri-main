@@ -14,6 +14,7 @@
   "discount": "OFF",
   "save": "Save",
   "viewDeal": "View Deal",
-  "resultsCount": "deals found"
+  "resultsCount": "deals found",
+  "noDealsMatch": "No deals match \"{{query}}\""
 }
 

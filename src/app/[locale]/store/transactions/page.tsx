@@ -11,6 +11,7 @@ import {
   TrendingUp,
   CreditCard,
 } from 'lucide-react';
+import { getServerTranslations } from '@/lib/translations-server';
 
 export default async function StoreTransactionsPage({
   params,
@@ -18,6 +19,7 @@ export default async function StoreTransactionsPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const t = await getServerTranslations(locale);
   const isRTL = locale === 'ar';
   const supabase = await createClient();
 
@@ -39,7 +41,7 @@ export default async function StoreTransactionsPage({
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-gray-600 dark:text-gray-400">
-          {isRTL ? 'لا يوجد متجر مرتبط بحسابك' : 'No store associated with your account'}
+          {t('store.dashboard.noStoreAssociated')}
         </p>
       </div>
     );
@@ -99,7 +101,7 @@ export default async function StoreTransactionsPage({
   const columns: Column<any>[] = [
     {
       key: 'product',
-      label: isRTL ? 'المنتج' : 'Product',
+      label: t('common.product'),
       render: (transaction) => {
         const productStore = transaction.product_stores as any;
         const product = productStore?.products as any;
@@ -108,22 +110,22 @@ export default async function StoreTransactionsPage({
     },
     {
       key: 'amount',
-      label: isRTL ? 'المبلغ' : 'Amount',
+      label: t('common.amount'),
       render: (transaction) => `$${transaction.amount.toLocaleString()}`,
     },
     {
       key: 'commission_amount',
-      label: isRTL ? 'العمولة' : 'Commission',
+      label: t('common.commission'),
       render: (transaction) => `$${(transaction.commission_amount || 0).toLocaleString()}`,
     },
     {
       key: 'commission_rate',
-      label: isRTL ? 'نسبة العمولة' : 'Commission Rate',
+      label: t('admin.transactions.commissionRate'),
       render: (transaction) => `${transaction.commission_rate || 0}%`,
     },
     {
       key: 'status',
-      label: isRTL ? 'الحالة' : 'Status',
+      label: t('common.status'),
       render: (transaction) => (
         <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
           {transaction.status}
@@ -132,13 +134,13 @@ export default async function StoreTransactionsPage({
     },
     {
       key: 'clicked_at',
-      label: isRTL ? 'تاريخ النقر' : 'Clicked At',
+      label: t('store.dashboard.clickedAt'),
       render: (transaction) =>
         transaction.clicked_at ? format(new Date(transaction.clicked_at), 'MMM dd, yyyy HH:mm') : '-',
     },
     {
       key: 'converted_at',
-      label: isRTL ? 'تاريخ التحويل' : 'Converted At',
+      label: t('store.dashboard.convertedAt'),
       render: (transaction) =>
         transaction.converted_at ? format(new Date(transaction.converted_at), 'MMM dd, yyyy HH:mm') : '-',
     },
@@ -149,10 +151,10 @@ export default async function StoreTransactionsPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'المعاملات' : 'Transactions'}
+          {t('store.dashboard.transactions')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'عرض معاملات متجرك والعمولات' : 'View your store transactions and commissions'}
+          {t('store.dashboard.transactionsSubtitle')}
         </p>
       </div>
 
@@ -160,27 +162,27 @@ export default async function StoreTransactionsPage({
       {stats && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatsCard
-            title={isRTL ? 'إجمالي النقرات' : 'Total Clicks'}
+            title={t('store.dashboard.totalClicks')}
             value={stats.totalClicks.toLocaleString()}
             icon={<MousePointerClick className="h-6 w-6" />}
           />
           <StatsCard
-            title={isRTL ? 'التحويلات' : 'Conversions'}
+            title={t('store.dashboard.conversions')}
             value={stats.totalConversions.toLocaleString()}
             icon={<TrendingUp className="h-6 w-6" />}
           />
           <StatsCard
-            title={isRTL ? 'معدل التحويل' : 'Conversion Rate'}
+            title={t('store.dashboard.conversionRate')}
             value={`${stats.conversionRate.toFixed(1)}%`}
             icon={<TrendingUp className="h-6 w-6" />}
           />
           <StatsCard
-            title={isRTL ? 'إجمالي الإيرادات' : 'Total Revenue'}
+            title={t('store.dashboard.totalRevenue')}
             value={`$${((stats.totalRevenue || 0) / 1000).toFixed(1)}K`}
             icon={<DollarSign className="h-6 w-6" />}
           />
           <StatsCard
-            title={isRTL ? 'إجمالي العمولات' : 'Total Commissions'}
+            title={t('store.dashboard.totalCommissions')}
             value={`$${((stats.totalCommissions || 0) / 1000).toFixed(1)}K`}
             icon={<CreditCard className="h-6 w-6" />}
           />
@@ -190,7 +192,7 @@ export default async function StoreTransactionsPage({
       {/* Transactions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{isRTL ? 'المعاملات الأخيرة' : 'Recent Transactions'}</CardTitle>
+          <CardTitle>{t('store.dashboard.recentTransactions')}</CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable data={transactions || []} columns={columns} />

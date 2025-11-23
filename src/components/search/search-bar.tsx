@@ -467,14 +467,14 @@ export function SearchBar({
           {/* No Results */}
           {query.trim() && suggestions.length === 0 && !loading && (
             <div className="p-4 text-sm text-gray-500 text-center">
-              {locale === 'ar' ? 'لا توجد اقتراحات' : 'No suggestions'}
+              {t('search.noSuggestions')}
             </div>
           )}
 
           {/* Loading */}
           {loading && (
             <div className="p-4 text-sm text-gray-500 text-center">
-              {locale === 'ar' ? 'جاري البحث...' : 'Searching...'}
+              {t('search.searching')}
             </div>
           )}
         </div>

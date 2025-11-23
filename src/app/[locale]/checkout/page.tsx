@@ -118,17 +118,15 @@ export default function CheckoutPage() {
         window.open(firstUrl, '_blank', 'noopener,noreferrer');
         
         toast({
-          title: isRTL ? 'تم التوجيه' : 'Redirected',
-          description: isRTL
-            ? 'سيتم توجيهك إلى صفحة الدفع الخاصة بالمتجر'
-            : 'You will be redirected to the store checkout page',
+          title: t('common.redirected'),
+          description: t('checkout.redirectedDesc'),
         });
       }
     } catch (error) {
       console.error('Error proceeding to checkout:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل التوجيه إلى صفحة الدفع' : 'Failed to redirect to checkout',
+        title: t('common.error'),
+        description: t('checkout.redirectFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -143,12 +141,12 @@ export default function CheckoutPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {isRTL ? 'سلة التسوق فارغة' : 'Your cart is empty'}
+              {t('checkout.cartEmpty')}
             </AlertDescription>
           </Alert>
           <Button onClick={() => router.push(`/${locale}/cart`)} className="mt-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {isRTL ? 'العودة إلى السلة' : 'Back to Cart'}
+            {t('checkout.backToCart')}
           </Button>
         </div>
       </div>
@@ -163,18 +161,18 @@ export default function CheckoutPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{isRTL ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}/cart`}>{isRTL ? 'سلة التسوق' : 'Cart'}</Link>
+                <Link href={`/${locale}/cart`}>{t('common.cart')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{isRTL ? 'الدفع' : 'Checkout'}</BreadcrumbPage>
+              <BreadcrumbPage>{t('common.checkout')}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -184,21 +182,17 @@ export default function CheckoutPage() {
           <div className="flex-1 space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {isRTL ? 'مراجعة الطلب' : 'Review Order'}
+                {t('checkout.reviewOrder')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                {isRTL
-                  ? 'راجع طلبك واكمل عملية الشراء من المتاجر'
-                  : 'Review your order and complete purchase from stores'}
+                {t('checkout.reviewOrderDesc')}
               </p>
             </div>
 
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {isRTL
-                  ? 'سيتم توجيهك إلى صفحة الدفع الخاصة بكل متجر لإتمام عملية الشراء'
-                  : 'You will be redirected to each store checkout page to complete your purchase'}
+                {t('checkout.redirectInfo')}
               </AlertDescription>
             </Alert>
 
@@ -244,7 +238,7 @@ export default function CheckoutPage() {
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">{item.productName}</p>
                               <p className="text-gray-500 dark:text-gray-400">
-                                {isRTL ? 'الكمية' : 'Qty'}: {item.quantity} ×{' '}
+                                {t('common.quantity')}: {item.quantity} ×{' '}
                                 <Price amount={item.price} className="inline" />
                               </p>
                             </div>
@@ -260,21 +254,21 @@ export default function CheckoutPage() {
                       <div className="border-t pt-4 space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">
-                            {isRTL ? 'المجموع الفرعي' : 'Subtotal'}
+                            {t('checkout.subtotal')}
                           </span>
                           <Price amount={totals.subtotal} className="font-semibold" />
                         </div>
                         {totals.deliveryCost > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">
-                              {isRTL ? 'رسوم التوصيل' : 'Delivery'}
+                              {t('checkout.delivery')}
                             </span>
                             <Price amount={totals.deliveryCost} className="font-semibold" />
                           </div>
                         )}
                         <div className="flex justify-between text-base pt-2 border-t">
                           <span className="font-bold">
-                            {isRTL ? 'المجموع' : 'Total'}
+                            {t('checkout.total')}
                           </span>
                           <Price amount={totals.total} className="font-bold text-lg" />
                         </div>
@@ -287,9 +281,7 @@ export default function CheckoutPage() {
                         className="w-full"
                         size="lg"
                       >
-                        {isRTL
-                          ? `الشراء من ${store.storeName}`
-                          : `Proceed to ${store.storeName} Checkout`}
+                        {t('checkout.proceedToStore', { storeName: store.storeName })}
                         <ExternalLink className="h-5 w-5 ml-2" />
                       </Button>
                     </div>
@@ -309,7 +301,7 @@ export default function CheckoutPage() {
                 className="w-full mt-4"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {isRTL ? 'العودة إلى السلة' : 'Back to Cart'}
+                {t('checkout.backToCart')}
               </Button>
             </div>
           </div>

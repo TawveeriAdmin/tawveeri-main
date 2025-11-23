@@ -122,12 +122,12 @@ export function ProductCard({
             )}
             {hasDeal && (
               <Badge variant="warning" className="text-xs animate-pulse">
-                🔥 {currentLocale === 'ar' ? 'عرض ساخن' : 'Hot Deal'}
+                🔥 {t('products.hotDeal')}
               </Badge>
             )}
             {isOutOfStock && (
               <Badge variant="secondary" className="text-xs">
-                {currentLocale === 'ar' ? 'غير متوفر' : 'Out of Stock'}
+                {t('products.outOfStock')}
               </Badge>
             )}
           </div>
@@ -162,7 +162,7 @@ export function ProductCard({
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {currentLocale === 'ar' ? 'السعر غير متاح' : 'Price not available'}
+                  {t('products.priceNotAvailable')}
                 </p>
               )}
               {savings > 0 && (
@@ -175,7 +175,7 @@ export function ProductCard({
             {/* Store Count */}
             {storeCount > 0 && (
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {storeCount} {currentLocale === 'ar' ? 'متجر' : storeCount === 1 ? 'store' : 'stores'}
+                {storeCount} {storeCount === 1 ? t('products.store') : t('products.stores')}
               </p>
             )}
           </div>

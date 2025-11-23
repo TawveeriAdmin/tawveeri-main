@@ -45,7 +45,6 @@ export default function AdminStoresPage({
   const [total, setTotal] = useState(0);
   const router = useRouter();
   const limit = 20;
-  const isRTL = locale === 'ar';
 
   useEffect(() => {
     params.then((p) => setLocale(p.locale));
@@ -145,12 +144,12 @@ export default function AdminStoresPage({
   const columns: Column<Store>[] = [
     {
       key: 'name',
-      label: isRTL ? 'الاسم' : 'Name',
-      render: (store) => (isRTL ? store.name_ar : store.name_en),
+      label: t('admin.stores.name'),
+      render: (store) => (locale === 'ar' ? store.name_ar : store.name_en),
     },
     {
       key: 'status',
-      label: isRTL ? 'الحالة' : 'Status',
+      label: t('admin.stores.status'),
       render: (store) => (
         <Badge variant={getStatusBadgeVariant(store.status)}>
           {store.status}
@@ -159,28 +158,28 @@ export default function AdminStoresPage({
     },
     {
       key: 'total_products',
-      label: isRTL ? 'المنتجات' : 'Products',
+      label: t('admin.stores.products'),
       render: (store) => store.total_products || 0,
     },
     {
       key: 'average_rating',
-      label: isRTL ? 'التقييم' : 'Rating',
+      label: t('admin.stores.rating'),
       render: (store) =>
         store.average_rating ? store.average_rating.toFixed(1) : '-',
     },
     {
       key: 'revenue',
-      label: isRTL ? 'الإيرادات' : 'Revenue',
+      label: t('admin.stores.revenue'),
       render: (store) => `$${((store.revenue || 0) / 1000).toFixed(1)}K`,
     },
     {
       key: 'created_at',
-      label: isRTL ? 'تاريخ الإنشاء' : 'Created Date',
+      label: t('admin.stores.createdDate'),
       render: (store) => new Date(store.created_at).toLocaleDateString(),
     },
     {
       key: 'actions',
-      label: isRTL ? 'الإجراءات' : 'Actions',
+      label: t('admin.stores.actions'),
       render: (store) => (
         <Button
           variant="ghost"
@@ -199,10 +198,10 @@ export default function AdminStoresPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'إدارة المتاجر' : 'Store Management'}
+          {t('admin.stores.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'عرض وإدارة جميع المتاجر' : 'View and manage all stores'}
+          {t('admin.stores.subtitle')}
         </p>
       </div>
 
@@ -210,21 +209,21 @@ export default function AdminStoresPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-4">
           <Input
-            placeholder={isRTL ? 'بحث...' : 'Search...'}
+            placeholder={t('admin.stores.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع الحالات' : 'All Statuses'} />
+              <SelectValue placeholder={t('admin.stores.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع الحالات' : 'All Statuses'}</SelectItem>
-              <SelectItem value="active">{isRTL ? 'نشط' : 'Active'}</SelectItem>
-              <SelectItem value="pending">{isRTL ? 'قيد الانتظار' : 'Pending'}</SelectItem>
-              <SelectItem value="suspended">{isRTL ? 'معلق' : 'Suspended'}</SelectItem>
-              <SelectItem value="inactive">{isRTL ? 'غير نشط' : 'Inactive'}</SelectItem>
+              <SelectItem value="all">{t('admin.stores.allStatuses')}</SelectItem>
+              <SelectItem value="active">{t('admin.stores.active')}</SelectItem>
+              <SelectItem value="pending">{t('admin.stores.pending')}</SelectItem>
+              <SelectItem value="suspended">{t('admin.stores.suspended')}</SelectItem>
+              <SelectItem value="inactive">{t('admin.stores.inactive')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

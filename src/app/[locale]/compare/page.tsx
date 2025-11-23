@@ -137,7 +137,7 @@ export default function ComparePage() {
         });
       } catch (err) {
         console.error('Error fetching comparison products:', err);
-        const errorMessage = err instanceof Error ? err.message : locale === 'ar' ? 'خطأ في التحميل' : 'Error loading products';
+        const errorMessage = err instanceof Error ? err.message : t('compare.errorLoading');
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -200,7 +200,7 @@ export default function ComparePage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -217,7 +217,7 @@ export default function ComparePage() {
               {t('compare.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              {products.length} {locale === 'ar' ? 'منتج' : products.length === 1 ? 'product' : 'products'}
+              {products.length} {products.length === 1 ? t('compare.product') : t('compare.products')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -334,7 +334,7 @@ export default function ComparePage() {
                               </div>
                             ) : (
                               <span className="text-gray-400">
-                                {locale === 'ar' ? 'غير متوفر' : 'N/A'}
+                                {t('compare.notAvailable')}
                               </span>
                             )}
                           </TableCell>
@@ -370,7 +370,7 @@ export default function ComparePage() {
                       {products.map((product) => (
                         <TableCell key={product.id} className="text-center">
                           {product.product_stores.length}{' '}
-                          {locale === 'ar' ? 'متجر' : product.product_stores.length === 1 ? 'store' : 'stores'}
+                          {product.product_stores.length === 1 ? t('compare.store') : t('compare.stores')}
                         </TableCell>
                       ))}
                     </TableRow>

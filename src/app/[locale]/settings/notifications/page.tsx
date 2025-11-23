@@ -122,14 +122,14 @@ export default function NotificationPreferencesPage() {
       // No database operation needed for now
 
       toast({
-        title: isRTL ? 'تم الحفظ' : 'Saved',
-        description: isRTL ? 'تم حفظ تفضيلات الإشعارات بنجاح' : 'Notification preferences saved successfully',
+        title: t('common.saved'),
+        description: t('notifications.preferencesSaved'),
       });
     } catch (error) {
       console.error('Error saving preferences:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حفظ التفضيلات' : 'Failed to save preferences',
+        title: t('common.error'),
+        description: t('notifications.saveError'),
         variant: 'destructive',
       });
     } finally {
@@ -149,12 +149,8 @@ export default function NotificationPreferencesPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-8">
           <GuestPrompt
-            title={isRTL ? 'إعدادات الإشعارات' : 'Notification Settings'}
-            description={
-              isRTL
-                ? 'قم بإنشاء حساب لتخصيص تفضيلات الإشعارات الخاصة بك.'
-                : 'Create an account to customize your notification preferences.'
-            }
+            title={t('notifications.title')}
+            description={t('notifications.guestDescription')}
             locale={locale}
           />
         </div>
@@ -165,7 +161,7 @@ export default function NotificationPreferencesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-8">Loading...</div>
+        <div className="container mx-auto px-4 py-8">{t('common.loading')}</div>
       </div>
     );
   }
@@ -176,23 +172,19 @@ export default function NotificationPreferencesPage() {
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {isRTL ? 'إعدادات الإشعارات' : 'Notification Settings'}
+              {t('notifications.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              {isRTL
-                ? 'اختر كيف ومتى تريد تلقي الإشعارات'
-                : 'Choose how and when you want to receive notifications'}
+              {t('notifications.subtitle')}
             </p>
           </div>
 
           {/* Channel Preferences */}
           <Card>
             <CardHeader>
-              <CardTitle>{isRTL ? 'قنوات الإشعارات' : 'Notification Channels'}</CardTitle>
+              <CardTitle>{t('notifications.channels')}</CardTitle>
               <CardDescription>
-                {isRTL
-                  ? 'اختر القنوات التي تريد تلقي الإشعارات عليها'
-                  : 'Choose the channels you want to receive notifications on'}
+                {t('notifications.channelsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -200,9 +192,9 @@ export default function NotificationPreferencesPage() {
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <Label htmlFor="email_enabled">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                    <Label htmlFor="email_enabled">{t('notifications.email')}</Label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {isRTL ? 'تلقي إشعارات عبر البريد الإلكتروني' : 'Receive notifications via email'}
+                      {t('notifications.emailDescription')}
                     </p>
                   </div>
                 </div>
@@ -217,9 +209,9 @@ export default function NotificationPreferencesPage() {
                 <div className="flex items-center gap-3">
                   <MessageSquare className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <Label htmlFor="sms_enabled">{isRTL ? 'الرسائل النصية (SMS)' : 'SMS'}</Label>
+                    <Label htmlFor="sms_enabled">{t('notifications.sms')}</Label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {isRTL ? 'تلقي إشعارات عبر الرسائل النصية' : 'Receive notifications via SMS'}
+                      {t('notifications.smsDescription')}
                     </p>
                   </div>
                 </div>
@@ -235,10 +227,10 @@ export default function NotificationPreferencesPage() {
                   <Smartphone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   <div>
                     <Label htmlFor="push_enabled">
-                      {isRTL ? 'الإشعارات الفورية (Push)' : 'Push Notifications'}
+                      {t('notifications.push')}
                     </Label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {isRTL ? 'تلقي إشعارات فورية على جهازك' : 'Receive push notifications on your device'}
+                      {t('notifications.pushDescription')}
                     </p>
                   </div>
                 </div>
@@ -254,12 +246,10 @@ export default function NotificationPreferencesPage() {
                   <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   <div>
                     <Label htmlFor="in_app_enabled">
-                      {isRTL ? 'الإشعارات داخل التطبيق' : 'In-App Notifications'}
+                      {t('notifications.inApp')}
                     </Label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {isRTL
-                        ? 'تلقي إشعارات داخل التطبيق'
-                        : 'Receive notifications within the app'}
+                      {t('notifications.inAppDescription')}
                     </p>
                   </div>
                 </div>
@@ -275,22 +265,20 @@ export default function NotificationPreferencesPage() {
           {/* Notification Types */}
           <Card>
             <CardHeader>
-              <CardTitle>{isRTL ? 'أنواع الإشعارات' : 'Notification Types'}</CardTitle>
+              <CardTitle>{t('notifications.types')}</CardTitle>
               <CardDescription>
-                {isRTL
-                  ? 'اختر أنواع الإشعارات التي تريد تلقيها'
-                  : 'Choose the types of notifications you want to receive'}
+                {t('notifications.typesDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Price Drops */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {isRTL ? 'تنبيهات انخفاض الأسعار' : 'Price Drop Alerts'}
+                  {t('notifications.priceDropAlerts')}
                 </h3>
                 <div className="space-y-2 pl-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="price_drop_email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                    <Label htmlFor="price_drop_email">{t('notifications.email')}</Label>
                     <Switch
                       id="price_drop_email"
                       checked={preferences.price_drop_email && preferences.email_enabled}
@@ -299,7 +287,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="price_drop_sms">{isRTL ? 'الرسائل النصية' : 'SMS'}</Label>
+                    <Label htmlFor="price_drop_sms">{t('notifications.sms')}</Label>
                     <Switch
                       id="price_drop_sms"
                       checked={preferences.price_drop_sms && preferences.sms_enabled}
@@ -308,7 +296,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="price_drop_push">{isRTL ? 'الإشعارات الفورية' : 'Push'}</Label>
+                    <Label htmlFor="price_drop_push">{t('common.push')}</Label>
                     <Switch
                       id="price_drop_push"
                       checked={preferences.price_drop_push && preferences.push_enabled}
@@ -322,11 +310,11 @@ export default function NotificationPreferencesPage() {
               {/* Deals */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {isRTL ? 'العروض والتخفيضات' : 'Deals & Discounts'}
+                  {t('notifications.dealsDiscounts')}
                 </h3>
                 <div className="space-y-2 pl-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="deals_email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                    <Label htmlFor="deals_email">{t('notifications.email')}</Label>
                     <Switch
                       id="deals_email"
                       checked={preferences.deals_email && preferences.email_enabled}
@@ -335,7 +323,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="deals_sms">{isRTL ? 'الرسائل النصية' : 'SMS'}</Label>
+                    <Label htmlFor="deals_sms">{t('notifications.sms')}</Label>
                     <Switch
                       id="deals_sms"
                       checked={preferences.deals_sms && preferences.sms_enabled}
@@ -344,7 +332,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="deals_push">{isRTL ? 'الإشعارات الفورية' : 'Push'}</Label>
+                    <Label htmlFor="deals_push">{t('common.push')}</Label>
                     <Switch
                       id="deals_push"
                       checked={preferences.deals_push && preferences.push_enabled}
@@ -358,11 +346,11 @@ export default function NotificationPreferencesPage() {
               {/* Back in Stock */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {isRTL ? 'الإشعارات عن التوفر' : 'Back in Stock'}
+                  {t('notifications.backInStock')}
                 </h3>
                 <div className="space-y-2 pl-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="back_in_stock_email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                    <Label htmlFor="back_in_stock_email">{t('notifications.email')}</Label>
                     <Switch
                       id="back_in_stock_email"
                       checked={preferences.back_in_stock_email && preferences.email_enabled}
@@ -371,7 +359,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="back_in_stock_sms">{isRTL ? 'الرسائل النصية' : 'SMS'}</Label>
+                    <Label htmlFor="back_in_stock_sms">{t('notifications.sms')}</Label>
                     <Switch
                       id="back_in_stock_sms"
                       checked={preferences.back_in_stock_sms && preferences.sms_enabled}
@@ -380,7 +368,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="back_in_stock_push">{isRTL ? 'الإشعارات الفورية' : 'Push'}</Label>
+                    <Label htmlFor="back_in_stock_push">{t('common.push')}</Label>
                     <Switch
                       id="back_in_stock_push"
                       checked={preferences.back_in_stock_push && preferences.push_enabled}
@@ -394,11 +382,11 @@ export default function NotificationPreferencesPage() {
               {/* Account Updates */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {isRTL ? 'تحديثات الحساب' : 'Account Updates'}
+                  {t('notifications.accountUpdates')}
                 </h3>
                 <div className="space-y-2 pl-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="account_updates_email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                    <Label htmlFor="account_updates_email">{t('notifications.email')}</Label>
                     <Switch
                       id="account_updates_email"
                       checked={preferences.account_updates_email && preferences.email_enabled}
@@ -407,7 +395,7 @@ export default function NotificationPreferencesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="account_updates_push">{isRTL ? 'الإشعارات الفورية' : 'Push'}</Label>
+                    <Label htmlFor="account_updates_push">{t('common.push')}</Label>
                     <Switch
                       id="account_updates_push"
                       checked={preferences.account_updates_push && preferences.push_enabled}
@@ -423,16 +411,14 @@ export default function NotificationPreferencesPage() {
           {/* Frequency Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>{isRTL ? 'تكرار الإشعارات' : 'Notification Frequency'}</CardTitle>
+              <CardTitle>{t('notifications.frequency')}</CardTitle>
               <CardDescription>
-                {isRTL
-                  ? 'اختر عدد مرات تلقي الإشعارات'
-                  : 'Choose how often you want to receive notifications'}
+                {t('notifications.frequencyDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="frequency">{isRTL ? 'التكرار' : 'Frequency'}</Label>
+                <Label htmlFor="frequency">{t('notifications.frequencyLabel')}</Label>
                 <Select
                   value={preferences.frequency}
                   onValueChange={(value: 'immediate' | 'daily' | 'weekly') =>
@@ -444,13 +430,13 @@ export default function NotificationPreferencesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="immediate">
-                      {isRTL ? 'فوري' : 'Immediate'}
+                      {t('notifications.immediate')}
                     </SelectItem>
                     <SelectItem value="daily">
-                      {isRTL ? 'ملخص يومي' : 'Daily Digest'}
+                      {t('notifications.dailyDigest')}
                     </SelectItem>
                     <SelectItem value="weekly">
-                      {isRTL ? 'ملخص أسبوعي' : 'Weekly Digest'}
+                      {t('notifications.weeklyDigest')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -461,13 +447,7 @@ export default function NotificationPreferencesPage() {
           {/* Save Button */}
           <div className="flex justify-end">
             <Button onClick={savePreferences} disabled={saving}>
-              {saving
-                ? isRTL
-                  ? 'جاري الحفظ...'
-                  : 'Saving...'
-                : isRTL
-                ? 'حفظ التفضيلات'
-                : 'Save Preferences'}
+              {saving ? t('notifications.saving') : t('notifications.savePreferences')}
             </Button>
           </div>
         </div>

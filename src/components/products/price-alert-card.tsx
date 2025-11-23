@@ -8,6 +8,7 @@ import { Edit, Trash2, Power, PowerOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useTranslations } from '@/lib/simple-intl-provider';
 import type { Database } from '@/lib/database/types';
 
 type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];
@@ -32,6 +33,7 @@ export function PriceAlertCard({
   onDelete,
   onToggle,
 }: PriceAlertCardProps) {
+  const t = useTranslations();
   const isRTL = locale === 'ar';
   const product = alert.products;
   const productName = product ? (locale === 'ar' ? product.name_ar : product.name_en) : 'Unknown Product';
@@ -68,7 +70,7 @@ export function PriceAlertCard({
             <div className="flex flex-col gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {isRTL ? 'السعر الحالي' : 'Current Price'}:
+                  {t('products.priceAlert.currentPrice')}:
                 </span>
                 <Price
                   amount={currentPrice}
@@ -77,7 +79,7 @@ export function PriceAlertCard({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {isRTL ? 'السعر المستهدف' : 'Target Price'}:
+                  {t('products.priceAlert.targetPrice')}:
                 </span>
                 <Price
                   amount={alert.target_price}
@@ -86,12 +88,12 @@ export function PriceAlertCard({
               </div>
               {isTargetReached ? (
                 <Badge variant="success" className="w-fit">
-                  {isRTL ? 'تم الوصول للهدف! 🎉' : 'Target Reached! 🎉'}
+                  {t('products.priceAlert.targetReached')}
                 </Badge>
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {isRTL ? 'الفرق' : 'Difference'}:
+                    {t('products.priceAlert.difference')}:
                   </span>
                   <span className={cn(
                     'text-sm font-semibold',
@@ -107,11 +109,11 @@ export function PriceAlertCard({
             {/* Status & Date */}
             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
               <span>
-                {isRTL ? 'تاريخ الإنشاء' : 'Created'}: {format(new Date(alert.created_at), 'MMM dd, yyyy')}
+                {t('products.priceAlert.created')}: {format(new Date(alert.created_at), 'MMM dd, yyyy')}
               </span>
               {alert.notified_at && (
                 <span>
-                  {isRTL ? 'تم الإشعار' : 'Notified'}: {format(new Date(alert.notified_at), 'MMM dd, yyyy')}
+                  {t('products.priceAlert.notified')}: {format(new Date(alert.notified_at), 'MMM dd, yyyy')}
                 </span>
               )}
             </div>
@@ -129,12 +131,12 @@ export function PriceAlertCard({
                 {alert.is_active ? (
                   <>
                     <Power className="h-4 w-4 mr-1" />
-                    {isRTL ? 'نشط' : 'Active'}
+                    {t('products.priceAlert.active')}
                   </>
                 ) : (
                   <>
                     <PowerOff className="h-4 w-4 mr-1" />
-                    {isRTL ? 'غير نشط' : 'Inactive'}
+                    {t('products.priceAlert.inactive')}
                   </>
                 )}
               </Button>
@@ -144,7 +146,7 @@ export function PriceAlertCard({
                 onClick={() => onEdit(alert)}
               >
                 <Edit className="h-4 w-4 mr-1" />
-                {isRTL ? 'تعديل' : 'Edit'}
+                {t('products.priceAlert.edit')}
               </Button>
               <Button
                 variant="outline"
@@ -153,7 +155,7 @@ export function PriceAlertCard({
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                {isRTL ? 'حذف' : 'Delete'}
+                {t('products.priceAlert.delete')}
               </Button>
             </div>
           </div>

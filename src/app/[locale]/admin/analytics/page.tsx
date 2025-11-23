@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { createClient } from '@/lib/auth/server';
+import { getServerTranslations } from '@/lib/translations-server';
 
 export default async function AdminAnalyticsPage({
   params,
@@ -24,6 +25,7 @@ export default async function AdminAnalyticsPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const t = await getServerTranslations(locale);
   const isRTL = locale === 'ar';
   const supabase = await createClient();
 
@@ -82,10 +84,10 @@ export default async function AdminAnalyticsPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'التحليلات' : 'Analytics'}
+          {t('admin.analytics.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'نظرة شاملة على إحصائيات النظام' : 'Comprehensive system statistics'}
+          {t('admin.analytics.subtitle')}
         </p>
       </div>
 
@@ -94,7 +96,7 @@ export default async function AdminAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'إجمالي المستخدمين' : 'Total Users'}
+              {t('admin.analytics.totalUsers')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -104,7 +106,7 @@ export default async function AdminAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'إجمالي المنتجات' : 'Total Products'}
+              {t('admin.analytics.totalProducts')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -114,7 +116,7 @@ export default async function AdminAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'إجمالي المتاجر' : 'Total Stores'}
+              {t('admin.analytics.totalStores')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -124,7 +126,7 @@ export default async function AdminAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'إجمالي المعاملات' : 'Total Transactions'}
+              {t('admin.analytics.totalTransactions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -134,7 +136,7 @@ export default async function AdminAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'إجمالي الإيرادات' : 'Total Revenue'}
+              {t('admin.analytics.totalRevenue')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -163,15 +165,15 @@ export default async function AdminAnalyticsPage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <PieChart
           data={categoryChartData}
-          title={isRTL ? 'توزيع الفئات' : 'Category Distribution'}
+          title={t('admin.analytics.categoryDistribution')}
         />
         <PieChart
           data={roleChartData}
-          title={isRTL ? 'توزيع الأدوار' : 'Role Distribution'}
+          title={t('admin.analytics.roleDistribution')}
         />
         <PieChart
           data={statusChartData}
-          title={isRTL ? 'حالة المتاجر' : 'Store Status'}
+          title={t('admin.analytics.storeStatus')}
         />
       </div>
     </div>

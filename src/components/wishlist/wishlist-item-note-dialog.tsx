@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from '@/lib/simple-intl-provider';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function WishlistItemNoteDialog({
   locale,
   onNoteUpdated,
 }: WishlistItemNoteDialogProps) {
+  const t = useTranslations();
   const [note, setNote] = useState(currentNote || '');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -60,8 +62,8 @@ export function WishlistItemNoteDialog({
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم الحفظ' : 'Saved',
-        description: isRTL ? 'تم حفظ الملاحظة بنجاح' : 'Note saved successfully',
+        title: t('common.saved'),
+        description: t('wishlist.noteSavedSuccess'),
       });
 
       onOpenChange(false);
@@ -69,8 +71,8 @@ export function WishlistItemNoteDialog({
     } catch (error) {
       console.error('Error saving note:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حفظ الملاحظة' : 'Failed to save note',
+        title: t('common.error'),
+        description: t('wishlist.noteSaveError'),
         variant: 'destructive',
       });
     } finally {
@@ -83,7 +85,7 @@ export function WishlistItemNoteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isRTL ? 'ملاحظة للمنتج' : 'Note for Product'}
+            {t('wishlist.noteForProduct')}
           </DialogTitle>
           <DialogDescription>
             {productName}
@@ -92,27 +94,23 @@ export function WishlistItemNoteDialog({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="note">
-              {isRTL ? 'الملاحظة' : 'Note'}
+              {t('wishlist.note')}
             </Label>
             <Textarea
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={
-                isRTL
-                  ? 'أضف ملاحظة خاصة لهذا المنتج (مثل: الحجم المطلوب، اللون، إلخ...)'
-                  : 'Add a special note for this product (e.g., size needed, color, etc...)'
-              }
+              placeholder={t('wishlist.notePlaceholder')}
               rows={6}
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            {isRTL ? 'إلغاء' : 'Cancel'}
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

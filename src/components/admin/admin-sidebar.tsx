@@ -12,23 +12,25 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface AdminSidebarProps {
   locale: string;
 }
 
 const navItems = [
-  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', key: 'dashboard' },
-  { href: '/admin/users', icon: Users, label: 'Users', key: 'users' },
-  { href: '/admin/products', icon: Package, label: 'Products', key: 'products' },
-  { href: '/admin/stores', icon: Store, label: 'Stores', key: 'stores' },
-  { href: '/admin/transactions', icon: CreditCard, label: 'Transactions', key: 'transactions' },
-  { href: '/admin/analytics', icon: BarChart3, label: 'Analytics', key: 'analytics' },
-  { href: '/admin/logs', icon: FileText, label: 'Logs', key: 'logs' },
+  { href: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+  { href: '/admin/users', icon: Users, key: 'users' },
+  { href: '/admin/products', icon: Package, key: 'products' },
+  { href: '/admin/stores', icon: Store, key: 'stores' },
+  { href: '/admin/transactions', icon: CreditCard, key: 'transactions' },
+  { href: '/admin/analytics', icon: BarChart3, key: 'analytics' },
+  { href: '/admin/logs', icon: FileText, key: 'logs' },
 ];
 
 export function AdminSidebar({ locale }: AdminSidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   return (
@@ -41,7 +43,7 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
       {/* Logo/Brand */}
       <div className="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 px-4">
         <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">
-          {locale === 'ar' ? 'لوحة التحكم' : 'Admin Panel'}
+          {t('admin.sidebar.adminPanel')}
         </h1>
       </div>
 
@@ -64,7 +66,7 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
               )}
             >
               <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              <span>{t(`admin.sidebar.${item.key}`)}</span>
             </Link>
           );
         })}

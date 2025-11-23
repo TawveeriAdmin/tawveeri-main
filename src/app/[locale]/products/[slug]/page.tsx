@@ -273,8 +273,8 @@ export default function ProductDetailPage() {
   const handleAddToCompare = (productId: string) => {
     // TODO: Implement comparison functionality
     toast({
-      title: locale === 'ar' ? 'تمت الإضافة' : 'Added',
-      description: locale === 'ar' ? 'تم إضافة المنتج للمقارنة' : 'Product added to comparison',
+      title: t('products.added'),
+      description: t('products.addedToComparison'),
     });
   };
 
@@ -298,13 +298,13 @@ export default function ProductDetailPage() {
       });
 
       toast({
-        title: locale === 'ar' ? 'تم الحفظ' : 'Saved',
-        description: locale === 'ar' ? 'تم حفظ المنتج في قائمة الأمنيات' : 'Product saved to wishlist',
+        title: t('products.saved'),
+        description: t('products.savedToWishlist'),
       });
     } catch (err) {
       toast({
-        title: locale === 'ar' ? 'خطأ' : 'Error',
-        description: err instanceof Error ? err.message : locale === 'ar' ? 'فشل الحفظ' : 'Failed to save',
+        title: t('common.error'),
+        description: err instanceof Error ? err.message : t('products.saveError'),
         variant: 'destructive',
       });
     }
@@ -327,8 +327,8 @@ export default function ProductDetailPage() {
       });
     } catch (err) {
       toast({
-        title: locale === 'ar' ? 'خطأ' : 'Error',
-        description: locale === 'ar' ? 'فشل نسخ الرابط' : 'Failed to copy link',
+        title: t('common.error'),
+        description: t('products.linkCopyError'),
         variant: 'destructive',
       });
     }
@@ -376,13 +376,13 @@ export default function ProductDetailPage() {
       setCopiedCoupon(couponCode);
       setTimeout(() => setCopiedCoupon(null), 2000);
       toast({
-        title: locale === 'ar' ? 'تم النسخ' : 'Copied',
-        description: locale === 'ar' ? 'تم نسخ كود الخصم' : 'Coupon code copied',
+        title: t('products.copied'),
+        description: t('products.couponCopied'),
       });
     } catch (err) {
       toast({
-        title: locale === 'ar' ? 'خطأ' : 'Error',
-        description: locale === 'ar' ? 'فشل النسخ' : 'Failed to copy',
+        title: t('common.error'),
+        description: t('products.copyError'),
         variant: 'destructive',
       });
     }
@@ -471,7 +471,7 @@ export default function ProductDetailPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -654,7 +654,7 @@ export default function ProductDetailPage() {
         <Tabs defaultValue="specifications" className="mb-8">
           <TabsList>
             <TabsTrigger value="specifications">
-              {locale === 'ar' ? 'المواصفات' : 'Specifications'}
+              {t('products.specifications')}
             </TabsTrigger>
             <TabsTrigger value="reviews">
               {locale === 'ar' ? 'التقييمات' : 'Reviews'} ({product.total_reviews || 0})

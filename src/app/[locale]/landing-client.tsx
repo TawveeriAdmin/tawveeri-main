@@ -47,6 +47,7 @@ export default function LandingPageClient() {
   const { user, loading: authLoading, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Get locale from params
   const locale = (params?.locale as string) || 'ar';
@@ -67,6 +68,19 @@ export default function LandingPageClient() {
     const newLocale = locale === 'ar' ? 'en' : 'ar';
     const newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
     window.location.href = newPath;
+  };
+
+  // Function to handle search
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      // If no query, just go to products page
+      router.push(`/${locale}/products`);
+      return;
+    }
+    
+    // Navigate to search page with query
+    const searchUrl = `/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`;
+    router.push(searchUrl);
   };
 
   return (
@@ -308,10 +322,18 @@ export default function LandingPageClient() {
                     <input
                       type="text"
                       placeholder={t('hero.searchPlaceholder')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
+                        }
+                      }}
                       className="flex-1 bg-transparent outline-none text-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     />
                   </div>
                   <button
+                    onClick={handleSearch}
                     className="px-10 py-4 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 group/btn shadow-lg"
                     style={{ color: '#ffffff' }}
                   >
@@ -343,6 +365,10 @@ export default function LandingPageClient() {
                 ].map((term) => (
                   <button
                     key={term.name}
+                    onClick={() => {
+                      setSearchQuery(term.name);
+                      setTimeout(() => handleSearch(), 0);
+                    }}
                     className="group/tag px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gradient-to-r hover:from-primary-50 hover:to-success-50 dark:hover:from-primary-900/50 dark:hover:to-success-900/50 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 transition-all shadow-sm hover:shadow-md hover:scale-105"
                   >
                     <span className={isRTL ? 'ms-2' : 'me-2'}>{term.icon}</span>

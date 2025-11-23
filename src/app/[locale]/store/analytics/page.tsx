@@ -13,6 +13,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 import type { RevenueChartData } from '@/lib/analytics/charts';
+import { getServerTranslations } from '@/lib/translations-server';
 
 export default async function StoreAnalyticsPage({
   params,
@@ -20,6 +21,7 @@ export default async function StoreAnalyticsPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const t = await getServerTranslations(locale);
   const isRTL = locale === 'ar';
   const supabase = await createClient();
 
@@ -41,7 +43,7 @@ export default async function StoreAnalyticsPage({
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-gray-600 dark:text-gray-400">
-          {isRTL ? 'لا يوجد متجر مرتبط بحسابك' : 'No store associated with your account'}
+          {t('store.dashboard.noStoreAssociated')}
         </p>
       </div>
     );
@@ -98,37 +100,37 @@ export default async function StoreAnalyticsPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'التحليلات' : 'Analytics'}
+          {t('store.dashboard.analytics')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'إحصائيات وأداء متجرك' : 'Your store statistics and performance'}
+          {t('store.dashboard.analyticsSubtitle')}
         </p>
       </div>
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
-          title={isRTL ? 'المنتجات' : 'Total Products'}
+          title={t('store.dashboard.totalProducts')}
           value={stats?.totalProducts || 0}
           icon={<Package className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'المشاهدات' : 'Total Views'}
+          title={t('store.dashboard.totalViews')}
           value={stats?.totalViews || 0}
           icon={<Eye className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'النقرات' : 'Total Clicks'}
+          title={t('store.dashboard.totalClicks')}
           value={stats?.totalClicks || 0}
           icon={<MousePointerClick className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'معدل النقر' : 'Click Rate'}
+          title={t('store.dashboard.clickRate')}
           value={`${clickThroughRate}%`}
           icon={<MousePointerClick className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'معدل التحويل' : 'Conversion Rate'}
+          title={t('store.dashboard.conversionRate')}
           value={`${conversionRate}%`}
           icon={<TrendingUp className="h-6 w-6" />}
         />
@@ -143,7 +145,7 @@ export default async function StoreAnalyticsPage({
           data={topProducts}
           dataKey="value"
           labelKey="name"
-          title={isRTL ? 'أفضل المنتجات حسب المشاهدات' : 'Top Products by Views'}
+          title={t('store.dashboard.topProductsByViews')}
         />
       )}
 
@@ -152,7 +154,7 @@ export default async function StoreAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'إجمالي الإيرادات' : 'Total Revenue'}
+              {t('store.dashboard.totalRevenue')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -165,7 +167,7 @@ export default async function StoreAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'التحويلات' : 'Conversions'}
+              {t('store.dashboard.conversions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -176,7 +178,7 @@ export default async function StoreAnalyticsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {isRTL ? 'متوسط التقييم' : 'Average Rating'}
+              {t('store.dashboard.averageRating')}
             </CardTitle>
           </CardHeader>
           <CardContent>

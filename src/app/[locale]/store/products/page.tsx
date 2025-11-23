@@ -53,6 +53,7 @@ export default function StoreProductsPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState<string>('en');
+  const t = useTranslations();
   const [products, setProducts] = useState<ProductStore[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductStore[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,8 +168,8 @@ export default function StoreProductsPage({
     } catch (error) {
       console.error('Error loading products:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل تحميل المنتجات' : 'Failed to load products',
+        title: t('common.error'),
+        description: t('store.dashboard.products.failedToLoad'),
         variant: 'destructive',
       });
     } finally {
@@ -190,8 +191,8 @@ export default function StoreProductsPage({
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Deleted',
-        description: isRTL ? 'تم حذف المنتج بنجاح' : 'Product deleted successfully',
+        title: t('common.deleted'),
+        description: t('store.dashboard.products.deleteSuccess'),
       });
 
       setDeleteDialogOpen(false);
@@ -200,8 +201,8 @@ export default function StoreProductsPage({
     } catch (error) {
       console.error('Error deleting product:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حذف المنتج' : 'Failed to delete product',
+        title: t('common.error'),
+        description: t('store.dashboard.products.deleteError'),
         variant: 'destructive',
       });
     }
@@ -219,7 +220,7 @@ export default function StoreProductsPage({
   const columns: Column<ProductStore>[] = [
     {
       key: 'product',
-      label: isRTL ? 'الاسم' : 'Name',
+      label: t('common.name'),
       render: (product) => {
         const prod = product.products as any;
         return prod ? (isRTL ? prod.name_ar : prod.name_en) : '-';
@@ -227,7 +228,7 @@ export default function StoreProductsPage({
     },
     {
       key: 'category',
-      label: isRTL ? 'الفئة' : 'Category',
+      label: t('store.dashboard.products.category'),
       render: (product) => {
         const prod = product.products as any;
         return prod?.category || '-';
@@ -235,24 +236,24 @@ export default function StoreProductsPage({
     },
     {
       key: 'current_price',
-      label: isRTL ? 'السعر' : 'Price',
+      label: t('common.price'),
       render: (product) => `$${product.current_price.toLocaleString()}`,
     },
     {
       key: 'stock_quantity',
-      label: isRTL ? 'المخزون' : 'Stock',
+      label: t('store.dashboard.products.stock'),
       render: (product) => product.stock_quantity?.toLocaleString() || '-',
     },
     {
       key: 'availability',
-      label: isRTL ? 'الحالة' : 'Status',
+      label: t('common.status'),
       render: (product) => (
         <span className="capitalize">{product.availability}</span>
       ),
     },
     {
       key: 'actions',
-      label: isRTL ? 'الإجراءات' : 'Actions',
+      label: t('common.actions'),
       render: (product) => (
         <div className="flex items-center gap-2">
           <Button
@@ -285,15 +286,15 @@ export default function StoreProductsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {isRTL ? 'إدارة المنتجات' : 'Product Management'}
+            {t('store.dashboard.products.title')}
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            {isRTL ? 'عرض وإدارة منتجات متجرك' : 'View and manage your store products'}
+            {t('store.dashboard.products.subtitle')}
           </p>
         </div>
         <Button onClick={() => router.push(`/${locale}/store/products/new`)}>
           <Plus className="mr-2 h-4 w-4" />
-          {isRTL ? 'إضافة منتج' : 'Add Product'}
+          {t('store.dashboard.products.addProduct')}
         </Button>
       </div>
 
@@ -301,17 +302,17 @@ export default function StoreProductsPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-4">
           <Input
-            placeholder={isRTL ? 'بحث...' : 'Search...'}
+            placeholder={t('common.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع الفئات' : 'All Categories'} />
+              <SelectValue placeholder={t('store.dashboard.products.allCategories')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع الفئات' : 'All Categories'}</SelectItem>
+              <SelectItem value="all">{t('store.dashboard.products.allCategories')}</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat as string} value={cat as string}>
                   {cat as string}
@@ -321,14 +322,14 @@ export default function StoreProductsPage({
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع الحالات' : 'All Statuses'} />
+              <SelectValue placeholder={t('admin.transactions.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع الحالات' : 'All Statuses'}</SelectItem>
-              <SelectItem value="in_stock">{isRTL ? 'متوفر' : 'In Stock'}</SelectItem>
-              <SelectItem value="out_of_stock">{isRTL ? 'نفد المخزون' : 'Out of Stock'}</SelectItem>
-              <SelectItem value="limited_stock">{isRTL ? 'مخزون محدود' : 'Limited Stock'}</SelectItem>
-              <SelectItem value="pre_order">{isRTL ? 'طلب مسبق' : 'Pre-Order'}</SelectItem>
+              <SelectItem value="all">{t('admin.transactions.allStatuses')}</SelectItem>
+              <SelectItem value="in_stock">{t('store.dashboard.products.inStock')}</SelectItem>
+              <SelectItem value="out_of_stock">{t('store.dashboard.products.outOfStock')}</SelectItem>
+              <SelectItem value="limited_stock">{t('store.dashboard.products.limitedStock')}</SelectItem>
+              <SelectItem value="pre_order">{t('store.dashboard.products.preOrder')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -352,18 +353,16 @@ export default function StoreProductsPage({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isRTL ? 'تأكيد الحذف' : 'Confirm Deletion'}
+              {t('store.dashboard.products.confirmDelete')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isRTL
-                ? `هل أنت متأكد من حذف ${productToDelete ? (isRTL ? productToDelete.products?.name_ar : productToDelete.products?.name_en) : 'هذا المنتج'}؟ لا يمكن التراجع عن هذا الإجراء.`
-                : `Are you sure you want to delete ${productToDelete ? (isRTL ? productToDelete.products?.name_ar : productToDelete.products?.name_en) : 'this product'}? This action cannot be undone.`}
+              {t('store.dashboard.products.confirmDeleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isRTL ? 'حذف' : 'Delete'}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,4 +1,9 @@
 {
+  "noteForProduct": "ملاحظة للمنتج",
+  "note": "الملاحظة",
+  "notePlaceholder": "أضف ملاحظة خاصة لهذا المنتج (مثل: الحجم المطلوب، اللون، إلخ...)",
+  "noteSavedSuccess": "تم حفظ الملاحظة بنجاح",
+  "noteSaveError": "فشل حفظ الملاحظة",
   "title": "قائمة الأمنيات",
   "myWishlist": "قائمتي",
   "savedProducts": "المنتجات المحفوظة",

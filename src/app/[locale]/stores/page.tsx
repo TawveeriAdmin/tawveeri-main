@@ -148,7 +148,7 @@ export default function StoresPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -233,9 +233,7 @@ export default function StoresPage() {
             title={t('stores.noStores')}
             description={
               searchQuery
-                ? locale === 'ar'
-                  ? `لا توجد متاجر تطابق "${searchQuery}"`
-                  : `No stores match "${searchQuery}"`
+                ? t('stores.noStoresMatch', { query: searchQuery })
                 : undefined
             }
           />

@@ -20,6 +20,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface ProductFormData {
   // Product selection
@@ -67,6 +68,7 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { toast } = useToast();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   const [formData, setFormData] = useState<ProductFormData>({
@@ -149,8 +151,8 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
       if (formData.createNewProduct || !productId) {
         if (!formData.name_ar || !formData.name_en || !formData.category || !formData.brand || !formData.model) {
           toast({
-            title: isRTL ? 'خطأ' : 'Error',
-            description: isRTL ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields',
+            title: t('store.dashboard.products.error'),
+            description: t('store.dashboard.products.fillRequiredFields'),
             variant: 'destructive',
           });
           return;
@@ -219,23 +221,19 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
       }
 
       toast({
-        title: isRTL ? 'نجح' : 'Success',
+        title: t('store.dashboard.products.success'),
         description:
           mode === 'create'
-            ? isRTL
-              ? 'تم إضافة المنتج بنجاح'
-              : 'Product added successfully'
-            : isRTL
-            ? 'تم تحديث المنتج بنجاح'
-            : 'Product updated successfully',
+            ? t('store.dashboard.products.productAdded')
+            : t('store.dashboard.products.productUpdated'),
       });
 
       onSuccess();
     } catch (error: any) {
       console.error('Error saving product:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: error.message || (isRTL ? 'فشل حفظ المنتج' : 'Failed to save product'),
+        title: t('store.dashboard.products.error'),
+        description: error.message || t('store.dashboard.products.saveFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -257,13 +255,13 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
               }
             />
             <Label htmlFor="createNew">
-              {isRTL ? 'إنشاء منتج جديد' : 'Create new product'}
+              {t('store.dashboard.products.createNewProduct')}
             </Label>
           </div>
 
           {!formData.createNewProduct && (
             <div className="space-y-2">
-              <Label>{isRTL ? 'البحث عن منتج' : 'Search Product'}</Label>
+              <Label>{t('store.dashboard.products.searchProduct')}</Label>
               <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -275,16 +273,14 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
                       ? isRTL
                         ? selectedProduct.name_ar
                         : selectedProduct.name_en
-                      : isRTL
-                      ? 'اختر منتج...'
-                      : 'Select product...'}
+                      : t('store.dashboard.products.selectProduct')}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0">
                   <Command>
                   <CommandInput
-                    placeholder={isRTL ? 'ابحث عن منتج...' : 'Search product...'}
+                    placeholder={t('store.dashboard.products.searchProduct')}
                     value={productSearchQuery}
                     onChange={(e) => setProductSearchQuery(e.target.value)}
                   />

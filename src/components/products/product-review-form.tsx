@@ -18,6 +18,7 @@ import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createProductReview, updateProductReview } from '@/lib/reviews/product-reviews';
 import { useAuth } from '@/lib/auth/auth-context';
+import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import type { ProductReview } from '@/lib/database/types';
 
@@ -48,6 +49,7 @@ export function ProductReviewForm({
   const [loading, setLoading] = useState(false);
   const [canVerifyPurchase, setCanVerifyPurchase] = useState(false);
   const { toast } = useToast();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   useEffect(() => {
@@ -93,8 +95,8 @@ export function ProductReviewForm({
   const handleSubmit = async () => {
     if (!user?.id) {
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'يجب تسجيل الدخول لكتابة تقييم' : 'You must be logged in to write a review',
+        title: t('products.review.error'),
+        description: t('products.review.loginRequired'),
         variant: 'destructive',
       });
       return;
@@ -102,8 +104,8 @@ export function ProductReviewForm({
 
     if (rating === 0) {
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'يرجى اختيار تقييم' : 'Please select a rating',
+        title: t('products.review.error'),
+        description: t('products.review.selectRating'),
         variant: 'destructive',
       });
       return;
@@ -111,8 +113,8 @@ export function ProductReviewForm({
 
     if (reviewText.length < 10) {
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'يجب أن يكون النص 10 أحرف على الأقل' : 'Review text must be at least 10 characters',
+        title: t('products.review.error'),
+        description: t('products.review.minLength'),
         variant: 'destructive',
       });
       return;
@@ -145,14 +147,10 @@ export function ProductReviewForm({
       }
 
       toast({
-        title: isRTL ? 'نجح' : 'Success',
+        title: t('products.review.success'),
         description: existingReview
-          ? isRTL
-            ? 'تم تحديث التقييم بنجاح'
-            : 'Review updated successfully'
-          : isRTL
-          ? 'تم إضافة التقييم بنجاح'
-          : 'Review added successfully',
+          ? t('products.review.reviewUpdated')
+          : t('products.review.reviewAdded'),
       });
 
       onSuccess();
@@ -167,8 +165,8 @@ export function ProductReviewForm({
     } catch (error: any) {
       console.error('Error saving review:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: error.message || (isRTL ? 'فشل حفظ التقييم' : 'Failed to save review'),
+        title: t('products.review.error'),
+        description: error.message || t('products.review.saveFailed'),
         variant: 'destructive',
       });
     } finally {

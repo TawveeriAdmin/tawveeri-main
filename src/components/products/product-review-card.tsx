@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Star, ThumbsUp, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductReview } from '@/lib/database/types';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -31,6 +32,7 @@ export function ProductReviewCard({
   onDelete,
   locale,
 }: ProductReviewCardProps) {
+  const t = useTranslations();
   const { user } = useAuth();
   const [helpfulClicked, setHelpfulClicked] = useState(false);
   const isRTL = locale === 'ar';
@@ -64,12 +66,12 @@ export function ProductReviewCard({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {review.users?.full_name || isRTL ? 'مستخدم' : 'User'}
+                  {review.users?.full_name || t('products.review.user')}
                 </p>
                 {review.is_verified_purchase && (
                   <Badge variant="success-light" className="gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    <span className="text-xs">{isRTL ? 'شراء موثق' : 'Verified Purchase'}</span>
+                    <span className="text-xs">{t('products.review.verifiedPurchase')}</span>
                   </Badge>
                 )}
               </div>
@@ -138,7 +140,7 @@ export function ProductReviewCard({
                 className="h-8 text-sm"
               >
                 <ThumbsUp className="h-4 w-4 mr-1" />
-                {isRTL ? 'مفيد' : 'Helpful'}
+                {t('products.review.helpful')}
                 {review.helpful_count > 0 && (
                   <span className="ml-1">({review.helpful_count})</span>
                 )}

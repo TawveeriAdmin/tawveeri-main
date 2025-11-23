@@ -88,11 +88,11 @@ export default function ForgotPasswordPage() {
       const errorMessageText = error instanceof Error ? error.message : '';
 
       if (errorMessageText?.includes('User not found') || errorMessageText?.includes('not found')) {
-        errorMessage = locale === 'ar' ? 'البريد الإلكتروني غير مسجل' : 'Email not registered';
+        errorMessage = t('auth.emailNotRegistered');
       } else if (errorMessageText?.includes('Invalid email')) {
-        errorMessage = locale === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email address';
+        errorMessage = t('auth.validation.emailInvalid');
       } else if (errorMessageText?.includes('rate limit')) {
-        errorMessage = locale === 'ar' ? 'تم تجاوز الحد المسموح. الرجاء المحاولة لاحقاً' : 'Too many attempts. Please try again later';
+        errorMessage = t('auth.tooManyAttempts');
       }
 
       toast({
@@ -258,16 +258,16 @@ export default function ForgotPasswordPage() {
                     color: '#ffffff'
                   }}>
                     {isLoading
-                      ? (locale === 'ar' ? 'جاري الإرسال...' : 'Sending...')
+                      ? t('auth.sending')
                       : resetMethod === 'email'
-                        ? (locale === 'ar' ? 'إرسال رابط إعادة التعيين' : 'Send Reset Link')
-                        : (locale === 'ar' ? 'إرسال رمز التحقق' : 'Send Verification Code')}
+                        ? t('auth.sendResetLink')
+                        : t('auth.sendVerificationCode')}
                   </span>
                 </button>
 
                 {/* Back to Sign In Link */}
                 <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  {locale === 'ar' ? 'تذكرت كلمة المرور؟' : 'Remember your password?'}{' '}
+                  {t('auth.rememberPassword')}{' '}
                   <Link
                     href={`/${locale}/auth/login`}
                     className="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
@@ -288,16 +288,12 @@ export default function ForgotPasswordPage() {
 
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {locale === 'ar' ? 'تم الإرسال!' : 'Sent Successfully!'}
+                  {t('auth.sentSuccessfully')}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
                   {resetMethod === 'email'
-                    ? (locale === 'ar'
-                      ? `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${formData.email}`
-                      : `A password reset link has been sent to ${formData.email}`)
-                    : (locale === 'ar'
-                      ? `تم إرسال رمز التحقق إلى ${formData.phone}`
-                      : `A verification code has been sent to ${formData.phone}`)}
+                    ? t('auth.resetLinkSent', { email: formData.email })
+                    : t('auth.verificationCodeSent', { phone: formData.phone })}
                 </p>
               </div>
 
@@ -311,7 +307,7 @@ export default function ForgotPasswordPage() {
                     textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
                     color: '#ffffff'
                   }}>
-                    {locale === 'ar' ? 'أرسل مرة أخرى' : 'Send Again'}
+                    {t('auth.sendAgain')}
                   </span>
                 </button>
 
@@ -319,7 +315,7 @@ export default function ForgotPasswordPage() {
                   href={`/${locale}/auth/login`}
                   className="block w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 text-center"
                 >
-                  {locale === 'ar' ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
+                  {t('auth.backToSignIn')}
                 </Link>
               </div>
             </div>
@@ -353,39 +349,35 @@ export default function ForgotPasswordPage() {
           <div className="mb-12">
             <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>{t('app.name')}</h2>
             <h1 className="text-5xl font-bold leading-tight mb-6" style={{ color: '#ffffff' }}>
-              {locale === 'ar' ? 'إعادة تعيين كلمة المرور' : 'Reset Your Password'}
+              {t('auth.resetPassword')}
             </h1>
             <p className="text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
-              {locale === 'ar'
-                ? 'لا تقلق! يحدث هذا للجميع. سنساعدك على استعادة حسابك بسرعة وأمان.'
-                : "Don't worry! This happens to everyone. We'll help you recover your account quickly and securely."}
+              {t('auth.resetPasswordDescription')}
             </p>
           </div>
 
           {/* Feature Card */}
           <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl rounded-3xl p-8 border border-gray-700/50 shadow-2xl">
             <h3 className="text-2xl font-bold mb-4" style={{ color: '#ffffff' }}>
-              {locale === 'ar' ? 'حساب آمن' : 'Secure Account'}
+              {t('auth.secureAccount')}
             </h3>
             <p className="text-base mb-6" style={{ color: '#d1d5db' }}>
-              {locale === 'ar'
-                ? 'نستخدم أحدث معايير الأمان لحماية بياناتك الشخصية ومعلومات حسابك.'
-                : 'We use the latest security standards to protect your personal data and account information.'}
+              {t('auth.secureAccountDescription')}
             </p>
 
             {/* Security Features */}
             <div className="space-y-3">
               <div className="flex items-center gap-3" style={{ color: '#d1d5db' }}>
                 <CheckCircle className="w-5 h-5 text-success-400" />
-                <span>{locale === 'ar' ? 'تشفير من طرف إلى طرف' : 'End-to-end encryption'}</span>
+                <span>{t('auth.endToEndEncryption')}</span>
               </div>
               <div className="flex items-center gap-3" style={{ color: '#d1d5db' }}>
                 <CheckCircle className="w-5 h-5 text-success-400" />
-                <span>{locale === 'ar' ? 'مصادقة ثنائية' : 'Two-factor authentication'}</span>
+                <span>{t('auth.twoFactorAuth')}</span>
               </div>
               <div className="flex items-center gap-3" style={{ color: '#d1d5db' }}>
                 <CheckCircle className="w-5 h-5 text-success-400" />
-                <span>{locale === 'ar' ? 'روابط آمنة لإعادة التعيين' : 'Secure reset links'}</span>
+                <span>{t('auth.secureResetLinks')}</span>
               </div>
             </div>
           </div>

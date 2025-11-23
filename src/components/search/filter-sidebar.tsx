@@ -207,7 +207,7 @@ export function FilterSidebar({
           {availableBrands.length > 0 && (
             <AccordionItem value="brands">
               <AccordionTrigger>
-                {locale === 'ar' ? 'العلامات التجارية' : 'Brands'}
+                {t('search.filters.brands')}
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -234,7 +234,7 @@ export function FilterSidebar({
           {/* Price Range Filter */}
           <AccordionItem value="price">
             <AccordionTrigger>
-              {locale === 'ar' ? 'نطاق السعر' : 'Price Range'}
+              {t('search.filters.priceRange')}
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-4">
@@ -262,7 +262,7 @@ export function FilterSidebar({
           {availableStores.length > 0 && (
             <AccordionItem value="stores">
               <AccordionTrigger>
-                {locale === 'ar' ? 'المتاجر' : 'Stores'}
+                {t('search.filters.stores')}
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -292,7 +292,7 @@ export function FilterSidebar({
           {/* Availability Filter */}
           <AccordionItem value="availability">
             <AccordionTrigger>
-              {locale === 'ar' ? 'التوفر' : 'Availability'}
+              {t('search.filters.availability')}
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-2">
@@ -333,9 +333,9 @@ export function FilterSidebar({
           {/* Deals Only Filter */}
           <AccordionItem value="deals">
             <AccordionTrigger>
-              {locale === 'ar' ? 'العروض' : 'Deals'}
+              {t('search.filters.deals')}
             </AccordionTrigger>
-            <AccordionContent>
+              <AccordionContent>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="deals-only"
@@ -345,7 +345,7 @@ export function FilterSidebar({
                   }
                 />
                 <Label htmlFor="deals-only" className="text-sm font-normal cursor-pointer">
-                  {locale === 'ar' ? 'عروض فقط' : 'Show deals only'}
+                  {t('search.filters.showDealsOnly')}
                 </Label>
               </div>
             </AccordionContent>
@@ -354,9 +354,9 @@ export function FilterSidebar({
           {/* Free Delivery Filter */}
           <AccordionItem value="delivery">
             <AccordionTrigger>
-              {locale === 'ar' ? 'التوصيل' : 'Delivery'}
+              {t('search.filters.delivery')}
             </AccordionTrigger>
-            <AccordionContent>
+              <AccordionContent>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="free-delivery"
@@ -366,7 +366,7 @@ export function FilterSidebar({
                   }
                 />
                 <Label htmlFor="free-delivery" className="text-sm font-normal cursor-pointer">
-                  {locale === 'ar' ? 'توصيل مجاني فقط' : 'Free delivery only'}
+                  {t('search.filters.freeDeliveryOnly')}
                 </Label>
               </div>
             </AccordionContent>
@@ -375,7 +375,7 @@ export function FilterSidebar({
           {/* Rating Filter */}
           <AccordionItem value="rating">
             <AccordionTrigger>
-              {locale === 'ar' ? 'التقييم' : 'Rating'}
+              {t('search.filters.rating')}
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-2">

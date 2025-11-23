@@ -90,8 +90,8 @@ export default function PriceAlertsPage() {
     } catch (error) {
       console.error('Error loading price alerts:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل تحميل تنبيهات الأسعار' : 'Failed to load price alerts',
+        title: t('common.error'),
+        description: t('priceAlerts.loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -102,7 +102,7 @@ export default function PriceAlertsPage() {
   const handleDelete = async (alertId: string) => {
     if (!user) return;
 
-    if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذا التنبيه؟' : 'Are you sure you want to delete this alert?')) {
+    if (!confirm(t('priceAlerts.deleteConfirm'))) {
       return;
     }
 
@@ -116,16 +116,16 @@ export default function PriceAlertsPage() {
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Deleted',
-        description: isRTL ? 'تم حذف التنبيه بنجاح' : 'Alert deleted successfully',
+        title: t('priceAlerts.deleted'),
+        description: t('priceAlerts.deleteSuccess'),
       });
 
       loadAlerts();
     } catch (error) {
       console.error('Error deleting alert:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حذف التنبيه' : 'Failed to delete alert',
+        title: t('common.error'),
+        description: t('priceAlerts.deleteError'),
         variant: 'destructive',
       });
     }
@@ -144,22 +144,16 @@ export default function PriceAlertsPage() {
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم التحديث' : 'Updated',
-        description: isRTL
-          ? isActive
-            ? 'تم تفعيل التنبيه'
-            : 'تم إلغاء تفعيل التنبيه'
-          : isActive
-          ? 'Alert activated'
-          : 'Alert deactivated',
+        title: t('priceAlerts.updated'),
+        description: isActive ? t('priceAlerts.activateSuccess') : t('priceAlerts.deactivateSuccess'),
       });
 
       loadAlerts();
     } catch (error) {
       console.error('Error toggling alert:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل تحديث التنبيه' : 'Failed to update alert',
+        title: t('common.error'),
+        description: t('priceAlerts.updateError'),
         variant: 'destructive',
       });
     }
@@ -187,12 +181,8 @@ export default function PriceAlertsPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-8">
           <GuestPrompt
-            title={isRTL ? 'تنبيهات الأسعار' : 'Price Alerts'}
-            description={
-              isRTL
-                ? 'قم بإنشاء حساب لتتبع أسعار المنتجات المفضلة لديك والحصول على تنبيهات عند انخفاض الأسعار.'
-                : 'Create an account to track prices for your favorite products and get notified when prices drop.'
-            }
+            title={t('priceAlerts.guestTitle')}
+            description={t('priceAlerts.guestDescription')}
             locale={locale}
           />
         </div>
@@ -208,12 +198,12 @@ export default function PriceAlertsPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{isRTL ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{isRTL ? 'تنبيهات الأسعار' : 'Price Alerts'}</BreadcrumbPage>
+              <BreadcrumbPage>{t('priceAlerts.title')}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -222,12 +212,10 @@ export default function PriceAlertsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {isRTL ? 'تنبيهات الأسعار' : 'Price Alerts'}
+              {t('priceAlerts.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              {isRTL
-                ? 'تتبع أسعار منتجاتك المفضلة واحصل على تنبيهات عند انخفاض الأسعار'
-                : 'Track prices for your favorite products and get notified when prices drop'}
+              {t('priceAlerts.description')}
             </p>
           </div>
           <Button onClick={() => setAlertDialogOpen(true)}>
@@ -240,10 +228,10 @@ export default function PriceAlertsPage() {
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'inactive')} className="mb-6">
           <TabsList>
             <TabsTrigger value="active">
-              {isRTL ? 'النشطة' : 'Active'} ({alerts.filter((a) => a.is_active).length})
+              {t('priceAlerts.active')} ({alerts.filter((a) => a.is_active).length})
             </TabsTrigger>
             <TabsTrigger value="inactive">
-              {isRTL ? 'غير النشطة' : 'Inactive'} ({alerts.filter((a) => !a.is_active).length})
+              {t('priceAlerts.inactive')} ({alerts.filter((a) => !a.is_active).length})
             </TabsTrigger>
           </TabsList>
 
@@ -257,11 +245,11 @@ export default function PriceAlertsPage() {
             ) : alerts.filter((a) => a.is_active).length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {isRTL ? 'لا توجد تنبيهات نشطة' : 'No active alerts'}
+                  {t('priceAlerts.noAlerts')}
                 </p>
                 <Button onClick={() => setAlertDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  {isRTL ? 'إضافة تنبيه' : 'Add Alert'}
+                  {t('priceAlerts.addAlert')}
                 </Button>
               </div>
             ) : (
@@ -293,7 +281,7 @@ export default function PriceAlertsPage() {
             ) : alerts.filter((a) => !a.is_active).length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600 dark:text-gray-400">
-                  {isRTL ? 'لا توجد تنبيهات غير نشطة' : 'No inactive alerts'}
+                  {t('priceAlerts.noAlerts')}
                 </p>
               </div>
             ) : (

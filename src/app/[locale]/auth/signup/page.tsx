@@ -191,9 +191,9 @@ export default function SignupPage() {
       let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
 
       if (error.message?.includes('popup') || error.message?.includes('window')) {
-        errorMessage = locale === 'ar' ? 'تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة' : 'Popup was blocked. Please allow popups';
+        errorMessage = t('auth.popupBlocked');
       } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        errorMessage = locale === 'ar' ? 'خطأ في الاتصال بالشبكة' : 'Network connection error';
+        errorMessage = t('auth.networkError');
       }
 
       toast({
@@ -357,9 +357,9 @@ export default function SignupPage() {
       let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
 
       if (error.message?.includes('User already registered')) {
-        errorMessage = locale === 'ar' ? 'المستخدم مسجل مسبقاً' : 'User already registered';
+        errorMessage = t('auth.userAlreadyRegistered');
       } else if (error.message?.includes('Email already exists') || error.message?.includes('already been registered')) {
-        errorMessage = locale === 'ar' ? 'البريد الإلكتروني مسجل مسبقاً' : 'Email already registered';
+        errorMessage = t('auth.emailAlreadyRegistered');
       } else if (error.message?.includes('Password should be at least')) {
         errorMessage = locale === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password should be at least 6 characters';
       } else if (error.message?.includes('Invalid email')) {

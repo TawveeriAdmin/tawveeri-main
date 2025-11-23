@@ -1,0 +1,17 @@
+{
+  "title": "Checkout",
+  "reviewOrder": "Review Order",
+  "reviewOrderDesc": "Review your order and complete purchase from stores",
+  "redirectInfo": "You will be redirected to each store checkout page to complete your purchase",
+  "cartEmpty": "Your cart is empty",
+  "backToCart": "Back to Cart",
+  "redirected": "Redirected",
+  "redirectedDesc": "You will be redirected to the store checkout page",
+  "redirectFailed": "Failed to redirect to checkout",
+  "proceedToStore": "Proceed to {{storeName}} Checkout",
+  "subtotal": "Subtotal",
+  "delivery": "Delivery",
+  "total": "Total",
+  "quantity": "Qty"
+}
+

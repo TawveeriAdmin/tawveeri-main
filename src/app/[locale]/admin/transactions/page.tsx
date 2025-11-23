@@ -55,6 +55,7 @@ export default function AdminTransactionsPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState<string>('en');
+  const t = useTranslations();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,12 +162,12 @@ export default function AdminTransactionsPage({
 
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error(isRTL ? 'غير مصرح' : 'Unauthorized');
+          throw new Error(t('admin.transactions.unauthorized'));
         }
         if (response.status === 404) {
-          throw new Error(isRTL ? 'لا توجد معاملات للتصدير' : 'No transactions to export');
+          throw new Error(t('admin.transactions.noTransactions'));
         }
-        throw new Error(isRTL ? 'فشل تصدير البيانات' : 'Export failed');
+        throw new Error(t('admin.transactions.exportFailed'));
       }
 
       // Get CSV content
@@ -195,21 +196,17 @@ export default function AdminTransactionsPage({
       document.body.removeChild(link);
 
       toast({
-        title: isRTL ? 'نجح التصدير' : 'Export Successful',
-        description: isRTL
-          ? 'تم تصدير المعاملات بنجاح'
-          : 'Transactions exported successfully',
+        title: t('admin.transactions.exportSuccess'),
+        description: t('admin.transactions.exportSuccessDesc'),
       });
     } catch (error) {
       console.error('Error exporting transactions:', error);
       toast({
-        title: isRTL ? 'خطأ في التصدير' : 'Export Error',
+        title: t('admin.transactions.exportError'),
         description:
           error instanceof Error
             ? error.message
-            : isRTL
-              ? 'حدث خطأ أثناء تصدير المعاملات'
-              : 'An error occurred while exporting transactions',
+            : t('admin.transactions.exportErrorDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -235,7 +232,7 @@ export default function AdminTransactionsPage({
   const columns: Column<Transaction>[] = [
     {
       key: 'product',
-      label: isRTL ? 'المنتج' : 'Product',
+      label: t('admin.transactions.product'),
       render: (transaction) => {
         const product = transaction.product_stores?.products as any;
         return product ? (isRTL ? product.name_ar : product.name_en) : '-';
@@ -243,7 +240,7 @@ export default function AdminTransactionsPage({
     },
     {
       key: 'store',
-      label: isRTL ? 'المتجر' : 'Store',
+      label: t('admin.transactions.store'),
       render: (transaction) => {
         const store = transaction.product_stores?.stores as any;
         return store ? (isRTL ? store.name_ar : store.name_en) : '-';
@@ -251,7 +248,7 @@ export default function AdminTransactionsPage({
     },
     {
       key: 'user',
-      label: isRTL ? 'المستخدم' : 'User',
+      label: t('admin.transactions.user'),
       render: (transaction) => {
         const user = transaction.users as any;
         return user?.email || user?.full_name || '-';
@@ -259,23 +256,23 @@ export default function AdminTransactionsPage({
     },
     {
       key: 'amount',
-      label: isRTL ? 'المبلغ' : 'Amount',
+      label: t('admin.transactions.amount'),
       render: (transaction) => `$${transaction.amount.toLocaleString()}`,
     },
     {
       key: 'commission_amount',
-      label: isRTL ? 'العمولة' : 'Commission',
+      label: t('admin.transactions.commission'),
       render: (transaction) =>
         `$${(transaction.commission_amount || 0).toLocaleString()}`,
     },
     {
       key: 'commission_rate',
-      label: isRTL ? 'نسبة العمولة' : 'Commission Rate',
+      label: t('admin.transactions.commissionRate'),
       render: (transaction) => `${transaction.commission_rate || 0}%`,
     },
     {
       key: 'status',
-      label: isRTL ? 'الحالة' : 'Status',
+      label: t('admin.transactions.status'),
       render: (transaction) => (
         <Badge variant={getStatusBadgeVariant(transaction.status)}>
           {transaction.status}
@@ -284,7 +281,7 @@ export default function AdminTransactionsPage({
     },
     {
       key: 'created_at',
-      label: isRTL ? 'التاريخ' : 'Date',
+      label: t('admin.transactions.date'),
       render: (transaction) => format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm'),
     },
   ];
@@ -294,10 +291,10 @@ export default function AdminTransactionsPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'المعاملات' : 'Transactions'}
+          {t('admin.transactions.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'عرض جميع المعاملات' : 'View all transactions'}
+          {t('admin.transactions.subtitle')}
         </p>
       </div>
 
@@ -305,20 +302,20 @@ export default function AdminTransactionsPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-4">
           <Input
-            placeholder={isRTL ? 'بحث...' : 'Search...'}
+            placeholder={t('admin.transactions.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع الحالات' : 'All Statuses'} />
+              <SelectValue placeholder={t('admin.transactions.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع الحالات' : 'All Statuses'}</SelectItem>
-              <SelectItem value="completed">{isRTL ? 'مكتمل' : 'Completed'}</SelectItem>
-              <SelectItem value="pending">{isRTL ? 'قيد الانتظار' : 'Pending'}</SelectItem>
-              <SelectItem value="cancelled">{isRTL ? 'ملغي' : 'Cancelled'}</SelectItem>
+              <SelectItem value="all">{t('admin.transactions.allStatuses')}</SelectItem>
+              <SelectItem value="completed">{t('admin.transactions.completed')}</SelectItem>
+              <SelectItem value="pending">{t('admin.transactions.pending')}</SelectItem>
+              <SelectItem value="cancelled">{t('admin.transactions.cancelled')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -329,13 +326,7 @@ export default function AdminTransactionsPage({
           className="gap-2"
         >
           <Download className="h-4 w-4" />
-          {exporting
-            ? isRTL
-              ? 'جاري التصدير...'
-              : 'Exporting...'
-            : isRTL
-              ? 'تصدير CSV'
-              : 'Export CSV'}
+          {exporting ? t('admin.transactions.exporting') : t('admin.transactions.export')}
         </Button>
       </div>
 

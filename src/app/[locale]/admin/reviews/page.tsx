@@ -53,6 +53,7 @@ export default function AdminReviewsPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState<string>('en');
+  const t = useTranslations();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,8 +134,8 @@ export default function AdminReviewsPage({
     } catch (error) {
       console.error('Error loading reviews:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل تحميل التقييمات' : 'Failed to load reviews',
+        title: t('admin.reviews.error'),
+        description: t('admin.reviews.loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -155,8 +156,8 @@ export default function AdminReviewsPage({
       if (error) throw error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Deleted',
-        description: isRTL ? 'تم حذف التقييم بنجاح' : 'Review deleted successfully',
+        title: t('common.deleted'),
+        description: t('admin.reviews.deleteSuccess'),
       });
 
       setDeleteDialogOpen(false);
@@ -165,8 +166,8 @@ export default function AdminReviewsPage({
     } catch (error) {
       console.error('Error deleting review:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حذف التقييم' : 'Failed to delete review',
+        title: t('admin.reviews.error'),
+        description: t('admin.reviews.deleteError'),
         variant: 'destructive',
       });
     }
@@ -175,7 +176,7 @@ export default function AdminReviewsPage({
   const columns: Column<Review>[] = [
     {
       key: 'product',
-      label: isRTL ? 'المنتج' : 'Product',
+      label: t('admin.reviews.product'),
       render: (review) => {
         const product = review.products as any;
         return product ? (isRTL ? product.name_ar : product.name_en) : '-';
@@ -183,7 +184,7 @@ export default function AdminReviewsPage({
     },
     {
       key: 'user',
-      label: isRTL ? 'المستخدم' : 'User',
+      label: t('admin.reviews.user'),
       render: (review) => {
         const user = review.users as any;
         return user?.full_name || user?.email || '-';
@@ -191,7 +192,7 @@ export default function AdminReviewsPage({
     },
     {
       key: 'rating',
-      label: isRTL ? 'التقييم' : 'Rating',
+      label: t('admin.reviews.rating'),
       render: (review) => (
         <div className="flex items-center gap-1">
           {[...Array(5)].map((_, i) => (
@@ -210,7 +211,7 @@ export default function AdminReviewsPage({
     },
     {
       key: 'review_text',
-      label: isRTL ? 'التعليق' : 'Review',
+      label: t('admin.reviews.review'),
       render: (review) => (
         <div className="max-w-md">
           <p className="text-sm truncate">{review.review_text || '-'}</p>
@@ -219,13 +220,13 @@ export default function AdminReviewsPage({
     },
     {
       key: 'status',
-      label: isRTL ? 'الحالة' : 'Status',
+      label: t('admin.reviews.status'),
       render: (review) => (
         <div className="flex items-center gap-2">
           {review.is_verified_purchase && (
             <Badge variant="success-light" className="gap-1">
               <CheckCircle className="h-3 w-3" />
-              <span className="text-xs">{isRTL ? 'موثق' : 'Verified'}</span>
+              <span className="text-xs">{t('admin.reviews.verified')}</span>
             </Badge>
           )}
         </div>
@@ -233,12 +234,12 @@ export default function AdminReviewsPage({
     },
     {
       key: 'created_at',
-      label: isRTL ? 'التاريخ' : 'Date',
+      label: t('admin.reviews.date'),
       render: (review) => format(new Date(review.created_at), 'MMM dd, yyyy HH:mm'),
     },
     {
       key: 'actions',
-      label: isRTL ? 'الإجراءات' : 'Actions',
+      label: t('admin.reviews.actions'),
       render: (review) => (
         <Button
           variant="ghost"
@@ -260,10 +261,10 @@ export default function AdminReviewsPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'إدارة التقييمات' : 'Review Management'}
+          {t('admin.reviews.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'عرض وإدارة تقييمات المنتجات' : 'View and manage product reviews'}
+          {t('admin.reviews.subtitle')}
         </p>
       </div>
 
@@ -271,22 +272,22 @@ export default function AdminReviewsPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-4">
           <Input
-            placeholder={isRTL ? 'بحث...' : 'Search...'}
+            placeholder={t('admin.reviews.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           <Select value={ratingFilter} onValueChange={setRatingFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={isRTL ? 'جميع التقييمات' : 'All Ratings'} />
+              <SelectValue placeholder={t('admin.reviews.allRatings')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{isRTL ? 'جميع التقييمات' : 'All Ratings'}</SelectItem>
-              <SelectItem value="5">5 {isRTL ? 'نجوم' : 'Stars'}</SelectItem>
-              <SelectItem value="4">4 {isRTL ? 'نجوم' : 'Stars'}</SelectItem>
-              <SelectItem value="3">3 {isRTL ? 'نجوم' : 'Stars'}</SelectItem>
-              <SelectItem value="2">2 {isRTL ? 'نجوم' : 'Stars'}</SelectItem>
-              <SelectItem value="1">1 {isRTL ? 'نجم' : 'Star'}</SelectItem>
+              <SelectItem value="all">{t('admin.reviews.allRatings')}</SelectItem>
+              <SelectItem value="5">5 {t('admin.reviews.stars')}</SelectItem>
+              <SelectItem value="4">4 {t('admin.reviews.stars')}</SelectItem>
+              <SelectItem value="3">3 {t('admin.reviews.stars')}</SelectItem>
+              <SelectItem value="2">2 {t('admin.reviews.stars')}</SelectItem>
+              <SelectItem value="1">1 {t('admin.reviews.star')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -310,18 +311,16 @@ export default function AdminReviewsPage({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isRTL ? 'تأكيد الحذف' : 'Confirm Deletion'}
+              {t('admin.reviews.confirmDelete')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isRTL
-                ? 'هل أنت متأكد من حذف هذا التقييم؟ لا يمكن التراجع عن هذا الإجراء.'
-                : 'Are you sure you want to delete this review? This action cannot be undone.'}
+              {t('admin.reviews.confirmDeleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('admin.reviews.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isRTL ? 'حذف' : 'Delete'}
+              {t('admin.reviews.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

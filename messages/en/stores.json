@@ -14,6 +14,7 @@
   "productsCount": "products",
   "viewStore": "View Store",
   "visitWebsite": "Visit Website",
-  "resultsCount": "stores found"
+  "resultsCount": "stores found",
+  "noStoresMatch": "No stores match \"{{query}}\""
 }
 

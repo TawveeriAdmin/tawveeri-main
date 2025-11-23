@@ -14,6 +14,7 @@
   "discount": "خصم",
   "save": "وفر",
   "viewDeal": "عرض العرض",
-  "resultsCount": "عرض"
+  "resultsCount": "عرض",
+  "noDealsMatch": "لا توجد عروض تطابق \"{{query}}\""
 }
 

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Trash2, Search, Plus, X } from 'lucide-react';
 import type { SearchFilters } from './filter-sidebar';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface SavedSearchesProps {
   locale: string;
@@ -27,6 +28,7 @@ export function SavedSearches({
 }: SavedSearchesProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
   const [savedSearches, setSavedSearches] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,8 +70,8 @@ export function SavedSearches({
       if (result.error) throw result.error;
 
       toast({
-        title: isRTL ? 'تم الحفظ' : 'Saved',
-        description: isRTL ? 'تم حفظ البحث بنجاح' : 'Search saved successfully',
+        title: t('search.savedSearches.saved'),
+        description: t('search.savedSearches.searchSaved'),
       });
 
       setSaveDialogOpen(false);
@@ -78,8 +80,8 @@ export function SavedSearches({
     } catch (error) {
       console.error('Error saving search:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حفظ البحث' : 'Failed to save search',
+        title: t('search.savedSearches.error'),
+        description: t('search.savedSearches.saveFailed'),
         variant: 'destructive',
       });
     }
@@ -88,7 +90,7 @@ export function SavedSearches({
   const handleDelete = async (searchId: string) => {
     if (!user) return;
 
-    if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذا البحث؟' : 'Are you sure you want to delete this search?')) {
+    if (!confirm(t('search.savedSearches.confirmDelete'))) {
       return;
     }
 
@@ -97,16 +99,16 @@ export function SavedSearches({
       if (result.error) throw result.error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Deleted',
-        description: isRTL ? 'تم حذف البحث بنجاح' : 'Search deleted successfully',
+        title: t('search.savedSearches.deleted'),
+        description: t('search.savedSearches.searchDeleted'),
       });
 
       loadSavedSearches();
     } catch (error) {
       console.error('Error deleting search:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'فشل حذف البحث' : 'Failed to delete search',
+        title: t('search.savedSearches.error'),
+        description: t('search.savedSearches.deleteFailed'),
         variant: 'destructive',
       });
     }
@@ -129,7 +131,7 @@ export function SavedSearches({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Search className="w-5 h-5" />
-              {isRTL ? 'البحوث المحفوظة' : 'Saved Searches'}
+              {t('search.savedSearches.title')}
             </CardTitle>
             <Button
               variant="ghost"
@@ -138,18 +140,18 @@ export function SavedSearches({
               disabled={!currentQuery && !currentFilters}
             >
               <Plus className="w-4 h-4 mr-1" />
-              {isRTL ? 'حفظ' : 'Save'}
+              {t('search.savedSearches.save')}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {isRTL ? 'جاري التحميل...' : 'Loading...'}
+              {t('search.savedSearches.loading')}
             </div>
           ) : savedSearches.length === 0 ? (
             <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-              {isRTL ? 'لا توجد بحوث محفوظة' : 'No saved searches'}
+              {t('search.savedSearches.noSearches')}
             </div>
           ) : (
             <div className="space-y-2">
@@ -191,30 +193,28 @@ export function SavedSearches({
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isRTL ? 'حفظ البحث' : 'Save Search'}</DialogTitle>
+            <DialogTitle>{t('search.savedSearches.saveSearch')}</DialogTitle>
             <DialogDescription>
-              {isRTL
-                ? 'أدخل اسماً لهذا البحث لحفظه للاستخدام لاحقاً'
-                : 'Enter a name for this search to save it for later use'}
+              {t('search.savedSearches.saveSearchDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="searchName">{isRTL ? 'اسم البحث' : 'Search Name'}</Label>
+              <Label htmlFor="searchName">{t('search.savedSearches.searchName')}</Label>
               <Input
                 id="searchName"
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                placeholder={isRTL ? 'مثال: هواتف Apple' : 'e.g., Apple phones'}
+                placeholder={t('search.savedSearches.searchNamePlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
-              {isRTL ? 'إلغاء' : 'Cancel'}
+              {t('search.savedSearches.cancel')}
             </Button>
             <Button onClick={handleSaveSearch} disabled={!searchName.trim()}>
-              {isRTL ? 'حفظ' : 'Save'}
+              {t('search.savedSearches.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

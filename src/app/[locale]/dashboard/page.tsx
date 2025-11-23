@@ -514,22 +514,22 @@ export default function DashboardPage() {
 
     return [
       {
-        label: locale === 'ar' ? 'عناصر القائمة المفضلة' : 'Wishlist items',
+        label: t('dashboard.wishlistItems'),
         value: stats.wishlist,
         icon: Heart,
       },
       {
-        label: locale === 'ar' ? 'تنبيهات الأسعار النشطة' : 'Active alerts',
+        label: t('dashboard.activeAlerts'),
         value: stats.priceAlerts,
         icon: Bell,
       },
       {
-        label: locale === 'ar' ? 'عمليات البحث المحفوظة' : 'Saved searches',
+        label: t('dashboard.savedSearches'),
         value: stats.savedSearches,
         icon: Search,
       },
       {
-        label: locale === 'ar' ? 'آخر المنتجات التي شاهدتها' : 'Recently viewed',
+        label: t('dashboard.recentlyViewed'),
         value: stats.recentlyViewed,
         icon: Package,
       },
@@ -563,7 +563,7 @@ export default function DashboardPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -640,7 +640,7 @@ export default function DashboardPage() {
                 <Bell className="w-5 h-5 mr-3" />
                 <div className="text-left">
                   <div className="font-semibold">
-                    {locale === 'ar' ? 'إدارة الإعدادات' : 'Manage settings'}
+                    {t('dashboard.manageSettings')}
                   </div>
                 </div>
               </Link>
@@ -660,7 +660,7 @@ export default function DashboardPage() {
                   icon={<Heart className="h-12 w-12" />}
                   title={t('dashboard.signInToUnlock')}
                   action={{
-                    label: locale === 'ar' ? 'سجل الدخول' : 'Sign In',
+                    label: t('common.login'),
                     onClick: () => router.push(`/${locale}/auth/login`),
                   }}
                 />
@@ -676,7 +676,7 @@ export default function DashboardPage() {
                   icon={<Search className="h-12 w-12" />}
                   title={t('dashboard.signInToUnlock')}
                   action={{
-                    label: locale === 'ar' ? 'سجل الدخول' : 'Sign In',
+                    label: t('common.login'),
                     onClick: () => router.push(`/${locale}/auth/login`),
                   }}
                 />
@@ -708,7 +708,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-300" />
-                    {locale === 'ar' ? 'رؤى ذكية' : 'Smart insights'}
+                    {t('dashboard.smartInsights')}
                   </CardTitle>
                   <CardDescription>
                     {locale === 'ar'
@@ -731,11 +731,11 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {locale === 'ar' ? 'توصيات مخصصة لك' : 'Recommended for you'}
+                  {t('dashboard.recommendedForYou')}
                 </h2>
                 <Badge variant="outline" className="text-xs">
                   <Sparkles className="w-3 h-3 mr-1" />
-                  {locale === 'ar' ? 'مستندة إلى نشاطك' : 'Based on your activity'}
+                  {t('dashboard.basedOnActivity')}
                 </Badge>
               </div>
               {loading ? (
@@ -747,7 +747,7 @@ export default function DashboardPage() {
               ) : recommendations.length === 0 ? (
                 <EmptyState
                   icon={<TrendingUp className="h-10 w-10" />}
-                  title={locale === 'ar' ? 'لا توجد توصيات بعد' : 'No recommendations yet'}
+                  title={t('dashboard.noRecommendations')}
                   description={
                     locale === 'ar'
                       ? 'تابع البحث وحفظ المنتجات لتحصل على اقتراحات مخصصة.'
@@ -775,7 +775,7 @@ export default function DashboardPage() {
                           />
                         ) : (
                           <div className="w-full h-40 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm text-gray-500">
-                            {locale === 'ar' ? 'لا توجد صورة' : 'No image'}
+                            {t('dashboard.noImage')}
                           </div>
                         )}
                         <div className="flex items-center justify-between text-sm">
@@ -790,7 +790,7 @@ export default function DashboardPage() {
                             href={`/${locale}/products/${product.slug}`}
                             className="inline-flex items-center gap-1 text-xs text-primary-600 dark:text-primary-300 hover:underline"
                           >
-                            {locale === 'ar' ? 'عرض التفاصيل' : 'View details'}
+                            {t('dashboard.viewDetails')}
                             <ArrowRight className="w-3 h-3" />
                           </Link>
                         </div>
@@ -805,10 +805,10 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {locale === 'ar' ? 'المفضلة' : 'Favorites'}
+                  {t('dashboard.favorites')}
                 </h2>
                 <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}/wishlist`)}>
-                  {locale === 'ar' ? 'فتح قائمة الأمنيات' : 'Open wishlist'}
+                  {t('dashboard.openWishlist')}
                 </Button>
               </div>
               {loading ? (
@@ -820,7 +820,7 @@ export default function DashboardPage() {
               ) : favorites.length === 0 ? (
                 <EmptyState
                   icon={<Heart className="h-10 w-10" />}
-                  title={locale === 'ar' ? 'لا توجد عناصر محفوظة' : 'Nothing saved yet'}
+                  title={t('dashboard.nothingSaved')}
                   description={
                     locale === 'ar'
                       ? 'احفظ المنتجات للمقارنة السريعة أو للحصول على تنبيهات الأسعار.'
@@ -848,7 +848,7 @@ export default function DashboardPage() {
                           />
                         ) : (
                           <div className="w-full h-36 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm text-gray-500">
-                            {locale === 'ar' ? 'لا توجد صورة' : 'No image'}
+                            {t('dashboard.noImage')}
                           </div>
                         )}
                         <div className="flex items-center justify-between text-sm">
@@ -876,7 +876,7 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {locale === 'ar' ? 'شوهد مؤخرًا' : 'Recently viewed'}
+                  {t('dashboard.recentlyViewed')}
                 </h2>
               </div>
               {loading ? (
@@ -888,12 +888,8 @@ export default function DashboardPage() {
               ) : recentlyViewed.length === 0 ? (
                 <EmptyState
                   icon={<Clock3 className="h-10 w-10" />}
-                  title={locale === 'ar' ? 'ابدأ التصفح' : 'Start exploring'}
-                  description={
-                    locale === 'ar'
-                      ? 'المنتجات التي تشاهدها ستظهر هنا تلقائيًا.'
-                      : 'Products you view will appear here automatically for easy access.'
-                  }
+                  title={t('dashboard.startExploring')}
+                  description={t('dashboard.startExploringDescription')}
                 />
               ) : (
                 <div className="flex gap-4 overflow-x-auto pb-2">
@@ -911,7 +907,7 @@ export default function DashboardPage() {
                           />
                         ) : (
                           <div className="w-full h-32 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-500">
-                            {locale === 'ar' ? 'لا توجد صورة' : 'No image'}
+                            {t('dashboard.noImage')}
                           </div>
                         )}
                         <div className="flex items-center justify-between text-xs">
@@ -986,14 +982,12 @@ export default function DashboardPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>
-                      {locale === 'ar' ? 'سجل المقارنات' : 'Comparison history'}
+                      {t('dashboard.comparisonHistory')}
                     </CardTitle>
                     <BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <CardDescription>
-                    {locale === 'ar'
-                      ? 'تابع المنتجات التي قارنتها مؤخرًا.'
-                      : 'Jump back into products you compared recently.'}
+                    {t('dashboard.comparisonHistoryDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1006,12 +1000,8 @@ export default function DashboardPage() {
                   ) : comparisonHistory.length === 0 ? (
                     <EmptyState
                       icon={<BarChart3 className="h-8 w-8" />}
-                      title={locale === 'ar' ? 'لا توجد مقارنات' : 'No comparisons yet'}
-                      description={
-                        locale === 'ar'
-                          ? 'أضف منتجات إلى أداة المقارنة، وسنضعها هنا للرجوع السريع.'
-                          : 'Add products to the comparison tool and we’ll keep them here for quick access.'
-                      }
+                      title={t('dashboard.noComparisons')}
+                      description={t('dashboard.noComparisonsDescription')}
                     />
                   ) : (
                     <div className="space-y-2">
@@ -1077,11 +1067,11 @@ export default function DashboardPage() {
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {locale === 'ar' ? 'السعر المستهدف' : 'Target'}: {alert.target_price} ر.س
+                                    {t('dashboard.targetPrice')}: {alert.target_price} ر.س
                                   </span>
                                   {triggered && (
                                     <Badge variant="success" className="text-xs">
-                                      {locale === 'ar' ? 'تم التنبيه' : 'Alert triggered'}
+                                      {t('dashboard.alertTriggered')}
                                     </Badge>
                                   )}
                                 </div>

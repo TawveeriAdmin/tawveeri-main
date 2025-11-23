@@ -10,6 +10,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface StoreSidebarProps {
   locale: string;
@@ -17,15 +18,16 @@ interface StoreSidebarProps {
 }
 
 const navItems = [
-  { href: '/store/dashboard', icon: LayoutDashboard, label: 'Dashboard', key: 'dashboard' },
-  { href: '/store/products', icon: Package, label: 'Products', key: 'products' },
-  { href: '/store/transactions', icon: CreditCard, label: 'Transactions', key: 'transactions' },
-  { href: '/store/analytics', icon: BarChart3, label: 'Analytics', key: 'analytics' },
-  { href: '/store/settings', icon: Settings, label: 'Settings', key: 'settings' },
+  { href: '/store/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+  { href: '/store/products', icon: Package, key: 'products' },
+  { href: '/store/transactions', icon: CreditCard, key: 'transactions' },
+  { href: '/store/analytics', icon: BarChart3, key: 'analytics' },
+  { href: '/store/settings', icon: Settings, key: 'settings' },
 ];
 
 export function StoreSidebar({ locale, store }: StoreSidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   return (
@@ -38,7 +40,7 @@ export function StoreSidebar({ locale, store }: StoreSidebarProps) {
       {/* Logo/Brand */}
       <div className="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 px-4">
         <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">
-          {locale === 'ar' ? 'لوحة المتجر' : 'Store Panel'}
+          {t('store.sidebar.storePanel')}
         </h1>
       </div>
 
@@ -73,7 +75,7 @@ export function StoreSidebar({ locale, store }: StoreSidebarProps) {
               )}
             >
               <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              <span>{t(`store.sidebar.${item.key}`)}</span>
             </Link>
           );
         })}

@@ -39,6 +39,41 @@
     "instructions": "Point your camera at a product barcode or QR code to search automatically.",
     "manualHint": "Or enter a code manually",
     "noSupport": "Barcode scanning is not supported on this device. Enter the code manually instead."
+  },
+  "noResultsFor": "No results found for \"{{query}}\"",
+  "startSearching": "Start Searching",
+  "searchForProducts": "Search for products you want",
+  "noSuggestions": "No suggestions",
+  "searching": "Searching...",
+  "filters": {
+    "brands": "Brands",
+    "priceRange": "Price Range",
+    "stores": "Stores",
+    "availability": "Availability",
+    "deals": "Deals",
+    "showDealsOnly": "Show deals only",
+    "delivery": "Delivery",
+    "freeDeliveryOnly": "Free delivery only",
+    "rating": "Rating"
+  },
+  "savedSearches": {
+    "title": "Saved Searches",
+    "save": "Save",
+    "saved": "Saved",
+    "searchSaved": "Search saved successfully",
+    "error": "Error",
+    "saveFailed": "Failed to save search",
+    "deleted": "Deleted",
+    "searchDeleted": "Search deleted successfully",
+    "deleteFailed": "Failed to delete search",
+    "confirmDelete": "Are you sure you want to delete this search?",
+    "loading": "Loading...",
+    "noSearches": "No saved searches",
+    "saveSearch": "Save Search",
+    "saveSearchDesc": "Enter a name for this search to save it for later use",
+    "searchName": "Search Name",
+    "searchNamePlaceholder": "e.g., Apple phones",
+    "cancel": "Cancel"
   }
 }
 

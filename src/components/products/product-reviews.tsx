@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { markReviewHelpful } from '@/lib/reviews/product-reviews';
 import { Plus } from 'lucide-react';
 import type { ProductReview } from '@/lib/database/types';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface ProductReviewsProps {
   productId: string;
@@ -45,6 +46,7 @@ export function ProductReviews({
   const [userHasReview, setUserHasReview] = useState(false);
   const limit = 10;
   const { toast } = useToast();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   useEffect(() => {
@@ -112,16 +114,16 @@ export function ProductReviews({
       if (result.error) throw result.error;
 
       toast({
-        title: isRTL ? 'تم الحذف' : 'Deleted',
-        description: isRTL ? 'تم حذف التقييم بنجاح' : 'Review deleted successfully',
+        title: t('common.deleted'),
+        description: t('products.review.reviewDeleted'),
       });
 
       loadReviews();
     } catch (error: any) {
       console.error('Error deleting review:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: error.message || (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
+        title: t('common.error'),
+        description: error.message || t('products.review.deleteFailed'),
         variant: 'destructive',
       });
     }
@@ -140,7 +142,7 @@ export function ProductReviews({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {isRTL ? 'التقييمات والمراجعات' : 'Reviews & Ratings'}
+            {t('products.review.reviewsTitle')}
           </h3>
           <ProductRatingDisplay
             rating={averageRating}
@@ -152,7 +154,7 @@ export function ProductReviews({
         {user && !userHasReview && (
           <Button onClick={() => setReviewDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            {isRTL ? 'كتابة تقييم' : 'Write Review'}
+            {t('products.review.writeReview')}
           </Button>
         )}
       </div>
@@ -168,9 +170,9 @@ export function ProductReviews({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">{isRTL ? 'الأحدث' : 'Newest'}</SelectItem>
-              <SelectItem value="oldest">{isRTL ? 'الأقدم' : 'Oldest'}</SelectItem>
-              <SelectItem value="rating">{isRTL ? 'الأعلى تقييمًا' : 'Highest Rating'}</SelectItem>
+              <SelectItem value="newest">{t('products.review.sortNewest')}</SelectItem>
+              <SelectItem value="oldest">{t('products.review.sortOldest')}</SelectItem>
+              <SelectItem value="rating">{t('products.review.sortHighestRating')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -189,12 +191,12 @@ export function ProductReviews({
       ) : reviews.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {isRTL ? 'لا توجد تقييمات بعد' : 'No reviews yet'}
+            {t('products.review.noReviews')}
           </p>
           {user && !userHasReview && (
             <Button onClick={() => setReviewDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              {isRTL ? 'كن أول من يقيم' : 'Be the first to review'}
+              {t('products.review.beFirstToReview')}
             </Button>
           )}
         </div>
@@ -221,17 +223,17 @@ export function ProductReviews({
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
-            {isRTL ? 'السابق' : 'Previous'}
+            {t('products.review.previous')}
           </Button>
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            {isRTL ? 'صفحة' : 'Page'} {page} {isRTL ? 'من' : 'of'} {totalPages}
+            {t('products.review.page')} {page} {t('products.review.of')} {totalPages}
           </span>
           <Button
             variant="outline"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
           >
-            {isRTL ? 'التالي' : 'Next'}
+            {t('products.review.next')}
           </Button>
         </div>
       )}

@@ -69,7 +69,7 @@ export function useTranslations(): (key: string) => string {
 
   const { messages = {} } = context;
 
-  return (key: string) => {
+  return (key: string, params?: Record<string, string | number>) => {
     if (!key || typeof key !== 'string') {
       return key || '';
     }
@@ -86,7 +86,16 @@ export function useTranslations(): (key: string) => string {
     }
 
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
+      let result = String(value);
+      
+      // Simple placeholder replacement: {{key}}
+      if (params) {
+        Object.entries(params).forEach(([paramKey, paramValue]) => {
+          result = result.replace(new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'), String(paramValue));
+        });
+      }
+      
+      return result;
     }
 
     return key;

@@ -114,8 +114,8 @@ export default function WishlistPage() {
       });
     } catch (err) {
       toast({
-        title: locale === 'ar' ? 'خطأ' : 'Error',
-        description: err instanceof Error ? err.message : locale === 'ar' ? 'فشل الإزالة' : 'Failed to remove',
+        title: t('common.error'),
+        description: err instanceof Error ? err.message : t('wishlist.removeFailed'),
         variant: 'destructive',
       });
     }
@@ -273,7 +273,7 @@ export default function WishlistPage() {
             icon={<LogIn className="h-12 w-12" />}
             title={t('wishlist.signInRequired')}
             action={{
-              label: locale === 'ar' ? 'سجل الدخول' : 'Sign In',
+              label: t('common.login'),
               onClick: () => router.push(`/${locale}/auth/login`),
             }}
           />
@@ -290,7 +290,7 @@ export default function WishlistPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -325,7 +325,7 @@ export default function WishlistPage() {
             title={t('wishlist.noProducts')}
             description={t('wishlist.emptyDescription')}
             action={{
-              label: locale === 'ar' ? 'تصفح المنتجات' : 'Browse Products',
+              label: t('wishlist.browseProducts'),
               onClick: () => router.push(`/${locale}/products`),
             }}
           />
@@ -349,9 +349,9 @@ export default function WishlistPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      aria-label={locale === 'ar' ? 'إضافة ملاحظة' : 'Add note'}
+                      aria-label={t('wishlist.addNote')}
                       onClick={() => handleOpenNoteDialog(product)}
-                      title={locale === 'ar' ? 'إضافة ملاحظة' : 'Add note'}
+                      title={t('wishlist.addNote')}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>

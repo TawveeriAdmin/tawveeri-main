@@ -42,7 +42,7 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
     <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {locale === 'ar' ? 'لوحة التحكم' : 'Admin Dashboard'}
+          {t('admin.header.adminDashboard')}
         </h2>
       </div>
 
@@ -70,7 +70,7 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
-              <span>{locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</span>
+              <span>{t('admin.header.signOut')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

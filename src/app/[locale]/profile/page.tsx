@@ -142,7 +142,7 @@ export default function ProfilePage() {
     if (newPassword !== confirmPassword) {
       toast({
         title: t('profile.passwordError'),
-        description: locale === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match',
+        description: t('profile.passwordsDoNotMatch'),
         variant: 'destructive',
       });
       return;
@@ -151,7 +151,7 @@ export default function ProfilePage() {
     if (newPassword.length < 6) {
       toast({
         title: t('profile.passwordError'),
-        description: locale === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters',
+        description: t('profile.passwordMinLength'),
         variant: 'destructive',
       });
       return;
@@ -227,14 +227,14 @@ export default function ProfilePage() {
 
       setAvatarUrl(data);
       toast({
-        title: locale === 'ar' ? 'تم تحديث الصورة' : 'Avatar updated',
+        title: t('profile.avatarUpdated'),
         variant: 'default',
       });
 
       await refreshSession();
     } catch (error) {
       toast({
-        title: locale === 'ar' ? 'فشل التحديث' : 'Update failed',
+        title: t('profile.updateFailed'),
         description: error instanceof Error ? error.message : undefined,
         variant: 'destructive',
       });
@@ -253,14 +253,14 @@ export default function ProfilePage() {
 
       setAvatarUrl(null);
       toast({
-        title: locale === 'ar' ? 'تمت إزالة الصورة' : 'Avatar removed',
+        title: t('profile.avatarRemoved'),
         variant: 'default',
       });
 
       await refreshSession();
     } catch (error) {
       toast({
-        title: locale === 'ar' ? 'فشل الإزالة' : 'Removal failed',
+        title: t('profile.removalFailed'),
         description: error instanceof Error ? error.message : undefined,
         variant: 'destructive',
       });
@@ -278,13 +278,13 @@ export default function ProfilePage() {
       if (error) throw error;
 
       toast({
-        title: locale === 'ar' ? 'تم الإرسال' : 'Verification sent',
-        description: locale === 'ar' ? 'تحقق من بريدك الإلكتروني' : 'Check your inbox for the verification email',
+        title: t('profile.verificationSent'),
+        description: t('profile.checkInbox'),
         variant: 'default',
       });
     } catch (error) {
       toast({
-        title: locale === 'ar' ? 'فشل الإرسال' : 'Send failed',
+        title: t('profile.sendFailed'),
         description: error instanceof Error ? error.message : undefined,
         variant: 'destructive',
       });
@@ -296,7 +296,7 @@ export default function ProfilePage() {
   const handleResendPhone = async () => {
     if (!user?.phone) {
       toast({
-        title: locale === 'ar' ? 'رقم الهاتف غير موجود' : 'Phone number missing',
+        title: t('profile.phoneNumberMissing'),
         variant: 'destructive',
       });
       return;
@@ -309,13 +309,13 @@ export default function ProfilePage() {
 
       setPhoneOtpSent(true);
       toast({
-        title: locale === 'ar' ? 'تم إرسال الرمز' : 'OTP sent',
-        description: locale === 'ar' ? 'تم إرسال رمز التحقق عبر الرسائل القصيرة' : 'Verification code sent via SMS',
+        title: t('profile.otpSent'),
+        description: t('profile.otpSentDescription'),
         variant: 'default',
       });
     } catch (error) {
       toast({
-        title: locale === 'ar' ? 'فشل الإرسال' : 'Send failed',
+        title: t('profile.sendFailed'),
         description: error instanceof Error ? error.message : undefined,
         variant: 'destructive',
       });
@@ -327,7 +327,7 @@ export default function ProfilePage() {
   const handleVerifyPhone = async () => {
     if (!user?.phone) {
       toast({
-        title: locale === 'ar' ? 'رقم الهاتف غير موجود' : 'Phone number missing',
+        title: t('profile.phoneNumberMissing'),
         variant: 'destructive',
       });
       return;
@@ -335,7 +335,7 @@ export default function ProfilePage() {
 
     if (!phoneOtp.trim()) {
       toast({
-        title: locale === 'ar' ? 'أدخل الرمز' : 'Enter OTP',
+        title: t('profile.enterOtp'),
         variant: 'destructive',
       });
       return;
@@ -350,14 +350,14 @@ export default function ProfilePage() {
       setPhoneOtp('');
       setPhoneOtpSent(false);
       toast({
-        title: locale === 'ar' ? 'تم التحقق من الهاتف' : 'Phone verified',
+        title: t('profile.phoneVerified'),
         variant: 'default',
       });
 
       await refreshSession();
     } catch (error) {
       toast({
-        title: locale === 'ar' ? 'فشل التحقق' : 'Verification failed',
+        title: t('profile.verificationFailed'),
         description: error instanceof Error ? error.message : undefined,
         variant: 'destructive',
       });
@@ -375,7 +375,7 @@ export default function ProfilePage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -391,7 +391,7 @@ export default function ProfilePage() {
             {t('profile.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {locale === 'ar' ? 'إدارة ملفك الشخصي وإعداداتك' : 'Manage your profile and settings'}
+            {t('profile.manageProfile')}
           </p>
         </div>
 
@@ -401,7 +401,7 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle>{t('profile.personalInfo')}</CardTitle>
               <CardDescription>
-                {locale === 'ar' ? 'حدّث معلوماتك الشخصية' : 'Update your personal information'}
+                {t('profile.updatePersonalInfo')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -438,11 +438,7 @@ export default function ProfilePage() {
                       disabled={avatarUploading}
                     >
                       <Camera className="w-4 h-4 mr-2" />
-                      {avatarUploading
-                        ? locale === 'ar'
-                          ? 'جاري التحميل...'
-                          : 'Uploading...'
-                        : t('profile.changeAvatar')}
+                      {avatarUploading ? t('profile.uploading') : t('profile.changeAvatar')}
                     </Button>
                     {avatarUrl && (
                       <Button
@@ -453,11 +449,7 @@ export default function ProfilePage() {
                         disabled={avatarUploading}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        {avatarUploading
-                          ? locale === 'ar'
-                            ? 'جاري الإزالة...'
-                            : 'Removing...'
-                          : t('profile.removeAvatar')}
+                        {avatarUploading ? t('profile.removing') : t('profile.removeAvatar')}
                       </Button>
                     )}
                   </div>
@@ -474,7 +466,7 @@ export default function ProfilePage() {
                   id="fullName"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder={locale === 'ar' ? 'أدخل اسمك الكامل' : 'Enter your full name'}
+                  placeholder={t('profile.enterFullName')}
                 />
               </div>
 
@@ -492,11 +484,11 @@ export default function ProfilePage() {
                   className="bg-gray-100 dark:bg-gray-800"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {locale === 'ar' ? 'لا يمكن تغيير البريد الإلكتروني' : 'Email cannot be changed'}
+                  {t('profile.emailCannotChange')}
                 </p>
                 <div className="flex items-center gap-3 pt-2">
                   <Badge variant={emailVerified ? 'success' : 'secondary'}>
-                    {emailVerified ? (locale === 'ar' ? 'تم التحقق' : 'Verified') : locale === 'ar' ? 'غير متحقق' : 'Unverified'}
+                    {emailVerified ? t('profile.verified') : t('profile.unverified')}
                   </Badge>
                   {!emailVerified && (
                     <Button
@@ -505,7 +497,7 @@ export default function ProfilePage() {
                       onClick={handleResendEmail}
                       disabled={emailResendLoading}
                     >
-                      {emailResendLoading ? (locale === 'ar' ? 'جاري الإرسال...' : 'Sending...') : locale === 'ar' ? 'إعادة إرسال التحقق' : 'Resend verification'}
+                      {emailResendLoading ? t('profile.sending') : t('profile.resendVerification')}
                     </Button>
                   )}
                 </div>
@@ -525,12 +517,12 @@ export default function ProfilePage() {
                   className="bg-gray-100 dark:bg-gray-800"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {locale === 'ar' ? 'لا يمكن تغيير رقم الهاتف' : 'Phone number cannot be changed'}
+                  {t('profile.phoneCannotChange')}
                 </p>
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3">
                     <Badge variant={phoneVerified ? 'success' : 'secondary'}>
-                      {phoneVerified ? (locale === 'ar' ? 'تم التحقق' : 'Verified') : locale === 'ar' ? 'غير متحقق' : 'Unverified'}
+                      {phoneVerified ? t('profile.verified') : t('profile.unverified')}
                     </Badge>
                     {!phoneVerified && (
                       <Button
@@ -539,7 +531,7 @@ export default function ProfilePage() {
                         onClick={handleResendPhone}
                         disabled={phoneResendLoading || !user?.phone}
                       >
-                        {phoneResendLoading ? (locale === 'ar' ? 'جاري الإرسال...' : 'Sending...') : phoneOtpSent ? (locale === 'ar' ? 'إعادة إرسال الرمز' : 'Resend code') : locale === 'ar' ? 'إرسال الرمز' : 'Send code'}
+                        {phoneResendLoading ? t('profile.sending') : phoneOtpSent ? t('profile.resendCode') : t('profile.sendCode')}
                       </Button>
                     )}
                   </div>
@@ -549,14 +541,14 @@ export default function ProfilePage() {
                         type="text"
                         value={phoneOtp}
                         onChange={(e) => setPhoneOtp(e.target.value)}
-                        placeholder={locale === 'ar' ? 'أدخل رمز التحقق' : 'Enter verification code'}
+                        placeholder={t('profile.enterVerificationCode')}
                         className="sm:w-60"
                       />
                       <Button
                         onClick={handleVerifyPhone}
                         disabled={phoneVerifyLoading || phoneOtp.trim().length === 0}
                       >
-                        {phoneVerifyLoading ? (locale === 'ar' ? 'جاري التحقق...' : 'Verifying...') : locale === 'ar' ? 'تحقق' : 'Verify'}
+                        {phoneVerifyLoading ? t('profile.verifying') : t('common.verify')}
                       </Button>
                     </div>
                   )}
@@ -571,7 +563,7 @@ export default function ProfilePage() {
                 </Button>
                 <Button onClick={handleSaveProfile} disabled={saving}>
                   <Save className="w-4 h-4 mr-2" />
-                  {saving ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...') : t('profile.saveChanges')}
+                  {saving ? t('profile.saving') : t('profile.saveChanges')}
                 </Button>
               </div>
             </CardContent>
@@ -582,7 +574,7 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle>{t('profile.preferences')}</CardTitle>
               <CardDescription>
-                {locale === 'ar' ? 'تخصيص تجربتك' : 'Customize your experience'}
+                {t('profile.customizeExperience')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -658,7 +650,7 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle>{t('profile.password')}</CardTitle>
               <CardDescription>
-                {locale === 'ar' ? 'تغيير كلمة المرور' : 'Change your password'}
+                {t('profile.changePasswordDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -675,7 +667,7 @@ export default function ProfilePage() {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder={locale === 'ar' ? 'كلمة المرور الجديدة' : 'New password'}
+                      placeholder={t('profile.newPasswordPlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
@@ -685,7 +677,7 @@ export default function ProfilePage() {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder={locale === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm password'}
+                      placeholder={t('profile.confirmPasswordPlaceholder')}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -693,7 +685,7 @@ export default function ProfilePage() {
                       {t('profile.cancel')}
                     </Button>
                     <Button onClick={handleChangePassword} disabled={saving}>
-                      {saving ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...') : t('profile.saveChanges')}
+                      {saving ? t('profile.saving') : t('profile.saveChanges')}
                     </Button>
                   </div>
                 </div>
@@ -706,7 +698,7 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="text-red-600 dark:text-red-400">{t('profile.deleteAccount')}</CardTitle>
               <CardDescription>
-                {locale === 'ar' ? 'احذف حسابك بشكل دائم' : 'Permanently delete your account'}
+                {t('profile.deleteAccountDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -731,11 +723,7 @@ export default function ProfilePage() {
                       {t('profile.cancel')}
                     </Button>
                     <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteLoading}>
-                      {deleteLoading
-                        ? locale === 'ar'
-                          ? 'جاري الحذف...'
-                          : 'Deleting...'
-                        : t('profile.deleteAccountConfirm')}
+                      {deleteLoading ? t('profile.deleting') : t('profile.deleteAccountConfirm')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

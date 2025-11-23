@@ -44,7 +44,7 @@ export default async function LocaleLayout({
   // Load messages directly with error handling
   let messages: Record<string, unknown> = {};
   try {
-    const [common, landing, auth, products, dashboard, profile, storesList, deals, product, store, search, wishlist, compare, settings, notifications] = await Promise.allSettled([
+    const [common, landing, auth, products, dashboard, profile, storesList, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart, compareTranslations] = await Promise.allSettled([
       import(`../../../messages/${locale}/common.json`) as Promise<{ default: Record<string, unknown> }>,
       import(`../../../messages/${locale}/landing.json`) as Promise<{ default: Record<string, unknown> }>,
       import(`../../../messages/${locale}/auth.json`) as Promise<{ default: Record<string, unknown> }>,
@@ -60,6 +60,11 @@ export default async function LocaleLayout({
       import(`../../../messages/${locale}/compare.json`) as Promise<{ default: Record<string, unknown> }>,
       import(`../../../messages/${locale}/settings.json`) as Promise<{ default: Record<string, unknown> }>,
       import(`../../../messages/${locale}/notifications.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/admin.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/checkout.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/priceAlerts.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/cart.json`) as Promise<{ default: Record<string, unknown> }>,
+      import(`../../../messages/${locale}/compare.json`) as Promise<{ default: Record<string, unknown> }>,
     ]);
 
     // Combine all successfully loaded messages
@@ -79,6 +84,11 @@ export default async function LocaleLayout({
       ...(compare.status === 'fulfilled' && compare.value?.default ? compare.value.default : {}),
       ...(settings.status === 'fulfilled' && settings.value?.default ? settings.value.default : {}),
       ...(notifications.status === 'fulfilled' && notifications.value?.default ? notifications.value.default : {}),
+      ...(admin.status === 'fulfilled' && admin.value?.default ? admin.value.default : {}),
+      ...(checkout.status === 'fulfilled' && checkout.value?.default ? checkout.value.default : {}),
+      ...(priceAlerts.status === 'fulfilled' && priceAlerts.value?.default ? priceAlerts.value.default : {}),
+      ...(cart.status === 'fulfilled' && cart.value?.default ? cart.value.default : {}),
+      ...(compareTranslations.status === 'fulfilled' && compareTranslations.value?.default ? compareTranslations.value.default : {}),
     };
 
     if (Object.keys(messages).length === 0) {

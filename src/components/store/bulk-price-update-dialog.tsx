@@ -22,6 +22,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { DataTable, type Column } from '@/components/admin/data-table';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface BulkPriceUpdateDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function BulkPriceUpdateDialog({
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   const previewChanges = () => {
@@ -74,8 +76,8 @@ export function BulkPriceUpdateDialog({
   const handleSubmit = async () => {
     if (selectedProducts.size === 0) {
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'يرجى اختيار منتج واحد على الأقل' : 'Please select at least one product',
+        title: t('common.error'),
+        description: t('store.bulkPriceUpdate.selectAtLeastOne'),
         variant: 'destructive',
       });
       return;
@@ -83,8 +85,8 @@ export function BulkPriceUpdateDialog({
 
     if (!updateValue) {
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: isRTL ? 'يرجى إدخال قيمة التحديث' : 'Please enter update value',
+        title: t('common.error'),
+        description: t('store.bulkPriceUpdate.enterUpdateValue'),
         variant: 'destructive',
       });
       return;
@@ -110,8 +112,8 @@ export function BulkPriceUpdateDialog({
       }
 
       toast({
-        title: isRTL ? 'نجح' : 'Success',
-        description: isRTL ? 'تم تحديث الأسعار بنجاح' : 'Prices updated successfully',
+        title: t('common.success'),
+        description: t('store.bulkPriceUpdate.pricesUpdated'),
       });
 
       onSuccess();
@@ -121,8 +123,8 @@ export function BulkPriceUpdateDialog({
     } catch (error: any) {
       console.error('Error updating prices:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
-        description: error.message || (isRTL ? 'فشل تحديث الأسعار' : 'Failed to update prices'),
+        title: t('common.error'),
+        description: error.message || t('store.bulkPriceUpdate.updateFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -135,16 +137,16 @@ export function BulkPriceUpdateDialog({
   const previewColumns: Column<any>[] = [
     {
       key: 'name',
-      label: isRTL ? 'المنتج' : 'Product',
+      label: t('store.bulkPriceUpdate.product'),
     },
     {
       key: 'current_price',
-      label: isRTL ? 'السعر الحالي' : 'Current Price',
+      label: t('store.bulkPriceUpdate.currentPrice'),
       render: (row) => `$${row.current_price.toLocaleString()}`,
     },
     {
       key: 'new_price',
-      label: isRTL ? 'السعر الجديد' : 'New Price',
+      label: t('store.bulkPriceUpdate.newPrice'),
       render: (row) => `$${row.new_price.toFixed(2)}`,
     },
   ];
@@ -154,19 +156,17 @@ export function BulkPriceUpdateDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isRTL ? 'تحديث الأسعار بالجملة' : 'Bulk Price Update'}
+            {t('store.bulkPriceUpdate.title')}
           </DialogTitle>
           <DialogDescription>
-            {isRTL
-              ? 'اختر المنتجات وقم بتحديث أسعارها'
-              : 'Select products and update their prices'}
+            {t('store.bulkPriceUpdate.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Product Selection */}
           <div className="space-y-2">
-            <Label>{isRTL ? 'اختر المنتجات' : 'Select Products'}</Label>
+            <Label>{t('store.bulkPriceUpdate.selectProducts')}</Label>
             <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
               {products.map((product) => (
                 <div key={product.id} className="flex items-center space-x-2 py-2">
@@ -196,17 +196,17 @@ export function BulkPriceUpdateDialog({
 
           {/* Update Type */}
           <div className="space-y-2">
-            <Label>{isRTL ? 'نوع التحديث' : 'Update Type'}</Label>
+            <Label>{t('store.bulkPriceUpdate.updateType')}</Label>
             <Select value={updateType} onValueChange={(value: 'percentage' | 'fixed') => setUpdateType(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="percentage">
-                  {isRTL ? 'نسبة مئوية' : 'Percentage'}
+                  {t('store.bulkPriceUpdate.percentage')}
                 </SelectItem>
                 <SelectItem value="fixed">
-                  {isRTL ? 'مبلغ ثابت' : 'Fixed Amount'}
+                  {t('store.bulkPriceUpdate.fixedAmount')}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -216,12 +216,8 @@ export function BulkPriceUpdateDialog({
           <div className="space-y-2">
             <Label>
               {updateType === 'percentage'
-                ? isRTL
-                  ? 'النسبة المئوية (%)'
-                  : 'Percentage (%)'
-                : isRTL
-                ? 'المبلغ'
-                : 'Amount'}
+                ? t('store.bulkPriceUpdate.percentageLabel')
+                : t('store.bulkPriceUpdate.amountLabel')}
             </Label>
             <Input
               type="number"
@@ -235,7 +231,7 @@ export function BulkPriceUpdateDialog({
           {/* Preview */}
           {preview.length > 0 && (
             <div className="space-y-2">
-              <Label>{isRTL ? 'معاينة التغييرات' : 'Preview Changes'}</Label>
+              <Label>{t('store.bulkPriceUpdate.previewChanges')}</Label>
               <DataTable data={preview} columns={previewColumns} />
             </div>
           )}
@@ -243,16 +239,12 @@ export function BulkPriceUpdateDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {isRTL ? 'إلغاء' : 'Cancel'}
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={loading || selectedProducts.size === 0}>
             {loading
-              ? isRTL
-                ? 'جاري التحديث...'
-                : 'Updating...'
-              : isRTL
-              ? 'تحديث'
-              : 'Update'}
+              ? t('store.bulkPriceUpdate.updating')
+              : t('store.bulkPriceUpdate.update')}
           </Button>
         </DialogFooter>
       </DialogContent>

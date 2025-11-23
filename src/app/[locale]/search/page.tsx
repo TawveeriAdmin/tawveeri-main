@@ -337,7 +337,7 @@ export default function SearchPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -441,11 +441,7 @@ export default function SearchPage() {
                 <EmptyState
                   icon={<Search className="h-12 w-12" />}
                   title={t('search.noResults')}
-                  description={
-                    locale === 'ar'
-                      ? `لا توجد نتائج لـ "${debouncedQuery}"`
-                      : `No results found for "${debouncedQuery}"`
-                  }
+                  description={t('search.noResultsFor', { query: debouncedQuery })}
                 />
               )}
 
@@ -520,8 +516,8 @@ export default function SearchPage() {
         {!debouncedQuery && !loading && (
           <EmptyState
             icon={<Search className="h-12 w-12" />}
-            title={locale === 'ar' ? 'ابدأ البحث' : 'Start Searching'}
-            description={locale === 'ar' ? 'ابحث عن المنتجات التي تريدها' : 'Search for products you want'}
+            title={t('search.startSearching')}
+            description={t('search.searchForProducts')}
           />
         )}
       </div>

@@ -78,8 +78,8 @@ export default function CartPage() {
     if (newQuantity <= 0) {
       removeItem(storeId, productId);
       toast({
-        title: isRTL ? 'تم الحذف' : 'Removed',
-        description: isRTL ? 'تم إزالة المنتج من السلة' : 'Product removed from cart',
+        title: t('cart.removed'),
+        description: t('cart.productRemoved'),
       });
     } else {
       updateItemQuantity(storeId, productId, newQuantity);
@@ -100,8 +100,8 @@ export default function CartPage() {
     setNoteDialogOpen(false);
     setEditNoteItem(null);
     toast({
-      title: isRTL ? 'تم الحفظ' : 'Saved',
-      description: isRTL ? 'تم حفظ الملاحظة' : 'Note saved',
+      title: t('common.saved'),
+      description: t('cart.noteSaved'),
     });
   };
 
@@ -120,14 +120,14 @@ export default function CartPage() {
         <div className="container mx-auto px-4 py-8">
           <EmptyState
             icon={<ShoppingBag className="h-12 w-12" />}
-            title={isRTL ? 'سلة التسوق فارغة' : 'Your cart is empty'}
+            title={t('cart.cartEmpty')}
             description={
               isRTL
                 ? 'ابدأ بإضافة المنتجات إلى سلة التسوق'
                 : 'Start adding products to your cart'
             }
             action={{
-              label: isRTL ? 'تصفح المنتجات' : 'Browse Products',
+              label: t('cart.browseProducts'),
               onClick: () => router.push(`/${locale}/products`),
             }}
           />
@@ -144,12 +144,12 @@ export default function CartPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{isRTL ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{isRTL ? 'سلة التسوق' : 'Cart'}</BreadcrumbPage>
+              <BreadcrumbPage>{t('cart.title')}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -158,7 +158,7 @@ export default function CartPage() {
           {/* Cart Items */}
           <div className="flex-1 space-y-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {isRTL ? 'سلة التسوق' : 'Shopping Cart'}
+              {t('cart.title')}
             </h1>
 
             {stores.map((store) => {
@@ -174,7 +174,7 @@ export default function CartPage() {
                         size="sm"
                         onClick={() => handleCheckout(store.storeId)}
                       >
-                        {isRTL ? 'الشراء من هذا المتجر' : 'Checkout from this store'}
+                        {t('cart.checkoutFromStore')}
                         <ExternalLink className="h-4 w-4 ml-2" />
                       </Button>
                     </div>
@@ -251,7 +251,7 @@ export default function CartPage() {
                                 onClick={() => handleOpenNoteDialog(store.storeId, item.productId)}
                               >
                                 <Edit className="h-3 w-3 mr-1" />
-                                {isRTL ? 'ملاحظة' : 'Note'}
+                                {t('cart.note')}
                                 {item.notes && ' ✓'}
                               </Button>
                               <div className="flex items-center gap-2">
@@ -271,7 +271,7 @@ export default function CartPage() {
                                   className="text-sm cursor-pointer flex items-center gap-1"
                                 >
                                   <Gift className="h-3 w-3" />
-                                  {isRTL ? 'تغليف هدية' : 'Gift Wrap'}
+                                  {t('cart.giftWrap')}
                                 </Label>
                               </div>
                               <Button
@@ -281,7 +281,7 @@ export default function CartPage() {
                                 className="text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="h-3 w-3 mr-1" />
-                                {isRTL ? 'حذف' : 'Remove'}
+                                {t('cart.remove')}
                               </Button>
                             </div>
 
@@ -306,21 +306,21 @@ export default function CartPage() {
                       <div className="border-t pt-4 mt-4">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600 dark:text-gray-400">
-                            {isRTL ? 'المجموع الفرعي' : 'Subtotal'}
+                            {t('cart.subtotal')}
                           </span>
                           <Price amount={totals.subtotal} className="font-semibold" />
                         </div>
                         {totals.deliveryCost > 0 && (
                           <div className="flex justify-between items-center mt-2">
                             <span className="text-gray-600 dark:text-gray-400">
-                              {isRTL ? 'رسوم التوصيل' : 'Delivery'}
+                              {t('cart.delivery')}
                             </span>
                             <Price amount={totals.deliveryCost} className="font-semibold" />
                           </div>
                         )}
                         <div className="flex justify-between items-center mt-2 pt-2 border-t">
                           <span className="font-bold text-lg">
-                            {isRTL ? 'المجموع' : 'Total'}
+                            {t('cart.total')}
                           </span>
                           <Price amount={totals.total} className="font-bold text-lg" />
                         </div>
@@ -345,7 +345,7 @@ export default function CartPage() {
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isRTL ? 'إضافة ملاحظة' : 'Add Note'}</DialogTitle>
+            <DialogTitle>{t('cart.addNote')}</DialogTitle>
             <DialogDescription>
               {isRTL
                 ? 'أضف ملاحظة خاصة لهذا المنتج'
@@ -354,25 +354,21 @@ export default function CartPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="note">{isRTL ? 'الملاحظة' : 'Note'}</Label>
+              <Label htmlFor="note">{t('cart.noteLabel')}</Label>
               <Textarea
                 id="note"
                 value={tempNote}
                 onChange={(e) => setTempNote(e.target.value)}
-                placeholder={
-                  isRTL
-                    ? 'مثال: لون محدد، حجم معين، إلخ...'
-                    : 'e.g., specific color, size, etc...'
-                }
+                placeholder={t('cart.notePlaceholderExample')}
                 rows={4}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
-              {isRTL ? 'إلغاء' : 'Cancel'}
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleSaveNote}>{isRTL ? 'حفظ' : 'Save'}</Button>
+            <Button onClick={handleSaveNote}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { ShoppingBag, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface CartSummaryProps {
   locale: string;
@@ -17,6 +18,7 @@ interface CartSummaryProps {
 
 export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
   const { cart, totalItems, subtotal } = useMultiStoreCart();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
   const stores = Object.values(cart);
 
@@ -26,7 +28,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
         <CardContent className="py-12 text-center">
           <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-gray-600 dark:text-gray-400">
-            {isRTL ? 'سلة التسوق فارغة' : 'Your cart is empty'}
+            {t('cart.cartEmpty')}
           </p>
         </CardContent>
       </Card>
@@ -36,7 +38,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isRTL ? 'ملخص السلة' : 'Cart Summary'}</CardTitle>
+        <CardTitle>{t('cart.cartSummary')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {stores.map((store, idx) => {
@@ -52,16 +54,14 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
                     {store.storeName}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {isRTL
-                      ? `${totals.itemCount} ${totals.itemCount === 1 ? 'منتج' : 'منتجات'}`
-                      : `${totals.itemCount} item${totals.itemCount === 1 ? '' : 's'}`}
+                    {totals.itemCount} {totals.itemCount === 1 ? t('cart.product') : t('cart.products')}
                   </p>
                 </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">
-                      {isRTL ? 'المجموع الفرعي' : 'Subtotal'}
+                      {t('cart.subtotal')}
                     </span>
                     <Price
                       amount={totals.subtotal}
@@ -71,7 +71,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
                   {totals.deliveryCost > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-gray-400">
-                        {isRTL ? 'رسوم التوصيل' : 'Delivery'}
+                        {t('cart.delivery')}
                       </span>
                       <Price
                         amount={totals.deliveryCost}
@@ -82,7 +82,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
                   <Separator />
                   <div className="flex justify-between text-base">
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {isRTL ? 'المجموع' : 'Total'}
+                      {t('cart.total')}
                     </span>
                     <Price
                       amount={totals.total}
@@ -97,7 +97,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
                     className="w-full"
                     variant="default"
                   >
-                    {isRTL ? `الشراء من ${store.storeName}` : `Checkout from ${store.storeName}`}
+                    {t('cart.checkoutFrom', { storeName: store.storeName })}
                     <ExternalLink className="h-4 w-4 ml-2" />
                   </Button>
                 )}
@@ -112,7 +112,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
             <div className="space-y-2">
               <div className="flex justify-between text-base">
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {isRTL ? 'المجموع الكلي' : 'Grand Total'}
+                  {t('cart.grandTotal')}
                 </span>
                 <Price
                   amount={subtotal}
@@ -120,9 +120,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {isRTL
-                  ? `من ${stores.length} متاجر`
-                  : `From ${stores.length} stores`}
+                {t('cart.fromStores', { count: stores.length })}
               </p>
             </div>
           </>

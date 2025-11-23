@@ -20,6 +20,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import type { UserRole } from '@/lib/database/types';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface UserRoleDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function UserRoleDialog({
   const [role, setRole] = useState<UserRole>(user.role);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   const handleSubmit = async () => {
@@ -68,8 +70,8 @@ export function UserRoleDialog({
       }
 
       toast({
-        title: isRTL ? 'تم التحديث' : 'Updated',
-        description: isRTL ? 'تم تحديث دور المستخدم بنجاح' : 'User role updated successfully',
+        title: t('admin.userRoleDialog.updated'),
+        description: t('admin.userRoleDialog.roleUpdated'),
       });
 
       onSuccess();
@@ -77,13 +79,11 @@ export function UserRoleDialog({
     } catch (error) {
       console.error('Error updating user role:', error);
       toast({
-        title: isRTL ? 'خطأ' : 'Error',
+        title: t('common.error'),
         description:
           error instanceof Error
             ? error.message
-            : isRTL
-            ? 'فشل تحديث دور المستخدم'
-            : 'Failed to update user role',
+            : t('admin.userRoleDialog.updateFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -96,27 +96,25 @@ export function UserRoleDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isRTL ? 'تعديل دور المستخدم' : 'Edit User Role'}
+            {t('admin.userRoleDialog.title')}
           </DialogTitle>
           <DialogDescription>
-            {isRTL
-              ? `تعديل دور ${user.full_name || user.email}`
-              : `Change role for ${user.full_name || user.email}`}
+            {t('admin.userRoleDialog.description', { name: user.full_name || user.email || '' })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="role">{isRTL ? 'الدور' : 'Role'}</Label>
+            <Label htmlFor="role">{t('admin.userRoleDialog.role')}</Label>
             <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
               <SelectTrigger id="role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="customer">{isRTL ? 'عميل' : 'Customer'}</SelectItem>
-                <SelectItem value="store">{isRTL ? 'متجر' : 'Store'}</SelectItem>
-                <SelectItem value="guest">{isRTL ? 'ضيف' : 'Guest'}</SelectItem>
+                <SelectItem value="admin">{t('admin.userRoleDialog.admin')}</SelectItem>
+                <SelectItem value="customer">{t('admin.userRoleDialog.customer')}</SelectItem>
+                <SelectItem value="store">{t('admin.userRoleDialog.store')}</SelectItem>
+                <SelectItem value="guest">{t('admin.userRoleDialog.guest')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -124,10 +122,10 @@ export function UserRoleDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {isRTL ? 'إلغاء' : 'Cancel'}
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : isRTL ? 'حفظ' : 'Save'}
+            {loading ? t('common.saving') : t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

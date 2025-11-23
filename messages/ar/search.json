@@ -39,6 +39,41 @@
     "instructions": "وجّه الكاميرا نحو رمز الباركود أو QR ليتم البحث تلقائياً.",
     "manualHint": "أو أدخل الرمز يدوياً",
     "noSupport": "المسح بالباركود غير مدعوم على هذا الجهاز. أدخل الرمز يدوياً."
+  },
+  "noResultsFor": "لا توجد نتائج لـ \"{{query}}\"",
+  "startSearching": "ابدأ البحث",
+  "searchForProducts": "ابحث عن المنتجات التي تريدها",
+  "noSuggestions": "لا توجد اقتراحات",
+  "searching": "جاري البحث...",
+  "filters": {
+    "brands": "العلامات التجارية",
+    "priceRange": "نطاق السعر",
+    "stores": "المتاجر",
+    "availability": "التوفر",
+    "deals": "العروض",
+    "showDealsOnly": "عروض فقط",
+    "delivery": "التوصيل",
+    "freeDeliveryOnly": "توصيل مجاني فقط",
+    "rating": "التقييم"
+  },
+  "savedSearches": {
+    "title": "البحوث المحفوظة",
+    "save": "حفظ",
+    "saved": "تم الحفظ",
+    "searchSaved": "تم حفظ البحث بنجاح",
+    "error": "خطأ",
+    "saveFailed": "فشل حفظ البحث",
+    "deleted": "تم الحذف",
+    "searchDeleted": "تم حذف البحث بنجاح",
+    "deleteFailed": "فشل حذف البحث",
+    "confirmDelete": "هل أنت متأكد من حذف هذا البحث؟",
+    "loading": "جاري التحميل...",
+    "noSearches": "لا توجد بحوث محفوظة",
+    "saveSearch": "حفظ البحث",
+    "saveSearchDesc": "أدخل اسماً لهذا البحث لحفظه للاستخدام لاحقاً",
+    "searchName": "اسم البحث",
+    "searchNamePlaceholder": "مثال: هواتف Apple",
+    "cancel": "إلغاء"
   }
 }
 

@@ -5,6 +5,7 @@ import { StatsCard } from '@/components/admin/stats-card';
 import { RevenueChart } from '@/components/analytics/revenue-chart';
 import { UserGrowthChart } from '@/components/analytics/user-growth-chart';
 import { DataTable, type Column } from '@/components/admin/data-table';
+import { getServerTranslations } from '@/lib/translations-server';
 import {
   Users,
   Package,
@@ -21,7 +22,7 @@ export default async function AdminDashboardPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const isRTL = locale === 'ar';
+  const t = await getServerTranslations(locale);
 
   // Fetch all dashboard data
   const [statsResult, userGrowthResult, recentActivityResult] = await Promise.all([
@@ -48,25 +49,25 @@ export default async function AdminDashboardPage({
   const activityColumns: Column<any>[] = [
     {
       key: 'created_at',
-      label: isRTL ? 'التاريخ' : 'Date',
+      label: t('admin.dashboard.date'),
       render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy HH:mm'),
     },
     {
       key: 'action',
-      label: isRTL ? 'الإجراء' : 'Action',
+      label: t('admin.dashboard.action'),
       render: (row) => (
         <span className="font-medium">{row.action}</span>
       ),
     },
     {
       key: 'entity_type',
-      label: isRTL ? 'النوع' : 'Type',
+      label: t('admin.dashboard.type'),
       render: (row) => row.entity_type || '-',
     },
     {
       key: 'user_id',
-      label: isRTL ? 'المستخدم' : 'User',
-      render: (row) => row.user_id ? row.user_id.substring(0, 8) + '...' : 'System',
+      label: t('admin.dashboard.user'),
+      render: (row) => row.user_id ? row.user_id.substring(0, 8) + '...' : t('admin.dashboard.system'),
     },
   ];
 
@@ -75,37 +76,37 @@ export default async function AdminDashboardPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isRTL ? 'لوحة التحكم' : 'Dashboard'}
+          {t('admin.dashboard.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {isRTL ? 'نظرة عامة على النظام' : 'System overview and statistics'}
+          {t('admin.dashboard.subtitle')}
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
-          title={isRTL ? 'المستخدمين' : 'Total Users'}
+          title={t('admin.dashboard.totalUsers')}
           value={stats?.totalUsers || 0}
           icon={<Users className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'المنتجات' : 'Total Products'}
+          title={t('admin.dashboard.totalProducts')}
           value={stats?.totalProducts || 0}
           icon={<Package className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'المتاجر' : 'Total Stores'}
+          title={t('admin.dashboard.totalStores')}
           value={stats?.totalStores || 0}
           icon={<Store className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'المعاملات' : 'Transactions'}
+          title={t('admin.dashboard.transactions')}
           value={stats?.totalTransactions || 0}
           icon={<CreditCard className="h-6 w-6" />}
         />
         <StatsCard
-          title={isRTL ? 'الإيرادات' : 'Total Revenue'}
+          title={t('admin.dashboard.totalRevenue')}
           value={`$${((stats?.totalRevenue || 0) / 1000).toFixed(1)}K`}
           icon={<DollarSign className="h-6 w-6" />}
         />
@@ -122,7 +123,7 @@ export default async function AdminDashboardPage({
         <div className="mb-4 flex items-center gap-2">
           <Activity className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {isRTL ? 'النشاط الأخير' : 'Recent Activity'}
+            {t('admin.dashboard.recentActivity')}
           </h2>
         </div>
         <DataTable

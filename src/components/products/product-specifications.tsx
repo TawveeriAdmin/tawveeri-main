@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from '@/lib/simple-intl-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -41,11 +42,11 @@ const specTranslations: Record<string, { ar: string; en: string }> = {
   network: { ar: 'الشبكة', en: 'Network' },
 };
 
-function formatSpecValue(value: any, locale: string): string {
+function formatSpecValue(value: any, t: (key: string) => string): string {
   if (value === null || value === undefined) return '-';
 
   if (typeof value === 'boolean') {
-    return locale === 'ar' ? (value ? 'نعم' : 'لا') : (value ? 'Yes' : 'No');
+    return value ? t('common.yes') : t('common.no');
   }
 
   if (Array.isArray(value)) {
@@ -76,17 +77,18 @@ export function ProductSpecifications({
   category,
   locale,
 }: ProductSpecificationsProps) {
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   if (!specifications || Object.keys(specifications).length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{isRTL ? 'المواصفات' : 'Specifications'}</CardTitle>
+          <CardTitle>{t('products.specifications.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-            {isRTL ? 'لا توجد مواصفات متاحة' : 'No specifications available'}
+            {t('products.specifications.noSpecifications')}
           </p>
         </CardContent>
       </Card>
@@ -101,11 +103,11 @@ export function ProductSpecifications({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{isRTL ? 'المواصفات' : 'Specifications'}</CardTitle>
+          <CardTitle>{t('products.specifications.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-            {isRTL ? 'لا توجد مواصفات متاحة' : 'No specifications available'}
+            {t('products.specifications.noSpecifications')}
           </p>
         </CardContent>
       </Card>
@@ -115,7 +117,7 @@ export function ProductSpecifications({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isRTL ? 'المواصفات' : 'Specifications'}</CardTitle>
+        <CardTitle>{t('products.specifications.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -123,10 +125,10 @@ export function ProductSpecifications({
             <TableHeader>
               <TableRow>
                 <TableHead className={isRTL ? 'text-right' : 'text-left'}>
-                  {isRTL ? 'المعيار' : 'Specification'}
+                  {t('products.specifications.specification')}
                 </TableHead>
                 <TableHead className={isRTL ? 'text-right' : 'text-left'}>
-                  {isRTL ? 'القيمة' : 'Value'}
+                  {t('products.specifications.value')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -137,7 +139,7 @@ export function ProductSpecifications({
                     {translateSpecKey(key, locale)}
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-300">
-                    {formatSpecValue(value, locale)}
+                    {formatSpecValue(value, t)}
                   </TableCell>
                 </TableRow>
               ))}

@@ -34,6 +34,7 @@ export default function AdminUsersPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState<string>('en');
+  const t = useTranslations();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,22 +122,22 @@ export default function AdminUsersPage({
   const columns: Column<User>[] = [
     {
       key: 'full_name',
-      label: locale === 'ar' ? 'الاسم' : 'Name',
+      label: t('common.name'),
       render: (user) => user.full_name || '-',
     },
     {
       key: 'email',
-      label: locale === 'ar' ? 'البريد الإلكتروني' : 'Email',
+      label: t('common.email'),
       render: (user) => user.email || '-',
     },
     {
       key: 'phone',
-      label: locale === 'ar' ? 'الهاتف' : 'Phone',
+      label: t('common.phone'),
       render: (user) => user.phone || '-',
     },
     {
       key: 'role',
-      label: locale === 'ar' ? 'الدور' : 'Role',
+      label: t('admin.users.role'),
       render: (user) => (
         <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-200">
           {user.role}
@@ -145,7 +146,7 @@ export default function AdminUsersPage({
     },
     {
       key: 'is_active',
-      label: locale === 'ar' ? 'الحالة' : 'Status',
+      label: t('common.status'),
       render: (user) => (
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -154,18 +155,18 @@ export default function AdminUsersPage({
               : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
           }`}
         >
-          {user.is_active ? (locale === 'ar' ? 'نشط' : 'Active') : locale === 'ar' ? 'غير نشط' : 'Inactive'}
+          {user.is_active ? t('common.active') : t('common.inactive')}
         </span>
       ),
     },
     {
       key: 'created_at',
-      label: locale === 'ar' ? 'تاريخ الانضمام' : 'Joined Date',
+      label: t('admin.users.joinedDate'),
       render: (user) => new Date(user.created_at).toLocaleDateString(),
     },
     {
       key: 'actions',
-      label: locale === 'ar' ? 'الإجراءات' : 'Actions',
+      label: t('common.actions'),
       render: (user) => (
         <div className="flex items-center gap-2">
           <Button
@@ -194,10 +195,10 @@ export default function AdminUsersPage({
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {locale === 'ar' ? 'إدارة المستخدمين' : 'User Management'}
+          {t('admin.users.title')}
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {locale === 'ar' ? 'عرض وإدارة جميع المستخدمين' : 'View and manage all users'}
+          {t('admin.users.subtitle')}
         </p>
       </div>
 
@@ -205,20 +206,20 @@ export default function AdminUsersPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center gap-4">
           <Input
-            placeholder={locale === 'ar' ? 'بحث...' : 'Search...'}
+            placeholder={t('admin.users.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={locale === 'ar' ? 'جميع الأدوار' : 'All Roles'} />
+              <SelectValue placeholder={t('admin.users.allRoles')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{locale === 'ar' ? 'جميع الأدوار' : 'All Roles'}</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="customer">{locale === 'ar' ? 'عميل' : 'Customer'}</SelectItem>
-              <SelectItem value="store">{locale === 'ar' ? 'متجر' : 'Store'}</SelectItem>
+              <SelectItem value="all">{t('admin.users.allRoles')}</SelectItem>
+              <SelectItem value="admin">{t('admin.users.admin')}</SelectItem>
+              <SelectItem value="customer">{t('admin.users.customer')}</SelectItem>
+              <SelectItem value="store">{t('admin.users.store')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from '@/lib/simple-intl-provider';
 
 interface StoreHeaderProps {
   userProfile: any;
@@ -23,6 +24,7 @@ interface StoreHeaderProps {
 export function StoreHeader({ userProfile, store, locale }: StoreHeaderProps) {
   const { signOut } = useAuth();
   const router = useRouter();
+  const t = useTranslations();
   const isRTL = locale === 'ar';
 
   const handleSignOut = async () => {
@@ -45,9 +47,7 @@ export function StoreHeader({ userProfile, store, locale }: StoreHeaderProps) {
             ? isRTL
               ? store.name_ar
               : store.name_en
-            : locale === 'ar'
-            ? 'لوحة المتجر'
-            : 'Store Dashboard'}
+            : t('store.header.storeDashboard')}
         </h2>
       </div>
 
@@ -75,7 +75,7 @@ export function StoreHeader({ userProfile, store, locale }: StoreHeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
-              <span>{locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</span>
+              <span>{t('store.header.signOut')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

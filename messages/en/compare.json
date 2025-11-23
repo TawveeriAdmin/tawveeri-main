@@ -1,21 +1,13 @@
 {
   "title": "Compare Products",
-  "compare": "Compare",
-  "addProducts": "Add Products to Compare",
-  "maxProducts": "You can compare up to 4 products",
+  "addProducts": "Add products to compare",
+  "compareUpTo": "Compare up to 4 products side by side",
+  "errorLoading": "Error loading products",
   "noProducts": "No products to compare",
-  "emptyDescription": "Add products to compare their prices and features",
-  "remove": "Remove",
-  "clearAll": "Clear All",
-  "specifications": "Specifications",
-  "price": "Price",
-  "availability": "Availability",
-  "stores": "Available Stores",
-  "inStock": "In Stock",
-  "outOfStock": "Out of Stock",
-  "limitedStock": "Limited Stock",
-  "bestPrice": "Best Price",
-  "viewProduct": "View Product",
-  "addMore": "Add More Products"
+  "noProductsDescription": "Add products from the product page to compare them here",
+  "product": "product",
+  "products": "products",
+  "store": "store",
+  "stores": "stores",
+  "notAvailable": "N/A"
 }
-

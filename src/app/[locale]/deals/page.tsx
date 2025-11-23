@@ -219,7 +219,7 @@ export default function DealsPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -304,9 +304,7 @@ export default function DealsPage() {
             title={t('deals.noDeals')}
             description={
               searchQuery
-                ? locale === 'ar'
-                  ? `لا توجد عروض تطابق "${searchQuery}"`
-                  : `No deals match "${searchQuery}"`
+                ? t('deals.noDealsMatch', { query: searchQuery })
                 : undefined
             }
           />

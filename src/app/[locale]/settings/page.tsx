@@ -307,7 +307,7 @@ export default function SettingsPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -331,9 +331,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>{t('settings.notifications')}</CardTitle>
               <CardDescription>
-                {locale === 'ar'
-                  ? 'اختر كيف نرسل لك التحديثات والعروض.'
-                  : 'Choose how we contact you with updates and deals.'}
+                {t('settings.notificationsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -367,9 +365,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>{t('settings.privacy')}</CardTitle>
               <CardDescription>
-                {locale === 'ar'
-                  ? 'تحكم بمن يمكنه رؤية نشاطك.'
-                  : 'Control who can see your activity.'}
+                {t('settings.privacyDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -403,9 +399,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>{t('settings.preferences')}</CardTitle>
               <CardDescription>
-                {locale === 'ar'
-                  ? 'خصص تجربتك باستخدام اللغة والمظهر.'
-                  : 'Tailor your experience with language and theme.'}
+                {t('settings.preferencesDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -422,8 +416,8 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ar">العربية</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="ar">{t('settings.arabic')}</SelectItem>
+                      <SelectItem value="en">{t('settings.english')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -439,9 +433,9 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="light">{locale === 'ar' ? 'فاتح' : 'Light'}</SelectItem>
-                      <SelectItem value="dark">{locale === 'ar' ? 'داكن' : 'Dark'}</SelectItem>
-                      <SelectItem value="system">{locale === 'ar' ? 'النظام' : 'System'}</SelectItem>
+                      <SelectItem value="light">{t('settings.light')}</SelectItem>
+                      <SelectItem value="dark">{t('settings.dark')}</SelectItem>
+                      <SelectItem value="system">{t('settings.system')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -454,9 +448,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>{t('settings.dataManagement')}</CardTitle>
               <CardDescription>
-                {locale === 'ar'
-                  ? 'قم بتصدير بياناتك أو حذف حسابك.'
-                  : 'Export your data or remove your account.'}
+                {t('settings.dataManagementDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -466,9 +458,7 @@ export default function SettingsPage() {
                     {t('settings.exportData')}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {locale === 'ar'
-                      ? 'قم بتنزيل نسخة من بياناتك بتنسيق JSON.'
-                      : 'Download a JSON copy of your data.'}
+                    {t('settings.exportDataDescription')}
                   </p>
                 </div>
                 <Button

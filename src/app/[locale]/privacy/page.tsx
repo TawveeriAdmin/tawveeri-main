@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from '@/lib/simple-intl-provider';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 
 export default function PrivacyPage() {
   const params = useParams();
+  const t = useTranslations();
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const lastUpdated = new Date('2025-01-15').toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US');
@@ -27,13 +29,13 @@ export default function PrivacyPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/${locale}`}>{isRTL ? 'الرئيسية' : 'Home'}</Link>
+                <Link href={`/${locale}`}>{t('common.home')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbPage>
-                {isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}
+                {t('legal.privacy')}
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -42,12 +44,10 @@ export default function PrivacyPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl font-bold">
-              {isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}
+              {t('legal.privacy')}
             </CardTitle>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              {isRTL
-                ? `آخر تحديث: ${lastUpdated}`
-                : `Last updated: ${lastUpdated}`}
+              {isRTL ? `آخر تحديث: ${lastUpdated}` : `Last updated: ${lastUpdated}`}
             </p>
           </CardHeader>
           <CardContent className="prose prose-gray dark:prose-invert max-w-none">
