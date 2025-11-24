@@ -67,28 +67,33 @@ export default async function LocaleLayout({
       import(`../../../messages/${locale}/compare.json`) as Promise<{ default: Record<string, unknown> }>,
     ]);
 
-    // Combine all successfully loaded messages
+    // Combine all successfully loaded messages with namespacing
+    // Note: common.json has both top-level keys (app, nav, etc.) and a nested "common" object
+    const commonMessages = common.status === 'fulfilled' && common.value?.default ? common.value.default : {};
+    const commonNested = (commonMessages as Record<string, unknown>)?.common as Record<string, unknown> | undefined;
+    const { common: _, ...commonTopLevel } = commonMessages as Record<string, unknown>;
     messages = {
-      ...(common.status === 'fulfilled' && common.value?.default ? common.value.default : {}),
+      ...(commonTopLevel || {}), // Top-level keys from common.json (app, nav, button, etc.)
+      ...(commonNested ? { common: commonNested } : {}), // Nested common object namespaced
       ...(landing.status === 'fulfilled' && landing.value?.default ? landing.value.default : {}),
-      ...(auth.status === 'fulfilled' && auth.value?.default ? auth.value.default : {}),
-      ...(products.status === 'fulfilled' && products.value?.default ? products.value.default : {}),
-      ...(dashboard.status === 'fulfilled' && dashboard.value?.default ? dashboard.value.default : {}),
-      ...(profile.status === 'fulfilled' && profile.value?.default ? profile.value.default : {}),
-      ...(storesList.status === 'fulfilled' && storesList.value?.default ? storesList.value.default : {}),
-      ...(deals.status === 'fulfilled' && deals.value?.default ? deals.value.default : {}),
-      ...(product.status === 'fulfilled' && product.value?.default ? product.value.default : {}),
-      ...(store.status === 'fulfilled' && store.value?.default ? store.value.default : {}),
-      ...(search.status === 'fulfilled' && search.value?.default ? search.value.default : {}),
-      ...(wishlist.status === 'fulfilled' && wishlist.value?.default ? wishlist.value.default : {}),
-      ...(compare.status === 'fulfilled' && compare.value?.default ? compare.value.default : {}),
-      ...(settings.status === 'fulfilled' && settings.value?.default ? settings.value.default : {}),
-      ...(notifications.status === 'fulfilled' && notifications.value?.default ? notifications.value.default : {}),
-      ...(admin.status === 'fulfilled' && admin.value?.default ? admin.value.default : {}),
-      ...(checkout.status === 'fulfilled' && checkout.value?.default ? checkout.value.default : {}),
-      ...(priceAlerts.status === 'fulfilled' && priceAlerts.value?.default ? priceAlerts.value.default : {}),
-      ...(cart.status === 'fulfilled' && cart.value?.default ? cart.value.default : {}),
-      ...(compareTranslations.status === 'fulfilled' && compareTranslations.value?.default ? compareTranslations.value.default : {}),
+      ...(auth.status === 'fulfilled' && auth.value?.default ? { auth: auth.value.default } : {}),
+      ...(products.status === 'fulfilled' && products.value?.default ? { products: products.value.default } : {}),
+      ...(dashboard.status === 'fulfilled' && dashboard.value?.default ? { dashboard: dashboard.value.default } : {}),
+      ...(profile.status === 'fulfilled' && profile.value?.default ? { profile: profile.value.default } : {}),
+      ...(storesList.status === 'fulfilled' && storesList.value?.default ? { stores: storesList.value.default } : {}),
+      ...(deals.status === 'fulfilled' && deals.value?.default ? { deals: deals.value.default } : {}),
+      ...(product.status === 'fulfilled' && product.value?.default ? { product: product.value.default } : {}),
+      ...(store.status === 'fulfilled' && store.value?.default ? { store: store.value.default } : {}),
+      ...(search.status === 'fulfilled' && search.value?.default ? { search: search.value.default } : {}),
+      ...(wishlist.status === 'fulfilled' && wishlist.value?.default ? { wishlist: wishlist.value.default } : {}),
+      ...(compare.status === 'fulfilled' && compare.value?.default ? { compare: compare.value.default } : {}),
+      ...(settings.status === 'fulfilled' && settings.value?.default ? { settings: settings.value.default } : {}),
+      ...(notifications.status === 'fulfilled' && notifications.value?.default ? { notifications: notifications.value.default } : {}),
+      ...(admin.status === 'fulfilled' && admin.value?.default ? { admin: admin.value.default } : {}),
+      ...(checkout.status === 'fulfilled' && checkout.value?.default ? { checkout: checkout.value.default } : {}),
+      ...(priceAlerts.status === 'fulfilled' && priceAlerts.value?.default ? { priceAlerts: priceAlerts.value.default } : {}),
+      ...(cart.status === 'fulfilled' && cart.value?.default ? { cart: cart.value.default } : {}),
+      ...(compareTranslations.status === 'fulfilled' && compareTranslations.value?.default ? { compare: compareTranslations.value.default } : {}),
     };
 
     if (Object.keys(messages).length === 0) {
