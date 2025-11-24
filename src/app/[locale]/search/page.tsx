@@ -133,7 +133,7 @@ export default function SearchPage() {
       params.delete('rating');
     }
     router.replace(`/${locale}/search?${params.toString()}`, { scroll: false });
-  }, [filters, locale, router, searchParams]);
+  }, [filters, locale, router]);
 
   const handleSearchSelect = (query: string, selectedFilters: SearchFilters) => {
     setSearchQuery(query);
@@ -160,7 +160,7 @@ export default function SearchPage() {
       params.delete('q');
     }
     router.replace(`/${locale}/search?${params.toString()}`, { scroll: false });
-  }, [debouncedQuery, locale, router, searchParams]);
+  }, [debouncedQuery, locale, router]);
 
   // Fetch products
   useEffect(() => {
@@ -291,7 +291,7 @@ export default function SearchPage() {
     }
 
     fetchProducts();
-  }, [debouncedQuery, sortBy, currentPage, selectedCategory, filters, user, t]);
+  }, [debouncedQuery, sortBy, currentPage, selectedCategory, filters, user]);
 
   const handleSearch = (query: string, category?: ProductCategory | 'all') => {
     setSearchQuery(query);

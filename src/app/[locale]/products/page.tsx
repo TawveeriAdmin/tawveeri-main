@@ -129,7 +129,7 @@ export default function ProductsPage() {
     }
 
     fetchProducts();
-  }, [selectedCategory, sortBy, currentPage, t]);
+  }, [selectedCategory, sortBy, currentPage]);
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
