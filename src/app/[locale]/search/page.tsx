@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -58,7 +58,6 @@ type SortOption = 'popularity' | 'price_low' | 'price_high' | 'rating';
 const ITEMS_PER_PAGE = 24;
 
 export default function SearchPage() {
-  const supabase = getSupabaseBrowserClient();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -67,6 +66,19 @@ export default function SearchPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addItem } = useMultiStoreCart();
+
+  // Lazy initialize Supabase client only in browser
+  const supabaseRef = useRef<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
+  const getSupabase = () => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    if (!supabaseRef.current) {
+      supabaseRef.current = getSupabaseBrowserClient();
+    }
+    return supabaseRef.current;
+  };
+  const supabase = getSupabase();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
@@ -86,7 +98,14 @@ export default function SearchPage() {
     minRating: undefined,
   });
 
-  // Load filters from URL on mount
+  // Extract filter-related params from URL string (excluding 'q' parameter)
+  const filterParamsString = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('q'); // Remove query param to only track filter changes
+    return params.toString();
+  }, [searchParams]);
+
+  // Load filters from URL when filter params change (not when 'q' changes)
   useEffect(() => {
     const urlFilters: SearchFilters = {
       brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
@@ -97,11 +116,18 @@ export default function SearchPage() {
       minRating: searchParams.get('rating') ? parseFloat(searchParams.get('rating') || '0') : undefined,
     };
     setFilters(urlFilters);
-  }, []);
+  }, [filterParamsString, searchParams]);
 
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
+    
+    // Preserve the 'q' parameter
+    const currentQuery = searchParams.get('q');
+    if (currentQuery) {
+      params.set('q', currentQuery);
+    }
+    
     if (filters.brands.length > 0) {
       params.set('brands', filters.brands.join(','));
     } else {
@@ -132,8 +158,15 @@ export default function SearchPage() {
     } else {
       params.delete('rating');
     }
-    router.replace(`/${locale}/search?${params.toString()}`, { scroll: false });
-  }, [filters, locale, router]);
+    
+    const newUrl = `/${locale}/search?${params.toString()}`;
+    const currentUrl = `/${locale}/search?${searchParams.toString()}`;
+    
+    // Only update URL if it actually changed
+    if (newUrl !== currentUrl) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [filters, locale, router, searchParams]);
 
   const handleSearchSelect = (query: string, selectedFilters: SearchFilters) => {
     setSearchQuery(query);
@@ -153,14 +186,45 @@ export default function SearchPage() {
 
   // Update URL when search changes
   useEffect(() => {
+    const currentQuery = searchParams.get('q') || '';
+    
+    // Only update if the query actually changed
+    if (currentQuery === debouncedQuery) {
+      return;
+    }
+    
     const params = new URLSearchParams(searchParams.toString());
+    
+    // Preserve filter parameters
+    const brands = searchParams.get('brands');
+    const stores = searchParams.get('stores');
+    const availability = searchParams.get('availability');
+    const deals = searchParams.get('deals');
+    const freeDelivery = searchParams.get('freeDelivery');
+    const rating = searchParams.get('rating');
+    
     if (debouncedQuery) {
       params.set('q', debouncedQuery);
     } else {
       params.delete('q');
     }
-    router.replace(`/${locale}/search?${params.toString()}`, { scroll: false });
-  }, [debouncedQuery, locale, router]);
+    
+    // Restore filter parameters
+    if (brands) params.set('brands', brands);
+    if (stores) params.set('stores', stores);
+    if (availability) params.set('availability', availability);
+    if (deals) params.set('deals', deals);
+    if (freeDelivery) params.set('freeDelivery', freeDelivery);
+    if (rating) params.set('rating', rating);
+    
+    const newUrl = `/${locale}/search?${params.toString()}`;
+    const currentUrl = `/${locale}/search?${searchParams.toString()}`;
+    
+    // Only update URL if it actually changed
+    if (newUrl !== currentUrl) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [debouncedQuery, locale, router, searchParams]);
 
   // Fetch products
   useEffect(() => {
@@ -172,13 +236,20 @@ export default function SearchPage() {
         return;
       }
 
+      // Ensure we're in browser and supabase is available
+      const client = getSupabase();
+      if (!client) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
       try {
         const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-        let query = supabase
+        let query = client
           .from('products')
           .select(
             `
@@ -268,8 +339,8 @@ export default function SearchPage() {
         setTotalCount(count || 0);
 
         // Save search history
-        if (user && debouncedQuery.trim()) {
-          supabase
+        if (user && debouncedQuery.trim() && client) {
+          client
             .from('search_history')
             .insert({
               user_id: user.id,
@@ -524,4 +595,5 @@ export default function SearchPage() {
     </div>
   );
 }
+
 

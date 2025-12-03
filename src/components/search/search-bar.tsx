@@ -85,7 +85,18 @@ export function SearchBar({
   const t = useTranslations();
   const { user } = useAuth();
   const { toast } = useToast();
-  const supabase = getSupabaseBrowserClient();
+
+  // Lazy initialize Supabase client only in browser
+  const supabaseRef = useRef<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
+  const getSupabase = () => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    if (!supabaseRef.current) {
+      supabaseRef.current = getSupabaseBrowserClient();
+    }
+    return supabaseRef.current;
+  };
 
   const [query, setQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
@@ -118,9 +129,15 @@ export function SearchBar({
         return;
       }
 
+      const client = getSupabase();
+      if (!client) {
+        setSuggestions([]);
+        return;
+      }
+
       setLoading(true);
       try {
-        let queryBuilder = supabase
+        let queryBuilder = client
           .from('products')
           .select('name_ar, name_en, slug, category, brand')
           .eq('is_active', true)
@@ -150,8 +167,11 @@ export function SearchBar({
     async function fetchRecentSearches() {
       if (!user || !showSuggestions) return;
 
+      const client = getSupabase();
+      if (!client) return;
+
       try {
-        const { data } = await supabase
+        const { data } = await client
           .from('search_history')
           .select('id, search_query, category, created_at')
           .eq('user_id', user.id)
@@ -262,13 +282,16 @@ export function SearchBar({
 
   const saveSearchHistory = async (searchTerm: string, categoryValue: ProductCategory | 'all') => {
     if (!user || !searchTerm.trim()) return;
+    const client = getSupabase();
+    if (!client) return;
+    
     const entry = {
       user_id: user.id,
       search_query: searchTerm.trim(),
       category: categoryValue === 'all' ? null : categoryValue,
     };
     try {
-      await supabase.from('search_history').insert(entry);
+      await client.from('search_history').insert(entry);
       setRecentSearches((prev) => {
         const filtered = prev.filter((item) => item.search_query !== entry.search_query);
         const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
