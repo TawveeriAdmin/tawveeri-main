@@ -666,6 +666,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      phone_otps: {
+        Row: {
+          id: string;
+          phone: string;
+          otp_code: string;
+          expires_at: string;
+          is_used: boolean;
+          attempts: number;
+          created_at: string;
+          verified_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          phone: string;
+          otp_code: string;
+          expires_at: string;
+          is_used?: boolean;
+          attempts?: number;
+          created_at?: string;
+          verified_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          phone?: string;
+          otp_code?: string;
+          expires_at?: string;
+          is_used?: boolean;
+          attempts?: number;
+          created_at?: string;
+          verified_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

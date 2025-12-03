@@ -8,10 +8,7 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Lock, Eye, EyeOff, User, Moon, Sun, Languages, Phone, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { validateEmail, validatePhone, validatePassword, validatePasswordMatch, validateFullName, validateOtp } from '@/lib/auth-validation';
-import { getSupabaseBrowserClient } from '@/lib/database';
-import { createNotification } from '@/lib/auth/notifications';
-import { createAuditLog } from '@/lib/auth/audit';
+import { validateEmail, validatePassword, validatePasswordMatch, validateFullName } from '@/lib/auth-validation';
 
 // Social auth icons (same as login page)
 const GoogleIcon = () => (
@@ -36,30 +33,24 @@ const FacebookIcon = () => (
 );
 
 export default function SignupPage() {
-  const supabase = getSupabaseBrowserClient();
   const t = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { signUp, signInWithOAuth, sendPhoneOtp, signInWithPhone } = useAuth();
+  const { signUp, signInWithOAuth } = useAuth();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isLoading, setIsLoading] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
-    otp: '',
     agreeToTerms: false,
   });
 
@@ -67,10 +58,8 @@ export default function SignupPage() {
   const [errors, setErrors] = useState({
     fullName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
-    otp: '',
     terms: '',
   });
 
@@ -78,10 +67,8 @@ export default function SignupPage() {
   const [touched, setTouched] = useState({
     fullName: false,
     email: false,
-    phone: false,
     password: false,
     confirmPassword: false,
-    otp: false,
   });
 
   // Fix hydration mismatch
@@ -105,74 +92,27 @@ export default function SignupPage() {
     }
   }, [formData.email, touched.email, authMethod]);
 
-  // Real-time validation for phone
-  useEffect(() => {
-    if (touched.phone && authMethod === 'phone') {
-      const result = validatePhone(formData.phone);
-      setErrors(prev => ({ ...prev, phone: result.isValid ? '' : result.message || '' }));
-    }
-  }, [formData.phone, touched.phone, authMethod]);
 
   // Real-time validation for password (validate while typing, no need for touch)
   useEffect(() => {
-    if (authMethod === 'email' && formData.password) {
+    if (formData.password) {
       const result = validatePassword(formData.password);
       setErrors(prev => ({ ...prev, password: result.isValid ? '' : result.message || '' }));
-    } else if (authMethod === 'email' && !formData.password) {
+    } else {
       setErrors(prev => ({ ...prev, password: '' }));
     }
-  }, [formData.password, authMethod]);
+  }, [formData.password]);
 
   // Real-time validation for password confirmation (validate while typing)
   useEffect(() => {
-    if (authMethod === 'email' && formData.confirmPassword) {
+    if (formData.confirmPassword) {
       const result = validatePasswordMatch(formData.password, formData.confirmPassword);
       setErrors(prev => ({ ...prev, confirmPassword: result.isValid ? '' : result.message || '' }));
-    } else if (authMethod === 'email' && !formData.confirmPassword) {
+    } else {
       setErrors(prev => ({ ...prev, confirmPassword: '' }));
     }
-  }, [formData.password, formData.confirmPassword, authMethod]);
+  }, [formData.password, formData.confirmPassword]);
 
-  // Real-time validation for OTP
-  useEffect(() => {
-    if (touched.otp && authMethod === 'phone' && otpSent) {
-      const result = validateOtp(formData.otp);
-      setErrors(prev => ({ ...prev, otp: result.isValid ? '' : result.message || '' }));
-    }
-  }, [formData.otp, touched.otp, authMethod, otpSent]);
-
-  const handleSendOtp = async () => {
-    setTouched(prev => ({ ...prev, phone: true }));
-    const phoneValidation = validatePhone(formData.phone);
-
-    if (!phoneValidation.isValid) {
-      setErrors(prev => ({ ...prev, phone: phoneValidation.message || '' }));
-      return;
-    }
-
-    try {
-      setOtpLoading(true);
-      const { error } = await sendPhoneOtp(formData.phone, { shouldCreateUser: true });
-      if (error) throw error;
-
-      setOtpSent(true);
-      setErrors(prev => ({ ...prev, phone: '' }));
-      toast({
-        title: t('auth.otpSent') || 'OTP sent',
-        description: t('auth.otpSentDescription') || 'Enter the code we sent to your phone to continue.',
-        variant: 'default',
-      });
-    } catch (error: any) {
-      console.error('Signup OTP error:', error);
-      toast({
-        title: t('auth.otpError') || 'Unable to send OTP',
-        description: error?.message || t('auth.somethingWrong') || 'Please try again shortly.',
-        variant: 'destructive',
-      });
-    } finally {
-      setOtpLoading(false);
-    }
-  };
 
   const handleOAuthSignup = async (provider: 'google' | 'facebook' | 'apple') => {
     setIsLoading(true);
@@ -212,10 +152,8 @@ export default function SignupPage() {
     setTouched({
       fullName: true,
       email: true,
-      phone: true,
       password: true,
       confirmPassword: true,
-      otp: true,
     });
 
     // Validate full name
@@ -225,47 +163,25 @@ export default function SignupPage() {
       return;
     }
 
-    if (authMethod === 'email') {
-      // Validate email
-      const emailValidation = validateEmail(formData.email);
-      if (!emailValidation.isValid) {
-        setErrors(prev => ({ ...prev, email: emailValidation.message || '' }));
-        return;
-      }
+    // Validate email
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      setErrors(prev => ({ ...prev, email: emailValidation.message || '' }));
+      return;
+    }
 
-      // Validate password
-      const passwordValidation = validatePassword(formData.password);
-      if (!passwordValidation.isValid) {
-        setErrors(prev => ({ ...prev, password: passwordValidation.message || '' }));
-        return;
-      }
+    // Validate password
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setErrors(prev => ({ ...prev, password: passwordValidation.message || '' }));
+      return;
+    }
 
-      // Validate password match
-      const passwordMatchValidation = validatePasswordMatch(formData.password, formData.confirmPassword);
-      if (!passwordMatchValidation.isValid) {
-        setErrors(prev => ({ ...prev, confirmPassword: passwordMatchValidation.message || '' }));
-        return;
-      }
-    } else {
-      // Validate phone
-      const phoneValidation = validatePhone(formData.phone);
-      if (!phoneValidation.isValid) {
-        setErrors(prev => ({ ...prev, phone: phoneValidation.message || '' }));
-        return;
-      }
-
-      // Check if OTP was sent
-      if (!otpSent) {
-        setErrors(prev => ({ ...prev, phone: 'Please send OTP first' }));
-        return;
-      }
-
-      // Validate OTP
-      const otpValidation = validateOtp(formData.otp);
-      if (!otpValidation.isValid) {
-        setErrors(prev => ({ ...prev, otp: otpValidation.message || '' }));
-        return;
-      }
+    // Validate password match
+    const passwordMatchValidation = validatePasswordMatch(formData.password, formData.confirmPassword);
+    if (!passwordMatchValidation.isValid) {
+      setErrors(prev => ({ ...prev, confirmPassword: passwordMatchValidation.message || '' }));
+      return;
     }
 
     // Validate terms agreement
@@ -278,58 +194,6 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      if (authMethod === 'phone') {
-        const { data, error } = await signInWithPhone(formData.phone, formData.otp);
-        if (error) throw error;
-
-        const authUser = data?.user ?? data?.session?.user ?? null;
-
-        if (authUser) {
-          await supabase
-            .from('users')
-            .upsert(
-              {
-                id: authUser.id,
-                phone: formData.phone,
-                full_name: formData.fullName || null,
-                preferred_language: locale as 'ar' | 'en',
-                role: 'customer',
-                auth_provider: 'phone',
-              },
-              { onConflict: 'id' }
-            );
-
-          await createNotification({
-            user_id: authUser.id,
-            type: 'system',
-            title_ar: 'مرحباً بك في توفيري',
-            title_en: 'Welcome to Tawveeri',
-            message_ar: 'نحن سعداء بانضمامك إلينا',
-            message_en: 'We are happy to have you join us',
-          });
-
-          await createAuditLog({
-            user_id: authUser.id,
-            action: 'user_signup',
-            entity_type: 'user',
-            entity_id: authUser.id,
-            details: {
-              method: 'phone',
-              full_name: formData.fullName,
-            },
-          });
-        }
-
-        toast({
-          title: t('auth.signupSuccess') || 'Account created successfully',
-          description: t('auth.phoneVerified') || 'Your phone number has been verified successfully.',
-          variant: 'default',
-        });
-
-        router.push(`/${locale}`);
-        return;
-      }
-
       const signupParams = {
         full_name: formData.fullName,
         password: formData.password,
@@ -463,33 +327,6 @@ export default function SignupPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email/Phone Tabs */}
-            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setAuthMethod('email')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                  authMethod === 'email'
-                    ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                <Mail className="w-4 h-4" />
-                {t('auth.emailTab')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthMethod('phone')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                  authMethod === 'phone'
-                    ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                <Phone className="w-4 h-4" />
-                {t('auth.phoneTab')}
-              </button>
-            </div>
 
             {/* Full Name Field */}
             <div>
@@ -513,176 +350,88 @@ export default function SignupPage() {
               {touched.fullName && <ErrorMessage message={errors.fullName} />}
             </div>
 
-            {/* Email or Phone Field (conditional) */}
-            {authMethod === 'email' ? (
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                  {t('auth.emailAddress')}
-                </label>
-                <div className="relative">
-                  <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <input
-                    id="email"
-                    type="text"
-                    autoComplete="email"
-                    inputMode="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
-                    placeholder={t('auth.emailPlaceholder')}
-                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.email && touched.email ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.email && touched.email ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
-                  />
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                {t('auth.emailAddress')}
+              </label>
+              <div className="relative">
+                <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                  <Mail className="w-5 h-5" />
                 </div>
-                {touched.email && <ErrorMessage message={errors.email} />}
+                <input
+                  id="email"
+                  type="text"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                  placeholder={t('auth.emailPlaceholder')}
+                  className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.email && touched.email ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.email && touched.email ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                />
               </div>
-            ) : (
-              <div>
-                <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                  {t('auth.phoneNumber')}
-                </label>
-                <div className="relative">
-                  <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                    <Phone className="w-5 h-5" />
-                  </div>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
-                    placeholder={t('auth.phonePlaceholder')}
-                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.phone && touched.phone ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.phone && touched.phone ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
-                  />
+              {touched.email && <ErrorMessage message={errors.email} />}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                {t('auth.password')}
+              </label>
+              <div className="relative">
+                <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                  <Lock className="w-5 h-5" />
                 </div>
-                {touched.phone && <ErrorMessage message={errors.phone} />}
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                  placeholder={t('auth.passwordPlaceholder')}
+                  className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.password && formData.password ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.password && formData.password ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
-            )}
+              {formData.password && <ErrorMessage message={errors.password} />}
+            </div>
 
-            {/* Password Fields (Email) or OTP Field (Phone) */}
-            {authMethod === 'email' ? (
-              <>
-                {/* Password Field */}
-                <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                    {t('auth.password')}
-                  </label>
-                  <div className="relative">
-                    <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
-                      placeholder={t('auth.passwordPlaceholder')}
-                      className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.password && formData.password ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.password && formData.password ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {formData.password && <ErrorMessage message={errors.password} />}
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                {t('auth.confirmPassword')}
+              </label>
+              <div className="relative">
+                <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                  <Lock className="w-5 h-5" />
                 </div>
-
-                {/* Confirm Password Field */}
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                    {t('auth.confirmPassword')}
-                  </label>
-                  <div className="relative">
-                    <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      onBlur={() => setTouched(prev => ({ ...prev, confirmPassword: true }))}
-                      placeholder={t('auth.passwordPlaceholder')}
-                      className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.confirmPassword && formData.confirmPassword ? 'border-warning-500 dark:border-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'border-success-500 dark:border-success-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.confirmPassword && formData.confirmPassword ? 'focus:ring-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'focus:ring-success-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {formData.confirmPassword && errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} />}
-                  {formData.confirmPassword && !errors.confirmPassword && <SuccessMessage message="passwordMatch" />}
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Send OTP Button */}
-                {!otpSent && (
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={otpLoading || !formData.phone}
-                    className="w-full py-3.5 bg-gradient-to-r from-success-600 to-success-700 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-success-600/30 transform hover:scale-[1.02] transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ color: '#ffffff' }}
-                  >
-                    <span
-                      style={{
-                        textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                        color: '#ffffff',
-                      }}
-                    >
-                      {otpLoading ? t('auth.sendingOtp') || 'Sending...' : t('auth.sendOtp') || 'Send OTP'}
-                    </span>
-                  </button>
-                )}
-
-                {/* OTP Field */}
-                {otpSent && (
-                  <div>
-                    <label htmlFor="otp" className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                      Enter OTP
-                    </label>
-                    <div className="relative">
-                      <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                        <Lock className="w-5 h-5" />
-                      </div>
-                      <input
-                        id="otp"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={formData.otp}
-                        onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/[^0-9]/g, '') })}
-                        onBlur={() => setTouched(prev => ({ ...prev, otp: true }))}
-                        placeholder="123456"
-                        maxLength={6}
-                        className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.otp && touched.otp ? 'border-warning-500 dark:border-warning-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.otp && touched.otp ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono`}
-                      />
-                    </div>
-                    {touched.otp && <ErrorMessage message={errors.otp} />}
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
-                      {t('auth.didntReceiveOtp') || "Didn't receive OTP?"}{' '}
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={otpLoading}
-                        className="text-primary-600 dark:text-primary-400 hover:underline font-semibold disabled:opacity-50"
-                      >
-                        {t('auth.resendOtp') || 'Resend'}
-                      </button>
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, confirmPassword: true }))}
+                  placeholder={t('auth.passwordPlaceholder')}
+                  className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border ${errors.confirmPassword && formData.confirmPassword ? 'border-warning-500 dark:border-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'border-success-500 dark:border-success-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.confirmPassword && formData.confirmPassword ? 'focus:ring-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'focus:ring-success-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {formData.confirmPassword && errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} />}
+              {formData.confirmPassword && !errors.confirmPassword && <SuccessMessage message="passwordMatch" />}
+            </div>
 
             {/* Terms Agreement */}
             <div>
@@ -716,16 +465,14 @@ export default function SignupPage() {
               </span>
             </button>
 
-            {/* Sign In Link */}
-            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-              {t('auth.hasAccount')}{' '}
-              <Link
-                href={`/${locale}/auth/login`}
-                className="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-              >
-                {t('auth.signInLink')}
-              </Link>
-            </p>
+            {/* Continue with Phone Button */}
+            <Link
+              href={`/${locale}/auth/login`}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm text-gray-700 dark:text-gray-300 font-medium"
+            >
+              <Phone className="w-4 h-4" />
+              {t('auth.continueWithPhone') || 'Continue with Phone'}
+            </Link>
 
             {/* Divider */}
             <div className="relative">

@@ -7,7 +7,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useToast } from '@/components/ui/use-toast';
-import { Mail, Lock, Eye, EyeOff, Moon, Sun, Languages, Phone, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Moon, Sun, Languages, Phone, ArrowLeft, User } from 'lucide-react';
 
 // Social auth icons
 const GoogleIcon = () => (
@@ -42,17 +42,15 @@ export default function LoginPage() {
   const { signInWithEmail, signInWithPhone, signInWithOAuth, sendPhoneOtp } = useAuth();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isLoading, setIsLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
     phone: '',
-    password: '',
     otp: '',
+    fullName: '',
     rememberMe: false,
   });
 
@@ -127,7 +125,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (authMethod === 'phone' && !otpSent) {
+    if (!otpSent) {
       toast({
         title: t('auth.otpRequired') || 'OTP Required',
         description: 'Please send OTP first',
@@ -136,7 +134,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (authMethod === 'phone' && !formData.otp) {
+    if (!formData.otp) {
       toast({
         title: t('auth.otpRequired') || 'OTP Required',
         description: 'Please enter OTP',
@@ -145,38 +143,56 @@ export default function LoginPage() {
       return;
     }
 
+    // If it's a new user and we're showing the name field, validate name
+    if (isNewUser && !formData.fullName) {
+      toast({
+        title: t('auth.validation.fullNameRequired') || 'Full name required',
+        description: 'Please enter your full name to continue',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      let result;
-
-      if (authMethod === 'email') {
-        if (!formData.email || !formData.password) {
-          throw new Error('Email and password are required');
-        }
-        result = await signInWithEmail(formData.email, formData.password);
-      } else {
-        if (!formData.phone || !formData.otp) {
-          throw new Error('Phone and OTP are required');
-        }
-        // For phone auth with OTP, we need to use password field with OTP
-        // This is a simplified implementation - in production, you'd verify OTP separately
-        result = await signInWithPhone(formData.phone, formData.otp);
+      if (!formData.phone || !formData.otp) {
+        throw new Error('Phone and OTP are required');
       }
+
+      // Verify OTP - check if user exists first
+      const result = await signInWithPhone(formData.phone, formData.otp, {
+        fullName: isNewUser ? formData.fullName : undefined,
+        preferredLanguage: locale as 'ar' | 'en',
+      });
 
       if (result.error) {
         throw result.error;
       }
 
+      // Check if this is a new user (from API response)
+      if (result.data?.isNewUser) {
+        if (!formData.fullName) {
+          // Show name field, don't proceed yet
+          setIsNewUser(true);
+          setIsLoading(false);
+          return;
+        }
+        // Name provided, proceed with account creation (already handled in API)
+      }
+
       // Show success message
       toast({
-        title: t('auth.loginSuccess') || 'Welcome back!',
-        description: t('auth.loginSuccessDesc') || 'You have successfully logged in',
+        title: isNewUser 
+          ? (t('auth.signupSuccess') || 'Account created successfully')
+          : (t('auth.loginSuccess') || 'Welcome back!'),
+        description: isNewUser
+          ? (t('auth.phoneVerified') || 'Your phone number has been verified successfully.')
+          : (t('auth.loginSuccessDesc') || 'You have successfully logged in'),
         variant: 'default',
       });
 
       // Wait a moment for auth state to update, then redirect
-      // This ensures the landing page shows the correct user state
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Refresh the router to ensure auth state is updated
@@ -193,15 +209,18 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error('Login error:', error);
 
-      // Translate common Supabase error messages
+      // Check if error indicates user doesn't exist (new user)
+      if (error.message?.includes('User not found') || error.message?.includes('not found')) {
+        setIsNewUser(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // Translate common error messages
       let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
 
-      if (error.message?.includes('Invalid login credentials') || error.message?.includes('invalid_credentials')) {
-        errorMessage = t('auth.invalidCredentials');
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = t('auth.emailNotConfirmed');
-      } else if (error.message?.includes('User not found')) {
-        errorMessage = t('auth.userNotFound');
+      if (error.message?.includes('Invalid') || error.message?.includes('invalid')) {
+        errorMessage = t('auth.invalidCredentials') || 'Invalid OTP code';
       }
 
       toast({
@@ -209,7 +228,6 @@ export default function LoginPage() {
         description: errorMessage,
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -270,62 +288,19 @@ export default function LoginPage() {
           {/* Sign In Header */}
           <div>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              {t('auth.signIn')}
+              {isNewUser ? (t('auth.signUp') || 'Sign Up') : (t('auth.signIn') || 'Sign In')}
             </h1>
-          </div>
-
-          {/* Email/Phone Tabs */}
-          <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setAuthMethod('email')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
-                authMethod === 'email'
-                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              {t('auth.emailTab')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMethod('phone')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
-                authMethod === 'phone'
-                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Phone className="w-4 h-4" />
-              {t('auth.phoneTab')}
-            </button>
+            {isNewUser && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                {t('auth.createAccountWithPhone') || 'Create your account with your phone number'}
+              </p>
+            )}
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email or Phone Field */}
-            {authMethod === 'email' ? (
-              <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-900 dark:text-white">
-                  {t('auth.emailAddress')}
-                </label>
-                <div className="relative">
-                  <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder={t('auth.emailPlaceholder')}
-                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
-                    required
-                  />
-                </div>
-              </div>
-            ) : (
+            {/* Phone Field */}
+            {!otpSent && (
               <div className="space-y-2">
                 <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 dark:text-white">
                   {t('auth.phoneNumber')}
@@ -342,94 +317,86 @@ export default function LoginPage() {
                     placeholder={t('auth.phonePlaceholder')}
                     className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                     required
+                    disabled={otpSent}
                   />
                 </div>
               </div>
             )}
 
-            {/* Password Field (Email) or OTP Field (Phone) */}
-            {authMethod === 'email' ? (
+            {/* Send OTP Button */}
+            {!otpSent && (
+              <button
+                type="button"
+                onClick={handleSendOtp}
+                disabled={otpLoading || !formData.phone}
+                className="w-full py-3.5 bg-gradient-to-r from-success-600 to-success-700 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-success-600/30 transform hover:scale-[1.02] transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ color: '#ffffff' }}
+              >
+                <span style={{
+                  textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
+                  color: '#ffffff'
+                }}>
+                  {otpLoading ? t('auth.sendingOtp') || 'Sending...' : t('auth.sendOtp') || 'Send OTP'}
+                </span>
+              </button>
+            )}
+
+            {/* Full Name Field (only shown for new users after OTP sent) */}
+            {isNewUser && otpSent && (
               <div className="space-y-2">
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-900 dark:text-white">
-                  {t('auth.password')}
+                <label htmlFor="fullName" className="block text-sm font-semibold text-gray-900 dark:text-white">
+                  {t('auth.fullName')}
+                </label>
+                <div className="relative">
+                  <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
+                    <User className="w-5 h-5" />
+                  </div>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder={t('auth.fullNamePlaceholder')}
+                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* OTP Field */}
+            {otpSent && (
+              <div className="space-y-2">
+                <label htmlFor="otp" className="block text-sm font-semibold text-gray-900 dark:text-white">
+                  {t('auth.enterOtp') || 'Enter OTP'}
                 </label>
                 <div className="relative">
                   <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
                     <Lock className="w-5 h-5" />
                   </div>
                   <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder={t('auth.passwordPlaceholder')}
-                    className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                    id="otp"
+                    type="text"
+                    value={formData.otp}
+                    onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/[^0-9]/g, '') })}
+                    placeholder="123456"
+                    maxLength={6}
+                    className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono`}
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
                 </div>
-              </div>
-            ) : (
-              <>
-                {/* Send OTP Button */}
-                {!otpSent && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  {t('auth.didntReceiveOtp') || "Didn't receive OTP?"}{' '}
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={otpLoading || !formData.phone}
-                    className="w-full py-3.5 bg-gradient-to-r from-success-600 to-success-700 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-success-600/30 transform hover:scale-[1.02] transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ color: '#ffffff' }}
+                    disabled={otpLoading}
+                    className="text-primary-600 dark:text-primary-400 hover:underline font-semibold disabled:opacity-50"
                   >
-                    <span style={{
-                      textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                      color: '#ffffff'
-                    }}>
-                      {otpLoading ? t('auth.sendingOtp') || 'Sending...' : t('auth.sendOtp') || 'Send OTP'}
-                    </span>
+                    {t('auth.resendOtp') || 'Resend'}
                   </button>
-                )}
-
-                {/* OTP Field */}
-                {otpSent && (
-                  <div className="space-y-2">
-                    <label htmlFor="otp" className="block text-sm font-semibold text-gray-900 dark:text-white">
-                      Enter OTP
-                    </label>
-                    <div className="relative">
-                      <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`}>
-                        <Lock className="w-5 h-5" />
-                      </div>
-                      <input
-                        id="otp"
-                        type="text"
-                        value={formData.otp}
-                        onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
-                        placeholder="123456"
-                        maxLength={6}
-                        className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono`}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      {t('auth.didntReceiveOtp') || "Didn't receive OTP?"}{' '}
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={otpLoading}
-                        className="text-primary-600 dark:text-primary-400 hover:underline font-semibold disabled:opacity-50"
-                      >
-                        {t('auth.resendOtp') || 'Resend'}
-                      </button>
-                    </p>
-                  </div>
-                )}
-              </>
+                </p>
+              </div>
             )}
 
             {/* Remember Me & Forgot Password */}
@@ -468,16 +435,14 @@ export default function LoginPage() {
               </span>
             </button>
 
-            {/* Sign Up Link */}
-            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-              {t('auth.noAccount')}{' '}
-              <Link
-                href={`/${locale}/auth/signup`}
-                className="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-              >
-                {t('auth.signUpLink')}
-              </Link>
-            </p>
+            {/* Continue with Email Button */}
+            <Link
+              href={`/${locale}/auth/signup`}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 shadow-sm text-gray-700 dark:text-gray-300 font-medium"
+            >
+              <Mail className="w-4 h-4" />
+              {t('auth.continueWithEmail') || 'Continue with Email'}
+            </Link>
 
             {/* Divider */}
             <div className="relative">

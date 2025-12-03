@@ -23,7 +23,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (params: SignUpParams) => Promise<AuthResponse>;
   signInWithEmail: (email: string, password: string) => Promise<AuthResponse>;
-  signInWithPhone: (phone: string, token: string) => Promise<AuthResponse>;
+  signInWithPhone: (phone: string, token: string, options?: { fullName?: string; preferredLanguage?: 'ar' | 'en' }) => Promise<AuthResponse>;
   sendPhoneOtp: (phone: string, options?: { shouldCreateUser?: boolean }) => Promise<AuthResponse>;
   signInWithOAuth: (provider: 'google' | 'facebook' | 'apple') => Promise<AuthResponse>;
   signOut: () => Promise<void>;
@@ -266,22 +266,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string,
     options?: { shouldCreateUser?: boolean }
   ): Promise<AuthResponse> => {
-    if (!supabase) {
-      return { error: new Error('Supabase client not initialized') };
-    }
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        phone,
-        options: {
-          channel: 'sms',
+      // Use absolute path to avoid locale prefix issues
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
+      const response = await fetch(`${baseUrl}/api/auth/send-phone-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
           shouldCreateUser: options?.shouldCreateUser ?? false,
-        },
+        }),
       });
 
-      if (error) throw error;
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response from API:', text.substring(0, 200));
+        return { error: new Error('Server returned an invalid response. Please check the server logs.') };
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: new Error(data.error || 'Failed to send OTP') };
+      }
 
       return { data, error: null };
     } catch (error) {
+      console.error('Send OTP error:', error);
       return { error: error as Error };
     }
   };
@@ -289,38 +305,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sign in or verify with phone OTP
   const signInWithPhone = async (
     phone: string,
-    token: string
+    token: string,
+    options?: { fullName?: string; preferredLanguage?: 'ar' | 'en' }
   ): Promise<AuthResponse> => {
     if (!supabase) {
       return { error: new Error('Supabase client not initialized') };
     }
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        type: 'sms',
-        phone,
-        token,
+      // Use absolute path to avoid locale prefix issues
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
+      const response = await fetch(`${baseUrl}/api/auth/verify-phone-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          otp: token,
+          fullName: options?.fullName,
+          preferredLanguage: options?.preferredLanguage,
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
-      const authUser = data.user ?? data.session?.user ?? null;
+      if (!response.ok) {
+        return { error: new Error(data.error || 'Failed to verify OTP') };
+      }
 
-      if (authUser) {
-        // Update last login
+      // The user is created in Supabase Auth with phone_confirmed: true
+      // We need to create a session. Since the user is already confirmed,
+      // we can try to get the session by refreshing auth state
+      // The auth state listener should pick up the new user
+      
+      // Wait a moment for auth state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Try to get the session
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (sessionData?.session?.user) {
+        const authUser = sessionData.session.user;
+
+        // Update last login (already done in API, but ensure it's updated)
         await supabase
           .from('users')
           .update({ last_login_at: new Date().toISOString() })
           .eq('id', authUser.id);
-
-        // Audit log
-        await createAuditLog({
-          user_id: authUser.id,
-          action: 'user_login',
-          entity_type: 'user',
-          entity_id: authUser.id,
-          details: { method: 'phone' },
-        });
+      } else {
+        // If no session, the auth state listener should pick it up
+        // The user is created in Supabase Auth, so the session should be available
+        // through the auth state change listener
+        console.log('Session not immediately available, auth state listener will handle it');
       }
+      
+      // Audit log is already created in API route
 
       return { data, error: null };
     } catch (error) {

@@ -36,11 +36,18 @@ const handleI18nRouting = createIntlMiddleware({
 });
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Skip middleware for API routes
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
   // First, let next-intl handle the routing
   const response = handleI18nRouting(request);
 
   // Get the pathname without locale prefix for route matching
-  const pathnameWithoutLocale = request.nextUrl.pathname.replace(/^\/(ar|en)/, '') || '/';
+  const pathnameWithoutLocale = pathname.replace(/^\/(ar|en)/, '') || '/';
 
   // Check if route requires authentication
   const isProtectedRoute = protectedRoutes.some((route) => pathnameWithoutLocale.startsWith(route));
