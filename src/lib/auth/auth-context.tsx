@@ -320,6 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${baseUrl}/api/auth/verify-phone-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Ensure cookies are sent and received
         body: JSON.stringify({
           phone,
           otp: token,
@@ -334,33 +335,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Failed to verify OTP') };
       }
 
-      // The user is created in Supabase Auth with phone_confirmed: true
-      // We need to create a session. Since the user is already confirmed,
-      // we can try to get the session by refreshing auth state
-      // The auth state listener should pick up the new user
+      // Session is created server-side and cookies are set automatically
+      // Wait a moment for cookies to be available, then force refresh
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Wait a moment for auth state to update
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Force refresh session to ensure cookies are read and state is updated
+      // This will trigger onAuthStateChange if session exists
+      await supabase.auth.refreshSession();
       
-      // Try to get the session
+      // Also try to get session directly and update state immediately
       const { data: sessionData } = await supabase.auth.getSession();
       
-      if (sessionData?.session?.user) {
-        const authUser = sessionData.session.user;
-
-        // Update last login (already done in API, but ensure it's updated)
-        await supabase
-          .from('users')
-          .update({ last_login_at: new Date().toISOString() })
-          .eq('id', authUser.id);
-      } else {
-        // If no session, the auth state listener should pick it up
-        // The user is created in Supabase Auth, so the session should be available
-        // through the auth state change listener
-        console.log('Session not immediately available, auth state listener will handle it');
+      if (sessionData?.session) {
+        // Session found, update state immediately so UI updates without waiting for redirect
+        const profile = await fetchUserProfile(sessionData.session.user.id, sessionData.session.user.email);
+        setUser({ ...sessionData.session.user, ...profile } as AuthUser);
+        setSession(sessionData.session);
       }
-      
-      // Audit log is already created in API route
 
       return { data, error: null };
     } catch (error) {

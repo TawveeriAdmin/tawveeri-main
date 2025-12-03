@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/database';
+import { createServerClient as createAdminClient } from '@/lib/database';
+import { createServerClient } from '@supabase/ssr';
 import { validateSaudiPhone } from '@/lib/auth/phone-validation';
 import { createAuditLog } from '@/lib/auth/audit';
 import { createNotification } from '@/lib/auth/notifications';
@@ -38,7 +39,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    // Create initial response for cookie handling
+    const response = NextResponse.json({});
+
+    // Create SSR client with cookie handlers for session management
+    const supabaseSSR = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            });
+          },
+          remove(name: string, options: any) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            });
+          },
+        },
+      }
+    );
+
+    // Create admin client for user creation operations
+    const supabase = createAdminClient();
 
     // Find active OTP in database
     const { data: otpRecord, error: otpError } = await supabase
@@ -199,19 +231,144 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate a magic link for session creation
-    // The client can use this to create a session
+    // For phone auth, generateLink requires an email
+    // We'll use a placeholder email to generate the magic link
+    // Format: phone_<sanitized_phone>@tawveeri.local
+    const sanitizedPhone = formattedPhone.replace(/[^0-9]/g, '');
+    const placeholderEmail = `phone_${sanitizedPhone}@tawveeri.local`;
+    
+    // Update user with placeholder email temporarily
+    const { error: emailUpdateError } = await supabase.auth.admin.updateUserById(userId, {
+      email: placeholderEmail,
+      email_confirm: true,
+    });
+
+    if (emailUpdateError) {
+      console.error('Error setting placeholder email:', emailUpdateError);
+      return NextResponse.json(
+        { error: 'Failed to create session' },
+        { status: 500 }
+      );
+    }
+
+    // Generate a magic link using the placeholder email
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
-      phone: formattedPhone,
+      email: placeholderEmail,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?type=phone`,
       },
     });
 
-    // Return user data
-    // The client will use the magic link to create a session
-    return NextResponse.json({
+    if (linkError || !linkData) {
+      console.error('Error generating magic link:', linkError);
+      // Remove placeholder email on error
+      await supabase.auth.admin.updateUserById(userId, {
+        email: null,
+      });
+      return NextResponse.json(
+        { error: 'Failed to create session' },
+        { status: 500 }
+      );
+    }
+
+    // Debug: Log the link data structure
+    console.log('Magic link data:', {
+      hasProperties: !!linkData.properties,
+      propertiesKeys: linkData.properties ? Object.keys(linkData.properties) : [],
+      action_link: linkData.properties?.action_link,
+      hashed_token: linkData.properties?.hashed_token ? 'present' : 'missing',
+    });
+
+    // Extract code or token from magic link
+    // generateLink can return either a code in the URL or a hashed_token in properties
+    let code: string | null = null;
+    let hashedToken: string | null = null;
+
+    // Try to get code from URL
+    try {
+      const magicLinkUrl = new URL(linkData.properties.action_link);
+      code = magicLinkUrl.searchParams.get('code');
+    } catch (error) {
+      console.log('Could not parse magic link URL, trying hashed_token');
+    }
+
+    // If no code in URL, try hashed_token from properties
+    if (!code && linkData.properties.hashed_token) {
+      hashedToken = linkData.properties.hashed_token;
+    }
+
+    if (!code && !hashedToken) {
+      console.error('No code or hashed_token found in magic link', {
+        action_link: linkData.properties.action_link,
+        properties: linkData.properties,
+      });
+      // Remove placeholder email on error
+      await supabase.auth.admin.updateUserById(userId, {
+        email: null,
+      });
+      return NextResponse.json(
+        { error: 'Failed to create session' },
+        { status: 500 }
+      );
+    }
+
+    // Exchange code/token for session using SSR client
+    // This will automatically set cookies in the response
+    let sessionData: any = null;
+    let sessionError: any = null;
+
+    if (code) {
+      // Use code exchange method
+      console.log('Using code exchange method');
+      const result = await supabaseSSR.auth.exchangeCodeForSession(code);
+      sessionData = result.data;
+      sessionError = result.error;
+    } else if (hashedToken) {
+      // Use verifyOtp with hashed_token
+      console.log('Using hashed_token verifyOtp method');
+      const result = await supabaseSSR.auth.verifyOtp({
+        token_hash: hashedToken,
+        type: 'email',
+      });
+      sessionData = result.data;
+      sessionError = result.error;
+    } else {
+      console.error('Neither code nor hashedToken available');
+      // Remove placeholder email on error
+      await supabase.auth.admin.updateUserById(userId, {
+        email: null,
+      });
+      return NextResponse.json(
+        { error: 'Failed to create session' },
+        { status: 500 }
+      );
+    }
+
+    if (sessionError || !sessionData?.session) {
+      console.error('Error creating session:', sessionError, {
+        hasSession: !!sessionData?.session,
+        sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
+      });
+      // Remove placeholder email on error
+      await supabase.auth.admin.updateUserById(userId, {
+        email: null,
+      });
+      return NextResponse.json(
+        { error: 'Failed to create session' },
+        { status: 500 }
+      );
+    }
+
+    // Remove placeholder email after successful session creation
+    // The session is established, so email is no longer needed for this flow
+    await supabase.auth.admin.updateUserById(userId, {
+      email: null,
+    });
+
+    // Create final response with user data
+    // Session cookies are already set in the response object by SSR client during exchangeCodeForSession
+    const finalResponse = NextResponse.json({
       success: true,
       user: {
         id: userId,
@@ -221,10 +378,23 @@ export async function POST(request: NextRequest) {
         phone_verified: true,
       },
       isNewUser,
-      // Return magic link for session creation
-      magicLink: linkData?.properties?.action_link || null,
-      verificationToken: linkData?.properties?.hashed_token || null,
     });
+
+    // Copy all cookies from the SSR response to the final response
+    // This preserves the session cookies set during exchangeCodeForSession
+    response.cookies.getAll().forEach((cookie) => {
+      const cookieOptions: any = {};
+      if (cookie.path) cookieOptions.path = cookie.path;
+      if (cookie.domain) cookieOptions.domain = cookie.domain;
+      if (cookie.maxAge !== undefined) cookieOptions.maxAge = cookie.maxAge;
+      if (cookie.httpOnly !== undefined) cookieOptions.httpOnly = cookie.httpOnly;
+      if (cookie.secure !== undefined) cookieOptions.secure = cookie.secure;
+      if (cookie.sameSite) cookieOptions.sameSite = cookie.sameSite;
+      
+      finalResponse.cookies.set(cookie.name, cookie.value, cookieOptions);
+    });
+
+    return finalResponse;
   } catch (error) {
     console.error('Verify OTP error:', error);
     return NextResponse.json(

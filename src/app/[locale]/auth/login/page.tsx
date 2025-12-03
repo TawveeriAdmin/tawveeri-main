@@ -39,7 +39,7 @@ export default function LoginPage() {
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const { theme, setTheme } = useTheme();
-  const { signInWithEmail, signInWithPhone, signInWithOAuth, sendPhoneOtp } = useAuth();
+  const { signInWithEmail, signInWithPhone, signInWithOAuth, sendPhoneOtp, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -192,11 +192,8 @@ export default function LoginPage() {
         variant: 'default',
       });
 
-      // Wait a moment for auth state to update, then redirect
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Refresh the router to ensure auth state is updated
-      router.refresh();
+      // Wait a moment for cookies to be set and session to be available
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Determine redirect path (defaults to home)
       const redirectParam = searchParams.get('redirect');
@@ -205,7 +202,12 @@ export default function LoginPage() {
         : '';
       const targetPath = sanitizedRedirect ? `/${locale}${sanitizedRedirect}` : `/${locale}`;
 
-      router.push(targetPath);
+      // Stop loading before redirect
+      setIsLoading(false);
+      
+      // Use window.location.href for full page reload to ensure cookies are read
+      // This ensures the auth context properly initializes with the session
+      window.location.href = targetPath;
     } catch (error: any) {
       console.error('Login error:', error);
 
