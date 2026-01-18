@@ -1,0 +1,40 @@
+{
+  "store_slug": "extra",
+  "store_name_ar": "اكسترا",
+  "store_name_en": "Extra",
+  "base_url": "https://www.extra.com",
+  "requires_js": true,
+  "rate_limit": {
+    "min_delay_ms": 3000,
+    "max_delay_ms": 6000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://www.extra.com/en-sa/smartphones"],
+    "laptop": ["https://www.extra.com/en-sa/laptops"],
+    "tv": ["https://www.extra.com/en-sa/tv"],
+    "tablet": ["https://www.extra.com/en-sa/tablets"],
+    "audio": ["https://www.extra.com/en-sa/audio"],
+    "camera": ["https://www.extra.com/en-sa/cameras"],
+    "gaming": ["https://www.extra.com/en-sa/gaming"],
+    "accessories": ["https://www.extra.com/en-sa/accessories"]
+  },
+  "selectors": {
+    "product_list": ".product-item",
+    "product_link": "a.product-link",
+    "product_name": ".product-name",
+    "product_price": ".price",
+    "product_original_price": ".original-price",
+    "product_image": ".product-image img",
+    "product_sku": ".sku",
+    "product_specs": ".specifications",
+    "product_availability": ".availability",
+    "pagination": ".pagination",
+    "next_page": ".pagination .next"
+  }
+}
+
