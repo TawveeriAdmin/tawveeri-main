@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getSupabaseBrowserClient } from '@/lib/database';
 import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchBar } from '@/components/search/search-bar';
@@ -32,11 +31,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, Sparkles } from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useToast } from '@/components/ui/use-toast';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
+import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
+import { mapScrapedToProductCard } from '@/lib/scraping/product-adapter';
 
 type Product = ProductCardProduct & {
   product_stores: Array<{
@@ -67,19 +68,6 @@ export default function SearchPage() {
   const { toast } = useToast();
   const { addItem } = useMultiStoreCart();
 
-  // Lazy initialize Supabase client only in browser
-  const supabaseRef = useRef<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
-  const getSupabase = () => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    if (!supabaseRef.current) {
-      supabaseRef.current = getSupabaseBrowserClient();
-    }
-    return supabaseRef.current;
-  };
-  const supabase = getSupabase();
-
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [products, setProducts] = useState<Product[]>([]);
@@ -89,6 +77,8 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
+  const [scrapingProgress, setScrapingProgress] = useState<string>('');
+  const [storeErrors, setStoreErrors] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState<SearchFilters>({
     brands: [],
     stores: [],
@@ -226,7 +216,109 @@ export default function SearchPage() {
     }
   }, [debouncedQuery, locale, router, searchParams]);
 
-  // Fetch products
+  // Search with scraping
+  async function searchWithScraping(query: string, stores: string[] = ['amazon', 'noon', 'jarir'], pages: number = 1) {
+    setLoading(true);
+    setError(null);
+    setScrapingProgress('Connecting to scraping service...');
+    setStoreErrors({});
+
+    try {
+      setScrapingProgress('Searching stores...');
+      const response = await fetch('/api/search/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: query.trim(),
+          stores,
+          pages,
+          sort: sortBy === 'price_low' ? 'price_asc' : sortBy === 'price_high' ? 'price_desc' : 'price_asc',
+        }),
+      });
+
+      if (!response.ok) {
+        let errorData: any = {};
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        
+        let errorMessage = errorData.error || errorData.message || `Failed to scrape products (${response.status})`;
+        
+        // Add helpful hints for common errors
+        if (response.status === 403) {
+          errorMessage = 'Scraping service is not accessible. Please ensure Flask is running (npm run flask:start)';
+        } else if (response.status === 503) {
+          errorMessage = errorData.error || 'Scraping service is not available. Please start Flask.';
+        }
+        
+        console.error('[Search] Scraping error:', {
+          status: response.status,
+          error: errorData,
+          hint: errorData.hint
+        });
+        throw new Error(errorMessage);
+      }
+
+      const data: ScrapedSearchResult = await response.json();
+
+      // Map scraped products to Product format
+      // Note: The mapper already includes store info from Python response
+      const mappedProducts: Product[] = data.products.map((scraped) => {
+        return mapScrapedToProductCard(scraped) as Product;
+      });
+
+      // Apply client-side sorting for scraped results
+      let sortedProducts = [...mappedProducts];
+      if (sortBy === 'price_low') {
+        sortedProducts.sort((a, b) => {
+          const priceA = a.product_stores[0]?.current_price || Infinity;
+          const priceB = b.product_stores[0]?.current_price || Infinity;
+          return priceA - priceB;
+        });
+      } else if (sortBy === 'price_high') {
+        sortedProducts.sort((a, b) => {
+          const priceA = a.product_stores[0]?.current_price || 0;
+          const priceB = b.product_stores[0]?.current_price || 0;
+          return priceB - priceA;
+        });
+      }
+
+      // Apply pagination
+      const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+      const paginatedProducts = sortedProducts.slice(offset, offset + ITEMS_PER_PAGE);
+
+      setProducts(paginatedProducts);
+      setTotalCount(data.count);
+      setStoreErrors(data.errors || {});
+      setScrapingProgress('');
+
+      // Show success message
+      if (data.count > 0) {
+        toast({
+          title: `Found ${data.count} products`,
+          description: `Search completed in ${data.searchTime}s`,
+        });
+      }
+    } catch (err) {
+      console.error('Error scraping products:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to scrape products';
+      setError(errorMessage);
+      setScrapingProgress('');
+      toast({
+        title: 'Scraping failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Fetch products - always use scraping
   useEffect(() => {
     async function fetchProducts() {
       if (!debouncedQuery.trim()) {
@@ -236,129 +328,8 @@ export default function SearchPage() {
         return;
       }
 
-      // Ensure we're in browser and supabase is available
-      const client = getSupabase();
-      if (!client) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
-        let query = client
-          .from('products')
-          .select(
-            `
-            id,
-            name_ar,
-            name_en,
-            slug,
-            category,
-            brand,
-            model,
-            image_urls,
-            product_stores(
-              id,
-              current_price,
-              original_price,
-              availability,
-              stores(
-                id,
-                name_ar,
-                name_en,
-                logo_url
-              )
-            )
-          `,
-            { count: 'exact' }
-          )
-          .eq('is_active', true);
-
-        // Apply text search (simple ILIKE search)
-        if (debouncedQuery.trim()) {
-          query = query.or(
-            `name_ar.ilike.%${debouncedQuery}%,name_en.ilike.%${debouncedQuery}%,brand.ilike.%${debouncedQuery}%,model.ilike.%${debouncedQuery}%`
-          );
-        }
-
-        // Apply category filter
-        if (selectedCategory !== 'all') {
-          query = query.eq('category', selectedCategory);
-        }
-
-        // Apply brand filter
-        if (filters.brands.length > 0) {
-          query = query.in('brand', filters.brands);
-        }
-
-        // Apply store filter
-        if (filters.stores.length > 0) {
-          // This requires a join - simplified for now
-          // TODO: Implement proper store filtering with joins
-        }
-
-        // Apply availability filter
-        if (filters.availability.length > 0) {
-          // This requires filtering product_stores - simplified for now
-          // TODO: Implement proper availability filtering
-        }
-
-        // Apply deals filter
-        if (filters.dealsOnly) {
-          // This requires filtering product_stores - simplified for now
-          // TODO: Implement proper deals filtering
-        }
-
-        // Apply price range filter
-        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-          // This requires filtering product_stores - simplified for now
-          // TODO: Implement proper price range filtering
-        }
-
-        // Apply sorting
-        if (sortBy === 'popularity') {
-          query = query.order('view_count', { ascending: false });
-        } else if (sortBy === 'price_low') {
-          query = query.order('view_count', { ascending: false }); // Placeholder
-        } else if (sortBy === 'price_high') {
-          query = query.order('view_count', { ascending: false }); // Placeholder
-        } else if (sortBy === 'rating') {
-          query = query.order('save_count', { ascending: false });
-        }
-
-        const { data, error: queryError, count } = await query
-          .range(offset, offset + ITEMS_PER_PAGE - 1);
-
-        if (queryError) throw queryError;
-
-        setProducts(data || []);
-        setTotalCount(count || 0);
-
-        // Save search history
-        if (user && debouncedQuery.trim() && client) {
-          client
-            .from('search_history')
-            .insert({
-              user_id: user.id,
-              search_query: debouncedQuery,
-              category: selectedCategory !== 'all' ? selectedCategory : null,
-              results_count: count || 0,
-            })
-            .then(() => {
-              // Silently handle
-            });
-        }
-      } catch (err) {
-        console.error('Error searching products:', err);
-        const errorMessage = err instanceof Error ? err.message : t('search.error');
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
+      // Always use scraping
+      await searchWithScraping(debouncedQuery, ['amazon', 'noon', 'jarir'], 1);
     }
 
     fetchProducts();
@@ -426,6 +397,40 @@ export default function SearchPage() {
             showSuggestions={true}
             showCategory={true}
           />
+          
+          {/* Scraping Info */}
+          <div className="flex items-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <Sparkles className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <span className="text-sm text-yellow-800 dark:text-yellow-200">
+              {t('search.scrapeNote')}
+            </span>
+          </div>
+
+          {/* Scraping Progress */}
+          {loading && scrapingProgress && (
+            <Alert>
+              <Sparkles className="h-4 w-4" />
+              <AlertDescription>{scrapingProgress}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Store Errors */}
+          {storeErrors && Object.keys(storeErrors).length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p>Some stores failed:</p>
+                  {Object.entries(storeErrors).map(([store, error]) => (
+                    <p key={store} className="text-xs">
+                      {store}: {error}
+                    </p>
+                  ))}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {user && (
             <SearchHistory
               limit={10}

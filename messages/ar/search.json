@@ -74,6 +74,9 @@
     "searchName": "اسم البحث",
     "searchNamePlaceholder": "مثال: هواتف Apple",
     "cancel": "إلغاء"
-  }
+  },
+  "databaseSearch": "البحث في قاعدة البيانات",
+  "realTimeScrape": "البحث الفوري",
+  "scrapeNote": "يبحث في جميع المتاجر مباشرة (قد يستغرق 10-30 ثانية)"
 }
 

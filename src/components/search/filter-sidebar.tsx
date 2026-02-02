@@ -43,7 +43,18 @@ export function FilterSidebar({
   const t = useTranslations();
   const params = useParams();
   const locale = propLocale || (params?.locale as string) || 'ar';
-  const supabase = getSupabaseBrowserClient();
+  
+  // Only get Supabase client in browser (for filters that need database)
+  // Since we're using scraping, we'll skip database-dependent filters for now
+  const getSupabase = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return getSupabaseBrowserClient();
+    } catch {
+      return null;
+    }
+  };
+  const supabase = getSupabase();
 
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [availableStores, setAvailableStores] = useState<Array<{ id: string; name_ar: string; name_en: string }>>([]);
@@ -53,7 +64,7 @@ export function FilterSidebar({
   // Fetch available brands
   useEffect(() => {
     async function fetchBrands() {
-      if (!category) return;
+      if (!category || !supabase) return; // Skip if no Supabase client
 
       setLoading(true);
       try {
@@ -78,11 +89,13 @@ export function FilterSidebar({
     }
 
     fetchBrands();
-  }, [category]);
+  }, [category, supabase]);
 
   // Fetch available stores
   useEffect(() => {
     async function fetchStores() {
+      if (!supabase) return; // Skip if no Supabase client
+      
       setLoading(true);
       try {
         const { data } = await supabase
@@ -107,6 +120,8 @@ export function FilterSidebar({
   // Fetch price range
   useEffect(() => {
     async function fetchPriceRange() {
+      if (!supabase) return; // Skip if no Supabase client
+      
       try {
         const { data } = await supabase
           .from('product_stores')
@@ -133,7 +148,7 @@ export function FilterSidebar({
     }
 
     fetchPriceRange();
-  }, []);
+  }, [supabase]);
 
   const handleBrandToggle = (brand: string) => {
     const newBrands = filters.brands.includes(brand)

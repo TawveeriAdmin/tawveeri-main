@@ -18,7 +18,11 @@
     "db:create-admin": "node scripts/create-admin-user.js",
     "db:migrate": "node scripts/run-migration.js scripts/database/04-fix-user-insert-policy.sql",
     "db:migrate-audit": "node scripts/run-migration.js scripts/database/05-fix-audit-logs-policy.sql",
-    "db:clean-mock": "psql $SUPABASE_DB_URL -f scripts/database/06-delete-mock-products.sql"
+    "db:clean-mock": "psql $SUPABASE_DB_URL -f scripts/database/06-delete-mock-products.sql",
+    "flask:install": "cd scripts/scraping && python3 -m pip install -r requirements.txt",
+    "flask:start": "cd scripts/scraping && python3 app.py",
+    "flask:dev": "cd scripts/scraping && FLASK_DEBUG=true python3 app.py",
+    "flask:check": "./scripts/scraping/check-flask.sh"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

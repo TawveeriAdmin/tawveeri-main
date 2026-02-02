@@ -74,6 +74,9 @@
     "searchName": "Search Name",
     "searchNamePlaceholder": "e.g., Apple phones",
     "cancel": "Cancel"
-  }
+  },
+  "databaseSearch": "Database Search",
+  "realTimeScrape": "Real-time Scrape",
+  "scrapeNote": "Searches all stores in real-time (may take 10-30 seconds)"
 }
 
