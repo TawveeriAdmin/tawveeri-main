@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
@@ -77,6 +78,15 @@ export function ProductCard({
   // Get product name based on locale
   const productName = currentLocale === 'ar' ? product.name_ar : product.name_en;
   const [imageError, setImageError] = useState(false);
+  
+  // Get external product URL if available (for scraped products)
+  const externalProductUrl = product.product_stores[0]?.product_url || product.product_stores[0]?.affiliate_url;
+  const isExternalLink = externalProductUrl && (externalProductUrl.startsWith('http://') || externalProductUrl.startsWith('https://'));
+  
+  // Determine the link destination
+  const productLink = isExternalLink 
+    ? externalProductUrl 
+    : `/${currentLocale}/products/${product.slug}`;
 
   useEffect(() => {
     setImageError(false);
@@ -99,9 +109,30 @@ export function ProductCard({
   const imageUrl = product.image_urls?.[0] || null;
   const imageSrc = imageError || !imageUrl ? PLACEHOLDER_IMAGE : imageUrl;
 
+  // Render link wrapper - external link for scraped products, internal for database products
+  const LinkWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isExternalLink) {
+      return (
+        <a 
+          href={productLink} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex flex-col h-full"
+        >
+          {children}
+        </a>
+      );
+    }
+    return (
+      <Link href={productLink} className="flex flex-col h-full">
+        {children}
+      </Link>
+    );
+  };
+
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 h-full flex flex-col">
-      <Link href={`/${currentLocale}/products/${product.slug}`} className="flex flex-col h-full">
+      <LinkWrapper>
         {/* Product Image */}
         <div className="relative w-full aspect-square overflow-hidden rounded-t-2xl bg-gray-100 dark:bg-gray-800">
           <Image
@@ -233,7 +264,7 @@ export function ProductCard({
             </div>
           )}
         </CardContent>
-      </Link>
+      </LinkWrapper>
     </Card>
   );
 }

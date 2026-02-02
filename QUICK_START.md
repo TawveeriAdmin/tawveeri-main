@@ -172,3 +172,19 @@ curl http://127.0.0.1:5000/health
    - Closing Flask will break the search functionality
    - Closing Next.js will stop the web app
 
+---
+
+## Production Deployment
+
+**⚠️ Important:** The original dev's repo was a standalone Flask app. Your setup requires **two services** in production.
+
+For production deployment, see: [`md/DEPLOYMENT.md`](../md/DEPLOYMENT.md)
+
+**Quick options:**
+- **Separate services:** Deploy Next.js (Vercel) + Flask (Railway/Render)
+- **Docker Compose:** Run both on same server
+- **PM2:** Process manager for single server
+- **Systemd:** Linux service files
+
+The `npm run flask:start` command is **only for development**. In production, Flask must run as a managed service.
+
