@@ -203,8 +203,22 @@ class JarirScraper:
             image_url = None
             if img_elem:
                 image_url = img_elem.get("src") or img_elem.get("data-src")
-                if image_url and not image_url.startswith("http"):
-                    image_url = urljoin(self.BASE_URL, image_url)
+                if image_url:
+                    # Handle Cloudflare CDN URLs - extract the actual image URL
+                    # Pattern: https://www.jarir.com/cdn-cgi/image/.../https://ak-asset.jarir.com/akeneo-prod/asset/...
+                    if "cdn-cgi/image" in image_url:
+                        # Extract the embedded image URL from the CDN URL
+                        asset_match = re.search(r'https://ak-asset\.jarir\.com/akeneo-prod/asset/([^\s?]+)', image_url)
+                        if asset_match:
+                            # Use the actual asset URL directly
+                            image_url = f"https://ak-asset.jarir.com/akeneo-prod/asset/{asset_match.group(1)}"
+                            # Remove any query params
+                            if "?" in image_url:
+                                image_url = image_url.split("?")[0]
+                    
+                    # Make sure it's a full URL
+                    if image_url and not image_url.startswith("http"):
+                        image_url = urljoin(self.BASE_URL, image_url)
 
             # Get full text for various checks
             full_text = elem.get_text()
@@ -285,6 +299,64 @@ class JarirScraper:
             print(f"  Error parsing product: {e}")
             return None
     
+    def _fetch_product_image_from_page(self, product_url: str) -> Optional[str]:
+        """Fetch image from product page - search results don't have images, only product pages do"""
+        try:
+            # Use shorter timeout and no delay for image fetching (already delayed in main search loop)
+            # Make request directly without delay to speed up image fetching
+            response = self.session.get(
+                product_url, 
+                headers=self._get_headers(), 
+                timeout=10  # Shorter timeout for image fetching
+            )
+            if not response or response.status_code != 200:
+                return None
+            
+            response.encoding = 'utf-8'
+            soup = BeautifulSoup(response.text, "html.parser")
+            
+            # Find images with cdn-cgi URLs (product images)
+            # Pattern discovered: img[src*="cdn-cgi"] finds images with Cloudflare CDN URLs
+            imgs = soup.select('img[src*="cdn-cgi"]')
+            if not imgs:
+                # Fallback: try img[src*="ak-asset"]
+                imgs = soup.select('img[src*="ak-asset"]')
+            
+            for img in imgs:
+                img_url = img.get("src") or img.get("data-src")
+                if not img_url:
+                    continue
+                
+                # Skip non-product images (brand logos, icons, etc.)
+                if (img_url.startswith("data:") or 
+                    "placeholder" in img_url.lower() or
+                    img_url.lower().endswith(".svg") or
+                    "icon" in img_url.lower() or
+                    ("catalog" in img_url.lower() and "asset" not in img_url.lower())):
+                    continue
+                
+                # Handle Cloudflare CDN URLs - extract the actual image URL
+                # Pattern: https://www.jarir.com/cdn-cgi/image/.../https://ak-asset.jarir.com/akeneo-prod/asset/...
+                if "cdn-cgi/image" in img_url:
+                    # Extract: https://ak-asset.jarir.com/akeneo-prod/asset/...
+                    asset_match = re.search(r'https://ak-asset\.jarir\.com/akeneo-prod/asset/([^\s?]+)', img_url)
+                    if asset_match:
+                        img_url = f"https://ak-asset.jarir.com/akeneo-prod/asset/{asset_match.group(1)}"
+                        if "?" in img_url:
+                            img_url = img_url.split("?")[0]
+                        return img_url
+                
+                # If it's already an ak-asset URL, use it directly
+                if "ak-asset.jarir.com/akeneo-prod/asset" in img_url:
+                    if "?" in img_url:
+                        img_url = img_url.split("?")[0]
+                    return img_url
+            
+            return None
+        except Exception as e:
+            # Silently fail - don't log every failure to avoid spam
+            return None
+    
     def _parse_page(self, html: str, category: str = None) -> List[Product]:
         soup = BeautifulSoup(html, "html.parser")
         products = []
@@ -304,6 +376,10 @@ class JarirScraper:
             # Parse this product card
             product = self._parse_product(card, category)
             if product and product.title != "No title" and product.price:
+                # Search results don't have images - always fetch from product page
+                # Even if image_url is set, it's likely a placeholder or invalid
+                product.image_url = self._fetch_product_image_from_page(product.url)
+                
                 products.append(product)
 
         return products

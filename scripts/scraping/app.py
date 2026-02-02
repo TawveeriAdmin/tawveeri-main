@@ -134,7 +134,7 @@ def normalize_product(product, store: str) -> dict:
         'rating': None,
         'reviews_count': None,
         'url': d.get('url', ''),
-        'image_url': d.get('image_url'),
+        'image_url': d.get('image_url') or d.get('imageUrl') or None,
         'sku': None,
         'brand': d.get('brand'),
         'in_stock': d.get('in_stock', True),

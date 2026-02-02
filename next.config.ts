@@ -46,6 +46,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'ak-asset.jarir.com',
+      },
+      {
+        protocol: 'https',
         hostname: '**.jarir.com',
       },
       // Extra

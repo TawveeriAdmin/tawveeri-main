@@ -3,6 +3,7 @@ import type { PythonSearchResponse } from '@/lib/scraping/python-types';
 import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import { mapPythonProductToScrapedProduct } from '@/lib/scraping/python-mapper';
 import { searchCache } from '@/lib/scraping/cache';
+import { filterTechProducts } from '@/lib/scraping/product-filter';
 
 /**
  * POST /api/search/scrape
@@ -189,7 +190,31 @@ export async function POST(request: NextRequest) {
     const pythonData: PythonSearchResponse = await flaskResponse.json();
 
     // Map Python response to TypeScript format
-    const mappedProducts = pythonData.products.map(mapPythonProductToScrapedProduct);
+    let mappedProducts = pythonData.products.map(mapPythonProductToScrapedProduct);
+    
+    // Debug: Check Jarir products for images
+    const jarirProducts = mappedProducts.filter(p => (p as any).store === 'jarir');
+    if (jarirProducts.length > 0) {
+      const jarirWithImages = jarirProducts.filter(p => p.image_urls && p.image_urls.length > 0);
+      const jarirWithoutImages = jarirProducts.filter(p => !p.image_urls || p.image_urls.length === 0);
+      console.log(`[Scrape API] Jarir products: ${jarirProducts.length} total, ${jarirWithImages.length} with images, ${jarirWithoutImages.length} without images`);
+      if (jarirWithoutImages.length > 0) {
+        console.log(`[Scrape API] Jarir products without images:`, jarirWithoutImages.slice(0, 3).map(p => ({
+          title: p.name_en?.substring(0, 50),
+          image_urls: p.image_urls,
+          store: (p as any).store
+        })));
+      }
+    }
+    
+    // Filter out non-tech products (e.g., books, food items when searching "apple")
+    const originalCount = mappedProducts.length;
+    mappedProducts = filterTechProducts(mappedProducts);
+    const filteredCount = mappedProducts.length;
+    
+    if (originalCount !== filteredCount) {
+      console.log(`[Scrape API] Filtered ${originalCount - filteredCount} non-tech products (${originalCount} → ${filteredCount})`);
+    }
 
     // Build response
     const result: ScrapedSearchResult = {

@@ -78,6 +78,8 @@ export function ProductCard({
   // Get product name based on locale
   const productName = currentLocale === 'ar' ? product.name_ar : product.name_en;
   const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Get external product URL if available (for scraped products)
   const externalProductUrl = product.product_stores[0]?.product_url || product.product_stores[0]?.affiliate_url;
@@ -88,9 +90,32 @@ export function ProductCard({
     ? externalProductUrl 
     : `/${currentLocale}/products/${product.slug}`;
 
+  // Get available images
+  const availableImages = product.image_urls?.filter(Boolean) || [];
+  
   useEffect(() => {
     setImageError(false);
+    setImageLoading(true);
+    setCurrentImageIndex(0);
   }, [product.id]);
+
+  // Try next image if current one fails
+  const handleImageError = () => {
+    if (currentImageIndex < availableImages.length - 1) {
+      // Try next image in the array
+      setCurrentImageIndex(prev => prev + 1);
+      setImageLoading(true);
+    } else {
+      // All images failed, show placeholder
+      setImageError(true);
+      setImageLoading(false);
+    }
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
 
   // Get best price from all stores
   const storesWithPrices = product.product_stores
@@ -105,9 +130,16 @@ export function ProductCard({
   const isOutOfStock = product.product_stores.every((ps) => ps.availability === 'out_of_stock');
   const savings = originalPrice ? calculateSavings(originalPrice, bestPriceValue) : 0;
 
-  // Get first image or placeholder SVG
-  const imageUrl = product.image_urls?.[0] || null;
-  const imageSrc = imageError || !imageUrl ? PLACEHOLDER_IMAGE : imageUrl;
+  // Get current image or placeholder
+  const currentImageUrl = availableImages[currentImageIndex] || null;
+  
+  // For Jarir images, ensure they're properly formatted
+  let imageSrc = imageError || !currentImageUrl ? PLACEHOLDER_IMAGE : currentImageUrl;
+  
+  // Debug: Log Jarir image URLs
+  if (currentImageUrl && currentImageUrl.includes('jarir.com')) {
+    console.log(`[ProductCard] Jarir image URL: ${currentImageUrl.substring(0, 100)}`);
+  }
 
   // Render link wrapper - external link for scraped products, internal for database products
   const LinkWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -135,14 +167,25 @@ export function ProductCard({
       <LinkWrapper>
         {/* Product Image */}
         <div className="relative w-full aspect-square overflow-hidden rounded-t-2xl bg-gray-100 dark:bg-gray-800">
+          {/* Loading skeleton */}
+          {imageLoading && !imageError && (
+            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          )}
+          
+          {/* Product Image */}
           <Image
             src={imageSrc}
             alt={productName}
             fill
             sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 100vw"
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
-            onError={() => setImageError(true)}
+            className={`object-cover group-hover:scale-110 transition-transform duration-300 ${
+              imageLoading ? 'opacity-0' : 'opacity-100'
+            }`}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
             loading="lazy"
+            unoptimized={isExternalLink || imageSrc.includes('jarir.com')} // Don't optimize external images or any Jarir images
+            priority={false}
           />
           {/* Badges Overlay */}
           <div className="absolute top-2 start-2 flex flex-col gap-2">
