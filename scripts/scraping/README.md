@@ -187,3 +187,4 @@ curl http://127.0.0.1:5000/health
 - Results are cached by default (10 minutes TTL) to reduce load
 - Some stores may require additional dependencies (e.g., `curl-cffi` for better anti-bot evasion)
 
+

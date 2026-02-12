@@ -17,3 +17,4 @@ export interface ScrapedSearchResult {
   errors: Record<string, string> | null;
 }
 
+

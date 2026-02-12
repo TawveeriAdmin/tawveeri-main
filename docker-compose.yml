@@ -27,3 +27,4 @@ services:
       - ALLOWED_ORIGINS=http://localhost:3000,http://nextjs:3000
     restart: unless-stopped
 
+
