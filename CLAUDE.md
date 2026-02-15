@@ -4,272 +4,149 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Built with Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Radix UI + shadcn/ui patterns.
+**Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Users compare prices across stores (Amazon SA, Noon, Jarir, Extra), set price alerts, and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router) with TypeScript
+- **Database**: Supabase (PostgreSQL + Auth + RLS)
+- **Styling**: Tailwind CSS v4 with custom design tokens
+- **UI**: Radix UI primitives + shadcn/ui patterns
+- **i18n**: Custom `SimpleIntlProvider` (replaced next-intl for reliability)
+- **Scraping**: Flask/Python backend (`scripts/scraping/`) + Node.js scrapers (`src/lib/scraping/`)
+- **Testing**: Jest + React Testing Library
+- **Charts**: Recharts (admin analytics)
 
 ## Commands
 
 ```bash
-npm run dev      # Start dev server (localhost:3000, uses Turbopack)
-npm run build    # Production build
-npm run start    # Start production server
-npm run lint     # Run ESLint
+npm run dev          # Dev server (localhost:3000, Turbopack)
+npm run build        # Production build (TS/ESLint errors ignored in config)
+npm run lint         # ESLint
+npm test             # Run all tests
+npm run test:watch   # Tests in watch mode
+npm run test:db      # Database tests only (tests/database/)
+npm run db:setup     # Full database setup
+npm run db:schema    # Apply schema SQL
+npm run db:seed      # Seed data
+npm run flask:start  # Start Python scraping server (localhost:5000)
+npm run flask:dev    # Flask dev mode with debug
 ```
-
-No test framework is configured yet.
 
 ## Architecture
 
+### Routing & i18n
+
+All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `en`. Locale config is in `src/i18n.ts`. The middleware (`src/middleware.ts`) combines next-intl routing with Supabase auth checks (session validation, role-based access).
+
+**Root layout** (`src/app/layout.tsx`) is a passthrough — the real layout is `src/app/[locale]/layout.tsx`.
+
 ### Provider Hierarchy
 
-The root layout (`src/app/layout.tsx`) nests providers in this order — **do not reorder**:
+`src/app/[locale]/layout.tsx` nests providers in this order — **do not reorder**:
 
 ```
-<html lang="ar" dir="rtl">
-  <LocaleProvider>        ← manages language, dir, font class on <html>
-    <ThemeProvider>        ← next-themes with class strategy, storageKey="tawveeri-theme"
-      {children}
-      <Toaster />
+<html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+  <SimpleIntlProvider>    ← translations from messages/{locale}/*.json
+    <ThemeProvider>        ← next-themes, class strategy, storageKey="tawveeri-theme"
+      <MultiStoreCartProvider>
+        <AuthProvider>    ← Supabase auth state, role fetching
+          {children}
+          <Toaster />
+        </AuthProvider>
+      </MultiStoreCartProvider>
     </ThemeProvider>
-  </LocaleProvider>
+  </SimpleIntlProvider>
 </html>
 ```
 
 Default: Arabic (RTL), light theme, system detection disabled.
 
-### Bilingual RTL/LTR System
+### Translation System
 
-The entire app automatically switches between Arabic (RTL) and English (LTR):
+Translations are JSON files in `messages/{ar,en}/` organized by feature (common, auth, products, admin, etc.). Loaded via dynamic imports in `src/app/[locale]/layout.tsx` and provided through `SimpleIntlProvider` (`src/lib/simple-intl-provider.tsx`).
 
-- **Default language**: Arabic (RTL)
-- **Language switching**: Handled by `LocaleProvider` in `src/app/providers/locale-provider.tsx`
-- **Font switching**: Automatic - IBM Plex Sans Arabic for Arabic, Inter for English
-- **Direction switching**: Automatic via `html[dir]` attribute
-- **Persistence**: User preference stored in localStorage
-
-**Using the locale context:**
+**Usage in components:**
 ```tsx
-'use client';
-import { useLocale } from '@/app/providers/locale-provider';
-
-export function MyComponent() {
-  const { locale, setLocale, t, dir } = useLocale();
-
-  return (
-    <div>
-      <p>{t('app.name')}</p> {/* Uses translation dictionary */}
-      <button onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}>
-        {locale === 'ar' ? 'English' : 'العربية'}
-      </button>
-    </div>
-  );
-}
+import { useTranslations } from '@/lib/simple-intl-provider';
+const t = useTranslations();
+t('products.title')              // dot-notation key lookup
+t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
 ```
 
-**Adding translations**: Edit the `translations` object in `src/app/providers/locale-provider.tsx`
+**Adding translations**: Create/edit JSON files in `messages/ar/` and `messages/en/`. If adding a new namespace file, also add the import in `src/app/[locale]/layout.tsx`.
 
-### Theme System
+### Authentication & Authorization
 
-**Design tokens** are defined in `src/app/globals.css` using CSS custom properties:
+- **Client**: `useAuth()` hook from `src/lib/auth/auth-context.tsx` — provides signUp, signIn, signOut, user with role
+- **Server**: `src/lib/auth/server.ts` — `getSession()`, `getUser()`, `getUserProfile()`, `requireAuth()`, `requireAdmin()`
+- **Middleware**: `src/middleware.ts` handles route protection:
+  - Protected routes: `/dashboard`, `/profile`, `/wishlist`, `/notifications`, `/price-alerts`
+  - Admin routes: `/admin/*` (requires `admin` role)
+  - Store routes: `/store/*` (requires `store` or `admin` role)
+- **Roles**: `admin`, `customer`, `store`, `guest` (defined in `src/lib/database/types.ts`)
 
-- **Primary**: Blue (#1E40AF) - Trust, CTAs, branding
-- **Success**: Green (#059669) - Best price indicators, savings
-- **Warning**: Red (#DC2626) - Hot deals, urgency, alerts
-- **Featured**: Amber (#F59E0B) - Premium stores, sponsored content
-- **Neutrals**: Complete gray scale for text and backgrounds
+### Database
 
-**Using themes:**
-```tsx
-'use client';
-import { useTheme } from 'next-themes';
+Supabase with typed client. Types in `src/lib/database/types.ts`. Two client patterns:
+- **Browser**: `getSupabaseBrowserClient()` from `src/lib/database/` (singleton, uses anon key)
+- **Server**: `createServerClient()` from `src/lib/database/` (uses service role key, no session persistence)
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`.
 
-  return (
-    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-      Toggle Theme
-    </button>
-  );
-}
-```
+Schema migrations are numbered SQL files in `scripts/database/`.
 
-**Creating themed components**: Use Tailwind's dark mode classes:
-```tsx
-<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-  Content
-</div>
-```
+### Required Action Pattern
 
-### Path Aliases
+Every user-facing action must include:
+1. **In-App Notification** — insert into `notifications` table with bilingual `title_ar`/`title_en` and `message_ar`/`message_en`
+2. **Audit Log** — insert into `admin_logs` via `createAuditLog()` from `src/lib/auth/audit.ts`
 
-TypeScript path alias `@/*` maps to `src/*`:
-```tsx
-import { Button } from '@/components/ui/button';
-import { formatPrice } from '@/lib/utils';
-import { useLocale } from '@/app/providers/locale-provider';
-```
+Use `createNotification()` from `src/lib/auth/notifications.ts` and `createAuditLog()` with standard actions from `AUDIT_ACTIONS` constant.
 
-### Component Patterns
+### Scraping Architecture
 
-All UI components follow these conventions:
+Two scraping systems:
+1. **Python/Flask** (`scripts/scraping/`) — standalone scrapers for Amazon SA, Noon, Jarir. Runs on port 5000.
+2. **Node.js** (`src/lib/scraping/`) — TypeScript scrapers with base class pattern, rate limiting, retry logic, caching, product matching/filtering. Called from API routes.
 
-1. **Located in** `src/components/ui/`
-2. **Built with** Radix UI primitives for accessibility
-3. **Styled with** Tailwind CSS and design tokens
-4. **Support** both RTL/LTR and light/dark modes automatically
-5. **Export** TypeScript interfaces for props
-6. **Use** `cn()` utility for conditional classes
+API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`.
 
-**Example component structure:**
-```tsx
-import { cn } from '@/lib/utils';
+### Tailwind v4 Color Override System
 
-interface MyComponentProps {
-  variant?: 'default' | 'success';
-  className?: string;
-}
+`src/app/globals.css` uses `@custom-variant dark (&:where(.dark, .dark *))` for class-based dark mode. Custom theme colors (primary, success, warning, featured) are defined in `@theme` block. Extensive `!important` overrides exist because Tailwind v4's OKLCH color space produces incorrect colors — when adding new color utility combinations, you may need to add corresponding overrides.
 
-export function MyComponent({ variant = 'default', className }: MyComponentProps) {
-  return (
-    <div className={cn(
-      'base-classes',
-      variant === 'success' && 'success-classes',
-      className
-    )}>
-      Content
-    </div>
-  );
-}
-```
+### Component Organization
 
-## Available UI Components
+- `src/components/ui/` — Base UI components (Radix + shadcn/ui). Use `cn()` for class merging.
+- `src/components/admin/` — Admin dashboard components (stats cards, data tables, charts)
+- `src/components/layout/` — App shell (header)
+- `src/components/comparison/` — Price comparison cards
 
-33 production-ready components in `src/components/ui/`:
+### Key Utilities (`src/lib/utils.ts`)
 
-**Form & Input**: button, input, textarea, label, select, checkbox, radio-group, switch, slider
-**Layout**: card, separator, accordion, tabs, breadcrumb, scroll-area, table, pagination
-**Feedback**: badge, alert, progress, skeleton, spinner, empty-state
-**Overlay**: dialog, dropdown-menu, tooltip, popover, command
-**Notifications**: toast, toaster, use-toast
-**Utility**: avatar, calendar
+- `cn(...classes)` — Tailwind class merging (clsx + tailwind-merge)
+- `formatPrice(price)` — Number formatting only (no currency). Use `<Price>` component for display with SAR symbol.
+- `formatPriceWithCurrency(price, locale)` — **deprecated**, use `<Price>` component instead
+- `calculateSavings(original, current)` / `calculateSavingsPercentage(original, current)`
 
-See `COMPLETE-COMPONENT-LIBRARY.md` for detailed usage examples.
+### Environment Variables
 
-## Key Utilities
+See `.env.example`. Required:
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase client
+- `SUPABASE_SERVICE_ROLE_KEY` — Server-side Supabase operations
+- `SUPABASE_DB_URL` — Direct PostgreSQL connection for migration scripts
+- `NEXT_PUBLIC_APP_URL` — App URL for auth callbacks and emails
 
-Located in `src/lib/utils.ts`:
+## Styling Rules
 
-```tsx
-// Class name merging (use for all conditional classes)
-cn(...classes)
+- Use Tailwind utility classes with design tokens: `text-primary-600`, `bg-success-50`, `border-warning-300`
+- Always pair light/dark: `bg-white dark:bg-gray-900`
+- Use `tabular-nums` for price/number displays
+- Use `cn()` for all conditional classes
+- **Never** set `dir` attributes on elements — the locale layout handles `html[dir]` globally
+- **Never** write separate RTL/LTR CSS — flexbox/grid auto-flip in RTL
 
-// Price formatting
-formatPrice(3299, 'ar')  // "3,299 ر.س"
-formatPrice(3299, 'en')  // "SAR 3,299"
+## Path Alias
 
-// Savings calculations
-calculateSavings(3799, 3299)              // 500
-calculateSavingsPercentage(3799, 3299)    // 13
-
-// Number formatting
-formatCompactNumber(1000000)  // "1.0M"
-```
-
-## Design System Quick Reference
-
-### Colors (defined in globals.css)
-- Primary: `bg-primary-600`, `text-primary-600`, `border-primary-600`
-- Success: `bg-success-600`, `text-success-600`, `border-success-600`
-- Warning: `bg-warning-600`, `text-warning-600`, `border-warning-600`
-- Featured: `bg-featured-500`, `text-featured-500`, `border-featured-500`
-
-### Typography
-- Arabic: Automatically applied when `locale='ar'`
-- English: Automatically applied when `locale='en'`
-- Price display: Use `tabular-nums` class for aligned numbers
-
-### Common Patterns
-
-**Best Price Card:**
-```tsx
-<Card className="border-2 border-success-600 bg-gradient-to-br from-success-50 to-white">
-  <Badge variant="success">Best Price</Badge>
-  {/* Card content */}
-</Card>
-```
-
-**Hot Deal Badge:**
-```tsx
-<Badge variant="warning" className="animate-pulse">
-  🔥 Hot Deal
-</Badge>
-```
-
-**Featured Store:**
-```tsx
-<Badge variant="featured">
-  ⭐ Featured
-</Badge>
-```
-
-## Client vs Server Components
-
-- **Provider components** (`LocaleProvider`, `ThemeProvider`) must be client components
-- **Layout components** that use providers must include `'use client'` directive
-- **Page components** can be server components unless they use hooks
-- **UI components** should be client components if they use state/events
-
-## Important Notes
-
-### RTL/LTR Handling
-- **DO NOT** manually set `dir` attributes on individual elements
-- **DO NOT** use separate CSS for RTL/LTR - Tailwind handles this automatically
-- The `LocaleProvider` sets `html[dir]` globally
-- Flexbox and Grid layouts automatically flip in RTL mode
-- Icons and arrows automatically flip direction
-
-### Styling Guidelines
-- Use Tailwind utility classes, not custom CSS
-- Use design tokens (e.g., `text-primary-600`) instead of arbitrary colors
-- Always use the `cn()` utility for conditional classes
-- Ensure dark mode support with `dark:` prefix
-- Use `tabular-nums` for all price displays
-
-### Performance
-- Next.js 15 uses Turbopack in development
-- Fonts are optimized with `display: swap`
-- Components use code splitting automatically
-- Target: sub-3-second page loads
-
-### Accessibility
-- All Radix UI components are WCAG 2.1 compliant
-- Include proper ARIA labels for icons and buttons
-- Maintain keyboard navigation support
-- Test with screen readers when adding complex interactions
-
-## Common Tasks
-
-### Adding a new page
-1. Create file in `src/app/your-page/page.tsx`
-2. Use `'use client'` if you need hooks or interactivity
-3. Import and use `useLocale()` for translations
-
-### Adding a new component
-1. Create in appropriate directory (`src/components/ui/`, `comparison/`, or `common/`)
-2. Use Radix UI primitives when possible
-3. Support dark mode with `dark:` classes
-4. Export TypeScript interfaces
-5. Use `cn()` for class merging
-
-### Adding translations
-1. Edit `src/app/providers/locale-provider.tsx`
-2. Add keys to both `ar` and `en` objects in the `translations` dictionary
-3. Use via `t('your.key')` from `useLocale()` hook
-
-### Creating themed elements
-Use CSS variables for colors that need to work in both light and dark modes:
-```tsx
-<div className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-  This adapts to theme automatically
-</div>
-```
+`@/*` maps to `src/*`
