@@ -6,12 +6,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format price for display
+ * Format price number for display (without currency symbol)
+ * Use the <Price> component from @/components/ui/price for display with the SAR symbol
  * @param price - The price value
- * @param locale - The locale (ar or en)
- * @returns Formatted price string
+ * @returns Formatted price string (number only)
  */
-export function formatPrice(price: number, locale: 'ar' | 'en' = 'ar'): string {
+export function formatPrice(price: number): string {
+  return price.toLocaleString('en-US');
+}
+
+/**
+ * @deprecated Use <Price> component from @/components/ui/price instead
+ * This function is kept for backwards compatibility only
+ */
+export function formatPriceWithCurrency(price: number, locale: 'ar' | 'en' = 'ar'): string {
   const formatted = price.toLocaleString('en-US');
   return locale === 'ar' ? `${formatted} ر.س` : `SAR ${formatted}`;
 }

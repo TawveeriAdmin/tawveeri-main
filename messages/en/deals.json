@@ -1,0 +1,20 @@
+{
+  "title": "Daily Deals",
+  "subtitle": "Discover the best deals and discounts",
+  "allDeals": "All Deals",
+  "searchPlaceholder": "Search deals...",
+  "sortBy": "Sort by",
+  "sortDiscount": "Biggest Discount",
+  "sortPrice": "Price",
+  "sortNewest": "Newest",
+  "noDeals": "No deals found",
+  "loading": "Loading deals...",
+  "error": "Failed to load deals. Please try again later.",
+  "expires": "Expires",
+  "discount": "OFF",
+  "save": "Save",
+  "viewDeal": "View Deal",
+  "resultsCount": "deals found",
+  "noDealsMatch": "No deals match \"{{query}}\""
+}
+

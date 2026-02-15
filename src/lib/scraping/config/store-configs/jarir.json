@@ -1,0 +1,64 @@
+{
+  "store_slug": "jarir",
+  "store_name_ar": "مكتبة جرير",
+  "store_name_en": "Jarir Bookstore",
+  "base_url": "https://www.jarir.com",
+  "requires_js": true,
+  "rate_limit": {
+    "min_delay_ms": 3000,
+    "max_delay_ms": 6000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=smartphone"
+    ],
+    "laptop": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=laptop"
+    ],
+    "tv": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=television"
+    ],
+    "tablet": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=tablet"
+    ],
+    "audio": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=audio"
+    ],
+    "camera": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=camera"
+    ],
+    "gaming": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=gaming"
+    ],
+    "accessories": [
+      "https://www.jarir.com/sa-en/catalogsearch/result/?q=accessories"
+    ]
+  },
+  "selectors": {
+    "product_list": ".product-item",
+    "product_link": "a.product-item-link",
+    "product_name": ".product-item-name",
+    "product_name_ar": ".product-item-name-ar",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": ".product-image img",
+    "product_sku": ".sku",
+    "product_specs": ".product-specs",
+    "product_availability": ".stock-status",
+    "product_description": ".product-description",
+    "product_description_ar": ".product-description-ar",
+    "pagination": ".pagination",
+    "next_page": ".pagination .next"
+  }
+}
+
+
+
+
+
+

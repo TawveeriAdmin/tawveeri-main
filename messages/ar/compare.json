@@ -1,0 +1,13 @@
+{
+  "title": "مقارنة المنتجات",
+  "addProducts": "أضف منتجات للمقارنة",
+  "compareUpTo": "قارن ما يصل إلى 4 منتجات جنباً إلى جنب",
+  "errorLoading": "خطأ في التحميل",
+  "noProducts": "لا توجد منتجات للمقارنة",
+  "noProductsDescription": "أضف منتجات من صفحة المنتج لمقارنتها هنا",
+  "product": "منتج",
+  "products": "منتجات",
+  "store": "متجر",
+  "stores": "متاجر",
+  "notAvailable": "غير متوفر"
+}

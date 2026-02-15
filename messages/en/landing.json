@@ -1,0 +1,116 @@
+{
+  "hero": {
+    "badge": "#1 Price Comparison Platform in Saudi Arabia 🇸🇦",
+    "saveUpTo": "Save up to",
+    "onPurchases": "on your purchases",
+    "description": "Compare electronics prices from",
+    "descriptionBold": "5+ trusted stores",
+    "descriptionEnd": "in one place",
+    "tagline": "Never overpay again! 💸",
+    "searchPlaceholder": "Search for iPhone 15 Pro, MacBook Air, Samsung S24...",
+    "popular": "Popular:"
+  },
+  "stats": {
+    "activeUsers": "Active Users",
+    "rating": "Rating",
+    "trustedStores": "Trusted Stores",
+    "avgSavings": "Avg. Savings",
+    "happyUsers": "Happy Users",
+    "products": "Products"
+  },
+  "stores": {
+    "title": "Trusted by the Best",
+    "subtitle": "We Compare Prices from Top Stores in Saudi Arabia"
+  },
+  "features": {
+    "badge": "Features",
+    "title": "Why",
+    "titleBrand": "Tawveeri",
+    "titleEnd": "is Different?",
+    "subtitle": "We make smart shopping easy and profitable with advanced technology",
+    "instant": {
+      "title": "Instant Smart Comparison",
+      "description": "Advanced algorithm compares prices from all stores in under a second",
+      "stats": "< 1 second"
+    },
+    "alerts": {
+      "title": "Smart Alerts",
+      "description": "Instant email and SMS alerts when prices drop on your favorite products",
+      "stats": "Real-time"
+    },
+    "trusted": {
+      "title": "100% Trusted",
+      "description": "Official partnerships with top stores in Saudi Arabia for best prices",
+      "stats": "5+ Certified"
+    },
+    "analytics": {
+      "title": "Price Analytics",
+      "description": "Detailed charts of price history and trends for informed decisions",
+      "stats": "Daily updates"
+    },
+    "wishlist": {
+      "title": "Wishlist",
+      "description": "Save favorite products and track their prices easily from dashboard",
+      "stats": "Cloud sync"
+    },
+    "deals": {
+      "title": "Exclusive Deals",
+      "description": "Discover best daily deals and exclusive discounts before everyone else",
+      "stats": "Daily deals"
+    }
+  },
+  "howItWorks": {
+    "badge": "Simple & Fast",
+    "title": "Three Steps to Save",
+    "subtitle": "Start saving in minutes",
+    "step1": {
+      "title": "Search Your Product",
+      "description": "Simply search for any electronic product you want to buy"
+    },
+    "step2": {
+      "title": "Compare Prices",
+      "description": "See all prices and offers from every store instantly"
+    },
+    "step3": {
+      "title": "Save Money",
+      "description": "Choose the best price and buy confidently from your preferred store"
+    }
+  },
+  "testimonials": {
+    "badge": "Customer Testimonials",
+    "title": "What Our",
+    "titleBrand": "Customers",
+    "titleEnd": "Say",
+    "subtitle": "Real reviews from happy users",
+    "saved": "Saved",
+    "user1": {
+      "name": "Ahmed Mohammed",
+      "role": "Software Engineer",
+      "comment": "Saved over 800 SAR on MacBook Pro! Amazing platform with very accurate comparisons. Highly recommended.",
+      "saved": "800"
+    },
+    "user2": {
+      "name": "Sarah Al-Otaibi",
+      "role": "University Student",
+      "comment": "Instant alerts are amazing! Got notified when iPhone price dropped and bought at best price. Thanks Tawveeri! 💕",
+      "saved": "450"
+    },
+    "user3": {
+      "name": "Khalid bin Fahd",
+      "role": "Businessman",
+      "comment": "Best price comparison site in Saudi Arabia, hands down. I always use it before any purchase. Saves time and money.",
+      "saved": "1,200"
+    }
+  },
+  "cta": {
+    "title": "Ready to Start Saving?",
+    "subtitle": "Join over",
+    "subtitleBold": "100,000 users",
+    "subtitleEnd": "saving money every day",
+    "benefit1": "✅ 100% Free",
+    "benefit2": "✅ No Credit Card",
+    "benefit3": "✅ Cancel Anytime",
+    "benefit4": "✅ 24/7 Support",
+    "security": "Your data is protected and encrypted with highest security standards"
+  }
+}

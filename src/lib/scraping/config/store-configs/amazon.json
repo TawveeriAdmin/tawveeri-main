@@ -1,0 +1,45 @@
+{
+  "store_slug": "amazon",
+  "store_name_ar": "أمازون السعودية",
+  "store_name_en": "Amazon.sa",
+  "base_url": "https://www.amazon.sa",
+  "requires_js": true,
+  "rate_limit": {
+    "min_delay_ms": 5000,
+    "max_delay_ms": 8000,
+    "requests_per_minute": 12
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://www.amazon.sa/s?k=smartphone"],
+    "laptop": ["https://www.amazon.sa/s?k=laptop"],
+    "tv": ["https://www.amazon.sa/s?k=tv"],
+    "tablet": ["https://www.amazon.sa/s?k=tablet"],
+    "audio": ["https://www.amazon.sa/s?k=audio"],
+    "camera": ["https://www.amazon.sa/s?k=camera"],
+    "gaming": ["https://www.amazon.sa/s?k=gaming"],
+    "accessories": ["https://www.amazon.sa/s?k=accessories"]
+  },
+  "selectors": {
+    "product_list": "[data-component-type='s-search-result']",
+    "product_link": "h2 a",
+    "product_name": "h2 span",
+    "product_price": ".a-price .a-offscreen",
+    "product_original_price": ".a-price.a-text-price .a-offscreen",
+    "product_image": ".s-image",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".a-color-state",
+    "pagination": ".s-pagination",
+    "next_page": ".s-pagination-next"
+  }
+}
+
+
+
+
+
+

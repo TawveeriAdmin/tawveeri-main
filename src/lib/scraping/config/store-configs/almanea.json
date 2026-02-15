@@ -1,0 +1,45 @@
+{
+  "store_slug": "almanea",
+  "store_name_ar": "المنيع",
+  "store_name_en": "Almanea",
+  "base_url": "https://www.almanea.com",
+  "requires_js": true,
+  "rate_limit": {
+    "min_delay_ms": 3000,
+    "max_delay_ms": 6000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://www.almanea.com/smartphones"],
+    "laptop": ["https://www.almanea.com/laptops"],
+    "tv": ["https://www.almanea.com/tv"],
+    "tablet": ["https://www.almanea.com/tablets"],
+    "audio": ["https://www.almanea.com/audio"],
+    "camera": ["https://www.almanea.com/cameras"],
+    "gaming": ["https://www.almanea.com/gaming"],
+    "accessories": ["https://www.almanea.com/accessories"]
+  },
+  "selectors": {
+    "product_list": ".product-item",
+    "product_link": "a.product-link",
+    "product_name": ".product-name",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": ".product-image img",
+    "product_sku": ".sku",
+    "product_specs": ".specifications",
+    "product_availability": ".availability",
+    "pagination": ".pagination",
+    "next_page": ".pagination .next"
+  }
+}
+
+
+
+
+
+

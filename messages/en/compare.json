@@ -1,0 +1,13 @@
+{
+  "title": "Compare Products",
+  "addProducts": "Add products to compare",
+  "compareUpTo": "Compare up to 4 products side by side",
+  "errorLoading": "Error loading products",
+  "noProducts": "No products to compare",
+  "noProductsDescription": "Add products from the product page to compare them here",
+  "product": "product",
+  "products": "products",
+  "store": "store",
+  "stores": "stores",
+  "notAvailable": "N/A"
+}

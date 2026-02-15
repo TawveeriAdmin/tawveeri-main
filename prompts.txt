@@ -24,27 +24,6 @@ Analyze the attached ZIP files and their contents. Build a clear understanding o
 please provide me with the code of each file separately
 
 =====================================================
-please provide me with the final, updated and complete code of each of the updated files
 
-=====================================================
-
-I want to create and setup this application "Tawveeri",
-  "توفيري" nextjs 16 application and radix-ui, the Arabic language should be the default langauge, I want you to make sure your setup ensure that Arabic RTL and English is LTR without me having it modify evey part of my app,
-
-App Name:
-    - EN: Tawveeri
-    - AR: توفيري
-Icons: Lucide
-Arabic Font: IBM Plex Sans Arabic
-English Font: IBM Plex Sans
-UI: radix-ui - must use our themes and support the languages (Arabic-RTL & English-LTR)
-
-themes_v3 tree                                     
-.
-├── DESIGN-SYSTEM.md
-├── globals-final.css
-├── tailwind.config.ts
-├── theme-config.ts
-└── theme-preview.html
-
-1 directory, 5 files
+  > Build Error
+  Next.js (15.1.5) is outdated

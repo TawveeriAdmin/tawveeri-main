@@ -1,0 +1,179 @@
+import type { ProductCategory } from '@/lib/database/types';
+
+/**
+ * Raw product data extracted from scraping
+ */
+export interface ScrapedProduct {
+  name_ar: string;
+  name_en: string;
+  brand: string;
+  model: string;
+  sku: string | null;
+  current_price: number;
+  original_price: number | null;
+  availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
+  product_url: string;
+  image_urls: string[];
+  specifications: Record<string, unknown>;
+  category: ProductCategory;
+  description_ar: string | null;
+  description_en: string | null;
+  stock_quantity?: number | null;
+  delivery_time_days?: number | null;
+  delivery_cost?: number;
+  is_free_delivery?: boolean;
+  is_deal?: boolean;
+  deal_expires_at?: string | null;
+  coupon_code?: string | null;
+}
+
+/**
+ * Configuration for CSS/XPath selectors
+ */
+export interface SelectorConfig {
+  product_list: string;
+  product_link: string;
+  product_name: string;
+  product_name_ar?: string;
+  product_price: string;
+  product_original_price: string | null;
+  product_image: string;
+  product_sku: string | null;
+  product_specs: string | null;
+  product_availability: string;
+  product_description?: string | null;
+  product_description_ar?: string | null;
+  pagination?: string | null;
+  next_page?: string | null;
+}
+
+/**
+ * Rate limiting configuration
+ */
+export interface RateLimitConfig {
+  min_delay_ms: number;
+  max_delay_ms: number;
+  requests_per_minute: number;
+}
+
+/**
+ * Complete scraper configuration for a store
+ */
+export interface ScraperConfig {
+  store_slug: string;
+  store_name_ar: string;
+  store_name_en: string;
+  base_url: string;
+  category_urls: Record<ProductCategory, string[]>;
+  selectors: SelectorConfig;
+  rate_limit: RateLimitConfig;
+  requires_js: boolean;
+  user_agents: string[];
+  timeout_ms?: number;
+}
+
+/**
+ * Result of a scraping operation
+ */
+export interface ScrapingResult {
+  success: boolean;
+  products: ScrapedProduct[];
+  errors: ScrapingError[];
+  metadata: ScrapingMetadata;
+}
+
+/**
+ * Scraping error details
+ */
+export interface ScrapingError {
+  type: 'network' | 'parse' | 'validation' | 'rate_limit' | 'selector' | 'unknown';
+  message: string;
+  url: string | null;
+  timestamp: string;
+  details?: unknown;
+}
+
+/**
+ * Metadata about scraping operation
+ */
+export interface ScrapingMetadata {
+  total_products_found: number;
+  total_products_scraped: number;
+  start_time: string;
+  end_time: string;
+  duration_ms: number;
+  pages_scraped: number;
+  store_slug: string;
+  category?: ProductCategory;
+}
+
+/**
+ * Result of data validation
+ */
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  score: number; // 0-100 data quality score
+}
+
+/**
+ * Options for retry operations
+ */
+export interface RetryOptions {
+  maxRetries?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+  backoffMultiplier?: number;
+}
+
+/**
+ * Options for product discovery
+ */
+export interface DiscoveryOptions {
+  store_slug: string;
+  category?: ProductCategory;
+  max_pages?: number;
+  dry_run?: boolean;
+}
+
+/**
+ * Options for price updates
+ */
+export interface PriceUpdateOptions {
+  store_slug?: string;
+  max_products?: number;
+  older_than_hours?: number;
+}
+
+/**
+ * Result of discovery job
+ */
+export interface DiscoveryResult {
+  success: boolean;
+  store: string;
+  category: string;
+  products_discovered: number;
+  products_created: number;
+  products_linked: number;
+  errors: number;
+  duration_ms: number;
+}
+
+/**
+ * Result of price update job
+ */
+export interface PriceUpdateResult {
+  success: boolean;
+  stores_updated: number;
+  products_updated: number;
+  price_changes: number;
+  errors: number;
+  duration_ms: number;
+}
+
+
+
+
+
+

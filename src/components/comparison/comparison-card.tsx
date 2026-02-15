@@ -3,9 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PriceDisplay, Price } from '@/components/ui/price';
 import { Star, Truck, ShieldCheck } from 'lucide-react';
-import { useLocale } from '@/app/providers/locale-provider';
-import { formatPrice, calculateSavings } from '@/lib/utils';
+import { useTranslations } from '@/lib/simple-intl-provider';
+import { useParams } from 'next/navigation';
+import { calculateSavings } from '@/lib/utils';
 
 interface ComparisonCardProps {
   storeName: string;
@@ -18,6 +20,7 @@ interface ComparisonCardProps {
   delivery?: string;
   warranty?: string;
   onViewStore: () => void;
+  locale?: string;
 }
 
 export function ComparisonCard({
@@ -31,8 +34,11 @@ export function ComparisonCard({
   delivery,
   warranty,
   onViewStore,
+  locale: propLocale,
 }: ComparisonCardProps) {
-  const { locale, t } = useLocale();
+  const t = useTranslations();
+  const params = useParams();
+  const locale = propLocale || (params?.locale as string) || 'ar';
   const savings = originalPrice ? calculateSavings(originalPrice, currentPrice) : 0;
 
   return (
@@ -79,24 +85,15 @@ export function ComparisonCard({
 
       <CardContent className="space-y-4">
         {/* Price Display */}
-        <div className="flex items-baseline gap-3">
-          <span className="text-5xl font-extrabold tabular-nums">
-            {currentPrice.toLocaleString('en-US')}
-          </span>
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-500">{t('price.sar')}</span>
-            {originalPrice && (
-              <span className="text-lg text-gray-400 line-through tabular-nums">
-                {originalPrice.toLocaleString('en-US')}
-              </span>
-            )}
-          </div>
-        </div>
+        <PriceDisplay
+          currentPrice={currentPrice}
+          originalPrice={originalPrice}
+        />
 
         {/* Savings Badge */}
         {savings > 0 && (
           <Badge variant="success-light">
-            💰 {t('price.save')} {savings.toLocaleString('en-US')} {t('price.sar')}
+            💰 {t('price.save')} <Price amount={savings} className="text-sm font-semibold" symbolClassName="w-3 h-3" />
           </Badge>
         )}
 
