@@ -46,7 +46,9 @@ import {
   Target,
   User,
   Users,
+  X,
   Zap,
+  Menu,
 } from 'lucide-react';
 
 const EMOJI_REGEX =
@@ -90,6 +92,7 @@ export default function LandingPageClient() {
   const [scrollY, setScrollY] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [typingText, setTypingText] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
@@ -410,6 +413,19 @@ export default function LandingPageClient() {
               <span>{locale === 'ar' ? 'EN' : 'AR'}</span>
             </button>
 
+            {/* Mobile hamburger — after theme & language buttons */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="rounded-xl border border-outline-variant/50 bg-surface-container-low/50 p-2.5 backdrop-blur-sm transition hover:border-primary/40 hover:bg-surface-container md:hidden"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5 text-on-surface" />
+              ) : (
+                <Menu className="h-5 w-5 text-on-surface" />
+              )}
+            </button>
+
             {authLoading ? (
               <div className="h-9 w-9 animate-pulse rounded-full bg-surface-container-high" />
             ) : user ? (
@@ -491,6 +507,48 @@ export default function LandingPageClient() {
           </div>
         </div>
       </header>
+
+      {/* Mobile menu panel */}
+      <div
+        className={`fixed inset-x-0 top-[4.5rem] z-40 transform transition-all duration-300 md:hidden ${
+          mobileMenuOpen
+            ? 'translate-y-0 opacity-100'
+            : '-translate-y-4 pointer-events-none opacity-0'
+        }`}
+      >
+        <div className="mx-4 rounded-2xl border-2 border-gray-300 bg-gray-50 shadow-2xl dark:border-gray-500 dark:bg-[#1a1a2e] dark:shadow-black/50">
+          <nav className="flex flex-col p-3 gap-1">
+            {navLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl px-4 py-3 text-sm font-medium text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          {!user && !authLoading && (
+            <div className="flex flex-col gap-2 border-t border-outline-variant/30 p-3">
+              <Link
+                href={`/${locale}/auth/login`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container"
+              >
+                {tx('nav.login')}
+              </Link>
+              <Link
+                href={`/${locale}/auth/signup`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl bg-gradient-to-r from-[#0a2f7e] to-primary px-4 py-3 text-center text-sm font-semibold text-white shadow-sm"
+              >
+                {tx('nav.startFree')}
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ═══════════════════════════════════════════
           MAIN
