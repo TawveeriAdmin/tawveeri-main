@@ -44,7 +44,6 @@ export default function AdminUsersPage({
   const [total, setTotal] = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const t = useTranslations();
   const router = useRouter();
   const limit = 20;
 

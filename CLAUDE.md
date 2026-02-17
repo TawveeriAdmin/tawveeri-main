@@ -33,12 +33,12 @@ npm run db:schema        # Apply schema SQL
 npm run db:policies      # Apply RLS policies
 npm run db:seed          # Seed data
 npm run db:create-admin  # Create admin user
-npm run flask:install    # Install Python scraping dependencies
-npm run flask:start      # Start Python scraping server (localhost:5000)
-npm run flask:dev        # Flask dev mode with debug
+npm run flask:install    # Install Python scraping dependencies (legacy)
+npm run flask:start      # Start Python scraping server (legacy, no longer needed)
+npm run flask:dev        # Flask dev mode with debug (legacy)
 ```
 
-Development requires **two terminals**: Flask on port 5000 (scraping) and Next.js on port 3000 (app).
+Development requires only **one terminal**: `npm run dev` on port 3000. Search scraping now runs as TypeScript inside Next.js (no Flask needed).
 
 ## Architecture
 
@@ -115,9 +115,11 @@ Use `createNotification()` from `src/lib/auth/notifications.ts` and `createAudit
 
 ### Scraping Architecture
 
-Two scraping systems:
-1. **Python/Flask** (`scripts/scraping/`) — standalone scrapers for Amazon SA, Noon, Jarir. Runs on port 5000.
-2. **Node.js** (`src/lib/scraping/`) — TypeScript scrapers with base class pattern, rate limiting, retry logic, caching, product matching/filtering. Called from API routes.
+Two scraping subsystems, both TypeScript:
+1. **Search scrapers** (`src/lib/scraping/search/`) — lightweight fetch+cheerio scrapers for Amazon SA, Noon, Jarir, Extra. Run in-process via `searchAllStores()` orchestrator. Called from `POST /api/search/scrape`.
+2. **Cron scrapers** (`src/lib/scraping/stores/`) — TypeScript scrapers with base class pattern, rate limiting, retry logic, caching, product matching/filtering. Called from cron API routes.
+
+Legacy Python/Flask scrapers (`scripts/scraping/`) still exist but are no longer used by the app.
 
 API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`.
 
@@ -154,7 +156,7 @@ See `.env.example`. Required:
 - `SUPABASE_SERVICE_ROLE_KEY` — Server-side Supabase operations
 - `SUPABASE_DB_URL` — Direct PostgreSQL connection for migration scripts
 - `NEXT_PUBLIC_APP_URL` — App URL for auth callbacks and emails
-- `FLASK_API_URL` — Flask scraping service URL (default: `http://127.0.0.1:5000`)
+- `FLASK_API_URL` — *(no longer needed)* Legacy Flask scraping service URL
 
 ## Styling Rules
 
