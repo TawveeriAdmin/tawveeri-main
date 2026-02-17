@@ -94,7 +94,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-3 text-sm text-on-surface-variant">
         <History className="w-4 h-4 animate-spin" />
         {t('search.history.loading') || 'Loading history...'}
       </div>
@@ -103,7 +103,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 text-sm text-destructive-600 dark:text-destructive-500">
+      <div className="flex items-center gap-3 text-sm text-error">
         <History className="w-4 h-4" />
         {error}
       </div>
@@ -112,7 +112,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
 
   if (history.length === 0) {
     return (
-      <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-3 text-sm text-on-surface-variant">
         <History className="w-4 h-4" />
         {t('search.history.empty') || 'No recent searches yet.'}
       </div>
@@ -122,7 +122,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+        <div className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
           <History className="w-4 h-4" />
           {t('search.history.title') || 'Recent Searches'}
         </div>
@@ -136,17 +136,17 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
         {formattedHistory.map((item) => (
           <li
             key={item.id}
-            className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/70 px-3 py-2"
+            className="flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2"
           >
             <button
               type="button"
-              className="flex items-center gap-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              className="flex items-center gap-3 text-left text-sm text-on-surface-variant hover:text-primary transition-colors"
               onClick={() => handleSelect(item.search_query)}
             >
-              <Clock1 className="w-4 h-4 text-gray-400" />
+              <Clock1 className="w-4 h-4 text-outline" />
               <span>{item.search_query}</span>
             </button>
-            <span className="text-xs text-gray-400 dark:text-gray-500">{item.relativeTime}</span>
+            <span className="text-xs text-outline">{item.relativeTime}</span>
           </li>
         ))}
       </ul>

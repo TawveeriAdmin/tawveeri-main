@@ -321,7 +321,7 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
       {/* New Product Fields */}
       {(formData.createNewProduct || mode === 'edit') && (
         <div className="space-y-4 border-t pt-4">
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-title-lg">
             {isRTL ? 'معلومات المنتج' : 'Product Information'}
           </h3>
 
@@ -430,7 +430,7 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
 
       {/* Product Store Fields */}
       <div className="space-y-4 border-t pt-4">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-title-lg">
           {isRTL ? 'معلومات المتجر' : 'Store Information'}
         </h3>
 

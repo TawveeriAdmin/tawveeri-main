@@ -38,10 +38,10 @@ const PaginationLink = ({ className, isActive, size = 'icon', ...props }: Pagina
   <a
     aria-current={isActive ? 'page' : undefined}
     className={cn(
-      buttonVariants({
-        variant: isActive ? 'default' : 'outline',
-        size,
-      }),
+      'inline-flex items-center justify-center rounded-full h-10 min-w-10 px-3 text-label-lg transition-colors',
+      'text-on-surface state-layer',
+      isActive && 'bg-secondary-container text-on-surface font-medium',
+      !isActive && 'hover:bg-surface-container-highest',
       className
     )}
     {...props}
@@ -81,7 +81,7 @@ PaginationNext.displayName = 'PaginationNext';
 const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<'span'>) => (
   <span
     aria-hidden
-    className={cn('flex h-9 w-9 items-center justify-center', className)}
+    className={cn('flex h-9 w-9 items-center justify-center text-on-surface-variant', className)}
     {...props}
   >
     <MoreHorizontal className="h-4 w-4" />

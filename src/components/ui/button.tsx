@@ -4,27 +4,33 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'state-layer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-label-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-38',
   {
     variants: {
       variant: {
         default:
-          'bg-primary-800 text-white hover:bg-primary-900 hover:-translate-y-0.5 shadow-md hover:shadow-lg',
+          'bg-primary text-on-primary',
+        tonal:
+          'bg-secondary-container text-on-secondary-container',
         success:
-          'bg-success-600 text-white hover:bg-success-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg',
+          'bg-success text-on-success',
         warning:
-          'bg-warning-600 text-white hover:bg-warning-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg',
+          'bg-error text-on-error',
         destructive:
-          'bg-destructive-600 text-white hover:bg-destructive-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg focus-visible:ring-destructive-500',
+          'bg-error text-on-error',
+        elevated:
+          'bg-surface-container-low text-primary elevation-1',
         outline:
-          'border-2 border-primary-800 text-primary-800 hover:bg-primary-50 dark:border-primary-600 dark:text-primary-400 dark:hover:bg-primary-950',
-        ghost: 'hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100',
-        link: 'text-primary-800 underline-offset-4 hover:underline',
+          'border border-outline text-primary bg-transparent hover:bg-primary/8',
+        ghost:
+          'text-on-surface-variant hover:bg-on-surface/8',
+        link:
+          'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-11 px-6 py-3',
+        default: 'h-10 px-6 py-2.5',
         sm: 'h-9 px-4 py-2',
-        lg: 'h-12 px-8 py-4 text-lg',
+        lg: 'h-12 px-8 py-3 text-body-lg',
         icon: 'h-10 w-10',
       },
     },

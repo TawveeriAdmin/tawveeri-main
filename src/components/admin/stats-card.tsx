@@ -18,22 +18,22 @@ export function StatsCard({ title, value, change, icon, className }: StatsCardPr
   return (
     <div
       className={cn(
-        'rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm',
+        'rounded-xl border border-outline-variant bg-surface-container-low p-6',
         className
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
+          <p className="text-label-lg text-on-surface-variant">{title}</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className="text-headline-md text-on-surface">{value}</p>
             {change && (
               <div
                 className={cn(
-                  'flex items-center gap-1 text-sm font-medium',
+                  'flex items-center gap-1 text-label-md',
                   change.type === 'increase'
-                    ? 'text-success-600 dark:text-success-400'
-                    : 'text-warning-600 dark:text-warning-400'
+                    ? 'text-success'
+                    : 'text-error'
                 )}
               >
                 {change.type === 'increase' ? (
@@ -46,11 +46,10 @@ export function StatsCard({ title, value, change, icon, className }: StatsCardPr
             )}
           </div>
         </div>
-        <div className="flex-shrink-0 rounded-lg bg-primary-50 dark:bg-primary-950 p-3">
-          <div className="text-primary-600 dark:text-primary-400">{icon}</div>
+        <div className="flex-shrink-0 rounded-xl bg-primary-container p-3">
+          <div className="text-on-primary-container">{icon}</div>
         </div>
       </div>
     </div>
   );
 }
-

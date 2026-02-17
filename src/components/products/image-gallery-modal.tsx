@@ -123,13 +123,13 @@ export function ImageGalleryModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 gap-0 bg-black/95">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 gap-0 bg-scrim/95">
         <div className="relative w-full h-full flex flex-col">
           {/* Close Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
+            className="absolute top-4 right-4 z-50 text-inverse-on-surface hover:bg-inverse-on-surface/20"
             onClick={onClose}
           >
             <X className="h-6 w-6" />
@@ -141,7 +141,7 @@ export function ImageGalleryModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white hover:bg-white/20"
+                className="text-inverse-on-surface hover:bg-inverse-on-surface/20"
                 onClick={handleZoomIn}
                 disabled={zoomLevel >= 3}
               >
@@ -150,7 +150,7 @@ export function ImageGalleryModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white hover:bg-white/20"
+                className="text-inverse-on-surface hover:bg-inverse-on-surface/20"
                 onClick={handleZoomOut}
                 disabled={zoomLevel <= 1}
               >
@@ -160,7 +160,7 @@ export function ImageGalleryModal({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20"
+                  className="text-inverse-on-surface hover:bg-inverse-on-surface/20"
                   onClick={handleResetZoom}
                 >
                   <RotateCw className="h-5 w-5" />
@@ -175,7 +175,7 @@ export function ImageGalleryModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-4 z-40 text-white hover:bg-white/20 h-12 w-12"
+                className="absolute left-4 z-40 text-inverse-on-surface hover:bg-inverse-on-surface/20 h-12 w-12"
                 onClick={handlePrevious}
               >
                 <ChevronLeft className="h-8 w-8" />
@@ -213,7 +213,7 @@ export function ImageGalleryModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-4 z-40 text-white hover:bg-white/20 h-12 w-12"
+                className="absolute right-4 z-40 text-inverse-on-surface hover:bg-inverse-on-surface/20 h-12 w-12"
                 onClick={handleNext}
               >
                 <ChevronRight className="h-8 w-8" />
@@ -223,7 +223,7 @@ export function ImageGalleryModal({
 
           {/* Thumbnail Strip */}
           {images.length > 1 && (
-            <div className="h-24 bg-black/50 flex items-center justify-center gap-2 p-2 overflow-x-auto">
+            <div className="h-24 bg-scrim/50 flex items-center justify-center gap-2 p-2 overflow-x-auto">
               {images.map((img, idx) => (
                 <button
                   key={idx}
@@ -233,9 +233,9 @@ export function ImageGalleryModal({
                     setPosition({ x: 0, y: 0 });
                   }}
                   className={cn(
-                    'relative h-20 w-20 flex-shrink-0 rounded border-2 transition-all',
+                    'relative h-20 w-20 flex-shrink-0 rounded-md border-2 transition-all',
                     idx === currentIndex
-                      ? 'border-white scale-110'
+                      ? 'border-inverse-primary scale-110'
                       : 'border-transparent opacity-60 hover:opacity-100'
                   )}
                 >
@@ -243,7 +243,7 @@ export function ImageGalleryModal({
                     src={img}
                     alt={`Thumbnail ${idx + 1}`}
                     fill
-                    className="object-cover rounded"
+                    className="object-cover rounded-md"
                     unoptimized
                   />
                 </button>
@@ -253,7 +253,7 @@ export function ImageGalleryModal({
 
           {/* Image Counter */}
           {images.length > 1 && (
-            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm">
+            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-scrim/70 text-inverse-on-surface px-4 py-2 rounded-full text-label-lg">
               {currentIndex + 1} / {images.length}
             </div>
           )}

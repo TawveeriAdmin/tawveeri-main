@@ -11,8 +11,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { ChartCard } from '@/components/admin/chart-card';
-import { cn } from '@/lib/utils';
-
 interface BarChartProps {
   data: Array<Record<string, any>>;
   dataKey?: string;
@@ -45,7 +43,7 @@ export function BarChart({
           data={data}
           layout={orientation === 'horizontal' ? 'vertical' : undefined}
         >
-          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-800" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-outline-variant" />
           {orientation === 'vertical' ? (
             <>
               <XAxis dataKey={labelKey} className="text-xs" />

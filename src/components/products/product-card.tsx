@@ -163,13 +163,13 @@ export function ProductCard({
   };
 
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+    <Card className="group transition-all duration-300 h-full flex flex-col">
       <LinkWrapper>
         {/* Product Image */}
-        <div className="relative w-full aspect-square overflow-hidden rounded-t-2xl bg-gray-100 dark:bg-gray-800">
+        <div className="relative w-full aspect-square overflow-hidden rounded-t-xl bg-surface-container-highest">
           {/* Loading skeleton */}
           {imageLoading && !imageError && (
-            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="absolute inset-0 bg-surface-container-highest animate-pulse" />
           )}
           
           {/* Product Image */}
@@ -210,10 +210,10 @@ export function ProductCard({
         <CardContent className="p-4 flex-1 flex flex-col">
           {/* Product Info */}
           <div className="flex-1 mb-3">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-2 min-h-[2.5rem]">
+            <h3 className="font-semibold text-on-surface mb-1 line-clamp-2 min-h-[2.5rem]">
               {productName}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <p className="text-sm text-on-surface-variant mb-2">
               {product.brand} {product.model}
             </p>
 
@@ -223,19 +223,19 @@ export function ProductCard({
                 <div className="flex items-baseline gap-2">
                   <Price
                     amount={bestPriceValue}
-                    className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                    className="text-headline-md text-on-surface"
                     symbolClassName="w-6 h-6"
                   />
                   {originalPrice && originalPrice > bestPriceValue && (
                     <Price
                       amount={originalPrice}
-                      className="text-sm text-gray-400 dark:text-gray-500 line-through"
+                      className="text-sm text-outline line-through"
                       symbolClassName="w-4 h-4"
                     />
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-on-surface-variant">
                   {t('products.priceNotAvailable')}
                 </p>
               )}
@@ -248,7 +248,7 @@ export function ProductCard({
 
             {/* Store Count */}
             {storeCount > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-on-surface-variant">
                 {storeCount} {storeCount === 1 ? t('products.store') : t('products.stores')}
               </p>
             )}

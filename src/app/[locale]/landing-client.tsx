@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useTranslations } from '@/lib/simple-intl-provider';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Languages, User, LogOut, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
   DropdownMenu,
@@ -18,25 +17,66 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Price } from '@/components/ui/price';
 import {
-  Search,
-  TrendingUp,
-  Bell,
-  Star,
-  ShoppingCart,
-  Zap,
-  Shield,
-  Users,
   ArrowRight,
-  Sparkles,
-  Gift,
-  Heart,
+  Award,
   BarChart3,
+  Bell,
   Check,
   ChevronDown,
-  Award,
-  Target,
+  Gift,
+  Globe,
+  Headphones,
+  Heart,
+  Languages,
+  Laptop,
+  Lock,
+  LogOut,
+  Mail,
+  Moon,
   Percent,
+  Search,
+  Settings,
+  Shield,
+  ShoppingCart,
+  Smartphone,
+  Sparkles,
+  Star,
+  Store,
+  Sun,
+  Target,
+  User,
+  Users,
+  Zap,
 } from 'lucide-react';
+
+const EMOJI_REGEX =
+  /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu;
+
+function stripEmojis(value: string): string {
+  return value.replace(EMOJI_REGEX, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function parseNumber(value: string): number {
+  const cleaned = value.replace(/[^\d.]/g, '');
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/* ─── Gradient palettes for feature icons ─── */
+const FEATURE_GRADIENTS = [
+  'from-blue-500 to-cyan-400',
+  'from-amber-500 to-orange-400',
+  'from-emerald-500 to-teal-400',
+  'from-violet-500 to-purple-400',
+  'from-rose-500 to-pink-400',
+  'from-sky-500 to-indigo-400',
+];
+
+const AVATAR_GRADIENTS = [
+  'from-blue-600 to-cyan-500',
+  'from-violet-600 to-purple-500',
+  'from-amber-600 to-orange-500',
+];
 
 export default function LandingPageClient() {
   const t = useTranslations();
@@ -45,973 +85,965 @@ export default function LandingPageClient() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user, loading: authLoading, signOut } = useAuth();
+
   const [mounted, setMounted] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [typingText, setTypingText] = useState('');
 
-  // Get locale from params
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
 
-  // Fix hydration mismatch - only render theme-dependent content after mount
-  useEffect(() => {
-    // Run setMounted in a microtask to avoid synchronous state update
-    Promise.resolve().then(() => setMounted(true));
+  const tx = (key: string) => stripEmojis(String(t(key)));
 
+  /* ─── Mount & scroll ─── */
+  useEffect(() => {
+    const mountTimer = window.setTimeout(() => setMounted(true), 0);
     const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.clearTimeout(mountTimer);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
-  // Function to switch locale
+  /* ─── Typing animation for search placeholder ─── */
+  useEffect(() => {
+    if (!mounted) return;
+
+    const products = isRTL
+      ? ['آيفون 15 برو ماكس', 'ماك بوك اير M3', 'سوني WH-1000XM5', 'سامسونج جالكسي S24', 'آيباد برو M4']
+      : ['iPhone 15 Pro Max', 'MacBook Air M3', 'Sony WH-1000XM5', 'Samsung Galaxy S24', 'iPad Pro M4'];
+    let idx = 0;
+    let charIdx = 0;
+    let deleting = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const tick = () => {
+      const word = products[idx];
+      if (!deleting) {
+        charIdx++;
+        setTypingText(word.slice(0, charIdx));
+        if (charIdx === word.length) {
+          deleting = true;
+          timer = setTimeout(tick, 2000);
+          return;
+        }
+        timer = setTimeout(tick, 80);
+      } else {
+        charIdx--;
+        setTypingText(word.slice(0, charIdx));
+        if (charIdx === 0) {
+          deleting = false;
+          idx = (idx + 1) % products.length;
+          timer = setTimeout(tick, 400);
+          return;
+        }
+        timer = setTimeout(tick, 40);
+      }
+    };
+
+    timer = setTimeout(tick, 800);
+    return () => clearTimeout(timer);
+  }, [mounted]);
+
+  /* ─── Intersection Observer for scroll-triggered reveals ─── */
+  useEffect(() => {
+    if (!mounted) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -60px 0px' }
+    );
+
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.scroll-reveal').forEach((el) => observer.observe(el));
+    });
+
+    return () => observer.disconnect();
+  }, [mounted]);
+
   const switchLocale = () => {
-    const newLocale = locale === 'ar' ? 'en' : 'ar';
-    const newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
-    window.location.href = newPath;
+    const nextLocale = locale === 'ar' ? 'en' : 'ar';
+    if (!pathname) {
+      router.push(`/${nextLocale}`);
+      return;
+    }
+    const nextPath = pathname.startsWith(`/${locale}`)
+      ? pathname.replace(`/${locale}`, `/${nextLocale}`)
+      : `/${nextLocale}`;
+    router.push(nextPath);
   };
 
-  // Function to handle search
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      // If no query, just go to products page
+  const handleSearch = (forcedQuery?: string) => {
+    const query = (forcedQuery ?? searchQuery).trim();
+    if (!query) {
       router.push(`/${locale}/products`);
       return;
     }
-    
-    // Navigate to search page with query
-    const searchUrl = `/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`;
-    router.push(searchUrl);
+    router.push(`/${locale}/search?q=${encodeURIComponent(query)}`);
   };
 
+  /* ─── Data ─── */
+
+  const menuCopy = useMemo(
+    () => ({
+      dashboard: isRTL ? 'لوحة التحكم' : 'Dashboard',
+      settings: isRTL ? 'الإعدادات' : 'Settings',
+      signOut: isRTL ? 'تسجيل الخروج' : 'Sign Out',
+      profileFallback: isRTL ? 'مستخدم' : 'User',
+      compareNow: isRTL ? 'قارن الآن' : 'Compare Now',
+      liveScan: isRTL ? 'فحص مباشر للأسعار' : 'Live Price Scan',
+    }),
+    [isRTL]
+  );
+
+  const navLinks = [
+    { href: '#features', label: tx('nav.features') },
+    { href: '#how-it-works', label: tx('nav.howItWorks') },
+    { href: '#stores', label: tx('nav.stores') },
+    { href: '#testimonials', label: tx('nav.testimonials') },
+  ];
+
+  const quickSearches = isRTL
+    ? [
+        { icon: <Smartphone className="h-4 w-4" />, query: 'آيفون 15 برو' },
+        { icon: <Laptop className="h-4 w-4" />, query: 'ماك بوك اير M3' },
+        { icon: <Headphones className="h-4 w-4" />, query: 'سوني WH-1000XM5' },
+      ]
+    : [
+        { icon: <Smartphone className="h-4 w-4" />, query: 'iPhone 15 Pro' },
+        { icon: <Laptop className="h-4 w-4" />, query: 'MacBook Air M3' },
+        { icon: <Headphones className="h-4 w-4" />, query: 'Sony WH-1000XM5' },
+      ];
+
+  const heroStats = [
+    { icon: <Users className="h-5 w-5" />, value: '100K+', label: tx('stats.activeUsers') },
+    { icon: <Star className="h-5 w-5" />, value: '4.9', label: tx('stats.rating') },
+    { icon: <Store className="h-5 w-5" />, value: '5+', label: tx('stats.trustedStores') },
+    { icon: <Percent className="h-5 w-5" />, value: '60%', label: tx('stats.avgSavings') },
+  ];
+
+  const stores = [
+    { name: 'Amazon.sa', icon: Globe, tone: 'from-amber-500/20 to-orange-500/20' },
+    { name: 'Noon', icon: Sparkles, tone: 'from-primary/20 to-secondary/20' },
+    { name: 'Jarir', icon: Store, tone: 'from-rose-500/20 to-red-500/20' },
+    { name: 'Extra', icon: ShoppingCart, tone: 'from-cyan-500/20 to-primary/20' },
+    { name: 'Almanea', icon: Shield, tone: 'from-emerald-500/20 to-success/20' },
+  ];
+
+  const features = [
+    {
+      icon: Zap,
+      title: tx('features.instant.title'),
+      description: tx('features.instant.description'),
+      stat: tx('features.instant.stats'),
+    },
+    {
+      icon: Bell,
+      title: tx('features.alerts.title'),
+      description: tx('features.alerts.description'),
+      stat: tx('features.alerts.stats'),
+    },
+    {
+      icon: Shield,
+      title: tx('features.trusted.title'),
+      description: tx('features.trusted.description'),
+      stat: tx('features.trusted.stats'),
+    },
+    {
+      icon: BarChart3,
+      title: tx('features.analytics.title'),
+      description: tx('features.analytics.description'),
+      stat: tx('features.analytics.stats'),
+    },
+    {
+      icon: Heart,
+      title: tx('features.wishlist.title'),
+      description: tx('features.wishlist.description'),
+      stat: tx('features.wishlist.stats'),
+    },
+    {
+      icon: Gift,
+      title: tx('features.deals.title'),
+      description: tx('features.deals.description'),
+      stat: tx('features.deals.stats'),
+    },
+  ];
+
+  const steps = [
+    {
+      step: '01',
+      icon: Search,
+      title: tx('howItWorks.step1.title'),
+      description: tx('howItWorks.step1.description'),
+    },
+    {
+      step: '02',
+      icon: BarChart3,
+      title: tx('howItWorks.step2.title'),
+      description: tx('howItWorks.step2.description'),
+    },
+    {
+      step: '03',
+      icon: Target,
+      title: tx('howItWorks.step3.title'),
+      description: tx('howItWorks.step3.description'),
+    },
+  ];
+
+  const testimonials = [
+    {
+      name: tx('testimonials.user1.name'),
+      role: tx('testimonials.user1.role'),
+      comment: tx('testimonials.user1.comment'),
+      saved: parseNumber(tx('testimonials.user1.saved')),
+    },
+    {
+      name: tx('testimonials.user2.name'),
+      role: tx('testimonials.user2.role'),
+      comment: tx('testimonials.user2.comment'),
+      saved: parseNumber(tx('testimonials.user2.saved')),
+    },
+    {
+      name: tx('testimonials.user3.name'),
+      role: tx('testimonials.user3.role'),
+      comment: tx('testimonials.user3.comment'),
+      saved: parseNumber(tx('testimonials.user3.saved')),
+    },
+  ];
+
+  const footerPrimary = [
+    { href: `/${locale}/products`, label: tx('footer.products') },
+    { href: `/${locale}/stores`, label: tx('footer.stores') },
+    { href: `/${locale}/deals`, label: tx('footer.deals') },
+    { href: `/${locale}/search`, label: tx('button.search') },
+  ];
+
+  const footerSupport = [
+    { href: `/${locale}/privacy`, label: tx('footer.privacy') },
+    { href: `/${locale}/terms`, label: tx('footer.terms') },
+    { href: `/${locale}/auth/login`, label: tx('nav.login') },
+    { href: `/${locale}/auth/signup`, label: tx('nav.startFree') },
+  ];
+
+  /* ═══════════════════════════════════════════
+     JSX
+     ═══════════════════════════════════════════ */
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 transition-colors duration-300">
-      {/* Enhanced Navigation with Glassmorphism */}
-      <nav
-        className={`fixed top-0 ${isRTL ? 'right-0 left-0' : 'left-0 right-0'} z-50 transition-all duration-300 ${
-          scrollY > 20
-            ? 'bg-white dark:bg-gray-900/95 backdrop-blur-2xl shadow-lg shadow-primary-600/5 dark:shadow-primary-600/10'
-            : 'bg-white dark:bg-gray-900/80 backdrop-blur-xl'
-        } border-b border-gray-200 dark:border-gray-700`}
+    <div className="relative min-h-screen overflow-x-clip bg-surface text-on-surface">
+      {/* ─── Animated Gradient Mesh Background ─── */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="gradient-mesh absolute inset-0 opacity-60" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(100,116,139,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(100,116,139,0.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      </div>
+
+      {/* ═══════════════════════════════════════════
+          HEADER
+          ═══════════════════════════════════════════ */}
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+          scrollY > 16
+            ? 'border-b border-outline-variant/50 bg-surface/80 shadow-sm backdrop-blur-2xl'
+            : 'bg-transparent backdrop-blur-sm'
+        }`}
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3 group cursor-pointer">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-800 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary-600/30 dark:shadow-primary-600/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                {t('app.initial')}
+        <div className="container mx-auto flex h-[4.5rem] items-center justify-between px-4">
+          {/* Logo with glow ring on hover */}
+          <Link href={`/${locale}`} className="group flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute -inset-1.5 rounded-2xl bg-primary/20 opacity-0 blur-lg transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0a2f7e] to-primary text-lg font-black text-white shadow-sm shadow-primary/15">
+                {tx('app.initial')}
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                {t('app.name')}
-              </span>
             </div>
+            <span className="text-lg font-bold tracking-tight text-on-surface">
+              {tx('app.name')}
+            </span>
+          </Link>
 
-            {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center gap-8">
-              {[
-                { href: '#features', label: t('nav.features') },
-                { href: '#how-it-works', label: t('nav.howItWorks') },
-                { href: '#stores', label: t('nav.stores') },
-                { href: '#testimonials', label: t('nav.testimonials') },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="relative text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors group font-medium"
-                >
-                  {item.label}
-                  <span className="absolute bottom-0 start-0 w-0 h-0.5 bg-gradient-to-r from-primary-600 to-primary-800 group-hover:w-full transition-all duration-300" />
-                </Link>
-              ))}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              {/* Theme Toggle with Animation */}
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="relative p-2.5 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 group border border-gray-200 dark:border-gray-600 shadow-sm"
-                aria-label="Toggle theme"
+          {/* Nav — pill-shaped hover indicator */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {navLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative rounded-full px-4 py-2 text-sm font-medium text-on-surface-variant transition-all duration-200 hover:bg-primary/10 hover:text-primary"
               >
-                {mounted ? (
-                  theme === 'dark' ? (
-                    <Sun className="w-5 h-5 text-featured-500 group-hover:rotate-90 transition-transform duration-300" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-primary-600 group-hover:-rotate-12 transition-transform duration-300" />
-                  )
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="rounded-xl border border-outline-variant/50 bg-surface-container-low/50 p-2.5 backdrop-blur-sm transition hover:border-primary/40 hover:bg-surface-container"
+              aria-label="Toggle theme"
+            >
+              {mounted ? (
+                theme === 'dark' ? (
+                  <Sun className="h-5 w-5 text-warning" />
                 ) : (
-                  <div className="w-5 h-5" />
-                )}
-              </button>
-
-              {/* Language Toggle */}
-              <button
-                onClick={switchLocale}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 group border border-gray-200 dark:border-gray-600 shadow-sm"
-                aria-label="Toggle language"
-              >
-                <Languages className="w-5 h-5 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-bold text-primary-700 dark:text-primary-300">
-                  {locale === 'ar' ? 'EN' : 'عربي'}
-                </span>
-              </button>
-
-              {/* Show user menu if logged in, otherwise show sign in/get started */}
-              {/* Show loading state briefly to prevent flash of wrong UI */}
-              {authLoading ? (
-                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-              ) : user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 border border-gray-200 dark:border-gray-600 shadow-sm">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={user.avatar_url || undefined} alt={user.full_name || user.email || ''} />
-                        <AvatarFallback className="bg-primary-600 text-white text-sm">
-                          {user.full_name
-                            ? user.full_name
-                                .split(' ')
-                                .map((n) => n[0])
-                                .join('')
-                                .toUpperCase()
-                                .slice(0, 2)
-                            : user.email?.[0]?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="hidden sm:inline-block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {user.full_name || user.email?.split('@')[0] || 'User'}
-                      </span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">{user.full_name || 'User'}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href={`/${locale}/dashboard`} className="cursor-pointer flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/${locale}/profile`} className="cursor-pointer flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        <span>Settings</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={async () => {
-                        await signOut();
-                        router.push(`/${locale}`);
-                      }}
-                      className="cursor-pointer text-red-600 dark:text-red-400 flex items-center gap-2"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Sign Out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  <Moon className="h-5 w-5 text-primary" />
+                )
               ) : (
-                <>
-                  <Link
-                    href={`/${locale}/auth/login`}
-                    className="hidden sm:inline-block px-5 py-2.5 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium"
-                  >
-                    {t('nav.login')}
-                  </Link>
-                  <Link
-                    href={`/${locale}/auth/signup`}
-                    className="px-6 py-2.5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl hover:shadow-xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 font-bold shadow-lg"
-                    style={{ color: '#ffffff' }}
-                  >
-                    <span className="relative" style={{
-                      textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                      color: '#ffffff'
-                    }}>
-                      {t('nav.startFree')}
-                    </span>
-                  </Link>
-                </>
+                <div className="h-5 w-5" />
               )}
-            </div>
+            </button>
+
+            <button
+              onClick={switchLocale}
+              className="flex items-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-low/50 px-3 py-2.5 text-sm font-semibold text-on-surface backdrop-blur-sm transition hover:border-primary/40 hover:bg-surface-container"
+              aria-label="Toggle language"
+            >
+              <Languages className="h-4 w-4 text-primary" />
+              <span>{locale === 'ar' ? 'EN' : 'AR'}</span>
+            </button>
+
+            {authLoading ? (
+              <div className="h-9 w-9 animate-pulse rounded-full bg-surface-container-high" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-low px-2 py-1.5 transition hover:bg-surface-container">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage
+                        src={user.avatar_url || undefined}
+                        alt={user.full_name || user.email || menuCopy.profileFallback}
+                      />
+                      <AvatarFallback className="bg-primary text-xs text-white">
+                        {user.full_name
+                          ? user.full_name
+                              .split(' ')
+                              .map((part) => part[0])
+                              .join('')
+                              .toUpperCase()
+                              .slice(0, 2)
+                          : user.email?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden max-w-28 truncate text-sm text-on-surface-variant sm:block">
+                      {user.full_name || user.email?.split('@')[0] || menuCopy.profileFallback}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-semibold">
+                        {user.full_name || menuCopy.profileFallback}
+                      </p>
+                      <p className="truncate text-xs text-on-surface-variant">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={`/${locale}/dashboard`} className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span>{menuCopy.dashboard}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/${locale}/profile`} className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      <span>{menuCopy.settings}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await signOut();
+                      router.push(`/${locale}`);
+                    }}
+                    className="flex cursor-pointer items-center gap-2 text-red-600"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>{menuCopy.signOut}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="hidden items-center gap-2 sm:flex">
+                <Link
+                  href={`/${locale}/auth/login`}
+                  className="rounded-full px-4 py-2 text-sm font-semibold text-on-surface-variant transition hover:text-primary"
+                >
+                  {tx('nav.login')}
+                </Link>
+                <Link
+                  href={`/${locale}/auth/signup`}
+                  className="shimmer-btn relative overflow-hidden rounded-full bg-gradient-to-r from-[#0a2f7e] to-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/15 transition hover:shadow-md hover:shadow-primary/20"
+                >
+                  <span className="relative z-10">{tx('nav.startFree')}</span>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section - Enhanced with Parallax Effect */}
-      <section className="relative overflow-hidden pt-32 pb-24">
-        {/* Animated Background Blobs with Better Dark Mode Support */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* ═══════════════════════════════════════════
+          MAIN
+          ═══════════════════════════════════════════ */}
+      <main className="relative">
+        {/* ─── Hero Section — Split Layout ─── */}
+        <section className="relative overflow-hidden pt-32 pb-28 sm:pt-36 lg:pt-40 lg:pb-36">
+          {/* Parallax glow ring */}
           <div
-            className="absolute top-0 start-0 w-96 h-96 bg-primary-400/30 dark:bg-primary-600/20 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-3xl opacity-70 dark:opacity-50 animate-blob"
-            style={{ transform: `translateY(${scrollY * 0.5}px)` }}
+            className="pointer-events-none absolute start-1/2 top-0 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/20 via-secondary/10 to-transparent blur-3xl"
+            style={{ transform: `translateY(${scrollY * 0.12}px)` }}
           />
-          <div
-            className="absolute top-0 end-0 w-96 h-96 bg-success-400/30 dark:bg-success-600/20 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-3xl opacity-70 dark:opacity-50 animate-blob animation-delay-2000"
-            style={{ transform: `translateY(${scrollY * 0.3}px)` }}
-          />
-          <div
-            className="absolute -bottom-8 start-20 w-96 h-96 bg-featured-400/30 dark:bg-featured-600/20 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-3xl opacity-70 dark:opacity-50 animate-blob animation-delay-4000"
-            style={{ transform: `translateY(${scrollY * 0.4}px)` }}
-          />
-        </div>
 
-        <div className="relative container mx-auto px-4">
-          <div className="text-center space-y-8 max-w-5xl mx-auto">
-            {/* Enhanced Badge */}
-            <div
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary-50 via-success-50 to-featured-50 dark:from-primary-900/40 dark:via-success-900/40 dark:to-featured-900/40 border border-primary-200 dark:border-primary-700 shadow-xl shadow-primary-600/10 dark:shadow-primary-600/5 backdrop-blur-sm"
-              style={{ animation: 'fadeInUp 0.6s ease-out' }}
-            >
-              <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400 animate-pulse" />
-              <span className="text-sm font-bold bg-gradient-to-r from-primary-700 to-success-700 dark:from-primary-300 dark:to-success-300 bg-clip-text text-transparent">
-                {t('hero.badge')}
-              </span>
-              <Sparkles className="w-5 h-5 text-success-600 dark:text-success-400 animate-pulse animation-delay-1000" />
-            </div>
+          <div className="container mx-auto px-4">
+            <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+              {/* ── Left: Text + Search ── */}
+              <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-start">
+                {/* Badge with shimmer */}
+                <div className="scroll-reveal inline-flex">
+                  <span className="shimmer-badge relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
+                    <Sparkles className="h-4 w-4" />
+                    <span>{tx('hero.badge')}</span>
+                  </span>
+                </div>
 
-            {/* Main Headline with Enhanced Gradient */}
-            <h1
-              className="text-6xl md:text-8xl font-black leading-tight"
-              style={{ animation: 'fadeInUp 0.6s ease-out 0.2s backwards' }}
-            >
-              <span className="inline-block bg-gradient-to-r from-primary-600 to-success-600 bg-clip-text text-transparent animate-gradient drop-shadow-lg">
-                {t('hero.saveUpTo')}
-              </span>
-              <br />
-              <span className="inline-block text-7xl md:text-9xl bg-gradient-to-r from-success-600 to-primary-600 bg-clip-text text-transparent animate-gradient animation-delay-1000 drop-shadow-2xl">
-                60%
-              </span>
-              <br />
-              <span className="text-gray-900 dark:text-white drop-shadow-md">
-                {t('hero.onPurchases')}
-              </span>
-            </h1>
+                {/* Headline */}
+                <h1 className="scroll-reveal mt-6 text-balance text-4xl font-black leading-[1.1] sm:text-5xl lg:text-7xl">
+                  <span className="text-on-surface">{tx('hero.saveUpTo')} </span>
+                  <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] bg-clip-text text-transparent">
+                    60%
+                  </span>
+                  <br />
+                  <span className="text-on-surface">{tx('hero.onPurchases')}</span>
+                </h1>
 
-            <p
-              className="text-2xl md:text-3xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed font-light"
-              style={{ animation: 'fadeInUp 0.6s ease-out 0.4s backwards' }}
-            >
-              {t('hero.description')}{' '}
-              <span className="font-bold text-primary-600 dark:text-primary-400">
-                {t('hero.descriptionBold')}
-              </span>{' '}
-              {t('hero.descriptionEnd')}
-              <br />
-              <span className="text-xl text-gray-600 dark:text-gray-400">
-                {t('hero.tagline')}
-              </span>
-            </p>
+                {/* Description */}
+                <p className="scroll-reveal mx-auto mt-6 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg lg:mx-0">
+                  {tx('hero.description')}{' '}
+                  <span className="font-semibold text-on-surface">{tx('hero.descriptionBold')}</span>{' '}
+                  {tx('hero.descriptionEnd')}. {tx('hero.tagline')}
+                </p>
 
-            {/* Enhanced Floating Search Bar with Glassmorphism */}
-            <div
-              className="max-w-3xl mx-auto pt-6"
-              style={{ animation: 'fadeInUp 0.6s ease-out 0.6s backwards' }}
-            >
-              <div className="relative group">
-                {/* Animated Glow Effect */}
-                <div className="absolute -inset-3 bg-gradient-to-r from-primary-600 to-success-600 rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 dark:opacity-30 dark:group-hover:opacity-50 transition duration-500 animate-pulse" />
-
-                {/* Search Bar with Glassmorphism */}
-                <div className="relative flex items-center bg-white dark:bg-gray-900 backdrop-blur-xl rounded-2xl shadow-2xl p-3 border-2 border-primary-200 dark:border-primary-700 group-hover:border-primary-400 dark:group-hover:border-primary-500 transition duration-300">
-                  <div className="flex-1 flex items-center gap-3 px-4">
-                    <Search className="w-7 h-7 text-primary-600 dark:text-primary-400" />
-                    <input
-                      type="text"
-                      placeholder={t('hero.searchPlaceholder')}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSearch();
-                        }
-                      }}
-                      className="flex-1 bg-transparent outline-none text-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                    />
+                {/* Search bar — pill-shaped with animated glow border */}
+                <div className="scroll-reveal relative mx-auto mt-8 max-w-xl lg:mx-0">
+                  <div className="search-glow-border rounded-full p-[2px] transition-shadow focus-within:shadow-[0_0_0_3px_rgba(13,71,161,0.25)]">
+                    <div className="flex items-center gap-3 rounded-full bg-surface py-2 pe-2 ps-5 shadow-sm">
+                      <Search className="h-5 w-5 shrink-0 text-primary" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') handleSearch();
+                        }}
+                        placeholder={mounted && typingText ? typingText : tx('hero.searchPlaceholder')}
+                        style={{ outline: 'none' }}
+                        className={`min-w-0 flex-1 bg-transparent py-2 text-base font-medium text-on-surface placeholder:text-on-surface-variant/60 sm:text-lg ${
+                          isRTL ? 'text-right' : 'text-left'
+                        }`}
+                      />
+                      <button
+                        onClick={() => handleSearch()}
+                        disabled={!searchQuery.trim()}
+                        className={`group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold transition sm:px-8 ${
+                          searchQuery.trim()
+                            ? 'bg-gradient-to-r from-[#0a2f7e] to-primary text-white shadow-sm shadow-primary/15 hover:shadow-md hover:shadow-primary/20'
+                            : 'bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className="hidden sm:inline">{tx('button.search')}</span>
+                        <ArrowRight
+                          className={`h-4 w-4 transition-transform group-hover:translate-x-0.5 ${
+                            isRTL ? 'rotate-180 group-hover:-translate-x-0.5' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={handleSearch}
-                    className="px-10 py-4 bg-gradient-to-r from-primary-700 to-primary-900 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 group/btn shadow-lg"
-                    style={{ color: '#ffffff' }}
+                </div>
+
+                {/* Quick searches */}
+                <div className="scroll-reveal mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                  <span className="me-1 text-xs font-medium text-on-surface-variant">
+                    {tx('hero.popular')}
+                  </span>
+                  {quickSearches.map((item) => (
+                    <button
+                      key={item.query}
+                      onClick={() => {
+                        setSearchQuery(item.query);
+                        handleSearch(item.query);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant/60 bg-surface/80 px-3 py-1.5 text-xs font-medium text-on-surface-variant backdrop-blur-sm transition hover:border-primary/40 hover:text-primary"
+                    >
+                      {item.icon}
+                      <span>{item.query}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Action buttons */}
+                <div className="scroll-reveal mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+                  <Link
+                    href={`/${locale}/products`}
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0a2f7e] to-primary px-6 py-3.5 text-sm font-semibold text-white shadow-sm shadow-primary/15 transition hover:shadow-md hover:shadow-primary/20"
                   >
-                    <span className="relative" style={{
-                      textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                      color: '#ffffff'
-                    }}>
-                      {t('button.search')}
-                    </span>
-                    <ArrowRight
-                      className={`inline-block ${isRTL ? 'me-2 rotate-180' : 'ms-2'} w-5 h-5 group-hover/btn:translate-x-1 transition-transform`}
-                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}
-                    />
-                  </button>
+                    <ShoppingCart className="h-4 w-4" />
+                    <span>{tx('button.browseProducts')}</span>
+                  </Link>
+                  <Link
+                    href="#how-it-works"
+                    className="inline-flex items-center gap-2 rounded-full border border-outline-variant/60 bg-surface/80 px-6 py-3.5 text-sm font-semibold text-on-surface backdrop-blur-sm transition hover:border-primary/40 hover:text-primary"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                    <span>{tx('button.howItWorks')}</span>
+                  </Link>
                 </div>
               </div>
 
-              {/* Popular Searches */}
-              <div className="flex flex-wrap justify-center gap-3 mt-6">
-                <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 font-medium">
-                  <TrendingUp className="w-4 h-4" />
-                  {t('hero.popular')}
-                </span>
-                {[
-                  { name: 'iPhone 15 Pro', icon: '📱' },
-                  { name: 'Samsung S24', icon: '📱' },
-                  { name: 'MacBook Air', icon: '💻' },
-                  { name: 'AirPods Pro', icon: '🎧' },
-                ].map((term) => (
-                  <button
-                    key={term.name}
-                    onClick={() => {
-                      setSearchQuery(term.name);
-                      setTimeout(() => handleSearch(), 0);
-                    }}
-                    className="group/tag px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gradient-to-r hover:from-primary-50 hover:to-success-50 dark:hover:from-primary-900/50 dark:hover:to-success-900/50 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 transition-all shadow-sm hover:shadow-md hover:scale-105"
-                  >
-                    <span className={isRTL ? 'ms-2' : 'me-2'}>{term.icon}</span>
-                    {term.name}
-                  </button>
+              {/* ── Right: Floating Price Comparison Mockup ── */}
+              <div className="hidden lg:flex lg:items-center lg:justify-center">
+                <div className="mockup-float relative">
+                  {/* Glow behind card */}
+                  <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-primary/10 via-secondary/5 to-success/10 blur-3xl" />
+
+                  <div className="relative w-[340px] rounded-2xl border border-outline-variant/30 bg-surface/90 p-5 shadow-sm backdrop-blur-xl">
+                    {/* Product header */}
+                    <div className="flex items-center gap-3 border-b border-outline-variant/40 pb-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
+                        <Smartphone className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-on-surface">{isRTL ? 'آيفون 15 برو ماكس' : 'iPhone 15 Pro Max'}</p>
+                        <p className="text-xs text-on-surface-variant">{isRTL ? '256 جيجا · تيتانيوم طبيعي' : '256GB · Natural Titanium'}</p>
+                      </div>
+                    </div>
+
+                    {/* Store prices */}
+                    <div className="mt-4 space-y-2">
+                      {/* Best price */}
+                      <div className="flex items-center justify-between rounded-xl border border-success/20 bg-success/10 px-3.5 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-amber-500" />
+                          <span className="text-sm font-medium text-on-surface">Amazon.sa</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Check className="h-3.5 w-3.5 text-success" />
+                          <Price
+                            amount={4199}
+                            className="text-sm font-bold tabular-nums text-success"
+                            symbolClassName="h-3.5 w-3.5 fill-success"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-3.5 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium text-on-surface">Noon</span>
+                        </div>
+                        <Price
+                          amount={4399}
+                          className="text-sm font-medium tabular-nums text-on-surface-variant"
+                          symbolClassName="h-3.5 w-3.5"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-3.5 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4 text-rose-500" />
+                          <span className="text-sm font-medium text-on-surface">Jarir</span>
+                        </div>
+                        <Price
+                          amount={4599}
+                          className="text-sm font-medium tabular-nums text-on-surface-variant"
+                          symbolClassName="h-3.5 w-3.5"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Savings */}
+                    <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-success/10 px-4 py-3">
+                      <Percent className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-on-surface">{isRTL ? 'وفّر حتى' : 'Save up to'}</span>
+                      <Price
+                        amount={400}
+                        className="text-sm font-bold text-success"
+                        symbolClassName="h-3.5 w-3.5 fill-success"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Stats Floating Bar — Glass Morphism ─── */}
+        <div className="relative z-10 -mt-14">
+          <div className="container mx-auto px-4">
+            <div className="scroll-reveal mx-auto max-w-5xl rounded-2xl border border-outline-variant/40 bg-surface/70 p-6 shadow-sm backdrop-blur-xl sm:p-8">
+              <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+                {heroStats.map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <div className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      {stat.icon}
+                    </div>
+                    <p className="text-2xl font-bold tabular-nums text-on-surface">{stat.value}</p>
+                    <p className="text-xs text-on-surface-variant">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════
+            STORES — Infinite Marquee
+            ═══════════════════════════════════════════ */}
+        <section id="stores" className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="scroll-reveal mx-auto mb-12 max-w-2xl text-center">
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                <Store className="h-4 w-4" />
+                {tx('stores.title')}
+              </p>
+              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">{tx('stores.subtitle')}</h2>
+            </div>
+          </div>
+
+          {/* Marquee */}
+          <div className="marquee-container relative overflow-hidden px-4 py-4">
+            <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-16 bg-gradient-to-r from-surface to-transparent sm:w-24" />
+            <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-16 bg-gradient-to-l from-surface to-transparent sm:w-24" />
+
+            <div className={`marquee-track flex gap-5 ${isRTL ? 'marquee-rtl' : ''}`}>
+              {[...stores, ...stores].map((store, index) => (
+                <div
+                  key={`${store.name}-${index}`}
+                  className="group relative flex w-52 shrink-0 flex-col gap-4 overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 transition-transform duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-md dark:bg-surface-container"
+                  aria-hidden={index >= stores.length ? 'true' : undefined}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${store.tone} opacity-0 transition group-hover:opacity-100`} />
+                  <div className="relative z-10 flex flex-col gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-primary transition group-hover:scale-110 dark:bg-surface-container-high">
+                      <store.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-on-surface">{store.name}</p>
+                      <p className="text-sm text-on-surface-variant">{tx('features.trusted.stats')}</p>
+                    </div>
+                    <div className="inline-flex items-center gap-1 text-xs font-medium text-success">
+                      <Check className="h-4 w-4" />
+                      <span>{tx('features.trusted.title')}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════
+            FEATURES — Bento Grid
+            ═══════════════════════════════════════════ */}
+        <section id="features" className="py-24">
+          <div className="container mx-auto px-4">
+            <div className="scroll-reveal mx-auto mb-14 max-w-2xl text-center">
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-secondary/20 bg-secondary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
+                <Sparkles className="h-4 w-4" />
+                {tx('features.badge')}
+              </p>
+              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">
+                {tx('features.title')}{' '}
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {tx('features.titleBrand')}
+                </span>{' '}
+                {tx('features.titleEnd')}
+              </h2>
+              <p className="mt-4 text-base text-on-surface-variant sm:text-lg">{tx('features.subtitle')}</p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature, index) => (
+                <article
+                  key={feature.title}
+                  className="scroll-reveal group rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-md dark:bg-surface-container"
+                  style={{ '--reveal-delay': `${index * 80}ms` } as React.CSSProperties}
+                >
+                  <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${FEATURE_GRADIENTS[index]} text-white transition group-hover:scale-110`}>
+                    <feature.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-on-surface">{feature.title}</h3>
+                  <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">{feature.description}</p>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-outline-variant/50 bg-surface-container-low px-3 py-1.5 text-xs font-medium text-on-surface-variant">
+                    <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                    <span>{feature.stat}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════
+            HOW IT WORKS — Horizontal Timeline
+            ═══════════════════════════════════════════ */}
+        <section id="how-it-works" className="py-24">
+          <div className="container mx-auto px-4">
+            <div className="scroll-reveal mx-auto mb-14 max-w-2xl text-center">
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-success">
+                <Target className="h-4 w-4" />
+                {tx('howItWorks.badge')}
+              </p>
+              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">{tx('howItWorks.title')}</h2>
+              <p className="mt-4 text-base text-on-surface-variant sm:text-lg">{tx('howItWorks.subtitle')}</p>
+            </div>
+
+            {/* Desktop: Horizontal Timeline */}
+            <div className="hidden lg:block">
+              <div className="relative mx-auto max-w-5xl">
+                {/* Connecting dashed line */}
+                <div className="timeline-line absolute top-[3.5rem] h-[2px] border-t-2 border-dashed border-primary/30" style={{ insetInlineStart: '16.67%', insetInlineEnd: '16.67%' }} />
+
+                <div className="grid grid-cols-3 gap-8">
+                  {steps.map((step, index) => (
+                    <div key={step.step} className="scroll-reveal group relative text-center" style={{ '--reveal-delay': `${index * 150}ms` } as React.CSSProperties}>
+                      {/* Step number */}
+                      <div className="relative z-10 mx-auto mb-6 flex h-[7rem] w-[7rem] items-center justify-center rounded-3xl bg-gradient-to-br from-[#0a2f7e] to-primary text-4xl font-black text-white shadow-md shadow-primary/15 transition group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-primary/20">
+                        {step.step}
+                      </div>
+                      <div className="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <step.icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-bold text-on-surface">{step.title}</h3>
+                      <p className="mx-auto max-w-xs text-sm leading-relaxed text-on-surface-variant">{step.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: Vertical Timeline */}
+            <div className="lg:hidden">
+              <div className="relative space-y-8">
+                {/* Vertical dashed line */}
+                <div className="absolute bottom-0 top-0 w-[2px] border-s-2 border-dashed border-primary/30" style={{ insetInlineStart: '1.75rem' }} />
+
+                {steps.map((step, index) => (
+                  <div key={step.step} className="scroll-reveal relative flex gap-5" style={{ '--reveal-delay': `${index * 120}ms` } as React.CSSProperties}>
+                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0a2f7e] to-primary text-xl font-black text-white shadow-sm shadow-primary/15">
+                      {step.step}
+                    </div>
+                    <div className="pt-2">
+                      <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <step.icon className="h-4 w-4" />
+                      </div>
+                      <h3 className="mb-1 text-lg font-bold text-on-surface">{step.title}</h3>
+                      <p className="text-sm leading-relaxed text-on-surface-variant">{step.description}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* Dual CTAs with Enhanced Design */}
-            <div
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
-              style={{ animation: 'fadeInUp 0.6s ease-out 0.8s backwards' }}
-            >
+            <div className="scroll-reveal mt-12 text-center">
               <Link
-                href={`/${locale}/products`}
-                className="group/cta relative px-12 py-5 bg-gradient-to-r from-primary-700 to-primary-900 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 overflow-hidden shadow-lg"
-                style={{ color: '#ffffff' }}
+                href={user ? `/${locale}/dashboard` : `/${locale}/auth/signup`}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0a2f7e] to-primary px-7 py-3.5 text-sm font-semibold text-white shadow-sm shadow-primary/15 transition hover:shadow-md hover:shadow-primary/20"
               >
-                <span className="relative z-10 flex items-center gap-3" style={{
-                  textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                  color: '#ffffff'
-                }}>
-                  <ShoppingCart className="w-6 h-6 group-hover/cta:scale-110 transition-transform" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-                  {t('button.browseProducts')}
-                  <ArrowRight className={`w-5 h-5 group-hover/cta:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-800 to-primary-950 opacity-0 group-hover/cta:opacity-100 transition duration-300" />
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="group/cta px-12 py-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700 rounded-2xl font-bold text-lg hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-3"
-              >
-                <span>{t('button.howItWorks')}</span>
-                <ChevronDown className="w-5 h-5 animate-bounce" />
+                <span>{tx('button.startSavingNow')}</span>
+                <ArrowRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
               </Link>
             </div>
+          </div>
+        </section>
 
-            {/* Enhanced Social Proof with Glassmorphism */}
-            <div
-              className="flex flex-wrap justify-center items-center gap-6 pt-12"
-              style={{ animation: 'fadeInUp 0.6s ease-out 1s backwards' }}
-            >
-              {[
-                {
-                  icon: <Users className="w-6 h-6" />,
-                  value: '+100K',
-                  label: t('stats.activeUsers'),
-                  color: 'from-primary-500 to-primary-700'
-                },
-                {
-                  icon: <Star className="w-6 h-6" />,
-                  value: '4.9',
-                  label: t('stats.rating'),
-                  color: 'from-featured-500 to-featured-700'
-                },
-                {
-                  icon: <ShoppingCart className="w-6 h-6" />,
-                  value: '+5',
-                  label: t('stats.trustedStores'),
-                  color: 'from-warning-500 to-warning-700'
-                },
-                {
-                  icon: <Gift className="w-6 h-6" />,
-                  value: '60%',
-                  label: t('stats.avgSavings'),
-                  color: 'from-success-500 to-success-700'
-                },
-              ].map((stat, idx) => (
-                <div
-                  key={idx}
-                  className="group/stat relative px-6 py-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-200 dark:border-gray-700"
-                  style={{ animation: `fadeInUp 0.6s ease-out ${1 + idx * 0.1}s backwards` }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 bg-gradient-to-br ${stat.color} rounded-xl text-white group-hover/stat:scale-110 group-hover/stat:rotate-6 transition-all duration-300 shadow-lg`}>
-                      {stat.icon}
-                    </div>
-                    <div className={isRTL ? 'text-right' : 'text-left'}>
-                      <div className="text-3xl font-black text-gray-900 dark:text-white">
-                        {stat.value}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        {stat.label}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Hover glow effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover/stat:opacity-10 dark:group-hover/stat:opacity-20 rounded-2xl transition duration-300`} />
-                </div>
-              ))}
+        {/* ═══════════════════════════════════════════
+            TESTIMONIALS — Stacked Cards
+            ═══════════════════════════════════════════ */}
+        <section id="testimonials" className="py-24">
+          <div className="container mx-auto px-4">
+            <div className="scroll-reveal mx-auto mb-14 max-w-2xl text-center">
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                <Award className="h-4 w-4" />
+                {tx('testimonials.badge')}
+              </p>
+              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">
+                {tx('testimonials.title')}{' '}
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {tx('testimonials.titleBrand')}
+                </span>{' '}
+                {tx('testimonials.titleEnd')}
+              </h2>
+              <p className="mt-4 text-base text-on-surface-variant sm:text-lg">{tx('testimonials.subtitle')}</p>
             </div>
-          </div>
-        </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 start-1/2 transform -translate-x-1/2">
-          <div className="flex flex-col items-center gap-2 text-primary-400 dark:text-primary-600 animate-bounce">
-            <ChevronDown className="w-6 h-6" />
-            <ChevronDown className="w-6 h-6 -mt-4 opacity-50" />
-          </div>
-        </div>
-      </section>
-
-      {/* Trusted Stores - Enhanced */}
-      <section id="stores" className="py-20 bg-white dark:bg-gray-900 border-y border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
-              <span className="text-sm font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
-                {t('stores.title')}
-              </span>
-            </div>
-            <h3 className="text-4xl font-black text-gray-900 dark:text-white">
-              {t('stores.subtitle')}
-            </h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-            {[
-              { name: 'Extra', logo: '🛒', color: 'from-warning-500 to-warning-700' },
-              { name: 'Jarir', logo: '📚', color: 'from-primary-500 to-primary-700' },
-              { name: 'Noon', logo: '🌙', color: 'from-featured-500 to-featured-700' },
-              { name: 'Amazon.sa', logo: '📦', color: 'from-success-500 to-success-700' },
-              { name: 'Almanea', logo: '🏪', color: 'from-primary-600 to-success-600' },
-            ].map((store, idx) => (
-              <div
-                key={store.name}
-                className="group relative flex flex-col items-center gap-4 p-8 rounded-2xl bg-white dark:bg-gray-800 hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border border-gray-200 dark:border-gray-700 cursor-pointer"
-                style={{ animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s backwards` }}
-              >
-                <div className="text-6xl filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-125 group-hover:rotate-12">
-                  {store.logo}
-                </div>
-                <span className="text-xl font-bold text-gray-700 dark:text-gray-300 transition duration-300">
-                  {store.name}
-                </span>
-                <div className={`absolute inset-0 bg-gradient-to-br ${store.color} opacity-0 group-hover:opacity-15 dark:group-hover:opacity-20 rounded-2xl transition duration-300`} />
-                <div className="absolute -top-2 -end-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-8 h-8 bg-success-500 rounded-full flex items-center justify-center shadow-lg">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features - Enhanced with Better Dark Mode */}
-      <section id="features" className="py-32 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
-            <div className="inline-block px-6 py-3 bg-gradient-to-r from-primary-100 to-success-100 dark:from-primary-900/40 dark:to-success-900/40 rounded-full mb-4 border border-primary-200 dark:border-primary-700">
-              <span className="text-sm font-bold text-primary-600 dark:text-primary-400 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                {t('features.badge')}
-              </span>
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6">
-              {t('features.title')}{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-success-600 bg-clip-text text-transparent">
-                {t('features.titleBrand')}
-              </span>
-              {' '}{t('features.titleEnd')}
-            </h2>
-            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-              {t('features.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Zap className="w-10 h-10" />,
-                title: t('features.instant.title'),
-                description: t('features.instant.description'),
-                gradient: 'from-featured-400 to-featured-600',
-                stats: t('features.instant.stats'),
-              },
-              {
-                icon: <Bell className="w-10 h-10" />,
-                title: t('features.alerts.title'),
-                description: t('features.alerts.description'),
-                gradient: 'from-warning-400 to-warning-600',
-                stats: t('features.alerts.stats'),
-              },
-              {
-                icon: <Shield className="w-10 h-10" />,
-                title: t('features.trusted.title'),
-                description: t('features.trusted.description'),
-                gradient: 'from-success-400 to-success-600',
-                stats: t('features.trusted.stats'),
-              },
-              {
-                icon: <BarChart3 className="w-10 h-10" />,
-                title: t('features.analytics.title'),
-                description: t('features.analytics.description'),
-                gradient: 'from-primary-400 to-primary-600',
-                stats: t('features.analytics.stats'),
-              },
-              {
-                icon: <Heart className="w-10 h-10" />,
-                title: t('features.wishlist.title'),
-                description: t('features.wishlist.description'),
-                gradient: 'from-warning-400 to-warning-600',
-                stats: t('features.wishlist.stats'),
-              },
-              {
-                icon: <Gift className="w-10 h-10" />,
-                title: t('features.deals.title'),
-                gradient: 'from-success-400 to-success-600',
-                description: t('features.deals.description'),
-                stats: t('features.deals.stats'),
-              },
-            ].map((feature, idx) => (
-              <div
-                key={idx}
-                className="group relative"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s backwards`,
-                }}
-              >
-                {/* Glow effect on hover */}
-                <div className={`absolute -inset-1 bg-gradient-to-r ${feature.gradient} rounded-3xl opacity-0 group-hover:opacity-100 blur-xl transition duration-500`} />
-
-                {/* Card content */}
-                <div className="relative h-full p-8 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-transparent transition duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 overflow-hidden">
-                  {/* Background gradient on hover */}
-                  <div className={`absolute top-0 end-0 w-32 h-32 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-full filter blur-3xl transition duration-500`} />
-
-                  <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${feature.gradient} text-white mb-6 group-hover:scale-110 transition-all duration-300 shadow-xl relative z-10`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 transition duration-300 relative z-10">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6 relative z-10">
-                    {feature.description}
-                  </p>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full relative z-10">
-                    <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${feature.gradient} animate-pulse`} />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      {feature.stats}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works - Enhanced */}
-      <section id="how-it-works" className="py-32 bg-gradient-to-br from-blue-50 via-green-50 to-amber-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
-            <div className="inline-block px-6 py-3 bg-white dark:bg-gray-900 backdrop-blur-sm rounded-full mb-4 border border-gray-200 dark:border-gray-700">
-              <span className="text-sm font-bold bg-gradient-to-r from-primary-600 to-success-600 bg-clip-text text-transparent flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                {t('howItWorks.badge')}
-              </span>
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6">
-              {t('howItWorks.title')}
-            </h2>
-            <p className="text-xl text-gray-800 dark:text-gray-300">
-              {t('howItWorks.subtitle')}
-            </p>
-          </div>
-
-          <div className="relative max-w-5xl mx-auto">
-            {/* Connection line */}
-            <div className="hidden md:block absolute top-1/2 start-0 end-0 h-1 bg-gradient-to-r from-primary-300 via-success-300 to-featured-300 dark:from-primary-700 dark:via-success-700 dark:to-featured-700 transform -translate-y-1/2" />
-
-            <div className="grid md:grid-cols-3 gap-8 relative">
-              {[
-                {
-                  step: '01',
-                  title: t('howItWorks.step1.title'),
-                  description: t('howItWorks.step1.description'),
-                  icon: <Search className="w-16 h-16" />,
-                  color: 'from-primary-500 to-primary-700',
-                },
-                {
-                  step: '02',
-                  title: t('howItWorks.step2.title'),
-                  description: t('howItWorks.step2.description'),
-                  icon: <BarChart3 className="w-16 h-16" />,
-                  color: 'from-success-500 to-success-700',
-                },
-                {
-                  step: '03',
-                  title: t('howItWorks.step3.title'),
-                  description: t('howItWorks.step3.description'),
-                  icon: <Gift className="w-16 h-16" />,
-                  color: 'from-featured-500 to-featured-700',
-                },
-              ].map((step, idx) => (
-                <div
-                  key={idx}
-                  className="relative group"
-                  style={{
-                    animation: `fadeInUp 0.6s ease-out ${idx * 0.2}s backwards`,
-                  }}
-                >
-                  {/* Step number badge */}
-                  <div className="absolute -top-6 start-1/2 transform -translate-x-1/2 z-10">
-                    <div className={`relative w-16 h-16 bg-gradient-to-br ${step.color} rounded-full flex items-center justify-center text-white font-black text-2xl shadow-2xl group-hover:scale-125 transition-all duration-300`}>
-                      {idx + 1}
-                      <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-30 transition duration-300" />
+            <div className="grid gap-6 lg:grid-cols-3">
+              {testimonials.map((testimonial, index) => {
+                const rotation = index === 0 ? 'lg:-rotate-2' : index === 2 ? 'lg:rotate-2' : '';
+                return (
+                  <article
+                    key={testimonial.name}
+                    className={`scroll-reveal group rounded-2xl border border-outline-variant/50 bg-surface/80 p-6 backdrop-blur-sm transition-all duration-300 hover:rotate-0 hover:-translate-y-2 hover:shadow-md ${rotation}`}
+                    style={{ '--reveal-delay': `${index * 100}ms` } as React.CSSProperties}
+                  >
+                    {/* Star rating — gold gradient */}
+                    <div className="mb-4 flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, starIndex) => (
+                        <Star key={starIndex} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      ))}
                     </div>
-                  </div>
 
-                  {/* Card */}
-                  <div className="mt-8 p-8 bg-white dark:bg-gray-900 backdrop-blur-xl rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:-translate-y-4 border border-gray-200 dark:border-gray-800">
-                    <div className={`mx-auto w-24 h-24 bg-gradient-to-br ${step.color} rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-xl`}>
-                      {step.icon}
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 text-center">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-700 dark:text-gray-300 text-center leading-relaxed">
-                      {step.description}
+                    <p className="mb-6 text-sm leading-relaxed text-on-surface-variant">
+                      &ldquo;{testimonial.comment}&rdquo;
                     </p>
 
-                    {/* Arrow to next step */}
-                    {idx < 2 && (
-                      <div className={`hidden md:block absolute top-1/2 ${isRTL ? 'start-auto -end-12' : '-end-12'} transform -translate-y-1/2 text-primary-400 dark:text-primary-600 animate-pulse`}>
-                        <ArrowRight className={`w-8 h-8 ${isRTL ? 'rotate-180' : ''}`} />
+                    {/* Author */}
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${AVATAR_GRADIENTS[index]} text-sm font-bold text-white`}>
+                        {testimonial.name.charAt(0)}
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-center mt-16">
-            <Link
-              href="/auth/signup"
-              className="inline-flex items-center gap-3 px-12 py-5 bg-gradient-to-r from-primary-700 to-success-700 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-primary-600/30 dark:hover:shadow-primary-600/20 transform hover:scale-105 transition-all duration-300 shadow-lg"
-              style={{ color: '#ffffff' }}
-            >
-              <span className="relative" style={{
-                textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 2px rgba(0,0,0,0.8)',
-                color: '#ffffff'
-              }}>
-                {t('button.startSavingNow')}
-              </span>
-              <Sparkles className="w-6 h-6 animate-pulse" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Counter - Enhanced with Dark Mode */}
-      <section className="py-24 bg-gradient-to-r from-primary-50 via-success-50 to-primary-50 dark:from-primary-600 dark:via-success-600 dark:to-primary-600 relative overflow-hidden">
-        {/* Animated background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 start-0 w-full h-full" style={{
-            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
-            animation: 'moveBackground 20s linear infinite'
-          }} />
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            {[
-              {
-                value: '100K+',
-                label: t('stats.happyUsers'),
-                icon: <Users className="w-12 h-12 mx-auto mb-4 text-primary-600 dark:text-white" />
-              },
-              {
-                value: '5+',
-                label: t('stats.trustedStores'),
-                icon: <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-success-600 dark:text-white" />
-              },
-              {
-                value: '50K+',
-                label: t('stats.products'),
-                icon: <BarChart3 className="w-12 h-12 mx-auto mb-4 text-primary-600 dark:text-white" />
-              },
-              {
-                value: '60%',
-                label: t('stats.avgSavings'),
-                icon: <TrendingUp className="w-12 h-12 mx-auto mb-4 text-success-600 dark:text-white" />
-              },
-            ].map((stat, idx) => (
-              <div
-                key={idx}
-                className="group transform hover:scale-110 transition-transform duration-300"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s backwards`,
-                }}
-              >
-                <div className="group-hover:animate-bounce">
-                  {stat.icon}
-                </div>
-                <div className="text-6xl md:text-7xl font-black mb-3 drop-shadow-lg text-gray-900 dark:text-white">
-                  {stat.value}
-                </div>
-                <div className="text-xl font-semibold text-gray-700 dark:text-white/90">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Decorative blobs */}
-        <div className="absolute top-0 start-0 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full filter blur-3xl" />
-        <div className="absolute bottom-0 end-0 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full filter blur-3xl" />
-      </section>
-
-      {/* Testimonials - Enhanced */}
-      <section id="testimonials" className="py-32 bg-white dark:bg-gray-950">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
-            <div className="inline-block px-6 py-3 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4 border border-primary-200 dark:border-primary-700">
-              <span className="text-sm font-bold text-primary-600 dark:text-primary-400 flex items-center gap-2">
-                <Award className="w-4 h-4" />
-                {t('testimonials.badge')}
-              </span>
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6">
-              {t('testimonials.title')}{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-success-600 bg-clip-text text-transparent">
-                {t('testimonials.titleBrand')}
-              </span>
-              {' '}{locale === 'en' && t('testimonials.titleEnd')}
-            </h2>
-            <p className="text-xl text-gray-700 dark:text-gray-300">
-              {t('testimonials.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: t('testimonials.user1.name'),
-                role: t('testimonials.user1.role'),
-                avatar: locale === 'ar' ? 'أ' : 'A',
-                comment: t('testimonials.user1.comment'),
-                rating: 5,
-                saved: t('testimonials.user1.saved'),
-              },
-              {
-                name: t('testimonials.user2.name'),
-                role: t('testimonials.user2.role'),
-                avatar: locale === 'ar' ? 'س' : 'S',
-                comment: t('testimonials.user2.comment'),
-                rating: 5,
-                saved: t('testimonials.user2.saved'),
-              },
-              {
-                name: t('testimonials.user3.name'),
-                role: t('testimonials.user3.role'),
-                avatar: locale === 'ar' ? 'خ' : 'K',
-                comment: t('testimonials.user3.comment'),
-                rating: 5,
-                saved: t('testimonials.user3.saved'),
-              },
-            ].map((testimonial, idx) => (
-              <div
-                key={idx}
-                className="group relative p-8 bg-white dark:bg-gray-900 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border border-gray-200 dark:border-gray-800"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s backwards`,
-                }}
-              >
-                {/* Quote mark */}
-                <div className={`absolute top-8 ${isRTL ? 'start-8' : 'end-8'} text-6xl text-primary-200 dark:text-primary-900 opacity-50`}>
-                  "
-                </div>
-
-                {/* Rating stars */}
-                <div className="flex gap-1 mb-6">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-featured-400 text-featured-400" />
-                  ))}
-                </div>
-
-                {/* Comment */}
-                <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed relative z-10 italic">
-                  "{testimonial.comment}"
-                </p>
-
-                {/* User info */}
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-success-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                    {testimonial.avatar}
-                  </div>
-                  <div className={isRTL ? 'text-right' : 'text-left'}>
-                    <div className="font-bold text-lg text-gray-900 dark:text-white">
-                      {testimonial.name}
+                      <div>
+                        <p className="text-sm font-semibold text-on-surface">{testimonial.name}</p>
+                        <p className="text-xs text-on-surface-variant">{testimonial.role}</p>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {testimonial.role}
+
+                    {/* Savings badge with pulse */}
+                    <div className="savings-pulse inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1.5">
+                      <Percent className="h-4 w-4 text-success" />
+                      <span className="text-xs font-medium text-on-surface-variant">{tx('testimonials.saved')}</span>
+                      <Price
+                        amount={testimonial.saved}
+                        className="text-sm font-semibold text-success"
+                        symbolClassName="h-4 w-4 fill-success"
+                      />
                     </div>
-                  </div>
-                </div>
-
-                {/* Savings badge */}
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-success-100 dark:bg-success-900/30 rounded-full border border-success-200 dark:border-success-800">
-                  <Percent className="w-4 h-4 text-success-600 dark:text-success-400" />
-                  <span className="text-sm font-bold text-success-700 dark:text-success-300 flex items-center gap-1">
-                    {t('testimonials.saved')} <Price amount={parseFloat(testimonial.saved.replace(',', ''))} className="inline text-sm font-bold" symbolClassName="w-5 h-5" />
-                  </span>
-                </div>
-              </div>
-            ))}
+                  </article>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Final CTA - Enhanced */}
-      <section className="relative py-32 bg-gradient-to-br from-primary-50 via-success-50 to-primary-50 dark:from-primary-600 dark:via-success-600 dark:to-primary-600 overflow-hidden">
-        {/* Animated blobs */}
-        <div className="absolute inset-0">
-          <div className="absolute top-0 start-0 w-96 h-96 bg-white/20 dark:bg-white/10 rounded-full filter blur-3xl animate-blob" />
-          <div className="absolute bottom-0 end-0 w-96 h-96 bg-white/20 dark:bg-white/10 rounded-full filter blur-3xl animate-blob animation-delay-2000" />
-          <div className="absolute top-1/2 start-1/2 w-96 h-96 bg-white/10 dark:bg-white/5 rounded-full filter blur-3xl animate-blob animation-delay-4000" />
-        </div>
+        {/* ═══════════════════════════════════════════
+            CTA — Full-Bleed Gradient
+            ═══════════════════════════════════════════ */}
+        <section className="relative overflow-hidden py-24">
+          {/* Gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#071a3e] via-[#0a2f7e] to-primary" />
 
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <div className="text-6xl animate-bounce">
-              ⭐✨💰
-            </div>
+          {/* Floating decorative circles */}
+          <div className="pointer-events-none absolute -start-20 top-10 h-72 w-72 rounded-full bg-white/[0.06] blur-3xl" />
+          <div className="pointer-events-none absolute -end-20 bottom-10 h-56 w-56 rounded-full bg-white/[0.06] blur-3xl" />
+          <div className="pointer-events-none absolute end-1/3 top-1/4 h-40 w-40 rounded-full bg-secondary/20 blur-3xl" />
 
-            <h2 className="text-5xl md:text-7xl font-black leading-tight text-gray-900 dark:text-white">
-              {t('cta.title')}
-            </h2>
-
-            <p className="text-2xl md:text-3xl text-gray-700 dark:text-white/90 font-light">
-              {t('cta.subtitle')}{' '}
-              <span className="font-bold text-gray-900 dark:text-white">{t('cta.subtitleBold')}</span>{' '}
-              {t('cta.subtitleEnd')}
-            </p>
-
-            {/* Benefits badges */}
-            <div className="flex flex-wrap justify-center gap-4 py-8">
-              {[
-                { text: t('cta.benefit1'), icon: <Check className="w-5 h-5" /> },
-                { text: t('cta.benefit2'), icon: <Shield className="w-5 h-5" /> },
-                { text: t('cta.benefit3'), icon: <Zap className="w-5 h-5" /> },
-                { text: t('cta.benefit4'), icon: <Gift className="w-5 h-5" /> },
-              ].map((benefit, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-white/20 backdrop-blur-sm rounded-full text-lg font-semibold border border-gray-200 dark:border-white/30 hover:bg-gray-50 dark:hover:bg-white/30 transition-all hover:scale-105 text-gray-700 dark:text-white"
-                >
-                  {benefit.icon}
-                  {benefit.text}
-                </div>
-              ))}
-            </div>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center pt-4">
-              {!authLoading && user ? (
-                <Link
-                  href={`/${locale}/dashboard`}
-                  className="group relative px-16 py-6 bg-gradient-to-r from-primary-600 to-primary-800 dark:bg-white text-white dark:text-primary-600 rounded-2xl font-black text-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center gap-3">
-                    Go to Dashboard
-                    <Sparkles className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-success-600 dark:from-primary-50 dark:to-success-50 opacity-0 group-hover:opacity-100 transition duration-300" />
-                </Link>
-              ) : (
-                <Link
-                  href={`/${locale}/auth/signup`}
-                  className="group relative px-16 py-6 bg-gradient-to-r from-primary-600 to-primary-800 dark:bg-white text-white dark:text-primary-600 rounded-2xl font-black text-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center gap-3">
-                    {t('button.startFreeNow')}
-                    <Sparkles className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-success-600 dark:from-primary-50 dark:to-success-50 opacity-0 group-hover:opacity-100 transition duration-300" />
-                </Link>
-              )}
-              <Link
-                href={`/${locale}/products`}
-                className="px-16 py-6 bg-transparent border-3 border-primary-600 dark:border-white text-primary-600 dark:text-white rounded-2xl font-black text-xl hover:bg-primary-600 hover:text-white dark:hover:bg-white dark:hover:text-primary-600 transition-all duration-300 flex items-center gap-3 justify-center hover:scale-105 transform"
-              >
-                {t('button.browseProductsShort')}
-                <ArrowRight className={`w-6 h-6 ${isRTL ? 'rotate-180' : ''}`} />
-              </Link>
-            </div>
-
-            {/* Security badge */}
-            <div className="pt-8">
-              <p className="text-sm text-gray-600 dark:text-white/80 flex items-center justify-center gap-2">
-                <Shield className="w-5 h-5" />
-                <span>{t('cta.security')}</span>
+          <div className="container relative z-10 mx-auto px-4">
+            <div className="scroll-reveal mx-auto max-w-3xl text-center">
+              <h2 className="text-balance text-3xl font-black text-white sm:text-5xl">
+                {tx('cta.title')}
+              </h2>
+              <p className="mt-5 text-base text-white/75 sm:text-lg">
+                {tx('cta.subtitle')}{' '}
+                <span className="font-semibold text-white">{tx('cta.subtitleBold')}</span>{' '}
+                {tx('cta.subtitleEnd')}
               </p>
+
+              {/* Benefits */}
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {[tx('cta.benefit1'), tx('cta.benefit2'), tx('cta.benefit3'), tx('cta.benefit4')].map(
+                  (benefit) => (
+                    <div
+                      key={benefit}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.07] px-4 py-2.5 text-sm text-white/90 backdrop-blur-sm"
+                    >
+                      <Check className="h-4 w-4 text-emerald-400" />
+                      <span>{benefit}</span>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Buttons — inverted style */}
+              <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+                {authLoading ? (
+                  <div className="h-12 w-48 animate-pulse rounded-full bg-white/20" />
+                ) : user ? (
+                  <Link
+                    href={`/${locale}/dashboard`}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-primary shadow-sm transition hover:bg-white/90"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>{menuCopy.dashboard}</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/${locale}/auth/signup`}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-primary shadow-sm transition hover:bg-white/90"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>{tx('button.startFreeNow')}</span>
+                  </Link>
+                )}
+                <Link
+                  href={`/${locale}/products`}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-white/25 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>{tx('button.browseProductsShort')}</span>
+                </Link>
+              </div>
+
+              <div className="mt-7 inline-flex items-center gap-2 text-xs text-white/60">
+                <Lock className="h-4 w-4" />
+                <span>{tx('cta.security')}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Footer - Enhanced with Dark Mode */}
-      <footer className="bg-gray-50 dark:bg-gray-900 py-16 border-t border-gray-200 dark:border-gray-800">
+      {/* ═══════════════════════════════════════════
+          FOOTER — Modernized
+          ═══════════════════════════════════════════ */}
+      <footer className="border-t border-outline-variant bg-surface-container py-16">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
+          <div className="grid gap-10 md:grid-cols-4">
             {/* Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-success-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                  {t('app.initial')}
+            <div>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0a2f7e] to-primary text-lg font-black text-white">
+                  {tx('app.initial')}
                 </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-success-600 dark:from-primary-400 dark:to-success-400 bg-clip-text text-transparent">
-                  {t('app.name')}
-                </span>
+                <span className="text-lg font-bold text-on-surface">{tx('app.name')}</span>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                {t('footer.description')}
-              </p>
+              <p className="text-sm leading-relaxed text-on-surface-variant">{tx('footer.description')}</p>
             </div>
 
             {/* Quick Links */}
             <div>
-              <h4 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
-                {t('footer.quickLinks')}
-              </h4>
-              <ul className="space-y-3 text-gray-600 dark:text-gray-400">
-                {[
-                  { href: `/${locale}/products`, label: t('footer.products') },
-                  { href: `/${locale}/stores`, label: t('footer.stores') },
-                  { href: `/${locale}/deals`, label: t('footer.deals') },
-                  { href: '/about', label: t('footer.about') },
-                ].map((link) => (
-                  <li key={link.href}>
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
+                {tx('footer.quickLinks')}
+              </h3>
+              <ul className="space-y-3">
+                {footerPrimary.map((item) => (
+                  <li key={item.href}>
                     <Link
-                      href={link.href}
-                      className="hover:text-primary-600 dark:hover:text-primary-400 transition flex items-center gap-2 group"
+                      href={item.href}
+                      className="inline-flex items-center gap-2 text-sm text-on-surface-variant transition hover:text-primary"
                     >
-                      <ArrowRight className={`w-4 h-4 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} />
-                      {link.label}
+                      <ArrowRight className={`h-3.5 w-3.5 ${isRTL ? 'rotate-180' : ''}`} />
+                      <span>{item.label}</span>
                     </Link>
                   </li>
                 ))}
@@ -1020,23 +1052,18 @@ export default function LandingPageClient() {
 
             {/* Support */}
             <div>
-              <h4 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
-                {t('footer.support')}
-              </h4>
-              <ul className="space-y-3 text-gray-600 dark:text-gray-400">
-                {[
-                  { href: '/help', label: t('footer.helpCenter') },
-                  { href: '/contact', label: t('footer.contact') },
-                  { href: '/privacy', label: t('footer.privacy') },
-                  { href: '/terms', label: t('footer.terms') },
-                ].map((link) => (
-                  <li key={link.href}>
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
+                {tx('footer.support')}
+              </h3>
+              <ul className="space-y-3">
+                {footerSupport.map((item) => (
+                  <li key={item.href}>
                     <Link
-                      href={link.href}
-                      className="hover:text-primary-600 dark:hover:text-primary-400 transition flex items-center gap-2 group"
+                      href={item.href}
+                      className="inline-flex items-center gap-2 text-sm text-on-surface-variant transition hover:text-primary"
                     >
-                      <ArrowRight className={`w-4 h-4 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} />
-                      {link.label}
+                      <ArrowRight className={`h-3.5 w-3.5 ${isRTL ? 'rotate-180' : ''}`} />
+                      <span>{item.label}</span>
                     </Link>
                   </li>
                 ))}
@@ -1045,51 +1072,91 @@ export default function LandingPageClient() {
 
             {/* Newsletter */}
             <div>
-              <h4 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
-                {t('footer.newsletter')}
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {t('footer.newsletterDescription')}
-              </p>
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
+                {tx('footer.newsletter')}
+              </h3>
+              <p className="mb-4 text-sm text-on-surface-variant">{tx('footer.newsletterDescription')}</p>
               <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder={t('footer.emailPlaceholder')}
-                  className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 transition text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-300 dark:border-gray-700"
-                />
-                <button className="px-6 py-3 bg-gradient-to-r from-primary-600 to-success-600 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all">
-                  {t('button.subscribe')}
+                <div className="relative flex-1">
+                  <Mail className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant ${isRTL ? 'right-3' : 'left-3'}`} />
+                  <input
+                    type="email"
+                    placeholder={tx('footer.emailPlaceholder')}
+                    className={`w-full rounded-xl border border-outline-variant bg-surface px-3 py-2.5 text-sm text-on-surface outline-none transition focus:border-primary focus:shadow-[0_0_0_3px_rgba(13,71,161,0.15)] ${isRTL ? 'pr-9' : 'pl-9'}`}
+                  />
+                </div>
+                <button className="rounded-xl bg-gradient-to-r from-[#0a2f7e] to-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md hover:shadow-primary/15">
+                  {tx('button.subscribe')}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-600 dark:text-gray-400 text-center md:text-start">
-              {t('footer.copyright')}
-            </p>
-            <div className="flex gap-4">
-              {['𝕏', 'in', 'f', '📷'].map((social, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className="w-12 h-12 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 hover:bg-gradient-to-br hover:from-primary-600 hover:to-success-600 hover:border-transparent rounded-xl flex items-center justify-center transition transform hover:scale-110 hover:-translate-y-1 text-gray-700 dark:text-white hover:text-white"
+          <div className="mt-12 flex flex-col gap-4 border-t border-outline-variant/60 pt-8 text-sm text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
+            <p>{tx('footer.copyright')}</p>
+            <div className="flex items-center gap-3">
+              {[Globe, Mail, Shield].map((Icon, i) => (
+                <span
+                  key={i}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-outline-variant/50 bg-surface text-on-surface-variant transition hover:border-primary/40 hover:text-primary"
                 >
-                  <span className="text-xl">{social}</span>
-                </a>
+                  <Icon className="h-4 w-4" />
+                </span>
               ))}
             </div>
           </div>
         </div>
       </footer>
 
-      {/* Custom Animations */}
+      {/* ═══════════════════════════════════════════
+          ANIMATIONS
+          ═══════════════════════════════════════════ */}
       <style jsx>{`
-        @keyframes fadeInUp {
+        /* ── Pointer cursor on all clickable elements ── */
+        button:not(:disabled),
+        a,
+        [role="button"] {
+          cursor: pointer;
+        }
+
+        /* ── Animated gradient mesh background ── */
+        .gradient-mesh {
+          background:
+            radial-gradient(ellipse 60% 50% at 20% 20%, rgba(13, 71, 161, 0.15), transparent 50%),
+            radial-gradient(ellipse 50% 60% at 80% 15%, rgba(16, 185, 129, 0.12), transparent 45%),
+            radial-gradient(ellipse 55% 45% at 50% 80%, rgba(79, 70, 229, 0.12), transparent 50%);
+          animation: gradient-shift 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes gradient-shift {
+          0% {
+            background-position: 0% 0%, 100% 0%, 50% 100%;
+          }
+          50% {
+            background-position: 30% 20%, 70% 30%, 40% 70%;
+          }
+          100% {
+            background-position: 10% 40%, 90% 10%, 60% 90%;
+          }
+        }
+
+        /* ── Scroll reveal animation ── */
+        .scroll-reveal {
+          opacity: 0;
+          transform: translateY(24px);
+          transition: opacity 0.01s, transform 0.01s;
+        }
+
+        .scroll-reveal.revealed {
+          animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation-delay: var(--reveal-delay, 0ms);
+        }
+
+        @keyframes reveal-up {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(24px);
           }
           to {
             opacity: 1;
@@ -1097,77 +1164,138 @@ export default function LandingPageClient() {
           }
         }
 
-        @keyframes blob {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          25% {
-            transform: translate(20px, -50px) scale(1.1);
-          }
-          50% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          75% {
-            transform: translate(50px, 50px) scale(1.05);
-          }
+        /* ── Floating mockup card ── */
+        .mockup-float {
+          animation: float 6s ease-in-out infinite;
         }
 
-        @keyframes gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
         }
 
-        @keyframes gradient-x {
-          0% {
-            background-position: 0% 50%;
+        /* ── Shimmer effect for badges ── */
+        .shimmer-badge::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.15) 50%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 3s ease-in-out infinite;
+          border-radius: inherit;
+        }
+
+        /* ── Shimmer effect for CTA buttons ── */
+        .shimmer-btn::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 2.5s ease-in-out infinite;
+          border-radius: inherit;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+
+        /* ── Search bar glowing border ── */
+        .search-glow-border {
+          background: linear-gradient(
+            135deg,
+            rgba(13, 71, 161, 0.5),
+            rgba(79, 70, 229, 0.3),
+            rgba(16, 185, 129, 0.3),
+            rgba(13, 71, 161, 0.5)
+          );
+          background-size: 300% 300%;
+          animation: glow-rotate 4s ease infinite;
+        }
+
+        @keyframes glow-rotate {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        /* ── Marquee ── */
+        .marquee-track {
+          animation: marquee-ltr 30s linear infinite;
+          width: max-content;
+        }
+
+        .marquee-rtl {
+          animation-name: marquee-rtl;
+        }
+
+        .marquee-container:hover .marquee-track {
+          animation-play-state: paused;
+        }
+
+        @keyframes marquee-ltr {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+
+        @keyframes marquee-rtl {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(50%); }
+        }
+
+        /* ── Timeline connecting line animation ── */
+        .timeline-line {
+          background-image: repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 6px,
+            rgba(13, 71, 161, 0.3) 6px,
+            rgba(13, 71, 161, 0.3) 12px
+          );
+        }
+
+        /* ── Savings badge pulse ── */
+        .savings-pulse {
+          animation: pulse-soft 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-soft {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.15); }
+          50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        }
+
+        /* ── Reduced motion ── */
+        @media (prefers-reduced-motion: reduce) {
+          .gradient-mesh,
+          .mockup-float,
+          .shimmer-badge::after,
+          .shimmer-btn::after,
+          .search-glow-border,
+          .marquee-track,
+          .savings-pulse {
+            animation: none !important;
           }
-          50% {
-            background-position: 100% 50%;
+
+          .scroll-reveal {
+            opacity: 1 !important;
+            transform: none !important;
           }
-          100% {
-            background-position: 0% 50%;
+
+          .scroll-reveal.revealed {
+            animation: none !important;
+            opacity: 1;
+            transform: none;
           }
-        }
-
-        @keyframes moveBackground {
-          0% {
-            background-position: 0 0;
-          }
-          100% {
-            background-position: 50px 50px;
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-1000 {
-          animation-delay: 1s;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
-          background-size: 200% 200%;
-        }
-
-        .animate-gradient-x {
-          animation: gradient-x 3s ease infinite;
         }
       `}</style>
     </div>

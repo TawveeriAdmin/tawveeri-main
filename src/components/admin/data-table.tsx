@@ -46,7 +46,7 @@ export function DataTable<T extends Record<string, any>>({
 
   if (loading) {
     return (
-      <div className={cn('rounded-lg border border-gray-200 dark:border-gray-800', className)}>
+      <div className={cn('rounded-xl border border-outline-variant', className)}>
         <div className="p-4">
           <Skeleton className="h-10 w-full mb-4" />
           {[...Array(5)].map((_, i) => (
@@ -58,7 +58,7 @@ export function DataTable<T extends Record<string, any>>({
   }
 
   return (
-    <div className={cn('rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900', className)}>
+    <div className={cn('rounded-xl border border-outline-variant bg-surface-container-lowest', className)}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -71,7 +71,7 @@ export function DataTable<T extends Record<string, any>>({
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell colSpan={columns.length} className="text-center py-8 text-on-surface-variant">
                   No data available
                 </TableCell>
               </TableRow>
@@ -80,7 +80,7 @@ export function DataTable<T extends Record<string, any>>({
                 <TableRow
                   key={index}
                   onClick={() => onRowClick?.(row)}
-                  className={onRowClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''}
+                  className={onRowClick ? 'cursor-pointer' : ''}
                 >
                   {columns.map((column) => (
                     <TableCell key={column.key}>
@@ -95,8 +95,8 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {pagination && totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-800 px-4 py-3">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3">
+          <div className="text-body-sm text-on-surface-variant">
             Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
             {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
           </div>
@@ -109,7 +109,7 @@ export function DataTable<T extends Record<string, any>>({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-body-sm text-on-surface-variant">
               Page {pagination.page} of {totalPages}
             </span>
             <Button
@@ -126,4 +126,3 @@ export function DataTable<T extends Record<string, any>>({
     </div>
   );
 }
-

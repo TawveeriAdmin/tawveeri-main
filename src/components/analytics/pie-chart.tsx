@@ -9,8 +9,6 @@ import {
   Legend,
 } from 'recharts';
 import { ChartCard } from '@/components/admin/chart-card';
-import { cn } from '@/lib/utils';
-
 interface PieChartProps {
   data: Array<{ name: string; value: number }>;
   title?: string;

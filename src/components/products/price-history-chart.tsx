@@ -106,13 +106,13 @@ export function PriceHistoryChart({
         {priceTrend && (
           <div className="flex items-center gap-2 text-sm">
             {priceTrend.isPositive ? (
-              <TrendingUp className="w-4 h-4 text-red-600" />
+              <TrendingUp className="w-4 h-4 text-error" />
             ) : priceTrend.diff < 0 ? (
-              <TrendingDown className="w-4 h-4 text-green-600" />
+              <TrendingDown className="w-4 h-4 text-success" />
             ) : (
-              <Minus className="w-4 h-4 text-gray-400" />
+              <Minus className="w-4 h-4 text-outline" />
             )}
-            <span className={priceTrend.isPositive ? 'text-red-600' : priceTrend.diff < 0 ? 'text-green-600' : 'text-gray-400'}>
+            <span className={priceTrend.isPositive ? 'text-error' : priceTrend.diff < 0 ? 'text-success' : 'text-outline'}>
               {priceTrend.isPositive ? '+' : ''}
               {priceTrend.percentage}%{' '}
               {priceTrend.isPositive
@@ -128,16 +128,16 @@ export function PriceHistoryChart({
         {loading ? (
           <Skeleton className="w-full" style={{ height: `${height}px` }} />
         ) : error ? (
-          <div className="text-center text-red-600 py-8">{error}</div>
+          <div className="text-center text-error py-8">{error}</div>
         ) : priceHistory.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-on-surface-variant py-8">
             {t('products.priceHistory.noData')}
           </div>
         ) : (
           <div className="space-y-4">
             {/* Simple Line Chart */}
             <div
-              className="relative w-full border-b-2 border-gray-200 dark:border-gray-700"
+              className="relative w-full border-b-2 border-outline-variant"
               style={{ height: `${height}px` }}
             >
               <svg className="w-full h-full" viewBox={`0 0 ${priceHistory.length * 10} ${height}`} preserveAspectRatio="none">
@@ -151,7 +151,7 @@ export function PriceHistoryChart({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  className="text-primary-600 dark:text-primary-400"
+                  className="text-primary"
                 />
                 {priceHistory.map((point, index) => (
                   <circle
@@ -159,14 +159,14 @@ export function PriceHistoryChart({
                     cx={index * 10}
                     cy={height - ((point.price - minPrice) / priceRange) * height}
                     r="3"
-                    className="fill-primary-600 dark:fill-primary-400"
+                    className="fill-primary"
                   />
                 ))}
               </svg>
             </div>
 
             {/* Price Labels */}
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-on-surface-variant">
               <div>
                 <div>{t('products.priceHistory.lowest')}</div>
                 <div className="font-semibold">{minPrice.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</div>
@@ -181,7 +181,7 @@ export function PriceHistoryChart({
             <div className="mt-4 space-y-2 max-h-32 overflow-y-auto">
               {priceHistory.slice(-5).reverse().map((point, index) => (
                 <div key={index} className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-on-surface-variant">
                     {new Date(point.recorded_at).toLocaleDateString(locale, {
                       year: 'numeric',
                       month: 'short',

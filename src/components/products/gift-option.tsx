@@ -77,21 +77,21 @@ export function GiftOption({ productName, shareUrl }: GiftOptionProps) {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+            <div className="flex items-center justify-between rounded-xl border border-outline-variant p-3">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">{productName}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="font-medium text-on-surface">{productName}</p>
+                <p className="text-xs text-on-surface-variant">
                   {t('product.priceAlertCurrentPrice')}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+            <div className="flex items-center justify-between rounded-xl border border-outline-variant p-3">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">
+                <p className="font-medium text-on-surface">
                   {t('product.giftWrapping')}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-on-surface-variant">
                   {t('product.giftWrappingHint')}
                 </p>
               </div>

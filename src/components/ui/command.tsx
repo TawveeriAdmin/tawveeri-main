@@ -11,7 +11,7 @@ const Command = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'flex h-full w-full flex-col overflow-hidden rounded-lg bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100',
+      'flex h-full w-full flex-col overflow-hidden rounded-lg bg-surface-container text-on-surface',
       className
     )}
     {...props}
@@ -24,8 +24,8 @@ interface CommandDialogProps extends DialogProps {}
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg">
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-gray-600 dark:[&_[cmdk-group-heading]]:text-gray-400 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+      <DialogContent className="overflow-hidden p-0">
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-on-surface-variant [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
           {children}
         </Command>
       </DialogContent>
@@ -37,12 +37,12 @@ const CommandInput = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
 >(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b border-gray-200 px-3 dark:border-gray-700" cmdk-input-wrapper="">
-    <Search className="me-2 h-4 w-4 shrink-0 opacity-50" />
+  <div className="flex items-center border-b border-outline-variant px-3 bg-surface-container-high rounded-t-full" cmdk-input-wrapper="">
+    <Search className="me-2 h-4 w-4 shrink-0 text-on-surface-variant" />
     <input
       ref={ref}
       className={cn(
-        'flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50 dark:placeholder:text-gray-400',
+        'flex h-11 w-full bg-transparent py-3 text-body-md text-on-surface outline-none placeholder:text-on-surface-variant disabled:cursor-not-allowed disabled:opacity-38',
         className
       )}
       {...props}
@@ -71,7 +71,7 @@ const CommandEmpty = React.forwardRef<
 >((props, ref) => (
   <div
     ref={ref}
-    className="py-6 text-center text-sm text-gray-600 dark:text-gray-400"
+    className="py-6 text-center text-body-md text-on-surface-variant"
     {...props}
   />
 ));
@@ -85,7 +85,7 @@ const CommandGroup = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'overflow-hidden p-1 text-gray-900 dark:text-gray-100 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-gray-600 dark:[&_[cmdk-group-heading]]:text-gray-400',
+      'overflow-hidden p-1 text-on-surface [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-label-sm [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-on-surface-variant',
       className
     )}
     {...props}
@@ -100,7 +100,7 @@ const CommandSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('-mx-1 h-px bg-gray-200 dark:bg-gray-700', className)}
+    className={cn('-mx-1 h-px bg-outline-variant', className)}
     {...props}
   />
 ));
@@ -113,7 +113,7 @@ const CommandItem = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'relative flex cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-none aria-selected:bg-primary-100 aria-selected:text-primary-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:aria-selected:bg-primary-900 dark:aria-selected:text-primary-100',
+      'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-body-md text-on-surface outline-none state-layer aria-selected:bg-surface-container-highest data-[disabled]:pointer-events-none data-[disabled]:opacity-38',
       className
     )}
     {...props}
@@ -125,7 +125,7 @@ CommandItem.displayName = 'CommandItem';
 const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return (
     <span
-      className={cn('ms-auto text-xs tracking-widest text-gray-600 dark:text-gray-400', className)}
+      className={cn('ms-auto text-label-sm tracking-widest text-on-surface-variant', className)}
       {...props}
     />
   );

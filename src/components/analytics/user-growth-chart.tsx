@@ -25,14 +25,14 @@ export function UserGrowthChart({ data, period, className }: UserGrowthChartProp
       title="User Growth"
       className={className}
       actions={
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="text-xs text-on-surface-variant">
           {period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : period === '90d' ? 'Last 90 days' : 'Last year'}
         </div>
       }
     >
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-800" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-outline-variant" />
           <XAxis
             dataKey="date"
             tickFormatter={(value) => {

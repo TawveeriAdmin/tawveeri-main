@@ -167,7 +167,7 @@ export function BulkPriceUpdateDialog({
           {/* Product Selection */}
           <div className="space-y-2">
             <Label>{t('store.bulkPriceUpdate.selectProducts')}</Label>
-            <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+            <div className="border rounded-xl p-4 max-h-60 overflow-y-auto">
               {products.map((product) => (
                 <div key={product.id} className="flex items-center space-x-2 py-2">
                   <Checkbox

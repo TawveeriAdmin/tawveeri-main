@@ -6,7 +6,7 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
     <div className="relative w-full overflow-auto">
       <table
         ref={ref}
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn('w-full caption-bottom text-body-md', className)}
         {...props}
       />
     </div>
@@ -20,10 +20,7 @@ const TableHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <thead
     ref={ref}
-    className={cn(
-      'border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800',
-      className
-    )}
+    className={cn('border-b border-outline-variant', className)}
     {...props}
   />
 ));
@@ -48,7 +45,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      'border-t border-gray-200 bg-gray-50 font-medium dark:border-gray-700 dark:bg-gray-800',
+      'border-t border-outline-variant font-medium',
       className
     )}
     {...props}
@@ -61,10 +58,9 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
     <tr
       ref={ref}
       className={cn(
-        'border-b border-gray-200 transition-colors',
-        'hover:bg-gray-50 dark:hover:bg-gray-800/50',
-        'data-[state=selected]:bg-gray-100 dark:data-[state=selected]:bg-gray-800',
-        'dark:border-gray-700',
+        'border-b border-outline-variant transition-colors',
+        'hover:bg-on-surface/4',
+        'data-[state=selected]:bg-secondary-container',
         className
       )}
       {...props}
@@ -80,8 +76,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-12 px-4 text-start align-middle font-semibold text-gray-700',
-      'dark:text-gray-300',
+      'h-12 px-4 text-start align-middle text-label-lg text-on-surface-variant',
       '[&:has([role=checkbox])]:pe-0',
       className
     )}
@@ -97,7 +92,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      'p-4 align-middle text-gray-900 dark:text-gray-100',
+      'p-4 align-middle text-on-surface',
       '[&:has([role=checkbox])]:pe-0',
       className
     )}
@@ -112,7 +107,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn('mt-4 text-sm text-gray-600 dark:text-gray-400', className)}
+    className={cn('mt-4 text-body-sm text-on-surface-variant', className)}
     {...props}
   />
 ));

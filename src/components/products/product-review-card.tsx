@@ -53,7 +53,7 @@ export function ProductReviewCard({
   };
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-800 pb-4 last:border-0">
+    <div className="border-b border-outline-variant pb-4 last:border-0">
       <div className="flex items-start gap-4">
         <Avatar className="h-10 w-10">
           <AvatarImage src={review.users?.avatar_url || ''} alt={review.users?.full_name || ''} />
@@ -65,7 +65,7 @@ export function ProductReviewCard({
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <p className="font-semibold text-gray-900 dark:text-white">
+                <p className="font-semibold text-on-surface">
                   {review.users?.full_name || t('products.review.user')}
                 </p>
                 {review.is_verified_purchase && (
@@ -83,13 +83,13 @@ export function ProductReviewCard({
                       className={cn(
                         'h-4 w-4',
                         i < review.rating
-                          ? 'fill-primary-500 text-primary-500'
-                          : 'text-gray-300 dark:text-gray-600'
+                          ? 'fill-primary text-primary'
+                          : 'text-outline'
                       )}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-on-surface-variant">
                   {format(new Date(review.created_at), 'MMM dd, yyyy')}
                 </span>
               </div>
@@ -124,7 +124,7 @@ export function ProductReviewCard({
 
           {/* Review Text */}
           {review.review_text && (
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+            <p className="text-on-surface-variant whitespace-pre-wrap">
               {review.review_text}
             </p>
           )}

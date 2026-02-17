@@ -361,7 +361,7 @@ export function SearchBar({
     <div className={`relative ${className}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline w-5 h-5" />
           <Input
             ref={inputRef}
             type="text"
@@ -379,7 +379,7 @@ export function SearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-outline hover:text-on-surface"
             >
               <X className="w-5 h-5" />
             </button>
@@ -435,12 +435,12 @@ export function SearchBar({
       {/* Suggestions Popover */}
       {showSuggestions && showSuggestionsPopup && hasContent && (
         <div
-          className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto"
         >
           {/* Recent Searches */}
           {recentSearches.length > 0 && !query.trim() && (
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <div className="p-4 border-b border-outline-variant">
+              <h4 className="text-sm font-semibold text-on-surface-variant mb-2">
                 {t('search.recentSearches')}
               </h4>
               <div className="space-y-1">
@@ -448,9 +448,9 @@ export function SearchBar({
                   <button
                     key={recent.id}
                     onClick={() => handleRecentSearchClick(recent)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2 text-sm"
+                    className="w-full text-left px-3 py-2 hover:bg-on-surface/8 rounded flex items-center gap-2 text-sm"
                   >
-                    <Clock className="w-4 h-4 text-gray-400" />
+                    <Clock className="w-4 h-4 text-outline" />
                     <span>{recent.search_query}</span>
                   </button>
                 ))}
@@ -461,7 +461,7 @@ export function SearchBar({
           {/* Suggestions */}
           {suggestions.length > 0 && query.trim() && (
             <div className="p-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <h4 className="text-sm font-semibold text-on-surface-variant mb-2">
                 {t('search.suggestions')}
               </h4>
               <div className="space-y-1">
@@ -471,12 +471,12 @@ export function SearchBar({
                     <button
                       key={idx}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2 text-sm"
+                      className="w-full text-left px-3 py-2 hover:bg-on-surface/8 rounded flex items-center gap-2 text-sm"
                     >
-                      <Search className="w-4 h-4 text-gray-400" />
+                      <Search className="w-4 h-4 text-outline" />
                       <div className="flex-1">
                         <div className="font-medium">{name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-on-surface-variant">
                           {suggestion.brand} • {suggestion.category}
                         </div>
                       </div>
@@ -489,14 +489,14 @@ export function SearchBar({
 
           {/* No Results */}
           {query.trim() && suggestions.length === 0 && !loading && (
-            <div className="p-4 text-sm text-gray-500 text-center">
+            <div className="p-4 text-sm text-on-surface-variant text-center">
               {t('search.noSuggestions')}
             </div>
           )}
 
           {/* Loading */}
           {loading && (
-            <div className="p-4 text-sm text-gray-500 text-center">
+            <div className="p-4 text-sm text-on-surface-variant text-center">
               {t('search.searching')}
             </div>
           )}

@@ -18,15 +18,15 @@ export function GuestPrompt({ locale, title, description, ctaLabel, className }:
 
   return (
     <div
-      className={`rounded-2xl border border-dashed border-primary-200 dark:border-primary-900 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm p-6 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${className || ''}`}
+      className={`rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest/80 backdrop-blur-sm p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${className || ''}`}
     >
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container">
           <LockKeyhole className="h-6 w-6" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{description}</p>
+          <h2 className="text-title-lg text-on-surface">{title}</h2>
+          <p className="text-sm text-on-surface-variant mt-1">{description}</p>
         </div>
       </div>
       <div className="flex flex-col sm:items-end gap-3">
@@ -35,11 +35,11 @@ export function GuestPrompt({ locale, title, description, ctaLabel, className }:
             {ctaLabel || t('auth.signIn') || 'Sign in'}
           </Link>
         </Button>
-        <p className="text-xs text-gray-500 dark:text-gray-500">
+        <p className="text-xs text-on-surface-variant">
           {t('auth.noAccount')}{' '}
           <Link
             href={`/${locale}/auth/signup`}
-            className="text-primary-600 dark:text-primary-400 hover:underline font-semibold"
+            className="text-primary hover:underline font-semibold"
           >
             {t('auth.signUpLink')}
           </Link>

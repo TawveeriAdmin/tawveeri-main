@@ -45,11 +45,11 @@ export function StoreReviewCard({ review, locale }: StoreReviewCardProps) {
     <Card>
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-warning-500">
+          <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, index) => (
               <Star
                 key={index}
-                className={`w-4 h-4 ${index < review.rating ? 'fill-featured-400 text-featured-400' : 'text-gray-300 dark:text-gray-600'}`}
+                className={`w-4 h-4 ${index < review.rating ? 'fill-primary text-primary' : 'text-outline'}`}
               />
             ))}
           </div>
@@ -62,31 +62,31 @@ export function StoreReviewCard({ review, locale }: StoreReviewCardProps) {
         </div>
 
         {review.review_text && (
-          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{review.review_text}</p>
+          <p className="text-on-surface-variant whitespace-pre-line">{review.review_text}</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-gray-600 dark:text-gray-400">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-on-surface-variant">
           {(review.delivery_rating || review.delivery_rating === 0) && (
             <div>
-              <span className="font-medium block">{t('store.deliveryRating')}</span>
+              <span className="font-medium block text-on-surface">{t('store.deliveryRating')}</span>
               <span>{review.delivery_rating}/5</span>
             </div>
           )}
           {(review.product_quality_rating || review.product_quality_rating === 0) && (
             <div>
-              <span className="font-medium block">{t('store.productQualityRating')}</span>
+              <span className="font-medium block text-on-surface">{t('store.productQualityRating')}</span>
               <span>{review.product_quality_rating}/5</span>
             </div>
           )}
           {(review.customer_service_rating || review.customer_service_rating === 0) && (
             <div>
-              <span className="font-medium block">{t('store.customerServiceRating')}</span>
+              <span className="font-medium block text-on-surface">{t('store.customerServiceRating')}</span>
               <span>{review.customer_service_rating}/5</span>
             </div>
           )}
         </div>
 
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-outline">
           {review.users?.full_name || t('store.anonymousUser')}
           <span className="mx-2">•</span>
           {formattedDate}

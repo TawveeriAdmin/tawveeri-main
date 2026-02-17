@@ -40,9 +40,9 @@ export function StoreHeader({ userProfile, store, locale }: StoreHeaderProps) {
     .slice(0, 2) || 'ST';
 
   return (
-    <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6">
+    <header className="h-16 border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 className="text-title-lg text-on-surface">
           {store
             ? isRTL
               ? store.name_ar
@@ -67,7 +67,7 @@ export function StoreHeader({ userProfile, store, locale }: StoreHeaderProps) {
                 <p className="text-sm font-medium leading-none">
                   {userProfile?.full_name || 'Store User'}
                 </p>
-                <p className="text-xs leading-none text-gray-500 dark:text-gray-400">
+                <p className="text-xs leading-none text-on-surface-variant">
                   {userProfile?.email || ''}
                 </p>
               </div>

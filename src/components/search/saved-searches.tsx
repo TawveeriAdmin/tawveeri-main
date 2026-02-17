@@ -146,11 +146,11 @@ export function SavedSearches({
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-on-surface-variant">
               {t('search.savedSearches.loading')}
             </div>
           ) : savedSearches.length === 0 ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+            <div className="text-sm text-on-surface-variant text-center py-4">
               {t('search.savedSearches.noSearches')}
             </div>
           ) : (
@@ -158,15 +158,15 @@ export function SavedSearches({
               {savedSearches.map((search) => (
                 <div
                   key={search.id}
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group"
+                  className="flex items-center justify-between p-2 rounded-xl hover:bg-on-surface/8 cursor-pointer group"
                   onClick={() => handleSearchClick(search)}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                    <p className="font-medium text-sm text-on-surface truncate">
                       {search.name}
                     </p>
                     {search.search_query && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <p className="text-xs text-on-surface-variant truncate">
                         {search.search_query}
                       </p>
                     )}

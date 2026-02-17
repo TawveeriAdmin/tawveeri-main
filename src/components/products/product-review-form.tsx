@@ -210,14 +210,14 @@ export function ProductReviewForm({
                     className={cn(
                       'h-8 w-8 transition-colors',
                       star <= (hoverRating || rating)
-                        ? 'fill-primary-500 text-primary-500'
-                        : 'text-gray-300 dark:text-gray-600'
+                        ? 'fill-primary text-primary'
+                        : 'text-outline'
                     )}
                   />
                 </button>
               ))}
               {rating > 0 && (
-                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                <span className="ml-2 text-sm text-on-surface-variant">
                   {rating}/5
                 </span>
               )}
@@ -240,10 +240,10 @@ export function ProductReviewForm({
               }
               rows={6}
               minLength={10}
-              className={cn(reviewText.length > 0 && reviewText.length < 10 && 'border-warning-500')}
+              className={cn(reviewText.length > 0 && reviewText.length < 10 && 'border-error')}
             />
             {reviewText.length > 0 && reviewText.length < 10 && (
-              <p className="text-xs text-warning-600 dark:text-warning-400">
+              <p className="text-xs text-error">
                 {isRTL
                   ? 'يجب أن يكون النص 10 أحرف على الأقل'
                   : 'Review must be at least 10 characters'}

@@ -45,7 +45,7 @@ export function ComparisonCard({
     <Card
       className={`${
         isBestPrice
-          ? 'border-2 border-success-600 bg-gradient-to-b from-success-50 to-white dark:from-success-950 dark:to-gray-900'
+          ? 'border-2 border-success bg-gradient-to-b from-success-container to-surface-container-lowest'
           : ''
       }`}
     >
@@ -98,7 +98,7 @@ export function ComparisonCard({
         )}
 
         {/* Metadata */}
-        <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-wrap gap-3 text-sm text-on-surface-variant">
           {delivery && (
             <div className="flex items-center gap-1">
               <Truck className="w-4 h-4" />

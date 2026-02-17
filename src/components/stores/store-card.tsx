@@ -35,11 +35,11 @@ export function StoreCard({ store, locale }: StoreCardProps) {
   const logoUrl = store.logo_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5TdG9yZTwvdGV4dD48L3N2Zz4=';
 
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+    <Card className="group transition-all duration-300 h-full flex flex-col hover:elevation-2">
       <CardContent className="p-6 flex flex-col h-full">
         {/* Store Logo */}
         <div className="flex items-center justify-center mb-4">
-          <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 group-hover:border-primary-500 transition-colors">
+          <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-surface-container-highest border-2 border-outline-variant group-hover:border-primary transition-colors">
             <img
               src={logoUrl}
               alt={storeName}
@@ -55,7 +55,7 @@ export function StoreCard({ store, locale }: StoreCardProps) {
         </div>
 
         {/* Store Name */}
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+        <h3 className="text-title-lg font-semibold text-on-surface mb-2 text-center group-hover:text-primary transition-colors">
           {storeName}
         </h3>
 
@@ -76,12 +76,12 @@ export function StoreCard({ store, locale }: StoreCardProps) {
         {/* Rating */}
         {store.average_rating !== null && (
           <div className="flex items-center justify-center gap-1 mb-2">
-            <Star className="w-4 h-4 fill-featured-400 text-featured-400" />
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+            <Star className="w-4 h-4 fill-primary text-primary" />
+            <span className="text-sm font-semibold text-on-surface">
               {store.average_rating.toFixed(1)}
             </span>
             {store.total_reviews !== null && store.total_reviews > 0 && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-on-surface-variant">
                 ({store.total_reviews})
               </span>
             )}
@@ -90,7 +90,7 @@ export function StoreCard({ store, locale }: StoreCardProps) {
 
         {/* Products Count */}
         {store.total_products !== null && (
-          <div className="flex items-center justify-center gap-2 mb-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-center gap-2 mb-4 text-sm text-on-surface-variant">
             <Package className="w-4 h-4" />
             <span>
               {store.total_products} {t('stores.productsCount')}

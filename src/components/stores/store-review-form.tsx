@@ -167,8 +167,8 @@ export function StoreReviewForm({ storeId, storeSlug, locale, onSuccess, onClose
             onClick={handleClick}
             className={`p-1 rounded-md transition-colors ${
               isActive
-                ? 'text-featured-500 dark:text-featured-300'
-                : 'text-gray-300 dark:text-gray-600 hover:text-featured-400 dark:hover:text-featured-300'
+                ? 'text-primary'
+                : 'text-outline hover:text-primary/60'
             }`}
             aria-label={`${value} ${t('store.reviewForm.stars')}`}
           >
@@ -184,7 +184,7 @@ export function StoreReviewForm({ storeId, storeSlug, locale, onSuccess, onClose
       <div className="space-y-2">
         <Label className="flex items-center justify-between">
           <span>{t('store.reviewForm.ratingLabel')}</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{t('store.reviewForm.required')}</span>
+          <span className="text-xs text-outline">{t('store.reviewForm.required')}</span>
         </Label>
         {renderRatingButtons(rating, (value) => setRating(value))}
       </div>
@@ -198,7 +198,7 @@ export function StoreReviewForm({ storeId, storeSlug, locale, onSuccess, onClose
           placeholder={t('store.reviewForm.reviewPlaceholder')}
           rows={5}
         />
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t('store.reviewForm.reviewHelper')}</p>
+        <p className="text-xs text-outline">{t('store.reviewForm.reviewHelper')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -207,7 +207,7 @@ export function StoreReviewForm({ storeId, storeSlug, locale, onSuccess, onClose
             <Label className="flex items-center justify-between">
               <span>{field.label}</span>
               {field.optional && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('store.reviewForm.optional')}</span>
+                <span className="text-xs text-outline">{t('store.reviewForm.optional')}</span>
               )}
             </Label>
             {renderRatingButtons(field.value, (value) => field.setValue(value))}
@@ -215,19 +215,19 @@ export function StoreReviewForm({ storeId, storeSlug, locale, onSuccess, onClose
         ))}
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className="flex items-center justify-between rounded-xl border border-outline-variant px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
+          <p className="text-sm font-medium text-on-surface">
             {t('store.reviewForm.verifiedPurchaseLabel')}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-on-surface-variant">
             {t('store.reviewForm.verifiedPurchaseHint')}
           </p>
         </div>
         <Switch checked={isVerifiedPurchase} onCheckedChange={setIsVerifiedPurchase} />
       </div>
 
-      {error && <p className="text-sm text-destructive-600 dark:text-destructive-500">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
       <div className="flex items-center justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>

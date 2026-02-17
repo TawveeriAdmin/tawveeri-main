@@ -87,7 +87,7 @@ export function ProductSpecifications({
           <CardTitle>{t('products.specifications.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+          <p className="text-on-surface-variant text-center py-4">
             {t('products.specifications.noSpecifications')}
           </p>
         </CardContent>
@@ -106,7 +106,7 @@ export function ProductSpecifications({
           <CardTitle>{t('products.specifications.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+          <p className="text-on-surface-variant text-center py-4">
             {t('products.specifications.noSpecifications')}
           </p>
         </CardContent>
@@ -135,10 +135,10 @@ export function ProductSpecifications({
             <TableBody>
               {specEntries.map(([key, value]) => (
                 <TableRow key={key}>
-                  <TableCell className="font-medium text-gray-900 dark:text-white">
+                  <TableCell className="font-medium text-on-surface">
                     {translateSpecKey(key, locale)}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-300">
+                  <TableCell className="text-on-surface-variant">
                     {formatSpecValue(value, t)}
                   </TableCell>
                 </TableRow>

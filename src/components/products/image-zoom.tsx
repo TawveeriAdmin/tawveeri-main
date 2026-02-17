@@ -135,7 +135,7 @@ export function ImageZoom({ src, alt, className, mode = 'hover' }: ImageZoomProp
 
       {/* Zoom Controls */}
       {mode === 'click' && isZoomed && (
-        <div className="absolute top-2 right-2 flex gap-1 bg-white/90 dark:bg-gray-900/90 rounded-lg p-1 shadow-lg">
+        <div className="absolute top-2 right-2 flex gap-1 bg-surface-container-lowest/90 rounded-xl p-1">
           <Button
             variant="ghost"
             size="icon"

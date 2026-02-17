@@ -43,11 +43,11 @@ export function PriceAlertCard({
   const isTargetReached = currentPrice <= alert.target_price;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card>
       <CardContent className="p-6">
         <div className="flex gap-4">
           {/* Product Image */}
-          <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+          <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-surface-container-highest">
             <Image
               src={productImage}
               alt={productName}
@@ -62,28 +62,28 @@ export function PriceAlertCard({
 
           {/* Product Info */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2 truncate">
+            <h3 className="text-title-lg text-on-surface mb-2 truncate">
               {productName}
             </h3>
 
             {/* Price Comparison */}
             <div className="flex flex-col gap-2 mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-on-surface-variant">
                   {t('products.priceAlert.currentPrice')}:
                 </span>
                 <Price
                   amount={currentPrice}
-                  className="text-lg font-bold text-gray-900 dark:text-white"
+                  className="text-lg font-bold text-on-surface"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-on-surface-variant">
                   {t('products.priceAlert.targetPrice')}:
                 </span>
                 <Price
                   amount={alert.target_price}
-                  className="text-lg font-semibold text-primary-600 dark:text-primary-400"
+                  className="text-lg font-semibold text-primary"
                 />
               </div>
               {isTargetReached ? (
@@ -92,12 +92,12 @@ export function PriceAlertCard({
                 </Badge>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-on-surface-variant">
                     {t('products.priceAlert.difference')}:
                   </span>
                   <span className={cn(
                     'text-sm font-semibold',
-                    priceDifference > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'
+                    priceDifference > 0 ? 'text-error' : 'text-success'
                   )}>
                     <Price amount={Math.abs(priceDifference)} />
                     {` (${pricePercentage.toFixed(1)}%)`}
@@ -107,7 +107,7 @@ export function PriceAlertCard({
             </div>
 
             {/* Status & Date */}
-            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <div className="flex items-center gap-4 text-sm text-on-surface-variant mb-4">
               <span>
                 {t('products.priceAlert.created')}: {format(new Date(alert.created_at), 'MMM dd, yyyy')}
               </span>
@@ -125,7 +125,7 @@ export function PriceAlertCard({
                 size="sm"
                 onClick={() => onToggle(alert.id, !alert.is_active)}
                 className={cn(
-                  alert.is_active ? 'text-success-600 dark:text-success-400' : 'text-gray-600 dark:text-gray-400'
+                  alert.is_active ? 'text-success' : 'text-on-surface-variant'
                 )}
               >
                 {alert.is_active ? (

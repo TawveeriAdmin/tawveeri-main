@@ -160,9 +160,9 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: BarcodeScanne
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-900 aspect-video flex items-center justify-center">
+          <div className="rounded-xl border border-outline-variant overflow-hidden bg-surface-container aspect-video flex items-center justify-center">
             {permissionError ? (
-              <p className="px-4 text-sm text-gray-600 dark:text-gray-400 text-center">
+              <p className="px-4 text-sm text-on-surface-variant text-center">
                 {permissionError}
               </p>
             ) : (
@@ -171,7 +171,7 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: BarcodeScanne
           </div>
 
           <form onSubmit={handleManualSubmit} className="space-y-2">
-            <label htmlFor="manual-barcode" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="manual-barcode" className="text-label-lg text-on-surface-variant">
               {t('search.barcode.manualHint')}
             </label>
             <div className="flex gap-2">

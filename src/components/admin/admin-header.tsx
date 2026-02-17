@@ -39,9 +39,9 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
     .slice(0, 2) || 'AD';
 
   return (
-    <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6">
+    <header className="h-16 border-b border-outline-variant bg-surface flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 className="text-title-lg text-on-surface">
           {t('admin.header.adminDashboard')}
         </h2>
       </div>
@@ -59,10 +59,10 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
           <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
+                <p className="text-label-lg text-on-surface">
                   {userProfile?.full_name || 'Admin User'}
                 </p>
-                <p className="text-xs leading-none text-gray-500 dark:text-gray-400">
+                <p className="text-body-sm text-on-surface-variant">
                   {userProfile?.email || ''}
                 </p>
               </div>
@@ -78,4 +78,3 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
     </header>
   );
 }
-

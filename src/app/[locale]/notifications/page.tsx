@@ -15,450 +15,450 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Bell,
-  PackageSearch,
-  Trash2,
-  Eye,
-  Check,
-  X,
-  ExternalLink,
+ Bell,
+ PackageSearch,
+ Trash2,
+ Eye,
+ Check,
+ X,
+ ExternalLink,
 } from 'lucide-react';
 import type { Database, NotificationType } from '@/lib/database/types';
 import { GuestPrompt } from '@/components/auth/guest-prompt';
 
 type NotificationRow = Database['public']['Tables']['notifications']['Row'];
 type ProductSummary = Pick<
-  Database['public']['Tables']['products']['Row'],
-  'id' | 'name_ar' | 'name_en' | 'slug' | 'image_urls'
+ Database['public']['Tables']['products']['Row'],
+ 'id' | 'name_ar' | 'name_en' | 'slug' | 'image_urls'
 >;
 
 interface NotificationRecord extends NotificationRow {
-  products: ProductSummary | null;
+ products: ProductSummary | null;
 }
 
 type FilterKey =
-  | 'all'
-  | 'unread'
-  | 'price_drop'
-  | 'back_in_stock'
-  | 'deal_alert'
-  | 'system'
-  | 'account';
+ | 'all'
+ | 'unread'
+ | 'price_drop'
+ | 'back_in_stock'
+ | 'deal_alert'
+ | 'system'
+ | 'account';
 
 const PAGE_SIZE = 20;
 
 const filterOrder: FilterKey[] = [
-  'all',
-  'unread',
-  'price_drop',
-  'back_in_stock',
-  'deal_alert',
-  'system',
-  'account',
+ 'all',
+ 'unread',
+ 'price_drop',
+ 'back_in_stock',
+ 'deal_alert',
+ 'system',
+ 'account',
 ];
 
 export default function NotificationsPage() {
-  const supabase = getSupabaseBrowserClient();
-  const { user, loading: authLoading } = useAuth();
-  const params = useParams();
-  const router = useRouter();
-  const locale = (params?.locale as string) || 'ar';
-  const t = useTranslations();
-  const { toast } = useToast();
+ const supabase = getSupabaseBrowserClient();
+ const { user, loading: authLoading } = useAuth();
+ const params = useParams();
+ const router = useRouter();
+ const locale = (params?.locale as string) || 'ar';
+ const t = useTranslations();
+ const { toast } = useToast();
 
-  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterKey>('all');
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [markingAll, setMarkingAll] = useState(false);
+ const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
+ const [filter, setFilter] = useState<FilterKey>('all');
+ const [page, setPage] = useState(0);
+ const [hasMore, setHasMore] = useState(true);
+ const [markingAll, setMarkingAll] = useState(false);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push(`/${locale}/auth/login?redirect=/notifications`);
-      return;
-    }
+ useEffect(() => {
+ if (authLoading) return;
+ if (!user) {
+ router.push(`/${locale}/auth/login?redirect=/notifications`);
+ return;
+ }
 
-    const loadNotifications = async () => {
-      setLoading(true);
-      setError(null);
+ const loadNotifications = async () => {
+ setLoading(true);
+ setError(null);
 
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
+ const from = page * PAGE_SIZE;
+ const to = from + PAGE_SIZE - 1;
 
-      const { data, error: queryError } = await supabase
-        .from('notifications')
-        .select(
-          `
-          *,
-          products (
-            id,
-            name_ar,
-            name_en,
-            slug,
-            image_urls
-          )
-        `
-        )
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .range(from, to)
-        .returns<NotificationRecord[]>();
+ const { data, error: queryError } = await supabase
+ .from('notifications')
+ .select(
+ `
+ *,
+ products (
+ id,
+ name_ar,
+ name_en,
+ slug,
+ image_urls
+ )
+ `
+ )
+ .eq('user_id', user.id)
+ .order('created_at', { ascending: false })
+ .range(from, to)
+ .returns<NotificationRecord[]>();
 
-      if (queryError) {
-        console.error('Failed to load notifications', queryError);
-        setError(t('notifications.loadError'));
-        setLoading(false);
-        return;
-      }
+ if (queryError) {
+ console.error('Failed to load notifications', queryError);
+ setError(t('notifications.loadError'));
+ setLoading(false);
+ return;
+ }
 
-      if (page === 0) {
-        setNotifications(data || []);
-      } else {
-        setNotifications((prev) => [...prev, ...(data || [])]);
-      }
+ if (page === 0) {
+ setNotifications(data || []);
+ } else {
+ setNotifications((prev) => [...prev, ...(data || [])]);
+ }
 
-      setHasMore((data || []).length === PAGE_SIZE);
-      setLoading(false);
-    };
+ setHasMore((data || []).length === PAGE_SIZE);
+ setLoading(false);
+ };
 
-    loadNotifications();
-  }, [authLoading, user, page, locale, router, t]);
+ loadNotifications();
+ }, [authLoading, user, page, locale, router, t]);
 
-  const filteredNotifications = useMemo(() => {
-    if (filter === 'all') return notifications;
-    if (filter === 'unread') return notifications.filter((n) => !n.is_read);
-    return notifications.filter((n) => n.type === filter);
-  }, [notifications, filter]);
+ const filteredNotifications = useMemo(() => {
+ if (filter === 'all') return notifications;
+ if (filter === 'unread') return notifications.filter((n) => !n.is_read);
+ return notifications.filter((n) => n.type === filter);
+ }, [notifications, filter]);
 
-  const formatRelativeTime = (dateString: string | null) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (diffSeconds < 60) {
-      return t('notifications.timeNow');
-    }
-    const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
-    const minutes = Math.floor(diffSeconds / 60);
-    if (minutes < 60) {
-      return rtf.format(-minutes, 'minute');
-    }
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-      return rtf.format(-hours, 'hour');
-    }
-    const days = Math.floor(hours / 24);
-    return rtf.format(-days, 'day');
-  };
+ const formatRelativeTime = (dateString: string | null) => {
+ if (!dateString) return '';
+ const date = new Date(dateString);
+ const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
+ if (diffSeconds < 60) {
+ return t('notifications.timeNow');
+ }
+ const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
+ const minutes = Math.floor(diffSeconds / 60);
+ if (minutes < 60) {
+ return rtf.format(-minutes, 'minute');
+ }
+ const hours = Math.floor(minutes / 60);
+ if (hours < 24) {
+ return rtf.format(-hours, 'hour');
+ }
+ const days = Math.floor(hours / 24);
+ return rtf.format(-days, 'day');
+ };
 
-  const getNotificationTitle = (notification: NotificationRecord) => {
-    return locale === 'ar' ? notification.title_ar : notification.title_en;
-  };
+ const getNotificationTitle = (notification: NotificationRecord) => {
+ return locale === 'ar' ? notification.title_ar : notification.title_en;
+ };
 
-  const getNotificationMessage = (notification: NotificationRecord) => {
-    const message = locale === 'ar' ? notification.message_ar : notification.message_en;
-    if (message) return message;
-    if (notification.type === 'price_drop' && notification.products) {
-      return locale === 'ar'
-        ? `انخفض سعر ${notification.products.name_ar}`
-        : `The price of ${notification.products.name_en} dropped`;
-    }
-    if (notification.type === 'back_in_stock' && notification.products) {
-      return locale === 'ar'
-        ? `${notification.products.name_ar} أصبح متوفراً مرة أخرى`
-        : `${notification.products.name_en} is back in stock`;
-    }
-    return '';
-  };
+ const getNotificationMessage = (notification: NotificationRecord) => {
+ const message = locale === 'ar' ? notification.message_ar : notification.message_en;
+ if (message) return message;
+ if (notification.type === 'price_drop' && notification.products) {
+ return locale === 'ar'
+ ? `انخفض سعر ${notification.products.name_ar}`
+ : `The price of ${notification.products.name_en} dropped`;
+ }
+ if (notification.type === 'back_in_stock' && notification.products) {
+ return locale === 'ar'
+ ? `${notification.products.name_ar} أصبح متوفراً مرة أخرى`
+ : `${notification.products.name_en} is back in stock`;
+ }
+ return '';
+ };
 
-  const updateNotificationInState = (id: string, changes: Partial<NotificationRecord>) => {
-    setNotifications((prev) => prev.map((notification) => (notification.id === id ? { ...notification, ...changes } : notification)));
-  };
+ const updateNotificationInState = (id: string, changes: Partial<NotificationRecord>) => {
+ setNotifications((prev) => prev.map((notification) => (notification.id === id ? { ...notification, ...changes } : notification)));
+ };
 
-  const handleMarkAsRead = async (notification: NotificationRecord, isRead: boolean) => {
-    const optimistic = { ...notification, is_read: isRead };
-    updateNotificationInState(notification.id, optimistic);
+ const handleMarkAsRead = async (notification: NotificationRecord, isRead: boolean) => {
+ const optimistic = { ...notification, is_read: isRead };
+ updateNotificationInState(notification.id, optimistic);
 
-    const { error: updateError } = await supabase
-      .from('notifications')
-      .update({ is_read: isRead })
-      .eq('id', notification.id);
+ const { error: updateError } = await supabase
+ .from('notifications')
+ .update({ is_read: isRead })
+ .eq('id', notification.id);
 
-    if (updateError) {
-      console.error('Failed to update notification state', updateError);
-      updateNotificationInState(notification.id, { is_read: notification.is_read });
-      toast({
-        title: t('notifications.markReadError'),
-        variant: 'destructive',
-      });
-    }
-  };
+ if (updateError) {
+ console.error('Failed to update notification state', updateError);
+ updateNotificationInState(notification.id, { is_read: notification.is_read });
+ toast({
+ title: t('notifications.markReadError'),
+ variant: 'destructive',
+ });
+ }
+ };
 
-  const handleDelete = async (notificationId: string) => {
-    const backup = notifications;
-    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+ const handleDelete = async (notificationId: string) => {
+ const backup = notifications;
+ setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
 
-    const { error: deleteError } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', notificationId);
+ const { error: deleteError } = await supabase
+ .from('notifications')
+ .delete()
+ .eq('id', notificationId);
 
-    if (deleteError) {
-      console.error('Failed to delete notification', deleteError);
-      setNotifications(backup);
-      toast({
-        title: t('notifications.deleteError'),
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: t('notifications.deleted'),
-        variant: 'default',
-      });
-    }
-  };
+ if (deleteError) {
+ console.error('Failed to delete notification', deleteError);
+ setNotifications(backup);
+ toast({
+ title: t('notifications.deleteError'),
+ variant: 'destructive',
+ });
+ } else {
+ toast({
+ title: t('notifications.deleted'),
+ variant: 'default',
+ });
+ }
+ };
 
-  const handleMarkAll = async () => {
-    if (!user) return;
-    setMarkingAll(true);
+ const handleMarkAll = async () => {
+ if (!user) return;
+ setMarkingAll(true);
 
-    const previous = notifications;
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+ const previous = notifications;
+ setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
 
-    const { error: updateError } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
+ const { error: updateError } = await supabase
+ .from('notifications')
+ .update({ is_read: true })
+ .eq('user_id', user.id)
+ .eq('is_read', false);
 
-    setMarkingAll(false);
+ setMarkingAll(false);
 
-    if (updateError) {
-      console.error('Failed to mark all notifications', updateError);
-      setNotifications(previous);
-      toast({
-        title: t('notifications.markAllError'),
-        variant: 'destructive',
-      });
-    }
-  };
+ if (updateError) {
+ console.error('Failed to mark all notifications', updateError);
+ setNotifications(previous);
+ toast({
+ title: t('notifications.markAllError'),
+ variant: 'destructive',
+ });
+ }
+ };
 
-  const handleLoadMore = () => {
-    if (hasMore) {
-      setPage((prev) => prev + 1);
-    }
-  };
+ const handleLoadMore = () => {
+ if (hasMore) {
+ setPage((prev) => prev + 1);
+ }
+ };
 
-  const renderFilterButton = (key: FilterKey) => (
-    <Button
-      key={key}
-      variant={filter === key ? 'default' : 'outline'}
-      onClick={() => setFilter(key)}
-      className="whitespace-nowrap"
-    >
-      {t(`notifications.filters.${key}`)}
-      {key === 'unread' && (
-        <Badge variant="secondary" className="ml-2">
-          {notifications.filter((n) => !n.is_read).length}
-        </Badge>
-      )}
-    </Button>
-  );
+ const renderFilterButton = (key: FilterKey) => (
+ <Button
+ key={key}
+ variant={filter === key ? 'default' : 'outline'}
+ onClick={() => setFilter(key)}
+ className="whitespace-nowrap"
+ >
+ {t(`notifications.filters.${key}`)}
+ {key === 'unread' && (
+ <Badge variant="secondary" className="ml-2">
+ {notifications.filter((n) => !n.is_read).length}
+ </Badge>
+ )}
+ </Button>
+ );
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <div className="container mx-auto px-4 py-8">
-          <Skeleton className="h-10 w-64 mb-6" />
-          <div className="space-y-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-28 w-full" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+ if (authLoading || loading) {
+ return (
+ <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="container mx-auto px-4 py-8">
+ <Skeleton className="h-10 w-64 mb-6" />
+ <div className="space-y-4">
+ {Array.from({ length: 4 }).map((_, index) => (
+ <Skeleton key={index} className="h-28 w-full" />
+ ))}
+ </div>
+ </div>
+ </div>
+ );
+ }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <div className="container mx-auto px-4 py-8">
-          <GuestPrompt
-            locale={locale}
-            title={t('notifications.guestTitle') || 'Sign in to view your alerts'}
-            description={t('notifications.guestDescription') || 'Track price drops, restocks, and deal alerts by creating a free account.'}
-            ctaLabel={t('auth.signIn') || 'Sign in'}
-          />
-        </div>
-      </div>
-    );
-  }
+ if (!user) {
+ return (
+ <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="container mx-auto px-4 py-8">
+ <GuestPrompt
+ locale={locale}
+ title={t('notifications.guestTitle') || 'Sign in to view your alerts'}
+ description={t('notifications.guestDescription') || 'Track price drops, restocks, and deal alerts by creating a free account.'}
+ ctaLabel={t('auth.signIn') || 'Sign in'}
+ />
+ </div>
+ </div>
+ );
+ }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-              {t('notifications.title')}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
-              {t('notifications.subtitle')}
-            </p>
-          </div>
-          <Button onClick={handleMarkAll} disabled={markingAll || notifications.length === 0}>
-            {markingAll ? t('notifications.marking') : t('notifications.markAllRead')}
-          </Button>
-        </div>
+ return (
+ <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="container mx-auto px-4 py-8">
+ <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+ <div>
+ <h1 className="text-headline-lg text-on-surface mb-1">
+ {t('notifications.title')}
+ </h1>
+ <p className="text-on-surface-variant max-w-2xl">
+ {t('notifications.subtitle')}
+ </p>
+ </div>
+ <Button onClick={handleMarkAll} disabled={markingAll || notifications.length === 0}>
+ {markingAll ? t('notifications.marking') : t('notifications.markAllRead')}
+ </Button>
+ </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {filterOrder.map(renderFilterButton)}
-        </div>
+ <div className="flex flex-wrap gap-2 mb-6">
+ {filterOrder.map(renderFilterButton)}
+ </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+ {error && (
+ <Alert variant="destructive" className="mb-6">
+ <AlertDescription>{error}</AlertDescription>
+ </Alert>
+ )}
 
-        {filteredNotifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900/60">
-            <Bell className="w-12 h-12 text-primary-500 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              {t('notifications.empty')}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md">
-              {t('notifications.emptyDescription')}
-            </p>
-          </div>
-        ) : (
-          <ScrollArea className="max-h-[70vh] pr-3">
-            <div className="space-y-4">
-              {filteredNotifications.map((notification) => {
-                const title = getNotificationTitle(notification);
-                const message = getNotificationMessage(notification);
-                const relativeTime = formatRelativeTime(notification.created_at);
+ {filteredNotifications.length === 0 ? (
+ <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline-variant rounded-xl bg-surface">
+ <Bell className="w-12 h-12 text-primary mb-4" />
+ <h2 className="text-title-lg text-on-surface mb-2">
+ {t('notifications.empty')}
+ </h2>
+ <p className="text-on-surface-variant max-w-md">
+ {t('notifications.emptyDescription')}
+ </p>
+ </div>
+ ) : (
+ <ScrollArea className="max-h-[70vh] pr-3">
+ <div className="space-y-4">
+ {filteredNotifications.map((notification) => {
+ const title = getNotificationTitle(notification);
+ const message = getNotificationMessage(notification);
+ const relativeTime = formatRelativeTime(notification.created_at);
 
-                const productLink = notification.products
-                  ? `/${locale}/products/${notification.products.slug}`
-                  : null;
+ const productLink = notification.products
+ ? `/${locale}/products/${notification.products.slug}`
+ : null;
 
-                const primaryLink = notification.link || productLink;
+ const primaryLink = notification.link || productLink;
 
-                return (
-                  <Card key={notification.id} className={notification.is_read ? '' : 'border-primary-200 dark:border-primary-900'}>
-                    <CardContent className="p-5">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div className="flex gap-4">
-                          {notification.products?.image_urls?.[0] ? (
-                            <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                              <Image
-                                src={notification.products.image_urls[0]}
-                                alt={locale === 'ar' ? notification.products.name_ar : notification.products.name_en}
-                                fill
-                                sizes="64px"
-                                className="object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700">
-                              <PackageSearch className="h-7 w-7 text-gray-400" />
-                            </div>
-                          )}
+ return (
+ <Card key={notification.id} className={notification.is_read ? '' : 'border-primary-200'}>
+ <CardContent className="p-5">
+ <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+ <div className="flex gap-4">
+ {notification.products?.image_urls?.[0] ? (
+ <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-surface-container-highest border border-outline-variant">
+ <Image
+ src={notification.products.image_urls[0]}
+ alt={locale === 'ar' ? notification.products.name_ar : notification.products.name_en}
+ fill
+ sizes="64px"
+ className="object-cover"
+ />
+ </div>
+ ) : (
+ <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-container-highest border border-dashed border-outline-variant">
+ <PackageSearch className="h-7 w-7 text-outline" />
+ </div>
+ )}
 
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant={notification.is_read ? 'secondary' : 'success'}>
-                                {t(`notifications.filters.${notification.type as NotificationType}`)}
-                              </Badge>
-                              {!notification.is_read && (
-                                <span className="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
-                                  {t('notifications.filters.unread')}
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {title}
-                              </h3>
-                              {message && (
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {message}
-                                </p>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {relativeTime}
-                            </p>
-                          </div>
-                        </div>
+ <div className="space-y-2">
+ <div className="flex flex-wrap items-center gap-2">
+ <Badge variant={notification.is_read ? 'secondary' : 'success'}>
+ {t(`notifications.filters.${notification.type as NotificationType}`)}
+ </Badge>
+ {!notification.is_read && (
+ <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+ {t('notifications.filters.unread')}
+ </span>
+ )}
+ </div>
+ <div className="space-y-1">
+ <h3 className="text-title-lg text-on-surface">
+ {title}
+ </h3>
+ {message && (
+ <p className="text-sm text-on-surface-variant">
+ {message}
+ </p>
+ )}
+ </div>
+ <p className="text-body-sm text-on-surface-variant">
+ {relativeTime}
+ </p>
+ </div>
+ </div>
 
-                        <div className="flex flex-col gap-2 md:items-end md:text-right">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMarkAsRead(notification, !notification.is_read)}
-                            >
-                              {notification.is_read ? (
-                                <>
-                                  <X className="w-4 h-4 mr-2" />
-                                  {t('notifications.actions.markUnread')}
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="w-4 h-4 mr-2" />
-                                  {t('notifications.actions.markRead')}
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(notification.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              {t('notifications.actions.delete')}
-                            </Button>
-                          </div>
-                          {primaryLink && (
-                            <Button asChild size="sm" className="mt-2">
-                              <Link href={primaryLink}>
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                {notification.products
-                                  ? t('notifications.viewProduct')
-                                  : t('notifications.viewStore')}
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        )}
+ <div className="flex flex-col gap-2 md:items-end md:text-right">
+ <div className="flex gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => handleMarkAsRead(notification, !notification.is_read)}
+ >
+ {notification.is_read ? (
+ <>
+ <X className="w-4 h-4 mr-2" />
+ {t('notifications.actions.markUnread')}
+ </>
+ ) : (
+ <>
+ <Check className="w-4 h-4 mr-2" />
+ {t('notifications.actions.markRead')}
+ </>
+ )}
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => handleDelete(notification.id)}
+ >
+ <Trash2 className="w-4 h-4 mr-2" />
+ {t('notifications.actions.delete')}
+ </Button>
+ </div>
+ {primaryLink && (
+ <Button asChild size="sm" className="mt-2">
+ <Link href={primaryLink}>
+ <ExternalLink className="w-4 h-4 mr-2" />
+ {notification.products
+ ? t('notifications.viewProduct')
+ : t('notifications.viewStore')}
+ </Link>
+ </Button>
+ )}
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ );
+ })}
+ </div>
+ </ScrollArea>
+ )}
 
-        {hasMore && filteredNotifications.length > 0 && (
-          <div className="flex justify-center mt-6">
-            <Button variant="outline" onClick={handleLoadMore} disabled={loading}>
-              {loading ? t('notifications.loading') : t('notifications.loadMore')}
-            </Button>
-          </div>
-        )}
+ {hasMore && filteredNotifications.length > 0 && (
+ <div className="flex justify-center mt-6">
+ <Button variant="outline" onClick={handleLoadMore} disabled={loading}>
+ {loading ? t('notifications.loading') : t('notifications.loadMore')}
+ </Button>
+ </div>
+ )}
 
-        {!hasMore && page > 0 && (
-          <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            {t('notifications.noMore')}
-          </p>
-        )}
-      </div>
-    </div>
-  );
+ {!hasMore && page > 0 && (
+ <p className="mt-6 text-center text-sm text-on-surface-variant">
+ {t('notifications.noMore')}
+ </p>
+ )}
+ </div>
+ </div>
+ );
 }
 

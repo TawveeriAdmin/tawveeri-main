@@ -166,11 +166,11 @@ export function PriceAlertDialog({
 
           <div className="space-y-3">
             <div>
-              <Label className="text-sm text-gray-600 dark:text-gray-300">
+              <Label className="text-sm text-on-surface-variant">
                 {productName}
               </Label>
               {formattedCurrentPrice && (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-on-surface-variant">
                   {t('product.priceAlertCurrentPrice')}: {formattedCurrentPrice}
                 </p>
               )}
@@ -189,9 +189,9 @@ export function PriceAlertDialog({
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
+            <div className="flex items-center justify-between rounded-xl border border-outline-variant px-4 py-3">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">
+                <p className="font-medium text-on-surface">
                   {t('product.priceAlertActiveLabel')}
                 </p>
               </div>
@@ -199,7 +199,7 @@ export function PriceAlertDialog({
             </div>
 
             {error && (
-              <p className="text-sm text-destructive-600 dark:text-destructive-500">
+              <p className="text-sm text-error">
                 {error}
               </p>
             )}

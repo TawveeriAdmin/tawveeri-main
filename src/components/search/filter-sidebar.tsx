@@ -261,7 +261,7 @@ export function FilterSidebar({
                   step={100}
                   className="w-full"
                 />
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex justify-between text-sm text-on-surface-variant">
                   <span>
                     <Price amount={filters.minPrice || priceRange[0]} className="text-sm" />
                   </span>
@@ -407,7 +407,7 @@ export function FilterSidebar({
                   step={0.5}
                   className="w-full"
                 />
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex justify-between text-sm text-on-surface-variant">
                   <span>0</span>
                   <span className="font-semibold">{filters.minRating || 0} ⭐</span>
                   <span>5</span>

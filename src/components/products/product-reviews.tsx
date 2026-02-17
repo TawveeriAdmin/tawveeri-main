@@ -141,7 +141,7 @@ export function ProductReviews({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h3 className="text-headline-md text-on-surface">
             {t('products.review.reviewsTitle')}
           </h3>
           <ProductRatingDisplay
@@ -183,14 +183,14 @@ export function ProductReviews({
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="animate-pulse space-y-2">
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4" />
-              <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded" />
+              <div className="h-4 bg-surface-container-highest rounded w-1/4" />
+              <div className="h-20 bg-surface-container-highest rounded" />
             </div>
           ))}
         </div>
       ) : reviews.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-on-surface-variant mb-4">
             {t('products.review.noReviews')}
           </p>
           {user && !userHasReview && (
@@ -225,7 +225,7 @@ export function ProductReviews({
           >
             {t('products.review.previous')}
           </Button>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+          <span className="text-sm text-on-surface-variant">
             {t('products.review.page')} {page} {t('products.review.of')} {totalPages}
           </span>
           <Button

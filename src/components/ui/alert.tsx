@@ -7,13 +7,10 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-white text-gray-900 border-gray-200 [&>svg]:text-primary-600 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:[&>svg]:text-primary-400',
-        success:
-          'border-success-200 bg-success-50 text-success-900 [&>svg]:text-success-600 dark:border-success-800 dark:bg-success-950 dark:text-success-100 dark:[&>svg]:text-success-400',
-        warning:
-          'border-warning-200 bg-warning-50 text-warning-900 [&>svg]:text-warning-600 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-100 dark:[&>svg]:text-warning-400',
-        destructive:
-          'border-warning-200 bg-warning-50 text-warning-900 [&>svg]:text-warning-600 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-100 dark:[&>svg]:text-warning-400',
+        default: 'bg-surface-container text-on-surface border-outline-variant [&>svg]:text-primary',
+        success: 'bg-success-container text-on-success-container border-success [&>svg]:text-success',
+        warning: 'bg-error-container text-on-error-container border-error [&>svg]:text-error',
+        destructive: 'bg-error-container text-on-error-container border-error [&>svg]:text-error',
       },
     },
     defaultVariants: {
@@ -34,7 +31,7 @@ const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<H
   ({ className, ...props }, ref) => (
     <h5
       ref={ref}
-      className={cn('mb-1 font-semibold leading-none tracking-tight', className)}
+      className={cn('mb-1 text-label-lg', className)}
       {...props}
     />
   )
@@ -45,7 +42,7 @@ const AlertDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('text-sm [&_p]:leading-relaxed', className)} {...props} />
+  <div ref={ref} className={cn('text-body-md [&_p]:leading-relaxed', className)} {...props} />
 ));
 AlertDescription.displayName = 'AlertDescription';
 

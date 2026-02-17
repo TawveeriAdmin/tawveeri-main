@@ -41,7 +41,7 @@ export function ProductVideoPlayer({
   if (isPlaying && embedUrl) {
     // YouTube iframe
     return (
-      <div className={cn('relative aspect-video w-full rounded-lg overflow-hidden', className)}>
+      <div className={cn('relative aspect-video w-full rounded-xl overflow-hidden', className)}>
         <iframe
           key={videoKey}
           src={embedUrl}
@@ -57,7 +57,7 @@ export function ProductVideoPlayer({
   if (isPlaying && !embedUrl) {
     // Direct video URL
     return (
-      <div className={cn('relative aspect-video w-full rounded-lg overflow-hidden bg-black', className)}>
+      <div className={cn('relative aspect-video w-full rounded-xl overflow-hidden bg-black', className)}>
         <video
           key={videoKey}
           src={videoUrl}
@@ -73,7 +73,7 @@ export function ProductVideoPlayer({
 
   // Thumbnail with play button
   return (
-    <div className={cn('relative aspect-video w-full rounded-lg overflow-hidden cursor-pointer group', className)}>
+    <div className={cn('relative aspect-video w-full rounded-xl overflow-hidden cursor-pointer group', className)}>
       {thumbnailUrl ? (
         <Image
           src={thumbnailUrl}
@@ -82,7 +82,7 @@ export function ProductVideoPlayer({
           className="object-cover"
         />
       ) : (
-        <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800" />
+        <div className="absolute inset-0 bg-surface-container-highest" />
       )}
       
       {/* Play Button Overlay */}
@@ -91,8 +91,8 @@ export function ProductVideoPlayer({
         className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors"
         aria-label="Play video"
       >
-        <div className="bg-white/90 dark:bg-gray-900/90 rounded-full p-4 group-hover:scale-110 transition-transform">
-          <Play className="h-12 w-12 text-primary-600 dark:text-primary-400 fill-current" />
+        <div className="bg-surface-container-lowest/90 rounded-full p-4 group-hover:scale-110 transition-transform">
+          <Play className="h-12 w-12 text-primary fill-current" />
         </div>
       </button>
     </div>

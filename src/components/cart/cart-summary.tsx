@@ -26,8 +26,8 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600 dark:text-gray-400">
+          <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-outline" />
+          <p className="text-on-surface-variant">
             {t('cart.cartEmpty')}
           </p>
         </CardContent>
@@ -50,43 +50,43 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
               
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
+                  <h3 className="text-title-lg text-on-surface mb-1">
                     {store.storeName}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-on-surface-variant">
                     {totals.itemCount} {totals.itemCount === 1 ? t('cart.product') : t('cart.products')}
                   </p>
                 </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-on-surface-variant">
                       {t('cart.subtotal')}
                     </span>
                     <Price
                       amount={totals.subtotal}
-                      className="font-semibold text-gray-900 dark:text-white"
+                      className="font-semibold text-on-surface"
                     />
                   </div>
                   {totals.deliveryCost > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">
+                      <span className="text-on-surface-variant">
                         {t('cart.delivery')}
                       </span>
                       <Price
                         amount={totals.deliveryCost}
-                        className="font-semibold text-gray-900 dark:text-white"
+                        className="font-semibold text-on-surface"
                       />
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between text-base">
-                    <span className="font-semibold text-gray-900 dark:text-white">
+                    <span className="font-semibold text-on-surface">
                       {t('cart.total')}
                     </span>
                     <Price
                       amount={totals.total}
-                      className="font-bold text-lg text-gray-900 dark:text-white"
+                      className="font-bold text-lg text-on-surface"
                     />
                   </div>
                 </div>
@@ -111,15 +111,15 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
             <Separator />
             <div className="space-y-2">
               <div className="flex justify-between text-base">
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="font-semibold text-on-surface">
                   {t('cart.grandTotal')}
                 </span>
                 <Price
                   amount={subtotal}
-                  className="font-bold text-lg text-gray-900 dark:text-white"
+                  className="font-bold text-lg text-on-surface"
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-on-surface-variant">
                 {t('cart.fromStores', { count: stores.length })}
               </p>
             </div>
