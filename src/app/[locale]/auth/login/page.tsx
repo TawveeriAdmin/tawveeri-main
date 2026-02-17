@@ -45,12 +45,16 @@ export default function LoginPage() {
  const [isLoading, setIsLoading] = useState(false);
  const [otpLoading, setOtpLoading] = useState(false);
  const [isNewUser, setIsNewUser] = useState(false);
+ const [loginMode, setLoginMode] = useState<'phone' | 'email'>('phone');
+ const [showPassword, setShowPassword] = useState(false);
 
  const [otpSent, setOtpSent] = useState(false);
  const [formData, setFormData] = useState({
  phone: '',
  otp: '',
  fullName: '',
+ email: '',
+ password: '',
  rememberMe: false,
  });
 
@@ -122,8 +126,60 @@ export default function LoginPage() {
  }
  };
 
+ const handleEmailLogin = async () => {
+ if (!formData.email || !formData.password) {
+ toast({
+ title: t('auth.validation.emailRequired') || 'Email and password required',
+ variant: 'destructive',
+ });
+ return;
+ }
+
+ setIsLoading(true);
+ try {
+ const { error } = await signInWithEmail(formData.email, formData.password);
+ if (error) throw error;
+
+ toast({
+ title: t('auth.loginSuccess') || 'Welcome back!',
+ description: t('auth.loginSuccessDesc') || 'You have successfully logged in',
+ variant: 'default',
+ });
+
+ await new Promise(resolve => setTimeout(resolve, 500));
+
+ const redirectParam = searchParams.get('redirect');
+ const sanitizedRedirect = redirectParam
+ ? `${redirectParam.startsWith('/') ? redirectParam : `/${redirectParam}`}`
+ : '';
+ const targetPath = sanitizedRedirect ? `/${locale}${sanitizedRedirect}` : `/${locale}`;
+
+ setIsLoading(false);
+ window.location.href = targetPath;
+ } catch (error: any) {
+ console.error('Email login error:', error);
+
+ let errorMessage = t('auth.somethingWrong') || 'Something went wrong. Please try again.';
+ if (error.message?.includes('Invalid login') || error.message?.includes('invalid')) {
+ errorMessage = t('auth.invalidCredentials') || 'Invalid email or password';
+ }
+
+ toast({
+ title: t('auth.loginError') || 'Login failed',
+ description: errorMessage,
+ variant: 'destructive',
+ });
+ setIsLoading(false);
+ }
+ };
+
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
+
+ if (loginMode === 'email') {
+ await handleEmailLogin();
+ return;
+ }
 
  if (!otpSent) {
  toast({
@@ -183,7 +239,7 @@ export default function LoginPage() {
 
  // Show success message
  toast({
- title: isNewUser 
+ title: isNewUser
  ? (t('auth.signupSuccess') || 'Account created successfully')
  : (t('auth.loginSuccess') || 'Welcome back!'),
  description: isNewUser
@@ -194,7 +250,7 @@ export default function LoginPage() {
 
  // Wait a moment for cookies to be set and session to be available
  await new Promise(resolve => setTimeout(resolve, 500));
- 
+
  // Determine redirect path (defaults to home)
  const redirectParam = searchParams.get('redirect');
  const sanitizedRedirect = redirectParam
@@ -204,7 +260,7 @@ export default function LoginPage() {
 
  // Stop loading before redirect
  setIsLoading(false);
- 
+
  // Use window.location.href for full page reload to ensure cookies are read
  // This ensures the auth context properly initializes with the session
  window.location.href = targetPath;
@@ -301,6 +357,8 @@ export default function LoginPage() {
 
  {/* Form */}
  <form onSubmit={handleSubmit} className="space-y-6">
+ {loginMode === 'phone' ? (
+ <>
  {/* Phone Field */}
  {!otpSent && (
  <div className="space-y-2">
@@ -366,8 +424,8 @@ export default function LoginPage() {
  </div>
  )}
 
- {/* OTP Field */}
- {otpSent && (
+ {/* OTP Field — hidden once OTP is verified and user is new */}
+ {otpSent && !isNewUser && (
  <div className="space-y-2">
  <label htmlFor="otp" className="block text-label-lg text-on-surface">
  {t('auth.enterOtp') || 'Enter OTP'}
@@ -399,6 +457,60 @@ export default function LoginPage() {
  </button>
  </p>
  </div>
+ )}
+ </>
+ ) : (
+ <>
+ {/* Email Field */}
+ <div className="space-y-2">
+ <label htmlFor="email" className="block text-label-lg text-on-surface">
+ {t('auth.emailAddress')}
+ </label>
+ <div className="relative">
+ <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-outline`}>
+ <Mail className="w-5 h-5" />
+ </div>
+ <input
+ id="email"
+ type="email"
+ autoComplete="email"
+ value={formData.email}
+ onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+ placeholder={t('auth.emailPlaceholder')}
+ className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ required
+ />
+ </div>
+ </div>
+
+ {/* Password Field */}
+ <div className="space-y-2">
+ <label htmlFor="password" className="block text-label-lg text-on-surface">
+ {t('auth.password')}
+ </label>
+ <div className="relative">
+ <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-outline`}>
+ <Lock className="w-5 h-5" />
+ </div>
+ <input
+ id="password"
+ type={showPassword ? 'text' : 'password'}
+ value={formData.password}
+ onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+ placeholder={t('auth.passwordPlaceholder')}
+ className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ required
+ />
+ <button
+ type="button"
+ onClick={() => setShowPassword(!showPassword)}
+ className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors`}
+ >
+ {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+ </button>
+ </div>
+ </div>
+ </>
  )}
 
  {/* Remember Me & Forgot Password */}
@@ -437,14 +549,28 @@ export default function LoginPage() {
  </span>
  </button>
 
- {/* Continue with Email Button */}
- <Link
- href={`/${locale}/auth/signup`}
+ {/* Toggle Login Mode Button */}
+ <button
+ type="button"
+ onClick={() => {
+ setLoginMode(loginMode === 'phone' ? 'email' : 'phone');
+ setOtpSent(false);
+ setIsNewUser(false);
+ }}
  className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:bg-surface-container transition-all duration-200 hover:scale-105 text-on-surface-variant font-medium"
  >
+ {loginMode === 'phone' ? (
+ <>
  <Mail className="w-4 h-4" />
  {t('auth.continueWithEmail') || 'Continue with Email'}
- </Link>
+ </>
+ ) : (
+ <>
+ <Phone className="w-4 h-4" />
+ {t('auth.continueWithPhone') || 'Continue with Phone'}
+ </>
+ )}
+ </button>
 
  {/* Divider */}
  <div className="relative">
@@ -477,6 +603,17 @@ export default function LoginPage() {
  <FacebookIcon />
  </button>
  </div>
+
+ {/* Don't have an account? Sign Up */}
+ <p className="text-center text-sm text-on-surface-variant">
+ {t('auth.noAccount') || "Don't have an account?"}{' '}
+ <Link
+ href={`/${locale}/auth/signup`}
+ className="text-primary font-semibold hover:underline"
+ >
+ {t('auth.signUp')}
+ </Link>
+ </p>
  </form>
  </div>
  </div>

@@ -505,6 +505,17 @@ export default function SignupPage() {
  <FacebookIcon />
  </button>
  </div>
+
+ {/* Already have an account? Sign In */}
+ <p className="text-center text-sm text-on-surface-variant">
+ {t('auth.hasAccount') || 'Already have an account?'}{' '}
+ <Link
+ href={`/${locale}/auth/login`}
+ className="text-primary font-semibold hover:underline"
+ >
+ {t('auth.signIn')}
+ </Link>
+ </p>
  </form>
  </div>
  </div>
