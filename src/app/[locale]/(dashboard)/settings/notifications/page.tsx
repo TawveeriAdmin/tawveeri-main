@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getSupabaseBrowserClient } from '@/lib/database';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -17,6 +16,7 @@ import {
  SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 import { GuestPrompt } from '@/components/auth/guest-prompt';
 import { Bell, Mail, MessageSquare, Smartphone } from 'lucide-react';
 
@@ -62,10 +62,9 @@ export default function NotificationPreferencesPage() {
  const params = useParams();
  const locale = (params?.locale as string) || 'ar';
  const t = useTranslations();
- const { user } = useAuth();
+ const { user, loading: authLoading } = useAuth();
  const { toast } = useToast();
  const isRTL = locale === 'ar';
- const supabase = getSupabaseBrowserClient();
 
  const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
  const [loading, setLoading] = useState(true);
@@ -144,37 +143,41 @@ export default function NotificationPreferencesPage() {
  setPreferences((prev) => ({ ...prev, [key]: value }));
  };
 
+ if (authLoading) {
+ return (
+ <div className="space-y-6 max-w-4xl">
+ <Skeleton className="h-8 w-48" />
+ <Skeleton className="h-64 w-full rounded-xl" />
+ </div>
+ );
+ }
+
  if (!user) {
  return (
- <div className="min-h-screen bg-surface-container">
- <div className="container mx-auto px-4 py-8">
  <GuestPrompt
  title={t('notifications.title')}
  description={t('notifications.guestDescription')}
  locale={locale}
  />
- </div>
- </div>
  );
  }
 
  if (loading) {
  return (
- <div className="min-h-screen bg-surface-container">
- <div className="container mx-auto px-4 py-8">{t('common.loading')}</div>
+ <div className="space-y-6 max-w-4xl">
+ <Skeleton className="h-8 w-48" />
+ <Skeleton className="h-64 w-full rounded-xl" />
  </div>
  );
  }
 
  return (
- <div className="min-h-screen bg-surface-container">
- <div className="container mx-auto px-4 py-8 max-w-4xl">
- <div className="space-y-6">
+ <div className="space-y-6 max-w-4xl">
  <div>
- <h1 className="text-headline-lg text-on-surface mb-2">
+ <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('notifications.title')}
  </h1>
- <p className="text-on-surface-variant">
+ <p className="text-sm text-gray-500 dark:text-gray-400">
  {t('notifications.subtitle')}
  </p>
  </div>
@@ -449,8 +452,6 @@ export default function NotificationPreferencesPage() {
  <Button onClick={savePreferences} disabled={saving}>
  {saving ? t('notifications.saving') : t('notifications.savePreferences')}
  </Button>
- </div>
- </div>
  </div>
  </div>
  );

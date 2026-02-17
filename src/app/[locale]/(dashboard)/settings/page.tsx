@@ -54,7 +54,10 @@ interface StoredPreferences {
 const LOCAL_STORAGE_KEY_PREFIX = 'tawveeri.preferences.';
 
 export default function SettingsPage() {
- const supabase = getSupabaseBrowserClient();
+ const supabase = useMemo(
+ () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
+ []
+ );
  const params = useParams();
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
@@ -105,7 +108,7 @@ export default function SettingsPage() {
  };
 
  useEffect(() => {
- if (authLoading) return;
+ if (authLoading || !supabase) return;
  if (!user) {
  router.push(`/${locale}/auth/login`);
  return;
@@ -191,7 +194,7 @@ export default function SettingsPage() {
  };
 
  const handleSave = async () => {
- if (!user) return;
+ if (!user || !supabase) return;
  setSaving(true);
  const payload: StoredPreferences = {
  notification_preferences: notificationSettings,
@@ -234,7 +237,7 @@ export default function SettingsPage() {
  };
 
  const handleExportData = async () => {
- if (!user) return;
+ if (!user || !supabase) return;
  setExporting(true);
  try {
  const [{ data: profile }, { data: wishlists }, { data: alerts }, { data: searches }] =
@@ -281,16 +284,12 @@ export default function SettingsPage() {
  }
  };
 
- if (authLoading || loading) {
+ if (authLoading || !supabase || loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
- <div className="space-y-6">
- <Skeleton className="h-10 w-64" />
- <Skeleton className="h-32 w-full" />
- <Skeleton className="h-64 w-full" />
- </div>
- </div>
+ <div className="space-y-6 max-w-5xl">
+ <Skeleton className="h-8 w-48" />
+ <Skeleton className="h-32 w-full rounded-xl" />
+ <Skeleton className="h-64 w-full rounded-xl" />
  </div>
  );
  }
@@ -300,29 +299,13 @@ export default function SettingsPage() {
  }
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8 max-w-5xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('settings.title')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
+ <div className="space-y-6 max-w-5xl">
  {/* Header */}
- <div className="mb-8">
- <h1 className="text-headline-lg text-on-surface mb-2">
+ <div>
+ <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('settings.title')}
  </h1>
- <p className="text-on-surface-variant">{t('settings.description')}</p>
+ <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.description')}</p>
  </div>
 
  <div className="space-y-6">
@@ -513,7 +496,6 @@ export default function SettingsPage() {
  <Save className="w-4 h-4" />
  {saving ? t('settings.saving') : t('settings.savePreferences')}
  </Button>
- </div>
  </div>
  </div>
  </div>

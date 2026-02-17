@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -69,7 +69,10 @@ const mapWishlistProduct = (record: WishlistProductRecord): WishlistProduct => (
 });
 
 export default function WishlistPage() {
- const supabase = getSupabaseBrowserClient();
+ const supabase = useMemo(
+ () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
+ []
+ );
  const params = useParams();
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
@@ -87,10 +90,10 @@ export default function WishlistPage() {
  useEffect(() => {
  fetchWishlist();
  // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [user, authLoading, t]);
+ }, [user, authLoading]);
 
  const handleRemoveFromWishlist = async (productId: string) => {
- if (!user) return;
+ if (!user || !supabase) return;
 
  try {
  const { error } = await supabase
@@ -154,7 +157,7 @@ export default function WishlistPage() {
  };
 
  const fetchWishlist = async () => {
- if (authLoading || !user) return;
+ if (authLoading || !user || !supabase) return;
 
  setLoading(true);
  setError(null);
@@ -231,81 +234,40 @@ export default function WishlistPage() {
 
  if (authLoading || loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
  <div className="space-y-6">
- <Skeleton className="h-10 w-64" />
+ <Skeleton className="h-8 w-48" />
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
  {Array.from({ length: 4 }).map((_, i) => (
  <div key={i} className="space-y-4">
- <Skeleton className="h-48 w-full" />
+ <Skeleton className="h-48 w-full rounded-xl" />
  <Skeleton className="h-4 w-3/4" />
  <Skeleton className="h-4 w-1/2" />
  </div>
  ))}
  </div>
  </div>
- </div>
- </div>
  );
  }
 
  if (!user) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
  <GuestPrompt
  locale={locale}
  title={t('wishlist.guestTitle') || 'Sign in to save your favourite products'}
  description={t('wishlist.guestDescription') || 'Create an account to build your wishlist, track prices, and never miss a deal.'}
  ctaLabel={t('auth.signIn') || 'Sign in'}
  />
- </div>
- </div>
- );
- }
-
- if (!user) {
- return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
- <EmptyState
- icon={<LogIn className="h-12 w-12" />}
- title={t('wishlist.signInRequired')}
- action={{
- label: t('common.login'),
- onClick: () => router.push(`/${locale}/auth/login`),
- }}
- />
- </div>
- </div>
  );
  }
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('wishlist.title')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
+ <div className="space-y-6">
  {/* Header */}
- <div className="mb-8">
- <h1 className="text-headline-lg text-on-surface mb-2">
+ <div>
+ <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('wishlist.myWishlist')}
  </h1>
- <p className="text-on-surface-variant">
+ <p className="text-sm text-gray-500 dark:text-gray-400">
  {products.length} {t('wishlist.savedProducts')}
  </p>
  </div>
@@ -392,7 +354,6 @@ export default function WishlistPage() {
  onNoteUpdated={handleNoteUpdated}
  />
  )}
- </div>
  </div>
  );
 }

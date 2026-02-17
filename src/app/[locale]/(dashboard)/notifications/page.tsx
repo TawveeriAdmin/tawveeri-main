@@ -58,7 +58,10 @@ const filterOrder: FilterKey[] = [
 ];
 
 export default function NotificationsPage() {
- const supabase = getSupabaseBrowserClient();
+ const supabase = useMemo(
+ () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
+ []
+ );
  const { user, loading: authLoading } = useAuth();
  const params = useParams();
  const router = useRouter();
@@ -75,7 +78,7 @@ export default function NotificationsPage() {
  const [markingAll, setMarkingAll] = useState(false);
 
  useEffect(() => {
- if (authLoading) return;
+ if (authLoading || !supabase) return;
  if (!user) {
  router.push(`/${locale}/auth/login?redirect=/notifications`);
  return;
@@ -125,7 +128,8 @@ export default function NotificationsPage() {
  };
 
  loadNotifications();
- }, [authLoading, user, page, locale, router, t]);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [authLoading, user, page]);
 
  const filteredNotifications = useMemo(() => {
  if (filter === 'all') return notifications;
@@ -178,6 +182,7 @@ export default function NotificationsPage() {
  };
 
  const handleMarkAsRead = async (notification: NotificationRecord, isRead: boolean) => {
+ if (!supabase) return;
  const optimistic = { ...notification, is_read: isRead };
  updateNotificationInState(notification.id, optimistic);
 
@@ -197,6 +202,7 @@ export default function NotificationsPage() {
  };
 
  const handleDelete = async (notificationId: string) => {
+ if (!supabase) return;
  const backup = notifications;
  setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
 
@@ -221,7 +227,7 @@ export default function NotificationsPage() {
  };
 
  const handleMarkAll = async () => {
- if (!user) return;
+ if (!user || !supabase) return;
  setMarkingAll(true);
 
  const previous = notifications;
@@ -267,16 +273,14 @@ export default function NotificationsPage() {
  </Button>
  );
 
- if (authLoading || loading) {
+ if (authLoading || !supabase || loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
- <Skeleton className="h-10 w-64 mb-6" />
+ <div className="space-y-6">
+ <Skeleton className="h-8 w-48" />
  <div className="space-y-4">
  {Array.from({ length: 4 }).map((_, index) => (
- <Skeleton key={index} className="h-28 w-full" />
+ <Skeleton key={index} className="h-28 w-full rounded-xl" />
  ))}
- </div>
  </div>
  </div>
  );
@@ -284,28 +288,23 @@ export default function NotificationsPage() {
 
  if (!user) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
  <GuestPrompt
  locale={locale}
  title={t('notifications.guestTitle') || 'Sign in to view your alerts'}
  description={t('notifications.guestDescription') || 'Track price drops, restocks, and deal alerts by creating a free account.'}
  ctaLabel={t('auth.signIn') || 'Sign in'}
  />
- </div>
- </div>
  );
  }
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
- <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+ <div className="space-y-6">
+ <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
  <div>
- <h1 className="text-headline-lg text-on-surface mb-1">
+ <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('notifications.title')}
  </h1>
- <p className="text-on-surface-variant max-w-2xl">
+ <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
  {t('notifications.subtitle')}
  </p>
  </div>
@@ -314,7 +313,7 @@ export default function NotificationsPage() {
  </Button>
  </div>
 
- <div className="flex flex-wrap gap-2 mb-6">
+ <div className="flex flex-wrap gap-2">
  {filterOrder.map(renderFilterButton)}
  </div>
 
@@ -453,11 +452,10 @@ export default function NotificationsPage() {
  )}
 
  {!hasMore && page > 0 && (
- <p className="mt-6 text-center text-sm text-on-surface-variant">
+ <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
  {t('notifications.noMore')}
  </p>
  )}
- </div>
  </div>
  );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -40,10 +40,13 @@ export default function PriceAlertsPage() {
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
  const t = useTranslations();
- const { user } = useAuth();
+ const { user, loading: authLoading } = useAuth();
  const { toast } = useToast();
  const isRTL = locale === 'ar';
- const supabase = getSupabaseBrowserClient();
+ const supabase = useMemo(
+ () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
+ []
+ );
 
  const [alerts, setAlerts] = useState<PriceAlertWithProduct[]>([]);
  const [loading, setLoading] = useState(true);
@@ -60,7 +63,7 @@ export default function PriceAlertsPage() {
  }, [user, activeTab]);
 
  const loadAlerts = async () => {
- if (!user) return;
+ if (!user || !supabase) return;
 
  try {
  setLoading(true);
@@ -100,7 +103,7 @@ export default function PriceAlertsPage() {
  };
 
  const handleDelete = async (alertId: string) => {
- if (!user) return;
+ if (!user || !supabase) return;
 
  if (!confirm(t('priceAlerts.deleteConfirm'))) {
  return;
@@ -132,7 +135,7 @@ export default function PriceAlertsPage() {
  };
 
  const handleToggle = async (alertId: string, isActive: boolean) => {
- if (!user) return;
+ if (!user || !supabase) return;
 
  try {
  const { error } = await supabase
@@ -176,45 +179,38 @@ export default function PriceAlertsPage() {
  return Math.min(...stores.map((ps) => ps.current_price));
  };
 
- if (!user) {
+ if (authLoading) {
  return (
- <div className="min-h-screen bg-surface-container">
- <div className="container mx-auto px-4 py-8">
- <GuestPrompt
- title={t('priceAlerts.guestTitle')}
- description={t('priceAlerts.guestDescription')}
- locale={locale}
- />
+ <div className="space-y-6">
+ <Skeleton className="h-8 w-48" />
+ <div className="grid gap-4">
+ {[...Array(3)].map((_, i) => (
+ <Skeleton key={i} className="h-32 w-full" />
+ ))}
  </div>
  </div>
  );
  }
 
+ if (!user) {
  return (
- <div className="min-h-screen bg-surface-container">
- <div className="container mx-auto px-4 py-8 max-w-7xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('priceAlerts.title')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
+ <GuestPrompt
+ title={t('priceAlerts.guestTitle')}
+ description={t('priceAlerts.guestDescription')}
+ locale={locale}
+ />
+ );
+ }
 
+ return (
+ <div className="space-y-6">
  {/* Page Header */}
- <div className="flex items-center justify-between mb-6">
+ <div className="flex items-center justify-between">
  <div>
- <h1 className="text-headline-lg text-on-surface mb-2">
+ <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('priceAlerts.title')}
  </h1>
- <p className="text-on-surface-variant">
+ <p className="text-sm text-gray-500 dark:text-gray-400">
  {t('priceAlerts.description')}
  </p>
  </div>
@@ -225,7 +221,7 @@ export default function PriceAlertsPage() {
  </div>
 
  {/* Tabs */}
- <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'inactive')} className="mb-6">
+ <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'inactive')}>
  <TabsList>
  <TabsTrigger value="active">
  {t('priceAlerts.active')} ({alerts.filter((a) => a.is_active).length})
@@ -303,7 +299,6 @@ export default function PriceAlertsPage() {
  )}
  </TabsContent>
  </Tabs>
- </div>
 
  {/* Price Alert Dialog - For adding new alerts, user needs to navigate to product page */}
  {/* Edit functionality will use the dialog but we need product context */}

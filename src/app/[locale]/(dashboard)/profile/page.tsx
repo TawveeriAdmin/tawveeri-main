@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -23,7 +23,10 @@ import { getSupabaseBrowserClient } from '@/lib/database';
 import { updateAvatar, deleteAvatar, resendEmailVerification, resendPhoneVerification, verifyPhoneOTP } from '@/lib/auth/profile';
 
 export default function ProfilePage() {
- const supabase = getSupabaseBrowserClient();
+ const supabase = useMemo(
+ () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
+ []
+ );
  const params = useParams();
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
@@ -86,13 +89,9 @@ export default function ProfilePage() {
  // Redirect if not authenticated
  if (authLoading || loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
- <div className="space-y-6">
- <Skeleton className="h-10 w-64" />
- <Skeleton className="h-96 w-full" />
- </div>
- </div>
+ <div className="space-y-6 max-w-4xl">
+ <Skeleton className="h-8 w-48" />
+ <Skeleton className="h-96 w-full rounded-xl" />
  </div>
  );
  }
@@ -189,6 +188,7 @@ export default function ProfilePage() {
  };
 
  const handleDeleteAccount = async () => {
+ if (!supabase) return;
  setDeleteLoading(true);
  try {
  // First, sign out the user
@@ -368,29 +368,13 @@ export default function ProfilePage() {
 
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8 max-w-4xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('profile.title')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
+ <div className="space-y-6 max-w-4xl">
  {/* Header */}
- <div className="mb-8">
- <h1 className="text-headline-lg text-on-surface mb-2">
+ <div>
+ <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('profile.title')}
  </h1>
- <p className="text-on-surface-variant">
+ <p className="text-sm text-gray-500 dark:text-gray-400">
  {t('profile.manageProfile')}
  </p>
  </div>
@@ -730,7 +714,6 @@ export default function ProfilePage() {
  </Dialog>
  </CardContent>
  </Card>
- </div>
  </div>
  </div>
  );

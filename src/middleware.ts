@@ -17,6 +17,7 @@ const protectedRoutes = [
   '/wishlist',
   '/notifications',
   '/price-alerts',
+  '/settings',
 ];
 
 // Routes that require admin role

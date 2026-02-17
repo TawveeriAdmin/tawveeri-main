@@ -1,7 +1,7 @@
 {
   "title": "Dashboard",
   "welcome": "Welcome back",
-  "welcomeGuest": "Welcome",
+  "welcomeGuest": "Welcome to Tawveeri",
   "wishlistCount": "Items in Wishlist",
   "recentSearches": "Recent Searches",
   "activeAlerts": "Active Price Alerts",
@@ -27,8 +27,8 @@
   "favorites": "Favorites",
   "openWishlist": "Open wishlist",
   "nothingSaved": "Nothing saved yet",
-  "wishlistItems": "Wishlist items",
-  "savedSearches": "Saved searches",
+  "wishlistItems": "Wishlist",
+  "savedSearches": "Searches",
   "recentlyViewed": "Recently viewed",
   "startExploring": "Start exploring",
   "startExploringDescription": "Products you view will appear here automatically for easy access.",
@@ -37,11 +37,67 @@
   "noComparisons": "No comparisons yet",
   "noComparisonsDescription": "Add products to the comparison tool and we'll keep them here for quick access.",
   "targetPrice": "Target",
+  "currentPrice": "Current",
   "alertTriggered": "Alert triggered",
+  "priceProgress": "of target",
+  "stores": "stores",
+  "insightsSubtitle": "Personalized tips based on your activity",
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "subtitle": "Here's your activity summary"
+  },
+  "quickAction": {
+    "search": "Search",
+    "wishlist": "Wishlist",
+    "compare": "Compare",
+    "alerts": "Alerts",
+    "settings": "Settings"
+  },
   "stats": {
+    "wishlist": "Wishlist",
+    "alerts": "Alerts",
+    "searches": "Searches",
+    "viewed": "Viewed",
     "totalSaved": "Total Saved",
     "productsCompared": "Products Compared",
     "alertsActive": "Active Alerts"
+  },
+  "section": {
+    "recommendations": "Recommendations",
+    "favorites": "Favorites",
+    "recentlyViewed": "Recently Viewed",
+    "recentSearches": "Recent Searches",
+    "notifications": "Notifications",
+    "comparisonHistory": "Comparison History",
+    "priceAlerts": "Price Alerts"
+  },
+  "guest": {
+    "title": "Discover the best prices in Saudi Arabia",
+    "subtitle": "Compare prices across stores and get instant alerts when prices drop",
+    "feature1Title": "Price Tracking",
+    "feature1Desc": "Automatically track product prices and get notified instantly",
+    "feature2Title": "Smart Wishlist",
+    "feature2Desc": "Save your favorite products and easily follow their prices",
+    "feature3Title": "Store Comparison",
+    "feature3Desc": "Compare prices across Amazon, Noon, Jarir, and Extra",
+    "cta": "Sign in now"
+  },
+  "profileMenu": {
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "wishlist": "Wishlist",
+    "priceAlerts": "Price Alerts",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "settings": "Settings",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   }
 }
-
