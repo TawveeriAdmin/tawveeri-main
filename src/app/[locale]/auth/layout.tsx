@@ -11,9 +11,18 @@ export default async function AuthLayout({
  const { locale } = await params;
 
  // Load messages
- const commonMessages = (await import(`../../../../messages/${locale}/common.json`)).default;
- const authMessages = (await import(`../../../../messages/${locale}/auth.json`)).default;
- const messages = { ...commonMessages, ...authMessages };
+ const commonMessages = (await import(`../../../../messages/${locale}/common.json`)).default as Record<string, unknown>;
+ const authMessages = (await import(`../../../../messages/${locale}/auth.json`)).default as Record<string, unknown>;
+
+ // Keep common top-level keys (app/nav/button...) and expose auth under `auth.*`
+ const commonNested = commonMessages.common as Record<string, unknown> | undefined;
+ const commonTopLevel = { ...commonMessages };
+ delete commonTopLevel.common;
+ const messages = {
+  ...commonTopLevel,
+  ...(commonNested ? { common: commonNested } : {}),
+  auth: authMessages,
+ };
 
  return (
  <SimpleIntlProvider messages={messages} locale={locale}>

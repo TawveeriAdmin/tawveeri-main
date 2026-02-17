@@ -1,10 +1,12 @@
 'use client';
 
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useCallback, useContext, useMemo } from 'react';
 
 type MessagePrimitive = string | number | boolean;
 type MessageValue = MessagePrimitive | MessageValue[] | { [key: string]: MessageValue };
 type Messages = Record<string, MessageValue>;
+type TranslationParams = Record<string, string | number>;
+type TranslateFn = (key: string, params?: TranslationParams) => string;
 
 const isMessageObject = (value: unknown): value is Record<string, MessageValue> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -58,18 +60,10 @@ export function SimpleIntlProvider({
   );
 }
 
-export function useTranslations(): (key: string) => string {
-  const context = useContext(IntlContext);
-  
-  // Safety check - ensure context exists
-  if (!context) {
-    console.warn('useTranslations called outside of SimpleIntlProvider');
-    return (key: string) => key;
-  }
+export function useTranslations(): TranslateFn {
+  const { messages = {} } = useContext(IntlContext);
 
-  const { messages = {} } = context;
-
-  return (key: string, params?: Record<string, string | number>) => {
+  return useCallback((key: string, params?: TranslationParams) => {
     if (!key || typeof key !== 'string') {
       return key || '';
     }
@@ -99,5 +93,5 @@ export function useTranslations(): (key: string) => string {
     }
 
     return key;
-  };
+  }, [messages]);
 }

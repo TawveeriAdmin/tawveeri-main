@@ -14,7 +14,7 @@ import {
  BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,7 +54,6 @@ interface Product {
 const MAX_COMPARE_PRODUCTS = 4;
 
 export default function ComparePage() {
- const supabase = getSupabaseBrowserClient();
  const params = useParams();
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
@@ -81,6 +80,8 @@ export default function ComparePage() {
 
  // Fetch products and track comparison_count
  useEffect(() => {
+ const supabase = getSupabaseBrowserClient();
+
  async function fetchProducts() {
  if (productIds.length === 0) {
  setProducts([]);
@@ -145,7 +146,7 @@ export default function ComparePage() {
  }
 
  fetchProducts();
- }, [productIds, locale]);
+ }, [productIds, locale, t]);
 
  const handleRemove = (productId: string) => {
  const newIds = productIds.filter((id) => id !== productId);
@@ -183,18 +184,15 @@ export default function ComparePage() {
 
  if (loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8">
+ <div className="space-y-6">
  <Skeleton className="h-10 w-64 mb-6" />
  <Skeleton className="h-96 w-full" />
- </div>
  </div>
  );
  }
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
- <div className="container mx-auto px-4 py-8 max-w-7xl">
+ <div className="space-y-6">
  {/* Breadcrumbs */}
  <Breadcrumb className="mb-6">
  <BreadcrumbList>
@@ -419,7 +417,5 @@ export default function ComparePage() {
  </Alert>
  )}
  </div>
- </div>
  );
 }
-

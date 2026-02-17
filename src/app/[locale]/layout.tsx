@@ -71,7 +71,8 @@ export default async function LocaleLayout({
  // Note: common.json has both top-level keys (app, nav, etc.) and a nested "common" object
  const commonMessages = common.status === 'fulfilled' && common.value?.default ? common.value.default : {};
  const commonNested = (commonMessages as Record<string, unknown>)?.common as Record<string, unknown> | undefined;
- const { common: _, ...commonTopLevel } = commonMessages as Record<string, unknown>;
+ const commonTopLevel = { ...(commonMessages as Record<string, unknown>) };
+ delete commonTopLevel.common;
  messages = {
  ...(commonTopLevel || {}), // Top-level keys from common.json (app, nav, button, etc.)
  ...(commonNested ? { common: commonNested } : {}), // Nested common object namespaced
@@ -110,27 +111,9 @@ export default async function LocaleLayout({
  messages = JSON.parse(JSON.stringify(messages || {}));
 
  return (
- <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning className="">
- <head>
- <script
- dangerouslySetInnerHTML={{
- __html: `
- try {
- // Tailwind uses 'dark' class for dark mode
- // NO CLASS = light mode (Tailwind default)
- const theme = localStorage.getItem('tawveeri-theme') || 'light';
- if (theme === 'dark') {
- document.documentElement.classList.add('dark');
- } else {
- // Light mode = remove dark class (don't add 'light' class!)
- document.documentElement.classList.remove('dark');
- }
- } catch (e) {}
- `,
- }}
- />
- </head>
- <body
+ <div
+ lang={locale}
+ dir={locale === 'ar' ? 'rtl' : 'ltr'}
  className={`${inter.variable} ${ibmPlexArabic.variable} ${
  locale === 'ar' ? 'font-sans-ar' : 'font-sans'
  } antialiased`}
@@ -152,7 +135,6 @@ export default async function LocaleLayout({
  </MultiStoreCartProvider>
  </ThemeProvider>
  </SimpleIntlProvider>
- </body>
- </html>
+ </div>
  );
 }

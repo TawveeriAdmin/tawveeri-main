@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,7 +18,6 @@ import {
  Bell,
  PackageSearch,
  Trash2,
- Eye,
  Check,
  X,
  ExternalLink,
@@ -67,6 +66,7 @@ export default function NotificationsPage() {
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
  const t = useTranslations();
+ const tn = (key: string) => t(`notifications.notifications.${key}`);
  const { toast } = useToast();
 
  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
@@ -112,7 +112,7 @@ export default function NotificationsPage() {
 
  if (queryError) {
  console.error('Failed to load notifications', queryError);
- setError(t('notifications.loadError'));
+ setError(tn('loadError'));
  setLoading(false);
  return;
  }
@@ -142,7 +142,7 @@ export default function NotificationsPage() {
  const date = new Date(dateString);
  const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
  if (diffSeconds < 60) {
- return t('notifications.timeNow');
+ return tn('timeNow');
  }
  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
  const minutes = Math.floor(diffSeconds / 60);
@@ -195,7 +195,7 @@ export default function NotificationsPage() {
  console.error('Failed to update notification state', updateError);
  updateNotificationInState(notification.id, { is_read: notification.is_read });
  toast({
- title: t('notifications.markReadError'),
+ title: tn('markReadError'),
  variant: 'destructive',
  });
  }
@@ -215,12 +215,12 @@ export default function NotificationsPage() {
  console.error('Failed to delete notification', deleteError);
  setNotifications(backup);
  toast({
- title: t('notifications.deleteError'),
+ title: tn('deleteError'),
  variant: 'destructive',
  });
  } else {
  toast({
- title: t('notifications.deleted'),
+ title: tn('deleted'),
  variant: 'default',
  });
  }
@@ -245,7 +245,7 @@ export default function NotificationsPage() {
  console.error('Failed to mark all notifications', updateError);
  setNotifications(previous);
  toast({
- title: t('notifications.markAllError'),
+ title: tn('markAllError'),
  variant: 'destructive',
  });
  }
@@ -264,7 +264,7 @@ export default function NotificationsPage() {
  onClick={() => setFilter(key)}
  className="whitespace-nowrap"
  >
- {t(`notifications.filters.${key}`)}
+ {tn(`filters.${key}`)}
  {key === 'unread' && (
  <Badge variant="secondary" className="ml-2">
  {notifications.filter((n) => !n.is_read).length}
@@ -290,8 +290,8 @@ export default function NotificationsPage() {
  return (
  <GuestPrompt
  locale={locale}
- title={t('notifications.guestTitle') || 'Sign in to view your alerts'}
- description={t('notifications.guestDescription') || 'Track price drops, restocks, and deal alerts by creating a free account.'}
+ title={tn('guestTitle') || 'Sign in to view your alerts'}
+ description={tn('guestDescription') || 'Track price drops, restocks, and deal alerts by creating a free account.'}
  ctaLabel={t('auth.signIn') || 'Sign in'}
  />
  );
@@ -302,14 +302,14 @@ export default function NotificationsPage() {
  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
  <div>
  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
- {t('notifications.title')}
+ {tn('title')}
  </h1>
  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
- {t('notifications.subtitle')}
+ {tn('subtitle')}
  </p>
  </div>
  <Button onClick={handleMarkAll} disabled={markingAll || notifications.length === 0}>
- {markingAll ? t('notifications.marking') : t('notifications.markAllRead')}
+ {markingAll ? tn('marking') : tn('markAllRead')}
  </Button>
  </div>
 
@@ -327,10 +327,10 @@ export default function NotificationsPage() {
  <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline-variant rounded-xl bg-surface">
  <Bell className="w-12 h-12 text-primary mb-4" />
  <h2 className="text-title-lg text-on-surface mb-2">
- {t('notifications.empty')}
+ {tn('empty')}
  </h2>
  <p className="text-on-surface-variant max-w-md">
- {t('notifications.emptyDescription')}
+ {tn('emptyDescription')}
  </p>
  </div>
  ) : (
@@ -371,11 +371,11 @@ export default function NotificationsPage() {
  <div className="space-y-2">
  <div className="flex flex-wrap items-center gap-2">
  <Badge variant={notification.is_read ? 'secondary' : 'success'}>
- {t(`notifications.filters.${notification.type as NotificationType}`)}
+ {tn(`filters.${notification.type as NotificationType}`)}
  </Badge>
  {!notification.is_read && (
  <span className="text-xs font-semibold uppercase tracking-wide text-primary">
- {t('notifications.filters.unread')}
+ {tn('filters.unread')}
  </span>
  )}
  </div>
@@ -405,12 +405,12 @@ export default function NotificationsPage() {
  {notification.is_read ? (
  <>
  <X className="w-4 h-4 mr-2" />
- {t('notifications.actions.markUnread')}
+ {tn('actions.markUnread')}
  </>
  ) : (
  <>
  <Check className="w-4 h-4 mr-2" />
- {t('notifications.actions.markRead')}
+ {tn('actions.markRead')}
  </>
  )}
  </Button>
@@ -420,7 +420,7 @@ export default function NotificationsPage() {
  onClick={() => handleDelete(notification.id)}
  >
  <Trash2 className="w-4 h-4 mr-2" />
- {t('notifications.actions.delete')}
+ {tn('actions.delete')}
  </Button>
  </div>
  {primaryLink && (
@@ -428,8 +428,8 @@ export default function NotificationsPage() {
  <Link href={primaryLink}>
  <ExternalLink className="w-4 h-4 mr-2" />
  {notification.products
- ? t('notifications.viewProduct')
- : t('notifications.viewStore')}
+ ? tn('viewProduct')
+ : tn('viewStore')}
  </Link>
  </Button>
  )}
@@ -446,17 +446,16 @@ export default function NotificationsPage() {
  {hasMore && filteredNotifications.length > 0 && (
  <div className="flex justify-center mt-6">
  <Button variant="outline" onClick={handleLoadMore} disabled={loading}>
- {loading ? t('notifications.loading') : t('notifications.loadMore')}
+ {loading ? tn('loading') : tn('loadMore')}
  </Button>
  </div>
  )}
 
  {!hasMore && page > 0 && (
  <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
- {t('notifications.noMore')}
+ {tn('noMore')}
  </p>
  )}
  </div>
  );
 }
-

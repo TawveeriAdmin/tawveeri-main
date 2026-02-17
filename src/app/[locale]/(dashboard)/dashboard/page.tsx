@@ -14,6 +14,7 @@ import {
   Heart,
   BarChart3,
   Bell,
+  Settings,
   TrendingUp,
   Package,
   AlertCircle,
@@ -128,7 +129,6 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<string[]>([]);
   const userId = user?.id ?? null;
   const [loading, setLoading] = useState(true);
-  const [secondaryLoading, setSecondaryLoading] = useState(true);
 
   const isGuest = !user;
 
@@ -217,6 +217,45 @@ export default function DashboardPage() {
     }
   };
 
+  // ── Secondary: recommendations (non-blocking) ──────────────
+  async function fetchRecommendations(
+    client: ReturnType<typeof getSupabaseBrowserClient>,
+    category: string | null
+  ) {
+    const selectQuery = `id, name_ar, name_en, slug, category, brand, model, image_urls,
+      product_stores(id, current_price, original_price, availability,
+        stores(id, name_ar, name_en, logo_url))`;
+
+    try {
+      let recommended: DashboardProduct[] = [];
+
+      if (category) {
+        const { data } = await client
+          .from('products')
+          .select(selectQuery)
+          .eq('category', category)
+          .eq('is_active', true)
+          .order('view_count', { ascending: false })
+          .limit(6);
+        recommended = (data as DashboardProduct[] | null) ?? [];
+      }
+
+      if (!recommended.length) {
+        const { data } = await client
+          .from('products')
+          .select(selectQuery)
+          .eq('is_active', true)
+          .order('view_count', { ascending: false })
+          .limit(6);
+        recommended = (data as DashboardProduct[] | null) ?? [];
+      }
+
+      setRecommendations(recommended);
+    } catch (err) {
+      console.error('Error fetching recommendations:', err);
+    }
+  }
+
   // ── Primary data: loads fast, unblocks the page ──────────────
   useEffect(() => {
     if (!supabase || authLoading) return;
@@ -235,7 +274,6 @@ export default function DashboardPage() {
       setStats(DEFAULT_STATS);
       setInsights([]);
       setLoading(false);
-      setSecondaryLoading(false);
       return;
     }
 
@@ -306,50 +344,10 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [supabase, authLoading, userId]);
 
-  // ── Secondary: recommendations (non-blocking) ──────────────
-  const fetchRecommendations = async (
-    client: ReturnType<typeof getSupabaseBrowserClient>,
-    category: string | null
-  ) => {
-    const selectQuery = `id, name_ar, name_en, slug, category, brand, model, image_urls,
-      product_stores(id, current_price, original_price, availability,
-        stores(id, name_ar, name_en, logo_url))`;
-
-    try {
-      let recommended: DashboardProduct[] = [];
-
-      if (category) {
-        const { data } = await client
-          .from('products')
-          .select(selectQuery)
-          .eq('category', category)
-          .eq('is_active', true)
-          .order('view_count', { ascending: false })
-          .limit(6);
-        recommended = (data as DashboardProduct[] | null) ?? [];
-      }
-
-      if (!recommended.length) {
-        const { data } = await client
-          .from('products')
-          .select(selectQuery)
-          .eq('is_active', true)
-          .order('view_count', { ascending: false })
-          .limit(6);
-        recommended = (data as DashboardProduct[] | null) ?? [];
-      }
-
-      setRecommendations(recommended);
-    } catch (err) {
-      console.error('Error fetching recommendations:', err);
-    }
-  };
-
   // ── Secondary: localStorage collections (non-blocking) ─────
   useEffect(() => {
     if (!supabase || authLoading) return;
-    setSecondaryLoading(true);
-    loadLocalCollections().finally(() => setSecondaryLoading(false));
+    void loadLocalCollections();
   }, [supabase, authLoading]);
 
   useEffect(() => {
@@ -534,17 +532,102 @@ export default function DashboardPage() {
     },
   ];
 
+  const heroTitle = isGuest
+    ? t('dashboard.welcomeGuest')
+    : `${t('dashboard.welcome')}, ${userName}!`;
+
+  const heroSubtitle = isGuest
+    ? t('dashboard.guest.subtitle')
+    : `${getGreeting()} · ${t('dashboard.greeting.subtitle')}`;
+
+  const quickActions = [
+    {
+      href: `/${locale}/search`,
+      label: t('dashboard.quickAction.search'),
+      icon: Search,
+      tone: 'from-blue-500/15 to-primary-500/5 dark:from-blue-400/20 dark:to-primary-400/10',
+    },
+    {
+      href: `/${locale}/wishlist`,
+      label: t('dashboard.quickAction.wishlist'),
+      icon: Heart,
+      tone: 'from-rose-500/15 to-pink-500/5 dark:from-rose-400/20 dark:to-pink-400/10',
+    },
+    {
+      href: `/${locale}/compare`,
+      label: t('dashboard.quickAction.compare'),
+      icon: BarChart3,
+      tone: 'from-violet-500/15 to-indigo-500/5 dark:from-violet-400/20 dark:to-indigo-400/10',
+    },
+    {
+      href: `/${locale}/price-alerts`,
+      label: t('dashboard.quickAction.alerts'),
+      icon: Bell,
+      tone: 'from-amber-500/18 to-orange-500/8 dark:from-amber-400/24 dark:to-orange-400/12',
+    },
+    {
+      href: `/${locale}/settings`,
+      label: t('dashboard.quickAction.settings'),
+      icon: Settings,
+      tone: 'from-emerald-500/15 to-teal-500/8 dark:from-emerald-400/20 dark:to-teal-400/10',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-          {t('dashboard.welcome')}, {userName}!
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {getGreeting()} &middot; {t('dashboard.greeting.subtitle')}
-        </p>
-      </div>
+    <div className="space-y-8">
+      <section className="animate-fadeInUp relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-primary-500/10 via-white to-secondary-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-primary-500/20 dark:via-gray-900 dark:to-secondary-500/20 md:p-7">
+        <div className="pointer-events-none absolute -end-12 -top-12 h-44 w-44 rounded-full bg-primary-500/15 blur-3xl dark:bg-primary-400/25" />
+        <div className="pointer-events-none absolute -bottom-16 start-1/3 h-44 w-44 rounded-full bg-secondary-500/15 blur-3xl dark:bg-secondary-400/25" />
+        <div className="relative z-10 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-300">
+              {t('dashboard.quickActions')}
+            </p>
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 md:text-3xl">
+              {heroTitle}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 md:text-base">
+              {heroSubtitle}
+            </p>
+
+            {isGuest ? (
+              <Link
+                href={`/${locale}/auth/login`}
+                className="mt-5 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+              >
+                {t('dashboard.guest.cta')}
+              </Link>
+            ) : (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                {statsConfig.slice(0, 4).map((stat) => (
+                  <Badge
+                    key={`hero-${stat.label}`}
+                    variant="outline"
+                    className="border-gray-200 bg-white/80 text-gray-700 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-200"
+                  >
+                    {stat.label}: {stat.value}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+            {quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className={`group rounded-2xl border border-gray-200 bg-gradient-to-br p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 ${action.tone}`}
+              >
+                <action.icon className="h-5 w-5 text-gray-700 transition-transform duration-200 group-hover:scale-110 dark:text-gray-200" />
+                <p className="mt-4 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  {action.label}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Stats Cards */}
       <section className="animate-fadeInUp">
