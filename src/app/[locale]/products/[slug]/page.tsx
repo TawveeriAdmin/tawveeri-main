@@ -117,7 +117,6 @@ const mapProductRecord = (record: ProductQueryResult): Product => ({
 });
 
 export default function ProductDetailPage() {
-  const supabase = getSupabaseBrowserClient();
   const params = useParams();
   const router = useRouter();
   const locale = (params?.locale as string) || 'ar';
@@ -181,6 +180,7 @@ export default function ProductDetailPage() {
       setLoading(true);
       setError(null);
 
+      const supabase = getSupabaseBrowserClient();
       try {
         // Fetch product with all details
         const { data: productData, error: productError } = await supabase
@@ -285,6 +285,7 @@ export default function ProductDetailPage() {
     }
 
     try {
+      const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.from('user_wishlists').insert({
         user_id: user.id,
         product_id: productId,

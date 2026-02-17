@@ -20,18 +20,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev          # Dev server (localhost:3000, Turbopack)
-npm run build        # Production build (TS/ESLint errors ignored in config)
-npm run lint         # ESLint
-npm test             # Run all tests
-npm run test:watch   # Tests in watch mode
-npm run test:db      # Database tests only (tests/database/)
-npm run db:setup     # Full database setup
-npm run db:schema    # Apply schema SQL
-npm run db:seed      # Seed data
-npm run flask:start  # Start Python scraping server (localhost:5000)
-npm run flask:dev    # Flask dev mode with debug
+npm run dev              # Dev server (localhost:3000, Turbopack)
+npm run build            # Production build (TS/ESLint errors ignored in config)
+npm run lint             # ESLint
+npm test                 # Run all tests
+npm test -- path/to/file # Run a single test file
+npm run test:watch       # Tests in watch mode
+npm run test:coverage    # Tests with coverage report
+npm run test:db          # Database tests only (tests/database/)
+npm run db:setup         # Full database setup (schema + policies + seed)
+npm run db:schema        # Apply schema SQL
+npm run db:policies      # Apply RLS policies
+npm run db:seed          # Seed data
+npm run db:create-admin  # Create admin user
+npm run flask:install    # Install Python scraping dependencies
+npm run flask:start      # Start Python scraping server (localhost:5000)
+npm run flask:dev        # Flask dev mode with debug
 ```
+
+Development requires **two terminals**: Flask on port 5000 (scraping) and Next.js on port 3000 (app).
 
 ## Architecture
 
@@ -74,7 +81,9 @@ t('products.title')              // dot-notation key lookup
 t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
 ```
 
-**Adding translations**: Create/edit JSON files in `messages/ar/` and `messages/en/`. If adding a new namespace file, also add the import in `src/app/[locale]/layout.tsx`.
+**Adding translations**: Create/edit JSON files in `messages/ar/` and `messages/en/`. If adding a new namespace file, also add the dynamic import in `src/app/[locale]/layout.tsx` and spread it into the `messages` object with a namespace key.
+
+**Special case**: `common.json` has a unique structure — its top-level keys (`app`, `nav`, `button`, etc.) are spread directly into messages, while its nested `common` key becomes the `common` namespace. All other files are namespaced by their filename (e.g., `auth.json` → `auth.*`).
 
 ### Authentication & Authorization
 
@@ -130,6 +139,14 @@ API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-price
 - `formatPriceWithCurrency(price, locale)` — **deprecated**, use `<Price>` component instead
 - `calculateSavings(original, current)` / `calculateSavingsPercentage(original, current)`
 
+### Fonts
+
+Two Google Fonts loaded in the locale layout:
+- **Inter** (`--font-inter`) — English text, applied via `font-sans` class
+- **IBM Plex Sans Arabic** (`--font-ibm-plex-arabic`) — Arabic text, applied via `font-sans-ar` class
+
+The body class switches based on locale: `font-sans-ar` for Arabic, `font-sans` for English.
+
 ### Environment Variables
 
 See `.env.example`. Required:
@@ -137,6 +154,7 @@ See `.env.example`. Required:
 - `SUPABASE_SERVICE_ROLE_KEY` — Server-side Supabase operations
 - `SUPABASE_DB_URL` — Direct PostgreSQL connection for migration scripts
 - `NEXT_PUBLIC_APP_URL` — App URL for auth callbacks and emails
+- `FLASK_API_URL` — Flask scraping service URL (default: `http://127.0.0.1:5000`)
 
 ## Styling Rules
 
@@ -150,3 +168,7 @@ See `.env.example`. Required:
 ## Path Alias
 
 `@/*` maps to `src/*`
+
+## Supabase Project
+
+Project ID: `ffpsjjazsluolysgithg` (for MCP/CLI operations)

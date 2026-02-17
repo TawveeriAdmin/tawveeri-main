@@ -86,11 +86,11 @@ export default function SignupPage() {
 
   // Real-time validation for email
   useEffect(() => {
-    if (touched.email && authMethod === 'email') {
+    if (touched.email) {
       const result = validateEmail(formData.email);
       setErrors(prev => ({ ...prev, email: result.isValid ? '' : result.message || '' }));
     }
-  }, [formData.email, touched.email, authMethod]);
+  }, [formData.email, touched.email]);
 
 
   // Real-time validation for password (validate while typing, no need for touch)
