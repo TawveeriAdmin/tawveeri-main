@@ -1,17 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState, useMemo } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { Price } from '@/components/ui/price';
-import { Filter, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Tag,
+  DollarSign,
+  Store,
+  PackageCheck,
+  Flame,
+  Truck,
+  Star,
+  ChevronDown,
+  RotateCcw,
+  Percent,
+  ShieldCheck,
+  Zap,
+} from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 
 export interface SearchFilters {
@@ -34,6 +45,135 @@ interface FilterSidebarProps {
   locale?: string;
 }
 
+// Collapsible filter section
+function FilterSection({
+  icon: Icon,
+  title,
+  badge,
+  defaultOpen = false,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  badge?: number;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2.5 py-3 px-1 text-start group"
+      >
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 transition-colors">
+          <Icon className="w-3.5 h-3.5 text-on-surface-variant group-hover:text-primary-500 transition-colors" />
+        </div>
+        <span className="flex-1 text-sm font-medium text-on-surface">{title}</span>
+        {badge !== undefined && badge > 0 && (
+          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 tabular-nums">
+            {badge}
+          </span>
+        )}
+        <ChevronDown className={cn(
+          'w-4 h-4 text-on-surface-variant transition-transform duration-200',
+          open && 'rotate-180'
+        )} />
+      </button>
+      <div className={cn(
+        'overflow-hidden transition-all duration-200',
+        open ? 'max-h-[500px] opacity-100 pb-3' : 'max-h-0 opacity-0'
+      )}>
+        <div className="px-1">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Toggle pill for quick filters (deals, free delivery)
+function TogglePill({
+  icon: Icon,
+  label,
+  active,
+  onChange,
+  color = 'primary',
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  active: boolean;
+  onChange: (active: boolean) => void;
+  color?: 'primary' | 'amber' | 'green';
+}) {
+  const colorMap = {
+    primary: {
+      active: 'bg-primary-50 dark:bg-primary-900/30 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300',
+      inactive: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-gray-300 dark:hover:border-gray-600',
+      icon: active ? 'text-primary-500' : 'text-on-surface-variant',
+    },
+    amber: {
+      active: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300',
+      inactive: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-gray-300 dark:hover:border-gray-600',
+      icon: active ? 'text-amber-500' : 'text-on-surface-variant',
+    },
+    green: {
+      active: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300',
+      inactive: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-gray-300 dark:hover:border-gray-600',
+      icon: active ? 'text-emerald-500' : 'text-on-surface-variant',
+    },
+  };
+
+  const colors = colorMap[color];
+
+  return (
+    <button
+      onClick={() => onChange(!active)}
+      className={cn(
+        'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200',
+        active ? colors.active : colors.inactive
+      )}
+    >
+      <Icon className={cn('w-4 h-4 transition-colors', colors.icon)} />
+      {label}
+    </button>
+  );
+}
+
+// Star rating selector
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (rating: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          onClick={() => onChange(value === star ? 0 : star)}
+          className="group p-0.5"
+        >
+          <Star
+            className={cn(
+              'w-5 h-5 transition-all duration-150',
+              star <= value
+                ? 'fill-amber-400 text-amber-400 scale-110'
+                : 'text-gray-300 dark:text-gray-600 group-hover:text-amber-300 group-hover:scale-105'
+            )}
+          />
+        </button>
+      ))}
+      {value > 0 && (
+        <span className="text-xs text-on-surface-variant ms-1 tabular-nums">{value}+</span>
+      )}
+    </div>
+  );
+}
+
 export function FilterSidebar({
   filters,
   onFilterChange,
@@ -43,9 +183,7 @@ export function FilterSidebar({
   const t = useTranslations();
   const params = useParams();
   const locale = propLocale || (params?.locale as string) || 'ar';
-  
-  // Only get Supabase client in browser (for filters that need database)
-  // Since we're using scraping, we'll skip database-dependent filters for now
+
   const getSupabase = () => {
     if (typeof window === 'undefined') return null;
     try {
@@ -64,8 +202,7 @@ export function FilterSidebar({
   // Fetch available brands
   useEffect(() => {
     async function fetchBrands() {
-      if (!category || !supabase) return; // Skip if no Supabase client
-
+      if (!category || !supabase) return;
       setLoading(true);
       try {
         const { data } = await supabase
@@ -87,15 +224,13 @@ export function FilterSidebar({
         setLoading(false);
       }
     }
-
     fetchBrands();
   }, [category, supabase]);
 
   // Fetch available stores
   useEffect(() => {
     async function fetchStores() {
-      if (!supabase) return; // Skip if no Supabase client
-      
+      if (!supabase) return;
       setLoading(true);
       try {
         const { data } = await supabase
@@ -113,15 +248,13 @@ export function FilterSidebar({
         setLoading(false);
       }
     }
-
     fetchStores();
   }, []);
 
   // Fetch price range
   useEffect(() => {
     async function fetchPriceRange() {
-      if (!supabase) return; // Skip if no Supabase client
-      
+      if (!supabase) return;
       try {
         const { data } = await supabase
           .from('product_stores')
@@ -146,7 +279,6 @@ export function FilterSidebar({
         console.error('Error fetching price range:', error);
       }
     }
-
     fetchPriceRange();
   }, [supabase]);
 
@@ -185,245 +317,303 @@ export function FilterSidebar({
       stores: [],
       availability: [],
       dealsOnly: false,
+      freeDeliveryOnly: false,
       minPrice: undefined,
       maxPrice: undefined,
+      minRating: undefined,
     });
   };
 
-  const hasActiveFilters =
-    filters.brands.length > 0 ||
-    filters.stores.length > 0 ||
-    filters.availability.length > 0 ||
-    filters.dealsOnly ||
-    filters.freeDeliveryOnly ||
-    (filters.minRating !== undefined && filters.minRating > 0) ||
-    filters.minPrice !== undefined ||
-    filters.maxPrice !== undefined;
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.brands.length > 0) count += filters.brands.length;
+    if (filters.stores.length > 0) count += filters.stores.length;
+    if (filters.availability.length > 0) count += filters.availability.length;
+    if (filters.dealsOnly) count++;
+    if (filters.freeDeliveryOnly) count++;
+    if (filters.minRating && filters.minRating > 0) count++;
+    if (filters.minPrice !== undefined) count++;
+    if (filters.maxPrice !== undefined) count++;
+    return count;
+  }, [filters]);
 
   return (
-    <Card className="sticky top-4">
-      <CardHeader>
+    <div className="flex flex-col flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            {t('search.filtersTitle')}
-          </CardTitle>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-              <X className="w-4 h-4 mr-1" />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary-100 dark:bg-primary-900/40">
+              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" x2="4" y1="21" y2="14" /><line x1="4" x2="4" y1="10" y2="3" />
+                <line x1="12" x2="12" y1="21" y2="12" /><line x1="12" x2="12" y1="8" y2="3" />
+                <line x1="20" x2="20" y1="21" y2="16" /><line x1="20" x2="20" y1="12" y2="3" />
+                <line x1="2" x2="6" y1="14" y2="14" /><line x1="10" x2="14" y1="8" y2="8" />
+                <line x1="18" x2="22" y1="16" y2="16" />
+              </svg>
+            </div>
+            <span className="text-sm font-bold text-on-surface">{t('search.filtersTitle')}</span>
+            {activeFilterCount > 0 && (
+              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-500 text-white tabular-nums">
+                {activeFilterCount}
+              </span>
+            )}
+          </div>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
               {t('search.clearFilters')}
-            </Button>
+            </button>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Accordion type="multiple" className="w-full">
-          {/* Brands Filter */}
-          {availableBrands.length > 0 && (
-            <AccordionItem value="brands">
-              <AccordionTrigger>
-                {t('search.filters.brands')}
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableBrands.map((brand) => (
-                    <div key={brand} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`brand-${brand}`}
-                        checked={filters.brands.includes(brand)}
-                        onCheckedChange={() => handleBrandToggle(brand)}
-                      />
-                      <Label
-                        htmlFor={`brand-${brand}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {brand}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
+      </div>
 
-          {/* Price Range Filter */}
-          <AccordionItem value="price">
-            <AccordionTrigger>
-              {t('search.filters.priceRange')}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4">
-                <Slider
-                  value={[filters.minPrice || priceRange[0], filters.maxPrice || priceRange[1]]}
-                  onValueChange={handlePriceChange}
-                  min={priceRange[0]}
-                  max={priceRange[1]}
-                  step={100}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-on-surface-variant">
-                  <span>
-                    <Price amount={filters.minPrice || priceRange[0]} className="text-sm" />
-                  </span>
-                  <span>
-                    <Price amount={filters.maxPrice || priceRange[1]} className="text-sm" />
-                  </span>
-                </div>
+      {/* Quick toggles */}
+      <div className="px-3 py-3 flex flex-col gap-2 border-b border-gray-100 dark:border-gray-800">
+        <TogglePill
+          icon={Flame}
+          label={t('search.filters.showDealsOnly')}
+          active={filters.dealsOnly}
+          onChange={(active) => onFilterChange({ ...filters, dealsOnly: active })}
+          color="amber"
+        />
+        <TogglePill
+          icon={Truck}
+          label={t('search.filters.freeDeliveryOnly')}
+          active={filters.freeDeliveryOnly || false}
+          onChange={(active) => onFilterChange({ ...filters, freeDeliveryOnly: active })}
+          color="green"
+        />
+      </div>
+
+      {/* Filter sections */}
+      <div className="flex-1 overflow-y-auto px-3" style={{ scrollbarWidth: 'none' }}>
+        {/* Price Range */}
+        <FilterSection icon={DollarSign} title={t('search.filters.priceRange')} defaultOpen>
+          <div className="space-y-4 pt-3">
+            <Slider
+              value={[filters.minPrice || priceRange[0], filters.maxPrice || priceRange[1]]}
+              onValueChange={handlePriceChange}
+              min={priceRange[0]}
+              max={priceRange[1]}
+              step={100}
+              className="w-full"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-center">
+                <Price amount={filters.minPrice || priceRange[0]} className="text-xs font-semibold tabular-nums" />
               </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Stores Filter */}
-          {availableStores.length > 0 && (
-            <AccordionItem value="stores">
-              <AccordionTrigger>
-                {t('search.filters.stores')}
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableStores.map((store) => {
-                    const storeName = locale === 'ar' ? store.name_ar : store.name_en;
-                    return (
-                      <div key={store.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`store-${store.id}`}
-                          checked={filters.stores.includes(store.id)}
-                          onCheckedChange={() => handleStoreToggle(store.id)}
-                        />
-                        <Label
-                          htmlFor={`store-${store.id}`}
-                          className="text-sm font-normal cursor-pointer"
-                        >
-                          {storeName}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {/* Availability Filter */}
-          <AccordionItem value="availability">
-            <AccordionTrigger>
-              {t('search.filters.availability')}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="availability-in-stock"
-                    checked={filters.availability.includes('in_stock')}
-                    onCheckedChange={() => handleAvailabilityToggle('in_stock')}
-                  />
-                  <Label htmlFor="availability-in-stock" className="text-sm font-normal cursor-pointer">
-                    {t('product.inStock')}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="availability-limited"
-                    checked={filters.availability.includes('limited_stock')}
-                    onCheckedChange={() => handleAvailabilityToggle('limited_stock')}
-                  />
-                  <Label htmlFor="availability-limited" className="text-sm font-normal cursor-pointer">
-                    {t('product.limitedStock')}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="availability-out-of-stock"
-                    checked={filters.availability.includes('out_of_stock')}
-                    onCheckedChange={() => handleAvailabilityToggle('out_of_stock')}
-                  />
-                  <Label htmlFor="availability-out-of-stock" className="text-sm font-normal cursor-pointer">
-                    {t('product.outOfStock')}
-                  </Label>
-                </div>
+              <span className="text-xs text-on-surface-variant">—</span>
+              <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-center">
+                <Price amount={filters.maxPrice || priceRange[1]} className="text-xs font-semibold tabular-nums" />
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </div>
+          </div>
+        </FilterSection>
 
-          {/* Deals Only Filter */}
-          <AccordionItem value="deals">
-            <AccordionTrigger>
-              {t('search.filters.deals')}
-            </AccordionTrigger>
-              <AccordionContent>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="deals-only"
-                  checked={filters.dealsOnly}
-                  onCheckedChange={(checked) =>
-                    onFilterChange({ ...filters, dealsOnly: checked === true })
-                  }
-                />
-                <Label htmlFor="deals-only" className="text-sm font-normal cursor-pointer">
-                  {t('search.filters.showDealsOnly')}
-                </Label>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Free Delivery Filter */}
-          <AccordionItem value="delivery">
-            <AccordionTrigger>
-              {t('search.filters.delivery')}
-            </AccordionTrigger>
-              <AccordionContent>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="free-delivery"
-                  checked={filters.freeDeliveryOnly || false}
-                  onCheckedChange={(checked) =>
-                    onFilterChange({ ...filters, freeDeliveryOnly: checked === true })
-                  }
-                />
-                <Label htmlFor="free-delivery" className="text-sm font-normal cursor-pointer">
-                  {t('search.filters.freeDeliveryOnly')}
-                </Label>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Rating Filter */}
-          <AccordionItem value="rating">
-            <AccordionTrigger>
-              {t('search.filters.rating')}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2">
-                <Label htmlFor="min-rating">
-                  {locale === 'ar' ? 'الحد الأدنى للتقييم' : 'Minimum Rating'}
-                </Label>
-                <Slider
-                  value={[filters.minRating || 0]}
-                  onValueChange={(values) =>
-                    onFilterChange({ ...filters, minRating: values[0] })
-                  }
-                  min={0}
-                  max={5}
-                  step={0.5}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-on-surface-variant">
-                  <span>0</span>
-                  <span className="font-semibold">{filters.minRating || 0} ⭐</span>
-                  <span>5</span>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-
-        {hasActiveFilters && (
-          <Button onClick={handleClearFilters} variant="outline" className="w-full">
-            {t('search.clearFilters')}
-          </Button>
+        {/* Stores */}
+        {availableStores.length > 0 && (
+          <FilterSection
+            icon={Store}
+            title={t('search.filters.stores')}
+            badge={filters.stores.length}
+            defaultOpen
+          >
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {availableStores.map((store) => {
+                const storeName = locale === 'ar' ? store.name_ar : store.name_en;
+                const isChecked = filters.stores.includes(store.id);
+                return (
+                  <label
+                    key={store.id}
+                    className={cn(
+                      'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                      isChecked
+                        ? 'bg-primary-50 dark:bg-primary-900/20'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                    )}
+                  >
+                    <Checkbox
+                      id={`store-${store.id}`}
+                      checked={isChecked}
+                      onCheckedChange={() => handleStoreToggle(store.id)}
+                    />
+                    <span className="text-sm text-on-surface">{storeName}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </FilterSection>
         )}
-      </CardContent>
-    </Card>
+
+        {/* Brands */}
+        {availableBrands.length > 0 && (
+          <FilterSection
+            icon={Tag}
+            title={t('search.filters.brands')}
+            badge={filters.brands.length}
+            defaultOpen
+          >
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {availableBrands.map((brand) => {
+                const isChecked = filters.brands.includes(brand);
+                return (
+                  <label
+                    key={brand}
+                    className={cn(
+                      'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                      isChecked
+                        ? 'bg-primary-50 dark:bg-primary-900/20'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                    )}
+                  >
+                    <Checkbox
+                      id={`brand-${brand}`}
+                      checked={isChecked}
+                      onCheckedChange={() => handleBrandToggle(brand)}
+                    />
+                    <span className="text-sm text-on-surface">{brand}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </FilterSection>
+        )}
+
+        {/* Availability */}
+        <FilterSection
+          icon={PackageCheck}
+          title={t('search.filters.availability')}
+          badge={filters.availability.length}
+          defaultOpen
+        >
+          <div className="space-y-1">
+            {([
+              { value: 'in_stock' as AvailabilityStatus, label: 'product.inStock', dot: 'bg-emerald-500' },
+              { value: 'limited_stock' as AvailabilityStatus, label: 'product.limitedStock', dot: 'bg-amber-500' },
+              { value: 'out_of_stock' as AvailabilityStatus, label: 'product.outOfStock', dot: 'bg-red-500' },
+            ]).map((item) => {
+              const isChecked = filters.availability.includes(item.value);
+              return (
+                <label
+                  key={item.value}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                    isChecked
+                      ? 'bg-primary-50 dark:bg-primary-900/20'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                  )}
+                >
+                  <Checkbox
+                    id={`availability-${item.value}`}
+                    checked={isChecked}
+                    onCheckedChange={() => handleAvailabilityToggle(item.value)}
+                  />
+                  <span className={cn('w-2 h-2 rounded-full', item.dot)} />
+                  <span className="text-sm text-on-surface">{t(item.label)}</span>
+                </label>
+              );
+            })}
+          </div>
+        </FilterSection>
+
+        {/* Rating */}
+        <FilterSection
+          icon={Star}
+          title={t('search.filters.rating')}
+          badge={filters.minRating && filters.minRating > 0 ? 1 : undefined}
+          defaultOpen
+        >
+          <div className="py-1">
+            <StarRating
+              value={filters.minRating || 0}
+              onChange={(rating) => onFilterChange({ ...filters, minRating: rating })}
+            />
+          </div>
+        </FilterSection>
+
+        {/* Discount Range */}
+        <FilterSection
+          icon={Percent}
+          title={locale === 'ar' ? 'نسبة الخصم' : 'Discount'}
+        >
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { value: 10, label: '+%10' },
+              { value: 25, label: '+%25' },
+              { value: 50, label: '+%50' },
+              { value: 70, label: '+%70' },
+            ].map((option) => (
+              <button
+                key={option.value}
+                className="py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-on-surface-variant hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700 transition-all"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </FilterSection>
+
+        {/* Condition */}
+        <FilterSection
+          icon={ShieldCheck}
+          title={locale === 'ar' ? 'الحالة' : 'Condition'}
+        >
+          <div className="space-y-1">
+            {([
+              { value: 'new', label: locale === 'ar' ? 'جديد' : 'New', dot: 'bg-emerald-500' },
+              { value: 'renewed', label: locale === 'ar' ? 'مجدد' : 'Renewed', dot: 'bg-blue-500' },
+              { value: 'used', label: locale === 'ar' ? 'مستعمل' : 'Used', dot: 'bg-gray-400' },
+            ]).map((item) => (
+              <label
+                key={item.value}
+                className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+              >
+                <Checkbox id={`condition-${item.value}`} />
+                <span className={cn('w-2 h-2 rounded-full', item.dot)} />
+                <span className="text-sm text-on-surface">{item.label}</span>
+              </label>
+            ))}
+          </div>
+        </FilterSection>
+
+        {/* Shipping Speed */}
+        <FilterSection
+          icon={Zap}
+          title={locale === 'ar' ? 'سرعة الشحن' : 'Shipping Speed'}
+        >
+          <div className="space-y-1">
+            {([
+              { value: 'same_day', label: locale === 'ar' ? 'توصيل في نفس اليوم' : 'Same Day Delivery' },
+              { value: 'express', label: locale === 'ar' ? 'توصيل سريع (1-2 يوم)' : 'Express (1-2 days)' },
+              { value: 'standard', label: locale === 'ar' ? 'توصيل عادي (3-7 أيام)' : 'Standard (3-7 days)' },
+            ]).map((item) => (
+              <label
+                key={item.value}
+                className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+              >
+                <Checkbox id={`shipping-${item.value}`} />
+                <span className="text-sm text-on-surface">{item.label}</span>
+              </label>
+            ))}
+          </div>
+        </FilterSection>
+      </div>
+
+      {/* Footer — clear all */}
+      {activeFilterCount > 0 && (
+        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+          <button
+            onClick={handleClearFilters}
+            className="w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-on-surface-variant hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            {t('search.clearFilters')}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
-

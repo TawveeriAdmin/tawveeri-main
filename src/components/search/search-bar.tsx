@@ -361,7 +361,7 @@ export function SearchBar({
     <div className={`relative ${className}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline w-5 h-5" />
+          <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-outline w-5 h-5" />
           <Input
             ref={inputRef}
             type="text"
@@ -373,13 +373,13 @@ export function SearchBar({
             }}
             onFocus={() => setShowSuggestionsPopup(true)}
             onKeyDown={handleKeyDown}
-            className="pl-10 pr-10"
+            className="ps-10 pe-10"
           />
           {query && (
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-outline hover:text-on-surface"
+              className="absolute end-3 top-1/2 transform -translate-y-1/2 text-outline hover:text-on-surface"
             >
               <X className="w-5 h-5" />
             </button>
@@ -413,7 +413,7 @@ export function SearchBar({
             onClick={toggleVoiceSearch}
             aria-pressed={isListening}
           >
-            <Mic className="w-4 h-4 mr-2" />
+            <Mic className="w-4 h-4 me-2" />
             <span className="whitespace-nowrap">
               {isListening ? t('search.voice.stop') : t('search.voice.start')}
             </span>

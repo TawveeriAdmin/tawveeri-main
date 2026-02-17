@@ -42,7 +42,7 @@
   },
   "noResultsFor": "لا توجد نتائج لـ \"{{query}}\"",
   "startSearching": "ابدأ البحث",
-  "searchForProducts": "ابحث عن المنتجات التي تريدها",
+  "searchForProducts": "ابحث عن المنتجات التي تريدها للمقارنة بين المتاجر",
   "noSuggestions": "لا توجد اقتراحات",
   "searching": "جاري البحث...",
   "filters": {
@@ -77,6 +77,24 @@
   },
   "databaseSearch": "البحث في قاعدة البيانات",
   "realTimeScrape": "البحث الفوري",
-  "scrapeNote": "يبحث في جميع المتاجر مباشرة (قد يستغرق 10-30 ثانية)"
+  "scrapeNote": "يبحث في جميع المتاجر مباشرة (قد يستغرق 10-30 ثانية)",
+  "backToHome": "الرئيسية",
+  "gridView": "عرض شبكي",
+  "listView": "عرض قائمة",
+  "activeFilters": "المرشحات النشطة",
+  "clearAll": "مسح الكل",
+  "mobileFilters": "المرشحات",
+  "resultsFor": "نتيجة لـ",
+  "searchingStores": "جاري البحث في المتاجر...",
+  "someStoresFailed": "فشل بعض المتاجر",
+  "paginationPrevious": "السابق",
+  "paginationNext": "التالي",
+  "quickCategories": {
+    "phones": "هواتف",
+    "laptops": "لابتوب",
+    "headphones": "سماعات",
+    "monitors": "شاشات",
+    "gaming": "ألعاب",
+    "cameras": "كاميرات"
+  }
 }
-

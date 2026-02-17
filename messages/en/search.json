@@ -42,7 +42,7 @@
   },
   "noResultsFor": "No results found for \"{{query}}\"",
   "startSearching": "Start Searching",
-  "searchForProducts": "Search for products you want",
+  "searchForProducts": "Search for products to compare prices across stores",
   "noSuggestions": "No suggestions",
   "searching": "Searching...",
   "filters": {
@@ -77,6 +77,24 @@
   },
   "databaseSearch": "Database Search",
   "realTimeScrape": "Real-time Scrape",
-  "scrapeNote": "Searches all stores in real-time (may take 10-30 seconds)"
+  "scrapeNote": "Searches all stores in real-time (may take 10-30 seconds)",
+  "backToHome": "Home",
+  "gridView": "Grid view",
+  "listView": "List view",
+  "activeFilters": "Active filters",
+  "clearAll": "Clear all",
+  "mobileFilters": "Filters",
+  "resultsFor": "results for",
+  "searchingStores": "Searching stores...",
+  "someStoresFailed": "Some stores failed",
+  "paginationPrevious": "Previous",
+  "paginationNext": "Next",
+  "quickCategories": {
+    "phones": "Phones",
+    "laptops": "Laptops",
+    "headphones": "Headphones",
+    "monitors": "Monitors",
+    "gaming": "Gaming",
+    "cameras": "Cameras"
+  }
 }
-
