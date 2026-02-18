@@ -43,6 +43,7 @@ next-env.d.ts
 
 prompts.txt
 images/
+md2pdf.py
 
 #Design systems
 DesignRef
