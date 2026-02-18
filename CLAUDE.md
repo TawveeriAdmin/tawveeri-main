@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **i18n**: Custom `SimpleIntlProvider` (replaced next-intl for reliability)
 - **Scraping**: TypeScript scrapers (`src/lib/scraping/`) — legacy Python/Flask in `scripts/scraping/` is unused
 - **Testing**: Jest + React Testing Library
-- **Charts**: Recharts (admin analytics)
+- **Charts**: ECharts (`echarts-for-react`) for admin dashboard, Recharts for other analytics
 
 ## Commands
 
@@ -57,7 +57,7 @@ All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `
 `src/app/[locale]/layout.tsx` nests providers in this order — **do not reorder**:
 
 ```
-<html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+<div lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
   <SimpleIntlProvider>    ← translations from messages/{locale}/*.json
     <ThemeProvider>        ← next-themes, class strategy, storageKey="tawveeri-theme"
       <MultiStoreCartProvider>
@@ -68,8 +68,10 @@ All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `
       </MultiStoreCartProvider>
     </ThemeProvider>
   </SimpleIntlProvider>
-</html>
+</div>
 ```
+
+Note: The root `<html>` tag is in `src/app/layout.tsx` (passthrough). The locale layout uses a `<div>` wrapper with lang/dir attributes.
 
 Default: Arabic (RTL), light theme, system detection disabled.
 
@@ -77,7 +79,7 @@ Default: Arabic (RTL), light theme, system detection disabled.
 
 Translations are JSON files in `messages/{ar,en}/` organized by feature. Loaded via `Promise.allSettled` dynamic imports in `src/app/[locale]/layout.tsx` and provided through `SimpleIntlProvider` (`src/lib/simple-intl-provider.tsx`).
 
-**Namespaces loaded** (20 files): common, landing, auth, products, dashboard, profile, stores, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart. If adding a new namespace file, add its dynamic import in the locale layout and spread it into the `messages` object.
+**Namespaces loaded** (19 files): common, landing, auth, products, dashboard, profile, stores, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart. If adding a new namespace file, add its dynamic import in the locale layout and spread it into the `messages` object.
 
 **Usage in components:**
 ```tsx
@@ -87,7 +89,11 @@ t('products.title')              // dot-notation key lookup
 t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
 ```
 
-**Special case**: `common.json` has a unique structure — its top-level keys (`app`, `nav`, `button`, etc.) are spread directly into messages, while its nested `common` key becomes the `common` namespace. All other files are namespaced by their filename (e.g., `auth.json` → `auth.*`).
+**Special cases for message spreading**:
+- `common.json` — top-level keys (`app`, `nav`, `button`, etc.) are spread directly into messages; its nested `common` key becomes the `common` namespace
+- `landing.json` — also spread directly (not namespaced), so its keys are top-level
+- `admin.json` — uses `extractNamespace()` to handle nested `admin` key structure
+- All other files are namespaced by filename (e.g., `auth.json` → `auth.*`)
 
 ### Authentication & Authorization
 
@@ -142,7 +148,7 @@ Colors are mapped in the `@theme` block. Extensive `!important` overrides exist 
 ### Component Organization
 
 - `src/components/ui/` — Base UI components (Radix + shadcn/ui). Use `cn()` for class merging.
-- `src/components/admin/` — Admin dashboard components (stats cards, data tables, charts)
+- `src/components/admin/` — Admin dashboard: sidebar (`admin-sidebar.tsx`), header (`admin-header.tsx`), data tables, ECharts chart cards, stats cards
 - `src/components/layout/` — App shell (header)
 - `src/components/comparison/` — Price comparison cards
 
@@ -181,7 +187,7 @@ See `.env.example`. Required:
 - Always pair light/dark: `bg-white dark:bg-gray-900`
 - Use `tabular-nums` for price/number displays
 - Use `cn()` for all conditional classes
-- **Never** set `dir` attributes on elements — the locale layout handles `html[dir]` globally
+- **Never** set `dir` attributes on elements — the locale layout wrapper handles `dir` globally
 - **Never** write separate RTL/LTR CSS — flexbox/grid auto-flip in RTL
 
 ## Path Alias
