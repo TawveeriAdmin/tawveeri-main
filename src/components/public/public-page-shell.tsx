@@ -111,7 +111,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
       <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top,rgba(13,71,161,0.10),transparent_62%)] dark:bg-[radial-gradient(circle_at_top,rgba(96,165,250,0.16),transparent_58%)]" />
       <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 h-[320px] bg-[radial-gradient(circle_at_bottom,rgba(79,70,229,0.08),transparent_64%)] dark:bg-[radial-gradient(circle_at_bottom,rgba(165,180,252,0.14),transparent_60%)]" />
 
-      <div className="container mx-auto max-w-[1400px] px-4 py-6 md:py-8">
+      <div className="container mx-auto max-w-[1900px] px-4 py-6 md:py-8">
         <div className="sticky top-3 z-30 mb-6 rounded-2xl border border-gray-200 bg-white/90 p-2 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/85">
           <div className="flex flex-wrap items-center gap-2">
             {navLinksWithState.map((item) => (

@@ -3,7 +3,7 @@
     "title": "لوحة تحكم المدير",
     "dashboard": {
       "title": "لوحة التحكم",
-      "subtitle": "نظرة عامة على النظام",
+      "subtitle": "نظرة عامة على النظام والإحصائيات",
       "totalUsers": "المستخدمين",
       "totalProducts": "المنتجات",
       "totalStores": "المتاجر",
@@ -14,7 +14,26 @@
       "action": "الإجراء",
       "type": "النوع",
       "user": "المستخدم",
-      "system": "النظام"
+      "system": "النظام",
+      "activeDeals": "العروض النشطة",
+      "priceAlerts": "تنبيهات الأسعار",
+      "revenueTrend": "اتجاه الإيرادات",
+      "userGrowth": "نمو المستخدمين",
+      "categoryDistribution": "توزيع الفئات",
+      "storePerformance": "أداء المتاجر",
+      "conversionFunnel": "قمع التحويل",
+      "dealActivity": "نشاط العروض",
+      "vsLastPeriod": "مقارنة بآخر 30 يوم",
+      "noData": "لا توجد بيانات",
+      "revenue": "الإيرادات",
+      "commission": "العمولة",
+      "clicks": "النقرات",
+      "conversions": "التحويلات",
+      "completed": "المكتملة",
+      "newDeals": "عروض جديدة",
+      "topStores": "أفضل المتاجر",
+      "dailySignups": "التسجيلات اليومية",
+      "cumulativeUsers": "المستخدمين التراكمي"
     },
     "sidebar": {
       "adminPanel": "لوحة التحكم",
@@ -25,7 +44,9 @@
       "transactions": "المعاملات",
       "analytics": "التحليلات",
       "logs": "السجلات",
-      "reviews": "التقييمات"
+      "reviews": "التقييمات",
+      "collapse": "طي",
+      "expand": "توسيع"
     },
     "header": {
       "adminDashboard": "لوحة التحكم",
@@ -68,7 +89,13 @@
       "allStatuses": "جميع الحالات",
       "completed": "مكتمل",
       "pending": "قيد الانتظار",
-      "cancelled": "ملغي"
+      "cancelled": "ملغي",
+      "failed": "فشل",
+      "refunded": "مسترجع",
+      "totalTransactions": "إجمالي المعاملات",
+      "columns": "الأعمدة",
+      "rowsPerPage": "عدد الصفوف:",
+      "actions": "الإجراءات"
     },
     "reviews": {
       "title": "إدارة التقييمات",
@@ -95,11 +122,16 @@
       "error": "خطأ",
       "allRatings": "جميع التقييمات",
       "stars": "نجوم",
-      "star": "نجم"
+      "star": "نجم",
+      "totalReviews": "إجمالي التقييمات",
+      "helpful": "مفيد",
+      "columns": "الأعمدة",
+      "rowsPerPage": "عدد الصفوف:"
     },
     "users": {
       "title": "إدارة المستخدمين",
       "subtitle": "عرض وإدارة جميع المستخدمين",
+      "totalUsers": "إجمالي المستخدمين",
       "name": "الاسم",
       "email": "البريد الإلكتروني",
       "phone": "الهاتف",
@@ -109,12 +141,16 @@
       "inactive": "غير نشط",
       "joinedDate": "تاريخ الانضمام",
       "actions": "الإجراءات",
-      "searchPlaceholder": "بحث...",
+      "searchPlaceholder": "بحث عن مستخدم...",
       "allRoles": "جميع الأدوار",
       "customer": "عميل",
       "store": "متجر",
       "admin": "مدير",
-      "guest": "زائر"
+      "guest": "زائر",
+      "columns": "الأعمدة",
+      "rowsPerPage": "عدد الصفوف:",
+      "viewDetails": "عرض التفاصيل",
+      "editRole": "تعديل الدور"
     },
     "analytics": {
       "title": "التحليلات",
@@ -165,7 +201,13 @@
       "productDeleted": "تم حذف المنتج بنجاح",
       "error": "خطأ",
       "loadError": "فشل تحميل المنتجات",
-      "deleteError": "فشل حذف المنتج"
+      "deleteError": "فشل حذف المنتج",
+      "totalProducts": "إجمالي المنتجات",
+      "withDeals": "مع عروض",
+      "totalSaves": "إجمالي الحفظ",
+      "columns": "الأعمدة",
+      "rowsPerPage": "عدد الصفوف:",
+      "viewDetails": "عرض التفاصيل"
     },
     "stores": {
       "title": "إدارة المتاجر",
@@ -197,7 +239,11 @@
       "conversions": "التحويلات",
       "avgCommission": "متوسط العمولة",
       "premium": "مميز",
-      "featured": "مميز"
+      "featured": "مميز",
+      "totalStores": "إجمالي المتاجر",
+      "columns": "الأعمدة",
+      "rowsPerPage": "عدد الصفوف:",
+      "viewDetails": "عرض التفاصيل"
     },
     "analytics": {
       "title": "التحليلات",
@@ -238,7 +284,10 @@
       "details": "التفاصيل",
       "searchPlaceholder": "بحث...",
       "allActions": "جميع الإجراءات",
-      "allTypes": "جميع الأنواع"
+      "allTypes": "جميع الأنواع",
+      "totalLogs": "إجمالي السجلات",
+      "columns": "الأعمدة",
+      "rowsPerPage": "عدد الصفوف:"
     }
   }
 }

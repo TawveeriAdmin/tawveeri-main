@@ -242,6 +242,9 @@ export default function LandingPageClient() {
     { name: 'Almanea', icon: Shield, tone: 'from-emerald-500/20 to-success/20' },
   ];
 
+  const marqueeStoreCycles = 4;
+  const marqueeStores = Array.from({ length: marqueeStoreCycles }, () => stores).flat();
+
   const features = [
     {
       icon: Zap,
@@ -780,31 +783,39 @@ export default function LandingPageClient() {
           </div>
 
           {/* Marquee */}
-          <div className="marquee-container relative overflow-hidden px-4 py-4">
+          <div className="marquee-container relative overflow-hidden px-4 py-4" dir="ltr">
             <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-16 bg-gradient-to-r from-surface to-transparent sm:w-24" />
             <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-16 bg-gradient-to-l from-surface to-transparent sm:w-24" />
 
-            <div className={`marquee-track flex gap-5 ${isRTL ? 'marquee-rtl' : ''}`}>
-              {[...stores, ...stores].map((store, index) => (
-                <div
-                  key={`${store.name}-${index}`}
-                  className="group relative flex w-52 shrink-0 flex-col gap-4 overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 transition-transform duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-md dark:bg-surface-container"
-                  aria-hidden={index >= stores.length ? 'true' : undefined}
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${store.tone} opacity-0 transition group-hover:opacity-100`} />
-                  <div className="relative z-10 flex flex-col gap-3">
-                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-primary transition group-hover:scale-110 dark:bg-surface-container-high">
-                      <store.icon className="h-5 w-5" />
+            <div
+              className={`marquee-track ${isRTL ? 'marquee-rtl' : ''}`}
+              style={{ '--marquee-duration': `${marqueeStoreCycles * 30}s` } as React.CSSProperties}
+            >
+              {[0, 1].map((duplicateIndex) => (
+                <div key={`stores-strip-${duplicateIndex}`} className="marquee-group">
+                  {marqueeStores.map((store, storeIndex) => (
+                    <div
+                      key={`${store.name}-${duplicateIndex}-${storeIndex}`}
+                      className="group relative flex w-52 shrink-0 flex-col gap-4 overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 transition-transform duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-md dark:bg-surface-container"
+                      aria-hidden={duplicateIndex === 1 || storeIndex >= stores.length ? 'true' : undefined}
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${store.tone} opacity-0 transition group-hover:opacity-100`} />
+                      <div className="relative z-10 flex flex-col gap-3">
+                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-primary transition group-hover:scale-110 dark:bg-surface-container-high">
+                          <store.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold text-on-surface">{store.name}</p>
+                          <p className="text-sm text-on-surface-variant">{tx('features.trusted.stats')}</p>
+                        </div>
+                        <div className="inline-flex items-center gap-1 text-xs font-medium text-success">
+                          <Check className="h-4 w-4" />
+                          <span>{tx('features.trusted.title')}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-lg font-semibold text-on-surface">{store.name}</p>
-                      <p className="text-sm text-on-surface-variant">{tx('features.trusted.stats')}</p>
-                    </div>
-                    <div className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                      <Check className="h-4 w-4" />
-                      <span>{tx('features.trusted.title')}</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -1289,8 +1300,17 @@ export default function LandingPageClient() {
 
         /* ── Marquee ── */
         .marquee-track {
-          animation: marquee-ltr 30s linear infinite;
+          display: flex;
           width: max-content;
+          will-change: transform;
+          animation: marquee-ltr var(--marquee-duration, 30s) linear infinite;
+        }
+
+        .marquee-group {
+          display: flex;
+          flex-shrink: 0;
+          gap: 1.25rem;
+          padding-inline-end: 1.25rem;
         }
 
         .marquee-rtl {
@@ -1307,8 +1327,8 @@ export default function LandingPageClient() {
         }
 
         @keyframes marquee-rtl {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(50%); }
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0); }
         }
 
         /* ── Timeline connecting line animation ── */

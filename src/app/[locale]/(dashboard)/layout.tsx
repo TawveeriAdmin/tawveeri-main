@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { requireAuth } from '@/lib/auth/server';
+import { getUserProfile, requireAuth } from '@/lib/auth/server';
 
 export default async function DashboardLayout({
   children,
@@ -15,6 +15,11 @@ export default async function DashboardLayout({
     await requireAuth();
   } catch {
     redirect(`/${locale}/auth/login`);
+  }
+
+  const profile = await getUserProfile();
+  if (profile?.role === 'admin') {
+    redirect(`/${locale}/admin/dashboard`);
   }
 
   return (

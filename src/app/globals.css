@@ -535,57 +535,57 @@
 }
 
 @utility text-title-md {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 17px;
+  line-height: 26px;
   font-weight: 500;
   letter-spacing: 0.15px;
 }
 
 @utility text-title-sm {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 15px;
+  line-height: 22px;
   font-weight: 500;
   letter-spacing: 0.1px;
 }
 
 @utility text-body-lg {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 17px;
+  line-height: 26px;
   font-weight: 400;
   letter-spacing: 0.5px;
 }
 
 @utility text-body-md {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 15px;
+  line-height: 22px;
   font-weight: 400;
   letter-spacing: 0.25px;
 }
 
 @utility text-body-sm {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 400;
   letter-spacing: 0.4px;
 }
 
 @utility text-label-lg {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 15px;
+  line-height: 22px;
   font-weight: 500;
   letter-spacing: 0.1px;
 }
 
 @utility text-label-md {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
 
 @utility text-label-sm {
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 12px;
+  line-height: 17px;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -663,10 +663,16 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
 }
 
 body {

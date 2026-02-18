@@ -4,6 +4,8 @@ import { AmazonSearchScraper } from './amazon-search-scraper';
 import { NoonSearchScraper } from './noon-search-scraper';
 import { JarirSearchScraper } from './jarir-search-scraper';
 import { ExtraSearchScraper } from './extra-search-scraper';
+import { matchesCategory } from '../utils/category-utils';
+import type { ProductCategory } from '@/lib/database/types';
 
 const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: number }) => Promise<StoreSearchResult> }> = {
   amazon: () => new AmazonSearchScraper(),
@@ -17,6 +19,7 @@ export async function searchAllStores(
   stores: string[],
   pages: number,
   sort: string = 'price_asc',
+  category?: ProductCategory,
 ): Promise<ScrapedSearchResult> {
   const startTime = Date.now();
 
@@ -57,6 +60,17 @@ export async function searchAllStores(
     } else {
       storeResults[store] = 0;
       errors[store] = result.reason instanceof Error ? result.reason.message : String(result.reason);
+    }
+  }
+
+  // Filter by category if specified
+  if (category) {
+    const beforeCount = allProducts.length;
+    const filtered = allProducts.filter(p => matchesCategory(p, category));
+    if (filtered.length > 0 || beforeCount > 0) {
+      allProducts.length = 0;
+      allProducts.push(...filtered);
+      console.log(`[SearchOrchestrator] Category filter "${category}": ${beforeCount} -> ${allProducts.length} products`);
     }
   }
 

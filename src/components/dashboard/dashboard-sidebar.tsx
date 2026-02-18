@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useParams, useRouter } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Heart,
@@ -37,7 +37,6 @@ const navItems = [
 export function DashboardSidebar() {
   const pathname = usePathname();
   const params = useParams();
-  const router = useRouter();
   const locale = (params?.locale as string) || 'ar';
   const t = useTranslations();
   const { signOut } = useAuth();
@@ -45,7 +44,7 @@ export function DashboardSidebar() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push(`/${locale}/auth/login`);
+    window.location.href = `/${locale}`;
   };
 
   const logoutButton = (

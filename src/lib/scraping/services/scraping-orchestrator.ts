@@ -7,6 +7,10 @@ import type {
   ProductCategory,
 } from '../base/types';
 import { JarirScraper } from '../stores/jarir-scraper';
+import { AmazonScraper } from '../stores/amazon-scraper';
+import { NoonScraper } from '../stores/noon-scraper';
+import { ExtraScraper } from '../stores/extra-scraper';
+import { AlmaneaScraper } from '../stores/almanea-scraper';
 import { ProductService } from './product-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
@@ -233,15 +237,14 @@ export class ScrapingOrchestrator {
     switch (storeSlug) {
       case 'jarir':
         return new JarirScraper();
-      // TODO: Add other scrapers
-      // case 'extra':
-      //   return new ExtraScraper();
-      // case 'noon':
-      //   return new NoonScraper();
-      // case 'amazon':
-      //   return new AmazonScraper();
-      // case 'almanea':
-      //   return new AlmaneaScraper();
+      case 'amazon':
+        return new AmazonScraper();
+      case 'noon':
+        return new NoonScraper();
+      case 'extra':
+        return new ExtraScraper();
+      case 'almanea':
+        return new AlmaneaScraper();
       default:
         return null;
     }

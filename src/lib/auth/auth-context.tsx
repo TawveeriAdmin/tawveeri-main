@@ -82,48 +82,134 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  type UserProfileShape = Pick<
+    AuthUser,
+    'role' | 'full_name' | 'avatar_url' | 'preferred_language' | 'phone' | 'email_verified' | 'phone_verified'
+  >;
+
+  const getDefaultProfile = (): UserProfileShape => ({
+    role: 'customer',
+    full_name: null,
+    avatar_url: null,
+    preferred_language: 'ar',
+    phone: null,
+    email_verified: false,
+    phone_verified: false,
+  });
+
+  const normalizeProfile = (
+    profile: Partial<UserProfileShape> | null | undefined
+  ): UserProfileShape => ({
+    ...getDefaultProfile(),
+    ...(profile || {}),
+  });
+
   // Fetch user profile data from database, create if doesn't exist
-  const fetchUserProfile = async (userId: string, userEmail?: string) => {
-    if (!supabase) return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar', phone: null, email_verified: false, phone_verified: false };
+  const fetchUserProfile = async (authUser: User): Promise<UserProfileShape> => {
+    if (!supabase) return getDefaultProfile();
+    const profileSelect =
+      'role, full_name, avatar_url, preferred_language, phone, email_verified, phone_verified';
+
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('role, full_name, avatar_url, preferred_language, phone, email_verified, phone_verified')
-        .eq('id', userId)
-        .single();
+        .select(profileSelect)
+        .eq('id', authUser.id)
+        .maybeSingle();
 
       if (error) {
-        // If user profile doesn't exist, create it
-        if (error.code === 'PGRST116') {
-          console.log('User profile not found, creating...');
-
-          const { data: newProfile, error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: userId,
-              email: userEmail,
-              role: 'customer',
-              auth_provider: 'email',
-              email_verified: true,
-            })
-            .select('role, full_name, avatar_url, preferred_language, phone, email_verified, phone_verified')
-            .single();
-
-          if (insertError) {
-            console.error('Error creating user profile:', insertError);
-            return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar', phone: null, email_verified: false, phone_verified: false };
-          }
-
-          return newProfile;
-        }
-        throw error;
+        console.error('Error fetching user profile:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          userId: authUser.id,
+        });
+        return getDefaultProfile();
       }
 
-      return data;
+      if (data) {
+        return normalizeProfile(data);
+      }
+
+      // Profile row is missing; create it using authenticated user metadata.
+      const provider = authUser.app_metadata?.provider;
+      const authProvider =
+        provider === 'google' || provider === 'facebook' || provider === 'apple'
+          ? provider
+          : authUser.phone
+            ? 'phone'
+            : 'email';
+      const fullNameMeta =
+        typeof authUser.user_metadata?.full_name === 'string'
+          ? authUser.user_metadata.full_name
+          : typeof authUser.user_metadata?.name === 'string'
+            ? authUser.user_metadata.name
+            : null;
+      const preferredLanguageMeta =
+        authUser.user_metadata?.preferred_language === 'en' ||
+        authUser.user_metadata?.preferred_language === 'ar'
+          ? authUser.user_metadata.preferred_language
+          : 'ar';
+
+      let { data: createdProfile, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: authUser.id,
+          email: authUser.email || null,
+          phone: authUser.phone || null,
+          full_name: fullNameMeta,
+          role: 'customer',
+          auth_provider: authProvider,
+          email_verified: Boolean(authUser.email_confirmed_at),
+          phone_verified: Boolean(authUser.phone_confirmed_at),
+          preferred_language: preferredLanguageMeta,
+        })
+        .select(profileSelect)
+        .maybeSingle();
+
+      // Retry with minimal payload in case stale unique email/phone data exists.
+      if (insertError) {
+        const retry = await supabase
+          .from('users')
+          .insert({
+            id: authUser.id,
+            role: 'customer',
+            auth_provider: authProvider,
+          })
+          .select(profileSelect)
+          .maybeSingle();
+        createdProfile = retry.data;
+        insertError = retry.error;
+      }
+
+      if (insertError) {
+        // Handle race condition where another flow inserted the row between calls.
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select(profileSelect)
+          .eq('id', authUser.id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          return normalizeProfile(existingProfile);
+        }
+
+        console.warn('Unable to create missing user profile, using defaults:', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          userId: authUser.id,
+        });
+        return getDefaultProfile();
+      }
+
+      return normalizeProfile(createdProfile);
     } catch (error) {
       console.error('Error fetching user profile:', error);
       // Return default profile to prevent app from breaking
-      return { role: 'customer', full_name: null, avatar_url: null, preferred_language: 'ar', phone: null, email_verified: false, phone_verified: false }; 
+      return getDefaultProfile();
     }
   };
 
@@ -135,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
 
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id, session.user.email);
+        const profile = await fetchUserProfile(session.user);
         setUser({ ...session.user, ...profile } as AuthUser);
       }
 
@@ -152,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
 
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id, session.user.email);
+        const profile = await fetchUserProfile(session.user);
         setUser({ ...session.user, ...profile } as AuthUser);
       } else {
         setUser(null);
@@ -351,7 +437,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (sessionData?.session) {
         // Session found, update state immediately so UI updates without waiting for redirect
-        const profile = await fetchUserProfile(sessionData.session.user.id, sessionData.session.user.email);
+        const profile = await fetchUserProfile(sessionData.session.user);
         setUser({ ...sessionData.session.user, ...profile } as AuthUser);
         setSession(sessionData.session);
       }
@@ -391,22 +477,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Supabase client not initialized');
       return;
     }
+    const userId = user?.id ?? null;
+
     try {
-      if (user) {
-        // Audit log before signing out
-        await createAuditLog({
-          user_id: user.id,
-          action: 'user_logout',
-          entity_type: 'user',
-          entity_id: user.id,
-        });
+      const { error: signOutError } = await supabase.auth.signOut();
+
+      if (signOutError) {
+        console.error('Global sign-out failed, attempting local sign-out:', signOutError);
+        const { error: localSignOutError } = await supabase.auth.signOut({ scope: 'local' });
+        if (localSignOutError) {
+          throw localSignOutError;
+        }
       }
 
-      await supabase.auth.signOut();
       setUser(null);
       setSession(null);
+
+      if (userId) {
+        void createAuditLog({
+          user_id: userId,
+          action: 'user_logout',
+          entity_type: 'user',
+          entity_id: userId,
+        });
+      }
     } catch (error) {
       console.error('Error signing out:', error);
+      setUser(null);
+      setSession(null);
     }
   };
 
@@ -515,7 +613,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(data.session);
       if (data.session?.user) {
-        const profile = await fetchUserProfile(data.session.user.id, data.session.user.email);
+        const profile = await fetchUserProfile(data.session.user);
         setUser({ ...data.session.user, ...profile } as AuthUser);
       }
     } catch (error) {

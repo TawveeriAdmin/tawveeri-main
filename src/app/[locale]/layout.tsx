@@ -24,6 +24,18 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
  display: 'swap',
 });
 
+const extractNamespace = (
+ payload: Record<string, unknown> | undefined,
+ namespace: string
+): Record<string, unknown> | undefined => {
+ if (!payload || typeof payload !== 'object') return undefined;
+ const nested = payload[namespace];
+ if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+ return nested as Record<string, unknown>;
+ }
+ return payload;
+};
+
 // Removed generateStaticParams - next-intl plugin handles this
 
 export default async function LocaleLayout({
@@ -73,6 +85,10 @@ export default async function LocaleLayout({
  const commonNested = (commonMessages as Record<string, unknown>)?.common as Record<string, unknown> | undefined;
  const commonTopLevel = { ...(commonMessages as Record<string, unknown>) };
  delete commonTopLevel.common;
+ const adminMessages = extractNamespace(
+   admin.status === 'fulfilled' && admin.value?.default ? admin.value.default : undefined,
+   'admin'
+ );
  messages = {
  ...(commonTopLevel || {}), // Top-level keys from common.json (app, nav, button, etc.)
  ...(commonNested ? { common: commonNested } : {}), // Nested common object namespaced
@@ -90,7 +106,7 @@ export default async function LocaleLayout({
  ...(compare.status === 'fulfilled' && compare.value?.default ? { compare: compare.value.default } : {}),
  ...(settings.status === 'fulfilled' && settings.value?.default ? { settings: settings.value.default } : {}),
  ...(notifications.status === 'fulfilled' && notifications.value?.default ? { notifications: notifications.value.default } : {}),
- ...(admin.status === 'fulfilled' && admin.value?.default ? { admin: admin.value.default } : {}),
+ ...(adminMessages ? { admin: adminMessages } : {}),
  ...(checkout.status === 'fulfilled' && checkout.value?.default ? { checkout: checkout.value.default } : {}),
  ...(priceAlerts.status === 'fulfilled' && priceAlerts.value?.default ? { priceAlerts: priceAlerts.value.default } : {}),
  ...(cart.status === 'fulfilled' && cart.value?.default ? { cart: cart.value.default } : {}),
