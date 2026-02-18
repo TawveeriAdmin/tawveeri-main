@@ -2,6 +2,132 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## RIPER-5 Operational Protocol (Terminal)
+
+Use this protocol for Claude Code sessions in this repository.
+
+### Core Rules
+
+- Default mode is `FAST` if no mode was explicitly set.
+- Do not switch modes unless the user explicitly commands it.
+- In `EXECUTE`, follow the approved `PLAN` exactly.
+- If execution needs any unplanned deviation, stop and return to `PLAN`.
+- When asked to inspect or edit backend DB items (schema, edge functions, DB functions), use Supabase MCP tools.
+
+### Mode Declaration
+
+Start every response with the current mode tag:
+
+- `[MODE: RESEARCH]`
+- `[MODE: INNOVATE]`
+- `[MODE: PLAN]`
+- `[MODE: EXECUTE]`
+- `[MODE: REVIEW]`
+- `[MODE: FAST]`
+- `[MODE: RESEARCH PLAN]`
+
+### Transition Commands
+
+Only these user commands change mode:
+
+- `do res` -> `RESEARCH`
+- `do inn` -> `INNOVATE`
+- `do pla` -> `PLAN`
+- `do exe` -> `EXECUTE`
+- `do rev` -> `REVIEW`
+- `do fas` -> `FAST`
+- `do respla` -> `RESEARCH PLAN`
+
+### Mode Contracts
+
+#### RESEARCH (`do res`)
+
+Purpose: understand existing code and gather facts.
+
+- Allowed: read/search files, inspect context, ask clarifying questions.
+- Forbidden: planning, implementation, and code changes.
+
+#### INNOVATE (`do inn`)
+
+Purpose: brainstorm options before choosing an approach.
+
+- Allowed: possible approaches with pros/cons and trade-offs.
+- Forbidden: final decisions, step-by-step planning, code writing.
+
+#### PLAN (`do pla`)
+
+Purpose: produce an exhaustive implementation plan with no open decisions.
+
+- Allowed: exact file paths, symbols, technical steps, sequencing.
+- Forbidden: code writing.
+- Requirement: end with a numbered implementation checklist.
+
+Checklist format:
+
+1. [Specific action]
+2. [Specific action]
+3. [Specific action]
+
+#### EXECUTE (`do exe`)
+
+Purpose: implement only what was approved in `PLAN`.
+
+- Allowed: only planned steps.
+- Forbidden: unplanned improvements, refactors, or extra scope.
+- If any deviation is required: stop and request return to `PLAN`.
+
+#### REVIEW (`do rev`)
+
+Purpose: verify implementation strictly against plan.
+
+- Allowed: comparison and verification only.
+- Forbidden: new edits.
+- Must explicitly flag deviations using:
+  - `DEVIATION DETECTED: <description>`
+- End with one verdict:
+  - `IMPLEMENTATION MATCHES PLAN EXACTLY`
+  - `IMPLEMENTATION DEVIATES FROM PLAN`
+
+#### FAST (`do fas`)
+
+Purpose: minimal, rapid, scoped task execution.
+
+- Allowed: smallest possible change to complete assigned task.
+- Forbidden: refactors, optimizations, or behavior changes outside scope unless explicitly requested.
+- Principles: KISS and YAGNI.
+- If task grows beyond scope: return to `PLAN`.
+
+Response format in FAST:
+
+1. Problem
+2. Expected outcome
+3. Constraints
+4. Minimal solution
+5. Files changed
+
+#### RESEARCH PLAN (`do respla`)
+
+Purpose: deep research first, then assumption-free planning.
+
+Phase 1 - Research:
+
+1. Restate and clarify the problem.
+2. List constraints, requirements, and context.
+3. Gather only confirmed facts; ask when uncertain.
+4. Compare possible approaches.
+5. Note risks, edge cases, and trade-offs.
+6. Choose final approach only with evidence.
+
+Phase 2 - Plan:
+
+- Produce exhaustive implementation plan (no code).
+- Include files, functions, APIs, config, and data changes.
+- End with checklist:
+
+1. [Problem] [Expected Result] [Solution] [Files to change]
+2. [Problem] [Expected Result] [Solution] [Files to change]
+3. [Problem] [Expected Result] [Solution] [Files to change]
+
 ## Project Overview
 
 **Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Users compare prices across stores (Amazon SA, Noon, Jarir, Extra), set price alerts, and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
