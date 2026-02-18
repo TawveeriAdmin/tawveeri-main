@@ -10,9 +10,9 @@
 
 | Category | Implemented | Partial | Not Implemented | Total | Completion |
 |----------|:-----------:|:-------:|:---------------:|:-----:|:----------:|
-| Functional Requirements | 24 | 10 | 7 | 41 | **68%** |
-| Non-Functional Requirements | 4 | 7 | 5 | 16 | **47%** |
-| **Overall** | **28** | **17** | **12** | **57** | **64%** |
+| Functional Requirements | 29 | 5 | 7 | 41 | **77%** |
+| Non-Functional Requirements | 5 | 6 | 5 | 16 | **50%** |
+| **Overall** | **34** | **11** | **12** | **57** | **69%** |
 
 > Partial items are counted as 50% in the overall percentage.
 
@@ -34,7 +34,7 @@
 
 ---
 
-### Week 2 — User Accounts & Access (90%)
+### Week 2 — User Accounts & Access (100%)
 
 | Task | Status | Notes |
 |------|:------:|-------|
@@ -43,30 +43,30 @@
 | Account management (profile editing, password reset, delete account) | ✅ Done | Profile page with avatar upload, password change, account deletion, email/phone verification (`src/app/[locale]/(dashboard)/profile/page.tsx`) |
 | Legal compliance (Saudi data privacy laws) | ✅ Done | Privacy policy + Terms of Service pages exist bilingual (`src/app/[locale]/(public)/privacy/`, `src/app/[locale]/(public)/terms/`) |
 | User/Admin/Customer page creation (frontend access layer) | ✅ Done | Route groups: `(public)`, `(dashboard)`, `/admin/`, `/store/`; middleware enforces roles |
-| Phone password reset | 🟡 Partial | Email-based reset works; phone reset UI marked "coming soon" in `forgot-password/page.tsx` |
+| Phone password reset | ✅ Done | 3-step flow in `forgot-password/page.tsx`: phone input → OTP verification (6-digit with auto-advance) → new password form. Backend: `POST /api/auth/reset-password-phone` verifies OTP from `phone_otps` table + updates password via `supabase.auth.admin.updateUserById()`. Includes notification + audit log. |
 
 ---
 
-### Week 3 — Search & Filtering (60%)
+### Week 3 — Search & Filtering (95%)
 
 | Task | Status | Notes |
 |------|:------:|-------|
-| Product search by category (TV, Laptop, Smartphone) | 🟡 Partial | Category chips and select in UI, but categories don't filter scraped results on backend |
+| Product search by category (TV, Laptop, Smartphone) | ✅ Done | Category passed end-to-end: SearchPage → `POST /api/search/scrape` body → `searchAllStores(query, stores, pages, sort, category)` → filtered by `matchesCategory()` from `src/lib/scraping/utils/category-utils.ts` |
 | Filtering by brand, model | ✅ Done | Dynamic brand filter from DB in `src/components/search/filter-sidebar.tsx` |
-| Filtering by RAM, storage, size, resolution, color | 🟡 Partial | `specifications` field captured in schema but no filter UI for these attributes |
-| Dynamic filters (based on category) | 🟡 Partial | Only brands are category-dynamic; other filters are static across categories |
+| Filtering by RAM, storage, size, resolution, color | ✅ Done | Dynamic spec filters per category in `filter-sidebar.tsx` using `CATEGORY_SPEC_FILTERS` from `src/lib/scraping/config/spec-configs.ts`. Specs extracted client-side from product titles via `extractSpecsFromTitle()`. Covers RAM, storage, screen size, resolution, panel type, audio type, wireless/ANC across 6 categories (smartphone, laptop, tv, tablet, audio, gaming). Discount %, condition, and shipping speed filters also wired. |
+| Dynamic filters (based on category) | ✅ Done | Spec filter sections change dynamically based on selected category. Smartphone shows RAM/storage, laptop shows CPU/GPU/storage type, TV shows resolution/panel type, audio shows type/wireless/ANC, etc. |
 | Sort by price, popularity, rating, store | ✅ Done | 4 sort options + 7 filter types with URL state persistence |
 | Search suggestions (auto-suggest) | ✅ Done | Debounced autocomplete from DB products (`src/components/search/search-bar.tsx`) |
 | Search history log | ✅ Done | Auto-logged to `search_history` table; visible in search bar + saved searches |
 
 ---
 
-### Week 4 — Store Integration (70%)
+### Week 4 — Store Integration (95%)
 
 | Task | Status | Notes |
 |------|:------:|-------|
-| Integration with 5 major stores (Extra, Jarir, Almanea, Noon, Amazon.sa) | 🟡 Partial | All 5 configured. **Search scrapers** work for all 4 main stores. **Cron scrapers** only Jarir is fully implemented; Amazon, Noon, Extra, Almanea are stub classes. |
-| Localized store integration (additional Saudi stores) | 🟡 Partial | Almanea added as 5th store; no further expansion beyond the 5 |
+| Integration with 5 major stores (Extra, Jarir, Almanea, Noon, Amazon.sa) | ✅ Done | All 5 stores fully operational. **Search scrapers** work for all 4 main stores. **Cron scrapers** implemented for all 5: `JarirScraper` (existing), `NoonScraper` (JSON API at `/_svc/catalog/api/v3/`), `AmazonScraper` (cheerio + Puppeteer, ASIN-based), `ExtraScraper` (`__NEXT_DATA__` JSON + HTML fallback), `AlmaneaScraper` (HTML selectors + JSON-LD). Orchestrator switch in `scraping-orchestrator.ts` routes all stores. |
+| Localized store integration (additional Saudi stores) | ✅ Done | 5 Saudi stores with bilingual configs (`name_ar`, `name_en`) in `src/lib/scraping/config/store-configs/`. All with working cron + search scrapers. |
 | Store onboarding portal (self-service for stores) | ✅ Done | Full store portal: `/store/dashboard`, `/store/products`, `/store/analytics`, `/store/transactions` with product management |
 | Store rating system | ✅ Done | `store_reviews` table with multi-field ratings (delivery, quality, service); review form + display on store pages |
 
@@ -158,12 +158,12 @@
 |---|-------------|:------:|---------|
 | 1 | User Registration & Authentication (email, phone, social) | ✅ | Email, Phone OTP, Google/Facebook/Apple OAuth |
 | 2 | Guest Access | ✅ | Public routes accessible without auth |
-| 3 | Product Search by category | 🟡 | Category UI exists; doesn't filter scraped results |
+| 3 | Product Search by category | ✅ | Category filters scraped results end-to-end via `searchAllStores()` + `matchesCategory()` |
 | 4 | Brand & Model Filtering | ✅ | Dynamic brand checkboxes from DB |
-| 5 | Advanced Filtering (RAM, storage, resolution, color) | 🟡 | Data captured; no filter UI |
+| 5 | Advanced Filtering (RAM, storage, resolution, color) | ✅ | Dynamic spec filters per category with client-side extraction from titles; 6 category configs |
 | 6 | Price Comparison Engine | ✅ | Multi-store pricing with best-price highlighting |
 | 7 | Sort & Filter Results | ✅ | 4 sort options + 7 filter types |
-| 8 | Store Integration (APIs/web scraping) | 🟡 | Search scrapers work; cron scrapers mostly stubs |
+| 8 | Store Integration (APIs/web scraping) | ✅ | All 5 stores: search scrapers + cron scrapers fully implemented |
 | 9 | Redirection to Store (click-through) | ✅ | Affiliate URL generation with click tracking |
 | 10 | Product Detail Page | ✅ | Full page with images, specs, multi-store prices |
 | 11 | Wishlist/Save Products | ✅ | Full CRUD with notes |
@@ -189,14 +189,14 @@
 | 31 | Multiple Login Options (Google, Apple, Facebook, email) | ✅ | All 4 + phone OTP |
 | 32 | Affiliate Tracking | ✅ | Unique click_id per redirect; conversion API |
 | 33 | Product Availability Checker | ✅ | 4 statuses with colored badges |
-| 34 | Dynamic Search Filters | 🟡 | Brands are dynamic; specs filters not built |
+| 34 | Dynamic Search Filters | ✅ | Spec filters change dynamically per category; brands + specs + discount/condition/shipping |
 | 35 | Product Videos/Demos | ✅ | YouTube embed + direct video player |
 | 36 | Store Rating System | ✅ | Multi-field ratings (delivery, quality, service) |
 | 37 | Smart Recommendations (AI-based) | ❌ | No AI/ML engine |
 | 38 | Coupon Integration | ❌ | Not implemented |
 | 39 | Multi-Store Cart (Phase 2+) | ✅ | Store-grouped cart with gift wrapping |
 | 40 | Comparison by Delivery Time | 🟡 | DB fields exist; limited UI |
-| 41 | Localized Store Integration | 🟡 | 5 Saudi stores configured |
+| 41 | Localized Store Integration | ✅ | 5 Saudi stores with full cron + search scrapers |
 | 42 | Gift Option Integration | ✅ | Gift wrapping + message + share |
 | 43 | Search History Log | ✅ | Auto-logged + saved searches |
 | 44 | Single Sign-On (OAuth) | ✅ | Google, Facebook, Apple via Supabase |
@@ -213,7 +213,7 @@
 | 2 | Scalability (1M+ users) | 🟡 | Supabase scales; no load testing |
 | 3 | Security (SSL, encryption, secure login) | ✅ | Supabase SSL, RLS, secure auth flows |
 | 4 | Reliability (99.9% uptime) | ❌ | No monitoring service (Sentry, Datadog, etc.) |
-| 5 | Data Accuracy (regular refresh) | 🟡 | Cron scrapers exist but most are stubs |
+| 5 | Data Accuracy (regular refresh) | ✅ | All 5 store cron scrapers fully implemented for automated price updates and product discovery |
 | 6 | Usability (intuitive bilingual UI) | ✅ | Clean UI with full AR/EN support |
 | 7 | SEO Optimization | 🟡 | Root metadata only; missing sitemap, robots.txt, JSON-LD |
 | 8 | Accessibility (WCAG 2.1) | 🟡 | Radix UI baseline; lacks comprehensive ARIA |
@@ -233,9 +233,9 @@
 | Week | Focus Area | Completion |
 |------|-----------|:----------:|
 | Week 1 | Foundation & Setup | **95%** |
-| Week 2 | User Accounts & Access | **90%** |
-| Week 3 | Search & Filtering | **60%** |
-| Week 4 | Store Integration | **70%** |
+| Week 2 | User Accounts & Access | **100%** |
+| Week 3 | Search & Filtering | **95%** |
+| Week 4 | Store Integration | **95%** |
 | Week 5 | Product Experience | **95%** |
 | Week 6 | Personalization & Favorites | **55%** |
 | Week 7 | Notifications & Engagement | **55%** |
@@ -250,15 +250,22 @@
 These are the highest-impact missing features ranked by business value:
 
 1. **Email service integration** — Templates and infrastructure are built but no email provider (Resend/SendGrid) is connected. This blocks all user-facing email alerts.
-2. **Cron scrapers completion** — Only Jarir has a full cron scraper. Amazon, Noon, Extra, Almanea are stubs. This limits automated price updates and data freshness.
-3. **Advanced spec filtering** — Specification data is captured but users can't filter by RAM, storage, screen size, etc. This is a core differentiator for an electronics comparison platform.
-4. **SEO** — No sitemap, robots.txt, dynamic metadata, or JSON-LD structured data. Critical for organic traffic.
-5. **Coupon integration** — Listed as a requirement but completely absent.
+2. **SEO** — No sitemap, robots.txt, dynamic metadata, or JSON-LD structured data. Critical for organic traffic.
+3. **Coupon integration** — Listed as a requirement but completely absent.
+4. **Push notifications** — Settings UI exists; no service worker or Web Push API backend.
+5. **Premium store upgrade flow** — DB fields exist; needs payment gateway integration.
 6. **AI recommendations** — No ML-based recommendation engine; only basic category/view-count logic.
 7. **Monitoring & reliability** — No Sentry, Datadog, or uptime monitoring. Required for production.
-8. **Mobile app** — iOS/Android app is a PDR requirement but no codebase exists.
-9. **Hijri calendar & Arabic numerals** — Saudi-specific localization requirement not addressed.
-10. **Loyalty program / Cashback** — No implementation at all.
+8. **Loyalty program / Cashback** — No implementation at all.
+9. **Mobile app** — iOS/Android app is a PDR requirement but no codebase exists.
+10. **Hijri calendar & Arabic numerals** — Saudi-specific localization requirement not addressed.
+
+### Recently Completed (Phase 1 gaps resolved)
+
+- ~~Cron scrapers~~ — All 5 store scrapers (Jarir, Noon, Amazon, Extra, Almanea) fully implemented
+- ~~Advanced spec filtering~~ — Dynamic spec filter UI per category with client-side extraction
+- ~~Category search filtering~~ — Category passed end-to-end through search pipeline
+- ~~Phone password reset~~ — 3-step OTP flow with `reset-password-phone` API route
 
 ---
 

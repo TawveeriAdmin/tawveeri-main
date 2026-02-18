@@ -24,6 +24,8 @@ import {
   Zap,
 } from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
+import { CATEGORY_SPEC_FILTERS, type SpecFilterDefinition } from '@/lib/scraping/config/spec-configs';
+import { Cpu } from 'lucide-react';
 
 export interface SearchFilters {
   brands: string[];
@@ -34,8 +36,10 @@ export interface SearchFilters {
   dealsOnly: boolean;
   freeDeliveryOnly?: boolean;
   minRating?: number;
-  specifications?: Record<string, unknown>;
-  categorySpecific?: Record<string, unknown>;
+  specs?: Record<string, string[]>;
+  discount?: number;
+  condition?: string[];
+  shipping?: string[];
 }
 
 interface FilterSidebarProps {
@@ -321,8 +325,45 @@ export function FilterSidebar({
       minPrice: undefined,
       maxPrice: undefined,
       minRating: undefined,
+      specs: undefined,
+      discount: undefined,
+      condition: undefined,
+      shipping: undefined,
     });
   };
+
+  const handleSpecToggle = (specKey: string, value: string) => {
+    const currentSpecs = filters.specs || {};
+    const currentValues = currentSpecs[specKey] || [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    const newSpecs = { ...currentSpecs, [specKey]: newValues };
+    if (newValues.length === 0) delete newSpecs[specKey];
+    onFilterChange({ ...filters, specs: Object.keys(newSpecs).length > 0 ? newSpecs : undefined });
+  };
+
+  const handleDiscountToggle = (value: number) => {
+    onFilterChange({ ...filters, discount: filters.discount === value ? undefined : value });
+  };
+
+  const handleConditionToggle = (value: string) => {
+    const current = filters.condition || [];
+    const newCondition = current.includes(value)
+      ? current.filter(c => c !== value)
+      : [...current, value];
+    onFilterChange({ ...filters, condition: newCondition.length > 0 ? newCondition : undefined });
+  };
+
+  const handleShippingToggle = (value: string) => {
+    const current = filters.shipping || [];
+    const newShipping = current.includes(value)
+      ? current.filter(s => s !== value)
+      : [...current, value];
+    onFilterChange({ ...filters, shipping: newShipping.length > 0 ? newShipping : undefined });
+  };
+
+  const specFilters: SpecFilterDefinition[] = category ? (CATEGORY_SPEC_FILTERS[category] || []) : [];
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -334,6 +375,10 @@ export function FilterSidebar({
     if (filters.minRating && filters.minRating > 0) count++;
     if (filters.minPrice !== undefined) count++;
     if (filters.maxPrice !== undefined) count++;
+    if (filters.specs) count += Object.values(filters.specs).reduce((sum, arr) => sum + arr.length, 0);
+    if (filters.discount) count++;
+    if (filters.condition) count += filters.condition.length;
+    if (filters.shipping) count += filters.shipping.length;
     return count;
   }, [filters]);
 
@@ -535,25 +580,74 @@ export function FilterSidebar({
           </div>
         </FilterSection>
 
+        {/* Dynamic Spec Filters (based on category) */}
+        {specFilters.map((spec) => {
+          const specValues = filters.specs?.[spec.key] || [];
+          return (
+            <FilterSection
+              key={spec.key}
+              icon={Cpu}
+              title={locale === 'ar' ? spec.label_ar : spec.label_en}
+              badge={specValues.length || undefined}
+            >
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {spec.options.map((option) => {
+                  const isChecked = specValues.includes(option.value);
+                  return (
+                    <label
+                      key={option.value}
+                      className={cn(
+                        'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                        isChecked
+                          ? 'bg-primary-50 dark:bg-primary-900/20'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                      )}
+                    >
+                      <Checkbox
+                        id={`spec-${spec.key}-${option.value}`}
+                        checked={isChecked}
+                        onCheckedChange={() => handleSpecToggle(spec.key, option.value)}
+                      />
+                      <span className="text-sm text-on-surface">
+                        {locale === 'ar' ? option.label_ar : option.label_en}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </FilterSection>
+          );
+        })}
+
         {/* Discount Range */}
         <FilterSection
           icon={Percent}
           title={locale === 'ar' ? 'نسبة الخصم' : 'Discount'}
+          badge={filters.discount ? 1 : undefined}
         >
           <div className="grid grid-cols-2 gap-1.5">
             {[
-              { value: 10, label: '+%10' },
-              { value: 25, label: '+%25' },
-              { value: 50, label: '+%50' },
-              { value: 70, label: '+%70' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                className="py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-on-surface-variant hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700 transition-all"
-              >
-                {option.label}
-              </button>
-            ))}
+              { value: 10, label: '+10%' },
+              { value: 25, label: '+25%' },
+              { value: 50, label: '+50%' },
+              { value: 70, label: '+70%' },
+            ].map((option) => {
+              const isActive = filters.discount === option.value;
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => handleDiscountToggle(option.value)}
+                  className={cn(
+                    'py-2 rounded-lg border text-sm font-medium transition-all',
+                    isActive
+                      ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700'
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         </FilterSection>
 
@@ -561,22 +655,35 @@ export function FilterSidebar({
         <FilterSection
           icon={ShieldCheck}
           title={locale === 'ar' ? 'الحالة' : 'Condition'}
+          badge={filters.condition?.length || undefined}
         >
           <div className="space-y-1">
             {([
               { value: 'new', label: locale === 'ar' ? 'جديد' : 'New', dot: 'bg-emerald-500' },
               { value: 'renewed', label: locale === 'ar' ? 'مجدد' : 'Renewed', dot: 'bg-blue-500' },
               { value: 'used', label: locale === 'ar' ? 'مستعمل' : 'Used', dot: 'bg-gray-400' },
-            ]).map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
-              >
-                <Checkbox id={`condition-${item.value}`} />
-                <span className={cn('w-2 h-2 rounded-full', item.dot)} />
-                <span className="text-sm text-on-surface">{item.label}</span>
-              </label>
-            ))}
+            ]).map((item) => {
+              const isChecked = filters.condition?.includes(item.value) || false;
+              return (
+                <label
+                  key={item.value}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                    isChecked
+                      ? 'bg-primary-50 dark:bg-primary-900/20'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                  )}
+                >
+                  <Checkbox
+                    id={`condition-${item.value}`}
+                    checked={isChecked}
+                    onCheckedChange={() => handleConditionToggle(item.value)}
+                  />
+                  <span className={cn('w-2 h-2 rounded-full', item.dot)} />
+                  <span className="text-sm text-on-surface">{item.label}</span>
+                </label>
+              );
+            })}
           </div>
         </FilterSection>
 
@@ -584,21 +691,34 @@ export function FilterSidebar({
         <FilterSection
           icon={Zap}
           title={locale === 'ar' ? 'سرعة الشحن' : 'Shipping Speed'}
+          badge={filters.shipping?.length || undefined}
         >
           <div className="space-y-1">
             {([
               { value: 'same_day', label: locale === 'ar' ? 'توصيل في نفس اليوم' : 'Same Day Delivery' },
               { value: 'express', label: locale === 'ar' ? 'توصيل سريع (1-2 يوم)' : 'Express (1-2 days)' },
               { value: 'standard', label: locale === 'ar' ? 'توصيل عادي (3-7 أيام)' : 'Standard (3-7 days)' },
-            ]).map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
-              >
-                <Checkbox id={`shipping-${item.value}`} />
-                <span className="text-sm text-on-surface">{item.label}</span>
-              </label>
-            ))}
+            ]).map((item) => {
+              const isChecked = filters.shipping?.includes(item.value) || false;
+              return (
+                <label
+                  key={item.value}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                    isChecked
+                      ? 'bg-primary-50 dark:bg-primary-900/20'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                  )}
+                >
+                  <Checkbox
+                    id={`shipping-${item.value}`}
+                    checked={isChecked}
+                    onCheckedChange={() => handleShippingToggle(item.value)}
+                  />
+                  <span className="text-sm text-on-surface">{item.label}</span>
+                </label>
+              );
+            })}
           </div>
         </FilterSection>
       </div>

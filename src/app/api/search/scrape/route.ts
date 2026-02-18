@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { query, stores, pages, sort } = body;
+    const { query, stores, pages, sort, category } = body;
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Run TypeScript scrapers directly
-    const result = await searchAllStores(query.trim(), normalizedStores, normalizedPages, normalizedSort);
+    const result = await searchAllStores(query.trim(), normalizedStores, normalizedPages, normalizedSort, category || undefined);
 
     // Filter non-tech products
     const originalCount = result.products.length;

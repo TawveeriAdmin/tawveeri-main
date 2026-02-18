@@ -66,6 +66,7 @@ import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import { mapScrapedToProductCard } from '@/lib/scraping/product-adapter';
+import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 
 type Product = ProductCardProduct & {
   product_stores: Array<{
@@ -105,7 +106,9 @@ export default function SearchPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>(
+    (searchParams.get('category') as ProductCategory | 'all') || 'all'
+  );
   const [scrapingProgress, setScrapingProgress] = useState<string>('');
   const [storeErrors, setStoreErrors] = useState<Record<string, string>>({});
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -133,6 +136,10 @@ export default function SearchPage() {
     if (filters.minRating && filters.minRating > 0) count++;
     if (filters.minPrice !== undefined) count++;
     if (filters.maxPrice !== undefined) count++;
+    if (filters.specs) count += Object.values(filters.specs).reduce((sum, arr) => sum + arr.length, 0);
+    if (filters.discount) count++;
+    if (filters.condition) count += filters.condition.length;
+    if (filters.shipping) count += filters.shipping.length;
     return count;
   }, [filters]);
 
@@ -165,6 +172,27 @@ export default function SearchPage() {
         case 'maxPrice':
           next.maxPrice = undefined;
           break;
+        case 'discount':
+          next.discount = undefined;
+          break;
+        case 'condition':
+          next.condition = prev.condition?.filter(c => c !== value);
+          if (next.condition?.length === 0) next.condition = undefined;
+          break;
+        case 'shipping':
+          next.shipping = prev.shipping?.filter(s => s !== value);
+          if (next.shipping?.length === 0) next.shipping = undefined;
+          break;
+        default:
+          // Handle spec filters (type starts with "spec:")
+          if (type.startsWith('spec:') && value) {
+            const specKey = type.replace('spec:', '');
+            const currentSpecs = { ...(prev.specs || {}) };
+            currentSpecs[specKey] = (currentSpecs[specKey] || []).filter(v => v !== value);
+            if (currentSpecs[specKey].length === 0) delete currentSpecs[specKey];
+            next.specs = Object.keys(currentSpecs).length > 0 ? currentSpecs : undefined;
+          }
+          break;
       }
       return next;
     });
@@ -181,6 +209,10 @@ export default function SearchPage() {
       minRating: undefined,
       minPrice: undefined,
       maxPrice: undefined,
+      specs: undefined,
+      discount: undefined,
+      condition: undefined,
+      shipping: undefined,
     });
   }, []);
 
@@ -243,6 +275,8 @@ export default function SearchPage() {
     else p.delete('freeDelivery');
     if (filters.minRating && filters.minRating > 0) p.set('rating', filters.minRating.toString());
     else p.delete('rating');
+    if (selectedCategory !== 'all') p.set('category', selectedCategory);
+    else p.delete('category');
 
     const newUrl = `/${locale}/search?${p.toString()}`;
     const currentUrl = `/${locale}/search?${searchParams.toString()}`;
@@ -250,7 +284,7 @@ export default function SearchPage() {
     if (newUrl !== currentUrl) {
       router.replace(newUrl, { scroll: false });
     }
-  }, [filters, locale, router, searchParams]);
+  }, [filters, selectedCategory, locale, router, searchParams]);
 
   const handleSearchSelect = (query: string, selectedFilters: SearchFilters) => {
     setSearchQuery(query);
@@ -301,6 +335,7 @@ export default function SearchPage() {
           stores,
           pages,
           sort: sortBy === 'price_low' ? 'price_asc' : sortBy === 'price_high' ? 'price_desc' : 'price_asc',
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
         }),
       });
 
@@ -345,11 +380,33 @@ export default function SearchPage() {
         });
       }
 
+      // Apply spec filters client-side
+      if (filters.specs && Object.keys(filters.specs).length > 0) {
+        sortedProducts = sortedProducts.filter(product => {
+          const title = product.name_en || product.name_ar || '';
+          const specs = extractSpecsFromTitle(title);
+          return Object.entries(filters.specs!).every(([key, values]) => {
+            if (values.length === 0) return true;
+            return values.includes(specs[key] || '');
+          });
+        });
+      }
+
+      // Apply discount filter
+      if (filters.discount) {
+        sortedProducts = sortedProducts.filter(product => {
+          const ps = product.product_stores[0];
+          if (!ps?.original_price || !ps.current_price) return false;
+          const discountPct = ((ps.original_price - ps.current_price) / ps.original_price) * 100;
+          return discountPct >= filters.discount!;
+        });
+      }
+
       const offset = (currentPage - 1) * ITEMS_PER_PAGE;
       const paginatedProducts = sortedProducts.slice(offset, offset + ITEMS_PER_PAGE);
 
       setProducts(paginatedProducts);
-      setTotalCount(data.count);
+      setTotalCount(sortedProducts.length);
       setStoreErrors(data.errors || {});
       setScrapingProgress('');
 
@@ -432,6 +489,14 @@ export default function SearchPage() {
     if (filters.dealsOnly) chips.push({ label: t('search.filters.showDealsOnly'), type: 'deals' });
     if (filters.freeDeliveryOnly) chips.push({ label: t('search.filters.freeDeliveryOnly'), type: 'freeDelivery' });
     if (filters.minRating && filters.minRating > 0) chips.push({ label: `${filters.minRating}+ ⭐`, type: 'rating' });
+    if (filters.discount) chips.push({ label: `+${filters.discount}%`, type: 'discount' });
+    filters.condition?.forEach(c => chips.push({ label: c, type: 'condition', value: c }));
+    filters.shipping?.forEach(s => chips.push({ label: s, type: 'shipping', value: s }));
+    if (filters.specs) {
+      Object.entries(filters.specs).forEach(([key, values]) => {
+        values.forEach(v => chips.push({ label: `${key}: ${v}`, type: `spec:${key}`, value: v }));
+      });
+    }
     return chips;
   }, [filters, t]);
 

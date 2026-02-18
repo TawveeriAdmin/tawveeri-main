@@ -53,7 +53,6 @@ export async function createNotification(params: NotificationParams) {
       message_en: params.message_en,
       product_id: params.product_id || null,
       store_id: params.store_id || null,
-      link: params.link || null,
       is_read: false,
     });
 

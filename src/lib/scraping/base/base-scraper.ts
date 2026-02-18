@@ -93,6 +93,31 @@ export abstract class BaseScraper {
   }
 
   /**
+   * Fetch JSON from URL (for API-based scrapers like Noon)
+   */
+  async fetchJson<T>(url: string, headers?: Record<string, string>): Promise<T> {
+    if (!isValidUrl(url)) {
+      throw new Error(`Invalid URL: ${url}`);
+    }
+
+    await this.rateLimiter.wait();
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': this.config.user_agents[0] || 'Mozilla/5.0',
+        'Accept': 'application/json',
+        ...headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json() as Promise<T>;
+  }
+
+  /**
    * Fetch page with JavaScript rendering
    */
   async fetchPageWithJS(url: string): Promise<Page> {
