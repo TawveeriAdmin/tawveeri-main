@@ -36,6 +36,39 @@ const handleI18nRouting = createIntlMiddleware({
   localePrefix: 'always',
 });
 
+const getConfiguredAdminEmails = (() => {
+  let cached: Set<string> | null = null;
+
+  return () => {
+    if (cached) return cached;
+
+    const raw = [
+      process.env.ADMIN_EMAILS,
+      process.env.ADMIN_EMAIL,
+      process.env.NEXT_PUBLIC_ADMIN_EMAILS,
+    ]
+      .filter(Boolean)
+      .join(',');
+
+    const parsed = raw
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (parsed.length === 0) {
+      parsed.push('jfr3sam@gmail.com');
+    }
+
+    cached = new Set(parsed);
+    return cached;
+  };
+})();
+
+const isConfiguredAdminEmail = (email?: string | null) => {
+  if (!email) return false;
+  return getConfiguredAdminEmails().has(email.trim().toLowerCase());
+};
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -82,17 +115,36 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Get session
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isBootstrapAdmin = isConfiguredAdminEmail(user?.email ?? null);
+
+  let userRole: string | null | undefined;
+  const getUserRole = async (): Promise<string | null> => {
+    if (!user) return null;
+    if (isBootstrapAdmin) return 'admin';
+    if (userRole !== undefined) return userRole;
+
+    const { data } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    userRole = data?.role ?? null;
+    if (userRole !== 'admin' && isBootstrapAdmin) {
+      userRole = 'admin';
+    }
+    return userRole ?? null;
+  };
 
   // Extract current locale from URL
   const locale = request.nextUrl.pathname.split('/')[1];
   const validLocale = locales.includes(locale as (typeof locales)[number]) ? locale : defaultLocale;
 
-  // Redirect to login if accessing protected route without session
-  if (isProtectedRoute && !session) {
+  // Redirect to login if accessing protected route without user
+  if (isProtectedRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = `/${validLocale}/auth/login`;
     redirectUrl.searchParams.set('redirect', pathnameWithoutLocale);
@@ -100,24 +152,24 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect to dashboard if accessing auth routes while logged in
-  if (isAuthRoute && session) {
+  if (isAuthRoute && user) {
+    const role = await getUserRole();
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = `/${validLocale}/dashboard`;
+    redirectUrl.pathname =
+      role === 'admin'
+        ? `/${validLocale}/admin/dashboard`
+        : `/${validLocale}/dashboard`;
     return NextResponse.redirect(redirectUrl);
   }
 
   // Check role-based access for admin routes
-  if (isAdminRoute && session) {
-    const { data: user } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
+  if (isAdminRoute && user) {
+    const role = await getUserRole();
 
-    if (user?.role !== 'admin') {
+    if (role !== 'admin') {
       // Log unauthorized access attempt
       await createAuditLog({
-        user_id: session.user.id,
+        user_id: user.id,
         action: 'security_alert',
         entity_type: 'admin',
         details: {
@@ -133,14 +185,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check role-based access for store routes
-  if (isStoreRoute && session) {
-    const { data: user } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
+  if (isStoreRoute && user) {
+    const role = await getUserRole();
 
-    if (user?.role !== 'store' && user?.role !== 'admin') {
+    if (role !== 'store' && role !== 'admin') {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = `/${validLocale}/unauthorized`;
       return NextResponse.redirect(redirectUrl);

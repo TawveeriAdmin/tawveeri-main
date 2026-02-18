@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Styling**: Tailwind CSS v4 with custom design tokens
 - **UI**: Radix UI primitives + shadcn/ui patterns
 - **i18n**: Custom `SimpleIntlProvider` (replaced next-intl for reliability)
-- **Scraping**: Flask/Python backend (`scripts/scraping/`) + Node.js scrapers (`src/lib/scraping/`)
+- **Scraping**: TypeScript scrapers (`src/lib/scraping/`) — legacy Python/Flask in `scripts/scraping/` is unused
 - **Testing**: Jest + React Testing Library
 - **Charts**: Recharts (admin analytics)
 
@@ -33,12 +33,9 @@ npm run db:schema        # Apply schema SQL
 npm run db:policies      # Apply RLS policies
 npm run db:seed          # Seed data
 npm run db:create-admin  # Create admin user
-npm run flask:install    # Install Python scraping dependencies (legacy)
-npm run flask:start      # Start Python scraping server (legacy, no longer needed)
-npm run flask:dev        # Flask dev mode with debug (legacy)
 ```
 
-Development requires only **one terminal**: `npm run dev` on port 3000. Search scraping now runs as TypeScript inside Next.js (no Flask needed).
+Development requires only **one terminal**: `npm run dev` on port 3000. All scraping runs as TypeScript inside Next.js.
 
 ## Architecture
 
@@ -47,6 +44,13 @@ Development requires only **one terminal**: `npm run dev` on port 3000. Search s
 All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `en`. Locale config is in `src/i18n.ts`. The middleware (`src/middleware.ts`) combines next-intl routing with Supabase auth checks (session validation, role-based access).
 
 **Root layout** (`src/app/layout.tsx`) is a passthrough — the real layout is `src/app/[locale]/layout.tsx`.
+
+**Route groups** under `src/app/[locale]/`:
+- `(public)/` — Public pages (stores, deals, products) wrapped with `PublicPageShell` layout
+- `(dashboard)/` — Protected user pages with `DashboardHeader`, calls `requireAuth()` server-side, redirects admins to `/admin/dashboard`
+- `/admin/` — Admin routes (not grouped, protected by middleware)
+- `/store/` — Store owner routes (not grouped, protected by middleware)
+- `/auth/` — Login/signup (redirects away if already authenticated)
 
 ### Provider Hierarchy
 
@@ -71,7 +75,9 @@ Default: Arabic (RTL), light theme, system detection disabled.
 
 ### Translation System
 
-Translations are JSON files in `messages/{ar,en}/` organized by feature (common, auth, products, admin, etc.). Loaded via dynamic imports in `src/app/[locale]/layout.tsx` and provided through `SimpleIntlProvider` (`src/lib/simple-intl-provider.tsx`).
+Translations are JSON files in `messages/{ar,en}/` organized by feature. Loaded via `Promise.allSettled` dynamic imports in `src/app/[locale]/layout.tsx` and provided through `SimpleIntlProvider` (`src/lib/simple-intl-provider.tsx`).
+
+**Namespaces loaded** (20 files): common, landing, auth, products, dashboard, profile, stores, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart. If adding a new namespace file, add its dynamic import in the locale layout and spread it into the `messages` object.
 
 **Usage in components:**
 ```tsx
@@ -81,19 +87,21 @@ t('products.title')              // dot-notation key lookup
 t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
 ```
 
-**Adding translations**: Create/edit JSON files in `messages/ar/` and `messages/en/`. If adding a new namespace file, also add the dynamic import in `src/app/[locale]/layout.tsx` and spread it into the `messages` object with a namespace key.
-
 **Special case**: `common.json` has a unique structure — its top-level keys (`app`, `nav`, `button`, etc.) are spread directly into messages, while its nested `common` key becomes the `common` namespace. All other files are namespaced by their filename (e.g., `auth.json` → `auth.*`).
 
 ### Authentication & Authorization
 
-- **Client**: `useAuth()` hook from `src/lib/auth/auth-context.tsx` — provides signUp, signIn, signOut, user with role
-- **Server**: `src/lib/auth/server.ts` — `getSession()`, `getUser()`, `getUserProfile()`, `requireAuth()`, `requireAdmin()`
+- **Client**: `useAuth()` hook from `src/lib/auth/auth-context.tsx` — provides signUp, signIn (email/phone/OAuth), signOut, user with role
+  - Email: `signInWithEmail(email, password)`
+  - Phone OTP: `sendPhoneOtp(phone)` then `signInWithPhone(phone, token)`
+  - OAuth: `signInWithOAuth('google' | 'facebook' | 'apple')`
+- **Server**: `src/lib/auth/server.ts` — `getSession()`, `getUser()`, `getUserProfile()`, `requireAuth()`, `requireAdmin()`, `requireStore()`, `isAdmin()`, `isStore()`. Uses React `cache()` for request deduplication.
 - **Middleware**: `src/middleware.ts` handles route protection:
-  - Protected routes: `/dashboard`, `/profile`, `/wishlist`, `/notifications`, `/price-alerts`
+  - Protected routes: `/dashboard`, `/profile`, `/wishlist`, `/notifications`, `/price-alerts`, `/settings`
   - Admin routes: `/admin/*` (requires `admin` role)
-  - Store routes: `/store/*` (requires `store` or `admin` role)
+  - Store routes: `/store/dashboard`, `/store/products`, `/store/analytics` (requires `store` or `admin` role)
 - **Roles**: `admin`, `customer`, `store`, `guest` (defined in `src/lib/database/types.ts`)
+- **Bootstrap admin**: Env vars `ADMIN_EMAILS` / `ADMIN_EMAIL` / `NEXT_PUBLIC_ADMIN_EMAILS` auto-promote matching emails to admin role (fallback: jfr3sam@gmail.com). Applied in middleware and `getUserProfile()`.
 
 ### Database
 
@@ -111,7 +119,7 @@ Every user-facing action must include:
 1. **In-App Notification** — insert into `notifications` table with bilingual `title_ar`/`title_en` and `message_ar`/`message_en`
 2. **Audit Log** — insert into `admin_logs` via `createAuditLog()` from `src/lib/auth/audit.ts`
 
-Use `createNotification()` from `src/lib/auth/notifications.ts` and `createAuditLog()` with standard actions from `AUDIT_ACTIONS` constant.
+Use `createNotification()` from `src/lib/auth/notifications.ts` (types: `price_drop`, `back_in_stock`, `deal`, `system`, `account`) and `createAuditLog()` with standard actions from `AUDIT_ACTIONS` constant. Audit logging fails silently to avoid blocking user actions.
 
 ### Scraping Architecture
 
@@ -121,11 +129,15 @@ Two scraping subsystems, both TypeScript:
 
 Legacy Python/Flask scrapers (`scripts/scraping/`) still exist but are no longer used by the app.
 
-API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`.
+API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`, `src/app/api/cron/check-price-alerts/route.ts`.
 
 ### Tailwind v4 Color Override System
 
-`src/app/globals.css` uses `@custom-variant dark (&:where(.dark, .dark *))` for class-based dark mode. Custom theme colors (primary, success, warning, featured) are defined in `@theme` block. Extensive `!important` overrides exist because Tailwind v4's OKLCH color space produces incorrect colors — when adding new color utility combinations, you may need to add corresponding overrides.
+`src/app/globals.css` uses CSS custom properties for theming with `:root` and `.dark` scopes. Dark mode is class-based: `@custom-variant dark (&:where(.dark, .dark *))`.
+
+**Color tokens** (CSS variables): `--color-primary-*`, `--color-secondary-*`, `--color-tertiary-*` (amber, for deals/featured), `--color-success-*`, `--color-warning-*`, `--color-error-*`. Surface hierarchy: `--color-surface-{lowest,low,high,highest}`. Domain-specific: `--color-deal`, `--color-price-savings`.
+
+Colors are mapped in the `@theme` block. Extensive `!important` overrides exist because Tailwind v4's OKLCH color space produces incorrect colors — when adding new color utility combinations, you may need to add corresponding overrides.
 
 ### Component Organization
 
@@ -139,6 +151,7 @@ API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-price
 - `cn(...classes)` — Tailwind class merging (clsx + tailwind-merge)
 - `formatPrice(price)` — Number formatting only (no currency). Use `<Price>` component for display with SAR symbol.
 - `formatPriceWithCurrency(price, locale)` — **deprecated**, use `<Price>` component instead
+- `formatCompactNumber(num)` — K/M suffixes for large numbers
 - `calculateSavings(original, current)` / `calculateSavingsPercentage(original, current)`
 
 ### Fonts
@@ -156,7 +169,11 @@ See `.env.example`. Required:
 - `SUPABASE_SERVICE_ROLE_KEY` — Server-side Supabase operations
 - `SUPABASE_DB_URL` — Direct PostgreSQL connection for migration scripts
 - `NEXT_PUBLIC_APP_URL` — App URL for auth callbacks and emails
-- `FLASK_API_URL` — *(no longer needed)* Legacy Flask scraping service URL
+- `ADMIN_EMAILS` or `ADMIN_EMAIL` — Bootstrap admin email(s), comma-separated
+
+### Image Domains
+
+`next.config.ts` has `remotePatterns` for store image CDNs: `**.amazon.sa`, `m.media-amazon.com`, `**.noon.com`, `f.nooncdn.com`, `**.jarir.com`, `ak-asset.jarir.com`, `**.extra.com`. Add new patterns here when integrating additional stores.
 
 ## Styling Rules
 

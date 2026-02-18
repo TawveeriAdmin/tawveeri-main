@@ -14,10 +14,11 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-14 w-full items-center justify-between rounded-xs border border-outline bg-transparent px-4 py-2',
-      'text-body-lg text-on-surface placeholder:text-on-surface-variant',
-      'transition-colors',
+      'flex h-11 w-full items-center justify-between rounded-xl border border-gray-300/70 bg-white/90 px-3 py-2',
+      'text-sm font-medium text-gray-900 placeholder:text-gray-500',
+      'shadow-sm transition-all',
       'focus:outline-none focus:border-2 focus:border-primary',
+      'dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400',
       'disabled:cursor-not-allowed disabled:opacity-38',
       '[&>span]:line-clamp-1',
       className
@@ -68,7 +69,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xs bg-surface-container elevation-2 text-on-surface',
+        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-2xl border border-gray-200/80 bg-white/95 text-gray-900 shadow-xl shadow-black/10 backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-100 dark:shadow-black/40',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -116,8 +117,10 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'state-layer relative flex w-full cursor-default select-none items-center rounded-none py-3 ps-8 pe-2 text-body-lg outline-none',
-      'focus:bg-on-surface/8',
+      'relative flex w-full cursor-default select-none items-center rounded-xl py-2.5 ps-8 pe-3 text-sm font-medium outline-none',
+      'focus:bg-primary-50 focus:text-primary-700 dark:focus:bg-primary-900/40 dark:focus:text-primary-200',
+      'data-[highlighted]:bg-primary-50 data-[highlighted]:text-primary-700 dark:data-[highlighted]:bg-primary-900/40 dark:data-[highlighted]:text-primary-200',
+      'data-[state=checked]:bg-primary-100/80 data-[state=checked]:text-primary-800 dark:data-[state=checked]:bg-primary-900/50 dark:data-[state=checked]:text-primary-200',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-38',
       className
     )}

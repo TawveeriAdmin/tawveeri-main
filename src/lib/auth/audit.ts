@@ -15,6 +15,8 @@ export interface AuditLogParams {
   user_agent?: string | null;
 }
 
+let hasWarnedMissingServiceRoleKey = false;
+
 /**
  * Create an audit log entry
  * Note: This function fails silently to prevent blocking user actions
@@ -22,6 +24,20 @@ export interface AuditLogParams {
  */
 export async function createAuditLog(params: AuditLogParams) {
   try {
+    // Client-side code cannot access service-role credentials.
+    // Skip silently to avoid blocking auth flows like logout.
+    if (typeof window !== 'undefined') {
+      return;
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      if (!hasWarnedMissingServiceRoleKey) {
+        console.warn('Audit logging disabled: SUPABASE_SERVICE_ROLE_KEY is not configured.');
+        hasWarnedMissingServiceRoleKey = true;
+      }
+      return;
+    }
+
     const supabase = createServerClient();
     // Validate required fields
     if (!params.action) {

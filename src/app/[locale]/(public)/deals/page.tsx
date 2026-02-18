@@ -30,7 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Flame, Percent, Search, Sparkles, Tag, TimerReset } from 'lucide-react';
+import { AlertCircle, Flame, Heart, Percent, Search, Sparkles, Tag, TimerReset } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database } from '@/lib/database/types';
 import { useToast } from '@/components/ui/use-toast';
@@ -86,6 +86,7 @@ export default function DealsPage() {
   const [products, setProducts] = useState<DealProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('discount');
   const [filteredProducts, setFilteredProducts] = useState<DealProduct[]>([]);
@@ -99,21 +100,37 @@ export default function DealsPage() {
       locale === 'ar'
         ? {
             featured: 'واجهة عروض احترافية بتحديث مستمر',
+            searchAction: 'بحث',
+            searchHelper: 'ابحث داخل جميع العروض بسهولة',
+            searchHint: 'اكتب اسم المنتج أو الماركة للوصول إلى أفضل التخفيضات بسرعة',
             compareCta: 'إدارة المقارنة',
+            compareHint: 'قارن حتى 4 منتجات معاً',
+            wishlist: 'قائمة الأمنيات',
+            wishlistHint: 'احفظ العروض المهمة قبل انتهاءها',
             expiringSoon: 'تنتهي قريباً',
             maxDiscount: 'أعلى توفير',
             activeDeals: 'عروض نشطة',
             reset: 'إعادة ضبط',
+            resetHint: 'إرجاع البحث والترتيب إلى الوضع الافتراضي',
+            clearSearch: 'مسح البحث',
             alreadyInCompare: 'المنتج مضاف بالفعل إلى المقارنة',
             alreadySaved: 'المنتج موجود بالفعل في قائمة الأمنيات',
           }
         : {
             featured: 'Premium Deals Surface with Live Updates',
+            searchAction: 'Search',
+            searchHelper: 'Search all deals with clarity',
+            searchHint: 'Type a product or brand to jump to the strongest discounts',
             compareCta: 'Manage Compare',
+            compareHint: 'Compare up to 4 products side by side',
+            wishlist: 'Wishlist',
+            wishlistHint: 'Save high-priority deals before they expire',
             expiringSoon: 'Expiring Soon',
             maxDiscount: 'Top Saving',
             activeDeals: 'Active Deals',
             reset: 'Reset',
+            resetHint: 'Return search and sorting to default',
+            clearSearch: 'Clear Search',
             alreadyInCompare: 'Product is already in compare',
             alreadySaved: 'Product is already in wishlist',
           },
@@ -428,8 +445,21 @@ export default function DealsPage() {
 
   const handleReset = () => {
     setSortBy('discount');
+    setSearchInput('');
     setSearchQuery('');
   };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSearchQuery(searchInput.trim());
+  };
+
+  const activeSortLabel =
+    sortBy === 'discount'
+      ? t('deals.sortDiscount')
+      : sortBy === 'price'
+        ? t('deals.sortPrice')
+        : t('deals.sortNewest');
 
   return (
     <div className="space-y-6">
@@ -451,7 +481,7 @@ export default function DealsPage() {
         <div className="pointer-events-none absolute -end-16 -top-14 h-44 w-44 rounded-full bg-amber-500/20 blur-3xl dark:bg-amber-400/20" />
         <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-rose-500/15 blur-3xl dark:bg-rose-400/20" />
 
-        <div className="relative z-10 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <div className="relative z-10 space-y-5">
           <div>
             <Badge
               variant="outline"
@@ -467,80 +497,129 @@ export default function DealsPage() {
             <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 md:text-base">
               {t('deals.subtitle')}
             </p>
+          </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleReset}
-                className="rounded-xl border-gray-200 bg-white/80 text-gray-700 hover:bg-white dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-200"
-              >
-                <TimerReset className="me-2 h-4 w-4" />
-                {uiCopy.reset}
+          <div className="rounded-2xl border border-amber-200/70 bg-white/90 p-3 shadow-sm dark:border-amber-800/70 dark:bg-gray-900/80 md:p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-300">
+              <Search className="h-3.5 w-3.5" />
+              <span>{uiCopy.searchHelper}</span>
+            </div>
+            <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                <Input
+                  type="text"
+                  placeholder={t('deals.searchPlaceholder')}
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  className="h-11 rounded-xl border-amber-200 bg-white ps-9 dark:border-amber-800/70 dark:bg-gray-950/70"
+                />
+              </div>
+              <Button type="submit" className="h-11 rounded-xl px-5">
+                {uiCopy.searchAction}
               </Button>
-              <Link
-                href={user ? `/${locale}/compare` : `/${locale}/auth/login?redirect=/compare`}
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700/70 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
-              >
-                <Tag className="h-4 w-4" />
-                <span>{uiCopy.compareCta}</span>
+            </form>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{uiCopy.searchHint}</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Link
+              href={user ? `/${locale}/compare` : `/${locale}/auth/login?redirect=/compare`}
+              className="group rounded-2xl border border-gray-200 bg-white/90 p-4 transition-all hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-amber-700/60"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                  <Tag className="h-4.5 w-4.5" />
+                </div>
                 <Badge className="border-0 bg-amber-200 px-1.5 py-0 text-[10px] text-amber-900 dark:bg-amber-700/60 dark:text-amber-100">
                   {compareCount}/{MAX_COMPARE_PRODUCTS}
                 </Badge>
-              </Link>
+              </div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.compareCta}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.compareHint}</p>
+            </Link>
+
+            <Link
+              href={user ? `/${locale}/wishlist` : `/${locale}/auth/login?redirect=/wishlist`}
+              className="group rounded-2xl border border-gray-200 bg-white/90 p-4 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-rose-700/60"
+            >
+              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300">
+                <Heart className="h-4.5 w-4.5" />
+              </div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.wishlist}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.wishlistHint}</p>
+            </Link>
+
+            <button
+              onClick={handleReset}
+              className="group rounded-2xl border border-gray-200 bg-white/90 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-gray-600"
+            >
+              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <TimerReset className="h-4.5 w-4.5" />
+              </div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.reset}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.resetHint}</p>
+            </button>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
+            <div className="mb-2 flex items-center justify-between">
+              <Flame className="h-5 w-5 text-rose-500" />
+              <Badge variant="outline">{uiCopy.activeDeals}</Badge>
             </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {filteredProducts.length}
+            </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-              <div className="mb-2 flex items-center justify-between">
-                <Flame className="h-5 w-5 text-rose-500" />
-                <Badge variant="outline">{uiCopy.activeDeals}</Badge>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {filteredProducts.length}
-              </p>
+          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
+            <div className="mb-2 flex items-center justify-between">
+              <Percent className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <Badge variant="outline">{uiCopy.maxDiscount}</Badge>
             </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {maxDiscount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+            </p>
+          </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-              <div className="mb-2 flex items-center justify-between">
-                <Percent className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                <Badge variant="outline">{uiCopy.maxDiscount}</Badge>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {maxDiscount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-              </p>
+          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
+            <div className="mb-2 flex items-center justify-between">
+              <TimerReset className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <Badge variant="outline">{uiCopy.expiringSoon}</Badge>
             </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-              <div className="mb-2 flex items-center justify-between">
-                <TimerReset className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                <Badge variant="outline">{uiCopy.expiringSoon}</Badge>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {endingSoonCount}
-              </p>
-            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {endingSoonCount}
+            </p>
           </div>
         </div>
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white/85 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/70">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative w-full max-w-xl">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-            <Input
-              type="text"
-              placeholder={t('deals.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-11 rounded-xl border-gray-200 bg-white/90 ps-9 dark:border-gray-700 dark:bg-gray-900/75"
-            />
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-rose-200/70 bg-rose-50/60 px-3 py-1.5 text-sm font-medium text-rose-700 dark:border-rose-800/70 dark:bg-rose-900/20 dark:text-rose-200">
+              <Flame className="h-4 w-4" />
+              <span>
+                {filteredProducts.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
+                {t('deals.resultsCount')}
+              </span>
+            </div>
+            <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
+              {t('deals.sortBy')}: {activeSortLabel}
+            </Badge>
+            {searchQuery && (
+              <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
+                {searchQuery}
+              </Badge>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-sm text-on-surface-variant">{t('deals.sortBy')}:</label>
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/85 p-2 dark:border-gray-700 dark:bg-gray-900/80">
+            <label className="px-1 text-sm text-on-surface-variant">{t('deals.sortBy')}:</label>
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-              <SelectTrigger className="w-[190px]">
+              <SelectTrigger className="h-9 w-[190px] border-gray-200 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -549,17 +628,32 @@ export default function DealsPage() {
                 <SelectItem value="newest">{t('deals.sortNewest')}</SelectItem>
               </SelectContent>
             </Select>
+            {searchQuery && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchInput('');
+                  setSearchQuery('');
+                }}
+                className="h-9 rounded-lg"
+              >
+                <TimerReset className="me-2 h-4 w-4" />
+                {uiCopy.clearSearch}
+              </Button>
+            )}
+            {!searchQuery && (
+              <div className="inline-flex h-9 items-center rounded-lg px-3 text-xs text-on-surface-variant">
+                {uiCopy.reset}
+              </div>
+            )}
           </div>
         </div>
 
-        {!loading && !error && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-on-surface-variant">
-            <Flame className="h-4 w-4 text-rose-500" />
-            <span>
-              {filteredProducts.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
-              {t('deals.resultsCount')}
-            </span>
-            {searchQuery && <Badge variant="outline">{searchQuery}</Badge>}
+        {!loading && !error && searchQuery && (
+          <div className="mt-3 text-xs text-on-surface-variant">
+            {locale === 'ar'
+              ? 'نتائج مطابقة للبحث الحالي'
+              : 'Showing matches for current search query'}
           </div>
         )}
       </section>

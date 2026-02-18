@@ -70,7 +70,7 @@ export function DashboardHeader() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push(`/${locale}/auth/login`);
+    window.location.href = `/${locale}`;
   };
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -216,7 +216,7 @@ export function DashboardHeader() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={handleSignOut}
+                  onSelect={(e) => { e.preventDefault(); handleSignOut(); }}
                   className="cursor-pointer text-red-600 dark:text-red-400"
                 >
                   <LogOut className="me-2 h-4 w-4" />

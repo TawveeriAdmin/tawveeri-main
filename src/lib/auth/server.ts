@@ -6,6 +6,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
+import type { UserRole } from '@/lib/database/types';
 
 /**
  * Create Supabase client for Server Components
@@ -22,18 +23,18 @@ export const createClient = cache(async () => {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options: Record<string, unknown>) {
           try {
             cookieStore.set({ name, value, ...options });
-          } catch (error) {
+          } catch {
             // Cookie setting can fail in Server Components
             // This is fine during the render phase
           }
         },
-        remove(name: string, options: any) {
+        remove(name: string, options: Record<string, unknown>) {
           try {
             cookieStore.set({ name, value: '', ...options });
-          } catch (error) {
+          } catch {
             // Cookie removal can fail in Server Components
           }
         },
@@ -42,27 +43,52 @@ export const createClient = cache(async () => {
   );
 });
 
+const getConfiguredAdminEmails = cache(() => {
+  const raw = [
+    process.env.ADMIN_EMAILS,
+    process.env.ADMIN_EMAIL,
+    process.env.NEXT_PUBLIC_ADMIN_EMAILS,
+  ]
+    .filter(Boolean)
+    .join(',');
+
+  const parsed = raw
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  // Legacy bootstrap fallback used in existing project setup notes.
+  if (parsed.length === 0) {
+    parsed.push('jfr3sam@gmail.com');
+  }
+
+  return new Set(parsed);
+});
+
+const isConfiguredAdminEmail = (email?: string | null) => {
+  if (!email) return false;
+  return getConfiguredAdminEmails().has(email.trim().toLowerCase());
+};
+
 /**
  * Get current session on server
  */
 export async function getSession() {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session;
+  const user = await getUser();
+  if (!user) return null;
+  return { user };
 }
 
 /**
  * Get current user on server
  */
-export async function getUser() {
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});
 
 /**
  * Get user profile with role from database
@@ -73,18 +99,79 @@ export async function getUserProfile() {
 
   if (!user) return null;
 
+  const profileSelect = 'id, email, phone, full_name, role, avatar_url, preferred_language, email_verified, phone_verified';
+  const isBootstrapAdmin = isConfiguredAdminEmail(user.email);
+  const fallbackRole: UserRole = isBootstrapAdmin ? 'admin' : 'customer';
+
   const { data, error } = await supabase
     .from('users')
-    .select('*')
+    .select(profileSelect)
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching user profile:', error);
-    return null;
+    return {
+      ...user,
+      role: fallbackRole,
+      preferred_language: 'ar',
+      email_verified: Boolean(user.email_confirmed_at),
+      phone_verified: Boolean(user.phone_confirmed_at),
+    };
   }
 
-  return { ...user, ...data };
+  if (!data) {
+    const { data: created } = await supabase
+      .from('users')
+      .insert({
+        id: user.id,
+        email: user.email || null,
+        phone: user.phone || null,
+        full_name:
+          typeof user.user_metadata?.full_name === 'string'
+            ? user.user_metadata.full_name
+            : typeof user.user_metadata?.name === 'string'
+              ? user.user_metadata.name
+              : null,
+        role: fallbackRole,
+        auth_provider: user.phone ? 'phone' : 'email',
+        email_verified: Boolean(user.email_confirmed_at),
+        phone_verified: Boolean(user.phone_confirmed_at),
+        preferred_language:
+          user.user_metadata?.preferred_language === 'en' ||
+          user.user_metadata?.preferred_language === 'ar'
+            ? user.user_metadata.preferred_language
+            : 'ar',
+      })
+      .select(profileSelect)
+      .maybeSingle();
+
+    return {
+      ...user,
+      ...(created || {}),
+      email: created?.email ?? user.email,
+      full_name: created?.full_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+      phone: created?.phone ?? user.phone,
+      role: (created?.role as UserRole | undefined) ?? fallbackRole,
+    };
+  }
+
+  if (isBootstrapAdmin && data.role !== 'admin') {
+    // Best effort: keep DB role consistent for bootstrap admin accounts.
+    await supabase
+      .from('users')
+      .update({ role: 'admin' })
+      .eq('id', user.id);
+  }
+
+  return {
+    ...user,
+    ...data,
+    email: data.email ?? user.email,
+    full_name: data.full_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+    phone: data.phone ?? user.phone,
+    role: isBootstrapAdmin ? 'admin' : data.role,
+  };
 }
 
 /**

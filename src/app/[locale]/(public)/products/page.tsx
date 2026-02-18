@@ -124,7 +124,6 @@ export default function ProductsPage() {
   const params = useParams();
   const router = useRouter();
   const locale = (params?.locale as string) || 'ar';
-  const isRTL = locale === 'ar';
   const t = useTranslations();
   const { toast } = useToast();
   const { addItem } = useMultiStoreCart();
@@ -151,13 +150,18 @@ export default function ProductsPage() {
             featured: 'تجربة تسوق أسرع وأذكى',
             searchPlaceholder: 'ابحث بالاسم، الماركة أو الموديل',
             searchAction: 'بحث',
+            searchHelper: 'ابحث بسرعة عن المنتج المناسب',
+            searchHint: 'اكتب اسم المنتج أو الماركة أو الموديل لعرض نتائج أدق',
             hotDeals: 'عروض نشطة',
             availableNow: 'منتجات متاحة',
             compareNow: 'صفحة المقارنة',
+            compareHint: 'قارن حتى 4 منتجات في نفس الوقت',
             wishlist: 'قائمة الأمنيات',
+            wishlistHint: 'احفظ المنتجات للرجوع إليها لاحقاً',
             dealsHub: 'مركز العروض',
             dashboard: 'لوحة التحكم',
             resetFilters: 'تصفير الفلاتر',
+            resetHint: 'إرجاع البحث والتصنيف والفئة إلى الوضع الافتراضي',
             quickFilters: 'فلاتر سريعة',
             alreadyInCompare: 'المنتج موجود بالفعل في المقارنة',
             alreadySaved: 'المنتج محفوظ مسبقاً في قائمة الأمنيات',
@@ -166,13 +170,18 @@ export default function ProductsPage() {
             featured: 'Faster and Smarter Shopping',
             searchPlaceholder: 'Search by name, brand or model',
             searchAction: 'Search',
+            searchHelper: 'Find the right product faster',
+            searchHint: 'Type product name, brand, or model for sharper results',
             hotDeals: 'Active Deals',
             availableNow: 'Available Products',
             compareNow: 'Compare Page',
+            compareHint: 'Compare up to 4 products side by side',
             wishlist: 'Wishlist',
+            wishlistHint: 'Save products to revisit them later',
             dealsHub: 'Deals Hub',
             dashboard: 'Dashboard',
             resetFilters: 'Reset Filters',
+            resetHint: 'Clear category, sorting, and search query',
             quickFilters: 'Quick Filters',
             alreadyInCompare: 'This product is already in compare list',
             alreadySaved: 'This product is already in your wishlist',
@@ -443,6 +452,23 @@ export default function ProductsPage() {
   const compareHref = user
     ? `/${locale}/compare`
     : `/${locale}/auth/login?redirect=/compare`;
+  const activeSortLabel =
+    sortBy === 'popularity'
+      ? t('products.sortPopularity')
+      : sortBy === 'price_low'
+        ? t('products.sortPriceLow')
+        : sortBy === 'price_high'
+          ? t('products.sortPriceHigh')
+          : t('products.sortNewest');
+  const activeCategoryLabel =
+    categoryOptions.find((option) => option.value === selectedCategory)?.key || 'allCategories';
+  const activeViewLabel = compactGrid
+    ? locale === 'ar'
+      ? 'عرض مضغوط'
+      : 'Compact View'
+    : locale === 'ar'
+      ? 'عرض شبكي'
+      : 'Grid View';
 
   return (
     <div className="space-y-6">
@@ -464,7 +490,7 @@ export default function ProductsPage() {
             <div className="pointer-events-none absolute -end-16 -top-16 h-44 w-44 rounded-full bg-primary-500/20 blur-3xl dark:bg-primary-400/20" />
             <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-secondary-500/15 blur-3xl dark:bg-secondary-400/25" />
 
-            <div className="relative z-10 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
+            <div className="relative z-10 space-y-5">
               <div>
                 <Badge
                   variant="outline"
@@ -479,10 +505,16 @@ export default function ProductsPage() {
                 <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 md:text-base">
                   {t('products.subtitle')}
                 </p>
+              </div>
 
+              <div className="rounded-2xl border border-primary-200/70 bg-white/90 p-3 shadow-sm dark:border-primary-800/70 dark:bg-gray-900/80 md:p-4">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-primary-700 dark:text-primary-300">
+                  <Search className="h-3.5 w-3.5" />
+                  <span>{uiCopy.searchHelper}</span>
+                </div>
                 <form
                   onSubmit={handleSearchSubmit}
-                  className="mt-5 flex flex-col gap-2 sm:flex-row"
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
                 >
                   <div className="relative flex-1">
                     <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -490,22 +522,25 @@ export default function ProductsPage() {
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
                       placeholder={uiCopy.searchPlaceholder}
-                      className="h-11 w-full rounded-xl border border-gray-200 bg-white/85 pe-3 ps-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 dark:border-gray-700 dark:bg-gray-900/75 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
+                      className="h-11 w-full rounded-xl border border-primary-200 bg-white pe-3 ps-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 dark:border-primary-800/70 dark:bg-gray-950/70 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
                     />
                   </div>
                   <Button type="submit" className="h-11 rounded-xl px-5">
                     {uiCopy.searchAction}
                   </Button>
                 </form>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{uiCopy.searchHint}</p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <Link
                   href={compareHref}
-                  className="rounded-2xl border border-gray-200 bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75"
+                  className="group rounded-2xl border border-gray-200 bg-white/90 p-4 transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-primary-700/60"
                 >
                   <div className="mb-3 flex items-center justify-between">
-                    <BarChart3 className="h-5 w-5 text-primary-600 dark:text-primary-300" />
+                    <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                      <BarChart3 className="h-4.5 w-4.5" />
+                    </div>
                     <Badge className="border-0 bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
                       {compareCount}/{MAX_COMPARE_PRODUCTS}
                     </Badge>
@@ -513,37 +548,33 @@ export default function ProductsPage() {
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {uiCopy.compareNow}
                   </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.compareHint}</p>
                 </Link>
 
                 <Link
                   href={user ? `/${locale}/wishlist` : `/${locale}/auth/login?redirect=/wishlist`}
-                  className="rounded-2xl border border-gray-200 bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75"
+                  className="group rounded-2xl border border-gray-200 bg-white/90 p-4 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-rose-700/60"
                 >
-                  <div className="mb-3 flex items-center justify-between">
-                    <Heart className="h-5 w-5 text-rose-500" />
-                    <Badge
-                      variant="outline"
-                      className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
-                    >
-                      {uiCopy.wishlist}
-                    </Badge>
+                  <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300">
+                    <Heart className="h-4.5 w-4.5" />
                   </div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {uiCopy.dealsHub}
+                    {uiCopy.wishlist}
                   </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.wishlistHint}</p>
                 </Link>
 
                 <button
                   onClick={handleResetFilters}
-                  className="rounded-2xl border border-gray-200 bg-white/85 p-4 text-start transition-all hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 sm:col-span-2 lg:col-span-1"
+                  className="group rounded-2xl border border-gray-200 bg-white/90 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-gray-600"
                 >
-                  <div className="mb-3 flex items-center justify-between">
-                    <RefreshCcw className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                    <Badge variant="outline">{uiCopy.quickFilters}</Badge>
+                  <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <RefreshCcw className="h-4.5 w-4.5" />
                   </div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {uiCopy.resetFilters}
                   </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.resetHint}</p>
                 </button>
               </div>
             </div>
@@ -577,82 +608,92 @@ export default function ProductsPage() {
           </section>
 
           <section className="rounded-2xl border border-gray-200 bg-white/85 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/70">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-primary-200/70 bg-primary-50/60 px-3 py-1.5 text-sm font-medium text-primary-700 dark:border-primary-800/70 dark:bg-primary-900/20 dark:text-primary-200">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>
+                      {totalCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')} {t('products.resultsCount')}
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
+                    {t('products.sortBy')}: {activeSortLabel}
+                  </Badge>
+                  <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
+                    {t(`products.${activeCategoryLabel}`)}
+                  </Badge>
+                  <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
+                    {activeViewLabel}
+                  </Badge>
+                  {searchQuery && (
+                    <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
+                      {searchQuery}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/85 p-2 dark:border-gray-700 dark:bg-gray-900/80">
+                  <label className="px-1 text-sm text-on-surface-variant">{t('products.sortBy')}:</label>
+                  <Select value={sortBy} onValueChange={(value) => handleSortChange(value as SortOption)}>
+                    <SelectTrigger className="h-9 w-[170px] border-gray-200 dark:border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="popularity">{t('products.sortPopularity')}</SelectItem>
+                      <SelectItem value="price_low">{t('products.sortPriceLow')}</SelectItem>
+                      <SelectItem value="price_high">{t('products.sortPriceHigh')}</SelectItem>
+                      <SelectItem value="newest">{t('products.sortNewest')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={cn(
+                        'inline-flex h-9 w-9 items-center justify-center rounded-s-lg transition-colors',
+                        viewMode === 'grid'
+                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
+                          : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                      )}
+                      aria-label="Grid View"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={cn(
+                        'inline-flex h-9 w-9 items-center justify-center rounded-e-lg transition-colors',
+                        viewMode === 'compact'
+                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
+                          : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                      )}
+                      aria-label="Compact View"
+                    >
+                      <LayoutList className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <Tabs
                 value={selectedCategory}
                 onValueChange={(value) =>
                   handleCategoryChange(value as ProductCategory | 'all')
                 }
-                className="w-full lg:w-auto"
+                className="w-full"
               >
-                <TabsList className="flex h-auto flex-wrap gap-1 bg-surface-container-low p-1">
-                  {categoryOptions.map((category) => (
-                    <TabsTrigger key={category.value} value={category.value}>
-                      {t(`products.${category.key}`)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="text-sm text-on-surface-variant">{t('products.sortBy')}:</label>
-                <Select value={sortBy} onValueChange={(value) => handleSortChange(value as SortOption)}>
-                  <SelectTrigger className="w-[170px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="popularity">{t('products.sortPopularity')}</SelectItem>
-                    <SelectItem value="price_low">{t('products.sortPriceLow')}</SelectItem>
-                    <SelectItem value="price_high">{t('products.sortPriceHigh')}</SelectItem>
-                    <SelectItem value="newest">{t('products.sortNewest')}</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={cn(
-                      'inline-flex h-9 w-9 items-center justify-center rounded-s-lg transition-colors',
-                      viewMode === 'grid'
-                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
-                        : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-                    )}
-                    aria-label="Grid View"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('compact')}
-                    className={cn(
-                      'inline-flex h-9 w-9 items-center justify-center rounded-e-lg transition-colors',
-                      viewMode === 'compact'
-                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
-                        : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-                    )}
-                    aria-label="Compact View"
-                  >
-                    <LayoutList className="h-4 w-4" />
-                  </button>
+                <div className="overflow-x-auto pb-1">
+                  <TabsList className="flex h-10 min-w-max gap-1 rounded-xl bg-surface-container-low p-1">
+                    {categoryOptions.map((category) => (
+                      <TabsTrigger key={category.value} value={category.value} className="whitespace-nowrap px-3">
+                        {t(`products.${category.key}`)}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
                 </div>
-              </div>
+              </Tabs>
             </div>
-
-            {!loading && !error && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-on-surface-variant">
-                <TrendingUp className="h-4 w-4 text-primary-500" />
-                <span>
-                  {totalCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')} {t('products.resultsCount')}
-                </span>
-                {searchQuery && (
-                  <Badge
-                    variant="outline"
-                    className={isRTL ? 'mr-0' : 'ml-0'}
-                  >
-                    {searchQuery}
-                  </Badge>
-                )}
-              </div>
-            )}
           </section>
 
           {loading && (

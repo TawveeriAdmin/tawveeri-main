@@ -29,31 +29,37 @@ RETURNS UUID AS $$
   SELECT auth.uid();
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
--- Get current user role
+-- Get current user role (plpgsql prevents inlining, preserving SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION public.current_user_role()
 RETURNS user_role AS $$
-  SELECT role FROM public.users WHERE id = auth.uid();
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+BEGIN
+  RETURN (SELECT role FROM public.users WHERE id = auth.uid());
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
--- Check if user is admin
+-- Check if user is admin (plpgsql prevents inlining, preserving SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
-  SELECT EXISTS (
+BEGIN
+  RETURN EXISTS (
     SELECT 1 FROM public.users
     WHERE id = auth.uid()
     AND role = 'admin'
   );
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
--- Check if user is store owner
+-- Check if user is store owner (plpgsql prevents inlining, preserving SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION public.is_store_owner(store_uuid UUID)
 RETURNS BOOLEAN AS $$
-  SELECT EXISTS (
+BEGIN
+  RETURN EXISTS (
     SELECT 1 FROM public.stores
     WHERE id = store_uuid
     AND created_by = auth.uid()
   );
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- ============================================================================
 -- USERS TABLE POLICIES

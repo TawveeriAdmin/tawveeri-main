@@ -14,7 +14,26 @@
       "action": "Action",
       "type": "Type",
       "user": "User",
-      "system": "System"
+      "system": "System",
+      "activeDeals": "Active Deals",
+      "priceAlerts": "Price Alerts",
+      "revenueTrend": "Revenue Trend",
+      "userGrowth": "User Growth",
+      "categoryDistribution": "Category Distribution",
+      "storePerformance": "Store Performance",
+      "conversionFunnel": "Conversion Funnel",
+      "dealActivity": "Deal Activity",
+      "vsLastPeriod": "vs last 30 days",
+      "noData": "No data available",
+      "revenue": "Revenue",
+      "commission": "Commission",
+      "clicks": "Clicks",
+      "conversions": "Conversions",
+      "completed": "Completed",
+      "newDeals": "New Deals",
+      "topStores": "Top Stores",
+      "dailySignups": "Daily Signups",
+      "cumulativeUsers": "Cumulative Users"
     },
     "sidebar": {
       "adminPanel": "Admin Panel",
@@ -25,7 +44,9 @@
       "transactions": "Transactions",
       "analytics": "Analytics",
       "logs": "Logs",
-      "reviews": "Reviews"
+      "reviews": "Reviews",
+      "collapse": "Collapse",
+      "expand": "Expand"
     },
     "header": {
       "adminDashboard": "Admin Dashboard",
@@ -68,7 +89,13 @@
       "allStatuses": "All Statuses",
       "completed": "Completed",
       "pending": "Pending",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "totalTransactions": "Total Transactions",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page:",
+      "actions": "Actions"
     },
     "reviews": {
       "title": "Review Management",
@@ -95,11 +122,16 @@
       "error": "Error",
       "allRatings": "All Ratings",
       "stars": "Stars",
-      "star": "Star"
+      "star": "Star",
+      "totalReviews": "Total Reviews",
+      "helpful": "Helpful",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page:"
     },
     "users": {
       "title": "User Management",
       "subtitle": "View and manage all users",
+      "totalUsers": "Total Users",
       "name": "Name",
       "email": "Email",
       "phone": "Phone",
@@ -109,12 +141,16 @@
       "inactive": "Inactive",
       "joinedDate": "Joined Date",
       "actions": "Actions",
-      "searchPlaceholder": "Search...",
+      "searchPlaceholder": "Search users...",
       "allRoles": "All Roles",
       "customer": "Customer",
       "store": "Store",
       "admin": "Admin",
-      "guest": "Guest"
+      "guest": "Guest",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page:",
+      "viewDetails": "View Details",
+      "editRole": "Edit Role"
     },
     "analytics": {
       "title": "Analytics",
@@ -165,7 +201,13 @@
       "productDeleted": "Product deleted successfully",
       "error": "Error",
       "loadError": "Failed to load products",
-      "deleteError": "Failed to delete product"
+      "deleteError": "Failed to delete product",
+      "totalProducts": "Total Products",
+      "withDeals": "With Deals",
+      "totalSaves": "Total Saves",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page:",
+      "viewDetails": "View Details"
     },
     "stores": {
       "title": "Store Management",
@@ -197,7 +239,11 @@
       "conversions": "Conversions",
       "avgCommission": "Avg Commission",
       "premium": "Premium",
-      "featured": "Featured"
+      "featured": "Featured",
+      "totalStores": "Total Stores",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page:",
+      "viewDetails": "View Details"
     },
     "analytics": {
       "title": "Analytics",
@@ -238,7 +284,10 @@
       "details": "Details",
       "searchPlaceholder": "Search...",
       "allActions": "All Actions",
-      "allTypes": "All Types"
+      "allTypes": "All Types",
+      "totalLogs": "Total Logs",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page:"
     }
   }
 }
