@@ -34,6 +34,9 @@ import 'react-native-reanimated';
 import { IntlProvider } from '@/src/lib/i18n/provider';
 import { ThemeProvider } from '@/src/lib/theme/theme-context';
 import { AuthProvider } from '@/src/lib/auth/auth-context';
+import * as Linking from 'expo-linking';
+import { usePushNotifications } from '@/src/lib/notifications/use-push-notifications';
+import { useDeepLinkHandler } from '@/src/lib/linking/use-deep-links';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -79,20 +82,31 @@ export default function RootLayout() {
         <IntlProvider>
           <ThemeProvider>
             <AuthProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="(auth)"
-                  options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-                />
-                <Stack.Screen name="(stack)" />
-                <Stack.Screen name="+not-found" />
-              </Stack>
+              <AppContent />
               <Toast />
             </AuthProvider>
           </ThemeProvider>
         </IntlProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+/** Inner component that can use auth-dependent hooks. */
+function AppContent() {
+  usePushNotifications();
+  useDeepLinkHandler();
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="(auth)"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen name="(stack)" />
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+      <Stack.Screen name="+not-found" />
+    </Stack>
   );
 }

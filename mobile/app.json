@@ -16,6 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tawveeri.app",
+      "associatedDomains": [
+        "applinks:tawveeri.com",
+        "applinks:www.tawveeri.com"
+      ],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleLocalizations": ["ar", "en"]
@@ -27,7 +31,26 @@
         "backgroundColor": "#0D47A1"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.tawveeri.app"
+      "package": "com.tawveeri.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "tawveeri.com",
+              "pathPrefix": "/product"
+            },
+            {
+              "scheme": "https",
+              "host": "tawveeri.com",
+              "pathPrefix": "/auth"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

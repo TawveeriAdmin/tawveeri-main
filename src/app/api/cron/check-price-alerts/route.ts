@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createNotification } from '@/lib/auth/notifications';
+import { sendPushToUser } from '@/lib/push/expo-push';
 
 /**
  * API Route to check price alerts and send notifications
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
           const locale = (user?.locale || 'en') as 'ar' | 'en';
           const productName = locale === 'ar' ? product?.name_ar : product?.name_en || 'Product';
 
-          // Create notification
+          // Create in-app notification
           await createNotification({
             user_id: alert.user_id,
             type: 'price_drop',
@@ -98,6 +99,22 @@ export async function POST(request: NextRequest) {
             message_en: `${productName} price dropped to ${currentPrice.toLocaleString()} SAR (Target: ${alert.target_price.toLocaleString()} SAR)`,
             product_id: alert.product_id,
             link: `/products/${product?.slug || alert.product_id}`,
+          });
+
+          // Send push notification to mobile
+          const pushTitle = locale === 'ar' ? `انخفض سعر ${productName}!` : `${productName} price dropped!`;
+          const pushBody = locale === 'ar'
+            ? `السعر الآن ${currentPrice.toLocaleString()} ر.س`
+            : `Now ${currentPrice.toLocaleString()} SAR`;
+          await sendPushToUser(alert.user_id, {
+            title: pushTitle,
+            body: pushBody,
+            data: {
+              type: 'price_drop',
+              product_id: alert.product_id,
+              product_slug: product?.slug,
+            },
+            channelId: 'price-alerts',
           });
 
           // Mark alert as inactive and update notified_at
