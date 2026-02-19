@@ -1,8 +1,8 @@
 /**
  * Home Screen
  *
- * HIG: Use large titles for top-level screens.
- * Content: Search bar, category chips, featured products, deals strip, top stores.
+ * HIG: Large titles for top-level screens.
+ * Sections: Greeting → Search → Categories → Deals → Trending → Trust bar.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -15,60 +15,111 @@ import {
   Pressable,
   RefreshControl,
   Dimensions,
+  I18nManager,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight, ChevronLeft, Zap, TrendingUp } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import {
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  Zap,
+  TrendingUp,
+  Bell,
+  Smartphone,
+  Laptop,
+  Headphones,
+  Monitor,
+  Gamepad2,
+  Tablet,
+  Package,
+  ShieldCheck,
+  Store as StoreIcon,
+} from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
-import { useTranslations, useLocale, useLocalizedField } from '@/src/lib/i18n/provider';
+import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
+import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
-import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Card, Price, Skeleton, SkeletonCard } from '@/src/components/ui';
-import { formatCompactNumber } from '@/src/lib/utils';
+import { typography, spacing, radii } from '@/src/lib/theme/typography';
+import { Card, Price, SkeletonCard } from '@/src/components/ui';
+import { calculateSavingsPercentage } from '@/src/lib/utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PRODUCT_CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
+const DEAL_CARD_WIDTH = SCREEN_WIDTH * 0.72;
+const ICON_CIRCLE_SIZE = 56;
 
-// Category chips
+const isRTL = I18nManager.isRTL;
+
+// ─── Static Data ─────────────────────────────────────────────
+
 const CATEGORIES = [
-  { key: 'smartphone', icon: '📱', label_ar: 'هواتف', label_en: 'Phones' },
-  { key: 'laptop', icon: '💻', label_ar: 'لابتوب', label_en: 'Laptops' },
-  { key: 'audio', icon: '🎧', label_ar: 'سماعات', label_en: 'Audio' },
-  { key: 'tv', icon: '📺', label_ar: 'شاشات', label_en: 'TVs' },
-  { key: 'gaming', icon: '🎮', label_ar: 'ألعاب', label_en: 'Gaming' },
-  { key: 'tablet', icon: '📲', label_ar: 'تابلت', label_en: 'Tablets' },
+  { key: 'smartphone', Icon: Smartphone, label_ar: 'هواتف', label_en: 'Phones', lightBg: '#EFF6FF', darkBg: '#172554', lightIcon: '#2563EB', darkIcon: '#60A5FA' },
+  { key: 'laptop', Icon: Laptop, label_ar: 'لابتوب', label_en: 'Laptops', lightBg: '#EEF2FF', darkBg: '#1E1B4B', lightIcon: '#4F46E5', darkIcon: '#A5B4FC' },
+  { key: 'audio', Icon: Headphones, label_ar: 'سماعات', label_en: 'Audio', lightBg: '#FAF5FF', darkBg: '#2E1065', lightIcon: '#9333EA', darkIcon: '#C084FC' },
+  { key: 'tv', Icon: Monitor, label_ar: 'شاشات', label_en: 'TVs', lightBg: '#ECFDF5', darkBg: '#022C22', lightIcon: '#059669', darkIcon: '#34D399' },
+  { key: 'gaming', Icon: Gamepad2, label_ar: 'ألعاب', label_en: 'Gaming', lightBg: '#FEF2F2', darkBg: '#450A0A', lightIcon: '#DC2626', darkIcon: '#F87171' },
+  { key: 'tablet', Icon: Tablet, label_ar: 'تابلت', label_en: 'Tablets', lightBg: '#FFF7ED', darkBg: '#431407', lightIcon: '#EA580C', darkIcon: '#FB923C' },
 ];
+
+const TRUSTED_STORES = [
+  { name_ar: 'أمازون', name_en: 'Amazon' },
+  { name_ar: 'نون', name_en: 'Noon' },
+  { name_ar: 'جرير', name_en: 'Jarir' },
+  { name_ar: 'اكسترا', name_en: 'Extra' },
+  { name_ar: 'المنيع', name_en: 'Almanea' },
+];
+
+// ─── Helpers ─────────────────────────────────────────────────
+
+function getGreeting(locale: string): { greeting: string; subtitle: string } {
+  const hour = new Date().getHours();
+  if (locale === 'ar') {
+    const greeting = hour >= 5 && hour < 12 ? 'صباح الخير' : 'مساء الخير';
+    return { greeting, subtitle: 'اعثر على أفضل الأسعار' };
+  }
+  let greeting = 'Good evening';
+  if (hour >= 5 && hour < 12) greeting = 'Good morning';
+  else if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+  return { greeting, subtitle: 'Find the best prices' };
+}
+
+// ─── Main Component ──────────────────────────────────────────
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const t = useTranslations();
   const { locale } = useLocale();
+  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { greeting, subtitle } = getGreeting(locale);
+  const firstName = user?.full_name?.split(' ')[0];
+
   const fetchData = useCallback(async () => {
     try {
-      // Featured products (most viewed)
-      const { data: products } = await supabase
-        .from('products')
-        .select('id, name_ar, name_en, slug, image_urls, brand, category, view_count, product_stores(id, current_price, original_price, store_id, stores(id, name_ar, name_en))')
-        .eq('is_active', true)
-        .order('view_count', { ascending: false })
-        .limit(10);
+      const [productsRes, dealsRes] = await Promise.all([
+        supabase
+          .from('products')
+          .select('id, name_ar, name_en, slug, image_urls, brand, category, view_count, product_stores(id, current_price, original_price, store_id, stores(id, name_ar, name_en))')
+          .eq('is_active', true)
+          .order('view_count', { ascending: false })
+          .limit(10),
+        supabase
+          .from('product_stores')
+          .select('id, current_price, original_price, deal_expires_at, products(id, name_ar, name_en, slug, image_urls, brand), stores(id, name_ar, name_en)')
+          .eq('is_deal', true)
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
 
-      // Deals
-      const { data: dealProducts } = await supabase
-        .from('product_stores')
-        .select('id, current_price, original_price, deal_expires_at, products(id, name_ar, name_en, slug, image_urls, brand), stores(id, name_ar, name_en)')
-        .eq('is_deal', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      setFeaturedProducts(products || []);
-      setDeals(dealProducts || []);
+      setFeaturedProducts(productsRes.data || []);
+      setDeals(dealsRes.data || []);
     } catch (err) {
       console.error('Home fetch error:', err);
     } finally {
@@ -76,7 +127,9 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -84,117 +137,101 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [fetchData]);
 
-  const renderProductCard = useCallback(({ item }: { item: any }) => {
-    const name = locale === 'ar' ? item.name_ar : item.name_en;
-    const image = item.image_urls?.[0];
-    const bestPrice = item.product_stores
-      ?.map((ps: any) => ps.current_price)
-      .filter(Boolean)
-      .sort((a: number, b: number) => a - b)[0];
-    const originalPrice = item.product_stores
-      ?.map((ps: any) => ps.original_price)
-      .filter(Boolean)[0];
-
-    return (
-      <Card
-        onPress={() => router.push(`/(stack)/product/${item.slug}`)}
-        style={{ width: PRODUCT_CARD_WIDTH, marginEnd: spacing.md }}
-        padding="xs"
-      >
-        <View style={{ height: 140, backgroundColor: colors.secondaryBackground, borderRadius: radii.md, overflow: 'hidden' }}>
-          {image ? (
-            <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
-          ) : (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: colors.tertiaryLabel, fontSize: 40 }}>📦</Text>
-            </View>
-          )}
-        </View>
-        <View style={{ padding: spacing.sm }}>
-          <Text
-            numberOfLines={2}
-            style={[typography.subheadline, { color: colors.label }]}
-          >
-            {name}
-          </Text>
-          <Text style={[typography.caption1, { color: colors.secondaryLabel, marginTop: 2 }]}>
-            {item.brand}
-          </Text>
-          {bestPrice && (
-            <View style={{ marginTop: spacing.xs }}>
-              <Price price={bestPrice} originalPrice={originalPrice} size="sm" />
-            </View>
-          )}
-        </View>
-      </Card>
-    );
-  }, [locale, colors]);
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
       >
-        {/* Search Bar */}
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.title2, { color: colors.label, fontWeight: '700' }]}>
+              {greeting}
+              {firstName ? `, ${firstName}` : ''}
+            </Text>
+            <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginTop: 2 }]}>
+              {subtitle}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => router.push('/(stack)/notifications')}
+            style={({ pressed }) => [
+              styles.iconButton,
+              { backgroundColor: colors.tertiaryFill },
+              pressed && { opacity: 0.7 },
+            ]}
+            hitSlop={8}
+            accessibilityLabel={locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+          >
+            <Bell size={20} color={colors.label} strokeWidth={1.8} />
+          </Pressable>
+        </View>
+
+        {/* ── Search Bar ── */}
         <Pressable
           onPress={() => router.push('/(tabs)/search')}
-          style={[styles.searchBar, { backgroundColor: colors.tertiaryFill, borderRadius: radii.md, marginHorizontal: spacing.md, marginTop: spacing.md }]}
+          style={({ pressed }) => [
+            styles.searchBar,
+            {
+              backgroundColor: colors.secondaryBackground,
+              marginHorizontal: spacing.md,
+              borderWidth: 1,
+              borderColor: pressed ? colors.primary : colors.separator,
+            },
+            pressed && { transform: [{ scale: 0.99 }] },
+          ]}
           accessibilityRole="search"
         >
-          <Search size={20} color={colors.tertiaryLabel} />
-          <Text style={[typography.body, { color: colors.tertiaryLabel, marginStart: spacing.sm, flex: 1 }]}>
-            {t('search.placeholder')}
+          <View style={[styles.searchIconCircle, { backgroundColor: colors.primary }]}>
+            <Search size={16} color="#FFFFFF" strokeWidth={2.2} />
+          </View>
+          <Text
+            style={[
+              typography.body,
+              { color: colors.tertiaryLabel, marginStart: spacing.sm, flex: 1 },
+            ]}
+          >
+            {t('search.searchPlaceholder')}
           </Text>
         </Pressable>
 
-        {/* Category Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm }}
-        >
-          {CATEGORIES.map((cat) => (
-            <Pressable
-              key={cat.key}
-              onPress={() => router.push({ pathname: '/(tabs)/search', params: { category: cat.key } })}
-              style={({ pressed }) => [
-                styles.categoryChip,
-                { backgroundColor: pressed ? colors.secondaryFill : colors.secondaryBackground, borderRadius: radii.full },
-              ]}
-            >
-              <Text style={{ fontSize: 20 }}>{cat.icon}</Text>
-              <Text style={[typography.footnote, { color: colors.label, fontWeight: '500', marginStart: spacing.xs }]}>
-                {locale === 'ar' ? cat.label_ar : cat.label_en}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {/* ── Category Grid ── */}
+        <View style={styles.categoryGrid}>
+          {CATEGORIES.map((cat) => {
+            const bg = isDark ? cat.darkBg : cat.lightBg;
+            const iconColor = isDark ? cat.darkIcon : cat.lightIcon;
+            return (
+              <Pressable
+                key={cat.key}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({ pathname: '/(tabs)/search', params: { category: cat.key } });
+                }}
+                style={({ pressed }) => [
+                  styles.categoryItem,
+                  pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+                ]}
+              >
+                <View style={[styles.categoryCircle, { backgroundColor: bg }]}>
+                  <cat.Icon size={24} color={iconColor} strokeWidth={1.8} />
+                </View>
+                <Text
+                  style={[
+                    typography.caption1,
+                    { color: colors.label, fontWeight: '500', marginTop: spacing.xs },
+                  ]}
+                >
+                  {locale === 'ar' ? cat.label_ar : cat.label_en}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-        {/* Featured Products */}
-        <SectionHeader
-          title={locale === 'ar' ? 'الأكثر مشاهدة' : 'Trending'}
-          icon={<TrendingUp size={18} color={colors.primary} />}
-          onSeeAll={() => router.push('/(tabs)/search')}
-          colors={colors}
-          locale={locale}
-        />
-        {loading ? (
-          <ScrollView horizontal contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}>
-            {[1, 2, 3].map((i) => <SkeletonCard key={i} style={{ width: PRODUCT_CARD_WIDTH }} />)}
-          </ScrollView>
-        ) : (
-          <FlatList
-            data={featuredProducts}
-            renderItem={renderProductCard}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: spacing.md }}
-          />
-        )}
-
-        {/* Deals Strip */}
+        {/* ── Deals ── */}
         {deals.length > 0 && (
           <>
             <SectionHeader
@@ -206,73 +243,356 @@ export default function HomeScreen() {
             />
             <FlatList
               data={deals}
-              renderItem={({ item }) => {
-                const product = item.products;
-                if (!product) return null;
-                const name = locale === 'ar' ? product.name_ar : product.name_en;
-                const image = product.image_urls?.[0];
-                return (
-                  <Card
-                    onPress={() => router.push(`/(stack)/product/${product.slug}`)}
-                    style={{ width: PRODUCT_CARD_WIDTH, marginEnd: spacing.md }}
-                    padding="xs"
-                  >
-                    <View style={{ height: 120, backgroundColor: colors.dealContainer, borderRadius: radii.md, overflow: 'hidden' }}>
-                      {image && <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="contain" />}
-                    </View>
-                    <View style={{ padding: spacing.sm }}>
-                      <Text numberOfLines={2} style={[typography.footnote, { color: colors.label }]}>{name}</Text>
-                      <Price price={item.current_price} originalPrice={item.original_price} size="sm" />
-                    </View>
-                  </Card>
-                );
-              }}
+              renderItem={({ item }) => (
+                <DealCard item={item} locale={locale} colors={colors} />
+              )}
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.md }}
+              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
+              snapToInterval={DEAL_CARD_WIDTH + spacing.md}
+              decelerationRate="fast"
             />
           </>
         )}
 
-        <View style={{ height: spacing.xxl }} />
+        {/* ── Trending ── */}
+        <SectionHeader
+          title={locale === 'ar' ? 'الأكثر مشاهدة' : 'Trending'}
+          icon={<TrendingUp size={18} color={colors.primary} />}
+          onSeeAll={() => router.push('/(tabs)/search')}
+          colors={colors}
+          locale={locale}
+        />
+        {loading ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
+          >
+            {[1, 2, 3].map((i) => (
+              <SkeletonCard key={i} style={{ width: PRODUCT_CARD_WIDTH }} />
+            ))}
+          </ScrollView>
+        ) : (
+          <FlatList
+            data={featuredProducts}
+            renderItem={({ item }) => (
+              <ProductCard item={item} locale={locale} colors={colors} />
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
+          />
+        )}
+
+        {/* ── Trust Bar ── */}
+        <TrustBar locale={locale} colors={colors} isDark={isDark} />
+
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function SectionHeader({ title, icon, onSeeAll, colors, locale }: {
-  title: string; icon: React.ReactNode; onSeeAll: () => void; colors: any; locale: string;
+// ─── Sub-Components ──────────────────────────────────────────
+
+function SectionHeader({
+  title,
+  icon,
+  onSeeAll,
+  colors,
+  locale,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  onSeeAll: () => void;
+  colors: any;
+  locale: string;
 }) {
   return (
     <View style={styles.sectionHeader}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
         {icon}
-        <Text style={[typography.title3, { color: colors.label, fontWeight: '600' }]}>{title}</Text>
+        <Text style={[typography.title3, { color: colors.label, fontWeight: '600' }]}>
+          {title}
+        </Text>
       </View>
-      <Pressable onPress={onSeeAll} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Pressable
+        onPress={onSeeAll}
+        hitSlop={8}
+        style={{ flexDirection: 'row', alignItems: 'center' }}
+      >
         <Text style={[typography.subheadline, { color: colors.primary }]}>
           {locale === 'ar' ? 'عرض الكل' : 'See All'}
         </Text>
-        {locale === 'ar' ? <ChevronLeft size={16} color={colors.primary} /> : <ChevronRight size={16} color={colors.primary} />}
+        {isRTL ? (
+          <ChevronLeft size={16} color={colors.primary} />
+        ) : (
+          <ChevronRight size={16} color={colors.primary} />
+        )}
       </Pressable>
     </View>
   );
 }
 
+function DealCard({
+  item,
+  locale,
+  colors,
+}: {
+  item: any;
+  locale: string;
+  colors: any;
+}) {
+  const product = item.products;
+  if (!product) return null;
+
+  const name = locale === 'ar' ? product.name_ar : product.name_en;
+  const storeName = locale === 'ar' ? item.stores?.name_ar : item.stores?.name_en;
+  const image = product.image_urls?.[0];
+  const savings = calculateSavingsPercentage(item.original_price, item.current_price);
+
+  return (
+    <Card
+      onPress={() => router.push(`/(stack)/product/${product.slug}`)}
+      style={{ width: DEAL_CARD_WIDTH }}
+      padding="xs"
+    >
+      <View
+        style={{
+          height: 160,
+          backgroundColor: colors.secondaryBackground,
+          borderRadius: radii.md,
+          overflow: 'hidden',
+        }}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Package size={40} color={colors.tertiaryLabel} strokeWidth={1.2} />
+          </View>
+        )}
+        {savings > 0 && (
+          <View style={[styles.savingsBadge, { backgroundColor: colors.error }]}>
+            <Text style={styles.savingsBadgeText}>-{savings}%</Text>
+          </View>
+        )}
+      </View>
+      <View style={{ padding: spacing.sm }}>
+        <Text
+          numberOfLines={2}
+          style={[typography.subheadline, { color: colors.label, fontWeight: '500' }]}
+        >
+          {name}
+        </Text>
+        {storeName && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+            <StoreIcon size={12} color={colors.secondaryLabel} strokeWidth={1.5} />
+            <Text style={[typography.caption1, { color: colors.secondaryLabel }]}>
+              {storeName}
+            </Text>
+          </View>
+        )}
+        <View style={{ marginTop: spacing.sm }}>
+          <Price price={item.current_price} originalPrice={item.original_price} size="sm" />
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+function ProductCard({
+  item,
+  locale,
+  colors,
+}: {
+  item: any;
+  locale: string;
+  colors: any;
+}) {
+  const name = locale === 'ar' ? item.name_ar : item.name_en;
+  const image = item.image_urls?.[0];
+  const stores = item.product_stores || [];
+  const bestPrice = stores
+    .map((ps: any) => ps.current_price)
+    .filter(Boolean)
+    .sort((a: number, b: number) => a - b)[0];
+  const originalPrice = stores.map((ps: any) => ps.original_price).filter(Boolean)[0];
+  const storeCount = stores.length;
+
+  return (
+    <Card
+      onPress={() => router.push(`/(stack)/product/${item.slug}`)}
+      style={{ width: PRODUCT_CARD_WIDTH }}
+      padding="xs"
+    >
+      <View
+        style={{
+          height: 140,
+          backgroundColor: colors.secondaryBackground,
+          borderRadius: radii.md,
+          overflow: 'hidden',
+        }}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Package size={36} color={colors.tertiaryLabel} strokeWidth={1.2} />
+          </View>
+        )}
+      </View>
+      <View style={{ padding: spacing.sm }}>
+        <Text numberOfLines={2} style={[typography.subheadline, { color: colors.label }]}>
+          {name}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 }}>
+          {item.brand && (
+            <Text style={[typography.caption1, { color: colors.secondaryLabel }]}>
+              {item.brand}
+            </Text>
+          )}
+          {storeCount > 0 && (
+            <View style={[styles.storeCountPill, { backgroundColor: colors.primaryContainer }]}>
+              <Text
+                style={[
+                  typography.caption2,
+                  { color: colors.onPrimaryContainer, fontWeight: '600' },
+                ]}
+              >
+                {storeCount}{' '}
+                {locale === 'ar'
+                  ? storeCount > 1
+                    ? 'متاجر'
+                    : 'متجر'
+                  : storeCount > 1
+                    ? 'stores'
+                    : 'store'}
+              </Text>
+            </View>
+          )}
+        </View>
+        {bestPrice && (
+          <View style={{ marginTop: spacing.xs }}>
+            <Price price={bestPrice} originalPrice={originalPrice} size="sm" />
+          </View>
+        )}
+      </View>
+    </Card>
+  );
+}
+
+function TrustBar({
+  locale,
+  colors,
+  isDark,
+}: {
+  locale: string;
+  colors: any;
+  isDark: boolean;
+}) {
+  return (
+    <View
+      style={[
+        styles.trustBar,
+        { backgroundColor: colors.secondaryBackground, marginHorizontal: spacing.md },
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <View
+          style={[
+            styles.trustIconCircle,
+            { backgroundColor: isDark ? '#064E3B' : '#D1FAE5' },
+          ]}
+        >
+          <ShieldCheck size={18} color={isDark ? '#34D399' : '#059669'} strokeWidth={2} />
+        </View>
+        <Text
+          style={[
+            typography.subheadline,
+            { color: colors.label, fontWeight: '600', flex: 1 },
+          ]}
+        >
+          {locale === 'ar'
+            ? 'نقارن الأسعار من أفضل المتاجر'
+            : 'Comparing prices from top stores'}
+        </Text>
+      </View>
+      <View style={styles.storeChips}>
+        {TRUSTED_STORES.map((store, i) => (
+          <View key={i} style={[styles.storeChip, { backgroundColor: colors.tertiaryFill }]}>
+            <Text
+              style={[typography.caption1, { color: colors.secondaryLabel, fontWeight: '500' }]}
+            >
+              {locale === 'ar' ? store.name_ar : store.name_en}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: MIN_TOUCH_TARGET,
+    height: 52,
     paddingHorizontal: spacing.md,
+    borderRadius: radii.lg,
   },
-  categoryChip: {
-    flexDirection: 'row',
+  searchIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+  },
+  categoryItem: {
+    width: '33.33%' as any,
+    alignItems: 'center',
     paddingVertical: spacing.sm,
-    minHeight: 40,
+  },
+  categoryCircle: {
+    width: ICON_CIRCLE_SIZE,
+    height: ICON_CIRCLE_SIZE,
+    borderRadius: ICON_CIRCLE_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -281,5 +601,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    start: spacing.sm,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  savingsBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  storeCountPill: {
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  trustBar: {
+    marginTop: spacing.xl,
+    padding: spacing.md,
+    gap: spacing.md,
+    borderRadius: radii.lg,
+  },
+  trustIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storeChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  storeChip: {
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
 });

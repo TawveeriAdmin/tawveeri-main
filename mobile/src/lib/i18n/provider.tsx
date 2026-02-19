@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { I18nManager } from 'react-native';
+import { I18nManager, Platform } from 'react-native';
 import * as Localization from 'expo-localization';
 
 // --- Types ---
@@ -132,21 +132,40 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('ar');
   const [ready, setReady] = useState(false);
 
-  // Load saved locale on mount
+  // Load saved locale on mount and sync RTL direction
   useEffect(() => {
     (async () => {
+      let resolvedLocale: Locale = 'ar';
       try {
         const saved = await AsyncStorage.getItem(LOCALE_STORAGE_KEY);
         if (saved === 'ar' || saved === 'en') {
-          setLocaleState(saved);
+          resolvedLocale = saved;
         } else {
-          // Use device locale, default to Arabic
           const deviceLocale = Localization.getLocales()[0]?.languageCode;
-          setLocaleState(deviceLocale === 'en' ? 'en' : 'ar');
+          resolvedLocale = deviceLocale === 'en' ? 'en' : 'ar';
         }
       } catch {
         // Default Arabic
       }
+
+      setLocaleState(resolvedLocale);
+
+      // Ensure I18nManager.isRTL matches the locale.
+      // If mismatched, force the correct direction and reload the app.
+      const shouldBeRTL = resolvedLocale === 'ar';
+      if (I18nManager.isRTL !== shouldBeRTL) {
+        I18nManager.forceRTL(shouldBeRTL);
+        I18nManager.allowRTL(shouldBeRTL);
+        // Reload required for layout direction change to take effect
+        try {
+          const { DevSettings } = require('react-native');
+          DevSettings?.reload?.();
+        } catch {
+          // Production: expo-updates reloadAsync or native restart needed
+        }
+        return; // Don't set ready — app is reloading
+      }
+
       setReady(true);
     })();
   }, []);

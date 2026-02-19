@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Tech Stack
 
+### Web
 - **Framework**: Next.js 15 (App Router) with TypeScript
 - **Database**: Supabase (PostgreSQL + Auth + RLS)
 - **Styling**: Tailwind CSS v4 with custom design tokens
@@ -18,6 +19,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Scraping**: TypeScript scrapers (`src/lib/scraping/`) — legacy Python/Flask in `scripts/scraping/` is unused
 - **Testing**: Jest + React Testing Library
 - **Charts**: ECharts (`echarts-for-react`) for admin dashboard, Recharts for other analytics
+
+### Mobile (`mobile/`)
+- **Framework**: Expo SDK 52+ with Expo Router (file-based routing), TypeScript
+- **New Architecture**: Enabled (`newArchEnabled: true` in app.json) — required by `react-native-reanimated` v4
+- **Styling**: StyleSheet + Apple HIG typography scale (no NativeWind)
+- **UI**: Lucide React Native icons, `expo-blur`, `expo-haptics`, `expo-image`
+- **State**: Zustand + AsyncStorage for cart, React Context for auth/theme/i18n
+- **Auth tokens**: `expo-secure-store` adapter for Supabase session persistence
+- **Fonts**: Inter (English) + IBM Plex Sans Arabic — same as web, loaded via `expo-font`
+- **Notifications**: `expo-notifications` with push token registration
 
 ## Commands
 
@@ -38,6 +49,18 @@ npm run db:create-admin  # Create admin user
 ```
 
 Development requires only **one terminal**: `npm run dev` on port 3000. All scraping runs as TypeScript inside Next.js.
+
+### Mobile Commands
+
+```bash
+cd mobile
+npx expo run:ios              # Build and run iOS dev build (requires Xcode)
+npx expo run:android          # Build and run Android dev build
+npx expo prebuild --clean     # Regenerate native projects after changing app.json or native deps
+npx expo start --port 8085    # Start Metro bundler on custom port (default 8081 often conflicts)
+```
+
+**Important**: The mobile app requires a native development build (`expo run:ios`), NOT Expo Go. New Architecture TurboModules (required by reanimated v4) are incompatible with Expo Go. After adding any native module (expo-blur, expo-haptics, etc.), run `npx expo prebuild --clean` then `npx expo run:ios`.
 
 ## Architecture
 
@@ -210,6 +233,124 @@ See `.env.example`. Required:
 
 `next.config.ts` has `remotePatterns` for store image CDNs: `**.amazon.sa`, `m.media-amazon.com`, `**.noon.com`, `f.nooncdn.com`, `**.jarir.com`, `ak-asset.jarir.com`, `**.extra.com`. Add new patterns here when integrating additional stores.
 
+## Mobile App Architecture (`mobile/`)
+
+Customer-facing screens only — no admin dashboard or store owner portal.
+
+### Navigation (Expo Router)
+
+```
+mobile/app/
+  _layout.tsx              # Root: providers (Intl > Theme > Auth > Navigation)
+  (tabs)/
+    _layout.tsx            # Tab navigator with CustomTabBar
+    index.tsx              # Home (trending, deals, categories)
+    search.tsx             # Search with debounce + category chips
+    deals.tsx              # Deals listing
+    cart.tsx               # Multi-store cart (Zustand)
+    profile.tsx            # Profile/dashboard
+  (auth)/
+    _layout.tsx            # Modal stack (slide from bottom)
+    login.tsx              # Phone OTP + email + OAuth
+    signup.tsx             # Name collection for new phone users
+    forgot-password.tsx    # 3-step phone reset flow
+  (stack)/
+    _layout.tsx            # Push stack
+    product/[slug].tsx     # Product detail + price history
+    store/[slug].tsx       # Store detail
+    stores/index.tsx       # Store listing
+    compare.tsx            # Product comparison
+    wishlist.tsx           # Saved products
+    notifications.tsx      # Notification list
+    price-alerts.tsx       # Price alert management
+    settings.tsx           # Language, theme, account
+    edit-profile.tsx       # Profile editing
+  auth/callback.tsx        # OAuth deep link handler
+```
+
+### Mobile Provider Hierarchy
+
+`mobile/app/_layout.tsx` — **do not reorder**:
+
+```
+<GestureHandlerRootView>
+  <SafeAreaProvider>
+    <IntlProvider>          ← i18n (AsyncStorage-persisted locale, RTL auto-reload)
+      <ThemeProvider>       ← light/dark (AsyncStorage, system detection)
+        <AuthProvider>      ← Supabase auth (SecureStore tokens)
+          <AppContent />    ← push notifications + deep link hooks
+          <Toast />
+        </AuthProvider>
+      </ThemeProvider>
+    </IntlProvider>
+  </SafeAreaProvider>
+</GestureHandlerRootView>
+```
+
+### Mobile Supabase Client
+
+`mobile/src/lib/supabase/client.ts` — uses `expo-secure-store` adapter (not SSR cookies). Auth tokens persist in the iOS Keychain / Android Keystore. `detectSessionInUrl: false` since deep links handle auth callbacks separately.
+
+### Mobile API Client
+
+`mobile/src/lib/api/client.ts` — HTTP client for calling the Next.js web app's API routes (`/api/search/scrape`, `/api/auth/*`, etc.). Base URL from `EXPO_PUBLIC_API_BASE_URL`. Automatically attaches Bearer token from auth session via `apiClient.setAccessToken()`.
+
+### Mobile Auth
+
+`mobile/src/lib/auth/auth-context.tsx` — adapted from web:
+- Phone OTP: calls `/api/auth/send-phone-otp` and `/api/auth/verify-phone-otp` via apiClient with `platform: 'mobile'`
+- OAuth: `expo-web-browser` + deep link redirect (`tawveeri://auth/callback`)
+- Email/password: standard `supabase.auth.signInWithPassword()`
+- Auto-creates user profile in `users` table on first login
+
+### Mobile Cart (Zustand)
+
+`mobile/src/lib/cart/cart-store.ts` — Zustand store (not React Context like web) with AsyncStorage persistence via `zustand/middleware/persist`. Pure cart functions ported from web's `multi-store-cart.ts`. Multi-store grouping: items organized by store with per-store subtotals.
+
+### Mobile i18n
+
+`mobile/src/lib/i18n/provider.tsx` — ported from web's `SimpleIntlProvider`. Same 19 translation namespaces as web, bundled as static `require()` imports from `messages/{ar,en}/`. Same message-spreading logic (common.json top-level, landing.json top-level, admin.json extracted namespace).
+
+**RTL handling**: `I18nManager.forceRTL()` persists across app sessions. The provider detects locale/RTL mismatches on mount and calls `DevSettings.reload()` to fix layout direction. Default: Arabic (RTL).
+
+### Mobile Theme
+
+`mobile/src/lib/theme/` — no NativeWind/Tailwind. Uses:
+- `colors.ts` — light/dark color token objects matching web's CSS custom properties (primary #0D47A1 blue, Apple HIG semantic colors like `systemGray`, `systemRed`, `separator`)
+- `theme-context.tsx` — ThemeProvider with `useColorScheme()` device detection + AsyncStorage override
+- `typography.ts` — Apple HIG type scale (largeTitle through caption2), spacing scale, radii, `MIN_TOUCH_TARGET = 44`
+
+Usage: `const { colors, isDark } = useTheme()` + inline styles, not utility classes.
+
+### Mobile UI Components
+
+`mobile/src/components/ui/` — `Card`, `Price`, `Badge`, `EmptyState`, `Skeleton`, `SkeletonCard`, `BottomSheet`, `StatusBar` — all styled with inline StyleSheet, supporting RTL and dark mode.
+
+`mobile/src/components/navigation/CustomTabBar.tsx` — custom tab bar with `expo-blur` frosted glass, haptic feedback, bounce animation, bilingual labels, cart badge.
+
+### Mobile Environment Variables
+
+```
+EXPO_PUBLIC_SUPABASE_URL=<same as web>
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<same as web>
+EXPO_PUBLIC_API_BASE_URL=https://tawveeri.com   # or http://localhost:3000 for dev
+```
+
+### Metro Config (Monorepo)
+
+`mobile/metro.config.js` — watches only `messages/` from the parent directory (for shared translations). Resolves `node_modules` only from `mobile/` to prevent conflicts with the parent Next.js project's dependencies.
+
+### Mobile RTL Rules
+
+- Use `start`/`end` instead of `left`/`right` for absolute positioning (`position: 'absolute', start: 16`)
+- Swap directional icons based on `isRTL`: `ArrowLeft`↔`ArrowRight`, `ChevronRight`↔`ChevronLeft`
+- `I18nManager.isRTL` auto-flips flexbox `row` direction — **do not** manually reverse `flexDirection`
+- `textAlign: I18nManager.isRTL ? 'right' : 'left'` for TextInput components
+
+### Deep Linking
+
+URL scheme: `tawveeri://` (configured in `app.json` under `scheme`). Associated domains for universal links: `tawveeri.com`, `www.tawveeri.com`. Deep link handler in `mobile/src/lib/linking/use-deep-links.ts`.
+
 ## Styling Rules
 
 - Use Tailwind utility classes with design tokens: `text-primary-600`, `bg-success-50`, `border-warning-300`
@@ -219,9 +360,10 @@ See `.env.example`. Required:
 - **Never** set `dir` attributes on elements — the locale layout wrapper handles `dir` globally
 - **Never** write separate RTL/LTR CSS — flexbox/grid auto-flip in RTL
 
-## Path Alias
+## Path Aliases
 
-`@/*` maps to `src/*`
+- **Web**: `@/*` maps to `src/*`
+- **Mobile**: `@/*` maps to `mobile/` root (so `@/src/lib/...` reaches `mobile/src/lib/...`)
 
 ## Bilingual Content Convention
 

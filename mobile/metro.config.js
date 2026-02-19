@@ -3,15 +3,16 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Allow Metro to resolve files from the parent monorepo root
-// This is needed to import shared translation files from messages/
+// Watch only the shared messages/ directory from the parent (for translations)
 const monorepoRoot = path.resolve(__dirname, '..');
-config.watchFolders = [monorepoRoot];
+config.watchFolders = [
+  path.resolve(monorepoRoot, 'messages'),
+];
 
-// Ensure node_modules resolution still prefers mobile's own modules
+// Resolve node_modules ONLY from mobile's own directory
+// This prevents Metro from picking up the parent's react/react-native/etc.
 config.resolver.nodeModulesPaths = [
   path.resolve(__dirname, 'node_modules'),
-  path.resolve(monorepoRoot, 'node_modules'),
 ];
 
 module.exports = config;

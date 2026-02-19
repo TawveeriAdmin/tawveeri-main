@@ -149,7 +149,7 @@ export default function SearchScreen() {
             value={query}
             onChangeText={onQueryChange}
             onSubmitEditing={onSubmit}
-            placeholder={t('search.placeholder')}
+            placeholder={t('search.searchPlaceholder')}
             placeholderTextColor={colors.tertiaryLabel}
             returnKeyType="search"
             autoCorrect={false}
