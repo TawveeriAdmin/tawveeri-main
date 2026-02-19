@@ -11,13 +11,15 @@ import { router } from 'expo-router';
 import { Star, ChevronRight, ChevronLeft, Store } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Skeleton } from '@/src/components/ui';
 
 export default function StoresScreen() {
   const { colors } = useTheme();
-  const { locale, isRTL } = useLocale();
+  const { locale } = useLocale();
+  const rtl = useRTL();
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +52,7 @@ export default function StoresScreen() {
       renderItem={({ item }) => (
         <Pressable
           onPress={() => router.push(`/(stack)/store/${item.slug}`)}
-          style={[styles.card, { backgroundColor: colors.card }]}
+          style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}
         >
           {item.logo_url ? (
             <Image source={{ uri: item.logo_url }} style={styles.logo} contentFit="contain" />
@@ -59,25 +61,25 @@ export default function StoresScreen() {
               <Store size={24} color={colors.tertiaryLabel} />
             </View>
           )}
-          <View style={{ flex: 1, marginStart: spacing.md }}>
-            <Text style={[typography.headline, { color: colors.label }]}>
+          <View style={{ flex: 1, marginLeft: spacing.md }}>
+            <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {locale === 'ar' ? (item.name_ar || item.name) : (item.name_en || item.name)}
             </Text>
             {item.description && (
-              <Text style={[typography.caption1, { color: colors.secondaryLabel, marginTop: 2 }]} numberOfLines={1}>
+              <Text style={[typography.caption1, { color: colors.secondaryLabel, marginTop: 2, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={1}>
                 {locale === 'ar' ? (item.description_ar || item.description) : (item.description_en || item.description)}
               </Text>
             )}
             {item.rating && (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                 <Star size={12} color={colors.systemYellow} fill={colors.systemYellow} />
-                <Text style={[typography.caption2, { color: colors.secondaryLabel, marginStart: 2 }]}>
+                <Text style={[typography.caption2, { color: colors.secondaryLabel, marginLeft: 2 }]}>
                   {item.rating}
                 </Text>
               </View>
             )}
           </View>
-          {isRTL ? <ChevronLeft size={18} color={colors.tertiaryLabel} /> : <ChevronRight size={18} color={colors.tertiaryLabel} />}
+          {rtl.isRTL ? <ChevronLeft size={18} color={colors.tertiaryLabel} /> : <ChevronRight size={18} color={colors.tertiaryLabel} />}
         </Pressable>
       )}
     />
@@ -86,7 +88,6 @@ export default function StoresScreen() {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radii.lg,

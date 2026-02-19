@@ -2,10 +2,10 @@
  * Search Screen
  *
  * HIG: Search field at top with scope buttons (category chips).
- * Debounced search → POST /api/search/scrape → FlatList grid results.
+ * States: Idle (recent + popular) → Loading (skeleton) → Results / No Results.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,34 +13,70 @@ import {
   FlatList,
   StyleSheet,
   Pressable,
-  ActivityIndicator,
   ScrollView,
   Dimensions,
-  I18nManager,
   Keyboard,
+  Linking,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search as SearchIcon, SlidersHorizontal, X, Grid, List } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
+import {
+  Search as SearchIcon,
+  X,
+  Grid,
+  List,
+  Smartphone,
+  Laptop,
+  Headphones,
+  Monitor,
+  Gamepad2,
+  Tablet,
+  Package,
+  Clock,
+  TrendingUp,
+  ArrowUpDown,
+  SearchX,
+} from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { apiClient } from '@/src/lib/api/client';
-import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
+import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
+import { calculateSavingsPercentage } from '@/src/lib/utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
+const RECENT_SEARCHES_KEY = 'tawveeri_recent_searches';
+const MAX_RECENT_SEARCHES = 8;
+
+// ─── Static Data ─────────────────────────────────────────────
 
 const CATEGORIES = [
-  { key: 'all', label_ar: 'الكل', label_en: 'All' },
-  { key: 'smartphone', label_ar: 'هواتف', label_en: 'Phones' },
-  { key: 'laptop', label_ar: 'لابتوب', label_en: 'Laptops' },
-  { key: 'audio', label_ar: 'سماعات', label_en: 'Audio' },
-  { key: 'tv', label_ar: 'شاشات', label_en: 'TVs' },
-  { key: 'gaming', label_ar: 'ألعاب', label_en: 'Gaming' },
-  { key: 'tablet', label_ar: 'تابلت', label_en: 'Tablets' },
+  { key: 'all', Icon: null, label_ar: 'الكل', label_en: 'All' },
+  { key: 'smartphone', Icon: Smartphone, label_ar: 'هواتف', label_en: 'Phones' },
+  { key: 'laptop', Icon: Laptop, label_ar: 'لابتوب', label_en: 'Laptops' },
+  { key: 'audio', Icon: Headphones, label_ar: 'سماعات', label_en: 'Audio' },
+  { key: 'tv', Icon: Monitor, label_ar: 'شاشات', label_en: 'TVs' },
+  { key: 'gaming', Icon: Gamepad2, label_ar: 'ألعاب', label_en: 'Gaming' },
+  { key: 'tablet', Icon: Tablet, label_ar: 'تابلت', label_en: 'Tablets' },
 ];
+
+const POPULAR_SEARCHES = [
+  'iPhone 15',
+  'MacBook Air',
+  'AirPods Pro',
+  'Samsung Galaxy S24',
+  'PlayStation 5',
+  'iPad Air',
+];
+
+// ─── Types ───────────────────────────────────────────────────
+
+type SortOption = 'relevance' | 'price_asc' | 'price_desc';
 
 interface SearchResult {
   id: string;
@@ -54,96 +90,151 @@ interface SearchResult {
   category?: string;
 }
 
+// ─── Main Component ──────────────────────────────────────────
+
 export default function SearchScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const t = useTranslations();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const params = useLocalSearchParams<{ category?: string; query?: string }>();
 
   const [query, setQuery] = useState(params.query || '');
   const [category, setCategory] = useState(params.category || 'all');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [gridView, setGridView] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const recentRef = useRef<string[]>([]);
 
-  const doSearch = useCallback(async (q: string, cat: string) => {
-    if (!q.trim()) { setResults([]); return; }
-    setLoading(true);
-    try {
-      const data = await apiClient.post<{ results: SearchResult[] }>('/api/search/scrape', {
-        query: q.trim(),
-        category: cat === 'all' ? undefined : cat,
-        stores: ['amazon', 'noon', 'jarir', 'extra'],
-        pages: 1,
-      });
-      setResults(data.results || []);
-    } catch (err) {
-      console.error('Search error:', err);
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
+  // Load recent searches on mount
+  useEffect(() => {
+    AsyncStorage.getItem(RECENT_SEARCHES_KEY).then((val) => {
+      if (val) {
+        try {
+          const parsed = JSON.parse(val);
+          recentRef.current = parsed;
+          setRecentSearches(parsed);
+        } catch {}
+      }
+    });
   }, []);
 
-  // Debounced search
-  const onQueryChange = useCallback((text: string) => {
-    setQuery(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(text, category), 600);
-  }, [category, doSearch]);
+  const saveRecentSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    const updated = [trimmed, ...recentRef.current.filter((s) => s !== trimmed)].slice(
+      0,
+      MAX_RECENT_SEARCHES,
+    );
+    recentRef.current = updated;
+    setRecentSearches(updated);
+    await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+  }, []);
 
-  const onCategoryChange = useCallback((cat: string) => {
-    setCategory(cat);
-    if (query.trim()) doSearch(query, cat);
-  }, [query, doSearch]);
+  const clearRecentSearches = useCallback(async () => {
+    recentRef.current = [];
+    setRecentSearches([]);
+    await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
+  }, []);
+
+  const doSearch = useCallback(
+    async (q: string, cat: string) => {
+      if (!q.trim()) {
+        setResults([]);
+        setHasSearched(false);
+        return;
+      }
+      setLoading(true);
+      setHasSearched(true);
+      saveRecentSearch(q);
+      try {
+        const data = await apiClient.post<{ results: SearchResult[] }>('/api/search/scrape', {
+          query: q.trim(),
+          category: cat === 'all' ? undefined : cat,
+          stores: ['amazon', 'noon', 'jarir', 'extra'],
+          pages: 1,
+        });
+        setResults(data.results || []);
+      } catch (err) {
+        console.error('Search error:', err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [saveRecentSearch],
+  );
+
+  const onQueryChange = useCallback(
+    (text: string) => {
+      setQuery(text);
+      if (!text.trim()) {
+        setResults([]);
+        setHasSearched(false);
+      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => doSearch(text, category), 600);
+    },
+    [category, doSearch],
+  );
+
+  const onCategoryChange = useCallback(
+    (cat: string) => {
+      setCategory(cat);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (query.trim()) doSearch(query, cat);
+    },
+    [query, doSearch],
+  );
 
   const onSubmit = useCallback(() => {
     Keyboard.dismiss();
     doSearch(query, category);
   }, [query, category, doSearch]);
 
+  const performSearch = useCallback(
+    (q: string) => {
+      setQuery(q);
+      Keyboard.dismiss();
+      doSearch(q, category);
+    },
+    [category, doSearch],
+  );
+
+  const sortedResults = useMemo(() => {
+    if (sortBy === 'relevance') return results;
+    return [...results].sort((a, b) =>
+      sortBy === 'price_asc' ? a.price - b.price : b.price - a.price,
+    );
+  }, [results, sortBy]);
+
   // Auto-search if params provided
   useEffect(() => {
     if (params.query) doSearch(params.query, params.category || 'all');
   }, []);
 
-  const renderItem = useCallback(({ item }: { item: SearchResult }) => (
-    <Card
-      onPress={() => {/* Open product detail or external URL */}}
-      style={gridView ? { width: CARD_WIDTH } : { width: '100%' }}
-      padding="xs"
-    >
-      <View style={{
-        height: gridView ? 120 : 80,
-        width: gridView ? '100%' : 80,
-        backgroundColor: colors.secondaryBackground,
-        borderRadius: radii.md,
-        overflow: 'hidden',
-      }}>
-        {item.imageUrl && (
-          <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
-        )}
-      </View>
-      <View style={{ flex: 1, padding: spacing.sm }}>
-        <Text numberOfLines={2} style={[typography.footnote, { color: colors.label }]}>
-          {item.title}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
-          <Badge text={item.store} variant="tinted" color="primary" />
-        </View>
-        <Price price={item.price} originalPrice={item.originalPrice} size="sm" />
-      </View>
-    </Card>
-  ), [gridView, colors]);
+  const isIdle = !hasSearched && !loading;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Search Input */}
+      {/* ── Search Input ── */}
       <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.searchInput, { backgroundColor: colors.tertiaryFill, borderRadius: radii.md }]}>
-          <SearchIcon size={20} color={colors.tertiaryLabel} />
+        <View
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: colors.secondaryBackground,
+              borderWidth: 1,
+              borderColor: colors.separator,
+            },
+          ]}
+        >
+          <SearchIcon size={18} color={colors.secondaryLabel} strokeWidth={2} />
           <TextInput
             ref={inputRef}
             value={query}
@@ -153,50 +244,82 @@ export default function SearchScreen() {
             placeholderTextColor={colors.tertiaryLabel}
             returnKeyType="search"
             autoCorrect={false}
-            style={[typography.body, {
-              flex: 1, color: colors.label, marginStart: spacing.sm,
-              textAlign: I18nManager.isRTL ? 'right' : 'left',
-            }]}
+            autoFocus={!params.query}
+            style={[
+              typography.body,
+              {
+                flex: 1,
+                color: colors.label,
+                marginLeft: rtl.isRTL ? 0 : spacing.sm,
+                marginRight: rtl.isRTL ? spacing.sm : 0,
+                textAlign: rtl.textAlign,
+                writingDirection: rtl.writingDirection,
+              },
+            ]}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => { setQuery(''); setResults([]); }} hitSlop={8}>
-              <X size={18} color={colors.tertiaryLabel} />
+            <Pressable
+              onPress={() => {
+                setQuery('');
+                setResults([]);
+                setHasSearched(false);
+              }}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.clearButton,
+                { backgroundColor: colors.tertiaryFill },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <X size={14} color={colors.secondaryLabel} strokeWidth={2} />
             </Pressable>
           )}
         </View>
-        <Pressable
-          onPress={() => setGridView(!gridView)}
-          style={styles.viewToggle}
-          hitSlop={8}
-        >
-          {gridView ? <List size={22} color={colors.secondaryLabel} /> : <Grid size={22} color={colors.secondaryLabel} />}
-        </Pressable>
       </View>
 
-      {/* Category Chips */}
+      {/* ── Category Chips ── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm, gap: spacing.sm }}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.md,
+          paddingBottom: spacing.sm,
+          gap: spacing.sm,
+        }}
       >
         {CATEGORIES.map((cat) => {
           const active = category === cat.key;
+          const CatIcon = cat.Icon;
           return (
             <Pressable
               key={cat.key}
               onPress={() => onCategoryChange(cat.key)}
-              style={[
+              style={({ pressed }) => [
                 styles.chip,
                 {
-                  backgroundColor: active ? colors.primary : colors.secondaryFill,
-                  borderRadius: radii.full,
+                  backgroundColor: active ? colors.primary : colors.secondaryBackground,
+                  borderWidth: active ? 0 : 1,
+                  borderColor: colors.separator,
                 },
+                pressed && { opacity: 0.8 },
               ]}
             >
-              <Text style={[typography.footnote, {
-                color: active ? colors.onPrimary : colors.label,
-                fontWeight: active ? '600' : '400',
-              }]}>
+              {CatIcon && (
+                <CatIcon
+                  size={14}
+                  color={active ? colors.onPrimary : colors.secondaryLabel}
+                  strokeWidth={1.8}
+                />
+              )}
+              <Text
+                style={[
+                  typography.footnote,
+                  {
+                    color: active ? colors.onPrimary : colors.label,
+                    fontWeight: active ? '600' : '500',
+                  },
+                ]}
+              >
                 {locale === 'ar' ? cat.label_ar : cat.label_en}
               </Text>
             </Pressable>
@@ -204,66 +327,549 @@ export default function SearchScreen() {
         })}
       </ScrollView>
 
-      {/* Results */}
+      {/* ── Content States ── */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : results.length === 0 && query.trim() ? (
+        <LoadingSkeleton gridView={gridView} />
+      ) : isIdle ? (
+        <IdleState
+          recentSearches={recentSearches}
+          onRecentPress={performSearch}
+          onClearRecent={clearRecentSearches}
+          onPopularPress={performSearch}
+          locale={locale}
+          colors={colors}
+          isDark={isDark}
+          rtl={rtl}
+        />
+      ) : results.length === 0 && hasSearched ? (
         <EmptyState
-          title={locale === 'ar' ? 'لا توجد نتائج' : 'No results found'}
-          message={locale === 'ar' ? 'جرب كلمات بحث مختلفة' : 'Try different search terms'}
+          icon={<SearchX size={48} color={colors.tertiaryLabel} strokeWidth={1.2} />}
+          title={t('search.noResults')}
+          message={
+            locale === 'ar'
+              ? 'جرب كلمات بحث مختلفة أو فئة أخرى'
+              : 'Try different search terms or another category'
+          }
         />
       ) : (
-        <FlatList
-          data={results}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => `${item.title}-${index}`}
-          numColumns={gridView ? 2 : 1}
-          key={gridView ? 'grid' : 'list'}
-          columnWrapperStyle={gridView ? { gap: spacing.md, paddingHorizontal: spacing.md } : undefined}
-          contentContainerStyle={[
-            { paddingHorizontal: gridView ? 0 : spacing.md, paddingBottom: spacing.xxl },
-            !gridView && { gap: spacing.sm },
-          ]}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-          showsVerticalScrollIndicator={false}
-        />
+        <>
+          <ResultsHeader
+            count={sortedResults.length}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            gridView={gridView}
+            onToggleView={() => {
+              setGridView(!gridView);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            locale={locale}
+            colors={colors}
+            t={t}
+            rtl={rtl}
+          />
+          <FlatList
+            data={sortedResults}
+            renderItem={({ item }) =>
+              gridView ? (
+                <GridResultCard item={item} colors={colors} rtl={rtl} />
+              ) : (
+                <ListResultCard item={item} colors={colors} rtl={rtl} />
+              )
+            }
+            keyExtractor={(item, index) => `${item.url}-${index}`}
+            numColumns={gridView ? 2 : 1}
+            key={gridView ? 'grid' : 'list'}
+            columnWrapperStyle={
+              gridView ? { gap: spacing.md, paddingHorizontal: spacing.md } : undefined
+            }
+            contentContainerStyle={[
+              { paddingHorizontal: gridView ? 0 : spacing.md, paddingBottom: 100 },
+              !gridView && { gap: spacing.sm },
+            ]}
+            ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+          />
+        </>
       )}
     </SafeAreaView>
   );
 }
 
+// ─── Sub-Components ──────────────────────────────────────────
+
+function LoadingSkeleton({ gridView }: { gridView: boolean }) {
+  if (gridView) {
+    return (
+      <View style={styles.skeletonGrid}>
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <SkeletonCard key={i} style={{ width: CARD_WIDTH }} />
+        ))}
+      </View>
+    );
+  }
+  return (
+    <View style={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.sm }}>
+      {[1, 2, 3, 4].map((i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </View>
+  );
+}
+
+function IdleState({
+  recentSearches,
+  onRecentPress,
+  onClearRecent,
+  onPopularPress,
+  locale,
+  colors,
+  isDark,
+  rtl,
+}: {
+  recentSearches: string[];
+  onRecentPress: (q: string) => void;
+  onClearRecent: () => void;
+  onPopularPress: (q: string) => void;
+  locale: string;
+  colors: any;
+  isDark: boolean;
+  rtl: ReturnType<typeof useRTL>;
+}) {
+  return (
+    <ScrollView
+      contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.lg }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Hero prompt */}
+      <View style={styles.idleHero}>
+        <View
+          style={[
+            styles.idleIconCircle,
+            { backgroundColor: isDark ? '#172554' : '#EFF6FF' },
+          ]}
+        >
+          <SearchIcon size={28} color={isDark ? '#60A5FA' : '#2563EB'} strokeWidth={1.5} />
+        </View>
+        <Text
+          style={[
+            typography.title3,
+            {
+              color: colors.label,
+              fontWeight: '600',
+              textAlign: 'center',
+              marginTop: spacing.md,
+              writingDirection: rtl.writingDirection,
+            },
+          ]}
+        >
+          {locale === 'ar' ? 'ابحث عن المنتجات' : 'Search for products'}
+        </Text>
+        <Text
+          style={[
+            typography.subheadline,
+            { color: colors.secondaryLabel, textAlign: 'center', marginTop: spacing.xs, writingDirection: rtl.writingDirection },
+          ]}
+        >
+          {locale === 'ar'
+            ? 'قارن الأسعار من أكثر من 5 متاجر'
+            : 'Compare prices from 5+ stores'}
+        </Text>
+      </View>
+
+      {/* Recent Searches */}
+      {recentSearches.length > 0 && (
+        <View style={{ marginTop: spacing.xl }}>
+          <View style={[styles.idleSectionHeader, { flexDirection: rtl.row }]}>
+            <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
+              <Clock size={16} color={colors.secondaryLabel} strokeWidth={1.8} />
+              <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                {locale === 'ar' ? 'البحوث الأخيرة' : 'Recent'}
+              </Text>
+            </View>
+            <Pressable onPress={onClearRecent} hitSlop={8}>
+              <Text style={[typography.subheadline, { color: colors.primary, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                {locale === 'ar' ? 'مسح' : 'Clear'}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.chipWrap}>
+            {recentSearches.map((q, i) => (
+              <Pressable
+                key={`${q}-${i}`}
+                onPress={() => onRecentPress(q)}
+                style={({ pressed }) => [
+                  styles.suggestionChip,
+                  {
+                    backgroundColor: colors.secondaryBackground,
+                    borderWidth: 1,
+                    borderColor: colors.separator,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Clock size={12} color={colors.tertiaryLabel} strokeWidth={1.5} />
+                <Text
+                  style={[typography.footnote, { color: colors.label }]}
+                  numberOfLines={1}
+                >
+                  {q}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Popular Searches */}
+      <View style={{ marginTop: spacing.xl }}>
+        <View
+          style={{
+            flexDirection: rtl.row,
+            alignItems: 'center',
+            gap: spacing.xs,
+            marginBottom: spacing.sm,
+          }}
+        >
+          <TrendingUp size={16} color={colors.primary} strokeWidth={1.8} />
+          <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+            {locale === 'ar' ? 'بحث شائع' : 'Popular'}
+          </Text>
+        </View>
+        <View style={styles.chipWrap}>
+          {POPULAR_SEARCHES.map((q) => (
+            <Pressable
+              key={q}
+              onPress={() => onPopularPress(q)}
+              style={({ pressed }) => [
+                styles.suggestionChip,
+                { backgroundColor: isDark ? '#172554' : '#EFF6FF' },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <TrendingUp
+                size={12}
+                color={isDark ? '#60A5FA' : '#2563EB'}
+                strokeWidth={1.5}
+              />
+              <Text
+                style={[
+                  typography.footnote,
+                  { color: isDark ? '#60A5FA' : '#2563EB', fontWeight: '500' },
+                ]}
+                numberOfLines={1}
+              >
+                {q}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+}
+
+function ResultsHeader({
+  count,
+  sortBy,
+  onSortChange,
+  gridView,
+  onToggleView,
+  locale,
+  colors,
+  t,
+  rtl,
+}: {
+  count: number;
+  sortBy: SortOption;
+  onSortChange: (s: SortOption) => void;
+  gridView: boolean;
+  onToggleView: () => void;
+  locale: string;
+  colors: any;
+  t: (key: string) => string;
+  rtl: ReturnType<typeof useRTL>;
+}) {
+  const sortLabels: Record<SortOption, string> = {
+    relevance: locale === 'ar' ? 'الأكثر صلة' : 'Relevance',
+    price_asc: locale === 'ar' ? 'الأقل سعراً' : 'Lowest',
+    price_desc: locale === 'ar' ? 'الأعلى سعراً' : 'Highest',
+  };
+
+  const cycleSortOption = () => {
+    const options: SortOption[] = ['relevance', 'price_asc', 'price_desc'];
+    const idx = options.indexOf(sortBy);
+    onSortChange(options[(idx + 1) % options.length]);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  return (
+    <View style={[styles.resultsHeader, { flexDirection: rtl.row }]}>
+      <Text style={[typography.footnote, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+        {count} {t('search.resultsCount')}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Pressable
+          onPress={cycleSortOption}
+          style={({ pressed }) => [
+            styles.sortButton,
+            {
+              backgroundColor: colors.secondaryBackground,
+              borderWidth: 1,
+              borderColor: colors.separator,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <ArrowUpDown size={12} color={colors.secondaryLabel} strokeWidth={2} />
+          <Text style={[typography.caption1, { color: colors.label, fontWeight: '500' }]}>
+            {sortLabels[sortBy]}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onToggleView}
+          style={({ pressed }) => [
+            styles.viewToggle,
+            { backgroundColor: colors.secondaryBackground },
+            pressed && { opacity: 0.7 },
+          ]}
+          hitSlop={4}
+        >
+          {gridView ? (
+            <List size={18} color={colors.secondaryLabel} strokeWidth={1.8} />
+          ) : (
+            <Grid size={18} color={colors.secondaryLabel} strokeWidth={1.8} />
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any; rtl: ReturnType<typeof useRTL> }) {
+  const savings = item.originalPrice
+    ? calculateSavingsPercentage(item.originalPrice, item.price)
+    : 0;
+
+  return (
+    <Card onPress={() => Linking.openURL(item.url)} style={{ width: CARD_WIDTH }} padding="xs">
+      <View
+        style={{
+          height: 130,
+          backgroundColor: colors.secondaryBackground,
+          borderRadius: radii.md,
+          overflow: 'hidden',
+        }}
+      >
+        {item.imageUrl ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Package size={32} color={colors.tertiaryLabel} strokeWidth={1.2} />
+          </View>
+        )}
+        {savings > 0 && (
+          <View style={[styles.savingsBadge, { backgroundColor: colors.error }]}>
+            <Text style={styles.savingsBadgeText}>-{savings}%</Text>
+          </View>
+        )}
+      </View>
+      <View style={{ padding: spacing.sm }}>
+        <Text
+          numberOfLines={2}
+          style={[typography.footnote, { color: colors.label, lineHeight: 18, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}
+        >
+          {item.title}
+        </Text>
+        <View style={{ marginTop: 6 }}>
+          <Badge text={item.store} variant="tinted" color="primary" size="sm" />
+        </View>
+        <View style={{ marginTop: spacing.xs }}>
+          <Price price={item.price} originalPrice={item.originalPrice} size="sm" />
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any; rtl: ReturnType<typeof useRTL> }) {
+  const savings = item.originalPrice
+    ? calculateSavingsPercentage(item.originalPrice, item.price)
+    : 0;
+
+  return (
+    <Card onPress={() => Linking.openURL(item.url)} padding="sm">
+      <View style={{ flexDirection: rtl.row, gap: spacing.md }}>
+        <View
+          style={{
+            width: 100,
+            height: 100,
+            backgroundColor: colors.secondaryBackground,
+            borderRadius: radii.md,
+            overflow: 'hidden',
+          }}
+        >
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="contain"
+            />
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={28} color={colors.tertiaryLabel} strokeWidth={1.2} />
+            </View>
+          )}
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Text
+            numberOfLines={2}
+            style={[typography.subheadline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}
+          >
+            {item.title}
+          </Text>
+          <View
+            style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: 6, gap: 6 }}
+          >
+            <Badge text={item.store} variant="tinted" color="primary" size="sm" />
+            {savings > 0 && (
+              <View
+                style={{
+                  backgroundColor: colors.priceSavingsContainer,
+                  borderRadius: radii.full,
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.caption2,
+                    { color: colors.priceSavings, fontWeight: '700' },
+                  ]}
+                >
+                  -{savings}%
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={{ marginTop: spacing.xs }}>
+            <Price price={item.price} originalPrice={item.originalPrice} size="sm" />
+          </View>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    gap: spacing.sm,
   },
   searchInput: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: MIN_TOUCH_TARGET,
+    height: 48,
     paddingHorizontal: spacing.md,
+    borderRadius: radii.lg,
   },
-  viewToggle: {
-    width: MIN_TOUCH_TARGET,
-    height: MIN_TOUCH_TARGET,
+  clearButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    minHeight: 32,
-    justifyContent: 'center',
+    borderRadius: radii.full,
   },
-  loadingContainer: {
-    flex: 1,
+  // Idle state
+  idleHero: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+  },
+  idleIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  idleSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+  },
+  // Results
+  resultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+  },
+  viewToggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  savingsBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
   },
 });

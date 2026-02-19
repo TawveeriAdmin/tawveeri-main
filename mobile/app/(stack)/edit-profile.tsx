@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Camera, Check, Mail, Phone, Shield } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
@@ -24,6 +25,7 @@ import { Input, Button } from '@/src/components/ui';
 export default function EditProfileScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const { user, updateProfile } = useAuth();
 
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -225,7 +227,7 @@ export default function EditProfileScreen() {
             {user.email_verified && (
               <View style={styles.verifiedRow}>
                 <Shield size={12} color={colors.systemGreen} />
-                <Text style={[typography.caption2, { color: colors.systemGreen, marginStart: 4 }]}>
+                <Text style={[typography.caption2, { color: colors.systemGreen, marginLeft: 4 }]}>
                   {locale === 'ar' ? 'تم التحقق' : 'Verified'}
                 </Text>
               </View>
@@ -249,7 +251,7 @@ export default function EditProfileScreen() {
             {user.phone_verified && (
               <View style={styles.verifiedRow}>
                 <Shield size={12} color={colors.systemGreen} />
-                <Text style={[typography.caption2, { color: colors.systemGreen, marginStart: 4 }]}>
+                <Text style={[typography.caption2, { color: colors.systemGreen, marginLeft: 4 }]}>
                   {locale === 'ar' ? 'تم التحقق' : 'Verified'}
                 </Text>
               </View>
@@ -293,7 +295,7 @@ const styles = StyleSheet.create({
   cameraOverlay: {
     position: 'absolute',
     bottom: 0,
-    end: 0,
+    right: 0,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -311,6 +313,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
-    paddingStart: 2,
+    paddingLeft: 2,
   },
 });

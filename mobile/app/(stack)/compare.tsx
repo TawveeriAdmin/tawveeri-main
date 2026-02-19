@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { X, Plus, BarChart3 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
 import { formatPrice } from '@/src/lib/utils';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
@@ -23,6 +24,7 @@ const COLUMN_WIDTH = (SCREEN_WIDTH - spacing.lg * 2) / 2.3;
 export default function CompareScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const [products, setProducts] = useState<any[]>([]);
 
   // Collect spec keys from all products
@@ -76,7 +78,7 @@ export default function CompareScreen() {
             )}
 
             {/* Name */}
-            <Text style={[typography.caption1, { color: colors.label, fontWeight: '600', marginTop: spacing.sm }]} numberOfLines={2}>
+            <Text style={[typography.caption1, { color: colors.label, fontWeight: '600', marginTop: spacing.sm, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>
               {locale === 'ar' ? (product.name_ar || product.name) : (product.name_en || product.name)}
             </Text>
 
@@ -111,7 +113,7 @@ export default function CompareScreen() {
       {/* Spec comparison rows */}
       {allSpecKeys.length > 0 && (
         <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl }}>
-          <Text style={[typography.headline, { color: colors.label, marginBottom: spacing.md }]}>
+          <Text style={[typography.headline, { color: colors.label, marginBottom: spacing.md, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {locale === 'ar' ? 'مقارنة المواصفات' : 'Spec Comparison'}
           </Text>
           {allSpecKeys.map((key) => (

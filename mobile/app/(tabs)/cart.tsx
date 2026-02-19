@@ -14,6 +14,7 @@ import { ShoppingCart, Trash2, Plus, Minus, ExternalLink } from 'lucide-react-na
 import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale, useTranslations } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useCartStore, StoreCart, CartItem } from '@/src/lib/cart/cart-store';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Button, Card, Price, EmptyState } from '@/src/components/ui';
@@ -23,6 +24,7 @@ export default function CartScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
   const t = useTranslations();
+  const rtl = useRTL();
   const { cart, removeItem, updateQuantity, clearCart, getTotals } = useCartStore();
   const totals = getTotals();
   const stores = Object.values(cart);
@@ -42,7 +44,7 @@ export default function CartScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
         <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
-          <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700' }]}>
+          <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {locale === 'ar' ? 'السلة' : 'Cart'}
           </Text>
         </View>
@@ -60,12 +62,12 @@ export default function CartScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700' }]}>
+      <View style={[styles.header, { flexDirection: rtl.row }]}>
+        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {locale === 'ar' ? 'السلة' : 'Cart'}
         </Text>
         <Pressable onPress={handleClearCart} hitSlop={8}>
-          <Text style={[typography.body, { color: colors.error }]}>
+          <Text style={[typography.body, { color: colors.error, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {locale === 'ar' ? 'مسح الكل' : 'Clear All'}
           </Text>
         </Pressable>
@@ -78,6 +80,7 @@ export default function CartScreen() {
             store={store}
             locale={locale}
             colors={colors}
+            rtl={rtl}
             onRemove={removeItem}
             onUpdateQty={updateQuantity}
           />
@@ -87,10 +90,10 @@ export default function CartScreen() {
       {/* Bottom Summary Bar */}
       <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.separator }]}>
         <View>
-          <Text style={[typography.footnote, { color: colors.secondaryLabel }]}>
+          <Text style={[typography.footnote, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {locale === 'ar' ? `${totals.totalItems} منتج من ${totals.totalStores} متجر` : `${totals.totalItems} items from ${totals.totalStores} stores`}
           </Text>
-          <Text style={[typography.title3, { color: colors.label, fontWeight: '700', fontVariant: ['tabular-nums'] }]}>
+          <Text style={[typography.title3, { color: colors.label, fontWeight: '700', fontVariant: ['tabular-nums'], textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {formatPrice(totals.subtotal)} {locale === 'ar' ? 'ر.س' : 'SAR'}
           </Text>
         </View>
@@ -99,8 +102,8 @@ export default function CartScreen() {
   );
 }
 
-function StoreSection({ store, locale, colors, onRemove, onUpdateQty }: {
-  store: StoreCart; locale: string; colors: any;
+function StoreSection({ store, locale, colors, rtl, onRemove, onUpdateQty }: {
+  store: StoreCart; locale: string; colors: any; rtl: ReturnType<typeof useRTL>;
   onRemove: (storeId: string, productId: string) => void;
   onUpdateQty: (storeId: string, productId: string, qty: number) => void;
 }) {
@@ -108,8 +111,8 @@ function StoreSection({ store, locale, colors, onRemove, onUpdateQty }: {
 
   return (
     <View style={{ marginHorizontal: spacing.md, marginTop: spacing.md }}>
-      <View style={[styles.storeHeader, { backgroundColor: colors.secondaryBackground, borderRadius: radii.md }]}>
-        <Text style={[typography.headline, { color: colors.label }]}>{store.storeName}</Text>
+      <View style={[styles.storeHeader, { backgroundColor: colors.secondaryBackground, borderRadius: radii.md, flexDirection: rtl.row }]}>
+        <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{store.storeName}</Text>
         <Text style={[typography.footnote, { color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }]}>
           {formatPrice(storeTotal)} {locale === 'ar' ? 'ر.س' : 'SAR'}
         </Text>
@@ -122,6 +125,7 @@ function StoreSection({ store, locale, colors, onRemove, onUpdateQty }: {
           storeId={store.storeId}
           locale={locale}
           colors={colors}
+          rtl={rtl}
           onRemove={onRemove}
           onUpdateQty={onUpdateQty}
         />
@@ -130,13 +134,13 @@ function StoreSection({ store, locale, colors, onRemove, onUpdateQty }: {
   );
 }
 
-function CartItemRow({ item, storeId, locale, colors, onRemove, onUpdateQty }: {
-  item: CartItem; storeId: string; locale: string; colors: any;
+function CartItemRow({ item, storeId, locale, colors, rtl, onRemove, onUpdateQty }: {
+  item: CartItem; storeId: string; locale: string; colors: any; rtl: ReturnType<typeof useRTL>;
   onRemove: (storeId: string, productId: string) => void;
   onUpdateQty: (storeId: string, productId: string, qty: number) => void;
 }) {
   return (
-    <View style={[styles.cartItem, { backgroundColor: colors.card, borderBottomColor: colors.separator }]}>
+    <View style={[styles.cartItem, { backgroundColor: colors.card, borderBottomColor: colors.separator, flexDirection: rtl.row }]}>
       <View style={[styles.itemImage, { backgroundColor: colors.secondaryBackground, borderRadius: radii.sm }]}>
         {item.imageUrl ? (
           <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
@@ -144,15 +148,15 @@ function CartItemRow({ item, storeId, locale, colors, onRemove, onUpdateQty }: {
           <ShoppingCart size={20} color={colors.tertiaryLabel} />
         )}
       </View>
-      <View style={{ flex: 1, marginStart: spacing.md }}>
-        <Text numberOfLines={2} style={[typography.subheadline, { color: colors.label }]}>
+      <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
+        <Text numberOfLines={2} style={[typography.subheadline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {item.productName}
         </Text>
-        <Text style={[typography.headline, { color: colors.label, marginTop: 4, fontVariant: ['tabular-nums'] }]}>
+        <Text style={[typography.headline, { color: colors.label, marginTop: 4, fontVariant: ['tabular-nums'], textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {formatPrice(item.price)} {locale === 'ar' ? 'ر.س' : 'SAR'}
         </Text>
         {/* Quantity controls */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.md }}>
+        <View style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: spacing.sm, gap: spacing.md }}>
           <View style={[styles.qtyControls, { borderColor: colors.separator }]}>
             <Pressable
               onPress={() => onUpdateQty(storeId, item.productId, item.quantity - 1)}
@@ -183,20 +187,17 @@ function CartItemRow({ item, storeId, locale, colors, onRemove, onUpdateQty }: {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
   storeHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: spacing.md,
   },
   cartItem: {
-    flexDirection: 'row',
     padding: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },

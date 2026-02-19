@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { I18nManager, Platform } from 'react-native';
 import * as Localization from 'expo-localization';
 
 // --- Types ---
@@ -128,11 +127,12 @@ const IntlContext = createContext<IntlContextValue>({
 });
 
 // --- Provider ---
+// RTL is handled entirely in JS via useRTL() hook. No I18nManager usage.
 export function IntlProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('ar');
   const [ready, setReady] = useState(false);
 
-  // Load saved locale on mount and sync RTL direction
+  // Load saved locale on mount
   useEffect(() => {
     (async () => {
       let resolvedLocale: Locale = 'ar';
@@ -149,23 +149,6 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLocaleState(resolvedLocale);
-
-      // Ensure I18nManager.isRTL matches the locale.
-      // If mismatched, force the correct direction and reload the app.
-      const shouldBeRTL = resolvedLocale === 'ar';
-      if (I18nManager.isRTL !== shouldBeRTL) {
-        I18nManager.forceRTL(shouldBeRTL);
-        I18nManager.allowRTL(shouldBeRTL);
-        // Reload required for layout direction change to take effect
-        try {
-          const { DevSettings } = require('react-native');
-          DevSettings?.reload?.();
-        } catch {
-          // Production: expo-updates reloadAsync or native restart needed
-        }
-        return; // Don't set ready — app is reloading
-      }
-
       setReady(true);
     })();
   }, []);
@@ -173,14 +156,7 @@ export function IntlProvider({ children }: { children: React.ReactNode }) {
   const setLocale = useCallback(async (newLocale: Locale) => {
     setLocaleState(newLocale);
     await AsyncStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
-
-    // Update RTL layout direction
-    const shouldBeRTL = newLocale === 'ar';
-    if (I18nManager.isRTL !== shouldBeRTL) {
-      I18nManager.forceRTL(shouldBeRTL);
-      I18nManager.allowRTL(shouldBeRTL);
-      // Note: Requires app restart for full RTL change on Android
-    }
+    // No I18nManager or reload needed — key={locale} on Stack re-mounts the tree
   }, []);
 
   const value = useMemo<IntlContextValue>(() => ({

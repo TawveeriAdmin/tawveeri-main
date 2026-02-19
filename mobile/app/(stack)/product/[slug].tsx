@@ -19,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { apiClient } from '@/src/lib/api/client';
@@ -35,7 +36,8 @@ type ContentTab = 'specs' | 'reviews' | 'history';
 export default function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
-  const { locale, isRTL } = useLocale();
+  const { locale } = useLocale();
+  const rtl = useRTL();
   const { user } = useAuth();
   const addItem = useCartStore((s) => s.addItem);
 
@@ -231,12 +233,12 @@ export default function ProductDetailScreen() {
           {/* Floating nav buttons */}
           <Pressable
             onPress={() => router.back()}
-            style={[styles.floatingButton, styles.floatingBack, { backgroundColor: colors.background + 'DD' }]}
+            style={[styles.floatingButton, { position: 'absolute', top: spacing.sm, ...(rtl.isRTL ? { right: spacing.sm } : { left: spacing.sm }), backgroundColor: colors.background + 'DD' }]}
             hitSlop={8}
           >
-            {isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
+            {rtl.isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
           </Pressable>
-          <View style={styles.floatingActions}>
+          <View style={[styles.floatingActions, rtl.isRTL ? { left: spacing.sm, right: undefined } : {}]}>
             <Pressable
               onPress={handleShare}
               style={[styles.floatingButton, { backgroundColor: colors.background + 'DD' }]}
@@ -258,7 +260,7 @@ export default function ProductDetailScreen() {
           )}
 
           {/* Name */}
-          <Text style={[typography.title2, { color: colors.label, fontWeight: '700' }]}>
+          <Text style={[typography.title2, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {locale === 'ar' ? (product.name_ar || product.name) : (product.name_en || product.name)}
           </Text>
 
@@ -266,7 +268,7 @@ export default function ProductDetailScreen() {
           {product.rating && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
               <Star size={16} color={colors.systemYellow} fill={colors.systemYellow} />
-              <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginStart: 4 }]}>
+              <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginLeft: 4 }]}>
                 {product.rating} {product.review_count ? `(${product.review_count})` : ''}
               </Text>
             </View>
@@ -296,7 +298,7 @@ export default function ProductDetailScreen() {
               style={[styles.primaryAction, { backgroundColor: colors.primary }]}
             >
               <ShoppingCart size={18} color="#fff" />
-              <Text style={[typography.headline, { color: '#fff', marginStart: spacing.sm }]}>
+              <Text style={[typography.headline, { color: '#fff', marginLeft: spacing.sm }]}>
                 {locale === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
               </Text>
             </Pressable>
@@ -587,15 +589,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  floatingBack: {
-    position: 'absolute',
-    top: spacing.sm,
-    start: spacing.sm,
-  },
   floatingActions: {
     position: 'absolute',
     top: spacing.sm,
-    end: spacing.sm,
+    right: spacing.sm,
     gap: spacing.xs,
   },
   actionBar: {

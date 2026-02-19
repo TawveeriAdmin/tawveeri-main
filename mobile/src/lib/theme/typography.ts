@@ -4,6 +4,10 @@
  * Uses SF Pro sizes/weights mapped to React Native.
  * Custom fonts: Inter (English), IBM Plex Sans Arabic (Arabic).
  *
+ * Note: letterSpacing is intentionally omitted because Arabic is a
+ * connected script — any non-zero letter spacing breaks ligatures
+ * and disconnects characters, making text unreadable.
+ *
  * HIG Reference:
  * - largeTitle: 34pt Regular
  * - title1: 28pt Regular
@@ -26,7 +30,6 @@ interface TypeStyle {
   fontSize: number;
   lineHeight: number;
   fontWeight: FontWeight;
-  letterSpacing: number;
 }
 
 // Apple HIG text styles
@@ -35,67 +38,56 @@ export const typography: Record<string, TypeStyle> = {
     fontSize: 34,
     lineHeight: 41,
     fontWeight: '400',
-    letterSpacing: 0.37,
   },
   title1: {
     fontSize: 28,
     lineHeight: 34,
     fontWeight: '400',
-    letterSpacing: 0.36,
   },
   title2: {
     fontSize: 22,
     lineHeight: 28,
     fontWeight: '400',
-    letterSpacing: 0.35,
   },
   title3: {
     fontSize: 20,
     lineHeight: 25,
     fontWeight: '400',
-    letterSpacing: 0.38,
   },
   headline: {
     fontSize: 17,
     lineHeight: 22,
     fontWeight: '600',
-    letterSpacing: -0.41,
   },
   body: {
     fontSize: 17,
     lineHeight: 22,
     fontWeight: '400',
-    letterSpacing: -0.41,
   },
   callout: {
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '400',
-    letterSpacing: -0.32,
   },
   subheadline: {
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '400',
-    letterSpacing: -0.24,
   },
   footnote: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400',
-    letterSpacing: -0.08,
   },
   caption1: {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '400',
-    letterSpacing: 0,
   },
   caption2: {
     fontSize: 11,
     lineHeight: 13,
     fontWeight: '400',
-    letterSpacing: 0.07,
   },
 };
 

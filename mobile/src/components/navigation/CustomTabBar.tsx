@@ -20,7 +20,7 @@ import {
 } from 'lucide-react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '@/src/lib/theme/theme-context';
-import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useCartStore } from '@/src/lib/cart/cart-store';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 84 : 60;
@@ -36,7 +36,8 @@ const TAB_CONFIG = [
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors, isDark } = useTheme();
-  const { locale } = useLocale();
+  const rtl = useRTL();
+  const locale = rtl.locale;
   const cartItemCount = useCartStore((s) => s.getTotals().totalItems);
 
   const scaleAnims = useRef(
@@ -78,7 +79,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.blur}>
         <View style={[styles.topBorder, { backgroundColor: colors.separator }]} />
 
-        <View style={styles.tabRow}>
+        <View style={[styles.tabRow, { flexDirection: rtl.row }]}>
           {state.routes.map((route, index) => {
             const config = TAB_CONFIG[index];
             if (!config) return null;
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     top: -4,
-    end: -10,
+    right: -10,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -196,6 +197,5 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 10,
-    letterSpacing: 0.1,
   },
 });

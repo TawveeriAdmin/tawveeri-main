@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { Heart, Trash2, ShoppingCart } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { useCartStore } from '@/src/lib/cart/cart-store';
@@ -20,6 +21,7 @@ import { Price, EmptyState, Skeleton } from '@/src/components/ui';
 export default function WishlistScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const { user } = useAuth();
   const addItem = useCartStore((s) => s.addItem);
 
@@ -103,7 +105,7 @@ export default function WishlistScreen() {
         return (
           <Pressable
             onPress={() => router.push(`/(stack)/product/${product?.slug}`)}
-            style={[styles.card, { backgroundColor: colors.card }]}
+            style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}
           >
             {product?.image_url && (
               <Image
@@ -112,15 +114,15 @@ export default function WishlistScreen() {
                 contentFit="contain"
               />
             )}
-            <View style={{ flex: 1, marginStart: spacing.md }}>
-              <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600' }]} numberOfLines={2}>
+            <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
+              <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>
                 {locale === 'ar' ? (product?.name_ar || product?.name) : (product?.name_en || product?.name)}
               </Text>
               {bestStore && (
                 <Price price={bestStore.current_price} locale={locale} size="sm" style={{ marginTop: 4 }} />
               )}
               {item.note && (
-                <Text style={[typography.caption1, { color: colors.tertiaryLabel, marginTop: 2 }]} numberOfLines={1}>
+                <Text style={[typography.caption1, { color: colors.tertiaryLabel, marginTop: 2, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={1}>
                   {item.note}
                 </Text>
               )}
@@ -141,7 +143,6 @@ export default function WishlistScreen() {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radii.lg,

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowRight, Star, ExternalLink, MapPin, Globe, Store } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Price, Badge, Skeleton } from '@/src/components/ui';
@@ -19,7 +20,8 @@ import { Price, Badge, Skeleton } from '@/src/components/ui';
 export default function StoreDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
-  const { locale, isRTL } = useLocale();
+  const { locale } = useLocale();
+  const rtl = useRTL();
 
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -69,8 +71,8 @@ export default function StoreDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ padding: spacing.lg }}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-            {isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: rtl.alignStart }]} hitSlop={8}>
+            {rtl.isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
           </Pressable>
 
           <View style={{ alignItems: 'center', marginTop: spacing.md }}>
@@ -82,14 +84,14 @@ export default function StoreDetailScreen() {
               </View>
             )}
 
-            <Text style={[typography.title2, { color: colors.label, fontWeight: '700', marginTop: spacing.md }]}>
+            <Text style={[typography.title2, { color: colors.label, fontWeight: '700', marginTop: spacing.md, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {locale === 'ar' ? (store.name_ar || store.name) : (store.name_en || store.name)}
             </Text>
 
             {store.rating && (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
                 <Star size={16} color={colors.systemYellow} fill={colors.systemYellow} />
-                <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginStart: 4 }]}>
+                <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginLeft: 4 }]}>
                   {store.rating} {store.review_count ? `(${store.review_count})` : ''}
                 </Text>
               </View>
@@ -101,7 +103,7 @@ export default function StoreDetailScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}
               >
                 <Globe size={14} color={colors.primary} />
-                <Text style={[typography.subheadline, { color: colors.primary, marginStart: 4 }]}>
+                <Text style={[typography.subheadline, { color: colors.primary, marginLeft: 4 }]}>
                   {locale === 'ar' ? 'زيارة الموقع' : 'Visit Website'}
                 </Text>
               </Pressable>
@@ -132,13 +134,13 @@ export default function StoreDetailScreen() {
             <Pressable
               key={ps.id}
               onPress={() => router.push(`/(stack)/product/${product.slug}`)}
-              style={[styles.productRow, { backgroundColor: colors.card, marginHorizontal: spacing.md }]}
+              style={[styles.productRow, { backgroundColor: colors.card, marginHorizontal: spacing.md, flexDirection: rtl.row }]}
             >
               {product.image_url && (
                 <Image source={{ uri: product.image_url }} style={styles.productImage} contentFit="contain" />
               )}
-              <View style={{ flex: 1, marginStart: spacing.md }}>
-                <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600' }]} numberOfLines={2}>
+              <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
+                <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>
                   {locale === 'ar' ? (product.name_ar || product.name) : (product.name_en || product.name)}
                 </Text>
                 <Price price={ps.current_price} originalPrice={ps.original_price} locale={locale} size="sm" style={{ marginTop: 4 }} />
@@ -166,7 +168,6 @@ const styles = StyleSheet.create({
     borderRadius: 36,
   },
   productRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radii.lg,

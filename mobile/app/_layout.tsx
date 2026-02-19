@@ -5,10 +5,14 @@
  * IntlProvider > ThemeProvider > AuthProvider > Navigation
  *
  * Fonts: Inter (English) + IBM Plex Sans Arabic loaded via expo-font.
+ *
+ * RTL: Native I18nManager is DISABLED. All RTL is handled in JS
+ * via the useRTL() hook. key={locale} on Stack forces re-mount
+ * on language switch — no app restart needed.
  */
 
 import { useEffect } from 'react';
-import { I18nManager } from 'react-native';
+import { I18nManager, DevSettings, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -31,7 +35,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import 'react-native-reanimated';
 
-import { IntlProvider } from '@/src/lib/i18n/provider';
+import { IntlProvider, useLocale } from '@/src/lib/i18n/provider';
 import { ThemeProvider } from '@/src/lib/theme/theme-context';
 import { AuthProvider } from '@/src/lib/auth/auth-context';
 import * as Linking from 'expo-linking';
@@ -41,6 +45,21 @@ import { useDeepLinkHandler } from '@/src/lib/linking/use-deep-links';
 export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
+
+// Disable native RTL completely — we handle RTL in JavaScript via useRTL hook.
+// forceRTL(false) persists the value but only takes effect after a reload.
+// If a previous session had forceRTL(true), isRTL will still be true until
+// we reload. The one-time reload below handles this transition.
+I18nManager.allowRTL(false);
+I18nManager.forceRTL(false);
+
+if (I18nManager.isRTL) {
+  // Previous session had native RTL enabled — reload once so forceRTL(false) takes effect.
+  // After reload, I18nManager.isRTL will be false and this block won't execute again.
+  if (__DEV__ && DevSettings?.reload) {
+    DevSettings.reload();
+  }
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -66,14 +85,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // Default to RTL for Arabic
-  useEffect(() => {
-    if (!I18nManager.isRTL) {
-      I18nManager.forceRTL(true);
-      I18nManager.allowRTL(true);
-    }
-  }, []);
-
   if (!fontsLoaded) return null;
 
   return (
@@ -96,9 +107,10 @@ export default function RootLayout() {
 function AppContent() {
   usePushNotifications();
   useDeepLinkHandler();
+  const { locale } = useLocale();
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack key={locale} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
         name="(auth)"

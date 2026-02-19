@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Zap } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
@@ -21,6 +22,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
 export default function DealsScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -64,7 +66,7 @@ export default function DealsScreen() {
         padding="xs"
       >
         {savings > 0 && (
-          <View style={{ position: 'absolute', top: spacing.sm, start: spacing.sm, zIndex: 1 }}>
+          <View style={{ position: 'absolute', top: spacing.sm, left: spacing.sm, zIndex: 1 }}>
             <Badge text={`-${savings}%`} color="error" />
           </View>
         )}
@@ -78,9 +80,9 @@ export default function DealsScreen() {
           )}
         </View>
         <View style={{ padding: spacing.sm }}>
-          <Text numberOfLines={2} style={[typography.footnote, { color: colors.label }]}>{name}</Text>
+          <Text numberOfLines={2} style={[typography.footnote, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{name}</Text>
           {store && (
-            <Text style={[typography.caption2, { color: colors.secondaryLabel, marginTop: 2 }]}>{store}</Text>
+            <Text style={[typography.caption2, { color: colors.secondaryLabel, marginTop: 2, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{store}</Text>
           )}
           <View style={{ marginTop: spacing.xs }}>
             <Price price={item.current_price} originalPrice={item.original_price} size="sm" />
@@ -88,14 +90,14 @@ export default function DealsScreen() {
         </View>
       </Card>
     );
-  }, [locale, colors]);
+  }, [locale, colors, rtl]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm }}>
+      <View style={{ flexDirection: rtl.row, alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm }}>
         <Zap size={24} color={colors.deal} />
-        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700' }]}>
+        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {locale === 'ar' ? 'العروض' : 'Deals'}
         </Text>
       </View>

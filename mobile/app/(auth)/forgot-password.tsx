@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { apiClient } from '@/src/lib/api/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
@@ -22,7 +23,8 @@ type Step = 'phone' | 'otp' | 'password';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
-  const { locale, isRTL } = useLocale();
+  const { locale } = useLocale();
+  const rtl = useRTL();
   const { sendPhoneOtp } = useAuth();
 
   const [step, setStep] = useState<Step>('phone');
@@ -89,20 +91,20 @@ export default function ForgotPasswordScreen() {
           {/* Back Button */}
           <Pressable
             onPress={() => step === 'phone' ? router.back() : setStep(step === 'password' ? 'otp' : 'phone')}
-            style={{ width: MIN_TOUCH_TARGET, height: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center', marginStart: spacing.sm }}
+            style={{ width: MIN_TOUCH_TARGET, height: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center', alignSelf: rtl.alignStart, marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0 }}
             hitSlop={8}
           >
-            {isRTL ? <ArrowRight size={24} color={colors.label} /> : <ArrowLeft size={24} color={colors.label} />}
+            {rtl.isRTL ? <ArrowRight size={24} color={colors.label} /> : <ArrowLeft size={24} color={colors.label} />}
           </Pressable>
 
           <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.md }}>
-            <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700' }]}>
+            <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {locale === 'ar' ? titles[step].ar : titles[step].en}
             </Text>
 
             {error ? (
               <View style={{ backgroundColor: colors.errorContainer, padding: spacing.md, borderRadius: radii.md, marginTop: spacing.md }}>
-                <Text style={[typography.footnote, { color: colors.error }]}>{error}</Text>
+                <Text style={[typography.footnote, { color: colors.error, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{error}</Text>
               </View>
             ) : null}
 

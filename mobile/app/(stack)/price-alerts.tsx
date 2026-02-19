@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { Bell, Trash2, TrendingDown, Check } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { formatPrice } from '@/src/lib/utils';
@@ -22,6 +23,7 @@ type Tab = 'active' | 'triggered';
 export default function PriceAlertsScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const { user } = useAuth();
 
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -91,7 +93,7 @@ export default function PriceAlertsScreen() {
               ? <Bell size={14} color={tab === t ? colors.primary : colors.secondaryLabel} />
               : <Check size={14} color={tab === t ? colors.systemGreen : colors.secondaryLabel} />
             }
-            <Text style={[typography.subheadline, { color: tab === t ? colors.label : colors.secondaryLabel, fontWeight: tab === t ? '600' : '400', marginStart: 4 }]}>
+            <Text style={[typography.subheadline, { color: tab === t ? colors.label : colors.secondaryLabel, fontWeight: tab === t ? '600' : '400', marginLeft: 4 }]}>
               {t === 'active'
                 ? (locale === 'ar' ? 'نشطة' : 'Active')
                 : (locale === 'ar' ? 'تم تفعيلها' : 'Triggered')}
@@ -130,12 +132,12 @@ export default function PriceAlertsScreen() {
             return (
               <Pressable
                 onPress={() => product?.slug && router.push(`/(stack)/product/${product.slug}`)}
-                style={[styles.alertCard, { backgroundColor: colors.card }]}
+                style={[styles.alertCard, { backgroundColor: colors.card, flexDirection: rtl.row }]}
               >
                 {product?.image_url && (
                   <Image source={{ uri: product.image_url }} style={styles.alertImage} contentFit="contain" />
                 )}
-                <View style={{ flex: 1, marginStart: spacing.md }}>
+                <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
                   <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600' }]} numberOfLines={2}>
                     {locale === 'ar' ? (product?.name_ar || product?.name) : (product?.name_en || product?.name)}
                   </Text>
@@ -188,7 +190,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   alertCard: {
-    flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radii.lg,

@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Phone, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Button, Input } from '@/src/components/ui';
@@ -31,6 +32,7 @@ type Tab = 'phone' | 'email';
 export default function LoginScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const { sendPhoneOtp, signInWithPhone, signInWithEmail, signInWithOAuth } = useAuth();
 
   const [tab, setTab] = useState<Tab>('phone');
@@ -129,7 +131,7 @@ export default function LoginScreen() {
                 ]}
               >
                 {t === 'phone' ? <Phone size={16} color={tab === t ? colors.primary : colors.secondaryLabel} /> : <Mail size={16} color={tab === t ? colors.primary : colors.secondaryLabel} />}
-                <Text style={[typography.subheadline, { color: tab === t ? colors.label : colors.secondaryLabel, fontWeight: tab === t ? '600' : '400', marginStart: 4 }]}>
+                <Text style={[typography.subheadline, { color: tab === t ? colors.label : colors.secondaryLabel, fontWeight: tab === t ? '600' : '400', marginLeft: 4 }]}>
                   {t === 'phone' ? (locale === 'ar' ? 'الهاتف' : 'Phone') : (locale === 'ar' ? 'البريد' : 'Email')}
                 </Text>
               </Pressable>

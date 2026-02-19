@@ -261,7 +261,7 @@ mobile/app/
     stores/index.tsx       # Store listing
     compare.tsx            # Product comparison
     wishlist.tsx           # Saved products
-    notifications.tsx      # Notification list
+    notifications.tsx      # Notification list (formSheet presentation)
     price-alerts.tsx       # Price alert management
     settings.tsx           # Language, theme, account
     edit-profile.tsx       # Profile editing
@@ -311,7 +311,7 @@ mobile/app/
 
 `mobile/src/lib/i18n/provider.tsx` — ported from web's `SimpleIntlProvider`. Same 19 translation namespaces as web, bundled as static `require()` imports from `messages/{ar,en}/`. Same message-spreading logic (common.json top-level, landing.json top-level, admin.json extracted namespace).
 
-**RTL handling**: `I18nManager.forceRTL()` persists across app sessions. The provider detects locale/RTL mismatches on mount and calls `DevSettings.reload()` to fix layout direction. Default: Arabic (RTL).
+**RTL handling**: Native `I18nManager` is **disabled** (`forceRTL(false)`, `allowRTL(false)` in root `_layout.tsx`). All RTL is handled in JavaScript via the `useRTL()` hook. A one-time auto-reload in `_layout.tsx` handles the transition from old `forceRTL(true)` sessions. Default locale: Arabic.
 
 ### Mobile Theme
 
@@ -342,10 +342,26 @@ EXPO_PUBLIC_API_BASE_URL=https://tawveeri.com   # or http://localhost:3000 for d
 
 ### Mobile RTL Rules
 
-- Use `start`/`end` instead of `left`/`right` for absolute positioning (`position: 'absolute', start: 16`)
-- Swap directional icons based on `isRTL`: `ArrowLeft`↔`ArrowRight`, `ChevronRight`↔`ChevronLeft`
-- `I18nManager.isRTL` auto-flips flexbox `row` direction — **do not** manually reverse `flexDirection`
-- `textAlign: I18nManager.isRTL ? 'right' : 'left'` for TextInput components
+Native `I18nManager` is **disabled**. All RTL is handled via `useRTL()` hook (`mobile/src/lib/rtl/useRTL.ts`):
+
+```tsx
+const rtl = useRTL();
+// rtl.row          → 'row-reverse' for AR, 'row' for EN
+// rtl.textAlign    → 'right' for AR, 'left' for EN
+// rtl.writingDirection → 'rtl' for AR, 'ltr' for EN
+// rtl.isRTL        → boolean
+// rtl.alignStart   → 'flex-end' for AR, 'flex-start' for EN
+// rtl.flipIcon     → [{ scaleX: -1 }] for AR, [] for EN
+// rtl.position(16) → { right: 16 } for AR, { left: 16 } for EN
+```
+
+Key rules:
+- **Do NOT** use `I18nManager.isRTL` — it's always `false`. Use `rtl.isRTL` from the hook.
+- **Do NOT** use `marginStart`/`paddingStart`/`start`/`end` — they won't flip since native RTL is off. Use explicit `marginLeft`/`marginRight` with `rtl.isRTL`.
+- Use `flexDirection: rtl.row` for rows that should flip in RTL.
+- Add `textAlign: rtl.textAlign, writingDirection: rtl.writingDirection` to all user-facing Text.
+- Swap directional icons based on `rtl.isRTL`: `ArrowLeft`↔`ArrowRight`, `ChevronRight`↔`ChevronLeft`.
+- For stack headers: use `headerRight` for the back button in RTL, `headerLeft` in LTR (see `(stack)/_layout.tsx`).
 
 ### Deep Linking
 

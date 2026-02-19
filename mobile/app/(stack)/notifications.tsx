@@ -9,6 +9,7 @@ import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
 import { Bell, TrendingDown, Package, Tag, AlertCircle, CheckCheck } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, any> = {
 export default function NotificationsScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
+  const rtl = useRTL();
   const { user } = useAuth();
 
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -148,20 +150,20 @@ export default function NotificationsScreen() {
                 onPress={() => markAsRead(item.id)}
                 style={[
                   styles.notifCard,
-                  { backgroundColor: item.is_read ? colors.card : colors.primaryContainer },
+                  { backgroundColor: item.is_read ? colors.card : colors.primaryContainer, flexDirection: rtl.row },
                 ]}
               >
                 <View style={[styles.iconCircle, { backgroundColor: iconColor + '20' }]}>
                   <Icon size={20} color={iconColor} />
                 </View>
-                <View style={{ flex: 1, marginStart: spacing.md }}>
-                  <Text style={[typography.subheadline, { color: colors.label, fontWeight: item.is_read ? '400' : '600' }]}>
+                <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
+                  <Text style={[typography.subheadline, { color: colors.label, fontWeight: item.is_read ? '400' : '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
                     {locale === 'ar' ? item.title_ar : item.title_en}
                   </Text>
-                  <Text style={[typography.caption1, { color: colors.secondaryLabel, marginTop: 2 }]} numberOfLines={2}>
+                  <Text style={[typography.caption1, { color: colors.secondaryLabel, marginTop: 2, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>
                     {locale === 'ar' ? item.message_ar : item.message_en}
                   </Text>
-                  <Text style={[typography.caption2, { color: colors.tertiaryLabel, marginTop: 4 }]}>
+                  <Text style={[typography.caption2, { color: colors.tertiaryLabel, marginTop: 4, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
                     {new Date(item.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
                   </Text>
                 </View>
@@ -183,7 +185,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   notifCard: {
-    flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radii.lg,

@@ -15,7 +15,6 @@ import {
   Pressable,
   RefreshControl,
   Dimensions,
-  I18nManager,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
@@ -28,6 +27,7 @@ import {
   Zap,
   TrendingUp,
   Bell,
+  Settings,
   Smartphone,
   Laptop,
   Headphones,
@@ -41,6 +41,7 @@ import {
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
 import { useAuth } from '@/src/lib/auth/auth-context';
+import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, SkeletonCard } from '@/src/components/ui';
@@ -51,7 +52,7 @@ const PRODUCT_CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
 const DEAL_CARD_WIDTH = SCREEN_WIDTH * 0.72;
 const ICON_CIRCLE_SIZE = 56;
 
-const isRTL = I18nManager.isRTL;
+// RTL is handled via useRTL() hook, not I18nManager
 
 // ─── Static Data ─────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ export default function HomeScreen() {
   const t = useTranslations();
   const { locale } = useLocale();
   const { user } = useAuth();
+  const rtl = useRTL();
   const [refreshing, setRefreshing] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -146,28 +148,42 @@ export default function HomeScreen() {
         }
       >
         {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={[typography.title2, { color: colors.label, fontWeight: '700' }]}>
+        <View style={[styles.header, { flexDirection: rtl.row }]}>
+          <View style={{ flex: 1, alignItems: rtl.alignStart }}>
+            <Text style={[typography.title2, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {greeting}
               {firstName ? `, ${firstName}` : ''}
             </Text>
-            <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginTop: 2 }]}>
+            <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginTop: 2, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {subtitle}
             </Text>
           </View>
-          <Pressable
-            onPress={() => router.push('/(stack)/notifications')}
-            style={({ pressed }) => [
-              styles.iconButton,
-              { backgroundColor: colors.tertiaryFill },
-              pressed && { opacity: 0.7 },
-            ]}
-            hitSlop={8}
-            accessibilityLabel={locale === 'ar' ? 'الإشعارات' : 'Notifications'}
-          >
-            <Bell size={20} color={colors.label} strokeWidth={1.8} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable
+              onPress={() => router.push('/(tabs)/profile')}
+              style={({ pressed }) => [
+                styles.iconButton,
+                { backgroundColor: colors.tertiaryFill },
+                pressed && { opacity: 0.7 },
+              ]}
+              hitSlop={8}
+              accessibilityLabel={locale === 'ar' ? 'الإعدادات' : 'Settings'}
+            >
+              <Settings size={20} color={colors.label} strokeWidth={1.8} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/(stack)/notifications')}
+              style={({ pressed }) => [
+                styles.iconButton,
+                { backgroundColor: colors.tertiaryFill },
+                pressed && { opacity: 0.7 },
+              ]}
+              hitSlop={8}
+              accessibilityLabel={locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+            >
+              <Bell size={20} color={colors.label} strokeWidth={1.8} />
+            </Pressable>
+          </View>
         </View>
 
         {/* ── Search Bar ── */}
@@ -180,6 +196,7 @@ export default function HomeScreen() {
               marginHorizontal: spacing.md,
               borderWidth: 1,
               borderColor: pressed ? colors.primary : colors.separator,
+              flexDirection: rtl.row,
             },
             pressed && { transform: [{ scale: 0.99 }] },
           ]}
@@ -191,7 +208,7 @@ export default function HomeScreen() {
           <Text
             style={[
               typography.body,
-              { color: colors.tertiaryLabel, marginStart: spacing.sm, flex: 1 },
+              { color: colors.tertiaryLabel, marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0, flex: 1, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection },
             ]}
           >
             {t('search.searchPlaceholder')}
@@ -239,12 +256,12 @@ export default function HomeScreen() {
               icon={<Zap size={18} color={colors.deal} />}
               onSeeAll={() => router.push('/(tabs)/deals')}
               colors={colors}
-              locale={locale}
+              rtl={rtl}
             />
             <FlatList
               data={deals}
               renderItem={({ item }) => (
-                <DealCard item={item} locale={locale} colors={colors} />
+                <DealCard item={item} locale={locale} colors={colors} rtl={rtl} />
               )}
               keyExtractor={(item) => item.id}
               horizontal
@@ -262,7 +279,7 @@ export default function HomeScreen() {
           icon={<TrendingUp size={18} color={colors.primary} />}
           onSeeAll={() => router.push('/(tabs)/search')}
           colors={colors}
-          locale={locale}
+          rtl={rtl}
         />
         {loading ? (
           <ScrollView
@@ -278,7 +295,7 @@ export default function HomeScreen() {
           <FlatList
             data={featuredProducts}
             renderItem={({ item }) => (
-              <ProductCard item={item} locale={locale} colors={colors} />
+              <ProductCard item={item} locale={locale} colors={colors} rtl={rtl} />
             )}
             keyExtractor={(item) => item.id}
             horizontal
@@ -288,7 +305,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── Trust Bar ── */}
-        <TrustBar locale={locale} colors={colors} isDark={isDark} />
+        <TrustBar locale={locale} colors={colors} isDark={isDark} rtl={rtl} />
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -303,35 +320,32 @@ function SectionHeader({
   icon,
   onSeeAll,
   colors,
-  locale,
+  rtl,
 }: {
   title: string;
   icon: React.ReactNode;
   onSeeAll: () => void;
   colors: any;
-  locale: string;
+  rtl: ReturnType<typeof useRTL>;
 }) {
+  const ChevronIcon = rtl.isRTL ? ChevronLeft : ChevronRight;
   return (
-    <View style={styles.sectionHeader}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+    <View style={[styles.sectionHeader, { flexDirection: rtl.row }]}>
+      <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
         {icon}
-        <Text style={[typography.title3, { color: colors.label, fontWeight: '600' }]}>
+        <Text style={[typography.title3, { color: colors.label, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {title}
         </Text>
       </View>
       <Pressable
         onPress={onSeeAll}
         hitSlop={8}
-        style={{ flexDirection: 'row', alignItems: 'center' }}
+        style={{ flexDirection: rtl.row, alignItems: 'center' }}
       >
-        <Text style={[typography.subheadline, { color: colors.primary }]}>
-          {locale === 'ar' ? 'عرض الكل' : 'See All'}
+        <Text style={[typography.subheadline, { color: colors.primary, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+          {rtl.isRTL ? 'عرض الكل' : 'See All'}
         </Text>
-        {isRTL ? (
-          <ChevronLeft size={16} color={colors.primary} />
-        ) : (
-          <ChevronRight size={16} color={colors.primary} />
-        )}
+        <ChevronIcon size={16} color={colors.primary} />
       </Pressable>
     </View>
   );
@@ -341,10 +355,12 @@ function DealCard({
   item,
   locale,
   colors,
+  rtl,
 }: {
   item: any;
   locale: string;
   colors: any;
+  rtl: ReturnType<typeof useRTL>;
 }) {
   const product = item.products;
   if (!product) return null;
@@ -388,14 +404,14 @@ function DealCard({
       <View style={{ padding: spacing.sm }}>
         <Text
           numberOfLines={2}
-          style={[typography.subheadline, { color: colors.label, fontWeight: '500' }]}
+          style={[typography.subheadline, { color: colors.label, fontWeight: '500', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}
         >
           {name}
         </Text>
         {storeName && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+          <View style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: 4, gap: 4 }}>
             <StoreIcon size={12} color={colors.secondaryLabel} strokeWidth={1.5} />
-            <Text style={[typography.caption1, { color: colors.secondaryLabel }]}>
+            <Text style={[typography.caption1, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {storeName}
             </Text>
           </View>
@@ -412,10 +428,12 @@ function ProductCard({
   item,
   locale,
   colors,
+  rtl,
 }: {
   item: any;
   locale: string;
   colors: any;
+  rtl: ReturnType<typeof useRTL>;
 }) {
   const name = locale === 'ar' ? item.name_ar : item.name_en;
   const image = item.image_urls?.[0];
@@ -454,12 +472,12 @@ function ProductCard({
         )}
       </View>
       <View style={{ padding: spacing.sm }}>
-        <Text numberOfLines={2} style={[typography.subheadline, { color: colors.label }]}>
+        <Text numberOfLines={2} style={[typography.subheadline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {name}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 }}>
+        <View style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: 4, gap: 6 }}>
           {item.brand && (
-            <Text style={[typography.caption1, { color: colors.secondaryLabel }]}>
+            <Text style={[typography.caption1, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {item.brand}
             </Text>
           )}
@@ -468,7 +486,7 @@ function ProductCard({
               <Text
                 style={[
                   typography.caption2,
-                  { color: colors.onPrimaryContainer, fontWeight: '600' },
+                  { color: colors.onPrimaryContainer, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection },
                 ]}
               >
                 {storeCount}{' '}
@@ -497,10 +515,12 @@ function TrustBar({
   locale,
   colors,
   isDark,
+  rtl,
 }: {
   locale: string;
   colors: any;
   isDark: boolean;
+  rtl: ReturnType<typeof useRTL>;
 }) {
   return (
     <View
@@ -509,7 +529,7 @@ function TrustBar({
         { backgroundColor: colors.secondaryBackground, marginHorizontal: spacing.md },
       ]}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.sm }}>
         <View
           style={[
             styles.trustIconCircle,
@@ -521,7 +541,7 @@ function TrustBar({
         <Text
           style={[
             typography.subheadline,
-            { color: colors.label, fontWeight: '600', flex: 1 },
+            { color: colors.label, fontWeight: '600', flex: 1, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection },
           ]}
         >
           {locale === 'ar'
@@ -533,7 +553,7 @@ function TrustBar({
         {TRUSTED_STORES.map((store, i) => (
           <View key={i} style={[styles.storeChip, { backgroundColor: colors.tertiaryFill }]}>
             <Text
-              style={[typography.caption1, { color: colors.secondaryLabel, fontWeight: '500' }]}
+              style={[typography.caption1, { color: colors.secondaryLabel, fontWeight: '500', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}
             >
               {locale === 'ar' ? store.name_ar : store.name_en}
             </Text>
@@ -562,7 +582,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchBar: {
-    flexDirection: 'row',
     alignItems: 'center',
     height: 52,
     paddingHorizontal: spacing.md,
@@ -605,7 +624,7 @@ const styles = StyleSheet.create({
   savingsBadge: {
     position: 'absolute',
     top: spacing.sm,
-    start: spacing.sm,
+    left: spacing.sm,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
