@@ -9,7 +9,8 @@ import { createNotification } from '@/lib/auth/notifications';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, otp, fullName, preferredLanguage } = body;
+    const { phone, otp, fullName, preferredLanguage, platform } = body;
+    const isMobile = platform === 'mobile';
 
     // fullName and preferredLanguage are optional (for signup flow)
 
@@ -366,6 +367,25 @@ export async function POST(request: NextRequest) {
       email: null,
     });
 
+    // For mobile: return tokens directly (no cookies)
+    if (isMobile) {
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: userId,
+          phone: formattedPhone,
+          full_name: fullName || existingUser?.full_name || null,
+          role: existingUser?.role || 'customer',
+          phone_verified: true,
+        },
+        isNewUser,
+        session: {
+          access_token: sessionData.session.access_token,
+          refresh_token: sessionData.session.refresh_token,
+        },
+      });
+    }
+
     // Create final response with user data
     // Session cookies are already set in the response object by SSR client during exchangeCodeForSession
     const finalResponse = NextResponse.json({
@@ -390,7 +410,7 @@ export async function POST(request: NextRequest) {
       if (cookie.httpOnly !== undefined) cookieOptions.httpOnly = cookie.httpOnly;
       if (cookie.secure !== undefined) cookieOptions.secure = cookie.secure;
       if (cookie.sameSite) cookieOptions.sameSite = cookie.sameSite;
-      
+
       finalResponse.cookies.set(cookie.name, cookie.value, cookieOptions);
     });
 

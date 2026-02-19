@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Framework**: Next.js 15 (App Router) with TypeScript
 - **Database**: Supabase (PostgreSQL + Auth + RLS)
 - **Styling**: Tailwind CSS v4 with custom design tokens
-- **UI**: Radix UI primitives + shadcn/ui patterns
+- **UI**: Radix UI primitives + shadcn/ui patterns, Lucide React icons
 - **i18n**: Custom `SimpleIntlProvider` (replaced next-intl for reliability)
 - **Scraping**: TypeScript scrapers (`src/lib/scraping/`) — legacy Python/Flask in `scripts/scraping/` is unused
 - **Testing**: Jest + React Testing Library
@@ -28,7 +28,7 @@ npm run lint             # ESLint
 npm test                 # Run all tests
 npm test -- path/to/file # Run a single test file
 npm run test:watch       # Tests in watch mode
-npm run test:coverage    # Tests with coverage report
+npm run test:coverage    # Tests with coverage report (70% threshold)
 npm run test:db          # Database tests only (tests/database/)
 npm run db:setup         # Full database setup (schema + policies + seed)
 npm run db:schema        # Apply schema SQL
@@ -118,9 +118,9 @@ Supabase with typed client. Types in `src/lib/database/types.ts`. Two client pat
 - **Browser**: `getSupabaseBrowserClient()` from `src/lib/database/` (singleton, uses anon key)
 - **Server**: `createServerClient()` from `src/lib/database/` (uses service role key, no session persistence)
 
-Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`.
+Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`.
 
-Schema migrations are numbered SQL files in `scripts/database/`.
+Schema migrations are numbered SQL files in `scripts/database/` (01 through 10). Note: some prefixes are duplicated (e.g., two `04-*`, two `05-*`, two `06-*` files). When adding new migrations, use the next available number after 10.
 
 ### Required Action Pattern
 
@@ -222,6 +222,10 @@ See `.env.example`. Required:
 ## Path Alias
 
 `@/*` maps to `src/*`
+
+## Bilingual Content Convention
+
+All user-visible text stored in the database uses paired `_ar`/`_en` suffix columns (e.g., `title_ar`/`title_en`, `name_ar`/`name_en`, `message_ar`/`message_en`). When creating new tables or columns for user-visible content, follow this pattern.
 
 ## Supabase Project
 

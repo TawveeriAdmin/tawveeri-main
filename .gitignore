@@ -47,3 +47,9 @@ md2pdf.py
 
 #Design systems
 DesignRef
+
+# Mobile (Expo)
+mobile/.expo/
+mobile/android/
+mobile/ios/
+mobile/node_modules/
