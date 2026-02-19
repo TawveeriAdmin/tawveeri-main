@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Star, ChevronRight, Store } from 'lucide-react-native';
+import { Star, ChevronRight, ChevronLeft, Store } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { supabase } from '@/src/lib/supabase/client';
@@ -17,7 +17,7 @@ import { Skeleton } from '@/src/components/ui';
 
 export default function StoresScreen() {
   const { colors } = useTheme();
-  const { locale } = useLocale();
+  const { locale, isRTL } = useLocale();
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +77,7 @@ export default function StoresScreen() {
               </View>
             )}
           </View>
-          <ChevronRight size={18} color={colors.tertiaryLabel} />
+          {isRTL ? <ChevronLeft size={18} color={colors.tertiaryLabel} /> : <ChevronRight size={18} color={colors.tertiaryLabel} />}
         </Pressable>
       )}
     />

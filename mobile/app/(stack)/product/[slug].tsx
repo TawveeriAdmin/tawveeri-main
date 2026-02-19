@@ -14,7 +14,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ArrowLeft, Heart, ShoppingCart, Share2, Bell, ExternalLink,
+  ArrowLeft, ArrowRight, Heart, ShoppingCart, Share2, Bell, ExternalLink,
   Star, ChevronRight, Check, Minus, Plus,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
@@ -35,7 +35,7 @@ type ContentTab = 'specs' | 'reviews' | 'history';
 export default function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
-  const { locale } = useLocale();
+  const { locale, isRTL } = useLocale();
   const { user } = useAuth();
   const addItem = useCartStore((s) => s.addItem);
 
@@ -234,7 +234,7 @@ export default function ProductDetailScreen() {
             style={[styles.floatingButton, styles.floatingBack, { backgroundColor: colors.background + 'DD' }]}
             hitSlop={8}
           >
-            <ArrowLeft size={22} color={colors.label} />
+            {isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
           </Pressable>
           <View style={styles.floatingActions}>
             <Pressable
@@ -590,12 +590,12 @@ const styles = StyleSheet.create({
   floatingBack: {
     position: 'absolute',
     top: spacing.sm,
-    left: spacing.sm,
+    start: spacing.sm,
   },
   floatingActions: {
     position: 'absolute',
     top: spacing.sm,
-    right: spacing.sm,
+    end: spacing.sm,
     gap: spacing.xs,
   },
   actionBar: {

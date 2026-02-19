@@ -19,7 +19,7 @@ import {
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight, Zap, TrendingUp } from 'lucide-react-native';
+import { Search, ChevronRight, ChevronLeft, Zap, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale, useLocalizedField } from '@/src/lib/i18n/provider';
 import { supabase } from '@/src/lib/supabase/client';
@@ -254,7 +254,7 @@ function SectionHeader({ title, icon, onSeeAll, colors, locale }: {
         <Text style={[typography.subheadline, { color: colors.primary }]}>
           {locale === 'ar' ? 'عرض الكل' : 'See All'}
         </Text>
-        <ChevronRight size={16} color={colors.primary} />
+        {locale === 'ar' ? <ChevronLeft size={16} color={colors.primary} /> : <ChevronRight size={16} color={colors.primary} />}
       </Pressable>
     </View>
   );

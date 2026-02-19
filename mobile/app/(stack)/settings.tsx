@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert } from 'react-native';
 import { router } from 'expo-router';
 import {
-  Globe, Moon, Bell, Lock, Trash2, ChevronRight, Check,
+  Globe, Moon, Bell, Lock, Trash2, ChevronRight, ChevronLeft, Check,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
@@ -63,11 +63,13 @@ export default function SettingsScreen() {
           value={locale === 'ar' ? 'العربية' : 'English'}
           onPress={handleLanguageToggle}
           colors={colors}
+          locale={locale}
         />
         <SettingRow
           icon={<Moon size={20} color={colors.systemIndigo} />}
           label={locale === 'ar' ? 'الوضع الداكن' : 'Dark Mode'}
           colors={colors}
+          locale={locale}
           last
         >
           <Switch
@@ -88,6 +90,7 @@ export default function SettingsScreen() {
           icon={<Bell size={20} color={colors.systemOrange} />}
           label={locale === 'ar' ? 'الإشعارات' : 'Notifications'}
           colors={colors}
+          locale={locale}
           last
         >
           <Switch
@@ -111,12 +114,14 @@ export default function SettingsScreen() {
               label={locale === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}
               onPress={() => router.push('/(auth)/forgot-password')}
               colors={colors}
+              locale={locale}
             />
             <SettingRow
               icon={<Trash2 size={20} color={colors.systemRed} />}
               label={locale === 'ar' ? 'حذف الحساب' : 'Delete Account'}
               onPress={handleDeleteAccount}
               colors={colors}
+              locale={locale}
               destructive
               last
             />
@@ -132,9 +137,9 @@ export default function SettingsScreen() {
   );
 }
 
-function SettingRow({ icon, label, value, onPress, children, colors, destructive, last }: {
+function SettingRow({ icon, label, value, onPress, children, colors, locale, destructive, last }: {
   icon: React.ReactNode; label: string; value?: string; onPress?: () => void;
-  children?: React.ReactNode; colors: any; destructive?: boolean; last?: boolean;
+  children?: React.ReactNode; colors: any; locale: string; destructive?: boolean; last?: boolean;
 }) {
   return (
     <Pressable
@@ -156,7 +161,7 @@ function SettingRow({ icon, label, value, onPress, children, colors, destructive
           {value && (
             <Text style={[typography.body, { color: colors.secondaryLabel, marginEnd: spacing.xs }]}>{value}</Text>
           )}
-          {onPress && <ChevronRight size={18} color={colors.tertiaryLabel} />}
+          {onPress && (locale === 'ar' ? <ChevronLeft size={18} color={colors.tertiaryLabel} /> : <ChevronRight size={18} color={colors.tertiaryLabel} />)}
         </View>
       )}
     </Pressable>

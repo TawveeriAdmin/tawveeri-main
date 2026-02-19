@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useAuth } from '@/src/lib/auth/auth-context';
@@ -22,7 +22,7 @@ type Step = 'phone' | 'otp' | 'password';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
-  const { locale } = useLocale();
+  const { locale, isRTL } = useLocale();
   const { sendPhoneOtp } = useAuth();
 
   const [step, setStep] = useState<Step>('phone');
@@ -92,7 +92,7 @@ export default function ForgotPasswordScreen() {
             style={{ width: MIN_TOUCH_TARGET, height: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center', marginStart: spacing.sm }}
             hitSlop={8}
           >
-            <ArrowLeft size={24} color={colors.label} />
+            {isRTL ? <ArrowRight size={24} color={colors.label} /> : <ArrowLeft size={24} color={colors.label} />}
           </Pressable>
 
           <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.md }}>

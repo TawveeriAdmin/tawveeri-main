@@ -9,7 +9,7 @@ import { View, Text, ScrollView, FlatList, StyleSheet, Pressable, Linking } from
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Star, ExternalLink, MapPin, Globe, Store } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Star, ExternalLink, MapPin, Globe, Store } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { supabase } from '@/src/lib/supabase/client';
@@ -19,7 +19,7 @@ import { Price, Badge, Skeleton } from '@/src/components/ui';
 export default function StoreDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
-  const { locale } = useLocale();
+  const { locale, isRTL } = useLocale();
 
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -70,7 +70,7 @@ export default function StoreDetailScreen() {
         {/* Header */}
         <View style={{ padding: spacing.lg }}>
           <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-            <ArrowLeft size={22} color={colors.label} />
+            {isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
           </Pressable>
 
           <View style={{ alignItems: 'center', marginTop: spacing.md }}>

@@ -9,9 +9,10 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import {
   User, Heart, Bell, TrendingDown, Settings, LogOut, LogIn,
-  ChevronRight, Search, BarChart3, Shield,
+  ChevronRight, ChevronLeft, Search, BarChart3, Shield, Pencil,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
@@ -21,7 +22,7 @@ import { Button, Card } from '@/src/components/ui';
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
-  const { locale } = useLocale();
+  const { locale, isRTL } = useLocale();
   const { user, loading, signOut } = useAuth();
 
   // Time-based greeting
@@ -57,11 +58,15 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
         {/* Greeting + Avatar */}
-        <View style={styles.header}>
+        <Pressable onPress={() => router.push('/(stack)/edit-profile')} style={styles.header}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-            <Text style={[typography.title1, { color: colors.primary }]}>
-              {user?.full_name?.charAt(0)?.toUpperCase() || '👤'}
-            </Text>
+            {user?.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={{ width: 56, height: 56, borderRadius: 28 }} contentFit="cover" />
+            ) : (
+              <Text style={[typography.title1, { color: colors.primary }]}>
+                {user?.full_name?.charAt(0)?.toUpperCase() || '👤'}
+              </Text>
+            )}
           </View>
           <View style={{ flex: 1, marginStart: spacing.md }}>
             <Text style={[typography.footnote, { color: colors.secondaryLabel }]}>{greeting}</Text>
@@ -69,7 +74,8 @@ export default function ProfileScreen() {
               {user?.full_name || (locale === 'ar' ? 'مستخدم' : 'User')}
             </Text>
           </View>
-        </View>
+          <Pencil size={16} color={colors.tertiaryLabel} />
+        </Pressable>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
@@ -99,24 +105,28 @@ export default function ProfileScreen() {
             label={locale === 'ar' ? 'قائمة الأمنيات' : 'Wishlist'}
             onPress={() => router.push('/(stack)/wishlist')}
             colors={colors}
+            isRTL={isRTL}
           />
           <MenuRow
             icon={<TrendingDown size={20} color={colors.systemGreen} />}
             label={locale === 'ar' ? 'تنبيهات الأسعار' : 'Price Alerts'}
             onPress={() => router.push('/(stack)/price-alerts')}
             colors={colors}
+            isRTL={isRTL}
           />
           <MenuRow
             icon={<Bell size={20} color={colors.systemBlue} />}
             label={locale === 'ar' ? 'الإشعارات' : 'Notifications'}
             onPress={() => router.push('/(stack)/notifications')}
             colors={colors}
+            isRTL={isRTL}
           />
           <MenuRow
             icon={<BarChart3 size={20} color={colors.systemIndigo} />}
             label={locale === 'ar' ? 'المقارنات' : 'Compare'}
             onPress={() => router.push('/(stack)/compare')}
             colors={colors}
+            isRTL={isRTL}
             last
           />
         </View>
@@ -127,12 +137,14 @@ export default function ProfileScreen() {
             label={locale === 'ar' ? 'الإعدادات' : 'Settings'}
             onPress={() => router.push('/(stack)/settings')}
             colors={colors}
+            isRTL={isRTL}
           />
           <MenuRow
             icon={<LogOut size={20} color={colors.systemRed} />}
             label={locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
             onPress={signOut}
             colors={colors}
+            isRTL={isRTL}
             destructive
             last
           />
@@ -142,9 +154,9 @@ export default function ProfileScreen() {
   );
 }
 
-function MenuRow({ icon, label, onPress, colors, destructive, last }: {
+function MenuRow({ icon, label, onPress, colors, isRTL, destructive, last }: {
   icon: React.ReactNode; label: string; onPress: () => void;
-  colors: any; destructive?: boolean; last?: boolean;
+  colors: any; isRTL: boolean; destructive?: boolean; last?: boolean;
 }) {
   return (
     <Pressable
@@ -161,7 +173,7 @@ function MenuRow({ icon, label, onPress, colors, destructive, last }: {
           {label}
         </Text>
       </View>
-      {!destructive && <ChevronRight size={18} color={colors.tertiaryLabel} />}
+      {!destructive && (isRTL ? <ChevronLeft size={18} color={colors.tertiaryLabel} /> : <ChevronRight size={18} color={colors.tertiaryLabel} />)}
     </Pressable>
   );
 }
