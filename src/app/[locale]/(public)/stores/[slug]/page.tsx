@@ -33,7 +33,10 @@ import {
  ShieldCheck,
  Star,
  Store,
+ Ticket,
 } from 'lucide-react';
+import { CouponBadge } from '@/components/ui/coupon-badge';
+import type { DiscountType } from '@/lib/database/types';
 import type { AvailabilityStatus, ProductCategory } from '@/lib/database/types';
 import {
  Dialog,
@@ -130,6 +133,7 @@ export default function StoreDetailPage() {
  const [store, setStore] = useState<StoreDetails | null>(null);
  const [products, setProducts] = useState<StoreProduct[]>([]);
  const [reviews, setReviews] = useState<StoreReview[]>([]);
+ const [coupons, setCoupons] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -248,6 +252,17 @@ export default function StoreDetailPage() {
  });
 
  setProducts(Array.from(groupedProducts.values()));
+
+ // Fetch store coupons
+ const { data: couponsData } = await supabase
+ .from('coupons')
+ .select('*')
+ .eq('store_id', storeData.id)
+ .eq('is_active', true)
+ .or('expires_at.is.null,expires_at.gt.now()')
+ .order('created_at', { ascending: false });
+
+ setCoupons(couponsData || []);
  } catch (err) {
  console.error('Error loading store detail:', err);
  const message = err instanceof Error ? err.message : t('store.error');
@@ -533,6 +548,37 @@ export default function StoreDetailPage() {
  </CardContent>
  </Card>
  </div>
+
+ {/* Coupons */}
+ {coupons.length > 0 && (
+ <section className="mb-12">
+ <div className="flex items-center gap-2 mb-6">
+ <Ticket className="h-5 w-5 text-tertiary-600 dark:text-tertiary-400" />
+ <h2 className="text-headline-md text-on-surface">{t('coupons.availableCoupons')}</h2>
+ <Badge variant="outline" className="text-sm">{coupons.length}</Badge>
+ </div>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {coupons.map((coupon) => (
+ <CouponBadge
+ key={coupon.id}
+ coupon={{
+ id: coupon.id,
+ code: coupon.code,
+ description_ar: coupon.description_ar,
+ description_en: coupon.description_en,
+ discount_type: coupon.discount_type as DiscountType,
+ discount_value: coupon.discount_value,
+ min_purchase: coupon.min_purchase,
+ max_discount: coupon.max_discount,
+ expires_at: coupon.expires_at,
+ }}
+ variant="expanded"
+ locale={locale}
+ />
+ ))}
+ </div>
+ </section>
+ )}
 
  {/* Products */}
  <section className="mb-12">

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
+import { getSession } from '@/lib/auth/server';
 
 /**
  * POST /api/products/[id]/view
- * Track product view count
- * Rate limited: one view per user per hour
+ * Track product view count + per-user view for recommendations
+ * Dedup: one per-user view per product per hour
  */
 export async function POST(
   request: Request,
@@ -14,13 +15,6 @@ export async function POST(
     const { id } = await params;
     const supabase = createServerClient();
 
-    // Get user ID from request if authenticated (optional)
-    const userId = request.headers.get('x-user-id') || null;
-
-    // Rate limiting: check if user viewed this product in the last hour
-    // For now, we'll just increment without strict rate limiting per user
-    // In production, you might want to store view timestamps per user
-    
     // Get current view_count
     const { data: product, error: fetchError } = await supabase
       .from('products')
@@ -32,7 +26,7 @@ export async function POST(
 
     const newCount = (product?.view_count || 0) + 1;
 
-    // Increment view_count atomically
+    // Increment global view_count
     const { data: updated, error: updateError } = await supabase
       .from('products')
       .update({ view_count: newCount })
@@ -41,6 +35,34 @@ export async function POST(
       .single();
 
     if (updateError) throw updateError;
+
+    // Track per-user view for AI recommendations (non-blocking)
+    try {
+      const session = await getSession();
+      if (session?.user?.id) {
+        const userId = session.user.id;
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+        // Check if user already viewed this product in the last hour
+        const { data: recentView } = await supabase
+          .from('product_views')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('product_id', id)
+          .gte('viewed_at', oneHourAgo)
+          .limit(1)
+          .single();
+
+        // Only insert if no recent view exists
+        if (!recentView) {
+          await supabase
+            .from('product_views')
+            .insert({ user_id: userId, product_id: id });
+        }
+      }
+    } catch {
+      // Per-user tracking is non-blocking — never fail the main request
+    }
 
     return NextResponse.json({ view_count: updated.view_count });
   } catch (error) {

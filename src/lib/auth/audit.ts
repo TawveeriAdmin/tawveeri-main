@@ -228,6 +228,12 @@ export const AUDIT_ACTIONS = {
   USER_SUSPENDED: 'user_suspended',
   USER_ACTIVATED: 'user_activated',
 
+  // Coupons
+  COUPON_CREATED: 'coupon_created',
+  COUPON_UPDATED: 'coupon_updated',
+  COUPON_DELETED: 'coupon_deleted',
+  COUPON_COPIED: 'coupon_copied',
+
   // System
   SYSTEM_ERROR: 'system_error',
   SECURITY_ALERT: 'security_alert',
@@ -282,6 +288,24 @@ export async function logStoreEvent(
     action,
     entity_type: 'store',
     entity_id: storeId,
+    details,
+  });
+}
+
+/**
+ * Helper to log coupon events
+ */
+export async function logCouponEvent(
+  userId: string | null,
+  action: string,
+  couponId: string,
+  details?: Record<string, any>
+) {
+  return createAuditLog({
+    user_id: userId,
+    action,
+    entity_type: 'coupon',
+    entity_id: couponId,
     details,
   });
 }

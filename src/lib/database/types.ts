@@ -8,6 +8,7 @@ export type AvailabilityStatus = 'in_stock' | 'out_of_stock' | 'limited_stock' |
 export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 export type NotificationType = 'price_drop' | 'back_in_stock' | 'deal_alert' | 'deal' | 'system' | 'account';
 export type StoreStatus = 'active' | 'pending' | 'suspended' | 'inactive';
+export type DiscountType = 'percentage' | 'fixed_amount' | 'free_shipping';
 
 // Type aliases for common table rows
 export type ProductReview = Database['public']['Tables']['product_reviews']['Row'];
@@ -185,6 +186,7 @@ export interface Database {
           comparison_count: number;
           average_rating: number | null;
           total_reviews: number | null;
+          embedding: unknown;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -208,6 +210,7 @@ export interface Database {
           comparison_count?: number;
           average_rating?: number | null;
           total_reviews?: number | null;
+          embedding?: unknown;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -231,6 +234,7 @@ export interface Database {
           comparison_count?: number;
           average_rating?: number | null;
           total_reviews?: number | null;
+          embedding?: unknown;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -636,6 +640,66 @@ export interface Database {
         };
         Relationships: [];
       };
+      coupons: {
+        Row: {
+          id: string;
+          store_id: string;
+          product_id: string | null;
+          code: string;
+          description_ar: string | null;
+          description_en: string | null;
+          discount_type: DiscountType;
+          discount_value: number;
+          min_purchase: number | null;
+          max_discount: number | null;
+          starts_at: string;
+          expires_at: string | null;
+          is_active: boolean;
+          usage_count: number;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          product_id?: string | null;
+          code: string;
+          description_ar?: string | null;
+          description_en?: string | null;
+          discount_type: DiscountType;
+          discount_value: number;
+          min_purchase?: number | null;
+          max_discount?: number | null;
+          starts_at?: string;
+          expires_at?: string | null;
+          is_active?: boolean;
+          usage_count?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          product_id?: string | null;
+          code?: string;
+          description_ar?: string | null;
+          description_en?: string | null;
+          discount_type?: DiscountType;
+          discount_value?: number;
+          min_purchase?: number | null;
+          max_discount?: number | null;
+          starts_at?: string;
+          expires_at?: string | null;
+          is_active?: boolean;
+          usage_count?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_preferences: {
         Row: {
           id: string;
@@ -699,9 +763,172 @@ export interface Database {
         };
         Relationships: [];
       };
+      product_views: {
+        Row: {
+          id: string;
+          product_id: string;
+          user_id: string;
+          viewed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          user_id: string;
+          viewed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          user_id?: string;
+          viewed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      saved_searches: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          search_query: string | null;
+          filters: Record<string, unknown> | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          search_query?: string | null;
+          filters?: Record<string, unknown> | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          search_query?: string | null;
+          filters?: Record<string, unknown> | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: {
+      mv_product_analytics: {
+        Row: {
+          product_id: string | null;
+          total_views: number | null;
+          total_saves: number | null;
+          total_comparisons: number | null;
+          total_reviews: number | null;
+          average_rating: number | null;
+        };
+        Relationships: [];
+      };
+      mv_store_analytics: {
+        Row: {
+          store_id: string | null;
+          total_clicks: number | null;
+          total_conversions: number | null;
+          total_revenue: number | null;
+          average_commission: number | null;
+        };
+        Relationships: [];
+      };
+      mv_user_analytics: {
+        Row: {
+          user_id: string | null;
+          total_wishlists: number | null;
+          total_price_alerts: number | null;
+          total_searches: number | null;
+          total_comparisons: number | null;
+          last_active_at: string | null;
+        };
+        Relationships: [];
+      };
+    };
+    Functions: {
+      current_user_id: { Args: never; Returns: string };
+      current_user_role: { Args: never; Returns: UserRole };
+      is_admin: { Args: never; Returns: boolean };
+      is_store_owner: { Args: { store_uuid: string }; Returns: boolean };
+      refresh_analytics_views: { Args: never; Returns: undefined };
+      get_recommendations: {
+        Args: {
+          p_user_id?: string;
+          p_product_id?: string;
+          p_type?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          name_ar: string;
+          name_en: string;
+          slug: string;
+          category: ProductCategory;
+          brand: string;
+          model: string;
+          image_urls: string[];
+          score: number;
+          source: string;
+        }[];
+      };
+      match_similar_products: {
+        Args: {
+          target_product_id: string;
+          match_threshold?: number;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          name_ar: string;
+          name_en: string;
+          slug: string;
+          category: ProductCategory;
+          brand: string;
+          model: string;
+          image_urls: string[];
+          similarity: number;
+        }[];
+      };
+      get_collaborative_recommendations: {
+        Args: {
+          target_product_id: string;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          name_ar: string;
+          name_en: string;
+          slug: string;
+          category: ProductCategory;
+          brand: string;
+          model: string;
+          image_urls: string[];
+          co_occurrence_count: number;
+        }[];
+      };
+      get_personalized_recommendations: {
+        Args: {
+          target_user_id: string;
+          match_threshold?: number;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          name_ar: string;
+          name_en: string;
+          slug: string;
+          category: ProductCategory;
+          brand: string;
+          model: string;
+          image_urls: string[];
+          relevance_score: number;
+        }[];
+      };
+    };
     Enums: {
       user_role: UserRole;
       auth_provider: AuthProvider;
@@ -710,6 +937,7 @@ export interface Database {
       transaction_status: TransactionStatus;
       notification_type: NotificationType;
       store_status: StoreStatus;
+      discount_type: DiscountType;
     };
     CompositeTypes: Record<string, never>;
   };

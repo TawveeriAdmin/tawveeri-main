@@ -14,6 +14,7 @@ import {
   Search,
   Store,
   Tag,
+  Ticket,
   User,
 } from 'lucide-react';
 
@@ -85,6 +86,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
     { href: `/${locale}`, label: t('common.home'), icon: Home },
     { href: `/${locale}/products`, label: t('nav.products'), icon: PackageSearch },
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
+    { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/search`, label: t('button.search'), icon: Search },
   ];

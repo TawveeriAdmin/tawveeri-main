@@ -123,6 +123,7 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [favorites, setFavorites] = useState<DashboardProduct[]>([]);
   const [recommendations, setRecommendations] = useState<DashboardProduct[]>([]);
+  const [recSource, setRecSource] = useState<string | null>(null);
   const [recentlyViewed, setRecentlyViewed] = useState<DashboardProduct[]>([]);
   const [comparisonHistory, setComparisonHistory] = useState<DashboardProduct[]>([]);
   const [stats, setStats] = useState<DashboardStats>(DEFAULT_STATS);
@@ -181,7 +182,7 @@ export default function DashboardPage() {
     }
 
     const map = new Map<string, DashboardProduct>();
-    (data as DashboardProduct[] | null)?.forEach((product) => {
+    (data as unknown as DashboardProduct[] | null)?.forEach((product) => {
       map.set(product.id, product);
     });
 
@@ -217,42 +218,81 @@ export default function DashboardPage() {
     }
   };
 
-  // ── Secondary: recommendations (non-blocking) ──────────────
+  // ── Secondary: AI recommendations (non-blocking) ──────────────
   async function fetchRecommendations(
-    client: ReturnType<typeof getSupabaseBrowserClient>,
-    category: string | null
+    client: ReturnType<typeof getSupabaseBrowserClient>
   ) {
-    const selectQuery = `id, name_ar, name_en, slug, category, brand, model, image_urls,
-      product_stores(id, current_price, original_price, availability,
-        stores(id, name_ar, name_en, logo_url))`;
-
     try {
-      let recommended: DashboardProduct[] = [];
+      // Call the unified get_recommendations PG function via .rpc()
+      const { data, error: rpcError } = await client.rpc('get_recommendations', {
+        p_user_id: userId ?? undefined,
+        p_product_id: undefined,
+        p_type: 'auto',
+        p_limit: 6,
+      });
 
-      if (category) {
-        const { data } = await client
-          .from('products')
-          .select(selectQuery)
-          .eq('category', category)
-          .eq('is_active', true)
-          .order('view_count', { ascending: false })
-          .limit(6);
-        recommended = (data as DashboardProduct[] | null) ?? [];
+      if (rpcError) throw rpcError;
+
+      // The RPC returns basic product fields — enrich with product_stores for pricing
+      const recProducts = (data ?? []) as Array<{
+        id: string;
+        name_ar: string;
+        name_en: string;
+        slug: string;
+        category: string;
+        brand: string;
+        model: string;
+        image_urls: string[] | null;
+        score: number;
+        source: string;
+      }>;
+
+      if (!recProducts.length) {
+        setRecommendations([]);
+        setRecSource(null);
+        return;
       }
 
-      if (!recommended.length) {
-        const { data } = await client
-          .from('products')
-          .select(selectQuery)
-          .eq('is_active', true)
-          .order('view_count', { ascending: false })
-          .limit(6);
-        recommended = (data as DashboardProduct[] | null) ?? [];
-      }
+      // Fetch product_stores for the recommended products
+      const productIds = recProducts.map((p) => p.id);
+      const { data: enriched } = await client
+        .from('products')
+        .select(
+          `id, name_ar, name_en, slug, category, brand, model, image_urls,
+          product_stores(id, current_price, original_price, availability,
+            stores(id, name_ar, name_en, logo_url))`
+        )
+        .in('id', productIds)
+        .eq('is_active', true);
 
-      setRecommendations(recommended);
+      // Preserve the recommendation order
+      const enrichedMap = new Map((enriched as unknown as DashboardProduct[] ?? []).map((p) => [p.id, p]));
+      const ordered = recProducts
+        .map((rp) => enrichedMap.get(rp.id))
+        .filter((p): p is DashboardProduct => Boolean(p));
+
+      setRecommendations(ordered);
+      setRecSource(recProducts[0]?.source ?? null);
     } catch (err) {
-      console.error('Error fetching recommendations:', err);
+      console.error('Error fetching AI recommendations:', err);
+      // Fallback to popularity-based
+      try {
+        const { data } = await client
+          .from('products')
+          .select(
+            `id, name_ar, name_en, slug, category, brand, model, image_urls,
+            product_stores(id, current_price, original_price, availability,
+              stores(id, name_ar, name_en, logo_url))`
+          )
+          .eq('is_active', true)
+          .order('view_count', { ascending: false })
+          .limit(6);
+        setRecommendations((data as DashboardProduct[] | null) ?? []);
+        setRecSource('popularity');
+      } catch {
+        setRecommendations([]);
+        setRecSource(null);
+      }
     }
   }
 
@@ -334,11 +374,8 @@ export default function DashboardPage() {
             .filter((product): product is DashboardProduct => Boolean(product))
         );
 
-        // Kick off recommendations (non-blocking)
-        const primaryCategory = ((searchesRes.data as RecentSearch[] | null) || []).find(
-          (s) => s.category
-        )?.category;
-        fetchRecommendations(client, primaryCategory ?? null);
+        // Kick off AI recommendations (non-blocking)
+        fetchRecommendations(client);
       })
       .catch((err) => console.error('Error fetching dashboard data:', err))
       .finally(() => setLoading(false));
@@ -818,7 +855,9 @@ export default function DashboardPage() {
             className="text-xs border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
           >
             <Sparkles className="w-3 h-3 me-1" />
-            {t('dashboard.basedOnActivity')}
+            {recSource && recSource !== 'popularity'
+              ? (locale === 'ar' ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered')
+              : t('dashboard.basedOnActivity')}
           </Badge>
         </div>
         {loading ? (

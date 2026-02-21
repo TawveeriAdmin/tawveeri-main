@@ -244,9 +244,27 @@ Supabase with typed client. Types in `src/lib/database/types.ts`. Two client pat
 - **Browser**: `getSupabaseBrowserClient()` from `src/lib/database/` (singleton, uses anon key)
 - **Server**: `createServerClient()` from `src/lib/database/` (uses service role key, no session persistence)
 
-Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`.
+Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `coupons` (store/product coupons with discount metadata).
 
 Schema migrations are numbered SQL files in `scripts/database/`.
+
+### Coupon System
+
+**Table:** `coupons` — stores coupon codes with full metadata. Each coupon belongs to a `store_id` and optionally a `product_id` (null = store-wide). Fields include `code`, `discount_type` (percentage/fixed_amount/free_shipping), `discount_value`, `min_purchase`, `max_discount`, `expires_at`, `is_active`, `usage_count`.
+
+**Types:** `DiscountType` enum in `src/lib/database/types.ts`.
+
+**API routes (mobile-compatible via `api-auth.ts`):**
+- `GET /api/coupons` — public list of active coupons with filters
+- `POST /api/coupons/[id]/copy` — track coupon code copy
+- `GET/POST /api/admin/coupons` — admin list + create
+- `PATCH/DELETE /api/admin/coupons/[id]` — admin update + soft-delete
+
+**Auth helper:** `src/lib/auth/api-auth.ts` supports both cookie-based (web) and Bearer token (mobile app) auth. Use `requireRequestAdmin(request)` and `getRequestUser(request)` in API routes that need mobile compatibility.
+
+**UI component:** `CouponBadge` (`src/components/ui/coupon-badge.tsx`) — compact (for cards) and expanded (for detail pages) variants with copy-to-clipboard.
+
+**Pages:** `/coupons` (public browsing), `/admin/coupons` (admin CRUD). Coupons also show on product detail, store detail, and deals pages.
 
 ### Required Action Pattern
 
@@ -344,6 +362,47 @@ See `.env.example`. Required:
 - Use `cn()` for all conditional classes
 - **Never** set `dir` attributes on elements — the locale layout wrapper handles `dir` globally
 - **Never** write separate RTL/LTR CSS — flexbox/grid auto-flip in RTL
+
+### AI Recommendations System
+
+**Architecture**: pgvector embeddings + PostgreSQL functions, callable via `.rpc()` from any Supabase SDK (web + mobile).
+
+**Embedding pipeline** (automatic):
+- Products get embeddings via OpenAI `text-embedding-3-small` (1536 dimensions, multilingual Arabic+English)
+- Stored in `products.embedding` column (`halfvec(1536)` with HNSW index)
+- Auto-generated on product insert/update via triggers → pgmq queue → pg_cron (every 10s) → `embed` Edge Function → OpenAI API
+- Infrastructure: `util` schema with `queue_embeddings()`, `process_embeddings()`, `invoke_edge_function()` functions
+- Requires `OPENAI_API_KEY` set as Supabase secret
+
+**Recommendation functions** (all in PostgreSQL, called via `.rpc()`):
+- `match_similar_products(target_product_id, match_count, match_threshold)` — pgvector cosine similarity
+- `get_collaborative_recommendations(target_product_id, match_count)` — wishlist co-occurrence
+- `get_personalized_recommendations(target_user_id, match_count, match_threshold)` — user profile embedding match (wishlists + price alerts + recent views averaged)
+- `get_recommendations(p_user_id, p_product_id, p_type, p_limit)` — **unified orchestrator** with auto-fallback chain
+
+**Unified API call** (same for web and mobile):
+```typescript
+const { data } = await supabase.rpc('get_recommendations', {
+  p_user_id: userId,       // NULL for guests
+  p_product_id: productId, // NULL for dashboard
+  p_type: 'auto',          // 'auto' | 'similar' | 'collaborative' | 'personalized'
+  p_limit: 8,
+});
+```
+
+**Fallback chain** (when `p_type = 'auto'`):
+- Product page: embedding similarity → collaborative → same-category popularity
+- Dashboard: personalized → category-from-search-history popularity → global popularity
+- Guest: global popularity by view_count
+
+**Per-user view tracking**: `product_views` table records user-product views (deduped hourly in application code). Used by personalized recommendations for the "recent views" signal.
+
+**Files**:
+- `src/lib/recommendations/types.ts` — `RecommendedProduct` and `RecommendationOptions` types
+- `src/lib/recommendations/use-recommendations.ts` — React hook wrapping `.rpc('get_recommendations')`
+- Edge Function `embed` — processes embedding jobs from pgmq queue via OpenAI
+
+**Backfilling embeddings**: Queue all products via `SELECT pgmq.send('embedding_jobs', ...)` — pg_cron processes in batches of 10.
 
 ## Path Alias
 
