@@ -519,9 +519,8 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-surface-container transition-colors duration-300">
       {/* ── Sticky Search Header ── */}
-      <div className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-3 py-3">
+      <div className="sticky top-0 z-50 rounded-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 px-4 py-3">
             <Link
               href={`/${locale}`}
               className="flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary-600 transition-colors shrink-0"
@@ -543,91 +542,14 @@ export default function SearchPage() {
 
           {/* Progress bar */}
           {loading && (
-            <div className="h-1 w-full overflow-hidden rounded-full">
+            <div className="h-1 w-full overflow-hidden">
               <div className="h-full w-full animate-progress bg-gradient-to-r from-primary-500 via-primary-300 to-primary-500 bg-[length:200%_100%]" />
             </div>
           )}
-        </div>
-      </div>
 
-      {/* ── Store Errors (collapsible below header) ── */}
-      {storeErrors && Object.keys(storeErrors).length > 0 && (
-        <div className="container mx-auto px-4 mt-2">
-          <Alert variant="destructive" className="cursor-pointer" onClick={() => setStoreErrorsExpanded(!storeErrorsExpanded)}>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{t('search.someStoresFailed')}</span>
-                <ChevronDown className={cn('w-4 h-4 transition-transform', storeErrorsExpanded && 'rotate-180')} />
-              </div>
-              {storeErrorsExpanded && (
-                <div className="mt-2 space-y-1">
-                  {Object.entries(storeErrors).map(([store, err]) => (
-                    <p key={store} className="text-body-sm">{store}: {err}</p>
-                  ))}
-                </div>
-              )}
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-
-      {/* ── No-Query State ── */}
-      {!debouncedQuery && !loading && (
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-2xl mx-auto text-center space-y-8">
-            {/* Gradient search icon */}
-            <div className="mx-auto w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-800/20 flex items-center justify-center">
-              <Search className="w-10 h-10 text-primary-500" />
-            </div>
-
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-on-surface">{t('search.startSearching')}</h1>
-              <p className="text-on-surface-variant">{t('search.searchForProducts')}</p>
-            </div>
-
-            {/* Quick category chips */}
-            <div className="flex flex-wrap justify-center gap-3">
-              {quickCategories.map(cat => {
-                const Icon = cat.icon;
-                return (
-                  <button
-                    key={cat.key}
-                    onClick={() => handleQuickCategory(cat.query)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-on-surface hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700 transition-all duration-200 hover:shadow-sm"
-                  >
-                    <Icon className="w-4 h-4 text-primary-500" />
-                    {t(`search.quickCategories.${cat.key}`)}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Subtle scraping info badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs text-on-surface-variant">
-              <Sparkles className="w-3 h-3" />
-              {t('search.scrapeNote')}
-            </div>
-
-            {/* Search history */}
-            {user && (
-              <div className="mt-8">
-                <SearchHistory
-                  limit={10}
-                  onSelectQuery={handleHistorySelect}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Active Search State ── */}
-      {debouncedQuery && (
-        <>
-          {/* ── Sticky Control Toolbar ── */}
-          <div className="sticky top-[57px] z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
-            <div className="container mx-auto px-4 py-3">
+          {/* ── Toolbar (inside header card) ── */}
+          {debouncedQuery && (
+            <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2.5">
               <div className="flex items-center justify-between gap-4">
                 {/* Left: result count */}
                 <div className="text-sm text-on-surface-variant shrink-0">
@@ -649,28 +571,13 @@ export default function SearchPage() {
                   {/* Sort Popover */}
                   <Popover open={sortOpen} onOpenChange={setSortOpen}>
                     <PopoverTrigger asChild>
-                      <button
-                        className={cn(
-                          'inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm font-medium transition-all duration-200',
-                          sortOpen
-                            ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 shadow-sm'
-                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-on-surface hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
-                        )}
-                      >
-                        <ArrowUpDown className="w-3.5 h-3.5 text-on-surface-variant" />
-                        <span className="hidden sm:inline">{currentSortOption.label}</span>
-                        <ChevronDown className={cn('w-3.5 h-3.5 text-on-surface-variant transition-transform duration-200', sortOpen && 'rotate-180')} />
-                      </button>
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-gray-200 dark:border-gray-700">
+                        <ArrowUpDown className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline text-xs">{currentSortOption.label}</span>
+                      </Button>
                     </PopoverTrigger>
-                    <PopoverContent
-                      align="end"
-                      sideOffset={8}
-                      className="w-72 p-1.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl dark:shadow-black/40"
-                    >
-                      <div className="px-3 py-2 mb-1">
-                        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">{t('search.sortBy')}</p>
-                      </div>
-                      {sortOptions.map((option) => {
+                    <PopoverContent align="end" className="w-52 p-1.5">
+                      {sortOptions.map(option => {
                         const Icon = option.icon;
                         const isActive = sortBy === option.value;
                         return (
@@ -681,14 +588,14 @@ export default function SearchPage() {
                               setSortOpen(false);
                             }}
                             className={cn(
-                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-start transition-all duration-150',
+                              'flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-start transition-colors',
                               isActive
-                                ? 'bg-primary-50 dark:bg-primary-900/40'
-                                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                ? 'bg-primary-50 dark:bg-primary-900/20'
+                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                             )}
                           >
                             <div className={cn(
-                              'flex items-center justify-center w-6 h-6 rounded-md shrink-0 transition-colors',
+                              'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
                               isActive
                                 ? 'bg-primary-100 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400'
                                 : 'bg-gray-100 dark:bg-gray-700 text-on-surface-variant'
@@ -771,7 +678,7 @@ export default function SearchPage() {
 
               {/* Active filter chips */}
               {filterChips.length > 0 && (
-                <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+                <div className="flex items-center gap-2 mt-2 overflow-x-auto pb-1 scrollbar-hide">
                   <span className="text-xs text-on-surface-variant shrink-0">{t('search.activeFilters')}:</span>
                   {filterChips.map((chip, i) => (
                     <button
@@ -792,10 +699,86 @@ export default function SearchPage() {
                 </div>
               )}
             </div>
-          </div>
+          )}
+      </div>
 
+      {/* ── Store Errors (collapsible below header) ── */}
+      {storeErrors && Object.keys(storeErrors).length > 0 && (
+        <div className="mt-2">
+          <Alert variant="destructive" className="cursor-pointer" onClick={() => setStoreErrorsExpanded(!storeErrorsExpanded)}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{t('search.someStoresFailed')}</span>
+                <ChevronDown className={cn('w-4 h-4 transition-transform', storeErrorsExpanded && 'rotate-180')} />
+              </div>
+              {storeErrorsExpanded && (
+                <div className="mt-2 space-y-1">
+                  {Object.entries(storeErrors).map(([store, err]) => (
+                    <p key={store} className="text-body-sm">{store}: {err}</p>
+                  ))}
+                </div>
+              )}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* ── No-Query State ── */}
+      {!debouncedQuery && !loading && (
+        <div className="py-16">
+          <div className="max-w-2xl mx-auto text-center space-y-8">
+            {/* Gradient search icon */}
+            <div className="mx-auto w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-800/20 flex items-center justify-center">
+              <Search className="w-10 h-10 text-primary-500" />
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-on-surface">{t('search.startSearching')}</h1>
+              <p className="text-on-surface-variant">{t('search.searchForProducts')}</p>
+            </div>
+
+            {/* Quick category chips */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {quickCategories.map(cat => {
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => handleQuickCategory(cat.query)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-on-surface hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700 transition-all duration-200 hover:shadow-sm"
+                  >
+                    <Icon className="w-4 h-4 text-primary-500" />
+                    {t(`search.quickCategories.${cat.key}`)}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Subtle scraping info badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs text-on-surface-variant">
+              <Sparkles className="w-3 h-3" />
+              {t('search.scrapeNote')}
+            </div>
+
+            {/* Search history */}
+            {user && (
+              <div className="mt-8">
+                <SearchHistory
+                  limit={10}
+                  onSelectQuery={handleHistorySelect}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Active Search State ── */}
+      {debouncedQuery && (
+        <>
           {/* ── Main Content ── */}
-          <div className="container mx-auto px-4 py-6">
+          <div className="py-6">
             <div className="flex gap-6">
               {/* Desktop Filter Sidebar */}
               <div className="hidden lg:block w-72 shrink-0">
@@ -871,7 +854,7 @@ export default function SearchPage() {
                     )}>
                       {products.map((product, index) => (
                         <div
-                          key={product.id}
+                          key={`${product.id}-${index}`}
                           className="animate-fadeInUp"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
