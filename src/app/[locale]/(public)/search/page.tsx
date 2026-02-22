@@ -334,7 +334,7 @@ export default function SearchPage() {
           query: query.trim(),
           stores,
           pages,
-          sort: sortBy === 'price_low' ? 'price_asc' : sortBy === 'price_high' ? 'price_desc' : 'price_asc',
+          sort: sortBy === 'price_low' ? 'price_asc' : sortBy === 'price_high' ? 'price_desc' : 'relevance',
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
         }),
       });

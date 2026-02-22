@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const normalizedStores = stores || ['amazon', 'noon', 'jarir'];
     const normalizedPages = pages || 1;
-    const normalizedSort = sort || 'price_asc';
+    const normalizedSort = sort || 'relevance';
 
     console.log(`[Scrape API] Search request: query="${query}", stores=${normalizedStores.join(',')}, pages=${normalizedPages}`);
 
