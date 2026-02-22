@@ -56,7 +56,7 @@ export default async function LocaleLayout({
  // Load messages directly with error handling
  let messages: Record<string, unknown> = {};
  try {
- const [common, landing, auth, products, dashboard, profile, storesList, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart, compareTranslations] = await Promise.allSettled([
+ const [common, landing, auth, products, dashboard, profile, storesList, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart, compareTranslations, couponsTranslations] = await Promise.allSettled([
  import(`../../../messages/${locale}/common.json`) as Promise<{ default: Record<string, unknown> }>,
  import(`../../../messages/${locale}/landing.json`) as Promise<{ default: Record<string, unknown> }>,
  import(`../../../messages/${locale}/auth.json`) as Promise<{ default: Record<string, unknown> }>,
@@ -77,6 +77,7 @@ export default async function LocaleLayout({
  import(`../../../messages/${locale}/priceAlerts.json`) as Promise<{ default: Record<string, unknown> }>,
  import(`../../../messages/${locale}/cart.json`) as Promise<{ default: Record<string, unknown> }>,
  import(`../../../messages/${locale}/compare.json`) as Promise<{ default: Record<string, unknown> }>,
+ import(`../../../messages/${locale}/coupons.json`) as Promise<{ default: Record<string, unknown> }>,
  ]);
 
  // Combine all successfully loaded messages with namespacing
@@ -111,6 +112,7 @@ export default async function LocaleLayout({
  ...(priceAlerts.status === 'fulfilled' && priceAlerts.value?.default ? { priceAlerts: priceAlerts.value.default } : {}),
  ...(cart.status === 'fulfilled' && cart.value?.default ? { cart: cart.value.default } : {}),
  ...(compareTranslations.status === 'fulfilled' && compareTranslations.value?.default ? { compare: compareTranslations.value.default } : {}),
+ ...(couponsTranslations.status === 'fulfilled' && couponsTranslations.value?.default ? { coupons: couponsTranslations.value.default } : {}),
  };
 
  if (Object.keys(messages).length === 0) {

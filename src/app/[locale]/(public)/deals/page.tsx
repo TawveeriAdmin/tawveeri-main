@@ -192,6 +192,7 @@ export default function DealsPage() {
               availability,
               is_deal,
               deal_expires_at,
+              coupon_code,
               stores(
                 id,
                 name_ar,
@@ -246,6 +247,7 @@ export default function DealsPage() {
             original_price: storeProduct.original_price,
             is_deal: storeProduct.is_deal,
             deal_expires_at: storeProduct.deal_expires_at,
+            coupon_code: (storeProduct as any).coupon_code || null,
             availability: storeProduct.availability as AvailabilityStatus,
             stores: storeProduct.stores,
           });

@@ -51,7 +51,9 @@ import {
  Eye,
 } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
-import type { AvailabilityStatus, Database } from '@/lib/database/types';
+import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
+import { CouponBadge } from '@/components/ui/coupon-badge';
+import { Ticket } from 'lucide-react';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import { trackProductClick, generateAffiliateUrl } from '@/lib/transactions/tracking';
@@ -131,6 +133,7 @@ export default function ProductDetailPage() {
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
+ const [productCoupons, setProductCoupons] = useState<any[]>([]);
  const [priceAlertOpen, setPriceAlertOpen] = useState(false);
  const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [galleryOpen, setGalleryOpen] = useState(false);
@@ -231,8 +234,54 @@ export default function ProductDetailPage() {
  setViewCount(mappedProduct.view_count);
  // View count is now tracked via API route (see useEffect above)
 
- // Fetch related products
- const { data: relatedData } = await supabase
+ // Fetch AI-powered similar products via .rpc()
+ let relatedData: ProductQueryResult[] | null = null;
+ try {
+ const { data: recData } = await supabase.rpc('get_recommendations', {
+ p_user_id: undefined,
+ p_product_id: productData.id,
+ p_type: 'auto',
+ p_limit: 4,
+ });
+
+ const recIds = (recData ?? []).map((r: { id: string }) => r.id);
+ if (recIds.length > 0) {
+ const { data: enriched } = await supabase
+ .from('products')
+ .select(
+ `
+ *,
+ product_stores(
+ id,
+ current_price,
+ original_price,
+ availability,
+ stores(
+ id,
+ name_ar,
+ name_en,
+ logo_url
+ )
+ )
+ `
+ )
+ .in('id', recIds)
+ .eq('is_active', true)
+ .returns<ProductQueryResult[]>();
+
+ // Preserve recommendation order
+ const enrichedMap = new Map((enriched ?? []).map((p) => [p.id, p]));
+ relatedData = recIds
+ .map((rid: string) => enrichedMap.get(rid))
+ .filter((p: ProductQueryResult | undefined): p is ProductQueryResult => Boolean(p));
+ }
+ } catch {
+ // Fallback to category-based if RPC fails
+ }
+
+ // Fallback: category-based related products
+ if (!relatedData || relatedData.length === 0) {
+ const { data: fallbackData } = await supabase
  .from('products')
  .select(
  `
@@ -256,8 +305,25 @@ export default function ProductDetailPage() {
  .eq('is_active', true)
  .limit(4)
  .returns<ProductQueryResult[]>();
+ relatedData = fallbackData;
+ }
 
  setRelatedProducts((relatedData || []).map(mapProductRecord));
+
+ // Fetch applicable coupons (product-specific + store-wide)
+ const storeIds = (mappedProduct.product_stores || []).map((ps: any) => ps.stores?.id).filter(Boolean);
+ if (storeIds.length > 0) {
+ const { data: couponsData } = await supabase
+ .from('coupons')
+ .select('*')
+ .eq('is_active', true)
+ .or('expires_at.is.null,expires_at.gt.now()')
+ .or(`product_id.eq.${productData.id},product_id.is.null`)
+ .in('store_id', storeIds)
+ .order('discount_value', { ascending: false });
+
+ setProductCoupons(couponsData || []);
+ }
  } catch (err) {
  console.error('Error fetching product:', err);
  const errorMessage = err instanceof Error ? err.message : t('product.error');
@@ -817,6 +883,39 @@ export default function ProductDetailPage() {
  )}
  </CardContent>
  </Card>
+
+ {/* Available Coupons */}
+ {productCoupons.length > 0 && (
+ <Card>
+ <CardHeader>
+ <CardTitle className="flex items-center gap-2">
+ <Ticket className="h-5 w-5 text-tertiary-600 dark:text-tertiary-400" />
+ {t('coupons.availableCoupons')}
+ <Badge variant="outline">{productCoupons.length}</Badge>
+ </CardTitle>
+ </CardHeader>
+ <CardContent className="space-y-3">
+ {productCoupons.map((coupon: any) => (
+ <CouponBadge
+ key={coupon.id}
+ coupon={{
+ id: coupon.id,
+ code: coupon.code,
+ description_ar: coupon.description_ar,
+ description_en: coupon.description_en,
+ discount_type: coupon.discount_type as DiscountType,
+ discount_value: coupon.discount_value,
+ min_purchase: coupon.min_purchase,
+ max_discount: coupon.max_discount,
+ expires_at: coupon.expires_at,
+ }}
+ variant="expanded"
+ locale={locale}
+ />
+ ))}
+ </CardContent>
+ </Card>
+ )}
 
  {/* Related Products */}
  {relatedProducts.length > 0 && (

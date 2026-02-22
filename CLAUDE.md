@@ -2,6 +2,132 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## RIPER-5 Operational Protocol (Terminal)
+
+Use this protocol for Claude Code sessions in this repository.
+
+### Core Rules
+
+- Default mode is `FAST` if no mode was explicitly set.
+- Do not switch modes unless the user explicitly commands it.
+- In `EXECUTE`, follow the approved `PLAN` exactly.
+- If execution needs any unplanned deviation, stop and return to `PLAN`.
+- When asked to inspect or edit backend DB items (schema, edge functions, DB functions), use Supabase MCP tools.
+
+### Mode Declaration
+
+Start every response with the current mode tag:
+
+- `[MODE: RESEARCH]`
+- `[MODE: INNOVATE]`
+- `[MODE: PLAN]`
+- `[MODE: EXECUTE]`
+- `[MODE: REVIEW]`
+- `[MODE: FAST]`
+- `[MODE: RESEARCH PLAN]`
+
+### Transition Commands
+
+Only these user commands change mode:
+
+- `do res` -> `RESEARCH`
+- `do inn` -> `INNOVATE`
+- `do pla` -> `PLAN`
+- `do exe` -> `EXECUTE`
+- `do rev` -> `REVIEW`
+- `do fas` -> `FAST`
+- `do respla` -> `RESEARCH PLAN`
+
+### Mode Contracts
+
+#### RESEARCH (`do res`)
+
+Purpose: understand existing code and gather facts.
+
+- Allowed: read/search files, inspect context, ask clarifying questions.
+- Forbidden: planning, implementation, and code changes.
+
+#### INNOVATE (`do inn`)
+
+Purpose: brainstorm options before choosing an approach.
+
+- Allowed: possible approaches with pros/cons and trade-offs.
+- Forbidden: final decisions, step-by-step planning, code writing.
+
+#### PLAN (`do pla`)
+
+Purpose: produce an exhaustive implementation plan with no open decisions.
+
+- Allowed: exact file paths, symbols, technical steps, sequencing.
+- Forbidden: code writing.
+- Requirement: end with a numbered implementation checklist.
+
+Checklist format:
+
+1. [Specific action]
+2. [Specific action]
+3. [Specific action]
+
+#### EXECUTE (`do exe`)
+
+Purpose: implement only what was approved in `PLAN`.
+
+- Allowed: only planned steps.
+- Forbidden: unplanned improvements, refactors, or extra scope.
+- If any deviation is required: stop and request return to `PLAN`.
+
+#### REVIEW (`do rev`)
+
+Purpose: verify implementation strictly against plan.
+
+- Allowed: comparison and verification only.
+- Forbidden: new edits.
+- Must explicitly flag deviations using:
+  - `DEVIATION DETECTED: <description>`
+- End with one verdict:
+  - `IMPLEMENTATION MATCHES PLAN EXACTLY`
+  - `IMPLEMENTATION DEVIATES FROM PLAN`
+
+#### FAST (`do fas`)
+
+Purpose: minimal, rapid, scoped task execution.
+
+- Allowed: smallest possible change to complete assigned task.
+- Forbidden: refactors, optimizations, or behavior changes outside scope unless explicitly requested.
+- Principles: KISS and YAGNI.
+- If task grows beyond scope: return to `PLAN`.
+
+Response format in FAST:
+
+1. Problem
+2. Expected outcome
+3. Constraints
+4. Minimal solution
+5. Files changed
+
+#### RESEARCH PLAN (`do respla`)
+
+Purpose: deep research first, then assumption-free planning.
+
+Phase 1 - Research:
+
+1. Restate and clarify the problem.
+2. List constraints, requirements, and context.
+3. Gather only confirmed facts; ask when uncertain.
+4. Compare possible approaches.
+5. Note risks, edge cases, and trade-offs.
+6. Choose final approach only with evidence.
+
+Phase 2 - Plan:
+
+- Produce exhaustive implementation plan (no code).
+- Include files, functions, APIs, config, and data changes.
+- End with checklist:
+
+1. [Problem] [Expected Result] [Solution] [Files to change]
+2. [Problem] [Expected Result] [Solution] [Files to change]
+3. [Problem] [Expected Result] [Solution] [Files to change]
+
 ## Project Overview
 
 **Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Users compare prices across stores (Amazon SA, Noon, Jarir, Extra, Almanea), set price alerts, and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
@@ -141,9 +267,27 @@ Supabase with typed client. Types in `src/lib/database/types.ts`. Two client pat
 - **Browser**: `getSupabaseBrowserClient()` from `src/lib/database/` (singleton, uses anon key)
 - **Server**: `createServerClient()` from `src/lib/database/` (uses service role key, no session persistence)
 
-Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`.
+Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`, `coupons` (store/product coupons with discount metadata).
 
 Schema migrations are numbered SQL files in `scripts/database/` (01 through 10). Note: some prefixes are duplicated (e.g., two `04-*`, two `05-*`, two `06-*` files). When adding new migrations, use the next available number after 10.
+
+### Coupon System
+
+**Table:** `coupons` — stores coupon codes with full metadata. Each coupon belongs to a `store_id` and optionally a `product_id` (null = store-wide). Fields include `code`, `discount_type` (percentage/fixed_amount/free_shipping), `discount_value`, `min_purchase`, `max_discount`, `expires_at`, `is_active`, `usage_count`.
+
+**Types:** `DiscountType` enum in `src/lib/database/types.ts`.
+
+**API routes (mobile-compatible via `api-auth.ts`):**
+- `GET /api/coupons` — public list of active coupons with filters
+- `POST /api/coupons/[id]/copy` — track coupon code copy
+- `GET/POST /api/admin/coupons` — admin list + create
+- `PATCH/DELETE /api/admin/coupons/[id]` — admin update + soft-delete
+
+**Auth helper:** `src/lib/auth/api-auth.ts` supports both cookie-based (web) and Bearer token (mobile app) auth. Use `requireRequestAdmin(request)` and `getRequestUser(request)` in API routes that need mobile compatibility.
+
+**UI component:** `CouponBadge` (`src/components/ui/coupon-badge.tsx`) — compact (for cards) and expanded (for detail pages) variants with copy-to-clipboard.
+
+**Pages:** `/coupons` (public browsing), `/admin/coupons` (admin CRUD). Coupons also show on product detail, store detail, and deals pages.
 
 ### Required Action Pattern
 
@@ -375,6 +519,47 @@ URL scheme: `tawveeri://` (configured in `app.json` under `scheme`). Associated 
 - Use `cn()` for all conditional classes
 - **Never** set `dir` attributes on elements — the locale layout wrapper handles `dir` globally
 - **Never** write separate RTL/LTR CSS — flexbox/grid auto-flip in RTL
+
+### AI Recommendations System
+
+**Architecture**: pgvector embeddings + PostgreSQL functions, callable via `.rpc()` from any Supabase SDK (web + mobile).
+
+**Embedding pipeline** (automatic):
+- Products get embeddings via OpenAI `text-embedding-3-small` (1536 dimensions, multilingual Arabic+English)
+- Stored in `products.embedding` column (`halfvec(1536)` with HNSW index)
+- Auto-generated on product insert/update via triggers → pgmq queue → pg_cron (every 10s) → `embed` Edge Function → OpenAI API
+- Infrastructure: `util` schema with `queue_embeddings()`, `process_embeddings()`, `invoke_edge_function()` functions
+- Requires `OPENAI_API_KEY` set as Supabase secret
+
+**Recommendation functions** (all in PostgreSQL, called via `.rpc()`):
+- `match_similar_products(target_product_id, match_count, match_threshold)` — pgvector cosine similarity
+- `get_collaborative_recommendations(target_product_id, match_count)` — wishlist co-occurrence
+- `get_personalized_recommendations(target_user_id, match_count, match_threshold)` — user profile embedding match (wishlists + price alerts + recent views averaged)
+- `get_recommendations(p_user_id, p_product_id, p_type, p_limit)` — **unified orchestrator** with auto-fallback chain
+
+**Unified API call** (same for web and mobile):
+```typescript
+const { data } = await supabase.rpc('get_recommendations', {
+  p_user_id: userId,       // NULL for guests
+  p_product_id: productId, // NULL for dashboard
+  p_type: 'auto',          // 'auto' | 'similar' | 'collaborative' | 'personalized'
+  p_limit: 8,
+});
+```
+
+**Fallback chain** (when `p_type = 'auto'`):
+- Product page: embedding similarity → collaborative → same-category popularity
+- Dashboard: personalized → category-from-search-history popularity → global popularity
+- Guest: global popularity by view_count
+
+**Per-user view tracking**: `product_views` table records user-product views (deduped hourly in application code). Used by personalized recommendations for the "recent views" signal.
+
+**Files**:
+- `src/lib/recommendations/types.ts` — `RecommendedProduct` and `RecommendationOptions` types
+- `src/lib/recommendations/use-recommendations.ts` — React hook wrapping `.rpc('get_recommendations')`
+- Edge Function `embed` — processes embedding jobs from pgmq queue via OpenAI
+
+**Backfilling embeddings**: Queue all products via `SELECT pgmq.send('embedding_jobs', ...)` — pg_cron processes in batches of 10.
 
 ## Path Aliases
 

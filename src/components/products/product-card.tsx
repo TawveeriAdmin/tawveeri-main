@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Button } from '@/components/ui/button';
 import { Heart, BarChart3, ShoppingCart } from 'lucide-react';
+import { CouponBadge } from '@/components/ui/coupon-badge';
 import { calculateSavings } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -245,6 +246,17 @@ export function ProductCard({
                 </Badge>
               )}
             </div>
+
+            {/* Coupon Badge */}
+            {bestPrice?.coupon_code && (
+              <div className="mt-1">
+                <CouponBadge
+                  coupon={{ code: bestPrice.coupon_code }}
+                  variant="compact"
+                  locale={currentLocale}
+                />
+              </div>
+            )}
 
             {/* Store Count */}
             {storeCount > 0 && (
