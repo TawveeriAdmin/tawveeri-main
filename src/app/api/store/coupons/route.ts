@@ -1,34 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
-import { requireRequestAdmin } from '@/lib/auth/api-auth';
+import { requireRequestStore } from '@/lib/auth/api-auth';
 import { logCouponEvent, AUDIT_ACTIONS } from '@/lib/auth/audit';
 import { createNotification } from '@/lib/auth/notifications';
 
 /**
- * GET /api/admin/coupons
- * Admin: list all coupons (including inactive/expired)
+ * Get the store owned by the authenticated user
+ */
+async function getOwnedStore(profileId: string) {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('stores')
+    .select('id, name_ar, name_en')
+    .eq('created_by', profileId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * GET /api/store/coupons
+ * Store owner: list coupons for their store
  */
 export async function GET(request: NextRequest) {
   try {
-    await requireRequestAdmin(request);
+    const profile = await requireRequestStore(request);
+
+    const store = await getOwnedStore(profile.id);
+    if (!store) {
+      return NextResponse.json(
+        { error: 'No store associated with your account' },
+        { status: 404 }
+      );
+    }
 
     const supabase = createServerClient();
     const { searchParams } = new URL(request.url);
 
-    // Return stores list for the filter dropdown
+    // Return store info for the form dialog
     if (searchParams.get('stores_only') === 'true') {
-      const { data: stores, error: storesError } = await supabase
-        .from('stores')
-        .select('id, name_ar, name_en')
-        .order('name_en');
-
-      if (storesError) throw storesError;
-
-      return NextResponse.json({ stores: stores || [] });
+      return NextResponse.json({ stores: [store] });
     }
 
-    const storeId = searchParams.get('store_id');
-    const status = searchParams.get('status'); // active, inactive, expired
     const search = searchParams.get('search');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -43,27 +57,11 @@ export async function GET(request: NextRequest) {
       `,
         { count: 'exact' }
       )
+      .eq('store_id', store.id)
       .order('created_at', { ascending: false });
-
-    if (storeId) {
-      query = query.eq('store_id', storeId);
-    }
 
     if (search) {
       query = query.ilike('code', `%${search}%`);
-    }
-
-    if (status === 'active') {
-      query = query
-        .eq('is_active', true)
-        .or('expires_at.is.null,expires_at.gt.now()');
-    } else if (status === 'inactive') {
-      query = query.eq('is_active', false);
-    } else if (status === 'expired') {
-      query = query
-        .eq('is_active', true)
-        .not('expires_at', 'is', null)
-        .lt('expires_at', new Date().toISOString());
     }
 
     query = query.range(offset, offset + limit - 1);
@@ -77,13 +75,14 @@ export async function GET(request: NextRequest) {
       count: count || 0,
     });
   } catch (error) {
-    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Admin access required')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+    if (
+      error instanceof Error &&
+      (error.message === 'Authentication required' ||
+        error.message === 'Store access required')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-    console.error('Error fetching admin coupons:', error);
+    console.error('Error fetching store coupons:', error);
     return NextResponse.json(
       { error: 'Failed to fetch coupons' },
       { status: 500 }
@@ -92,16 +91,23 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/admin/coupons
- * Admin: create a new coupon
+ * POST /api/store/coupons
+ * Store owner: create a coupon for their store
  */
 export async function POST(request: NextRequest) {
   try {
-    const profile = await requireRequestAdmin(request);
+    const profile = await requireRequestStore(request);
+
+    const store = await getOwnedStore(profile.id);
+    if (!store) {
+      return NextResponse.json(
+        { error: 'No store associated with your account' },
+        { status: 404 }
+      );
+    }
 
     const body = await request.json();
     const {
-      store_id,
       product_id,
       code,
       description_ar,
@@ -115,14 +121,16 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!store_id || !code || !discount_type || discount_value === undefined) {
+    if (!code || !discount_type || discount_value === undefined) {
       return NextResponse.json(
-        { error: 'store_id, code, discount_type, and discount_value are required' },
+        { error: 'code, discount_type, and discount_value are required' },
         { status: 400 }
       );
     }
 
-    if (!['percentage', 'fixed_amount', 'free_shipping'].includes(discount_type)) {
+    if (
+      !['percentage', 'fixed_amount', 'free_shipping'].includes(discount_type)
+    ) {
       return NextResponse.json(
         { error: 'Invalid discount_type' },
         { status: 400 }
@@ -141,7 +149,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('coupons')
       .insert({
-        store_id,
+        store_id: store.id,
         product_id: product_id || null,
         code: code.trim().toUpperCase(),
         description_ar: description_ar || null,
@@ -186,13 +194,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Admin access required')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+    if (
+      error instanceof Error &&
+      (error.message === 'Authentication required' ||
+        error.message === 'Store access required')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-    console.error('Error creating coupon:', error);
+    console.error('Error creating store coupon:', error);
     return NextResponse.json(
       { error: 'Failed to create coupon' },
       { status: 500 }

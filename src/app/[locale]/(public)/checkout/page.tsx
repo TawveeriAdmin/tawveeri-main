@@ -11,14 +11,6 @@ import { CartSummary } from '@/components/cart/cart-summary';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Price } from '@/components/ui/price';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalLink, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -156,27 +148,6 @@ export default function CheckoutPage() {
  return (
  <div className="min-h-screen bg-surface-container">
  <div className="container mx-auto px-4 py-8 max-w-7xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}/cart`}>{t('common.cart')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('common.checkout')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  <div className="flex flex-col lg:flex-row gap-8">
  {/* Checkout Items */}
  <div className="flex-1 space-y-6">

@@ -3,14 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -322,27 +314,6 @@ export default function StoreDetailPage() {
  return (
  <div className="min-h-screen bg-surface-container transition-colors duration-300">
  <div className="container mx-auto px-4 py-8 max-w-6xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}/stores`}>{t('stores.title')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{storeName}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  {/* Store Header */}
  <Card className="mb-8">
  <CardContent className="p-6">

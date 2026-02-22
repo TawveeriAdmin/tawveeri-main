@@ -6,14 +6,6 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { AlertCircle, Home, LogIn, Shield } from 'lucide-react';
 
 export default function UnauthorizedPage() {
@@ -27,21 +19,6 @@ export default function UnauthorizedPage() {
  return (
  <div className="min-h-screen bg-surface-container flex items-center justify-center px-4">
  <div className="max-w-md w-full">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('common.unauthorized')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  <Card className="border-warning-200">
  <CardHeader className="text-center">
  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warning-100">

@@ -20,8 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useTranslations } from '@/lib/simple-intl-provider';
-import { cn } from '@/lib/utils';
 import type { CouponRow } from '@/app/[locale]/admin/coupons/page';
 
 interface CouponFormDialogProps {
@@ -31,6 +31,7 @@ interface CouponFormDialogProps {
   stores: Array<{ id: string; name_ar: string; name_en: string }>;
   locale: string;
   onSuccess: () => void;
+  apiEndpoint?: string;
 }
 
 export function CouponFormDialog({
@@ -40,6 +41,7 @@ export function CouponFormDialog({
   stores,
   locale,
   onSuccess,
+  apiEndpoint = '/api/admin/coupons',
 }: CouponFormDialogProps) {
   const t = useTranslations();
   const { toast } = useToast();
@@ -78,11 +80,7 @@ export function CouponFormDialog({
         setMaxDiscount(
           coupon.max_discount != null ? String(coupon.max_discount) : ''
         );
-        setExpiresAt(
-          coupon.expires_at
-            ? new Date(coupon.expires_at).toISOString().slice(0, 16)
-            : ''
-        );
+        setExpiresAt(coupon.expires_at || '');
       } else {
         setStoreId('');
         setCode('');
@@ -155,8 +153,8 @@ export function CouponFormDialog({
       setLoading(true);
 
       const url = isEdit
-        ? `/api/admin/coupons/${coupon!.id}`
-        : '/api/admin/coupons';
+        ? `${apiEndpoint}/${coupon!.id}`
+        : apiEndpoint;
       const method = isEdit ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
@@ -193,7 +191,7 @@ export function CouponFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t('coupons.editCoupon') : t('coupons.addCoupon')}
@@ -205,7 +203,9 @@ export function CouponFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="grid grid-cols-1 gap-4 py-4 sm:grid-cols-2">
+          {/* ── Left Column ── */}
+
           {/* Store */}
           <div className="space-y-2">
             <Label htmlFor="coupon-store">{t('coupons.form.store')} *</Label>
@@ -225,18 +225,6 @@ export function CouponFormDialog({
             </Select>
           </div>
 
-          {/* Code */}
-          <div className="space-y-2">
-            <Label htmlFor="coupon-code">{t('coupons.form.code')} *</Label>
-            <Input
-              id="coupon-code"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder={t('coupons.form.codePlaceholder')}
-              className="font-mono uppercase"
-            />
-          </div>
-
           {/* Description AR */}
           <div className="space-y-2">
             <Label htmlFor="coupon-desc-ar">
@@ -247,6 +235,18 @@ export function CouponFormDialog({
               value={descriptionAr}
               onChange={(e) => setDescriptionAr(e.target.value)}
               placeholder={t('coupons.form.descriptionArPlaceholder')}
+            />
+          </div>
+
+          {/* Code */}
+          <div className="space-y-2">
+            <Label htmlFor="coupon-code">{t('coupons.form.code')} *</Label>
+            <Input
+              id="coupon-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder={t('coupons.form.codePlaceholder')}
+              className="font-mono uppercase"
             />
           </div>
 
@@ -293,6 +293,23 @@ export function CouponFormDialog({
             </Select>
           </div>
 
+          {/* Min Purchase */}
+          <div className="space-y-2">
+            <Label htmlFor="coupon-min-purchase">
+              {t('coupons.form.minPurchase')} (SAR)
+            </Label>
+            <Input
+              id="coupon-min-purchase"
+              type="number"
+              min="0"
+              step="0.01"
+              value={minPurchase}
+              onChange={(e) => setMinPurchase(e.target.value)}
+              placeholder={t('coupons.form.optional')}
+              className="tabular-nums"
+            />
+          </div>
+
           {/* Discount Value (hidden for free_shipping) */}
           {discountType !== 'free_shipping' && (
             <div className="space-y-2">
@@ -313,23 +330,6 @@ export function CouponFormDialog({
               />
             </div>
           )}
-
-          {/* Min Purchase */}
-          <div className="space-y-2">
-            <Label htmlFor="coupon-min-purchase">
-              {t('coupons.form.minPurchase')} (SAR)
-            </Label>
-            <Input
-              id="coupon-min-purchase"
-              type="number"
-              min="0"
-              step="0.01"
-              value={minPurchase}
-              onChange={(e) => setMinPurchase(e.target.value)}
-              placeholder={t('coupons.form.optional')}
-              className="tabular-nums"
-            />
-          </div>
 
           {/* Max Discount (only for percentage) */}
           {discountType === 'percentage' && (
@@ -352,15 +352,12 @@ export function CouponFormDialog({
 
           {/* Expires At */}
           <div className="space-y-2">
-            <Label htmlFor="coupon-expires">
-              {t('coupons.form.expiresAt')}
-            </Label>
-            <Input
-              id="coupon-expires"
-              type="datetime-local"
+            <Label>{t('coupons.form.expiresAt')}</Label>
+            <DateTimePicker
               value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="tabular-nums"
+              onChange={setExpiresAt}
+              placeholder={t('coupons.form.optional')}
+              locale={locale}
             />
           </div>
         </div>

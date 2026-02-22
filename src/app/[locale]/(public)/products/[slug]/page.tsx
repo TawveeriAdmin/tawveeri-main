@@ -17,14 +17,6 @@ import { PriceAlertDialog } from '@/components/products/price-alert-dialog';
 import { GiftOption } from '@/components/products/gift-option';
 import { ImageGalleryModal } from '@/components/products/image-gallery-modal';
 import { ProductVideoPlayer } from '@/components/products/product-video-player';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -533,27 +525,6 @@ export default function ProductDetailPage() {
  return (
  <div className="min-h-screen bg-surface-container transition-colors duration-300">
  <div className="container mx-auto px-4 py-8 max-w-7xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}/products`}>{t('products.title')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{productName}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  {/* Main Product Info */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
  {/* Image Gallery */}

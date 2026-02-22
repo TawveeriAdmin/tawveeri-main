@@ -1,7 +1,7 @@
 # Tawveeri PDR — Phase 1 & Phase 2 Status Report
 
-**Report Date:** 2026-02-18
-**Branch:** `phase2_v1`
+**Report Date:** 2026-02-22 (updated)
+**Branch:** `mobile-app` (merged `phase2_v2_Alhussain`)
 **Compared Against:** 10-Week Implementation Plan (PDR.pdf)
 
 ---
@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 29 | 1 | 0 | **98%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 14 | 13 | 12 | **53%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 17 | 12 | 7 | **65%** |
 
 ---
 
@@ -72,7 +72,7 @@ The core platform is fully built. Users can register, search with category and s
 |---|------|:------:|----------|
 | 1 | Integration with 5 stores (Extra, Jarir, Almanea, Noon, Amazon.sa) | ✅ | All 5 stores fully operational. **Search scrapers** work for all 4 main stores. **Cron scrapers** implemented for all 5: `JarirScraper`, `NoonScraper` (JSON API), `AmazonScraper` (cheerio + Puppeteer), `ExtraScraper` (`__NEXT_DATA__` + HTML fallback), `AlmaneaScraper` (HTML + JSON-LD). Orchestrator routes all stores in `scraping-orchestrator.ts`. |
 | 2 | Localized store integration (additional Saudi stores) | ✅ | 5 Saudi stores with bilingual configs (`name_ar`, `name_en`) in `src/lib/scraping/config/store-configs/` |
-| 3 | Store onboarding portal (self-service) | ✅ | Full portal: `/store/dashboard`, `/store/products`, `/store/products/new`, `/store/analytics`, `/store/transactions` |
+| 3 | Store onboarding portal (self-service) | ✅ | Full portal: `/store/dashboard`, `/store/products`, `/store/products/new`, `/store/analytics`, `/store/transactions`, `/store/coupons` (coupon management) |
 | 4 | Store rating system | ✅ | `store_reviews` table with multi-field ratings (delivery, quality, service); review form + display on store detail pages |
 
 ---
@@ -141,33 +141,33 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 53%
+## Overall: 65%
 
-Monetization infrastructure (affiliate tracking, commission calculation) is solid. The biggest gaps are in engagement features (email/push/coupons), AI recommendations, SEO, mobile app, and production-readiness.
+Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). The biggest remaining gaps are email service integration, SEO, monitoring, and the loyalty program.
 
 ---
 
-### Week 6 — Personalization & Favorites `55%`
+### Week 6 — Personalization & Favorites `75%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Wishlist / Save products | ✅ | Full CRUD with notes in `(dashboard)/wishlist/page.tsx` |
 | 2 | Favorites sync (cross-device) | ✅ | Supabase-backed; auto-syncs on login from any device |
 | 3 | Search history log | ✅ | Auto-logged to `search_history` table; shown in search bar + saved searches feature |
-| 4 | Personalized recommendations | 🟡 | Category-based + view_count algorithm on dashboard. Not sophisticated. |
-| 5 | AI-powered smart recommendations | ❌ | No ML models, collaborative filtering, or AI infrastructure |
+| 4 | Personalized recommendations | 🟡 | pgvector-based `get_personalized_recommendations()` RPC function documented. React hook `use-recommendations.ts` calls unified `get_recommendations()` RPC with auto-fallback. Category-based + popularity fallback for guests. **Pending**: verify Supabase Edge Function `embed` is deployed and embeddings are populated. |
+| 5 | AI-powered smart recommendations | 🟡 | Infrastructure built: pgvector embeddings (`halfvec(1536)` with HNSW index), OpenAI `text-embedding-3-small`, 4 PostgreSQL recommendation functions (`match_similar_products`, `get_collaborative_recommendations`, `get_personalized_recommendations`, `get_recommendations` orchestrator). Types in `src/lib/recommendations/types.ts`. **Pending**: Edge Function `embed` deployment verification, embedding backfill for existing products. |
 
 ---
 
-### Week 7 — Notifications & Engagement `50%`
+### Week 7 — Notifications & Engagement `80%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Notification system (price drop, back in stock) | ✅ | Full in-app system with bilingual content; cron job checks price alerts (`/api/cron/check-price-alerts/`) |
-| 2 | Email/SMS alerts | 🟡 | HTML email templates built for 7 types. **No email provider connected** — calls `supabase.functions.invoke('send-email')` placeholder. SMS = OTP only (Authentica). |
-| 3 | Push notifications (mobile) | 🟡 | Preference toggles exist in settings UI. **No service worker, no Web Push API, no FCM** backend. |
+| 2 | Email/SMS alerts | 🟡 | HTML email templates built for 7 types (welcome, password_reset, price_drop_alert, etc.) with bilingual RTL support. Helper functions ready (`sendWelcomeEmail()`, `sendPriceDropEmail()`, etc.). **No email provider connected** — calls `supabase.functions.invoke('send-email')` placeholder. SMS = OTP only (Authentica). |
+| 3 | Push notifications | 🟡 | **Mobile**: Fully implemented via `expo-notifications` — push token registration, foreground/background listeners, badge count, deep link handling in `mobile/src/lib/notifications/`. **Web**: No service worker, no Web Push API, no FCM backend. |
 | 4 | Daily deals section | ✅ | Full deals page with search, sorting, stats cards, expiry tracking (`(public)/deals/page.tsx`) |
-| 5 | Coupon integration | ❌ | No coupon table, no promo code UI, no validation logic |
+| 5 | Coupon integration | ✅ | **Fully implemented.** `coupons` table with full metadata (code, discount_type, discount_value, min_purchase, max_discount, expires_at, usage_count). DB migration: `scripts/database/11-coupons-schema.sql` (table, RLS policies, indexes). **Admin**: full datatable at `/admin/coupons/` — sortable columns, checkbox selection, column visibility, pagination, rows-per-page, status filter, store filter, AlertDialog confirmation modals for delete/activate/deactivate. 2-column form dialog with custom DateTimePicker. **Store owner**: full CRUD at `/store/coupons/` — same datatable pattern, scoped to owner's store. API routes: `/api/admin/coupons/` (admin CRUD), `/api/store/coupons/` (store owner CRUD), `/api/coupons/` (public list) + copy tracking. **Public**: browsing page at `/(public)/coupons/` with store/type filters, search, sort. `CouponBadge` component (compact + expanded variants). Audit logging + in-app notifications on create. Bilingual translations in `messages/{ar,en}/coupons.json`. |
 
 ---
 
@@ -179,7 +179,7 @@ Monetization infrastructure (affiliate tracking, commission calculation) is soli
 | 2 | Loyalty program / Cashback | ❌ | Zero implementation — no tables, no UI, no logic |
 | 3 | Store dashboard (merchant analytics) | ✅ | Revenue charts, product performance, click/conversion rates, transaction history in `/store/dashboard/` and `/store/analytics/` |
 | 4 | Admin analytics dashboard | ✅ | KPIs, revenue charts, user growth, category distribution, search analytics, activity logs in `/admin/dashboard/` and `/admin/analytics/` |
-| 5 | SEO optimization | 🟡 | Root metadata in `layout.tsx`. **Missing**: dynamic per-page metadata, `sitemap.xml`, `robots.txt`, JSON-LD structured data, OG tags |
+| 5 | SEO optimization | 🟡 | Root metadata in `layout.tsx`. **Missing**: dynamic per-page `generateMetadata()`, `sitemap.xml`, `robots.txt`, JSON-LD structured data, OG tags |
 
 ---
 
@@ -195,12 +195,12 @@ Monetization infrastructure (affiliate tracking, commission calculation) is soli
 
 ---
 
-### Week 10 — Performance, Compliance & Launch `25%`
+### Week 10 — Performance, Compliance & Launch `35%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
-| 1 | Mobile app launch (iOS & Android) | ❌ | No React Native / Expo / mobile app codebase |
-| 2 | Mobile optimization (responsive, feature parity) | ✅ | Extensive Tailwind responsive breakpoints, mobile dialogs, responsive grids |
+| 1 | Mobile app launch (iOS & Android) | ✅ | Full Expo React Native app in `mobile/` with 23 screens. Expo SDK 52+, New Architecture enabled, Expo Router file-based navigation. Tabs: Home, Search, Deals, Cart, Profile. Auth: Phone OTP, Email, OAuth. Stack: Product detail, Store detail, Wishlist, Notifications, Price Alerts, Settings, Compare. Push notifications via `expo-notifications`. Deep linking (`tawveeri://`). Zustand cart with AsyncStorage persistence. JS-based RTL via `useRTL()` hook. Bilingual (AR/EN) sharing all 19 translation namespaces with web. |
+| 2 | Mobile optimization (responsive, feature parity) | ✅ | Web: extensive Tailwind responsive breakpoints, mobile dialogs, responsive grids. Mobile app: native StyleSheet + Apple HIG typography, custom tab bar with haptics, dark mode, RTL support. |
 | 3 | Performance optimization (< 3s search) | 🟡 | Turbopack in dev. No Lighthouse audit, bundle analysis, or load time benchmarks. |
 | 4 | Scalability (1M+ users) | 🟡 | Supabase is horizontally scalable. No load testing or CDN setup evidence. |
 | 5 | Reliability (99.9% uptime) | ❌ | No monitoring service (Sentry, Datadog, UptimeRobot, etc.) |
@@ -227,14 +227,17 @@ Monetization infrastructure (affiliate tracking, commission calculation) is soli
 | Favorites Sync (cross-device) | ✅ |
 | Search History Log | ✅ |
 | Daily Deals Section | ✅ |
+| Coupon Integration | ✅ |
 | Multi-Store Cart | ✅ |
 | Gift Option Integration | ✅ |
+| Mobile App (iOS & Android) | ✅ |
 | Mobile Responsiveness | ✅ |
 | Legal Compliance (Saudi laws) | ✅ |
 | Notification System (in-app) | ✅ |
+| AI Smart Recommendations | 🟡 |
 | Personalized Recommendations | 🟡 |
 | Email/SMS Alerts | 🟡 |
-| Push Notifications | 🟡 |
+| Push Notifications (web) | 🟡 |
 | Premium Store Listings | 🟡 |
 | SEO Optimization | 🟡 |
 | Comparison (warranty, returns, delivery) | 🟡 |
@@ -243,18 +246,35 @@ Monetization infrastructure (affiliate tracking, commission calculation) is soli
 | Scalability (1M+ users) | 🟡 |
 | Cross-Browser Compatibility | 🟡 |
 | Accessibility (WCAG 2.1) | 🟡 |
-| Monitoring & Logging (external) | 🟡 |
-| AI Smart Recommendations | ❌ |
-| Coupon Integration | ❌ |
 | Loyalty Program / Cashback | ❌ |
-| Mobile App (iOS & Android) | ❌ |
 | Reliability (99.9% uptime monitoring) | ❌ |
 | Data Backup (custom daily) | ❌ |
 | Energy Efficiency | ❌ |
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **15 ✅ · 12 🟡 · 10 ❌** |
+| **Totals** | **17 ✅ · 12 🟡 · 7 ❌** |
+
+---
+
+### Phase 2 — Changes Since Last Report (2026-02-18)
+
+| Item | Previous | Current | What Changed |
+|------|:--------:|:-------:|--------------|
+| Coupon Integration | ❌ | ✅ | Full implementation: `coupons` table, admin CRUD (`/admin/coupons/`), public page (`/(public)/coupons/`), API routes, `CouponBadge` component, copy tracking, audit logging, bilingual translations. |
+| AI Smart Recommendations | ❌ | 🟡 | pgvector infrastructure built: `products.embedding` column (`halfvec(1536)`), OpenAI `text-embedding-3-small`, 4 PostgreSQL RPC functions, React hook (`use-recommendations.ts`), types. Edge Function `embed` documented. Pending deployment verification + embedding backfill. |
+| Mobile App (iOS & Android) | ❌ | ✅ | Full Expo React Native app: 23 screens, Expo SDK 52+, New Architecture, push notifications, deep linking, Zustand cart, JS-based RTL, native builds. |
+| Push Notifications | 🟡 | 🟡 | Mobile push now fully implemented via `expo-notifications` (registration, listeners, badge count). Web push still missing. |
+| Personalized Recommendations | 🟡 | 🟡 | Upgraded from category-based to pgvector-backed `get_personalized_recommendations()` RPC with fallback chain. Pending embedding verification. |
+
+### Phase 2 — Changes Since Last Report (2026-02-22)
+
+| Item | Previous | Current | What Changed |
+|------|:--------:|:-------:|--------------|
+| Coupon Integration (enhanced) | ✅ | ✅ | Major quality upgrade: admin page rewritten to full datatable pattern (sortable columns, checkbox selection, column visibility dropdown, pagination with rows-per-page, status/store filter dropdowns). AlertDialog confirmation modals for all destructive actions (delete, activate, deactivate). Real delete (not soft-delete). Custom DateTimePicker replacing native datetime-local. 2-column form dialog layout. |
+| Store Owner Coupon Management | ❌ | ✅ | New store owner coupon portal at `/store/coupons/` with full datatable (matching admin pattern). Store-scoped API routes: `GET/POST /api/store/coupons/`, `PATCH/DELETE /api/store/coupons/[id]/` with ownership verification. Sidebar nav link added. |
+| Coupon DB Migration | ❌ | ✅ | `scripts/database/11-coupons-schema.sql` — table definition, `discount_type` enum, foreign keys, unique constraint on `code`, RLS policies (public read active, admin full, store owner own), indexes, `updated_at` trigger. |
+| Coupon Notifications | ❌ | ✅ | In-app bilingual notifications on coupon creation via `createNotification()` in both admin and store API POST handlers. Audit logging via `logCouponEvent()`. |
 
 ---
 
@@ -262,17 +282,15 @@ Monetization infrastructure (affiliate tracking, commission calculation) is soli
 
 | # | Gap | Impact | Effort | Notes |
 |---|-----|--------|--------|-------|
-| 1 | **Connect email service** (Resend/SendGrid) | Critical | Low | Templates + helpers already built. Just need to wire up a provider. |
-| 2 | **SEO fundamentals** — sitemap, robots.txt, dynamic metadata, JSON-LD | Critical | Medium | No organic search traffic without this. |
-| 3 | **Coupon integration** — DB table, admin UI, user display | High | Medium | Listed as PDR requirement, zero implementation. |
-| 4 | **Push notifications** — service worker + Web Push API | High | Medium | Settings UI exists, backend missing. |
-| 5 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway. |
-| 6 | **AI recommendations** | Medium | High | Could start with simple collaborative filtering before full ML. |
-| 7 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
-| 8 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
-| 9 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
-| 10 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
-| 11 | **Mobile app** (React Native / Expo) | Low (short-term) | Very High | Entire new codebase. Consider after web is production-ready. |
+| 1 | **Connect email service** (Resend/SendGrid) | Critical | Low | Templates + helpers already built for 7 email types. Just need to wire up a provider or deploy `send-email` Edge Function. |
+| 2 | **SEO fundamentals** — sitemap, robots.txt, dynamic metadata, JSON-LD | Critical | Medium | No organic search traffic without this. Add `generateMetadata()` to key pages, `app/sitemap.ts`, `app/robots.ts`. |
+| 3 | **Verify AI recommendations deployment** — Edge Function `embed`, backfill embeddings | High | Low | Infrastructure is documented; verify Supabase Edge Function is deployed and run backfill: `SELECT pgmq.send('embedding_jobs', ...)`. |
+| 4 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
+| 5 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
+| 6 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
+| 7 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
+| 8 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
+| 9 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
 
 ---
 
@@ -289,13 +307,13 @@ Phase 1 — Growth & Adoption
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-██████████░░░░░░░░░░░  53%
+█████████████░░░░░░░░  65%
 
-  Week 6  Personal.      ███████████░░░░░░░░░░  55%
-  Week 7  Notifications  ██████████░░░░░░░░░░░  50%
+  Week 6  Personal.      ███████████████░░░░░░  75%
+  Week 7  Notifications  ████████████████░░░░░  80%
   Week 8  Monetization   ████████████░░░░░░░░░  60%
   Week 9  Comparison     ██████████████░░░░░░░  70%
-  Week 10 Launch         █████░░░░░░░░░░░░░░░░  25%
+  Week 10 Launch         ███████░░░░░░░░░░░░░░  35%
 ```
 
 ---

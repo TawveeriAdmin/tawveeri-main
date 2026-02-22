@@ -100,7 +100,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/admin/coupons/[id]
- * Admin: soft-delete a coupon (set is_active = false)
+ * Admin: permanently delete a coupon
  */
 export async function DELETE(
   request: NextRequest,
@@ -112,19 +112,24 @@ export async function DELETE(
 
     const supabase = createServerClient();
 
-    const { data, error } = await supabase
+    // Fetch coupon info for audit log before deleting
+    const { data: coupon } = await supabase
       .from('coupons')
-      .update({ is_active: false })
-      .eq('id', id)
       .select('id, code, store_id')
+      .eq('id', id)
       .single();
+
+    const { error } = await supabase
+      .from('coupons')
+      .delete()
+      .eq('id', id);
 
     if (error) throw error;
 
     // Audit log
     logCouponEvent(profile.id, AUDIT_ACTIONS.COUPON_DELETED, id, {
-      code: data.code,
-      store_id: data.store_id,
+      code: coupon?.code,
+      store_id: coupon?.store_id,
     });
 
     return NextResponse.json({ success: true });

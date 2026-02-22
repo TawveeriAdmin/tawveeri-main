@@ -8,14 +8,6 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';

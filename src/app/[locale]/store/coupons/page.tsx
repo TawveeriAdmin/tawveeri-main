@@ -53,7 +53,6 @@ import {
   Power,
   MoreHorizontal,
   CheckCircle,
-  XCircle,
   Clock,
   ChevronLeft,
   ChevronRight,
@@ -68,7 +67,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────
 
-export interface CouponRow {
+interface CouponRow {
   id: string;
   store_id: string;
   code: string;
@@ -98,7 +97,7 @@ interface StoreOption {
 type CouponStatus = 'active' | 'inactive' | 'expired';
 type SortField = 'code' | 'discount_value' | 'usage_count' | 'created_at';
 type SortDir = 'asc' | 'desc';
-type ColumnKey = 'code' | 'store' | 'discount' | 'status' | 'usage' | 'expires' | 'actions';
+type ColumnKey = 'code' | 'discount' | 'status' | 'usage' | 'expires' | 'actions';
 
 // ─── Helpers ──────────────────────────────────────────────
 
@@ -199,11 +198,13 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 
 // ─── Page ─────────────────────────────────────────────────
 
-export default function AdminCouponsPage() {
+export default function StoreCouponsPage() {
   const { locale } = useParams<{ locale: string }>();
   const t = useTranslations();
   const { toast } = useToast();
   const isRTL = locale === 'ar';
+
+  const API_BASE = '/api/store/coupons';
 
   // Data
   const [coupons, setCoupons] = useState<CouponRow[]>([]);
@@ -212,7 +213,6 @@ export default function AdminCouponsPage() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [storeFilter, setStoreFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Sort
@@ -226,7 +226,6 @@ export default function AdminCouponsPage() {
   // Column visibility
   const [visibleCols, setVisibleCols] = useState<Record<ColumnKey, boolean>>({
     code: true,
-    store: true,
     discount: true,
     status: true,
     usage: true,
@@ -251,7 +250,7 @@ export default function AdminCouponsPage() {
 
   const loadStores = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/coupons?stores_only=true');
+      const res = await fetch(`${API_BASE}?stores_only=true`);
       if (res.ok) {
         const data = await res.json();
         setStores(data.stores || []);
@@ -266,10 +265,8 @@ export default function AdminCouponsPage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
-      if (storeFilter !== 'all') params.set('store_id', storeFilter);
-      if (statusFilter !== 'all') params.set('status', statusFilter);
 
-      const res = await fetch(`/api/admin/coupons?${params.toString()}`);
+      const res = await fetch(`${API_BASE}?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch coupons');
 
       const data = await res.json();
@@ -284,13 +281,18 @@ export default function AdminCouponsPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, storeFilter, statusFilter, t, toast]);
+  }, [searchQuery, t, toast]);
 
   useEffect(() => { loadStores(); }, [loadStores]);
   useEffect(() => { loadCoupons(); }, [loadCoupons]);
-  useEffect(() => { setPage(1); }, [storeFilter, statusFilter, searchQuery, rowsPerPage]);
+  useEffect(() => { setPage(1); }, [statusFilter, searchQuery, rowsPerPage]);
 
   // ─── Derived data ─────────────────────────────────────
+
+  const filteredCoupons = useMemo(() => {
+    if (statusFilter === 'all') return coupons;
+    return coupons.filter((c) => getCouponStatus(c) === statusFilter);
+  }, [coupons, statusFilter]);
 
   const totalCoupons = coupons.length;
   const activeCoupons = coupons.filter((c) => getCouponStatus(c) === 'active').length;
@@ -298,7 +300,7 @@ export default function AdminCouponsPage() {
 
   // Sort
   const sortedCoupons = useMemo(() => {
-    const sorted = [...coupons];
+    const sorted = [...filteredCoupons];
     sorted.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
@@ -318,7 +320,7 @@ export default function AdminCouponsPage() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [coupons, sortField, sortDir]);
+  }, [filteredCoupons, sortField, sortDir]);
 
   // Paginate
   const totalPages = Math.max(1, Math.ceil(sortedCoupons.length / rowsPerPage));
@@ -354,7 +356,7 @@ export default function AdminCouponsPage() {
 
     try {
       if (type === 'delete') {
-        const res = await fetch(`/api/admin/coupons/${coupon.id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_BASE}/${coupon.id}`, { method: 'DELETE' });
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || 'Failed to delete coupon');
@@ -362,7 +364,7 @@ export default function AdminCouponsPage() {
         toast({ title: t('coupons.deleted'), description: t('coupons.deleteSuccess') });
       } else {
         const newActive = type === 'activate';
-        const res = await fetch(`/api/admin/coupons/${coupon.id}`, {
+        const res = await fetch(`${API_BASE}/${coupon.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ is_active: newActive }),
@@ -414,12 +416,11 @@ export default function AdminCouponsPage() {
     });
   };
 
-  const hasActiveFilter = storeFilter !== 'all' || statusFilter !== 'all' || searchQuery.trim() !== '';
+  const hasActiveFilter = statusFilter !== 'all' || searchQuery.trim() !== '';
 
   const colLabels: Record<ColumnKey, string> = useMemo(
     () => ({
       code: t('coupons.code'),
-      store: t('coupons.store'),
       discount: t('coupons.discount'),
       status: t('coupons.statusLabel'),
       usage: t('coupons.usageCount'),
@@ -496,28 +497,10 @@ export default function AdminCouponsPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className={cn('gap-1.5', hasActiveFilter && 'border-primary text-primary')}>
                   <SlidersHorizontal className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('coupons.store')}</span>
+                  <span className="hidden sm:inline">{t('coupons.statusLabel')}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>{t('coupons.store')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={storeFilter === 'all'}
-                  onCheckedChange={() => setStoreFilter('all')}
-                >
-                  {t('coupons.allStores')}
-                </DropdownMenuCheckboxItem>
-                {stores.map((store) => (
-                  <DropdownMenuCheckboxItem
-                    key={store.id}
-                    checked={storeFilter === store.id}
-                    onCheckedChange={() => setStoreFilter(store.id)}
-                  >
-                    {isRTL ? store.name_ar : store.name_en}
-                  </DropdownMenuCheckboxItem>
-                ))}
-                <DropdownMenuSeparator />
                 <DropdownMenuLabel>{t('coupons.statusLabel')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {(['all', 'active', 'inactive', 'expired'] as const).map((s) => (
@@ -565,7 +548,6 @@ export default function AdminCouponsPage() {
               <div key={i} className="flex items-center gap-4 border-t border-outline-variant px-4 py-3">
                 <Skeleton className="h-5 w-5 rounded" />
                 <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-4 w-16" />
                 <Skeleton className="h-5 w-16 rounded-full" />
                 <Skeleton className="h-4 w-10" />
@@ -595,9 +577,6 @@ export default function AdminCouponsPage() {
                           <SortIcon field="code" sortField={sortField} sortDir={sortDir} />
                         </button>
                       </TableHead>
-                    )}
-                    {visibleCols.store && (
-                      <TableHead>{colLabels.store}</TableHead>
                     )}
                     {visibleCols.discount && (
                       <TableHead>
@@ -656,13 +635,6 @@ export default function AdminCouponsPage() {
                               <span className="font-mono text-sm font-medium text-on-surface">
                                 {coupon.code}
                               </span>
-                            </TableCell>
-                          )}
-                          {visibleCols.store && (
-                            <TableCell className="text-sm text-on-surface-variant">
-                              {coupon.store
-                                ? isRTL ? coupon.store.name_ar : coupon.store.name_en
-                                : '-'}
                             </TableCell>
                           )}
                           {visibleCols.discount && (
@@ -752,11 +724,6 @@ export default function AdminCouponsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-mono text-sm font-medium text-on-surface">
                           {coupon.code}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-on-surface-variant">
-                          {coupon.store
-                            ? isRTL ? coupon.store.name_ar : coupon.store.name_en
-                            : '-'}
                         </p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2">
                           <StatusBadge status={status} t={t} />
@@ -866,6 +833,7 @@ export default function AdminCouponsPage() {
         stores={stores}
         locale={locale}
         onSuccess={handleFormSuccess}
+        apiEndpoint={API_BASE}
       />
 
       {/* Confirmation Dialog */}

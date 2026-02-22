@@ -14,14 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import type { Database } from '@/lib/database/types';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import Link from 'next/link';
 
 type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];

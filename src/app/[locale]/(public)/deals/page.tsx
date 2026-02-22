@@ -10,14 +10,6 @@ import { incrementSaveCount } from '@/lib/wishlist/utils';
 import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -465,20 +457,6 @@ export default function DealsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href={`/${locale}`}>{t('common.home')}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{t('deals.title')}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-amber-500/15 via-white to-rose-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-amber-500/20 dark:via-gray-900 dark:to-rose-500/20 md:p-7">
         <div className="pointer-events-none absolute -end-16 -top-14 h-44 w-44 rounded-full bg-amber-500/20 blur-3xl dark:bg-amber-400/20" />
         <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-rose-500/15 blur-3xl dark:bg-rose-400/20" />

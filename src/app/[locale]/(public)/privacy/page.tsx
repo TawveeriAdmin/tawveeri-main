@@ -3,14 +3,6 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
@@ -24,23 +16,6 @@ export default function PrivacyPage() {
  return (
  <div className="min-h-screen bg-surface-container">
  <div className="container mx-auto px-4 py-8 max-w-4xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>
- {t('legal.privacy')}
- </BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  <Card>
  <CardHeader>
  <CardTitle className="text-headline-lg">

@@ -9,14 +9,6 @@ import { getSupabaseBrowserClient } from '@/lib/database';
 import { incrementSaveCount } from '@/lib/wishlist/utils';
 import { ProductCard } from '@/components/products/product-card';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -472,20 +464,6 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href={`/${locale}`}>{t('common.home')}</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{t('products.title')}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-      </Breadcrumb>
-
           <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-primary-500/10 via-white to-secondary-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-primary-500/20 dark:via-gray-900 dark:to-secondary-500/20 md:p-7">
             <div className="pointer-events-none absolute -end-16 -top-16 h-44 w-44 rounded-full bg-primary-500/20 blur-3xl dark:bg-primary-400/20" />
             <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-secondary-500/15 blur-3xl dark:bg-secondary-400/25" />

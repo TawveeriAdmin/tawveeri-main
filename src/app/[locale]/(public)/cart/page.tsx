@@ -17,14 +17,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Price } from '@/components/ui/price';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import {
  Dialog,
  DialogContent,
  DialogDescription,
@@ -139,21 +131,6 @@ export default function CartPage() {
  return (
  <div className="min-h-screen bg-surface-container">
  <div className="container mx-auto px-4 py-8 max-w-7xl">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('cart.title')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  <div className="flex flex-col lg:flex-row gap-8">
  {/* Cart Items */}
  <div className="flex-1 space-y-6">

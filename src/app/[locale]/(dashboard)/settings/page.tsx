@@ -9,14 +9,6 @@ import { getSupabaseBrowserClient } from '@/lib/database';
 import type { Database } from '@/lib/database/types';
 import { useToast } from '@/components/ui/use-toast';
 import { useTheme } from 'next-themes';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';

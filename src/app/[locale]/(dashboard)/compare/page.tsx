@@ -5,14 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
-import {
- Breadcrumb,
- BreadcrumbItem,
- BreadcrumbLink,
- BreadcrumbList,
- BreadcrumbPage,
- BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -193,21 +185,6 @@ export default function ComparePage() {
 
  return (
  <div className="space-y-6">
- {/* Breadcrumbs */}
- <Breadcrumb className="mb-6">
- <BreadcrumbList>
- <BreadcrumbItem>
- <BreadcrumbLink asChild>
- <Link href={`/${locale}`}>{t('common.home')}</Link>
- </BreadcrumbLink>
- </BreadcrumbItem>
- <BreadcrumbSeparator />
- <BreadcrumbItem>
- <BreadcrumbPage>{t('compare.title')}</BreadcrumbPage>
- </BreadcrumbItem>
- </BreadcrumbList>
- </Breadcrumb>
-
  {/* Header */}
  <div className="mb-8 flex items-center justify-between">
  <div>

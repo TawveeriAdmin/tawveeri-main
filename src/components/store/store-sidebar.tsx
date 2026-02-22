@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   CreditCard,
+  Ticket,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -20,6 +21,7 @@ interface StoreSidebarProps {
 const navItems = [
   { href: '/store/dashboard', icon: LayoutDashboard, key: 'dashboard' },
   { href: '/store/products', icon: Package, key: 'products' },
+  { href: '/store/coupons', icon: Ticket, key: 'coupons' },
   { href: '/store/transactions', icon: CreditCard, key: 'transactions' },
   { href: '/store/analytics', icon: BarChart3, key: 'analytics' },
   { href: '/store/settings', icon: Settings, key: 'settings' },

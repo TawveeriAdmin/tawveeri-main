@@ -7,14 +7,6 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreCard } from '@/components/stores/store-card';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -259,20 +251,6 @@ export default function StoresPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href={`/${locale}`}>{t('common.home')}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{t('stores.title')}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-cyan-500/10 via-white to-blue-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-cyan-500/20 dark:via-gray-900 dark:to-blue-500/20 md:p-7">
         <div className="pointer-events-none absolute -end-16 -top-14 h-44 w-44 rounded-full bg-cyan-500/20 blur-3xl dark:bg-cyan-400/20" />
         <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-blue-500/15 blur-3xl dark:bg-blue-400/20" />
