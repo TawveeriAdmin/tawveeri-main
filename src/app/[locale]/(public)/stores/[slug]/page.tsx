@@ -43,6 +43,7 @@ import {
  AccordionItem,
  AccordionTrigger,
 } from '@/components/ui/accordion';
+import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 interface StoreDetails {
  id: string;
@@ -274,7 +275,7 @@ export default function StoreDetailPage() {
 
  if (loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="">
  <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
  <Skeleton className="h-10 w-64" />
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -290,7 +291,7 @@ export default function StoreDetailPage() {
 
  if (error || !store) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="">
  <div className="container mx-auto px-4 py-8 max-w-4xl">
  <Alert variant="destructive">
  <AlertCircle className="h-4 w-4" />
@@ -312,8 +313,12 @@ export default function StoreDetailPage() {
  const warrantyInfo = locale === 'ar' ? store.warranty_info_ar : store.warranty_info_en;
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="">
  <div className="container mx-auto px-4 py-8 max-w-6xl">
+ <PageBreadcrumbs items={[
+   { label: t('nav.stores'), href: `/${locale}/stores` },
+   { label: storeName },
+ ]} />
  {/* Store Header */}
  <Card className="mb-8">
  <CardContent className="p-6">

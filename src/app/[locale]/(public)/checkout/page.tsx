@@ -128,7 +128,7 @@ export default function CheckoutPage() {
 
  if (stores.length === 0) {
  return (
- <div className="min-h-screen bg-surface-container">
+ <div>
  <div className="container mx-auto px-4 py-8">
  <Alert>
  <AlertCircle className="h-4 w-4" />
@@ -146,7 +146,7 @@ export default function CheckoutPage() {
  }
 
  return (
- <div className="min-h-screen bg-surface-container">
+ <div>
  <div className="container mx-auto px-4 py-8 max-w-7xl">
  <div className="flex flex-col lg:flex-row gap-8">
  {/* Checkout Items */}

@@ -24,6 +24,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import type { ProductCategory } from '@/lib/database/types';
+import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 const RECENTLY_VIEWED_KEY = 'tawveeri.recentlyViewedProducts';
 const COMPARE_HISTORY_KEY = 'compare_products';
@@ -612,6 +613,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      <PageBreadcrumbs items={[{ label: t('dashboard.sidebar.dashboard') }]} />
       <section className="animate-fadeInUp relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-primary-500/10 via-white to-secondary-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-primary-500/20 dark:via-gray-900 dark:to-secondary-500/20 md:p-7">
         <div className="pointer-events-none absolute -end-12 -top-12 h-44 w-44 rounded-full bg-primary-500/15 blur-3xl dark:bg-primary-400/25" />
         <div className="pointer-events-none absolute -bottom-16 start-1/3 h-44 w-44 rounded-full bg-secondary-500/15 blur-3xl dark:bg-secondary-400/25" />

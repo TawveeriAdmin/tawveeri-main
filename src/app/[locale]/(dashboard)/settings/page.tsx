@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, Download, Save, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 interface NotificationSettings {
  email: boolean;
@@ -292,6 +293,8 @@ export default function SettingsPage() {
 
  return (
  <div className="space-y-6 max-w-5xl">
+ <PageBreadcrumbs items={[{ label: t('dashboard.profileMenu.settings') }]} />
+
  {/* Header */}
  <div>
  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">

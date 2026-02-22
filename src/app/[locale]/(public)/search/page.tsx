@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,6 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
-import { SearchBar } from '@/components/search/search-bar';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
 import { SavedSearches } from '@/components/search/saved-searches';
@@ -39,10 +38,6 @@ import {
   Search,
   AlertCircle,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
-  LayoutGrid,
-  List,
   SlidersHorizontal,
   X,
   Smartphone,
@@ -51,7 +46,6 @@ import {
   Monitor,
   Gamepad2,
   Camera,
-  Loader2,
   ChevronDown,
   ArrowDownNarrowWide,
   ArrowUpNarrowWide,
@@ -65,8 +59,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
-import { mapScrapedToProductCard } from '@/lib/scraping/product-adapter';
+import { mapGroupedToProductCard } from '@/lib/scraping/product-adapter';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
+import { StoreComparisonPanel } from '@/components/search/store-comparison-panel';
 
 type Product = ProductCardProduct & {
   product_stores: Array<{
@@ -111,11 +106,11 @@ export default function SearchPage() {
   );
   const [scrapingProgress, setScrapingProgress] = useState<string>('');
   const [storeErrors, setStoreErrors] = useState<Record<string, string>>({});
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [externalQueryKey, setExternalQueryKey] = useState(0);
   const [storeErrorsExpanded, setStoreErrorsExpanded] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [filters, setFilters] = useState<SearchFilters>({
     brands: [],
     stores: [],
@@ -124,6 +119,19 @@ export default function SearchPage() {
     freeDeliveryOnly: false,
     minRating: undefined,
   });
+
+  // Sync search query from URL params (e.g. when header search navigates here)
+  const urlQueryRef = useRef(searchParams.get('q') || '');
+  useEffect(() => {
+    const urlQuery = searchParams.get('q') || '';
+    if (urlQuery !== urlQueryRef.current) {
+      urlQueryRef.current = urlQuery;
+      if (urlQuery !== searchQuery) {
+        setSearchQuery(urlQuery);
+        setDebouncedQuery(urlQuery);
+      }
+    }
+  }, [searchParams]);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -306,6 +314,9 @@ export default function SearchPage() {
     const currentQuery = searchParams.get('q') || '';
     if (currentQuery === debouncedQuery) return;
 
+    // Update the ref so the sync effect doesn't re-trigger
+    urlQueryRef.current = debouncedQuery;
+
     const p = new URLSearchParams(searchParams.toString());
 
     if (debouncedQuery) p.set('q', debouncedQuery);
@@ -361,21 +372,21 @@ export default function SearchPage() {
 
       const data: ScrapedSearchResult = await response.json();
 
-      const mappedProducts: Product[] = data.products.map((scraped) => {
-        return mapScrapedToProductCard(scraped) as Product;
+      const mappedProducts: Product[] = data.products.map((grouped) => {
+        return mapGroupedToProductCard(grouped) as Product;
       });
 
       let sortedProducts = [...mappedProducts];
       if (sortBy === 'price_low') {
         sortedProducts.sort((a, b) => {
-          const priceA = a.product_stores[0]?.current_price || Infinity;
-          const priceB = b.product_stores[0]?.current_price || Infinity;
+          const priceA = Math.min(...a.product_stores.map(ps => ps.current_price || Infinity));
+          const priceB = Math.min(...b.product_stores.map(ps => ps.current_price || Infinity));
           return priceA - priceB;
         });
       } else if (sortBy === 'price_high') {
         sortedProducts.sort((a, b) => {
-          const priceA = a.product_stores[0]?.current_price || 0;
-          const priceB = b.product_stores[0]?.current_price || 0;
+          const priceA = Math.min(...a.product_stores.map(ps => ps.current_price || 0));
+          const priceB = Math.min(...b.product_stores.map(ps => ps.current_price || 0));
           return priceB - priceA;
         });
       }
@@ -460,6 +471,10 @@ export default function SearchPage() {
     setExternalQueryKey(prev => prev + 1);
   };
 
+  const handleComparePrices = useCallback((productId: string) => {
+    setExpandedProductId(prev => prev === productId ? null : productId);
+  }, []);
+
   const handleAddToCompare = (productId: string) => {
     console.log('Add to compare:', productId);
   };
@@ -514,195 +529,11 @@ export default function SearchPage() {
     return pages;
   }, [totalPages, currentPage]);
 
-  const BackIcon = isRTL ? ChevronRight : ChevronLeft;
-
   return (
-    <div className="min-h-screen bg-surface-container transition-colors duration-300">
-      {/* ── Sticky Search Header ── */}
-      <div className="sticky top-0 z-50 rounded-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-800">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <Link
-              href={`/${locale}`}
-              className="flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary-600 transition-colors shrink-0"
-            >
-              <BackIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">{t('search.backToHome')}</span>
-            </Link>
-            <div className="flex-1 min-w-0">
-              <SearchBar
-                key={externalQueryKey}
-                initialQuery={searchQuery}
-                onSearch={handleSearch}
-                showSuggestions={true}
-                showCategory={false}
-                className="[&_input]:border-gray-300 [&_input]:dark:border-gray-600 [&_input]:bg-gray-50 [&_input]:dark:bg-gray-800/50 [&_input]:rounded-xl [&_input]:h-11"
-              />
-            </div>
-          </div>
+    <div>
+      {/* ── Toolbar ── */}
 
-          {/* Progress bar */}
-          {loading && (
-            <div className="h-1 w-full overflow-hidden">
-              <div className="h-full w-full animate-progress bg-gradient-to-r from-primary-500 via-primary-300 to-primary-500 bg-[length:200%_100%]" />
-            </div>
-          )}
-
-          {/* ── Toolbar (inside header card) ── */}
-          {debouncedQuery && (
-            <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2.5">
-              <div className="flex items-center justify-between gap-4">
-                {/* Left: result count */}
-                <div className="text-sm text-on-surface-variant shrink-0">
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
-                      <span>{scrapingProgress || t('search.searchingStores')}</span>
-                    </div>
-                  ) : (
-                    <span>
-                      <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
-                      {t('search.resultsCount')}
-                    </span>
-                  )}
-                </div>
-
-                {/* Right: controls */}
-                <div className="flex items-center gap-2">
-                  {/* Sort Popover */}
-                  <Popover open={sortOpen} onOpenChange={setSortOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-gray-200 dark:border-gray-700">
-                        <ArrowUpDown className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline text-xs">{currentSortOption.label}</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-52 p-1.5">
-                      {sortOptions.map(option => {
-                        const Icon = option.icon;
-                        const isActive = sortBy === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              setSortBy(option.value);
-                              setSortOpen(false);
-                            }}
-                            className={cn(
-                              'flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-start transition-colors',
-                              isActive
-                                ? 'bg-primary-50 dark:bg-primary-900/20'
-                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                            )}
-                          >
-                            <div className={cn(
-                              'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
-                              isActive
-                                ? 'bg-primary-100 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400'
-                                : 'bg-gray-100 dark:bg-gray-700 text-on-surface-variant'
-                            )}>
-                              <Icon className="w-3.5 h-3.5" />
-                            </div>
-                            <p className={cn(
-                              'flex-1 min-w-0 text-sm font-medium',
-                              isActive ? 'text-primary-700 dark:text-primary-300' : 'text-on-surface'
-                            )}>
-                              {option.label}
-                            </p>
-                            {isActive && (
-                              <Check className="w-4 h-4 text-primary-500 shrink-0" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Grid/List toggle */}
-                  <div className="hidden sm:flex items-center border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={cn(
-                        'p-2 transition-colors',
-                        viewMode === 'grid'
-                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600'
-                          : 'text-on-surface-variant hover:bg-gray-50 dark:hover:bg-gray-800'
-                      )}
-                      title={t('search.gridView')}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={cn(
-                        'p-2 transition-colors',
-                        viewMode === 'list'
-                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600'
-                          : 'text-on-surface-variant hover:bg-gray-50 dark:hover:bg-gray-800'
-                      )}
-                      title={t('search.listView')}
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Mobile filter button */}
-                  <Dialog open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="lg:hidden relative">
-                        <SlidersHorizontal className="w-4 h-4" />
-                        <span className="hidden sm:inline ms-1">{t('search.mobileFilters')}</span>
-                        {activeFilterCount > 0 && (
-                          <span className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">
-                            {activeFilterCount}
-                          </span>
-                        )}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-h-[85vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>{t('search.filtersTitle')}</DialogTitle>
-                      </DialogHeader>
-                      <FilterSidebar
-                        filters={filters}
-                        onFilterChange={(newFilters) => {
-                          setFilters(newFilters);
-                          setMobileFiltersOpen(false);
-                        }}
-                        category={selectedCategory !== 'all' ? selectedCategory : undefined}
-                        locale={locale}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-
-              {/* Active filter chips */}
-              {filterChips.length > 0 && (
-                <div className="flex items-center gap-2 mt-2 overflow-x-auto pb-1 scrollbar-hide">
-                  <span className="text-xs text-on-surface-variant shrink-0">{t('search.activeFilters')}:</span>
-                  {filterChips.map((chip, i) => (
-                    <button
-                      key={`${chip.type}-${chip.value || i}`}
-                      onClick={() => removeFilter(chip.type, chip.value)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-medium shrink-0 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
-                    >
-                      {chip.label}
-                      <X className="w-3 h-3" />
-                    </button>
-                  ))}
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-xs text-red-500 hover:text-red-600 font-medium shrink-0 transition-colors"
-                  >
-                    {t('search.clearAll')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-      </div>
-
-      {/* ── Store Errors (collapsible below header) ── */}
+      {/* ── Store Errors (collapsible) ── */}
       {storeErrors && Object.keys(storeErrors).length > 0 && (
         <div className="mt-2">
           <Alert variant="destructive" className="cursor-pointer" onClick={() => setStoreErrorsExpanded(!storeErrorsExpanded)}>
@@ -782,7 +613,7 @@ export default function SearchPage() {
             <div className="flex gap-6">
               {/* Desktop Filter Sidebar */}
               <div className="hidden lg:block w-72 shrink-0">
-                <div className="sticky top-[130px] h-[calc(100vh-130px-1.5rem)] flex flex-col gap-4 scrollbar-hide">
+                <div className="sticky top-[120px] max-h-[calc(100vh-148px)] overflow-y-auto flex flex-col gap-4 scrollbar-hide">
                   {user && (
                     <SavedSearches
                       locale={locale}
@@ -796,21 +627,136 @@ export default function SearchPage() {
                     onFilterChange={setFilters}
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
+                    topContent={
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm text-on-surface-variant">
+                          <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
+                          {t('search.resultsCount')}
+                        </div>
+                        <Popover open={sortOpen} onOpenChange={setSortOpen}>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-gray-200 dark:border-gray-700">
+                              <ArrowUpDown className="w-3.5 h-3.5" />
+                              <span className="text-xs">{currentSortOption.label}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-52 p-1.5">
+                            {sortOptions.map(option => {
+                              const Icon = option.icon;
+                              const isActive = sortBy === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  onClick={() => { setSortBy(option.value); setSortOpen(false); }}
+                                  className={cn(
+                                    'flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-start transition-colors',
+                                    isActive ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                  )}
+                                >
+                                  <div className={cn(
+                                    'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
+                                    isActive ? 'bg-primary-100 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400' : 'bg-gray-100 dark:bg-gray-700 text-on-surface-variant'
+                                  )}>
+                                    <Icon className="w-3.5 h-3.5" />
+                                  </div>
+                                  <p className={cn('flex-1 min-w-0 text-sm font-medium', isActive ? 'text-primary-700 dark:text-primary-300' : 'text-on-surface')}>
+                                    {option.label}
+                                  </p>
+                                  {isActive && <Check className="w-4 h-4 text-primary-500 shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    }
                   />
                 </div>
               </div>
 
               {/* Results Area */}
               <div className="flex-1 min-w-0">
+                {/* Mobile toolbar + filter chips */}
+                <div className="mb-4">
+                  {/* Mobile: results count, sort, filters button */}
+                  <div className="flex items-center justify-between gap-4 lg:hidden">
+                    <div className="text-sm text-on-surface-variant shrink-0">
+                      <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
+                      {t('search.resultsCount')}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Popover open={sortOpen} onOpenChange={setSortOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-gray-200 dark:border-gray-700">
+                            <ArrowUpDown className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline text-xs">{currentSortOption.label}</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="w-52 p-1.5">
+                          {sortOptions.map(option => {
+                            const Icon = option.icon;
+                            const isActive = sortBy === option.value;
+                            return (
+                              <button
+                                key={option.value}
+                                onClick={() => { setSortBy(option.value); setSortOpen(false); }}
+                                className={cn(
+                                  'flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-start transition-colors',
+                                  isActive ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                )}
+                              >
+                                <div className={cn(
+                                  'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
+                                  isActive ? 'bg-primary-100 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400' : 'bg-gray-100 dark:bg-gray-700 text-on-surface-variant'
+                                )}>
+                                  <Icon className="w-3.5 h-3.5" />
+                                </div>
+                                <p className={cn('flex-1 min-w-0 text-sm font-medium', isActive ? 'text-primary-700 dark:text-primary-300' : 'text-on-surface')}>
+                                  {option.label}
+                                </p>
+                                {isActive && <Check className="w-4 h-4 text-primary-500 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </PopoverContent>
+                      </Popover>
+                      <Dialog open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="relative">
+                            <SlidersHorizontal className="w-4 h-4" />
+                            <span className="hidden sm:inline ms-1">{t('search.mobileFilters')}</span>
+                            {activeFilterCount > 0 && (
+                              <span className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">{activeFilterCount}</span>
+                            )}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[85vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>{t('search.filtersTitle')}</DialogTitle>
+                          </DialogHeader>
+                          <FilterSidebar filters={filters} onFilterChange={(newFilters) => { setFilters(newFilters); setMobileFiltersOpen(false); }} category={selectedCategory !== 'all' ? selectedCategory : undefined} locale={locale} />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                  {filterChips.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2 overflow-x-auto pb-1 scrollbar-hide">
+                      <span className="text-xs text-on-surface-variant shrink-0">{t('search.activeFilters')}:</span>
+                      {filterChips.map((chip, i) => (
+                        <button key={`${chip.type}-${chip.value || i}`} onClick={() => removeFilter(chip.type, chip.value)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-medium shrink-0 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors">
+                          {chip.label}
+                          <X className="w-3 h-3" />
+                        </button>
+                      ))}
+                      <button onClick={clearAllFilters} className="text-xs text-red-500 hover:text-red-600 font-medium shrink-0 transition-colors">{t('search.clearAll')}</button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Loading State */}
                 {loading && (
-                  <div className={cn(
-                    'grid gap-4',
-                    viewMode === 'grid'
-                      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
-                      : 'grid-cols-1 lg:grid-cols-2'
-                  )}>
-                    {Array.from({ length: 12 }).map((_, i) => (
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+                    {Array.from({ length: 18 }).map((_, i) => (
                       <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-4">
                         <Skeleton className="h-44 w-full rounded-lg" />
                         <Skeleton className="h-4 w-3/4" />
@@ -846,12 +792,7 @@ export default function SearchPage() {
                 {/* Products Grid */}
                 {!loading && !error && products.length > 0 && (
                   <>
-                    <div className={cn(
-                      'grid gap-4',
-                      viewMode === 'grid'
-                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
-                        : 'grid-cols-1 lg:grid-cols-2'
-                    )}>
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
                       {products.map((product, index) => (
                         <div
                           key={`${product.id}-${index}`}
@@ -862,9 +803,19 @@ export default function SearchPage() {
                             product={product}
                             locale={locale}
                             onCompare={handleAddToCompare}
+                            onComparePrices={handleComparePrices}
                             onSave={handleSaveToWishlist}
-                            onAddToCart={handleAddProductToCart}
                           />
+                          {/* Inline Store Comparison Panel */}
+                          {expandedProductId === product.id && product.product_stores.length > 1 && (
+                            <div className="mt-2">
+                              <StoreComparisonPanel
+                                product={product}
+                                locale={locale}
+                                onClose={() => setExpandedProductId(null)}
+                              />
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

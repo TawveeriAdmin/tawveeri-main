@@ -1,11 +1,23 @@
 import type { ScrapedProduct } from './base/types';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import type { AvailabilityStatus } from '@/lib/database/types';
+import type { GroupedSearchProduct } from './search/product-grouper';
 
 interface ScrapedProductWithStore extends ScrapedProduct {
   store?: string;
   store_name?: string;
 }
+
+/**
+ * Bilingual store name mapping
+ */
+const STORE_NAMES_BILINGUAL: Record<string, { name_ar: string; name_en: string }> = {
+  amazon: { name_ar: 'أمازون السعودية', name_en: 'Amazon SA' },
+  noon: { name_ar: 'نون', name_en: 'Noon' },
+  jarir: { name_ar: 'مكتبة جرير', name_en: 'Jarir' },
+  extra: { name_ar: 'اكسترا', name_en: 'Extra' },
+  almanea: { name_ar: 'المنيع', name_en: 'Almanea' },
+};
 
 /**
  * Map ScrapedProduct to ProductCardProduct format for UI display
@@ -15,10 +27,10 @@ export function mapScrapedToProductCard(
   scraped: ScrapedProductWithStore
 ): ProductCardProduct {
   const storeSlug = scraped.store || 'amazon';
-  const storeName = scraped.store_name || getStoreName(storeSlug);
+  const storeNames = STORE_NAMES_BILINGUAL[storeSlug] || { name_ar: storeSlug, name_en: storeSlug };
   // Generate a temporary ID from SKU or URL
   const id = scraped.sku || `scraped-${storeSlug}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // Generate slug from name
   const slug = scraped.name_en
     .toLowerCase()
@@ -52,9 +64,9 @@ export function mapScrapedToProductCard(
         coupon_code: scraped.coupon_code || null,
         stores: {
           id: storeSlug,
-          name_ar: storeName,
-          name_en: storeName,
-          logo_url: null, // Can be enhanced later with actual logo URLs
+          name_ar: storeNames.name_ar,
+          name_en: storeNames.name_en,
+          logo_url: null,
         },
       },
     ],
@@ -62,16 +74,69 @@ export function mapScrapedToProductCard(
 }
 
 /**
- * Store name mapping
+ * Map a GroupedSearchProduct (multiple stores) to ProductCardProduct format.
+ * Maps the representative product info and ALL store entries into product_stores[].
  */
-const STORE_NAMES: Record<string, string> = {
-  amazon: 'Amazon SA',
-  noon: 'Noon',
-  jarir: 'Jarir',
-  extra: 'Extra',
-};
+export function mapGroupedToProductCard(
+  grouped: GroupedSearchProduct
+): ProductCardProduct {
+  const firstStore = grouped.stores[0];
+  const storeSlug = firstStore?.store || 'amazon';
+  const id = grouped.sku || `grouped-${storeSlug}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-export function getStoreName(storeSlug: string): string {
-  return STORE_NAMES[storeSlug] || storeSlug;
+  const slug = grouped.name_en
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'product';
+
+  // Map all store entries into product_stores[]
+  const productStores = grouped.stores.map((sp) => {
+    const names = STORE_NAMES_BILINGUAL[sp.store] || { name_ar: sp.store, name_en: sp.store };
+    return {
+      id: `store-${sp.store}-${sp.sku || id}`,
+      current_price: sp.current_price,
+      original_price: sp.original_price,
+      availability: sp.availability as AvailabilityStatus,
+      currency: 'SAR',
+      stock_quantity: null as number | null,
+      product_url: sp.product_url,
+      affiliate_url: sp.product_url,
+      delivery_time_days: sp.delivery_time_days || null,
+      delivery_cost: sp.delivery_cost || null,
+      is_free_delivery: sp.is_free_delivery || false,
+      is_deal: sp.is_deal || false,
+      deal_expires_at: sp.deal_expires_at || null,
+      coupon_code: sp.coupon_code || null,
+      stores: {
+        id: sp.store,
+        name_ar: names.name_ar,
+        name_en: names.name_en,
+        logo_url: null as string | null,
+      },
+    };
+  });
+
+  // Sort product_stores by price (cheapest first)
+  productStores.sort((a, b) => {
+    if (!a.current_price && !b.current_price) return 0;
+    if (!a.current_price) return 1;
+    if (!b.current_price) return -1;
+    return a.current_price - b.current_price;
+  });
+
+  return {
+    id,
+    name_ar: grouped.name_ar,
+    name_en: grouped.name_en,
+    slug,
+    category: grouped.category,
+    brand: grouped.brand,
+    model: grouped.model,
+    image_urls: grouped.image_urls.length > 0 ? grouped.image_urls : null,
+    product_stores: productStores,
+  };
 }
 
+export function getStoreName(storeSlug: string): string {
+  return STORE_NAMES_BILINGUAL[storeSlug]?.name_en || storeSlug;
+}

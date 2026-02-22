@@ -17,7 +17,7 @@ export default function UnauthorizedPage() {
  const isRTL = locale === 'ar';
 
  return (
- <div className="min-h-screen bg-surface-container flex items-center justify-center px-4">
+ <div className="flex items-center justify-center px-4 py-16">
  <div className="max-w-md w-full">
  <Card className="border-warning-200">
  <CardHeader className="text-center">

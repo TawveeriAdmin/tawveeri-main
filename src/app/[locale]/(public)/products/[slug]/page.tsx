@@ -50,6 +50,7 @@ import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import { trackProductClick, generateAffiliateUrl } from '@/lib/transactions/tracking';
 import { incrementSaveCount } from '@/lib/wishlist/utils';
+import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
@@ -484,7 +485,7 @@ export default function ProductDetailPage() {
 
  if (loading) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="">
  <div className="container mx-auto px-4 py-8">
  <div className="space-y-6">
  <Skeleton className="h-10 w-64" />
@@ -500,7 +501,7 @@ export default function ProductDetailPage() {
 
  if (error || !product) {
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="">
  <div className="container mx-auto px-4 py-8">
  <Alert variant="destructive">
  <AlertCircle className="h-4 w-4" />
@@ -523,8 +524,12 @@ export default function ProductDetailPage() {
  const bestPriceStore = storesWithPrices[0];
 
  return (
- <div className="min-h-screen bg-surface-container transition-colors duration-300">
+ <div className="">
  <div className="container mx-auto px-4 py-8 max-w-7xl">
+ <PageBreadcrumbs items={[
+   { label: t('products.title'), href: `/${locale}/products` },
+   { label: productName },
+ ]} />
  {/* Main Product Info */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
  {/* Image Gallery */}

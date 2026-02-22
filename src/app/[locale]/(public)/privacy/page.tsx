@@ -14,7 +14,7 @@ export default function PrivacyPage() {
  const lastUpdated = new Date('2025-01-15').toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US');
 
  return (
- <div className="min-h-screen bg-surface-container">
+ <div>
  <div className="container mx-auto px-4 py-8 max-w-4xl">
  <Card>
  <CardHeader>

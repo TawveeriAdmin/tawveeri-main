@@ -6,6 +6,7 @@ import { JarirSearchScraper } from './jarir-search-scraper';
 import { ExtraSearchScraper } from './extra-search-scraper';
 import { matchesCategory } from '../utils/category-utils';
 import type { ProductCategory } from '@/lib/database/types';
+import { groupSearchProducts, type GroupedSearchProduct } from './product-grouper';
 
 const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: number }) => Promise<StoreSearchResult> }> = {
   amazon: () => new AmazonSearchScraper(),
@@ -79,11 +80,15 @@ export async function searchAllStores(
     }
   }
 
-  // Sort
-  sortProducts(allProducts, sort, query, storeRankMap);
+  // Group products from different stores that represent the same product
+  const grouped = groupSearchProducts(allProducts, query);
+  console.log(`[SearchOrchestrator] Grouped ${allProducts.length} products into ${grouped.length} groups`);
 
-  // Price stats
-  const prices = allProducts.map(p => p.current_price).filter(p => p > 0);
+  // Sort grouped products
+  sortGroupedProducts(grouped, sort, query, storeRankMap);
+
+  // Price stats (based on best prices per group)
+  const prices = grouped.map(p => p.best_price).filter(p => p > 0);
   const priceStats = {
     min: prices.length > 0 ? Math.min(...prices) : null,
     max: prices.length > 0 ? Math.max(...prices) : null,
@@ -93,8 +98,8 @@ export async function searchAllStores(
   const searchTime = (Date.now() - startTime) / 1000;
 
   return {
-    products: allProducts,
-    count: allProducts.length,
+    products: grouped,
+    count: grouped.length,
     query,
     storeResults,
     priceStats,
@@ -338,6 +343,63 @@ function sortProducts(
       break;
     case 'name':
       products.sort((a, b) => (a.name_en || '').toLowerCase().localeCompare((b.name_en || '').toLowerCase()));
+      break;
+  }
+}
+
+/**
+ * Sort grouped products. Uses max relevance score across all store entries in the group.
+ * Price sort uses best_price (min price across stores).
+ */
+function sortGroupedProducts(
+  groups: GroupedSearchProduct[],
+  sort: string,
+  query?: string,
+  storeRankMap?: Map<SearchProduct, number>,
+): void {
+  switch (sort) {
+    case 'relevance':
+      if (query) {
+        // Compute median from all individual store entries for relevance scoring
+        const allStoreProducts = groups.flatMap(g => g.stores);
+        const medianPrice = computeMedianPrice(allStoreProducts);
+        const groupScores = new Map<GroupedSearchProduct, number>();
+
+        for (const group of groups) {
+          // Take the max relevance across all store entries in the group
+          let maxScore = -Infinity;
+          for (const p of group.stores) {
+            const storeRank = storeRankMap?.get(p) ?? 50;
+            const score = calculateRelevance(p, query, storeRank, medianPrice);
+            if (score > maxScore) maxScore = score;
+          }
+          groupScores.set(group, maxScore);
+        }
+
+        groups.sort((a, b) => (groupScores.get(b) || 0) - (groupScores.get(a) || 0));
+      }
+      break;
+    case 'price_asc':
+      groups.sort((a, b) => {
+        if (!a.best_price && !b.best_price) return 0;
+        if (!a.best_price) return 1;
+        if (!b.best_price) return -1;
+        return a.best_price - b.best_price;
+      });
+      break;
+    case 'price_desc':
+      groups.sort((a, b) => {
+        if (!a.best_price && !b.best_price) return 0;
+        if (!a.best_price) return 1;
+        if (!b.best_price) return -1;
+        return b.best_price - a.best_price;
+      });
+      break;
+    case 'rating':
+      groups.sort((a, b) => (b.is_deal ? 1 : 0) - (a.is_deal ? 1 : 0));
+      break;
+    case 'name':
+      groups.sort((a, b) => (a.name_en || '').toLowerCase().localeCompare((b.name_en || '').toLowerCase()));
       break;
   }
 }

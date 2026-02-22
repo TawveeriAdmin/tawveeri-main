@@ -1,10 +1,10 @@
-import type { ScrapedProduct } from './base/types';
+import type { GroupedSearchProduct } from './search/product-grouper';
 
 /**
  * Search result type for UI consumption
  */
 export interface ScrapedSearchResult {
-  products: ScrapedProduct[];
+  products: GroupedSearchProduct[];
   count: number;
   query: string;
   storeResults: Record<string, number>;

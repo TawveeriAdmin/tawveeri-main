@@ -247,6 +247,9 @@
 @theme {
   --color-scheme: light dark;
 
+  /* ---- Breakpoints ---- */
+  --breakpoint-3xl: 1800px;
+
   /* ---- M3 Color Roles as Tailwind utilities ---- */
   /* Usage: bg-primary, text-on-primary, bg-primary-container, etc. */
   --color-primary: var(--color-primary);

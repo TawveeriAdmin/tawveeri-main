@@ -90,6 +90,11 @@
   "priceNotAvailable": "السعر غير متاح",
   "store": "متجر",
   "stores": "متاجر",
+  "from": "من",
+  "availableAt": "متوفر في {{count}} متاجر",
+  "comparePrices": "قارن {{count}} متاجر",
+  "viewAtStore": "عرض في المتجر",
+  "bestPriceLabel": "أفضل سعر",
   "categories": {
     "tv": "تلفزيون",
     "laptop": "لابتوب",

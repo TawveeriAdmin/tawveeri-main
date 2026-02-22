@@ -90,6 +90,11 @@
   "priceNotAvailable": "Price not available",
   "store": "store",
   "stores": "stores",
+  "from": "From",
+  "availableAt": "Available at {{count}} stores",
+  "comparePrices": "Compare {{count}} Stores",
+  "viewAtStore": "View at Store",
+  "bestPriceLabel": "Best Price",
   "categories": {
     "tv": "TV",
     "laptop": "Laptop",

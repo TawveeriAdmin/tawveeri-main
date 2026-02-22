@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import type { Database, NotificationType } from '@/lib/database/types';
 import { GuestPrompt } from '@/components/auth/guest-prompt';
+import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 type NotificationRow = Database['public']['Tables']['notifications']['Row'];
 type ProductSummary = Pick<
@@ -299,6 +300,8 @@ export default function NotificationsPage() {
 
  return (
  <div className="space-y-6">
+ <PageBreadcrumbs items={[{ label: t('dashboard.sidebar.notifications') }]} />
+
  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
  <div>
  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">

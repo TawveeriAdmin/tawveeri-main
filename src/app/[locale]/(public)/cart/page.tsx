@@ -108,7 +108,7 @@ export default function CartPage() {
 
  if (stores.length === 0) {
  return (
- <div className="min-h-screen bg-surface-container">
+ <div>
  <div className="container mx-auto px-4 py-8">
  <EmptyState
  icon={<ShoppingBag className="h-12 w-12" />}
@@ -129,7 +129,7 @@ export default function CartPage() {
  }
 
  return (
- <div className="min-h-screen bg-surface-container">
+ <div>
  <div className="container mx-auto px-4 py-8 max-w-7xl">
  <div className="flex flex-col lg:flex-row gap-8">
  {/* Cart Items */}
