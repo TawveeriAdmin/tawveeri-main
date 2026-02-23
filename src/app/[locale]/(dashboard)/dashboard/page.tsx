@@ -24,7 +24,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import type { ProductCategory } from '@/lib/database/types';
-import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
+
 
 const RECENTLY_VIEWED_KEY = 'tawveeri.recentlyViewedProducts';
 const COMPARE_HISTORY_KEY = 'compare_products';
@@ -149,6 +149,10 @@ export default function DashboardPage() {
 
   const fetchProductsByIds = async (ids: string[]): Promise<DashboardProduct[]> => {
     if (!supabase || !ids.length) return [];
+    // Filter to valid UUIDs only — localStorage may contain scraped product IDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validIds = ids.filter(id => uuidRegex.test(id));
+    if (!validIds.length) return [];
     const { data, error } = await supabase
       .from('products')
       .select(
@@ -175,7 +179,7 @@ export default function DashboardPage() {
         )
       `
       )
-      .in('id', ids);
+      .in('id', validIds);
 
     if (error) {
       console.error('Error fetching products by IDs:', error);
@@ -187,7 +191,7 @@ export default function DashboardPage() {
       map.set(product.id, product);
     });
 
-    return ids
+    return validIds
       .map((id) => map.get(id))
       .filter((product): product is DashboardProduct => Boolean(product));
   };
@@ -613,11 +617,10 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageBreadcrumbs items={[{ label: t('dashboard.sidebar.dashboard') }]} />
       <section className="animate-fadeInUp relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-primary-500/10 via-white to-secondary-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-primary-500/20 dark:via-gray-900 dark:to-secondary-500/20 md:p-7">
         <div className="pointer-events-none absolute -end-12 -top-12 h-44 w-44 rounded-full bg-primary-500/15 blur-3xl dark:bg-primary-400/25" />
         <div className="pointer-events-none absolute -bottom-16 start-1/3 h-44 w-44 rounded-full bg-secondary-500/15 blur-3xl dark:bg-secondary-400/25" />
-        <div className="relative z-10 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
+        <div className="relative z-10 space-y-5">
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-300">
               {t('dashboard.quickActions')}
@@ -651,17 +654,17 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+          <div className="flex flex-wrap gap-2.5">
             {quickActions.map((action) => (
               <Link
                 key={action.href}
                 href={action.href}
-                className={`group rounded-2xl border border-gray-200 bg-gradient-to-br p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 ${action.tone}`}
+                className={`group rounded-2xl border border-gray-200 bg-gradient-to-br px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 inline-flex items-center gap-2 ${action.tone}`}
               >
-                <action.icon className="h-5 w-5 text-gray-700 transition-transform duration-200 group-hover:scale-110 dark:text-gray-200" />
-                <p className="mt-4 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                <action.icon className="h-4 w-4 text-gray-700 transition-transform duration-200 group-hover:scale-110 dark:text-gray-200 shrink-0" />
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">
                   {action.label}
-                </p>
+                </span>
               </Link>
             ))}
           </div>

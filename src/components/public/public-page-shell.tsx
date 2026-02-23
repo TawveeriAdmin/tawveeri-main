@@ -122,6 +122,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
+    ...(user ? [{ href: `/${locale}/dashboard`, label: t('nav.dashboard'), icon: LayoutDashboard }] : []),
   ];
 
   /* ── User info ── */
@@ -178,14 +179,14 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
       {/* ═══ Unified Header ═══ */}
       <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/95 backdrop-blur-md dark:border-gray-800/80 dark:bg-gray-950/95">
         <div className="mx-auto w-full max-w-[1900px] px-3 py-3 md:px-6">
-          {/* Row 1: Logo | Search | Actions */}
+          {/* Row 1: Logo | Search (centered) | Actions */}
           <div className="flex items-center gap-2 md:gap-3">
             {/* Logo */}
             <Link
               href={`/${locale}`}
               className="group inline-flex shrink-0 items-center gap-2 rounded-xl p-1 transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-800/70"
             >
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-extrabold text-on-primary">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-extrabold text-on-primary">
                 TV
               </span>
               <span className="hidden text-sm font-semibold text-gray-900 dark:text-gray-100 sm:block">
@@ -193,19 +194,30 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
               </span>
             </Link>
 
-            {/* Search bar — desktop */}
-            <form
-              onSubmit={handleSearchSubmit}
-              className="relative hidden flex-1 items-center md:flex"
-            >
-              <Search className="pointer-events-none absolute start-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('search.searchPlaceholder')}
-                className="h-10 w-full rounded-xl border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400 dark:focus:bg-gray-900"
-              />
-            </form>
+            {/* Search bar — desktop (centered, max-width constrained) */}
+            <div className="hidden flex-1 justify-center md:flex">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="flex w-full max-w-lg items-center gap-2"
+              >
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t('search.searchPlaceholder')}
+                    className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400 dark:focus:bg-gray-900"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-on-primary transition-colors hover:bg-primary-600"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  {t('button.search')}
+                </button>
+              </form>
+            </div>
 
             {/* Actions */}
             <div className="ms-auto flex items-center gap-1 md:ms-0 md:gap-1.5">
@@ -344,14 +356,23 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
           </div>
 
           {/* Search bar — mobile */}
-          <form onSubmit={handleSearchSubmit} className="relative mt-3 flex items-center md:hidden">
-            <Search className="pointer-events-none absolute start-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('search.searchPlaceholder')}
-              className="h-10 w-full rounded-xl border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
-            />
+          <form onSubmit={handleSearchSubmit} className="mt-2 flex items-center gap-2 md:hidden">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute start-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('search.searchPlaceholder')}
+                className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
+              />
+            </div>
+            <button
+              type="submit"
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-on-primary transition-colors hover:bg-primary-600"
+            >
+              <Search className="h-3.5 w-3.5" />
+              {t('button.search')}
+            </button>
           </form>
 
           {/* Row 2: Nav pills */}

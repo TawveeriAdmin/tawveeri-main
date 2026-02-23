@@ -41,8 +41,14 @@
     "noSupport": "المسح بالباركود غير مدعوم على هذا الجهاز. أدخل الرمز يدوياً."
   },
   "noResultsFor": "لا توجد نتائج لـ \"{{query}}\"",
-  "startSearching": "ابدأ البحث",
+  "startSearching": "اعثر على أفضل الأسعار",
+  "searchSubtitle": "قارن الأسعار عبر 5 متاجر في الوقت الفعلي",
   "searchForProducts": "ابحث عن المنتجات التي تريدها للمقارنة بين المتاجر",
+  "popularSearches": "رائج",
+  "weSearchAcross": "نبحث في",
+  "featureRealTime": "بحث فوري",
+  "featureCompare": "مقارنة أسعار",
+  "featureBestPrice": "ضمان أفضل سعر",
   "noSuggestions": "لا توجد اقتراحات",
   "searching": "جاري البحث...",
   "filters": {

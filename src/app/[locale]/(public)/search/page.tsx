@@ -37,7 +37,6 @@ import {
 import {
   Search,
   AlertCircle,
-  Sparkles,
   SlidersHorizontal,
   X,
   Smartphone,
@@ -53,6 +52,10 @@ import {
   Star,
   ArrowUpDown,
   Check,
+  Zap,
+  BarChart3,
+  BadgeCheck,
+  Loader2,
 } from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useToast } from '@/components/ui/use-toast';
@@ -476,7 +479,28 @@ export default function SearchPage() {
   }, []);
 
   const handleAddToCompare = (productId: string) => {
-    console.log('Add to compare:', productId);
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = window.localStorage.getItem('compare_products');
+      const existing: string[] = stored ? JSON.parse(stored) : [];
+      const unique = Array.from(new Set(existing));
+
+      if (unique.includes(productId)) {
+        toast({ title: t('products.added'), description: t('compare.alreadyInCompare') });
+        return;
+      }
+      if (unique.length >= 4) {
+        toast({ title: t('common.error'), description: t('compare.maxProducts'), variant: 'destructive' });
+        return;
+      }
+
+      const next = [productId, ...unique].slice(0, 4);
+      window.localStorage.setItem('compare_products', JSON.stringify(next));
+      window.dispatchEvent(new Event('compare-products-updated'));
+      toast({ title: t('products.added'), description: t('products.addedToComparison') });
+    } catch {
+      // ignore storage errors
+    }
   };
 
   const handleSaveToWishlist = (productId: string) => {
@@ -557,48 +581,119 @@ export default function SearchPage() {
 
       {/* ── No-Query State ── */}
       {!debouncedQuery && !loading && (
-        <div className="py-16">
-          <div className="max-w-2xl mx-auto text-center space-y-8">
-            {/* Gradient search icon */}
-            <div className="mx-auto w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-800/20 flex items-center justify-center">
-              <Search className="w-10 h-10 text-primary-500" />
+        <div className="py-8">
+          <div className="mx-auto max-w-3xl space-y-8">
+            {/* Hero */}
+            <div className="text-center space-y-3">
+              <h1 className="text-3xl font-extrabold tracking-tight text-on-surface sm:text-4xl">
+                {t('search.startSearching')}
+              </h1>
+              <p className="text-base text-on-surface-variant">
+                {t('search.searchSubtitle')}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-on-surface">{t('search.startSearching')}</h1>
-              <p className="text-on-surface-variant">{t('search.searchForProducts')}</p>
+            {/* Hero search bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = searchQuery.trim();
+                if (q) { setDebouncedQuery(q); setCurrentPage(1); }
+              }}
+              className="mx-auto flex max-w-xl items-center gap-2"
+            >
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('search.searchPlaceholder')}
+                  className="h-11 w-full rounded-xl border border-gray-200 bg-white pe-3 ps-9 text-sm text-on-surface outline-none transition-all placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-900 dark:placeholder:text-gray-500 dark:focus:border-primary-400 dark:focus:ring-primary-400/20"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="submit"
+                className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-600"
+              >
+                <Search className="h-4 w-4" />
+                {t('button.search')}
+              </button>
+            </form>
+
+            {/* Popular searches */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs font-medium text-on-surface-variant">{t('search.popularSearches')}:</span>
+              {(locale === 'ar'
+                ? ['ايفون 16', 'سامسونج S24', 'ماك بوك', 'ايربودز', 'بلايستيشن 5', 'شاشة 4K']
+                : ['iPhone 16', 'Samsung S24', 'MacBook', 'AirPods', 'PlayStation 5', '4K Monitor']
+              ).map((term) => (
+                <button
+                  key={term}
+                  onClick={() => handleQuickCategory(term)}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-on-surface-variant transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-700 dark:hover:bg-primary-950/60 dark:hover:text-primary-300"
+                >
+                  {term}
+                </button>
+              ))}
             </div>
 
-            {/* Quick category chips */}
-            <div className="flex flex-wrap justify-center gap-3">
-              {quickCategories.map(cat => {
+            {/* Category cards */}
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {quickCategories.map((cat) => {
                 const Icon = cat.icon;
                 return (
                   <button
                     key={cat.key}
                     onClick={() => handleQuickCategory(cat.query)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-on-surface hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700 transition-all duration-200 hover:shadow-sm"
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 transition-all hover:border-primary-300 hover:bg-primary-50 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-700 dark:hover:bg-primary-950/60"
                   >
-                    <Icon className="w-4 h-4 text-primary-500" />
-                    {t(`search.quickCategories.${cat.key}`)}
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors group-hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-400 dark:group-hover:bg-primary-900/50">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-medium text-on-surface">
+                      {t(`search.quickCategories.${cat.key}`)}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Subtle scraping info badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs text-on-surface-variant">
-              <Sparkles className="w-3 h-3" />
-              {t('search.scrapeNote')}
+            {/* Store trust row */}
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-xs font-medium text-on-surface-variant">{t('search.weSearchAcross')}</span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {['Amazon', 'Noon', 'Jarir', 'Extra', 'Almanea'].map((store) => (
+                  <span
+                    key={store}
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-on-surface dark:border-gray-700 dark:bg-gray-800"
+                  >
+                    {store}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Feature badges */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                <Zap className="h-3 w-3" />
+                {t('search.featureRealTime')}
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+                <BarChart3 className="h-3 w-3" />
+                {t('search.featureCompare')}
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <BadgeCheck className="h-3 w-3" />
+                {t('search.featureBestPrice')}
+              </div>
             </div>
 
             {/* Search history */}
             {user && (
-              <div className="mt-8">
-                <SearchHistory
-                  limit={10}
-                  onSelectQuery={handleHistorySelect}
-                />
+              <div>
+                <SearchHistory limit={10} onSelectQuery={handleHistorySelect} />
               </div>
             )}
           </div>
@@ -755,18 +850,33 @@ export default function SearchPage() {
 
                 {/* Loading State */}
                 {loading && (
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-                    {Array.from({ length: 18 }).map((_, i) => (
-                      <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-4">
-                        <Skeleton className="h-44 w-full rounded-lg" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <div className="flex justify-between">
-                          <Skeleton className="h-6 w-20" />
-                          <Skeleton className="h-8 w-24 rounded-lg" />
+                  <div className="space-y-6">
+                    {/* Progress banner */}
+                    <div className="flex items-center gap-3 rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 dark:border-primary-800 dark:bg-primary-900/20">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary-600 dark:text-primary-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                          {scrapingProgress || t('search.searchingStores')}
+                        </p>
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-primary-100 dark:bg-primary-800/40">
+                          <div className="h-full w-full animate-progress rounded-full bg-gradient-to-r from-primary-400 via-primary-600 to-primary-400 bg-[length:200%_100%]" />
                         </div>
                       </div>
-                    ))}
+                    </div>
+                    {/* Skeleton grid */}
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+                      {Array.from({ length: 12 }).map((_, i) => (
+                        <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+                          <Skeleton className="h-40 w-full rounded-lg" />
+                          <Skeleton className="h-3.5 w-3/4" />
+                          <Skeleton className="h-3.5 w-1/2" />
+                          <div className="flex justify-between">
+                            <Skeleton className="h-5 w-20" />
+                            <Skeleton className="h-7 w-20 rounded-lg" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -780,12 +890,30 @@ export default function SearchPage() {
 
                 {/* No Results */}
                 {!loading && !error && products.length === 0 && debouncedQuery && (
-                  <div className="text-center py-20 space-y-4">
-                    <div className="mx-auto w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Search className="w-7 h-7 text-on-surface-variant" />
+                  <div className="mx-auto max-w-md text-center py-16 space-y-5">
+                    <div className="mx-auto w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                      <Search className="w-6 h-6 text-on-surface-variant" />
                     </div>
-                    <h2 className="text-lg font-semibold text-on-surface">{t('search.noResults')}</h2>
-                    <p className="text-sm text-on-surface-variant">{t('search.noResultsFor').replace('{{query}}', debouncedQuery)}</p>
+                    <div className="space-y-1.5">
+                      <h2 className="text-lg font-semibold text-on-surface">{t('search.noResults')}</h2>
+                      <p className="text-sm text-on-surface-variant">{t('search.noResultsFor').replace('{{query}}', debouncedQuery)}</p>
+                    </div>
+                    {/* Suggest categories */}
+                    <div className="flex flex-wrap justify-center gap-2 pt-2">
+                      {quickCategories.slice(0, 4).map((cat) => {
+                        const Icon = cat.icon;
+                        return (
+                          <button
+                            key={cat.key}
+                            onClick={() => handleQuickCategory(cat.query)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-900/30"
+                          >
+                            <Icon className="h-3.5 w-3.5 text-primary-500" />
+                            {t(`search.quickCategories.${cat.key}`)}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 

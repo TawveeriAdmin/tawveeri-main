@@ -94,7 +94,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+      <div className="flex items-center justify-center gap-2 text-sm text-on-surface-variant">
         <History className="w-4 h-4 animate-spin" />
         {t('search.history.loading') || 'Loading history...'}
       </div>
@@ -103,7 +103,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 text-sm text-error">
+      <div className="flex items-center justify-center gap-2 text-sm text-error">
         <History className="w-4 h-4" />
         {error}
       </div>
@@ -112,7 +112,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
 
   if (history.length === 0) {
     return (
-      <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+      <div className="flex items-center justify-center gap-2 text-sm text-on-surface-variant">
         <History className="w-4 h-4" />
         {t('search.history.empty') || 'No recent searches yet.'}
       </div>

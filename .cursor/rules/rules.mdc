@@ -168,7 +168,7 @@ CRITICAL PROTOCOL GUIDELINES
 ✅ In do exe, follow the plan with 100% accuracy  
 ✅ In do rev, flag even the smallest deviation  
 ✅ You CANNOT make independent decisions
-✅ When the user explicitly asks you to inspect or edit anything related to the backend (DB Schema, Edge Functions, DB Functions, etc.), you MUST use supabase MCP with project id: misnoxmipgiawezkdzvb
+✅ When the user explicitly asks you to inspect or edit anything related to the backend (DB Schema, Edge Functions, DB Functions, etc.), you MUST use supabase MCP with project id: ffpsjjazsluolysgithg
 ⸻
 
 MODE TRANSITION COMMANDS

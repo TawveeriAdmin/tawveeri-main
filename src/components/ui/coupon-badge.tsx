@@ -153,74 +153,70 @@ export function CouponBadge({ coupon, variant = 'compact', locale, onCopy }: Cou
   const expiryInfo = getExpiryInfo(coupon.expires_at, t);
 
   return (
-    <div className="rounded-xl border border-dashed border-tertiary-300 bg-tertiary-50/50 p-4 dark:border-tertiary-700 dark:bg-tertiary-950/20">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Discount label */}
-          <div className="flex items-center gap-2 mb-2">
-            <Ticket className="h-4 w-4 text-tertiary-600 dark:text-tertiary-400 shrink-0" />
-            <span className="font-semibold text-tertiary-700 dark:text-tertiary-300">
-              {discountLabel}
-            </span>
-          </div>
-
-          {/* Code */}
-          <div className="flex items-center gap-2 mb-2">
-            <code className="rounded-lg border-2 border-dashed border-tertiary-400 bg-white px-3 py-1.5 font-mono text-sm font-bold tracking-wider text-on-surface dark:bg-gray-900 dark:border-tertiary-600">
-              {coupon.code}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="h-8 w-8 p-0"
-            >
-              {copied ? (
-                <Check className="h-4 w-4 text-success" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Description */}
-          {description && (
-            <p className="text-sm text-on-surface-variant mb-1">{description}</p>
-          )}
-
-          {/* Meta info */}
-          <div className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
-            {coupon.min_purchase && (
-              <span>
-                {t('coupons.minPurchase')} {coupon.min_purchase} {t('price.sar')}
-              </span>
-            )}
-            {coupon.max_discount && coupon.discount_type === 'percentage' && (
-              <span>
-                ({t('coupons.maxDiscountAmount')}: {coupon.max_discount} {t('price.sar')})
-              </span>
-            )}
-          </div>
+    <div className="rounded-lg border border-dashed border-tertiary-300 bg-tertiary-50/50 px-3 py-2 dark:border-tertiary-700 dark:bg-tertiary-950/20">
+      {/* Discount + expiry row */}
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <Ticket className="h-3.5 w-3.5 text-tertiary-600 dark:text-tertiary-400 shrink-0" />
+          <span className="text-sm font-semibold text-tertiary-700 dark:text-tertiary-300">
+            {discountLabel}
+          </span>
         </div>
-
-        {/* Expiry badge */}
-        <div className="shrink-0">
-          {expiryInfo.isExpired ? (
-            <Badge variant="warning" className="text-xs">
-              {expiryInfo.label}
-            </Badge>
-          ) : expiryInfo.isUrgent ? (
-            <Badge variant="warning" className="text-xs gap-1">
-              <Clock className="h-3 w-3" />
-              {expiryInfo.label}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-xs">
-              {expiryInfo.label}
-            </Badge>
-          )}
-        </div>
+        {expiryInfo.isExpired ? (
+          <Badge variant="warning" className="text-[10px] px-1.5 py-0">
+            {expiryInfo.label}
+          </Badge>
+        ) : expiryInfo.isUrgent ? (
+          <Badge variant="warning" className="text-[10px] px-1.5 py-0 gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            {expiryInfo.label}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            {expiryInfo.label}
+          </Badge>
+        )}
       </div>
+
+      {/* Code + copy */}
+      <div className="flex items-center gap-1.5 mb-1">
+        <code className="rounded-md border border-dashed border-tertiary-400 bg-white px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-on-surface dark:bg-gray-900 dark:border-tertiary-600">
+          {coupon.code}
+        </code>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCopy}
+          className="h-6 w-6 p-0"
+        >
+          {copied ? (
+            <Check className="h-3 w-3 text-success" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
+        </Button>
+      </div>
+
+      {/* Description */}
+      {description && (
+        <p className="text-xs text-on-surface-variant">{description}</p>
+      )}
+
+      {/* Meta info */}
+      {(coupon.min_purchase || (coupon.max_discount && coupon.discount_type === 'percentage')) && (
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-on-surface-variant">
+          {coupon.min_purchase && (
+            <span>
+              {t('coupons.minPurchase')} {coupon.min_purchase} {t('price.sar')}
+            </span>
+          )}
+          {coupon.max_discount && coupon.discount_type === 'percentage' && (
+            <span>
+              ({t('coupons.maxDiscountAmount')}: {coupon.max_discount} {t('price.sar')})
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

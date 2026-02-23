@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreCard } from '@/components/stores/store-card';
@@ -235,50 +234,68 @@ export default function StoresPage() {
     setSearchQuery(searchInput.trim());
   };
 
-  const activeSortLabel =
-    sortBy === 'name'
-      ? t('stores.sortName')
-      : sortBy === 'rating'
-        ? t('stores.sortRating')
-        : t('stores.sortProducts');
-
-  const activeFilterLabel =
-    storeFilter === 'all'
-      ? uiCopy.filterAll
-      : storeFilter === 'featured'
-        ? uiCopy.filterFeatured
-        : uiCopy.filterPremium;
-
   return (
-    <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-cyan-500/10 via-white to-blue-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-cyan-500/20 dark:via-gray-900 dark:to-blue-500/20 md:p-7">
-        <div className="pointer-events-none absolute -end-16 -top-14 h-44 w-44 rounded-full bg-cyan-500/20 blur-3xl dark:bg-cyan-400/20" />
-        <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-blue-500/15 blur-3xl dark:bg-blue-400/20" />
+    <div className="space-y-4">
+      {/* Compact header */}
+      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-cyan-500/10 via-white to-blue-500/10 p-4 shadow-sm dark:border-gray-800 dark:from-cyan-500/20 dark:via-gray-900 dark:to-blue-500/20 md:p-5">
+        <div className="pointer-events-none absolute -end-16 -top-14 h-36 w-36 rounded-full bg-cyan-500/20 blur-3xl dark:bg-cyan-400/20" />
 
-        <div className="relative z-10 space-y-5">
-          <div>
-            <Badge
-              variant="outline"
-              className="mb-3 border-cyan-300 bg-cyan-50 text-cyan-700 dark:border-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
-            >
-              <Sparkles className="me-1 h-3.5 w-3.5" />
-              {uiCopy.featured}
-            </Badge>
-
-            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 md:text-3xl">
-              {t('stores.title')}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 md:text-base">
-              {t('stores.subtitle')}
-            </p>
+        <div className="relative z-10 space-y-4">
+          {/* Title + inline stats */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 md:text-2xl">
+                  {t('stores.title')}
+                </h1>
+                <Badge
+                  variant="outline"
+                  className="border-cyan-300 bg-cyan-50 text-cyan-700 dark:border-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
+                >
+                  <Sparkles className="me-1 h-3 w-3" />
+                  {uiCopy.featured}
+                </Badge>
+              </div>
+              <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
+                {t('stores.subtitle')}
+              </p>
+            </div>
+            {/* Inline stats */}
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
+                <Store className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : filteredStores.length}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.filterAll}</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
+                <Sparkles className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : featuredCount}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.featuredStores}</span>
+              </div>
+              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 sm:flex dark:border-gray-700 dark:bg-gray-900/75">
+                <ShieldCheck className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : premiumCount}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.premiumStores}</span>
+              </div>
+              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 md:flex dark:border-gray-700 dark:bg-gray-900/75">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : productsTotal.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.totalProducts}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-cyan-200/70 bg-white/90 p-3 shadow-sm dark:border-cyan-800/70 dark:bg-gray-900/80 md:p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-cyan-700 dark:text-cyan-300">
-              <Search className="h-3.5 w-3.5" />
-              <span>{uiCopy.searchHelper}</span>
-            </div>
-            <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {/* Search + filters + sort row */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <Input
@@ -286,194 +303,79 @@ export default function StoresPage() {
                   placeholder={t('stores.searchPlaceholder')}
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  className="h-11 rounded-xl border-cyan-200 bg-white/90 ps-9 dark:border-cyan-800/70 dark:bg-gray-950/70"
+                  className="h-9 rounded-lg border-cyan-200 bg-white ps-9 dark:border-cyan-800/70 dark:bg-gray-950/70"
                 />
               </div>
-              <Button type="submit" className="h-11 rounded-xl px-5">
+              <Button type="submit" size="sm" className="h-9 rounded-lg px-4">
                 {uiCopy.searchAction}
               </Button>
             </form>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{uiCopy.searchHint}</p>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <button
-              onClick={() => setStoreFilter('all')}
-              className={`group rounded-2xl border p-4 text-start transition-all hover:-translate-y-0.5 hover:shadow-sm ${
-                storeFilter === 'all'
-                  ? 'border-cyan-300 bg-cyan-50/80 dark:border-cyan-700 dark:bg-cyan-900/20'
-                  : 'border-gray-200 bg-white/90 hover:border-cyan-200 dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-cyan-700/60'
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
-                  <Store className="h-4.5 w-4.5" />
-                </div>
-                <Badge variant="outline">{stores.length}</Badge>
+            <div className="flex items-center gap-2">
+              {/* Filter chips */}
+              <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-0.5 dark:border-gray-700">
+                {(['all', 'featured', 'premium'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setStoreFilter(filter)}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                      storeFilter === filter
+                        ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    {filter === 'all' ? uiCopy.filterAll : filter === 'featured' ? uiCopy.filterFeatured : uiCopy.filterPremium}
+                  </button>
+                ))}
               </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.allStores}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.allStoresHint}</p>
-            </button>
 
-            <button
-              onClick={() => setStoreFilter('featured')}
-              className={`group rounded-2xl border p-4 text-start transition-all hover:-translate-y-0.5 hover:shadow-sm ${
-                storeFilter === 'featured'
-                  ? 'border-cyan-300 bg-cyan-50/80 dark:border-cyan-700 dark:bg-cyan-900/20'
-                  : 'border-gray-200 bg-white/90 hover:border-cyan-200 dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-cyan-700/60'
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
-                  <Sparkles className="h-4.5 w-4.5" />
-                </div>
-                <Badge variant="outline">{featuredCount}</Badge>
-              </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.filterFeatured}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.featuredHint}</p>
-            </button>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <SelectTrigger className="h-9 w-[140px] border-gray-200 dark:border-gray-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">{t('stores.sortName')}</SelectItem>
+                  <SelectItem value="rating">{t('stores.sortRating')}</SelectItem>
+                  <SelectItem value="products">{t('stores.sortProducts')}</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <button
-              onClick={() => setStoreFilter('premium')}
-              className={`group rounded-2xl border p-4 text-start transition-all hover:-translate-y-0.5 hover:shadow-sm ${
-                storeFilter === 'premium'
-                  ? 'border-cyan-300 bg-cyan-50/80 dark:border-cyan-700 dark:bg-cyan-900/20'
-                  : 'border-gray-200 bg-white/90 hover:border-cyan-200 dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-cyan-700/60'
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                  <ShieldCheck className="h-4.5 w-4.5" />
-                </div>
-                <Badge variant="outline">{premiumCount}</Badge>
-              </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.filterPremium}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.premiumHint}</p>
-            </button>
-
-            <button
-              onClick={handleReset}
-              className="group rounded-2xl border border-gray-200 bg-white/90 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-gray-600"
-            >
-              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                <Search className="h-4.5 w-4.5" />
-              </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uiCopy.reset}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uiCopy.resetHint}</p>
-            </button>
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <Store className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-              <Badge variant="outline">{uiCopy.filterAll}</Badge>
+              {(storeFilter !== 'all' || searchQuery) && (
+                <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2">
+                  <Search className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {filteredStores.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-            </p>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <Sparkles className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-              <Badge variant="outline">{uiCopy.featuredStores}</Badge>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{featuredCount}</p>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <ShieldCheck className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-              <Badge variant="outline">{uiCopy.premiumStores}</Badge>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{premiumCount}</p>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              <Badge variant="outline">{uiCopy.totalProducts}</Badge>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {productsTotal.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white/85 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/70">
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/70 bg-cyan-50/60 px-3 py-1.5 text-sm font-medium text-cyan-700 dark:border-cyan-800/70 dark:bg-cyan-900/20 dark:text-cyan-200">
-              <Store className="h-4 w-4" />
-              <span>
-                {filteredStores.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
-                {t('stores.resultsCount')}
-              </span>
-            </div>
-            <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
-              {t('stores.sortBy')}: {activeSortLabel}
-            </Badge>
-            <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
-              {activeFilterLabel}
-            </Badge>
+          {/* Results count */}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">
+              {filteredStores.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
+              {t('stores.resultsCount')}
+            </span>
             {searchQuery && (
-              <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
-                {searchQuery}
+              <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs">
+                &ldquo;{searchQuery}&rdquo;
+                <button
+                  onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+                  className="ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  ×
+                </button>
               </Badge>
             )}
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/85 p-2 dark:border-gray-700 dark:bg-gray-900/80">
-            <label className="px-1 text-sm text-on-surface-variant">{t('stores.sortBy')}:</label>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-              <SelectTrigger className="h-9 w-[190px] border-gray-200 dark:border-gray-700">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">{t('stores.sortName')}</SelectItem>
-                <SelectItem value="rating">{t('stores.sortRating')}</SelectItem>
-                <SelectItem value="products">{t('stores.sortProducts')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {searchQuery && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchInput('');
-                  setSearchQuery('');
-                }}
-                className="h-9 rounded-lg"
-              >
-                {uiCopy.clearSearch}
-              </Button>
-            )}
-            {!searchQuery && (
-              <div className="inline-flex h-9 items-center rounded-lg px-3 text-xs text-on-surface-variant">
-                {uiCopy.reset}
-              </div>
-            )}
-          </div>
         </div>
-
-        {!loading && !error && searchQuery && (
-          <div className="mt-3 text-xs text-on-surface-variant">
-            {locale === 'ar'
-              ? 'نتائج مطابقة لاسم المتجر الذي أدخلته'
-              : 'Showing stores that match your search'}
-          </div>
-        )}
       </section>
 
       {loading && (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="space-y-4">
-              <Skeleton className="h-56 w-full rounded-xl" />
-              <Skeleton className="mx-auto h-4 w-3/4" />
-              <Skeleton className="mx-auto h-4 w-1/2" />
+            <div key={index} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
           ))}
         </div>
@@ -497,7 +399,7 @@ export default function StoresPage() {
       )}
 
       {!loading && !error && filteredStores.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredStores.map((store) => (
             <StoreCard key={store.id} store={store} locale={locale} />
           ))}

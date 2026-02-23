@@ -41,8 +41,14 @@
     "noSupport": "Barcode scanning is not supported on this device. Enter the code manually instead."
   },
   "noResultsFor": "No results found for \"{{query}}\"",
-  "startSearching": "Start Searching",
+  "startSearching": "Find the Best Prices",
+  "searchSubtitle": "Compare prices across 5 stores in real-time",
   "searchForProducts": "Search for products to compare prices across stores",
+  "popularSearches": "Popular",
+  "weSearchAcross": "We search across",
+  "featureRealTime": "Real-time search",
+  "featureCompare": "Price comparison",
+  "featureBestPrice": "Best price guarantee",
   "noSuggestions": "No suggestions",
   "searching": "Searching...",
   "filters": {

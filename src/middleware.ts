@@ -139,6 +139,17 @@ export async function middleware(request: NextRequest) {
     return userRole ?? null;
   };
 
+  // Helper: create a redirect that preserves auth cookies set by Supabase SSR
+  // (e.g. refreshed access tokens). Without this, token refreshes done in the
+  // middleware are lost and the browser client cannot establish a session.
+  const createRedirect = (url: URL) => {
+    const redirectResponse = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
+  };
+
   // Extract current locale from URL
   const locale = request.nextUrl.pathname.split('/')[1];
   const validLocale = locales.includes(locale as (typeof locales)[number]) ? locale : defaultLocale;
@@ -148,7 +159,7 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = `/${validLocale}/auth/login`;
     redirectUrl.searchParams.set('redirect', pathnameWithoutLocale);
-    return NextResponse.redirect(redirectUrl);
+    return createRedirect(redirectUrl);
   }
 
   // Redirect to dashboard if accessing auth routes while logged in
@@ -159,7 +170,7 @@ export async function middleware(request: NextRequest) {
       role === 'admin'
         ? `/${validLocale}/admin/dashboard`
         : `/${validLocale}/dashboard`;
-    return NextResponse.redirect(redirectUrl);
+    return createRedirect(redirectUrl);
   }
 
   // Check role-based access for admin routes
@@ -180,7 +191,7 @@ export async function middleware(request: NextRequest) {
 
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = `/${validLocale}/unauthorized`;
-      return NextResponse.redirect(redirectUrl);
+      return createRedirect(redirectUrl);
     }
   }
 
@@ -191,7 +202,7 @@ export async function middleware(request: NextRequest) {
     if (role !== 'store' && role !== 'admin') {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = `/${validLocale}/unauthorized`;
-      return NextResponse.redirect(redirectUrl);
+      return createRedirect(redirectUrl);
     }
   }
 

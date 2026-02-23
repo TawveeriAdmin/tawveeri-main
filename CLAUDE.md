@@ -198,7 +198,7 @@ All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `
 
 **Route groups** under `src/app/[locale]/`:
 - `(public)/` — Public pages (stores, deals, products) wrapped with `PublicPageShell` layout
-- `(dashboard)/` — Protected user pages with `DashboardHeader`, calls `requireAuth()` server-side, redirects admins to `/admin/dashboard`
+- `(dashboard)/` — Protected user pages wrapped with `PublicPageShell` (same header as public pages), calls `requireAuth()` server-side, redirects admins to `/admin/dashboard`
 - `/admin/` — Admin routes (not grouped, protected by middleware)
 - `/store/` — Store owner routes (not grouped, protected by middleware)
 - `/auth/` — Login/signup (redirects away if already authenticated)
@@ -257,6 +257,7 @@ t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
   - Protected routes: `/dashboard`, `/profile`, `/wishlist`, `/notifications`, `/price-alerts`, `/settings`
   - Admin routes: `/admin/*` (requires `admin` role)
   - Store routes: `/store/dashboard`, `/store/products`, `/store/analytics` (requires `store` or `admin` role)
+  - **Cookie preservation**: Middleware uses a `createRedirect()` helper that copies Supabase SSR cookies (e.g., refreshed tokens) onto redirect responses. Without this, token refreshes done in middleware are lost and the browser client cannot establish a session. Always use `createRedirect(url)` instead of bare `NextResponse.redirect(url)` when redirecting in the middleware.
 - **Roles**: `admin`, `customer`, `store`, `guest` (defined in `src/lib/database/types.ts`)
 - **Bootstrap admin**: Env vars `ADMIN_EMAILS` / `ADMIN_EMAIL` / `NEXT_PUBLIC_ADMIN_EMAILS` auto-promote matching emails to admin role (fallback: jfr3sam@gmail.com). Applied in middleware and `getUserProfile()`.
 - **Phone password reset**: 3-step flow in `forgot-password/page.tsx` (phone → OTP → new password). OTP verified server-side only at final step via `POST /api/auth/reset-password-phone`, which uses `supabase.auth.admin.updateUserById()`.
@@ -293,7 +294,8 @@ Schema migrations are numbered SQL files in `scripts/database/` (01 through 10).
 
 Every user-facing action must include:
 1. **In-App Notification** — insert into `notifications` table with bilingual `title_ar`/`title_en` and `message_ar`/`message_en`
-2. **Audit Log** — insert into `admin_logs` via `createAuditLog()` from `src/lib/auth/audit.ts`
+2. **Email Notification** — via `sendEmailNotification()` from `src/lib/auth/notifications.ts`, which invokes the `send-email` Supabase Edge Function. Templates: `welcome`, `password_reset`, `password_changed`, `email_verification`, `price_drop_alert`, `back_in_stock`, `daily_deals`. Helper functions: `sendWelcomeEmail()`, `sendPasswordResetEmail()`, `sendPriceDropEmail()`.
+3. **Audit Log** — insert into `admin_logs` via `createAuditLog()` from `src/lib/auth/audit.ts`
 
 Use `createNotification()` from `src/lib/auth/notifications.ts` (types: `price_drop`, `back_in_stock`, `deal`, `system`, `account`) and `createAuditLog()` with standard actions from `AUDIT_ACTIONS` constant. Audit logging fails silently to avoid blocking user actions.
 
@@ -324,13 +326,34 @@ Legacy Python/Flask scrapers (`scripts/scraping/`) still exist but are no longer
 
 API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`, `src/app/api/cron/check-price-alerts/route.ts`.
 
+### API Routes
+
+All routes live under `src/app/api/`. Key routes by domain:
+
+- **Search**: `POST /api/search/scrape` (main search), `POST /api/search/scrape/clear-cache`
+- **Cron**: `POST /api/cron/update-prices`, `POST /api/cron/discover-products`, `POST /api/cron/check-price-alerts`
+- **Products**: `GET /api/products/[id]/comparison` (multi-store price comparison), `POST /api/products/[id]/view` (track product view)
+- **Auth**: `POST /api/auth/send-phone-otp`, `POST /api/auth/verify-phone-otp`, `POST /api/auth/reset-password-phone`
+- **Coupons**: `GET /api/coupons` (public list), `POST /api/coupons/[id]/copy` (track copy)
+- **Admin**: `GET/POST /api/admin/coupons`, `PATCH/DELETE /api/admin/coupons/[id]`, `PATCH /api/admin/users/[id]/role` (change user role), `GET /api/admin/transactions/export` (CSV export)
+- **Store owner**: `GET/POST /api/store/coupons`, `PATCH/DELETE /api/store/coupons/[id]`, `POST /api/store/products/bulk-update`, `POST /api/store/sync/[storeId]` (trigger store product sync)
+- **Transactions**: `POST /api/transactions/conversion` (affiliate conversion tracking)
+
+All admin/store routes use `requireRequestAdmin(request)` or `getRequestUser(request)` from `src/lib/auth/api-auth.ts` to support both cookie-based (web) and Bearer token (mobile) auth.
+
 ### Search & Filtering
 
 The search pipeline flows: `SearchBar` → `search/page.tsx` → `POST /api/search/scrape` → `searchAllStores()` → per-store search scrapers → results.
 
 **Category filtering**: Category is passed from the SearchPage through the API to `searchAllStores()`, which filters results using `matchesCategory()` from `category-utils.ts`.
 
+**Product grouping**: Search results from different stores are grouped into single cards via `groupSearchProducts()` (`src/lib/scraping/search/product-grouper.ts`). Same product from Amazon, Noon, Jarir etc. becomes one card showing "from X SAR across N stores". Grouping uses fingerprinting (brand + model + storage) with fuzzy fallback via `calculateSimilarity()`. Products with different storage (128GB vs 256GB) are NOT merged.
+
 **Spec filtering**: Dynamic per-category. The `FilterSidebar` component reads `CATEGORY_SPEC_FILTERS[category]` to render appropriate filter sections (e.g., smartphone shows RAM/storage, TV shows resolution/panel type). Specs are extracted client-side from product titles via `extractSpecsFromTitle()`. Additional filters: discount %, condition (new/renewed/used), shipping speed.
+
+**ProductCard comparison mode**: When `product_stores.length > 1`, the card shows "from X SAR", store initial circles, and a "Compare N Stores" CTA that expands an inline `StoreComparisonPanel` (`src/components/search/store-comparison-panel.tsx`). Single-store cards show "View at Store" with external link. Action buttons (wishlist, compare) are rendered outside the link wrapper to avoid click interception.
+
+**Compare list**: Products can be added to a comparison list (max 4) stored in `localStorage['compare_products']`. The header tracks the count via a `compare-products-updated` custom event. Full comparison view at `/(dashboard)/compare`.
 
 ### Tailwind v4 Color Override System
 

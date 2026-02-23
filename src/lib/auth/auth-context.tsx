@@ -424,22 +424,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Failed to verify OTP') };
       }
 
-      // Session is created server-side and cookies are set automatically
-      // Wait a moment for cookies to be available, then force refresh
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Force refresh session to ensure cookies are read and state is updated
-      // This will trigger onAuthStateChange if session exists
-      await supabase.auth.refreshSession();
-      
-      // Also try to get session directly and update state immediately
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (sessionData?.session) {
-        // Session found, update state immediately so UI updates without waiting for redirect
-        const profile = await fetchUserProfile(sessionData.session.user);
-        setUser({ ...sessionData.session.user, ...profile } as AuthUser);
-        setSession(sessionData.session);
+      // Session cookies are set in the API response.
+      // Try to sync browser Supabase client state, but don't block on it —
+      // the login page does a full page reload (window.location.href) which
+      // will establish the session from cookies anyway.
+      try {
+        await Promise.race([
+          supabase.auth.refreshSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
+        ]);
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          const profile = await fetchUserProfile(sessionData.session.user);
+          setUser({ ...sessionData.session.user, ...profile } as AuthUser);
+          setSession(sessionData.session);
+        }
+      } catch {
+        // Ignore — the full page reload after redirect will establish the session
       }
 
       return { data, error: null };

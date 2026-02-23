@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
@@ -199,45 +198,61 @@ export default function CouponsPage() {
     setSearchQuery(searchInput.trim());
   };
 
-  const activeSortLabel =
-    sortBy === 'newest'
-      ? t('coupons.sortNewest')
-      : sortBy === 'discount'
-        ? t('coupons.sortHighestDiscount')
-        : t('coupons.sortExpiringSoon');
-
   return (
-    <div className="space-y-6">
-      {/* Hero section */}
-      <section className="relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br from-emerald-500/15 via-white to-teal-500/10 p-5 shadow-sm dark:border-gray-800 dark:from-emerald-500/20 dark:via-gray-900 dark:to-teal-500/20 md:p-7">
-        <div className="pointer-events-none absolute -end-16 -top-14 h-44 w-44 rounded-full bg-emerald-500/20 blur-3xl dark:bg-emerald-400/20" />
-        <div className="pointer-events-none absolute -bottom-20 start-1/4 h-44 w-44 rounded-full bg-teal-500/15 blur-3xl dark:bg-teal-400/20" />
+    <div className="space-y-4">
+      {/* Compact header: title + search + filters + stats all in one card */}
+      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-emerald-500/15 via-white to-teal-500/10 p-4 shadow-sm dark:border-gray-800 dark:from-emerald-500/20 dark:via-gray-900 dark:to-teal-500/20 md:p-5">
+        <div className="pointer-events-none absolute -end-16 -top-14 h-36 w-36 rounded-full bg-emerald-500/20 blur-3xl dark:bg-emerald-400/20" />
 
-        <div className="relative z-10 space-y-5">
-          <div>
-            <Badge
-              variant="outline"
-              className="mb-3 border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-            >
-              <Sparkles className="me-1 h-3.5 w-3.5" />
-              {t('coupons.featured')}
-            </Badge>
-
-            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 md:text-3xl">
-              {t('coupons.title')}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 md:text-base">
-              {t('coupons.subtitle')}
-            </p>
+        <div className="relative z-10 space-y-4">
+          {/* Title row */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 md:text-2xl">
+                  {t('coupons.title')}
+                </h1>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                >
+                  <Sparkles className="me-1 h-3 w-3" />
+                  {t('coupons.featured')}
+                </Badge>
+              </div>
+              <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
+                {t('coupons.subtitle')}
+              </p>
+            </div>
+            {/* Inline stats */}
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
+                <Ticket className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : activeCouponsCount}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('coupons.totalActive')}</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
+                <Tag className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : highestDiscount > 0 ? `${highestDiscount}%` : '—'}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('coupons.highestDiscount')}</span>
+              </div>
+              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 sm:flex dark:border-gray-700 dark:bg-gray-900/75">
+                <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
+                  {loading ? '…' : expiringSoonCount}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('coupons.expiringSoon')}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Search bar */}
-          <div className="rounded-2xl border border-emerald-200/70 bg-white/90 p-3 shadow-sm dark:border-emerald-800/70 dark:bg-gray-900/80 md:p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-              <Search className="h-3.5 w-3.5" />
-              <span>{t('coupons.searchHelper')}</span>
-            </div>
-            <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {/* Search + filters row */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <Input
@@ -245,156 +260,78 @@ export default function CouponsPage() {
                   placeholder={t('coupons.searchPlaceholder')}
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  className="h-11 rounded-xl border-emerald-200 bg-white ps-9 dark:border-emerald-800/70 dark:bg-gray-950/70"
+                  className="h-9 rounded-lg border-emerald-200 bg-white ps-9 dark:border-emerald-800/70 dark:bg-gray-950/70"
                 />
               </div>
-              <Button type="submit" className="h-11 rounded-xl px-5">
+              <Button type="submit" size="sm" className="h-9 rounded-lg px-4">
                 {t('coupons.searchAction')}
               </Button>
             </form>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('coupons.searchHint')}</p>
-          </div>
 
-          {/* Quick action cards */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-gray-200 bg-white/90 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                <Store className="h-4.5 w-4.5" />
-              </div>
-              <div>
-                <Select value={storeFilter} onValueChange={setStoreFilter}>
-                  <SelectTrigger className="h-9 w-full border-gray-200 dark:border-gray-700">
-                    <SelectValue placeholder={t('coupons.filterByStore')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('coupons.allStores')}</SelectItem>
-                    {availableStores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {locale === 'ar' ? store.name_ar : store.name_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <div className="flex items-center gap-2">
+              <Select value={storeFilter} onValueChange={setStoreFilter}>
+                <SelectTrigger className="h-9 w-[140px] border-gray-200 dark:border-gray-700">
+                  <Store className="me-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  <SelectValue placeholder={t('coupons.filterByStore')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('coupons.allStores')}</SelectItem>
+                  {availableStores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {locale === 'ar' ? store.name_ar : store.name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <div className="rounded-2xl border border-gray-200 bg-white/90 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
-                <Tag className="h-4.5 w-4.5" />
-              </div>
-              <div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-9 w-full border-gray-200 dark:border-gray-700">
-                    <SelectValue placeholder={t('coupons.filterByType')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('coupons.allTypes')}</SelectItem>
-                    <SelectItem value="percentage">{t('coupons.percentage')}</SelectItem>
-                    <SelectItem value="fixed_amount">{t('coupons.fixedAmount')}</SelectItem>
-                    <SelectItem value="free_shipping">{t('coupons.freeShipping')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-9 w-[130px] border-gray-200 dark:border-gray-700">
+                  <Tag className="me-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  <SelectValue placeholder={t('coupons.filterByType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('coupons.allTypes')}</SelectItem>
+                  <SelectItem value="percentage">{t('coupons.percentage')}</SelectItem>
+                  <SelectItem value="fixed_amount">{t('coupons.fixedAmount')}</SelectItem>
+                  <SelectItem value="free_shipping">{t('coupons.freeShipping')}</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <button
-              onClick={handleReset}
-              className="group rounded-2xl border border-gray-200 bg-white/90 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900/75 dark:hover:border-gray-600"
-            >
-              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                <TimerReset className="h-4.5 w-4.5" />
-              </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('coupons.resetFilters')}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('coupons.resetHint')}</p>
-            </button>
-          </div>
-        </div>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <SelectTrigger className="h-9 w-[140px] border-gray-200 dark:border-gray-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">{t('coupons.sortNewest')}</SelectItem>
+                  <SelectItem value="discount">{t('coupons.sortHighestDiscount')}</SelectItem>
+                  <SelectItem value="expiring">{t('coupons.sortExpiringSoon')}</SelectItem>
+                </SelectContent>
+              </Select>
 
-        {/* Stats row inside hero */}
-        <div className="relative z-10 mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <Ticket className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <Badge variant="outline">{t('coupons.totalActive')}</Badge>
-            </div>
-            <div className="text-2xl font-bold tabular-nums text-gray-900 dark:text-gray-100">
-              {loading ? <Skeleton className="h-8 w-12 inline-block" /> : activeCouponsCount}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <Tag className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-              <Badge variant="outline">{t('coupons.highestDiscount')}</Badge>
-            </div>
-            <div className="text-2xl font-bold tabular-nums text-gray-900 dark:text-gray-100">
-              {loading ? (
-                <Skeleton className="h-8 w-12 inline-block" />
-              ) : highestDiscount > 0 ? (
-                `${highestDiscount}%`
-              ) : (
-                '—'
+              {(storeFilter !== 'all' || typeFilter !== 'all' || searchQuery) && (
+                <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2">
+                  <TimerReset className="h-4 w-4" />
+                </Button>
               )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white/85 p-4 dark:border-gray-700 dark:bg-gray-900/75">
-            <div className="mb-2 flex items-center justify-between">
-              <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              <Badge variant="outline">{t('coupons.expiringSoon')}</Badge>
-            </div>
-            <div className="text-2xl font-bold tabular-nums text-gray-900 dark:text-gray-100">
-              {loading ? <Skeleton className="h-8 w-12 inline-block" /> : expiringSoonCount}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Results bar */}
-      <section className="rounded-2xl border border-gray-200 bg-white/85 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/70">
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-900/20 dark:text-emerald-200">
-              <Ticket className="h-4 w-4" />
-              <span>
-                {filteredCoupons.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
-                {t('coupons.resultsCount')}
-              </span>
-            </div>
-            <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
-              {t('coupons.sortBy')}: {activeSortLabel}
-            </Badge>
+          {/* Active filters / results count */}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">
+              {filteredCoupons.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
+              {t('coupons.resultsCount')}
+            </span>
             {searchQuery && (
-              <Badge variant="outline" className="rounded-lg px-2.5 py-1 text-xs">
-                {searchQuery}
+              <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs">
+                &ldquo;{searchQuery}&rdquo;
+                <button
+                  onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+                  className="ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  ×
+                </button>
               </Badge>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/85 p-2 dark:border-gray-700 dark:bg-gray-900/80">
-            <label className="px-1 text-sm text-on-surface-variant">{t('coupons.sortBy')}:</label>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-              <SelectTrigger className="h-9 w-[190px] border-gray-200 dark:border-gray-700">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">{t('coupons.sortNewest')}</SelectItem>
-                <SelectItem value="discount">{t('coupons.sortHighestDiscount')}</SelectItem>
-                <SelectItem value="expiring">{t('coupons.sortExpiringSoon')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {searchQuery && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchInput('');
-                  setSearchQuery('');
-                }}
-                className="h-9 rounded-lg"
-              >
-                <TimerReset className="me-2 h-4 w-4" />
-                {t('coupons.clearSearch')}
-              </Button>
             )}
           </div>
         </div>
@@ -402,12 +339,15 @@ export default function CouponsPage() {
 
       {/* Loading state */}
       {loading && (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="space-y-4">
-              <Skeleton className="h-56 w-full rounded-xl" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div key={index} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-7 w-7 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-4 w-16" />
             </div>
           ))}
         </div>
@@ -432,7 +372,7 @@ export default function CouponsPage() {
 
       {/* Coupon cards grid */}
       {!loading && !error && filteredCoupons.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredCoupons.map((coupon) => {
             const storeName = coupon.stores
               ? locale === 'ar'
@@ -448,29 +388,27 @@ export default function CouponsPage() {
             return (
               <div
                 key={coupon.id}
-                className="overflow-hidden rounded-2xl border border-gray-200 bg-white/90 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/75"
+                className="overflow-hidden rounded-xl border border-gray-200 bg-white/90 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/75"
               >
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   {/* Store header */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {coupon.stores?.logo_url ? (
                       <Image
                         src={coupon.stores.logo_url}
                         alt={storeName}
-                        width={40}
-                        height={40}
-                        className="h-10 w-10 rounded-full border border-gray-200 object-contain dark:border-gray-700"
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 rounded-full border border-gray-200 object-contain dark:border-gray-700"
                       />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                        <Store className="h-5 w-5 text-gray-400" />
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                        <Store className="h-3.5 w-3.5 text-gray-400" />
                       </div>
                     )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {storeName}
-                      </p>
-                    </div>
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {storeName}
+                    </p>
                   </div>
 
                   {/* Coupon badge (expanded) */}

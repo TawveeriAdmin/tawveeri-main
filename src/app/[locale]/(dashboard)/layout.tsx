@@ -24,9 +24,7 @@ export default async function DashboardLayout({
 
   return (
     <PublicPageShell locale={locale}>
-      <div className="rounded-2xl border border-gray-200/70 bg-white/85 p-4 shadow-sm backdrop-blur-sm dark:border-gray-800/70 dark:bg-gray-900/65 md:p-6">
-        {children}
-      </div>
+      {children}
     </PublicPageShell>
   );
 }

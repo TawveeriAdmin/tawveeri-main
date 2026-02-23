@@ -13,7 +13,8 @@
     "coupons": "Coupons",
     "testimonials": "Testimonials",
     "login": "Login",
-    "startFree": "Start Free"
+    "startFree": "Start Free",
+    "dashboard": "Dashboard"
   },
   "button": {
     "view": "View at Store",
