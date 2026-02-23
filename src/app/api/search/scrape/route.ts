@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchAllStores } from '@/lib/scraping/search/search-orchestrator';
 import { searchCache } from '@/lib/scraping/cache';
 import { filterTechProducts } from '@/lib/scraping/product-filter';
+import { DEFAULT_SEARCH_STORES, normalizeSearchStores } from '@/lib/scraping/search/store-registry';
 
 /**
  * POST /api/search/scrape
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedStores = stores || ['amazon', 'noon', 'jarir'];
+    const normalizedStores = normalizeSearchStores(stores);
     const normalizedPages = pages || 1;
     const normalizedSort = sort || 'relevance';
 
@@ -86,6 +87,6 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     engine: 'typescript',
-    stores: ['amazon', 'noon', 'jarir', 'extra'],
+    stores: DEFAULT_SEARCH_STORES,
   });
 }

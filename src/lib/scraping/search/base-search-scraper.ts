@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import type { ProductCategory } from '@/lib/database/types';
 import type { StoreSearchOptions, StoreSearchResult } from './types';
 import { getBrowserHeaders } from './user-agents';
+import { determineCategory as determineCategoryFromTitle } from '../utils/category-utils';
 
 export abstract class BaseSearchScraper {
   protected storeName: string;
@@ -69,18 +70,7 @@ export abstract class BaseSearchScraper {
   }
 
   protected determineCategory(title: string): ProductCategory {
-    const t = title.toLowerCase();
-
-    if (t.includes('laptop') || t.includes('notebook') || t.includes('macbook')) return 'laptop';
-    if (t.includes('smartphone') || t.includes('iphone') || t.includes('phone') || t.includes('galaxy')) return 'smartphone';
-    if (t.includes('tablet') || t.includes('ipad')) return 'tablet';
-    if (t.includes('tv') || t.includes('television')) return 'tv';
-    if (t.includes('headphone') || t.includes('earphone') || t.includes('airpod') || t.includes('speaker')) return 'audio';
-    if (t.includes('camera')) return 'camera';
-    if (t.includes('gaming') || t.includes('playstation') || t.includes('xbox') || t.includes('nintendo')) return 'gaming';
-    if (t.includes('watch') || t.includes('smartwatch')) return 'accessories';
-
-    return 'accessories';
+    return determineCategoryFromTitle(title);
   }
 
   protected parsePrice(priceStr: string | null | undefined): number | null {

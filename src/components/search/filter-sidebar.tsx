@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/utils';
+import { isSupportedSearchStore } from '@/lib/scraping/search/store-registry';
 import {
   Tag,
   DollarSign,
@@ -17,11 +17,16 @@ import {
   Flame,
   Truck,
   Star,
+  ArrowUpDown,
+  ArrowDownNarrowWide,
+  ArrowUpNarrowWide,
+  TrendingUp,
   ChevronDown,
   RotateCcw,
   Percent,
   ShieldCheck,
   Zap,
+  Check,
 } from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { CATEGORY_SPEC_FILTERS, type SpecFilterDefinition } from '@/lib/scraping/config/spec-configs';
@@ -42,9 +47,13 @@ export interface SearchFilters {
   shipping?: string[];
 }
 
+export type SearchSortOption = 'popularity' | 'price_low' | 'price_high' | 'rating';
+
 interface FilterSidebarProps {
   filters: SearchFilters;
   onFilterChange: (filters: SearchFilters) => void;
+  sortBy?: SearchSortOption;
+  onSortChange?: (sort: SearchSortOption) => void;
   category?: ProductCategory;
   locale?: string;
   topContent?: React.ReactNode;
@@ -182,6 +191,8 @@ function StarRating({
 export function FilterSidebar({
   filters,
   onFilterChange,
+  sortBy = 'popularity',
+  onSortChange,
   category,
   locale: propLocale,
   topContent,
@@ -201,15 +212,13 @@ export function FilterSidebar({
   const supabase = getSupabase();
 
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
-  const [availableStores, setAvailableStores] = useState<Array<{ id: string; name_ar: string; name_en: string }>>([]);
+  const [availableStores, setAvailableStores] = useState<Array<{ id: string; slug: string; name_ar: string; name_en: string }>>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
-  const [loading, setLoading] = useState(false);
 
   // Fetch available brands
   useEffect(() => {
     async function fetchBrands() {
       if (!category || !supabase) return;
-      setLoading(true);
       try {
         const { data } = await supabase
           .from('products')
@@ -226,8 +235,6 @@ export function FilterSidebar({
         }
       } catch (error) {
         console.error('Error fetching brands:', error);
-      } finally {
-        setLoading(false);
       }
     }
     fetchBrands();
@@ -237,25 +244,25 @@ export function FilterSidebar({
   useEffect(() => {
     async function fetchStores() {
       if (!supabase) return;
-      setLoading(true);
       try {
         const { data } = await supabase
           .from('stores')
-          .select('id, name_ar, name_en')
+          .select('id, slug, name_ar, name_en')
           .eq('status', 'active')
-          .returns<Array<{ id: string; name_ar: string; name_en: string }>>();
+          .returns<Array<{ id: string; slug: string; name_ar: string; name_en: string }>>();
 
         if (data) {
-          setAvailableStores(data);
+          const supportedStores = data
+            .map((store) => ({ ...store, slug: store.slug.trim().toLowerCase() }))
+            .filter((store) => isSupportedSearchStore(store.slug));
+          setAvailableStores(supportedStores);
         }
       } catch (error) {
         console.error('Error fetching stores:', error);
-      } finally {
-        setLoading(false);
       }
     }
     fetchStores();
-  }, []);
+  }, [supabase]);
 
   // Fetch price range
   useEffect(() => {
@@ -295,10 +302,10 @@ export function FilterSidebar({
     onFilterChange({ ...filters, brands: newBrands });
   };
 
-  const handleStoreToggle = (storeId: string) => {
-    const newStores = filters.stores.includes(storeId)
-      ? filters.stores.filter((s) => s !== storeId)
-      : [...filters.stores, storeId];
+  const handleStoreToggle = (storeSlug: string) => {
+    const newStores = filters.stores.includes(storeSlug)
+      ? filters.stores.filter((s) => s !== storeSlug)
+      : [...filters.stores, storeSlug];
     onFilterChange({ ...filters, stores: newStores });
   };
 
@@ -366,6 +373,59 @@ export function FilterSidebar({
   };
 
   const specFilters: SpecFilterDefinition[] = category ? (CATEGORY_SPEC_FILTERS[category] || []) : [];
+  const sortOptions = useMemo(() => [
+    {
+      value: 'popularity' as SearchSortOption,
+      label: t('search.sortPopularity'),
+      icon: TrendingUp,
+    },
+    {
+      value: 'price_low' as SearchSortOption,
+      label: t('search.sortPriceLow'),
+      icon: ArrowDownNarrowWide,
+    },
+    {
+      value: 'price_high' as SearchSortOption,
+      label: t('search.sortPriceHigh'),
+      icon: ArrowUpNarrowWide,
+    },
+    {
+      value: 'rating' as SearchSortOption,
+      label: t('search.sortRating'),
+      icon: Star,
+    },
+  ], [t]);
+
+  const pricePresets = useMemo(() => {
+    const [min, max] = priceRange;
+    const span = Math.max(0, max - min);
+    if (span < 100) return [];
+
+    const round = (value: number) => Math.round(value / 100) * 100;
+    const q1 = round(min + span * 0.25);
+    const q2 = round(min + span * 0.6);
+
+    return [
+      {
+        key: 'budget',
+        label: locale === 'ar' ? 'اقتصادي' : 'Budget',
+        min,
+        max: q1,
+      },
+      {
+        key: 'mid',
+        label: locale === 'ar' ? 'متوسط' : 'Mid Range',
+        min: q1,
+        max: q2,
+      },
+      {
+        key: 'premium',
+        label: locale === 'ar' ? 'فاخر' : 'Premium',
+        min: q2,
+        max,
+      },
+    ];
+  }, [priceRange, locale]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -444,24 +504,77 @@ export function FilterSidebar({
 
       {/* Filter sections */}
       <div className="flex-1 overflow-y-auto px-3" style={{ scrollbarWidth: 'none' }}>
+        {/* Sort */}
+        {onSortChange && (
+          <FilterSection icon={ArrowUpDown} title={t('search.sortBy')} defaultOpen>
+            <div className="space-y-1">
+              {sortOptions.map((option) => {
+                const isActive = sortBy === option.value;
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => onSortChange(option.value)}
+                    className={cn(
+                      'w-full flex items-center gap-2.5 px-2 py-2 rounded-lg border text-start transition-colors',
+                      isActive
+                        ? 'border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                        : 'border-transparent text-on-surface hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                    )}
+                  >
+                    <Icon className={cn(
+                      'w-4 h-4',
+                      isActive ? 'text-primary-500' : 'text-on-surface-variant'
+                    )} />
+                    <span className="flex-1 text-sm font-medium">{option.label}</span>
+                    {isActive && <Check className="w-3.5 h-3.5 text-primary-500" />}
+                  </button>
+                );
+              })}
+            </div>
+          </FilterSection>
+        )}
+
         {/* Price Range */}
         <FilterSection icon={DollarSign} title={t('search.filters.priceRange')} defaultOpen>
           <div className="space-y-4 pt-3">
             <Slider
-              value={[filters.minPrice || priceRange[0], filters.maxPrice || priceRange[1]]}
+              value={[filters.minPrice ?? priceRange[0], filters.maxPrice ?? priceRange[1]]}
               onValueChange={handlePriceChange}
               min={priceRange[0]}
               max={priceRange[1]}
               step={100}
               className="w-full"
             />
+            {pricePresets.length > 0 && (
+              <div className="grid grid-cols-3 gap-1.5">
+                {pricePresets.map((preset) => {
+                  const isActive = (filters.minPrice ?? priceRange[0]) === preset.min &&
+                    (filters.maxPrice ?? priceRange[1]) === preset.max;
+                  return (
+                    <button
+                      key={preset.key}
+                      onClick={() => onFilterChange({ ...filters, minPrice: preset.min, maxPrice: preset.max })}
+                      className={cn(
+                        'py-1.5 rounded-lg border text-xs font-medium transition-colors',
+                        isActive
+                          ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                          : 'border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700'
+                      )}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex items-center justify-between gap-2">
               <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-center">
-                <Price amount={filters.minPrice || priceRange[0]} className="text-xs font-semibold tabular-nums" />
+                <Price amount={filters.minPrice ?? priceRange[0]} className="text-xs font-semibold tabular-nums" />
               </div>
               <span className="text-xs text-on-surface-variant">—</span>
               <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-center">
-                <Price amount={filters.maxPrice || priceRange[1]} className="text-xs font-semibold tabular-nums" />
+                <Price amount={filters.maxPrice ?? priceRange[1]} className="text-xs font-semibold tabular-nums" />
               </div>
             </div>
           </div>
@@ -478,7 +591,7 @@ export function FilterSidebar({
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {availableStores.map((store) => {
                 const storeName = locale === 'ar' ? store.name_ar : store.name_en;
-                const isChecked = filters.stores.includes(store.id);
+                const isChecked = filters.stores.includes(store.slug);
                 return (
                   <label
                     key={store.id}
@@ -490,9 +603,9 @@ export function FilterSidebar({
                     )}
                   >
                     <Checkbox
-                      id={`store-${store.id}`}
+                      id={`store-${store.slug}`}
                       checked={isChecked}
-                      onCheckedChange={() => handleStoreToggle(store.id)}
+                      onCheckedChange={() => handleStoreToggle(store.slug)}
                     />
                     <span className="text-sm text-on-surface">{storeName}</span>
                   </label>

@@ -4,16 +4,37 @@ import { AmazonSearchScraper } from './amazon-search-scraper';
 import { NoonSearchScraper } from './noon-search-scraper';
 import { JarirSearchScraper } from './jarir-search-scraper';
 import { ExtraSearchScraper } from './extra-search-scraper';
+import { AlmaneaSearchScraper } from './almanea-search-scraper';
 import { matchesCategory } from '../utils/category-utils';
 import type { ProductCategory } from '@/lib/database/types';
 import { groupSearchProducts, type GroupedSearchProduct } from './product-grouper';
+import { normalizeSearchStores } from './store-registry';
 
 const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: number }) => Promise<StoreSearchResult> }> = {
   amazon: () => new AmazonSearchScraper(),
   noon: () => new NoonSearchScraper(),
   jarir: () => new JarirSearchScraper(),
   extra: () => new ExtraSearchScraper(),
+  almanea: () => new AlmaneaSearchScraper(),
 };
+
+const STORE_SEARCH_TIMEOUT_MS = 18_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, store: string): Promise<T> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Timed out after ${timeoutMs}ms while searching ${store}`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }) as Promise<T>;
+}
 
 export async function searchAllStores(
   query: string,
@@ -24,7 +45,7 @@ export async function searchAllStores(
 ): Promise<ScrapedSearchResult> {
   const startTime = Date.now();
 
-  const validStores = stores.filter(s => s in SCRAPERS);
+  const validStores = normalizeSearchStores(stores).filter(s => s in SCRAPERS);
   if (validStores.length === 0) {
     return {
       products: [],
@@ -41,7 +62,11 @@ export async function searchAllStores(
   const results = await Promise.allSettled(
     validStores.map(store => {
       const scraper = SCRAPERS[store]();
-      return scraper.search({ query, pages });
+      return withTimeout(
+        scraper.search({ query, pages }),
+        STORE_SEARCH_TIMEOUT_MS,
+        store
+      );
     }),
   );
 
@@ -301,50 +326,6 @@ function computeMedianPrice(products: SearchProduct[]): number | null {
   return prices.length % 2 === 0
     ? (prices[mid - 1] + prices[mid]) / 2
     : prices[mid];
-}
-
-function sortProducts(
-  products: SearchProduct[],
-  sort: string,
-  query?: string,
-  storeRankMap?: Map<SearchProduct, number>,
-): void {
-  switch (sort) {
-    case 'relevance':
-      if (query) {
-        const medianPrice = computeMedianPrice(products);
-        const scores = new Map<SearchProduct, number>();
-        for (const p of products) {
-          const storeRank = storeRankMap?.get(p) ?? 50;
-          scores.set(p, calculateRelevance(p, query, storeRank, medianPrice));
-        }
-        products.sort((a, b) => (scores.get(b) || 0) - (scores.get(a) || 0));
-      }
-      break;
-    case 'price_asc':
-      products.sort((a, b) => {
-        if (!a.current_price && !b.current_price) return 0;
-        if (!a.current_price) return 1;
-        if (!b.current_price) return -1;
-        return a.current_price - b.current_price;
-      });
-      break;
-    case 'price_desc':
-      products.sort((a, b) => {
-        if (!a.current_price && !b.current_price) return 0;
-        if (!a.current_price) return 1;
-        if (!b.current_price) return -1;
-        return b.current_price - a.current_price;
-      });
-      break;
-    case 'rating':
-      // No rating field on ScrapedProduct, sort by deal status as proxy
-      products.sort((a, b) => (b.is_deal ? 1 : 0) - (a.is_deal ? 1 : 0));
-      break;
-    case 'name':
-      products.sort((a, b) => (a.name_en || '').toLowerCase().localeCompare((b.name_en || '').toLowerCase()));
-      break;
-  }
 }
 
 /**

@@ -64,25 +64,18 @@ import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import { mapGroupedToProductCard } from '@/lib/scraping/product-adapter';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { StoreComparisonPanel } from '@/components/search/store-comparison-panel';
+import {
+  DEFAULT_SEARCH_STORES,
+  isSupportedSearchStore,
+} from '@/lib/scraping/search/store-registry';
 
-type Product = ProductCardProduct & {
-  product_stores: Array<{
-    id: string;
-    current_price: number;
-    original_price: number | null;
-    availability: AvailabilityStatus;
-    stores: {
-      id: string;
-      name_ar: string;
-      name_en: string;
-      logo_url: string | null;
-    };
-  }>;
-};
+type Product = ProductCardProduct;
 
 type SortOption = 'popularity' | 'price_low' | 'price_high' | 'rating';
 
 const ITEMS_PER_PAGE = 24;
+const COMPARE_STORAGE_KEY = 'compare_products';
+const COMPARE_CACHE_STORAGE_KEY = 'compare_products_cache';
 
 export default function SearchPage() {
   const params = useParams();
@@ -245,6 +238,16 @@ export default function SearchPage() {
   ], [t]);
 
   const currentSortOption = sortOptions.find(o => o.value === sortBy) || sortOptions[0];
+  const storeLabels = useMemo(
+    () => ({
+      amazon: locale === 'ar' ? 'أمازون' : 'Amazon',
+      noon: locale === 'ar' ? 'نون' : 'Noon',
+      jarir: locale === 'ar' ? 'جرير' : 'Jarir',
+      extra: locale === 'ar' ? 'اكسترا' : 'Extra',
+      almanea: locale === 'ar' ? 'المنيع' : 'Almanea',
+    }),
+    [locale]
+  );
 
   // Extract filter-related params from URL string (excluding 'q' parameter)
   const filterParamsString = useMemo(() => {
@@ -255,9 +258,13 @@ export default function SearchPage() {
 
   // Load filters from URL when filter params change
   useEffect(() => {
+    const storesFromUrl = (searchParams.get('stores')?.split(',') || [])
+      .map((store) => store.trim().toLowerCase())
+      .filter(isSupportedSearchStore);
+
     const urlFilters: SearchFilters = {
       brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
-      stores: searchParams.get('stores')?.split(',').filter(Boolean) || [],
+      stores: storesFromUrl,
       availability: (searchParams.get('availability')?.split(',').filter(Boolean) || []) as AvailabilityStatus[],
       dealsOnly: searchParams.get('deals') === 'true',
       freeDeliveryOnly: searchParams.get('freeDelivery') === 'true',
@@ -327,7 +334,11 @@ export default function SearchPage() {
   }, [debouncedQuery, locale, router, searchParams]);
 
   // Search with scraping
-  async function searchWithScraping(query: string, stores: string[] = ['amazon', 'noon', 'jarir'], pages: number = 1) {
+  async function searchWithScraping(
+    query: string,
+    stores: string[] = DEFAULT_SEARCH_STORES,
+    pages: number = 1
+  ) {
     setLoading(true);
     setError(null);
     setScrapingProgress(t('search.searchingStores'));
@@ -441,7 +452,14 @@ export default function SearchPage() {
         setLoading(false);
         return;
       }
-      await searchWithScraping(debouncedQuery, ['amazon', 'noon', 'jarir'], 1);
+
+      const supportedSelectedStores = filters.stores.filter(isSupportedSearchStore);
+      const selectedStores =
+        supportedSelectedStores.length > 0
+          ? supportedSelectedStores
+          : DEFAULT_SEARCH_STORES;
+
+      await searchWithScraping(debouncedQuery, selectedStores, 1);
     }
     fetchProducts();
   }, [debouncedQuery, sortBy, currentPage, selectedCategory, filters, user]);
@@ -474,9 +492,10 @@ export default function SearchPage() {
   const handleAddToCompare = (productId: string) => {
     if (typeof window === 'undefined') return;
     try {
-      const stored = window.localStorage.getItem('compare_products');
+      const stored = window.localStorage.getItem(COMPARE_STORAGE_KEY);
       const existing: string[] = stored ? JSON.parse(stored) : [];
       const unique = Array.from(new Set(existing));
+      const selectedProduct = products.find((product) => product.id === productId);
 
       if (unique.includes(productId)) {
         toast({ title: t('products.added'), description: t('compare.alreadyInCompare') });
@@ -488,7 +507,22 @@ export default function SearchPage() {
       }
 
       const next = [productId, ...unique].slice(0, 4);
-      window.localStorage.setItem('compare_products', JSON.stringify(next));
+
+      const rawCache = window.localStorage.getItem(COMPARE_CACHE_STORAGE_KEY);
+      const existingCache: Record<string, Product> = rawCache ? JSON.parse(rawCache) : {};
+      if (selectedProduct) {
+        existingCache[productId] = selectedProduct;
+      }
+      const nextCache = next.reduce<Record<string, Product>>((acc, id) => {
+        const cachedProduct = existingCache[id];
+        if (cachedProduct) {
+          acc[id] = cachedProduct;
+        }
+        return acc;
+      }, {});
+
+      window.localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+      window.localStorage.setItem(COMPARE_CACHE_STORAGE_KEY, JSON.stringify(nextCache));
       window.dispatchEvent(new Event('compare-products-updated'));
       toast({ title: t('products.added'), description: t('products.addedToComparison') });
     } catch {
@@ -516,7 +550,9 @@ export default function SearchPage() {
   const filterChips = useMemo(() => {
     const chips: Array<{ label: string; type: string; value?: string }> = [];
     filters.brands.forEach(b => chips.push({ label: b, type: 'brand', value: b }));
-    filters.stores.forEach(s => chips.push({ label: s, type: 'store', value: s }));
+    filters.stores.forEach(s =>
+      chips.push({ label: storeLabels[s as keyof typeof storeLabels] || s, type: 'store', value: s })
+    );
     filters.availability.forEach(a => chips.push({ label: a, type: 'availability', value: a }));
     if (filters.dealsOnly) chips.push({ label: t('search.filters.showDealsOnly'), type: 'deals' });
     if (filters.freeDeliveryOnly) chips.push({ label: t('search.filters.freeDeliveryOnly'), type: 'freeDelivery' });
@@ -530,7 +566,7 @@ export default function SearchPage() {
       });
     }
     return chips;
-  }, [filters, t]);
+  }, [filters, storeLabels, t]);
 
   // Smart pagination numbers with ellipsis
   const paginationPages = useMemo(() => {
@@ -705,49 +741,14 @@ export default function SearchPage() {
                   <FilterSidebar
                     filters={filters}
                     onFilterChange={setFilters}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
                     topContent={
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm text-on-surface-variant">
-                          <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
-                          {t('search.resultsCount')}
-                        </div>
-                        <Popover open={sortOpen} onOpenChange={setSortOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-gray-200 dark:border-gray-700">
-                              <ArrowUpDown className="w-3.5 h-3.5" />
-                              <span className="text-xs">{currentSortOption.label}</span>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-52 p-1.5">
-                            {sortOptions.map(option => {
-                              const Icon = option.icon;
-                              const isActive = sortBy === option.value;
-                              return (
-                                <button
-                                  key={option.value}
-                                  onClick={() => { setSortBy(option.value); setSortOpen(false); }}
-                                  className={cn(
-                                    'flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-start transition-colors',
-                                    isActive ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                                  )}
-                                >
-                                  <div className={cn(
-                                    'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
-                                    isActive ? 'bg-primary-100 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400' : 'bg-gray-100 dark:bg-gray-700 text-on-surface-variant'
-                                  )}>
-                                    <Icon className="w-3.5 h-3.5" />
-                                  </div>
-                                  <p className={cn('flex-1 min-w-0 text-sm font-medium', isActive ? 'text-primary-700 dark:text-primary-300' : 'text-on-surface')}>
-                                    {option.label}
-                                  </p>
-                                  {isActive && <Check className="w-4 h-4 text-primary-500 shrink-0" />}
-                                </button>
-                              );
-                            })}
-                          </PopoverContent>
-                        </Popover>
+                      <div className="text-sm text-on-surface-variant">
+                        <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
+                        {t('search.resultsCount')}
                       </div>
                     }
                   />
@@ -814,7 +815,14 @@ export default function SearchPage() {
                           <DialogHeader>
                             <DialogTitle>{t('search.filtersTitle')}</DialogTitle>
                           </DialogHeader>
-                          <FilterSidebar filters={filters} onFilterChange={(newFilters) => { setFilters(newFilters); setMobileFiltersOpen(false); }} category={selectedCategory !== 'all' ? selectedCategory : undefined} locale={locale} />
+                          <FilterSidebar
+                            filters={filters}
+                            onFilterChange={(newFilters) => { setFilters(newFilters); setMobileFiltersOpen(false); }}
+                            sortBy={sortBy}
+                            onSortChange={(nextSort) => { setSortBy(nextSort); setMobileFiltersOpen(false); }}
+                            category={selectedCategory !== 'all' ? selectedCategory : undefined}
+                            locale={locale}
+                          />
                         </DialogContent>
                       </Dialog>
                     </div>

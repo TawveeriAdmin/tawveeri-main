@@ -2,7 +2,7 @@
   "store_slug": "almanea",
   "store_name_ar": "المنيع",
   "store_name_en": "Almanea",
-  "base_url": "https://www.almanea.com",
+  "base_url": "https://www.almanea.sa",
   "requires_js": true,
   "rate_limit": {
     "min_delay_ms": 3000,
@@ -14,14 +14,14 @@
   ],
   "timeout_ms": 30000,
   "category_urls": {
-    "smartphone": ["https://www.almanea.com/smartphones"],
-    "laptop": ["https://www.almanea.com/laptops"],
-    "tv": ["https://www.almanea.com/tv"],
-    "tablet": ["https://www.almanea.com/tablets"],
-    "audio": ["https://www.almanea.com/audio"],
-    "camera": ["https://www.almanea.com/cameras"],
-    "gaming": ["https://www.almanea.com/gaming"],
-    "accessories": ["https://www.almanea.com/accessories"]
+    "smartphone": ["https://www.almanea.sa/smartphones"],
+    "laptop": ["https://www.almanea.sa/laptops"],
+    "tv": ["https://www.almanea.sa/tv"],
+    "tablet": ["https://www.almanea.sa/tablets"],
+    "audio": ["https://www.almanea.sa/audio"],
+    "camera": ["https://www.almanea.sa/cameras"],
+    "gaming": ["https://www.almanea.sa/gaming"],
+    "accessories": ["https://www.almanea.sa/accessories"]
   },
   "selectors": {
     "product_list": ".product-item",

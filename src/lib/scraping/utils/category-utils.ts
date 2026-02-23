@@ -1,20 +1,145 @@
 import type { ProductCategory } from '@/lib/database/types';
 
+const CATEGORY_KEYWORDS: Record<ProductCategory, string[]> = {
+  smartphone: [
+    'smartphone',
+    'mobile phone',
+    'cell phone',
+    'iphone',
+    'galaxy s',
+    'galaxy z',
+    'pixel',
+    'redmi',
+    'هاتف',
+    'جوال',
+    'هواتف',
+    'هواتف ذكية',
+    'موبايل',
+    'ايفون',
+    'آيفون',
+  ],
+  laptop: [
+    'laptop',
+    'notebook',
+    'ultrabook',
+    'macbook',
+    'chromebook',
+    'لابتوب',
+    'حاسوب محمول',
+    'كمبيوتر محمول',
+  ],
+  tablet: [
+    'tablet',
+    'ipad',
+    'galaxy tab',
+    'تابلت',
+    'آيباد',
+    'ايباد',
+  ],
+  tv: [
+    'tv',
+    'smart tv',
+    'television',
+    'oled',
+    'qled',
+    '4k tv',
+    '8k tv',
+    'تلفزيون',
+    'شاشة',
+    'شاشات',
+  ],
+  audio: [
+    'headphone',
+    'headset',
+    'earbuds',
+    'earphone',
+    'airpods',
+    'speaker',
+    'soundbar',
+    'سماعة',
+    'سماعات',
+    'مكبر صوت',
+  ],
+  camera: [
+    'camera',
+    'dslr',
+    'mirrorless',
+    'action cam',
+    'كاميرا',
+  ],
+  gaming: [
+    'gaming',
+    'playstation',
+    'ps5',
+    'ps4',
+    'xbox',
+    'nintendo',
+    'steam deck',
+    'قيمنج',
+    'ألعاب',
+    'العاب',
+    'بلايستيشن',
+    'إكس بوكس',
+    'اكس بوكس',
+  ],
+  accessories: [
+    'accessory',
+    'accessories',
+    'case',
+    'cover',
+    'screen protector',
+    'charger',
+    'cable',
+    'adapter',
+    'smartwatch',
+    'wearable',
+    'ملحقات',
+    'إكسسوارات',
+    'جراب',
+    'كفر',
+    'شاحن',
+    'كيبل',
+    'ساعة ذكية',
+  ],
+};
+
+const CATEGORY_DETECTION_ORDER: ProductCategory[] = [
+  'laptop',
+  'tablet',
+  'tv',
+  'audio',
+  'camera',
+  'gaming',
+  'smartphone',
+  'accessories',
+];
+
+const PRODUCT_CATEGORY_SET = new Set<ProductCategory>([
+  'smartphone',
+  'laptop',
+  'tablet',
+  'tv',
+  'audio',
+  'camera',
+  'gaming',
+  'accessories',
+]);
+
+function containsKeyword(text: string, keywords: string[]): boolean {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
 /**
  * Determines a product's category from its title using keyword matching.
  * Shared between search scrapers and cron scrapers.
  */
 export function determineCategory(title: string): ProductCategory {
   const t = title.toLowerCase();
-
-  if (t.includes('laptop') || t.includes('notebook') || t.includes('macbook')) return 'laptop';
-  if (t.includes('smartphone') || t.includes('iphone') || t.includes('phone') || t.includes('galaxy')) return 'smartphone';
-  if (t.includes('tablet') || t.includes('ipad')) return 'tablet';
-  if (t.includes('tv') || t.includes('television')) return 'tv';
-  if (t.includes('headphone') || t.includes('earphone') || t.includes('airpod') || t.includes('speaker')) return 'audio';
-  if (t.includes('camera')) return 'camera';
-  if (t.includes('gaming') || t.includes('playstation') || t.includes('xbox') || t.includes('nintendo')) return 'gaming';
-  if (t.includes('watch') || t.includes('smartwatch')) return 'accessories';
+  for (const category of CATEGORY_DETECTION_ORDER) {
+    if (containsKeyword(t, CATEGORY_KEYWORDS[category])) {
+      return category;
+    }
+  }
 
   return 'accessories';
 }
@@ -24,15 +149,19 @@ export function determineCategory(title: string): ProductCategory {
  * Uses the product's category field if set, otherwise determines from title.
  */
 export function matchesCategory(
-  product: { category?: ProductCategory | string; name_en?: string | null },
+  product: { category?: ProductCategory | string; name_en?: string | null; name_ar?: string | null },
   category: ProductCategory,
 ): boolean {
-  if (product.category && product.category !== 'accessories') {
-    return product.category === category;
+  if (product.category && PRODUCT_CATEGORY_SET.has(product.category as ProductCategory)) {
+    const explicitCategory = product.category as ProductCategory;
+    if (explicitCategory !== 'accessories') {
+      return explicitCategory === category;
+    }
+    if (category === 'accessories') {
+      return true;
+    }
   }
-  // Fallback: determine from title
-  if (product.name_en) {
-    return determineCategory(product.name_en) === category;
-  }
-  return false;
+
+  const title = product.name_en || product.name_ar || '';
+  return title ? determineCategory(title) === category : false;
 }

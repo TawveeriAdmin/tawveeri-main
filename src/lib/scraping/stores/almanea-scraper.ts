@@ -4,7 +4,7 @@ import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
 
-const BASE_URL = 'https://www.almanea.com';
+const BASE_URL = 'https://www.almanea.sa';
 
 /**
  * Almanea (المنيع) store scraper.

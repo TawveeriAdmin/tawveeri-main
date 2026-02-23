@@ -54,15 +54,11 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
 
       {/* Store rows */}
       <div className="divide-y divide-gray-100 dark:divide-gray-800">
-        {sortedStores.map((ps, index) => {
+        {sortedStores.map((ps) => {
           const storeName = locale === 'ar' ? ps.stores.name_ar : ps.stores.name_en;
           const storeInitial = storeName.charAt(0).toUpperCase();
           const isBestPrice = ps.current_price === bestPriceValue;
           const storeUrl = ps.product_url || ps.affiliate_url;
-          const savings = ps.original_price && ps.original_price > ps.current_price
-            ? ps.original_price - ps.current_price
-            : 0;
-
           return (
             <div
               key={ps.id}

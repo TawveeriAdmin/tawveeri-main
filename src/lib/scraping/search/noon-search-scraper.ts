@@ -136,6 +136,8 @@ export class NoonSearchScraper extends BaseSearchScraper {
       let productUrl = '';
       if (slug) {
         productUrl = sku ? `${BASE_URL}/${slug}/p/${sku}/` : `${BASE_URL}/${slug}/`;
+      } else if (sku) {
+        productUrl = `${BASE_URL}/-/p/${sku}/`;
       }
 
       // Image
