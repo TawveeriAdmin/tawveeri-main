@@ -42,9 +42,8 @@ type SortOption = 'name' | 'rating' | 'products';
 type StoreFilter = 'all' | 'featured' | 'premium';
 
 export default function StoresPage() {
-  const supabase = useMemo(
-    () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
-    []
+  const [supabase] = useState(() =>
+    typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
   );
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
@@ -156,8 +155,7 @@ export default function StoresPage() {
         const errorMessage = err instanceof Error ? err.message : fetchErrorFallback;
         setError(errorMessage);
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 

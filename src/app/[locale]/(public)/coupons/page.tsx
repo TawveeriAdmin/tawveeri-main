@@ -48,9 +48,8 @@ type CouponWithRelations = CouponRow & {
 type SortOption = 'newest' | 'discount' | 'expiring';
 
 export default function CouponsPage() {
-  const supabase = useMemo(
-    () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
-    []
+  const [supabase] = useState(() =>
+    typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
   );
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';

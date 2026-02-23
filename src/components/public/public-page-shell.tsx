@@ -53,7 +53,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const t = useTranslations();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const [compareCount, setCompareCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const isHydrated = useSyncExternalStore(subscribe, () => true, () => false);
@@ -248,7 +248,12 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                 )}
               </button>
 
-              {user ? (
+              {authLoading ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="h-9 w-20 animate-pulse rounded-xl bg-gray-200/90 dark:bg-gray-700/80" />
+                  <div className="h-9 w-24 animate-pulse rounded-xl bg-gray-200/90 dark:bg-gray-700/80" />
+                </div>
+              ) : user ? (
                 <>
                   {/* Wishlist */}
                   <Link

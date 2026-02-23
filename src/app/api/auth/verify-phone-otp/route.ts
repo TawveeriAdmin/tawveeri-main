@@ -386,8 +386,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create final response with user data
-    // Session cookies are already set in the response object by SSR client during exchangeCodeForSession
+    // Create final response with user data AND session tokens
+    // Include tokens so the browser client can call setSession() directly,
+    // which is more reliable than relying solely on server-set cookies.
     const finalResponse = NextResponse.json({
       success: true,
       user: {
@@ -398,6 +399,10 @@ export async function POST(request: NextRequest) {
         phone_verified: true,
       },
       isNewUser,
+      session: {
+        access_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
+      },
     });
 
     // Copy all cookies from the SSR response to the final response

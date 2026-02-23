@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { UserRole } from '@/lib/database/types';
@@ -48,11 +48,15 @@ interface ProfileUpdateData {
 }
 
 interface AuthResponse {
+  // Payload shape varies by auth method (email, phone OTP, OAuth).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any;
   error?: AuthError | Error | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_LOADING_TIMEOUT_MS = 5000;
+const PROFILE_LOADING_TIMEOUT_MS = 4000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(
@@ -81,31 +85,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const authRequestIdRef = useRef(0);
 
   type UserProfileShape = Pick<
     AuthUser,
     'role' | 'full_name' | 'avatar_url' | 'preferred_language' | 'phone' | 'email_verified' | 'phone_verified'
   >;
 
-  const getDefaultProfile = (): UserProfileShape => ({
-    role: 'customer',
-    full_name: null,
-    avatar_url: null,
-    preferred_language: 'ar',
-    phone: null,
-    email_verified: false,
-    phone_verified: false,
-  });
+  const getDefaultProfile = useCallback(
+    (): UserProfileShape => ({
+      role: 'customer',
+      full_name: null,
+      avatar_url: null,
+      preferred_language: 'ar',
+      phone: null,
+      email_verified: false,
+      phone_verified: false,
+    }),
+    []
+  );
 
-  const normalizeProfile = (
-    profile: Partial<UserProfileShape> | null | undefined
-  ): UserProfileShape => ({
-    ...getDefaultProfile(),
-    ...(profile || {}),
-  });
+  const normalizeProfile = useCallback(
+    (profile: Partial<UserProfileShape> | null | undefined): UserProfileShape => ({
+      ...getDefaultProfile(),
+      ...(profile || {}),
+    }),
+    [getDefaultProfile]
+  );
 
   // Fetch user profile data from database, create if doesn't exist
-  const fetchUserProfile = async (authUser: User): Promise<UserProfileShape> => {
+  const fetchUserProfile = useCallback(async (authUser: User): Promise<UserProfileShape> => {
     if (!supabase) return getDefaultProfile();
     const profileSelect =
       'role, full_name, avatar_url, preferred_language, phone, email_verified, phone_verified';
@@ -211,44 +220,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Return default profile to prevent app from breaking
       return getDefaultProfile();
     }
-  };
+  }, [getDefaultProfile, normalizeProfile, supabase]);
 
   // Initialize auth state
   useEffect(() => {
     if (!supabase) return;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
+    let isMounted = true;
+    const getOptimisticProfile = (authUser: User): UserProfileShape =>
+      normalizeProfile({
+        full_name:
+          typeof authUser.user_metadata?.full_name === 'string'
+            ? authUser.user_metadata.full_name
+            : typeof authUser.user_metadata?.name === 'string'
+              ? authUser.user_metadata.name
+              : null,
+        preferred_language:
+          authUser.user_metadata?.preferred_language === 'en' ||
+          authUser.user_metadata?.preferred_language === 'ar'
+            ? authUser.user_metadata.preferred_language
+            : 'ar',
+        phone: authUser.phone || null,
+        email_verified: Boolean(authUser.email_confirmed_at),
+        phone_verified: Boolean(authUser.phone_confirmed_at),
+      });
 
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user);
-        setUser({ ...session.user, ...profile } as AuthUser);
+    const hydrateUserState = async (authUser: User, requestId: number) => {
+      try {
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        const timeoutProfile = new Promise<UserProfileShape>((resolve) => {
+          timeoutId = setTimeout(() => {
+            resolve(getOptimisticProfile(authUser));
+          }, PROFILE_LOADING_TIMEOUT_MS);
+        });
+
+        const profile = await Promise.race([fetchUserProfile(authUser), timeoutProfile]);
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (requestId !== authRequestIdRef.current) return;
+        setUser({ ...authUser, ...profile } as AuthUser);
+      } catch (error) {
+        console.error('Error hydrating user state:', error);
+        if (requestId !== authRequestIdRef.current) return;
+        setUser({ ...authUser, ...getOptimisticProfile(authUser) } as AuthUser);
       }
+    };
 
-      setLoading(false);
-    }).catch((err) => {
-      console.error('Error getting session:', err);
-      setLoading(false);
-    });
+    const applySession = (nextSession: Session | null) => {
+      if (!isMounted) return null;
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
+      const requestId = ++authRequestIdRef.current;
+      setSession(nextSession);
 
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user);
-        setUser({ ...session.user, ...profile } as AuthUser);
+      if (nextSession?.user) {
+        setUser({ ...nextSession.user, ...getOptimisticProfile(nextSession.user) } as AuthUser);
       } else {
         setUser(null);
       }
 
       setLoading(false);
+      return requestId;
+    };
+
+    const loadingTimeout = window.setTimeout(() => {
+      if (!isMounted) return;
+      console.warn('Auth initialization timed out; unblocking UI.');
+      setLoading(false);
+    }, AUTH_LOADING_TIMEOUT_MS);
+
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      const requestId = applySession(session);
+      if (requestId && session?.user) {
+        void hydrateUserState(session.user, requestId);
+      }
+    }).catch((err) => {
+      console.error('Error getting session:', err);
+      if (isMounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const requestId = applySession(nextSession);
+      if (requestId && nextSession?.user) {
+        // Run profile fetch outside auth callback to avoid session lock deadlocks.
+        window.setTimeout(() => {
+          if (!isMounted) return;
+          void hydrateUserState(nextSession.user, requestId);
+        }, 0);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      authRequestIdRef.current += 1;
+      window.clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
+  }, [fetchUserProfile, normalizeProfile, supabase]);
 
   // Sign up with email or phone
   const signUp = async (params: SignUpParams): Promise<AuthResponse> => {
@@ -424,23 +494,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Failed to verify OTP') };
       }
 
-      // Session cookies are set in the API response.
-      // Try to sync browser Supabase client state, but don't block on it —
-      // the login page does a full page reload (window.location.href) which
-      // will establish the session from cookies anyway.
-      try {
-        await Promise.race([
-          supabase.auth.refreshSession(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
-        ]);
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session) {
-          const profile = await fetchUserProfile(sessionData.session.user);
-          setUser({ ...sessionData.session.user, ...profile } as AuthUser);
-          setSession(sessionData.session);
+      // Establish the session on the browser Supabase client directly using
+      // the tokens returned by the API. This is more reliable than relying
+      // solely on server-set cookies — setSession() stores the tokens in the
+      // client's cookie storage and triggers onAuthStateChange.
+      // Unlike refreshSession(), setSession() is a local operation (no API call)
+      // so it won't deadlock or hold the session lock indefinitely.
+      if (data.session?.access_token && data.session?.refresh_token) {
+        try {
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+        } catch {
+          // Non-fatal — the page reload will establish the session from cookies
         }
-      } catch {
-        // Ignore — the full page reload after redirect will establish the session
       }
 
       return { data, error: null };

@@ -63,9 +63,8 @@ const getDealDiscount = (product: DealProduct) => {
 };
 
 export default function DealsPage() {
-  const supabase = useMemo(
-    () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
-    []
+  const [supabase] = useState(() =>
+    typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
   );
   const params = useParams();
   const router = useRouter();
@@ -257,8 +256,7 @@ export default function DealsPage() {
         const errorMessage = err instanceof Error ? err.message : fetchErrorFallback;
         setError(errorMessage);
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 

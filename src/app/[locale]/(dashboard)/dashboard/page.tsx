@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -109,9 +109,8 @@ const DEFAULT_STATS: DashboardStats = {
 };
 
 export default function DashboardPage() {
-  const supabase = useMemo(
-    () => (typeof window !== 'undefined' ? getSupabaseBrowserClient() : null),
-    []
+  const [supabase] = useState(() =>
+    typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
   );
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';

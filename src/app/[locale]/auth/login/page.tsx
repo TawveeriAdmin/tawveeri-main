@@ -6,7 +6,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getSupabaseBrowserClient } from '@/lib/database';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Lock, Eye, EyeOff, Moon, Sun, Languages, Phone, ArrowLeft, User } from 'lucide-react';
 
@@ -31,25 +30,6 @@ const FacebookIcon = () => (
  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
  </svg>
 );
-
-const getConfiguredAdminEmails = () => {
- const raw = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
- const parsed = raw
- .split(',')
- .map((email) => email.trim().toLowerCase())
- .filter(Boolean);
-
- if (parsed.length === 0) {
- parsed.push('jfr3sam@gmail.com');
- }
-
- return new Set(parsed);
-};
-
-const isConfiguredAdminEmail = (email?: string | null) => {
- if (!email) return false;
- return getConfiguredAdminEmails().has(email.trim().toLowerCase());
-};
 
 export default function LoginPage() {
  const t = useTranslations();
@@ -97,53 +77,14 @@ export default function LoginPage() {
  return `/${locale}${path}`;
  };
 
- const resolveRoleHomePath = async (): Promise<string> => {
- if (isConfiguredAdminEmail(user?.email || null) || isConfiguredAdminEmail(formData.email || null)) {
- return '/admin/dashboard';
- }
-
- if (user?.role === 'admin') return '/admin/dashboard';
-
- try {
- const supabase = getSupabaseBrowserClient();
- const {
- data: { user: currentUser },
- } = await supabase.auth.getUser();
-
- if (!currentUser) {
- return isConfiguredAdminEmail(formData.email || null) ? '/admin/dashboard' : '/dashboard';
- }
-
- if (isConfiguredAdminEmail(currentUser.email || null)) {
- return '/admin/dashboard';
- }
-
- const { data: profile } = await supabase
- .from('users')
- .select('role')
- .eq('id', currentUser.id)
- .maybeSingle();
-
- if (profile?.role === 'admin') {
- return '/admin/dashboard';
- }
- } catch (error) {
- console.error('Error resolving role-based redirect:', error);
- }
-
- return '/dashboard';
- };
-
- const resolvePostLoginPath = async (): Promise<string> => {
+ const getPostLoginPath = (): string => {
  const redirectParam = searchParams.get('redirect');
  const sanitizedRedirect = sanitizeRedirectPath(redirectParam);
-
- // Keep explicit deep-link redirects except generic dashboard fallback.
  if (sanitizedRedirect && sanitizedRedirect !== '/dashboard') {
  return sanitizedRedirect;
  }
-
- return resolveRoleHomePath();
+ // Admin redirect is handled server-side by the dashboard layout and middleware
+ return '/dashboard';
  };
 
  const handleSendOtp = async () => {
@@ -229,11 +170,9 @@ export default function LoginPage() {
  variant: 'default',
  });
 
- await new Promise(resolve => setTimeout(resolve, 500));
- const targetPath = await resolvePostLoginPath();
-
+ await new Promise(resolve => setTimeout(resolve, 300));
  setIsLoading(false);
- window.location.href = localizePath(targetPath);
+ window.location.href = localizePath(getPostLoginPath());
  } catch (error: any) {
  console.error('Email login error:', error);
 
@@ -326,16 +265,10 @@ export default function LoginPage() {
  variant: 'default',
  });
 
- // Wait a moment for cookies to be set and session to be available
- await new Promise(resolve => setTimeout(resolve, 500));
- const targetPath = await resolvePostLoginPath();
-
- // Stop loading before redirect
+ // Brief wait for cookies to be set before full page reload
+ await new Promise(resolve => setTimeout(resolve, 300));
  setIsLoading(false);
-
- // Use window.location.href for full page reload to ensure cookies are read
- // This ensures the auth context properly initializes with the session
- window.location.href = localizePath(targetPath);
+ window.location.href = localizePath(getPostLoginPath());
  } catch (error: any) {
  console.error('Login error:', error);
 
