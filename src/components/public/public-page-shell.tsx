@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -51,11 +51,18 @@ const isActivePath = (pathname: string, href: string) =>
 export function PublicPageShell({ locale, children }: PublicPageShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const t = useTranslations();
   const { user, signOut, loading: authLoading } = useAuth();
   const [compareCount, setCompareCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+
+  // Keep header search input in sync with URL ?q= param
+  // (e.g. when user searches from the search page's own input)
+  useEffect(() => {
+    setSearchQuery(searchParams.get('q') || '');
+  }, [searchParams]);
   const isHydrated = useSyncExternalStore(subscribe, () => true, () => false);
 
   const isRTL = locale === 'ar';

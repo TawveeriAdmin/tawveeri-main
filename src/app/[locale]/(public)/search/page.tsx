@@ -10,7 +10,6 @@ import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
-import { SavedSearches } from '@/components/search/saved-searches';
 import {
   Popover,
   PopoverContent,
@@ -296,12 +295,6 @@ export default function SearchPage() {
       router.replace(newUrl, { scroll: false });
     }
   }, [filters, selectedCategory, locale, router, searchParams]);
-
-  const handleSearchSelect = (query: string, selectedFilters: SearchFilters) => {
-    setSearchQuery(query);
-    setFilters(selectedFilters);
-    setCurrentPage(1);
-  };
 
   // Debounce search query
   useEffect(() => {
@@ -709,14 +702,6 @@ export default function SearchPage() {
               {/* Desktop Filter Sidebar */}
               <div className="hidden lg:block w-72 shrink-0">
                 <div className="sticky top-[120px] max-h-[calc(100vh-148px)] overflow-y-auto flex flex-col gap-4 scrollbar-hide">
-                  {user && (
-                    <SavedSearches
-                      locale={locale}
-                      currentQuery={debouncedQuery}
-                      currentFilters={filters}
-                      onSearchSelect={handleSearchSelect}
-                    />
-                  )}
                   <FilterSidebar
                     filters={filters}
                     onFilterChange={setFilters}
