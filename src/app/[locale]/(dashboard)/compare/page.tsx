@@ -20,6 +20,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cn, calculateSavings } from '@/lib/utils';
+import { extractSpecsFromTitle, CATEGORY_SPEC_FILTERS } from '@/lib/scraping/config/spec-configs';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 
 interface StoreInfo {
@@ -68,6 +69,53 @@ const COMPARE_CACHE_STORAGE_KEY = 'compare_products_cache';
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const STORE_POLICIES: Record<string, {
+  delivery_ar: string; delivery_en: string;
+  warranty_ar: string; warranty_en: string;
+  return_ar: string; return_en: string;
+}> = {
+  amazon: {
+    delivery_ar: '١-٥ أيام عمل',
+    delivery_en: '1-5 business days',
+    warranty_ar: 'ضمان الشركة المصنعة',
+    warranty_en: 'Manufacturer warranty',
+    return_ar: 'إرجاع خلال ١٥ يوم',
+    return_en: '15-day returns',
+  },
+  noon: {
+    delivery_ar: '١-٣ أيام (نون إكسبريس)',
+    delivery_en: '1-3 days (Noon Express)',
+    warranty_ar: 'ضمان الشركة المصنعة',
+    warranty_en: 'Manufacturer warranty',
+    return_ar: 'إرجاع خلال ١٥ يوم',
+    return_en: '15-day returns',
+  },
+  jarir: {
+    delivery_ar: '٢-٥ أيام عمل',
+    delivery_en: '2-5 business days',
+    warranty_ar: 'ضمان الشركة المصنعة',
+    warranty_en: 'Manufacturer warranty',
+    return_ar: 'إرجاع خلال ٧ أيام',
+    return_en: '7-day returns',
+  },
+  extra: {
+    delivery_ar: '٢-٥ أيام عمل',
+    delivery_en: '2-5 business days',
+    warranty_ar: 'ضمان الشركة المصنعة',
+    warranty_en: 'Manufacturer warranty',
+    return_ar: 'إرجاع خلال ٧ أيام',
+    return_en: '7-day returns',
+  },
+  almanea: {
+    delivery_ar: '٣-٧ أيام عمل',
+    delivery_en: '3-7 business days',
+    warranty_ar: 'ضمان الشركة المصنعة',
+    warranty_en: 'Manufacturer warranty',
+    return_ar: 'إرجاع خلال ٧ أيام',
+    return_en: '7-day returns',
+  },
+};
 
 const EXTENDED_COMPARE_SELECT = `
   id,
@@ -321,6 +369,62 @@ function formatSpecValue(value: unknown): string {
   return String(value);
 }
 
+function getStoreSlug(store: StoreInfo | null): string | null {
+  if (!store) return null;
+  const nameEn = store.name_en.toLowerCase();
+  if (nameEn.includes('amazon')) return 'amazon';
+  if (nameEn.includes('noon')) return 'noon';
+  if (nameEn.includes('jarir')) return 'jarir';
+  if (nameEn.includes('extra')) return 'extra';
+  if (nameEn.includes('almanea') || nameEn.includes('منيع')) return 'almanea';
+  // For scraped products, store.id is the slug itself
+  if (STORE_POLICIES[store.id]) return store.id;
+  return null;
+}
+
+function getSpecLabel(specKey: string, category: ProductCategory | undefined, locale: string): string {
+  if (category) {
+    const filters = CATEGORY_SPEC_FILTERS[category];
+    if (filters) {
+      const match = filters.find((f) => f.key === specKey);
+      if (match) return locale === 'ar' ? match.label_ar : match.label_en;
+    }
+  }
+  // Search all categories for a match
+  for (const filters of Object.values(CATEGORY_SPEC_FILTERS)) {
+    if (filters) {
+      const match = filters.find((f) => f.key === specKey);
+      if (match) return locale === 'ar' ? match.label_ar : match.label_en;
+    }
+  }
+  // Fallback: format the key itself
+  return specKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatExtractedSpecValue(specKey: string, value: string, category: ProductCategory | undefined, locale: string): string {
+  if (category) {
+    const filters = CATEGORY_SPEC_FILTERS[category];
+    if (filters) {
+      const filter = filters.find((f) => f.key === specKey);
+      if (filter) {
+        const option = filter.options.find((o) => o.value === value);
+        if (option) return locale === 'ar' ? option.label_ar : option.label_en;
+      }
+    }
+  }
+  // Search all categories
+  for (const filters of Object.values(CATEGORY_SPEC_FILTERS)) {
+    if (filters) {
+      const filter = filters.find((f) => f.key === specKey);
+      if (filter) {
+        const option = filter.options.find((o) => o.value === value);
+        if (option) return locale === 'ar' ? option.label_ar : option.label_en;
+      }
+    }
+  }
+  return value;
+}
+
 export default function ComparePage() {
   const params = useParams();
   const router = useRouter();
@@ -458,24 +562,57 @@ export default function ComparePage() {
     fetchProducts();
   }, [productIds, t]);
 
+  const productExtractedSpecs = useMemo(() => {
+    const map = new Map<string, Record<string, string>>();
+    products.forEach((product) => {
+      const hasRealSpecs = product.specifications && Object.keys(product.specifications).length > 0;
+      if (!hasRealSpecs) {
+        const extracted = extractSpecsFromTitle(product.name_en || product.name_ar);
+        if (Object.keys(extracted).length > 0) {
+          map.set(product.id, extracted);
+        }
+      }
+    });
+    return map;
+  }, [products]);
+
   const allSpecKeys = useMemo(() => {
     const keys = new Set<string>();
     products.forEach((product) => {
-      if (product.specifications) {
+      if (product.specifications && Object.keys(product.specifications).length > 0) {
         Object.keys(product.specifications).forEach((key) => keys.add(key));
+      }
+      const extracted = productExtractedSpecs.get(product.id);
+      if (extracted) {
+        Object.keys(extracted).forEach((key) => keys.add(key));
       }
     });
     return Array.from(keys);
-  }, [products]);
+  }, [products, productExtractedSpecs]);
+
+  const getProductSpecValue = (product: Product, specKey: string): string => {
+    // First check real specifications from DB
+    if (product.specifications && Object.keys(product.specifications).length > 0) {
+      const val = product.specifications[specKey];
+      if (val !== null && val !== undefined) return formatSpecValue(val);
+    }
+    // Fall back to extracted specs
+    const extracted = productExtractedSpecs.get(product.id);
+    if (extracted?.[specKey]) {
+      return formatExtractedSpecValue(specKey, extracted[specKey], products[0]?.category, locale);
+    }
+    return '-';
+  };
 
   const filteredSpecKeys = useMemo(() => {
     if (!onlyShowDifferences) return allSpecKeys;
     return allSpecKeys.filter((key) => {
-      const values = products.map((p) => formatSpecValue(p.specifications?.[key]));
+      const values = products.map((p) => getProductSpecValue(p, key));
       const unique = new Set(values);
       return unique.size > 1;
     });
-  }, [allSpecKeys, onlyShowDifferences, products]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSpecKeys, onlyShowDifferences, products, productExtractedSpecs]);
 
   const getStoresByPrice = (product: Product): ProductStore[] => {
     return [...product.product_stores]
@@ -498,10 +635,16 @@ export default function ComparePage() {
     return <Badge variant="secondary">{t('product.outOfStock')}</Badge>;
   };
 
-  const getDeliveryTimeLabel = (days: number | null | undefined): string => {
-    if (!days || days <= 0) return t('compare.notSpecified');
-    if (days === 1) return `1 ${t('compare.day')}`;
-    return `${days} ${t('compare.days')}`;
+  const getDeliveryTimeLabel = (store: ProductStore | null): string => {
+    if (store?.delivery_time_days && store.delivery_time_days > 0) {
+      if (store.delivery_time_days === 1) return `1 ${t('compare.day')}`;
+      return `${store.delivery_time_days} ${t('compare.days')}`;
+    }
+    // Fall back to store policy
+    const slug = getStoreSlug(store?.stores || null);
+    const policy = slug ? STORE_POLICIES[slug] : null;
+    if (policy) return locale === 'ar' ? policy.delivery_ar : policy.delivery_en;
+    return t('compare.notSpecified');
   };
 
   const getShippingLabel = (store: ProductStore | null): string => {
@@ -770,8 +913,30 @@ export default function ComparePage() {
               { key: 'bestStore', label: t('compare.bestStore'), render: (product: Product) => getStoreName(bestStoreByProductId.get(product.id) || null) },
               { key: 'availability', label: t('compare.availability'), render: (product: Product) => { const bs = bestStoreByProductId.get(product.id) || null; return bs ? getAvailabilityBadge(bs.availability) : <Badge variant="secondary">{t('product.outOfStock')}</Badge>; } },
               { key: 'storesAvailable', label: t('compare.storesAvailable'), render: (product: Product) => `${product.product_stores.length} ${product.product_stores.length === 1 ? t('compare.store') : t('compare.stores')}` },
-              { key: 'deliveryTime', label: t('compare.deliveryTime'), render: (product: Product) => getDeliveryTimeLabel((bestStoreByProductId.get(product.id) || null)?.delivery_time_days) },
+              { key: 'deliveryTime', label: t('compare.deliveryTime'), render: (product: Product) => getDeliveryTimeLabel(bestStoreByProductId.get(product.id) || null) },
               { key: 'shippingCost', label: t('compare.shippingCost'), render: (product: Product) => getShippingLabel(bestStoreByProductId.get(product.id) || null) },
+              {
+                key: 'warranty', label: t('compare.warranty'), render: (product: Product) => {
+                  const bs = bestStoreByProductId.get(product.id) || null;
+                  const warranty = bs?.stores ? (locale === 'ar' ? bs.stores.warranty_info_ar : bs.stores.warranty_info_en) : null;
+                  if (warranty) return <span className="text-on-surface">{warranty}</span>;
+                  const slug = getStoreSlug(bs?.stores || null);
+                  const policy = slug ? STORE_POLICIES[slug] : null;
+                  if (policy) return <span className="text-on-surface">{locale === 'ar' ? policy.warranty_ar : policy.warranty_en}</span>;
+                  return <span className="text-on-surface-variant">{t('compare.notSpecified')}</span>;
+                },
+              },
+              {
+                key: 'returnPolicy', label: t('compare.returnPolicy'), render: (product: Product) => {
+                  const bs = bestStoreByProductId.get(product.id) || null;
+                  const returnPolicy = bs?.stores ? (locale === 'ar' ? bs.stores.return_policy_ar : bs.stores.return_policy_en) : null;
+                  if (returnPolicy) return <span className="text-on-surface">{returnPolicy}</span>;
+                  const slug = getStoreSlug(bs?.stores || null);
+                  const policy = slug ? STORE_POLICIES[slug] : null;
+                  if (policy) return <span className="text-on-surface">{locale === 'ar' ? policy.return_ar : policy.return_en}</span>;
+                  return <span className="text-on-surface-variant">{t('compare.notSpecified')}</span>;
+                },
+              },
               {
                 key: 'savings', label: t('compare.savings'), render: (product: Product) => {
                   const bs = bestStoreByProductId.get(product.id) || null;
@@ -799,14 +964,15 @@ export default function ComparePage() {
               </div>
             ) : (
               filteredSpecKeys.map((specKey, specIdx) => {
-                const values = products.map((p) => formatSpecValue(p.specifications?.[specKey]));
+                const values = products.map((p) => getProductSpecValue(p, specKey));
                 const allSame = new Set(values).size === 1;
+                const specLabel = getSpecLabel(specKey, products[0]?.category, locale);
 
                 return (
                   <React.Fragment key={specKey}>
                     {/* Spec name header row */}
                     <div className="border-b border-outline-variant/40 bg-surface-container-low/50 py-2 px-4 text-sm font-bold text-on-surface">
-                      {specKey}
+                      {specLabel}
                     </div>
                     {/* Values row */}
                     <div
@@ -826,7 +992,7 @@ export default function ComparePage() {
                             colIdx < products.length - 1 && 'border-e border-outline-variant/30'
                           )}
                         >
-                          {formatSpecValue(product.specifications?.[specKey])}
+                          {getProductSpecValue(product, specKey)}
                         </div>
                       ))}
                     </div>

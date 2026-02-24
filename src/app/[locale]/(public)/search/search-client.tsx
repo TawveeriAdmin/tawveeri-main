@@ -523,6 +523,11 @@ export default function SearchClient() {
         return mapGroupedToProductCard(grouped) as Product;
       });
 
+      // Clear compare list from previous search
+      localStorage.removeItem(COMPARE_STORAGE_KEY);
+      localStorage.removeItem(COMPARE_CACHE_STORAGE_KEY);
+      window.dispatchEvent(new Event('compare-products-updated'));
+
       setRawProducts(mappedProducts);
       setSearchCache(query, selectedCategory || 'all', mappedProducts);
       setStoreErrors(data.errors || {});
@@ -650,7 +655,6 @@ export default function SearchClient() {
       window.localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
       window.localStorage.setItem(COMPARE_CACHE_STORAGE_KEY, JSON.stringify(nextCache));
       window.dispatchEvent(new Event('compare-products-updated'));
-      toast({ title: t('products.added'), description: t('products.addedToComparison') });
     } catch {
       // ignore storage errors
     }

@@ -380,10 +380,6 @@ export default function DealsClient() {
       window.dispatchEvent(new Event('compare-products-updated'));
       setCompareCount(next.length);
 
-      toast({
-        title: t('products.added'),
-        description: t('products.addedToComparison'),
-      });
     } catch (err) {
       console.error('Error adding product to comparison:', err);
       toast({

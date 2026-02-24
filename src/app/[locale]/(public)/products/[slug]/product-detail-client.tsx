@@ -331,10 +331,6 @@ export default function ProductDetailClient() {
 
  const handleAddToCompare = (productId: string) => {
  // TODO: Implement comparison functionality
- toast({
- title: t('products.added'),
- description: t('products.addedToComparison'),
- });
  };
 
  const handleSaveToWishlist = async (productId: string) => {
