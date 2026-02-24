@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
@@ -39,7 +40,7 @@ export function PageBreadcrumbs({ items }: PageBreadcrumbsProps) {
         {allItems.map((item, index) => {
           const isLast = index === allItems.length - 1;
           return (
-            <BreadcrumbItem key={`${item.label}-${index}`}>
+            <React.Fragment key={`${item.label}-${index}`}>
               {index > 0 && (
                 <BreadcrumbSeparator>
                   <ChevronLeft
@@ -47,21 +48,23 @@ export function PageBreadcrumbs({ items }: PageBreadcrumbsProps) {
                   />
                 </BreadcrumbSeparator>
               )}
-              {isLast ? (
-                <BreadcrumbPage className="max-w-[200px] truncate text-sm">
-                  {item.label}
-                </BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link
-                    href={item.href || '#'}
-                    className="text-sm hover:text-primary"
-                  >
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage className="max-w-[200px] truncate text-sm">
                     {item.label}
-                  </Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+                  </BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={item.href || '#'}
+                      className="text-sm hover:text-primary"
+                    >
+                      {item.label}
+                    </Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </React.Fragment>
           );
         })}
       </BreadcrumbList>
