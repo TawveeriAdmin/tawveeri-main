@@ -586,7 +586,6 @@ export function FilterSidebar({
             icon={Store}
             title={t('search.filters.stores')}
             badge={filters.stores.length}
-            defaultOpen
           >
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {availableStores.map((store) => {
@@ -654,7 +653,6 @@ export function FilterSidebar({
           icon={PackageCheck}
           title={t('search.filters.availability')}
           badge={filters.availability.length}
-          defaultOpen
         >
           <div className="space-y-1">
             {([
@@ -691,7 +689,6 @@ export function FilterSidebar({
           icon={Star}
           title={t('search.filters.rating')}
           badge={filters.minRating && filters.minRating > 0 ? 1 : undefined}
-          defaultOpen
         >
           <div className="py-1">
             <StarRating

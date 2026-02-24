@@ -5,6 +5,16 @@ import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
 
 const BASE_URL = 'https://www.almanea.sa';
+const PROD_BASE = 'https://almanea.sa';
+
+/** Rewrite dev/staging Almanea URLs to production format. */
+function sanitizeAlmaneaUrl(url: string): string {
+  if (!url) return url;
+  const devPattern = /^https?:\/\/m\.dev-almanea\.com\/(.+)/;
+  const match = url.match(devPattern);
+  if (match) return `${PROD_BASE}/product/${match[1]}`;
+  return url;
+}
 
 /**
  * Almanea (المنيع) store scraper.
@@ -144,7 +154,8 @@ export class AlmaneaScraper extends BaseScraper {
       // URL
       const linkEl = el.find('a.product-link, .product-name a, h2 a, h3 a, a[href*="/product"]').first();
       const href = linkEl.attr('href') || titleEl.closest('a').attr('href') || '';
-      const productUrl = href.startsWith('http') ? href : normalizeUrl(href, BASE_URL);
+      const rawUrl = href.startsWith('http') ? href : normalizeUrl(href, BASE_URL);
+      const productUrl = sanitizeAlmaneaUrl(rawUrl);
       if (!productUrl) return null;
 
       // Price
@@ -216,7 +227,7 @@ export class AlmaneaScraper extends BaseScraper {
         current_price: price,
         original_price: null,
         availability: offers.availability === 'https://schema.org/OutOfStock' ? 'out_of_stock' : 'in_stock',
-        product_url: (item.url || '') as string,
+        product_url: sanitizeAlmaneaUrl((item.url || '') as string),
         image_urls: imageUrl ? [imageUrl] : [],
         specifications: {},
         category,

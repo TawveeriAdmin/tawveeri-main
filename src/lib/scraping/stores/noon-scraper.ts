@@ -174,11 +174,18 @@ export class NoonScraper extends BaseScraper {
 
       if (!price || price <= 0) return null;
 
-      // URL
+      // URL — Noon format: {BASE_URL}/{slug}/{sku}/p/
       const slug = (item.slug || item.url_key || '') as string;
       let productUrl = overrideUrl || '';
-      if (!productUrl && slug) {
-        productUrl = sku ? `${BASE_URL}/${slug}/p/${sku}/` : `${BASE_URL}/${slug}/`;
+      if (!productUrl) {
+        if (slug && sku) {
+          productUrl = `${BASE_URL}/${slug}/${sku}/p/`;
+        } else if (slug) {
+          productUrl = `${BASE_URL}/${slug}/p/`;
+        } else if (sku) {
+          const titleSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          productUrl = `${BASE_URL}/${titleSlug}/${sku}/p/`;
+        }
       }
 
       // Image

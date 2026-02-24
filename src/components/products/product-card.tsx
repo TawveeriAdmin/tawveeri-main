@@ -18,13 +18,13 @@ import { useParams } from 'next/navigation';
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
 
-/** Store brand colors for initial circles */
-const STORE_COLORS: Record<string, string> = {
-  amazon: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  noon: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  jarir: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  extra: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  almanea: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+/** Store logo paths */
+const STORE_LOGOS: Record<string, string> = {
+  amazon: '/logos/amazon.png',
+  noon: '/logos/noon.png',
+  jarir: '/logos/jarir.png',
+  extra: '/logos/extra.png',
+  almanea: '/logos/almanea.png',
 };
 
 interface ProductStore {
@@ -183,9 +183,10 @@ export function ProductCard({
 
   // Get unique store initials for display
   const storeInitials = product.product_stores
+    .filter(ps => ps.stores)
     .map(ps => ({
       id: ps.stores.id,
-      initial: (currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en).charAt(0).toUpperCase(),
+      initial: (currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en || '?').charAt(0).toUpperCase(),
       name: currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en,
     }))
     .filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i);
@@ -293,13 +294,14 @@ export function ProductCard({
                     {storeInitials.map((s) => (
                       <div
                         key={s.id}
-                        className={cn(
-                          'w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white dark:border-gray-900',
-                          STORE_COLORS[s.id] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                        )}
+                        className="w-5 h-5 rounded-full border-2 border-white dark:border-gray-900 overflow-hidden bg-white dark:bg-gray-800"
                         title={s.name}
                       >
-                        {s.initial}
+                        {STORE_LOGOS[s.id] ? (
+                          <img src={STORE_LOGOS[s.id]} alt={s.name} className="w-full h-full object-contain" />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-[9px] font-bold text-gray-500">{s.initial}</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -310,14 +312,14 @@ export function ProductCard({
                   const storeName = currentLocale === 'ar'
                     ? product.product_stores[0]?.stores.name_ar
                     : product.product_stores[0]?.stores.name_en;
-                  const storeInitial = (storeName || '?')[0].toUpperCase();
                   return (
                     <div className="flex items-center gap-1 shrink-0">
-                      <div className={cn(
-                        'w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold',
-                        STORE_COLORS[storeId] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                      )}>
-                        {storeInitial}
+                      <div className="w-5 h-5 rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                        {STORE_LOGOS[storeId] ? (
+                          <img src={STORE_LOGOS[storeId]} alt={storeName || ''} className="w-full h-full object-contain" />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-[9px] font-bold text-gray-500">{(storeName || '?')[0].toUpperCase()}</span>
+                        )}
                       </div>
                       <span className="text-[11px] text-on-surface-variant">
                         {storeName}

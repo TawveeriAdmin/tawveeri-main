@@ -9,12 +9,12 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
 
-const STORE_COLORS: Record<string, string> = {
-  amazon: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  noon: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  jarir: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  extra: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  almanea: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+const STORE_LOGOS: Record<string, string> = {
+  amazon: '/logos/amazon.png',
+  noon: '/logos/noon.png',
+  jarir: '/logos/jarir.png',
+  extra: '/logos/extra.png',
+  almanea: '/logos/almanea.png',
 };
 
 interface StoreComparisonPanelProps {
@@ -67,14 +67,13 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
                 isBestPrice && 'bg-success-50/50 dark:bg-success-900/10'
               )}
             >
-              {/* Store initial */}
-              <div
-                className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                  STORE_COLORS[ps.stores.id] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+              {/* Store logo */}
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-white dark:bg-gray-800 shrink-0 flex items-center justify-center">
+                {STORE_LOGOS[ps.stores.id] ? (
+                  <img src={STORE_LOGOS[ps.stores.id]} alt={storeName} className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-xs font-bold text-gray-500">{storeInitial}</span>
                 )}
-              >
-                {storeInitial}
               </div>
 
               {/* Store info */}

@@ -3,6 +3,16 @@ import type { SearchProduct, StoreSearchOptions, StoreSearchResult } from './typ
 import { getBrowserHeaders } from './user-agents';
 
 const BASE_URL = 'https://www.almanea.sa';
+const PROD_BASE = 'https://almanea.sa';
+
+/** Rewrite dev/staging Almanea URLs to production format. */
+function sanitizeAlmaneaUrl(url: string): string {
+  if (!url) return url;
+  const devPattern = /^https?:\/\/m\.dev-almanea\.com\/(.+)/;
+  const match = url.match(devPattern);
+  if (match) return `${PROD_BASE}/product/${match[1]}`;
+  return url;
+}
 
 const SEARCH_PATH_BUILDERS = [
   (query: string, page: number) =>
@@ -380,8 +390,8 @@ export class AlmaneaSearchScraper extends BaseSearchScraper {
 
   private normalizeUrl(url: string, base: string): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('//')) return `https:${url}`;
+    if (url.startsWith('http://') || url.startsWith('https://')) return sanitizeAlmaneaUrl(url);
+    if (url.startsWith('//')) return sanitizeAlmaneaUrl(`https:${url}`);
 
     const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
     const normalizedPath = url.startsWith('/') ? url : `/${url}`;

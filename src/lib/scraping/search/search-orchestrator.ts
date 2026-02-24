@@ -18,7 +18,7 @@ const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: nu
   almanea: () => new AlmaneaSearchScraper(),
 };
 
-const STORE_SEARCH_TIMEOUT_MS = 18_000;
+const STORE_SEARCH_TIMEOUT_MS = 60_000;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, store: string): Promise<T> {
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
@@ -102,6 +102,48 @@ export async function searchAllStores(
       allProducts.length = 0;
       allProducts.push(...filtered);
       console.log(`[SearchOrchestrator] Category filter "${category}": ${beforeCount} -> ${allProducts.length} products`);
+    }
+  }
+
+  // Filter out completely irrelevant results (no query word overlap at all)
+  {
+    const queryWords = query.toLowerCase().trim().split(/\s+/).filter(w => w.length > 2);
+    if (queryWords.length > 0) {
+      // Build stems: "laptops" -> ["laptops", "laptop"], "monitors" -> ["monitors", "monitor"]
+      const queryStems = queryWords.flatMap(w => {
+        const stems = [w];
+        if (w.endsWith('s') && w.length > 3) stems.push(w.slice(0, -1));
+        if (w.endsWith('es') && w.length > 4) stems.push(w.slice(0, -2));
+        return stems;
+      });
+
+      // Known prefixes that form valid compound words with the stem
+      // e.g. "smart" + "phone" = "smartphone", "i" + "phone" = "iphone"
+      // But "ear" + "phone" ≠ a valid match for searching "phones"
+      const VALID_COMPOUND_PREFIXES = ['smart', 'i', 'e', 'my'];
+
+      const beforeCount = allProducts.length;
+      const relevant = allProducts.filter(p => {
+        const title = (p.name_en || p.name_ar || '').toLowerCase();
+        const titleWords = title.split(/[\s,/()[\]-]+/).filter(w => w.length > 0);
+        return queryStems.some(stem =>
+          titleWords.some(word =>
+            // Exact word match: "phone" = "phone"
+            word === stem ||
+            // Word starts with stem: "phones" starts with "phone"
+            word.startsWith(stem) ||
+            // Valid compound: "smartphone" = "smart" + "phone", "iphone" = "i" + "phone"
+            (word.endsWith(stem) && VALID_COMPOUND_PREFIXES.includes(word.slice(0, word.length - stem.length)))
+          )
+        );
+      });
+      if (relevant.length > 0) {
+        allProducts.length = 0;
+        allProducts.push(...relevant);
+        if (beforeCount > relevant.length) {
+          console.log(`[SearchOrchestrator] Relevance filter: ${beforeCount} -> ${allProducts.length} products`);
+        }
+      }
     }
   }
 
@@ -282,8 +324,8 @@ function calculateRelevance(
   if (!queryIsAccessory) {
     const matchedAccessoryKeywords = ACCESSORY_KEYWORDS.filter(kw => title.includes(kw));
     if (matchedAccessoryKeywords.length > 0) {
-      // More accessory keywords = stronger penalty
-      score -= 40 + (matchedAccessoryKeywords.length - 1) * 15;
+      // Strong penalty — accessories should never rank above actual products
+      score -= 120 + (matchedAccessoryKeywords.length - 1) * 30;
     }
   }
 
@@ -292,7 +334,7 @@ function calculateRelevance(
   if (!queryIsAccessory) {
     const hasAccessoryPreposition = ACCESSORY_PREPOSITION_PATTERNS.some(p => p.test(title));
     if (hasAccessoryPreposition) {
-      score -= 40;
+      score -= 80;
     }
   }
 
@@ -305,7 +347,7 @@ function calculateRelevance(
       brand => titleLower.startsWith(brand) && !queryLower.includes(brand)
     );
     if (isAccessoryBrand) {
-      score -= 50;
+      score -= 100;
     }
   }
 

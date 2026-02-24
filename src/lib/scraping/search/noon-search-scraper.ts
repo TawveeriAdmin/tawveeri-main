@@ -131,13 +131,17 @@ export class NoonSearchScraper extends BaseSearchScraper {
         originalPrice = this.toNumber(item.price);
       }
 
-      // URL
+      // URL — Noon format: {BASE_URL}/{slug}/{sku}/p/
       const slug = (item.slug || item.url_key || '') as string;
       let productUrl = '';
-      if (slug) {
-        productUrl = sku ? `${BASE_URL}/${slug}/p/${sku}/` : `${BASE_URL}/${slug}/`;
+      if (slug && sku) {
+        productUrl = `${BASE_URL}/${slug}/${sku}/p/`;
+      } else if (slug) {
+        productUrl = `${BASE_URL}/${slug}/p/`;
       } else if (sku) {
-        productUrl = `${BASE_URL}/-/p/${sku}/`;
+        // Generate slug from title when API doesn't provide one
+        const titleSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        productUrl = `${BASE_URL}/${titleSlug}/${sku}/p/`;
       }
 
       // Image

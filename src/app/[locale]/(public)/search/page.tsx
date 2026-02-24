@@ -90,10 +90,9 @@ export default function SearchPage() {
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>(
@@ -117,6 +116,7 @@ export default function SearchPage() {
 
   // Sync search query from URL params (e.g. when header search navigates here)
   const urlQueryRef = useRef(searchParams.get('q') || '');
+  const filtersFromUrlRef = useRef(false);
   useEffect(() => {
     const urlQuery = searchParams.get('q') || '';
     if (urlQuery !== urlQueryRef.current) {
@@ -219,6 +219,105 @@ export default function SearchPage() {
     });
   }, []);
 
+  // Reset page when filters or sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, sortBy]);
+
+  // Client-side filtering, sorting, and pagination of cached scrape results
+  const { products, totalCount } = useMemo(() => {
+    let result = [...rawProducts];
+
+    // Store filter
+    if (filters.stores.length > 0) {
+      result = result.filter(p =>
+        p.product_stores.some(ps => filters.stores.includes(ps.stores.id))
+      );
+    }
+
+    // Brand filter
+    if (filters.brands.length > 0) {
+      result = result.filter(p =>
+        filters.brands.some(b => b.toLowerCase() === p.brand.toLowerCase())
+      );
+    }
+
+    // Availability filter
+    if (filters.availability.length > 0) {
+      result = result.filter(p =>
+        p.product_stores.some(ps => filters.availability.includes(ps.availability))
+      );
+    }
+
+    // Deals only
+    if (filters.dealsOnly) {
+      result = result.filter(p =>
+        p.product_stores.some(ps => ps.original_price != null && ps.current_price < ps.original_price)
+      );
+    }
+
+    // Free delivery only
+    if (filters.freeDeliveryOnly) {
+      result = result.filter(p =>
+        p.product_stores.some(ps => ps.is_free_delivery)
+      );
+    }
+
+    // Price range
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      result = result.filter(p => {
+        const prices = p.product_stores.map(ps => ps.current_price).filter((pr): pr is number => pr != null && pr > 0);
+        if (prices.length === 0) return false;
+        const lowest = Math.min(...prices);
+        if (filters.minPrice !== undefined && lowest < filters.minPrice) return false;
+        if (filters.maxPrice !== undefined && lowest > filters.maxPrice) return false;
+        return true;
+      });
+    }
+
+    // Spec filters
+    if (filters.specs && Object.keys(filters.specs).length > 0) {
+      result = result.filter(product => {
+        const title = product.name_en || product.name_ar || '';
+        const specs = extractSpecsFromTitle(title);
+        return Object.entries(filters.specs!).every(([key, values]) => {
+          if (values.length === 0) return true;
+          return values.includes(specs[key] || '');
+        });
+      });
+    }
+
+    // Discount filter
+    if (filters.discount) {
+      result = result.filter(product => {
+        const ps = product.product_stores[0];
+        if (!ps?.original_price || !ps.current_price) return false;
+        const pct = ((ps.original_price - ps.current_price) / ps.original_price) * 100;
+        return pct >= filters.discount!;
+      });
+    }
+
+    // Sort
+    if (sortBy === 'price_low') {
+      result.sort((a, b) => {
+        const pa = Math.min(...a.product_stores.map(ps => ps.current_price || Infinity));
+        const pb = Math.min(...b.product_stores.map(ps => ps.current_price || Infinity));
+        return pa - pb;
+      });
+    } else if (sortBy === 'price_high') {
+      result.sort((a, b) => {
+        const pa = Math.min(...a.product_stores.map(ps => ps.current_price || 0));
+        const pb = Math.min(...b.product_stores.map(ps => ps.current_price || 0));
+        return pb - pa;
+      });
+    }
+
+    const totalCount = result.length;
+    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+    const products = result.slice(offset, offset + ITEMS_PER_PAGE);
+    return { products, totalCount };
+  }, [rawProducts, filters, sortBy, currentPage]);
+
   // Quick category chips
   const quickCategories = useMemo(() => [
     { key: 'phones', icon: Smartphone, query: locale === 'ar' ? 'هواتف' : 'phones' },
@@ -270,11 +369,17 @@ export default function SearchPage() {
       freeDeliveryOnly: searchParams.get('freeDelivery') === 'true',
       minRating: searchParams.get('rating') ? parseFloat(searchParams.get('rating') || '0') : undefined,
     };
+    filtersFromUrlRef.current = true;
     setFilters(urlFilters);
   }, [filterParamsString, searchParams]);
 
-  // Update URL when filters change
+  // Update URL when filters change (skip if change came from URL sync)
   useEffect(() => {
+    if (filtersFromUrlRef.current) {
+      filtersFromUrlRef.current = false;
+      return;
+    }
+
     const p = new URLSearchParams(searchParams.toString());
 
     const currentQuery = searchParams.get('q');
@@ -337,7 +442,7 @@ export default function SearchPage() {
   async function searchWithScraping(
     query: string,
     stores: string[] = DEFAULT_SEARCH_STORES,
-    pages: number = 1
+    pages: number = 5
   ) {
     setLoading(true);
     setError(null);
@@ -352,7 +457,6 @@ export default function SearchPage() {
           query: query.trim(),
           stores,
           pages,
-          sort: sortBy === 'price_low' ? 'price_asc' : sortBy === 'price_high' ? 'price_desc' : 'relevance',
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
         }),
       });
@@ -383,48 +487,7 @@ export default function SearchPage() {
         return mapGroupedToProductCard(grouped) as Product;
       });
 
-      let sortedProducts = [...mappedProducts];
-      if (sortBy === 'price_low') {
-        sortedProducts.sort((a, b) => {
-          const priceA = Math.min(...a.product_stores.map(ps => ps.current_price || Infinity));
-          const priceB = Math.min(...b.product_stores.map(ps => ps.current_price || Infinity));
-          return priceA - priceB;
-        });
-      } else if (sortBy === 'price_high') {
-        sortedProducts.sort((a, b) => {
-          const priceA = Math.min(...a.product_stores.map(ps => ps.current_price || 0));
-          const priceB = Math.min(...b.product_stores.map(ps => ps.current_price || 0));
-          return priceB - priceA;
-        });
-      }
-
-      // Apply spec filters client-side
-      if (filters.specs && Object.keys(filters.specs).length > 0) {
-        sortedProducts = sortedProducts.filter(product => {
-          const title = product.name_en || product.name_ar || '';
-          const specs = extractSpecsFromTitle(title);
-          return Object.entries(filters.specs!).every(([key, values]) => {
-            if (values.length === 0) return true;
-            return values.includes(specs[key] || '');
-          });
-        });
-      }
-
-      // Apply discount filter
-      if (filters.discount) {
-        sortedProducts = sortedProducts.filter(product => {
-          const ps = product.product_stores[0];
-          if (!ps?.original_price || !ps.current_price) return false;
-          const discountPct = ((ps.original_price - ps.current_price) / ps.original_price) * 100;
-          return discountPct >= filters.discount!;
-        });
-      }
-
-      const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-      const paginatedProducts = sortedProducts.slice(offset, offset + ITEMS_PER_PAGE);
-
-      setProducts(paginatedProducts);
-      setTotalCount(sortedProducts.length);
+      setRawProducts(mappedProducts);
       setStoreErrors(data.errors || {});
       setScrapingProgress('');
 
@@ -443,26 +506,20 @@ export default function SearchPage() {
     }
   }
 
-  // Fetch products
+  // Fetch products — only re-scrape when query or category changes
   useEffect(() => {
     async function fetchProducts() {
       if (!debouncedQuery.trim()) {
-        setProducts([]);
-        setTotalCount(0);
+        setRawProducts([]);
         setLoading(false);
         return;
       }
 
-      const supportedSelectedStores = filters.stores.filter(isSupportedSearchStore);
-      const selectedStores =
-        supportedSelectedStores.length > 0
-          ? supportedSelectedStores
-          : DEFAULT_SEARCH_STORES;
-
-      await searchWithScraping(debouncedQuery, selectedStores, 1);
+      await searchWithScraping(debouncedQuery, DEFAULT_SEARCH_STORES, 5);
     }
     fetchProducts();
-  }, [debouncedQuery, sortBy, currentPage, selectedCategory, filters, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, selectedCategory]);
 
   const handleSearch = (query: string, category?: ProductCategory | 'all') => {
     setSearchQuery(query);
