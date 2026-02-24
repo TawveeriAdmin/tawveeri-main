@@ -1,14 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { ChartCard } from '@/components/admin/chart-card';
-import { BarChart } from '@/components/analytics/bar-chart';
 import { format } from 'date-fns';
+
+const BarChart = dynamic(
+  () => import('@/components/analytics/bar-chart').then((m) => ({ default: m.BarChart })),
+  { ssr: false }
+);
 import { Search, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 
 interface SearchAnalytics {

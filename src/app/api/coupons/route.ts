@@ -65,10 +65,17 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      data: data || [],
-      count: count || 0,
-    });
+    return NextResponse.json(
+      {
+        data: data || [],
+        count: count || 0,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching coupons:', error);
     return NextResponse.json(

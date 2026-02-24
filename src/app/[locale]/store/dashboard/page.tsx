@@ -1,10 +1,14 @@
+import dynamic from 'next/dynamic';
 import { getStoreOwnerStats, getStoreProductAnalytics } from '@/lib/store/utils';
 import { getStoreRevenue } from '@/lib/store/utils';
 import { createClient } from '@/lib/auth/server';
 import { getUserProfile } from '@/lib/auth/server';
 import { StatsCard } from '@/components/admin/stats-card';
-import { RevenueChart } from '@/components/analytics/revenue-chart';
 import { DataTable, type Column } from '@/components/admin/data-table';
+
+const RevenueChart = dynamic(
+  () => import('@/components/analytics/revenue-chart').then((m) => ({ default: m.RevenueChart }))
+);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
  Package,

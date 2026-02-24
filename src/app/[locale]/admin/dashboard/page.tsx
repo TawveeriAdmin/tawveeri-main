@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import {
   getDashboardKPIs,
   getRevenueOverTime,
@@ -9,8 +10,11 @@ import {
 } from '@/lib/admin/dashboard-queries';
 import { getAuditLogs } from '@/lib/auth/audit';
 import { getServerTranslations } from '@/lib/translations-server';
-import { DashboardCharts } from './dashboard-charts';
 import { DashboardKPICards } from './dashboard-kpis';
+
+const DashboardCharts = dynamic(
+  () => import('./dashboard-charts').then((m) => ({ default: m.DashboardCharts }))
+);
 import {
   Table,
   TableBody,

@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { ProductForm } from '@/components/store/product-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getProductPerformanceChartData } from '@/lib/analytics/charts';
-import { BarChart } from '@/components/analytics/bar-chart';
+
+const BarChart = dynamic(
+  () => import('@/components/analytics/bar-chart').then((m) => ({ default: m.BarChart })),
+  { ssr: false }
+);
 
 export default function EditProductPage({
  params,

@@ -6,9 +6,51 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './i18n';
 
 /**
- * Combined Middleware: i18n + Auth
- * Handles locale routing and authentication/authorization
+ * Combined Middleware: i18n + Auth + API Rate Limiting
  */
+
+// --- Rate Limiting ---
+const RATE_WINDOW_MS = 60_000; // 60 seconds
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Cleanup stale entries every 60s
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60_000);
+
+function getRateLimit(pathname: string): number | null {
+  if (pathname.startsWith('/api/cron/')) return null; // authenticated by CRON_SECRET
+  if (pathname === '/api/health') return null;
+  if (pathname.startsWith('/api/search/scrape')) return 15; // half of 30 (2 PM2 instances)
+  return 30; // half of 60 (2 PM2 instances)
+}
+
+function checkRateLimit(ip: string, pathname: string): { allowed: boolean; remaining: number; retryAfter?: number } {
+  const limit = getRateLimit(pathname);
+  if (limit === null) return { allowed: true, remaining: -1 };
+
+  const key = `${ip}:${pathname.startsWith('/api/search/scrape') ? 'scrape' : 'api'}`;
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_WINDOW_MS });
+    return { allowed: true, remaining: limit - 1 };
+  }
+
+  entry.count++;
+  if (entry.count > limit) {
+    const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
+    return { allowed: false, remaining: 0, retryAfter };
+  }
+
+  return { allowed: true, remaining: limit - entry.count };
+}
 
 // Routes that require authentication (without locale prefix)
 const protectedRoutes = [
@@ -72,9 +114,31 @@ const isConfiguredAdminEmail = (email?: string | null) => {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Skip middleware for API routes
+  // API routes: apply rate limiting, then pass through
   if (pathname.startsWith('/api/')) {
-    return NextResponse.next();
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+    const { allowed, remaining, retryAfter } = checkRateLimit(ip, pathname);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
+    const response = NextResponse.next();
+    if (remaining >= 0) {
+      response.headers.set('X-RateLimit-Remaining', String(remaining));
+    }
+    return response;
   }
 
   // First, let next-intl handle the routing

@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import {
   getDashboardKPIs,
   getRevenueOverTime,
@@ -7,7 +8,10 @@ import {
 import { createClient } from '@/lib/auth/server';
 import { getServerTranslations } from '@/lib/translations-server';
 import { DashboardKPICards } from '../dashboard/dashboard-kpis';
-import { AnalyticsCharts } from './analytics-charts';
+
+const AnalyticsCharts = dynamic(
+  () => import('./analytics-charts').then((m) => ({ default: m.AnalyticsCharts }))
+);
 
 export default async function AdminAnalyticsPage({
   params,
