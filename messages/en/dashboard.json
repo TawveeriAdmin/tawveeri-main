@@ -64,6 +64,12 @@
     "productsCompared": "Products Compared",
     "alertsActive": "Active Alerts"
   },
+  "kpi": {
+    "totalSavings": "Savings Found",
+    "productsTracked": "Products Tracked",
+    "priceDrops": "Price Drops",
+    "alertsTriggered": "Alerts Hit"
+  },
   "section": {
     "recommendations": "Recommendations",
     "favorites": "Favorites",

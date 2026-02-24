@@ -64,6 +64,12 @@
     "productsCompared": "المنتجات التي تمت مقارنتها",
     "alertsActive": "التنبيهات النشطة"
   },
+  "kpi": {
+    "totalSavings": "التوفير المتاح",
+    "productsTracked": "المنتجات المتابعة",
+    "priceDrops": "انخفاضات الأسعار",
+    "alertsTriggered": "تنبيهات محققة"
+  },
   "section": {
     "recommendations": "توصيات لك",
     "favorites": "المفضلة",
