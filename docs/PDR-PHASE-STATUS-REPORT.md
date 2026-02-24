@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 21 | 9 | 6 | **75%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 22 | 8 | 6 | **75%** |
 
 ---
 
@@ -143,7 +143,7 @@ All Phase 1 gaps have been resolved:
 
 ## Overall: 75%
 
-Since the last report (69%), **AI-powered recommendations are now fully operational** — switched from OpenAI to Google Gemini `gemini-embedding-001` (768 dims), Edge Function deployed, all 199 products backfilled with embeddings, personalized + similar product recommendations live on dashboard. Previous completions include **coupon integration** (full admin + public UI), **mobile app** (Expo React Native with 23 screens), **full SEO implementation**, **search relevance scoring rework**, **wishlist improvements**, and **UX polish**. The biggest remaining gaps are email service integration, web push notifications, monitoring, and the loyalty program.
+Since the last report (69%), **AI-powered recommendations are now fully operational** — switched from OpenAI to Google Gemini `gemini-embedding-001` (768 dims), Edge Function deployed, all 199 products backfilled with embeddings, personalized + similar product recommendations live on dashboard. **WCAG 2.1 AA accessibility** fixes applied across 18 files (skip links, `<main>` landmarks, ARIA attributes, keyboard accessibility, color contrast). Previous completions include **coupon integration** (full admin + public UI), **mobile app** (Expo React Native with 23 screens), **full SEO implementation**, **search relevance scoring rework**, **wishlist improvements**, and **UX polish**. The biggest remaining gaps are email service integration, web push notifications, monitoring, and the loyalty program.
 
 ---
 
@@ -195,7 +195,7 @@ Since the last report (69%), **AI-powered recommendations are now fully operatio
 
 ---
 
-### Week 10 — Performance, Compliance & Launch `35%`
+### Week 10 — Performance, Compliance & Launch `40%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
@@ -205,7 +205,7 @@ Since the last report (69%), **AI-powered recommendations are now fully operatio
 | 4 | Scalability (1M+ users) | 🟡 | Supabase is horizontally scalable. No load testing or CDN setup evidence. |
 | 5 | Reliability (99.9% uptime) | ❌ | No monitoring service (Sentry, Datadog, UptimeRobot, etc.) |
 | 6 | Cross-browser compatibility | 🟡 | Feature detection for modern APIs; no polyfills for legacy browsers |
-| 7 | Accessibility compliance (WCAG 2.1) | 🟡 | Radix UI baseline; `prefers-reduced-motion`. Missing ARIA landmarks, comprehensive labels, contrast audit. |
+| 7 | Accessibility compliance (WCAG 2.1) | ✅ | Radix UI baseline + `prefers-reduced-motion` + comprehensive WCAG 2.1 AA pass: skip-to-main links on all 3 layouts (public, admin, store), `<main>` landmarks with IDs, `aria-current="page"` on nav links, `aria-label` on OAuth/password-toggle/search buttons, `aria-expanded`/`aria-pressed` on filter sidebar, `role="alert"` on form errors, keyboard-accessible product cards (`<button>` replaces `<div onClick>`), `focus-visible:ring-2` on Input/Select, color contrast fixes (success #059669, outline #4B5563), `lang="ar"` on `<html>`. |
 | 8 | Energy efficiency optimization | ❌ | No specific infrastructure optimization |
 | 9 | Legal compliance (Saudi regulations) | ✅ | Privacy + Terms (bilingual) |
 | 10 | Localization (Hijri/Gregorian + Arabic numerals) | ❌ | Gregorian only; no Hijri calendar or Eastern Arabic numeral support |
@@ -245,7 +245,7 @@ Since the last report (69%), **AI-powered recommendations are now fully operatio
 | Performance (< 3s search) | 🟡 |
 | Scalability (1M+ users) | 🟡 |
 | Cross-Browser Compatibility | 🟡 |
-| Accessibility (WCAG 2.1) | 🟡 |
+| Accessibility (WCAG 2.1) | ✅ |
 | Loyalty Program / Cashback | ❌ |
 | Reliability (99.9% uptime monitoring) | ❌ |
 | Data Backup (daily) | ✅ |
@@ -253,63 +253,9 @@ Since the last report (69%), **AI-powered recommendations are now fully operatio
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **21 ✅ · 9 🟡 · 6 ❌** |
+| **Totals** | **22 ✅ · 8 🟡 · 6 ❌** |
 
 ---
-
-### Phase 2 — Changes Since Last Report (2026-02-18)
-
-| Item | Previous | Current | What Changed |
-|------|:--------:|:-------:|--------------|
-| Coupon Integration | ❌ | ✅ | Full implementation: `coupons` table, admin CRUD (`/admin/coupons/`), public page (`/(public)/coupons/`), API routes, `CouponBadge` component, copy tracking, audit logging, bilingual translations. |
-| AI Smart Recommendations | ❌ | 🟡 | pgvector infrastructure built: `products.embedding` column (`halfvec(1536)`), OpenAI `text-embedding-3-small`, 4 PostgreSQL RPC functions, React hook (`use-recommendations.ts`), types. Edge Function `embed` documented. Pending deployment verification + embedding backfill. |
-| Mobile App (iOS & Android) | ❌ | ✅ | Full Expo React Native app: 23 screens, Expo SDK 52+, New Architecture, push notifications, deep linking, Zustand cart, JS-based RTL, native builds. |
-| Push Notifications | 🟡 | 🟡 | Mobile push now fully implemented via `expo-notifications` (registration, listeners, badge count). Web push still missing. |
-| Personalized Recommendations | 🟡 | 🟡 | Upgraded from category-based to pgvector-backed `get_personalized_recommendations()` RPC with fallback chain. Pending embedding verification. |
-
-### Phase 2 — Changes Since Last Report (2026-02-22)
-
-| Item | Previous | Current | What Changed |
-|------|:--------:|:-------:|--------------|
-| Coupon Integration (enhanced) | ✅ | ✅ | Major quality upgrade: admin page rewritten to full datatable pattern (sortable columns, checkbox selection, column visibility dropdown, pagination with rows-per-page, status/store filter dropdowns). AlertDialog confirmation modals for all destructive actions (delete, activate, deactivate). Real delete (not soft-delete). Custom DateTimePicker replacing native datetime-local. 2-column form dialog layout. |
-| Store Owner Coupon Management | ❌ | ✅ | New store owner coupon portal at `/store/coupons/` with full datatable (matching admin pattern). Store-scoped API routes: `GET/POST /api/store/coupons/`, `PATCH/DELETE /api/store/coupons/[id]/` with ownership verification. Sidebar nav link added. |
-| Coupon DB Migration | ❌ | ✅ | `scripts/database/11-coupons-schema.sql` — table definition, `discount_type` enum, foreign keys, unique constraint on `code`, RLS policies (public read active, admin full, store owner own), indexes, `updated_at` trigger. |
-| Coupon Notifications | ❌ | ✅ | In-app bilingual notifications on coupon creation via `createNotification()` in both admin and store API POST handlers. Audit logging via `logCouponEvent()`. |
-
-### Phase 2 — Changes Since Last Report (2026-02-24)
-
-| Item | Previous | Current | What Changed |
-|------|:--------:|:-------:|--------------|
-| Search Relevance Scoring | ✅ | ✅ | Complete rework: new two-pass classification system in `src/lib/scraping/search/relevance-scorer.ts` (477 lines). Gap-based price clustering separates main products from accessories. Query intent detection identifies accessory queries. Additive scoring (0–100) replaces old keyword penalty system. Removed ~220 lines of old scoring code from `search-orchestrator.ts`. |
-| Jarir & Extra Search Scrapers | ✅ | ✅ | Rewritten to use JSON APIs instead of HTML scraping — faster and more reliable. Store logos added to search results. |
-| Amazon & Noon Scrapers | ✅ | ✅ | Now pass `rating` and `review_count` data through to search results (were parsed but discarded). |
-| Wishlist Save from Search | 🟡 | ✅ | Was a non-functional stub (`console.log`). Now auto-creates products in DB via `POST /api/products/ensure` (server-side, bypasses RLS). Handles both DB UUID products and scraped temporary-ID products. |
-| Wishlist Header Counter | ❌ | ✅ | New red counter badge on header heart icon. Fetches count from Supabase, updates in real-time via `wishlist-updated` custom event dispatched from search, deals, product detail, and wishlist pages. |
-| Saved Indicator on Search | ❌ | ✅ | Filled red heart for products already in user's wishlist on search page. Fetches user's wishlist names on load, matches by `name_en`. |
-| Store Logos in Filter Sidebar | ❌ | ✅ | Store filter section now shows store logos (`/logos/{slug}.png`) alongside store names. |
-| Wishlist Page UX | ✅ | ✅ | Removed redundant heart button. Fixed store logos (maps DB UUID → slug for `STORE_LOGOS`). Fixed "View at Store" links (fetches `product_url`). Removed breadcrumbs. |
-| Notifications Page UX | ✅ | ✅ | Removed breadcrumbs matching wishlist page pattern. Fixed breadcrumb component hydration error (`<li>` nested in `<li>`). |
-| Logout Security | ✅ | ✅ | `localStorage.clear()` and `sessionStorage.clear()` on sign out for clean browser state. |
-| Search Grid Layout | ✅ | ✅ | Updated to 5 items per row at `xl` breakpoint (was 4 at `xl`, 5 at `2xl`). |
-| Image Domains | ✅ | ✅ | Added `**.almanea.com` and `**.dev-almanea.com` to `next.config.ts` remote patterns. |
-
-### Phase 2 — Changes Since Last Report (2026-02-24, SEO)
-
-| Item | Previous | Current | What Changed |
-|------|:--------:|:-------:|--------------|
-| SEO Optimization | 🟡 | ✅ | Full implementation: `generateMetadata()` on all 10 public pages (landing, search, deals, stores listing, coupons, privacy, terms, product detail, store detail). Server wrapper pattern: renamed 8 `page.tsx` to `*-client.tsx`, created thin server `page.tsx` wrappers. `src/app/robots.ts` (allow public, disallow admin/store/dashboard/auth/api). `src/app/sitemap.ts` (dynamic product/store URLs for ar/en with hreflang alternates). JSON-LD: Product (AggregateOffer, AggregateRating, Brand), Store (AggregateRating), WebSite (SearchAction). OG/Twitter tags with images. Canonical URLs + hreflang. `noindex` on 4 protected layouts (dashboard, admin, store, auth). SEO utilities: `src/lib/seo/metadata.ts`, `json-ld.tsx`, `product-data.ts`, `store-data.ts`. |
-| Week 8 Monetization | 60% | 70% | SEO completion raises Week 8 from 3/5 to 4/5 items done. |
-
----
-
-### Phase 2 — Changes Since Last Report (2026-02-24, AI Recommendations)
-
-| Item | Previous | Current | What Changed |
-|------|:--------:|:-------:|--------------|
-| AI Smart Recommendations | 🟡 | ✅ | Switched from OpenAI `text-embedding-3-small` (1536 dims) to Google Gemini `gemini-embedding-001` (768 dims). Edge Function `embed` rewritten and deployed (`supabase/functions/embed/index.ts`). `GOOGLE_AI_API_KEY` secret set. DB migrations added: `12-ai-recommendations-infrastructure.sql` (version control for existing objects), `13-migrate-embeddings-to-gemini.sql` (dimension change + function type fixes). All 199 products backfilled with Gemini embeddings. Auto-pipeline operational: insert → trigger → pgmq → pg_cron → Gemini → pgvector. |
-| Personalized Recommendations | 🟡 | ✅ | Now live with real product data (images, prices). Dashboard "Recommendations" section shows AI-powered cards with "AI" badge. Fallback chain verified: embedding similarity → collaborative → category popularity → global popularity. |
-| Week 6 Personalization | 75% | 100% | Both AI recommendation items completed. All 5 Week 6 items now ✅. |
-| Phase 2 Overall | 69% | 75% | 21/36 items complete (was 19/36). |
 
 ### Phase 2 — Remaining Work (Priority Order)
 
@@ -319,9 +265,8 @@ Since the last report (69%), **AI-powered recommendations are now fully operatio
 | 2 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
 | 3 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
 | 4 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
-| 5 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
-| 6 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
-| 7 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
+| 5 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
+| 6 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
 
 ---
 
@@ -344,7 +289,7 @@ Phase 2 — Profitability & Scale
   Week 7  Notifications  ████████████████░░░░░  80%
   Week 8  Monetization   ██████████████░░░░░░░  70%
   Week 9  Comparison     ██████████████░░░░░░░  70%
-  Week 10 Launch         ███████░░░░░░░░░░░░░░  35%
+  Week 10 Launch         ████████░░░░░░░░░░░░░  40%
 ```
 
 ---
