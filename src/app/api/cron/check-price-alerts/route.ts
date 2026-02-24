@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createNotification } from '@/lib/auth/notifications';
 import { sendPushToUser } from '@/lib/push/expo-push';
+import { sendWebPushToUser } from '@/lib/push/web-push';
 
 /**
  * API Route to check price alerts and send notifications
@@ -115,6 +116,20 @@ export async function POST(request: NextRequest) {
               product_slug: product?.slug,
             },
             channelId: 'price-alerts',
+          });
+
+          // Send web push notification to browser
+          await sendWebPushToUser(alert.user_id, {
+            title: pushTitle,
+            body: pushBody,
+            data: {
+              url: `/${locale}/products/${product?.slug || alert.product_id}`,
+              type: 'price_drop',
+              product_id: alert.product_id,
+            },
+            dir: locale === 'ar' ? 'rtl' : 'ltr',
+            lang: locale,
+            tag: `price-drop-${alert.product_id}`,
           });
 
           // Mark alert as inactive and update notified_at

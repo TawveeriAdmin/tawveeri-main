@@ -18,7 +18,8 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GuestPrompt } from '@/components/auth/guest-prompt';
-import { Bell, Mail, MessageSquare, Smartphone } from 'lucide-react';
+import { Bell, Mail, MessageSquare, Monitor, Smartphone } from 'lucide-react';
+import { useWebPush } from '@/lib/push/use-web-push';
 
 interface NotificationPreferences {
  email_enabled: boolean;
@@ -66,6 +67,7 @@ export default function NotificationPreferencesPage() {
  const { toast } = useToast();
  const isRTL = locale === 'ar';
 
+ const { status: pushStatus, isSupported: pushSupported, subscribe: subscribePush, unsubscribe: unsubscribePush } = useWebPush();
  const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
  const [loading, setLoading] = useState(true);
  const [saving, setSaving] = useState(false);
@@ -241,6 +243,39 @@ export default function NotificationPreferencesPage() {
  id="push_enabled"
  checked={preferences.push_enabled}
  onCheckedChange={(checked) => updatePreference('push_enabled', checked)}
+ />
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-3">
+ <Monitor className="h-5 w-5 text-on-surface-variant" />
+ <div>
+ <Label htmlFor="web_push_enabled">
+ {t('notifications.webPush')}
+ </Label>
+ <p className="text-sm text-on-surface-variant">
+ {pushStatus === 'subscribed'
+ ? t('notifications.webPushSubscribed')
+ : pushStatus === 'denied'
+ ? t('notifications.webPushDenied')
+ : pushStatus === 'unsupported'
+ ? t('notifications.webPushUnsupported')
+ : pushStatus === 'error'
+ ? t('notifications.webPushError')
+ : pushStatus === 'loading'
+ ? t('notifications.webPushLoading')
+ : t('notifications.webPushDescription')}
+ </p>
+ </div>
+ </div>
+ <Switch
+ id="web_push_enabled"
+ checked={pushStatus === 'subscribed'}
+ disabled={!pushSupported || pushStatus === 'loading' || pushStatus === 'denied'}
+ onCheckedChange={(checked) => {
+ if (checked) subscribePush();
+ else unsubscribePush();
+ }}
  />
  </div>
 
