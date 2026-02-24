@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 30 | 1 | 0 | **99%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 17 | 12 | 7 | **65%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 18 | 11 | 7 | **66%** |
 
 ---
 
@@ -141,9 +141,9 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 65%
+## Overall: 66%
 
-Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). Recent updates include a **search relevance scoring rework** (two-pass classification), **wishlist improvements** (save from search, header counter, saved indicators), and **UX polish** (store logos in filters, breadcrumb fixes, logout cleanup). The biggest remaining gaps are email service integration, SEO, monitoring, and the loyalty program.
+Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). Recent updates include **full SEO implementation** (dynamic metadata, JSON-LD, sitemap, robots.txt), **search relevance scoring rework** (two-pass classification), **wishlist improvements** (save from search, header counter, saved indicators), and **UX polish** (store logos in filters, breadcrumb fixes, logout cleanup). The biggest remaining gaps are email service integration, monitoring, and the loyalty program.
 
 ---
 
@@ -171,7 +171,7 @@ Since the last report (53%), three major features have been completed: **coupon 
 
 ---
 
-### Week 8 — Monetization & Analytics `60%`
+### Week 8 — Monetization & Analytics `70%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
@@ -179,7 +179,7 @@ Since the last report (53%), three major features have been completed: **coupon 
 | 2 | Loyalty program / Cashback | ❌ | Zero implementation — no tables, no UI, no logic |
 | 3 | Store dashboard (merchant analytics) | ✅ | Revenue charts, product performance, click/conversion rates, transaction history in `/store/dashboard/` and `/store/analytics/` |
 | 4 | Admin analytics dashboard | ✅ | KPIs, revenue charts, user growth, category distribution, search analytics, activity logs in `/admin/dashboard/` and `/admin/analytics/` |
-| 5 | SEO optimization | 🟡 | Root metadata in `layout.tsx`. **Missing**: dynamic per-page `generateMetadata()`, `sitemap.xml`, `robots.txt`, JSON-LD structured data, OG tags |
+| 5 | SEO optimization | ✅ | Full implementation: `generateMetadata()` on all 10 public pages via server wrapper pattern, `robots.ts` (allow/disallow rules), `sitemap.ts` (dynamic product/store URLs for ar/en with hreflang), JSON-LD structured data (Product with AggregateOffer/AggregateRating, Store, WebSite with SearchAction), OG/Twitter tags, canonical URLs, hreflang alternates, noindex on 4 protected layouts. SEO utilities in `src/lib/seo/`. |
 
 ---
 
@@ -239,7 +239,7 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Email/SMS Alerts | 🟡 |
 | Push Notifications (web) | 🟡 |
 | Premium Store Listings | 🟡 |
-| SEO Optimization | 🟡 |
+| SEO Optimization | ✅ |
 | Comparison (warranty, returns, delivery) | 🟡 |
 | Delivery Time Comparison | 🟡 |
 | Performance (< 3s search) | 🟡 |
@@ -253,7 +253,7 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **17 ✅ · 12 🟡 · 7 ❌** |
+| **Totals** | **18 ✅ · 11 🟡 · 7 ❌** |
 
 ---
 
@@ -293,6 +293,13 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Search Grid Layout | ✅ | ✅ | Updated to 5 items per row at `xl` breakpoint (was 4 at `xl`, 5 at `2xl`). |
 | Image Domains | ✅ | ✅ | Added `**.almanea.com` and `**.dev-almanea.com` to `next.config.ts` remote patterns. |
 
+### Phase 2 — Changes Since Last Report (2026-02-24, SEO)
+
+| Item | Previous | Current | What Changed |
+|------|:--------:|:-------:|--------------|
+| SEO Optimization | 🟡 | ✅ | Full implementation: `generateMetadata()` on all 10 public pages (landing, search, deals, stores listing, coupons, privacy, terms, product detail, store detail). Server wrapper pattern: renamed 8 `page.tsx` to `*-client.tsx`, created thin server `page.tsx` wrappers. `src/app/robots.ts` (allow public, disallow admin/store/dashboard/auth/api). `src/app/sitemap.ts` (dynamic product/store URLs for ar/en with hreflang alternates). JSON-LD: Product (AggregateOffer, AggregateRating, Brand), Store (AggregateRating), WebSite (SearchAction). OG/Twitter tags with images. Canonical URLs + hreflang. `noindex` on 4 protected layouts (dashboard, admin, store, auth). SEO utilities: `src/lib/seo/metadata.ts`, `json-ld.tsx`, `product-data.ts`, `store-data.ts`. |
+| Week 8 Monetization | 60% | 70% | SEO completion raises Week 8 from 3/5 to 4/5 items done. |
+
 ---
 
 ### Phase 2 — Remaining Work (Priority Order)
@@ -300,14 +307,13 @@ Since the last report (53%), three major features have been completed: **coupon 
 | # | Gap | Impact | Effort | Notes |
 |---|-----|--------|--------|-------|
 | 1 | **Connect email service** (Resend/SendGrid) | Critical | Low | Templates + helpers already built for 7 email types. Just need to wire up a provider or deploy `send-email` Edge Function. |
-| 2 | **SEO fundamentals** — sitemap, robots.txt, dynamic metadata, JSON-LD | Critical | Medium | No organic search traffic without this. Add `generateMetadata()` to key pages, `app/sitemap.ts`, `app/robots.ts`. |
-| 3 | **Verify AI recommendations deployment** — Edge Function `embed`, backfill embeddings | High | Low | Infrastructure is documented; verify Supabase Edge Function is deployed and run backfill: `SELECT pgmq.send('embedding_jobs', ...)`. |
-| 4 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
-| 5 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
-| 6 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
-| 7 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
-| 8 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
-| 9 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
+| 2 | **Verify AI recommendations deployment** — Edge Function `embed`, backfill embeddings | High | Low | Infrastructure is documented; verify Supabase Edge Function is deployed and run backfill: `SELECT pgmq.send('embedding_jobs', ...)`. |
+| 3 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
+| 4 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
+| 5 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
+| 6 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
+| 7 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
+| 8 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
 
 ---
 
@@ -324,11 +330,11 @@ Phase 1 — Growth & Adoption
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-█████████████░░░░░░░░  65%
+██████████████░░░░░░░  66%
 
   Week 6  Personal.      ███████████████░░░░░░  75%
   Week 7  Notifications  ████████████████░░░░░  80%
-  Week 8  Monetization   ████████████░░░░░░░░░  60%
+  Week 8  Monetization   ██████████████░░░░░░░  70%
   Week 9  Comparison     ██████████████░░░░░░░  70%
   Week 10 Launch         ███████░░░░░░░░░░░░░░  35%
 ```
