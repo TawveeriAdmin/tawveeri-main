@@ -76,6 +76,21 @@ type SortOption = 'popularity' | 'price_low' | 'price_high' | 'rating';
 const ITEMS_PER_PAGE = 24;
 const COMPARE_STORAGE_KEY = 'compare_products';
 const COMPARE_CACHE_STORAGE_KEY = 'compare_products_cache';
+const SEARCH_CACHE_KEY = 'search_results_cache';
+
+// Session-storage helpers for persisting search results across navigation
+function getSearchCache(): { query: string; category: string; products: Product[] } | null {
+  try {
+    const raw = sessionStorage.getItem(SEARCH_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function setSearchCache(query: string, category: string, products: Product[]) {
+  try {
+    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, products }));
+  } catch { /* quota exceeded — ignore */ }
+}
 
 export default function SearchPage() {
   const params = useParams();
@@ -88,16 +103,17 @@ export default function SearchPage() {
   const { toast } = useToast();
   const { addItem } = useMultiStoreCart();
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const urlQuery = searchParams.get('q') || '';
+  const initialCategory = (searchParams.get('category') as ProductCategory | 'all') || 'all';
+
+  const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>(
-    (searchParams.get('category') as ProductCategory | 'all') || 'all'
-  );
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>(initialCategory);
   const [scrapingProgress, setScrapingProgress] = useState<string>('');
   const [storeErrors, setStoreErrors] = useState<Record<string, string>>({});
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -115,7 +131,7 @@ export default function SearchPage() {
   });
 
   // Sync search query from URL params (e.g. when header search navigates here)
-  const urlQueryRef = useRef(searchParams.get('q') || '');
+  const urlQueryRef = useRef(urlQuery);
   const filtersFromUrlRef = useRef(false);
   useEffect(() => {
     const urlQuery = searchParams.get('q') || '';
@@ -488,6 +504,7 @@ export default function SearchPage() {
       });
 
       setRawProducts(mappedProducts);
+      setSearchCache(query, selectedCategory || 'all', mappedProducts);
       setStoreErrors(data.errors || {});
       setScrapingProgress('');
 
@@ -506,8 +523,40 @@ export default function SearchPage() {
     }
   }
 
-  // Fetch products — only re-scrape when query or category changes
+  // Fetch products when query/category changes, with sessionStorage cache restore on mount
+  const mountedRef = useRef(false);
+  const cacheSkipRef = useRef(false);
   useEffect(() => {
+    // Skip one trigger after cache restored query+category from back-navigation
+    if (cacheSkipRef.current) {
+      cacheSkipRef.current = false;
+      return;
+    }
+
+    // On first mount, try restoring from sessionStorage before scraping
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      const cached = getSearchCache();
+      if (cached && cached.products.length > 0) {
+        const q = debouncedQuery;
+        if (q && cached.query === q) {
+          // URL had matching query — just restore products, skip scrape
+          setRawProducts(cached.products);
+          return;
+        }
+        if (!q && cached.query) {
+          // URL had no query (back-nav stripped ?q=) — restore everything
+          setRawProducts(cached.products);
+          // These state changes will re-trigger this effect once (React batches them)
+          cacheSkipRef.current = true;
+          setSearchQuery(cached.query);
+          setDebouncedQuery(cached.query);
+          setSelectedCategory(cached.category as ProductCategory | 'all');
+          return;
+        }
+      }
+    }
+
     async function fetchProducts() {
       if (!debouncedQuery.trim()) {
         setRawProducts([]);

@@ -183,10 +183,12 @@ const ACCESSORY_KEYWORDS = [
   'case', 'cover', 'protector', 'screen protector', 'tempered glass',
   'holder', 'stand', 'mount', 'charger', 'cable', 'adapter', 'hub',
   'sleeve', 'pouch', 'bag', 'skin', 'sticker', 'decal', 'film',
-  'lens protector', 'camera protector', 'back cover', 'bumper',
+  'lens protector', 'camera protector', 'camera lens', 'back cover', 'bumper',
   'grip', 'ring', 'strap', 'band', 'dock', 'cradle', 'wallet',
   'folio', 'shell', 'armor', 'armour', 'shield', 'guard',
   'magsafe', 'kickstand', 'rugged', 'shockproof', 'tpu', 'silicone',
+  'privacy screen', 'privacy glass', 'privacy filter', 'anti-spy',
+  '3in1', '3-in-1', '2in1', '2-in-1', 'bundle pack',
   'كفر', 'جراب', 'حافظة', 'حماية', 'شاحن', 'كيبل', 'سلك',
   'لاصق', 'واقي', 'واقي شاشة', 'غطاء', 'حامل', 'ستاند',
   'توصيلة', 'محول', 'قلم', 'ملصق',
@@ -203,6 +205,9 @@ const ACCESSORY_BRANDS = [
   'anker', 'baseus', 'nillkin', 'mofi', 'dux ducis', 'torras',
   'rhinoshield', 'catalyst', 'lifeproof', 'incipio', 'moshi',
   'elago', 'vrs design', 'ghostek', 'raptic', 'smartish',
+  'xonda', 'panzerglass', 'amazingthing', 'amazing thing',
+  'ugreen', 'jsaux', 'benks', 'switcheasy', 'uniq', 'laut',
+  'care by', 'green lion', 'devia', 'hoco', 'rock', 'joyroom',
 ];
 
 /**
@@ -301,21 +306,24 @@ function calculateRelevance(
 
   // ── Signal 6: Price proximity to median ──
   // Products priced near or above the median are likely the main product.
-  // Products far below median are likely accessories.
+  // Products far below median are likely accessories (case at 89 SAR vs phone at 4000 SAR).
   if (medianPrice && medianPrice > 0 && product.current_price > 0) {
     const priceRatio = product.current_price / medianPrice;
     if (priceRatio >= 0.5) {
       // At or above half the median — likely the real product
-      score += Math.min(priceRatio * 10, 20);
+      score += Math.min(priceRatio * 15, 25);
+    } else if (priceRatio < 0.05) {
+      // Less than 5% of median (e.g. 39 SAR vs 4000 SAR) — almost certainly an accessory
+      score -= 150;
     } else if (priceRatio < 0.1) {
-      // Less than 10% of median (e.g. 30 SAR vs 3500 SAR median) — almost certainly an accessory
-      score -= 40;
+      // Less than 10% of median (e.g. 89 SAR vs 4000 SAR) — very likely an accessory
+      score -= 100;
     } else if (priceRatio < 0.25) {
-      // Less than 25% of median — very likely an accessory
-      score -= 25;
+      // Less than 25% of median — likely an accessory
+      score -= 60;
     } else {
-      // 25-50% of median — probably an accessory
-      score -= 15;
+      // 25-50% of median — possibly an accessory
+      score -= 25;
     }
   }
 
