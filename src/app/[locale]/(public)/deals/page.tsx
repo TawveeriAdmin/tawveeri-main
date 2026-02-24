@@ -422,6 +422,7 @@ export default function DealsPage() {
         console.error('Error incrementing save count:', err);
       });
 
+      window.dispatchEvent(new Event('wishlist-updated'));
       toast({
         title: t('products.saved'),
         description: t('products.savedToWishlist'),

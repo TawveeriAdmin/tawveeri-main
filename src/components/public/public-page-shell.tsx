@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
+import { getSupabaseBrowserClient } from '@/lib/database';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -56,6 +57,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
   const t = useTranslations();
   const { user, signOut, loading: authLoading } = useAuth();
   const [compareCount, setCompareCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   // Keep header search input in sync with URL ?q= param
@@ -121,6 +123,25 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
       window.removeEventListener('compare-products-updated', handleCompareUpdate);
     };
   }, [pathname]);
+
+  /* ── Wishlist count from Supabase ── */
+  useEffect(() => {
+    if (!user) { setWishlistCount(0); return; }
+
+    const supabase = getSupabaseBrowserClient();
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from('user_wishlists')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setWishlistCount(count ?? 0);
+    };
+    fetchCount();
+
+    const handleWishlistUpdate = () => fetchCount();
+    window.addEventListener('wishlist-updated', handleWishlistUpdate);
+    return () => window.removeEventListener('wishlist-updated', handleWishlistUpdate);
+  }, [user, pathname]);
 
   /* ── Navigation links ── */
   const navLinks = [
@@ -265,10 +286,15 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                   {/* Wishlist */}
                   <Link
                     href={`/${locale}/wishlist`}
-                    className={iconBtnClass}
+                    className={cn(iconBtnClass, 'relative')}
                     aria-label={copy.wishlist}
                   >
                     <Heart className="h-4 w-4" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-0.5 -end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                        {wishlistCount > 99 ? '99+' : wishlistCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* Notifications */}

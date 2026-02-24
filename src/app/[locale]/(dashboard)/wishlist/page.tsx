@@ -24,11 +24,11 @@ import { GuestPrompt } from '@/components/auth/guest-prompt';
 
 type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
-type StoreSummary = Pick<Database['public']['Tables']['stores']['Row'], 'id' | 'name_ar' | 'name_en' | 'logo_url'>;
+type StoreSummary = Pick<Database['public']['Tables']['stores']['Row'], 'id' | 'name_ar' | 'name_en' | 'logo_url'> & { slug?: string };
 
 type WishlistProduct = ProductCardProduct & {
  product_stores: Array<
- (Pick<ProductStoreRow, 'id' | 'current_price' | 'original_price'> & {
+ (Pick<ProductStoreRow, 'id' | 'current_price' | 'original_price' | 'product_url'> & {
  availability: AvailabilityStatus;
  stores: StoreSummary;
  })
@@ -52,13 +52,21 @@ const mapWishlistProduct = (record: WishlistProductRecord): WishlistProduct => (
  image_urls: record.image_urls,
  product_stores: (record.product_stores || [])
  .filter((ps) => ps.stores)
- .map((ps) => ({
+ .map((ps) => {
+ const store = ps.stores as StoreSummary;
+ return {
  id: ps.id,
  current_price: ps.current_price,
  original_price: ps.original_price,
  availability: ps.availability as AvailabilityStatus,
- stores: ps.stores as StoreSummary,
- })),
+ product_url: ps.product_url,
+ stores: {
+  ...store,
+  // Use slug as id so ProductCard's STORE_LOGOS map works
+  id: store.slug || store.id,
+ },
+ };
+ }),
 });
 
 export default function WishlistPage() {
@@ -103,6 +111,7 @@ export default function WishlistPage() {
  });
 
  setProducts(products.filter((p) => p.id !== productId));
+ window.dispatchEvent(new Event('wishlist-updated'));
 
  toast({
  title: t('wishlist.removeSuccess'),
@@ -189,8 +198,10 @@ export default function WishlistPage() {
  current_price,
  original_price,
  availability,
+ product_url,
  stores(
  id,
+ slug,
  name_ar,
  name_en,
  logo_url
@@ -297,7 +308,6 @@ export default function WishlistPage() {
  product={product}
  locale={locale}
  onCompare={handleAddToCompare}
- onSave={() => handleRemoveFromWishlist(product.id)}
  onAddToCart={handleAddToCart}
  />
  <div className="absolute top-2 right-2 z-10 flex gap-2">

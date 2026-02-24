@@ -66,6 +66,7 @@ interface ProductCardProps {
   onCompare?: (productId: string) => void;
   onComparePrices?: (productId: string) => void;
   onSave?: (productId: string) => void;
+  isSaved?: boolean;
   onAddToCart?: (product: ProductCardProps['product']) => void;
   showActions?: boolean;
 }
@@ -78,6 +79,7 @@ export function ProductCard({
   onCompare,
   onComparePrices,
   onSave,
+  isSaved = false,
   onAddToCart,
   showActions = true,
 }: ProductCardProps) {
@@ -396,11 +398,11 @@ export function ProductCard({
             <Button
               variant="outline"
               size="sm"
-              className="shrink-0 px-2"
+              className={cn('shrink-0 px-2', isSaved && 'text-red-500 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20')}
               aria-label={t('product.saveToWishlist')}
               onClick={() => onSave(product.id)}
             >
-              <Heart className="w-4 h-4" />
+              <Heart className={cn('w-4 h-4', isSaved && 'fill-current')} />
             </Button>
           )}
           {/* Compare */}

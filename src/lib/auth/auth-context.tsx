@@ -562,6 +562,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSession(null);
 
+      // Clear all browser storage
+      localStorage.clear();
+      sessionStorage.clear();
+
       if (userId) {
         void createAuditLog({
           user_id: userId,
@@ -574,6 +578,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error signing out:', error);
       setUser(null);
       setSession(null);
+      localStorage.clear();
+      sessionStorage.clear();
     }
   };
 

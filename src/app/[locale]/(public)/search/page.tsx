@@ -123,6 +123,24 @@ export default function SearchPage() {
   const [storeErrorsExpanded, setStoreErrorsExpanded] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
+
+  // Fetch user's wishlist product names to show filled hearts
+  useEffect(() => {
+    if (!user) { setSavedProductNames(new Set()); return; }
+    const supabase = getSupabaseBrowserClient();
+    supabase
+      .from('user_wishlists')
+      .select('products(name_en)')
+      .eq('user_id', user.id)
+      .returns<Array<{ products: { name_en: string } | null }>>()
+      .then(({ data }) => {
+        if (data) {
+          setSavedProductNames(new Set(data.map(d => d.products?.name_en).filter(Boolean) as string[]));
+        }
+      });
+  }, [user]);
+
   const [filters, setFilters] = useState<SearchFilters>({
     brands: [],
     stores: [],
@@ -638,6 +656,7 @@ export default function SearchPage() {
     }
   };
 
+
   const handleSaveToWishlist = async (productId: string) => {
     if (!user) {
       router.push(`/${locale}/auth/login?redirect=/wishlist`);
@@ -645,10 +664,55 @@ export default function SearchPage() {
     }
 
     const supabase = getSupabaseBrowserClient();
+
+    // Search results use temporary IDs (SKU-based), not DB UUIDs.
+    // Use the server API to find or create the product (bypasses RLS).
+    let dbProductId = productId;
+    const isDbUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId);
+
+    if (!isDbUuid) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      const res = await fetch('/api/products/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name_en: product.name_en,
+          name_ar: product.name_ar,
+          slug: product.slug,
+          category: product.category,
+          brand: product.brand,
+          model: product.model,
+          image_urls: product.image_urls,
+          product_stores: (product.product_stores || []).map(ps => ({
+            store_slug: ps.stores?.id,
+            current_price: ps.current_price,
+            original_price: ps.original_price,
+            product_url: ps.product_url,
+            availability: ps.availability,
+            is_deal: ps.is_deal,
+            is_free_delivery: ps.is_free_delivery,
+          })),
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.id) {
+        toast({
+          title: t('common.error'),
+          description: result.error || t('products.saveError'),
+          variant: 'destructive',
+        });
+        return;
+      }
+      dbProductId = result.id;
+    }
+
     try {
       const { error: saveError } = await supabase.from('user_wishlists').insert({
         user_id: user.id,
-        product_id: productId,
+        product_id: dbProductId,
       });
 
       if (saveError && saveError.code === '23505') {
@@ -658,10 +722,17 @@ export default function SearchPage() {
 
       if (saveError) throw saveError;
 
-      incrementSaveCount(productId).catch((err) => {
+      incrementSaveCount(dbProductId).catch((err) => {
         console.error('Error incrementing save count:', err);
       });
 
+      // Update local saved set so heart fills immediately
+      const savedProduct = products.find(p => p.id === productId);
+      if (savedProduct?.name_en) {
+        setSavedProductNames(prev => new Set([...prev, savedProduct.name_en]));
+      }
+
+      window.dispatchEvent(new Event('wishlist-updated'));
       toast({ title: t('products.saved'), description: t('products.savedToWishlist') });
     } catch (err) {
       toast({
@@ -995,7 +1066,7 @@ export default function SearchPage() {
                       </div>
                     </div>
                     {/* Skeleton grid */}
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                       {Array.from({ length: 12 }).map((_, i) => (
                         <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
                           <Skeleton className="h-40 w-full rounded-lg" />
@@ -1051,7 +1122,7 @@ export default function SearchPage() {
                 {/* Products Grid */}
                 {!loading && !error && products.length > 0 && (
                   <>
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                       {products.map((product, index) => (
                         <div
                           key={`${product.id}-${index}`}
@@ -1064,6 +1135,7 @@ export default function SearchPage() {
                             onCompare={handleAddToCompare}
                             onComparePrices={handleComparePrices}
                             onSave={handleSaveToWishlist}
+                            isSaved={savedProductNames.has(product.name_en)}
                           />
                           {/* Inline Store Comparison Panel */}
                           {expandedProductId === product.id && product.product_stores.length > 1 && (

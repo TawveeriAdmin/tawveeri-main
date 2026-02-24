@@ -357,6 +357,7 @@ export default function ProductDetailPage() {
  console.error('Error tracking save_count:', err);
  });
 
+ window.dispatchEvent(new Event('wishlist-updated'));
  toast({
  title: t('products.saved'),
  description: t('products.savedToWishlist'),

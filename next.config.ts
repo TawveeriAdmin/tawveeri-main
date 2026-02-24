@@ -61,6 +61,15 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.extra.com',
       },
+      // Almanea
+      {
+        protocol: 'https',
+        hostname: '**.almanea.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.dev-almanea.com',
+      },
     ],
   },
 };
