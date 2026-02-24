@@ -366,6 +366,7 @@ export function SearchBar({
             ref={inputRef}
             type="text"
             placeholder={placeholder || t('search.searchPlaceholder')}
+            aria-label={placeholder || t('search.searchPlaceholder')}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -380,6 +381,7 @@ export function SearchBar({
               type="button"
               onClick={handleClear}
               className="absolute end-3 top-1/2 transform -translate-y-1/2 text-outline hover:text-on-surface"
+              aria-label={t('search.clearSearch')}
             >
               <X className="w-5 h-5" />
             </button>

@@ -65,8 +65,8 @@
   --color-surface-bright: #FFFFFF;
   --color-surface-tint: #0D47A1;
 
-  /* ---- Outline ---- */
-  --color-outline: #6B7280;
+  /* ---- Outline (WCAG AA: 5.74:1 on white) ---- */
+  --color-outline: #4B5563;
   --color-outline-variant: #D1D5DB;
 
   /* ---- Inverse ---- */
@@ -78,8 +78,8 @@
   --color-scrim: #000000;
   --color-shadow: #000000;
 
-  /* ---- Extended: Success – Emerald ---- */
-  --color-success: #10B981;
+  /* ---- Extended: Success – Emerald (WCAG AA: 4.55:1 on white) ---- */
+  --color-success: #059669;
   --color-on-success: #FFFFFF;
   --color-success-container: #D1FAE5;
   --color-on-success-container: #065F46;

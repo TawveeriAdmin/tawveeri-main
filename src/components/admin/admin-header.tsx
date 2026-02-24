@@ -94,7 +94,7 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
         <button
           onClick={() => setMobileOpen(true)}
           className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-on-surface/8"
-          aria-label="Open menu"
+          aria-label={locale === 'ar' ? 'فتح القائمة' : 'Open menu'}
         >
           <Menu className="h-5 w-5" />
         </button>

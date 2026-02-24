@@ -298,7 +298,7 @@ export default function LoginPage() {
  return (
  <div className="h-screen flex overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
  {/* Left Side - Form */}
- <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface transition-colors duration-300 overflow-y-auto">
+ <main className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface transition-colors duration-300 overflow-y-auto">
  <div className="w-full max-w-md space-y-8 py-8">
  {/* Header with Back Button, Logo and Theme Toggle */}
  <div className="flex items-center justify-between">
@@ -510,6 +510,7 @@ export default function LoginPage() {
  type="button"
  onClick={() => setShowPassword(!showPassword)}
  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors`}
+ aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
  >
  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
  </button>
@@ -596,6 +597,7 @@ export default function LoginPage() {
  onClick={() => handleOAuthLogin('google')}
  disabled={isLoading}
  className="flex items-center justify-center gap-2 py-3 px-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:bg-surface-container transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+ aria-label={t('auth.continueWithGoogle')}
  >
  <GoogleIcon />
  </button>
@@ -604,6 +606,7 @@ export default function LoginPage() {
  onClick={() => handleOAuthLogin('facebook')}
  disabled={isLoading}
  className="flex items-center justify-center gap-2 py-3 px-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:bg-surface-container transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+ aria-label={t('auth.continueWithFacebook')}
  >
  <FacebookIcon />
  </button>
@@ -621,7 +624,7 @@ export default function LoginPage() {
  </p>
  </form>
  </div>
- </div>
+ </main>
 
  {/* Right Side - Branding */}
  <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 items-center justify-center p-12 relative overflow-hidden">

@@ -156,12 +156,13 @@ export function ProductCard({
   const LinkWrapper = ({ children }: { children: React.ReactNode }) => {
     if (isMultiStore) {
       return (
-        <div
-          className="flex flex-col h-full cursor-pointer"
+        <button
+          type="button"
+          className="flex flex-col h-full cursor-pointer text-start w-full"
           onClick={() => onComparePrices?.(product.id)}
         >
           {children}
-        </div>
+        </button>
       );
     }
     if (isExternalLink) {

@@ -47,6 +47,14 @@ export default async function StoreLayout({
 
  return (
  <div className="flex h-screen overflow-hidden bg-surface-container">
+ {/* Skip to main content link */}
+ <a
+   href="#store-main"
+   className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-on-primary focus:shadow-lg"
+ >
+   {locale === 'ar' ? 'تخطي إلى المحتوى الرئيسي' : 'Skip to main content'}
+ </a>
+
  {/* Sidebar */}
  <StoreSidebar locale={locale} store={primaryStore} />
 
@@ -56,7 +64,7 @@ export default async function StoreLayout({
  <StoreHeader userProfile={userProfile} store={primaryStore} locale={locale} />
 
  {/* Page Content */}
- <main className="flex-1 overflow-y-auto p-6">
+ <main id="store-main" className="flex-1 overflow-y-auto p-6">
  {children}
  </main>
  </div>

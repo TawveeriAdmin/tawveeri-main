@@ -245,7 +245,7 @@ export default function SignupPage() {
  if (!message) return null;
 
  return (
- <div className="flex items-center gap-1.5 mt-1.5 text-sm text-error">
+ <div className="flex items-center gap-1.5 mt-1.5 text-sm text-error" role="alert" aria-live="polite">
  <AlertCircle className="w-4 h-4 flex-shrink-0" />
  <span>{t(`auth.validation.${message}`)}</span>
  </div>
@@ -267,7 +267,7 @@ export default function SignupPage() {
  return (
  <div className="h-screen flex overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
  {/* Left Side - Form */}
- <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface transition-colors duration-300 overflow-y-auto">
+ <main className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface transition-colors duration-300 overflow-y-auto">
  <div className="w-full max-w-md space-y-8 py-8">
  {/* Header with Logo, Back Button, Theme & Language Toggle */}
  <div className="flex items-center justify-between">
@@ -396,6 +396,7 @@ export default function SignupPage() {
  type="button"
  onClick={() => setShowPassword(!showPassword)}
  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors`}
+ aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
  >
  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
  </button>
@@ -425,6 +426,7 @@ export default function SignupPage() {
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
  className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors`}
+ aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
  >
  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
  </button>
@@ -493,6 +495,7 @@ export default function SignupPage() {
  onClick={() => handleOAuthSignup('google')}
  disabled={isLoading}
  className="flex items-center justify-center gap-2 py-3 px-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:bg-surface-container transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+ aria-label={t('auth.continueWithGoogle')}
  >
  <GoogleIcon />
  </button>
@@ -501,6 +504,7 @@ export default function SignupPage() {
  onClick={() => handleOAuthSignup('facebook')}
  disabled={isLoading}
  className="flex items-center justify-center gap-2 py-3 px-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:bg-surface-container transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+ aria-label={t('auth.continueWithFacebook')}
  >
  <FacebookIcon />
  </button>
@@ -518,7 +522,7 @@ export default function SignupPage() {
  </p>
  </form>
  </div>
- </div>
+ </main>
 
  {/* Right Side - Branding (same as login) */}
  <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 items-center justify-center p-12 relative overflow-hidden">

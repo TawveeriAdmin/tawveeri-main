@@ -31,6 +31,14 @@ export default async function AdminLayout({
   return (
     <AdminSidebarProvider>
       <div className="flex h-screen overflow-hidden bg-surface-container">
+        {/* Skip to main content link */}
+        <a
+          href="#admin-main"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-on-primary focus:shadow-lg"
+        >
+          {locale === 'ar' ? 'تخطي إلى المحتوى الرئيسي' : 'Skip to main content'}
+        </a>
+
         {/* Sidebar (desktop only, mobile uses overlay) */}
         <AdminSidebar locale={locale} />
 
@@ -40,7 +48,7 @@ export default async function AdminLayout({
           <AdminHeader userProfile={userProfile} locale={locale} />
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <main id="admin-main" className="flex-1 overflow-y-auto p-4 md:p-6">
             {children}
           </main>
         </div>

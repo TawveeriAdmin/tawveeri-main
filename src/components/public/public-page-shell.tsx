@@ -200,6 +200,14 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
 
   return (
     <div className="min-h-screen bg-surface-container transition-colors duration-300">
+      {/* Skip to main content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-on-primary focus:shadow-lg"
+      >
+        {locale === 'ar' ? 'تخطي إلى المحتوى الرئيسي' : 'Skip to main content'}
+      </a>
+
       {/* Background gradients */}
       <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top,rgba(13,71,161,0.10),transparent_62%)] dark:bg-[radial-gradient(circle_at_top,rgba(96,165,250,0.16),transparent_58%)]" />
       <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 h-[320px] bg-[radial-gradient(circle_at_bottom,rgba(79,70,229,0.08),transparent_64%)] dark:bg-[radial-gradient(circle_at_bottom,rgba(165,180,252,0.14),transparent_60%)]" />
@@ -234,6 +242,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t('search.searchPlaceholder')}
+                    aria-label={t('search.searchPlaceholder')}
                     className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400 dark:focus:bg-gray-900"
                   />
                 </div>
@@ -401,6 +410,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('search.searchPlaceholder')}
+                aria-label={t('search.searchPlaceholder')}
                 className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
               />
             </div>
@@ -425,6 +435,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
                     'inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-3 text-sm font-medium transition-colors',
                     isActive
@@ -455,9 +466,9 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
       </header>
 
       {/* ═══ Content ═══ */}
-      <div className="mx-auto max-w-[1900px] px-4 py-6 md:px-6">
+      <main id="main-content" className="mx-auto max-w-[1900px] px-4 py-6 md:px-6">
         {children}
-      </div>
+      </main>
     </div>
   );
 }

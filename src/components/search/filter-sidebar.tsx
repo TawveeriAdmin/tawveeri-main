@@ -80,6 +80,7 @@ function FilterSection({
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2.5 py-3 px-1 text-start group"
+        aria-expanded={open}
       >
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 transition-colors">
           <Icon className="w-3.5 h-3.5 text-on-surface-variant group-hover:text-primary-500 transition-colors" />
@@ -144,6 +145,7 @@ function TogglePill({
   return (
     <button
       onClick={() => onChange(!active)}
+      aria-pressed={active}
       className={cn(
         'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200',
         active ? colors.active : colors.inactive
@@ -170,6 +172,8 @@ function StarRating({
           key={star}
           onClick={() => onChange(value === star ? 0 : star)}
           className="group p-0.5"
+          aria-label={`${star} ${star === 1 ? 'star' : 'stars'}`}
+          aria-pressed={star <= value}
         >
           <Star
             className={cn(
@@ -445,7 +449,7 @@ export function FilterSidebar({
   }, [filters]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+    <aside aria-label={t('search.filtersTitle')} className="flex flex-col flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
       {/* Top content (results count + sort) */}
       {topContent && (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
@@ -859,6 +863,6 @@ export function FilterSidebar({
           </button>
         </div>
       )}
-    </div>
+    </aside>
   );
 }
