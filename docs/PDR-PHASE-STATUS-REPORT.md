@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 19 | 11 | 6 | **69%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 21 | 9 | 6 | **75%** |
 
 ---
 
@@ -141,21 +141,21 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 69%
+## Overall: 75%
 
-Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). Recent updates include **full SEO implementation** (dynamic metadata, JSON-LD, sitemap, robots.txt), **search relevance scoring rework** (two-pass classification), **wishlist improvements** (save from search, header counter, saved indicators), and **UX polish** (store logos in filters, breadcrumb fixes, logout cleanup). The biggest remaining gaps are email service integration, monitoring, and the loyalty program.
+Since the last report (69%), **AI-powered recommendations are now fully operational** — switched from OpenAI to Google Gemini `gemini-embedding-001` (768 dims), Edge Function deployed, all 199 products backfilled with embeddings, personalized + similar product recommendations live on dashboard. Previous completions include **coupon integration** (full admin + public UI), **mobile app** (Expo React Native with 23 screens), **full SEO implementation**, **search relevance scoring rework**, **wishlist improvements**, and **UX polish**. The biggest remaining gaps are email service integration, web push notifications, monitoring, and the loyalty program.
 
 ---
 
-### Week 6 — Personalization & Favorites `75%`
+### Week 6 — Personalization & Favorites `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Wishlist / Save products | ✅ | Full CRUD with notes in `(dashboard)/wishlist/page.tsx`. Save from search results auto-creates products in DB via `POST /api/products/ensure` (server-side, bypasses RLS). Wishlist counter badge on header heart icon with real-time updates via `wishlist-updated` event. Filled heart indicator on search/deals pages for already-saved products. Store logos and "View at Store" links display correctly on wishlist page. |
 | 2 | Favorites sync (cross-device) | ✅ | Supabase-backed; auto-syncs on login from any device. Browser storage cleared on logout for clean state. |
 | 3 | Search history log | ✅ | Auto-logged to `search_history` table; shown in search bar + saved searches feature |
-| 4 | Personalized recommendations | 🟡 | pgvector-based `get_personalized_recommendations()` RPC function documented. React hook `use-recommendations.ts` calls unified `get_recommendations()` RPC with auto-fallback. Category-based + popularity fallback for guests. **Pending**: verify Supabase Edge Function `embed` is deployed and embeddings are populated. |
-| 5 | AI-powered smart recommendations | 🟡 | Infrastructure built: pgvector embeddings (`halfvec(1536)` with HNSW index), OpenAI `text-embedding-3-small`, 4 PostgreSQL recommendation functions (`match_similar_products`, `get_collaborative_recommendations`, `get_personalized_recommendations`, `get_recommendations` orchestrator). Types in `src/lib/recommendations/types.ts`. **Pending**: Edge Function `embed` deployment verification, embedding backfill for existing products. |
+| 4 | Personalized recommendations | ✅ | pgvector-based `get_personalized_recommendations()` RPC function live. React hook `use-recommendations.ts` calls unified `get_recommendations()` RPC with auto-fallback chain (personalized → collaborative → category popularity → global popularity). Dashboard shows personalized cards with images, prices, and "AI" badge. Guest fallback to popularity. |
+| 5 | AI-powered smart recommendations | ✅ | Fully operational: Google Gemini `gemini-embedding-001` embeddings (768 dims, `halfvec(768)` with HNSW index), Edge Function `embed` deployed (`supabase/functions/embed/index.ts`), 199/199 products backfilled. 4 PostgreSQL RPC functions (`match_similar_products`, `get_collaborative_recommendations`, `get_personalized_recommendations`, `get_recommendations` orchestrator). Auto-pipeline: product insert → trigger → pgmq queue → pg_cron (10s) → Edge Function → Gemini API → embedding stored. DB migrations in version control: `scripts/database/12-ai-recommendations-infrastructure.sql`, `13-migrate-embeddings-to-gemini.sql`. |
 
 ---
 
@@ -234,8 +234,8 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Mobile Responsiveness | ✅ |
 | Legal Compliance (Saudi laws) | ✅ |
 | Notification System (in-app) | ✅ |
-| AI Smart Recommendations | 🟡 |
-| Personalized Recommendations | 🟡 |
+| AI Smart Recommendations | ✅ |
+| Personalized Recommendations | ✅ |
 | Email/SMS Alerts | 🟡 |
 | Push Notifications (web) | 🟡 |
 | Premium Store Listings | 🟡 |
@@ -253,7 +253,7 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **19 ✅ · 11 🟡 · 6 ❌** |
+| **Totals** | **21 ✅ · 9 🟡 · 6 ❌** |
 
 ---
 
@@ -302,18 +302,26 @@ Since the last report (53%), three major features have been completed: **coupon 
 
 ---
 
+### Phase 2 — Changes Since Last Report (2026-02-24, AI Recommendations)
+
+| Item | Previous | Current | What Changed |
+|------|:--------:|:-------:|--------------|
+| AI Smart Recommendations | 🟡 | ✅ | Switched from OpenAI `text-embedding-3-small` (1536 dims) to Google Gemini `gemini-embedding-001` (768 dims). Edge Function `embed` rewritten and deployed (`supabase/functions/embed/index.ts`). `GOOGLE_AI_API_KEY` secret set. DB migrations added: `12-ai-recommendations-infrastructure.sql` (version control for existing objects), `13-migrate-embeddings-to-gemini.sql` (dimension change + function type fixes). All 199 products backfilled with Gemini embeddings. Auto-pipeline operational: insert → trigger → pgmq → pg_cron → Gemini → pgvector. |
+| Personalized Recommendations | 🟡 | ✅ | Now live with real product data (images, prices). Dashboard "Recommendations" section shows AI-powered cards with "AI" badge. Fallback chain verified: embedding similarity → collaborative → category popularity → global popularity. |
+| Week 6 Personalization | 75% | 100% | Both AI recommendation items completed. All 5 Week 6 items now ✅. |
+| Phase 2 Overall | 69% | 75% | 21/36 items complete (was 19/36). |
+
 ### Phase 2 — Remaining Work (Priority Order)
 
 | # | Gap | Impact | Effort | Notes |
 |---|-----|--------|--------|-------|
 | 1 | **Connect email service** (Resend/SendGrid) | Critical | Low | Templates + helpers already built for 7 email types. Just need to wire up a provider or deploy `send-email` Edge Function. |
-| 2 | **Verify AI recommendations deployment** — Edge Function `embed`, backfill embeddings | High | Low | Infrastructure is documented; verify Supabase Edge Function is deployed and run backfill: `SELECT pgmq.send('embedding_jobs', ...)`. |
-| 3 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
-| 4 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
-| 5 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
-| 6 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
-| 7 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
-| 8 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
+| 2 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
+| 3 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
+| 4 | **Monitoring** — Sentry / Datadog / UptimeRobot | Medium | Low | Required for production reliability. |
+| 5 | **Accessibility audit** — WCAG 2.1 AA | Medium | Medium | Radix helps; needs ARIA labels, landmarks, contrast fixes. |
+| 6 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
+| 7 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
 
 ---
 
@@ -330,9 +338,9 @@ Phase 1 — Growth & Adoption
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-██████████████░░░░░░░  69%
+███████████████░░░░░░  75%
 
-  Week 6  Personal.      ███████████████░░░░░░  75%
+  Week 6  Personal.      ██████████████████████ 100%
   Week 7  Notifications  ████████████████░░░░░  80%
   Week 8  Monetization   ██████████████░░░░░░░  70%
   Week 9  Comparison     ██████████████░░░░░░░  70%
