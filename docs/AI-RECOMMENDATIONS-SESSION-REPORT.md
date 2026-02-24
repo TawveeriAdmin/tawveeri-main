@@ -205,7 +205,15 @@ SELECT COUNT(*) FROM products WHERE embedding IS NOT NULL;
 
 ---
 
-## 10. Files Changed Summary
+## 10. Post-Implementation Updates
+
+| Date | Update |
+|------|--------|
+| 2026-02-25 | Header bell icon now shows unread notification count badge — recommendation-triggered notifications (price drops, back in stock) are now immediately visible to users without opening the notifications page |
+
+---
+
+## 11. Files Changed Summary
 
 - **17 files modified**
 - **7 database migrations** applied

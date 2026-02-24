@@ -9,7 +9,7 @@ Phase 1 — Research
                                                                                                                      
   - Platform is a price comparison site — Tawveeri doesn't process payments for products (redirects to stores)
   - Target audience: Saudi electronics shoppers (modern browsers, Arabic-first)
-  - Email provider must be Resend with domain noreply@styloforge.com (per global instructions)
+  - Email provider must be Resend with domain noreply@ (per global instructions)
   - Supabase is the backend — Edge Functions for serverless logic
   - Mobile app already has push notifications via Expo
 
@@ -31,7 +31,8 @@ Phase 1 — Research
   What's missing:
   - supabase/functions/send-email/ Edge Function does not exist (or needs active email provider)
   - SendGrid shows "Maximum credits exceeded" — billing/provider issue, not a code issue
-  - No sendBackInStockEmail() or sendDailyDealsEmail() helpers (templates exist, helpers don't)
+  - **sendBackInStockEmail() wired** into `scraping-orchestrator.ts` — triggers on out_of_stock → in_stock transition during price update cron, notifies users with active price alerts (in-app + email + mobile push + web push)
+  - No sendDailyDealsEmail() helper wired (template exists)
 
   Effort: Very Low — all wiring done, just need active email provider (resolve SendGrid billing or switch to Resend).
 
@@ -165,7 +166,7 @@ Phase 1 — Research
 
   5. Risks & Edge Cases
 
-  - Email: Resend requires DNS verification for styloforge.com — if not done, emails will fail
+  - Email: Resend requires DNS verification for  — if not done, emails will fail
   - Web Push: FCM requires Firebase project + VAPID keys — external dependency
   - Hijri: Multiple Hijri calculation methods (Umm al-Qura is Saudi standard) — must use correct one
   - Loyalty: Business model unclear — needs product decision before implementation
@@ -292,4 +293,11 @@ Phase 1 — Research
   Deferred:
     8. SSO                           ← Low priority for consumer platform
     9. Go-Live                       ← After Sprints 1-3 minimum
+
+  ---
+  Recent UI/UX Improvements (2026-02-25)
+
+  ✅ Header notification badge — bell icon now shows unread count (red badge, same pattern as wishlist heart icon). Fetches from `notifications` table where `is_read = false`. Listens for `notifications-updated` custom event. Caps display at 99+. Uses `-end-0.5` for correct RTL positioning.
+
+  ✅ Profile language switch fix — language toggle in Preferences now navigates immediately to the new locale (e.g. `/ar/profile` ↔ `/en/profile`) instead of requiring a separate "Save" click. Matches the behavior of the header language toggle and the theme toggle (which already applied instantly).
 
