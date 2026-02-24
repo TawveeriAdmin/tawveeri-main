@@ -1,5 +1,7 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SimpleIntlProvider } from '@/lib/simple-intl-provider';
+import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 
 const locales = ['ar', 'en'] as const;
 import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
@@ -7,6 +9,32 @@ import { ThemeProvider } from '../providers/theme-provider';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { MultiStoreCartProvider } from '@/lib/cart/cart-context';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const baseUrl = getBaseUrl();
+
+  return {
+    title: {
+      default: locale === 'ar'
+        ? 'توفيري | منصة مقارنة أسعار الإلكترونيات'
+        : 'Tawveeri | Electronics Price Comparison',
+      template: locale === 'ar' ? '%s | توفيري' : '%s | Tawveeri',
+    },
+    description: locale === 'ar'
+      ? 'قارن أسعار الإلكترونيات من أمازون ونون وجرير واكسترا والمنيع. أفضل العروض والتخفيضات في السعودية.'
+      : 'Compare electronics prices from Amazon, Noon, Jarir, Extra & Almanea. Best deals in Saudi Arabia.',
+    alternates: buildAlternates(''),
+    openGraph: {
+      locale: locale === 'ar' ? 'ar_SA' : 'en_US',
+      url: `${baseUrl}/${locale}`,
+    },
+  };
+}
 
 // English font
 const inter = Inter({

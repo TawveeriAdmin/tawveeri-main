@@ -1,5 +1,10 @@
+import type { Metadata } from 'next';
 import { SimpleIntlProvider } from '@/lib/simple-intl-provider';
 import { ThemeProvider } from 'next-themes';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AuthLayout({
  children,

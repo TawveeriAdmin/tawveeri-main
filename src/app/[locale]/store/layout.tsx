@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireStore, getUserProfile, createClient } from '@/lib/auth/server';
 import { StoreSidebar } from '@/components/store/store-sidebar';
 import { StoreHeader } from '@/components/store/store-header';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function StoreLayout({
  children,
