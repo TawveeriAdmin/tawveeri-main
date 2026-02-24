@@ -1,6 +1,6 @@
 # Tawveeri PDR — Phase 1 & Phase 2 Status Report
 
-**Report Date:** 2026-02-22 (updated)
+**Report Date:** 2026-02-24 (updated)
 **Branch:** `mobile-app` (merged `phase2_v2_Alhussain`)
 **Compared Against:** 10-Week Implementation Plan (PDR.pdf)
 
@@ -13,16 +13,16 @@ Per the PDR:
 
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
-| **Phase 1** | Growth & Adoption | 1–5 | 29 | 1 | 0 | **98%** |
+| **Phase 1** | Growth & Adoption | 1–5 | 30 | 1 | 0 | **99%** |
 | **Phase 2** | Profitability & Scale | 6–10 | 17 | 12 | 7 | **65%** |
 
 ---
 
 # PHASE 1 — Growth & Adoption (Weeks 1–5)
 
-## Overall: 98%
+## Overall: 99%
 
-The core platform is fully built. Users can register, search with category and spec filtering, compare prices, view products, save wishlists, and browse stores. All 5 store scrapers (cron + search) are operational. The only remaining partial item is custom daily backups (relies on Supabase managed backups).
+The core platform is fully built. Users can register, search with category and spec filtering, compare prices, view products, save wishlists, and browse stores. All 5 store scrapers (cron + search) are operational. Search relevance scoring uses a two-pass classification system separating main products from accessories. The only remaining partial item is custom daily backups (relies on Supabase managed backups).
 
 ---
 
@@ -53,15 +53,15 @@ The core platform is fully built. Users can register, search with category and s
 
 ---
 
-### Week 3 — Search & Filtering `95%`
+### Week 3 — Search & Filtering `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Product search by category (TV, Laptop, Smartphone) | ✅ | Category passed end-to-end: SearchPage → `POST /api/search/scrape` → `searchAllStores()` → filtered by `matchesCategory()` in `src/lib/scraping/utils/category-utils.ts` |
-| 2 | Filtering by brand, model | ✅ | Dynamic brand checkboxes from DB in `src/components/search/filter-sidebar.tsx` |
+| 2 | Filtering by brand, model | ✅ | Dynamic brand checkboxes with store logos from DB in `src/components/search/filter-sidebar.tsx` |
 | 3 | Filtering by RAM, storage, size, resolution, color | ✅ | Dynamic spec filters per category in `filter-sidebar.tsx` using configs from `src/lib/scraping/config/spec-configs.ts`. Specs extracted client-side from product titles via `extractSpecsFromTitle()`. Covers RAM, storage, screen size, resolution, panel type, audio type, wireless/ANC for 6 categories. |
-| 4 | Dynamic filters (based on category) | ✅ | Spec filter sections change dynamically based on selected category (smartphone shows RAM/storage, laptop shows CPU/GPU, TV shows resolution/panel, etc.). Discount, condition, and shipping speed filters also wired. |
-| 5 | Sort by price, popularity, rating, store | ✅ | 4 sort options + 7 filter types with URL state in `search/page.tsx` |
+| 4 | Dynamic filters (based on category) | ✅ | Spec filter sections change dynamically based on selected category (smartphone shows RAM/storage, laptop shows CPU/GPU, TV shows resolution/panel, etc.). Discount, condition, and shipping speed filters also wired. Store filter includes store logos. |
+| 5 | Sort by price, popularity, rating, store | ✅ | 4 sort options + 7 filter types with URL state in `search/page.tsx`. **Relevance scoring reworked** with two-pass classification in `src/lib/scraping/search/relevance-scorer.ts` (477 lines): gap-based price clustering, product classification (main vs accessory), additive scoring (0–100), query intent detection. Main products always rank above accessories unless user searches for an accessory. |
 | 6 | Search suggestions (auto-suggest) | ✅ | Debounced autocomplete from DB products in `search-bar.tsx` |
 
 ---
@@ -70,7 +70,7 @@ The core platform is fully built. Users can register, search with category and s
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
-| 1 | Integration with 5 stores (Extra, Jarir, Almanea, Noon, Amazon.sa) | ✅ | All 5 stores fully operational. **Search scrapers** work for all 4 main stores. **Cron scrapers** implemented for all 5: `JarirScraper`, `NoonScraper` (JSON API), `AmazonScraper` (cheerio + Puppeteer), `ExtraScraper` (`__NEXT_DATA__` + HTML fallback), `AlmaneaScraper` (HTML + JSON-LD). Orchestrator routes all stores in `scraping-orchestrator.ts`. |
+| 1 | Integration with 5 stores (Extra, Jarir, Almanea, Noon, Amazon.sa) | ✅ | All 5 stores fully operational. **Search scrapers** rewritten: Jarir and Extra now use JSON APIs for faster, more reliable results. Amazon and Noon scrapers pass `rating` and `review_count` data. **Cron scrapers** implemented for all 5: `JarirScraper`, `NoonScraper` (JSON API), `AmazonScraper` (cheerio + Puppeteer), `ExtraScraper` (JSON API), `AlmaneaScraper` (HTML + JSON-LD). |
 | 2 | Localized store integration (additional Saudi stores) | ✅ | 5 Saudi stores with bilingual configs (`name_ar`, `name_en`) in `src/lib/scraping/config/store-configs/` |
 | 3 | Store onboarding portal (self-service) | ✅ | Full portal: `/store/dashboard`, `/store/products`, `/store/products/new`, `/store/analytics`, `/store/transactions`, `/store/coupons` (coupon management) |
 | 4 | Store rating system | ✅ | `store_reviews` table with multi-field ratings (delivery, quality, service); review form + display on store detail pages |
@@ -143,7 +143,7 @@ All Phase 1 gaps have been resolved:
 
 ## Overall: 65%
 
-Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). The biggest remaining gaps are email service integration, SEO, monitoring, and the loyalty program.
+Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). Recent updates include a **search relevance scoring rework** (two-pass classification), **wishlist improvements** (save from search, header counter, saved indicators), and **UX polish** (store logos in filters, breadcrumb fixes, logout cleanup). The biggest remaining gaps are email service integration, SEO, monitoring, and the loyalty program.
 
 ---
 
@@ -151,8 +151,8 @@ Since the last report (53%), three major features have been completed: **coupon 
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
-| 1 | Wishlist / Save products | ✅ | Full CRUD with notes in `(dashboard)/wishlist/page.tsx` |
-| 2 | Favorites sync (cross-device) | ✅ | Supabase-backed; auto-syncs on login from any device |
+| 1 | Wishlist / Save products | ✅ | Full CRUD with notes in `(dashboard)/wishlist/page.tsx`. Save from search results auto-creates products in DB via `POST /api/products/ensure` (server-side, bypasses RLS). Wishlist counter badge on header heart icon with real-time updates via `wishlist-updated` event. Filled heart indicator on search/deals pages for already-saved products. Store logos and "View at Store" links display correctly on wishlist page. |
+| 2 | Favorites sync (cross-device) | ✅ | Supabase-backed; auto-syncs on login from any device. Browser storage cleared on logout for clean state. |
 | 3 | Search history log | ✅ | Auto-logged to `search_history` table; shown in search bar + saved searches feature |
 | 4 | Personalized recommendations | 🟡 | pgvector-based `get_personalized_recommendations()` RPC function documented. React hook `use-recommendations.ts` calls unified `get_recommendations()` RPC with auto-fallback. Category-based + popularity fallback for guests. **Pending**: verify Supabase Edge Function `embed` is deployed and embeddings are populated. |
 | 5 | AI-powered smart recommendations | 🟡 | Infrastructure built: pgvector embeddings (`halfvec(1536)` with HNSW index), OpenAI `text-embedding-3-small`, 4 PostgreSQL recommendation functions (`match_similar_products`, `get_collaborative_recommendations`, `get_personalized_recommendations`, `get_recommendations` orchestrator). Types in `src/lib/recommendations/types.ts`. **Pending**: Edge Function `embed` deployment verification, embedding backfill for existing products. |
@@ -276,6 +276,23 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Coupon DB Migration | ❌ | ✅ | `scripts/database/11-coupons-schema.sql` — table definition, `discount_type` enum, foreign keys, unique constraint on `code`, RLS policies (public read active, admin full, store owner own), indexes, `updated_at` trigger. |
 | Coupon Notifications | ❌ | ✅ | In-app bilingual notifications on coupon creation via `createNotification()` in both admin and store API POST handlers. Audit logging via `logCouponEvent()`. |
 
+### Phase 2 — Changes Since Last Report (2026-02-24)
+
+| Item | Previous | Current | What Changed |
+|------|:--------:|:-------:|--------------|
+| Search Relevance Scoring | ✅ | ✅ | Complete rework: new two-pass classification system in `src/lib/scraping/search/relevance-scorer.ts` (477 lines). Gap-based price clustering separates main products from accessories. Query intent detection identifies accessory queries. Additive scoring (0–100) replaces old keyword penalty system. Removed ~220 lines of old scoring code from `search-orchestrator.ts`. |
+| Jarir & Extra Search Scrapers | ✅ | ✅ | Rewritten to use JSON APIs instead of HTML scraping — faster and more reliable. Store logos added to search results. |
+| Amazon & Noon Scrapers | ✅ | ✅ | Now pass `rating` and `review_count` data through to search results (were parsed but discarded). |
+| Wishlist Save from Search | 🟡 | ✅ | Was a non-functional stub (`console.log`). Now auto-creates products in DB via `POST /api/products/ensure` (server-side, bypasses RLS). Handles both DB UUID products and scraped temporary-ID products. |
+| Wishlist Header Counter | ❌ | ✅ | New red counter badge on header heart icon. Fetches count from Supabase, updates in real-time via `wishlist-updated` custom event dispatched from search, deals, product detail, and wishlist pages. |
+| Saved Indicator on Search | ❌ | ✅ | Filled red heart for products already in user's wishlist on search page. Fetches user's wishlist names on load, matches by `name_en`. |
+| Store Logos in Filter Sidebar | ❌ | ✅ | Store filter section now shows store logos (`/logos/{slug}.png`) alongside store names. |
+| Wishlist Page UX | ✅ | ✅ | Removed redundant heart button. Fixed store logos (maps DB UUID → slug for `STORE_LOGOS`). Fixed "View at Store" links (fetches `product_url`). Removed breadcrumbs. |
+| Notifications Page UX | ✅ | ✅ | Removed breadcrumbs matching wishlist page pattern. Fixed breadcrumb component hydration error (`<li>` nested in `<li>`). |
+| Logout Security | ✅ | ✅ | `localStorage.clear()` and `sessionStorage.clear()` on sign out for clean browser state. |
+| Search Grid Layout | ✅ | ✅ | Updated to 5 items per row at `xl` breakpoint (was 4 at `xl`, 5 at `2xl`). |
+| Image Domains | ✅ | ✅ | Added `**.almanea.com` and `**.dev-almanea.com` to `next.config.ts` remote patterns. |
+
 ---
 
 ### Phase 2 — Remaining Work (Priority Order)
@@ -298,11 +315,11 @@ Since the last report (53%), three major features have been completed: **coupon 
 
 ```
 Phase 1 — Growth & Adoption
-█████████████████████░  98%
+██████████████████████░ 99%
 
   Week 1  Foundation     █████████████████████  95%
   Week 2  Accounts       ██████████████████████ 100%
-  Week 3  Search         █████████████████████  95%
+  Week 3  Search         ██████████████████████ 100%
   Week 4  Stores         █████████████████████  95%
   Week 5  Products       █████████████████████  95%
 
