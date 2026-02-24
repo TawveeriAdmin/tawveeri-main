@@ -58,6 +58,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
   const { user, signOut, loading: authLoading } = useAuth();
   const [compareCount, setCompareCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   // Keep header search input in sync with URL ?q= param
@@ -141,6 +142,26 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
     const handleWishlistUpdate = () => fetchCount();
     window.addEventListener('wishlist-updated', handleWishlistUpdate);
     return () => window.removeEventListener('wishlist-updated', handleWishlistUpdate);
+  }, [user, pathname]);
+
+  /* ── Unread notification count from Supabase ── */
+  useEffect(() => {
+    if (!user) { setNotificationCount(0); return; }
+
+    const supabase = getSupabaseBrowserClient();
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      setNotificationCount(count ?? 0);
+    };
+    fetchCount();
+
+    const handleUpdate = () => fetchCount();
+    window.addEventListener('notifications-updated', handleUpdate);
+    return () => window.removeEventListener('notifications-updated', handleUpdate);
   }, [user, pathname]);
 
   /* ── Navigation links ── */
@@ -309,10 +330,15 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                   {/* Notifications */}
                   <Link
                     href={`/${locale}/notifications`}
-                    className={iconBtnClass}
+                    className={cn(iconBtnClass, 'relative')}
                     aria-label={t('dashboard.sidebar.notifications')}
                   >
                     <Bell className="h-4 w-4" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-0.5 -end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                        {notificationCount > 99 ? '99+' : notificationCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* User avatar dropdown */}
