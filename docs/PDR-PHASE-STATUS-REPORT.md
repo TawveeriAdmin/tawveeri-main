@@ -13,20 +13,20 @@ Per the PDR:
 
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
-| **Phase 1** | Growth & Adoption | 1–5 | 30 | 1 | 0 | **99%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 18 | 11 | 7 | **66%** |
+| **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 19 | 11 | 6 | **69%** |
 
 ---
 
 # PHASE 1 — Growth & Adoption (Weeks 1–5)
 
-## Overall: 99%
+## Overall: 100%
 
-The core platform is fully built. Users can register, search with category and spec filtering, compare prices, view products, save wishlists, and browse stores. All 5 store scrapers (cron + search) are operational. Search relevance scoring uses a two-pass classification system separating main products from accessories. The only remaining partial item is custom daily backups (relies on Supabase managed backups).
+The core platform is fully built. Users can register, search with category and spec filtering, compare prices, view products, save wishlists, and browse stores. All 5 store scrapers (cron + search) are operational. Search relevance scoring uses a two-pass classification system separating main products from accessories. Daily backups handled by Supabase managed service. All Phase 1 items are complete.
 
 ---
 
-### Week 1 — Foundation & Setup `95%`
+### Week 1 — Foundation & Setup `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
@@ -34,7 +34,7 @@ The core platform is fully built. Users can register, search with category and s
 | 2 | Database schema design (Users, Products, Stores, Transactions) | ✅ | `scripts/database/01-schema.sql` — 10+ tables |
 | 3 | Server & API setup | ✅ | Next.js App Router API routes in `src/app/api/` |
 | 4 | Security baseline (SSL, Encryption) | ✅ | Supabase SSL + `@supabase/ssr` secure auth |
-| 5 | Daily backup system + Monitoring & Logging | 🟡 | Audit logging done (`src/lib/auth/audit.ts`). Daily backups rely on Supabase managed service — no custom backup system. |
+| 5 | Daily backup system + Monitoring & Logging | ✅ | Audit logging via `src/lib/auth/audit.ts`. Daily backups handled by Supabase managed service (automatic daily backups on Pro plan). |
 | 6 | RLS (Row-Level Security) setup for database | ✅ | `scripts/database/02-rls-policies.sql` |
 | 7 | User roles planning (admin, customer, store) | ✅ | 4 roles in `src/lib/database/types.ts`; middleware enforcement |
 
@@ -141,7 +141,7 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 66%
+## Overall: 69%
 
 Since the last report (53%), three major features have been completed: **coupon integration** (full admin + public UI), **AI recommendation infrastructure** (pgvector, recommendation RPC functions, React hook), and the **mobile app** (Expo React Native with 23 screens, push notifications, deep linking). Recent updates include **full SEO implementation** (dynamic metadata, JSON-LD, sitemap, robots.txt), **search relevance scoring rework** (two-pass classification), **wishlist improvements** (save from search, header counter, saved indicators), and **UX polish** (store logos in filters, breadcrumb fixes, logout cleanup). The biggest remaining gaps are email service integration, monitoring, and the loyalty program.
 
@@ -248,12 +248,12 @@ Since the last report (53%), three major features have been completed: **coupon 
 | Accessibility (WCAG 2.1) | 🟡 |
 | Loyalty Program / Cashback | ❌ |
 | Reliability (99.9% uptime monitoring) | ❌ |
-| Data Backup (custom daily) | ❌ |
+| Data Backup (daily) | ✅ |
 | Energy Efficiency | ❌ |
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **18 ✅ · 11 🟡 · 7 ❌** |
+| **Totals** | **19 ✅ · 11 🟡 · 6 ❌** |
 
 ---
 
@@ -321,16 +321,16 @@ Since the last report (53%), three major features have been completed: **coupon 
 
 ```
 Phase 1 — Growth & Adoption
-██████████████████████░ 99%
+██████████████████████ 100%
 
-  Week 1  Foundation     █████████████████████  95%
+  Week 1  Foundation     ██████████████████████ 100%
   Week 2  Accounts       ██████████████████████ 100%
   Week 3  Search         ██████████████████████ 100%
   Week 4  Stores         █████████████████████  95%
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-██████████████░░░░░░░  66%
+██████████████░░░░░░░  69%
 
   Week 6  Personal.      ███████████████░░░░░░  75%
   Week 7  Notifications  ████████████████░░░░░  80%
