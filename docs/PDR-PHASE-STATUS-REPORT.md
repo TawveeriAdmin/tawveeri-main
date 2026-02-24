@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 27 | 4 | 5 | **83%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 29 | 2 | 5 | **86%** |
 
 ---
 
@@ -141,9 +141,9 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 83%
+## Overall: 86%
 
-Since the last report (81%), **cross-browser compatibility** confirmed as complete — Next.js 15 default browserslist covers ~95% of global browsers, TypeScript targets ES2017, Radix UI handles cross-browser accessibility, and feature detection is used for progressive APIs (SpeechRecognition, BarcodeDetector, navigator.mediaDevices). Previous completions include reliability/performance/scalability infrastructure (Sentry, dynamic imports, rate limiting, PM2), AI recommendations (Gemini embeddings), WCAG 2.1 AA accessibility, coupon integration, mobile app, SEO, and search relevance scoring. The biggest remaining gaps are email service integration, web push notifications, premium store payment flow, and the loyalty program.
+Since the last report (83%), **compare page fully enhanced** — specs now auto-extracted from product titles via `extractSpecsFromTitle()` when DB specs are empty (RAM, Storage, Screen Size, etc. with bilingual labels from `CATEGORY_SPEC_FILTERS`), static store policy fallbacks added for delivery time, warranty, and return policy per store (Amazon SA, Noon, Jarir, Extra, Almanea), and compare list auto-clears when new search results load. Previously: cross-browser compatibility confirmed as complete — Next.js 15 default browserslist covers ~95% of global browsers, TypeScript targets ES2017, Radix UI handles cross-browser accessibility, and feature detection is used for progressive APIs (SpeechRecognition, BarcodeDetector, navigator.mediaDevices). Previous completions include reliability/performance/scalability infrastructure (Sentry, dynamic imports, rate limiting, PM2), AI recommendations (Gemini embeddings), WCAG 2.1 AA accessibility, coupon integration, mobile app, SEO, and search relevance scoring. The biggest remaining gaps are email service integration, web push notifications, premium store payment flow, and the loyalty program.
 
 ---
 
@@ -183,13 +183,13 @@ Since the last report (81%), **cross-browser compatibility** confirmed as comple
 
 ---
 
-### Week 9 — Advanced Comparison `70%`
+### Week 9 — Advanced Comparison `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
-| 1 | Comparison tables (specs & prices) | ✅ | Up to 4 products side-by-side; dynamic spec rows with 40+ translated keys in `(dashboard)/compare/page.tsx` |
-| 2 | Comparison across stores (warranty, shipping, return policies) | 🟡 | DB fields exist (`warranty_info_ar/en`, `return_policy_ar/en`, `delivery_info_ar/en`). `ComparisonCard` shows warranty/delivery icons. **Full policy comparison UI not built.** |
-| 3 | Delivery time comparison | 🟡 | `delivery_time_days` and `delivery_cost` fields in DB; tracked in cart items. **Limited end-user UI exposure.** |
+| 1 | Comparison tables (specs & prices) | ✅ | Up to 4 products side-by-side. Specs auto-extracted from product titles via `extractSpecsFromTitle()` when DB specs are empty — covers RAM, storage, screen size, resolution, panel type, audio type, wireless/ANC. Bilingual spec labels from `CATEGORY_SPEC_FILTERS`. Compare list auto-clears on new search. |
+| 2 | Comparison across stores (warranty, shipping, return policies) | ✅ | DB fields fetched via `EXTENDED_COMPARE_SELECT`. Static `STORE_POLICIES` fallback provides bilingual warranty, return policy, and delivery time per store (Amazon SA, Noon, Jarir, Extra, Almanea) when DB fields are null — scraped products always show store policies instead of "Not specified". |
+| 3 | Delivery time comparison | ✅ | `delivery_time_days` and `delivery_cost` in `product_stores` table. Compare page falls back to `STORE_POLICIES` delivery estimates when scraper doesn't provide `delivery_time_days`. Free delivery badge shown when `is_free_delivery` is true. Cart tracks delivery cost per store. |
 | 4 | Multi-store cart | ✅ | Fully implemented: store-based grouping, quantity management, gift wrapping in `src/lib/cart/` |
 | 5 | Gift option integration | ✅ | Gift wrapping toggle + message + Web Share API in `src/components/products/gift-option.tsx` |
 
@@ -240,8 +240,8 @@ Since the last report (81%), **cross-browser compatibility** confirmed as comple
 | Push Notifications (web) | 🟡 |
 | Premium Store Listings | 🟡 |
 | SEO Optimization | ✅ |
-| Comparison (warranty, returns, delivery) | 🟡 |
-| Delivery Time Comparison | 🟡 |
+| Comparison (warranty, returns, delivery) | ✅ |
+| Delivery Time Comparison | ✅ |
 | Performance (< 3s search) | ✅ |
 | Scalability (1M+ users) | ✅ |
 | Cross-Browser Compatibility | ✅ |
@@ -253,7 +253,7 @@ Since the last report (81%), **cross-browser compatibility** confirmed as comple
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **27 ✅ · 4 🟡 · 5 ❌** |
+| **Totals** | **29 ✅ · 2 🟡 · 5 ❌** |
 
 ---
 
@@ -282,12 +282,12 @@ Phase 1 — Growth & Adoption
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-█████████████████░░░░  83%
+██████████████████░░░  86%
 
   Week 6  Personal.      ██████████████████████ 100%
   Week 7  Notifications  ████████████████░░░░░  80%
   Week 8  Monetization   ██████████████░░░░░░░  70%
-  Week 9  Comparison     ██████████████░░░░░░░  70%
+  Week 9  Comparison     ██████████████████████ 100%
   Week 10 Launch         █████████████████░░░░  82%
 ```
 
