@@ -16,41 +16,46 @@ Phase 1 — Research
   3. Confirmed Facts Per Gap
 
   ---
-  Gap 1: Email/SMS Alerts 🟡
+  Gap 1: Email/SMS Alerts 🟡 (mostly wired)
 
   What exists:
   - 7 HTML email templates (bilingual, RTL) in src/lib/auth/notifications.ts:260-538
   - sendEmailNotification() dispatcher that calls supabase.functions.invoke('send-email')
   - 3 helper functions: sendWelcomeEmail(), sendPasswordResetEmail(), sendPriceDropEmail()
   - Email type definitions: EmailTemplate, EmailNotificationParams
+  - **sendWelcomeEmail() wired** into `verify-phone-otp/route.ts` — called for new phone signup users with real email
+  - **sendPasswordResetEmail() wired** into auth callback flow
+  - **sendPriceDropEmail() wired** into `check-price-alerts` cron
+  - Phone signup now **mandates email collection** — real email stored in Supabase Auth + `users` table (no more placeholder `phone_xxx@tawveeri.local`)
 
   What's missing:
-  - supabase/functions/send-email/ Edge Function does not exist
-  - No RESEND_API_KEY in .env.example
-  - Helper functions are never called anywhere in the codebase
+  - supabase/functions/send-email/ Edge Function does not exist (or needs active email provider)
+  - SendGrid shows "Maximum credits exceeded" — billing/provider issue, not a code issue
   - No sendBackInStockEmail() or sendDailyDealsEmail() helpers (templates exist, helpers don't)
 
-  Effort: Low — templates + dispatcher ready, just need Edge Function + wiring call sites.
+  Effort: Very Low — all wiring done, just need active email provider (resolve SendGrid billing or switch to Resend).
 
   ---
-  Gap 2: Web Push Notifications 🟡
+  ~~Gap 2: Web Push Notifications 🟡~~ ✅ DONE
 
-  What exists:
-  - Mobile: Fully implemented — expo-notifications, push token registration in
-  user_preferences.notification_preferences, server-side sendPushToUser() in src/lib/push/expo-push.ts, integrated
-  with check-price-alerts cron
-  - Web: Full in-app notification system (DB-backed notifications table, header dropdown, notifications page with
-  filters, settings page with toggles)
-  - Notification settings UI at /settings/notifications with push/email/SMS channel toggles — but stored in
-  localStorage only, not DB
+  ~~What exists:~~
+  ~~- Mobile: Fully implemented — expo-notifications, push token registration in~~
+  ~~user_preferences.notification_preferences, server-side sendPushToUser() in src/lib/push/expo-push.ts, integrated~~
+  ~~with check-price-alerts cron~~
+  ~~- Web: Full in-app notification system (DB-backed notifications table, header dropdown, notifications page with~~
+  ~~filters, settings page with toggles)~~
+  ~~- Notification settings UI at /settings/notifications with push/email/SMS channel toggles — but stored in~~
+  ~~localStorage only, not DB~~
 
-  What's missing:
-  - No service worker (public/sw.js or firebase-messaging-sw.js)
-  - No Web Push API subscription
-  - No FCM/VAPID key configuration
-  - Notification preferences not persisted to user_preferences table
+  ~~What's missing:~~
+  ~~- No service worker (public/sw.js or firebase-messaging-sw.js)~~
+  ~~- No Web Push API subscription~~
+  ~~- No FCM/VAPID key configuration~~
+  ~~- Notification preferences not persisted to user_preferences table~~
 
-  Effort: Medium — need service worker, FCM setup, subscription management, and server-side web push sending.
+  ~~Effort: Medium — need service worker, FCM setup, subscription management, and server-side web push sending.~~
+
+  Resolution: VAPID-based web push implemented via `web-push` npm package (no Firebase). Service worker `public/sw.js` handles push display + notification click navigation. Server-side `sendWebPushToUser()` in `src/lib/push/web-push.ts`. Client hook `useWebPush()` manages browser permission/subscribe/unsubscribe. API route `/api/push/web/subscribe` (POST/DELETE) persists subscription in `user_preferences.notification_preferences` JSONB. Price alerts cron sends both Expo + web push. Auto-cleanup on 410/404. Settings toggle with Monitor icon and 6 status states. 9 bilingual translation keys.
 
   ---
   Gap 3: Premium Store Listings 🟡
@@ -221,15 +226,15 @@ Phase 1 — Research
   Files to Change: src/lib/utils.ts, src/components/ui/price.tsx (web), mobile/src/components/ui/Price.tsx (mobile),
     settings pages
   ────────────────────────────────────────
-  #: 5
-  Problem: No web push notifications
-  Expected Result: Browser push notifications for price drops, deals, back-in-stock
-  Solution: Register service worker. Set up Firebase Cloud Messaging with VAPID keys. Create push subscription flow
-    (permission request → token storage in user_preferences). Add sendWebPush() server function. Integrate with
-    existing notification creation flow.
-  Files to Change: public/firebase-messaging-sw.js (new), src/lib/push/web-push.ts (new), src/lib/push/expo-push.ts
-    (extend), src/app/[locale]/(dashboard)/settings/notifications/page.tsx,
-    src/app/api/cron/check-price-alerts/route.ts, .env.example
+  ~~#: 5~~ ✅ DONE
+  ~~Problem: No web push notifications~~
+  ~~Expected Result: Browser push notifications for price drops, deals, back-in-stock~~
+  ~~Solution: Register service worker. Set up Firebase Cloud Messaging with VAPID keys. Create push subscription flow~~
+    ~~(permission request → token storage in user_preferences). Add sendWebPush() server function. Integrate with~~
+    ~~existing notification creation flow.~~
+  ~~Files to Change: public/firebase-messaging-sw.js (new), src/lib/push/web-push.ts (new), src/lib/push/expo-push.ts~~
+    ~~(extend), src/app/[locale]/(dashboard)/settings/notifications/page.tsx,~~
+    ~~src/app/api/cron/check-price-alerts/route.ts, .env.example~~
   ────────────────────────────────────────
   #: 6
   Problem: Premium store upgrade — no payment flow
@@ -278,8 +283,8 @@ Phase 1 — Research
     3. Hijri calendar (Gap 3)        ← Medium effort
     4. Arabic numerals (Gap 4)       ← Low-Medium effort
 
-  Sprint 3 (Engagement):
-    5. Web push (Gap 5)              ← Medium effort
+  ~~Sprint 3 (Engagement):~~
+    ~~5. Web push (Gap 5)              ← Medium effort~~ ✅ DONE
 
   Sprint 4 (Monetization):
     7. Loyalty/cashback (Gap 7)      ← High effort, needs design

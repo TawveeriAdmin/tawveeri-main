@@ -216,11 +216,27 @@ export default function LoginPage() {
  return;
  }
 
- // If it's a new user and we're showing the name field, validate name
+ // If it's a new user, validate name and email
  if (isNewUser && !formData.fullName) {
  toast({
  title: t('auth.validation.fullNameRequired') || 'Full name required',
  description: 'Please enter your full name to continue',
+ variant: 'destructive',
+ });
+ return;
+ }
+
+ if (isNewUser && !formData.email) {
+ toast({
+ title: t('auth.validation.emailRequired') || 'Email is required',
+ variant: 'destructive',
+ });
+ return;
+ }
+
+ if (isNewUser && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+ toast({
+ title: t('auth.validation.emailInvalid') || 'Please enter a valid email address',
  variant: 'destructive',
  });
  return;
@@ -236,6 +252,7 @@ export default function LoginPage() {
  // Verify OTP - check if user exists first
  const result = await signInWithPhone(formData.phone, formData.otp, {
  fullName: isNewUser ? formData.fullName : undefined,
+ email: isNewUser ? formData.email : undefined,
  preferredLanguage: locale as 'ar' | 'en',
  });
 
@@ -245,13 +262,13 @@ export default function LoginPage() {
 
  // Check if this is a new user (from API response)
  if (result.data?.isNewUser) {
- if (!formData.fullName) {
- // Show name field, don't proceed yet
+ if (!formData.fullName || !formData.email) {
+ // Show name + email fields, don't proceed yet
  setIsNewUser(true);
  setIsLoading(false);
  return;
  }
- // Name provided, proceed with account creation (already handled in API)
+ // Name and email provided, proceed with account creation (already handled in API)
  }
 
  // Show success message
@@ -406,8 +423,9 @@ export default function LoginPage() {
  </button>
  )}
 
- {/* Full Name Field (only shown for new users after OTP sent) */}
+ {/* Full Name & Email Fields (only shown for new users after OTP sent) */}
  {isNewUser && otpSent && (
+ <>
  <div className="space-y-2">
  <label htmlFor="fullName" className="block text-label-lg text-on-surface">
  {t('auth.fullName')}
@@ -427,6 +445,30 @@ export default function LoginPage() {
  />
  </div>
  </div>
+
+ <div className="space-y-2">
+ <label htmlFor="signupEmail" className="block text-label-lg text-on-surface">
+ {t('auth.emailAddress')}
+ </label>
+ <div className="relative">
+ <div className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-outline`}>
+ <Mail className="w-5 h-5" />
+ </div>
+ <input
+ id="signupEmail"
+ type="email"
+ value={formData.email}
+ onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+ placeholder={t('auth.emailPlaceholder')}
+ className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ required
+ />
+ </div>
+ <p className="text-body-sm text-on-surface-variant">
+ {t('auth.emailRequiredExplanation')}
+ </p>
+ </div>
+ </>
  )}
 
  {/* OTP Field — hidden once OTP is verified and user is new */}

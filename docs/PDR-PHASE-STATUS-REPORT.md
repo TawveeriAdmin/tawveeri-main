@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 29 | 2 | 5 | **86%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 30 | 1 | 5 | **88%** |
 
 ---
 
@@ -44,7 +44,7 @@ The core platform is fully built. Users can register, search with category and s
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
-| 1 | User registration (Email/Phone/Google) | ✅ | Email+password, Phone OTP, Google/Facebook/Apple OAuth in `src/lib/auth/auth-context.tsx` |
+| 1 | User registration (Email/Phone/Google) | ✅ | Email+password, Phone OTP, Google/Facebook/Apple OAuth in `src/lib/auth/auth-context.tsx`. Phone signup now **mandates email collection** alongside name — real email stored in Supabase Auth + `users` table (replaces placeholder `phone_xxx@tawveeri.local`). Profile page shows correct phone/name/email with Auth user fallbacks. |
 | 2 | Guest access | ✅ | Search, browse, compare all work without auth |
 | 3 | Account management (profile editing, password reset, delete account) | ✅ | `src/app/[locale]/(dashboard)/profile/page.tsx` — avatar, name, password change, account deletion |
 | 4 | Legal compliance (Saudi data privacy laws) | ✅ | Bilingual Privacy Policy + Terms of Service in `(public)/privacy/` and `(public)/terms/` |
@@ -141,9 +141,9 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 86%
+## Overall: 88%
 
-Since the last report (83%), **compare page fully enhanced** — specs now auto-extracted from product titles via `extractSpecsFromTitle()` when DB specs are empty (RAM, Storage, Screen Size, etc. with bilingual labels from `CATEGORY_SPEC_FILTERS`), static store policy fallbacks added for delivery time, warranty, and return policy per store (Amazon SA, Noon, Jarir, Extra, Almanea), and compare list auto-clears when new search results load. Previously: cross-browser compatibility confirmed as complete — Next.js 15 default browserslist covers ~95% of global browsers, TypeScript targets ES2017, Radix UI handles cross-browser accessibility, and feature detection is used for progressive APIs (SpeechRecognition, BarcodeDetector, navigator.mediaDevices). Previous completions include reliability/performance/scalability infrastructure (Sentry, dynamic imports, rate limiting, PM2), AI recommendations (Gemini embeddings), WCAG 2.1 AA accessibility, coupon integration, mobile app, SEO, and search relevance scoring. The biggest remaining gaps are email service integration, web push notifications, premium store payment flow, and the loyalty program.
+Since the last report (86%), **web push notifications fully implemented** — VAPID-based web push via `web-push` npm package (no Firebase dependency). Service worker (`public/sw.js`) handles push display and notification click navigation. Server-side `sendWebPushToUser()` in `src/lib/push/web-push.ts` mirrors the Expo push pattern. Client hook `useWebPush()` manages browser permission, subscription, and unsubscription. Subscribe/unsubscribe API at `/api/push/web/subscribe` persists subscription in `user_preferences.notification_preferences` JSONB (coexists with mobile push keys). Price alerts cron now sends both Expo (mobile) and web push notifications. Expired subscriptions auto-cleaned on 410/404. Notification settings page has a new "Browser Notifications" toggle with `Monitor` icon and dynamic status descriptions (subscribed/denied/unsupported/error/loading). 9 bilingual translation keys added. **Email service wiring completed** — `sendWelcomeEmail()` called in phone signup (`verify-phone-otp`), `sendPriceDropEmail()` called in price alerts cron; email provider needs billing resolution (SendGrid credits exhausted). **Phone signup now mandates real email** — new users must provide name + email on both web and mobile; real email stored in Supabase Auth + `users` table, replacing the `phone_xxx@tawveeri.local` placeholder. Profile page enhanced with Auth user fallbacks for phone/name/verified status. Stale-data recovery handles edge cases where Auth user and `users` table are out of sync. Previously: compare page enhancements, cross-browser compatibility, reliability/performance/scalability, AI recommendations, accessibility, coupon integration, mobile app, SEO. The biggest remaining gaps are email provider billing, premium store payment flow, and the loyalty program.
 
 ---
 
@@ -159,13 +159,13 @@ Since the last report (83%), **compare page fully enhanced** — specs now auto-
 
 ---
 
-### Week 7 — Notifications & Engagement `80%`
+### Week 7 — Notifications & Engagement `90%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Notification system (price drop, back in stock) | ✅ | Full in-app system with bilingual content; cron job checks price alerts (`/api/cron/check-price-alerts/`) |
-| 2 | Email/SMS alerts | 🟡 | HTML email templates built for 7 types (welcome, password_reset, price_drop_alert, etc.) with bilingual RTL support. Helper functions ready (`sendWelcomeEmail()`, `sendPriceDropEmail()`, etc.). **No email provider connected** — calls `supabase.functions.invoke('send-email')` placeholder. SMS = OTP only (Authentica). |
-| 3 | Push notifications | 🟡 | **Mobile**: Fully implemented via `expo-notifications` — push token registration, foreground/background listeners, badge count, deep link handling in `mobile/src/lib/notifications/`. **Web**: No service worker, no Web Push API, no FCM backend. |
+| 2 | Email/SMS alerts | 🟡 | HTML email templates built for 7 types (welcome, password_reset, price_drop_alert, etc.) with bilingual RTL support. Helper functions wired: `sendWelcomeEmail()` called in `verify-phone-otp` for new phone signups, `sendPriceDropEmail()` called in `check-price-alerts` cron. Phone signup now mandates real email (no more placeholder). **Email provider billing issue** — SendGrid "Maximum credits exceeded"; code is fully wired, needs provider billing resolution or switch to Resend. SMS = OTP only (Authentica). |
+| 3 | Push notifications | ✅ | **Mobile**: Fully implemented via `expo-notifications` — push token registration, foreground/background listeners, badge count, deep link handling in `mobile/src/lib/notifications/`. **Web**: VAPID-based web push via `web-push` npm package. Service worker `public/sw.js` (push display + notification click navigation). Server-side `sendWebPushToUser()` in `src/lib/push/web-push.ts`. Client hook `useWebPush()` in `src/lib/push/use-web-push.ts` (permission, subscribe, unsubscribe). API route `/api/push/web/subscribe` (POST/DELETE). Subscription stored in `user_preferences.notification_preferences` JSONB. Integrated into price alerts cron. Auto-cleanup on 410/404. Settings toggle with `Monitor` icon and 6 status states. |
 | 4 | Daily deals section | ✅ | Full deals page with search, sorting, stats cards, expiry tracking (`(public)/deals/page.tsx`) |
 | 5 | Coupon integration | ✅ | **Fully implemented.** `coupons` table with full metadata (code, discount_type, discount_value, min_purchase, max_discount, expires_at, usage_count). DB migration: `scripts/database/11-coupons-schema.sql` (table, RLS policies, indexes). **Admin**: full datatable at `/admin/coupons/` — sortable columns, checkbox selection, column visibility, pagination, rows-per-page, status filter, store filter, AlertDialog confirmation modals for delete/activate/deactivate. 2-column form dialog with custom DateTimePicker. **Store owner**: full CRUD at `/store/coupons/` — same datatable pattern, scoped to owner's store. API routes: `/api/admin/coupons/` (admin CRUD), `/api/store/coupons/` (store owner CRUD), `/api/coupons/` (public list) + copy tracking. **Public**: browsing page at `/(public)/coupons/` with store/type filters, search, sort. `CouponBadge` component (compact + expanded variants). Audit logging + in-app notifications on create. Bilingual translations in `messages/{ar,en}/coupons.json`. |
 
@@ -237,7 +237,7 @@ Since the last report (83%), **compare page fully enhanced** — specs now auto-
 | AI Smart Recommendations | ✅ |
 | Personalized Recommendations | ✅ |
 | Email/SMS Alerts | 🟡 |
-| Push Notifications (web) | 🟡 |
+| Push Notifications (web + mobile) | ✅ |
 | Premium Store Listings | 🟡 |
 | SEO Optimization | ✅ |
 | Comparison (warranty, returns, delivery) | ✅ |
@@ -253,7 +253,7 @@ Since the last report (83%), **compare page fully enhanced** — specs now auto-
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **29 ✅ · 2 🟡 · 5 ❌** |
+| **Totals** | **30 ✅ · 1 🟡 · 5 ❌** |
 
 ---
 
@@ -261,11 +261,10 @@ Since the last report (83%), **compare page fully enhanced** — specs now auto-
 
 | # | Gap | Impact | Effort | Notes |
 |---|-----|--------|--------|-------|
-| 1 | **Connect email service** (Resend/SendGrid) | Critical | Low | Templates + helpers already built for 7 email types. Just need to wire up a provider or deploy `send-email` Edge Function. |
-| 2 | **Web push notifications** — service worker + Web Push API | High | Medium | Mobile push done. Web needs service worker registration + FCM/VAPID keys. |
-| 3 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
-| 4 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
-| 5 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
+| 1 | **Connect email service** (Resend/SendGrid) | Critical | Very Low | Templates + helpers built and **wired into call sites** (welcome email on phone signup, price drop on cron). SendGrid billing exhausted — resolve billing or switch to Resend. Code-complete, needs active provider. |
+| 2 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
+| 3 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
+| 4 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
 
 ---
 
@@ -282,10 +281,10 @@ Phase 1 — Growth & Adoption
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-██████████████████░░░  86%
+██████████████████░░░  88%
 
   Week 6  Personal.      ██████████████████████ 100%
-  Week 7  Notifications  ████████████████░░░░░  80%
+  Week 7  Notifications  ██████████████████░░░  90%
   Week 8  Monetization   ██████████████░░░░░░░  70%
   Week 9  Comparison     ██████████████████████ 100%
   Week 10 Launch         █████████████████░░░░  82%

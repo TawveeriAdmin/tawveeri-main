@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAuditLog } from '@/lib/auth/audit';
-import { createNotification } from '@/lib/auth/notifications';
+import { createNotification, sendWelcomeEmail } from '@/lib/auth/notifications';
 
 /**
  * Auth Callback Route
@@ -74,6 +74,14 @@ export async function GET(request: NextRequest) {
           message_ar: 'نحن سعداء بانضمامك إلينا',
           message_en: 'We are happy to have you join us',
         });
+
+        // Send welcome email (fire-and-forget)
+        if (user.email) {
+          const fullName = user.user_metadata.full_name || user.user_metadata.name;
+          sendWelcomeEmail(user.email, fullName, 'ar').catch((err) =>
+            console.error('Failed to send welcome email:', err)
+          );
+        }
 
         // Audit log for OAuth signup
         await createAuditLog({

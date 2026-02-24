@@ -4,12 +4,12 @@ import { createServerClient as createAdminClient } from '@/lib/database';
 import { createServerClient } from '@supabase/ssr';
 import { validateSaudiPhone } from '@/lib/auth/phone-validation';
 import { createAuditLog } from '@/lib/auth/audit';
-import { createNotification } from '@/lib/auth/notifications';
+import { createNotification, sendWelcomeEmail } from '@/lib/auth/notifications';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, otp, fullName, preferredLanguage, platform } = body;
+    const { phone, otp, fullName, email, preferredLanguage, platform } = body;
     const isMobile = platform === 'mobile';
 
     // fullName and preferredLanguage are optional (for signup flow)
@@ -118,13 +118,14 @@ export async function POST(request: NextRequest) {
     let userId: string;
     let isNewUser = false;
 
-    // If user doesn't exist and no fullName provided, return isNewUser flag
-    // Don't mark OTP as used yet - user needs to provide name first
-    if ((userError || !existingUser) && !fullName) {
+    // If user doesn't exist, or exists but has no name/email — prompt for details
+    // Don't mark OTP as used yet — user needs to provide name and email first
+    const needsProfile = !existingUser || !existingUser.full_name || !existingUser.email;
+    if (needsProfile && (!fullName || !email)) {
       return NextResponse.json({
         success: true,
         isNewUser: true,
-        message: 'Please provide your name to create an account',
+        message: 'Please provide your name and email to create an account',
       });
     }
 
@@ -141,29 +142,65 @@ export async function POST(request: NextRequest) {
       // Create new user in Supabase Auth using Admin API
       const { data: authUser, error: createError } = await supabase.auth.admin.createUser({
         phone: formattedPhone,
+        email: email || undefined,
         phone_confirmed: true,
-        email_confirm: false,
+        email_confirm: true,
         user_metadata: {
           full_name: fullName || null,
           preferred_language: preferredLanguage || 'ar',
         },
       });
 
-      if (createError || !authUser.user) {
-        console.error('Error creating user in Supabase Auth:', createError);
-        return NextResponse.json(
-          { error: 'Failed to create user account' },
-          { status: 500 }
-        );
+      if (createError || !authUser?.user) {
+        // Phone or email already registered in Auth but no users table row — find and reuse
+        const errorCode = (createError as any)?.code;
+        if (errorCode === 'phone_exists' || errorCode === 'email_exists') {
+          console.warn(`Auth user already exists (${errorCode}), searching by phone`);
+          const phoneDigits = formattedPhone.replace(/[^0-9]/g, '');
+          const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+          const found = listData?.users?.find((u) => {
+            if (!u.phone) return false;
+            return u.phone === formattedPhone || u.phone.replace(/[^0-9]/g, '') === phoneDigits;
+          });
+
+          if (found) {
+            userId = found.id;
+            // Update Auth user with any missing data
+            await supabase.auth.admin.updateUserById(userId, {
+              email: email || found.email || undefined,
+              email_confirm: true,
+              phone_confirm: true,
+              user_metadata: {
+                ...found.user_metadata,
+                full_name: fullName || found.user_metadata?.full_name || null,
+                preferred_language: preferredLanguage || found.user_metadata?.preferred_language || 'ar',
+              },
+            }).catch(() => {});
+          } else {
+            console.error('Could not find Auth user by phone after conflict:', createError);
+            return NextResponse.json(
+              { error: 'Failed to create user account' },
+              { status: 500 }
+            );
+          }
+        } else {
+          console.error('Error creating user in Supabase Auth:', createError);
+          return NextResponse.json(
+            { error: 'Failed to create user account' },
+            { status: 500 }
+          );
+        }
+      } else {
+        userId = authUser.user.id;
       }
 
-      userId = authUser.user.id;
       isNewUser = true;
 
       // Create user profile in users table
       const { error: profileError } = await supabase.from('users').insert({
         id: userId,
         phone: formattedPhone,
+        email: email || null,
         full_name: fullName || null,
         preferred_language: preferredLanguage || 'ar',
         role: 'customer',
@@ -199,17 +236,113 @@ export async function POST(request: NextRequest) {
           full_name: fullName || null,
         },
       });
+
+      // Send welcome email using the real email provided during signup
+      if (email) {
+        sendWelcomeEmail(email, fullName, preferredLanguage || 'ar').catch((err) =>
+          console.error('Failed to send welcome email:', err)
+        );
+      }
     } else {
-      // Existing user - update last login
+      // Existing user
       userId = existingUser.id;
 
-      await supabase
-        .from('users')
-        .update({
+      // Check if Auth user still exists (may have been deleted during testing)
+      const { data: existingAuthUser, error: authCheckError } = await supabase.auth.admin.getUserById(userId);
+
+      if (authCheckError || !existingAuthUser?.user) {
+        // Stale reference: users table ID doesn't match any Auth user.
+        // First, try to find the Auth user by phone (may exist under a different ID).
+        console.warn('Auth user not found by ID, searching by phone');
+        const stalePhoneDigits = formattedPhone.replace(/[^0-9]/g, '');
+        const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const authByPhone = listData?.users?.find((u) => {
+          if (!u.phone) return false;
+          return u.phone === formattedPhone || u.phone.replace(/[^0-9]/g, '') === stalePhoneDigits;
+        });
+
+        let resolvedUserId: string;
+
+        if (authByPhone) {
+          // Auth user exists with this phone under a different ID — relink
+          resolvedUserId = authByPhone.id;
+          // Update Auth user metadata if needed
+          const updates: Record<string, any> = {};
+          if (fullName && !authByPhone.user_metadata?.full_name) {
+            updates.user_metadata = { ...authByPhone.user_metadata, full_name: fullName };
+          }
+          if (email && !authByPhone.email) {
+            updates.email = email;
+            updates.email_confirm = true;
+          }
+          if (Object.keys(updates).length > 0) {
+            await supabase.auth.admin.updateUserById(resolvedUserId, updates).catch(() => {});
+          }
+        } else {
+          // No Auth user with this phone at all — create one
+          const { data: recreated, error: recreateError } = await supabase.auth.admin.createUser({
+            phone: formattedPhone,
+            email: email || existingUser.email || undefined,
+            phone_confirmed: true,
+            email_confirm: !!(email || existingUser.email),
+            user_metadata: {
+              full_name: fullName || existingUser.full_name || null,
+              preferred_language: preferredLanguage || existingUser.preferred_language || 'ar',
+            },
+          });
+
+          if (recreateError || !recreated?.user) {
+            console.error('Error recreating Auth user:', recreateError);
+            return NextResponse.json(
+              { error: 'Failed to create user account' },
+              { status: 500 }
+            );
+          }
+          resolvedUserId = recreated.user.id;
+        }
+
+        // Delete old row and insert fresh one with correct Auth ID
+        await supabase.from('users').delete().eq('id', userId);
+        await supabase.from('users').insert({
+          id: resolvedUserId,
+          phone: formattedPhone,
+          email: email || existingUser.email || null,
+          full_name: fullName || existingUser.full_name || null,
+          preferred_language: preferredLanguage || existingUser.preferred_language || 'ar',
+          role: existingUser.role || 'customer',
+          auth_provider: 'phone',
+          phone_verified: true,
+          email_verified: false,
+          last_login_at: new Date().toISOString(),
+        });
+        userId = resolvedUserId;
+      } else {
+        // Auth user exists — normal login, backfill missing profile data
+        const updateData: Record<string, any> = {
           last_login_at: new Date().toISOString(),
           phone_verified: true,
-        })
-        .eq('id', userId);
+        };
+        if (fullName && !existingUser.full_name) updateData.full_name = fullName;
+        if (email && !existingUser.email) updateData.email = email;
+
+        await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', userId);
+
+        // Also update Auth user metadata if name/email were backfilled
+        if (fullName && !existingUser.full_name) {
+          await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: { full_name: fullName },
+          }).catch(() => {});
+        }
+        if (email && !existingUser.email) {
+          await supabase.auth.admin.updateUserById(userId, {
+            email: email,
+            email_confirm: true,
+          }).catch(() => {});
+        }
+      }
 
       // Audit log for login
       await createAuditLog({
@@ -221,10 +354,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get the user from auth to verify creation
+    // Get the user from auth (should always succeed now)
     const { data: authUserData, error: getUserError } = await supabase.auth.admin.getUserById(userId);
 
-    if (getUserError || !authUserData.user) {
+    if (getUserError || !authUserData?.user) {
       console.error('Error getting user:', getUserError);
       return NextResponse.json(
         { error: 'Failed to retrieve user' },
@@ -232,30 +365,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For phone auth, generateLink requires an email
-    // We'll use a placeholder email to generate the magic link
-    // Format: phone_<sanitized_phone>@tawveeri.local
+    // For phone auth, generateLink requires an email.
+    // New users have a real email set during createUser.
+    // Existing users may have an email from their profile, otherwise use a placeholder.
     const sanitizedPhone = formattedPhone.replace(/[^0-9]/g, '');
     const placeholderEmail = `phone_${sanitizedPhone}@tawveeri.local`;
-    
-    // Update user with placeholder email temporarily
-    const { error: emailUpdateError } = await supabase.auth.admin.updateUserById(userId, {
-      email: placeholderEmail,
-      email_confirm: true,
-    });
+    const userEmail = isNewUser
+      ? email
+      : (authUserData.user.email || email || existingUser?.email || null);
+    const usePlaceholder = !userEmail;
+    const emailForLink = userEmail || placeholderEmail;
 
-    if (emailUpdateError) {
-      console.error('Error setting placeholder email:', emailUpdateError);
-      return NextResponse.json(
-        { error: 'Failed to create session' },
-        { status: 500 }
-      );
+    // If we need a placeholder (existing user without email), set it temporarily
+    if (usePlaceholder) {
+      const { error: emailUpdateError } = await supabase.auth.admin.updateUserById(userId, {
+        email: placeholderEmail,
+        email_confirm: true,
+      });
+
+      if (emailUpdateError) {
+        console.error('Error setting placeholder email:', emailUpdateError);
+        return NextResponse.json(
+          { error: 'Failed to create session' },
+          { status: 500 }
+        );
+      }
     }
 
-    // Generate a magic link using the placeholder email
+    // Generate a magic link
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
-      email: placeholderEmail,
+      email: emailForLink,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?type=phone`,
       },
@@ -263,30 +403,19 @@ export async function POST(request: NextRequest) {
 
     if (linkError || !linkData) {
       console.error('Error generating magic link:', linkError);
-      // Remove placeholder email on error
-      await supabase.auth.admin.updateUserById(userId, {
-        email: null,
-      });
+      if (usePlaceholder) {
+        await supabase.auth.admin.updateUserById(userId, { email: null });
+      }
       return NextResponse.json(
         { error: 'Failed to create session' },
         { status: 500 }
       );
     }
 
-    // Debug: Log the link data structure
-    console.log('Magic link data:', {
-      hasProperties: !!linkData.properties,
-      propertiesKeys: linkData.properties ? Object.keys(linkData.properties) : [],
-      action_link: linkData.properties?.action_link,
-      hashed_token: linkData.properties?.hashed_token ? 'present' : 'missing',
-    });
-
     // Extract code or token from magic link
-    // generateLink can return either a code in the URL or a hashed_token in properties
     let code: string | null = null;
     let hashedToken: string | null = null;
 
-    // Try to get code from URL
     try {
       const magicLinkUrl = new URL(linkData.properties.action_link);
       code = magicLinkUrl.searchParams.get('code');
@@ -294,7 +423,6 @@ export async function POST(request: NextRequest) {
       console.log('Could not parse magic link URL, trying hashed_token');
     }
 
-    // If no code in URL, try hashed_token from properties
     if (!code && linkData.properties.hashed_token) {
       hashedToken = linkData.properties.hashed_token;
     }
@@ -304,10 +432,9 @@ export async function POST(request: NextRequest) {
         action_link: linkData.properties.action_link,
         properties: linkData.properties,
       });
-      // Remove placeholder email on error
-      await supabase.auth.admin.updateUserById(userId, {
-        email: null,
-      });
+      if (usePlaceholder) {
+        await supabase.auth.admin.updateUserById(userId, { email: null });
+      }
       return NextResponse.json(
         { error: 'Failed to create session' },
         { status: 500 }
@@ -315,19 +442,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Exchange code/token for session using SSR client
-    // This will automatically set cookies in the response
     let sessionData: any = null;
     let sessionError: any = null;
 
     if (code) {
-      // Use code exchange method
-      console.log('Using code exchange method');
       const result = await supabaseSSR.auth.exchangeCodeForSession(code);
       sessionData = result.data;
       sessionError = result.error;
     } else if (hashedToken) {
-      // Use verifyOtp with hashed_token
-      console.log('Using hashed_token verifyOtp method');
       const result = await supabaseSSR.auth.verifyOtp({
         token_hash: hashedToken,
         type: 'email',
@@ -335,11 +457,9 @@ export async function POST(request: NextRequest) {
       sessionData = result.data;
       sessionError = result.error;
     } else {
-      console.error('Neither code nor hashedToken available');
-      // Remove placeholder email on error
-      await supabase.auth.admin.updateUserById(userId, {
-        email: null,
-      });
+      if (usePlaceholder) {
+        await supabase.auth.admin.updateUserById(userId, { email: null });
+      }
       return NextResponse.json(
         { error: 'Failed to create session' },
         { status: 500 }
@@ -351,21 +471,19 @@ export async function POST(request: NextRequest) {
         hasSession: !!sessionData?.session,
         sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
       });
-      // Remove placeholder email on error
-      await supabase.auth.admin.updateUserById(userId, {
-        email: null,
-      });
+      if (usePlaceholder) {
+        await supabase.auth.admin.updateUserById(userId, { email: null });
+      }
       return NextResponse.json(
         { error: 'Failed to create session' },
         { status: 500 }
       );
     }
 
-    // Remove placeholder email after successful session creation
-    // The session is established, so email is no longer needed for this flow
-    await supabase.auth.admin.updateUserById(userId, {
-      email: null,
-    });
+    // Only remove placeholder email after session creation — keep real emails
+    if (usePlaceholder) {
+      await supabase.auth.admin.updateUserById(userId, { email: null });
+    }
 
     // For mobile: return tokens directly (no cookies)
     if (isMobile) {

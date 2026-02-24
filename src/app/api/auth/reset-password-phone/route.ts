@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { validateSaudiPhone } from '@/lib/auth/phone-validation';
-import { createNotification } from '@/lib/auth/notifications';
+import { createNotification, sendPasswordChangedEmail } from '@/lib/auth/notifications';
 import { createAuditLog, AUDIT_ACTIONS } from '@/lib/auth/audit';
 
 export const runtime = 'nodejs';
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Create notification
     await createNotification({
       user_id: userProfile.id,
-      type: 'account',
+      type: 'system',
       title_ar: 'تم تغيير كلمة المرور',
       title_en: 'Password Changed',
       message_ar: 'تم إعادة تعيين كلمة المرور بنجاح عبر رقم الجوال.',
@@ -123,6 +123,13 @@ export async function POST(request: NextRequest) {
         phone: formattedPhone.replace(/\d(?=\d{4})/g, '*'),
       },
     });
+
+    // Send password changed email (fire-and-forget)
+    if (userProfile.email) {
+      sendPasswordChangedEmail(userProfile.email).catch((err) =>
+        console.error('Failed to send password changed email:', err)
+      );
+    }
 
     return NextResponse.json({
       success: true,

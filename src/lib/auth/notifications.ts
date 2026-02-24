@@ -217,37 +217,45 @@ export async function deleteNotification(notificationId: string) {
 }
 
 /**
- * Send email notification
- * This uses Supabase Edge Functions or external email service
+ * Send email notification via SendGrid API
  */
 export async function sendEmailNotification(params: EmailNotificationParams) {
   try {
-    const supabase = createServerClient();
-    // Get user's preferred language or use provided language
-    const language = params.user_language || 'ar';
-    const subject = language === 'ar' ? params.subject_ar : params.subject_en;
-
-    // Get email template
-    const emailContent = getEmailTemplate(params.template, params.data, language);
-
-    // TODO: Integrate with actual email service (SendGrid, AWS SES, or Supabase Edge Function)
-    // For now, we'll use Supabase Edge Functions approach
-    const { data, error } = await supabase.functions.invoke('send-email', {
-      body: {
-        to: params.to,
-        subject,
-        html: emailContent,
-        template: params.template,
-        data: params.data,
-      },
-    });
-
-    if (error) {
-      console.error('Error sending email:', error);
-      return { error };
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (!apiKey) {
+      console.warn('SENDGRID_API_KEY not configured — skipping email send');
+      return { error: new Error('SendGrid API key not configured') };
     }
 
-    return { data, error: null };
+    const language = params.user_language || 'ar';
+    const subject = language === 'ar' ? params.subject_ar : params.subject_en;
+    const emailContent = getEmailTemplate(params.template, params.data, language);
+
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: params.to }] }],
+        from: {
+          email: process.env.SENDGRID_FROM_EMAIL || 'info@tawveeri.com',
+          name: process.env.SENDGRID_FROM_NAME || 'Tawveeri',
+        },
+        subject,
+        content: [{ type: 'text/html', value: emailContent }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => 'No body');
+      console.error('SendGrid error:', response.status, errorBody);
+      return { error: new Error(`SendGrid API error: ${response.status}`) };
+    }
+
+    // SendGrid returns 202 with no body on success
+    return { data: { success: true }, error: null };
   } catch (error) {
     console.error('Error in sendEmailNotification:', error);
     return { error: error as Error };
@@ -595,6 +603,43 @@ export async function sendPriceDropEmail(
       savings,
       discount_percentage: discountPercentage,
     },
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send password changed email
+ */
+export async function sendPasswordChangedEmail(email: string, language?: 'ar' | 'en') {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: 'تم تغيير كلمة المرور',
+    subject_en: 'Password Changed',
+    template: 'password_changed',
+    data: {},
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send back in stock email
+ */
+export async function sendBackInStockEmail(
+  email: string,
+  productData: {
+    product_name: string;
+    price: number;
+    store_name: string;
+    product_link: string;
+  },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: `عاد للمخزون: ${productData.product_name}`,
+    subject_en: `Back in Stock: ${productData.product_name}`,
+    template: 'back_in_stock',
+    data: productData,
     user_language: language,
   });
 }

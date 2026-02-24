@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
-import { createNotification } from '@/lib/auth/notifications';
+import { createNotification, sendPriceDropEmail } from '@/lib/auth/notifications';
 import { sendPushToUser } from '@/lib/push/expo-push';
 import { sendWebPushToUser } from '@/lib/push/web-push';
 
@@ -117,6 +117,19 @@ export async function POST(request: NextRequest) {
             },
             channelId: 'price-alerts',
           });
+
+          // Send price drop email
+          if (user?.email) {
+            const productLink = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/products/${product?.slug || alert.product_id}`;
+            sendPriceDropEmail(user.email, {
+              product_name: productName,
+              old_price: alert.target_price,
+              new_price: currentPrice,
+              product_link: productLink,
+            }, locale).catch((err) =>
+              console.error('Failed to send price drop email:', err)
+            );
+          }
 
           // Send web push notification to browser
           await sendWebPushToUser(alert.user_id, {

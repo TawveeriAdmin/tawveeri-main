@@ -73,14 +73,14 @@ export default function ProfilePage() {
  return;
  }
 
- setFullName(user.full_name || '');
+ setFullName(user.full_name || user.user_metadata?.full_name || '');
  setEmail(user.email || '');
- setPhone(user.phone || '');
+ setPhone(user.phone || user.user_metadata?.phone || '');
  setAvatarUrl(user.avatar_url || null);
  setPreferredLanguage((user.preferred_language as 'ar' | 'en') || locale);
  setCurrentTheme(theme || 'system');
  setEmailVerified(user.email_verified ?? !!user.email_confirmed_at);
- setPhoneVerified(user.phone_verified ?? false);
+ setPhoneVerified(user.phone_verified ?? !!user.phone_confirmed_at);
  setPhoneOtp('');
  setPhoneOtpSent(false);
  setLoading(false);

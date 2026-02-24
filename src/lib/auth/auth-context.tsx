@@ -23,7 +23,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (params: SignUpParams) => Promise<AuthResponse>;
   signInWithEmail: (email: string, password: string) => Promise<AuthResponse>;
-  signInWithPhone: (phone: string, token: string, options?: { fullName?: string; preferredLanguage?: 'ar' | 'en' }) => Promise<AuthResponse>;
+  signInWithPhone: (phone: string, token: string, options?: { fullName?: string; email?: string; preferredLanguage?: 'ar' | 'en' }) => Promise<AuthResponse>;
   sendPhoneOtp: (phone: string, options?: { shouldCreateUser?: boolean }) => Promise<AuthResponse>;
   signInWithOAuth: (provider: 'google' | 'facebook' | 'apple') => Promise<AuthResponse>;
   signOut: () => Promise<void>;
@@ -138,7 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        return normalizeProfile(data);
+        const profile = normalizeProfile(data);
+        // Preserve Auth user's phone if the users table has null
+        if (!profile.phone && authUser.phone) profile.phone = authUser.phone;
+        // Trust Auth phone_confirmed_at over users table flag
+        if (!profile.phone_verified && authUser.phone_confirmed_at) profile.phone_verified = true;
+        return profile;
       }
 
       // Profile row is missing; create it using authenticated user metadata.
@@ -465,17 +470,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithPhone = async (
     phone: string,
     token: string,
-    options?: { fullName?: string; preferredLanguage?: 'ar' | 'en' }
+    options?: { fullName?: string; email?: string; preferredLanguage?: 'ar' | 'en' }
   ): Promise<AuthResponse> => {
     if (!supabase) {
       return { error: new Error('Supabase client not initialized') };
     }
     try {
       // Use absolute path to avoid locale prefix issues
-      const baseUrl = typeof window !== 'undefined' 
-        ? window.location.origin 
+      const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
         : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      
+
       const response = await fetch(`${baseUrl}/api/auth/verify-phone-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -484,6 +489,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phone,
           otp: token,
           fullName: options?.fullName,
+          email: options?.email,
           preferredLanguage: options?.preferredLanguage,
         }),
       });

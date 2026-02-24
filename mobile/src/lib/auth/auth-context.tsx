@@ -37,7 +37,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (params: { email?: string; phone?: string; password: string; full_name?: string; preferred_language?: 'ar' | 'en' }) => Promise<AuthResponse>;
   signInWithEmail: (email: string, password: string) => Promise<AuthResponse>;
-  signInWithPhone: (phone: string, token: string, options?: { fullName?: string; preferredLanguage?: 'ar' | 'en' }) => Promise<AuthResponse>;
+  signInWithPhone: (phone: string, token: string, options?: { fullName?: string; email?: string; preferredLanguage?: 'ar' | 'en' }) => Promise<AuthResponse>;
   sendPhoneOtp: (phone: string) => Promise<AuthResponse>;
   signInWithOAuth: (provider: 'google' | 'facebook' | 'apple') => Promise<AuthResponse>;
   signOut: () => Promise<void>;
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithPhone = useCallback(async (
     phone: string,
     token: string,
-    options?: { fullName?: string; preferredLanguage?: 'ar' | 'en' }
+    options?: { fullName?: string; email?: string; preferredLanguage?: 'ar' | 'en' }
   ): Promise<AuthResponse> => {
     try {
       // Call verify endpoint with platform=mobile
@@ -216,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone,
         otp: token,
         fullName: options?.fullName,
+        email: options?.email,
         preferredLanguage: options?.preferredLanguage,
         platform: 'mobile',
       });
