@@ -58,6 +58,8 @@ import {
 } from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useToast } from '@/components/ui/use-toast';
+import { getSupabaseBrowserClient } from '@/lib/database';
+import { incrementSaveCount } from '@/lib/wishlist/utils';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
@@ -636,8 +638,38 @@ export default function SearchPage() {
     }
   };
 
-  const handleSaveToWishlist = (productId: string) => {
-    console.log('Save to wishlist:', productId);
+  const handleSaveToWishlist = async (productId: string) => {
+    if (!user) {
+      router.push(`/${locale}/auth/login?redirect=/wishlist`);
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    try {
+      const { error: saveError } = await supabase.from('user_wishlists').insert({
+        user_id: user.id,
+        product_id: productId,
+      });
+
+      if (saveError && saveError.code === '23505') {
+        toast({ title: t('products.saved'), description: t('products.alreadySaved') });
+        return;
+      }
+
+      if (saveError) throw saveError;
+
+      incrementSaveCount(productId).catch((err) => {
+        console.error('Error incrementing save count:', err);
+      });
+
+      toast({ title: t('products.saved'), description: t('products.savedToWishlist') });
+    } catch (err) {
+      toast({
+        title: t('common.error'),
+        description: err instanceof Error ? err.message : t('products.saveError'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAddProductToCart = (item: Product) => {

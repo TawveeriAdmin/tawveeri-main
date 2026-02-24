@@ -20,7 +20,7 @@ import type { AvailabilityStatus, Database } from '@/lib/database/types';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import { GuestPrompt } from '@/components/auth/guest-prompt';
-import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
+
 
 type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
@@ -255,10 +255,8 @@ export default function WishlistPage() {
 
  return (
  <div className="space-y-6">
- <PageBreadcrumbs items={[{ label: t('dashboard.sidebar.wishlist') }]} />
-
  {/* Header */}
- <div>
+<div>
  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
  {t('wishlist.myWishlist')}
  </h1>

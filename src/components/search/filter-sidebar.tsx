@@ -606,6 +606,13 @@ export function FilterSidebar({
                       checked={isChecked}
                       onCheckedChange={() => handleStoreToggle(store.slug)}
                     />
+                    <img
+                      src={`/logos/${store.slug}.png`}
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="rounded object-contain shrink-0"
+                    />
                     <span className="text-sm text-on-surface">{storeName}</span>
                   </label>
                 );
