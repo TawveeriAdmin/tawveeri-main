@@ -17,4 +17,6 @@ export interface StoreSearchResult {
 export type SearchProduct = ScrapedProduct & {
   store: string;
   store_name: string;
+  rating?: number | null;
+  review_count?: number | null;
 };

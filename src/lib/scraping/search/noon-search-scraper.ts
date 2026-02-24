@@ -202,6 +202,8 @@ export class NoonSearchScraper extends BaseSearchScraper {
         is_free_delivery: isExpress,
         store: this.storeSlug,
         store_name: this.storeName,
+        rating,
+        review_count: reviewCount,
       };
     } catch (err) {
       console.error('[Noon] Error parsing product:', err);

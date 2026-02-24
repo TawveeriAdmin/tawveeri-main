@@ -125,6 +125,8 @@ export class AmazonSearchScraper extends BaseSearchScraper {
       is_free_delivery: isPrime,
       store: this.storeSlug,
       store_name: this.storeName,
+      rating,
+      review_count: reviewCount,
     };
   }
 }

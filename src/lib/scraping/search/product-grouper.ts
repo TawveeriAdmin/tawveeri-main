@@ -12,7 +12,7 @@ export interface GroupedSearchProduct extends ScrapedProduct {
 /**
  * Brand alias map — normalizes brand variants to a canonical form.
  */
-const BRAND_ALIASES: Record<string, string> = {
+export const BRAND_ALIASES: Record<string, string> = {
   galaxy: 'samsung',
   'hewlett-packard': 'hp',
   'hewlett packard': 'hp',
