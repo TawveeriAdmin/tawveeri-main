@@ -3,6 +3,7 @@
   "addProducts": "Add products to compare",
   "compareUpTo": "Compare up to 4 products side by side",
   "clearAll": "Clear All",
+  "clearSelection": "Clear selection",
   "addMore": "Add More Products",
   "errorLoading": "Error loading products",
   "noProducts": "No products to compare",
@@ -23,7 +24,7 @@
   "shippingCost": "Shipping Cost",
   "warranty": "Warranty",
   "returnPolicy": "Return Policy",
-  "storeComparison": "Store-by-Store Comparison",
+  "storeComparison": "Store Comparison",
   "storeBreakdownDescription": "Compare delivery, shipping, warranty and return policy for each store.",
   "freeDelivery": "Free delivery",
   "notSpecified": "Not specified",
@@ -38,5 +39,11 @@
   "matrixDescription": "Scan the most important differences first, then drill into each store offer.",
   "technicalSpecs": "Technical Specs",
   "technicalSpecsDescription": "Review technical details side by side for each product.",
-  "noTechnicalSpecs": "No technical specs available for the selected products."
+  "noTechnicalSpecs": "No technical specs available for the selected products.",
+  "onlyShowDifferences": "Only show differences",
+  "brand": "Brand",
+  "model": "Model",
+  "category": "Category",
+  "storesAvailable": "Stores Available",
+  "savings": "Savings"
 }

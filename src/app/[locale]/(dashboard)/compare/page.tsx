@@ -1,33 +1,25 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   X,
   AlertCircle,
   BarChart3,
-  Plus,
-  Trash2,
   ExternalLink,
-  Store,
-  Truck,
-  ShieldCheck,
-  RotateCcw,
-  Sparkles,
 } from 'lucide-react';
-import { calculateSavings } from '@/lib/utils';
+import { cn, calculateSavings } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 
 interface StoreInfo {
@@ -314,13 +306,6 @@ function writeCompareCache(cacheById: Record<string, Product>, orderedIds: strin
   localStorage.setItem(COMPARE_CACHE_STORAGE_KEY, JSON.stringify(nextCache));
 }
 
-function textByLocale(locale: string, ar: string | null | undefined, en: string | null | undefined): string {
-  if (locale === 'ar') {
-    return ar || en || '';
-  }
-  return en || ar || '';
-}
-
 function formatSpecValue(value: unknown): string {
   if (value === null || value === undefined) return '-';
   if (Array.isArray(value)) {
@@ -346,6 +331,7 @@ export default function ComparePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [onlyShowDifferences, setOnlyShowDifferences] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(COMPARE_STORAGE_KEY);
@@ -482,6 +468,15 @@ export default function ComparePage() {
     return Array.from(keys);
   }, [products]);
 
+  const filteredSpecKeys = useMemo(() => {
+    if (!onlyShowDifferences) return allSpecKeys;
+    return allSpecKeys.filter((key) => {
+      const values = products.map((p) => formatSpecValue(p.specifications?.[key]));
+      const unique = new Set(values);
+      return unique.size > 1;
+    });
+  }, [allSpecKeys, onlyShowDifferences, products]);
+
   const getStoresByPrice = (product: Product): ProductStore[] => {
     return [...product.product_stores]
       .filter((store) => store.current_price > 0)
@@ -516,24 +511,6 @@ export default function ComparePage() {
       return `${store.delivery_cost.toLocaleString('en-US')} ${locale === 'ar' ? 'ر.س' : 'SAR'}`;
     }
     return t('compare.notSpecified');
-  };
-
-  const getWarrantyText = (store: ProductStore | null): string => {
-    if (!store?.stores) return t('compare.notAvailable');
-    const text = textByLocale(locale, store.stores.warranty_info_ar, store.stores.warranty_info_en);
-    return text || t('compare.notSpecified');
-  };
-
-  const getReturnPolicyText = (store: ProductStore | null): string => {
-    if (!store?.stores) return t('compare.notAvailable');
-    const text = textByLocale(locale, store.stores.return_policy_ar, store.stores.return_policy_en);
-    return text || t('compare.notSpecified');
-  };
-
-  const getDeliveryInfoText = (store: ProductStore | null): string => {
-    if (!store?.stores) return t('compare.notAvailable');
-    const text = textByLocale(locale, store.stores.delivery_info_ar, store.stores.delivery_info_en);
-    return text || t('compare.notSpecified');
   };
 
   const handleRemove = (productId: string) => {
@@ -580,109 +557,33 @@ export default function ComparePage() {
     .filter((price): price is number => typeof price === 'number' && price > 0);
 
   const lowestBestPrice = bestPriceValues.length > 0 ? Math.min(...bestPriceValues) : null;
-  const highestBestPrice = bestPriceValues.length > 0 ? Math.max(...bestPriceValues) : null;
-  const priceSpread = lowestBestPrice !== null && highestBestPrice !== null ? highestBestPrice - lowestBestPrice : null;
-  const totalStoreOffers = Array.from(sortedStoresByProductId.values()).reduce((sum, stores) => sum + stores.length, 0);
-
-  const bestDeal = products.reduce<{ productName: string; savings: number } | null>((currentBest, product) => {
-    const bestStore = bestStoreByProductId.get(product.id) || null;
-    if (!bestStore?.original_price || bestStore.original_price <= bestStore.current_price) {
-      return currentBest;
-    }
-
-    const savings = calculateSavings(bestStore.original_price, bestStore.current_price);
-    if (!currentBest || savings > currentBest.savings) {
-      return { productName: getProductName(product), savings };
-    }
-    return currentBest;
-  }, null);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-44 w-full rounded-2xl" />
-        <Skeleton className="h-96 w-full rounded-2xl" />
-        <Skeleton className="h-72 w-full rounded-2xl" />
+        <Skeleton className="h-10 w-72" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="aspect-square w-full rounded-xl" />
+              <Skeleton className="h-4 w-3/4 mx-auto" />
+              <Skeleton className="h-4 w-1/2 mx-auto" />
+              <Skeleton className="h-8 w-24 mx-auto" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-px w-full" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-outline-variant bg-gradient-to-br from-primary-500/10 via-surface-container-lowest to-secondary-500/10 p-5 md:p-6">
-        <div className="pointer-events-none absolute -top-20 end-6 h-52 w-52 rounded-full bg-primary-500/15 blur-3xl" />
-
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="text-headline-lg text-on-surface mb-2">{t('compare.title')}</h1>
-            <p className="text-on-surface-variant text-sm">
-              {products.length} {products.length === 1 ? t('compare.product') : t('compare.products')} • {t('compare.compareUpTo')}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {products.length > 0 && (
-              <Button variant="outline" onClick={handleClearAll}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                {t('compare.clearAll')}
-              </Button>
-            )}
-            {products.length < MAX_COMPARE_PRODUCTS && (
-              <Button onClick={handleAddMore}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('compare.addMore')}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {products.length > 0 && (
-          <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-xl border border-outline-variant/70 bg-surface-container-lowest/90 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-on-surface-variant">{t('compare.storeOffers')}</p>
-              <p className="text-xl font-semibold text-on-surface mt-1">{totalStoreOffers}</p>
-            </div>
-
-            <div className="rounded-xl border border-outline-variant/70 bg-surface-container-lowest/90 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-on-surface-variant">{t('compare.bestPrice')}</p>
-              <div className="mt-1">
-                {lowestBestPrice !== null ? (
-                  <Price amount={lowestBestPrice} className="text-xl font-semibold" symbolClassName="w-5 h-5" />
-                ) : (
-                  <p className="text-lg text-outline">{t('compare.notAvailable')}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-outline-variant/70 bg-surface-container-lowest/90 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-on-surface-variant">{t('compare.priceSpread')}</p>
-              <div className="mt-1">
-                {priceSpread !== null ? (
-                  <Price amount={priceSpread} className="text-xl font-semibold" symbolClassName="w-5 h-5" />
-                ) : (
-                  <p className="text-lg text-outline">{t('compare.notAvailable')}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-outline-variant/70 bg-surface-container-lowest/90 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-on-surface-variant">{t('compare.bestDeal')}</p>
-              <div className="mt-1">
-                {bestDeal ? (
-                  <>
-                    <Price amount={bestDeal.savings} className="text-xl font-semibold" symbolClassName="w-5 h-5" />
-                    <p className="text-xs text-on-surface-variant truncate mt-1" title={bestDeal.productName}>
-                      {bestDeal.productName}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-lg text-outline">{t('compare.notAvailable')}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
+      {/* Page Title */}
+      <h1 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+        {t('compare.title')}
+      </h1>
 
       {error && (
         <Alert variant="destructive">
@@ -703,414 +604,242 @@ export default function ComparePage() {
         />
       )}
 
-      {products.length > 0 && (
-        <div className="space-y-6">
-          <Card className="overflow-hidden border-outline-variant bg-surface-container-lowest">
-            <CardHeader className="border-b border-outline-variant/70 pb-4">
-              <CardTitle className="text-base flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                {t('compare.comparisonMatrix')}
-              </CardTitle>
-              <p className="text-sm text-on-surface-variant">{t('compare.matrixDescription')}</p>
-            </CardHeader>
+      {products.length > 0 && (() => {
+        const gridCols = `160px repeat(${products.length}, 1fr)`;
+        const totalCols = products.length + 1;
 
-            <CardContent className="p-0">
-              <Table className="min-w-[980px] border-separate border-spacing-0">
-                <TableHeader className="border-b-0">
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/80">
-                    <TableHead className="w-56 min-w-56 sticky start-0 z-20 border-e border-outline-variant bg-surface-container px-4 py-4 text-sm font-semibold text-on-surface">
-                      {t('compare.specifications')}
-                    </TableHead>
-                    {products.map((product) => {
-                      const productName = getProductName(product);
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      const imageUrl = product.image_urls?.[0] || PLACEHOLDER_IMAGE;
-                      const isBestPriceProduct = lowestBestPrice !== null && bestStore?.current_price === lowestBestPrice;
-                      const primaryStoreUrl = getStoreUrl(bestStore);
+        /** Renders one grid-row with a label cell + one cell per product */
+        const renderDataRow = (
+          label: string,
+          renderCell: (product: Product, colIdx: number) => React.ReactNode,
+          rowIdx: number,
+        ) => (
+          <div
+            key={label}
+            className={cn(
+              'grid border-b border-outline-variant/50',
+              rowIdx % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container-low/30'
+            )}
+            style={{ gridTemplateColumns: gridCols }}
+          >
+            <div className="py-3 px-4 text-sm font-bold text-on-surface whitespace-nowrap border-e border-outline-variant/50 flex items-center">
+              {label}
+            </div>
+            {products.map((product, colIdx) => (
+              <div
+                key={product.id}
+                className={cn(
+                  'py-3 px-4 text-sm text-on-surface flex items-center justify-center text-center',
+                  colIdx < products.length - 1 && 'border-e border-outline-variant/30'
+                )}
+              >
+                {renderCell(product, colIdx)}
+              </div>
+            ))}
+          </div>
+        );
 
-                      return (
-                        <TableHead
-                          key={`summary-${product.id}`}
-                          className="min-w-[250px] border-e border-outline-variant bg-surface-container-lowest align-top last:border-e-0 p-0"
-                        >
-                          <div className="p-3.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-start gap-3 min-w-0">
-                                <Image
-                                  src={imageUrl}
-                                  alt={productName}
-                                  width={60}
-                                  height={60}
-                                  className="h-14 w-14 rounded-lg bg-white object-contain"
-                                  unoptimized
-                                />
-                                <div className="min-w-0">
-                                  <h3 className="text-sm font-semibold text-on-surface line-clamp-2">{productName}</h3>
-                                  <p className="text-xs text-on-surface-variant mt-1 line-clamp-1">
-                                    {product.brand} - {product.model}
-                                  </p>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleRemove(product.id)}
-                                className="text-outline hover:text-on-surface transition-colors"
-                                aria-label={`${t('compare.clearAll')} ${productName}`}
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
+        return (
+          <div className="overflow-x-auto rounded-lg border border-outline-variant/70 min-w-[700px]">
+            {/* ── Product Header Row ── */}
+            <div
+              className="grid border-b border-outline-variant/50 bg-surface-container-lowest"
+              style={{ gridTemplateColumns: gridCols }}
+            >
+              {/* Empty label column */}
+              <div className="border-e border-outline-variant/50 p-4" />
+              {products.map((product, colIdx) => {
+                const productName = getProductName(product);
+                const bestStore = bestStoreByProductId.get(product.id) || null;
+                const imageUrl = product.image_urls?.[0] || PLACEHOLDER_IMAGE;
+                const isBestPriceProduct = lowestBestPrice !== null && bestStore?.current_price === lowestBestPrice && products.length > 1;
+                const primaryStoreUrl = getStoreUrl(bestStore);
 
-                            <div className="mt-3 flex items-center gap-2">
-                              {bestStore ? (
-                                <Price amount={bestStore.current_price} className="text-lg font-bold" symbolClassName="w-4 h-4" />
-                              ) : (
-                                <span className="text-sm text-outline">{t('compare.notAvailable')}</span>
-                              )}
-                              {isBestPriceProduct && (
-                                <Badge variant="success" className="text-[10px]">
-                                  {t('price.best')}
-                                </Badge>
-                              )}
-                            </div>
+                return (
+                  <div
+                    key={product.id}
+                    className={cn(
+                      'p-4 text-center',
+                      colIdx < products.length - 1 && 'border-e border-outline-variant/30'
+                    )}
+                  >
+                    <div className="relative flex flex-col items-center">
+                      {/* Remove button */}
+                      <button
+                        onClick={() => handleRemove(product.id)}
+                        className="absolute -top-1 -end-1 z-10 w-6 h-6 rounded-full bg-surface-container border border-outline-variant/70 flex items-center justify-center text-on-surface-variant hover:text-error-600 hover:border-error-300 transition-colors"
+                        aria-label={`${t('compare.clearAll')} ${productName}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
 
-                            <div className="mt-3">
-                              {isUuid(product.id) ? (
-                                <Button asChild variant="outline" size="sm" className="h-8">
-                                  <Link href={`/${locale}/products/${product.slug}`}>{t('compare.viewProduct')}</Link>
-                                </Button>
-                              ) : (
-                                primaryStoreUrl && (
-                                  <Button asChild variant="outline" size="sm" className="h-8">
-                                    <a href={primaryStoreUrl} target="_blank" rel="noopener noreferrer">
-                                      {t('compare.viewStore')}
-                                    </a>
-                                  </Button>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        </TableHead>
-                      );
-                    })}
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container-low font-semibold">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.price')}</span>
+                      {/* Product Image */}
+                      <div className="relative w-32 h-32 mb-3 rounded-lg bg-white dark:bg-gray-900 p-2 flex items-center justify-center">
+                        <Image
+                          src={imageUrl}
+                          alt={productName}
+                          width={120}
+                          height={120}
+                          className="object-contain max-h-[112px] w-auto"
+                          unoptimized
+                        />
+                        {isBestPriceProduct && (
+                          <Badge variant="success" className="absolute top-1 start-1 text-[10px]">
+                            {t('compare.bestPrice')}
+                          </Badge>
+                        )}
                       </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      return (
-                        <TableCell key={`price-${product.id}`} className="text-center border-e border-outline-variant/70 bg-surface-container-lowest last:border-e-0">
-                          {bestStore ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <Price amount={bestStore.current_price} className="text-base font-semibold" symbolClassName="w-4 h-4" />
-                              {bestStore.original_price && bestStore.original_price > bestStore.current_price && (
-                                <>
-                                  <Price
-                                    amount={bestStore.original_price}
-                                    className="text-xs text-outline line-through"
-                                    symbolClassName="w-3 h-3"
-                                  />
-                                  <Badge variant="success-light" className="text-[11px]">
-                                    <Price
-                                      amount={calculateSavings(bestStore.original_price, bestStore.current_price)}
-                                      className="text-[11px] font-semibold"
-                                      symbolClassName="w-3 h-3"
-                                    />
-                                  </Badge>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-outline">{t('compare.notAvailable')}</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
 
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container font-semibold">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.availability')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      return (
-                        <TableCell key={`availability-${product.id}`} className="text-center border-e border-outline-variant/70 bg-surface-container last:border-e-0">
-                          {bestStore ? getAvailabilityBadge(bestStore.availability) : <Badge variant="secondary">{t('product.outOfStock')}</Badge>}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
+                      {/* Product Name */}
+                      <h3 className="text-sm font-semibold text-on-surface line-clamp-2 leading-snug mb-0.5">
+                        {productName}
+                      </h3>
 
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container-low font-semibold">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.stores')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => (
-                      <TableCell key={`stores-${product.id}`} className="text-center border-e border-outline-variant/70 bg-surface-container-lowest last:border-e-0">
-                        {product.product_stores.length} {product.product_stores.length === 1 ? t('compare.store') : t('compare.stores')}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                      {/* Brand / Model */}
+                      <p className="text-xs text-on-surface-variant mb-2">
+                        {product.brand}{product.model ? ` - ${product.model}` : ''}
+                      </p>
 
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container font-semibold">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.bestStore')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      return (
-                        <TableCell key={`best-store-${product.id}`} className="text-center border-e border-outline-variant/70 bg-surface-container last:border-e-0">
-                          {getStoreName(bestStore)}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container-low font-semibold">
-                      <div className="flex items-center gap-2">
-                        <Truck className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.deliveryTime')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      return (
-                        <TableCell key={`delivery-${product.id}`} className="text-center border-e border-outline-variant/70 bg-surface-container-lowest last:border-e-0">
-                          {getDeliveryTimeLabel(bestStore?.delivery_time_days)}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container font-semibold">
-                      <div className="flex items-center gap-2">
-                        <RotateCcw className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.shippingCost')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      return (
-                        <TableCell key={`shipping-${product.id}`} className="text-center border-e border-outline-variant/70 bg-surface-container last:border-e-0">
-                          {getShippingLabel(bestStore)}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-
-                  <TableRow className="hover:bg-transparent border-b border-outline-variant/70">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container-low font-semibold">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.warranty')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      const warrantyText = getWarrantyText(bestStore);
-                      return (
-                        <TableCell key={`warranty-${product.id}`} className="text-start border-e border-outline-variant/70 bg-surface-container-lowest last:border-e-0">
-                          <p className="line-clamp-2" title={warrantyText}>{warrantyText}</p>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-
-                  <TableRow className="hover:bg-transparent border-b-0">
-                    <TableCell className="sticky start-0 z-10 border-e border-outline-variant bg-surface-container font-semibold">
-                      <div className="flex items-center gap-2">
-                        <RotateCcw className="w-4 h-4 text-primary-600" />
-                        <span>{t('compare.returnPolicy')}</span>
-                      </div>
-                    </TableCell>
-                    {products.map((product) => {
-                      const bestStore = bestStoreByProductId.get(product.id) || null;
-                      const returnPolicyText = getReturnPolicyText(bestStore);
-                      return (
-                        <TableCell key={`return-policy-${product.id}`} className="text-start border-e border-outline-variant/70 bg-surface-container last:border-e-0">
-                          <p className="line-clamp-2" title={returnPolicyText}>{returnPolicyText}</p>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-outline-variant bg-surface-container-lowest">
-            <CardHeader className="border-b border-outline-variant/70 pb-4">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                {t('compare.technicalSpecs')}
-              </CardTitle>
-              <p className="text-sm text-on-surface-variant">{t('compare.technicalSpecsDescription')}</p>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              {allSpecKeys.length === 0 ? (
-                <div className="p-5 text-sm text-on-surface-variant">{t('compare.noTechnicalSpecs')}</div>
-              ) : (
-                <Table className="min-w-[980px] border-separate border-spacing-0">
-                  <TableHeader className="border-b-0">
-                    <TableRow className="hover:bg-transparent border-b border-outline-variant/80">
-                      <TableHead className="w-56 min-w-56 sticky start-0 z-20 border-e border-outline-variant bg-surface-container px-4 py-3 text-sm font-semibold text-on-surface">
-                        {t('compare.specifications')}
-                      </TableHead>
-                      {products.map((product) => (
-                        <TableHead
-                          key={`spec-head-${product.id}`}
-                          className="min-w-[250px] border-e border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface last:border-e-0"
-                        >
-                          <span className="line-clamp-2">{getProductName(product)}</span>
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {allSpecKeys.map((specKey, index) => (
-                      <TableRow key={specKey} className={`hover:bg-transparent border-b border-outline-variant/70 ${index === allSpecKeys.length - 1 ? 'border-b-0' : ''}`}>
-                        <TableCell className={`sticky start-0 z-10 border-e border-outline-variant font-semibold ${index % 2 === 0 ? 'bg-surface-container-low' : 'bg-surface-container'}`}>
-                          <span className="break-words">{specKey}</span>
-                        </TableCell>
-                        {products.map((product) => (
-                          <TableCell
-                            key={`${specKey}-${product.id}`}
-                            className={`text-start border-e border-outline-variant/70 last:border-e-0 ${index % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container'}`}
-                          >
-                            {formatSpecValue(product.specifications?.[specKey])}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-outline-variant bg-surface-container-lowest">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Store className="w-4 h-4" />
-                {t('compare.storeComparison')}
-              </CardTitle>
-              <p className="text-sm text-on-surface-variant">{t('compare.storeBreakdownDescription')}</p>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 lg:grid-cols-2">
-                {products.map((product) => {
-                  const productName = getProductName(product);
-                  const sortedStores = sortedStoresByProductId.get(product.id) || [];
-
-                  return (
-                    <div key={product.id} className="rounded-xl border border-outline-variant/80 bg-surface-container-low p-3.5 space-y-3">
-                      <h3 className="font-semibold text-sm line-clamp-2">{productName}</h3>
-
-                      {sortedStores.length === 0 && (
-                        <p className="text-sm text-on-surface-variant">{t('compare.notAvailable')}</p>
-                      )}
-
-                      {sortedStores.map((store, index) => {
-                        const storeName = getStoreName(store);
-                        const storeUrl = getStoreUrl(store);
-                        const deliveryInfo = getDeliveryInfoText(store);
-                        const warranty = getWarrantyText(store);
-                        const returnPolicy = getReturnPolicyText(store);
-                        const isBestForProduct = index === 0;
-                        const shipping = getShippingLabel(store);
-                        const deliveryTime = getDeliveryTimeLabel(store.delivery_time_days);
-
-                        return (
-                          <div key={store.id} className="rounded-lg border border-outline-variant/70 bg-surface-container-lowest p-3 space-y-2.5">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm font-medium truncate">{storeName}</p>
-                                  {isBestForProduct && (
-                                    <Badge variant="success" className="text-[10px]">{t('price.best')}</Badge>
-                                  )}
-                                </div>
-                                <div className="mt-1">
-                                  {getAvailabilityBadge(store.availability)}
-                                </div>
-                              </div>
-
-                              <div className="text-end">
-                                <Price amount={store.current_price} className="text-sm font-bold" symbolClassName="w-4 h-4" />
-                                {store.original_price && store.original_price > store.current_price && (
-                                  <Price
-                                    amount={store.original_price}
-                                    className="text-xs text-outline line-through"
-                                    symbolClassName="w-3 h-3"
-                                  />
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="grid gap-1 text-xs text-on-surface-variant">
-                              <div className="flex items-center gap-1.5">
-                                <Truck className="w-3.5 h-3.5" />
-                                <span>{t('compare.deliveryTime')}: {deliveryTime}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                <span>{t('compare.shippingCost')}: {shipping}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                <span className="line-clamp-2">{t('compare.warranty')}: {warranty}</span>
-                              </div>
-                              <p className="line-clamp-2">{t('compare.returnPolicy')}: {returnPolicy}</p>
-                              <p className="line-clamp-2">{deliveryInfo}</p>
-                            </div>
-
-                            {storeUrl && (
-                              <a
-                                href={storeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-500"
-                              >
-                                {t('compare.viewStore')}
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                      {/* Price */}
+                      <div className="mb-3">
+                        {bestStore ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Price amount={bestStore.current_price} className="text-lg font-bold text-on-surface" symbolClassName="w-4 h-4" />
+                            {bestStore.original_price && bestStore.original_price > bestStore.current_price && (
+                              <Price
+                                amount={bestStore.original_price}
+                                className="text-xs text-on-surface-variant line-through"
+                                symbolClassName="w-3 h-3"
+                              />
                             )}
                           </div>
-                        );
-                      })}
+                        ) : (
+                          <span className="text-sm text-outline">{t('compare.notAvailable')}</span>
+                        )}
+                      </div>
+
+                      {/* CTA Button */}
+                      {isUuid(product.id) ? (
+                        <Button asChild variant="default" size="sm" className="h-9 px-5 rounded-md text-sm font-semibold">
+                          <Link href={`/${locale}/products/${product.slug}`}>
+                            {t('compare.viewProduct')}
+                          </Link>
+                        </Button>
+                      ) : (
+                        primaryStoreUrl && (
+                          <Button asChild variant="default" size="sm" className="h-9 px-5 rounded-md text-sm font-semibold">
+                            <a href={primaryStoreUrl} target="_blank" rel="noopener noreferrer">
+                              {t('compare.viewStore')}
+                              <ExternalLink className="w-3.5 h-3.5 ms-1.5" />
+                            </a>
+                          </Button>
+                        )
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Controls Row ── */}
+            <div className="flex items-center justify-between border-b border-outline-variant/50 bg-surface-container-low/50 py-2.5 px-4">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <Checkbox
+                  checked={onlyShowDifferences}
+                  onCheckedChange={(checked) => setOnlyShowDifferences(checked === true)}
+                />
+                <span className="text-sm text-on-surface">{t('compare.onlyShowDifferences')}</span>
+              </label>
+              <button
+                onClick={handleClearAll}
+                className="text-sm font-medium text-primary-600 hover:text-primary-500 transition-colors"
+              >
+                {t('compare.clearSelection')}
+              </button>
+            </div>
+
+            {/* ── Store Comparison Section Header ── */}
+            <div className="border-b border-outline-variant/50 bg-surface-container py-2.5 px-4">
+              <h2 className="text-sm font-bold text-on-surface uppercase tracking-wide">
+                {t('compare.storeComparison')}
+              </h2>
+            </div>
+
+            {/* ── Store Comparison Rows ── */}
+            {[
+              { key: 'bestStore', label: t('compare.bestStore'), render: (product: Product) => getStoreName(bestStoreByProductId.get(product.id) || null) },
+              { key: 'availability', label: t('compare.availability'), render: (product: Product) => { const bs = bestStoreByProductId.get(product.id) || null; return bs ? getAvailabilityBadge(bs.availability) : <Badge variant="secondary">{t('product.outOfStock')}</Badge>; } },
+              { key: 'storesAvailable', label: t('compare.storesAvailable'), render: (product: Product) => `${product.product_stores.length} ${product.product_stores.length === 1 ? t('compare.store') : t('compare.stores')}` },
+              { key: 'deliveryTime', label: t('compare.deliveryTime'), render: (product: Product) => getDeliveryTimeLabel((bestStoreByProductId.get(product.id) || null)?.delivery_time_days) },
+              { key: 'shippingCost', label: t('compare.shippingCost'), render: (product: Product) => getShippingLabel(bestStoreByProductId.get(product.id) || null) },
+              {
+                key: 'savings', label: t('compare.savings'), render: (product: Product) => {
+                  const bs = bestStoreByProductId.get(product.id) || null;
+                  const hasSavings = bs?.original_price && bs.original_price > bs.current_price;
+                  return hasSavings ? (
+                    <Badge variant="success-light" className="text-xs">
+                      <Price amount={calculateSavings(bs.original_price!, bs.current_price)} className="text-xs font-semibold" symbolClassName="w-3 h-3" />
+                    </Badge>
+                  ) : <span className="text-on-surface-variant">-</span>;
+                },
+              },
+            ].map((row, rowIdx) => renderDataRow(row.label, (product) => <>{row.render(product)}</>, rowIdx))}
+
+            {/* ── Specifications Section Header ── */}
+            <div className="border-b border-outline-variant/50 bg-surface-container py-2.5 px-4">
+              <h2 className="text-sm font-bold text-on-surface uppercase tracking-wide">
+                {t('compare.specifications')}
+              </h2>
+            </div>
+
+            {/* ── Specification Rows ── */}
+            {filteredSpecKeys.length === 0 ? (
+              <div className="py-4 px-4 text-sm text-on-surface-variant">
+                {t('compare.noTechnicalSpecs')}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            ) : (
+              filteredSpecKeys.map((specKey, specIdx) => {
+                const values = products.map((p) => formatSpecValue(p.specifications?.[specKey]));
+                const allSame = new Set(values).size === 1;
+
+                return (
+                  <React.Fragment key={specKey}>
+                    {/* Spec name header row */}
+                    <div className="border-b border-outline-variant/40 bg-surface-container-low/50 py-2 px-4 text-sm font-bold text-on-surface">
+                      {specKey}
+                    </div>
+                    {/* Values row */}
+                    <div
+                      className={cn(
+                        'grid border-b border-outline-variant/50',
+                        specIdx === filteredSpecKeys.length - 1 && 'border-b-0'
+                      )}
+                      style={{ gridTemplateColumns: gridCols }}
+                    >
+                      <div className="border-e border-outline-variant/50" />
+                      {products.map((product, colIdx) => (
+                        <div
+                          key={`${specKey}-${product.id}`}
+                          className={cn(
+                            'py-2.5 px-4 text-sm text-center',
+                            allSame ? 'text-on-surface-variant' : 'text-on-surface',
+                            colIdx < products.length - 1 && 'border-e border-outline-variant/30'
+                          )}
+                        >
+                          {formatSpecValue(product.specifications?.[specKey])}
+                        </div>
+                      ))}
+                    </div>
+                  </React.Fragment>
+                );
+              })
+            )}
+          </div>
+        );
+      })()}
 
       {products.length >= MAX_COMPARE_PRODUCTS && (
-        <Alert className="mt-6">
+        <Alert className="mt-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{t('compare.maxProducts')}</AlertDescription>
         </Alert>

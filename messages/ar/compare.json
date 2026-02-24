@@ -3,6 +3,7 @@
   "addProducts": "أضف منتجات للمقارنة",
   "compareUpTo": "قارن ما يصل إلى 4 منتجات جنباً إلى جنب",
   "clearAll": "مسح الكل",
+  "clearSelection": "مسح الاختيار",
   "addMore": "إضافة المزيد من المنتجات",
   "errorLoading": "خطأ في التحميل",
   "noProducts": "لا توجد منتجات للمقارنة",
@@ -23,7 +24,7 @@
   "shippingCost": "تكلفة الشحن",
   "warranty": "الضمان",
   "returnPolicy": "سياسة الإرجاع",
-  "storeComparison": "مقارنة بين المتاجر",
+  "storeComparison": "مقارنة المتاجر",
   "storeBreakdownDescription": "قارن التوصيل والشحن والضمان وسياسة الإرجاع لكل متجر.",
   "freeDelivery": "شحن مجاني",
   "notSpecified": "غير محدد",
@@ -38,5 +39,11 @@
   "matrixDescription": "اطّلع على أهم الفروقات أولاً، ثم راجع تفاصيل عروض كل متجر.",
   "technicalSpecs": "المواصفات التقنية",
   "technicalSpecsDescription": "راجع التفاصيل التقنية جنباً إلى جنب لكل منتج.",
-  "noTechnicalSpecs": "لا توجد مواصفات تقنية متاحة للمنتجات المحددة."
+  "noTechnicalSpecs": "لا توجد مواصفات تقنية متاحة للمنتجات المحددة.",
+  "onlyShowDifferences": "إظهار الفروقات فقط",
+  "brand": "العلامة التجارية",
+  "model": "الموديل",
+  "category": "الفئة",
+  "storesAvailable": "المتاجر المتاحة",
+  "savings": "التوفير"
 }
