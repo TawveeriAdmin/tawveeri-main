@@ -318,7 +318,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                         </Avatar>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
+                    <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56" dir={isRTL ? 'rtl' : 'ltr'}>
                       <DropdownMenuLabel>
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">

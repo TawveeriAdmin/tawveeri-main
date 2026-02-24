@@ -75,7 +75,7 @@ type Product = ProductCardProduct;
 
 type SortOption = 'popularity' | 'price_low' | 'price_high' | 'rating';
 
-const ITEMS_PER_PAGE = 24;
+const ITEMS_PER_PAGE = 25;
 const COMPARE_STORAGE_KEY = 'compare_products';
 const COMPARE_CACHE_STORAGE_KEY = 'compare_products_cache';
 const SEARCH_CACHE_KEY = 'search_results_cache';
