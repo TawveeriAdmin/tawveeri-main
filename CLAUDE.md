@@ -548,11 +548,11 @@ URL scheme: `tawveeri://` (configured in `app.json` under `scheme`). Associated 
 **Architecture**: pgvector embeddings + PostgreSQL functions, callable via `.rpc()` from any Supabase SDK (web + mobile).
 
 **Embedding pipeline** (automatic):
-- Products get embeddings via OpenAI `text-embedding-3-small` (1536 dimensions, multilingual Arabic+English)
-- Stored in `products.embedding` column (`halfvec(1536)` with HNSW index)
-- Auto-generated on product insert/update via triggers → pgmq queue → pg_cron (every 10s) → `embed` Edge Function → OpenAI API
+- Products get embeddings via Google Gemini `gemini-embedding-001` (768 dimensions, multilingual Arabic+English)
+- Stored in `products.embedding` column (`halfvec(768)` with HNSW index)
+- Auto-generated on product insert/update via triggers → pgmq queue → pg_cron (every 10s) → `embed` Edge Function → Google Gemini API
 - Infrastructure: `util` schema with `queue_embeddings()`, `process_embeddings()`, `invoke_edge_function()` functions
-- Requires `OPENAI_API_KEY` set as Supabase secret
+- Requires `GOOGLE_AI_API_KEY` set as Supabase secret
 
 **Recommendation functions** (all in PostgreSQL, called via `.rpc()`):
 - `match_similar_products(target_product_id, match_count, match_threshold)` — pgvector cosine similarity
@@ -580,7 +580,7 @@ const { data } = await supabase.rpc('get_recommendations', {
 **Files**:
 - `src/lib/recommendations/types.ts` — `RecommendedProduct` and `RecommendationOptions` types
 - `src/lib/recommendations/use-recommendations.ts` — React hook wrapping `.rpc('get_recommendations')`
-- Edge Function `embed` — processes embedding jobs from pgmq queue via OpenAI
+- Edge Function `embed` (`supabase/functions/embed/index.ts`) — processes embedding jobs from pgmq queue via Google Gemini
 
 **Backfilling embeddings**: Queue all products via `SELECT pgmq.send('embedding_jobs', ...)` — pg_cron processes in batches of 10.
 

@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-19
 **Branch:** `phase2_v2_Alhussain`
-**Status:** Complete (pending OPENAI_API_KEY secret)
+**Status:** Complete (switched to Google Gemini, GOOGLE_AI_API_KEY deployed)
 
 ---
 
@@ -58,10 +58,10 @@ Product Insert/Update
   pg_net calls Edge Function (embed)
         |
         v
-  Edge Function calls OpenAI text-embedding-3-small
+  Edge Function calls Google Gemini gemini-embedding-001
         |
         v
-  1536-dim embedding vector saved to products.embedding column
+  768-dim embedding vector saved to products.embedding column
 ```
 
 ### Recommendation Serving (Per User Request)
@@ -93,7 +93,7 @@ User visits page
 |-----------|---------|
 | `enable_ai_extensions` | Enabled pgvector 0.8.0, pgmq 1.5.1, pg_net 0.19.5, pg_cron 1.6.4, hstore |
 | `create_product_views_table` | Per-user product view tracking with RLS policies |
-| `add_product_embeddings` | `embedding halfvec(1536)` column + HNSW index on products |
+| `add_product_embeddings` | `embedding halfvec(768)` column + HNSW index on products (migrated from 1536 to 768 dims) |
 | `embedding_infrastructure` | `util` schema, pgmq queue, `process_embeddings()` function, pg_cron job (10s) |
 | `product_embedding_triggers` | `product_embedding_input()` function + INSERT/UPDATE triggers on products |
 | `recommendation_functions` | 4 PG functions (see below) |
@@ -113,7 +113,7 @@ User visits page
 
 | Name | Runtime | Model | Purpose |
 |------|---------|-------|---------|
-| `embed` | Deno (Supabase Edge) | OpenAI `text-embedding-3-small` | Processes embedding jobs from pgmq queue, generates 1536-dim vectors |
+| `embed` | Deno (Supabase Edge) | Google Gemini `gemini-embedding-001` | Processes embedding jobs from pgmq queue, generates 768-dim vectors |
 
 ### Files Created
 
@@ -137,18 +137,18 @@ User visits page
 
 ## 5. Cost Analysis
 
-### OpenAI Embedding Cost
+### Google Gemini Embedding Cost
 
 | Scale | One-time Cost | Monthly Updates (est. 10%) |
 |-------|---------------|---------------------------|
-| 100 products | $0.0002 | $0.00002 |
-| 1,000 products | $0.002 | $0.0002 |
-| 10,000 products | $0.02 | $0.002 |
-| 100,000 products | $0.20 | $0.02 |
+| 100 products | Free tier | Free tier |
+| 1,000 products | Free tier | Free tier |
+| 10,000 products | Free tier | Free tier |
+| 100,000 products | ~$0.01 | ~$0.001 |
 
-- Model: `text-embedding-3-small` at **$0.02 per 1M tokens**
+- Model: `gemini-embedding-001` — free tier covers 1,500 RPM / 1M tokens per minute
 - ~50-100 tokens per product (name_ar + name_en + brand + model + category)
-- OpenAI is called **once per product change**, not per user request
+- Gemini is called **once per product change**, not per user request
 - Recommendations are served via pure PostgreSQL math (zero API cost)
 - pg_cron polling costs nothing when queue is empty
 
@@ -191,13 +191,13 @@ Recommendations don't replace price comparison — they **increase product disco
 
 ## 9. Remaining Action
 
-**One manual step required:**
+**Secrets deployed:**
 
 ```bash
-supabase secrets set OPENAI_API_KEY=sk-your-key-here
+supabase secrets set GOOGLE_AI_API_KEY=AIza...
 ```
 
-After setting the key, the pg_cron job will automatically process queued embedding jobs. Verify with:
+The pg_cron job automatically processes queued embedding jobs. Verify with:
 
 ```sql
 SELECT COUNT(*) FROM products WHERE embedding IS NOT NULL;
