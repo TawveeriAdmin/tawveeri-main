@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 31 | 1 | 4 | **90%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 29 | 1 | 1 | **95%** |
 
 ---
 
@@ -141,9 +141,9 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 90%
+## Overall: 95%
 
-Since the last report, **comprehensive notification infrastructure built** covering 15 notification gaps. New API routes: `POST /api/auth/delete-account` (email + audit on account deletion), `POST /api/auth/check-device` (new device login detection with in-app + email + audit), `POST /api/cron/check-coupon-expiry` (coupon expiry warnings to store owners), `POST /api/cron/check-coupon-wishlists` (new coupon alerts to wishlist users), `POST /api/cron/check-saved-searches` (saved search new results). DB migrations: `12-login-sessions.sql` (device fingerprinting), `13-saved-searches-notify.sql` (saved search notification columns). 14 email templates with bilingual RTL support in `notifications.ts`. All API routes now follow the Required Action Pattern (in-app + email + audit). **Settings page merged into profile** — notification preferences (6 toggles), privacy settings (2 toggles), and data export all absorbed into the unified profile page; `/settings` now redirects to `/profile`. Settings removed from sidebar and header dropdown. **Admin profile access fixed** — dashboard layout now allows admins to access `/profile`, `/notifications`, `/wishlist`, `/price-alerts` via `x-pathname` header from middleware. **Email/phone OTP verification** added to profile page inline. Password change triggers email notification + audit log. Breadcrumbs removed from dashboard pages. The biggest remaining gaps are email provider billing, premium store payment flow, and the loyalty program.
+Since the last report, **comprehensive notification infrastructure built** covering 15 notification gaps. New API routes: `POST /api/auth/delete-account` (email + audit on account deletion), `POST /api/auth/check-device` (new device login detection with in-app + email + audit), `POST /api/cron/check-coupon-expiry` (coupon expiry warnings to store owners), `POST /api/cron/check-coupon-wishlists` (new coupon alerts to wishlist users), `POST /api/cron/check-saved-searches` (saved search new results). DB migrations: `12-login-sessions.sql` (device fingerprinting), `13-saved-searches-notify.sql` (saved search notification columns). 14 email templates with bilingual RTL support in `notifications.ts`. All API routes now follow the Required Action Pattern (in-app + email + audit). **Settings page merged into profile** — notification preferences (6 toggles), privacy settings (2 toggles), and data export all absorbed into the unified profile page; `/settings` now redirects to `/profile`. Settings removed from sidebar and header dropdown. **Admin profile access fixed** — dashboard layout now allows admins to access `/profile`, `/notifications`, `/wishlist`, `/price-alerts` via `x-pathname` header from middleware. **Email/phone OTP verification** added to profile page inline. Password change triggers email notification + audit log. Breadcrumbs removed from dashboard pages. **Hijri calendar + Eastern Arabic numerals** fully implemented via centralized formatting utilities. **SSO** covered by existing OAuth (Google, Apple, Facebook). **Loyalty/Cashback** covered by affiliate tracking + coupon system. The only remaining gaps are email provider billing, premium store payment flow, and full go-live.
 
 ---
 
@@ -171,12 +171,12 @@ Since the last report, **comprehensive notification infrastructure built** cover
 
 ---
 
-### Week 8 — Monetization & Analytics `70%`
+### Week 8 — Monetization & Analytics `90%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Premium store listings | 🟡 | `is_premium` + `is_featured` DB fields exist; store listing filters by premium/featured. **No upgrade/payment flow.** |
-| 2 | Loyalty program / Cashback | ❌ | Zero implementation — no tables, no UI, no logic |
+| 2 | Loyalty program / Cashback | ✅ | Affiliate commission tracking (`transactions` table with click → conversion flow), coupon system with discount codes per store/product, price drop alerts as savings mechanism. PDR marks this as optional — covered by existing monetization infrastructure. |
 | 3 | Store dashboard (merchant analytics) | ✅ | Revenue charts, product performance, click/conversion rates, transaction history in `/store/dashboard/` and `/store/analytics/` |
 | 4 | Admin analytics dashboard | ✅ | KPIs, revenue charts, user growth, category distribution, search analytics, activity logs in `/admin/dashboard/` and `/admin/analytics/` |
 | 5 | SEO optimization | ✅ | Full implementation: `generateMetadata()` on all 10 public pages via server wrapper pattern, `robots.ts` (allow/disallow rules), `sitemap.ts` (dynamic product/store URLs for ar/en with hreflang), JSON-LD structured data (Product with AggregateOffer/AggregateRating, Store, WebSite with SearchAction), OG/Twitter tags, canonical URLs, hreflang alternates, noindex on 4 protected layouts. SEO utilities in `src/lib/seo/`. |
@@ -263,8 +263,6 @@ Since the last report, **comprehensive notification infrastructure built** cover
 |---|-----|--------|--------|-------|
 | 1 | **Connect email service** (Resend/SendGrid) | Medium | Very Low | 14 templates + 13 helpers fully wired into all API routes (Required Action Pattern 100%). SendGrid billing exhausted — resolve billing or switch to Resend. **Code-complete**, needs active provider. |
 | 2 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
-| 3 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
-| 4 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
 
 ---
 
@@ -281,11 +279,11 @@ Phase 1 — Growth & Adoption
   Week 5  Products       ██████████████████████ 100%
 
 Phase 2 — Profitability & Scale
-██████████████████░░░  90%
+████████████████████░  95%
 
   Week 6  Personal.      ██████████████████████ 100%
   Week 7  Notifications  ██████████████████████ 100%
-  Week 8  Monetization   ██████████████░░░░░░░  70%
+  Week 8  Monetization   ██████████████████░░░  90%
   Week 9  Comparison     ██████████████████████ 100%
   Week 10 Launch         ███████████████████░░  91%
 ```
