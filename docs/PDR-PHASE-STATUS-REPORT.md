@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 31 | 0 | 5 | **90%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 31 | 1 | 4 | **90%** |
 
 ---
 
@@ -66,7 +66,7 @@ The core platform is fully built. Users can register, search with category and s
 
 ---
 
-### Week 4 — Store Integration `95%`
+### Week 4 — Store Integration `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
@@ -77,7 +77,7 @@ The core platform is fully built. Users can register, search with category and s
 
 ---
 
-### Week 5 — Product Experience `95%`
+### Week 5 — Product Experience `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
@@ -163,11 +163,11 @@ Since the last report, **comprehensive notification infrastructure built** cover
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
-| 1 | Notification system (price drop, back in stock) | ✅ | Full in-app system with bilingual content. 15 notification events covered: price drop, back-in-stock, price alert CRUD, account deletion, new device login, role change, coupon expiry/wishlist alerts, store sync, saved search results. Cron jobs: `check-price-alerts`, `check-coupon-expiry`, `check-coupon-wishlists`, `check-saved-searches`. All events include in-app notification + audit log; most include email. 13 email templates. |
+| 1 | Notification system (price drop, back in stock) | ✅ | Full in-app system with bilingual content. 15 notification events covered: price drop, back-in-stock, price alert CRUD, account deletion, new device login, role change, coupon expiry/wishlist alerts, store sync, saved search results. Cron jobs: `check-price-alerts`, `check-coupon-expiry`, `check-coupon-wishlists`, `check-saved-searches`. All events include in-app notification + audit log; most include email. 14 email templates. |
 | 2 | Email/SMS alerts | ✅ | 14 HTML email templates with bilingual RTL support: welcome, password_reset, password_changed, email_verification, price_drop_alert, back_in_stock, daily_deals, role_changed, account_deleted, coupon_expiry_warning, new_coupon_alert, new_device_login, saved_search_results, coupon_admin_action. 13 helper functions wired into all call sites. All API routes now follow Required Action Pattern (in-app + email + audit). **Email provider billing issue** — SendGrid "Maximum credits exceeded"; code is fully wired, needs provider billing resolution or switch to Resend. SMS = OTP only (Authentica). |
 | 3 | Push notifications | ✅ | **Mobile**: Fully implemented via `expo-notifications` — push token registration, foreground/background listeners, badge count, deep link handling in `mobile/src/lib/notifications/`. **Web**: VAPID-based web push via `web-push` npm package. Service worker `public/sw.js` (push display + notification click navigation). Server-side `sendWebPushToUser()` in `src/lib/push/web-push.ts`. Client hook `useWebPush()` in `src/lib/push/use-web-push.ts` (permission, subscribe, unsubscribe). API route `/api/push/web/subscribe` (POST/DELETE). Subscription stored in `user_preferences.notification_preferences` JSONB. Integrated into price alerts cron. Auto-cleanup on 410/404. Settings toggle with `Monitor` icon and 6 status states. |
 | 4 | Daily deals section | ✅ | Full deals page with search, sorting, stats cards, expiry tracking (`(public)/deals/page.tsx`) |
-| 5 | Coupon integration | ✅ | **Fully implemented.** `coupons` table with full metadata (code, discount_type, discount_value, min_purchase, max_discount, expires_at, usage_count). DB migration: `scripts/database/11-coupons-schema.sql` (table, RLS policies, indexes). **Admin**: full datatable at `/admin/coupons/` — sortable columns, checkbox selection, column visibility, pagination, rows-per-page, status filter, store filter, AlertDialog confirmation modals for delete/activate/deactivate. 2-column form dialog with custom DateTimePicker. **Store owner**: full CRUD at `/store/coupons/` — same datatable pattern, scoped to owner's store. API routes: `/api/admin/coupons/` (admin CRUD), `/api/store/coupons/` (store owner CRUD), `/api/coupons/` (public list) + copy tracking. **Public**: browsing page at `/(public)/coupons/` with store/type filters, search, sort. `CouponBadge` component (compact + expanded variants). Audit logging + in-app notifications on create. Bilingual translations in `messages/{ar,en}/coupons.json`. |
+| 5 | Coupon integration | ✅ | **Fully implemented.** `coupons` table with full metadata (code, discount_type, discount_value, min_purchase, max_discount, expires_at, usage_count). DB migration: `scripts/database/11-coupons-schema.sql` (table, RLS policies, indexes). **Admin**: full datatable at `/admin/coupons/` — sortable columns, checkbox selection, column visibility, pagination, rows-per-page, status filter, store filter, AlertDialog confirmation modals for delete/activate/deactivate. 2-column form dialog with custom DateTimePicker. **Store owner**: full CRUD at `/store/coupons/` — same datatable pattern, scoped to owner's store. API routes: `/api/admin/coupons/` (admin CRUD), `/api/store/coupons/` (store owner CRUD), `/api/coupons/` (public list) + copy tracking. **Public**: browsing page at `/(public)/coupons/` with store/type filters, search, sort. `CouponBadge` component (compact + expanded variants). Full Required Action Pattern (in-app + email + audit) on all coupon CRUD operations. Store owners emailed on admin coupon actions via `coupon_admin_action` template. Bilingual translations in `messages/{ar,en}/coupons.json`. |
 
 ---
 
@@ -253,7 +253,7 @@ Since the last report, **comprehensive notification infrastructure built** cover
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **31 ✅ · 0 🟡 · 5 ❌** |
+| **Totals** | **31 ✅ · 1 🟡 · 4 ❌** |
 
 ---
 
@@ -277,8 +277,8 @@ Phase 1 — Growth & Adoption
   Week 1  Foundation     ██████████████████████ 100%
   Week 2  Accounts       ██████████████████████ 100%
   Week 3  Search         ██████████████████████ 100%
-  Week 4  Stores         █████████████████████  95%
-  Week 5  Products       █████████████████████  95%
+  Week 4  Stores         ██████████████████████ 100%
+  Week 5  Products       ██████████████████████ 100%
 
 Phase 2 — Profitability & Scale
 ██████████████████░░░  90%
