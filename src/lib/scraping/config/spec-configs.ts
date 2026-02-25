@@ -448,8 +448,8 @@ export function extractSpecsFromTitle(title: string): Record<string, string> {
   }
 
   // Storage type
-  if (t.includes('ssd')) specs.storage_type = 'ssd';
-  else if (t.includes('hdd')) specs.storage_type = 'hdd';
+  if (/\bssd\b/i.test(t)) specs.storage_type = 'ssd';
+  else if (/\bhdd\b/i.test(t)) specs.storage_type = 'hdd';
 
   // Screen size: "14-inch", "55\"", "15.6 inch", "14 بوصة"
   const screenMatch = t.match(/(\d+(?:\.\d+)?)\s*[-"]?\s*(?:inch|"|بوصة|in\b)/i) ||
@@ -458,15 +458,15 @@ export function extractSpecsFromTitle(title: string): Record<string, string> {
     specs.screen_size = String(Math.round(parseFloat(screenMatch[1])));
   }
 
-  // TV resolution
-  if (t.includes('8k')) specs.resolution = '8k';
-  else if (t.includes('4k') || t.includes('uhd')) specs.resolution = '4k';
-  else if (t.includes('1080p') || t.includes('full hd') || t.includes('fhd')) specs.resolution = 'fhd';
+  // TV resolution — word boundaries to avoid "8kg" → "8k", "14kg" → "4k"
+  if (/\b8k\b/i.test(t)) specs.resolution = '8k';
+  else if (/\b4k\b/i.test(t) || /\buhd\b/i.test(t)) specs.resolution = '4k';
+  else if (/\b1080p\b/i.test(t) || /\bfull\s*hd\b/i.test(t) || /\bfhd\b/i.test(t)) specs.resolution = 'fhd';
 
-  // TV panel type
-  if (t.includes('oled') && !t.includes('qled')) specs.panel_type = 'oled';
-  else if (t.includes('qled')) specs.panel_type = 'qled';
-  else if (t.includes('led')) specs.panel_type = 'led';
+  // TV panel type — word boundaries to avoid "oled" in random substrings
+  if (/\boled\b/i.test(t) && !/\bqled\b/i.test(t)) specs.panel_type = 'oled';
+  else if (/\bqled\b/i.test(t)) specs.panel_type = 'qled';
+  else if (/\bled\b/i.test(t)) specs.panel_type = 'led';
 
   // Audio type
   if (t.includes('over-ear') || t.includes('over ear')) specs.audio_type = 'over-ear';
