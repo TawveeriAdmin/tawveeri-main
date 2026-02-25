@@ -198,6 +198,8 @@ export default function NotificationsPage() {
  title: tn('markReadError'),
  variant: 'destructive',
  });
+ } else {
+ window.dispatchEvent(new Event('notifications-updated'));
  }
  };
 
@@ -219,6 +221,7 @@ export default function NotificationsPage() {
  variant: 'destructive',
  });
  } else {
+ window.dispatchEvent(new Event('notifications-updated'));
  toast({
  title: tn('deleted'),
  variant: 'default',
@@ -248,6 +251,8 @@ export default function NotificationsPage() {
  title: tn('markAllError'),
  variant: 'destructive',
  });
+ } else {
+ window.dispatchEvent(new Event('notifications-updated'));
  }
  };
 

@@ -17,10 +17,10 @@ import { cn } from '@/lib/utils';
 import {
   User, Mail, Phone, Globe, Moon, Sun, Monitor, Camera, Trash2,
   AlertTriangle, Save, X, CheckCircle2, AlertCircle, Clock3,
-  Lock, Heart, Bell, TrendingUp,
+  Lock, Heart, Bell, TrendingUp, Eye, EyeOff,
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/database';
-import { updateAvatar, deleteAvatar, resendEmailVerification, resendPhoneVerification, verifyPhoneOTP } from '@/lib/auth/profile';
+import { updateAvatar, deleteAvatar, resendEmailVerification, resendPhoneVerification, verifyPhoneOTP, verifyEmailOTPCode } from '@/lib/auth/profile';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 export default function ProfilePage() {
@@ -54,6 +54,9 @@ export default function ProfilePage() {
  const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
  const [phoneOtp, setPhoneOtp] = useState('');
  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+ const [emailOtp, setEmailOtp] = useState('');
+ const [emailOtpSent, setEmailOtpSent] = useState(false);
+ const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
  const [emailVerified, setEmailVerified] = useState(false);
  const [phoneVerified, setPhoneVerified] = useState(false);
  const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -68,6 +71,12 @@ export default function ProfilePage() {
  const [currentPassword, setCurrentPassword] = useState('');
  const [newPassword, setNewPassword] = useState('');
  const [confirmPassword, setConfirmPassword] = useState('');
+ const [showNewPassword, setShowNewPassword] = useState(false);
+ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+ // Original values for change detection
+ const originalFullName = user?.full_name || user?.user_metadata?.full_name || '';
+ const hasChanges = fullName !== originalFullName;
 
  // Load user data
  useEffect(() => {
@@ -212,6 +221,17 @@ export default function ProfilePage() {
  setCurrentPassword('');
  setNewPassword('');
  setConfirmPassword('');
+
+ // Send email notification + in-app notification + audit log
+ fetch('/api/auth/password-changed-notify', {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({
+     userId: user.id,
+     email: user.email,
+     language: locale,
+   }),
+ }).catch(() => {});
  }
  } catch (error) {
  toast({
@@ -311,9 +331,10 @@ export default function ProfilePage() {
  const { error } = await resendEmailVerification(user.email);
  if (error) throw error;
 
+ setEmailOtpSent(true);
  toast({
  title: t('profile.verificationSent'),
- description: t('profile.checkInbox'),
+ description: t('profile.emailCodeSent'),
  variant: 'default',
  });
  } catch (error) {
@@ -324,6 +345,42 @@ export default function ProfilePage() {
  });
  } finally {
  setEmailResendLoading(false);
+ }
+ };
+
+ const handleVerifyEmail = async () => {
+ if (!user?.email) return;
+
+ if (!emailOtp.trim()) {
+ toast({
+ title: t('profile.enterOtp'),
+ variant: 'destructive',
+ });
+ return;
+ }
+
+ setEmailVerifyLoading(true);
+ try {
+ const { error } = await verifyEmailOTPCode(user.email, emailOtp.trim());
+ if (error) throw error;
+
+ setEmailVerified(true);
+ setEmailOtp('');
+ setEmailOtpSent(false);
+ toast({
+ title: t('profile.emailVerified'),
+ variant: 'default',
+ });
+
+ await refreshSession();
+ } catch (error) {
+ toast({
+ title: t('profile.verificationFailed'),
+ description: error instanceof Error ? error.message : undefined,
+ variant: 'destructive',
+ });
+ } finally {
+ setEmailVerifyLoading(false);
  }
  };
 
@@ -610,10 +667,31 @@ export default function ProfilePage() {
                  className="text-xs shrink-0"
                >
                  <AlertCircle className="w-3.5 h-3.5 me-1 text-amber-500" />
-                 {emailResendLoading ? t('profile.sending') : t('profile.resendVerification')}
+                 {emailResendLoading ? t('profile.sending') : emailOtpSent ? t('profile.resendCode') : t('profile.resendVerification')}
                </Button>
              )}
            </div>
+           {/* Email OTP input when sent */}
+           {!emailVerified && emailOtpSent && (
+             <div className="flex items-center gap-2 mt-2">
+               <Input
+                 type="text"
+                 value={emailOtp}
+                 onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                 placeholder={t('profile.enterVerificationCode')}
+                 className="flex-1"
+                 dir="ltr"
+                 maxLength={6}
+               />
+               <Button
+                 size="sm"
+                 onClick={handleVerifyEmail}
+                 disabled={emailVerifyLoading || emailOtp.trim().length === 0}
+               >
+                 {emailVerifyLoading ? t('profile.verifying') : t('common.verify')}
+               </Button>
+             </div>
+           )}
          </div>
 
          {/* Phone */}
@@ -652,9 +730,11 @@ export default function ProfilePage() {
                <Input
                  type="text"
                  value={phoneOtp}
-                 onChange={(e) => setPhoneOtp(e.target.value)}
+                 onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                  placeholder={t('profile.enterVerificationCode')}
                  className="flex-1"
+                 dir="ltr"
+                 maxLength={6}
                />
                <Button
                  size="sm"
@@ -674,7 +754,7 @@ export default function ProfilePage() {
            <X className="w-3.5 h-3.5 me-1.5" />
            {t('profile.cancel')}
          </Button>
-         <Button size="sm" onClick={handleSaveProfile} disabled={saving}>
+         <Button size="sm" onClick={handleSaveProfile} disabled={saving || !hasChanges}>
            <Save className="w-3.5 h-3.5 me-1.5" />
            {saving ? t('profile.saving') : t('profile.saveChanges')}
          </Button>
@@ -789,23 +869,43 @@ export default function ProfilePage() {
            <div className="space-y-3">
              <div className="space-y-1.5">
                <Label htmlFor="newPassword" className="text-sm">{t('profile.newPassword')}</Label>
-               <Input
-                 id="newPassword"
-                 type="password"
-                 value={newPassword}
-                 onChange={(e) => setNewPassword(e.target.value)}
-                 placeholder={t('profile.newPasswordPlaceholder')}
-               />
+               <div className="relative">
+                 <Input
+                   id="newPassword"
+                   type={showNewPassword ? 'text' : 'password'}
+                   value={newPassword}
+                   onChange={(e) => setNewPassword(e.target.value)}
+                   placeholder={t('profile.newPasswordPlaceholder')}
+                   className="pe-9"
+                 />
+                 <button
+                   type="button"
+                   onClick={() => setShowNewPassword(!showNewPassword)}
+                   className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" style={{ insetInlineEnd: '0.625rem' }}
+                 >
+                   {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                 </button>
+               </div>
              </div>
              <div className="space-y-1.5">
                <Label htmlFor="confirmPassword" className="text-sm">{t('profile.confirmPassword')}</Label>
-               <Input
-                 id="confirmPassword"
-                 type="password"
-                 value={confirmPassword}
-                 onChange={(e) => setConfirmPassword(e.target.value)}
-                 placeholder={t('profile.confirmPasswordPlaceholder')}
-               />
+               <div className="relative">
+                 <Input
+                   id="confirmPassword"
+                   type={showConfirmPassword ? 'text' : 'password'}
+                   value={confirmPassword}
+                   onChange={(e) => setConfirmPassword(e.target.value)}
+                   placeholder={t('profile.confirmPasswordPlaceholder')}
+                   className="pe-9"
+                 />
+                 <button
+                   type="button"
+                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                   className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" style={{ insetInlineEnd: '0.625rem' }}
+                 >
+                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                 </button>
+               </div>
              </div>
              <div className="flex gap-2">
                <Button variant="outline" size="sm" onClick={() => setShowPasswordChange(false)} className="flex-1">

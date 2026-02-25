@@ -76,6 +76,8 @@
   "enterOtp": "أدخل الرمز",
   "enterVerificationCode": "أدخل رمز التحقق",
   "phoneVerified": "تم التحقق من الهاتف",
+  "emailVerified": "تم التحقق من البريد الإلكتروني",
+  "emailCodeSent": "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
   "verificationFailed": "فشل التحقق",
   "verifying": "جاري التحقق...",
   "sending": "جاري الإرسال...",

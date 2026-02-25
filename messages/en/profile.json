@@ -76,6 +76,8 @@
   "enterOtp": "Enter OTP",
   "enterVerificationCode": "Enter verification code",
   "phoneVerified": "Phone verified",
+  "emailVerified": "Email verified",
+  "emailCodeSent": "Verification code sent to your email",
   "verificationFailed": "Verification failed",
   "verifying": "Verifying...",
   "sending": "Sending...",

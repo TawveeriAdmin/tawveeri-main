@@ -619,25 +619,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      if (user) {
-        // Audit log
-        await createAuditLog({
-          user_id: user.id,
-          action: 'password_changed',
-          entity_type: 'user',
-          entity_id: user.id,
-        });
-
-        // Notification
-        await createNotification({
-          user_id: user.id,
-          type: 'system',
-          title_ar: 'تم تغيير كلمة المرور',
-          title_en: 'Password Changed',
-          message_ar: 'تم تغيير كلمة المرور الخاصة بك بنجاح',
-          message_en: 'Your password has been changed successfully',
-        });
-      }
+      // Notification, email, and audit log are handled server-side
+      // via /api/auth/password-changed-notify called from the profile page
 
       return { data, error: null };
     } catch (error) {

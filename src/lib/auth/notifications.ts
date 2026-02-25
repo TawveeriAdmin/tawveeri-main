@@ -423,18 +423,28 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>تأكيد البريد الإلكتروني</h2>
-            <p>شكراً لتسجيلك في توفيري!</p>
-            <p>اضغط على الزر أدناه لتأكيد بريدك الإلكتروني:</p>
-            <a href="${data.verification_link}" class="button">تأكيد البريد الإلكتروني</a>
+            <h2>رمز التحقق من البريد الإلكتروني</h2>
+            <p>استخدم الرمز التالي للتحقق من بريدك الإلكتروني في توفيري:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="display: inline-block; background: #f0f4ff; border: 2px solid #667eea; border-radius: 12px; padding: 20px 40px;">
+                <span style="font-size: 36px; font-weight: bold; letter-spacing: 10px; color: #667eea; font-family: monospace;">${data.otp_code}</span>
+              </div>
+            </div>
+            <p style="color: #999; font-size: 14px;">هذا الرمز صالح لمدة 5 دقائق فقط.</p>
+            <p style="color: #999; font-size: 14px;">إذا لم تطلب هذا الرمز، يمكنك تجاهل هذه الرسالة.</p>
           `
           : `
-            <h2>Verify Your Email</h2>
-            <p>Thank you for signing up with Tawveeri!</p>
-            <p>Click the button below to verify your email address:</p>
-            <a href="${data.verification_link}" class="button">Verify Email</a>
+            <h2>Email Verification Code</h2>
+            <p>Use the following code to verify your email on Tawveeri:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="display: inline-block; background: #f0f4ff; border: 2px solid #667eea; border-radius: 12px; padding: 20px 40px;">
+                <span style="font-size: 36px; font-weight: bold; letter-spacing: 10px; color: #667eea; font-family: monospace;">${data.otp_code}</span>
+              </div>
+            </div>
+            <p style="color: #999; font-size: 14px;">This code expires in 5 minutes.</p>
+            <p style="color: #999; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
           `,
-        isRTL ? 'تأكيد البريد الإلكتروني' : 'Verify Your Email'
+        isRTL ? 'رمز التحقق من البريد الإلكتروني' : 'Email Verification Code'
       );
 
     case 'price_drop_alert':

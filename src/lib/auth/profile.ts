@@ -360,109 +360,97 @@ export async function getUserStats(userId: string) {
 }
 
 /**
- * Verify email OTP
+ * Verify email OTP via custom API (SendGrid-based)
  */
-export async function verifyEmailOTP(email: string, token: string) {
-  const supabase = getSupabaseClient();
+export async function verifyEmailOTPCode(email: string, otp: string) {
   try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'email',
+    const response = await fetch('/api/auth/verify-email-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
     });
 
-    if (error) throw error;
+    const data = await response.json();
 
-    if (data.user) {
-      // Audit log
-      await createAuditLog({
-        user_id: data.user.id,
-        action: 'email_verified',
-        entity_type: 'user',
-        entity_id: data.user.id,
-      });
+    if (!response.ok) {
+      throw new Error(data.error || 'Verification failed');
     }
-
-    return { data, error: null };
-  } catch (error) {
-    console.error('Error verifying email OTP:', error);
-    return { data: null, error: error as Error };
-  }
-}
-
-/**
- * Verify phone OTP
- */
-export async function verifyPhoneOTP(phone: string, token: string) {
-  const supabase = getSupabaseClient();
-  try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms',
-    });
-
-    if (error) throw error;
-
-    if (data.user) {
-      // Update phone_verified in database
-      await supabase
-        .from('users')
-        .update({ phone_verified: true })
-        .eq('id', data.user.id);
-
-      // Audit log
-      await createAuditLog({
-        user_id: data.user.id,
-        action: 'phone_verified',
-        entity_type: 'user',
-        entity_id: data.user.id,
-      });
-    }
-
-    return { data, error: null };
-  } catch (error) {
-    console.error('Error verifying phone OTP:', error);
-    return { data: null, error: error as Error };
-  }
-}
-
-/**
- * Resend email verification
- */
-export async function resendEmailVerification(email: string) {
-  const supabase = getSupabaseClient();
-  try {
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-    });
-
-    if (error) throw error;
 
     return { error: null };
   } catch (error) {
-    console.error('Error resending email verification:', error);
+    console.error('Error verifying email OTP:', error);
     return { error: error as Error };
   }
 }
 
 /**
- * Resend phone verification
+ * Verify phone OTP via custom API (Authentica SMS-based)
  */
-export async function resendPhoneVerification(phone: string) {
-  const supabase = getSupabaseClient();
+export async function verifyPhoneOTP(phone: string, otp: string) {
   try {
-    const { error } = await supabase.auth.resend({
-      type: 'sms',
-      phone,
+    const response = await fetch('/api/auth/verify-profile-phone-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp }),
     });
 
-    if (error) throw error;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Verification failed');
+    }
 
     return { error: null };
   } catch (error) {
-    console.error('Error resending phone verification:', error);
+    console.error('Error verifying phone OTP:', error);
+    return { error: error as Error };
+  }
+}
+
+/**
+ * Send email verification OTP via SendGrid
+ */
+export async function resendEmailVerification(email: string) {
+  try {
+    const response = await fetch('/api/auth/send-email-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send verification code');
+    }
+
+    return { error: null };
+  } catch (error) {
+    console.error('Error sending email verification:', error);
+    return { error: error as Error };
+  }
+}
+
+/**
+ * Send phone verification OTP via Authentica SMS
+ */
+export async function resendPhoneVerification(phone: string) {
+  try {
+    const response = await fetch('/api/auth/send-phone-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send verification code');
+    }
+
+    return { error: null };
+  } catch (error) {
+    console.error('Error sending phone verification:', error);
     return { error: error as Error };
   }
 }
