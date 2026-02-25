@@ -83,5 +83,14 @@
   "resendCode": "Resend code",
   "sendCode": "Send code",
   "manageProfile": "Manage your profile and settings",
-  "customizeExperience": "Customize your experience"
+  "customizeExperience": "Customize your experience",
+  "memberSince": "Member since {{date}}",
+  "wishlistItems": "Wishlist",
+  "activePriceAlerts": "Price Alerts",
+  "notificationsCount": "Notifications",
+  "personalInformation": "Personal Information",
+  "preferencesTitle": "Preferences",
+  "securityTitle": "Security",
+  "dangerZone": "Danger Zone",
+  "dangerZoneDescription": "Irreversible account actions"
 }

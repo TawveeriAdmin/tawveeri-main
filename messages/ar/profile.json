@@ -83,5 +83,14 @@
   "resendCode": "إعادة إرسال الرمز",
   "sendCode": "إرسال الرمز",
   "manageProfile": "إدارة ملفك الشخصي وإعداداتك",
-  "customizeExperience": "تخصيص تجربتك"
+  "customizeExperience": "تخصيص تجربتك",
+  "memberSince": "عضو منذ {{date}}",
+  "wishlistItems": "قائمة الأمنيات",
+  "activePriceAlerts": "تنبيهات الأسعار",
+  "notificationsCount": "الإشعارات",
+  "personalInformation": "المعلومات الشخصية",
+  "preferencesTitle": "التفضيلات",
+  "securityTitle": "الأمان",
+  "dangerZone": "منطقة خطرة",
+  "dangerZoneDescription": "إجراءات لا يمكن التراجع عنها"
 }

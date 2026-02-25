@@ -14,6 +14,9 @@ import { AlmaneaScraper } from '../stores/almanea-scraper';
 import { ProductService } from './product-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
+import { createNotification, sendBackInStockEmail } from '@/lib/auth/notifications';
+import { sendPushToUser } from '@/lib/push/expo-push';
+import { sendWebPushToUser } from '@/lib/push/web-push';
 
 /**
  * Orchestrator for running scraping jobs
@@ -133,7 +136,7 @@ export class ScrapingOrchestrator {
 
       let query = supabase
         .from('product_stores')
-        .select('id, product_id, store_id, product_url, current_price, stores!inner(slug)')
+        .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
         .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
         .limit(options.max_products || 100);
 
@@ -193,6 +196,20 @@ export class ScrapingOrchestrator {
                 if (oldPrice !== newPrice) {
                   priceChanges++;
                 }
+
+                // Detect back-in-stock transition
+                const oldAvailability = (productStore as any).availability;
+                const newAvailability = scrapedProduct.availability;
+                if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
+                  const store = (productStore as any).stores;
+                  this.notifyBackInStock(
+                    supabase,
+                    (productStore as any).product_id,
+                    (productStore as any).store_id,
+                    newPrice,
+                    { name_ar: store.name_ar, name_en: store.name_en }
+                  ).catch((err) => console.error('Back-in-stock notification error:', err));
+                }
               }
             } catch (error) {
               console.error(`Error updating product price:`, error);
@@ -247,6 +264,83 @@ export class ScrapingOrchestrator {
         return new AlmaneaScraper();
       default:
         return null;
+    }
+  }
+
+  /**
+   * Notify users with active price alerts when a product comes back in stock
+   */
+  private async notifyBackInStock(
+    supabase: ReturnType<typeof createServerClient>,
+    productId: string,
+    storeId: string,
+    price: number,
+    store: { name_ar: string; name_en: string }
+  ) {
+    const [productResult, alertsResult] = await Promise.all([
+      supabase.from('products').select('name_ar, name_en, slug').eq('id', productId).single(),
+      supabase
+        .from('price_alerts')
+        .select('user_id, users(id, email, full_name, locale)')
+        .eq('product_id', productId)
+        .eq('is_active', true),
+    ]);
+
+    const product = productResult.data;
+    const alerts = alertsResult.data;
+    if (!product || !alerts?.length) return;
+
+    for (const alert of alerts) {
+      const user = (alert as any).users;
+      const locale = (user?.locale || 'ar') as 'ar' | 'en';
+      const productName = locale === 'ar' ? product.name_ar : product.name_en;
+      const storeName = locale === 'ar' ? store.name_ar : store.name_en;
+      const productLink = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/products/${product.slug}`;
+
+      // In-app notification
+      createNotification({
+        user_id: alert.user_id,
+        type: 'back_in_stock',
+        title_ar: `عاد للمخزون: ${product.name_ar}`,
+        title_en: `Back in Stock: ${product.name_en}`,
+        message_ar: `${product.name_ar} أصبح متوفراً الآن في ${store.name_ar} بسعر ${price.toLocaleString()} ر.س`,
+        message_en: `${product.name_en} is now available at ${store.name_en} for ${price.toLocaleString()} SAR`,
+        product_id: productId,
+        store_id: storeId,
+      }).catch((err) => console.error('Back-in-stock in-app notification error:', err));
+
+      // Email
+      if (user?.email) {
+        sendBackInStockEmail(user.email, {
+          product_name: productName,
+          price,
+          store_name: storeName,
+          product_link: productLink,
+        }, locale).catch((err) => console.error('Back-in-stock email error:', err));
+      }
+
+      // Mobile push
+      const pushTitle = locale === 'ar' ? `عاد للمخزون: ${productName}` : `Back in Stock: ${productName}`;
+      const pushBody = locale === 'ar'
+        ? `متوفر الآن في ${storeName} بسعر ${price.toLocaleString()} ر.س`
+        : `Now available at ${storeName} for ${price.toLocaleString()} SAR`;
+
+      sendPushToUser(alert.user_id, {
+        title: pushTitle,
+        body: pushBody,
+        data: { type: 'back_in_stock', product_id: productId, product_slug: product.slug },
+        channelId: 'price-alerts',
+      }).catch((err) => console.error('Back-in-stock push error:', err));
+
+      // Web push
+      sendWebPushToUser(alert.user_id, {
+        title: pushTitle,
+        body: pushBody,
+        data: { url: `/${locale}/products/${product.slug}`, type: 'back_in_stock', product_id: productId },
+        dir: locale === 'ar' ? 'rtl' : 'ltr',
+        lang: locale,
+        tag: `back-in-stock-${productId}`,
+      }).catch((err) => console.error('Back-in-stock web push error:', err));
     }
   }
 
