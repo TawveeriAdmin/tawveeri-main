@@ -251,9 +251,9 @@ Since the last report, **comprehensive notification infrastructure built** cover
 | Data Backup (daily) | ✅ |
 | Energy Efficiency | ✅ |
 | Localization (Hijri + Arabic numerals) | ✅ |
-| Single Sign-On (corporate/academic) | ❌ |
+| Single Sign-On (corporate/academic) | ✅ |
 | Full Go-Live | ❌ |
-| **Totals** | **32 ✅ · 1 🟡 · 3 ❌** |
+| **Totals** | **33 ✅ · 1 🟡 · 2 ❌** |
 
 ---
 
