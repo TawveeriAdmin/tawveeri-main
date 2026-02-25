@@ -28,7 +28,6 @@ import {
   LogOut,
   Moon,
   Search,
-  Settings,
   SlidersHorizontal,
   Store,
   Sun,
@@ -80,7 +79,6 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
             profile: 'الملف الشخصي',
             wishlist: 'المفضلة',
             priceAlerts: 'تنبيهات الأسعار',
-            settings: 'الإعدادات',
             signOut: 'تسجيل الخروج',
           }
         : {
@@ -90,7 +88,6 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
             profile: 'Profile',
             wishlist: 'Wishlist',
             priceAlerts: 'Price Alerts',
-            settings: 'Settings',
             signOut: 'Sign Out',
           },
     [locale]
@@ -387,12 +384,6 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                         <Link href={`/${locale}/price-alerts`}>
                           <SlidersHorizontal className="me-2 h-4 w-4" />
                           {copy.priceAlerts}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/profile`}>
-                          <Settings className="me-2 h-4 w-4" />
-                          {copy.settings}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
