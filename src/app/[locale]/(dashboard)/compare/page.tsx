@@ -401,6 +401,40 @@ function getSpecLabel(specKey: string, category: ProductCategory | undefined, lo
   return specKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const SPEC_SUFFIX_UNITS: Record<string, { ar: string; en: string }> = {
+  screen_size: { ar: 'بوصة', en: '"' },
+};
+
+const UNIT_SUFFIX_MAP: Record<string, { ar: string; en: string }> = {
+  _gb: { ar: 'جيجابايت', en: 'GB' },
+  _tb: { ar: 'تيرابايت', en: 'TB' },
+  _mb: { ar: 'ميجابايت', en: 'MB' },
+  _kg: { ar: 'كجم', en: 'kg' },
+  _g: { ar: 'جرام', en: 'g' },
+  _cm: { ar: 'سم', en: 'cm' },
+  _mm: { ar: 'مم', en: 'mm' },
+  _inch: { ar: 'بوصة', en: '"' },
+  _w: { ar: 'واط', en: 'W' },
+  _wh: { ar: 'واط/ساعة', en: 'Wh' },
+  _mah: { ar: 'مللي أمبير', en: 'mAh' },
+  _hz: { ar: 'هرتز', en: 'Hz' },
+  _rpm: { ar: 'دورة/دقيقة', en: 'RPM' },
+  _l: { ar: 'لتر', en: 'L' },
+  _mp: { ar: 'ميجابكسل', en: 'MP' },
+};
+
+function inferUnitFromSuffix(specKey: string, _locale: string): { ar: string; en: string } | null {
+  const lower = specKey.toLowerCase();
+  // Check longest suffixes first to avoid _g matching before _gb
+  const suffixes = Object.keys(UNIT_SUFFIX_MAP).sort((a, b) => b.length - a.length);
+  for (const suffix of suffixes) {
+    if (lower.endsWith(suffix)) {
+      return UNIT_SUFFIX_MAP[suffix];
+    }
+  }
+  return null;
+}
+
 function formatExtractedSpecValue(specKey: string, value: string, category: ProductCategory | undefined, locale: string): string {
   if (category) {
     const filters = CATEGORY_SPEC_FILTERS[category];
@@ -420,6 +454,14 @@ function formatExtractedSpecValue(specKey: string, value: string, category: Prod
         const option = filter.options.find((o) => o.value === value);
         if (option) return locale === 'ar' ? option.label_ar : option.label_en;
       }
+    }
+  }
+  // Append unit from spec key suffix when no filter option matched
+  const num = parseFloat(value);
+  if (!isNaN(num)) {
+    const unit = SPEC_SUFFIX_UNITS[specKey] ?? inferUnitFromSuffix(specKey, locale);
+    if (unit) {
+      return `${num} ${locale === 'ar' ? unit.ar : unit.en}`;
     }
   }
   return value;
@@ -651,7 +693,7 @@ export default function ComparePage() {
     if (!store) return t('compare.notAvailable');
     if (store.is_free_delivery) return t('compare.freeDelivery');
     if (typeof store.delivery_cost === 'number' && store.delivery_cost >= 0) {
-      return `${store.delivery_cost.toLocaleString('en-US')} ${locale === 'ar' ? 'ر.س' : 'SAR'}`;
+      return `${Math.round(store.delivery_cost).toLocaleString('en-US')} ${locale === 'ar' ? 'ر.س' : 'SAR'}`;
     }
     return t('compare.notSpecified');
   };

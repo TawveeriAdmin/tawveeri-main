@@ -42,6 +42,48 @@ export const CATEGORY_SPEC_FILTERS: Partial<Record<ProductCategory, SpecFilterDe
         { value: '1024', label_ar: '1 تيرابايت', label_en: '1 TB' },
       ],
     },
+    {
+      key: 'color',
+      label_ar: 'اللون',
+      label_en: 'Color',
+      type: 'checkbox',
+      options: [
+        { value: 'black', label_ar: 'أسود', label_en: 'Black' },
+        { value: 'white', label_ar: 'أبيض', label_en: 'White' },
+        { value: 'silver', label_ar: 'فضي', label_en: 'Silver' },
+        { value: 'gold', label_ar: 'ذهبي', label_en: 'Gold' },
+        { value: 'blue', label_ar: 'أزرق', label_en: 'Blue' },
+        { value: 'green', label_ar: 'أخضر', label_en: 'Green' },
+        { value: 'red', label_ar: 'أحمر', label_en: 'Red' },
+        { value: 'pink', label_ar: 'وردي', label_en: 'Pink' },
+        { value: 'purple', label_ar: 'بنفسجي', label_en: 'Purple' },
+        { value: 'orange', label_ar: 'برتقالي', label_en: 'Orange' },
+        { value: 'titanium', label_ar: 'تيتانيوم', label_en: 'Titanium' },
+      ],
+    },
+    {
+      key: 'connectivity',
+      label_ar: 'الاتصال',
+      label_en: 'Connectivity',
+      type: 'checkbox',
+      options: [
+        { value: '5g', label_ar: '5G', label_en: '5G' },
+        { value: '4g', label_ar: '4G LTE', label_en: '4G LTE' },
+        { value: 'wifi', label_ar: 'واي فاي فقط', label_en: 'WiFi Only' },
+      ],
+    },
+    {
+      key: 'sim_type',
+      label_ar: 'نوع الشريحة',
+      label_en: 'SIM Type',
+      type: 'checkbox',
+      options: [
+        { value: 'esim_only', label_ar: 'eSIM فقط', label_en: 'eSIM Only' },
+        { value: 'esim', label_ar: 'eSIM', label_en: 'eSIM' },
+        { value: 'dual_sim', label_ar: 'شريحتين', label_en: 'Dual SIM' },
+        { value: 'single_sim', label_ar: 'شريحة واحدة', label_en: 'Single SIM' },
+      ],
+    },
   ],
   laptop: [
     {
@@ -89,6 +131,20 @@ export const CATEGORY_SPEC_FILTERS: Partial<Record<ProductCategory, SpecFilterDe
         { value: '15', label_ar: '15 بوصة', label_en: '15"' },
         { value: '16', label_ar: '16 بوصة', label_en: '16"' },
         { value: '17', label_ar: '17 بوصة', label_en: '17"' },
+      ],
+    },
+    {
+      key: 'color',
+      label_ar: 'اللون',
+      label_en: 'Color',
+      type: 'checkbox',
+      options: [
+        { value: 'black', label_ar: 'أسود', label_en: 'Black' },
+        { value: 'white', label_ar: 'أبيض', label_en: 'White' },
+        { value: 'silver', label_ar: 'فضي', label_en: 'Silver' },
+        { value: 'gold', label_ar: 'ذهبي', label_en: 'Gold' },
+        { value: 'blue', label_ar: 'أزرق', label_en: 'Blue' },
+        { value: 'purple', label_ar: 'بنفسجي', label_en: 'Purple' },
       ],
     },
   ],
@@ -158,6 +214,31 @@ export const CATEGORY_SPEC_FILTERS: Partial<Record<ProductCategory, SpecFilterDe
         { value: '1024', label_ar: '1 تيرابايت', label_en: '1 TB' },
       ],
     },
+    {
+      key: 'color',
+      label_ar: 'اللون',
+      label_en: 'Color',
+      type: 'checkbox',
+      options: [
+        { value: 'black', label_ar: 'أسود', label_en: 'Black' },
+        { value: 'white', label_ar: 'أبيض', label_en: 'White' },
+        { value: 'silver', label_ar: 'فضي', label_en: 'Silver' },
+        { value: 'gold', label_ar: 'ذهبي', label_en: 'Gold' },
+        { value: 'blue', label_ar: 'أزرق', label_en: 'Blue' },
+        { value: 'purple', label_ar: 'بنفسجي', label_en: 'Purple' },
+      ],
+    },
+    {
+      key: 'connectivity',
+      label_ar: 'الاتصال',
+      label_en: 'Connectivity',
+      type: 'checkbox',
+      options: [
+        { value: '5g', label_ar: '5G', label_en: '5G' },
+        { value: '4g', label_ar: '4G LTE', label_en: '4G LTE' },
+        { value: 'wifi', label_ar: 'واي فاي فقط', label_en: 'WiFi Only' },
+      ],
+    },
   ],
   audio: [
     {
@@ -219,6 +300,75 @@ export const CATEGORY_SPEC_FILTERS: Partial<Record<ProductCategory, SpecFilterDe
   ],
 };
 
+// Multi-word colors first, then single-word, then Arabic
+const COLOR_KEYWORDS: [RegExp, string][] = [
+  // Multi-word (must come first to match before single-word)
+  [/cosmic\s*orange/i, 'orange'],
+  [/cosmic\s*black/i, 'black'],
+  [/space\s*black/i, 'black'],
+  [/space\s*gray/i, 'silver'],
+  [/space\s*grey/i, 'silver'],
+  [/midnight\s*blue/i, 'blue'],
+  [/ocean\s*blue/i, 'blue'],
+  [/ice\s*blue/i, 'blue'],
+  [/sky\s*blue/i, 'blue'],
+  [/mint\s*green/i, 'green'],
+  [/sage\s*green/i, 'green'],
+  [/forest\s*green/i, 'green'],
+  [/rose\s*gold/i, 'pink'],
+  [/phantom\s*silver/i, 'silver'],
+  [/phantom\s*black/i, 'black'],
+  [/phantom\s*white/i, 'white'],
+  [/natural\s*titanium/i, 'titanium'],
+  [/desert\s*titanium/i, 'titanium'],
+  [/black\s*titanium/i, 'titanium'],
+  [/white\s*titanium/i, 'titanium'],
+  [/blue\s*titanium/i, 'titanium'],
+  [/starlight/i, 'white'],
+  [/midnight/i, 'black'],
+  // Single-word English
+  [/\btitanium\b/i, 'titanium'],
+  [/\bsilver\b/i, 'silver'],
+  [/\bgold\b/i, 'gold'],
+  [/\bblack\b/i, 'black'],
+  [/\bwhite\b/i, 'white'],
+  [/\bblue\b/i, 'blue'],
+  [/\bgreen\b/i, 'green'],
+  [/\bred\b/i, 'red'],
+  [/\bpink\b/i, 'pink'],
+  [/\bpurple\b/i, 'purple'],
+  [/\borange\b/i, 'orange'],
+  [/\bgray\b/i, 'silver'],
+  [/\bgrey\b/i, 'silver'],
+  [/\blavender\b/i, 'purple'],
+  [/\bcoral\b/i, 'orange'],
+  [/\bcream\b/i, 'white'],
+  // Arabic
+  [/أسود/i, 'black'],
+  [/أبيض/i, 'white'],
+  [/فضي/i, 'silver'],
+  [/ذهبي/i, 'gold'],
+  [/أزرق/i, 'blue'],
+  [/أخضر/i, 'green'],
+  [/أحمر/i, 'red'],
+  [/وردي/i, 'pink'],
+  [/بنفسجي/i, 'purple'],
+  [/برتقالي/i, 'orange'],
+];
+
+// Build a single regex from all color keywords for efficient matching
+const COLOR_PATTERN = new RegExp(
+  COLOR_KEYWORDS.map(([re]) => re.source).join('|'),
+  'i'
+);
+
+function normalizeColor(matched: string): string {
+  for (const [re, normalized] of COLOR_KEYWORDS) {
+    if (re.test(matched)) return normalized;
+  }
+  return matched.toLowerCase();
+}
+
 /**
  * Extract specs from a product title string.
  * Returns key-value pairs matching spec filter keys.
@@ -227,42 +377,73 @@ export function extractSpecsFromTitle(title: string): Record<string, string> {
   const specs: Record<string, string> = {};
   const t = title.toLowerCase();
 
-  // RAM: "8GB", "12 GB", "8gb ram"
-  const ramMatch = t.match(/(\d+)\s*gb\s*(?:ram|memory|ذاكرة)?/i) ||
-                   t.match(/(?:ram|memory|ذاكرة)\s*[:.]?\s*(\d+)\s*gb/i);
-  if (ramMatch) {
-    specs.ram_gb = ramMatch[1];
+  // --- RAM & Storage disambiguation ---
+  // Collect all GB/TB matches
+  const allGB: { value: number; index: number }[] = [];
+  const allTB: { value: number; index: number }[] = [];
+  let gbMatch: RegExpExecArray | null;
+  const gbRe = /(\d+)\s*gb/gi;
+  while ((gbMatch = gbRe.exec(t)) !== null) {
+    allGB.push({ value: parseInt(gbMatch[1]), index: gbMatch.index });
+  }
+  const tbRe = /(\d+)\s*tb/gi;
+  let tbMatch: RegExpExecArray | null;
+  while ((tbMatch = tbRe.exec(t)) !== null) {
+    allTB.push({ value: parseInt(tbMatch[1]) * 1024, index: tbMatch.index });
   }
 
-  // Storage: "256GB", "512 GB", "1TB", "2 TB"
-  // Must distinguish from RAM - look for storage indicators or second GB match
-  const storagePatterns = [
-    /(\d+)\s*tb\b/i,
-    /(?:storage|ssd|hdd|rom|internal|تخزين)\s*[:.]?\s*(\d+)\s*gb/i,
-    /(\d+)\s*gb\s*(?:storage|ssd|hdd|rom|internal|تخزين)/i,
-  ];
+  // Check for explicit RAM keyword: "8GB RAM", "RAM 8GB", "8gb memory", "ذاكرة 8"
+  const explicitRamMatch = t.match(/(\d+)\s*gb\s*(?:ram|memory|ذاكرة)/i) ||
+                           t.match(/(?:ram|memory|ذاكرة)\s*[:.]?\s*(\d+)\s*gb/i);
+  if (explicitRamMatch) {
+    specs.ram_gb = (explicitRamMatch[1] || explicitRamMatch[2]);
+  }
 
-  for (const pat of storagePatterns) {
-    const m = t.match(pat);
-    if (m) {
-      const val = m[1] || m[2];
-      if (pat.source.includes('tb')) {
-        specs.storage_gb = String(parseInt(val) * 1024);
-      } else {
-        specs.storage_gb = val;
+  // Check for explicit storage keyword: "256GB SSD", "storage 512GB", "تخزين 256"
+  const explicitStorageMatch = t.match(/(\d+)\s*gb\s*(?:storage|ssd|hdd|rom|internal|تخزين)/i) ||
+                               t.match(/(?:storage|ssd|hdd|rom|internal|تخزين)\s*[:.]?\s*(\d+)\s*gb/i);
+  if (explicitStorageMatch) {
+    specs.storage_gb = (explicitStorageMatch[1] || explicitStorageMatch[2]);
+  }
+
+  // TB values without keywords → always storage
+  if (!specs.storage_gb && allTB.length > 0) {
+    specs.storage_gb = String(allTB[0].value);
+  }
+
+  // If no keywords found, use heuristics on bare GB values
+  if (!specs.ram_gb && !specs.storage_gb) {
+    if (allGB.length === 1) {
+      // Single GB value ≥ 32 → storage (phone titles never list bare RAM alone)
+      if (allGB[0].value >= 32) {
+        specs.storage_gb = String(allGB[0].value);
       }
-      break;
+    } else if (allGB.length >= 2) {
+      // Two+ GB values → smaller = RAM, larger = storage ("12GB 256GB")
+      const sorted = [...allGB].sort((a, b) => a.value - b.value);
+      specs.ram_gb = String(sorted[0].value);
+      specs.storage_gb = String(sorted[sorted.length - 1].value);
     }
   }
 
-  // If no explicit storage found, check for second GB value (common in phone titles like "12GB 256GB")
-  if (!specs.storage_gb) {
-    const allGB = [...t.matchAll(/(\d+)\s*gb/gi)];
-    if (allGB.length >= 2 && specs.ram_gb) {
-      const secondVal = allGB[1][1];
-      if (parseInt(secondVal) > parseInt(specs.ram_gb)) {
-        specs.storage_gb = secondVal;
-      }
+  // Cross-fill: explicit RAM found but no storage — check remaining GB values ≥ 32
+  if (specs.ram_gb && !specs.storage_gb) {
+    const ramVal = parseInt(specs.ram_gb);
+    const remaining = allGB.filter(g => g.value !== ramVal && g.value >= 32);
+    if (remaining.length > 0) {
+      specs.storage_gb = String(Math.max(...remaining.map(g => g.value)));
+    }
+    if (!specs.storage_gb && allTB.length > 0) {
+      specs.storage_gb = String(allTB[0].value);
+    }
+  }
+
+  // Cross-fill: explicit storage found but no RAM — check remaining GB values < storage
+  if (specs.storage_gb && !specs.ram_gb) {
+    const storageVal = parseInt(specs.storage_gb);
+    const remaining = allGB.filter(g => g.value < storageVal && g.value < 32);
+    if (remaining.length > 0) {
+      specs.ram_gb = String(Math.max(...remaining.map(g => g.value)));
     }
   }
 
@@ -307,6 +488,27 @@ export function extractSpecsFromTitle(title: string): Record<string, string> {
   // Gaming type
   if (t.includes('controller') || t.includes('headset') || t.includes('joystick')) specs.gaming_type = 'accessory';
   else if (t.includes('console')) specs.gaming_type = 'console';
+
+  // Color extraction — test against original title (case-insensitive patterns)
+  const colorMatch = title.match(COLOR_PATTERN);
+  if (colorMatch) {
+    specs.color = normalizeColor(colorMatch[0]);
+  }
+
+  // Connectivity: 5G / 4G / WiFi Only
+  if (/\b5g\b/i.test(t)) specs.connectivity = '5g';
+  else if (/\b4g\b|\blte\b/i.test(t)) specs.connectivity = '4g';
+  else if (/\bwi-?fi\s*only\b/i.test(t)) specs.connectivity = 'wifi';
+
+  // SIM type
+  if (/\besim\s*only\b/i.test(t)) specs.sim_type = 'esim_only';
+  else if (/\bdual\s*sim\b/i.test(t)) specs.sim_type = 'dual_sim';
+  else if (/\besim\b/i.test(t)) specs.sim_type = 'esim';
+  else if (/\bsingle\s*sim\b/i.test(t)) specs.sim_type = 'single_sim';
+
+  // Condition: renewed/refurbished/used (skip "new" — too many false positives)
+  if (/\b(?:renewed|refurbished|مجدد)\b/i.test(t)) specs.condition = 'renewed';
+  else if (/\b(?:used|مستعمل)\b/i.test(t)) specs.condition = 'used';
 
   return specs;
 }
