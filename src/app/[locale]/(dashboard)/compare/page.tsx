@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,7 +12,7 @@ import { Price } from '@/components/ui/price';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import {
   X,
   AlertCircle,
@@ -20,7 +20,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cn, calculateSavings } from '@/lib/utils';
-import { extractSpecsFromTitle, CATEGORY_SPEC_FILTERS } from '@/lib/scraping/config/spec-configs';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 
 interface StoreInfo {
@@ -354,21 +353,6 @@ function writeCompareCache(cacheById: Record<string, Product>, orderedIds: strin
   localStorage.setItem(COMPARE_CACHE_STORAGE_KEY, JSON.stringify(nextCache));
 }
 
-function formatSpecValue(value: unknown): string {
-  if (value === null || value === undefined) return '-';
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item)).join(' / ');
-  }
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-  return String(value);
-}
-
 function getStoreSlug(store: StoreInfo | null): string | null {
   if (!store) return null;
   const nameEn = store.name_en.toLowerCase();
@@ -382,91 +366,6 @@ function getStoreSlug(store: StoreInfo | null): string | null {
   return null;
 }
 
-function getSpecLabel(specKey: string, category: ProductCategory | undefined, locale: string): string {
-  if (category) {
-    const filters = CATEGORY_SPEC_FILTERS[category];
-    if (filters) {
-      const match = filters.find((f) => f.key === specKey);
-      if (match) return locale === 'ar' ? match.label_ar : match.label_en;
-    }
-  }
-  // Search all categories for a match
-  for (const filters of Object.values(CATEGORY_SPEC_FILTERS)) {
-    if (filters) {
-      const match = filters.find((f) => f.key === specKey);
-      if (match) return locale === 'ar' ? match.label_ar : match.label_en;
-    }
-  }
-  // Fallback: format the key itself
-  return specKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-const SPEC_SUFFIX_UNITS: Record<string, { ar: string; en: string }> = {
-  screen_size: { ar: 'بوصة', en: '"' },
-};
-
-const UNIT_SUFFIX_MAP: Record<string, { ar: string; en: string }> = {
-  _gb: { ar: 'جيجابايت', en: 'GB' },
-  _tb: { ar: 'تيرابايت', en: 'TB' },
-  _mb: { ar: 'ميجابايت', en: 'MB' },
-  _kg: { ar: 'كجم', en: 'kg' },
-  _g: { ar: 'جرام', en: 'g' },
-  _cm: { ar: 'سم', en: 'cm' },
-  _mm: { ar: 'مم', en: 'mm' },
-  _inch: { ar: 'بوصة', en: '"' },
-  _w: { ar: 'واط', en: 'W' },
-  _wh: { ar: 'واط/ساعة', en: 'Wh' },
-  _mah: { ar: 'مللي أمبير', en: 'mAh' },
-  _hz: { ar: 'هرتز', en: 'Hz' },
-  _rpm: { ar: 'دورة/دقيقة', en: 'RPM' },
-  _l: { ar: 'لتر', en: 'L' },
-  _mp: { ar: 'ميجابكسل', en: 'MP' },
-};
-
-function inferUnitFromSuffix(specKey: string, _locale: string): { ar: string; en: string } | null {
-  const lower = specKey.toLowerCase();
-  // Check longest suffixes first to avoid _g matching before _gb
-  const suffixes = Object.keys(UNIT_SUFFIX_MAP).sort((a, b) => b.length - a.length);
-  for (const suffix of suffixes) {
-    if (lower.endsWith(suffix)) {
-      return UNIT_SUFFIX_MAP[suffix];
-    }
-  }
-  return null;
-}
-
-function formatExtractedSpecValue(specKey: string, value: string, category: ProductCategory | undefined, locale: string): string {
-  if (category) {
-    const filters = CATEGORY_SPEC_FILTERS[category];
-    if (filters) {
-      const filter = filters.find((f) => f.key === specKey);
-      if (filter) {
-        const option = filter.options.find((o) => o.value === value);
-        if (option) return locale === 'ar' ? option.label_ar : option.label_en;
-      }
-    }
-  }
-  // Search all categories
-  for (const filters of Object.values(CATEGORY_SPEC_FILTERS)) {
-    if (filters) {
-      const filter = filters.find((f) => f.key === specKey);
-      if (filter) {
-        const option = filter.options.find((o) => o.value === value);
-        if (option) return locale === 'ar' ? option.label_ar : option.label_en;
-      }
-    }
-  }
-  // Append unit from spec key suffix when no filter option matched
-  const num = parseFloat(value);
-  if (!isNaN(num)) {
-    const unit = SPEC_SUFFIX_UNITS[specKey] ?? inferUnitFromSuffix(specKey, locale);
-    if (unit) {
-      return `${num} ${locale === 'ar' ? unit.ar : unit.en}`;
-    }
-  }
-  return value;
-}
-
 export default function ComparePage() {
   const params = useParams();
   const router = useRouter();
@@ -477,7 +376,7 @@ export default function ComparePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [onlyShowDifferences, setOnlyShowDifferences] = useState(false);
+
 
   useEffect(() => {
     const stored = localStorage.getItem(COMPARE_STORAGE_KEY);
@@ -603,58 +502,6 @@ export default function ComparePage() {
 
     fetchProducts();
   }, [productIds, t]);
-
-  const productExtractedSpecs = useMemo(() => {
-    const map = new Map<string, Record<string, string>>();
-    products.forEach((product) => {
-      const hasRealSpecs = product.specifications && Object.keys(product.specifications).length > 0;
-      if (!hasRealSpecs) {
-        const extracted = extractSpecsFromTitle(product.name_en || product.name_ar);
-        if (Object.keys(extracted).length > 0) {
-          map.set(product.id, extracted);
-        }
-      }
-    });
-    return map;
-  }, [products]);
-
-  const allSpecKeys = useMemo(() => {
-    const keys = new Set<string>();
-    products.forEach((product) => {
-      if (product.specifications && Object.keys(product.specifications).length > 0) {
-        Object.keys(product.specifications).forEach((key) => keys.add(key));
-      }
-      const extracted = productExtractedSpecs.get(product.id);
-      if (extracted) {
-        Object.keys(extracted).forEach((key) => keys.add(key));
-      }
-    });
-    return Array.from(keys);
-  }, [products, productExtractedSpecs]);
-
-  const getProductSpecValue = (product: Product, specKey: string): string => {
-    // First check real specifications from DB
-    if (product.specifications && Object.keys(product.specifications).length > 0) {
-      const val = product.specifications[specKey];
-      if (val !== null && val !== undefined) return formatSpecValue(val);
-    }
-    // Fall back to extracted specs
-    const extracted = productExtractedSpecs.get(product.id);
-    if (extracted?.[specKey]) {
-      return formatExtractedSpecValue(specKey, extracted[specKey], products[0]?.category, locale);
-    }
-    return '-';
-  };
-
-  const filteredSpecKeys = useMemo(() => {
-    if (!onlyShowDifferences) return allSpecKeys;
-    return allSpecKeys.filter((key) => {
-      const values = products.map((p) => getProductSpecValue(p, key));
-      const unique = new Set(values);
-      return unique.size > 1;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSpecKeys, onlyShowDifferences, products, productExtractedSpecs]);
 
   const getStoresByPrice = (product: Product): ProductStore[] => {
     return [...product.product_stores]
@@ -927,14 +774,7 @@ export default function ComparePage() {
             </div>
 
             {/* ── Controls Row ── */}
-            <div className="flex items-center justify-between border-b border-outline-variant/50 bg-surface-container-low/50 py-2.5 px-4">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <Checkbox
-                  checked={onlyShowDifferences}
-                  onCheckedChange={(checked) => setOnlyShowDifferences(checked === true)}
-                />
-                <span className="text-sm text-on-surface">{t('compare.onlyShowDifferences')}</span>
-              </label>
+            <div className="flex items-center justify-end border-b border-outline-variant/50 bg-surface-container-low/50 py-2.5 px-4">
               <button
                 onClick={handleClearAll}
                 className="text-sm font-medium text-primary-600 hover:text-primary-500 transition-colors"
@@ -992,56 +832,6 @@ export default function ComparePage() {
               },
             ].map((row, rowIdx) => renderDataRow(row.label, (product) => <>{row.render(product)}</>, rowIdx))}
 
-            {/* ── Specifications Section Header ── */}
-            <div className="border-b border-outline-variant/50 bg-surface-container py-2.5 px-4">
-              <h2 className="text-sm font-bold text-on-surface uppercase tracking-wide">
-                {t('compare.specifications')}
-              </h2>
-            </div>
-
-            {/* ── Specification Rows ── */}
-            {filteredSpecKeys.length === 0 ? (
-              <div className="py-4 px-4 text-sm text-on-surface-variant">
-                {t('compare.noTechnicalSpecs')}
-              </div>
-            ) : (
-              filteredSpecKeys.map((specKey, specIdx) => {
-                const values = products.map((p) => getProductSpecValue(p, specKey));
-                const allSame = new Set(values).size === 1;
-                const specLabel = getSpecLabel(specKey, products[0]?.category, locale);
-
-                return (
-                  <React.Fragment key={specKey}>
-                    {/* Spec name header row */}
-                    <div className="border-b border-outline-variant/40 bg-surface-container-low/50 py-2 px-4 text-sm font-bold text-on-surface">
-                      {specLabel}
-                    </div>
-                    {/* Values row */}
-                    <div
-                      className={cn(
-                        'grid border-b border-outline-variant/50',
-                        specIdx === filteredSpecKeys.length - 1 && 'border-b-0'
-                      )}
-                      style={{ gridTemplateColumns: gridCols }}
-                    >
-                      <div className="border-e border-outline-variant/50" />
-                      {products.map((product, colIdx) => (
-                        <div
-                          key={`${specKey}-${product.id}`}
-                          className={cn(
-                            'py-2.5 px-4 text-sm text-center',
-                            allSame ? 'text-on-surface-variant' : 'text-on-surface',
-                            colIdx < products.length - 1 && 'border-e border-outline-variant/30'
-                          )}
-                        >
-                          {getProductSpecValue(product, specKey)}
-                        </div>
-                      ))}
-                    </div>
-                  </React.Fragment>
-                );
-              })
-            )}
           </div>
         );
       })()}
