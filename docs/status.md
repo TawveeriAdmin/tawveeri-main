@@ -301,3 +301,31 @@ Phase 1 — Research
 
   ✅ Profile language switch fix — language toggle in Preferences now navigates immediately to the new locale (e.g. `/ar/profile` ↔ `/en/profile`) instead of requiring a separate "Save" click. Matches the behavior of the header language toggle and the theme toggle (which already applied instantly).
 
+  ✅ Settings merged into Profile — notification preferences (6 toggles: email, SMS, push, price alerts, stock alerts, deal alerts), privacy settings (2 toggles: public profile, share search history), and data export all absorbed into the unified profile page. `/settings` redirects to `/profile`. Settings link removed from dashboard sidebar and header dropdown. Bento grid rebalanced (Notifications left, Privacy & Data right).
+
+  ✅ Admin profile access — dashboard layout no longer blanket-redirects admins to `/admin/dashboard`. Admins can now access `/profile`, `/settings`, `/notifications`, `/price-alerts`, `/wishlist` via `x-pathname` header set in middleware.
+
+  ✅ Email/phone OTP verification — profile page now supports inline OTP verification for both email and phone. Send code → enter OTP → verify, all without leaving the profile page. Uses `resendEmailVerification()`, `resendPhoneVerification()`, `verifyPhoneOTP()`, `verifyEmailOTPCode()` from `src/lib/auth/profile.ts`.
+
+  ✅ Password change notifications — changing password now triggers email notification (`sendPasswordChangedEmail()`) + in-app notification + audit log via `POST /api/auth/password-changed-notify`.
+
+  ✅ Comprehensive notification gaps closed — 15 notification events now covered with in-app + email + audit:
+    - Gap 1: User role changed by admin (in-app + email + audit) ✅
+    - Gap 2: Email signup welcome email ✅
+    - Gap 3: Account deletion (email + audit, no in-app by design) ✅
+    - Gap 4-6: Price alert create/delete/toggle (in-app + audit) ✅
+    - Gap 7: New coupon for wishlisted product (in-app + email) ✅
+    - Gap 8: Coupon expiry warning to store owner (in-app + email) ✅
+    - Gap 9: Store sync completed (in-app + audit) ✅
+    - Gap 10-11: Coupon updated/deleted by admin (in-app + audit) ✅
+    - Gap 12: Price drop + back-in-stock audit logs ✅
+    - Gap 14: Login from new device (in-app + email + audit) ✅
+    - Gap 15: Saved search new results (in-app + email + audit) ✅
+    New DB migrations: `12-login-sessions.sql`, `13-saved-searches-notify.sql`
+    New API routes: `/api/auth/delete-account`, `/api/auth/check-device`, `/api/cron/check-coupon-expiry`, `/api/cron/check-coupon-wishlists`, `/api/cron/check-saved-searches`, `/api/audit`
+    13 email templates, 12 email helper functions, expanded AUDIT_ACTIONS constant
+
+  ✅ Breadcrumbs removed from profile and price alerts dashboard pages for cleaner UI.
+
+  ✅ Profile hero card enhanced — avatar centered on gradient/white border, increased banner height for better spacing.
+
