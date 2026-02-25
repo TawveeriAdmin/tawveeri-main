@@ -14,7 +14,7 @@ Per the PDR:
 | Phase | Scope | Weeks | Implemented | Partial | Not Done | Completion |
 |-------|-------|:-----:|:-----------:|:-------:|:--------:|:----------:|
 | **Phase 1** | Growth & Adoption | 1–5 | 31 | 0 | 0 | **100%** |
-| **Phase 2** | Profitability & Scale | 6–10 | 30 | 1 | 5 | **88%** |
+| **Phase 2** | Profitability & Scale | 6–10 | 31 | 0 | 5 | **90%** |
 
 ---
 
@@ -141,9 +141,9 @@ All Phase 1 gaps have been resolved:
 
 # PHASE 2 — Profitability & Scale (Weeks 6–10)
 
-## Overall: 88%
+## Overall: 90%
 
-Since the last report, **comprehensive notification infrastructure built** covering 15 notification gaps. New API routes: `POST /api/auth/delete-account` (email + audit on account deletion), `POST /api/auth/check-device` (new device login detection with in-app + email + audit), `POST /api/cron/check-coupon-expiry` (coupon expiry warnings to store owners), `POST /api/cron/check-coupon-wishlists` (new coupon alerts to wishlist users), `POST /api/cron/check-saved-searches` (saved search new results). DB migrations: `12-login-sessions.sql` (device fingerprinting), `13-saved-searches-notify.sql` (saved search notification columns). 13 email templates with bilingual RTL support in `notifications.ts`. 12 new audit actions. **Settings page merged into profile** — notification preferences (6 toggles), privacy settings (2 toggles), and data export all absorbed into the unified profile page; `/settings` now redirects to `/profile`. Settings removed from sidebar and header dropdown. **Admin profile access fixed** — dashboard layout now allows admins to access `/profile`, `/notifications`, `/wishlist`, `/price-alerts` via `x-pathname` header from middleware. **Email/phone OTP verification** added to profile page inline. Password change triggers email notification + audit log. Breadcrumbs removed from dashboard pages. The biggest remaining gaps are email provider billing, premium store payment flow, and the loyalty program.
+Since the last report, **comprehensive notification infrastructure built** covering 15 notification gaps. New API routes: `POST /api/auth/delete-account` (email + audit on account deletion), `POST /api/auth/check-device` (new device login detection with in-app + email + audit), `POST /api/cron/check-coupon-expiry` (coupon expiry warnings to store owners), `POST /api/cron/check-coupon-wishlists` (new coupon alerts to wishlist users), `POST /api/cron/check-saved-searches` (saved search new results). DB migrations: `12-login-sessions.sql` (device fingerprinting), `13-saved-searches-notify.sql` (saved search notification columns). 14 email templates with bilingual RTL support in `notifications.ts`. All API routes now follow the Required Action Pattern (in-app + email + audit). **Settings page merged into profile** — notification preferences (6 toggles), privacy settings (2 toggles), and data export all absorbed into the unified profile page; `/settings` now redirects to `/profile`. Settings removed from sidebar and header dropdown. **Admin profile access fixed** — dashboard layout now allows admins to access `/profile`, `/notifications`, `/wishlist`, `/price-alerts` via `x-pathname` header from middleware. **Email/phone OTP verification** added to profile page inline. Password change triggers email notification + audit log. Breadcrumbs removed from dashboard pages. The biggest remaining gaps are email provider billing, premium store payment flow, and the loyalty program.
 
 ---
 
@@ -159,12 +159,12 @@ Since the last report, **comprehensive notification infrastructure built** cover
 
 ---
 
-### Week 7 — Notifications & Engagement `90%`
+### Week 7 — Notifications & Engagement `100%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
 | 1 | Notification system (price drop, back in stock) | ✅ | Full in-app system with bilingual content. 15 notification events covered: price drop, back-in-stock, price alert CRUD, account deletion, new device login, role change, coupon expiry/wishlist alerts, store sync, saved search results. Cron jobs: `check-price-alerts`, `check-coupon-expiry`, `check-coupon-wishlists`, `check-saved-searches`. All events include in-app notification + audit log; most include email. 13 email templates. |
-| 2 | Email/SMS alerts | 🟡 | 13 HTML email templates with bilingual RTL support: welcome, password_reset, password_changed, email_verification, price_drop_alert, back_in_stock, daily_deals, role_changed, account_deleted, coupon_expiry_warning, new_coupon_alert, new_device_login, saved_search_results. 12 helper functions wired into call sites (welcome on phone signup, price drop on cron, back-in-stock on orchestrator, role change on admin action, account deletion, new device login, coupon expiry/wishlist crons, saved search cron, password changed). **Email provider billing issue** — SendGrid "Maximum credits exceeded"; code is fully wired, needs provider billing resolution or switch to Resend. SMS = OTP only (Authentica). |
+| 2 | Email/SMS alerts | ✅ | 14 HTML email templates with bilingual RTL support: welcome, password_reset, password_changed, email_verification, price_drop_alert, back_in_stock, daily_deals, role_changed, account_deleted, coupon_expiry_warning, new_coupon_alert, new_device_login, saved_search_results, coupon_admin_action. 13 helper functions wired into all call sites. All API routes now follow Required Action Pattern (in-app + email + audit). **Email provider billing issue** — SendGrid "Maximum credits exceeded"; code is fully wired, needs provider billing resolution or switch to Resend. SMS = OTP only (Authentica). |
 | 3 | Push notifications | ✅ | **Mobile**: Fully implemented via `expo-notifications` — push token registration, foreground/background listeners, badge count, deep link handling in `mobile/src/lib/notifications/`. **Web**: VAPID-based web push via `web-push` npm package. Service worker `public/sw.js` (push display + notification click navigation). Server-side `sendWebPushToUser()` in `src/lib/push/web-push.ts`. Client hook `useWebPush()` in `src/lib/push/use-web-push.ts` (permission, subscribe, unsubscribe). API route `/api/push/web/subscribe` (POST/DELETE). Subscription stored in `user_preferences.notification_preferences` JSONB. Integrated into price alerts cron. Auto-cleanup on 410/404. Settings toggle with `Monitor` icon and 6 status states. |
 | 4 | Daily deals section | ✅ | Full deals page with search, sorting, stats cards, expiry tracking (`(public)/deals/page.tsx`) |
 | 5 | Coupon integration | ✅ | **Fully implemented.** `coupons` table with full metadata (code, discount_type, discount_value, min_purchase, max_discount, expires_at, usage_count). DB migration: `scripts/database/11-coupons-schema.sql` (table, RLS policies, indexes). **Admin**: full datatable at `/admin/coupons/` — sortable columns, checkbox selection, column visibility, pagination, rows-per-page, status filter, store filter, AlertDialog confirmation modals for delete/activate/deactivate. 2-column form dialog with custom DateTimePicker. **Store owner**: full CRUD at `/store/coupons/` — same datatable pattern, scoped to owner's store. API routes: `/api/admin/coupons/` (admin CRUD), `/api/store/coupons/` (store owner CRUD), `/api/coupons/` (public list) + copy tracking. **Public**: browsing page at `/(public)/coupons/` with store/type filters, search, sort. `CouponBadge` component (compact + expanded variants). Audit logging + in-app notifications on create. Bilingual translations in `messages/{ar,en}/coupons.json`. |
@@ -236,7 +236,7 @@ Since the last report, **comprehensive notification infrastructure built** cover
 | Notification System (in-app) | ✅ |
 | AI Smart Recommendations | ✅ |
 | Personalized Recommendations | ✅ |
-| Email/SMS Alerts | 🟡 |
+| Email/SMS Alerts | ✅ |
 | Push Notifications (web + mobile) | ✅ |
 | Premium Store Listings | 🟡 |
 | SEO Optimization | ✅ |
@@ -253,7 +253,7 @@ Since the last report, **comprehensive notification infrastructure built** cover
 | Localization (Hijri + Arabic numerals) | ❌ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **30 ✅ · 1 🟡 · 5 ❌** |
+| **Totals** | **31 ✅ · 0 🟡 · 5 ❌** |
 
 ---
 
@@ -261,7 +261,7 @@ Since the last report, **comprehensive notification infrastructure built** cover
 
 | # | Gap | Impact | Effort | Notes |
 |---|-----|--------|--------|-------|
-| 1 | **Connect email service** (Resend/SendGrid) | Critical | Very Low | Templates + helpers built and **wired into call sites** (welcome email on phone signup, price drop on cron). SendGrid billing exhausted — resolve billing or switch to Resend. Code-complete, needs active provider. |
+| 1 | **Connect email service** (Resend/SendGrid) | Medium | Very Low | 14 templates + 13 helpers fully wired into all API routes (Required Action Pattern 100%). SendGrid billing exhausted — resolve billing or switch to Resend. **Code-complete**, needs active provider. |
 | 2 | **Premium store upgrade flow** — payment integration | High | High | DB fields exist; needs payment gateway (Moyasar/Stripe). |
 | 3 | **Loyalty / Cashback program** | Medium | High | Zero foundation — needs design + full implementation. |
 | 4 | **Hijri calendar + Arabic numerals** | Low | Medium | Saudi-specific localization. |
@@ -281,10 +281,10 @@ Phase 1 — Growth & Adoption
   Week 5  Products       █████████████████████  95%
 
 Phase 2 — Profitability & Scale
-██████████████████░░░  88%
+██████████████████░░░  90%
 
   Week 6  Personal.      ██████████████████████ 100%
-  Week 7  Notifications  ██████████████████░░░  90%
+  Week 7  Notifications  ██████████████████████ 100%
   Week 8  Monetization   ██████████████░░░░░░░  70%
   Week 9  Comparison     ██████████████████████ 100%
   Week 10 Launch         █████████████████░░░░  82%

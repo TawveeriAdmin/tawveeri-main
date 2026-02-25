@@ -42,7 +42,8 @@ export type EmailTemplate =
   | 'coupon_expiry_warning'
   | 'new_coupon_alert'
   | 'new_device_login'
-  | 'saved_search_results';
+  | 'saved_search_results'
+  | 'coupon_admin_action';
 
 /**
  * Create an in-app notification
@@ -697,6 +698,39 @@ function getEmailTemplate(
         isRTL ? 'نتائج جديدة لبحثك المحفوظ' : 'New Results for Your Saved Search'
       );
 
+    case 'coupon_admin_action': {
+      const actionLabels: Record<string, { ar: string; en: string }> = {
+        created: { ar: 'تم إنشاء كوبون جديد', en: 'New Coupon Created' },
+        updated: { ar: 'تم تحديث كوبون', en: 'Coupon Updated' },
+        deleted: { ar: 'تم حذف كوبون', en: 'Coupon Deleted' },
+      };
+      const label = actionLabels[data.action_type] || actionLabels.updated;
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>${label.ar} 🏷️</h2>
+            <p>قام المشرف بإجراء تغيير على كوبون في متجرك:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>الإجراء:</strong> ${label.ar}</p>
+              <p><strong>الكود:</strong> ${data.coupon_code}</p>
+              <p><strong>المتجر:</strong> ${data.store_name}</p>
+            </div>
+            <p>يرجى مراجعة الكوبونات في لوحة التحكم الخاصة بك.</p>
+          `
+          : `
+            <h2>${label.en} 🏷️</h2>
+            <p>An admin has made a change to a coupon in your store:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Action:</strong> ${label.en}</p>
+              <p><strong>Code:</strong> ${data.coupon_code}</p>
+              <p><strong>Store:</strong> ${data.store_name}</p>
+            </div>
+            <p>Please review the coupons in your store dashboard.</p>
+          `,
+        isRTL ? label.ar : label.en
+      );
+    }
+
     default:
       return baseTemplate(
         `<p>${isRTL ? 'رسالة من توفيري' : 'Message from Tawveeri'}</p>`,
@@ -907,6 +941,30 @@ export async function sendSavedSearchResultsEmail(
     subject_ar: `نتائج جديدة لبحثك: ${data.search_name}`,
     subject_en: `New Results: ${data.search_name}`,
     template: 'saved_search_results',
+    data,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send coupon admin action email to store owner
+ */
+export async function sendCouponAdminActionEmail(
+  email: string,
+  data: { action_type: 'created' | 'updated' | 'deleted'; coupon_code: string; store_name: string },
+  language?: 'ar' | 'en'
+) {
+  const subjects: Record<string, { ar: string; en: string }> = {
+    created: { ar: `كوبون جديد في متجرك: ${data.coupon_code}`, en: `New Coupon in Your Store: ${data.coupon_code}` },
+    updated: { ar: `تم تحديث كوبون: ${data.coupon_code}`, en: `Coupon Updated: ${data.coupon_code}` },
+    deleted: { ar: `تم حذف كوبون: ${data.coupon_code}`, en: `Coupon Deleted: ${data.coupon_code}` },
+  };
+  const subject = subjects[data.action_type] || subjects.updated;
+  return sendEmailNotification({
+    to: email,
+    subject_ar: subject.ar,
+    subject_en: subject.en,
+    template: 'coupon_admin_action',
     data,
     user_language: language,
   });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireStore, getUserProfile, createClient } from '@/lib/auth/server';
 import { createAuditLog } from '@/lib/auth/audit';
+import { createNotification } from '@/lib/auth/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,6 +95,17 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    // In-app notification
+    createNotification({
+      user_id: userProfile.id,
+      type: 'system',
+      title_ar: 'تم تحديث الأسعار بالجملة',
+      title_en: 'Bulk Price Update Completed',
+      message_ar: `تم تحديث أسعار ${updates.length} منتج بنجاح`,
+      message_en: `${updates.length} product prices updated successfully`,
+      store_id: stores.id,
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { requireRequestAdmin } from '@/lib/auth/api-auth';
 import { logCouponEvent, AUDIT_ACTIONS } from '@/lib/auth/audit';
-import { createNotification } from '@/lib/auth/notifications';
+import { createNotification, sendCouponAdminActionEmail } from '@/lib/auth/notifications';
 
 /**
  * GET /api/admin/coupons
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       discount_value: data.discount_value,
     });
 
-    // In-app notification
+    // In-app notification to admin
     createNotification({
       user_id: profile.id,
       type: 'system',
@@ -183,6 +183,41 @@ export async function POST(request: NextRequest) {
       message_ar: `تم إنشاء كوبون "${data.code}" بنجاح`,
       message_en: `Coupon "${data.code}" created successfully`,
     });
+
+    // Notify store owner (in-app + email)
+    const { data: storeRow } = await supabase
+      .from('stores')
+      .select('created_by, name_ar, name_en')
+      .eq('id', store_id)
+      .single();
+
+    if (storeRow?.created_by && storeRow.created_by !== profile.id) {
+      createNotification({
+        user_id: storeRow.created_by,
+        type: 'system',
+        title_ar: 'كوبون جديد بواسطة المشرف',
+        title_en: 'New Coupon by Admin',
+        message_ar: `تم إنشاء كوبون "${data.code}" في متجرك بواسطة المشرف`,
+        message_en: `Coupon "${data.code}" was created in your store by admin`,
+        store_id,
+      }).catch(() => {});
+
+      const { data: ownerProfile } = await supabase
+        .from('users')
+        .select('email, preferred_language')
+        .eq('id', storeRow.created_by)
+        .single();
+
+      if (ownerProfile?.email) {
+        const locale = (ownerProfile.preferred_language || 'ar') as 'ar' | 'en';
+        const storeName = locale === 'ar' ? storeRow.name_ar : storeRow.name_en;
+        sendCouponAdminActionEmail(
+          ownerProfile.email,
+          { action_type: 'created', coupon_code: data.code, store_name: storeName || '' },
+          locale,
+        ).catch(() => {});
+      }
+    }
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {

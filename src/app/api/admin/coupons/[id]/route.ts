@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { requireRequestAdmin } from '@/lib/auth/api-auth';
 import { logCouponEvent, AUDIT_ACTIONS } from '@/lib/auth/audit';
-import { createNotification } from '@/lib/auth/notifications';
+import { createNotification, sendCouponAdminActionEmail } from '@/lib/auth/notifications';
 
 /**
  * PATCH /api/admin/coupons/[id]
@@ -102,6 +102,23 @@ export async function PATCH(
           message_en: `Coupon "${(data as any)?.code}" has been updated by admin`,
           store_id: storeData.id,
         }).catch(() => {});
+
+        // Email store owner
+        const { data: ownerProfile } = await supabase
+          .from('users')
+          .select('email, preferred_language')
+          .eq('id', storeRow.created_by)
+          .single();
+
+        if (ownerProfile?.email) {
+          const locale = (ownerProfile.preferred_language || 'ar') as 'ar' | 'en';
+          const storeName = locale === 'ar' ? storeData.name_ar : storeData.name_en;
+          sendCouponAdminActionEmail(
+            ownerProfile.email,
+            { action_type: 'updated', coupon_code: (data as any)?.code || '', store_name: storeName || '' },
+            locale,
+          ).catch(() => {});
+        }
       }
     }
 
@@ -167,6 +184,23 @@ export async function DELETE(
         message_en: `Coupon "${coupon?.code}" from store "${storeInfo.name_en}" has been deleted by admin`,
         store_id: coupon?.store_id,
       }).catch(() => {});
+
+      // Email store owner
+      const { data: ownerProfile } = await supabase
+        .from('users')
+        .select('email, preferred_language')
+        .eq('id', storeInfo.created_by)
+        .single();
+
+      if (ownerProfile?.email) {
+        const locale = (ownerProfile.preferred_language || 'ar') as 'ar' | 'en';
+        const storeName = locale === 'ar' ? storeInfo.name_ar : storeInfo.name_en;
+        sendCouponAdminActionEmail(
+          ownerProfile.email,
+          { action_type: 'deleted', coupon_code: coupon?.code || '', store_name: storeName || '' },
+          locale,
+        ).catch(() => {});
+      }
     }
 
     return NextResponse.json({ success: true });

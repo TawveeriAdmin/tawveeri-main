@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { requireRequestStore } from '@/lib/auth/api-auth';
 import { logCouponEvent, AUDIT_ACTIONS } from '@/lib/auth/audit';
+import { createNotification } from '@/lib/auth/notifications';
 
 /**
  * Get the store owned by the authenticated user
@@ -131,6 +132,17 @@ export async function PATCH(
       updates,
     });
 
+    // In-app notification
+    createNotification({
+      user_id: profile.id,
+      type: 'system',
+      title_ar: 'تم تحديث الكوبون',
+      title_en: 'Coupon Updated',
+      message_ar: `تم تحديث الكوبون "${(data as any)?.code}" بنجاح`,
+      message_en: `Coupon "${(data as any)?.code}" updated successfully`,
+      store_id: store.id,
+    }).catch(() => {});
+
     return NextResponse.json({ data });
   } catch (error) {
     if (
@@ -199,6 +211,17 @@ export async function DELETE(
       code: coupon?.code,
       store_id: coupon?.store_id,
     });
+
+    // In-app notification
+    createNotification({
+      user_id: profile.id,
+      type: 'system',
+      title_ar: 'تم حذف الكوبون',
+      title_en: 'Coupon Deleted',
+      message_ar: `تم حذف الكوبون "${coupon?.code}" بنجاح`,
+      message_en: `Coupon "${coupon?.code}" deleted successfully`,
+      store_id: store.id,
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error) {

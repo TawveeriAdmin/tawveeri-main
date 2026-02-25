@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createNotification, sendCouponExpiryEmail } from '@/lib/auth/notifications';
+import { createAuditLog, AUDIT_ACTIONS } from '@/lib/auth/audit';
 
 /**
  * POST /api/cron/check-coupon-expiry
@@ -76,6 +77,13 @@ export async function POST(request: NextRequest) {
 
       warningsSent++;
     }
+
+    // Audit log
+    createAuditLog({
+      action: AUDIT_ACTIONS.COUPON_EXPIRY_WARNINGS_SENT,
+      entity_type: 'cron',
+      details: { warnings_sent: warningsSent, coupons_checked: expiringCoupons.length },
+    });
 
     return NextResponse.json({ success: true, warnings_sent: warningsSent });
   } catch (error) {

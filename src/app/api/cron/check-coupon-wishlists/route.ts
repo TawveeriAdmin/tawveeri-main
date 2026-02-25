@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createNotification, sendNewCouponAlertEmail } from '@/lib/auth/notifications';
+import { createAuditLog, AUDIT_ACTIONS } from '@/lib/auth/audit';
 
 /**
  * POST /api/cron/check-coupon-wishlists
@@ -85,6 +86,13 @@ export async function POST(request: NextRequest) {
         notificationsSent++;
       }
     }
+
+    // Audit log
+    createAuditLog({
+      action: AUDIT_ACTIONS.COUPON_WISHLIST_ALERTS_SENT,
+      entity_type: 'cron',
+      details: { notifications_sent: notificationsSent, coupons_checked: recentCoupons.length },
+    });
 
     return NextResponse.json({ success: true, notifications_sent: notificationsSent });
   } catch (error) {

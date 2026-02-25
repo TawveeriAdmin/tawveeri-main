@@ -250,6 +250,10 @@ export const AUDIT_ACTIONS = {
   // Saved Searches
   SAVED_SEARCH_RESULTS: 'saved_search_results',
 
+  // Cron
+  COUPON_EXPIRY_WARNINGS_SENT: 'coupon_expiry_warnings_sent',
+  COUPON_WISHLIST_ALERTS_SENT: 'coupon_wishlist_alerts_sent',
+
   // System
   SYSTEM_ERROR: 'system_error',
   SECURITY_ALERT: 'security_alert',
