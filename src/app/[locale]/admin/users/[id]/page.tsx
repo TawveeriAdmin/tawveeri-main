@@ -3,7 +3,7 @@ import { createClient } from '@/lib/auth/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/formatting';
 import { UserDetailTabs } from './user-detail-tabs';
 
 export default async function AdminUserDetailPage({
@@ -118,7 +118,7 @@ export default async function AdminUserDetailPage({
                 {isRTL ? 'تاريخ الانضمام' : 'Joined Date'}
               </p>
               <p className="mt-1 text-on-surface">
-                {format(new Date(user.created_at), 'MMM dd, yyyy')}
+                {formatDate(user.created_at, locale)}
               </p>
             </div>
             <div>
@@ -127,7 +127,7 @@ export default async function AdminUserDetailPage({
               </p>
               <p className="mt-1 text-on-surface">
                 {user.last_login_at
-                  ? format(new Date(user.last_login_at), 'MMM dd, yyyy HH:mm')
+                  ? formatDate(user.last_login_at, locale, 'datetime')
                   : '-'}
               </p>
             </div>

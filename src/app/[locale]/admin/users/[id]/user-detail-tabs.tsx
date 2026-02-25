@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable, type Column } from '@/components/admin/data-table';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/formatting';
 
 interface UserDetailTabsProps {
   locale: string;
@@ -33,7 +33,7 @@ export function UserDetailTabs({
     {
       key: 'created_at',
       label: isRTL ? 'تاريخ الإضافة' : 'Added Date',
-      render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy'),
+      render: (row) => formatDate(row.created_at, locale),
     },
   ];
 
@@ -49,7 +49,7 @@ export function UserDetailTabs({
     {
       key: 'created_at',
       label: isRTL ? 'التاريخ' : 'Date',
-      render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy HH:mm'),
+      render: (row) => formatDate(row.created_at, locale, 'datetime'),
     },
   ];
 
@@ -94,7 +94,7 @@ export function UserDetailTabs({
     {
       key: 'created_at',
       label: isRTL ? 'التاريخ' : 'Date',
-      render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy'),
+      render: (row) => formatDate(row.created_at, locale),
     },
   ];
 

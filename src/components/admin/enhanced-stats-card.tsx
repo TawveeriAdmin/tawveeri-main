@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { formatNumber } from '@/lib/formatting';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Price } from '@/components/ui/price';
 import type { ReactNode } from 'react';
@@ -18,6 +19,7 @@ interface EnhancedStatsCardProps {
   secondaryValue?: string;
   sparklineData?: number[];
   sparklineColor?: string;
+  locale?: 'ar' | 'en';
 }
 
 function Sparkline({ data, color = '#0D47A1' }: { data: number[]; color?: string }) {
@@ -63,6 +65,7 @@ export function EnhancedStatsCard({
   secondaryValue,
   sparklineData,
   sparklineColor,
+  locale,
 }: EnhancedStatsCardProps) {
   return (
     <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-shadow hover:shadow-md">
@@ -86,7 +89,7 @@ export function EnhancedStatsCard({
             />
           ) : (
             <span className="tabular-nums text-2xl font-bold text-on-surface">
-              {value.toLocaleString()}
+              {formatNumber(value, locale ?? 'en')}
             </span>
           )}
           {trend && (
@@ -104,7 +107,7 @@ export function EnhancedStatsCard({
                 <TrendingDown className="h-3 w-3" />
               )}
               {trend.value > 0 ? '+' : ''}
-              {trend.value}%
+              {formatNumber(trend.value, locale ?? 'en')}%
             </span>
           )}
         </div>

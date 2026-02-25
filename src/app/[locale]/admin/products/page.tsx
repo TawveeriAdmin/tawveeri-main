@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -99,7 +100,7 @@ function StatsCard({
   onClick,
 }: {
   title: string;
-  value: number;
+  value: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -124,7 +125,7 @@ function StatsCard({
       </div>
       <div className="min-w-0">
         <p className="tabular-nums text-xl font-bold text-on-surface">
-          {value.toLocaleString()}
+          {value}
         </p>
         <p className="truncate text-xs text-on-surface-variant">{title}</p>
       </div>
@@ -384,22 +385,22 @@ export default function AdminProductsPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatsCard
           title={t('admin.products.totalProducts')}
-          value={stats.total}
+          value={formatNumber(stats.total, locale)}
           icon={<Package className="h-5 w-5" />}
         />
         <StatsCard
           title={t('admin.products.withDeals')}
-          value={stats.withDeals}
+          value={formatNumber(stats.withDeals, locale)}
           icon={<Tag className="h-5 w-5" />}
         />
         <StatsCard
           title={t('admin.products.totalViews')}
-          value={stats.totalViews}
+          value={formatNumber(stats.totalViews, locale)}
           icon={<BarChart3 className="h-5 w-5" />}
         />
         <StatsCard
           title={t('admin.products.totalSaves')}
-          value={stats.totalSaves}
+          value={formatNumber(stats.totalSaves, locale)}
           icon={<Bookmark className="h-5 w-5" />}
         />
       </div>
@@ -649,20 +650,17 @@ export default function AdminProductsPage({
                         )}
                         {visibleCols.views && (
                           <TableCell className="hidden text-sm tabular-nums text-on-surface-variant lg:table-cell">
-                            {product.view_count.toLocaleString()}
+                            {formatNumber(product.view_count, locale)}
                           </TableCell>
                         )}
                         {visibleCols.saves && (
                           <TableCell className="hidden text-sm tabular-nums text-on-surface-variant lg:table-cell">
-                            {product.save_count.toLocaleString()}
+                            {formatNumber(product.save_count, locale)}
                           </TableCell>
                         )}
                         {visibleCols.createdDate && (
                           <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
-                            {new Date(product.created_at).toLocaleDateString(
-                              isRTL ? 'ar-SA' : 'en-US',
-                              { year: 'numeric', month: 'short', day: 'numeric' }
-                            )}
+                            {formatDate(product.created_at, locale)}
                           </TableCell>
                         )}
                         {visibleCols.actions && (
@@ -733,7 +731,7 @@ export default function AdminProductsPage({
                           {getStoresCount(product)} {t('admin.products.stores')}
                         </span>
                         <span className="text-xs tabular-nums text-on-surface-variant">
-                          {product.view_count.toLocaleString()} {t('admin.products.views')}
+                          {formatNumber(product.view_count, locale)} {t('admin.products.views')}
                         </span>
                       </div>
                     </div>

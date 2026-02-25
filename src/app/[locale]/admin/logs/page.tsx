@@ -43,7 +43,7 @@ import {
   Columns3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/formatting';
 
 // ─── Types ────────────────────────────────────────────────
 interface AuditLog {
@@ -448,7 +448,7 @@ export default function AdminLogsPage({
                           </TableCell>
                           {visibleCols.date && (
                             <TableCell className="text-sm tabular-nums text-on-surface-variant whitespace-nowrap">
-                              {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm:ss')}
+                              {formatDate(log.created_at, locale, 'datetime')}
                             </TableCell>
                           )}
                           {visibleCols.action && (
@@ -502,13 +502,13 @@ export default function AdminLogsPage({
                           <EntityTypeBadge type={log.entity_type} />
                         </div>
                         <span className="shrink-0 text-xs tabular-nums text-on-surface-variant">
-                          {format(new Date(log.created_at), 'HH:mm:ss')}
+                          {formatDate(log.created_at, locale, 'datetime')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-on-surface-variant">
                         <span>{user?.full_name || user?.email || t('admin.logs.system')}</span>
                         <span>&middot;</span>
-                        <span>{format(new Date(log.created_at), 'MMM dd, yyyy')}</span>
+                        <span>{formatDate(log.created_at, locale)}</span>
                       </div>
                       {log.details && (
                         <p className="line-clamp-2 text-xs text-on-surface-variant">

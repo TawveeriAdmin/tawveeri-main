@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { ChartCard } from '@/components/admin/chart-card';
 import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 
 const BarChart = dynamic(
   () => import('@/components/analytics/bar-chart').then((m) => ({ default: m.BarChart })),
@@ -173,7 +174,7 @@ export default function SearchAnalyticsPage() {
  {
  key: 'created_at',
  label: isRTL ? 'آخر بحث' : 'Last Search',
- render: (search) => format(new Date(search.created_at), 'MMM dd, yyyy'),
+ render: (search) => formatDate(search.created_at, locale),
  },
  ];
 
@@ -190,7 +191,7 @@ export default function SearchAnalyticsPage() {
  {
  key: 'created_at',
  label: isRTL ? 'التاريخ' : 'Date',
- render: (search) => format(new Date(search.created_at), 'MMM dd, yyyy HH:mm'),
+ render: (search) => formatDate(search.created_at, locale, 'datetime'),
  },
  ];
 
@@ -218,7 +219,7 @@ export default function SearchAnalyticsPage() {
  <Search className="h-4 w-4 text-muted-foreground" />
  </CardHeader>
  <CardContent>
- <div className="text-headline-md">{totalSearches.toLocaleString()}</div>
+ <div className="text-headline-md">{formatNumber(totalSearches, locale)}</div>
  <p className="text-body-sm text-muted-foreground">
  {isRTL ? 'آخر 30 يوماً' : 'Last 30 days'}
  </p>

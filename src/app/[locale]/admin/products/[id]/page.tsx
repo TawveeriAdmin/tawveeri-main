@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable, type Column } from '@/components/admin/data-table';
-import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import Image from 'next/image';
 
 export default async function AdminProductDetailPage({
@@ -100,7 +100,7 @@ export default async function AdminProductDetailPage({
  {
  key: 'created_at',
  label: isRTL ? 'التاريخ' : 'Date',
- render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy'),
+ render: (row) => formatDate(row.created_at, locale),
  },
  ];
 
@@ -142,19 +142,19 @@ export default async function AdminProductDetailPage({
  <p className="text-label-lg text-on-surface-variant">
  {isRTL ? 'المشاهدات' : 'Views'}
  </p>
- <p className="mt-1 text-headline-md">{product.view_count.toLocaleString()}</p>
+ <p className="mt-1 text-headline-md">{formatNumber(product.view_count, locale)}</p>
  </div>
  <div>
  <p className="text-label-lg text-on-surface-variant">
  {isRTL ? 'الحفظ' : 'Saves'}
  </p>
- <p className="mt-1 text-headline-md">{product.save_count.toLocaleString()}</p>
+ <p className="mt-1 text-headline-md">{formatNumber(product.save_count, locale)}</p>
  </div>
  <div>
  <p className="text-label-lg text-on-surface-variant">
  {isRTL ? 'المقارنات' : 'Comparisons'}
  </p>
- <p className="mt-1 text-headline-md">{product.comparison_count.toLocaleString()}</p>
+ <p className="mt-1 text-headline-md">{formatNumber(product.comparison_count, locale)}</p>
  </div>
  </div>
  </CardContent>
@@ -192,7 +192,7 @@ export default async function AdminProductDetailPage({
  </CardTitle>
  </CardHeader>
  <CardContent>
- <p className="text-headline-md">{analytics.total_views.toLocaleString()}</p>
+ <p className="text-headline-md">{formatNumber(analytics.total_views, locale)}</p>
  </CardContent>
  </Card>
  </div>

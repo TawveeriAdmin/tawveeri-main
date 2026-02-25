@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { History, Clock1, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatRelativeTime } from '@/lib/formatting';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { useAuth } from '@/lib/auth/auth-context';
 import type { Database } from '@/lib/database/types';
@@ -154,22 +155,4 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
   );
 }
 
-function formatRelativeTime(dateString: string, locale: string) {
-  const date = new Date(dateString);
-  const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diffSeconds < 60) {
-    return locale === 'ar' ? 'الآن' : 'Just now';
-  }
-  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
-  const minutes = Math.floor(diffSeconds / 60);
-  if (minutes < 60) {
-    return rtf.format(-minutes, 'minute');
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return rtf.format(-hours, 'hour');
-  }
-  const days = Math.floor(hours / 24);
-  return rtf.format(-days, 'day');
-}
 

@@ -13,6 +13,7 @@ import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
+import { formatDate } from '@/src/lib/formatting';
 import { EmptyState, Skeleton } from '@/src/components/ui';
 import { router } from 'expo-router';
 
@@ -164,7 +165,7 @@ export default function NotificationsScreen() {
                     {locale === 'ar' ? item.message_ar : item.message_en}
                   </Text>
                   <Text style={[typography.caption2, { color: colors.tertiaryLabel, marginTop: 4, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-                    {new Date(item.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+                    {formatDate(item.created_at, locale)}
                   </Text>
                 </View>
                 {!item.is_read && (

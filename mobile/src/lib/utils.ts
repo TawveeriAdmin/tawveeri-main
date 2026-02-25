@@ -2,6 +2,8 @@
  * Portable utility functions shared with web app.
  */
 
+import { formatDate } from '@/src/lib/formatting';
+
 /**
  * Format price number for display (without currency symbol)
  */
@@ -61,12 +63,12 @@ export function formatRelativeTime(date: string | Date, locale: 'ar' | 'en' = 'e
     if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
     if (diffHours < 24) return `منذ ${diffHours} ساعة`;
     if (diffDays < 7) return `منذ ${diffDays} يوم`;
-    return then.toLocaleDateString('ar-SA');
+    return formatDate(then, 'ar');
   }
 
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return then.toLocaleDateString('en-US');
+  return formatDate(then, 'en');
 }

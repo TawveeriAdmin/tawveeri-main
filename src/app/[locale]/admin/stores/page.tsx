@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -93,7 +94,7 @@ function StatsCard({
   onClick,
 }: {
   title: string;
-  value: number;
+  value: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -118,7 +119,7 @@ function StatsCard({
       </div>
       <div className="min-w-0">
         <p className="tabular-nums text-xl font-bold text-on-surface">
-          {value.toLocaleString()}
+          {value}
         </p>
         <p className="truncate text-xs text-on-surface-variant">{title}</p>
       </div>
@@ -349,35 +350,35 @@ export default function AdminStoresPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatsCard
           title={t('admin.stores.totalStores')}
-          value={stats.total}
+          value={formatNumber(stats.total, locale)}
           icon={<Store className="h-5 w-5" />}
           active={statusFilter === 'all'}
           onClick={() => setStatusFilter('all')}
         />
         <StatsCard
           title={t('admin.stores.active')}
-          value={stats.active}
+          value={formatNumber(stats.active, locale)}
           icon={<CheckCircle className="h-5 w-5" />}
           active={statusFilter === 'active'}
           onClick={() => handleStatsClick('active')}
         />
         <StatsCard
           title={t('admin.stores.pending')}
-          value={stats.pending}
+          value={formatNumber(stats.pending, locale)}
           icon={<Clock className="h-5 w-5" />}
           active={statusFilter === 'pending'}
           onClick={() => handleStatsClick('pending')}
         />
         <StatsCard
           title={t('admin.stores.suspended')}
-          value={stats.suspended}
+          value={formatNumber(stats.suspended, locale)}
           icon={<ShieldOff className="h-5 w-5" />}
           active={statusFilter === 'suspended'}
           onClick={() => handleStatsClick('suspended')}
         />
         <StatsCard
           title={t('admin.stores.inactive')}
-          value={stats.inactive}
+          value={formatNumber(stats.inactive, locale)}
           icon={<XCircle className="h-5 w-5" />}
           active={statusFilter === 'inactive'}
           onClick={() => handleStatsClick('inactive')}
@@ -594,7 +595,7 @@ export default function AdminStoresPage({
                         )}
                         {visibleCols.products && (
                           <TableCell className="text-sm tabular-nums text-on-surface-variant">
-                            {store.total_products.toLocaleString()}
+                            {formatNumber(store.total_products, locale)}
                           </TableCell>
                         )}
                         {visibleCols.rating && (
@@ -628,10 +629,7 @@ export default function AdminStoresPage({
                         )}
                         {visibleCols.createdDate && (
                           <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
-                            {new Date(store.created_at).toLocaleDateString(
-                              isRTL ? 'ar-SA' : 'en-US',
-                              { year: 'numeric', month: 'short', day: 'numeric' }
-                            )}
+                            {formatDate(store.created_at, locale)}
                           </TableCell>
                         )}
                         {visibleCols.actions && (

@@ -23,6 +23,7 @@ import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { apiClient } from '@/src/lib/api/client';
+import { formatDate } from '@/src/lib/formatting';
 import { useCartStore } from '@/src/lib/cart/cart-store';
 import { formatPrice, calculateSavingsPercentage } from '@/src/lib/utils';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
@@ -492,7 +493,7 @@ function ReviewsTab({ reviews, colors, locale }: { reviews: any[]; colors: any; 
               ))}
             </View>
             <Text style={[typography.caption1, { color: colors.tertiaryLabel }]}>
-              {new Date(review.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+              {formatDate(review.created_at, locale)}
             </Text>
           </View>
           {review.reviewer_name && (
@@ -554,7 +555,7 @@ function HistoryTab({ productId, colors, locale }: { productId: string; colors: 
               {locale === 'ar' ? (h.stores?.name_ar || h.stores?.name) : (h.stores?.name_en || h.stores?.name)}
             </Text>
             <Text style={[typography.caption1, { color: colors.tertiaryLabel }]}>
-              {new Date(h.recorded_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+              {formatDate(h.recorded_at, locale)}
             </Text>
           </View>
           <Price price={h.price} locale={locale} size="sm" />

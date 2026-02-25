@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star, ThumbsUp, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/formatting';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductReview } from '@/lib/database/types';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -90,7 +90,7 @@ export function ProductReviewCard({
                   ))}
                 </div>
                 <span className="text-sm text-on-surface-variant">
-                  {format(new Date(review.created_at), 'MMM dd, yyyy')}
+                  {formatDate(review.created_at, locale)}
                 </span>
               </div>
             </div>

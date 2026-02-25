@@ -18,7 +18,7 @@ import {
  DollarSign,
  Star,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import type { RevenueChartData } from '@/lib/analytics/charts';
 
 export default async function StoreDashboardPage({
@@ -129,7 +129,7 @@ export default async function StoreDashboardPage({
  {
  key: 'created_at',
  label: isRTL ? 'التاريخ' : 'Date',
- render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy'),
+ render: (row) => formatDate(row.created_at, locale),
  },
  ];
 
@@ -142,17 +142,17 @@ export default async function StoreDashboardPage({
  {
  key: 'views',
  label: isRTL ? 'المشاهدات' : 'Views',
- render: (row) => row.views.toLocaleString(),
+ render: (row) => formatNumber(row.views, locale),
  },
  {
  key: 'clicks',
  label: isRTL ? 'النقرات' : 'Clicks',
- render: (row) => row.clicks.toLocaleString(),
+ render: (row) => formatNumber(row.clicks, locale),
  },
  {
  key: 'conversions',
  label: isRTL ? 'التحويلات' : 'Conversions',
- render: (row) => row.conversions.toLocaleString(),
+ render: (row) => formatNumber(row.conversions, locale),
  },
  {
  key: 'revenue',

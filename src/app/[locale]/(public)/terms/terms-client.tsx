@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate } from '@/lib/formatting';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
@@ -11,7 +12,7 @@ export default function TermsClient() {
  const t = useTranslations();
  const locale = (params?.locale as string) || 'ar';
  const isRTL = locale === 'ar';
- const lastUpdated = new Date('2025-01-15').toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US');
+ const lastUpdated = formatDate('2025-01-15', locale);
 
  return (
  <div>

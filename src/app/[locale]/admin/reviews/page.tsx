@@ -60,7 +60,7 @@ import {
   Columns3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 
 // ─── Types ────────────────────────────────────────────────
 interface Review {
@@ -105,7 +105,7 @@ function StatsCard({
   onClick,
 }: {
   title: string;
-  value: number;
+  value: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -130,7 +130,7 @@ function StatsCard({
       </div>
       <div className="min-w-0">
         <p className="tabular-nums text-xl font-bold text-on-surface">
-          {value.toLocaleString()}
+          {value}
         </p>
         <p className="truncate text-xs text-on-surface-variant">{title}</p>
       </div>
@@ -398,42 +398,42 @@ export default function AdminReviewsPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatsCard
           title={t('admin.reviews.totalReviews')}
-          value={stats.total}
+          value={formatNumber(stats.total, locale)}
           icon={<MessageSquare className="h-5 w-5" />}
           active={ratingFilter === 'all'}
           onClick={() => setRatingFilter('all')}
         />
         <StatsCard
           title={starLabel(5)}
-          value={stats.fiveStar}
+          value={formatNumber(stats.fiveStar, locale)}
           icon={<Star className="h-5 w-5 fill-warning text-warning" />}
           active={ratingFilter === '5'}
           onClick={() => handleStatsClick('5')}
         />
         <StatsCard
           title={starLabel(4)}
-          value={stats.fourStar}
+          value={formatNumber(stats.fourStar, locale)}
           icon={<Star className="h-5 w-5 fill-warning text-warning" />}
           active={ratingFilter === '4'}
           onClick={() => handleStatsClick('4')}
         />
         <StatsCard
           title={starLabel(3)}
-          value={stats.threeStar}
+          value={formatNumber(stats.threeStar, locale)}
           icon={<Star className="h-5 w-5 fill-warning text-warning" />}
           active={ratingFilter === '3'}
           onClick={() => handleStatsClick('3')}
         />
         <StatsCard
           title={starLabel(2)}
-          value={stats.twoStar}
+          value={formatNumber(stats.twoStar, locale)}
           icon={<Star className="h-5 w-5 fill-warning text-warning" />}
           active={ratingFilter === '2'}
           onClick={() => handleStatsClick('2')}
         />
         <StatsCard
           title={starLabel(1)}
-          value={stats.oneStar}
+          value={formatNumber(stats.oneStar, locale)}
           icon={<Star className="h-5 w-5 fill-warning text-warning" />}
           active={ratingFilter === '1'}
           onClick={() => handleStatsClick('1')}
@@ -657,7 +657,7 @@ export default function AdminReviewsPage({
                           )}
                           {visibleCols.date && (
                             <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
-                              {format(new Date(review.created_at), 'MMM dd, yyyy')}
+                              {formatDate(review.created_at, locale)}
                             </TableCell>
                           )}
                           {visibleCols.actions && (
@@ -747,7 +747,7 @@ export default function AdminReviewsPage({
                         </p>
                       )}
                       <p className="text-xs text-on-surface-variant">
-                        {format(new Date(review.created_at), 'MMM dd, yyyy')}
+                        {formatDate(review.created_at, locale)}
                       </p>
                     </div>
                   );

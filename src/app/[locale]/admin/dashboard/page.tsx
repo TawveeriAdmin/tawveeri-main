@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Activity } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/formatting';
 
 export default async function AdminDashboardPage({
   params,
@@ -101,7 +101,7 @@ export default async function AdminDashboardPage({
               ) : (
                 recentActivity.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell>{format(new Date(row.created_at), 'MMM dd, yyyy HH:mm')}</TableCell>
+                    <TableCell>{formatDate(row.created_at, locale, 'datetime')}</TableCell>
                     <TableCell className="font-medium">{row.action}</TableCell>
                     <TableCell>{row.entity_type || '-'}</TableCell>
                     <TableCell>

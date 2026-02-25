@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -90,7 +91,7 @@ function StatsCard({
   onClick,
 }: {
   title: string;
-  value: number;
+  value: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -115,7 +116,7 @@ function StatsCard({
       </div>
       <div className="min-w-0">
         <p className="tabular-nums text-xl font-bold text-on-surface">
-          {value.toLocaleString()}
+          {value}
         </p>
         <p className="truncate text-xs text-on-surface-variant">{title}</p>
       </div>
@@ -385,42 +386,42 @@ export default function AdminUsersPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatsCard
           title={t('admin.users.totalUsers')}
-          value={stats.total}
+          value={formatNumber(stats.total, locale)}
           icon={<Users className="h-5 w-5" />}
           active={roleFilter === 'all' && statusFilter === 'all'}
           onClick={() => { setRoleFilter('all'); setStatusFilter('all'); }}
         />
         <StatsCard
           title={t('admin.users.active')}
-          value={stats.active}
+          value={formatNumber(stats.active, locale)}
           icon={<UserCheck className="h-5 w-5" />}
           active={statusFilter === 'active'}
           onClick={() => handleStatsClick('active', 'status')}
         />
         <StatsCard
           title={t('admin.users.inactive')}
-          value={stats.inactive}
+          value={formatNumber(stats.inactive, locale)}
           icon={<UserX className="h-5 w-5" />}
           active={statusFilter === 'inactive'}
           onClick={() => handleStatsClick('inactive', 'status')}
         />
         <StatsCard
           title={t('admin.users.admin')}
-          value={stats.admins}
+          value={formatNumber(stats.admins, locale)}
           icon={<Shield className="h-5 w-5" />}
           active={roleFilter === 'admin'}
           onClick={() => handleStatsClick('admin', 'role')}
         />
         <StatsCard
           title={t('admin.users.store')}
-          value={stats.stores}
+          value={formatNumber(stats.stores, locale)}
           icon={<Store className="h-5 w-5" />}
           active={roleFilter === 'store'}
           onClick={() => handleStatsClick('store', 'role')}
         />
         <StatsCard
           title={t('admin.users.customer')}
-          value={stats.customers}
+          value={formatNumber(stats.customers, locale)}
           icon={<Users className="h-5 w-5" />}
           active={roleFilter === 'customer'}
           onClick={() => handleStatsClick('customer', 'role')}
@@ -648,10 +649,7 @@ export default function AdminUsersPage({
                         )}
                         {visibleCols.joinedDate && (
                           <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
-                            {new Date(user.created_at).toLocaleDateString(
-                              locale === 'ar' ? 'ar-SA' : 'en-US',
-                              { year: 'numeric', month: 'short', day: 'numeric' }
-                            )}
+                            {formatDate(user.created_at, locale)}
                           </TableCell>
                         )}
                         {visibleCols.actions && (

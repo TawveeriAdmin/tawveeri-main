@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import {
@@ -124,7 +125,7 @@ function StatsCard({
   loading,
 }: {
   title: string;
-  value: number;
+  value: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -153,7 +154,7 @@ function StatsCard({
           <Skeleton className="h-6 w-12" />
         ) : (
           <p className="tabular-nums text-xl font-bold text-on-surface">
-            {value.toLocaleString()}
+            {value}
           </p>
         )}
         <p className="truncate text-xs text-on-surface-variant">{title}</p>
@@ -450,7 +451,7 @@ export default function StoreCouponsPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatsCard
           title={t('coupons.totalCoupons')}
-          value={totalCoupons}
+          value={formatNumber(totalCoupons, locale)}
           icon={<Ticket className="h-5 w-5" />}
           loading={loading}
           active={statusFilter === 'all'}
@@ -458,7 +459,7 @@ export default function StoreCouponsPage() {
         />
         <StatsCard
           title={t('coupons.activeCoupons')}
-          value={activeCoupons}
+          value={formatNumber(activeCoupons, locale)}
           icon={<CheckCircle className="h-5 w-5" />}
           loading={loading}
           active={statusFilter === 'active'}
@@ -466,7 +467,7 @@ export default function StoreCouponsPage() {
         />
         <StatsCard
           title={t('coupons.expiredCoupons')}
-          value={expiredCoupons}
+          value={formatNumber(expiredCoupons, locale)}
           icon={<Clock className="h-5 w-5" />}
           loading={loading}
           active={statusFilter === 'expired'}
@@ -655,10 +656,7 @@ export default function StoreCouponsPage() {
                           {visibleCols.expires && (
                             <TableCell className="hidden text-sm text-on-surface-variant lg:table-cell">
                               {coupon.expires_at
-                                ? new Date(coupon.expires_at).toLocaleDateString(
-                                    isRTL ? 'ar-SA' : 'en-US',
-                                    { year: 'numeric', month: 'short', day: 'numeric' }
-                                  )
+                                ? formatDate(coupon.expires_at, locale)
                                 : t('coupons.noExpiry')}
                             </TableCell>
                           )}

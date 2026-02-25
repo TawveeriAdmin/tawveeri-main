@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Edit, Trash2, Power, PowerOff } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -109,11 +109,11 @@ export function PriceAlertCard({
             {/* Status & Date */}
             <div className="flex items-center gap-4 text-sm text-on-surface-variant mb-4">
               <span>
-                {t('products.priceAlert.created')}: {format(new Date(alert.created_at), 'MMM dd, yyyy')}
+                {t('products.priceAlert.created')}: {formatDate(alert.created_at, locale)}
               </span>
               {alert.notified_at && (
                 <span>
-                  {t('products.priceAlert.notified')}: {format(new Date(alert.notified_at), 'MMM dd, yyyy')}
+                  {t('products.priceAlert.notified')}: {formatDate(alert.notified_at, locale)}
                 </span>
               )}
             </div>

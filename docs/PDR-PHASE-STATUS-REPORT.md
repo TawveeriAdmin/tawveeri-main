@@ -195,7 +195,7 @@ Since the last report, **comprehensive notification infrastructure built** cover
 
 ---
 
-### Week 10 — Performance, Compliance & Launch `82%`
+### Week 10 — Performance, Compliance & Launch `91%`
 
 | # | Task | Status | Evidence |
 |---|------|:------:|----------|
@@ -208,7 +208,7 @@ Since the last report, **comprehensive notification infrastructure built** cover
 | 7 | Accessibility compliance (WCAG 2.1) | ✅ | Radix UI baseline + `prefers-reduced-motion` + comprehensive WCAG 2.1 AA pass: skip-to-main links on all 3 layouts (public, admin, store), `<main>` landmarks with IDs, `aria-current="page"` on nav links, `aria-label` on OAuth/password-toggle/search buttons, `aria-expanded`/`aria-pressed` on filter sidebar, `role="alert"` on form errors, keyboard-accessible product cards (`<button>` replaces `<div onClick>`), `focus-visible:ring-2` on Input/Select, color contrast fixes (success #059669, outline #4B5563), `lang="ar"` on `<html>`. |
 | 8 | Energy efficiency optimization | ✅ | Dynamic imports eliminate ~1.2MB of chart JS (ECharts + Recharts) from public page bundles. `optimizePackageImports` tree-shakes lucide-react (87+ files), recharts, date-fns — reduces parsed JS and CPU on client. Immutable cache headers on static assets prevent redundant downloads. CDN caching on coupons API (5 min + stale-while-revalidate) reduces origin server load. PM2 cluster mode distributes requests across 2 workers for better CPU utilization. Rate limiting prevents resource exhaustion from abusive traffic. |
 | 9 | Legal compliance (Saudi regulations) | ✅ | Privacy + Terms (bilingual) |
-| 10 | Localization (Hijri/Gregorian + Arabic numerals) | ❌ | Gregorian only; no Hijri calendar or Eastern Arabic numeral support |
+| 10 | Localization (Hijri/Gregorian + Arabic numerals) | ✅ | Centralized `formatDate`/`formatNumber`/`formatRelativeTime` utilities (`src/lib/formatting.ts`, `mobile/src/lib/formatting.ts`). Arabic dates: dual Hijri primary + Gregorian in parentheses via `Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura')`. Arabic numbers: Eastern Arabic numerals (٠-٩) via `Intl.NumberFormat('ar-SA')`. English: Gregorian dates + Western numerals (unchanged). Prices: Western numerals in both locales (Saudi e-commerce standard). Replaced `date-fns format()` (13 files), `toLocaleDateString()` (10 files), `.toLocaleString()` (22 call sites), inline `formatRelativeTime` (2 files). Mobile: 3 date sites + utils fallback updated. |
 | 11 | Full Go-Live | ❌ | Not launched |
 
 ---
@@ -250,10 +250,10 @@ Since the last report, **comprehensive notification infrastructure built** cover
 | Reliability (99.9% uptime monitoring) | ✅ |
 | Data Backup (daily) | ✅ |
 | Energy Efficiency | ✅ |
-| Localization (Hijri + Arabic numerals) | ❌ |
+| Localization (Hijri + Arabic numerals) | ✅ |
 | Single Sign-On (corporate/academic) | ❌ |
 | Full Go-Live | ❌ |
-| **Totals** | **31 ✅ · 1 🟡 · 4 ❌** |
+| **Totals** | **32 ✅ · 1 🟡 · 3 ❌** |
 
 ---
 
@@ -287,7 +287,7 @@ Phase 2 — Profitability & Scale
   Week 7  Notifications  ██████████████████████ 100%
   Week 8  Monetization   ██████████████░░░░░░░  70%
   Week 9  Comparison     ██████████████████████ 100%
-  Week 10 Launch         █████████████████░░░░  82%
+  Week 10 Launch         ███████████████████░░  91%
 ```
 
 ---

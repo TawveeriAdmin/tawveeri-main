@@ -51,7 +51,7 @@ import {
   Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import type { TransactionStatus } from '@/lib/database/types';
 
 // ─── Types ────────────────────────────────────────────────
@@ -107,7 +107,7 @@ function StatsCard({
   onClick,
 }: {
   title: string;
-  value: number;
+  value: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -132,7 +132,7 @@ function StatsCard({
       </div>
       <div className="min-w-0">
         <p className="tabular-nums text-xl font-bold text-on-surface">
-          {value.toLocaleString()}
+          {value}
         </p>
         <p className="truncate text-xs text-on-surface-variant">{title}</p>
       </div>
@@ -433,35 +433,35 @@ export default function AdminTransactionsPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatsCard
           title={t('admin.transactions.totalTransactions')}
-          value={stats.total}
+          value={formatNumber(stats.total, locale)}
           icon={<ArrowRightLeft className="h-5 w-5" />}
           active={statusFilter === 'all'}
           onClick={() => setStatusFilter('all')}
         />
         <StatsCard
           title={t('admin.transactions.completed')}
-          value={stats.completed}
+          value={formatNumber(stats.completed, locale)}
           icon={<CheckCircle className="h-5 w-5" />}
           active={statusFilter === 'completed'}
           onClick={() => handleStatsClick('completed')}
         />
         <StatsCard
           title={t('admin.transactions.pending')}
-          value={stats.pending}
+          value={formatNumber(stats.pending, locale)}
           icon={<Clock className="h-5 w-5" />}
           active={statusFilter === 'pending'}
           onClick={() => handleStatsClick('pending')}
         />
         <StatsCard
           title={t('admin.transactions.failed')}
-          value={stats.failed}
+          value={formatNumber(stats.failed, locale)}
           icon={<XCircle className="h-5 w-5" />}
           active={statusFilter === 'failed'}
           onClick={() => handleStatsClick('failed')}
         />
         <StatsCard
           title={t('admin.transactions.refunded')}
-          value={stats.refunded}
+          value={formatNumber(stats.refunded, locale)}
           icon={<RotateCcw className="h-5 w-5" />}
           active={statusFilter === 'refunded'}
           onClick={() => handleStatsClick('refunded')}
@@ -695,7 +695,7 @@ export default function AdminTransactionsPage({
                           )}
                           {visibleCols.date && (
                             <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
-                              {format(new Date(tx.created_at), 'MMM dd, yyyy HH:mm')}
+                              {formatDate(tx.created_at, locale, 'datetime')}
                             </TableCell>
                           )}
                         </TableRow>
@@ -742,7 +742,7 @@ export default function AdminTransactionsPage({
                         </span>
                       </div>
                       <p className="text-xs text-on-surface-variant">
-                        {format(new Date(tx.created_at), 'MMM dd, yyyy HH:mm')}
+                        {formatDate(tx.created_at, locale, 'datetime')}
                       </p>
                     </div>
                   );

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate } from '@/lib/formatting';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -225,7 +226,7 @@ export default function ProfilePage() {
  }
 
  const memberSince = user.created_at
-   ? new Date(user.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long' })
+   ? formatDate(user.created_at, locale)
    : '';
 
  const handleSaveProfile = async () => {

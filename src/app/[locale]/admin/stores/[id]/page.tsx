@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable, type Column } from '@/components/admin/data-table';
-import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import Image from 'next/image';
 
 export default async function AdminStoreDetailPage({
@@ -132,7 +132,7 @@ export default async function AdminStoreDetailPage({
  {
  key: 'created_at',
  label: isRTL ? 'التاريخ' : 'Date',
- render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy'),
+ render: (row) => formatDate(row.created_at, locale),
  },
  ];
 
@@ -159,7 +159,7 @@ export default async function AdminStoreDetailPage({
  {
  key: 'created_at',
  label: isRTL ? 'التاريخ' : 'Date',
- render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy HH:mm'),
+ render: (row) => formatDate(row.created_at, locale, 'datetime'),
  },
  ];
 
@@ -244,7 +244,7 @@ export default async function AdminStoreDetailPage({
  </CardTitle>
  </CardHeader>
  <CardContent>
- <p className="text-headline-md">{analytics.total_clicks.toLocaleString()}</p>
+ <p className="text-headline-md">{formatNumber(analytics.total_clicks, locale)}</p>
  </CardContent>
  </Card>
  <Card>
@@ -254,7 +254,7 @@ export default async function AdminStoreDetailPage({
  </CardTitle>
  </CardHeader>
  <CardContent>
- <p className="text-headline-md">{analytics.total_conversions.toLocaleString()}</p>
+ <p className="text-headline-md">{formatNumber(analytics.total_conversions, locale)}</p>
  </CardContent>
  </Card>
  <Card>

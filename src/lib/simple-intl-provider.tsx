@@ -60,6 +60,15 @@ export function SimpleIntlProvider({
   );
 }
 
+export function useLocale() {
+  const { locale } = useContext(IntlContext);
+  return {
+    locale: locale as 'ar' | 'en',
+    isRTL: locale === 'ar',
+    direction: (locale === 'ar' ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
+  };
+}
+
 export function useTranslations(): TranslateFn {
   const { messages = {} } = useContext(IntlContext);
 

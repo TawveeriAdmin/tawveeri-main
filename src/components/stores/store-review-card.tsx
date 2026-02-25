@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatDate } from '@/lib/formatting';
 import { Star, ShieldCheck } from 'lucide-react';
 
 export interface StoreReview {
@@ -30,15 +31,7 @@ export function StoreReviewCard({ review, locale }: StoreReviewCardProps) {
   const t = useTranslations();
 
   const formattedDate = useMemo(() => {
-    try {
-      return new Date(review.created_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch (error) {
-      return review.created_at;
-    }
+    return formatDate(review.created_at, locale) || review.created_at;
   }, [review.created_at, locale]);
 
   return (

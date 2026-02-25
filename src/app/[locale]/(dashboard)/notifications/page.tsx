@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { formatRelativeTime } from '@/lib/formatting';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { Card, CardContent } from '@/components/ui/card';
@@ -137,24 +138,9 @@ export default function NotificationsPage() {
  return notifications.filter((n) => n.type === filter);
  }, [notifications, filter]);
 
- const formatRelativeTime = (dateString: string | null) => {
+ const getRelativeTime = (dateString: string | null) => {
  if (!dateString) return '';
- const date = new Date(dateString);
- const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
- if (diffSeconds < 60) {
- return tn('timeNow');
- }
- const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
- const minutes = Math.floor(diffSeconds / 60);
- if (minutes < 60) {
- return rtf.format(-minutes, 'minute');
- }
- const hours = Math.floor(minutes / 60);
- if (hours < 24) {
- return rtf.format(-hours, 'hour');
- }
- const days = Math.floor(hours / 24);
- return rtf.format(-days, 'day');
+ return formatRelativeTime(dateString, locale);
  };
 
  const getNotificationTitle = (notification: NotificationRecord) => {
@@ -344,7 +330,7 @@ export default function NotificationsPage() {
  {filteredNotifications.map((notification) => {
  const title = getNotificationTitle(notification);
  const message = getNotificationMessage(notification);
- const relativeTime = formatRelativeTime(notification.created_at);
+ const relativeTime = getRelativeTime(notification.created_at);
 
  const productLink = notification.products
  ? `/${locale}/products/${notification.products.slug}`

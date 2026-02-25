@@ -4,7 +4,7 @@ import { DataTable, type Column } from '@/components/admin/data-table';
 import { StatsCard } from '@/components/admin/stats-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDate, formatNumber } from '@/lib/formatting';
 import {
  DollarSign,
  MousePointerClick,
@@ -136,13 +136,13 @@ export default async function StoreTransactionsPage({
  key: 'clicked_at',
  label: t('store.dashboard.clickedAt'),
  render: (transaction) =>
- transaction.clicked_at ? format(new Date(transaction.clicked_at), 'MMM dd, yyyy HH:mm') : '-',
+ transaction.clicked_at ? formatDate(transaction.clicked_at, locale, 'datetime') : '-',
  },
  {
  key: 'converted_at',
  label: t('store.dashboard.convertedAt'),
  render: (transaction) =>
- transaction.converted_at ? format(new Date(transaction.converted_at), 'MMM dd, yyyy HH:mm') : '-',
+ transaction.converted_at ? formatDate(transaction.converted_at, locale, 'datetime') : '-',
  },
  ];
 
@@ -163,12 +163,12 @@ export default async function StoreTransactionsPage({
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
  <StatsCard
  title={t('store.dashboard.totalClicks')}
- value={stats.totalClicks.toLocaleString()}
+ value={formatNumber(stats.totalClicks, locale)}
  icon={<MousePointerClick className="h-6 w-6" />}
  />
  <StatsCard
  title={t('store.dashboard.conversions')}
- value={stats.totalConversions.toLocaleString()}
+ value={formatNumber(stats.totalConversions, locale)}
  icon={<TrendingUp className="h-6 w-6" />}
  />
  <StatsCard
