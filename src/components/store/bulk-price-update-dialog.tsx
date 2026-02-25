@@ -142,12 +142,12 @@ export function BulkPriceUpdateDialog({
     {
       key: 'current_price',
       label: t('store.bulkPriceUpdate.currentPrice'),
-      render: (row) => `$${row.current_price.toLocaleString()}`,
+      render: (row) => `${Math.round(row.current_price).toLocaleString()}`,
     },
     {
       key: 'new_price',
       label: t('store.bulkPriceUpdate.newPrice'),
-      render: (row) => `$${row.new_price.toFixed(2)}`,
+      render: (row) => `${Math.round(row.new_price).toLocaleString()}`,
     },
   ];
 
@@ -187,7 +187,7 @@ export function BulkPriceUpdateDialog({
                     htmlFor={product.id}
                     className="flex-1 cursor-pointer"
                   >
-                    {product.name} - ${product.current_price.toLocaleString()}
+                    {product.name} - {Math.round(product.current_price).toLocaleString()}
                   </Label>
                 </div>
               ))}

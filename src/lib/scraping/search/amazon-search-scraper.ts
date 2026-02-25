@@ -65,20 +65,41 @@ export class AmazonSearchScraper extends BaseSearchScraper {
     const href = linkEl.attr('href');
     const productUrl = href ? `${BASE_URL}${href}` : '';
 
-    // Price
+    // Price — current (sale) price: first non-strikethrough a-price
     let price: number | null = null;
-    const priceSelectors = [
+    const currentPriceSelectors = [
+      'span.a-price:not([data-a-strike="true"]) span.a-offscreen',
+      "span[data-a-color='price'] span.a-offscreen",
       'span.a-price span.a-offscreen',
       'span.a-price-whole',
-      "span[data-a-color='price'] span.a-offscreen",
     ];
-    for (const sel of priceSelectors) {
+    for (const sel of currentPriceSelectors) {
       const priceEl = el.find(sel).first();
       if (priceEl.length) {
         price = this.parsePrice(priceEl.text());
         if (price !== null) break;
       }
     }
+
+    // Original (list/strikethrough) price
+    let originalPrice: number | null = null;
+    const originalPriceSelectors = [
+      'span.a-price[data-a-strike="true"] span.a-offscreen',
+      'span.a-text-price span.a-offscreen',
+      "span[data-a-color='secondary'] span.a-offscreen",
+    ];
+    for (const sel of originalPriceSelectors) {
+      const origEl = el.find(sel).first();
+      if (origEl.length) {
+        originalPrice = this.parsePrice(origEl.text());
+        if (originalPrice !== null) break;
+      }
+    }
+    // Only keep original if it's actually higher than current
+    if (originalPrice !== null && price !== null && originalPrice <= price) {
+      originalPrice = null;
+    }
+    const isDeal = originalPrice !== null && price !== null && originalPrice > price;
 
     // Rating
     let rating: number | null = null;
@@ -113,7 +134,7 @@ export class AmazonSearchScraper extends BaseSearchScraper {
       model,
       sku: asin,
       current_price: price || 0,
-      original_price: null,
+      original_price: originalPrice,
       availability: 'in_stock',
       product_url: productUrl,
       image_urls: imageUrl ? [imageUrl] : [],
@@ -121,7 +142,7 @@ export class AmazonSearchScraper extends BaseSearchScraper {
       category,
       description_ar: null,
       description_en: null,
-      is_deal: false,
+      is_deal: isDeal,
       is_free_delivery: isPrime,
       store: this.storeSlug,
       store_name: this.storeName,

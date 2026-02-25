@@ -19,7 +19,7 @@ export function Price({
 }: PriceProps) {
   const formattedAmount = showDecimals
     ? amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : amount.toLocaleString('en-US');
+    : Math.round(amount).toLocaleString('en-US');
 
   return (
     <span className={cn('inline-flex items-center gap-3', className)}>

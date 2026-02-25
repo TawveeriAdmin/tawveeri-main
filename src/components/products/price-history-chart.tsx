@@ -188,7 +188,7 @@ export function PriceHistoryChart({
                       day: 'numeric',
                     })}
                   </span>
-                  <span className="font-semibold">{point.price.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</span>
+                  <span className="font-semibold">{Math.round(point.price).toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</span>
                 </div>
               ))}
             </div>

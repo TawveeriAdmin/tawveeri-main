@@ -304,8 +304,8 @@ export class ScrapingOrchestrator {
         type: 'back_in_stock',
         title_ar: `عاد للمخزون: ${product.name_ar}`,
         title_en: `Back in Stock: ${product.name_en}`,
-        message_ar: `${product.name_ar} أصبح متوفراً الآن في ${store.name_ar} بسعر ${price.toLocaleString()} ر.س`,
-        message_en: `${product.name_en} is now available at ${store.name_en} for ${price.toLocaleString()} SAR`,
+        message_ar: `${product.name_ar} أصبح متوفراً الآن في ${store.name_ar} بسعر ${Math.round(price).toLocaleString()} ر.س`,
+        message_en: `${product.name_en} is now available at ${store.name_en} for ${Math.round(price).toLocaleString()} SAR`,
         product_id: productId,
         store_id: storeId,
       }).catch((err) => console.error('Back-in-stock in-app notification error:', err));
@@ -323,8 +323,8 @@ export class ScrapingOrchestrator {
       // Mobile push
       const pushTitle = locale === 'ar' ? `عاد للمخزون: ${productName}` : `Back in Stock: ${productName}`;
       const pushBody = locale === 'ar'
-        ? `متوفر الآن في ${storeName} بسعر ${price.toLocaleString()} ر.س`
-        : `Now available at ${storeName} for ${price.toLocaleString()} SAR`;
+        ? `متوفر الآن في ${storeName} بسعر ${Math.round(price).toLocaleString()} ر.س`
+        : `Now available at ${storeName} for ${Math.round(price).toLocaleString()} SAR`;
 
       sendPushToUser(alert.user_id, {
         title: pushTitle,

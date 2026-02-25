@@ -237,7 +237,7 @@ export default function StoreProductsPage({
  {
  key: 'current_price',
  label: t('common.price'),
- render: (product) => `$${product.current_price.toLocaleString()}`,
+ render: (product) => `${Math.round(product.current_price).toLocaleString()}`,
  },
  {
  key: 'stock_quantity',

@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Formatted price string (number only)
  */
 export function formatPrice(price: number): string {
-  return price.toLocaleString('en-US');
+  return Math.round(price).toLocaleString('en-US');
 }
 
 /**
@@ -20,7 +20,7 @@ export function formatPrice(price: number): string {
  * This function is kept for backwards compatibility only
  */
 export function formatPriceWithCurrency(price: number, locale: 'ar' | 'en' = 'ar'): string {
-  const formatted = price.toLocaleString('en-US');
+  const formatted = Math.round(price).toLocaleString('en-US');
   return locale === 'ar' ? `${formatted} ر.س` : `SAR ${formatted}`;
 }
 

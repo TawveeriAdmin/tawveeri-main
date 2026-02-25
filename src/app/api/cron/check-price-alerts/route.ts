@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
             type: 'price_drop',
             title_ar: `انخفض سعر ${productName}!`,
             title_en: `${productName} price dropped!`,
-            message_ar: `انخفض سعر ${productName} إلى ${currentPrice.toLocaleString()} ر.س (الهدف: ${alert.target_price.toLocaleString()} ر.س)`,
-            message_en: `${productName} price dropped to ${currentPrice.toLocaleString()} SAR (Target: ${alert.target_price.toLocaleString()} SAR)`,
+            message_ar: `انخفض سعر ${productName} إلى ${Math.round(currentPrice).toLocaleString()} ر.س (الهدف: ${Math.round(alert.target_price).toLocaleString()} ر.س)`,
+            message_en: `${productName} price dropped to ${Math.round(currentPrice).toLocaleString()} SAR (Target: ${Math.round(alert.target_price).toLocaleString()} SAR)`,
             product_id: alert.product_id,
             link: `/products/${product?.slug || alert.product_id}`,
           });
@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
           // Send push notification to mobile
           const pushTitle = locale === 'ar' ? `انخفض سعر ${productName}!` : `${productName} price dropped!`;
           const pushBody = locale === 'ar'
-            ? `السعر الآن ${currentPrice.toLocaleString()} ر.س`
-            : `Now ${currentPrice.toLocaleString()} SAR`;
+            ? `السعر الآن ${Math.round(currentPrice).toLocaleString()} ر.س`
+            : `Now ${Math.round(currentPrice).toLocaleString()} SAR`;
           await sendPushToUser(alert.user_id, {
             title: pushTitle,
             body: pushBody,

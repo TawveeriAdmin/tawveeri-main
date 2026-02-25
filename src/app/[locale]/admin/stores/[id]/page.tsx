@@ -97,7 +97,7 @@ export default async function AdminStoreDetailPage({
  {
  key: 'current_price',
  label: isRTL ? 'السعر' : 'Price',
- render: (row) => `$${row.current_price.toLocaleString()}`,
+ render: (row) => `${Math.round(row.current_price).toLocaleString()}`,
  },
  {
  key: 'availability',

@@ -280,21 +280,35 @@ export class AlmaneaSearchScraper extends BaseSearchScraper {
     if (!title) return null;
 
     const sku = String(item.sku || item.id || item.product_id || '').trim() || null;
-    const price = this.toNumber(
-      item.price ||
-        (item.prices_with_tax as Record<string, unknown> | undefined)?.price ||
-        (item.prices_with_tax as Record<string, unknown> | undefined)?.discounted_price ||
-        (item.offers as Record<string, unknown> | undefined)?.price ||
-        (item.price_data as Record<string, unknown> | undefined)?.current
+    const pricesWithTax = item.prices_with_tax as Record<string, unknown> | undefined;
+    const offers = item.offers as Record<string, unknown> | undefined;
+    const priceData = item.price_data as Record<string, unknown> | undefined;
+
+    // Extract regular/base price
+    const regularPrice = this.toNumber(
+      item.price || pricesWithTax?.price || pricesWithTax?.original_price ||
+        offers?.price || priceData?.current
     );
+
+    // Extract discounted/sale price (check dedicated discount fields first)
+    const discountedPrice = this.toNumber(
+      pricesWithTax?.discounted_price || item.special_price ||
+        item.sale_price || item.discounted_price || priceData?.discounted
+    );
+
+    // Use discounted price as current if it's a valid discount
+    const price = (discountedPrice && regularPrice && discountedPrice < regularPrice)
+      ? discountedPrice
+      : (regularPrice || discountedPrice);
     if (!price || price <= 0) return null;
 
-    const originalPrice = this.toNumber(
-      item.original_price ||
-        (item.prices_with_tax as Record<string, unknown> | undefined)?.original_price ||
-        (item.offers as Record<string, unknown> | undefined)?.highPrice ||
-        (item.price_data as Record<string, unknown> | undefined)?.original
-    );
+    // Original price: use regular price when there's a discount, otherwise check explicit fields
+    const originalPrice = (discountedPrice && regularPrice && discountedPrice < regularPrice)
+      ? regularPrice
+      : this.toNumber(
+          item.original_price || pricesWithTax?.original_price ||
+            offers?.highPrice || priceData?.original
+        );
 
     const rewriteUrl = this.stringFromUnknown(item.rewrite_url);
     const href = String(item.url || item.product_url || item.link || rewriteUrl || '').trim();
