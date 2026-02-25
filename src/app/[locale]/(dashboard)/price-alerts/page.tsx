@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { createNotification } from '@/lib/auth/notifications';
 import type { Database } from '@/lib/database/types';
 import Link from 'next/link';
-import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
+
 
 type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];
 type ProductRow = Database['public']['Tables']['products']['Row'];
@@ -245,8 +245,6 @@ export default function PriceAlertsPage() {
 
  return (
  <div className="space-y-6">
- <PageBreadcrumbs items={[{ label: t('dashboard.sidebar.priceAlerts') }]} />
-
  {/* Page Header */}
  <div className="flex items-center justify-between">
  <div>

@@ -23,7 +23,7 @@ import {
 import { getSupabaseBrowserClient } from '@/lib/database';
 import type { Database } from '@/lib/database/types';
 import { updateAvatar, deleteAvatar, deleteAccount, resendEmailVerification, resendPhoneVerification, verifyPhoneOTP, verifyEmailOTPCode } from '@/lib/auth/profile';
-import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
+
 
 interface NotificationSettings {
  email: boolean;
@@ -645,8 +645,6 @@ export default function ProfilePage() {
 
  return (
  <div className="space-y-6">
-   <PageBreadcrumbs items={[{ label: t('dashboard.profileMenu.profile') }]} />
-
    {/* ── Profile Hero Card ── */}
    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
      {/* Gradient banner */}
