@@ -234,6 +234,22 @@ export const AUDIT_ACTIONS = {
   COUPON_DELETED: 'coupon_deleted',
   COUPON_COPIED: 'coupon_copied',
 
+  // Price Alerts (extended)
+  PRICE_ALERT_TOGGLED: 'price_alert_toggled',
+  PRICE_DROP_ALERT_SENT: 'price_drop_alert_sent',
+  BACK_IN_STOCK_ALERT_SENT: 'back_in_stock_alert_sent',
+
+  // Store
+  STORE_SYNC_COMPLETED: 'store_sync_completed',
+
+  // Account
+  ACCOUNT_DELETED: 'account_deleted',
+  USER_ROLE_CHANGED_NOTIFIED: 'user_role_changed_notified',
+  NEW_DEVICE_LOGIN: 'new_device_login',
+
+  // Saved Searches
+  SAVED_SEARCH_RESULTS: 'saved_search_results',
+
   // System
   SYSTEM_ERROR: 'system_error',
   SECURITY_ALERT: 'security_alert',

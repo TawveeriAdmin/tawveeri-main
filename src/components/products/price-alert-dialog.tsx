@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
+import { createNotification } from '@/lib/auth/notifications';
 import type { Database } from '@/lib/database/types';
 
 type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];
@@ -139,6 +140,29 @@ export function PriceAlertDialog({
       setError(upsertError.message);
       return;
     }
+
+    // In-app notification
+    createNotification({
+      user_id: user.id,
+      type: 'system',
+      title_ar: existingAlert ? 'تم تحديث تنبيه السعر' : 'تم إنشاء تنبيه السعر',
+      title_en: existingAlert ? 'Price Alert Updated' : 'Price Alert Created',
+      message_ar: `تنبيه السعر لـ "${productName}" عند ${parsedTarget} ر.س`,
+      message_en: `Price alert for "${productName}" at ${parsedTarget} SAR`,
+      product_id: productId,
+    }).catch(() => {});
+
+    // Audit log (fire-and-forget)
+    fetch('/api/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: existingAlert ? 'price_alert_created' : 'price_alert_created',
+        entity_type: 'price_alert',
+        entity_id: productId,
+        details: { target_price: parsedTarget, product_name: productName },
+      }),
+    }).catch(() => {});
 
     const successMessage = existingAlert
       ? t('product.priceAlertUpdated')

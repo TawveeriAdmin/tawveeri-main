@@ -36,7 +36,13 @@ export type EmailTemplate =
   | 'email_verification'
   | 'price_drop_alert'
   | 'back_in_stock'
-  | 'daily_deals';
+  | 'daily_deals'
+  | 'role_changed'
+  | 'account_deleted'
+  | 'coupon_expiry_warning'
+  | 'new_coupon_alert'
+  | 'new_device_login'
+  | 'saved_search_results';
 
 /**
  * Create an in-app notification
@@ -547,6 +553,150 @@ function getEmailTemplate(
         isRTL ? 'عروض اليوم' : "Today's Deals"
       );
 
+    case 'role_changed':
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>تم تغيير صلاحياتك</h2>
+            <p>تم تغيير دورك في منصة توفيري:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>الدور السابق:</strong> ${data.old_role}</p>
+              <p><strong>الدور الجديد:</strong> ${data.new_role}</p>
+            </div>
+            <p>إذا كان لديك أي استفسار، يرجى التواصل معنا.</p>
+          `
+          : `
+            <h2>Your Role Has Been Changed</h2>
+            <p>Your role on Tawveeri has been updated:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Previous role:</strong> ${data.old_role}</p>
+              <p><strong>New role:</strong> ${data.new_role}</p>
+            </div>
+            <p>If you have any questions, please contact us.</p>
+          `,
+        isRTL ? 'تم تغيير صلاحياتك' : 'Your Role Has Been Changed'
+      );
+
+    case 'account_deleted':
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>تم حذف حسابك</h2>
+            <p>عزيزي ${data.full_name || 'العميل'},</p>
+            <p>نود إبلاغك بأنه تم حذف حسابك على توفيري بنجاح.</p>
+            <p>جميع بياناتك الشخصية تم إزالتها من أنظمتنا.</p>
+            <p>نأسف لمغادرتك ونتمنى لك التوفيق.</p>
+          `
+          : `
+            <h2>Your Account Has Been Deleted</h2>
+            <p>Dear ${data.full_name || 'Customer'},</p>
+            <p>We would like to inform you that your Tawveeri account has been successfully deleted.</p>
+            <p>All your personal data has been removed from our systems.</p>
+            <p>We're sorry to see you go and wish you all the best.</p>
+          `,
+        isRTL ? 'تم حذف حسابك' : 'Your Account Has Been Deleted'
+      );
+
+    case 'coupon_expiry_warning':
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>تحذير: كوبون على وشك الانتهاء ⏰</h2>
+            <p>الكوبون التالي سينتهي قريباً:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>الكود:</strong> ${data.coupon_code}</p>
+              <p><strong>المتجر:</strong> ${data.store_name}</p>
+              <p><strong>ينتهي في:</strong> ${data.expires_at}</p>
+            </div>
+            <p>يرجى تجديد الكوبون أو تعديله إذا لزم الأمر.</p>
+          `
+          : `
+            <h2>Warning: Coupon Expiring Soon ⏰</h2>
+            <p>The following coupon is about to expire:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Code:</strong> ${data.coupon_code}</p>
+              <p><strong>Store:</strong> ${data.store_name}</p>
+              <p><strong>Expires at:</strong> ${data.expires_at}</p>
+            </div>
+            <p>Please renew or modify the coupon if needed.</p>
+          `,
+        isRTL ? 'كوبون على وشك الانتهاء' : 'Coupon Expiring Soon'
+      );
+
+    case 'new_coupon_alert':
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>كوبون جديد لمنتج في قائمة أمنياتك! 🎁</h2>
+            <p>تم إضافة كوبون خصم جديد لمنتج في قائمة أمنياتك:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>المنتج:</strong> ${data.product_name}</p>
+              <p><strong>كود الكوبون:</strong> ${data.coupon_code}</p>
+              <p><strong>الخصم:</strong> ${data.discount}</p>
+            </div>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}" class="button">عرض المنتج</a>
+          `
+          : `
+            <h2>New Coupon for Your Wishlisted Product! 🎁</h2>
+            <p>A new discount coupon has been added for a product in your wishlist:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Product:</strong> ${data.product_name}</p>
+              <p><strong>Coupon code:</strong> ${data.coupon_code}</p>
+              <p><strong>Discount:</strong> ${data.discount}</p>
+            </div>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}" class="button">View Product</a>
+          `,
+        isRTL ? 'كوبون جديد لمنتج في قائمة أمنياتك' : 'New Coupon for Your Wishlisted Product'
+      );
+
+    case 'new_device_login':
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>تسجيل دخول من جهاز جديد 🔐</h2>
+            <p>تم تسجيل دخول إلى حسابك من جهاز جديد:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>الجهاز:</strong> ${data.device_info || 'غير معروف'}</p>
+              <p><strong>الوقت:</strong> ${data.login_time || new Date().toLocaleString('ar-SA')}</p>
+            </div>
+            <p>إذا لم تكن أنت من قام بتسجيل الدخول، يرجى تغيير كلمة المرور فوراً.</p>
+          `
+          : `
+            <h2>Login from New Device 🔐</h2>
+            <p>Your account was accessed from a new device:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Device:</strong> ${data.device_info || 'Unknown'}</p>
+              <p><strong>Time:</strong> ${data.login_time || new Date().toLocaleString('en-US')}</p>
+            </div>
+            <p>If this wasn't you, please change your password immediately.</p>
+          `,
+        isRTL ? 'تسجيل دخول من جهاز جديد' : 'Login from New Device'
+      );
+
+    case 'saved_search_results':
+      return baseTemplate(
+        isRTL
+          ? `
+            <h2>نتائج جديدة لبحثك المحفوظ! 🔍</h2>
+            <p>تم العثور على نتائج جديدة لبحثك المحفوظ:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>البحث:</strong> ${data.search_name}</p>
+              <p><strong>نتائج جديدة:</strong> ${data.new_count}</p>
+            </div>
+            <a href="${data.search_link || process.env.NEXT_PUBLIC_APP_URL}" class="button">عرض النتائج</a>
+          `
+          : `
+            <h2>New Results for Your Saved Search! 🔍</h2>
+            <p>New results have been found for your saved search:</p>
+            <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Search:</strong> ${data.search_name}</p>
+              <p><strong>New results:</strong> ${data.new_count}</p>
+            </div>
+            <a href="${data.search_link || process.env.NEXT_PUBLIC_APP_URL}" class="button">View Results</a>
+          `,
+        isRTL ? 'نتائج جديدة لبحثك المحفوظ' : 'New Results for Your Saved Search'
+      );
+
     default:
       return baseTemplate(
         `<p>${isRTL ? 'رسالة من توفيري' : 'Message from Tawveeri'}</p>`,
@@ -650,6 +800,114 @@ export async function sendBackInStockEmail(
     subject_en: `Back in Stock: ${productData.product_name}`,
     template: 'back_in_stock',
     data: productData,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send role changed email
+ */
+export async function sendRoleChangedEmail(
+  email: string,
+  data: { old_role: string; new_role: string },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: 'تم تغيير صلاحياتك في توفيري',
+    subject_en: 'Your Tawveeri Role Has Changed',
+    template: 'role_changed',
+    data,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send account deleted email
+ */
+export async function sendAccountDeletedEmail(
+  email: string,
+  data: { full_name?: string | null },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: 'تم حذف حسابك في توفيري',
+    subject_en: 'Your Tawveeri Account Has Been Deleted',
+    template: 'account_deleted',
+    data,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send coupon expiry warning email
+ */
+export async function sendCouponExpiryEmail(
+  email: string,
+  data: { coupon_code: string; store_name: string; expires_at: string },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: `كوبون على وشك الانتهاء: ${data.coupon_code}`,
+    subject_en: `Coupon Expiring Soon: ${data.coupon_code}`,
+    template: 'coupon_expiry_warning',
+    data,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send new coupon alert email
+ */
+export async function sendNewCouponAlertEmail(
+  email: string,
+  data: { product_name: string; coupon_code: string; discount: string },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: `كوبون جديد: ${data.product_name}`,
+    subject_en: `New Coupon: ${data.product_name}`,
+    template: 'new_coupon_alert',
+    data,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send new device login email
+ */
+export async function sendNewDeviceLoginEmail(
+  email: string,
+  data: { device_info?: string; login_time?: string },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: 'تسجيل دخول من جهاز جديد',
+    subject_en: 'Login from New Device',
+    template: 'new_device_login',
+    data,
+    user_language: language,
+  });
+}
+
+/**
+ * Helper to send saved search results email
+ */
+export async function sendSavedSearchResultsEmail(
+  email: string,
+  data: { search_name: string; new_count: number; search_link?: string },
+  language?: 'ar' | 'en'
+) {
+  return sendEmailNotification({
+    to: email,
+    subject_ar: `نتائج جديدة لبحثك: ${data.search_name}`,
+    subject_en: `New Results: ${data.search_name}`,
+    template: 'saved_search_results',
+    data,
     user_language: language,
   });
 }

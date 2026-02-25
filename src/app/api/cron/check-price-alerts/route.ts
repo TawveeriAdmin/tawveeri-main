@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createNotification, sendPriceDropEmail } from '@/lib/auth/notifications';
+import { createAuditLog } from '@/lib/auth/audit';
 import { sendPushToUser } from '@/lib/push/expo-push';
 import { sendWebPushToUser } from '@/lib/push/web-push';
 
@@ -144,6 +145,15 @@ export async function POST(request: NextRequest) {
             lang: locale,
             tag: `price-drop-${alert.product_id}`,
           });
+
+          // Audit log for price drop alert sent
+          createAuditLog({
+            user_id: alert.user_id,
+            action: 'price_drop_alert_sent',
+            entity_type: 'product',
+            entity_id: alert.product_id,
+            details: { target_price: alert.target_price, current_price: currentPrice },
+          }).catch(() => {});
 
           // Mark alert as inactive and update notified_at
           const alertId = (alertData as any).id;

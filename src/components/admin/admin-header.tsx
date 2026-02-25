@@ -167,6 +167,12 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
                 {t('admin.sidebar.dashboard')}
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={`/${locale}/profile`}>
+                <User className="me-2 h-4 w-4" />
+                {isRTL ? 'الملف الشخصي' : 'Profile'}
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={(e) => { e.preventDefault(); handleSignOut(); }}

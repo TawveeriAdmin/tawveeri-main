@@ -791,6 +791,9 @@ export interface Database {
           name: string;
           search_query: string | null;
           filters: Record<string, unknown> | null;
+          last_result_count: number;
+          last_checked_at: string | null;
+          notify_on_new_results: boolean;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -800,6 +803,9 @@ export interface Database {
           name: string;
           search_query?: string | null;
           filters?: Record<string, unknown> | null;
+          last_result_count?: number;
+          last_checked_at?: string | null;
+          notify_on_new_results?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -809,8 +815,44 @@ export interface Database {
           name?: string;
           search_query?: string | null;
           filters?: Record<string, unknown> | null;
+          last_result_count?: number;
+          last_checked_at?: string | null;
+          notify_on_new_results?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      login_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          device_fingerprint: string;
+          user_agent: string | null;
+          ip_address: string | null;
+          is_known_device: boolean;
+          last_seen_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          device_fingerprint: string;
+          user_agent?: string | null;
+          ip_address?: string | null;
+          is_known_device?: boolean;
+          last_seen_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          device_fingerprint?: string;
+          user_agent?: string | null;
+          ip_address?: string | null;
+          is_known_device?: boolean;
+          last_seen_at?: string;
+          created_at?: string;
         };
         Relationships: [];
       };

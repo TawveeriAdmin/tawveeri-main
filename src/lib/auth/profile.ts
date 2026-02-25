@@ -209,7 +209,7 @@ export async function changeEmail(userId: string, newEmail: string) {
     // Create notification
     await createNotification({
       user_id: userId,
-      type: 'account',
+      type: 'system',
       title_ar: 'تم تحديث البريد الإلكتروني',
       title_en: 'Email Updated',
       message_ar: 'تم تحديث بريدك الإلكتروني. يرجى التحقق من البريد الجديد.',
@@ -251,7 +251,7 @@ export async function changePhone(userId: string, newPhone: string) {
     // Create notification
     await createNotification({
       user_id: userId,
-      type: 'account',
+      type: 'system',
       title_ar: 'تم تحديث رقم الهاتف',
       title_en: 'Phone Number Updated',
       message_ar: 'تم تحديث رقم هاتفك. يرجى التحقق من الرقم الجديد.',
@@ -278,30 +278,18 @@ export async function changePhone(userId: string, newPhone: string) {
  * Delete user account
  */
 export async function deleteAccount(userId: string) {
-  const supabase = getSupabaseClient();
   try {
-    // Delete user avatar if exists
-    await deleteAvatar(userId);
-
-    // Audit log before deletion
-    await createAuditLog({
-      user_id: userId,
-      action: 'user_deleted',
-      entity_type: 'user',
-      entity_id: userId,
+    // Delegate to server-side API route which handles:
+    // - Email notification (requires SENDGRID_API_KEY, server-only)
+    // - Audit log (requires SUPABASE_SERVICE_ROLE_KEY, server-only)
+    // - Avatar deletion, DB deletion, Auth deletion
+    const response = await fetch('/api/auth/delete-account', {
+      method: 'POST',
     });
 
-    // Delete user from database (cascade will handle related records)
-    const { error: dbError } = await supabase.from('users').delete().eq('id', userId);
-
-    if (dbError) throw dbError;
-
-    // Delete from auth
-    // Note: This requires admin privileges or user to be logged in
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-
-    if (authError) {
-      console.error('Error deleting from auth (may require admin):', authError);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to delete account');
     }
 
     return { error: null };

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { getUserProfile, requireAuth } from '@/lib/auth/server';
@@ -6,6 +7,9 @@ import { getUserProfile, requireAuth } from '@/lib/auth/server';
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
+
+// Routes under (dashboard) that admins are allowed to access
+const adminAllowedRoutes = ['/profile', '/settings', '/notifications', '/price-alerts', '/wishlist'];
 
 export default async function DashboardLayout({
   children,
@@ -24,7 +28,12 @@ export default async function DashboardLayout({
 
   const profile = await getUserProfile();
   if (profile?.role === 'admin') {
-    redirect(`/${locale}/admin/dashboard`);
+    const headersList = await headers();
+    const pathname = headersList.get('x-pathname') || '/';
+    const isAllowed = adminAllowedRoutes.some((route) => pathname.startsWith(route));
+    if (!isAllowed) {
+      redirect(`/${locale}/admin/dashboard`);
+    }
   }
 
   return (

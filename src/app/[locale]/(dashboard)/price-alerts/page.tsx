@@ -13,6 +13,7 @@ import { GuestPrompt } from '@/components/auth/guest-prompt';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { createNotification } from '@/lib/auth/notifications';
 import type { Database } from '@/lib/database/types';
 import Link from 'next/link';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
@@ -111,6 +112,29 @@ export default function PriceAlertsPage() {
 
  if (error) throw error;
 
+ // In-app notification
+ if (user) {
+ createNotification({
+ user_id: user.id,
+ type: 'system',
+ title_ar: 'تم حذف تنبيه السعر',
+ title_en: 'Price Alert Deleted',
+ message_ar: 'تم حذف تنبيه السعر بنجاح',
+ message_en: 'Price alert has been deleted successfully',
+ }).catch(() => {});
+ }
+
+ // Audit log (fire-and-forget)
+ fetch('/api/audit', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ action: 'price_alert_deleted',
+ entity_type: 'price_alert',
+ entity_id: alertId,
+ }),
+ }).catch(() => {});
+
  toast({
  title: t('priceAlerts.deleted'),
  description: t('priceAlerts.deleteSuccess'),
@@ -138,6 +162,30 @@ export default function PriceAlertsPage() {
  .eq('user_id', user.id);
 
  if (error) throw error;
+
+ // In-app notification
+ if (user) {
+ createNotification({
+ user_id: user.id,
+ type: 'system',
+ title_ar: isActive ? 'تم تفعيل تنبيه السعر' : 'تم إيقاف تنبيه السعر',
+ title_en: isActive ? 'Price Alert Activated' : 'Price Alert Deactivated',
+ message_ar: isActive ? 'تم تفعيل تنبيه السعر بنجاح' : 'تم إيقاف تنبيه السعر',
+ message_en: isActive ? 'Price alert has been activated' : 'Price alert has been deactivated',
+ }).catch(() => {});
+ }
+
+ // Audit log (fire-and-forget)
+ fetch('/api/audit', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ action: 'price_alert_toggled',
+ entity_type: 'price_alert',
+ entity_id: alertId,
+ details: { is_active: isActive },
+ }),
+ }).catch(() => {});
 
  toast({
  title: t('priceAlerts.updated'),

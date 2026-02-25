@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       // Create notification for verified email
       await createNotification({
         user_id: user.id,
-        type: 'account',
+        type: 'system',
         title_ar: 'تم التحقق من البريد الإلكتروني',
         title_en: 'Email Verified',
         message_ar: 'تم التحقق من بريدك الإلكتروني بنجاح',

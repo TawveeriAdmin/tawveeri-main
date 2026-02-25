@@ -15,6 +15,7 @@ import { ProductService } from './product-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
 import { createNotification, sendBackInStockEmail } from '@/lib/auth/notifications';
+import { createAuditLog } from '@/lib/auth/audit';
 import { sendPushToUser } from '@/lib/push/expo-push';
 import { sendWebPushToUser } from '@/lib/push/web-push';
 
@@ -342,6 +343,14 @@ export class ScrapingOrchestrator {
         tag: `back-in-stock-${productId}`,
       }).catch((err) => console.error('Back-in-stock web push error:', err));
     }
+
+    // Audit log for back-in-stock alert batch
+    createAuditLog({
+      action: 'back_in_stock_alert_sent',
+      entity_type: 'product',
+      entity_id: productId,
+      details: { store_id: storeId, price, users_notified: alerts.length },
+    }).catch(() => {});
   }
 
   /**

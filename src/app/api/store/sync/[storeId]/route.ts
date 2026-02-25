@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
+import { createNotification } from '@/lib/auth/notifications';
+import { createAuditLog } from '@/lib/auth/audit';
 import type { Database } from '@/lib/database/types';
 
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
@@ -128,12 +130,44 @@ export async function POST(
       }
     }
 
+    const createdCount = results.filter((r) => r.status === 'created').length;
+    const updatedCount = results.filter((r) => r.status === 'updated').length;
+    const errorCount = results.filter((r) => r.status === 'error').length;
+
+    // Notify store owner about sync results
+    const { data: store } = await supabase
+      .from('stores')
+      .select('created_by, name_ar, name_en')
+      .eq('id', storeId)
+      .single();
+
+    if (store?.created_by) {
+      createNotification({
+        user_id: store.created_by,
+        type: 'system',
+        title_ar: 'اكتملت مزامنة المتجر',
+        title_en: 'Store Sync Completed',
+        message_ar: `تمت مزامنة ${store.name_ar}: ${createdCount} جديد، ${updatedCount} محدث، ${errorCount} أخطاء، ${priceChanges.length} تغيير سعر`,
+        message_en: `${store.name_en} synced: ${createdCount} created, ${updatedCount} updated, ${errorCount} errors, ${priceChanges.length} price changes`,
+        store_id: storeId,
+      }).catch(() => {});
+    }
+
+    // Audit log
+    createAuditLog({
+      user_id: store?.created_by || null,
+      action: 'store_sync_completed',
+      entity_type: 'store',
+      entity_id: storeId,
+      details: { created: createdCount, updated: updatedCount, errors: errorCount, price_changes: priceChanges.length },
+    }).catch(() => {});
+
     return NextResponse.json({
       success: true,
       synced: results.length,
-      created: results.filter((r) => r.status === 'created').length,
-      updated: results.filter((r) => r.status === 'updated').length,
-      errors: results.filter((r) => r.status === 'error').length,
+      created: createdCount,
+      updated: updatedCount,
+      errors: errorCount,
       price_changes: priceChanges.length,
       results,
     });

@@ -270,6 +270,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Pass current pathname to server components via header
+  response.headers.set('x-pathname', pathnameWithoutLocale);
+
   return response;
 }
 

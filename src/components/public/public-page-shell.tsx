@@ -390,7 +390,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/settings`}>
+                        <Link href={`/${locale}/profile`}>
                           <Settings className="me-2 h-4 w-4" />
                           {copy.settings}
                         </Link>

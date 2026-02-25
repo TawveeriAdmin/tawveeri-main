@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { requireRequestAdmin } from '@/lib/auth/api-auth';
 import { logCouponEvent, AUDIT_ACTIONS } from '@/lib/auth/audit';
+import { createNotification } from '@/lib/auth/notifications';
 
 /**
  * PATCH /api/admin/coupons/[id]
@@ -82,6 +83,28 @@ export async function PATCH(
       updates,
     });
 
+    // Notify store owner
+    const storeData = (data as any)?.stores;
+    if (storeData?.id) {
+      const { data: storeRow } = await supabase
+        .from('stores')
+        .select('created_by')
+        .eq('id', storeData.id)
+        .single();
+
+      if (storeRow?.created_by) {
+        createNotification({
+          user_id: storeRow.created_by,
+          type: 'system',
+          title_ar: 'تم تحديث كوبون بواسطة المشرف',
+          title_en: 'Coupon Updated by Admin',
+          message_ar: `تم تحديث الكوبون "${(data as any)?.code}" بواسطة المشرف`,
+          message_en: `Coupon "${(data as any)?.code}" has been updated by admin`,
+          store_id: storeData.id,
+        }).catch(() => {});
+      }
+    }
+
     return NextResponse.json({ data });
   } catch (error) {
     if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Admin access required')) {
@@ -112,10 +135,10 @@ export async function DELETE(
 
     const supabase = createServerClient();
 
-    // Fetch coupon info for audit log before deleting
+    // Fetch coupon and store owner info before deleting
     const { data: coupon } = await supabase
       .from('coupons')
-      .select('id, code, store_id')
+      .select('id, code, store_id, stores:store_id (created_by, name_ar, name_en)')
       .eq('id', id)
       .single();
 
@@ -131,6 +154,20 @@ export async function DELETE(
       code: coupon?.code,
       store_id: coupon?.store_id,
     });
+
+    // Notify store owner about deletion
+    const storeInfo = (coupon as any)?.stores;
+    if (storeInfo?.created_by) {
+      createNotification({
+        user_id: storeInfo.created_by,
+        type: 'system',
+        title_ar: 'تم حذف كوبون بواسطة المشرف',
+        title_en: 'Coupon Deleted by Admin',
+        message_ar: `تم حذف الكوبون "${coupon?.code}" من متجر "${storeInfo.name_ar}" بواسطة المشرف`,
+        message_en: `Coupon "${coupon?.code}" from store "${storeInfo.name_en}" has been deleted by admin`,
+        store_id: coupon?.store_id,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/server';
 import { createClient } from '@/lib/auth/server';
 import { createAuditLog } from '@/lib/auth/audit';
+import { createNotification, sendRoleChangedEmail } from '@/lib/auth/notifications';
 import type { UserRole } from '@/lib/database/types';
 
 export async function PUT(
@@ -72,6 +73,24 @@ export async function PUT(
         target_user_name: targetUser.full_name,
       },
     });
+
+    // In-app notification to target user
+    await createNotification({
+      user_id: id,
+      type: 'system',
+      title_ar: 'تم تغيير صلاحياتك',
+      title_en: 'Your Role Has Been Changed',
+      message_ar: `تم تغيير دورك من "${targetUser.role}" إلى "${role}"`,
+      message_en: `Your role has been changed from "${targetUser.role}" to "${role}"`,
+    });
+
+    // Email notification to target user
+    if (targetUser.email) {
+      sendRoleChangedEmail(
+        targetUser.email,
+        { old_role: targetUser.role, new_role: role },
+      ).catch((err) => console.error('Failed to send role changed email:', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

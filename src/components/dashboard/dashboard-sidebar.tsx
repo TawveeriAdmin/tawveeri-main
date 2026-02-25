@@ -8,7 +8,6 @@ import {
   Bell,
   BellRing,
   User,
-  Settings,
   PanelLeftClose,
   PanelLeftOpen,
   X,
@@ -31,7 +30,6 @@ const navItems = [
   { href: '/price-alerts', icon: Bell, key: 'priceAlerts' },
   { href: '/notifications', icon: BellRing, key: 'notifications' },
   { href: '/profile', icon: User, key: 'profile' },
-  { href: '/settings', icon: Settings, key: 'settings' },
 ];
 
 export function DashboardSidebar() {

@@ -14,14 +14,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 import {
   User, Mail, Phone, Globe, Moon, Sun, Monitor, Camera, Trash2,
   AlertTriangle, Save, X, CheckCircle2, AlertCircle, Clock3,
-  Lock, Heart, Bell, TrendingUp, Eye, EyeOff,
+  Lock, Heart, Bell, TrendingUp, Eye, EyeOff, Download,
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/database';
-import { updateAvatar, deleteAvatar, resendEmailVerification, resendPhoneVerification, verifyPhoneOTP, verifyEmailOTPCode } from '@/lib/auth/profile';
+import type { Database } from '@/lib/database/types';
+import { updateAvatar, deleteAvatar, deleteAccount, resendEmailVerification, resendPhoneVerification, verifyPhoneOTP, verifyEmailOTPCode } from '@/lib/auth/profile';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
+
+interface NotificationSettings {
+ email: boolean;
+ sms: boolean;
+ push: boolean;
+ price: boolean;
+ stock: boolean;
+ deal: boolean;
+}
+
+interface PrivacySettings {
+ publicProfile: boolean;
+ shareSearchHistory: boolean;
+}
+
+const LOCAL_STORAGE_KEY_PREFIX = 'tawveeri.preferences.';
 
 export default function ProfilePage() {
  const supabase = useMemo(
@@ -74,6 +92,21 @@ export default function ProfilePage() {
  const [showNewPassword, setShowNewPassword] = useState(false);
  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+ // Notification & privacy settings
+ const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+   email: true, sms: false, push: true, price: true, stock: true, deal: true,
+ });
+ const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
+   publicProfile: true, shareSearchHistory: false,
+ });
+ const [settingsSaving, setSettingsSaving] = useState(false);
+ const [exporting, setExporting] = useState(false);
+
+ const localStorageKey = useMemo(() => {
+   if (!user?.id) return null;
+   return `${LOCAL_STORAGE_KEY_PREFIX}${user.id}`;
+ }, [user?.id]);
+
  // Original values for change detection
  const originalFullName = user?.full_name || user?.user_metadata?.full_name || '';
  const hasChanges = fullName !== originalFullName;
@@ -114,6 +147,54 @@ export default function ProfilePage() {
      setUnreadNotifCount(notifRes.count || 0);
    });
  }, [supabase, authLoading, user?.id]);
+
+ // Fetch notification & privacy preferences
+ useEffect(() => {
+   if (!supabase || authLoading || !user?.id) return;
+
+   async function fetchPreferences() {
+     try {
+       const { data, error } = await supabase!
+         .from('user_preferences')
+         .select('notification_preferences, privacy_preferences')
+         .eq('user_id', user!.id)
+         .single<Database['public']['Tables']['user_preferences']['Row']>();
+
+       if (error) {
+         // Fall back to localStorage
+         if (localStorageKey) {
+           try {
+             const raw = localStorage.getItem(localStorageKey);
+             if (raw) {
+               const parsed = JSON.parse(raw);
+               if (parsed.notification_preferences) setNotificationSettings(parsed.notification_preferences);
+               if (parsed.privacy_preferences) setPrivacySettings(parsed.privacy_preferences);
+             }
+           } catch {}
+         }
+       } else if (data) {
+         if (data.notification_preferences) {
+           setNotificationSettings({
+             email: !!data.notification_preferences.email,
+             sms: !!data.notification_preferences.sms,
+             push: !!data.notification_preferences.push,
+             price: !!data.notification_preferences.price,
+             stock: !!data.notification_preferences.stock,
+             deal: !!data.notification_preferences.deal,
+           });
+         }
+         if (data.privacy_preferences) {
+           setPrivacySettings({
+             publicProfile: !!data.privacy_preferences.publicProfile,
+             shareSearchHistory: !!data.privacy_preferences.shareSearchHistory,
+           });
+         }
+       }
+     } catch {}
+   }
+
+   fetchPreferences();
+ }, [supabase, authLoading, user?.id, localStorageKey]);
 
  // Loading skeleton
  if (authLoading || loading) {
@@ -248,9 +329,12 @@ export default function ProfilePage() {
  if (!supabase) return;
  setDeleteLoading(true);
  try {
- const { error: signOutError } = await supabase.auth.signOut();
+ // Delete account via server-side API (handles email, audit, DB, auth deletion)
+ const { error: deleteError } = await deleteAccount(user?.id || '');
+ if (deleteError) throw deleteError;
 
- if (signOutError) throw signOutError;
+ // Sign out locally (session is already invalid after auth user deletion)
+ await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
  toast({
  title: t('profile.accountDeleted'),
@@ -457,6 +541,108 @@ export default function ProfilePage() {
  }
  };
 
+ const handleSaveSettings = async (
+   updatedNotif?: NotificationSettings,
+   updatedPrivacy?: PrivacySettings,
+ ) => {
+   if (!user || !supabase) return;
+   setSettingsSaving(true);
+   const notif = updatedNotif || notificationSettings;
+   const priv = updatedPrivacy || privacySettings;
+
+   try {
+     const upsertPayload: Database['public']['Tables']['user_preferences']['Insert'] = {
+       user_id: user.id,
+       notification_preferences: { ...notif },
+       privacy_preferences: { ...priv },
+       updated_at: new Date().toISOString(),
+     };
+
+     const { error } = await supabase
+       .from('user_preferences')
+       .upsert(upsertPayload, { onConflict: 'user_id' });
+
+     if (error) throw error;
+
+     // Persist to localStorage as fallback
+     if (localStorageKey) {
+       try {
+         const existing = localStorage.getItem(localStorageKey);
+         const parsed = existing ? JSON.parse(existing) : {};
+         localStorage.setItem(localStorageKey, JSON.stringify({
+           ...parsed,
+           notification_preferences: notif,
+           privacy_preferences: priv,
+         }));
+       } catch {}
+     }
+
+     toast({ title: t('profile.settingsSaved'), variant: 'default' });
+   } catch (error) {
+     // Still persist to localStorage on error
+     if (localStorageKey) {
+       try {
+         const existing = localStorage.getItem(localStorageKey);
+         const parsed = existing ? JSON.parse(existing) : {};
+         localStorage.setItem(localStorageKey, JSON.stringify({
+           ...parsed,
+           notification_preferences: notif,
+           privacy_preferences: priv,
+         }));
+       } catch {}
+     }
+     toast({
+       title: t('profile.updateError'),
+       description: error instanceof Error ? error.message : undefined,
+       variant: 'destructive',
+     });
+   } finally {
+     setSettingsSaving(false);
+   }
+ };
+
+ const handleExportData = async () => {
+   if (!user || !supabase) return;
+   setExporting(true);
+   try {
+     const [{ data: profile }, { data: wishlists }, { data: alerts }, { data: searches }] =
+       await Promise.all([
+         supabase.from('users').select('*').eq('id', user.id).single(),
+         supabase.from('user_wishlists').select('*').eq('user_id', user.id),
+         supabase.from('price_alerts').select('*').eq('user_id', user.id),
+         supabase.from('search_history').select('*').eq('user_id', user.id),
+       ]);
+
+     const exportPayload = {
+       exported_at: new Date().toISOString(),
+       user: profile,
+       wishlist: wishlists,
+       price_alerts: alerts,
+       search_history: searches,
+     };
+
+     const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+     const url = URL.createObjectURL(blob);
+     const anchor = document.createElement('a');
+     anchor.href = url;
+     anchor.download = `tawveeri-export-${new Date().toISOString()}.json`;
+     document.body.appendChild(anchor);
+     anchor.click();
+     document.body.removeChild(anchor);
+     URL.revokeObjectURL(url);
+
+     toast({ title: t('profile.dataExported'), variant: 'default' });
+   } catch (error) {
+     toast({
+       title: t('profile.dataExportFailed'),
+       description: error instanceof Error ? error.message : undefined,
+       variant: 'destructive',
+     });
+   } finally {
+     setExporting(false);
+   }
+ };
+
  return (
  <div className="space-y-6">
    <PageBreadcrumbs items={[{ label: t('dashboard.profileMenu.profile') }]} />
@@ -464,7 +650,7 @@ export default function ProfilePage() {
    {/* ── Profile Hero Card ── */}
    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
      {/* Gradient banner */}
-     <div className="h-24 bg-gradient-to-r from-primary-500/10 via-primary-400/5 to-primary-600/10" />
+     <div className="h-28 bg-gradient-to-r from-primary-500/10 via-primary-400/5 to-primary-600/10" />
 
      {/* Profile info */}
      <div className="px-5 pb-5 -mt-12">
@@ -616,152 +802,192 @@ export default function ProfilePage() {
    </div>
 
    {/* ── Bento Grid ── */}
-   <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-     {/* Left: Personal Information (col-span-3) */}
-     <div className="lg:col-span-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-       {/* Section header */}
-       <div className="flex items-center gap-3 mb-5">
-         <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
-           <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+   <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+     {/* Left column (col-span-3) */}
+     <div className="lg:col-span-3 space-y-4">
+       {/* Personal Information */}
+       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+         {/* Section header */}
+         <div className="flex items-center gap-3 mb-5">
+           <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+             <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+           </div>
+           <div>
+             <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('profile.personalInformation')}</h2>
+             <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.updatePersonalInfo')}</p>
+           </div>
          </div>
-         <div>
-           <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('profile.personalInformation')}</h2>
-           <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.updatePersonalInfo')}</p>
+
+         <div className="space-y-4">
+           {/* Full Name */}
+           <div className="space-y-1.5">
+             <Label htmlFor="fullName" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.fullName')}</Label>
+             <Input
+               id="fullName"
+               value={fullName}
+               onChange={(e) => setFullName(e.target.value)}
+               placeholder={t('profile.enterFullName')}
+             />
+           </div>
+
+           {/* Email */}
+           <div className="space-y-1.5">
+             <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.email')}</Label>
+             <div className="flex items-center gap-2">
+               <Input
+                 id="email"
+                 type="email"
+                 value={email}
+                 disabled
+                 className="bg-gray-50 dark:bg-gray-800/50 flex-1"
+               />
+               {emailVerified ? (
+                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg shrink-0">
+                   <CheckCircle2 className="w-3.5 h-3.5" />
+                   {t('profile.verified')}
+                 </span>
+               ) : (
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={handleResendEmail}
+                   disabled={emailResendLoading}
+                   className="text-xs shrink-0"
+                 >
+                   <AlertCircle className="w-3.5 h-3.5 me-1 text-amber-500" />
+                   {emailResendLoading ? t('profile.sending') : emailOtpSent ? t('profile.resendCode') : t('profile.resendVerification')}
+                 </Button>
+               )}
+             </div>
+             {/* Email OTP input when sent */}
+             {!emailVerified && emailOtpSent && (
+               <div className="flex items-center gap-2 mt-2">
+                 <Input
+                   type="text"
+                   value={emailOtp}
+                   onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                   placeholder={t('profile.enterVerificationCode')}
+                   className="flex-1"
+                   dir="ltr"
+                   maxLength={6}
+                 />
+                 <Button
+                   size="sm"
+                   onClick={handleVerifyEmail}
+                   disabled={emailVerifyLoading || emailOtp.trim().length === 0}
+                 >
+                   {emailVerifyLoading ? t('profile.verifying') : t('common.verify')}
+                 </Button>
+               </div>
+             )}
+           </div>
+
+           {/* Phone */}
+           <div className="space-y-1.5">
+             <Label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.phone')}</Label>
+             <div className="flex items-center gap-2">
+               <Input
+                 id="phone"
+                 type="tel"
+                 value={phone}
+                 disabled
+                 className="bg-gray-50 dark:bg-gray-800/50 flex-1"
+                 dir="ltr"
+               />
+               {phoneVerified ? (
+                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg shrink-0">
+                   <CheckCircle2 className="w-3.5 h-3.5" />
+                   {t('profile.verified')}
+                 </span>
+               ) : (
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={handleResendPhone}
+                   disabled={phoneResendLoading || !user?.phone}
+                   className="text-xs shrink-0"
+                 >
+                   <AlertCircle className="w-3.5 h-3.5 me-1 text-amber-500" />
+                   {phoneResendLoading ? t('profile.sending') : phoneOtpSent ? t('profile.resendCode') : t('profile.sendCode')}
+                 </Button>
+               )}
+             </div>
+             {/* OTP input when sent */}
+             {!phoneVerified && phoneOtpSent && (
+               <div className="flex items-center gap-2 mt-2">
+                 <Input
+                   type="text"
+                   value={phoneOtp}
+                   onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                   placeholder={t('profile.enterVerificationCode')}
+                   className="flex-1"
+                   dir="ltr"
+                   maxLength={6}
+                 />
+                 <Button
+                   size="sm"
+                   onClick={handleVerifyPhone}
+                   disabled={phoneVerifyLoading || phoneOtp.trim().length === 0}
+                 >
+                   {phoneVerifyLoading ? t('profile.verifying') : t('common.verify')}
+                 </Button>
+               </div>
+             )}
+           </div>
+         </div>
+
+         {/* Save/Cancel footer */}
+         <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
+           <Button variant="outline" size="sm" onClick={() => router.back()}>
+             <X className="w-3.5 h-3.5 me-1.5" />
+             {t('profile.cancel')}
+           </Button>
+           <Button size="sm" onClick={handleSaveProfile} disabled={saving || !hasChanges}>
+             <Save className="w-3.5 h-3.5 me-1.5" />
+             {saving ? t('profile.saving') : t('profile.saveChanges')}
+           </Button>
          </div>
        </div>
 
-       <div className="space-y-4">
-         {/* Full Name */}
-         <div className="space-y-1.5">
-           <Label htmlFor="fullName" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.fullName')}</Label>
-           <Input
-             id="fullName"
-             value={fullName}
-             onChange={(e) => setFullName(e.target.value)}
-             placeholder={t('profile.enterFullName')}
-           />
-         </div>
-
-         {/* Email */}
-         <div className="space-y-1.5">
-           <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.email')}</Label>
-           <div className="flex items-center gap-2">
-             <Input
-               id="email"
-               type="email"
-               value={email}
-               disabled
-               className="bg-gray-50 dark:bg-gray-800/50 flex-1"
-             />
-             {emailVerified ? (
-               <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg shrink-0">
-                 <CheckCircle2 className="w-3.5 h-3.5" />
-                 {t('profile.verified')}
-               </span>
-             ) : (
-               <Button
-                 variant="outline"
-                 size="sm"
-                 onClick={handleResendEmail}
-                 disabled={emailResendLoading}
-                 className="text-xs shrink-0"
-               >
-                 <AlertCircle className="w-3.5 h-3.5 me-1 text-amber-500" />
-                 {emailResendLoading ? t('profile.sending') : emailOtpSent ? t('profile.resendCode') : t('profile.resendVerification')}
-               </Button>
-             )}
+       {/* Notification Preferences */}
+       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+         <div className="flex items-center gap-3 mb-4">
+           <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center">
+             <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />
            </div>
-           {/* Email OTP input when sent */}
-           {!emailVerified && emailOtpSent && (
-             <div className="flex items-center gap-2 mt-2">
-               <Input
-                 type="text"
-                 value={emailOtp}
-                 onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                 placeholder={t('profile.enterVerificationCode')}
-                 className="flex-1"
-                 dir="ltr"
-                 maxLength={6}
-               />
-               <Button
-                 size="sm"
-                 onClick={handleVerifyEmail}
-                 disabled={emailVerifyLoading || emailOtp.trim().length === 0}
-               >
-                 {emailVerifyLoading ? t('profile.verifying') : t('common.verify')}
-               </Button>
-             </div>
-           )}
-         </div>
-
-         {/* Phone */}
-         <div className="space-y-1.5">
-           <Label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.phone')}</Label>
-           <div className="flex items-center gap-2">
-             <Input
-               id="phone"
-               type="tel"
-               value={phone}
-               disabled
-               className="bg-gray-50 dark:bg-gray-800/50 flex-1"
-               dir="ltr"
-             />
-             {phoneVerified ? (
-               <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg shrink-0">
-                 <CheckCircle2 className="w-3.5 h-3.5" />
-                 {t('profile.verified')}
-               </span>
-             ) : (
-               <Button
-                 variant="outline"
-                 size="sm"
-                 onClick={handleResendPhone}
-                 disabled={phoneResendLoading || !user?.phone}
-                 className="text-xs shrink-0"
-               >
-                 <AlertCircle className="w-3.5 h-3.5 me-1 text-amber-500" />
-                 {phoneResendLoading ? t('profile.sending') : phoneOtpSent ? t('profile.resendCode') : t('profile.sendCode')}
-               </Button>
-             )}
+           <div>
+             <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('profile.notificationPreferences')}</h2>
+             <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.notificationPreferencesDesc')}</p>
            </div>
-           {/* OTP input when sent */}
-           {!phoneVerified && phoneOtpSent && (
-             <div className="flex items-center gap-2 mt-2">
-               <Input
-                 type="text"
-                 value={phoneOtp}
-                 onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                 placeholder={t('profile.enterVerificationCode')}
-                 className="flex-1"
-                 dir="ltr"
-                 maxLength={6}
-               />
-               <Button
-                 size="sm"
-                 onClick={handleVerifyPhone}
-                 disabled={phoneVerifyLoading || phoneOtp.trim().length === 0}
-               >
-                 {phoneVerifyLoading ? t('profile.verifying') : t('common.verify')}
-               </Button>
-             </div>
-           )}
          </div>
-       </div>
 
-       {/* Save/Cancel footer */}
-       <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
-         <Button variant="outline" size="sm" onClick={() => router.back()}>
-           <X className="w-3.5 h-3.5 me-1.5" />
-           {t('profile.cancel')}
-         </Button>
-         <Button size="sm" onClick={handleSaveProfile} disabled={saving || !hasChanges}>
-           <Save className="w-3.5 h-3.5 me-1.5" />
-           {saving ? t('profile.saving') : t('profile.saveChanges')}
-         </Button>
+         <div className="space-y-3">
+           {([
+             ['email', t('profile.emailNotif')],
+             ['sms', t('profile.smsNotif')],
+             ['push', t('profile.pushNotif')],
+             ['price', t('profile.priceAlertsNotif')],
+             ['stock', t('profile.stockAlerts')],
+             ['deal', t('profile.dealAlerts')],
+           ] as [keyof NotificationSettings, string][]).map(([key, label]) => (
+             <div key={key} className="flex items-center justify-between gap-3">
+               <Label className="text-sm text-gray-700 dark:text-gray-300">{label}</Label>
+               <Switch
+                 checked={notificationSettings[key]}
+                 onCheckedChange={(value) => {
+                   const updated = { ...notificationSettings, [key]: value };
+                   setNotificationSettings(updated);
+                   handleSaveSettings(updated, undefined);
+                 }}
+                 disabled={settingsSaving}
+               />
+             </div>
+           ))}
+         </div>
        </div>
      </div>
 
-     {/* Right: Preferences + Security + Danger Zone (col-span-2) */}
+     {/* Right column (col-span-2) */}
      <div className="lg:col-span-2 space-y-4">
        {/* Preferences */}
        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
@@ -917,6 +1143,59 @@ export default function ProfilePage() {
              </div>
            </div>
          )}
+       </div>
+
+       {/* Privacy & Data */}
+       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+         <div className="flex items-center gap-3 mb-4">
+           <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+             <Eye className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+           </div>
+           <div>
+             <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('profile.privacyAndData')}</h2>
+             <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.privacyAndDataDesc')}</p>
+           </div>
+         </div>
+
+         <div className="space-y-3">
+           <div className="flex items-center justify-between gap-3">
+             <Label className="text-sm text-gray-700 dark:text-gray-300">{t('profile.publicProfile')}</Label>
+             <Switch
+               checked={privacySettings.publicProfile}
+               onCheckedChange={(value) => {
+                 const updated = { ...privacySettings, publicProfile: value };
+                 setPrivacySettings(updated);
+                 handleSaveSettings(undefined, updated);
+               }}
+               disabled={settingsSaving}
+             />
+           </div>
+           <div className="flex items-center justify-between gap-3">
+             <Label className="text-sm text-gray-700 dark:text-gray-300">{t('profile.shareSearchHistory')}</Label>
+             <Switch
+               checked={privacySettings.shareSearchHistory}
+               onCheckedChange={(value) => {
+                 const updated = { ...privacySettings, shareSearchHistory: value };
+                 setPrivacySettings(updated);
+                 handleSaveSettings(undefined, updated);
+               }}
+               disabled={settingsSaving}
+             />
+           </div>
+
+           <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+             <div className="flex items-center justify-between gap-3">
+               <div>
+                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile.exportData')}</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.exportDataDesc')}</p>
+               </div>
+               <Button variant="outline" size="sm" onClick={handleExportData} disabled={exporting}>
+                 <Download className="w-3.5 h-3.5 me-1.5" />
+                 {exporting ? t('profile.exporting') : t('profile.exportData')}
+               </Button>
+             </div>
+           </div>
+         </div>
        </div>
 
        {/* Danger Zone */}

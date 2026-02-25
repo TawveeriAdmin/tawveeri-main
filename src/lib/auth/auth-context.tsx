@@ -5,7 +5,7 @@ import { User, Session, AuthError } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { UserRole } from '@/lib/database/types';
 import { createAuditLog } from './audit';
-import { createNotification } from './notifications';
+import { createNotification, sendWelcomeEmail } from './notifications';
 
 interface AuthUser extends Omit<User, 'phone'> {
   role?: UserRole;
@@ -379,6 +379,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             full_name,
           },
         });
+
+        // Send welcome email (fire-and-forget)
+        if (email) {
+          sendWelcomeEmail(email, full_name, preferred_language).catch(() => {});
+        }
       }
 
       return { data, error: null };
@@ -418,6 +423,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           entity_id: data.user.id,
           details: { method: 'email' },
         });
+
+        // Check for new device (fire-and-forget)
+        fetch('/api/auth/check-device', { method: 'POST' }).catch(() => {});
       }
 
       return { data, error: null };
@@ -516,6 +524,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Non-fatal — the page reload will establish the session from cookies
         }
       }
+
+      // Check for new device (fire-and-forget)
+      fetch('/api/auth/check-device', { method: 'POST' }).catch(() => {});
 
       return { data, error: null };
     } catch (error) {
