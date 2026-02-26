@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { EChartsWrapper } from './echarts-wrapper';
 import { useChartThemeColors, buildBaseChartOption } from './use-chart-theme';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { sarSvgHtml, sarSvgDataUri } from '@/components/ui/price';
 import type { RevenueDataPoint } from '@/lib/admin/dashboard-queries';
 
 interface RevenueTrendChartProps {
@@ -34,7 +35,7 @@ export function RevenueTrendChart({ data, locale, loading }: RevenueTrendChartPr
           for (const p of params) {
             const marker = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color};margin-inline-end:6px"></span>`;
             const value = p.seriesIndex === 0
-              ? `${Number(p.value).toLocaleString()} SAR`
+              ? `${Number(p.value).toLocaleString()} ${sarSvgHtml(colors.onSurface)}`
               : p.value;
             html += `<div>${marker}${p.seriesName}: ${value}</div>`;
           }
@@ -68,8 +69,15 @@ export function RevenueTrendChart({ data, locale, loading }: RevenueTrendChartPr
             color: colors.onSurfaceVariant,
             fontSize: 11,
             formatter: (value: number) => {
-              if (value >= 1000) return `${(value / 1000).toFixed(0)}K SAR`;
-              return `${value} SAR`;
+              if (value >= 1000) return `${(value / 1000).toFixed(0)}K {sar|}`;
+              return `${value} {sar|}`;
+            },
+            rich: {
+              sar: {
+                backgroundColor: { image: sarSvgDataUri(colors.onSurfaceVariant) } as any,
+                width: 10,
+                height: 10,
+              },
             },
           },
           splitLine: { lineStyle: { color: colors.outlineVariant, type: 'dashed' } },

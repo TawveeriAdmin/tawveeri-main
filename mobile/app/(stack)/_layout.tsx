@@ -74,7 +74,7 @@ export default function StackLayout() {
         }}
       />
       <Stack.Screen name="price-alerts" options={{ title: locale === 'ar' ? 'تنبيهات الأسعار' : 'Price Alerts' }} />
-      <Stack.Screen name="compare" options={{ title: locale === 'ar' ? 'المقارنة' : 'Compare' }} />
+      <Stack.Screen name="cart" options={{ title: locale === 'ar' ? 'السلة' : 'Cart' }} />
       <Stack.Screen name="settings" options={{ title: locale === 'ar' ? 'الإعدادات' : 'Settings' }} />
       <Stack.Screen name="edit-profile" options={{ title: locale === 'ar' ? 'تعديل الملف الشخصي' : 'Edit Profile' }} />
       <Stack.Screen name="coupons" options={{ title: locale === 'ar' ? 'كوبونات' : 'Coupons' }} />

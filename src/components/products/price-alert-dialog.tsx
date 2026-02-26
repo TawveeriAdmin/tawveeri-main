@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { SARSymbol } from '@/components/ui/price';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { createNotification } from '@/lib/auth/notifications';
@@ -41,12 +42,8 @@ export function PriceAlertDialog({
 
   const formattedCurrentPrice = useMemo(() => {
     if (typeof currentPrice !== 'number') return null;
-    return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
-      style: 'currency',
-      currency: 'SAR',
-      maximumFractionDigits: 2,
-    }).format(currentPrice);
-  }, [currentPrice, locale]);
+    return Math.round(currentPrice).toLocaleString('en-US');
+  }, [currentPrice]);
 
   const [targetPrice, setTargetPrice] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
@@ -194,8 +191,8 @@ export function PriceAlertDialog({
                 {productName}
               </Label>
               {formattedCurrentPrice && (
-                <p className="text-sm text-on-surface-variant">
-                  {t('product.priceAlertCurrentPrice')}: {formattedCurrentPrice}
+                <p className="text-sm text-on-surface-variant inline-flex items-center gap-1">
+                  {t('product.priceAlertCurrentPrice')}: {formattedCurrentPrice} <SARSymbol className="w-2.5 h-2.5 fill-current" />
                 </p>
               )}
             </div>

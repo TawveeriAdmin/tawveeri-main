@@ -15,6 +15,7 @@ import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { formatPrice } from '@/src/lib/utils';
+import { SARSymbol } from '@/src/components/ui/SARSymbol';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Price, Badge, EmptyState, Skeleton } from '@/src/components/ui';
 
@@ -146,17 +147,23 @@ export default function PriceAlertsScreen() {
                       <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
                         {locale === 'ar' ? 'الحالي' : 'Current'}
                       </Text>
-                      <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
-                        {formatPrice(currentPrice)}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
+                          {formatPrice(currentPrice)}
+                        </Text>
+                        <SARSymbol size={10} color={colors.primary} />
+                      </View>
                     </View>
                     <View>
                       <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
                         {locale === 'ar' ? 'المستهدف' : 'Target'}
                       </Text>
-                      <Text style={[typography.subheadline, { color: colors.systemGreen, fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
-                        {formatPrice(targetPrice)}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Text style={[typography.subheadline, { color: colors.systemGreen, fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
+                          {formatPrice(targetPrice)}
+                        </Text>
+                        <SARSymbol size={10} color={colors.primary} />
+                      </View>
                     </View>
                   </View>
                   {/* Progress bar */}

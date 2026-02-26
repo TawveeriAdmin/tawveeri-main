@@ -28,11 +28,25 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...rest,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        ...rest,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
+      throw err;
+    }
+    clearTimeout(timeout);
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {

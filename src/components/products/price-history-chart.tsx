@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from '@/lib/database';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { SARSymbol } from '@/components/ui/price';
 
 interface PriceHistoryChartProps {
   productStoreId: string;
@@ -169,11 +170,11 @@ export function PriceHistoryChart({
             <div className="flex justify-between text-xs text-on-surface-variant">
               <div>
                 <div>{t('products.priceHistory.lowest')}</div>
-                <div className="font-semibold">{minPrice.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</div>
+                <div className="font-semibold inline-flex items-center gap-1">{Math.round(minPrice).toLocaleString()} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></div>
               </div>
               <div>
                 <div>{t('products.priceHistory.highest')}</div>
-                <div className="font-semibold">{maxPrice.toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</div>
+                <div className="font-semibold inline-flex items-center gap-1">{Math.round(maxPrice).toLocaleString()} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></div>
               </div>
             </div>
 
@@ -188,7 +189,7 @@ export function PriceHistoryChart({
                       day: 'numeric',
                     })}
                   </span>
-                  <span className="font-semibold">{Math.round(point.price).toLocaleString()} {locale === 'ar' ? 'ر.س' : 'SAR'}</span>
+                  <span className="font-semibold inline-flex items-center gap-1">{Math.round(point.price).toLocaleString()} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></span>
                 </div>
               ))}
             </div>

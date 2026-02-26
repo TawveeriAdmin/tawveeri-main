@@ -40,6 +40,9 @@ import {
   ArrowUpDown,
   SearchX,
   SlidersHorizontal,
+  BarChart3,
+  ExternalLink,
+  Heart,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
@@ -49,6 +52,8 @@ import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
 import { STORE_LOGOS } from '@/src/lib/constants/store-logos';
+import { useCompareStore } from '@/src/lib/compare/compare-store';
+import { useSavedStore } from '@/src/lib/wishlist/saved-store';
 import {
   FilterSheet,
   applyFilters,
@@ -724,6 +729,46 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
   const savings = item.originalPrice
     ? calculateSavingsPercentage(item.originalPrice, item.price)
     : 0;
+  const addToCompare = useCompareStore((s) => s.addProduct);
+  const removeFromCompare = useCompareStore((s) => s.removeProduct);
+  const isInCompare = useCompareStore((s) => s.isInCompare(item.id));
+  const { addProduct: saveProduct, removeProduct: unsaveProduct, isSaved } = useSavedStore();
+  const saved = isSaved(item.id);
+
+  const toggleSaved = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (saved) {
+      unsaveProduct(item.id);
+    } else {
+      saveProduct({ id: item.id, title: item.title, price: item.price, originalPrice: item.originalPrice, imageUrl: item.imageUrl, store: item.store, url: item.url });
+    }
+  };
+
+  const toggleCompare = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (isInCompare) {
+      removeFromCompare(item.id);
+    } else {
+      const added = addToCompare({
+        id: item.id,
+        name: item.title,
+        slug: item.id,
+        image_url: item.imageUrl,
+        brand: item.brand,
+        category: item.category,
+        product_stores: [{
+          id: item.id,
+          current_price: item.price,
+          original_price: item.originalPrice,
+          store_id: item.store,
+          stores: { id: item.store, name: item.store },
+        }],
+      });
+      if (!added) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
+    }
+  };
 
   return (
     <Card onPress={() => Linking.openURL(item.url)} style={{ width: CARD_WIDTH }} padding="xs">
@@ -751,6 +796,30 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
             <Text style={styles.savingsBadgeText}>-{savings}%</Text>
           </View>
         )}
+        {/* Action buttons overlay */}
+        <View style={styles.cardActions}>
+          <Pressable
+            onPress={(e) => { e.stopPropagation(); toggleSaved(); }}
+            style={[styles.cardActionBtn, { backgroundColor: saved ? '#FEE2E2' : colors.background + 'E6' }]}
+            hitSlop={4}
+          >
+            <Heart size={14} color={saved ? colors.systemRed : colors.secondaryLabel} fill={saved ? colors.systemRed : 'none'} strokeWidth={2} />
+          </Pressable>
+          <Pressable
+            onPress={(e) => { e.stopPropagation(); toggleCompare(); }}
+            style={[styles.cardActionBtn, { backgroundColor: isInCompare ? colors.primaryContainer : colors.background + 'E6' }]}
+            hitSlop={4}
+          >
+            <BarChart3 size={14} color={isInCompare ? colors.primary : colors.secondaryLabel} strokeWidth={2} />
+          </Pressable>
+          <Pressable
+            onPress={(e) => { e.stopPropagation(); Linking.openURL(item.url); }}
+            style={[styles.cardActionBtn, { backgroundColor: colors.background + 'E6' }]}
+            hitSlop={4}
+          >
+            <ExternalLink size={14} color={colors.secondaryLabel} strokeWidth={2} />
+          </Pressable>
+        </View>
       </View>
       <View style={{ padding: spacing.sm }}>
         <Text
@@ -784,6 +853,46 @@ function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
   const savings = item.originalPrice
     ? calculateSavingsPercentage(item.originalPrice, item.price)
     : 0;
+  const addToCompare = useCompareStore((s) => s.addProduct);
+  const removeFromCompare = useCompareStore((s) => s.removeProduct);
+  const isInCompare = useCompareStore((s) => s.isInCompare(item.id));
+  const { addProduct: saveProduct, removeProduct: unsaveProduct, isSaved } = useSavedStore();
+  const saved = isSaved(item.id);
+
+  const toggleSaved = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (saved) {
+      unsaveProduct(item.id);
+    } else {
+      saveProduct({ id: item.id, title: item.title, price: item.price, originalPrice: item.originalPrice, imageUrl: item.imageUrl, store: item.store, url: item.url });
+    }
+  };
+
+  const toggleCompare = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (isInCompare) {
+      removeFromCompare(item.id);
+    } else {
+      const added = addToCompare({
+        id: item.id,
+        name: item.title,
+        slug: item.id,
+        image_url: item.imageUrl,
+        brand: item.brand,
+        category: item.category,
+        product_stores: [{
+          id: item.id,
+          current_price: item.price,
+          original_price: item.originalPrice,
+          store_id: item.store,
+          stores: { id: item.store, name: item.store },
+        }],
+      });
+      if (!added) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
+    }
+  };
 
   return (
     <Card onPress={() => Linking.openURL(item.url)} padding="sm">
@@ -852,6 +961,39 @@ function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
                 </View>
               )}
             </View>
+          </View>
+          {/* Action buttons */}
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); toggleSaved(); }}
+              style={[styles.listActionBtn, { backgroundColor: saved ? '#FEE2E2' : colors.tertiaryFill }]}
+              hitSlop={4}
+            >
+              <Heart size={13} color={saved ? colors.systemRed : colors.secondaryLabel} fill={saved ? colors.systemRed : 'none'} strokeWidth={2} />
+              <Text style={[typography.caption2, { color: saved ? colors.systemRed : colors.secondaryLabel, fontWeight: '500' }]}>
+                {saved ? (rtl.isRTL ? 'محفوظ' : 'Saved') : (rtl.isRTL ? 'حفظ' : 'Save')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); toggleCompare(); }}
+              style={[styles.listActionBtn, { backgroundColor: isInCompare ? colors.primaryContainer : colors.tertiaryFill }]}
+              hitSlop={4}
+            >
+              <BarChart3 size={13} color={isInCompare ? colors.primary : colors.secondaryLabel} strokeWidth={2} />
+              <Text style={[typography.caption2, { color: isInCompare ? colors.primary : colors.secondaryLabel, fontWeight: '500' }]}>
+                {isInCompare ? (rtl.isRTL ? 'في المقارنة' : 'In Compare') : (rtl.isRTL ? 'قارن' : 'Compare')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); Linking.openURL(item.url); }}
+              style={[styles.listActionBtn, { backgroundColor: colors.tertiaryFill }]}
+              hitSlop={4}
+            >
+              <ExternalLink size={13} color={colors.secondaryLabel} strokeWidth={2} />
+              <Text style={[typography.caption2, { color: colors.secondaryLabel, fontWeight: '500' }]}>
+                {rtl.isRTL ? 'المتجر' : 'Store'}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -962,5 +1104,26 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
+  },
+  cardActions: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    gap: 4,
+  },
+  cardActionBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.full,
   },
 });

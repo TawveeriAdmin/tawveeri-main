@@ -15,7 +15,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft, ArrowRight, Heart, ShoppingCart, Share2, Bell, ExternalLink,
-  Star, ChevronRight, Check, Minus, Plus, BarChart3,
+  Star, ChevronRight, Check, Minus, Plus, BarChart3, Truck, TrendingDown, TrendingUp,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/src/lib/theme/theme-context';
@@ -29,7 +29,7 @@ import { useCartStore } from '@/src/lib/cart/cart-store';
 import { useCompareStore } from '@/src/lib/compare/compare-store';
 import { formatPrice, calculateSavingsPercentage } from '@/src/lib/utils';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Badge, Price, Skeleton } from '@/src/components/ui';
+import { Badge, Price, Skeleton, SARSymbol } from '@/src/components/ui';
 import { CouponBadge } from '@/src/components/ui/CouponBadge';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -205,7 +205,7 @@ export default function ProductDetailScreen() {
     if (!product) return;
     try {
       await Share.share({
-        message: `${product.name} - ${formatPrice(bestPrice)} SAR\nhttps://tawveeri.com/product/${slug}`,
+        message: `${product.name} - ${formatPrice(bestPrice)} SAR\nhttps://tawveeri.com/product/${slug}`, // SAR text kept for plain-text share
       });
     } catch {
       // User cancelled
@@ -235,7 +235,18 @@ export default function ProductDetailScreen() {
           current_price: ps.current_price,
           original_price: ps.original_price,
           store_id: ps.store_id,
-          stores: ps.stores,
+          delivery_time_days: ps.delivery_time_days,
+          delivery_cost: ps.delivery_cost,
+          is_free_delivery: ps.is_free_delivery,
+          stores: ps.stores ? {
+            ...ps.stores,
+            delivery_info_ar: ps.stores.delivery_info_ar,
+            delivery_info_en: ps.stores.delivery_info_en,
+            return_policy_ar: ps.stores.return_policy_ar,
+            return_policy_en: ps.stores.return_policy_en,
+            warranty_info_ar: ps.stores.warranty_info_ar,
+            warranty_info_en: ps.stores.warranty_info_en,
+          } : undefined,
         })),
       });
       if (!added) {
@@ -595,6 +606,30 @@ function StorePriceCard({ productStore, isBest, colors, locale }: {
               : (locale === 'ar' ? 'غير متوفر' : 'Out of Stock')}
           </Text>
         )}
+        {/* Delivery info */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+          {productStore.is_free_delivery && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.systemGreen + '18', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+              <Truck size={11} color={colors.systemGreen} />
+              <Text style={[typography.caption2, { color: colors.systemGreen, fontWeight: '600' }]}>
+                {locale === 'ar' ? 'توصيل مجاني' : 'Free Delivery'}
+              </Text>
+            </View>
+          )}
+          {!productStore.is_free_delivery && productStore.delivery_cost != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              <Truck size={11} color={colors.secondaryLabel} />
+              <Text style={[typography.caption2, { color: colors.secondaryLabel }]}>
+                {productStore.delivery_cost} <SARSymbol size={10} color={colors.primary} />
+              </Text>
+            </View>
+          )}
+          {productStore.delivery_time_days != null && (
+            <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
+              {locale === 'ar' ? `${productStore.delivery_time_days} يوم` : `${productStore.delivery_time_days} days`}
+            </Text>
+          )}
+        </View>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Price price={productStore.current_price} locale={locale} size="md" />
@@ -690,7 +725,7 @@ function HistoryTab({ productId, colors, locale }: { productId: string; colors: 
         .from('price_history')
         .select('*, stores(name, name_ar, name_en)')
         .eq('product_id', productId)
-        .order('recorded_at', { ascending: false })
+        .order('recorded_at', { ascending: true })
         .limit(50);
       setHistory(data || []);
       setLoading(false);
@@ -707,30 +742,170 @@ function HistoryTab({ productId, colors, locale }: { productId: string; colors: 
     );
   }
 
+  // Prepare chart data
+  const prices = history.map((h) => h.price).filter(Boolean);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const firstPrice = prices[0];
+  const lastPrice = prices[prices.length - 1];
+  const trendPercent = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+  const isDown = trendPercent < 0;
+
+  const chartData = history.map((h, i) => ({
+    x: i,
+    y: h.price || 0,
+    date: h.recorded_at,
+  }));
+
+  const formatShortDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getDate()}/${d.getMonth() + 1}`;
+  };
+
+  // Last 5 entries (most recent)
+  const recentHistory = [...history].reverse().slice(0, 5);
+
   return (
-    <View style={{ gap: spacing.sm }}>
-      {history.map((h, i) => (
-        <View
-          key={h.id || i}
-          style={[
-            styles.historyRow,
-            { backgroundColor: colors.card },
-            i < history.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator },
-          ]}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={[typography.subheadline, { color: colors.label }]}>
-              {locale === 'ar' ? (h.stores?.name_ar || h.stores?.name) : (h.stores?.name_en || h.stores?.name)}
-            </Text>
-            <Text style={[typography.caption1, { color: colors.tertiaryLabel }]}>
-              {formatDate(h.recorded_at, locale)}
-            </Text>
-          </View>
-          <Price price={h.price} locale={locale} size="sm" />
+    <View style={{ gap: spacing.md }}>
+      {/* Trend summary */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, backgroundColor: isDown ? colors.systemGreen + '12' : colors.systemRed + '12', borderRadius: radii.md }}>
+        {isDown ? (
+          <TrendingDown size={18} color={colors.systemGreen} />
+        ) : (
+          <TrendingUp size={18} color={trendPercent > 0 ? colors.systemRed : colors.secondaryLabel} />
+        )}
+        <Text style={[typography.subheadline, { color: isDown ? colors.systemGreen : trendPercent > 0 ? colors.systemRed : colors.secondaryLabel, fontWeight: '600' }]}>
+          {isDown
+            ? (locale === 'ar' ? `انخفض ${Math.abs(trendPercent).toFixed(1)}%` : `Down ${Math.abs(trendPercent).toFixed(1)}%`)
+            : trendPercent > 0
+              ? (locale === 'ar' ? `ارتفع ${trendPercent.toFixed(1)}%` : `Up ${trendPercent.toFixed(1)}%`)
+              : (locale === 'ar' ? 'مستقر' : 'Stable')}
+        </Text>
+        <Text style={[typography.caption1, { color: colors.tertiaryLabel }]}>
+          {locale === 'ar' ? `آخر ${history.length} تسجيل` : `Last ${history.length} records`}
+        </Text>
+      </View>
+
+      {/* Price Chart */}
+      {chartData.length >= 2 && (
+        <View style={{ height: 200, backgroundColor: colors.card, borderRadius: radii.lg, padding: spacing.sm, overflow: 'hidden' }}>
+          <PriceChart data={chartData} colors={colors} minPrice={minPrice} maxPrice={maxPrice} />
         </View>
-      ))}
+      )}
+
+      {/* Min/Max labels */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={[typography.caption2, { color: colors.secondaryLabel }]}>
+            {locale === 'ar' ? 'أقل سعر' : 'Lowest'}
+          </Text>
+          <Text style={[typography.headline, { color: colors.systemGreen, fontWeight: '700', fontVariant: ['tabular-nums'] }]}>
+            {formatPrice(minPrice)} <SARSymbol size={12} color={colors.primary} />
+          </Text>
+        </View>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={[typography.caption2, { color: colors.secondaryLabel }]}>
+            {locale === 'ar' ? 'أعلى سعر' : 'Highest'}
+          </Text>
+          <Text style={[typography.headline, { color: colors.systemRed, fontWeight: '700', fontVariant: ['tabular-nums'] }]}>
+            {formatPrice(maxPrice)} <SARSymbol size={12} color={colors.primary} />
+          </Text>
+        </View>
+      </View>
+
+      {/* Recent entries list */}
+      {recentHistory.length > 0 && (
+        <View>
+          <Text style={[typography.footnote, { color: colors.secondaryLabel, marginBottom: spacing.xs }]}>
+            {locale === 'ar' ? 'آخر التحديثات' : 'Recent Updates'}
+          </Text>
+          {recentHistory.map((h, i) => (
+            <View
+              key={h.id || i}
+              style={[
+                styles.historyRow,
+                { backgroundColor: colors.card },
+                i < recentHistory.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.subheadline, { color: colors.label }]}>
+                  {locale === 'ar' ? (h.stores?.name_ar || h.stores?.name) : (h.stores?.name_en || h.stores?.name)}
+                </Text>
+                <Text style={[typography.caption1, { color: colors.tertiaryLabel }]}>
+                  {formatDate(h.recorded_at, locale)}
+                </Text>
+              </View>
+              <Price price={h.price} locale={locale} size="sm" />
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
+}
+
+function PriceChart({ data, colors, minPrice, maxPrice }: {
+  data: { x: number; y: number; date: string }[];
+  colors: any;
+  minPrice: number;
+  maxPrice: number;
+}) {
+  // Lazy import to avoid crashes if skia isn't available
+  try {
+    const { CartesianChart, Line, Area } = require('victory-native');
+    const padding = (maxPrice - minPrice) * 0.1 || 10;
+    return (
+      <CartesianChart
+        data={data}
+        xKey="x"
+        yKeys={['y']}
+        domain={{ y: [minPrice - padding, maxPrice + padding] }}
+        axisOptions={{
+          font: null,
+          tickCount: { x: 4, y: 4 },
+          formatXLabel: (val: number) => {
+            const entry = data[Math.round(val)];
+            if (!entry) return '';
+            const d = new Date(entry.date);
+            return `${d.getDate()}/${d.getMonth() + 1}`;
+          },
+          formatYLabel: (val: number) => `${Math.round(val)}`,
+          labelColor: colors.tertiaryLabel,
+          lineColor: colors.separator,
+        }}
+      >
+        {({ points, chartBounds }: any) => (
+          <>
+            <Area
+              points={points.y}
+              y0={chartBounds.bottom}
+              color={colors.primary}
+              opacity={0.1}
+              curveType="natural"
+              animate={{ type: 'timing', duration: 500 }}
+            />
+            <Line
+              points={points.y}
+              color={colors.primary}
+              strokeWidth={2}
+              curveType="natural"
+              animate={{ type: 'timing', duration: 500 }}
+            />
+          </>
+        )}
+      </CartesianChart>
+    );
+  } catch {
+    // Fallback if victory-native/skia not available
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={[typography.caption1, { color: colors.tertiaryLabel }]}>
+          Chart unavailable
+        </Text>
+      </View>
+    );
+  }
 }
 
 const styles = StyleSheet.create({

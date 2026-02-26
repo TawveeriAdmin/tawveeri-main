@@ -22,12 +22,21 @@ export interface CompareProduct {
     current_price: number;
     original_price?: number | null;
     store_id: string;
+    delivery_time_days?: number | null;
+    delivery_cost?: number | null;
+    is_free_delivery?: boolean | null;
     stores?: {
       id: string;
       name: string;
       name_ar?: string;
       name_en?: string;
       logo_url?: string | null;
+      delivery_info_ar?: string | null;
+      delivery_info_en?: string | null;
+      return_policy_ar?: string | null;
+      return_policy_en?: string | null;
+      warranty_info_ar?: string | null;
+      warranty_info_en?: string | null;
     };
   }>;
 }

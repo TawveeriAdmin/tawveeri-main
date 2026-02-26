@@ -8,6 +8,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Clipboard } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ticket, Copy, Check, Clock } from 'lucide-react-native';
+import { SARSymbol } from './SARSymbol';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
@@ -157,14 +158,21 @@ export function CouponBadge({ coupon, variant = 'compact', locale }: CouponBadge
       {(coupon.min_purchase || (coupon.max_discount && coupon.discount_type === 'percentage')) && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs }}>
           {coupon.min_purchase ? (
-            <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
-              {t('coupons.minPurchase')} {coupon.min_purchase} {locale === 'ar' ? 'ر.س' : 'SAR'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
+                {t('coupons.minPurchase')} {coupon.min_purchase}
+              </Text>
+              <SARSymbol size={8} color={colors.primary} />
+            </View>
           ) : null}
           {coupon.max_discount && coupon.discount_type === 'percentage' ? (
-            <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
-              ({t('coupons.maxDiscountAmount')}: {coupon.max_discount} {locale === 'ar' ? 'ر.س' : 'SAR'})
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>
+                ({t('coupons.maxDiscountAmount')}: {coupon.max_discount}
+              </Text>
+              <SARSymbol size={8} color={colors.primary} />
+              <Text style={[typography.caption2, { color: colors.tertiaryLabel }]}>)</Text>
+            </View>
           ) : null}
         </View>
       )}

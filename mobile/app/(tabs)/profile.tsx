@@ -35,7 +35,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Search,
-  BarChart3,
+  ShoppingCart,
   Pencil,
   Globe,
   Sun,
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
               { icon: <Heart size={20} color={colors.systemPink} />, label_ar: 'قائمة الأمنيات', label_en: 'Wishlist', route: '/(stack)/wishlist' },
               { icon: <TrendingDown size={20} color={colors.systemGreen} />, label_ar: 'تنبيهات الأسعار', label_en: 'Price Alerts', route: '/(stack)/price-alerts' },
               { icon: <Bell size={20} color={colors.systemBlue} />, label_ar: 'الإشعارات', label_en: 'Notifications', route: '/(stack)/notifications' },
-              { icon: <BarChart3 size={20} color={colors.systemIndigo} />, label_ar: 'المقارنات', label_en: 'Compare', route: '/(stack)/compare' },
+              { icon: <ShoppingCart size={20} color={colors.systemIndigo} />, label_ar: 'السلة', label_en: 'Cart', route: '/(stack)/cart' },
             ].map((item, i, arr) => (
               <Pressable
                 key={item.route}

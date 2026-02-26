@@ -536,11 +536,11 @@ export default function ComparePage() {
     return t('compare.notSpecified');
   };
 
-  const getShippingLabel = (store: ProductStore | null): string => {
+  const getShippingLabel = (store: ProductStore | null): string | React.ReactNode => {
     if (!store) return t('compare.notAvailable');
     if (store.is_free_delivery) return t('compare.freeDelivery');
     if (typeof store.delivery_cost === 'number' && store.delivery_cost >= 0) {
-      return `${Math.round(store.delivery_cost).toLocaleString('en-US')} ${locale === 'ar' ? 'ر.س' : 'SAR'}`;
+      return <Price amount={store.delivery_cost} className="text-sm font-semibold" symbolClassName="w-3 h-3" />;
     }
     return t('compare.notSpecified');
   };

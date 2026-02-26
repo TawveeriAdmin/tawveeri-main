@@ -24,7 +24,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="search" />
       <Tabs.Screen name="deals" />
-      <Tabs.Screen name="cart" />
+      <Tabs.Screen name="compare" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

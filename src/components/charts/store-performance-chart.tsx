@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { EChartsWrapper } from './echarts-wrapper';
 import { useChartThemeColors, buildBaseChartOption } from './use-chart-theme';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { sarSvgHtml, sarSvgDataUri } from '@/components/ui/price';
 import type { StorePerformanceItem } from '@/lib/admin/dashboard-queries';
 
 interface StorePerformanceChartProps {
@@ -31,7 +32,7 @@ export function StorePerformanceChart({ data, locale, loading }: StorePerformanc
         formatter: (params: any[]) => {
           const p = params[0];
           if (!p) return '';
-          return `<div style="font-weight:600">${p.name}</div><div>${Number(p.value).toLocaleString()} SAR</div>`;
+          return `<div style="font-weight:600">${p.name}</div><div>${Number(p.value).toLocaleString()} ${sarSvgHtml(colors.onSurface)}</div>`;
         },
       },
       grid: {
@@ -88,8 +89,15 @@ export function StorePerformanceChart({ data, locale, loading }: StorePerformanc
             fontSize: 11,
             formatter: (params: any) => {
               const val = params.value;
-              if (val >= 1000) return `${(val / 1000).toFixed(1)}K SAR`;
-              return `${val} SAR`;
+              if (val >= 1000) return `${(val / 1000).toFixed(1)}K {sar|}`;
+              return `${val} {sar|}`;
+            },
+            rich: {
+              sar: {
+                backgroundColor: { image: sarSvgDataUri(colors.onSurfaceVariant) } as any,
+                width: 10,
+                height: 10,
+              },
             },
           },
         },

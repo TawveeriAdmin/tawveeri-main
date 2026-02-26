@@ -1,5 +1,5 @@
 /**
- * Cart Screen - Multi-store grouped cart
+ * Cart Screen - Multi-store grouped cart (stack screen)
  *
  * HIG: Use .insetGrouped list style for settings-like grouped content.
  * Groups items by store with subtotals.
@@ -17,7 +17,7 @@ import { useLocale, useTranslations } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useCartStore, StoreCart, CartItem } from '@/src/lib/cart/cart-store';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Button, Card, Price, EmptyState } from '@/src/components/ui';
+import { Button, Card, Price, EmptyState, SARSymbol } from '@/src/components/ui';
 import { formatPrice } from '@/src/lib/utils';
 
 export default function CartScreen() {
@@ -42,32 +42,25 @@ export default function CartScreen() {
 
   if (stores.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-        <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
-          <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-            {locale === 'ar' ? 'السلة' : 'Cart'}
-          </Text>
-        </View>
-        <EmptyState
-          icon={<ShoppingCart size={48} color={colors.tertiaryLabel} />}
-          title={locale === 'ar' ? 'السلة فارغة' : 'Your cart is empty'}
-          message={locale === 'ar' ? 'ابحث عن منتجات وأضفها إلى سلتك' : 'Search for products and add them to your cart'}
-          actionTitle={locale === 'ar' ? 'ابدأ التسوق' : 'Start Shopping'}
-          onAction={() => router.push('/(tabs)/search')}
-        />
-      </SafeAreaView>
+      <EmptyState
+        icon={<ShoppingCart size={48} color={colors.tertiaryLabel} />}
+        title={locale === 'ar' ? 'السلة فارغة' : 'Your cart is empty'}
+        message={locale === 'ar' ? 'ابحث عن منتجات وأضفها إلى سلتك' : 'Search for products and add them to your cart'}
+        actionTitle={locale === 'ar' ? 'ابدأ التسوق' : 'Start Shopping'}
+        onAction={() => router.push('/(tabs)/search')}
+      />
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Header */}
-      <View style={[styles.header, { flexDirection: rtl.row }]}>
-        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-          {locale === 'ar' ? 'السلة' : 'Cart'}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Clear All header */}
+      <View style={[styles.clearHeader, { flexDirection: rtl.row }]}>
+        <Text style={[typography.footnote, { color: colors.secondaryLabel }]}>
+          {totals.totalItems} {locale === 'ar' ? 'منتج' : 'items'}
         </Text>
         <Pressable onPress={handleClearCart} hitSlop={8}>
-          <Text style={[typography.body, { color: colors.error, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+          <Text style={[typography.footnote, { color: colors.error, fontWeight: '600' }]}>
             {locale === 'ar' ? 'مسح الكل' : 'Clear All'}
           </Text>
         </Pressable>
@@ -94,11 +87,11 @@ export default function CartScreen() {
             {locale === 'ar' ? `${totals.totalItems} منتج من ${totals.totalStores} متجر` : `${totals.totalItems} items from ${totals.totalStores} stores`}
           </Text>
           <Text style={[typography.title3, { color: colors.label, fontWeight: '700', fontVariant: ['tabular-nums'], textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-            {formatPrice(totals.subtotal)} {locale === 'ar' ? 'ر.س' : 'SAR'}
+            {formatPrice(totals.subtotal)} <SARSymbol size={14} color={colors.primary} />
           </Text>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -114,7 +107,7 @@ function StoreSection({ store, locale, colors, rtl, onRemove, onUpdateQty }: {
       <View style={[styles.storeHeader, { backgroundColor: colors.secondaryBackground, borderRadius: radii.md, flexDirection: rtl.row }]}>
         <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{store.storeName}</Text>
         <Text style={[typography.footnote, { color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }]}>
-          {formatPrice(storeTotal)} {locale === 'ar' ? 'ر.س' : 'SAR'}
+          {formatPrice(storeTotal)} <SARSymbol size={11} color={colors.primary} />
         </Text>
       </View>
 
@@ -153,7 +146,7 @@ function CartItemRow({ item, storeId, locale, colors, rtl, onRemove, onUpdateQty
           {item.productName}
         </Text>
         <Text style={[typography.headline, { color: colors.label, marginTop: 4, fontVariant: ['tabular-nums'], textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-          {formatPrice(item.price)} {locale === 'ar' ? 'ر.س' : 'SAR'}
+          {formatPrice(item.price)} <SARSymbol size={12} color={colors.primary} />
         </Text>
         {/* Quantity controls */}
         <View style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: spacing.sm, gap: spacing.md }}>
@@ -186,11 +179,11 @@ function CartItemRow({ item, storeId, locale, colors, rtl, onRemove, onUpdateQty
 }
 
 const styles = StyleSheet.create({
-  header: {
+  clearHeader: {
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.sm,
   },
   storeHeader: {
     justifyContent: 'space-between',

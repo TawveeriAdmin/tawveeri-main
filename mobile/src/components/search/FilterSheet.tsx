@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { X, SlidersHorizontal } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { SARSymbol } from '@/src/components/ui/SARSymbol';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
@@ -161,7 +162,7 @@ export function FilterSheet({ visible, onClose, filters, onApply, category, avai
           </View>
 
           {/* Price Range */}
-          <SectionLabel text={locale === 'ar' ? 'نطاق السعر (ر.س)' : 'Price Range (SAR)'} rtl={rtl} colors={colors} />
+          <SectionLabel text={locale === 'ar' ? 'نطاق السعر' : 'Price Range'} rtl={rtl} colors={colors} suffix={<SARSymbol size={10} color={colors.primary} />} />
           <View style={[styles.section, { backgroundColor: colors.card }]}>
             <View style={{ flexDirection: 'row', gap: spacing.md }}>
               <TextInput
@@ -272,11 +273,14 @@ export function FilterSheet({ visible, onClose, filters, onApply, category, avai
 
 // --- Helpers ---
 
-function SectionLabel({ text, rtl, colors }: { text: string; rtl: ReturnType<typeof useRTL>; colors: any }) {
+function SectionLabel({ text, rtl, colors, suffix }: { text: string; rtl: ReturnType<typeof useRTL>; colors: any; suffix?: React.ReactNode }) {
   return (
-    <Text style={[typography.footnote, { color: colors.secondaryLabel, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xs, textTransform: 'uppercase', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-      {text}
-    </Text>
+    <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: 4, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xs }}>
+      <Text style={[typography.footnote, { color: colors.secondaryLabel, textTransform: 'uppercase', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+        {text}
+      </Text>
+      {suffix}
+    </View>
   );
 }
 

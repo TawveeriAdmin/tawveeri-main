@@ -16,12 +16,12 @@ import {
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import {
-  Home, Search, Percent, ShoppingCart, User,
+  Home, Search, Percent, BarChart3, User,
 } from 'lucide-react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useRTL } from '@/src/lib/rtl/useRTL';
-import { useCartStore } from '@/src/lib/cart/cart-store';
+import { useCompareStore } from '@/src/lib/compare/compare-store';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 84 : 60;
 const BOTTOM_PADDING = Platform.OS === 'ios' ? 28 : 8;
@@ -30,7 +30,7 @@ const TAB_CONFIG = [
   { name: 'index', icon: Home, label_ar: 'الرئيسية', label_en: 'Home' },
   { name: 'search', icon: Search, label_ar: 'البحث', label_en: 'Search' },
   { name: 'deals', icon: Percent, label_ar: 'العروض', label_en: 'Deals' },
-  { name: 'cart', icon: ShoppingCart, label_ar: 'السلة', label_en: 'Cart' },
+  { name: 'compare', icon: BarChart3, label_ar: 'المقارنة', label_en: 'Compare' },
   { name: 'profile', icon: User, label_ar: 'حسابي', label_en: 'Profile' },
 ];
 
@@ -38,7 +38,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors, isDark } = useTheme();
   const rtl = useRTL();
   const locale = rtl.locale;
-  const cartItemCount = useCartStore((s) => s.getTotals().totalItems);
+  const compareCount = useCompareStore((s) => s.products.length);
 
   const scaleAnims = useRef(
     TAB_CONFIG.map(() => new Animated.Value(1))
@@ -88,7 +88,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             const IconComponent = config.icon;
             const label = locale === 'ar' ? config.label_ar : config.label_en;
             const tint = isFocused ? colors.primary : colors.systemGray;
-            const showBadge = config.name === 'cart' && cartItemCount > 0;
+            const showBadge = config.name === 'compare' && compareCount > 0;
 
             return (
               <Pressable
@@ -113,7 +113,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                   {showBadge && (
                     <View style={[styles.badge, { backgroundColor: colors.systemRed }]}>
                       <Text style={styles.badgeText}>
-                        {cartItemCount > 99 ? '99+' : cartItemCount}
+                        {compareCount > 99 ? '99+' : compareCount}
                       </Text>
                     </View>
                   )}

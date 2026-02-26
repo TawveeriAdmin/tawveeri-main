@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { CouponFormDialog } from '@/components/admin/coupon-form-dialog';
 import { cn } from '@/lib/utils';
+import { SARSymbol } from '@/components/ui/price';
 import {
   Ticket,
   Plus,
@@ -108,10 +109,10 @@ function getCouponStatus(coupon: CouponRow): CouponStatus {
   return 'active';
 }
 
-function formatDiscount(coupon: CouponRow, t: (key: string) => string): string {
+function formatDiscount(coupon: CouponRow, t: (key: string) => string): React.ReactNode {
   if (coupon.discount_type === 'free_shipping') return t('coupons.freeShipping');
   if (coupon.discount_type === 'percentage') return `${coupon.discount_value ?? 0}%`;
-  return `${coupon.discount_value ?? 0} SAR`;
+  return <span className="inline-flex items-center gap-1">{coupon.discount_value ?? 0} <SARSymbol className="w-2.5 h-2.5 fill-current" /></span>;
 }
 
 // ─── Sub-components ───────────────────────────────────────

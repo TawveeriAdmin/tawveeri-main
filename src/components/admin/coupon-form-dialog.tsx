@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { SARSymbol } from '@/components/ui/price';
 import type { CouponRow } from '@/app/[locale]/admin/coupons/page';
 
 interface CouponFormDialogProps {
@@ -296,7 +297,7 @@ export function CouponFormDialog({
           {/* Min Purchase */}
           <div className="space-y-2">
             <Label htmlFor="coupon-min-purchase">
-              {t('coupons.form.minPurchase')} (SAR)
+              {t('coupons.form.minPurchase')} (<SARSymbol className="w-2.5 h-2.5 fill-current inline" />)
             </Label>
             <Input
               id="coupon-min-purchase"
@@ -315,7 +316,7 @@ export function CouponFormDialog({
             <div className="space-y-2">
               <Label htmlFor="coupon-discount-value">
                 {t('coupons.form.discountValue')} *
-                {discountType === 'percentage' ? ' (%)' : ' (SAR)'}
+                {discountType === 'percentage' ? ' (%)' : <> (<SARSymbol className="w-2.5 h-2.5 fill-current inline" />)</>}
               </Label>
               <Input
                 id="coupon-discount-value"
@@ -335,7 +336,7 @@ export function CouponFormDialog({
           {discountType === 'percentage' && (
             <div className="space-y-2">
               <Label htmlFor="coupon-max-discount">
-                {t('coupons.form.maxDiscount')} (SAR)
+                {t('coupons.form.maxDiscount')} (<SARSymbol className="w-2.5 h-2.5 fill-current inline" />)
               </Label>
               <Input
                 id="coupon-max-discount"

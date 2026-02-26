@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Copy, Check, Ticket, Clock } from 'lucide-react';
+import { SARSymbol } from '@/components/ui/price';
 import type { DiscountType } from '@/lib/database/types';
 
 interface CouponData {
@@ -206,13 +207,13 @@ export function CouponBadge({ coupon, variant = 'compact', locale, onCopy }: Cou
       {(coupon.min_purchase || (coupon.max_discount && coupon.discount_type === 'percentage')) && (
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-on-surface-variant">
           {coupon.min_purchase && (
-            <span>
-              {t('coupons.minPurchase')} {coupon.min_purchase} {t('price.sar')}
+            <span className="inline-flex items-center gap-0.5">
+              {t('coupons.minPurchase')} {coupon.min_purchase} <SARSymbol className="w-2 h-2 fill-current" />
             </span>
           )}
           {coupon.max_discount && coupon.discount_type === 'percentage' && (
-            <span>
-              ({t('coupons.maxDiscountAmount')}: {coupon.max_discount} {t('price.sar')})
+            <span className="inline-flex items-center gap-0.5">
+              ({t('coupons.maxDiscountAmount')}: {coupon.max_discount} <SARSymbol className="w-2 h-2 fill-current" />)
             </span>
           )}
         </div>
