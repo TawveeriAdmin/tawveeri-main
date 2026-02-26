@@ -91,6 +91,8 @@ export default function ForgotPasswordScreen() {
           {/* Back Button */}
           <Pressable
             onPress={() => step === 'phone' ? router.back() : setStep(step === 'password' ? 'otp' : 'phone')}
+            accessibilityRole="button"
+            accessibilityLabel={locale === 'ar' ? 'رجوع' : 'Go back'}
             style={{ width: MIN_TOUCH_TARGET, height: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center', alignSelf: rtl.alignStart, marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0 }}
             hitSlop={8}
           >

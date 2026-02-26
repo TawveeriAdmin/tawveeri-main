@@ -87,7 +87,12 @@ export function CouponBadge({ coupon, variant = 'compact', locale }: CouponBadge
 
   if (variant === 'compact') {
     return (
-      <Pressable onPress={handleCopy} style={[styles.compact, { borderColor: colors.tertiary + '80', backgroundColor: colors.tertiary + '10' }]}>
+      <Pressable
+        onPress={handleCopy}
+        accessibilityRole="button"
+        accessibilityLabel={rtl.isRTL ? `كوبون ${coupon.code}` : `Coupon ${coupon.code}`}
+        accessibilityHint={rtl.isRTL ? 'انقر لنسخ رمز الكوبون' : 'Tap to copy coupon code'}
+        style={[styles.compact, { borderColor: colors.tertiary + '80', backgroundColor: colors.tertiary + '10' }]}>
         <Ticket size={12} color={colors.tertiary} />
         <Text style={[typography.caption2, { color: colors.tertiary, fontWeight: '700', fontVariant: ['tabular-nums'] }]}>
           {coupon.code}
@@ -106,7 +111,12 @@ export function CouponBadge({ coupon, variant = 'compact', locale }: CouponBadge
   const expiryInfo = getExpiryInfo(coupon.expires_at, t);
 
   return (
-    <Pressable onPress={handleCopy} style={[styles.expanded, { borderColor: colors.tertiary + '50', backgroundColor: colors.tertiary + '08' }]}>
+    <Pressable
+      onPress={handleCopy}
+      accessibilityRole="button"
+      accessibilityLabel={rtl.isRTL ? `كوبون ${coupon.code}` : `Coupon ${coupon.code}`}
+      accessibilityHint={rtl.isRTL ? 'انقر لنسخ رمز الكوبون' : 'Tap to copy coupon code'}
+      style={[styles.expanded, { borderColor: colors.tertiary + '50', backgroundColor: colors.tertiary + '08' }]}>
       {/* Discount + Expiry row */}
       <View style={[styles.expandedRow, { flexDirection: rtl.row }]}>
         <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs, flex: 1 }}>
@@ -142,7 +152,12 @@ export function CouponBadge({ coupon, variant = 'compact', locale }: CouponBadge
             {coupon.code}
           </Text>
         </View>
-        <Pressable onPress={handleCopy} style={[styles.copyBtn, { backgroundColor: colors.tertiary + '15' }]}>
+        <Pressable
+          onPress={handleCopy}
+          accessibilityRole="button"
+          accessibilityLabel={rtl.isRTL ? 'نسخ الكوبون' : 'Copy coupon'}
+          accessibilityHint={rtl.isRTL ? 'انقر لنسخ رمز الكوبون' : 'Tap to copy coupon code'}
+          style={[styles.copyBtn, { backgroundColor: colors.tertiary + '15' }]}>
           {copied ? <Check size={14} color={colors.systemGreen} /> : <Copy size={14} color={colors.tertiary} />}
         </Pressable>
       </View>

@@ -125,6 +125,8 @@ export default function LoginScreen() {
               <Pressable
                 key={t}
                 onPress={() => { setTab(t); setError(''); }}
+                accessibilityRole="button"
+                accessibilityLabel={t === 'phone' ? (locale === 'ar' ? 'الهاتف' : 'Phone') : (locale === 'ar' ? 'البريد الإلكتروني' : 'Email')}
                 style={[
                   styles.tabItem,
                   tab === t && { backgroundColor: colors.card, borderRadius: radii.sm, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
@@ -187,7 +189,7 @@ export default function LoginScreen() {
                       fullWidth
                       style={{ marginTop: spacing.lg }}
                     />
-                    <Pressable onPress={() => { setOtpSent(false); setOtp(''); }} style={{ marginTop: spacing.md, alignSelf: 'center' }}>
+                    <Pressable onPress={() => { setOtpSent(false); setOtp(''); }} accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'تغيير الرقم' : 'Change number'} style={{ marginTop: spacing.md, alignSelf: 'center' }}>
                       <Text style={[typography.subheadline, { color: colors.primary }]}>
                         {locale === 'ar' ? 'تغيير الرقم' : 'Change number'}
                       </Text>
@@ -216,7 +218,7 @@ export default function LoginScreen() {
                     textContentType="password"
                   />
                 </View>
-                <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={{ marginTop: spacing.sm, alignSelf: 'flex-end' }}>
+                <Pressable onPress={() => router.push('/(auth)/forgot-password')} accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'} style={{ marginTop: spacing.sm, alignSelf: 'flex-end' }}>
                   <Text style={[typography.subheadline, { color: colors.primary }]}>
                     {locale === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
                   </Text>

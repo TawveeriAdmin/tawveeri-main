@@ -74,6 +74,12 @@
           "icon": "./assets/images/notification-icon.png",
           "color": "#0D47A1"
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Tawveeri to use your camera to scan barcodes and search for products."
+        }
       ]
     ],
     "experiments": {
@@ -81,7 +87,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "YOUR_EAS_PROJECT_ID"
       }
     }
   }

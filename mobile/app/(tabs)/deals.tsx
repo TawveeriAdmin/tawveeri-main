@@ -3,7 +3,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, Dimensions, Pressable } from 'react-native';
+import { View, Text, RefreshControl, Dimensions, Pressable } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -63,7 +64,7 @@ export default function DealsScreen() {
     return (
       <Card
         onPress={() => router.push(`/(stack)/product/${product.slug}`)}
-        style={{ width: CARD_WIDTH }}
+        style={{ flex: 1, margin: spacing.sm / 2 }}
         padding="xs"
       >
         {savings > 0 && (
@@ -106,6 +107,8 @@ export default function DealsScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/(stack)/coupons');
           }}
+          accessibilityRole="button"
+          accessibilityLabel={locale === 'ar' ? 'عرض الكوبونات' : 'View coupons'}
           style={({ pressed }) => [
             {
               flexDirection: 'row',
@@ -136,16 +139,15 @@ export default function DealsScreen() {
           message={locale === 'ar' ? 'تحقق لاحقاً للعروض الجديدة' : 'Check back later for new deals'}
         />
       ) : (
-        <FlatList
+        <FlashList
           data={deals}
           renderItem={renderDeal}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          columnWrapperStyle={{ gap: spacing.md, paddingHorizontal: spacing.md }}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-          contentContainerStyle={{ paddingBottom: spacing.xxl }}
+          contentContainerStyle={{ paddingBottom: spacing.xxl, paddingHorizontal: spacing.md }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
+
         />
       )}
     </SafeAreaView>

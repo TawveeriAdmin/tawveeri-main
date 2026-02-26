@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Bell, Trash2, TrendingDown, Check } from 'lucide-react-native';
@@ -85,6 +86,8 @@ export default function PriceAlertsScreen() {
           <Pressable
             key={t}
             onPress={() => setTab(t)}
+            accessibilityRole="button"
+            accessibilityLabel={t === 'active' ? (locale === 'ar' ? 'التنبيهات النشطة' : 'Active alerts') : (locale === 'ar' ? 'التنبيهات المفعّلة' : 'Triggered alerts')}
             style={[
               styles.segmentItem,
               tab === t && { backgroundColor: colors.card, borderRadius: radii.sm, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
@@ -118,10 +121,11 @@ export default function PriceAlertsScreen() {
           message={locale === 'ar' ? 'أنشئ تنبيهات من صفحة المنتج' : 'Create alerts from the product page'}
         />
       ) : (
-        <FlatList
+        <FlashList
           data={filteredAlerts}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+
           renderItem={({ item }) => {
             const product = item.products;
             const currentPrice = item.current_price || 0;
@@ -133,6 +137,8 @@ export default function PriceAlertsScreen() {
             return (
               <Pressable
                 onPress={() => product?.slug && router.push(`/(stack)/product/${product.slug}`)}
+                accessibilityRole="button"
+                accessibilityLabel={locale === 'ar' ? (product?.name_ar || product?.name) : (product?.name_en || product?.name)}
                 style={[styles.alertCard, { backgroundColor: colors.card, flexDirection: rtl.row }]}
               >
                 {product?.image_url && (
@@ -171,7 +177,7 @@ export default function PriceAlertsScreen() {
                     <View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: colors.systemGreen }]} />
                   </View>
                 </View>
-                <Pressable onPress={() => confirmDelete(item.id)} style={styles.deleteBtn} hitSlop={8}>
+                <Pressable onPress={() => confirmDelete(item.id)} accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'حذف التنبيه' : 'Delete alert'} style={styles.deleteBtn} hitSlop={8}>
                   <Trash2 size={18} color={colors.systemRed} />
                 </Pressable>
               </Pressable>

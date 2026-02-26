@@ -4,12 +4,14 @@
  * Shows store info, rating, products, and policies.
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, Pressable, Linking } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, FlatList, StyleSheet, Pressable, Linking, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowRight, Star, ExternalLink, MapPin, Globe, Store, Ticket } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Star, ExternalLink, MapPin, Globe, Store, Ticket, MessageSquare } from 'lucide-react-native';
+import { useAuth } from '@/src/lib/auth/auth-context';
+import { StoreReviewForm } from '@/src/components/store/StoreReviewForm';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
@@ -24,10 +26,13 @@ export default function StoreDetailScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
   const rtl = useRTL();
+  const { user } = useAuth();
 
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [storeCoupons, setStoreCoupons] = useState<any[]>([]);
+  const [storeReviews, setStoreReviews] = useState<any[]>([]);
+  const [reviewFormVisible, setReviewFormVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,9 +63,34 @@ export default function StoreDetailScreen() {
         const list = Array.isArray(data.data) ? data.data : Array.isArray(data.coupons) ? data.coupons : Array.isArray(data) ? data : [];
         setStoreCoupons(list);
       } catch {}
+
+      // Fetch store reviews
+      try {
+        const { data: reviews } = await supabase
+          .from('store_reviews')
+          .select('*, users(full_name)')
+          .eq('store_id', storeData.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        setStoreReviews(reviews || []);
+      } catch {}
     }
     setLoading(false);
   };
+
+  const handleReviewSubmitted = useCallback(() => {
+    setReviewFormVisible(false);
+    // Reload reviews
+    if (store) {
+      supabase
+        .from('store_reviews')
+        .select('*, users(full_name)')
+        .eq('store_id', store.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+        .then(({ data }) => setStoreReviews(data || []));
+    }
+  }, [store?.id]);
 
   if (loading) {
     return (
@@ -81,7 +111,7 @@ export default function StoreDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ padding: spacing.lg }}>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: rtl.alignStart }]} hitSlop={8}>
+          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'رجوع' : 'Go back'} style={[styles.backBtn, { alignSelf: rtl.alignStart }]} hitSlop={8}>
             {rtl.isRTL ? <ArrowRight size={22} color={colors.label} /> : <ArrowLeft size={22} color={colors.label} />}
           </Pressable>
 
@@ -147,6 +177,59 @@ export default function StoreDetailScreen() {
           </View>
         )}
 
+        {/* Reviews */}
+        <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.lg }}>
+          <View style={{ flexDirection: rtl.row, alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+            <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
+              <MessageSquare size={16} color={colors.primary} />
+              <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                {locale === 'ar' ? 'التقييمات' : 'Reviews'} {storeReviews.length > 0 ? `(${storeReviews.length})` : ''}
+              </Text>
+            </View>
+            {user && (
+              <Pressable onPress={() => setReviewFormVisible(true)} accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'كتابة تقييم' : 'Write a review'} style={[styles.writeReviewBtn, { backgroundColor: colors.primaryContainer }]}>
+                <Star size={14} color={colors.primary} />
+                <Text style={[typography.footnote, { color: colors.primary, fontWeight: '600' }]}>
+                  {locale === 'ar' ? 'اكتب تقييم' : 'Write Review'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {storeReviews.length === 0 ? (
+            <Text style={[typography.body, { color: colors.tertiaryLabel, textAlign: 'center', paddingVertical: spacing.md }]}>
+              {locale === 'ar' ? 'لا توجد تقييمات بعد' : 'No reviews yet'}
+            </Text>
+          ) : (
+            storeReviews.slice(0, 5).map((review: any) => (
+              <View key={review.id} style={[styles.reviewCard, { backgroundColor: colors.card }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                  <View style={{ flexDirection: 'row' }}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={14}
+                        color={s <= (review.rating || 0) ? colors.systemYellow : colors.systemGray4}
+                        fill={s <= (review.rating || 0) ? colors.systemYellow : 'none'}
+                      />
+                    ))}
+                  </View>
+                  {review.users?.full_name && (
+                    <Text style={[typography.caption1, { color: colors.secondaryLabel, fontWeight: '500' }]}>
+                      {review.users.full_name}
+                    </Text>
+                  )}
+                </View>
+                {review.comment && (
+                  <Text style={[typography.body, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                    {review.comment}
+                  </Text>
+                )}
+              </View>
+            ))
+          )}
+        </View>
+
         {/* Products */}
         <View style={{ paddingHorizontal: spacing.lg }}>
           <Text style={[typography.headline, { color: colors.label, marginBottom: spacing.md }]}>
@@ -178,6 +261,19 @@ export default function StoreDetailScreen() {
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
+
+      {/* Review Form Modal */}
+      <Modal visible={reviewFormVisible} transparent animationType="slide">
+        <View style={styles.reviewOverlay}>
+          <StoreReviewForm
+            storeId={store.id}
+            userId={user?.id || ''}
+            locale={locale}
+            onSubmitted={handleReviewSubmitted}
+            onCancel={() => setReviewFormVisible(false)}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -204,5 +300,23 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: radii.md,
+  },
+  writeReviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+  },
+  reviewCard: {
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    marginBottom: spacing.sm,
+  },
+  reviewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
 });

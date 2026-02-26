@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Star, ChevronRight, ChevronLeft, Store } from 'lucide-react-native';
@@ -45,10 +46,11 @@ export default function StoresScreen() {
   }
 
   return (
-    <FlatList
+    <FlashList
       data={stores}
       keyExtractor={(item) => item.id}
       contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+
       renderItem={({ item }) => (
         <Pressable
           onPress={() => router.push(`/(stack)/store/${item.slug}`)}

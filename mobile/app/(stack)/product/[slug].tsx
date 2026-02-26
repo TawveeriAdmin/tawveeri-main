@@ -8,15 +8,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, FlatList,
-  Dimensions, ActivityIndicator, Share, Linking,
+  Dimensions, ActivityIndicator, Share, Linking, Modal, TextInput, Switch,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft, ArrowRight, Heart, ShoppingCart, Share2, Bell, ExternalLink,
-  Star, ChevronRight, Check, Minus, Plus, BarChart3, Truck, TrendingDown, TrendingUp,
+  Star, ChevronRight, Check, Minus, Plus, BarChart3, Truck, TrendingDown, TrendingUp, Gift, X, Copy,
 } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
@@ -31,6 +33,7 @@ import { formatPrice, calculateSavingsPercentage } from '@/src/lib/utils';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Badge, Price, Skeleton, SARSymbol } from '@/src/components/ui';
 import { CouponBadge } from '@/src/components/ui/CouponBadge';
+import { ProductVideoPlayer } from '@/src/components/product/ProductVideoPlayer';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_HEIGHT = SCREEN_WIDTH * 0.75;
@@ -59,6 +62,9 @@ export default function ProductDetailScreen() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
   const [coupons, setCoupons] = useState<any[]>([]);
+  const [giftModalVisible, setGiftModalVisible] = useState(false);
+  const [giftWrapping, setGiftWrapping] = useState(false);
+  const [giftMessage, setGiftMessage] = useState('');
 
   useEffect(() => {
     if (slug) loadProduct();
@@ -271,6 +277,25 @@ export default function ProductDetailScreen() {
     });
   };
 
+  const handleGiftShare = async () => {
+    const productName = locale === 'ar' ? (product?.name_ar || product?.name) : (product?.name_en || product?.name);
+    const url = `https://tawveeri.com/product/${slug}`;
+    const msg = giftMessage.trim()
+      ? `${locale === 'ar' ? 'هدية لك!' : 'A gift for you!'}\n\n${giftMessage}\n\n${productName}\n${url}`
+      : `${locale === 'ar' ? 'هدية لك!' : 'A gift for you!'}\n\n${productName}\n${url}`;
+    try {
+      await Share.share({ message: msg });
+    } catch {}
+    setGiftModalVisible(false);
+  };
+
+  const handleGiftCopyLink = async () => {
+    const url = `https://tawveeri.com/product/${slug}`;
+    await Clipboard.setStringAsync(url);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setGiftModalVisible(false);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -308,12 +333,14 @@ export default function ProductDetailScreen() {
                   setActiveImageIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH));
                 }}
                 keyExtractor={(_, i) => String(i)}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                   <Image
                     source={{ uri: item }}
                     style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT }}
                     contentFit="contain"
                     transition={200}
+                    accessibilityRole="image"
+                    accessibilityLabel={locale === 'ar' ? `صورة المنتج ${index + 1}` : `Product image ${index + 1}`}
                   />
                 )}
               />
@@ -340,6 +367,8 @@ export default function ProductDetailScreen() {
           {/* Floating nav buttons */}
           <Pressable
             onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={locale === 'ar' ? 'رجوع' : 'Go back'}
             style={[styles.floatingButton, { position: 'absolute', top: spacing.sm, ...(rtl.isRTL ? { right: spacing.sm } : { left: spacing.sm }), backgroundColor: colors.background + 'DD' }]}
             hitSlop={8}
           >
@@ -348,6 +377,8 @@ export default function ProductDetailScreen() {
           <View style={[styles.floatingActions, rtl.isRTL ? { left: spacing.sm, right: undefined } : {}]}>
             <Pressable
               onPress={handleShare}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? 'مشاركة المنتج' : 'Share product'}
               style={[styles.floatingButton, { backgroundColor: colors.background + 'DD' }]}
               hitSlop={8}
             >
@@ -414,10 +445,20 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
+          {/* Product Video */}
+          {product.video_url && (
+            <ProductVideoPlayer
+              videoUrl={product.video_url}
+              thumbnailUrl={product.image_urls?.[0] || product.image_url}
+            />
+          )}
+
           {/* Action Bar */}
           <View style={[styles.actionBar, { borderColor: colors.separator }]}>
             <Pressable
               onPress={handleAddToCart}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
               style={[styles.primaryAction, { backgroundColor: colors.primary }]}
             >
               <ShoppingCart size={18} color="#fff" />
@@ -428,6 +469,8 @@ export default function ProductDetailScreen() {
 
             <Pressable
               onPress={toggleWishlist}
+              accessibilityRole="button"
+              accessibilityLabel={isWishlisted ? (locale === 'ar' ? 'إزالة من المفضلة' : 'Remove from wishlist') : (locale === 'ar' ? 'إضافة إلى المفضلة' : 'Add to wishlist')}
               style={[styles.iconAction, { backgroundColor: colors.secondaryBackground }]}
               disabled={wishlistLoading}
             >
@@ -440,6 +483,8 @@ export default function ProductDetailScreen() {
 
             <Pressable
               onPress={toggleCompare}
+              accessibilityRole="button"
+              accessibilityLabel={inCompare ? (locale === 'ar' ? 'إزالة من المقارنة' : 'Remove from compare') : (locale === 'ar' ? 'إضافة إلى المقارنة' : 'Add to compare')}
               style={[styles.iconAction, { backgroundColor: inCompare ? colors.primaryContainer : colors.secondaryBackground }]}
             >
               <BarChart3
@@ -453,9 +498,20 @@ export default function ProductDetailScreen() {
                 if (!user) { router.push('/(auth)/login'); return; }
                 // Navigate to create alert
               }}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? 'تنبيه السعر' : 'Price alert'}
               style={[styles.iconAction, { backgroundColor: colors.secondaryBackground }]}
             >
               <Bell size={22} color={colors.secondaryLabel} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => setGiftModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? 'إرسال كهدية' : 'Send as gift'}
+              style={[styles.iconAction, { backgroundColor: colors.secondaryBackground }]}
+            >
+              <Gift size={22} color={colors.secondaryLabel} />
             </Pressable>
           </View>
         </View>
@@ -487,12 +543,13 @@ export default function ProductDetailScreen() {
                 </Text>
               </View>
             </View>
-            <FlatList
+            <FlashList
               data={recommendations}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md }}
               keyExtractor={(item) => item.id}
+
               renderItem={({ item: rec }) => {
                 const name = locale === 'ar' ? rec.name_ar : rec.name_en;
                 const image = rec.image_urls?.[0];
@@ -556,6 +613,69 @@ export default function ProductDetailScreen() {
           {activeTab === 'history' && <HistoryTab productId={product.id} colors={colors} locale={locale} />}
         </View>
       </ScrollView>
+
+      {/* Gift Modal */}
+      <Modal visible={giftModalVisible} transparent animationType="slide">
+        <View style={styles.giftOverlay}>
+          <View style={[styles.giftSheet, { backgroundColor: colors.card }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+              <Text style={[typography.title3, { color: colors.label, fontWeight: '600' }]}>
+                {locale === 'ar' ? 'إرسال كهدية' : 'Send as Gift'}
+              </Text>
+              <Pressable onPress={() => setGiftModalVisible(false)} hitSlop={8}>
+                <X size={22} color={colors.secondaryLabel} />
+              </Pressable>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+              <Text style={[typography.body, { color: colors.label }]}>
+                {locale === 'ar' ? 'تغليف هدية' : 'Gift Wrapping'}
+              </Text>
+              <Switch
+                value={giftWrapping}
+                onValueChange={setGiftWrapping}
+                trackColor={{ false: colors.systemGray4, true: colors.systemGreen }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <TextInput
+              value={giftMessage}
+              onChangeText={setGiftMessage}
+              placeholder={locale === 'ar' ? 'اكتب رسالة للمستلم...' : 'Write a message for the recipient...'}
+              placeholderTextColor={colors.tertiaryLabel}
+              multiline
+              numberOfLines={3}
+              style={[
+                typography.body,
+                {
+                  color: colors.label,
+                  backgroundColor: colors.secondaryBackground,
+                  borderRadius: radii.md,
+                  padding: spacing.md,
+                  minHeight: 80,
+                  textAlignVertical: 'top',
+                  marginBottom: spacing.lg,
+                },
+              ]}
+            />
+
+            <Pressable onPress={handleGiftShare} style={[styles.giftBtn, { backgroundColor: colors.primary }]}>
+              <Share2 size={18} color="#fff" />
+              <Text style={[typography.headline, { color: '#fff', marginLeft: spacing.sm }]}>
+                {locale === 'ar' ? 'مشاركة كهدية' : 'Share as Gift'}
+              </Text>
+            </Pressable>
+
+            <Pressable onPress={handleGiftCopyLink} style={[styles.giftBtn, { backgroundColor: colors.secondaryBackground, marginTop: spacing.sm }]}>
+              <Copy size={18} color={colors.primary} />
+              <Text style={[typography.headline, { color: colors.primary, marginLeft: spacing.sm }]}>
+                {locale === 'ar' ? 'نسخ الرابط' : 'Copy Link'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -571,9 +691,12 @@ function StorePriceCard({ productStore, isBest, colors, locale }: {
     if (url) Linking.openURL(url);
   };
 
+  const storeName = locale === 'ar' ? (store?.name_ar || store?.name) : (store?.name_en || store?.name);
   return (
     <Pressable
       onPress={openStore}
+      accessibilityRole="button"
+      accessibilityLabel={locale === 'ar' ? `عرض في ${storeName}` : `View at ${storeName}`}
       style={[
         styles.storeCard,
         {
@@ -1013,5 +1136,23 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: radii.md,
     overflow: 'hidden',
+  },
+  giftOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  giftSheet: {
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  giftBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: MIN_TOUCH_TARGET,
+    borderRadius: radii.md,
   },
 });

@@ -10,7 +10,6 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
   StyleSheet,
   Pressable,
   ScrollView,
@@ -18,6 +17,7 @@ import {
   Keyboard,
   Linking,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,11 +43,20 @@ import {
   BarChart3,
   ExternalLink,
   Heart,
+  Bookmark,
+  BookmarkCheck,
+  ScanBarcode,
+  Mic,
 } from 'lucide-react-native';
+import { saveSearch } from '@/src/lib/search/saved-searches';
+import { BarcodeScanner } from '@/src/components/search/BarcodeScanner';
+import { useNetwork } from '@/src/lib/network/use-network';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
+import { useAuth } from '@/src/lib/auth/auth-context';
 import { apiClient } from '@/src/lib/api/client';
+import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
@@ -79,16 +88,15 @@ const CATEGORIES = [
   { key: 'tablet', Icon: Tablet, label_ar: 'تابلت', label_en: 'Tablets' },
 ];
 
-const POPULAR_SEARCHES = [
-  'iPhone 15',
-  'MacBook Air',
-  'AirPods Pro',
-  'Samsung Galaxy S24',
-  'PlayStation 5',
-  'iPad Air',
-];
-
 // ─── Types ───────────────────────────────────────────────────
+
+interface AutocompleteSuggestion {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  type: 'product' | 'recent';
+}
+
 
 type SortOption = 'relevance' | 'price_asc' | 'price_desc';
 
@@ -113,6 +121,8 @@ export default function SearchScreen() {
   const t = useTranslations();
   const { locale } = useLocale();
   const rtl = useRTL();
+  const { user } = useAuth();
+  const { isConnected } = useNetwork();
   const params = useLocalSearchParams<{ category?: string; query?: string }>();
 
   const [query, setQuery] = useState(params.query || '');
@@ -125,8 +135,14 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<AutocompleteSuggestion[]>([]);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [searchSaved, setSearchSaved] = useState(false);
+  const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const autocompleteRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const recentRef = useRef<string[]>([]);
 
   // Load recent searches on mount
@@ -141,6 +157,87 @@ export default function SearchScreen() {
       }
     });
   }, []);
+
+  // Load popular searches from DB (top viewed products)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('products')
+          .select('name_en')
+          .eq('is_active', true)
+          .order('view_count', { ascending: false })
+          .limit(6);
+        if (data && data.length > 0) {
+          setPopularSearches(data.map((p: any) => p.name_en).filter(Boolean));
+        }
+      } catch {
+        setPopularSearches(['iPhone 15', 'MacBook Air', 'AirPods Pro', 'Samsung Galaxy S24', 'PlayStation 5', 'iPad Air']);
+      }
+    })();
+  }, []);
+
+  // Autocomplete suggestions
+  const fetchAutocomplete = useCallback(
+    (text: string) => {
+      if (autocompleteRef.current) clearTimeout(autocompleteRef.current);
+      if (!text.trim() || text.trim().length < 2) {
+        setAutocompleteSuggestions([]);
+        setShowAutocomplete(false);
+        return;
+      }
+      autocompleteRef.current = setTimeout(async () => {
+        try {
+          const suggestions: AutocompleteSuggestion[] = [];
+
+          // Search products from DB
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, name_ar, name_en, image_url')
+            .eq('is_active', true)
+            .or(`name_ar.ilike.%${text.trim()}%,name_en.ilike.%${text.trim()}%,brand.ilike.%${text.trim()}%`)
+            .order('view_count', { ascending: false })
+            .limit(6);
+
+          if (products) {
+            products.forEach((p: any) => {
+              suggestions.push({
+                id: p.id,
+                name: locale === 'ar' ? (p.name_ar || p.name_en) : (p.name_en || p.name_ar),
+                imageUrl: p.image_url,
+                type: 'product',
+              });
+            });
+          }
+
+          // Recent matching searches for auth users
+          if (user) {
+            const { data: history } = await supabase
+              .from('saved_searches')
+              .select('id, query')
+              .eq('user_id', user.id)
+              .ilike('query', `%${text.trim()}%`)
+              .order('created_at', { ascending: false })
+              .limit(2);
+
+            if (history) {
+              history.forEach((h: any) => {
+                if (!suggestions.find((s) => s.name.toLowerCase() === h.query.toLowerCase())) {
+                  suggestions.push({ id: h.id, name: h.query, type: 'recent' });
+                }
+              });
+            }
+          }
+
+          setAutocompleteSuggestions(suggestions.slice(0, 8));
+          setShowAutocomplete(suggestions.length > 0);
+        } catch {
+          setShowAutocomplete(false);
+        }
+      }, 300);
+    },
+    [locale, user?.id],
+  );
 
   const saveRecentSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
@@ -170,6 +267,19 @@ export default function SearchScreen() {
       setLoading(true);
       setHasSearched(true);
       saveRecentSearch(q);
+
+      const cacheKey = `tawveeri_search_cache_${q.trim()}_${cat}`;
+
+      // If offline, load from cache
+      if (!isConnected) {
+        try {
+          const cached = await AsyncStorage.getItem(cacheKey);
+          if (cached) setResults(JSON.parse(cached));
+        } catch {}
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = await apiClient.post<{ products: any[] }>('/api/search/scrape', {
           query: q.trim(),
@@ -191,14 +301,21 @@ export default function SearchScreen() {
           storeCount: p.store_count || 1,
         }));
         setResults(mapped);
+        // Cache results for offline use
+        AsyncStorage.setItem(cacheKey, JSON.stringify(mapped)).catch(() => {});
       } catch (err) {
         console.error('Search error:', err);
+        // Try cache on error too
+        try {
+          const cached = await AsyncStorage.getItem(cacheKey);
+          if (cached) { setResults(JSON.parse(cached)); return; }
+        } catch {}
         setResults([]);
       } finally {
         setLoading(false);
       }
     },
-    [saveRecentSearch],
+    [saveRecentSearch, isConnected],
   );
 
   const onQueryChange = useCallback(
@@ -207,11 +324,15 @@ export default function SearchScreen() {
       if (!text.trim()) {
         setResults([]);
         setHasSearched(false);
+        setShowAutocomplete(false);
+        setAutocompleteSuggestions([]);
+      } else {
+        fetchAutocomplete(text);
       }
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => doSearch(text, category), 600);
     },
-    [category, doSearch],
+    [category, doSearch, fetchAutocomplete],
   );
 
   const onCategoryChange = useCallback(
@@ -231,11 +352,22 @@ export default function SearchScreen() {
   const performSearch = useCallback(
     (q: string) => {
       setQuery(q);
+      setShowAutocomplete(false);
       Keyboard.dismiss();
       doSearch(q, category);
     },
     [category, doSearch],
   );
+
+  const handleSaveSearch = useCallback(async () => {
+    if (!user || !query.trim()) return;
+    try {
+      await saveSearch(user.id, query.trim(), category !== 'all' ? category : undefined);
+      setSearchSaved(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTimeout(() => setSearchSaved(false), 3000);
+    } catch {}
+  }, [user, query, category]);
 
   const availableBrands = useMemo(() => {
     const brands = new Set<string>();
@@ -284,6 +416,8 @@ export default function SearchScreen() {
             returnKeyType="search"
             autoCorrect={false}
             autoFocus={!params.query}
+            accessibilityRole="search"
+            accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
             style={[
               typography.body,
               {
@@ -304,6 +438,8 @@ export default function SearchScreen() {
                 setHasSearched(false);
               }}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={rtl.isRTL ? 'مسح البحث' : 'Clear search'}
               style={({ pressed }) => [
                 styles.clearButton,
                 { backgroundColor: colors.tertiaryFill },
@@ -313,8 +449,67 @@ export default function SearchScreen() {
               <X size={14} color={colors.secondaryLabel} strokeWidth={2} />
             </Pressable>
           )}
+          {/* Mic button — focuses input to trigger OS dictation */}
+          <Pressable
+            onPress={() => {
+              inputRef.current?.focus();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={rtl.isRTL ? 'البحث الصوتي' : 'Voice search'}
+            accessibilityHint={rtl.isRTL ? 'يفتح لوحة المفاتيح للإملاء الصوتي' : 'Opens keyboard for voice dictation'}
+            style={({ pressed }) => [styles.inputIconBtn, pressed && { opacity: 0.6 }]}
+          >
+            <Mic size={18} color={colors.secondaryLabel} strokeWidth={2} />
+          </Pressable>
+          {/* Barcode scanner button */}
+          <Pressable
+            onPress={() => {
+              setBarcodeScannerVisible(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={rtl.isRTL ? 'مسح الباركود' : 'Scan barcode'}
+            accessibilityHint={rtl.isRTL ? 'يفتح الكاميرا لمسح باركود المنتج' : 'Opens camera to scan a product barcode'}
+            style={({ pressed }) => [styles.inputIconBtn, pressed && { opacity: 0.6 }]}
+          >
+            <ScanBarcode size={18} color={colors.secondaryLabel} strokeWidth={2} />
+          </Pressable>
         </View>
       </View>
+
+      {/* ── Autocomplete Overlay ── */}
+      {showAutocomplete && autocompleteSuggestions.length > 0 && !loading && !hasSearched && (
+        <View style={[styles.autocompleteContainer, { backgroundColor: colors.card, borderColor: colors.separator }]}>
+          {autocompleteSuggestions.map((suggestion) => (
+            <Pressable
+              key={`${suggestion.type}-${suggestion.id}`}
+              onPress={() => performSearch(suggestion.name)}
+              style={({ pressed }) => [
+                styles.autocompleteRow,
+                { flexDirection: rtl.row },
+                pressed && { backgroundColor: colors.quaternaryFill },
+              ]}
+            >
+              {suggestion.type === 'product' && suggestion.imageUrl ? (
+                <Image source={{ uri: suggestion.imageUrl }} style={styles.autocompleteImage} contentFit="contain" />
+              ) : (
+                <View style={[styles.autocompleteIconWrap, { backgroundColor: colors.tertiaryFill }]}>
+                  <Clock size={14} color={colors.tertiaryLabel} />
+                </View>
+              )}
+              <Text
+                numberOfLines={1}
+                style={[typography.subheadline, { color: colors.label, flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}
+              >
+                {suggestion.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {/* ── Category Chips ── */}
       <ScrollView
@@ -333,6 +528,8 @@ export default function SearchScreen() {
             <Pressable
               key={cat.key}
               onPress={() => onCategoryChange(cat.key)}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? cat.label_ar : cat.label_en}
               style={({ pressed }) => [
                 styles.chip,
                 {
@@ -375,6 +572,7 @@ export default function SearchScreen() {
           onRecentPress={performSearch}
           onClearRecent={clearRecentSearches}
           onPopularPress={performSearch}
+          popularSearches={popularSearches}
           locale={locale}
           colors={colors}
           isDark={isDark}
@@ -403,12 +601,14 @@ export default function SearchScreen() {
             }}
             filterCount={filterCount}
             onFilterPress={() => setFilterVisible(true)}
+            onSaveSearch={user ? handleSaveSearch : undefined}
+            searchSaved={searchSaved}
             locale={locale}
             colors={colors}
             t={t}
             rtl={rtl}
           />
-          <FlatList
+          <FlashList
             data={sortedResults}
             renderItem={({ item }) =>
               gridView ? (
@@ -420,16 +620,14 @@ export default function SearchScreen() {
             keyExtractor={(item, index) => `${item.url}-${index}`}
             numColumns={gridView ? 2 : 1}
             key={gridView ? 'grid' : 'list'}
-            columnWrapperStyle={
-              gridView ? { gap: spacing.md, paddingHorizontal: spacing.md } : undefined
-            }
             contentContainerStyle={[
               { paddingHorizontal: gridView ? 0 : spacing.md, paddingBottom: 100 },
               !gridView && { gap: spacing.sm },
             ]}
-            ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+            ItemSeparatorComponent={gridView ? undefined : () => <View style={{ height: spacing.md }} />}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
+
           />
         </>
       )}
@@ -441,6 +639,13 @@ export default function SearchScreen() {
         onApply={setFilters}
         category={category}
         availableBrands={availableBrands}
+        locale={locale}
+      />
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        visible={barcodeScannerVisible}
+        onClose={() => setBarcodeScannerVisible(false)}
+        onScanned={(data) => performSearch(data)}
         locale={locale}
       />
     </SafeAreaView>
@@ -473,6 +678,7 @@ function IdleState({
   onRecentPress,
   onClearRecent,
   onPopularPress,
+  popularSearches,
   locale,
   colors,
   isDark,
@@ -482,6 +688,7 @@ function IdleState({
   onRecentPress: (q: string) => void;
   onClearRecent: () => void;
   onPopularPress: (q: string) => void;
+  popularSearches: string[];
   locale: string;
   colors: any;
   isDark: boolean;
@@ -574,49 +781,51 @@ function IdleState({
       )}
 
       {/* Popular Searches */}
-      <View style={{ marginTop: spacing.xl }}>
-        <View
-          style={{
-            flexDirection: rtl.row,
-            alignItems: 'center',
-            gap: spacing.xs,
-            marginBottom: spacing.sm,
-          }}
-        >
-          <TrendingUp size={16} color={colors.primary} strokeWidth={1.8} />
-          <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-            {locale === 'ar' ? 'بحث شائع' : 'Popular'}
-          </Text>
-        </View>
-        <View style={styles.chipWrap}>
-          {POPULAR_SEARCHES.map((q) => (
-            <Pressable
-              key={q}
-              onPress={() => onPopularPress(q)}
-              style={({ pressed }) => [
-                styles.suggestionChip,
-                { backgroundColor: isDark ? '#172554' : '#EFF6FF' },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <TrendingUp
-                size={12}
-                color={isDark ? '#60A5FA' : '#2563EB'}
-                strokeWidth={1.5}
-              />
-              <Text
-                style={[
-                  typography.footnote,
-                  { color: isDark ? '#60A5FA' : '#2563EB', fontWeight: '500' },
+      {popularSearches.length > 0 && (
+        <View style={{ marginTop: spacing.xl }}>
+          <View
+            style={{
+              flexDirection: rtl.row,
+              alignItems: 'center',
+              gap: spacing.xs,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <TrendingUp size={16} color={colors.primary} strokeWidth={1.8} />
+            <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+              {locale === 'ar' ? 'بحث شائع' : 'Popular'}
+            </Text>
+          </View>
+          <View style={styles.chipWrap}>
+            {popularSearches.map((q) => (
+              <Pressable
+                key={q}
+                onPress={() => onPopularPress(q)}
+                style={({ pressed }) => [
+                  styles.suggestionChip,
+                  { backgroundColor: isDark ? '#172554' : '#EFF6FF' },
+                  pressed && { opacity: 0.7 },
                 ]}
-                numberOfLines={1}
               >
-                {q}
-              </Text>
-            </Pressable>
-          ))}
+                <TrendingUp
+                  size={12}
+                  color={isDark ? '#60A5FA' : '#2563EB'}
+                  strokeWidth={1.5}
+                />
+                <Text
+                  style={[
+                    typography.footnote,
+                    { color: isDark ? '#60A5FA' : '#2563EB', fontWeight: '500' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {q}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={{ height: 100 }} />
     </ScrollView>
@@ -631,6 +840,8 @@ function ResultsHeader({
   onToggleView,
   filterCount,
   onFilterPress,
+  onSaveSearch,
+  searchSaved,
   locale,
   colors,
   t,
@@ -643,6 +854,8 @@ function ResultsHeader({
   onToggleView: () => void;
   filterCount: number;
   onFilterPress: () => void;
+  onSaveSearch?: () => void;
+  searchSaved?: boolean;
   locale: string;
   colors: any;
   t: (key: string) => string;
@@ -672,6 +885,8 @@ function ResultsHeader({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onFilterPress();
           }}
+          accessibilityRole="button"
+          accessibilityLabel={locale === 'ar' ? 'فلتر النتائج' : 'Filter results'}
           style={({ pressed }) => [
             styles.sortButton,
             {
@@ -690,6 +905,8 @@ function ResultsHeader({
         </Pressable>
         <Pressable
           onPress={cycleSortOption}
+          accessibilityRole="button"
+          accessibilityLabel={locale === 'ar' ? `ترتيب حسب: ${sortLabels[sortBy]}` : `Sort by: ${sortLabels[sortBy]}`}
           style={({ pressed }) => [
             styles.sortButton,
             {
@@ -705,8 +922,29 @@ function ResultsHeader({
             {sortLabels[sortBy]}
           </Text>
         </Pressable>
+        {onSaveSearch && (
+          <Pressable
+            onPress={onSaveSearch}
+            accessibilityRole="button"
+            accessibilityLabel={locale === 'ar' ? (searchSaved ? 'تم حفظ البحث' : 'حفظ البحث') : (searchSaved ? 'Search saved' : 'Save search')}
+            style={({ pressed }) => [
+              styles.viewToggle,
+              { backgroundColor: searchSaved ? colors.primaryContainer : colors.secondaryBackground },
+              pressed && { opacity: 0.7 },
+            ]}
+            hitSlop={4}
+          >
+            {searchSaved ? (
+              <BookmarkCheck size={18} color={colors.primary} strokeWidth={1.8} />
+            ) : (
+              <Bookmark size={18} color={colors.secondaryLabel} strokeWidth={1.8} />
+            )}
+          </Pressable>
+        )}
         <Pressable
           onPress={onToggleView}
+          accessibilityRole="button"
+          accessibilityLabel={locale === 'ar' ? (gridView ? 'عرض قائمة' : 'عرض شبكة') : (gridView ? 'List view' : 'Grid view')}
           style={({ pressed }) => [
             styles.viewToggle,
             { backgroundColor: colors.secondaryBackground },
@@ -1015,6 +1253,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radii.lg,
   },
+  inputIconBtn: {
+    padding: 6,
+    marginLeft: 2,
+  },
   clearButton: {
     width: 24,
     height: 24,
@@ -1125,5 +1367,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radii.full,
+  },
+  autocompleteContainer: {
+    marginHorizontal: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    marginBottom: spacing.xs,
+  },
+  autocompleteRow: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  autocompleteImage: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.sm,
+  },
+  autocompleteIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

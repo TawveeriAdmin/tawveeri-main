@@ -9,7 +9,7 @@
  * textAlign: rtl.textAlign + writingDirection: rtl.writingDirection for text.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import {
   Switch,
   Alert,
   Linking,
+  Share,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
@@ -50,12 +52,16 @@ import {
   Shield,
   FileText,
   Palette,
+  Eye,
+  Download,
+  Bookmark,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
+import { supabase } from '@/src/lib/supabase/client';
 import { Button } from '@/src/components/ui';
 
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -72,6 +78,10 @@ export default function ProfileScreen() {
   const [priceAlerts, setPriceAlerts] = useState(true);
   const [dealAlerts, setDealAlerts] = useState(true);
   const [stockAlerts, setStockAlerts] = useState(true);
+  const [publicProfile, setPublicProfile] = useState(false);
+  const [shareSearchHistory, setShareSearchHistory] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const privacyDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const hour = new Date().getHours();
   const greeting =
@@ -86,6 +96,72 @@ export default function ProfileScreen() {
       }
     });
   }, []);
+
+  // Load privacy preferences
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('privacy_preferences')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.privacy_preferences) {
+          const prefs = data.privacy_preferences as any;
+          setPublicProfile(!!prefs.public_profile);
+          setShareSearchHistory(!!prefs.share_search_history);
+        }
+      } catch {}
+    })();
+  }, [user?.id]);
+
+  const savePrivacyPreferences = useCallback(
+    (prefs: { public_profile: boolean; share_search_history: boolean }) => {
+      if (!user) return;
+      if (privacyDebounceRef.current) clearTimeout(privacyDebounceRef.current);
+      privacyDebounceRef.current = setTimeout(async () => {
+        try {
+          await supabase.from('user_preferences').upsert(
+            { user_id: user.id, privacy_preferences: prefs },
+            { onConflict: 'user_id' },
+          );
+        } catch {}
+      }, 500);
+    },
+    [user?.id],
+  );
+
+  const handleExportData = useCallback(async () => {
+    if (!user) return;
+    setExporting(true);
+    try {
+      const [wishlists, alerts, searches, profile] = await Promise.all([
+        supabase.from('user_wishlists').select('*, products(name_ar, name_en, slug)').eq('user_id', user.id),
+        supabase.from('price_alerts').select('*, products(name_ar, name_en, slug)').eq('user_id', user.id),
+        supabase.from('saved_searches').select('*').eq('user_id', user.id),
+        supabase.from('users').select('*').eq('id', user.id).single(),
+      ]);
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        profile: profile.data,
+        wishlists: wishlists.data || [],
+        price_alerts: alerts.data || [],
+        saved_searches: searches.data || [],
+      };
+      await Share.share({
+        message: JSON.stringify(exportData, null, 2),
+        title: 'Tawveeri Data Export',
+      });
+    } catch {
+      Alert.alert(
+        rtl.isRTL ? 'خطأ' : 'Error',
+        rtl.isRTL ? 'فشل تصدير البيانات' : 'Failed to export data',
+      );
+    } finally {
+      setExporting(false);
+    }
+  }, [user, rtl.isRTL]);
 
   const handleThemeChange = useCallback(
     (pref: ThemePreference) => {
@@ -189,6 +265,8 @@ export default function ProfileScreen() {
               <Pressable
                 key={action.route}
                 onPress={() => router.push(action.route as any)}
+                accessibilityRole="button"
+                accessibilityLabel={rtl.isRTL ? action.label_ar : action.label_en}
                 style={[styles.quickAction, { backgroundColor: colors.secondaryBackground }]}
               >
                 <action.icon size={22} color={colors.primary} />
@@ -282,12 +360,57 @@ export default function ProfileScreen() {
           <ToggleRow icon={<IconBg color={colors.systemTeal}><Package size={16} color="#fff" strokeWidth={2} /></IconBg>} label={t('settings.stockAlerts')} value={stockAlerts && pushEnabled} onValueChange={(v) => { setStockAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
         </View>
 
+        {/* ── Privacy (logged in only) ── */}
+        {user && (
+          <>
+            <SectionLabel text={rtl.isRTL ? 'الخصوصية' : 'Privacy'} colors={colors} rtl={rtl} />
+            <View style={[styles.group, { backgroundColor: colors.card }]}>
+              <ToggleRow
+                icon={<IconBg color={colors.systemIndigo}><Shield size={16} color="#fff" strokeWidth={2} /></IconBg>}
+                label={rtl.isRTL ? 'ملف شخصي عام' : 'Public Profile'}
+                value={publicProfile}
+                onValueChange={(v) => {
+                  setPublicProfile(v);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  savePrivacyPreferences({ public_profile: v, share_search_history: shareSearchHistory });
+                }}
+                colors={colors}
+                rtl={rtl}
+              />
+              <Separator colors={colors} />
+              <ToggleRow
+                icon={<IconBg color={colors.systemTeal}><Eye size={16} color="#fff" strokeWidth={2} /></IconBg>}
+                label={rtl.isRTL ? 'مشاركة سجل البحث' : 'Share Search History'}
+                value={shareSearchHistory}
+                onValueChange={(v) => {
+                  setShareSearchHistory(v);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  savePrivacyPreferences({ public_profile: publicProfile, share_search_history: v });
+                }}
+                colors={colors}
+                rtl={rtl}
+              />
+            </View>
+          </>
+        )}
+
         {/* ── Account (logged in only) ── */}
         {user && (
           <>
             <SectionLabel text={rtl.isRTL ? 'الحساب' : 'Account'} colors={colors} rtl={rtl} />
             <View style={[styles.group, { backgroundColor: colors.card }]}>
               <NavRow icon={<IconBg color={colors.systemCyan}><Pencil size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'} onPress={() => router.push('/(stack)/edit-profile')} colors={colors} rtl={rtl} />
+              <Separator colors={colors} />
+              <NavRow icon={<IconBg color={colors.systemPurple}><Bookmark size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'البحوث المحفوظة' : 'Saved Searches'} onPress={() => router.push('/(stack)/saved-searches')} colors={colors} rtl={rtl} />
+              <Separator colors={colors} />
+              <NavRow
+                icon={<IconBg color={colors.systemGreen}><Download size={16} color="#fff" strokeWidth={2} /></IconBg>}
+                label={rtl.isRTL ? 'تصدير بياناتي' : 'Export My Data'}
+                onPress={handleExportData}
+                colors={colors}
+                rtl={rtl}
+                trailing={exporting ? <ActivityIndicator size="small" color={colors.secondaryLabel} /> : undefined}
+              />
               <Separator colors={colors} />
               <NavRow icon={<IconBg color={colors.systemGray}><Lock size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'تغيير كلمة المرور' : 'Change Password'} onPress={() => router.push('/(auth)/forgot-password')} colors={colors} rtl={rtl} />
               <Separator colors={colors} />
@@ -409,7 +532,7 @@ function ToggleRow({ icon, label, value, onValueChange, colors, rtl, disabled }:
   );
 }
 
-function NavRow({ icon, label, onPress, colors, rtl, destructive }: { icon: React.ReactNode; label: string; onPress: () => void; colors: any; rtl: RTLHook; destructive?: boolean }) {
+function NavRow({ icon, label, onPress, colors, rtl, destructive, trailing }: { icon: React.ReactNode; label: string; onPress: () => void; colors: any; rtl: RTLHook; destructive?: boolean; trailing?: React.ReactNode }) {
   const ChevronIcon = rtl.isRTL ? ChevronLeft : ChevronRight;
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, { flexDirection: rtl.row }, pressed && { backgroundColor: colors.quaternaryFill }]}>
@@ -417,7 +540,7 @@ function NavRow({ icon, label, onPress, colors, rtl, destructive }: { icon: Reac
       <Text style={[typography.body, { color: destructive ? colors.error : colors.label, flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
         {label}
       </Text>
-      {!destructive && <ChevronIcon size={18} color={colors.tertiaryLabel} />}
+      {trailing || (!destructive && <ChevronIcon size={18} color={colors.tertiaryLabel} />)}
     </Pressable>
   );
 }

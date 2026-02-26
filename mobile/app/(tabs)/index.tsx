@@ -11,11 +11,11 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  FlatList,
   Pressable,
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,7 +46,9 @@ import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { useRTL } from '@/src/lib/rtl/useRTL';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase/client';
+import { useNetwork } from '@/src/lib/network/use-network';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, SkeletonCard, Skeleton } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
@@ -108,6 +110,7 @@ export default function HomeScreen() {
   const { locale } = useLocale();
   const { user } = useAuth();
   const rtl = useRTL();
+  const { isConnected } = useNetwork();
 
   const [refreshing, setRefreshing] = useState(false);
   const [trendingProducts, setTrendingProducts] = useState<any[]>([]);
@@ -121,7 +124,26 @@ export default function HomeScreen() {
   const { greeting, subtitle } = getGreeting(locale);
   const firstName = user?.full_name?.split(' ')[0];
 
+  const HOME_CACHE_KEY = 'tawveeri_home_cache';
+
   const fetchData = useCallback(async () => {
+    // If offline, load from cache
+    if (!isConnected) {
+      try {
+        const cached = await AsyncStorage.getItem(HOME_CACHE_KEY);
+        if (cached) {
+          const c = JSON.parse(cached);
+          setTrendingProducts(c.trending || []);
+          setDeals(c.deals || []);
+          setBiggestSavings(c.savings || []);
+          setStores(c.storesList || []);
+          setCouponsCount(c.cCount || 0);
+        }
+      } catch {}
+      setLoading(false);
+      return;
+    }
+
     try {
       const [productsRes, dealsRes, storesRes, couponsRes] = await Promise.all([
         supabase
@@ -146,11 +168,9 @@ export default function HomeScreen() {
           .eq('is_active', true),
       ]);
 
-      setTrendingProducts(productsRes.data || []);
+      const trending = productsRes.data || [];
       const allDeals = dealsRes.data || [];
-      setDeals(allDeals.slice(0, 10));
-
-      // Compute biggest savings from deals
+      const dealsSlice = allDeals.slice(0, 10);
       const sorted = [...allDeals]
         .filter((d) => d.original_price && d.original_price > d.current_price)
         .sort((a, b) => {
@@ -159,16 +179,37 @@ export default function HomeScreen() {
           return savB - savA;
         })
         .slice(0, 6);
-      setBiggestSavings(sorted);
+      const storesList = storesRes.data || [];
+      const cCount = couponsRes.count || 0;
 
-      setStores(storesRes.data || []);
-      setCouponsCount(couponsRes.count || 0);
+      setTrendingProducts(trending);
+      setDeals(dealsSlice);
+      setBiggestSavings(sorted);
+      setStores(storesList);
+      setCouponsCount(cCount);
+
+      // Cache for offline
+      AsyncStorage.setItem(HOME_CACHE_KEY, JSON.stringify({
+        trending, deals: dealsSlice, savings: sorted, storesList, cCount,
+      })).catch(() => {});
     } catch (err) {
       console.error('Home fetch error:', err);
+      // Try cache on error
+      try {
+        const cached = await AsyncStorage.getItem(HOME_CACHE_KEY);
+        if (cached) {
+          const c = JSON.parse(cached);
+          setTrendingProducts(c.trending || []);
+          setDeals(c.deals || []);
+          setBiggestSavings(c.savings || []);
+          setStores(c.storesList || []);
+          setCouponsCount(c.cCount || 0);
+        }
+      } catch {}
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isConnected]);
 
   useEffect(() => {
     fetchData();
@@ -289,6 +330,7 @@ export default function HomeScreen() {
             pressed && { transform: [{ scale: 0.99 }] },
           ]}
           accessibilityRole="search"
+          accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
         >
           <View style={[styles.searchIconCircle, { backgroundColor: colors.primary }]}>
             <Search size={16} color="#FFFFFF" strokeWidth={2.2} />
@@ -326,6 +368,8 @@ export default function HomeScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push({ pathname: '/(tabs)/search', params: { category: cat.key } });
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={rtl.isRTL ? cat.label_ar : cat.label_en}
                 style={({ pressed }) => [
                   styles.categoryChip,
                   { backgroundColor: bg, flexDirection: rtl.row },
@@ -362,7 +406,7 @@ export default function HomeScreen() {
               rtl={rtl}
               locale={locale}
             />
-            <FlatList
+            <FlashList
               data={deals}
               renderItem={({ item }) => (
                 <DealCard item={item} locale={locale} colors={colors} rtl={rtl} isDark={isDark} />
@@ -373,6 +417,7 @@ export default function HomeScreen() {
               contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
               snapToInterval={DEAL_CARD_WIDTH + spacing.md}
               decelerationRate="fast"
+
             />
           </>
         )}
@@ -418,7 +463,7 @@ export default function HomeScreen() {
                 ))}
               </ScrollView>
             ) : (
-              <FlatList
+              <FlashList
                 data={trendingProducts}
                 renderItem={({ item }) => (
                   <ProductCard item={item} locale={locale} colors={colors} rtl={rtl} />
@@ -427,6 +472,7 @@ export default function HomeScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
+  
               />
             )}
           </>
@@ -534,7 +580,7 @@ export default function HomeScreen() {
               rtl={rtl}
               locale={locale}
             />
-            <FlatList
+            <FlashList
               data={recommendations}
               renderItem={({ item }) => (
                 <ProductCard item={item} locale={locale} colors={colors} rtl={rtl} />
@@ -543,6 +589,7 @@ export default function HomeScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
+
             />
           </>
         )}
@@ -592,6 +639,8 @@ function SectionHeader({
       <Pressable
         onPress={onSeeAll}
         hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={locale === 'ar' ? `عرض الكل ${title}` : `See all ${title}`}
         style={{ flexDirection: rtl.row, alignItems: 'center' }}
       >
         <Text
@@ -895,6 +944,8 @@ function StoreCard({
           router.push('/(stack)/stores');
         }
       }}
+      accessibilityRole="link"
+      accessibilityLabel={storeName || ''}
       style={({ pressed }) => [
         styles.storeCard,
         { backgroundColor: bg },

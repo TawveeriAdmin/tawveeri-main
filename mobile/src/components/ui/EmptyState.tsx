@@ -20,7 +20,7 @@ export function EmptyState({ icon, title, message, actionTitle, actionLabel, onA
   return (
     <View style={styles.container}>
       {icon && <View style={styles.icon}>{icon}</View>}
-      <Text style={[typography.title3, { color: colors.label, fontWeight: '600', textAlign: 'center' }]}>
+      <Text accessibilityRole="text" style={[typography.title3, { color: colors.label, fontWeight: '600', textAlign: 'center' }]}>
         {title}
       </Text>
       {message && (

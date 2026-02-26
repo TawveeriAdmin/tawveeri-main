@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Bell, TrendingDown, Package, Tag, AlertCircle, CheckCheck } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
@@ -90,15 +91,18 @@ export default function NotificationsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Filter chips */}
-      <FlatList
+      <FlashList
         data={filters}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(f) => f.key}
         contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm }}
+
         renderItem={({ item: f }) => (
           <Pressable
             onPress={() => setFilter(f.key)}
+            accessibilityRole="button"
+            accessibilityLabel={f.label}
             style={[
               styles.chip,
               {
@@ -116,7 +120,7 @@ export default function NotificationsScreen() {
 
       {/* Mark all as read */}
       {notifications.some((n) => !n.is_read) && (
-        <Pressable onPress={markAllAsRead} style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}>
+        <Pressable onPress={markAllAsRead} accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all as read'} style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}>
           <Text style={[typography.subheadline, { color: colors.primary }]}>
             <CheckCheck size={14} color={colors.primary} /> {locale === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all as read'}
           </Text>
@@ -136,10 +140,11 @@ export default function NotificationsScreen() {
           message={locale === 'ar' ? 'ستظهر الإشعارات هنا' : 'Notifications will appear here'}
         />
       ) : (
-        <FlatList
+        <FlashList
           data={notifications}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}
+  
           renderItem={({ item }) => {
             const Icon = ICON_MAP[item.type] || Bell;
             const iconColor = item.type === 'price_drop' ? colors.systemGreen
@@ -149,6 +154,8 @@ export default function NotificationsScreen() {
             return (
               <Pressable
                 onPress={() => markAsRead(item.id)}
+                accessibilityRole="button"
+                accessibilityLabel={locale === 'ar' ? item.title_ar : item.title_en}
                 style={[
                   styles.notifCard,
                   { backgroundColor: item.is_read ? colors.card : colors.primaryContainer, flexDirection: rtl.row },

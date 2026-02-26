@@ -151,6 +151,8 @@ export default function WishlistScreen() {
           return (
             <Pressable
               onPress={() => router.push(`/(stack)/product/${product?.slug}`)}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? (product?.name_ar || product?.name) : (product?.name_en || product?.name)}
               style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}
             >
               {product?.image_url && (
@@ -170,6 +172,8 @@ export default function WishlistScreen() {
               </View>
               <Pressable
                 onPress={() => confirmRemoveDb(wishlistItem.id)}
+                accessibilityRole="button"
+                accessibilityLabel={locale === 'ar' ? 'إزالة من المفضلة' : 'Remove from wishlist'}
                 style={styles.deleteBtn}
                 hitSlop={8}
               >
@@ -184,6 +188,8 @@ export default function WishlistScreen() {
         return (
           <Pressable
             onPress={() => Linking.openURL(saved.url)}
+            accessibilityRole="link"
+            accessibilityLabel={saved.title}
             style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}
           >
             {saved.imageUrl && (
@@ -207,6 +213,8 @@ export default function WishlistScreen() {
             </View>
             <Pressable
               onPress={() => confirmRemoveSaved(saved.id)}
+              accessibilityRole="button"
+              accessibilityLabel={locale === 'ar' ? 'إزالة من المحفوظات' : 'Remove from saved'}
               style={styles.deleteBtn}
               hitSlop={8}
             >

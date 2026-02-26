@@ -4,8 +4,9 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  View, Text, FlatList, RefreshControl, TextInput, ScrollView, StyleSheet, Pressable,
+  View, Text, RefreshControl, TextInput, ScrollView, StyleSheet, Pressable,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Search, Ticket, X } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
@@ -165,12 +166,13 @@ export default function CouponsScreen() {
           message={t('coupons.noCouponsDesc')}
         />
       ) : (
-        <FlatList
+        <FlashList
           data={filtered}
           keyExtractor={(item) => item.id || item.code}
           contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
+
           renderItem={({ item }) => {
             // Flatten nested store data from API join into coupon props
             const coupon = {

@@ -41,6 +41,7 @@ import { AuthProvider } from '@/src/lib/auth/auth-context';
 import * as Linking from 'expo-linking';
 import { usePushNotifications } from '@/src/lib/notifications/use-push-notifications';
 import { useDeepLinkHandler } from '@/src/lib/linking/use-deep-links';
+import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -110,15 +111,18 @@ function AppContent() {
   const { locale } = useLocale();
 
   return (
-    <Stack key={locale} screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="(auth)"
-        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-      />
-      <Stack.Screen name="(stack)" />
-      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-      <Stack.Screen name="+not-found" />
-    </Stack>
+    <>
+      <OfflineBanner />
+      <Stack key={locale} screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="(auth)"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen name="(stack)" />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+    </>
   );
 }
