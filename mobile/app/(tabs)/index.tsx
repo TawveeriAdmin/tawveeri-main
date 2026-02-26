@@ -37,6 +37,7 @@ import {
   Package,
   ShieldCheck,
   Store as StoreIcon,
+  Sparkles,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
@@ -98,6 +99,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { greeting, subtitle } = getGreeting(locale);
@@ -132,6 +134,32 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Load personalized recommendations for authenticated users
+  useEffect(() => {
+    if (!user) { setRecommendations([]); return; }
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('get_recommendations', {
+          p_user_id: user.id,
+          p_product_id: null,
+          p_type: 'auto',
+          p_limit: 8,
+        });
+        if (data && data.length > 0) {
+          const ids = data.map((r: any) => r.id);
+          const { data: enriched } = await supabase
+            .from('products')
+            .select('id, name_ar, name_en, slug, image_urls, brand, category, view_count, product_stores(id, current_price, original_price, store_id, stores(id, name_ar, name_en))')
+            .in('id', ids)
+            .eq('is_active', true);
+          setRecommendations(enriched || []);
+        }
+      } catch {
+        // Silently fail — section just won't show
+      }
+    })();
+  }, [user]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -302,6 +330,29 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
           />
+        )}
+
+        {/* ── Recommended For You ── */}
+        {user && recommendations.length > 0 && (
+          <>
+            <SectionHeader
+              title={locale === 'ar' ? 'مقترحات لك' : 'Recommended For You'}
+              icon={<Sparkles size={18} color={colors.tertiary} />}
+              onSeeAll={() => router.push('/(tabs)/search')}
+              colors={colors}
+              rtl={rtl}
+            />
+            <FlatList
+              data={recommendations}
+              renderItem={({ item }) => (
+                <ProductCard item={item} locale={locale} colors={colors} rtl={rtl} />
+              )}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
+            />
+          </>
         )}
 
         {/* ── Trust Bar ── */}

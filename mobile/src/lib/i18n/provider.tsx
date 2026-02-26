@@ -41,6 +41,7 @@ const arMessages: Record<string, Record<string, unknown>> = {
   checkout: require('../../../../messages/ar/checkout.json'),
   priceAlerts: require('../../../../messages/ar/priceAlerts.json'),
   cart: require('../../../../messages/ar/cart.json'),
+  coupons: require('../../../../messages/ar/coupons.json'),
 };
 
 const enMessages: Record<string, Record<string, unknown>> = {
@@ -63,6 +64,7 @@ const enMessages: Record<string, Record<string, unknown>> = {
   checkout: require('../../../../messages/en/checkout.json'),
   priceAlerts: require('../../../../messages/en/priceAlerts.json'),
   cart: require('../../../../messages/en/cart.json'),
+  coupons: require('../../../../messages/en/coupons.json'),
 };
 
 function extractNamespace(data: Record<string, unknown>, key: string): Record<string, unknown> {

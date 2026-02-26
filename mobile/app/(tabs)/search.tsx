@@ -39,6 +39,7 @@ import {
   TrendingUp,
   ArrowUpDown,
   SearchX,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
@@ -47,6 +48,14 @@ import { apiClient } from '@/src/lib/api/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
+import { STORE_LOGOS } from '@/src/lib/constants/store-logos';
+import {
+  FilterSheet,
+  applyFilters,
+  getActiveFilterCount,
+  EMPTY_FILTERS,
+  type SearchFilters,
+} from '@/src/components/search/FilterSheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
@@ -88,6 +97,8 @@ interface SearchResult {
   url: string;
   brand?: string;
   category?: string;
+  stores?: any[];
+  storeCount?: number;
 }
 
 // ─── Main Component ──────────────────────────────────────────
@@ -107,6 +118,8 @@ export default function SearchScreen() {
   const [gridView, setGridView] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
+  const [filterVisible, setFilterVisible] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const recentRef = useRef<string[]>([]);
@@ -153,13 +166,26 @@ export default function SearchScreen() {
       setHasSearched(true);
       saveRecentSearch(q);
       try {
-        const data = await apiClient.post<{ results: SearchResult[] }>('/api/search/scrape', {
+        const data = await apiClient.post<{ products: any[] }>('/api/search/scrape', {
           query: q.trim(),
           category: cat === 'all' ? undefined : cat,
-          stores: ['amazon', 'noon', 'jarir', 'extra'],
+          stores: ['amazon', 'noon', 'jarir', 'extra', 'almanea'],
           pages: 1,
         });
-        setResults(data.results || []);
+        const mapped: SearchResult[] = (data.products || []).map((p: any) => ({
+          id: p.sku || p.product_url || String(Math.random()),
+          title: p.name_en || p.name_ar || '',
+          price: p.best_price || p.current_price || 0,
+          originalPrice: p.original_price ?? undefined,
+          store: p.stores?.[0]?.store || p.store || '',
+          imageUrl: p.image_urls?.[0] ?? undefined,
+          url: p.product_url || '',
+          brand: p.brand ?? undefined,
+          category: p.category ?? undefined,
+          stores: p.stores,
+          storeCount: p.store_count || 1,
+        }));
+        setResults(mapped);
       } catch (err) {
         console.error('Search error:', err);
         setResults([]);
@@ -206,12 +232,20 @@ export default function SearchScreen() {
     [category, doSearch],
   );
 
+  const availableBrands = useMemo(() => {
+    const brands = new Set<string>();
+    results.forEach((r) => { if (r.brand) brands.add(r.brand); });
+    return Array.from(brands).sort();
+  }, [results]);
+
+  const filterCount = useMemo(() => getActiveFilterCount(filters), [filters]);
+
   const sortedResults = useMemo(() => {
-    if (sortBy === 'relevance') return results;
-    return [...results].sort((a, b) =>
-      sortBy === 'price_asc' ? a.price - b.price : b.price - a.price,
-    );
-  }, [results, sortBy]);
+    let filtered = applyFilters(results, filters);
+    if (sortBy === 'price_asc') filtered.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price_desc') filtered.sort((a, b) => b.price - a.price);
+    return filtered;
+  }, [results, sortBy, filters]);
 
   // Auto-search if params provided
   useEffect(() => {
@@ -362,6 +396,8 @@ export default function SearchScreen() {
               setGridView(!gridView);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
+            filterCount={filterCount}
+            onFilterPress={() => setFilterVisible(true)}
             locale={locale}
             colors={colors}
             t={t}
@@ -392,6 +428,16 @@ export default function SearchScreen() {
           />
         </>
       )}
+      {/* Filter Sheet */}
+      <FilterSheet
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        filters={filters}
+        onApply={setFilters}
+        category={category}
+        availableBrands={availableBrands}
+        locale={locale}
+      />
     </SafeAreaView>
   );
 }
@@ -578,6 +624,8 @@ function ResultsHeader({
   onSortChange,
   gridView,
   onToggleView,
+  filterCount,
+  onFilterPress,
   locale,
   colors,
   t,
@@ -588,6 +636,8 @@ function ResultsHeader({
   onSortChange: (s: SortOption) => void;
   gridView: boolean;
   onToggleView: () => void;
+  filterCount: number;
+  onFilterPress: () => void;
   locale: string;
   colors: any;
   t: (key: string) => string;
@@ -612,6 +662,27 @@ function ResultsHeader({
         {count} {t('search.resultsCount')}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onFilterPress();
+          }}
+          style={({ pressed }) => [
+            styles.sortButton,
+            {
+              backgroundColor: filterCount > 0 ? colors.primaryContainer : colors.secondaryBackground,
+              borderWidth: filterCount > 0 ? 0 : 1,
+              borderColor: colors.separator,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <SlidersHorizontal size={12} color={filterCount > 0 ? colors.primary : colors.secondaryLabel} strokeWidth={2} />
+          <Text style={[typography.caption1, { color: filterCount > 0 ? colors.primary : colors.label, fontWeight: '500' }]}>
+            {locale === 'ar' ? 'فلتر' : 'Filter'}
+            {filterCount > 0 ? ` (${filterCount})` : ''}
+          </Text>
+        </Pressable>
         <Pressable
           onPress={cycleSortOption}
           style={({ pressed }) => [
@@ -688,11 +759,21 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
         >
           {item.title}
         </Text>
-        <View style={{ marginTop: 6 }}>
-          <Badge text={item.store} variant="tinted" color="primary" size="sm" />
-        </View>
-        <View style={{ marginTop: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs }}>
           <Price price={item.price} originalPrice={item.originalPrice} size="sm" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            {STORE_LOGOS[item.store] ? (
+              <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: colors.secondaryBackground, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={STORE_LOGOS[item.store]} style={{ width: 14, height: 14 }} contentFit="contain" />
+              </View>
+            ) : null}
+            <Text style={[typography.caption2, { color: colors.secondaryLabel, fontWeight: '500' }]}>{item.store}</Text>
+            {(item.storeCount ?? 0) > 1 && (
+              <Text style={[typography.caption2, { color: colors.primary, fontWeight: '600' }]}>
+                +{(item.storeCount ?? 1) - 1}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
     </Card>
@@ -736,31 +817,41 @@ function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
             {item.title}
           </Text>
           <View
-            style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: 6, gap: 6 }}
+            style={{ flexDirection: rtl.row, alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}
           >
-            <Badge text={item.store} variant="tinted" color="primary" size="sm" />
-            {savings > 0 && (
-              <View
-                style={{
-                  backgroundColor: colors.priceSavingsContainer,
-                  borderRadius: radii.full,
-                  paddingHorizontal: spacing.sm,
-                  paddingVertical: 2,
-                }}
-              >
-                <Text
-                  style={[
-                    typography.caption2,
-                    { color: colors.priceSavings, fontWeight: '700' },
-                  ]}
-                >
-                  -{savings}%
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={{ marginTop: spacing.xs }}>
             <Price price={item.price} originalPrice={item.originalPrice} size="sm" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              {STORE_LOGOS[item.store] ? (
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: colors.secondaryBackground, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+                  <Image source={STORE_LOGOS[item.store]} style={{ width: 16, height: 16 }} contentFit="contain" />
+                </View>
+              ) : null}
+              <Text style={[typography.caption2, { color: colors.secondaryLabel, fontWeight: '500' }]}>{item.store}</Text>
+              {(item.storeCount ?? 0) > 1 && (
+                <Text style={[typography.caption2, { color: colors.primary, fontWeight: '600' }]}>
+                  +{(item.storeCount ?? 1) - 1}
+                </Text>
+              )}
+              {savings > 0 && (
+                <View
+                  style={{
+                    backgroundColor: colors.priceSavingsContainer,
+                    borderRadius: radii.full,
+                    paddingHorizontal: spacing.sm,
+                    paddingVertical: 2,
+                  }}
+                >
+                  <Text
+                    style={[
+                      typography.caption2,
+                      { color: colors.priceSavings, fontWeight: '700' },
+                    ]}
+                  >
+                    -{savings}%
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </View>

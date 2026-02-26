@@ -15,8 +15,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft, ArrowRight, Heart, ShoppingCart, Share2, Bell, ExternalLink,
-  Star, ChevronRight, Check, Minus, Plus,
+  Star, ChevronRight, Check, Minus, Plus, BarChart3,
 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
@@ -25,9 +26,11 @@ import { supabase } from '@/src/lib/supabase/client';
 import { apiClient } from '@/src/lib/api/client';
 import { formatDate } from '@/src/lib/formatting';
 import { useCartStore } from '@/src/lib/cart/cart-store';
+import { useCompareStore } from '@/src/lib/compare/compare-store';
 import { formatPrice, calculateSavingsPercentage } from '@/src/lib/utils';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Badge, Price, Skeleton } from '@/src/components/ui';
+import { CouponBadge } from '@/src/components/ui/CouponBadge';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_HEIGHT = SCREEN_WIDTH * 0.75;
@@ -41,6 +44,9 @@ export default function ProductDetailScreen() {
   const rtl = useRTL();
   const { user } = useAuth();
   const addItem = useCartStore((s) => s.addItem);
+  const addToCompare = useCompareStore((s) => s.addProduct);
+  const removeFromCompare = useCompareStore((s) => s.removeProduct);
+  const isInCompare = useCompareStore((s) => s.isInCompare);
 
   const [product, setProduct] = useState<any>(null);
   const [stores, setStores] = useState<any[]>([]);
@@ -50,10 +56,66 @@ export default function ProductDetailScreen() {
   const [activeTab, setActiveTab] = useState<ContentTab>('specs');
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [coupons, setCoupons] = useState<any[]>([]);
 
   useEffect(() => {
     if (slug) loadProduct();
   }, [slug]);
+
+  // Load coupons for this product
+  useEffect(() => {
+    if (!product) return;
+    (async () => {
+      try {
+        const data = await apiClient.get<any>(`/api/coupons?product_id=${product.id}&limit=3`);
+        const list = Array.isArray(data.data) ? data.data : Array.isArray(data.coupons) ? data.coupons : Array.isArray(data) ? data : [];
+        setCoupons(list);
+      } catch {}
+    })();
+  }, [product?.id]);
+
+  // Load recommendations after product loads
+  useEffect(() => {
+    if (!product) return;
+    (async () => {
+      setRecsLoading(true);
+      try {
+        const { data } = await supabase.rpc('get_recommendations', {
+          p_product_id: product.id,
+          p_user_id: user?.id ?? null,
+          p_type: 'auto',
+          p_limit: 6,
+        });
+        if (data && data.length > 0) {
+          // Enrich with product_stores for price display
+          const ids = data.map((r: any) => r.id);
+          const { data: enriched } = await supabase
+            .from('products')
+            .select('id, name_ar, name_en, slug, image_urls, brand, product_stores(id, current_price, original_price, store_id)')
+            .in('id', ids)
+            .eq('is_active', true);
+          setRecommendations(enriched || []);
+        }
+      } catch {
+        // Fallback: same category products
+        try {
+          const { data: fallback } = await supabase
+            .from('products')
+            .select('id, name_ar, name_en, slug, image_urls, brand, product_stores(id, current_price, original_price, store_id)')
+            .eq('category', product.category)
+            .eq('is_active', true)
+            .neq('id', product.id)
+            .order('view_count', { ascending: false })
+            .limit(6);
+          setRecommendations(fallback || []);
+        } catch {}
+      } finally {
+        setRecsLoading(false);
+      }
+    })();
+  }, [product?.id]);
 
   const loadProduct = async () => {
     setLoading(true);
@@ -147,6 +209,39 @@ export default function ProductDetailScreen() {
       });
     } catch {
       // User cancelled
+    }
+  };
+
+  const inCompare = product ? isInCompare(product.id) : false;
+
+  const toggleCompare = () => {
+    if (!product) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (inCompare) {
+      removeFromCompare(product.id);
+    } else {
+      const added = addToCompare({
+        id: product.id,
+        name_ar: product.name_ar,
+        name_en: product.name_en,
+        name: product.name,
+        slug: product.slug,
+        image_url: product.image_url || product.image_urls?.[0],
+        brand: product.brand,
+        category: product.category,
+        specifications: product.specifications || product.specs,
+        product_stores: stores.map((ps: any) => ({
+          id: ps.id,
+          current_price: ps.current_price,
+          original_price: ps.original_price,
+          store_id: ps.store_id,
+          stores: ps.stores,
+        })),
+      });
+      if (!added) {
+        // Max reached — already 4 products
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
     }
   };
 
@@ -292,6 +387,22 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
+          {/* Coupons */}
+          {coupons.length > 0 && (
+            <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+              {coupons.slice(0, 2).map((c: any) => (
+                <CouponBadge key={c.id || c.code} coupon={c} variant="compact" locale={locale} />
+              ))}
+              {coupons.length > 2 && (
+                <Pressable onPress={() => router.push('/(stack)/coupons')}>
+                  <Text style={[typography.caption1, { color: colors.primary, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                    {locale === 'ar' ? `عرض الكل (${coupons.length})` : `See all (${coupons.length})`}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
           {/* Action Bar */}
           <View style={[styles.actionBar, { borderColor: colors.separator }]}>
             <Pressable
@@ -313,6 +424,16 @@ export default function ProductDetailScreen() {
                 size={22}
                 color={isWishlisted ? colors.systemPink : colors.secondaryLabel}
                 fill={isWishlisted ? colors.systemPink : 'none'}
+              />
+            </Pressable>
+
+            <Pressable
+              onPress={toggleCompare}
+              style={[styles.iconAction, { backgroundColor: inCompare ? colors.primaryContainer : colors.secondaryBackground }]}
+            >
+              <BarChart3
+                size={22}
+                color={inCompare ? colors.primary : colors.secondaryLabel}
               />
             </Pressable>
 
@@ -343,6 +464,53 @@ export default function ProductDetailScreen() {
             />
           ))}
         </View>
+
+        {/* Similar Products */}
+        {recommendations.length > 0 && (
+          <View style={{ marginTop: spacing.xl }}>
+            <View style={[styles.recHeader, { flexDirection: rtl.row }]}>
+              <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
+                <Star size={16} color={colors.primary} />
+                <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                  {locale === 'ar' ? 'منتجات مشابهة' : 'Similar Products'}
+                </Text>
+              </View>
+            </View>
+            <FlatList
+              data={recommendations}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md }}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item: rec }) => {
+                const name = locale === 'ar' ? rec.name_ar : rec.name_en;
+                const image = rec.image_urls?.[0];
+                const ps = rec.product_stores || [];
+                const bestP = ps.map((s: any) => s.current_price).filter(Boolean).sort((a: number, b: number) => a - b)[0];
+                return (
+                  <Pressable
+                    onPress={() => router.push(`/(stack)/product/${rec.slug}`)}
+                    style={[styles.recCard, { backgroundColor: colors.card }]}
+                  >
+                    <View style={[styles.recImageWrap, { backgroundColor: colors.secondaryBackground }]}>
+                      {image ? (
+                        <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+                      ) : (
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <Star size={20} color={colors.tertiaryLabel} />
+                        </View>
+                      )}
+                    </View>
+                    <Text numberOfLines={2} style={[typography.caption1, { color: colors.label, marginTop: spacing.xs, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                      {name}
+                    </Text>
+                    {bestP && <Price price={bestP} locale={locale} size="sm" style={{ marginTop: 2 }} />}
+                  </Pressable>
+                );
+              }}
+            />
+          </View>
+        )}
 
         {/* Tabs */}
         <View style={[styles.tabBar, { borderColor: colors.separator, marginTop: spacing.xl }]}>
@@ -652,5 +820,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radii.md,
+  },
+  recHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  recCard: {
+    width: 140,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    padding: spacing.sm,
+  },
+  recImageWrap: {
+    width: '100%',
+    height: 100,
+    borderRadius: radii.md,
+    overflow: 'hidden',
   },
 });

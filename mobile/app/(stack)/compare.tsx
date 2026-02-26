@@ -5,16 +5,16 @@
  * Dynamic spec rows, best price highlighting.
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { X, Plus, BarChart3 } from 'lucide-react-native';
+import { X, Plus, BarChart3, Trash2 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
-import { supabase } from '@/src/lib/supabase/client';
-import { formatPrice } from '@/src/lib/utils';
+import { useCompareStore } from '@/src/lib/compare/compare-store';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Price, EmptyState } from '@/src/components/ui';
 
@@ -25,17 +25,19 @@ export default function CompareScreen() {
   const { colors } = useTheme();
   const { locale } = useLocale();
   const rtl = useRTL();
-  const [products, setProducts] = useState<any[]>([]);
+  const products = useCompareStore((s) => s.products);
+  const removeProduct = useCompareStore((s) => s.removeProduct);
+  const clearAll = useCompareStore((s) => s.clearAll);
 
   // Collect spec keys from all products
   const allSpecKeys = Array.from(
-    new Set(products.flatMap((p) => Object.keys(p.specifications || p.specs || {})))
+    new Set(products.flatMap((p) => Object.keys(p.specifications || {})))
   );
 
   const bestPrices = products.map((p) => {
     const stores = p.product_stores || [];
     return stores.length > 0
-      ? Math.min(...stores.map((s: any) => s.current_price || Infinity))
+      ? Math.min(...stores.map((s) => s.current_price || Infinity))
       : null;
   });
   const overallBest = bestPrices.filter(Boolean).length > 0
@@ -56,26 +58,57 @@ export default function CompareScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Clear All header */}
+      {products.length > 0 && (
+        <View style={[styles.clearHeader, { flexDirection: rtl.row }]}>
+          <Text style={[typography.footnote, { color: colors.secondaryLabel }]}>
+            {products.length} {locale === 'ar' ? 'منتجات' : 'products'}
+          </Text>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              clearAll();
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            hitSlop={8}
+          >
+            <Trash2 size={14} color={colors.error} />
+            <Text style={[typography.footnote, { color: colors.error, fontWeight: '600' }]}>
+              {locale === 'ar' ? 'مسح الكل' : 'Clear All'}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* Product columns (horizontal scroll) */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
         {products.map((product, idx) => (
           <View key={product.id} style={[styles.column, { width: COLUMN_WIDTH }]}>
             {/* Remove button */}
             <Pressable
-              onPress={() => setProducts((prev) => prev.filter((_, i) => i !== idx))}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                removeProduct(product.id);
+              }}
               style={[styles.removeBtn, { backgroundColor: colors.tertiaryFill }]}
             >
               <X size={14} color={colors.secondaryLabel} />
             </Pressable>
 
             {/* Image */}
-            {product.image_url && (
-              <Image
-                source={{ uri: product.image_url }}
-                style={[styles.productImage, { backgroundColor: colors.tertiaryFill }]}
-                contentFit="contain"
-              />
-            )}
+            <Pressable onPress={() => router.push(`/(stack)/product/${product.slug}`)}>
+              {product.image_url ? (
+                <Image
+                  source={{ uri: product.image_url }}
+                  style={[styles.productImage, { backgroundColor: colors.tertiaryFill }]}
+                  contentFit="contain"
+                />
+              ) : (
+                <View style={[styles.productImage, { backgroundColor: colors.tertiaryFill, alignItems: 'center', justifyContent: 'center' }]}>
+                  <BarChart3 size={24} color={colors.tertiaryLabel} />
+                </View>
+              )}
+            </Pressable>
 
             {/* Name */}
             <Text style={[typography.caption1, { color: colors.label, fontWeight: '600', marginTop: spacing.sm, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>
@@ -124,7 +157,7 @@ export default function CompareScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', gap: spacing.md }}>
                   {products.map((p) => {
-                    const specs = p.specifications || p.specs || {};
+                    const specs = p.specifications || {};
                     return (
                       <Text
                         key={p.id}
@@ -146,6 +179,12 @@ export default function CompareScreen() {
 }
 
 const styles = StyleSheet.create({
+  clearHeader: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
   column: {
     alignItems: 'center',
   },

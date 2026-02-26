@@ -9,13 +9,15 @@ import { View, Text, ScrollView, FlatList, StyleSheet, Pressable, Linking } from
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowRight, Star, ExternalLink, MapPin, Globe, Store } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Star, ExternalLink, MapPin, Globe, Store, Ticket } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
+import { apiClient } from '@/src/lib/api/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { Price, Badge, Skeleton } from '@/src/components/ui';
+import { CouponBadge } from '@/src/components/ui/CouponBadge';
 
 export default function StoreDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -25,6 +27,7 @@ export default function StoreDetailScreen() {
 
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [storeCoupons, setStoreCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +51,13 @@ export default function StoreDetailScreen() {
         .order('current_price', { ascending: true })
         .limit(20);
       setProducts(prods || []);
+
+      // Fetch store coupons
+      try {
+        const data = await apiClient.get<any>(`/api/coupons?store_id=${storeData.id}&limit=5`);
+        const list = Array.isArray(data.data) ? data.data : Array.isArray(data.coupons) ? data.coupons : Array.isArray(data) ? data : [];
+        setStoreCoupons(list);
+      } catch {}
     }
     setLoading(false);
   };
@@ -117,6 +127,23 @@ export default function StoreDetailScreen() {
             <Text style={[typography.body, { color: colors.secondaryLabel }]}>
               {locale === 'ar' ? (store.description_ar || store.description) : (store.description_en || store.description)}
             </Text>
+          </View>
+        )}
+
+        {/* Coupons */}
+        {storeCoupons.length > 0 && (
+          <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.lg }}>
+            <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md }}>
+              <Ticket size={16} color={colors.tertiary} />
+              <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                {locale === 'ar' ? 'كوبونات' : 'Coupons'}
+              </Text>
+            </View>
+            <View style={{ gap: spacing.sm }}>
+              {storeCoupons.map((c: any) => (
+                <CouponBadge key={c.id || c.code} coupon={c} variant="expanded" locale={locale} />
+              ))}
+            </View>
           </View>
         )}
 

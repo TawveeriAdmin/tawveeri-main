@@ -3,15 +3,16 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, FlatList, RefreshControl, Dimensions, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Zap } from 'lucide-react-native';
+import { Zap, Ticket } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
+import * as Haptics from 'expo-haptics';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
@@ -97,9 +98,32 @@ export default function DealsScreen() {
       {/* Header */}
       <View style={{ flexDirection: rtl.row, alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm }}>
         <Zap size={24} color={colors.deal} />
-        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', flex: 1, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
           {locale === 'ar' ? 'العروض' : 'Deals'}
         </Text>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/(stack)/coupons');
+          }}
+          style={({ pressed }) => [
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: colors.tertiary + '15',
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+              borderRadius: 20,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Ticket size={14} color={colors.tertiary} />
+          <Text style={[typography.footnote, { color: colors.tertiary, fontWeight: '600' }]}>
+            {locale === 'ar' ? 'كوبونات' : 'Coupons'}
+          </Text>
+        </Pressable>
       </View>
 
       {loading ? (

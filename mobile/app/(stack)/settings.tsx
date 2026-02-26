@@ -5,7 +5,7 @@
  * inline language picker, theme cards, notification toggles.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   Switch,
   Alert,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -44,7 +45,11 @@ import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
+import { supabase } from '@/src/lib/supabase/client';
+import { apiClient } from '@/src/lib/api/client';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
+
+const NOTIF_PREFS_KEY = 'tawveeri_notification_prefs';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 
@@ -62,6 +67,8 @@ export default function SettingsScreen() {
   const [priceAlerts, setPriceAlerts] = useState(true);
   const [dealAlerts, setDealAlerts] = useState(true);
   const [stockAlerts, setStockAlerts] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Read saved theme preference
   useEffect(() => {
@@ -71,6 +78,64 @@ export default function SettingsScreen() {
       }
     });
   }, []);
+
+  // Load notification preferences from DB (with AsyncStorage fallback)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      // Try AsyncStorage first for instant UI
+      try {
+        const cached = await AsyncStorage.getItem(NOTIF_PREFS_KEY);
+        if (cached) {
+          const prefs = JSON.parse(cached);
+          setPushEnabled(prefs.push ?? true);
+          setPriceAlerts(prefs.priceAlerts ?? true);
+          setDealAlerts(prefs.dealAlerts ?? true);
+          setStockAlerts(prefs.stockAlerts ?? true);
+        }
+      } catch {}
+      // Then fetch from DB
+      try {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('notification_preferences')
+          .eq('user_id', user.id)
+          .single();
+        if (data?.notification_preferences) {
+          const prefs = data.notification_preferences as Record<string, boolean>;
+          setPushEnabled(prefs.push ?? true);
+          setPriceAlerts(prefs.priceAlerts ?? true);
+          setDealAlerts(prefs.dealAlerts ?? true);
+          setStockAlerts(prefs.stockAlerts ?? true);
+          await AsyncStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(prefs));
+        }
+      } catch {}
+    })();
+  }, [user]);
+
+  // Save notification preferences (debounced)
+  const saveNotificationPrefs = useCallback(
+    (prefs: { push: boolean; priceAlerts: boolean; dealAlerts: boolean; stockAlerts: boolean }) => {
+      // Save to AsyncStorage immediately
+      AsyncStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(prefs)).catch(() => {});
+      // Debounce DB write
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        if (!user) return;
+        try {
+          await supabase.from('user_preferences').upsert(
+            {
+              user_id: user.id,
+              notification_preferences: prefs,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id' },
+          );
+        } catch {}
+      }, 500);
+    },
+    [user],
+  );
 
   const handleThemeChange = useCallback(
     (pref: ThemePreference) => {
@@ -113,7 +178,20 @@ export default function SettingsScreen() {
       {
         text: locale === 'ar' ? 'حذف' : 'Delete',
         style: 'destructive',
-        onPress: () => signOut(),
+        onPress: async () => {
+          setDeleteLoading(true);
+          try {
+            await apiClient.post('/api/auth/delete-account', {});
+            await signOut();
+          } catch (err: any) {
+            Alert.alert(
+              locale === 'ar' ? 'خطأ' : 'Error',
+              err?.message || (locale === 'ar' ? 'فشل حذف الحساب' : 'Failed to delete account'),
+            );
+          } finally {
+            setDeleteLoading(false);
+          }
+        },
       },
     ]);
   }, [t, locale, signOut]);
@@ -227,6 +305,7 @@ export default function SettingsScreen() {
           onValueChange={(v) => {
             setPushEnabled(v);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            saveNotificationPrefs({ push: v, priceAlerts, dealAlerts, stockAlerts });
           }}
           colors={colors}
         />
@@ -242,6 +321,7 @@ export default function SettingsScreen() {
           onValueChange={(v) => {
             setPriceAlerts(v);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            saveNotificationPrefs({ push: pushEnabled, priceAlerts: v, dealAlerts, stockAlerts });
           }}
           colors={colors}
           disabled={!pushEnabled}
@@ -258,6 +338,7 @@ export default function SettingsScreen() {
           onValueChange={(v) => {
             setDealAlerts(v);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            saveNotificationPrefs({ push: pushEnabled, priceAlerts, dealAlerts: v, stockAlerts });
           }}
           colors={colors}
           disabled={!pushEnabled}
@@ -274,6 +355,7 @@ export default function SettingsScreen() {
           onValueChange={(v) => {
             setStockAlerts(v);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            saveNotificationPrefs({ push: pushEnabled, priceAlerts, dealAlerts, stockAlerts: v });
           }}
           colors={colors}
           disabled={!pushEnabled}
@@ -370,12 +452,18 @@ export default function SettingsScreen() {
           <View style={[styles.group, { backgroundColor: colors.card, marginTop: spacing.xl }]}>
             <Pressable
               onPress={handleDeleteAccount}
+              disabled={deleteLoading}
               style={({ pressed }) => [
                 styles.deleteRow,
                 pressed && { backgroundColor: colors.quaternaryFill },
+                deleteLoading && { opacity: 0.5 },
               ]}
             >
-              <Trash2 size={18} color={colors.error} strokeWidth={1.8} />
+              {deleteLoading ? (
+                <ActivityIndicator size="small" color={colors.error} />
+              ) : (
+                <Trash2 size={18} color={colors.error} strokeWidth={1.8} />
+              )}
               <Text
                 style={[
                   typography.body,
