@@ -178,6 +178,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Ensure auth state is updated before returning
+      if (data.session?.user) {
+        const profile = await fetchUserProfile(data.session.user);
+        setUser({ ...data.session.user, ...profile } as AuthUser);
+        setSession(data.session);
+        apiClient.setAccessToken(data.session.access_token);
+      }
       return { data, error: null };
     } catch (error) {
       return { error: error as Error };
@@ -223,10 +230,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // If API returned tokens directly, set Supabase session
       if (data.session?.access_token && data.session?.refresh_token) {
-        await supabase.auth.setSession({
+        const { error: sessionError } = await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
+        if (sessionError) {
+          console.error('setSession failed:', sessionError.message);
+          throw sessionError;
+        }
+        // Ensure auth state is updated before returning
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.user) {
+          const profile = await fetchUserProfile(currentSession.user);
+          setUser({ ...currentSession.user, ...profile } as AuthUser);
+          setSession(currentSession);
+          apiClient.setAccessToken(currentSession.access_token);
+        }
       }
 
       return { data, error: null };

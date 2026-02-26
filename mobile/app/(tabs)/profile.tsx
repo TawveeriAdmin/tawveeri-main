@@ -64,7 +64,7 @@ export default function ProfileScreen() {
   const { colors, setColorScheme } = useTheme();
   const t = useTranslations();
   const { locale, setLocale } = useLocale();
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const rtl = useRTL();
 
   const [themePreference, setThemePreference] = useState<ThemePreference>('system');
@@ -156,7 +156,7 @@ export default function ProfileScreen() {
             </View>
             <Pencil size={16} color={colors.tertiaryLabel} />
           </Pressable>
-        ) : !loading ? (
+        ) : (
           <View style={styles.welcomeHeader}>
             <View style={[styles.avatarLarge, { backgroundColor: colors.primaryContainer }]}>
               <User size={36} color={colors.primary} strokeWidth={1.5} />
@@ -175,7 +175,7 @@ export default function ProfileScreen() {
               fullWidth
             />
           </View>
-        ) : null}
+        )}
 
         {/* ── Quick Actions (logged in only) ── */}
         {user && (

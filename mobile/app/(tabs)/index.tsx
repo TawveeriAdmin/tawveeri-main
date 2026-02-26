@@ -27,7 +27,6 @@ import {
   Zap,
   TrendingUp,
   Bell,
-  Settings,
   Heart,
   Smartphone,
   Laptop,
@@ -250,17 +249,6 @@ export default function HomeScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Pressable
-              onPress={() => router.push('/(stack)/settings')}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.tertiaryFill },
-                pressed && { opacity: 0.7 },
-              ]}
-              hitSlop={8}
-            >
-              <Settings size={20} color={colors.label} strokeWidth={1.8} />
-            </Pressable>
             <Pressable
               onPress={() => router.push('/(stack)/wishlist')}
               style={({ pressed }) => [

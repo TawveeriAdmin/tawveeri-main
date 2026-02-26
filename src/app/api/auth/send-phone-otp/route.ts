@@ -8,39 +8,6 @@ import { validateSaudiPhone, generateOTP } from '@/lib/auth/phone-validation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Explicitly load .env.local to ensure variables are available
-if (typeof process !== 'undefined') {
-  try {
-    const dotenv = require('dotenv');
-    const path = require('path');
-    const result = dotenv.config({ path: path.join(process.cwd(), '.env.local') });
-    if (result.error) {
-      console.warn('dotenv config error:', result.error);
-    } else {
-      console.log('dotenv loaded, AUTHENTICA_API_KEY exists:', !!result.parsed?.AUTHENTICA_API_KEY);
-    }
-  } catch (error) {
-    // dotenv might not be available, that's okay
-    console.warn('Could not load dotenv:', error);
-  }
-}
-
-// Debug: Log environment variables at module load
-if (typeof process !== 'undefined') {
-  const apiKey = process.env.AUTHENTICA_API_KEY;
-  const baseUrl = process.env.AUTHENTICA_BASE_URL;
-  console.log('API Route - Environment check:', {
-    hasAuthenticaKey: !!apiKey,
-    hasAuthenticaUrl: !!baseUrl,
-    keyLength: apiKey?.length || 0,
-    keyPrefix: apiKey?.substring(0, 10) || 'N/A',
-    keyValue: apiKey ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}` : 'N/A',
-    baseUrlValue: baseUrl || 'N/A',
-    allEnvKeys: Object.keys(process.env).filter(k => k.includes('AUTHENTICA')),
-    // Try to read directly from process.env
-    directRead: typeof process.env.AUTHENTICA_API_KEY,
-  });
-}
 
 export async function POST(request: NextRequest) {
   try {

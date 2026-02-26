@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
 
     let userId: string;
     let isNewUser = false;
+    let authEmail: string | null = null; // Track auth user email to avoid redundant getUserById
 
     // If user doesn't exist, or exists but has no name/email — prompt for details
     // Don't mark OTP as used yet — user needs to provide name and email first
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
       const { data: authUser, error: createError } = await supabase.auth.admin.createUser({
         phone: formattedPhone,
         email: email || undefined,
-        phone_confirmed: true,
+        phone_confirm: true,
         email_confirm: true,
         user_metadata: {
           full_name: fullName || null,
@@ -196,6 +197,7 @@ export async function POST(request: NextRequest) {
       }
 
       isNewUser = true;
+      authEmail = email || null;
 
       // Create user profile in users table
       const { error: profileError } = await supabase.from('users').insert({
@@ -284,7 +286,7 @@ export async function POST(request: NextRequest) {
           const { data: recreated, error: recreateError } = await supabase.auth.admin.createUser({
             phone: formattedPhone,
             email: email || existingUser.email || undefined,
-            phone_confirmed: true,
+            phone_confirm: true,
             email_confirm: !!(email || existingUser.email),
             user_metadata: {
               full_name: fullName || existingUser.full_name || null,
@@ -317,7 +319,9 @@ export async function POST(request: NextRequest) {
           last_login_at: new Date().toISOString(),
         });
         userId = resolvedUserId;
+        authEmail = email || existingUser.email || null;
       } else {
+        authEmail = existingAuthUser.user.email || email || existingUser?.email || null;
         // Auth user exists — normal login, backfill missing profile data
         const updateData: Record<string, any> = {
           last_login_at: new Date().toISOString(),
@@ -326,56 +330,44 @@ export async function POST(request: NextRequest) {
         if (fullName && !existingUser.full_name) updateData.full_name = fullName;
         if (email && !existingUser.email) updateData.email = email;
 
-        await supabase
-          .from('users')
-          .update(updateData)
-          .eq('id', userId);
-
-        // Also update Auth user metadata if name/email were backfilled
+        // Run profile update + auth metadata updates in parallel
+        const parallelUpdates: Promise<any>[] = [
+          Promise.resolve(supabase.from('users').update(updateData).eq('id', userId)),
+        ];
         if (fullName && !existingUser.full_name) {
-          await supabase.auth.admin.updateUserById(userId, {
-            user_metadata: { full_name: fullName },
-          }).catch(() => {});
+          parallelUpdates.push(
+            supabase.auth.admin.updateUserById(userId, {
+              user_metadata: { full_name: fullName },
+            }).catch(() => {})
+          );
         }
         if (email && !existingUser.email) {
-          await supabase.auth.admin.updateUserById(userId, {
-            email: email,
-            email_confirm: true,
-          }).catch(() => {});
+          parallelUpdates.push(
+            supabase.auth.admin.updateUserById(userId, {
+              email: email,
+              email_confirm: true,
+            }).catch(() => {})
+          );
         }
+        await Promise.all(parallelUpdates);
       }
 
-      // Audit log for login
-      await createAuditLog({
+      // Audit log for login (fire-and-forget)
+      createAuditLog({
         user_id: userId,
         action: 'user_login',
         entity_type: 'user',
         entity_id: userId,
         details: { method: 'phone' },
-      });
-    }
-
-    // Get the user from auth (should always succeed now)
-    const { data: authUserData, error: getUserError } = await supabase.auth.admin.getUserById(userId);
-
-    if (getUserError || !authUserData?.user) {
-      console.error('Error getting user:', getUserError);
-      return NextResponse.json(
-        { error: 'Failed to retrieve user' },
-        { status: 500 }
-      );
+      }).catch(() => {});
     }
 
     // For phone auth, generateLink requires an email.
-    // New users have a real email set during createUser.
-    // Existing users may have an email from their profile, otherwise use a placeholder.
+    // authEmail was tracked through new/existing user paths above.
     const sanitizedPhone = formattedPhone.replace(/[^0-9]/g, '');
     const placeholderEmail = `phone_${sanitizedPhone}@tawveeri.local`;
-    const userEmail = isNewUser
-      ? email
-      : (authUserData.user.email || email || existingUser?.email || null);
-    const usePlaceholder = !userEmail;
-    const emailForLink = userEmail || placeholderEmail;
+    const usePlaceholder = !authEmail;
+    const emailForLink = authEmail || placeholderEmail;
 
     // If we need a placeholder (existing user without email), set it temporarily
     if (usePlaceholder) {
@@ -405,7 +397,7 @@ export async function POST(request: NextRequest) {
     if (linkError || !linkData) {
       console.error('Error generating magic link:', linkError);
       if (usePlaceholder) {
-        await supabase.auth.admin.updateUserById(userId, { email: null });
+        await supabase.auth.admin.updateUserById(userId, { email: undefined });
       }
       return NextResponse.json(
         { error: 'Failed to create session' },
@@ -434,7 +426,7 @@ export async function POST(request: NextRequest) {
         properties: linkData.properties,
       });
       if (usePlaceholder) {
-        await supabase.auth.admin.updateUserById(userId, { email: null });
+        await supabase.auth.admin.updateUserById(userId, { email: undefined });
       }
       return NextResponse.json(
         { error: 'Failed to create session' },
@@ -459,7 +451,7 @@ export async function POST(request: NextRequest) {
       sessionError = result.error;
     } else {
       if (usePlaceholder) {
-        await supabase.auth.admin.updateUserById(userId, { email: null });
+        await supabase.auth.admin.updateUserById(userId, { email: undefined });
       }
       return NextResponse.json(
         { error: 'Failed to create session' },
@@ -473,7 +465,7 @@ export async function POST(request: NextRequest) {
         sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
       });
       if (usePlaceholder) {
-        await supabase.auth.admin.updateUserById(userId, { email: null });
+        await supabase.auth.admin.updateUserById(userId, { email: undefined });
       }
       return NextResponse.json(
         { error: 'Failed to create session' },
@@ -482,101 +474,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Only remove placeholder email after session creation — keep real emails
+    // Fire-and-forget to avoid blocking the response
     if (usePlaceholder) {
-      await supabase.auth.admin.updateUserById(userId, { email: null });
+      supabase.auth.admin.updateUserById(userId, { email: undefined }).catch(() => {});
     }
 
-    // Check for new device login (fire-and-forget)
-    try {
-      const userAgent = request.headers.get('user-agent') || 'unknown';
-      const forwarded = request.headers.get('x-forwarded-for');
-      const ip = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '0.0.0.0';
-      const ipParts = ip.split('.').slice(0, 3).join('.');
-      const fingerprint = createHash('sha256').update(`${userAgent}:${ipParts}`).digest('hex');
-
-      const { data: existingSession } = await supabase
-        .from('login_sessions')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('device_fingerprint', fingerprint)
-        .maybeSingle();
-
-      if (!existingSession) {
-        await supabase.from('login_sessions').insert({
-          user_id: userId,
-          device_fingerprint: fingerprint,
-          user_agent: userAgent,
-          ip_address: ip,
-          is_known_device: true,
-        });
-
-        if (!isNewUser) {
-          const deviceInfo = userAgent.includes('iPhone') ? 'iPhone'
-            : userAgent.includes('Android') ? 'Android'
-            : userAgent.includes('Windows') ? 'Windows PC'
-            : userAgent.includes('Macintosh') ? 'Mac'
-            : 'Unknown Device';
-
-          createNotification({
-            user_id: userId,
-            type: 'system',
-            title_ar: 'تسجيل دخول من جهاز جديد',
-            title_en: 'Login from New Device',
-            message_ar: `تم تسجيل دخول إلى حسابك من جهاز جديد: ${deviceInfo}`,
-            message_en: `Your account was accessed from a new device: ${deviceInfo}`,
-          }).catch(() => {});
-
-          const userEmail = email || existingUser?.email;
-          if (userEmail) {
-            sendNewDeviceLoginEmail(
-              userEmail,
-              { device_info: deviceInfo, login_time: new Date().toLocaleString('en-US') },
-            ).catch(() => {});
-          }
-
-          createAuditLog({
-            user_id: userId,
-            action: 'new_device_login',
-            entity_type: 'user',
-            entity_id: userId,
-            details: { device_info: deviceInfo, ip_address: ip },
-            user_agent: userAgent,
-            ip_address: ip,
-          }).catch(() => {});
-        }
-      } else {
-        await supabase
-          .from('login_sessions')
-          .update({ last_seen_at: new Date().toISOString() })
-          .eq('id', existingSession.id);
-      }
-    } catch (err) {
-      console.error('Device check error in phone OTP:', err);
-    }
-
-    // For mobile: return tokens directly (no cookies)
-    if (isMobile) {
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: userId,
-          phone: formattedPhone,
-          full_name: fullName || existingUser?.full_name || null,
-          role: existingUser?.role || 'customer',
-          phone_verified: true,
-        },
-        isNewUser,
-        session: {
-          access_token: sessionData.session.access_token,
-          refresh_token: sessionData.session.refresh_token,
-        },
-      });
-    }
-
-    // Create final response with user data AND session tokens
-    // Include tokens so the browser client can call setSession() directly,
-    // which is more reliable than relying solely on server-set cookies.
-    const finalResponse = NextResponse.json({
+    // Build response payload (shared between mobile and web)
+    const responsePayload = {
       success: true,
       user: {
         id: userId,
@@ -590,10 +494,87 @@ export async function POST(request: NextRequest) {
         access_token: sessionData.session.access_token,
         refresh_token: sessionData.session.refresh_token,
       },
-    });
+    };
+
+    // Device fingerprinting + new device notifications (fire-and-forget)
+    (async () => {
+      try {
+        const userAgent = request.headers.get('user-agent') || 'unknown';
+        const forwarded = request.headers.get('x-forwarded-for');
+        const ip = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '0.0.0.0';
+        const ipParts = ip.split('.').slice(0, 3).join('.');
+        const fingerprint = createHash('sha256').update(`${userAgent}:${ipParts}`).digest('hex');
+
+        const { data: existingSession } = await supabase
+          .from('login_sessions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('device_fingerprint', fingerprint)
+          .maybeSingle();
+
+        if (!existingSession) {
+          await supabase.from('login_sessions').insert({
+            user_id: userId,
+            device_fingerprint: fingerprint,
+            user_agent: userAgent,
+            ip_address: ip,
+            is_known_device: true,
+          });
+
+          if (!isNewUser) {
+            const deviceInfo = userAgent.includes('iPhone') ? 'iPhone'
+              : userAgent.includes('Android') ? 'Android'
+              : userAgent.includes('Windows') ? 'Windows PC'
+              : userAgent.includes('Macintosh') ? 'Mac'
+              : 'Unknown Device';
+
+            createNotification({
+              user_id: userId,
+              type: 'system',
+              title_ar: 'تسجيل دخول من جهاز جديد',
+              title_en: 'Login from New Device',
+              message_ar: `تم تسجيل دخول إلى حسابك من جهاز جديد: ${deviceInfo}`,
+              message_en: `Your account was accessed from a new device: ${deviceInfo}`,
+            }).catch(() => {});
+
+            const notifEmail = email || existingUser?.email;
+            if (notifEmail) {
+              sendNewDeviceLoginEmail(
+                notifEmail,
+                { device_info: deviceInfo, login_time: new Date().toLocaleString('en-US') },
+              ).catch(() => {});
+            }
+
+            createAuditLog({
+              user_id: userId,
+              action: 'new_device_login',
+              entity_type: 'user',
+              entity_id: userId,
+              details: { device_info: deviceInfo, ip_address: ip },
+              user_agent: userAgent,
+              ip_address: ip,
+            }).catch(() => {});
+          }
+        } else {
+          await supabase
+            .from('login_sessions')
+            .update({ last_seen_at: new Date().toISOString() })
+            .eq('id', existingSession.id);
+        }
+      } catch (err) {
+        console.error('Device check error in phone OTP:', err);
+      }
+    })();
+
+    // For mobile: return tokens directly (no cookies)
+    if (isMobile) {
+      return NextResponse.json(responsePayload);
+    }
+
+    // Web: include session cookies
+    const finalResponse = NextResponse.json(responsePayload);
 
     // Copy all cookies from the SSR response to the final response
-    // This preserves the session cookies set during exchangeCodeForSession
     response.cookies.getAll().forEach((cookie) => {
       const cookieOptions: any = {};
       if (cookie.path) cookieOptions.path = cookie.path;
