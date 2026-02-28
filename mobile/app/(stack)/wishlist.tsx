@@ -6,7 +6,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, SectionList, StyleSheet, Pressable, Alert } from 'react-native';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Heart, Trash2, ExternalLink } from 'lucide-react-native';
 import * as Linking from 'expo-linking';
@@ -17,7 +16,7 @@ import { useAuth } from '@/src/lib/auth/auth-context';
 import { supabase } from '@/src/lib/supabase/client';
 import { useSavedStore, SavedProduct } from '@/src/lib/wishlist/saved-store';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Price, EmptyState, Skeleton } from '@/src/components/ui';
+import { Price, EmptyState, Skeleton, KeyedProductImage } from '@/src/components/ui';
 
 export default function WishlistScreen() {
   const { colors } = useTheme();
@@ -156,11 +155,7 @@ export default function WishlistScreen() {
               style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}
             >
               {product?.image_url && (
-                <Image
-                  source={{ uri: product.image_url }}
-                  style={styles.image}
-                  contentFit="contain"
-                />
+                <KeyedProductImage uri={product.image_url} style={styles.image} contentFit="contain" />
               )}
               <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
                 <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>
@@ -193,11 +188,7 @@ export default function WishlistScreen() {
             style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}
           >
             {saved.imageUrl && (
-              <Image
-                source={{ uri: saved.imageUrl }}
-                style={styles.image}
-                contentFit="contain"
-              />
+              <KeyedProductImage uri={saved.imageUrl} style={styles.image} contentFit="contain" />
             )}
             <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
               <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={2}>

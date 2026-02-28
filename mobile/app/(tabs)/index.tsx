@@ -50,7 +50,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase/client';
 import { useNetwork } from '@/src/lib/network/use-network';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
-import { Card, Price, Badge, SkeletonCard, Skeleton } from '@/src/components/ui';
+import { Card, Price, SkeletonCard, Skeleton, KeyedProductImage } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -123,6 +123,12 @@ export default function HomeScreen() {
 
   const { greeting, subtitle } = getGreeting(locale);
   const firstName = user?.full_name?.split(' ')[0];
+  const visual = {
+    glowTint: isDark ? colors.primary : colors.primaryContainer,
+    heroSurface: isDark ? colors.tertiaryBackground : colors.secondaryGroupedBackground,
+    glassSurface: isDark ? colors.secondaryBackground : colors.secondaryGroupedBackground,
+    borderSoft: colors.separator,
+  };
 
   const HOME_CACHE_KEY = 'tawveeri_home_cache';
 
@@ -259,98 +265,153 @@ export default function HomeScreen() {
         }
       >
         {/* ── Header ── */}
-        <View style={[styles.header, { flexDirection: rtl.row }]}>
-          <View style={{ flex: 1, alignItems: rtl.alignStart }}>
-            <Text
-              style={[
-                typography.title2,
-                {
-                  color: colors.label,
-                  fontWeight: '700',
-                  textAlign: rtl.textAlign,
-                  writingDirection: rtl.writingDirection,
-                },
-              ]}
-            >
-              {greeting}
-              {firstName ? `, ${firstName}` : ''}
-            </Text>
-            <Text
-              style={[
-                typography.subheadline,
-                {
-                  color: colors.secondaryLabel,
-                  marginTop: 2,
-                  textAlign: rtl.textAlign,
-                  writingDirection: rtl.writingDirection,
-                },
-              ]}
-            >
-              {subtitle}
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Pressable
-              onPress={() => router.push('/(stack)/wishlist')}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.tertiaryFill },
-                pressed && { opacity: 0.7 },
-              ]}
-              hitSlop={8}
-            >
-              <Heart size={20} color={colors.label} strokeWidth={1.8} />
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/(stack)/notifications')}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.tertiaryFill },
-                pressed && { opacity: 0.7 },
-              ]}
-              hitSlop={8}
-            >
-              <Bell size={20} color={colors.label} strokeWidth={1.8} />
-            </Pressable>
+        <View style={[styles.heroShell, { marginHorizontal: spacing.md }]}>
+          <View
+            style={[
+              styles.heroGlow,
+              {
+                backgroundColor: visual.glowTint,
+                left: rtl.isRTL ? undefined : spacing.lg,
+                right: rtl.isRTL ? spacing.lg : undefined,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.header,
+              {
+                flexDirection: rtl.row,
+                backgroundColor: visual.heroSurface,
+                borderColor: visual.borderSoft,
+              },
+            ]}
+          >
+            <View style={{ flex: 1, alignItems: rtl.alignStart }}>
+              <Text
+                style={[
+                  typography.title2,
+                  {
+                    color: colors.label,
+                    fontWeight: '800',
+                    textAlign: rtl.textAlign,
+                    writingDirection: rtl.writingDirection,
+                  },
+                ]}
+              >
+                {greeting}
+                {firstName ? `, ${firstName}` : ''}
+              </Text>
+              <Text
+                style={[
+                  typography.subheadline,
+                  {
+                    color: colors.secondaryLabel,
+                    marginTop: 4,
+                    textAlign: rtl.textAlign,
+                    writingDirection: rtl.writingDirection,
+                  },
+                ]}
+              >
+                {subtitle}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <Pressable
+                onPress={() => router.push('/(stack)/wishlist')}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    backgroundColor: colors.secondaryBackground,
+                    borderColor: colors.separator,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+                hitSlop={8}
+              >
+                <Heart size={20} color={colors.label} strokeWidth={1.8} />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/(stack)/notifications')}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    backgroundColor: colors.secondaryBackground,
+                    borderColor: colors.separator,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+                hitSlop={8}
+              >
+                <Bell size={20} color={colors.label} strokeWidth={1.8} />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/(tabs)/profile')}
+                style={({ pressed }) => [
+                  styles.avatarButton,
+                  {
+                    backgroundColor: colors.primaryContainer,
+                    borderColor: colors.primary,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={locale === 'ar' ? 'الملف الشخصي' : 'Profile'}
+              >
+                <Text style={[typography.caption1, { color: colors.onPrimaryContainer, fontWeight: '700' }]}>
+                  {firstName?.[0]?.toUpperCase() || 'T'}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
 
         {/* ── Search Bar ── */}
-        <Pressable
-          onPress={() => router.push('/(tabs)/search')}
-          style={({ pressed }) => [
-            styles.searchBar,
+        <View
+          style={[
+            styles.searchShell,
             {
-              backgroundColor: colors.secondaryBackground,
               marginHorizontal: spacing.md,
-              borderWidth: 1,
-              borderColor: pressed ? colors.primary : colors.separator,
-              flexDirection: rtl.row,
+              borderColor: colors.primary,
+              backgroundColor: visual.glowTint,
             },
-            pressed && { transform: [{ scale: 0.99 }] },
           ]}
-          accessibilityRole="search"
-          accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
         >
-          <View style={[styles.searchIconCircle, { backgroundColor: colors.primary }]}>
-            <Search size={16} color="#FFFFFF" strokeWidth={2.2} />
-          </View>
-          <Text
-            style={[
-              typography.body,
+          <Pressable
+            onPress={() => router.push('/(tabs)/search')}
+            style={({ pressed }) => [
+              styles.searchBar,
               {
-                color: colors.tertiaryLabel,
-                marginLeft: rtl.isRTL ? 0 : spacing.sm,
-                marginRight: rtl.isRTL ? spacing.sm : 0,
-                flex: 1,
-                textAlign: rtl.textAlign,
-                writingDirection: rtl.writingDirection,
+                backgroundColor: visual.glassSurface,
+                borderWidth: 1,
+                borderColor: pressed ? colors.primary : colors.separator,
+                flexDirection: rtl.row,
               },
+              pressed && { transform: [{ scale: 0.995 }] },
             ]}
+            accessibilityRole="search"
+            accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
           >
-            {t('search.searchPlaceholder')}
-          </Text>
-        </Pressable>
+            <View style={[styles.searchIconCircle, { backgroundColor: colors.primary }]}>
+              <Search size={16} color={colors.onPrimary} strokeWidth={2.2} />
+            </View>
+            <Text
+              style={[
+                typography.body,
+                {
+                  color: colors.tertiaryLabel,
+                  marginLeft: rtl.isRTL ? 0 : spacing.sm,
+                  marginRight: rtl.isRTL ? spacing.sm : 0,
+                  flex: 1,
+                  textAlign: rtl.textAlign,
+                  writingDirection: rtl.writingDirection,
+                },
+              ]}
+            >
+              {t('search.searchPlaceholder')}
+            </Text>
+          </Pressable>
+        </View>
 
         {/* ── Category Chips ── */}
         <ScrollView
@@ -372,7 +433,11 @@ export default function HomeScreen() {
                 accessibilityLabel={rtl.isRTL ? cat.label_ar : cat.label_en}
                 style={({ pressed }) => [
                   styles.categoryChip,
-                  { backgroundColor: bg, flexDirection: rtl.row },
+                  {
+                    backgroundColor: bg,
+                    borderColor: colors.separator,
+                    flexDirection: rtl.row,
+                  },
                   pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
                 ]}
               >
@@ -414,7 +479,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
+              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
               snapToInterval={DEAL_CARD_WIDTH + spacing.md}
               decelerationRate="fast"
 
@@ -456,7 +521,7 @@ export default function HomeScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md }}
+                contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
               >
                 {[1, 2, 3].map((i) => (
                   <SkeletonCard key={i} style={{ width: SMALL_CARD_WIDTH }} />
@@ -471,7 +536,7 @@ export default function HomeScreen() {
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
+                contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
   
               />
             )}
@@ -492,7 +557,7 @@ export default function HomeScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
+              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
             >
               {stores.map((store) => (
                 <StoreCard
@@ -515,15 +580,16 @@ export default function HomeScreen() {
             style={({ pressed }) => [
               styles.couponsBanner,
               {
-                backgroundColor: isDark ? colors.tertiaryContainer : colors.tertiaryContainer,
+                backgroundColor: colors.tertiaryContainer,
                 marginHorizontal: spacing.md,
+                borderColor: colors.separator,
                 flexDirection: rtl.row,
               },
               pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
             ]}
           >
             <View style={[styles.couponIconCircle, { backgroundColor: colors.tertiary }]}>
-              <Ticket size={18} color="#FFFFFF" strokeWidth={2} />
+              <Ticket size={18} color={colors.onTertiary} strokeWidth={2} />
             </View>
             <View
               style={{
@@ -562,9 +628,13 @@ export default function HomeScreen() {
               </Text>
             </View>
             {rtl.isRTL ? (
-              <ArrowLeft size={20} color={colors.onTertiaryContainer} />
+              <View style={[styles.couponArrowPill, { backgroundColor: colors.tertiary }]}>
+                <ArrowLeft size={16} color={colors.onTertiary} />
+              </View>
             ) : (
-              <ArrowRight size={20} color={colors.onTertiaryContainer} />
+              <View style={[styles.couponArrowPill, { backgroundColor: colors.tertiary }]}>
+                <ArrowRight size={16} color={colors.onTertiary} />
+              </View>
             )}
           </Pressable>
         )}
@@ -594,7 +664,7 @@ export default function HomeScreen() {
           </>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 96 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -621,13 +691,15 @@ function SectionHeader({
   return (
     <View style={[styles.sectionHeader, { flexDirection: rtl.row }]}>
       <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
-        {icon}
+        <View style={[styles.sectionIconBadge, { backgroundColor: colors.primaryContainer }]}>
+          {icon}
+        </View>
         <Text
           style={[
             typography.title3,
             {
               color: colors.label,
-              fontWeight: '600',
+              fontWeight: '700',
               textAlign: rtl.textAlign,
               writingDirection: rtl.writingDirection,
             },
@@ -641,13 +713,14 @@ function SectionHeader({
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={locale === 'ar' ? `عرض الكل ${title}` : `See all ${title}`}
-        style={{ flexDirection: rtl.row, alignItems: 'center' }}
+        style={{ flexDirection: rtl.row, alignItems: 'center', gap: 2 }}
       >
         <Text
           style={[
-            typography.subheadline,
+            typography.caption1,
             {
               color: colors.primary,
+              fontWeight: '700',
               textAlign: rtl.textAlign,
               writingDirection: rtl.writingDirection,
             },
@@ -685,24 +758,33 @@ function DealCard({
   return (
     <Card
       onPress={() => router.push(`/(stack)/product/${product.slug}`)}
-      style={{ width: DEAL_CARD_WIDTH }}
+      style={{
+        width: DEAL_CARD_WIDTH,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.separator,
+      }}
       padding="xs"
     >
-      <View style={styles.dealImageContainer}>
+      <View style={[styles.dealImageContainer, { backgroundColor: colors.secondaryBackground }]}>
         {image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-          />
+          <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Package size={40} color={colors.tertiaryLabel} strokeWidth={1.2} />
           </View>
         )}
         {savings > 0 && (
-          <View style={[styles.savingsBadge, { backgroundColor: colors.error }]}>
-            <Text style={styles.savingsBadgeText}>-{savings}%</Text>
+          <View
+            style={[
+              styles.savingsBadge,
+              {
+                backgroundColor: colors.error,
+                left: rtl.isRTL ? undefined : spacing.sm,
+                right: rtl.isRTL ? spacing.sm : undefined,
+              },
+            ]}
+          >
+            <Text style={[styles.savingsBadgeText, { color: colors.onError }]}>-{savings}%</Text>
           </View>
         )}
       </View>
@@ -768,24 +850,33 @@ function SavingsCard({
   return (
     <Card
       onPress={() => router.push(`/(stack)/product/${product.slug}`)}
-      style={styles.savingsCardContainer}
+      style={{
+        width: PRODUCT_CARD_WIDTH,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.separator,
+      }}
       padding="xs"
     >
-      <View style={styles.savingsImageContainer}>
+      <View style={[styles.savingsImageContainer, { backgroundColor: colors.secondaryBackground }]}>
         {image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-          />
+          <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Package size={28} color={colors.tertiaryLabel} strokeWidth={1.2} />
           </View>
         )}
         {savings > 0 && (
-          <View style={[styles.savingsBadge, { backgroundColor: colors.error }]}>
-            <Text style={styles.savingsBadgeText}>-{savings}%</Text>
+          <View
+            style={[
+              styles.savingsBadge,
+              {
+                backgroundColor: colors.error,
+                left: rtl.isRTL ? undefined : spacing.sm,
+                right: rtl.isRTL ? spacing.sm : undefined,
+              },
+            ]}
+          >
+            <Text style={[styles.savingsBadgeText, { color: colors.onError }]}>-{savings}%</Text>
           </View>
         )}
       </View>
@@ -851,16 +942,16 @@ function ProductCard({
   return (
     <Card
       onPress={() => router.push(`/(stack)/product/${item.slug}`)}
-      style={{ width: SMALL_CARD_WIDTH }}
+      style={{
+        width: SMALL_CARD_WIDTH,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.separator,
+      }}
       padding="xs"
     >
-      <View style={styles.productImageContainer}>
+      <View style={[styles.productImageContainer, { backgroundColor: colors.secondaryBackground }]}>
         {image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-          />
+          <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Package size={32} color={colors.tertiaryLabel} strokeWidth={1.2} />
@@ -948,7 +1039,10 @@ function StoreCard({
       accessibilityLabel={storeName || ''}
       style={({ pressed }) => [
         styles.storeCard,
-        { backgroundColor: bg },
+        {
+          backgroundColor: bg,
+          borderColor: colors.separator,
+        },
         pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
       ]}
     >
@@ -965,7 +1059,7 @@ function StoreCard({
             { backgroundColor: brand?.color || colors.primary },
           ]}
         >
-          <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
+          <Text style={{ color: colors.onPrimary, fontSize: 18, fontWeight: '700' }}>
             {(storeName || '?')[0]}
           </Text>
         </View>
@@ -991,12 +1085,30 @@ function StoreCard({
 // ─── Styles ──────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  heroShell: {
+    position: 'relative',
+    marginTop: spacing.sm,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+  },
+  heroGlow: {
+    position: 'absolute',
+    top: -26,
+    width: 180,
+    height: 110,
+    borderRadius: radii.xl,
+    opacity: 0.35,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
+    marginHorizontal: 1,
+    marginVertical: 1,
+    borderRadius: radii.xl,
+    borderWidth: 1,
   },
   iconButton: {
     width: 40,
@@ -1004,43 +1116,71 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  avatarButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  searchShell: {
+    marginTop: spacing.md,
+    padding: 2,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   searchBar: {
     alignItems: 'center',
-    height: 52,
+    height: 56,
     paddingHorizontal: spacing.md,
-    borderRadius: radii.lg,
+    borderRadius: radii.full,
   },
   searchIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   categoryChipRow: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
   categoryChip: {
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 9,
     borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.sm,
+  },
+  sectionIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dealImageContainer: {
     height: 160,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   savingsBadge: {
@@ -1052,7 +1192,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   savingsBadgeText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
@@ -1068,12 +1207,12 @@ const styles = StyleSheet.create({
   },
   savingsImageContainer: {
     height: 120,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   productImageContainer: {
     height: 120,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   storeCard: {
@@ -1083,6 +1222,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   storeLogo: {
     width: 48,
@@ -1101,11 +1241,19 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radii.lg,
     alignItems: 'center',
+    borderWidth: 1,
   },
   couponIconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  couponArrowPill: {
+    width: 28,
+    height: 28,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

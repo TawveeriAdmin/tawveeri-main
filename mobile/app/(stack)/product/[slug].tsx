@@ -31,7 +31,7 @@ import { useCartStore } from '@/src/lib/cart/cart-store';
 import { useCompareStore } from '@/src/lib/compare/compare-store';
 import { formatPrice, calculateSavingsPercentage } from '@/src/lib/utils';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Badge, Price, Skeleton, SARSymbol } from '@/src/components/ui';
+import { Badge, Price, Skeleton, SARSymbol, KeyedProductImage } from '@/src/components/ui';
 import { CouponBadge } from '@/src/components/ui/CouponBadge';
 import { ProductVideoPlayer } from '@/src/components/product/ProductVideoPlayer';
 
@@ -334,13 +334,10 @@ export default function ProductDetailScreen() {
                 }}
                 keyExtractor={(_, i) => String(i)}
                 renderItem={({ item, index }) => (
-                  <Image
-                    source={{ uri: item }}
+                  <KeyedProductImage
+                    uri={item}
                     style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT }}
                     contentFit="contain"
-                    transition={200}
-                    accessibilityRole="image"
-                    accessibilityLabel={locale === 'ar' ? `صورة المنتج ${index + 1}` : `Product image ${index + 1}`}
                   />
                 )}
               />
@@ -562,7 +559,7 @@ export default function ProductDetailScreen() {
                   >
                     <View style={[styles.recImageWrap, { backgroundColor: colors.secondaryBackground }]}>
                       {image ? (
-                        <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+                        <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
                       ) : (
                         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                           <Star size={20} color={colors.tertiaryLabel} />

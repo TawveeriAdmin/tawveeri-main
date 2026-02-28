@@ -8,7 +8,6 @@
 import React, { useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShoppingCart, Trash2, Plus, Minus, ExternalLink } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -17,7 +16,7 @@ import { useLocale, useTranslations } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useCartStore, StoreCart, CartItem } from '@/src/lib/cart/cart-store';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Button, Card, Price, EmptyState, SARSymbol } from '@/src/components/ui';
+import { Button, Card, Price, EmptyState, SARSymbol, KeyedProductImage } from '@/src/components/ui';
 import { formatPrice } from '@/src/lib/utils';
 
 export default function CartScreen() {
@@ -136,7 +135,7 @@ function CartItemRow({ item, storeId, locale, colors, rtl, onRemove, onUpdateQty
     <View style={[styles.cartItem, { backgroundColor: colors.card, borderBottomColor: colors.separator, flexDirection: rtl.row }]}>
       <View style={[styles.itemImage, { backgroundColor: colors.secondaryBackground, borderRadius: radii.sm }]}>
         {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+          <KeyedProductImage uri={item.imageUrl} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
           <ShoppingCart size={20} color={colors.tertiaryLabel} />
         )}

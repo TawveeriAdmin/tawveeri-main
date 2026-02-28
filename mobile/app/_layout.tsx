@@ -41,7 +41,6 @@ import { AuthProvider } from '@/src/lib/auth/auth-context';
 import * as Linking from 'expo-linking';
 import { usePushNotifications } from '@/src/lib/notifications/use-push-notifications';
 import { useDeepLinkHandler } from '@/src/lib/linking/use-deep-links';
-import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -112,7 +111,6 @@ function AppContent() {
 
   return (
     <>
-      <OfflineBanner />
       <Stack key={locale} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen

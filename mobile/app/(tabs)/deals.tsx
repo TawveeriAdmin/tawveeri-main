@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, RefreshControl, Dimensions, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Zap, Ticket } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
@@ -15,7 +14,7 @@ import { useRTL } from '@/src/lib/rtl/useRTL';
 import { supabase } from '@/src/lib/supabase/client';
 import * as Haptics from 'expo-haptics';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
-import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
+import { Card, Price, Badge, EmptyState, SkeletonCard, KeyedProductImage } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -74,7 +73,7 @@ export default function DealsScreen() {
         )}
         <View style={{ height: 130, backgroundColor: colors.secondaryBackground, borderRadius: radii.md, overflow: 'hidden' }}>
           {image ? (
-            <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+            <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Zap size={32} color={colors.deal} />

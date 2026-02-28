@@ -6,3 +6,4 @@ export { Price } from './Price';
 export { SARSymbol } from './SARSymbol';
 export { Skeleton, SkeletonCard } from './Skeleton';
 export { EmptyState } from './EmptyState';
+export { KeyedProductImage } from './KeyedProductImage';

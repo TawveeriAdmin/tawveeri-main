@@ -58,7 +58,7 @@ import { useAuth } from '@/src/lib/auth/auth-context';
 import { apiClient } from '@/src/lib/api/client';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
-import { Card, Price, Badge, EmptyState, SkeletonCard } from '@/src/components/ui';
+import { Card, Price, Badge, EmptyState, SkeletonCard, KeyedProductImage } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
 import { STORE_LOGOS } from '@/src/lib/constants/store-logos';
 import { useCompareStore } from '@/src/lib/compare/compare-store';
@@ -494,7 +494,7 @@ export default function SearchScreen() {
               ]}
             >
               {suggestion.type === 'product' && suggestion.imageUrl ? (
-                <Image source={{ uri: suggestion.imageUrl }} style={styles.autocompleteImage} contentFit="contain" />
+                <KeyedProductImage uri={suggestion.imageUrl} style={styles.autocompleteImage} contentFit="contain" />
               ) : (
                 <View style={[styles.autocompleteIconWrap, { backgroundColor: colors.tertiaryFill }]}>
                   <Clock size={14} color={colors.tertiaryLabel} />
@@ -1019,11 +1019,7 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
         }}
       >
         {item.imageUrl ? (
-          <Image
-            source={{ uri: item.imageUrl }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-          />
+          <KeyedProductImage uri={item.imageUrl} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Package size={32} color={colors.tertiaryLabel} strokeWidth={1.2} />
@@ -1145,11 +1141,7 @@ function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
           }}
         >
           {item.imageUrl ? (
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="contain"
-            />
+            <KeyedProductImage uri={item.imageUrl} style={{ width: '100%', height: '100%' }} contentFit="contain" />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Package size={28} color={colors.tertiaryLabel} strokeWidth={1.2} />

@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Bell, Trash2, TrendingDown, Check } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
@@ -18,7 +17,7 @@ import { supabase } from '@/src/lib/supabase/client';
 import { formatPrice } from '@/src/lib/utils';
 import { SARSymbol } from '@/src/components/ui/SARSymbol';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
-import { Price, Badge, EmptyState, Skeleton } from '@/src/components/ui';
+import { Price, Badge, EmptyState, Skeleton, KeyedProductImage } from '@/src/components/ui';
 
 type Tab = 'active' | 'triggered';
 
@@ -142,7 +141,7 @@ export default function PriceAlertsScreen() {
                 style={[styles.alertCard, { backgroundColor: colors.card, flexDirection: rtl.row }]}
               >
                 {product?.image_url && (
-                  <Image source={{ uri: product.image_url }} style={styles.alertImage} contentFit="contain" />
+                  <KeyedProductImage uri={product.image_url} style={styles.alertImage} contentFit="contain" />
                 )}
                 <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
                   <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600' }]} numberOfLines={2}>
