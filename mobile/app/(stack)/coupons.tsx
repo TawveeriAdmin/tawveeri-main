@@ -95,8 +95,8 @@ export default function CouponsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Search */}
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      {/* Search — same spacing as search page */}
       <View style={[styles.searchRow, { backgroundColor: colors.background }]}>
         <View style={[styles.searchInput, { backgroundColor: colors.secondaryBackground, borderColor: colors.separator }]}>
           <Search size={16} color={colors.secondaryLabel} />
@@ -115,14 +115,24 @@ export default function CouponsScreen() {
         </View>
       </View>
 
-      {/* Store chips */}
+      {/* Store chips — compact, no stretch (match search page category chips spacing) */}
       {stores.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm, paddingBottom: spacing.sm }}>
+        <View style={styles.chipRowWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipScrollContent}
+            style={styles.chipScrollView}
+          >
           <Pressable
             onPress={() => setStoreFilter(null)}
-            style={[styles.chip, { backgroundColor: !storeFilter ? colors.primary : colors.secondaryBackground, borderWidth: storeFilter ? 1 : 0, borderColor: colors.separator }]}
+            style={({ pressed }) => [
+              styles.chip,
+              { backgroundColor: !storeFilter ? colors.primary : colors.secondaryBackground, borderWidth: storeFilter ? 1 : 0, borderColor: colors.separator },
+              pressed && { opacity: 0.8 },
+            ]}
           >
-            <Text style={[typography.footnote, { color: !storeFilter ? '#fff' : colors.label, fontWeight: !storeFilter ? '600' : '400' }]}>
+            <Text style={[typography.footnote, { color: !storeFilter ? colors.onPrimary : colors.label, fontWeight: !storeFilter ? '600' : '500' }]}>
               {t('coupons.allStores')}
             </Text>
           </Pressable>
@@ -130,17 +140,22 @@ export default function CouponsScreen() {
             <Pressable
               key={s.id}
               onPress={() => setStoreFilter(storeFilter === s.id ? null : s.id)}
-              style={[styles.chip, { backgroundColor: storeFilter === s.id ? colors.primary : colors.secondaryBackground, borderWidth: storeFilter !== s.id ? 1 : 0, borderColor: colors.separator }]}
+              style={({ pressed }) => [
+                styles.chip,
+                { backgroundColor: storeFilter === s.id ? colors.primary : colors.secondaryBackground, borderWidth: storeFilter !== s.id ? 1 : 0, borderColor: colors.separator },
+                pressed && { opacity: 0.8 },
+              ]}
             >
-              <Text style={[typography.footnote, { color: storeFilter === s.id ? '#fff' : colors.label, fontWeight: storeFilter === s.id ? '600' : '400' }]}>
+              <Text style={[typography.footnote, { color: storeFilter === s.id ? colors.onPrimary : colors.label, fontWeight: storeFilter === s.id ? '600' : '500' }]}>
                 {s.name}
               </Text>
             </Pressable>
           ))}
-        </ScrollView>
+          </ScrollView>
+        </View>
       )}
 
-      {/* Sort row */}
+      {/* Sort row — same padding as search page results header */}
       <View style={[styles.sortRow, { flexDirection: rtl.row }]}>
         <Text style={[typography.footnote, { color: colors.secondaryLabel }]}>
           {filtered.length} {t('coupons.resultsCount')}
@@ -169,7 +184,7 @@ export default function CouponsScreen() {
         <FlashList
           data={filtered}
           keyExtractor={(item) => item.id || item.code}
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }}
+          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxl, gap: spacing.md }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
 
@@ -189,6 +204,9 @@ export default function CouponsScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   searchRow: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -201,17 +219,33 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
   },
+  chipRowWrap: {
+    alignSelf: 'stretch',
+  },
+  chipScrollView: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  chipScrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
+    alignSelf: 'center',
   },
   sortRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
   },
   sortBtn: {
     paddingHorizontal: spacing.sm,
