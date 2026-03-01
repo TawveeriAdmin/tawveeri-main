@@ -36,7 +36,7 @@ import Toast from 'react-native-toast-message';
 import 'react-native-reanimated';
 
 import { IntlProvider, useLocale } from '@/src/lib/i18n/provider';
-import { ThemeProvider } from '@/src/lib/theme/theme-context';
+import { ThemeProvider, useTheme } from '@/src/lib/theme/theme-context';
 import { AuthProvider } from '@/src/lib/auth/auth-context';
 import * as Linking from 'expo-linking';
 import { usePushNotifications } from '@/src/lib/notifications/use-push-notifications';
@@ -108,10 +108,17 @@ function AppContent() {
   usePushNotifications();
   useDeepLinkHandler();
   const { locale } = useLocale();
+  const { colors } = useTheme();
 
   return (
     <>
-      <Stack key={locale} screenOptions={{ headerShown: false }}>
+      <Stack
+        key={locale}
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="(auth)"
