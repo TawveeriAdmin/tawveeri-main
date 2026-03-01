@@ -18,6 +18,7 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
@@ -51,7 +52,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase/client';
 import { useNetwork } from '@/src/lib/network/use-network';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
-import { Card, Price, SkeletonCard, Skeleton, KeyedProductImage } from '@/src/components/ui';
+import { Card, Price, SkeletonCard, Skeleton, KeyedProductImage, SARSymbol } from '@/src/components/ui';
 import { calculateSavingsPercentage } from '@/src/lib/utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -120,6 +121,7 @@ export default function HomeScreen() {
   const [stores, setStores] = useState<any[]>([]);
   const [couponsCount, setCouponsCount] = useState(0);
   const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [featuredDeal, setFeaturedDeal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const { greeting, subtitle } = getGreeting(locale);
@@ -138,6 +140,7 @@ export default function HomeScreen() {
           setBiggestSavings(c.savings || []);
           setStores(c.storesList || []);
           setCouponsCount(c.cCount || 0);
+          if (c.savings?.length > 0) setFeaturedDeal(c.savings[0]);
         }
       } catch {}
       setLoading(false);
@@ -187,6 +190,7 @@ export default function HomeScreen() {
       setBiggestSavings(sorted);
       setStores(storesList);
       setCouponsCount(cCount);
+      if (sorted.length > 0) setFeaturedDeal(sorted[0]);
 
       // Cache for offline
       AsyncStorage.setItem(HOME_CACHE_KEY, JSON.stringify({
@@ -204,6 +208,7 @@ export default function HomeScreen() {
           setBiggestSavings(c.savings || []);
           setStores(c.storesList || []);
           setCouponsCount(c.cCount || 0);
+          if (c.savings?.length > 0) setFeaturedDeal(c.savings[0]);
         }
       } catch {}
     } finally {
@@ -413,6 +418,66 @@ export default function HomeScreen() {
             })}
           </ScrollView>
         </View>
+
+        {/* ── Featured Deal Banner (highest discount product) ── */}
+        {featuredDeal && (() => {
+          const f = featuredDeal;
+          const product = f.products || {};
+          const imageUrl = (product.image_urls?.[0]) ?? f.image_url ?? null;
+          const slug = product.slug ?? f.slug ?? null;
+          const nameEn = product.name_en ?? f.name_en ?? '';
+          const nameAr = product.name_ar ?? f.name_ar ?? '';
+          const discount = f.original_price && f.current_price
+            ? Math.round(((f.original_price - f.current_price) / f.original_price) * 100)
+            : 0;
+          return (
+            <Pressable
+              onPress={() => slug && router.push(`/(stack)/product/${slug}`)}
+              style={({ pressed }) => [styles.featuredBanner, { marginHorizontal: spacing.md, opacity: pressed ? 0.93 : 1 }]}
+              accessibilityRole="button"
+            >
+              {imageUrl ? (
+                <>
+                  <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                </>
+              ) : (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary + '33' }]} />
+              )}
+              <View style={styles.featuredGradient} />
+              <View style={styles.featuredContent}>
+                <View style={[styles.featuredBadgeRow, { flexDirection: rtl.row }]}>
+                  <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.featuredBadgeText}>
+                      {locale === 'ar' ? 'عرض مميز' : 'Featured Deal'}
+                    </Text>
+                  </View>
+                  {discount > 0 && (
+                    <View style={[styles.featuredBadge, { backgroundColor: colors.systemRed }]}>
+                      <Text style={styles.featuredBadgeText}>-{discount}%</Text>
+                    </View>
+                  )}
+                </View>
+                <Text numberOfLines={1} style={styles.featuredTitle}>
+                  {locale === 'ar' ? (nameAr || nameEn) : (nameEn || nameAr)}
+                </Text>
+                <View style={[styles.featuredBottom, { flexDirection: rtl.row }]}>
+                  <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.featuredPrice}>
+                      {f.current_price?.toLocaleString()}
+                    </Text>
+                    <SARSymbol size={18} color="#fff" />
+                  </View>
+                  <View style={styles.featuredBtn}>
+                    <Text style={styles.featuredBtnText}>
+                      {locale === 'ar' ? 'اشتري الآن' : 'Buy Now'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+          );
+        })()}
 
         {/* ── Hot Deals (same scroll/padding as category chips: full-bleed container, content padding) ── */}
         {deals.length > 0 && (
@@ -1112,6 +1177,68 @@ const styles = StyleSheet.create({
   },
   categoryChipSection: {
     marginBottom: spacing.sm,
+  },
+  featuredBanner: {
+    height: 192,
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  featuredGradient: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  featuredContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.lg,
+  },
+  featuredBadgeRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  featuredBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  featuredBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  featuredTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginBottom: spacing.sm,
+  },
+  featuredBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  featuredPrice: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  featuredBtn: {
+    backgroundColor: '#fff',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+  },
+  featuredBtnText: {
+    color: '#0D1117',
+    fontSize: 12,
+    fontWeight: '700',
   },
   categoryChipRow: {
     gap: spacing.sm,
