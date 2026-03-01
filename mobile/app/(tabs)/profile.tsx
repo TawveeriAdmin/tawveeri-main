@@ -250,13 +250,24 @@ export default function ProfileScreen() {
             </Text>
             <Pressable
               onPress={() => router.push('/(auth)/login')}
-              style={({ pressed }) => [styles.signInButtonMock, { backgroundColor: colors.primary }, pressed && { opacity: 0.9 }]}
+              style={({ pressed }) => [
+                styles.signInButtonMock,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 12,
+                  elevation: 8,
+                },
+                pressed && { opacity: 0.9 },
+              ]}
             >
               <View style={[styles.signInButtonContent, { flexDirection: rtl.row }]}>
                 <View style={styles.signInIconWrap}>
                   <LogOut size={20} color="#fff" strokeWidth={2} />
                 </View>
-                <Text style={[typography.headline, { color: '#fff', fontWeight: '700', marginLeft: rtl.isRTL ? spacing.sm : 0, marginRight: rtl.isRTL ? 0 : spacing.sm, writingDirection: rtl.writingDirection }]}>
+                <Text style={[typography.headline, { color: '#fff', fontWeight: '700', writingDirection: rtl.writingDirection }]}>
                   {rtl.isRTL ? 'تسجيل الدخول' : 'Sign In'}
                 </Text>
               </View>
@@ -590,7 +601,6 @@ const styles = StyleSheet.create({
   },
   welcomeHeader: {
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl * 1.25,
     paddingBottom: spacing.xl,
   },
@@ -619,12 +629,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   signInButtonMock: {
+    alignSelf: 'stretch',
     width: '100%',
     paddingVertical: spacing.md,
     marginTop: spacing.xl,
     borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  signInButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: spacing.sm,
   },
   mockSectionLabel: {
     paddingTop: spacing.xl,
@@ -685,12 +703,6 @@ const styles = StyleSheet.create({
   mockThemeGrid: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  signInButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
   },
   signInIconWrap: {
     transform: [{ rotate: '180deg' }],
