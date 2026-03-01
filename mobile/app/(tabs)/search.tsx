@@ -78,9 +78,9 @@ const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
 const RECENT_SEARCHES_KEY = 'tawveeri_recent_searches';
 const MAX_RECENT_SEARCHES = 8;
 
-// Animated placeholder phrases (typing effect)
-const SEARCH_PHRASES_EN = ['Find iPhone 15 Pro...', 'Search GPU...', 'Check RTX 4090...', 'Compare MacBooks...'];
-const SEARCH_PHRASES_AR = ['ابحث عن آيفون 15 برو...', 'ابحث عن كرت شاشة...', 'قارن أسعار MacBook...', 'ابحث عن سماعات...'];
+// Animated placeholder phrases (typing effect) — product names only
+const SEARCH_PHRASES_EN = ['iPhone 15 Pro...', 'GPU...', 'RTX 4090...', 'MacBooks...'];
+const SEARCH_PHRASES_AR = ['آيفون 15 برو...', 'كرت شاشة...', 'RTX 4090...', 'MacBook...'];
 
 // ─── Static Data ─────────────────────────────────────────────
 
