@@ -1359,7 +1359,8 @@ const styles = StyleSheet.create({
   categoryPillsRowMock: {
     flexDirection: 'row',
     gap: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs / 2,
     paddingHorizontal: spacing.md,
   },
   categoryPillMock: {
@@ -1370,7 +1371,7 @@ const styles = StyleSheet.create({
   // Mock idle state
   idleContainerMock: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
+    paddingTop: 1,
   },
   idlePromptMock: {
     alignItems: 'center',
