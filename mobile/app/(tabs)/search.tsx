@@ -812,7 +812,7 @@ function IdleState({
 
       {/* Mock: Recent — uppercase label + TrendingDown, Clear; chips with dot */}
       {recentSearches.length > 0 && (
-        <View style={[styles.idleSectionMock, { paddingHorizontal: spacing.md }]}>
+        <View style={styles.idleSectionMock}>
           <View style={[styles.idleSectionHeaderMock, { flexDirection: rtl.row }]}>
             <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.sm }}>
               <TrendingDown size={14} color={colors.secondaryLabel} strokeWidth={2} />
@@ -853,7 +853,7 @@ function IdleState({
 
       {/* Mock: Popular — uppercase + Zap; chips primary/10 border primary/20 */}
       {popularSearches.length > 0 && (
-        <View style={[styles.idleSectionMock, { paddingHorizontal: spacing.md }]}>
+        <View style={styles.idleSectionMock}>
           <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
             <Zap size={14} color={colors.secondaryLabel} strokeWidth={2} />
             <Text style={[styles.idleSectionTitleMock, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
