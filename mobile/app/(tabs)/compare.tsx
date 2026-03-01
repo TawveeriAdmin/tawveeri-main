@@ -342,8 +342,8 @@ function CompareInfoRow({
 
 const styles = StyleSheet.create({
   stickyHeader: {
-    paddingHorizontal: H_PAD,
-    paddingTop: spacing.xl * 1.25,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.md,
     justifyContent: 'space-between',
     alignItems: 'flex-end',

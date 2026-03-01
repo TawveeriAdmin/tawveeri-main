@@ -275,7 +275,7 @@ export default function HomeScreen() {
         }
       >
         {/* ── Header (mock: greeting, subtitle, Bell + Avatar) ── */}
-        <View style={[styles.headerWrap, { paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md }]}>
+        <View style={[styles.headerWrap, { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md }]}>
           <View style={[styles.headerRow, { flexDirection: rtl.row }]}>
             <View style={{ flex: 1, alignItems: rtl.alignStart }}>
               <Text

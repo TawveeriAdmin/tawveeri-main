@@ -1297,7 +1297,7 @@ const styles = StyleSheet.create({
   // Mock search header & bar
   searchHeaderMock: {
     paddingHorizontal: 0,
-    paddingTop: spacing.xl * 1.25,
+    paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
   searchBarOuterMock: {
