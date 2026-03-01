@@ -16,6 +16,7 @@ import {
   Dimensions,
   Keyboard,
   Linking,
+  Animated,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
@@ -76,6 +77,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
 const RECENT_SEARCHES_KEY = 'tawveeri_recent_searches';
 const MAX_RECENT_SEARCHES = 8;
+
+// Animated placeholder phrases (typing effect)
+const SEARCH_PHRASES_EN = ['Find iPhone 15 Pro...', 'Search GPU...', 'Check RTX 4090...', 'Compare MacBooks...'];
+const SEARCH_PHRASES_AR = ['ابحث عن آيفون 15 برو...', 'ابحث عن كرت شاشة...', 'قارن أسعار MacBook...', 'ابحث عن سماعات...'];
 
 // ─── Static Data ─────────────────────────────────────────────
 
@@ -141,10 +146,17 @@ export default function SearchScreen() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [searchSaved, setSearchSaved] = useState(false);
   const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [typedPlaceholder, setTypedPlaceholder] = useState('');
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autocompleteRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const recentRef = useRef<string[]>([]);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const phraseIndexRef = useRef(0);
+  const charIndexRef = useRef(0);
+  const isDeletingRef = useRef(false);
+  const cursorAnim = useRef(new Animated.Value(1)).current;
 
   // Load recent searches on mount
   useEffect(() => {
@@ -158,6 +170,56 @@ export default function SearchScreen() {
       }
     });
   }, []);
+
+  // Blinking cursor for animated placeholder
+  useEffect(() => {
+    const blink = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cursorAnim, { toValue: 0, duration: 530, useNativeDriver: true }),
+        Animated.timing(cursorAnim, { toValue: 1, duration: 530, useNativeDriver: true }),
+      ])
+    );
+    blink.start();
+    return () => blink.stop();
+  }, [cursorAnim]);
+
+  // Typing animation for search placeholder (when idle and not focused)
+  useEffect(() => {
+    if (query !== '' || inputFocused) return;
+    const phrases = locale === 'ar' ? SEARCH_PHRASES_AR : SEARCH_PHRASES_EN;
+    phraseIndexRef.current = 0;
+    charIndexRef.current = 0;
+    isDeletingRef.current = false;
+    setTypedPlaceholder('');
+    const type = () => {
+      const currentPhrase = phrases[phraseIndexRef.current];
+      let nextDelay: number;
+      if (isDeletingRef.current) {
+        const next = currentPhrase.substring(0, charIndexRef.current - 1);
+        setTypedPlaceholder(next);
+        charIndexRef.current -= 1;
+        nextDelay = 50;
+      } else {
+        const next = currentPhrase.substring(0, charIndexRef.current + 1);
+        setTypedPlaceholder(next);
+        charIndexRef.current += 1;
+        nextDelay = 100;
+      }
+      if (!isDeletingRef.current && charIndexRef.current === currentPhrase.length) {
+        isDeletingRef.current = true;
+        nextDelay = 2000;
+      } else if (isDeletingRef.current && charIndexRef.current === 0) {
+        isDeletingRef.current = false;
+        phraseIndexRef.current = (phraseIndexRef.current + 1) % phrases.length;
+        nextDelay = 500;
+      }
+      typingTimeoutRef.current = setTimeout(type, nextDelay);
+    };
+    type();
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [query, inputFocused, locale]);
 
   // Load popular searches from DB (top viewed products)
   useEffect(() => {
@@ -416,29 +478,58 @@ export default function SearchScreen() {
           >
             <SearchIcon size={20} color={colors.secondaryLabel} strokeWidth={2} />
           </View>
-          <TextInput
-            ref={inputRef}
-            value={query}
-            onChangeText={onQueryChange}
-            onSubmitEditing={onSubmit}
-            placeholder={t('search.searchPlaceholder')}
-            placeholderTextColor={colors.tertiaryLabel}
-            returnKeyType="search"
-            autoCorrect={false}
-            autoFocus={!params.query}
-            accessibilityRole="search"
-            accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
-            style={[
-              styles.searchInputMock,
-              {
-                color: colors.label,
-                marginLeft: rtl.isRTL ? spacing.sm : 0,
-                marginRight: rtl.isRTL ? 0 : spacing.sm,
-                textAlign: rtl.textAlign,
-                writingDirection: rtl.writingDirection,
-              },
-            ]}
-          />
+          <View style={styles.searchInputWrap}>
+            {query === '' && !inputFocused && (
+              <View pointerEvents="none" style={[styles.animatedPlaceholderWrap, { flexDirection: rtl.row }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.animatedPlaceholderText,
+                    {
+                      color: colors.tertiaryLabel,
+                      textAlign: rtl.textAlign,
+                      writingDirection: rtl.writingDirection,
+                    },
+                  ]}
+                >
+                  {typedPlaceholder}
+                </Text>
+                <Animated.Text
+                  style={[
+                    styles.animatedPlaceholderCursor,
+                    { color: colors.primary, opacity: cursorAnim, marginLeft: rtl.isRTL ? 0 : 2, marginRight: rtl.isRTL ? 2 : 0 },
+                  ]}
+                >
+                  |
+                </Animated.Text>
+              </View>
+            )}
+            <TextInput
+              ref={inputRef}
+              value={query}
+              onChangeText={onQueryChange}
+              onSubmitEditing={onSubmit}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              placeholder={query === '' && !inputFocused ? '' : t('search.searchPlaceholder')}
+              placeholderTextColor={colors.tertiaryLabel}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoFocus={!params.query}
+              accessibilityRole="search"
+              accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
+              style={[
+                styles.searchInputMock,
+                {
+                  color: colors.label,
+                  marginLeft: rtl.isRTL ? spacing.sm : 0,
+                  marginRight: rtl.isRTL ? 0 : spacing.sm,
+                  textAlign: rtl.textAlign,
+                  writingDirection: rtl.writingDirection,
+                },
+              ]}
+            />
+          </View>
           <View style={[styles.searchBarRightIconsMock, { flexDirection: rtl.row }]}>
             {query.length > 0 && (
               <Pressable
@@ -1227,6 +1318,26 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     justifyContent: 'center',
+  },
+  searchInputWrap: {
+    flex: 1,
+    position: 'relative',
+    minHeight: 24,
+  },
+  animatedPlaceholderWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  animatedPlaceholderText: {
+    fontSize: 16,
+  },
+  animatedPlaceholderCursor: {
+    fontSize: 16,
   },
   searchInputMock: {
     flex: 1,
