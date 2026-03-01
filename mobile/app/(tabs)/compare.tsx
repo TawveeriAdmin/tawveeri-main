@@ -104,7 +104,7 @@ export default function CompareScreen() {
           {products.map((product, idx) => {
             const isBestValue = bestPrices[idx] !== null && bestPrices[idx] === overallBest;
             return (
-              <View key={product.id} style={[styles.productCard, { width: COLUMN_WIDTH, backgroundColor: colors.secondaryGroupedBackground, borderColor: isBestValue ? 'rgba(52,199,89,0.5)' : colors.separator, borderWidth: isBestValue ? 2 : 1 }]}>
+              <View key={product.id} style={[styles.productCard, { width: COLUMN_WIDTH, backgroundColor: colors.secondaryGroupedBackground, borderColor: isBestValue ? colors.brandAccent : colors.separator, borderWidth: isBestValue ? 2 : 1 }]}>
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -137,8 +137,8 @@ export default function CompareScreen() {
 
                 {isBestValue && (
                   <View style={[styles.bestValueRow, { flexDirection: rtl.row }]}>
-                    <CheckCircle size={14} color={colors.systemGreen} />
-                    <Text style={[typography.caption2, { color: colors.systemGreen, fontWeight: '700' }]}>
+                    <CheckCircle size={14} color={colors.brandAccent} />
+                    <Text style={[typography.caption2, { color: colors.brandAccent, fontWeight: '700' }]}>
                       {locale === 'ar' ? 'الأفضل قيمة' : 'Best Value'}
                     </Text>
                   </View>
@@ -164,7 +164,9 @@ export default function CompareScreen() {
         {products.some((p) => p.product_stores && p.product_stores.length > 0) && (
           <View style={[styles.storeCard, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
             <View style={[styles.storeCardTitleRow, { flexDirection: rtl.row }]}>
-              <Store size={20} color={colors.primary} />
+              <View style={[styles.storeCardIconBox, { backgroundColor: `${colors.primary}18` }]}>
+                <Store size={20} color={colors.primary} />
+              </View>
               <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
                 {locale === 'ar' ? 'مقارنة المتاجر' : 'Store Comparison'}
               </Text>
@@ -314,7 +316,7 @@ function CompareInfoRow({
                 style={[
                   typography.footnote,
                   {
-                    color: highlighted ? colors.systemGreen : colors.label,
+                    color: highlighted ? colors.brandAccent : colors.label,
                     fontWeight: highlighted ? '700' : '500',
                     flexShrink: 1,
                     textAlign: rtl.textAlign,
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     padding: 12,
-    borderRadius: 16,
+    borderRadius: 24,
     borderWidth: 1,
     position: 'relative',
   },
@@ -416,7 +418,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   storeCard: {
-    borderRadius: 24,
+    borderRadius: 32,
     padding: spacing.lg,
     borderWidth: 1,
     marginBottom: spacing.lg,
@@ -425,6 +427,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.lg,
+  },
+  storeCardIconBox: {
+    padding: spacing.sm,
+    borderRadius: radii.md,
   },
   storeRows: {},
   storeRowDivider: {

@@ -3,11 +3,11 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, RefreshControl, Dimensions, Pressable } from 'react-native';
+import { View, Text, RefreshControl, Dimensions, Pressable, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Zap, Ticket } from 'lucide-react-native';
+import { Zap, Percent } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
@@ -63,7 +63,7 @@ export default function DealsScreen() {
     return (
       <Card
         onPress={() => router.push(`/(stack)/product/${product.slug}`)}
-        style={{ flex: 1, margin: spacing.sm / 2 }}
+        style={{ flex: 1, margin: spacing.sm / 2, borderRadius: 24, overflow: 'hidden', padding: 0 }}
         padding="xs"
       >
         {savings > 0 && (
@@ -71,7 +71,7 @@ export default function DealsScreen() {
             <Badge text={`-${savings}%`} color="error" />
           </View>
         )}
-        <View style={{ height: 130, backgroundColor: colors.secondaryBackground, borderRadius: radii.md, overflow: 'hidden' }}>
+        <View style={{ height: 130, backgroundColor: colors.tertiaryGroupedBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }}>
           {image ? (
             <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
           ) : (
@@ -80,7 +80,7 @@ export default function DealsScreen() {
             </View>
           )}
         </View>
-        <View style={{ padding: spacing.sm }}>
+        <View style={{ padding: spacing.md }}>
           <Text numberOfLines={2} style={[typography.footnote, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{name}</Text>
           {store && (
             <Text style={[typography.caption2, { color: colors.secondaryLabel, marginTop: 2, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>{store}</Text>
@@ -95,12 +95,14 @@ export default function DealsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: rtl.row, alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm }}>
-        <Zap size={24} color={colors.deal} />
-        <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', flex: 1, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-          {locale === 'ar' ? 'العروض' : 'Deals'}
-        </Text>
+      {/* Sticky header (mock: Zap + Deals, Coupons button) */}
+      <View style={[styles.dealsHeader, { flexDirection: rtl.row }]}>
+        <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.sm }}>
+          <Zap size={28} color={colors.deal} strokeWidth={2} fill={colors.deal} />
+          <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', fontSize: 28, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+            {locale === 'ar' ? 'العروض' : 'Deals'}
+          </Text>
+        </View>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -109,20 +111,17 @@ export default function DealsScreen() {
           accessibilityRole="button"
           accessibilityLabel={locale === 'ar' ? 'عرض الكوبونات' : 'View coupons'}
           style={({ pressed }) => [
+            styles.couponsBtn,
             {
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: colors.tertiary + '15',
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.sm,
-              borderRadius: 20,
+              flexDirection: rtl.row,
+              backgroundColor: colors.secondaryGroupedBackground,
+              borderColor: colors.separator,
             },
             pressed && { opacity: 0.7 },
           ]}
         >
-          <Ticket size={14} color={colors.tertiary} />
-          <Text style={[typography.footnote, { color: colors.tertiary, fontWeight: '600' }]}>
+          <Percent size={16} color={colors.deal} />
+          <Text style={[typography.footnote, { color: colors.deal, fontWeight: '700' }]}>
             {locale === 'ar' ? 'كوبونات' : 'Coupons'}
           </Text>
         </Pressable>
@@ -152,3 +151,22 @@ export default function DealsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  dealsHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  couponsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+});

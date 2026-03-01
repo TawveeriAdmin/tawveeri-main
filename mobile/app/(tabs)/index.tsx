@@ -123,13 +123,6 @@ export default function HomeScreen() {
 
   const { greeting, subtitle } = getGreeting(locale);
   const firstName = user?.full_name?.split(' ')[0];
-  const visual = {
-    glowTint: isDark ? colors.primary : colors.primaryContainer,
-    heroSurface: isDark ? colors.tertiaryBackground : colors.secondaryGroupedBackground,
-    glassSurface: isDark ? colors.secondaryBackground : colors.secondaryGroupedBackground,
-    borderSoft: colors.separator,
-  };
-
   const HOME_CACHE_KEY = 'tawveeri_home_cache';
 
   const fetchData = useCallback(async () => {
@@ -258,41 +251,50 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      {/* Background glows (mock) */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View
+          style={[
+            styles.glowCircle,
+            {
+              top: -80,
+              left: -SCREEN_WIDTH * 0.3,
+              width: SCREEN_WIDTH * 0.9,
+              height: 220,
+              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(13, 71, 161, 0.04)',
+            },
+          ]}
+        />
+        <View
+          style={[
+            styles.glowCircle,
+            {
+              bottom: 80,
+              right: -SCREEN_WIDTH * 0.3,
+              width: SCREEN_WIDTH * 0.9,
+              height: 220,
+              backgroundColor: isDark ? 'rgba(168, 85, 247, 0.04)' : 'rgba(79, 70, 229, 0.03)',
+            },
+          ]}
+        />
+      </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        {/* ── Header ── */}
-        <View style={[styles.heroShell, { marginHorizontal: spacing.md }]}>
-          <View
-            style={[
-              styles.heroGlow,
-              {
-                backgroundColor: visual.glowTint,
-                left: rtl.isRTL ? undefined : spacing.lg,
-                right: rtl.isRTL ? spacing.lg : undefined,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.header,
-              {
-                flexDirection: rtl.row,
-                backgroundColor: visual.heroSurface,
-                borderColor: visual.borderSoft,
-              },
-            ]}
-          >
+        {/* ── Header (mock: greeting, subtitle, Bell + Avatar) ── */}
+        <View style={[styles.headerWrap, { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.md }]}>
+          <View style={[styles.headerRow, { flexDirection: rtl.row }]}>
             <View style={{ flex: 1, alignItems: rtl.alignStart }}>
               <Text
                 style={[
-                  typography.title2,
+                  typography.largeTitle,
                   {
                     color: colors.label,
-                    fontWeight: '800',
+                    fontWeight: '700',
+                    fontSize: 28,
                     textAlign: rtl.textAlign,
                     writingDirection: rtl.writingDirection,
                   },
@@ -303,10 +305,10 @@ export default function HomeScreen() {
               </Text>
               <Text
                 style={[
-                  typography.subheadline,
+                  typography.footnote,
                   {
                     color: colors.secondaryLabel,
-                    marginTop: 4,
+                    marginTop: spacing.xs,
                     textAlign: rtl.textAlign,
                     writingDirection: rtl.writingDirection,
                   },
@@ -315,15 +317,12 @@ export default function HomeScreen() {
                 {subtitle}
               </Text>
             </View>
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flexDirection: rtl.row, gap: spacing.sm }}>
               <Pressable
                 onPress={() => router.push('/(stack)/wishlist')}
                 style={({ pressed }) => [
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.secondaryBackground,
-                    borderColor: colors.separator,
-                  },
+                  styles.headerIconBtn,
+                  { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator },
                   pressed && { opacity: 0.7 },
                 ]}
                 hitSlop={8}
@@ -333,11 +332,8 @@ export default function HomeScreen() {
               <Pressable
                 onPress={() => router.push('/(stack)/notifications')}
                 style={({ pressed }) => [
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.secondaryBackground,
-                    borderColor: colors.separator,
-                  },
+                  styles.headerIconBtn,
+                  { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator },
                   pressed && { opacity: 0.7 },
                 ]}
                 hitSlop={8}
@@ -347,18 +343,15 @@ export default function HomeScreen() {
               <Pressable
                 onPress={() => router.push('/(tabs)/profile')}
                 style={({ pressed }) => [
-                  styles.avatarButton,
-                  {
-                    backgroundColor: colors.primaryContainer,
-                    borderColor: colors.primary,
-                  },
+                  styles.headerAvatarBtn,
+                  { backgroundColor: colors.primary },
                   pressed && { opacity: 0.8 },
                 ]}
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel={locale === 'ar' ? 'الملف الشخصي' : 'Profile'}
               >
-                <Text style={[typography.caption1, { color: colors.onPrimaryContainer, fontWeight: '700' }]}>
+                <Text style={[typography.caption1, { color: colors.onPrimary, fontWeight: '700' }]}>
                   {firstName?.[0]?.toUpperCase() || 'T'}
                 </Text>
               </Pressable>
@@ -366,42 +359,30 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Search Bar ── */}
-        <View
-          style={[
-            styles.searchShell,
-            {
-              marginHorizontal: spacing.md,
-              borderColor: colors.primary,
-              backgroundColor: visual.glowTint,
-            },
-          ]}
-        >
+        {/* ── Search Bar (mock: rounded-2xl, icon left) ── */}
+        <View style={[styles.searchBarWrap, { paddingHorizontal: spacing.lg }]}>
           <Pressable
             onPress={() => router.push('/(tabs)/search')}
             style={({ pressed }) => [
-              styles.searchBar,
+              styles.searchBarMock,
               {
-                backgroundColor: visual.glassSurface,
-                borderWidth: 1,
+                backgroundColor: colors.secondaryGroupedBackground,
                 borderColor: pressed ? colors.primary : colors.separator,
                 flexDirection: rtl.row,
               },
-              pressed && { transform: [{ scale: 0.995 }] },
+              pressed && { opacity: 0.95 },
             ]}
             accessibilityRole="search"
             accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
           >
-            <View style={[styles.searchIconCircle, { backgroundColor: colors.primary }]}>
-              <Search size={16} color={colors.onPrimary} strokeWidth={2.2} />
+            <View style={[styles.searchBarIconWrap, { marginRight: rtl.isRTL ? 0 : spacing.sm, marginLeft: rtl.isRTL ? spacing.sm : 0 }]}>
+              <Search size={20} color={colors.secondaryLabel} strokeWidth={2} />
             </View>
             <Text
               style={[
                 typography.body,
                 {
                   color: colors.tertiaryLabel,
-                  marginLeft: rtl.isRTL ? 0 : spacing.sm,
-                  marginRight: rtl.isRTL ? spacing.sm : 0,
                   flex: 1,
                   textAlign: rtl.textAlign,
                   writingDirection: rtl.writingDirection,
@@ -413,59 +394,62 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* ── Category Chips ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryChipRow}
-        >
-          {CATEGORIES.map((cat) => {
-            const bg = isDark ? cat.darkBg : cat.lightBg;
-            const iconColor = isDark ? cat.darkIcon : cat.lightIcon;
-            return (
-              <Pressable
-                key={cat.key}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({ pathname: '/(tabs)/search', params: { category: cat.key } });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={rtl.isRTL ? cat.label_ar : cat.label_en}
-                style={({ pressed }) => [
-                  styles.categoryChip,
-                  {
-                    backgroundColor: bg,
-                    borderColor: colors.separator,
-                    flexDirection: rtl.row,
-                  },
-                  pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
-                ]}
-              >
-                <cat.Icon size={16} color={iconColor} strokeWidth={2} />
-                <Text
-                  style={[
-                    typography.footnote,
+        {/* ── Category Chips (mock: rounded-2xl, icon in small box + label) ── */}
+        <View style={[styles.categoryChipSection, { paddingHorizontal: spacing.lg }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryChipRow}
+          >
+            {CATEGORIES.map((cat) => {
+              const iconColor = isDark ? cat.darkIcon : cat.lightIcon;
+              return (
+                <Pressable
+                  key={cat.key}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push({ pathname: '/(tabs)/search', params: { category: cat.key } });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={rtl.isRTL ? cat.label_ar : cat.label_en}
+                  style={({ pressed }) => [
+                    styles.categoryChipMock,
                     {
-                      color: iconColor,
-                      fontWeight: '600',
-                      marginLeft: rtl.isRTL ? 0 : 6,
-                      marginRight: rtl.isRTL ? 6 : 0,
+                      backgroundColor: colors.secondaryGroupedBackground,
+                      borderColor: colors.separator,
+                      flexDirection: rtl.row,
                     },
+                    pressed && { opacity: 0.85 },
                   ]}
                 >
-                  {locale === 'ar' ? cat.label_ar : cat.label_en}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                  <View style={[styles.categoryChipIconBox, { backgroundColor: colors.tertiaryBackground }]}>
+                    <cat.Icon size={18} color={iconColor} strokeWidth={2} />
+                  </View>
+                  <Text
+                    style={[
+                      typography.footnote,
+                      {
+                        color: colors.secondaryLabel,
+                        fontWeight: '600',
+                        marginLeft: rtl.isRTL ? 0 : spacing.sm,
+                        marginRight: rtl.isRTL ? spacing.sm : 0,
+                      },
+                    ]}
+                  >
+                    {locale === 'ar' ? cat.label_ar : cat.label_en}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
 
         {/* ── Hot Deals ── */}
         {deals.length > 0 && (
           <>
             <SectionHeader
               title={locale === 'ar' ? 'عروض اليوم' : 'Hot Deals'}
-              icon={<Zap size={18} color={colors.deal} />}
+              icon={<Zap size={20} color={colors.deal} strokeWidth={2} fill={colors.deal} />}
               onSeeAll={() => router.push('/(tabs)/deals')}
               colors={colors}
               rtl={rtl}
@@ -479,10 +463,10 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
+              contentContainerStyle={styles.horizontalSectionList}
+              ItemSeparatorComponent={() => <View style={{ width: spacing.md }} />}
               snapToInterval={DEAL_CARD_WIDTH + spacing.md}
               decelerationRate="fast"
-
             />
           </>
         )}
@@ -492,7 +476,7 @@ export default function HomeScreen() {
           <>
             <SectionHeader
               title={locale === 'ar' ? 'أكبر التخفيضات' : 'Biggest Savings'}
-              icon={<Flame size={18} color={colors.error} />}
+              icon={<Flame size={20} color={colors.systemOrange} strokeWidth={2} fill={colors.systemOrange} />}
               onSeeAll={() => router.push('/(tabs)/deals')}
               colors={colors}
               rtl={rtl}
@@ -521,7 +505,7 @@ export default function HomeScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
+                contentContainerStyle={styles.horizontalSectionList}
               >
                 {[1, 2, 3].map((i) => (
                   <SkeletonCard key={i} style={{ width: SMALL_CARD_WIDTH }} />
@@ -536,8 +520,8 @@ export default function HomeScreen() {
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
-  
+                contentContainerStyle={styles.horizontalSectionList}
+                ItemSeparatorComponent={() => <View style={{ width: spacing.md }} />}
               />
             )}
           </>
@@ -557,7 +541,7 @@ export default function HomeScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xs }}
+              contentContainerStyle={styles.horizontalSectionList}
             >
               {stores.map((store) => (
                 <StoreCard
@@ -691,7 +675,7 @@ function SectionHeader({
   return (
     <View style={[styles.sectionHeader, { flexDirection: rtl.row }]}>
       <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
-        <View style={[styles.sectionIconBadge, { backgroundColor: colors.primaryContainer }]}>
+        <View style={styles.sectionIconBadge}>
           {icon}
         </View>
         <Text
@@ -760,12 +744,15 @@ function DealCard({
       onPress={() => router.push(`/(stack)/product/${product.slug}`)}
       style={{
         width: DEAL_CARD_WIDTH,
-        borderWidth: StyleSheet.hairlineWidth,
+        borderRadius: 24,
+        borderWidth: 1,
         borderColor: colors.separator,
+        padding: 0,
+        overflow: 'hidden',
       }}
       padding="xs"
     >
-      <View style={[styles.dealImageContainer, { backgroundColor: colors.secondaryBackground }]}>
+      <View style={[styles.dealImageContainer, { backgroundColor: colors.tertiaryGroupedBackground }]}>
         {image ? (
           <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
@@ -787,15 +774,40 @@ function DealCard({
             <Text style={[styles.savingsBadgeText, { color: colors.onError }]}>-{savings}%</Text>
           </View>
         )}
+        <Pressable
+          style={({ pressed }) => [
+            styles.cardHeartBtn,
+            {
+              opacity: pressed ? 0.8 : 1,
+              right: rtl.isRTL ? undefined : spacing.sm,
+              left: rtl.isRTL ? spacing.sm : undefined,
+            },
+          ]}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <Heart size={16} color={colors.label} strokeWidth={2} fill="transparent" />
+        </Pressable>
       </View>
-      <View style={{ padding: spacing.sm }}>
+      <View style={{ padding: spacing.md }}>
+        {storeName && (
+          <Text
+            style={[
+              typography.caption2,
+              { color: colors.primary, fontWeight: '600', marginBottom: 4, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection },
+            ]}
+            numberOfLines={1}
+          >
+            {storeName}
+          </Text>
+        )}
         <Text
           numberOfLines={2}
           style={[
-            typography.subheadline,
+            typography.footnote,
             {
               color: colors.label,
-              fontWeight: '500',
+              fontWeight: '600',
+              minHeight: 40,
               textAlign: rtl.textAlign,
               writingDirection: rtl.writingDirection,
             },
@@ -803,23 +815,6 @@ function DealCard({
         >
           {name}
         </Text>
-        {storeName && (
-          <View style={{ flexDirection: rtl.row, alignItems: 'center', marginTop: 4, gap: 4 }}>
-            <StoreIcon size={12} color={colors.secondaryLabel} strokeWidth={1.5} />
-            <Text
-              style={[
-                typography.caption1,
-                {
-                  color: colors.secondaryLabel,
-                  textAlign: rtl.textAlign,
-                  writingDirection: rtl.writingDirection,
-                },
-              ]}
-            >
-              {storeName}
-            </Text>
-          </View>
-        )}
         <View style={{ marginTop: spacing.sm }}>
           <Price price={item.current_price} originalPrice={item.original_price} size="sm" />
         </View>
@@ -852,12 +847,15 @@ function SavingsCard({
       onPress={() => router.push(`/(stack)/product/${product.slug}`)}
       style={{
         width: PRODUCT_CARD_WIDTH,
-        borderWidth: StyleSheet.hairlineWidth,
+        borderRadius: 24,
+        borderWidth: 1,
         borderColor: colors.separator,
+        padding: 0,
+        overflow: 'hidden',
       }}
       padding="xs"
     >
-      <View style={[styles.savingsImageContainer, { backgroundColor: colors.secondaryBackground }]}>
+      <View style={[styles.savingsImageContainer, { backgroundColor: colors.tertiaryGroupedBackground }]}>
         {image ? (
           <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
@@ -944,12 +942,15 @@ function ProductCard({
       onPress={() => router.push(`/(stack)/product/${item.slug}`)}
       style={{
         width: SMALL_CARD_WIDTH,
-        borderWidth: StyleSheet.hairlineWidth,
+        borderRadius: 24,
+        borderWidth: 1,
         borderColor: colors.separator,
+        padding: 0,
+        overflow: 'hidden',
       }}
       padding="xs"
     >
-      <View style={[styles.productImageContainer, { backgroundColor: colors.secondaryBackground }]}>
+      <View style={[styles.productImageContainer, { backgroundColor: colors.tertiaryGroupedBackground }]}>
         {image ? (
           <KeyedProductImage uri={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
         ) : (
@@ -1099,6 +1100,68 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     opacity: 0.35,
   },
+  glowCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  headerWrap: {},
+  headerRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerIconBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  headerAvatarBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchBarWrap: {
+    marginBottom: spacing.sm,
+  },
+  searchBarMock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    paddingLeft: 16,
+    paddingRight: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  searchBarIconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryChipSection: {
+    marginBottom: spacing.sm,
+  },
+  categoryChipRow: {
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  categoryChipMock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  categoryChipIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1150,12 +1213,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryChipRow: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
-  },
   categoryChip: {
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -1163,11 +1220,16 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     borderWidth: StyleSheet.hairlineWidth,
   },
+  horizontalSectionList: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.xs,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.sm,
   },
@@ -1180,8 +1242,20 @@ const styles = StyleSheet.create({
   },
   dealImageContainer: {
     height: 160,
-    borderRadius: radii.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     overflow: 'hidden',
+  },
+  cardHeartBtn: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   savingsBadge: {
     position: 'absolute',
@@ -1207,12 +1281,14 @@ const styles = StyleSheet.create({
   },
   savingsImageContainer: {
     height: 120,
-    borderRadius: radii.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     overflow: 'hidden',
   },
   productImageContainer: {
     height: 120,
-    borderRadius: radii.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     overflow: 'hidden',
   },
   storeCard: {

@@ -134,6 +134,9 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 >
                   {label}
                 </Text>
+                {isFocused && (
+                  <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />
+                )}
               </Pressable>
             );
           })}
@@ -197,5 +200,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: -4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
 });

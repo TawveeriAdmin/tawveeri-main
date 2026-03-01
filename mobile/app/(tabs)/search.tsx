@@ -36,7 +36,8 @@ import {
   Tablet,
   Package,
   Clock,
-  TrendingUp,
+  TrendingDown,
+  Zap,
   ArrowUpDown,
   SearchX,
   SlidersHorizontal,
@@ -393,19 +394,28 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* ── Search Input ── */}
-      <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
-        <View
-          style={[
-            styles.searchInput,
+      {/* ── Search header (mock: bar with icon left, Mic+Scan right; pills below) ── */}
+      <View style={[styles.searchHeaderMock, { backgroundColor: colors.background }]}>
+        <View style={styles.searchBarOuterMock}>
+          <View
+            style={[
+              styles.searchBarWrapMock,
             {
-              backgroundColor: colors.secondaryBackground,
-              borderWidth: 1,
+              backgroundColor: colors.secondaryGroupedBackground,
               borderColor: colors.separator,
+              paddingLeft: rtl.isRTL ? spacing.md : spacing.md + 28,
+              paddingRight: rtl.isRTL ? spacing.md + 28 : spacing.md,
             },
           ]}
         >
-          <SearchIcon size={18} color={colors.secondaryLabel} strokeWidth={2} />
+          <View
+            style={[
+              styles.searchBarIconLeftMock,
+              rtl.isRTL ? { left: undefined, right: spacing.md + 4 } : { left: spacing.md + 4, right: undefined },
+            ]}
+          >
+            <SearchIcon size={20} color={colors.secondaryLabel} strokeWidth={2} />
+          </View>
           <TextInput
             ref={inputRef}
             value={query}
@@ -419,65 +429,95 @@ export default function SearchScreen() {
             accessibilityRole="search"
             accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
             style={[
-              typography.body,
+              styles.searchInputMock,
               {
-                flex: 1,
                 color: colors.label,
-                marginLeft: rtl.isRTL ? 0 : spacing.sm,
-                marginRight: rtl.isRTL ? spacing.sm : 0,
+                marginLeft: rtl.isRTL ? spacing.sm : 0,
+                marginRight: rtl.isRTL ? 0 : spacing.sm,
                 textAlign: rtl.textAlign,
                 writingDirection: rtl.writingDirection,
               },
             ]}
           />
-          {query.length > 0 && (
+          <View style={[styles.searchBarRightIconsMock, { flexDirection: rtl.row }]}>
+            {query.length > 0 && (
+              <Pressable
+                onPress={() => {
+                  setQuery('');
+                  setResults([]);
+                  setHasSearched(false);
+                }}
+                hitSlop={8}
+                style={({ pressed }) => [styles.searchClearBtnMock, { backgroundColor: colors.tertiaryFill }, pressed && { opacity: 0.7 }]}
+              >
+                <X size={14} color={colors.secondaryLabel} strokeWidth={2} />
+              </Pressable>
+            )}
             <Pressable
               onPress={() => {
-                setQuery('');
-                setResults([]);
-                setHasSearched(false);
+                inputRef.current?.focus();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={rtl.isRTL ? 'مسح البحث' : 'Clear search'}
-              style={({ pressed }) => [
-                styles.clearButton,
-                { backgroundColor: colors.tertiaryFill },
-                pressed && { opacity: 0.7 },
-              ]}
+              hitSlop={6}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
             >
-              <X size={14} color={colors.secondaryLabel} strokeWidth={2} />
+              <Mic size={20} color={colors.secondaryLabel} strokeWidth={2} />
             </Pressable>
-          )}
-          {/* Mic button — focuses input to trigger OS dictation */}
-          <Pressable
-            onPress={() => {
-              inputRef.current?.focus();
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel={rtl.isRTL ? 'البحث الصوتي' : 'Voice search'}
-            accessibilityHint={rtl.isRTL ? 'يفتح لوحة المفاتيح للإملاء الصوتي' : 'Opens keyboard for voice dictation'}
-            style={({ pressed }) => [styles.inputIconBtn, pressed && { opacity: 0.6 }]}
-          >
-            <Mic size={18} color={colors.secondaryLabel} strokeWidth={2} />
-          </Pressable>
-          {/* Barcode scanner button */}
-          <Pressable
-            onPress={() => {
-              setBarcodeScannerVisible(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel={rtl.isRTL ? 'مسح الباركود' : 'Scan barcode'}
-            accessibilityHint={rtl.isRTL ? 'يفتح الكاميرا لمسح باركود المنتج' : 'Opens camera to scan a product barcode'}
-            style={({ pressed }) => [styles.inputIconBtn, pressed && { opacity: 0.6 }]}
-          >
-            <ScanBarcode size={18} color={colors.secondaryLabel} strokeWidth={2} />
-          </Pressable>
+            <Pressable
+              onPress={() => {
+                setBarcodeScannerVisible(true);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              hitSlop={6}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1, marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0 }]}
+            >
+              <ScanBarcode size={20} color={colors.secondaryLabel} strokeWidth={2} />
+            </Pressable>
+          </View>
         </View>
+        </View>
+
+        {/* Category pills: no left/right padding so selector is full-bleed */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryPillsRowMock}
+        >
+          {CATEGORIES.map((cat) => {
+            const active = category === cat.key;
+            return (
+              <Pressable
+                key={cat.key}
+                onPress={() => onCategoryChange(cat.key)}
+                accessibilityRole="button"
+                accessibilityLabel={locale === 'ar' ? cat.label_ar : cat.label_en}
+                style={({ pressed }) => [
+                  styles.categoryPillMock,
+                  {
+                    backgroundColor: active ? colors.primary : colors.secondaryGroupedBackground,
+                    borderWidth: active ? 0 : 1,
+                    borderColor: colors.separator,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Text
+                  style={[
+                    typography.footnote,
+                    {
+                      color: active ? colors.onPrimary : colors.secondaryLabel,
+                      fontWeight: '600',
+                      textAlign: rtl.textAlign,
+                      writingDirection: rtl.writingDirection,
+                    },
+                  ]}
+                >
+                  {locale === 'ar' ? cat.label_ar : cat.label_en}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* ── Autocomplete Overlay ── */}
@@ -510,58 +550,6 @@ export default function SearchScreen() {
           ))}
         </View>
       )}
-
-      {/* ── Category Chips ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: spacing.md,
-          paddingBottom: spacing.sm,
-          gap: spacing.sm,
-        }}
-      >
-        {CATEGORIES.map((cat) => {
-          const active = category === cat.key;
-          const CatIcon = cat.Icon;
-          return (
-            <Pressable
-              key={cat.key}
-              onPress={() => onCategoryChange(cat.key)}
-              accessibilityRole="button"
-              accessibilityLabel={locale === 'ar' ? cat.label_ar : cat.label_en}
-              style={({ pressed }) => [
-                styles.chip,
-                {
-                  backgroundColor: active ? colors.primary : colors.secondaryBackground,
-                  borderWidth: active ? 0 : 1,
-                  borderColor: colors.separator,
-                },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              {CatIcon && (
-                <CatIcon
-                  size={14}
-                  color={active ? colors.onPrimary : colors.secondaryLabel}
-                  strokeWidth={1.8}
-                />
-              )}
-              <Text
-                style={[
-                  typography.footnote,
-                  {
-                    color: active ? colors.onPrimary : colors.label,
-                    fontWeight: active ? '600' : '500',
-                  },
-                ]}
-              >
-                {locale === 'ar' ? cat.label_ar : cat.label_en}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
 
       {/* ── Content States ── */}
       {loading ? (
@@ -621,7 +609,7 @@ export default function SearchScreen() {
             numColumns={gridView ? 2 : 1}
             key={gridView ? 'grid' : 'list'}
             contentContainerStyle={[
-              { paddingHorizontal: gridView ? 0 : spacing.md, paddingBottom: 100 },
+              { paddingHorizontal: spacing.md, paddingBottom: 100 },
               !gridView && { gap: spacing.sm },
             ]}
             ItemSeparatorComponent={gridView ? undefined : () => <View style={{ height: spacing.md }} />}
@@ -696,26 +684,21 @@ function IdleState({
 }) {
   return (
     <ScrollView
-      contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.lg }}
+      contentContainerStyle={styles.idleContainerMock}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Hero prompt */}
-      <View style={styles.idleHero}>
-        <View
-          style={[
-            styles.idleIconCircle,
-            { backgroundColor: isDark ? '#172554' : '#EFF6FF' },
-          ]}
-        >
-          <SearchIcon size={28} color={isDark ? '#60A5FA' : '#2563EB'} strokeWidth={1.5} />
+      {/* Mock: centered idle prompt, opacity 0.4 */}
+      <View style={[styles.idlePromptMock, { opacity: 0.4 }]}>
+        <View style={[styles.idleCircleMock, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
+          <SearchIcon size={32} color={colors.secondaryLabel} strokeWidth={1.5} />
         </View>
         <Text
           style={[
             typography.title3,
             {
               color: colors.label,
-              fontWeight: '600',
+              fontWeight: '700',
               textAlign: 'center',
               marginTop: spacing.md,
               writingDirection: rtl.writingDirection,
@@ -726,52 +709,49 @@ function IdleState({
         </Text>
         <Text
           style={[
-            typography.subheadline,
-            { color: colors.secondaryLabel, textAlign: 'center', marginTop: spacing.xs, writingDirection: rtl.writingDirection },
+            typography.footnote,
+            { color: colors.secondaryLabel, textAlign: 'center', marginTop: spacing.sm, writingDirection: rtl.writingDirection },
           ]}
         >
           {locale === 'ar'
-            ? 'قارن الأسعار من أكثر من 5 متاجر'
-            : 'Compare prices from 5+ stores'}
+            ? 'قارن الأسعار من أكثر من 5 متاجر فوراً'
+            : 'Compare prices from 5+ stores instantly'}
         </Text>
       </View>
 
-      {/* Recent Searches */}
+      {/* Mock: Recent — uppercase label + TrendingDown, Clear; chips with dot */}
       {recentSearches.length > 0 && (
-        <View style={{ marginTop: spacing.xl }}>
-          <View style={[styles.idleSectionHeader, { flexDirection: rtl.row }]}>
-            <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
-              <Clock size={16} color={colors.secondaryLabel} strokeWidth={1.8} />
-              <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-                {locale === 'ar' ? 'البحوث الأخيرة' : 'Recent'}
+        <View style={[styles.idleSectionMock, { paddingHorizontal: spacing.md }]}>
+          <View style={[styles.idleSectionHeaderMock, { flexDirection: rtl.row }]}>
+            <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.sm }}>
+              <TrendingDown size={14} color={colors.secondaryLabel} strokeWidth={2} />
+              <Text style={[styles.idleSectionTitleMock, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                {locale === 'ar' ? 'الأخيرة' : 'Recent'}
               </Text>
             </View>
             <Pressable onPress={onClearRecent} hitSlop={8}>
-              <Text style={[typography.subheadline, { color: colors.primary, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+              <Text style={[typography.caption1, { color: colors.primary, fontWeight: '600', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
                 {locale === 'ar' ? 'مسح' : 'Clear'}
               </Text>
             </Pressable>
           </View>
-          <View style={styles.chipWrap}>
+          <View style={styles.chipWrapMock}>
             {recentSearches.map((q, i) => (
               <Pressable
                 key={`${q}-${i}`}
                 onPress={() => onRecentPress(q)}
                 style={({ pressed }) => [
-                  styles.suggestionChip,
+                  styles.recentChipMock,
                   {
-                    backgroundColor: colors.secondaryBackground,
-                    borderWidth: 1,
+                    backgroundColor: colors.secondaryGroupedBackground,
                     borderColor: colors.separator,
+                    flexDirection: rtl.row,
                   },
-                  pressed && { opacity: 0.7 },
+                  pressed && { opacity: 0.85 },
                 ]}
               >
-                <Clock size={12} color={colors.tertiaryLabel} strokeWidth={1.5} />
-                <Text
-                  style={[typography.footnote, { color: colors.label }]}
-                  numberOfLines={1}
-                >
+                <View style={[styles.recentChipDotMock, { backgroundColor: colors.tertiaryLabel }]} />
+                <Text style={[typography.footnote, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={1}>
                   {q}
                 </Text>
               </Pressable>
@@ -780,45 +760,34 @@ function IdleState({
         </View>
       )}
 
-      {/* Popular Searches */}
+      {/* Mock: Popular — uppercase + Zap; chips primary/10 border primary/20 */}
       {popularSearches.length > 0 && (
-        <View style={{ marginTop: spacing.xl }}>
-          <View
-            style={{
-              flexDirection: rtl.row,
-              alignItems: 'center',
-              gap: spacing.xs,
-              marginBottom: spacing.sm,
-            }}
-          >
-            <TrendingUp size={16} color={colors.primary} strokeWidth={1.8} />
-            <Text style={[typography.headline, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-              {locale === 'ar' ? 'بحث شائع' : 'Popular'}
+        <View style={[styles.idleSectionMock, { paddingHorizontal: spacing.md }]}>
+          <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+            <Zap size={14} color={colors.secondaryLabel} strokeWidth={2} />
+            <Text style={[styles.idleSectionTitleMock, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+              {locale === 'ar' ? 'شائع' : 'Popular'}
             </Text>
           </View>
-          <View style={styles.chipWrap}>
+          <View style={styles.chipWrapMock}>
             {popularSearches.map((q) => (
               <Pressable
                 key={q}
                 onPress={() => onPopularPress(q)}
                 style={({ pressed }) => [
-                  styles.suggestionChip,
-                  { backgroundColor: isDark ? '#172554' : '#EFF6FF' },
-                  pressed && { opacity: 0.7 },
+                  styles.popularChipMock,
+                  {
+                    backgroundColor: `${colors.primary}18`,
+                    borderColor: `${colors.primary}33`,
+                    flexDirection: rtl.row,
+                  },
+                  pressed && { opacity: 0.85 },
                 ]}
               >
-                <TrendingUp
-                  size={12}
-                  color={isDark ? '#60A5FA' : '#2563EB'}
-                  strokeWidth={1.5}
-                />
-                <Text
-                  style={[
-                    typography.footnote,
-                    { color: isDark ? '#60A5FA' : '#2563EB', fontWeight: '500' },
-                  ]}
-                  numberOfLines={1}
-                >
+                <View style={{ transform: [{ rotate: '180deg' }] }}>
+                  <TrendingDown size={14} color={colors.primary} strokeWidth={2} />
+                </View>
+                <Text style={[typography.footnote, { color: colors.primary, fontWeight: '500', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={1}>
                   {q}
                 </Text>
               </Pressable>
@@ -1234,6 +1203,119 @@ function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
 // ─── Styles ──────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  // Mock search header & bar
+  searchHeaderMock: {
+    paddingHorizontal: 0,
+    paddingTop: spacing.xl * 1.25,
+    paddingBottom: spacing.lg,
+  },
+  searchBarOuterMock: {
+    paddingHorizontal: spacing.md,
+  },
+  searchBarWrapMock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.md + 28,
+    paddingRight: spacing.md,
+  },
+  searchBarIconLeftMock: {
+    position: 'absolute',
+    left: spacing.md + 4,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  searchInputMock: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 0,
+    minHeight: 24,
+  },
+  searchClearBtnMock: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchBarRightIconsMock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  categoryPillsRowMock: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  categoryPillMock: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+  },
+  // Mock idle state
+  idleContainerMock: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xl,
+  },
+  idlePromptMock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+  },
+  idleCircleMock: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  idleSectionMock: {
+    marginBottom: spacing.xl,
+  },
+  idleSectionHeaderMock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  idleSectionTitleMock: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  chipWrapMock: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  recentChipMock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+  },
+  recentChipDotMock: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  popularChipMock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+  },
   searchContainer: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

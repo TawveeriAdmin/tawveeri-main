@@ -96,13 +96,16 @@ export const colors = {
     // --- Surface ---
     card: '#FFFFFF',
     cardElevated: '#FFFFFF',
+
+    // --- Mock parity (Best Value, accents) ---
+    brandAccent: '#059669',
   },
 
   dark: {
-    // --- Tawveeri Brand ---
-    primary: '#60A5FA',
+    // --- Tawveeri Brand (mock: brand-blue, brand-dark, brand-surface, brand-accent) ---
+    primary: '#3B82F6',
     onPrimary: '#FFFFFF',
-    primaryContainer: '#1D4ED8',
+    primaryContainer: '#1E3A8A',
     onPrimaryContainer: '#DBEAFE',
 
     secondary: '#A5B4FC',
@@ -123,7 +126,7 @@ export const colors = {
     systemMint: '#63E6E2',
     systemTeal: '#40CBE0',
     systemCyan: '#64D2FF',
-    systemBlue: '#0A84FF',
+    systemBlue: '#3B82F6',
     systemIndigo: '#5E5CE6',
     systemPurple: '#BF5AF2',
     systemPink: '#FF375F',
@@ -133,55 +136,58 @@ export const colors = {
     error: '#FCA5A5',
     onError: '#7F1D1D',
     errorContainer: '#DC2626',
-    success: '#6EE7B7',
+    success: '#10B981',
     onSuccess: '#064E3B',
     successContainer: '#059669',
     warning: '#FCD34D',
     onWarning: '#78350F',
     warningContainer: '#D97706',
 
-    // --- Surface hierarchy (dark web parity) ---
-    background: '#111827',
-    secondaryBackground: '#111827',
-    tertiaryBackground: '#1F2937',
-    groupedBackground: '#111827',
-    secondaryGroupedBackground: '#111827',
-    tertiaryGroupedBackground: '#1F2937',
+    // --- Surface hierarchy (mock: brand-dark #0F172A, brand-surface #1E293B) ---
+    background: '#0F172A',
+    secondaryBackground: '#0F172A',
+    tertiaryBackground: '#1E293B',
+    groupedBackground: '#0F172A',
+    secondaryGroupedBackground: '#1E293B',
+    tertiaryGroupedBackground: '#1E293B',
 
     // --- Text hierarchy (dark web parity) ---
-    label: '#F3F4F6',
-    secondaryLabel: '#9CA3AF',
-    tertiaryLabel: '#6B7280',
-    quaternaryLabel: '#374151',
+    label: '#F1F5F9',
+    secondaryLabel: '#94A3B8',
+    tertiaryLabel: '#64748B',
+    quaternaryLabel: '#475569',
 
     // --- Apple HIG Fills (Dark) ---
     fill: 'rgba(120,120,128,0.36)',
     secondaryFill: 'rgba(120,120,128,0.32)',
-    tertiaryFill: 'rgba(118,118,128,0.24)',
-    quaternaryFill: 'rgba(116,116,128,0.18)',
+    tertiaryFill: 'rgba(255,255,255,0.08)',
+    quaternaryFill: 'rgba(255,255,255,0.05)',
 
-    // --- Outline (dark web parity) ---
-    separator: '#374151',
-    opaqueSeparator: '#374151',
+    // --- Outline (mock: border-white/5, white/10) ---
+    separator: 'rgba(255,255,255,0.08)',
+    opaqueSeparator: '#334155',
 
     // --- Apple HIG Gray Scale (Dark) ---
-    systemGray: '#8E8E93',
-    systemGray2: '#636366',
-    systemGray3: '#48484A',
-    systemGray4: '#3A3A3C',
-    systemGray5: '#2C2C2E',
-    systemGray6: '#1C1C1E',
+    systemGray: '#94A3B8',
+    systemGray2: '#64748B',
+    systemGray3: '#475569',
+    systemGray4: '#334155',
+    systemGray5: '#1E293B',
+    systemGray6: '#0F172A',
 
     // --- Domain-specific ---
-    deal: '#FCD34D',
+    deal: '#EAB308',
     dealContainer: '#B45309',
-    priceSavings: '#6EE7B7',
+    priceSavings: '#10B981',
     priceSavingsContainer: '#059669',
-    priceOriginal: '#6B7280',
+    priceOriginal: '#64748B',
 
-    // --- Surface ---
-    card: '#111827',
-    cardElevated: '#1F2937',
+    // --- Surface (mock: brand-surface) ---
+    card: '#1E293B',
+    cardElevated: '#334155',
+
+    // --- Mock parity (Best Value green) ---
+    brandAccent: '#10B981',
   },
 } as const;
 
