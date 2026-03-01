@@ -431,51 +431,55 @@ export default function HomeScreen() {
             ? Math.round(((f.original_price - f.current_price) / f.original_price) * 100)
             : 0;
           return (
-            <Pressable
-              onPress={() => slug && router.push(`/(stack)/product/${slug}`)}
-              style={({ pressed }) => [styles.featuredBanner, { marginHorizontal: spacing.md, opacity: pressed ? 0.93 : 1 }]}
-              accessibilityRole="button"
-            >
-              {imageUrl ? (
-                <>
-                  <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                  <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
-                </>
-              ) : (
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary + '33' }]} />
-              )}
-              <View style={styles.featuredGradient} />
-              <View style={styles.featuredContent}>
-                <View style={[styles.featuredBadgeRow, { flexDirection: rtl.row }]}>
-                  <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.featuredBadgeText}>
-                      {locale === 'ar' ? 'عرض مميز' : 'Featured Deal'}
-                    </Text>
-                  </View>
+            <>
+              <SectionHeader
+                title={locale === 'ar' ? 'عرض مميز' : 'Featured Deal'}
+                icon={<Flame size={20} color={colors.systemOrange} strokeWidth={2} fill={colors.systemOrange} />}
+                colors={colors}
+                locale={locale}
+                rtl={rtl}
+              />
+              <Pressable
+                onPress={() => slug && router.push(`/(stack)/product/${slug}`)}
+                style={({ pressed }) => [styles.featuredBanner, { marginHorizontal: spacing.md, opacity: pressed ? 0.93 : 1 }]}
+                accessibilityRole="button"
+              >
+                {imageUrl ? (
+                  <>
+                    <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                    <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                  </>
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary + '33' }]} />
+                )}
+                <View style={styles.featuredGradient} />
+                <View style={styles.featuredContent}>
                   {discount > 0 && (
-                    <View style={[styles.featuredBadge, { backgroundColor: colors.systemRed }]}>
-                      <Text style={styles.featuredBadgeText}>-{discount}%</Text>
+                    <View style={[styles.featuredBadgeRow, { flexDirection: rtl.row }]}>
+                      <View style={[styles.featuredBadge, { backgroundColor: colors.systemRed }]}>
+                        <Text style={styles.featuredBadgeText}>-{discount}%</Text>
+                      </View>
                     </View>
                   )}
-                </View>
-                <Text numberOfLines={1} style={styles.featuredTitle}>
-                  {locale === 'ar' ? (nameAr || nameEn) : (nameEn || nameAr)}
-                </Text>
-                <View style={[styles.featuredBottom, { flexDirection: rtl.row }]}>
-                  <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.featuredPrice}>
-                      {f.current_price?.toLocaleString()}
-                    </Text>
-                    <SARSymbol size={18} color="#fff" />
+                  <Text numberOfLines={1} style={styles.featuredTitle}>
+                    {locale === 'ar' ? (nameAr || nameEn) : (nameEn || nameAr)}
+                  </Text>
+                  <View style={[styles.featuredBottom, { flexDirection: rtl.row }]}>
+                    <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.featuredPrice}>
+                        {f.current_price?.toLocaleString()}
+                      </Text>
+                      <SARSymbol size={18} color="#fff" />
+                    </View>
+                    <View style={styles.featuredBtn}>
+                      <Text style={styles.featuredBtnText}>
+                        {locale === 'ar' ? 'اشتري الآن' : 'Buy Now'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.featuredBtn}>
-                    <Text style={styles.featuredBtnText}>
-                      {locale === 'ar' ? 'اشتري الآن' : 'Buy Now'}
-                    </Text>
-                  </View>
                 </View>
-              </View>
-            </Pressable>
+              </Pressable>
+            </>
           );
         })()}
 
@@ -701,7 +705,7 @@ function SectionHeader({
 }: {
   title: string;
   icon: React.ReactNode;
-  onSeeAll: () => void;
+  onSeeAll?: () => void;
   colors: any;
   rtl: ReturnType<typeof useRTL>;
   locale: string;
@@ -727,7 +731,7 @@ function SectionHeader({
           {title}
         </Text>
       </View>
-      <Pressable
+      {onSeeAll && <Pressable
         onPress={onSeeAll}
         hitSlop={8}
         accessibilityRole="button"
@@ -748,7 +752,7 @@ function SectionHeader({
           {locale === 'ar' ? 'عرض الكل' : 'See All'}
         </Text>
         <ChevronIcon size={16} color={colors.primary} />
-      </Pressable>
+      </Pressable>}
     </View>
   );
 }
