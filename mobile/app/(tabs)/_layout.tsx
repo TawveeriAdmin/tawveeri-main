@@ -6,9 +6,13 @@
  *
  * key={locale} forces re-mount when language changes — ensures
  * all child screens get fresh RTL values without app restart.
+ *
+ * Smooth tab transition: ShiftTransition so page content slides
+ * and fades when switching tabs (matches native mockup feel).
  */
 
 import { Tabs } from 'expo-router';
+import { TransitionPresets } from '@react-navigation/bottom-tabs';
 import { CustomTabBar } from '@/src/components/navigation/CustomTabBar';
 import { useLocale } from '@/src/lib/i18n/provider';
 
@@ -19,7 +23,10 @@ export default function TabLayout() {
     <Tabs
       key={locale}
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        ...TransitionPresets.ShiftTransition,
+      }}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="search" />

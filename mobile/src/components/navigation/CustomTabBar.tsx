@@ -8,10 +8,10 @@
  * filled icon when active, outline when inactive.
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Platform,
-  Animated,
+  Animated, LayoutChangeEvent,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +25,7 @@ import { useCompareStore } from '@/src/lib/compare/compare-store';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 84 : 60;
 const BOTTOM_PADDING = Platform.OS === 'ios' ? 28 : 8;
+const ACTIVE_DOT_SIZE = 4;
 
 const TAB_CONFIG = [
   { name: 'index', icon: Home, label_ar: 'الرئيسية', label_en: 'Home' },
@@ -43,6 +44,31 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const scaleAnims = useRef(
     TAB_CONFIG.map(() => new Animated.Value(1))
   ).current;
+
+  // Single sliding dot: track each tab's center X, animate dot to active tab
+  const tabCentersX = useRef<Record<number, number>>({});
+  const dotTranslateX = useRef(new Animated.Value(0)).current;
+
+  const handleTabLayout = (index: number) => (e: LayoutChangeEvent) => {
+    const { x, width } = e.nativeEvent.layout;
+    const centerX = x + width / 2;
+    tabCentersX.current[index] = centerX;
+    if (state.index === index) {
+      dotTranslateX.setValue(centerX - ACTIVE_DOT_SIZE / 2);
+    }
+  };
+
+  useEffect(() => {
+    const targetCenter = tabCentersX.current[state.index];
+    if (targetCenter == null) return;
+    const targetLeft = targetCenter - ACTIVE_DOT_SIZE / 2;
+    Animated.spring(dotTranslateX, {
+      toValue: targetLeft,
+      useNativeDriver: true,
+      damping: 20,
+      stiffness: 300,
+    }).start();
+  }, [state.index]);
 
   const handlePress = (index: number, routeName: string) => {
     const event = navigation.emit({
@@ -94,6 +120,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               <Pressable
                 key={route.key}
                 onPress={() => handlePress(index, route.name)}
+                onLayout={handleTabLayout(index)}
                 style={styles.tab}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: isFocused }}
@@ -134,12 +161,23 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 >
                   {label}
                 </Text>
-                {isFocused && (
-                  <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />
-                )}
               </Pressable>
             );
           })}
+          {/* Single sliding dot: animates to active tab */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.activeDotSliding,
+              {
+                backgroundColor: colors.primary,
+                width: ACTIVE_DOT_SIZE,
+                height: ACTIVE_DOT_SIZE,
+                borderRadius: ACTIVE_DOT_SIZE / 2,
+                transform: [{ translateX: dotTranslateX }],
+              },
+            ]}
+          />
         </View>
       </BlurView>
     </View>
@@ -209,5 +247,10 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
+  },
+  activeDotSliding: {
+    position: 'absolute',
+    bottom: -4,
+    left: 0,
   },
 });
