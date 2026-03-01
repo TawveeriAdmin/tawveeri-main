@@ -41,6 +41,7 @@ import {
   Store as StoreIcon,
   ArrowRight,
   ArrowLeft,
+  LayoutGrid,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
@@ -300,8 +301,7 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                {greeting}
-                {firstName ? `, ${firstName}` : ''}
+                {locale === 'ar' ? 'توفيري' : 'Tawveeri'}
               </Text>
               <Text
                 style={[
@@ -340,61 +340,31 @@ export default function HomeScreen() {
               >
                 <Bell size={20} color={colors.label} strokeWidth={1.8} />
               </Pressable>
-              <Pressable
-                onPress={() => router.push('/(tabs)/profile')}
-                style={({ pressed }) => [
-                  styles.headerAvatarBtn,
-                  { backgroundColor: colors.primary },
-                  pressed && { opacity: 0.8 },
-                ]}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={locale === 'ar' ? 'الملف الشخصي' : 'Profile'}
-              >
-                <Text style={[typography.caption1, { color: colors.onPrimary, fontWeight: '700' }]}>
-                  {firstName?.[0]?.toUpperCase() || 'T'}
-                </Text>
-              </Pressable>
             </View>
           </View>
         </View>
 
-        {/* ── Search Bar (mock: rounded-2xl, icon left) ── */}
-        <View style={[styles.searchBarWrap, { paddingHorizontal: spacing.md }]}>
-          <Pressable
-            onPress={() => router.push('/(tabs)/search')}
-            style={({ pressed }) => [
-              styles.searchBarMock,
-              {
-                backgroundColor: colors.secondaryGroupedBackground,
-                borderColor: pressed ? colors.primary : colors.separator,
-                flexDirection: rtl.row,
-              },
-              pressed && { opacity: 0.95 },
-            ]}
-            accessibilityRole="search"
-            accessibilityLabel={rtl.isRTL ? 'البحث عن المنتجات' : 'Search for products'}
-          >
-            <View style={[styles.searchBarIconWrap, { marginRight: rtl.isRTL ? 0 : spacing.sm, marginLeft: rtl.isRTL ? spacing.sm : 0 }]}>
-              <Search size={20} color={colors.secondaryLabel} strokeWidth={2} />
+        {/* ── Category Chips: no left/right padding so selector is full-bleed ── */}
+        <View style={[styles.sectionHeader, { flexDirection: rtl.row, paddingHorizontal: spacing.md, paddingTop: 0, paddingBottom: spacing.sm }]}>
+          <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
+            <View style={styles.sectionIconBadge}>
+              <LayoutGrid size={16} color={colors.primary} strokeWidth={2} />
             </View>
             <Text
               style={[
-                typography.body,
+                typography.title3,
                 {
-                  color: colors.tertiaryLabel,
-                  flex: 1,
+                  color: colors.label,
+                  fontWeight: '700',
                   textAlign: rtl.textAlign,
                   writingDirection: rtl.writingDirection,
                 },
               ]}
             >
-              {t('search.searchPlaceholder')}
+              {locale === 'ar' ? 'الفئات' : 'Categories'}
             </Text>
-          </Pressable>
+          </View>
         </View>
-
-        {/* ── Category Chips: no left/right padding so selector is full-bleed ── */}
         <View style={styles.categoryChipSection}>
           <ScrollView
             horizontal
