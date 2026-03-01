@@ -19,6 +19,7 @@ import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
@@ -257,33 +258,16 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Background glows (mock) */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <View
-          style={[
-            styles.glowCircle,
-            {
-              top: -80,
-              left: -SCREEN_WIDTH * 0.3,
-              width: SCREEN_WIDTH * 0.9,
-              height: 220,
-              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(13, 71, 161, 0.04)',
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.glowCircle,
-            {
-              bottom: 80,
-              right: -SCREEN_WIDTH * 0.3,
-              width: SCREEN_WIDTH * 0.9,
-              height: 220,
-              backgroundColor: isDark ? 'rgba(168, 85, 247, 0.04)' : 'rgba(79, 70, 229, 0.03)',
-            },
-          ]}
-        />
-      </View>
+      {/* Subtle top-to-bottom gradient overlay */}
+      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <SvgLinearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={colors.background} stopOpacity="1" />
+            <Stop offset="1" stopColor={isDark ? '#000000' : '#D1D5DB'} stopOpacity={isDark ? '0.5' : '0.25'} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#bg)" />
+      </Svg>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -1138,10 +1122,6 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: radii.xl,
     opacity: 0.35,
-  },
-  glowCircle: {
-    position: 'absolute',
-    borderRadius: 999,
   },
   headerWrap: {},
   headerRow: {
