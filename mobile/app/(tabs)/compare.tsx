@@ -20,7 +20,8 @@ import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Price, EmptyState, SARSymbol, KeyedProductImage } from '@/src/components/ui';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const H_PAD = spacing.md;
+const H_PAD = spacing.lg;
+const CARD_WIDTH = 192;
 const COLUMN_WIDTH = (SCREEN_WIDTH - spacing.lg * 2) / 2.3;
 
 export default function CompareScreen() {
@@ -69,13 +70,13 @@ export default function CompareScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Sticky header: title, subtitle, Clear All */}
+      {/* Header (mock: px-6 pt-8 pb-4, title + subtitle, Clear All) */}
       <View style={[styles.stickyHeader, { flexDirection: rtl.row, backgroundColor: colors.background }]}>
         <View>
-          <Text style={[typography.largeTitle, { color: colors.label, fontWeight: '700', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+          <Text style={[styles.headerTitle, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {locale === 'ar' ? 'المقارنة' : 'Compare'}
           </Text>
-          <Text style={[typography.footnote, { color: colors.secondaryLabel, marginTop: spacing.xs, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+          <Text style={[typography.footnote, { color: colors.secondaryLabel, marginTop: 4, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
             {products.length} {locale === 'ar' ? 'منتجات محددة' : 'products selected'}
           </Text>
         </View>
@@ -87,7 +88,7 @@ export default function CompareScreen() {
           style={[styles.clearAllBtn, { flexDirection: rtl.row }]}
           hitSlop={8}
         >
-          <Trash2 size={18} color={colors.error} />
+          <Trash2 size={16} color={colors.error} />
           <Text style={[typography.footnote, { color: colors.error, fontWeight: '600' }]}>
             {locale === 'ar' ? 'مسح الكل' : 'Clear All'}
           </Text>
@@ -95,7 +96,7 @@ export default function CompareScreen() {
       </View>
 
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.mainContent}>
-        {/* Horizontal product carousel */}
+        {/* Horizontal product carousel (mock: gap-4 px-6 py-6, cards rounded-3xl, Add Product dashed) */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -104,15 +105,15 @@ export default function CompareScreen() {
           {products.map((product, idx) => {
             const isBestValue = bestPrices[idx] !== null && bestPrices[idx] === overallBest;
             return (
-              <View key={product.id} style={[styles.productCard, { width: COLUMN_WIDTH, backgroundColor: colors.secondaryGroupedBackground, borderColor: isBestValue ? colors.brandAccent : colors.separator, borderWidth: isBestValue ? 2 : 1 }]}>
+              <View key={product.id} style={[styles.productCard, { width: CARD_WIDTH, backgroundColor: colors.secondaryGroupedBackground, borderColor: isBestValue ? colors.brandAccent + '80' : colors.separator, borderWidth: isBestValue ? 2 : 1 }]}>
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     removeProduct(product.id);
                   }}
-                  style={[styles.removeBtn, { backgroundColor: colors.tertiaryFill, ...(rtl.isRTL ? { right: undefined, left: -6 } : { right: -6 }) }]}
+                  style={[styles.removeBtn, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator, ...(rtl.isRTL ? { right: undefined, left: -8 } : { right: -8 }) }]}
                 >
-                  <X size={14} color={colors.secondaryLabel} />
+                  <X size={16} color={colors.secondaryLabel} />
                 </Pressable>
 
                 <Pressable onPress={() => router.push(`/(stack)/product/${product.slug}`)}>
@@ -129,20 +130,21 @@ export default function CompareScreen() {
                   {locale === 'ar' ? (product.name_ar || product.name) : (product.name_en || product.name)}
                 </Text>
 
-                {bestPrices[idx] !== null && (
-                  <View style={[styles.priceRow, { flexDirection: rtl.row }]}>
+                <View style={[styles.priceRow, { flexDirection: rtl.row }]}>
+                  {bestPrices[idx] !== null ? (
                     <Price price={bestPrices[idx]!} locale={locale} size="sm" />
-                  </View>
-                )}
-
-                {isBestValue && (
-                  <View style={[styles.bestValueRow, { flexDirection: rtl.row }]}>
-                    <CheckCircle size={14} color={colors.brandAccent} />
-                    <Text style={[typography.caption2, { color: colors.brandAccent, fontWeight: '700' }]}>
-                      {locale === 'ar' ? 'الأفضل قيمة' : 'Best Value'}
-                    </Text>
-                  </View>
-                )}
+                  ) : (
+                    <Text style={[typography.footnote, { color: colors.tertiaryLabel }]}>—</Text>
+                  )}
+                  {isBestValue && (
+                    <View style={[styles.bestValueBadge, { backgroundColor: colors.brandAccent + '1A', flexDirection: rtl.row }]}>
+                      <CheckCircle size={10} color={colors.brandAccent} strokeWidth={2.5} />
+                      <Text style={[styles.bestValueBadgeText, { color: colors.brandAccent }]}>
+                        {locale === 'ar' ? 'الأفضل قيمة' : 'Best Value'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             );
           })}
@@ -150,12 +152,14 @@ export default function CompareScreen() {
           {products.length < 4 && (
             <Pressable
               onPress={() => router.push('/(tabs)/search')}
-              style={[styles.addSlot, { width: COLUMN_WIDTH, borderColor: colors.separator }]}
+              style={[styles.addSlot, { width: CARD_WIDTH, borderColor: colors.separator, backgroundColor: colors.secondaryGroupedBackground + '4D' }]}
             >
-              <View style={[styles.addSlotImageArea, { backgroundColor: colors.tertiaryFill }]}>
-                <Plus size={24} color={colors.tertiaryLabel} />
+              <View style={[styles.addSlotCircle, { backgroundColor: colors.tertiaryFill }]}>
+                <BarChart3 size={20} color={colors.secondaryLabel} />
               </View>
-              <View style={styles.addSlotSpacer} />
+              <Text style={[typography.caption2, { color: colors.secondaryLabel, fontWeight: '500', marginTop: spacing.sm }]}>
+                {locale === 'ar' ? 'إضافة منتج' : 'Add Product'}
+              </Text>
             </Pressable>
           )}
         </ScrollView>
@@ -338,42 +342,46 @@ function CompareInfoRow({
 
 const styles = StyleSheet.create({
   stickyHeader: {
-    paddingHorizontal: H_PAD + spacing.sm,
-    paddingTop: spacing.sm,
+    paddingHorizontal: H_PAD,
+    paddingTop: spacing.xl * 1.25,
     paddingBottom: spacing.md,
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   clearAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
   },
   mainContent: {
     paddingHorizontal: H_PAD,
-    paddingTop: spacing.md,
+    paddingTop: 0,
     paddingBottom: 100,
   },
   carouselContent: {
     gap: spacing.md,
+    paddingVertical: spacing.lg,
     marginBottom: spacing.xl,
   },
   productCard: {
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 24,
     borderWidth: 1,
     position: 'relative',
   },
   removeBtn: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: -8,
+    right: -8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -381,41 +389,48 @@ const styles = StyleSheet.create({
   productImage: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: radii.md,
-    marginBottom: spacing.sm,
+    borderRadius: radii.xl,
+    marginBottom: 12,
     overflow: 'hidden',
   },
   productTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-    marginBottom: spacing.sm,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    marginBottom: 8,
     minHeight: 32,
   },
   priceRow: {
     alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
-  bestValueRow: {
+  bestValueBadge: {
     alignItems: 'center',
-    gap: 4,
-    marginTop: spacing.sm,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  bestValueBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   addSlot: {
-    padding: 12,
-    borderRadius: 16,
-    borderWidth: 1,
+    padding: spacing.lg,
+    borderRadius: 24,
+    borderWidth: 2,
     borderStyle: 'dashed',
-  },
-  addSlotImageArea: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: radii.md,
-    marginBottom: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 180,
   },
-  addSlotSpacer: {
-    minHeight: 44,
+  addSlotCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   storeCard: {
     borderRadius: 32,
