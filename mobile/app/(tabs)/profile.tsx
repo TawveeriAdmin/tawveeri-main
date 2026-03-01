@@ -55,6 +55,7 @@ import {
   Eye,
   Download,
   Bookmark,
+  Zap,
 } from 'lucide-react-native';
 import { useTheme } from '@/src/lib/theme/theme-context';
 import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
@@ -62,7 +63,6 @@ import { useAuth } from '@/src/lib/auth/auth-context';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { typography, spacing, radii, MIN_TOUCH_TARGET } from '@/src/lib/theme/typography';
 import { supabase } from '@/src/lib/supabase/client';
-import { Button } from '@/src/components/ui';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 
@@ -205,13 +205,13 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.groupedBackground }} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xxl }]}
       >
-        {/* ── Profile Header ── */}
+        {/* ── Profile Header (mock: centered avatar + Sign In when guest) ── */}
         {user ? (
           <Pressable
             onPress={() => router.push('/(stack)/edit-profile')}
-            style={[styles.header, { flexDirection: rtl.row }]}
+            style={[styles.headerLoggedIn, { flexDirection: rtl.row, backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}
           >
             <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
               {user.avatar_url ? (
@@ -234,22 +234,33 @@ export default function ProfileScreen() {
           </Pressable>
         ) : (
           <View style={styles.welcomeHeader}>
-            <View style={[styles.avatarLarge, { backgroundColor: colors.primaryContainer }]}>
-              <User size={36} color={colors.primary} strokeWidth={1.5} />
+            <View style={styles.avatarWrapMock}>
+              <View style={[styles.avatarMock, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.primary + '33' }]}>
+                <User size={48} color={colors.secondaryLabel} strokeWidth={1.5} />
+              </View>
+              <View style={[styles.avatarBadgeMock, { backgroundColor: colors.primary, borderColor: colors.groupedBackground }]}>
+                <Zap size={14} color="#fff" strokeWidth={2} />
+              </View>
             </View>
-            <Text style={[typography.title2, { color: colors.label, fontWeight: '600', marginTop: spacing.md, textAlign: 'center' }]}>
+            <Text style={[typography.title2, { color: colors.label, fontWeight: '700', marginTop: spacing.lg, textAlign: 'center', writingDirection: rtl.writingDirection }]}>
               {rtl.isRTL ? 'مرحباً بك في توفيري' : 'Welcome to Tawveeri'}
             </Text>
-            <Text style={[typography.subheadline, { color: colors.secondaryLabel, marginTop: spacing.xs, textAlign: 'center' }]}>
-              {rtl.isRTL ? 'سجل دخولك لتتبع الأسعار وإنشاء التنبيهات' : 'Sign in to track prices and create alerts'}
+            <Text style={[typography.footnote, { color: colors.secondaryLabel, marginTop: spacing.sm, textAlign: 'center', paddingHorizontal: spacing.xl, writingDirection: rtl.writingDirection }]}>
+              {rtl.isRTL ? 'سجل دخولك لتتبع الأسعار وإنشاء التنبيهات ومزامنتها على أجهزتك' : 'Sign in to track prices, create alerts and sync across devices'}
             </Text>
-            <Button
-              title={rtl.isRTL ? 'تسجيل الدخول' : 'Sign In'}
+            <Pressable
               onPress={() => router.push('/(auth)/login')}
-              icon={<LogIn size={18} color="#fff" />}
-              style={{ marginTop: spacing.lg }}
-              fullWidth
-            />
+              style={({ pressed }) => [styles.signInButtonMock, { backgroundColor: colors.primary }, pressed && { opacity: 0.9 }]}
+            >
+              <View style={[styles.signInButtonContent, { flexDirection: rtl.row }]}>
+                <View style={styles.signInIconWrap}>
+                  <LogOut size={20} color="#fff" strokeWidth={2} />
+                </View>
+                <Text style={[typography.headline, { color: '#fff', fontWeight: '700', marginLeft: rtl.isRTL ? spacing.sm : 0, marginRight: rtl.isRTL ? 0 : spacing.sm, writingDirection: rtl.writingDirection }]}>
+                  {rtl.isRTL ? 'تسجيل الدخول' : 'Sign In'}
+                </Text>
+              </View>
+            </Pressable>
           </View>
         )}
 
@@ -280,7 +291,7 @@ export default function ProfileScreen() {
 
         {/* ── Menu Rows (logged in only) ── */}
         {user && (
-          <View style={[styles.group, { backgroundColor: colors.card }]}>
+          <View style={[styles.mockCardNoPadding, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
             {[
               { icon: <Heart size={20} color={colors.systemPink} />, label_ar: 'قائمة الأمنيات', label_en: 'Wishlist', route: '/(stack)/wishlist' },
               { icon: <TrendingDown size={20} color={colors.systemGreen} />, label_ar: 'تنبيهات الأسعار', label_en: 'Price Alerts', route: '/(stack)/price-alerts' },
@@ -309,62 +320,66 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* ── Language & Theme ── */}
+        {/* ── Preferences (mock: section label + Language card + Theme card) ── */}
         <SectionLabel text={t('settings.preferences')} colors={colors} rtl={rtl} />
 
-        <View style={[styles.group, { backgroundColor: colors.card }]}>
-          <View style={styles.block}>
-            <View style={[styles.labelLine, { flexDirection: rtl.row }]}>
-              <IconBg color={colors.systemBlue}>
-                <Globe size={16} color="#fff" strokeWidth={2} />
-              </IconBg>
-              <Text style={[typography.body, { color: colors.label, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
-                {t('settings.language')}
-              </Text>
-            </View>
-            <View style={[styles.cardRow, { flexDirection: rtl.row }]}>
-              <LanguageCard label="العربية" active={locale === 'ar'} onPress={() => handleLanguageChange('ar')} colors={colors} rtl={rtl} />
-              <LanguageCard label="English" active={locale === 'en'} onPress={() => handleLanguageChange('en')} colors={colors} rtl={rtl} />
+        <View style={styles.mockSectionBlock}>
+          <View style={[styles.mockCard, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
+            <View style={[styles.mockCardRow, { flexDirection: rtl.row }]}>
+              <View style={{ flexDirection: rtl.row, alignItems: 'center', flex: 1 }}>
+                <View style={[styles.mockIconBox, { backgroundColor: colors.systemBlue + '1A' }]}>
+                  <Globe size={20} color={colors.systemBlue} strokeWidth={2} />
+                </View>
+                <Text style={[typography.body, { color: colors.label, fontWeight: '600', marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+                  {t('settings.language')}
+                </Text>
+              </View>
+              <View style={[styles.mockSegmentedWrap, { flexDirection: rtl.row, backgroundColor: colors.background, borderColor: colors.separator }]}>
+                <Pressable onPress={() => handleLanguageChange('ar')} style={[styles.mockSegmentedBtn, locale === 'ar' && { backgroundColor: colors.primary }, { flexDirection: rtl.row }]}>
+                  <Text style={[typography.footnote, { fontWeight: '700', color: locale === 'ar' ? '#fff' : colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>العربية</Text>
+                </Pressable>
+                <Pressable onPress={() => handleLanguageChange('en')} style={[styles.mockSegmentedBtn, locale === 'en' && { backgroundColor: colors.primary }, { flexDirection: rtl.row }]}>
+                  <Text style={[typography.footnote, { fontWeight: '700', color: locale === 'en' ? '#fff' : colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>English</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
 
-          <Separator colors={colors} />
-
-          <View style={styles.block}>
-            <View style={[styles.labelLine, { flexDirection: rtl.row }]}>
-              <IconBg color={colors.systemIndigo}>
-                <Palette size={16} color="#fff" strokeWidth={2} />
-              </IconBg>
-              <Text style={[typography.body, { color: colors.label, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+          <View style={[styles.mockCard, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator, marginTop: spacing.md }]}>
+            <View style={[styles.mockCardRow, { flexDirection: rtl.row, marginBottom: spacing.md }]}>
+              <View style={[styles.mockIconBox, { backgroundColor: colors.systemPurple + '1A' }]}>
+                <Palette size={20} color={colors.systemPurple} strokeWidth={2} />
+              </View>
+              <Text style={[typography.body, { color: colors.label, fontWeight: '600', marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
                 {t('settings.theme')}
               </Text>
             </View>
-            <View style={[styles.cardRow, { flexDirection: rtl.row }]}>
-              <ThemeCard icon={<Sun size={22} color={themePreference === 'light' ? colors.primary : colors.secondaryLabel} strokeWidth={1.8} />} label={t('settings.light')} active={themePreference === 'light'} onPress={() => handleThemeChange('light')} colors={colors} rtl={rtl} />
-              <ThemeCard icon={<Moon size={22} color={themePreference === 'dark' ? colors.primary : colors.secondaryLabel} strokeWidth={1.8} />} label={t('settings.dark')} active={themePreference === 'dark'} onPress={() => handleThemeChange('dark')} colors={colors} rtl={rtl} />
-              <ThemeCard icon={<Smartphone size={22} color={themePreference === 'system' ? colors.primary : colors.secondaryLabel} strokeWidth={1.8} />} label={t('settings.system')} active={themePreference === 'system'} onPress={() => handleThemeChange('system')} colors={colors} rtl={rtl} />
+            <View style={[styles.mockThemeGrid, { flexDirection: rtl.row }]}>
+              <ThemeCard icon={<Sun size={20} color={themePreference === 'light' ? colors.primary : colors.secondaryLabel} strokeWidth={1.8} />} label={t('settings.light')} active={themePreference === 'light'} onPress={() => handleThemeChange('light')} colors={colors} rtl={rtl} />
+              <ThemeCard icon={<Moon size={20} color={themePreference === 'dark' ? colors.primary : colors.secondaryLabel} strokeWidth={1.8} />} label={t('settings.dark')} active={themePreference === 'dark'} onPress={() => handleThemeChange('dark')} colors={colors} rtl={rtl} />
+              <ThemeCard icon={<Smartphone size={20} color={themePreference === 'system' ? colors.primary : colors.secondaryLabel} strokeWidth={1.8} />} label={t('settings.system')} active={themePreference === 'system'} onPress={() => handleThemeChange('system')} colors={colors} rtl={rtl} />
             </View>
           </View>
         </View>
 
-        {/* ── Notifications ── */}
+        {/* ── Notifications (mock: single card with dividers) ── */}
         <SectionLabel text={t('settings.notifications')} colors={colors} rtl={rtl} />
 
-        <View style={[styles.group, { backgroundColor: colors.card }]}>
-          <ToggleRow icon={<IconBg color={colors.systemOrange}><Bell size={16} color="#fff" strokeWidth={2} /></IconBg>} label={t('settings.pushNotifications')} value={pushEnabled} onValueChange={(v) => { setPushEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} />
-          <Separator colors={colors} />
-          <ToggleRow icon={<IconBg color={colors.systemGreen}><TrendingDown size={16} color="#fff" strokeWidth={2} /></IconBg>} label={t('settings.priceAlerts')} value={priceAlerts && pushEnabled} onValueChange={(v) => { setPriceAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
-          <Separator colors={colors} />
-          <ToggleRow icon={<IconBg color={colors.tertiary}><Tag size={16} color="#fff" strokeWidth={2} /></IconBg>} label={t('settings.dealAlerts')} value={dealAlerts && pushEnabled} onValueChange={(v) => { setDealAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
-          <Separator colors={colors} />
-          <ToggleRow icon={<IconBg color={colors.systemTeal}><Package size={16} color="#fff" strokeWidth={2} /></IconBg>} label={t('settings.stockAlerts')} value={stockAlerts && pushEnabled} onValueChange={(v) => { setStockAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
+        <View style={[styles.mockCardNoPadding, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
+          <ToggleRow icon={<View style={[styles.mockIconBox, { backgroundColor: colors.systemOrange + '1A' }]}><Bell size={20} color={colors.systemOrange} strokeWidth={2} /></View>} label={t('settings.pushNotifications')} value={pushEnabled} onValueChange={(v) => { setPushEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} />
+          <SeparatorFull colors={colors} />
+          <ToggleRow icon={<View style={[styles.mockIconBox, { backgroundColor: colors.systemGreen + '1A' }]}><TrendingDown size={20} color={colors.systemGreen} strokeWidth={2} /></View>} label={t('settings.priceAlerts')} value={priceAlerts && pushEnabled} onValueChange={(v) => { setPriceAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
+          <SeparatorFull colors={colors} />
+          <ToggleRow icon={<View style={[styles.mockIconBox, { backgroundColor: colors.tertiary + '1A' }]}><Tag size={20} color={colors.tertiary} strokeWidth={2} /></View>} label={t('settings.dealAlerts')} value={dealAlerts && pushEnabled} onValueChange={(v) => { setDealAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
+          <SeparatorFull colors={colors} />
+          <ToggleRow icon={<View style={[styles.mockIconBox, { backgroundColor: colors.systemTeal + '1A' }]}><Package size={20} color={colors.systemTeal} strokeWidth={2} /></View>} label={t('settings.stockAlerts')} value={stockAlerts && pushEnabled} onValueChange={(v) => { setStockAlerts(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} colors={colors} rtl={rtl} disabled={!pushEnabled} />
         </View>
 
         {/* ── Privacy (logged in only) ── */}
         {user && (
           <>
             <SectionLabel text={rtl.isRTL ? 'الخصوصية' : 'Privacy'} colors={colors} rtl={rtl} />
-            <View style={[styles.group, { backgroundColor: colors.card }]}>
+            <View style={[styles.mockCardNoPadding, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
               <ToggleRow
                 icon={<IconBg color={colors.systemIndigo}><Shield size={16} color="#fff" strokeWidth={2} /></IconBg>}
                 label={rtl.isRTL ? 'ملف شخصي عام' : 'Public Profile'}
@@ -377,7 +392,7 @@ export default function ProfileScreen() {
                 colors={colors}
                 rtl={rtl}
               />
-              <Separator colors={colors} />
+              <SeparatorFull colors={colors} />
               <ToggleRow
                 icon={<IconBg color={colors.systemTeal}><Eye size={16} color="#fff" strokeWidth={2} /></IconBg>}
                 label={rtl.isRTL ? 'مشاركة سجل البحث' : 'Share Search History'}
@@ -398,11 +413,11 @@ export default function ProfileScreen() {
         {user && (
           <>
             <SectionLabel text={rtl.isRTL ? 'الحساب' : 'Account'} colors={colors} rtl={rtl} />
-            <View style={[styles.group, { backgroundColor: colors.card }]}>
+            <View style={[styles.mockCardNoPadding, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
               <NavRow icon={<IconBg color={colors.systemCyan}><Pencil size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'} onPress={() => router.push('/(stack)/edit-profile')} colors={colors} rtl={rtl} />
-              <Separator colors={colors} />
+              <SeparatorFull colors={colors} />
               <NavRow icon={<IconBg color={colors.systemPurple}><Bookmark size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'البحوث المحفوظة' : 'Saved Searches'} onPress={() => router.push('/(stack)/saved-searches')} colors={colors} rtl={rtl} />
-              <Separator colors={colors} />
+              <SeparatorFull colors={colors} />
               <NavRow
                 icon={<IconBg color={colors.systemGreen}><Download size={16} color="#fff" strokeWidth={2} /></IconBg>}
                 label={rtl.isRTL ? 'تصدير بياناتي' : 'Export My Data'}
@@ -411,35 +426,37 @@ export default function ProfileScreen() {
                 rtl={rtl}
                 trailing={exporting ? <ActivityIndicator size="small" color={colors.secondaryLabel} /> : undefined}
               />
-              <Separator colors={colors} />
+              <SeparatorFull colors={colors} />
               <NavRow icon={<IconBg color={colors.systemGray}><Lock size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'تغيير كلمة المرور' : 'Change Password'} onPress={() => router.push('/(auth)/forgot-password')} colors={colors} rtl={rtl} />
-              <Separator colors={colors} />
+              <SeparatorFull colors={colors} />
               <NavRow icon={<IconBg color={colors.systemRed}><LogOut size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'تسجيل الخروج' : 'Sign Out'} onPress={handleSignOut} colors={colors} rtl={rtl} destructive />
             </View>
           </>
         )}
 
-        {/* ── About ── */}
+        {/* ── About (same single-block + divider style as Notifications) ── */}
         <SectionLabel text={rtl.isRTL ? 'حول التطبيق' : 'About'} colors={colors} rtl={rtl} />
 
-        <View style={[styles.group, { backgroundColor: colors.card }]}>
+        <View style={[styles.mockCardNoPadding, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator }]}>
           <View style={[styles.row, { flexDirection: rtl.row }]}>
-            <IconBg color={colors.systemGray2}><Info size={16} color="#fff" strokeWidth={2} /></IconBg>
+            <View style={[styles.mockIconBox, { backgroundColor: colors.systemGray2 + '1A' }]}>
+              <Info size={20} color={colors.systemGray2} strokeWidth={2} />
+            </View>
             <Text style={[typography.body, { color: colors.label, flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
               {rtl.isRTL ? 'الإصدار' : 'Version'}
             </Text>
             <Text style={[typography.body, { color: colors.secondaryLabel }]}>1.0.0</Text>
           </View>
-          <Separator colors={colors} />
-          <NavRow icon={<IconBg color={colors.systemBlue}><Shield size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'} onPress={() => Linking.openURL('https://tawveeri.com/privacy')} colors={colors} rtl={rtl} />
-          <Separator colors={colors} />
-          <NavRow icon={<IconBg color={colors.systemBlue}><FileText size={16} color="#fff" strokeWidth={2} /></IconBg>} label={rtl.isRTL ? 'الشروط والأحكام' : 'Terms of Service'} onPress={() => Linking.openURL('https://tawveeri.com/terms')} colors={colors} rtl={rtl} />
+          <SeparatorFull colors={colors} />
+          <NavRow icon={<View style={[styles.mockIconBox, { backgroundColor: colors.systemBlue + '1A' }]}><Shield size={20} color={colors.systemBlue} strokeWidth={2} /></View>} label={rtl.isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'} onPress={() => Linking.openURL('https://tawveeri.com/privacy')} colors={colors} rtl={rtl} />
+          <SeparatorFull colors={colors} />
+          <NavRow icon={<View style={[styles.mockIconBox, { backgroundColor: colors.systemBlue + '1A' }]}><FileText size={20} color={colors.systemBlue} strokeWidth={2} /></View>} label={rtl.isRTL ? 'الشروط والأحكام' : 'Terms of Service'} onPress={() => Linking.openURL('https://tawveeri.com/terms')} colors={colors} rtl={rtl} />
         </View>
 
         {/* ── Delete Account ── */}
         {user && (
           <>
-            <View style={[styles.group, { backgroundColor: colors.card, marginTop: spacing.xl }]}>
+            <View style={[styles.mockCardNoPadding, { backgroundColor: colors.secondaryGroupedBackground, borderColor: colors.separator, marginTop: spacing.xl }]}>
               <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.deleteRow, { flexDirection: rtl.row }, pressed && { backgroundColor: colors.quaternaryFill }]}>
                 <Trash2 size={18} color={colors.error} strokeWidth={1.8} />
                 <Text style={[typography.body, { color: colors.error, marginLeft: rtl.isRTL ? 0 : spacing.sm, marginRight: rtl.isRTL ? spacing.sm : 0, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
@@ -467,8 +484,8 @@ type RTLHook = ReturnType<typeof useRTL>;
 
 function SectionLabel({ text, colors, rtl }: { text: string; colors: any; rtl: RTLHook }) {
   return (
-    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm, alignItems: rtl.alignStart }}>
-      <Text style={[typography.footnote, { color: colors.secondaryLabel, textTransform: 'uppercase', textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>
+    <View style={[styles.mockSectionLabel, { alignItems: rtl.isRTL ? 'flex-end' : 'flex-start' }]}>
+      <Text style={[styles.mockSectionLabelText, { color: colors.secondaryLabel, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]} numberOfLines={1}>
         {text}
       </Text>
     </View>
@@ -481,6 +498,10 @@ function IconBg({ color, children }: { color: string; children: React.ReactNode 
 
 function Separator({ colors }: { colors: any }) {
   return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 52 }} />;
+}
+
+function SeparatorFull({ colors }: { colors: any }) {
+  return <View style={[styles.separatorBar, { backgroundColor: colors.separator }]} />;
 }
 
 function LanguageCard({ label, active, onPress, colors, rtl }: { label: string; active: boolean; onPress: () => void; colors: any; rtl: RTLHook }) {
@@ -547,17 +568,137 @@ function NavRow({ icon, label, onPress, colors, rtl, destructive, trailing }: { 
 
 // ─── Styles ──────────────────────────────────────────────────
 
+const MOCK_CARD_RADIUS = 24;
+
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+  },
   header: {
     alignItems: 'center',
     padding: spacing.md,
     paddingTop: spacing.lg,
   },
+  headerLoggedIn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: MOCK_CARD_RADIUS,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   welcomeHeader: {
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl * 1.25,
+    paddingBottom: spacing.xl,
+  },
+  avatarWrapMock: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
+  avatarMock: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBadgeMock: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 4,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signInButtonMock: {
+    width: '100%',
+    paddingVertical: spacing.md,
+    marginTop: spacing.xl,
+    borderRadius: radii.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mockSectionLabel: {
     paddingTop: spacing.xl,
     paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    alignSelf: 'stretch',
+    alignItems: 'flex-start',
+  },
+  mockSectionLabelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    alignSelf: 'flex-start',
+  },
+  contentPad: {
+    marginHorizontal: spacing.lg,
+  },
+  mockSectionBlock: {
+    paddingHorizontal: 0,
+    marginBottom: 0,
+  },
+  mockCard: {
+    borderRadius: MOCK_CARD_RADIUS,
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  mockCardNoPadding: {
+    borderRadius: MOCK_CARD_RADIUS,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  mockCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  mockIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mockSegmentedWrap: {
+    padding: 4,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+  },
+  mockSegmentedBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+  },
+  mockThemeGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  signInButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  signInIconWrap: {
+    transform: [{ rotate: '180deg' }],
+  },
+  separatorBar: {
+    height: 1,
+    width: '100%',
+    alignSelf: 'stretch',
   },
   avatar: {
     width: 56,
@@ -574,7 +715,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quickActions: {
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
   },

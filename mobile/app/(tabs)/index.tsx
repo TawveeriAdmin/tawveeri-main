@@ -285,7 +285,7 @@ export default function HomeScreen() {
         }
       >
         {/* ── Header (mock: greeting, subtitle, Bell + Avatar) ── */}
-        <View style={[styles.headerWrap, { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.md }]}>
+        <View style={[styles.headerWrap, { paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md }]}>
           <View style={[styles.headerRow, { flexDirection: rtl.row }]}>
             <View style={{ flex: 1, alignItems: rtl.alignStart }}>
               <Text
@@ -360,7 +360,7 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Search Bar (mock: rounded-2xl, icon left) ── */}
-        <View style={[styles.searchBarWrap, { paddingHorizontal: spacing.lg }]}>
+        <View style={[styles.searchBarWrap, { paddingHorizontal: spacing.md }]}>
           <Pressable
             onPress={() => router.push('/(tabs)/search')}
             style={({ pressed }) => [
@@ -394,8 +394,8 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* ── Category Chips (mock: rounded-2xl, icon in small box + label) ── */}
-        <View style={[styles.categoryChipSection, { paddingHorizontal: spacing.lg }]}>
+        {/* ── Category Chips: no left/right padding so selector is full-bleed ── */}
+        <View style={styles.categoryChipSection}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -444,7 +444,7 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Hot Deals ── */}
+        {/* ── Hot Deals (same scroll/padding as category chips: full-bleed container, content padding) ── */}
         {deals.length > 0 && (
           <>
             <SectionHeader
@@ -1146,6 +1146,7 @@ const styles = StyleSheet.create({
   categoryChipRow: {
     gap: spacing.sm,
     paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   categoryChipMock: {
     flexDirection: 'row',
@@ -1221,7 +1222,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   horizontalSectionList: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     gap: spacing.md,
     paddingBottom: spacing.xs,
   },
@@ -1229,7 +1230,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
     paddingBottom: spacing.sm,
   },

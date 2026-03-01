@@ -1249,6 +1249,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   categoryPillMock: {
     paddingHorizontal: spacing.lg,
