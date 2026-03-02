@@ -417,13 +417,6 @@ export default function ProductDetailScreen() {
               locale={locale}
               size="lg"
             />
-            {savings > 0 && (
-              <Badge
-                label={locale === 'ar' ? `وفر ${Math.round(savings)}%` : `Save ${Math.round(savings)}%`}
-                color={colors.systemGreen}
-                style={{ marginTop: spacing.xs }}
-              />
-            )}
           </View>
 
           {/* Coupons */}
@@ -459,7 +452,7 @@ export default function ProductDetailScreen() {
               style={[styles.primaryAction, { backgroundColor: colors.primary }]}
             >
               <ShoppingCart size={18} color="#fff" />
-              <Text style={[typography.headline, { color: '#fff', marginLeft: spacing.sm }]}>
+              <Text style={[typography.subheadline, { color: '#fff', fontWeight: '600', marginLeft: spacing.sm }]}>
                 {locale === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
               </Text>
             </Pressable>
@@ -468,13 +461,13 @@ export default function ProductDetailScreen() {
               onPress={toggleWishlist}
               accessibilityRole="button"
               accessibilityLabel={isWishlisted ? (locale === 'ar' ? 'إزالة من المفضلة' : 'Remove from wishlist') : (locale === 'ar' ? 'إضافة إلى المفضلة' : 'Add to wishlist')}
-              style={[styles.iconAction, { backgroundColor: colors.secondaryBackground }]}
+              style={[styles.iconAction, { backgroundColor: isWishlisted ? '#FEE2E2' : colors.secondaryBackground }]}
               disabled={wishlistLoading}
             >
               <Heart
-                size={22}
-                color={isWishlisted ? colors.systemPink : colors.secondaryLabel}
-                fill={isWishlisted ? colors.systemPink : 'none'}
+                size={20}
+                color={isWishlisted ? colors.systemRed : colors.secondaryLabel}
+                fill={isWishlisted ? colors.systemRed : 'none'}
               />
             </Pressable>
 
@@ -485,7 +478,7 @@ export default function ProductDetailScreen() {
               style={[styles.iconAction, { backgroundColor: inCompare ? colors.primaryContainer : colors.secondaryBackground }]}
             >
               <BarChart3
-                size={22}
+                size={20}
                 color={inCompare ? colors.primary : colors.secondaryLabel}
               />
             </Pressable>
@@ -499,7 +492,7 @@ export default function ProductDetailScreen() {
               accessibilityLabel={locale === 'ar' ? 'تنبيه السعر' : 'Price alert'}
               style={[styles.iconAction, { backgroundColor: colors.secondaryBackground }]}
             >
-              <Bell size={22} color={colors.secondaryLabel} />
+              <Bell size={20} color={colors.secondaryLabel} />
             </Pressable>
 
             <Pressable
@@ -508,13 +501,13 @@ export default function ProductDetailScreen() {
               accessibilityLabel={locale === 'ar' ? 'إرسال كهدية' : 'Send as gift'}
               style={[styles.iconAction, { backgroundColor: colors.secondaryBackground }]}
             >
-              <Gift size={22} color={colors.secondaryLabel} />
+              <Gift size={20} color={colors.secondaryLabel} />
             </Pressable>
           </View>
         </View>
 
         {/* Store Prices */}
-        <View style={{ paddingHorizontal: spacing.lg }}>
+        <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.sm }}>
           <Text style={[typography.headline, { color: colors.label, marginBottom: spacing.md }]}>
             {locale === 'ar' ? 'مقارنة الأسعار' : 'Compare Prices'}
           </Text>
@@ -531,7 +524,7 @@ export default function ProductDetailScreen() {
 
         {/* Similar Products */}
         {recommendations.length > 0 && (
-          <View style={{ marginTop: spacing.xl }}>
+          <View style={{ marginTop: spacing.xl, paddingTop: spacing.md }}>
             <View style={[styles.recHeader, { flexDirection: rtl.row }]}>
               <View style={{ flexDirection: rtl.row, alignItems: 'center', gap: spacing.xs }}>
                 <Star size={16} color={colors.primary} />
@@ -544,9 +537,10 @@ export default function ProductDetailScreen() {
               data={recommendations}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md }}
+              contentContainerStyle={{ paddingHorizontal: spacing.lg }}
+              ItemSeparatorComponent={() => <View style={{ width: spacing.sm }} />}
               keyExtractor={(item) => item.id}
-
+              estimatedItemSize={140}
               renderItem={({ item: rec }) => {
                 const name = locale === 'ar' ? rec.name_ar : rec.name_en;
                 const image = rec.image_urls?.[0];
@@ -1063,23 +1057,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginTop: spacing.lg,
-    paddingTop: spacing.lg,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   primaryAction: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: MIN_TOUCH_TARGET,
-    borderRadius: radii.md,
+    height: 42,
+    borderRadius: 21,
     paddingHorizontal: spacing.lg,
   },
   iconAction: {
-    width: MIN_TOUCH_TARGET,
-    height: MIN_TOUCH_TARGET,
-    borderRadius: radii.md,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1123,7 +1116,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   recCard: {
-    width: 140,
+    width: 150,
     borderRadius: radii.lg,
     overflow: 'hidden',
     padding: spacing.sm,

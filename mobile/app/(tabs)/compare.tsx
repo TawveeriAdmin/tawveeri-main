@@ -31,6 +31,7 @@ export default function CompareScreen() {
   const products = useCompareStore((s) => s.products);
   const removeProduct = useCompareStore((s) => s.removeProduct);
   const clearAll = useCompareStore((s) => s.clearAll);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Collect spec keys from all products
   const allSpecKeys = Array.from(
@@ -66,11 +67,9 @@ export default function CompareScreen() {
     );
   }
 
-  const scrollRef = useRef<ScrollView>(null);
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Header (mock: px-6 pt-8 pb-4, title + subtitle, Clear All) */}
+      {/* Header */}
       <View style={[styles.stickyHeader, { flexDirection: rtl.row, backgroundColor: colors.background }]}>
         <View>
           <Text style={[styles.headerTitle, { color: colors.label, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}>

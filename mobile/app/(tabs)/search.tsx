@@ -74,7 +74,7 @@ import {
 } from '@/src/components/search/FilterSheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
+const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 2 - spacing.sm) / 2;
 const RECENT_SEARCHES_KEY = 'tawveeri_recent_searches';
 const MAX_RECENT_SEARCHES = 8;
 
@@ -689,9 +689,11 @@ export default function SearchScreen() {
           />
           <FlashList
             data={sortedResults}
-            renderItem={({ item }) =>
+            renderItem={({ item, index }) =>
               gridView ? (
-                <GridResultCard item={item} colors={colors} rtl={rtl} />
+                <View style={{ flex: 1, paddingRight: index % 2 === 0 ? spacing.sm / 2 : 0, paddingLeft: index % 2 === 1 ? spacing.sm / 2 : 0, marginBottom: spacing.sm }}>
+                  <GridResultCard item={item} colors={colors} rtl={rtl} />
+                </View>
               ) : (
                 <ListResultCard item={item} colors={colors} rtl={rtl} />
               )
@@ -1069,7 +1071,7 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
   };
 
   return (
-    <Card onPress={() => Linking.openURL(item.url)} style={{ width: CARD_WIDTH }} padding="xs">
+    <Card onPress={() => Linking.openURL(item.url)} style={{ flex: 1 }} padding="xs">
       <View
         style={{
           height: 130,
@@ -1115,7 +1117,7 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
           </Pressable>
         </View>
       </View>
-      <View style={{ padding: spacing.sm }}>
+      <View style={{ flex: 1, padding: spacing.sm, justifyContent: 'space-between' }}>
         <Text
           numberOfLines={2}
           style={[typography.footnote, { color: colors.label, lineHeight: 18, textAlign: rtl.textAlign, writingDirection: rtl.writingDirection }]}
