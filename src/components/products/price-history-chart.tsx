@@ -88,6 +88,8 @@ export function PriceHistoryChart({
   const minPrice = Math.min(...priceHistory.map((p) => p.price), maxPrice);
   const priceRange = maxPrice - minPrice || 1;
 
+  if (!loading && priceHistory.length === 0) return null;
+
   return (
     <Card>
       <CardHeader>

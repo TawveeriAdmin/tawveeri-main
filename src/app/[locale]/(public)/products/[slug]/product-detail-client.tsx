@@ -41,6 +41,7 @@ import {
  Clock,
  ShoppingCart,
  Eye,
+ PiggyBank,
 } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
@@ -212,7 +213,7 @@ export default function ProductDetailClient() {
  )
  .eq('slug', slug)
  .eq('is_active', true)
- .single<ProductQueryResult>();
+ .maybeSingle<ProductQueryResult>();
 
  if (productError) throw productError;
 
@@ -619,7 +620,7 @@ export default function ProductDetailClient() {
  symbolClassName="w-5 h-5"
  />
  <Badge variant="success-light" className="text-sm">
- 💰 {t('price.save')}{' '}
+ <PiggyBank className="w-3 h-3 inline" /> {t('price.save')}{' '}
  <Price
  amount={calculateSavings(bestPriceStore.original_price, bestPriceStore.current_price)}
  className="text-label-lg"
@@ -690,26 +691,30 @@ export default function ProductDetailClient() {
  </div>
 
 
- {/* Product Details Tabs */}
- <Tabs defaultValue="specifications" className="mb-8">
+ {/* Product Details Tabs — only show if there's data */}
+ {(Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0 || (product.total_reviews || 0) > 0) && (
+ <Tabs defaultValue={Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0 ? 'specifications' : 'reviews'} className="mb-8">
  <TabsList>
+ {(Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0) && (
  <TabsTrigger value="specifications">
- {t('products.specifications')}
+ {t('products.specifications.title')}
  </TabsTrigger>
+ )}
  <TabsTrigger value="reviews">
  {locale === 'ar' ? 'التقييمات' : 'Reviews'} ({product.total_reviews || 0})
  </TabsTrigger>
  </TabsList>
 
+ {(Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0) && (
  <TabsContent value="specifications" className="space-y-6">
- {/* Specifications */}
+ {Object.keys(product.specifications || {}).length > 0 && (
  <ProductSpecifications
  specifications={product.specifications || {}}
  category={product.category}
  locale={locale}
  />
+ )}
 
- {/* Price History Charts */}
  {product.product_stores.length > 0 && (
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {product.product_stores.slice(0, 2).map((productStore) => {
@@ -727,6 +732,7 @@ export default function ProductDetailClient() {
  </div>
  )}
  </TabsContent>
+ )}
 
  <TabsContent value="reviews">
  <Card>
@@ -742,6 +748,7 @@ export default function ProductDetailClient() {
  </Card>
  </TabsContent>
  </Tabs>
+ )}
 
  {/* Available Stores */}
  <Card className="mb-8">
@@ -789,7 +796,7 @@ export default function ProductDetailClient() {
 
  {savings > 0 && (
  <Badge variant="success-light" className="text-body-sm">
- 💰 {t('price.save')} <Price amount={savings} className="text-body-sm" symbolClassName="w-3 h-3" />
+ <PiggyBank className="w-3 h-3 inline" /> {t('price.save')} <Price amount={savings} className="text-body-sm" symbolClassName="w-3 h-3" />
  </Badge>
  )}
 

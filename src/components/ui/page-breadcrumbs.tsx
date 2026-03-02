@@ -13,6 +13,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { useAuth } from '@/lib/auth/auth-context';
 
 export interface BreadcrumbEntry {
   label: string;
@@ -28,9 +29,12 @@ export function PageBreadcrumbs({ items }: PageBreadcrumbsProps) {
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const t = useTranslations();
+  const { user } = useAuth();
 
   const allItems: BreadcrumbEntry[] = [
-    { label: t('common.home'), href: `/${locale}` },
+    user
+      ? { label: t('nav.dashboard'), href: `/${locale}/dashboard` }
+      : { label: t('common.home'), href: `/${locale}` },
     ...items,
   ];
 

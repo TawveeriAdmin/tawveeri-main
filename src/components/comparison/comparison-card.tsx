@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PriceDisplay, Price } from '@/components/ui/price';
-import { Star, Truck, ShieldCheck } from 'lucide-react';
+import { Check, Flame, Star, Truck, ShieldCheck, PiggyBank } from 'lucide-react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { calculateSavings } from '@/lib/utils';
@@ -55,17 +55,17 @@ export function ComparisonCard({
           <div className="flex flex-wrap gap-2">
             {isBestPrice && (
               <Badge variant="success">
-                ✓ {t('price.best')}
+                <Check className="w-3 h-3" /> {t('price.best')}
               </Badge>
             )}
             {isHotDeal && (
               <Badge variant="warning">
-                🔥 {locale === 'ar' ? 'عرض ساخن' : 'Hot Deal'}
+                <Flame className="w-3 h-3" /> {locale === 'ar' ? 'عرض ساخن' : 'Hot Deal'}
               </Badge>
             )}
             {isFeatured && (
               <Badge variant="featured">
-                ⭐ {locale === 'ar' ? 'مميز' : 'Featured'}
+                <Star className="w-3 h-3 fill-current" /> {locale === 'ar' ? 'مميز' : 'Featured'}
               </Badge>
             )}
           </div>
@@ -93,7 +93,7 @@ export function ComparisonCard({
         {/* Savings Badge */}
         {savings > 0 && (
           <Badge variant="success-light">
-            💰 {t('price.save')} <Price amount={savings} className="text-sm font-semibold" symbolClassName="w-3 h-3" />
+            <PiggyBank className="w-3 h-3" /> {t('price.save')} <Price amount={savings} className="text-sm font-semibold" symbolClassName="w-3 h-3" />
           </Badge>
         )}
 

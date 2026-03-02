@@ -64,9 +64,9 @@ interface ProductCardProps {
   };
   locale: string;
   onCompare?: (productId: string) => void;
-  onComparePrices?: (productId: string) => void;
   onSave?: (productId: string) => void;
   isSaved?: boolean;
+  isInCompare?: boolean;
   onAddToCart?: (product: ProductCardProps['product']) => void;
   showActions?: boolean;
 }
@@ -77,9 +77,9 @@ export function ProductCard({
   product,
   locale,
   onCompare,
-  onComparePrices,
   onSave,
   isSaved = false,
+  isInCompare = false,
   onAddToCart,
   showActions = true,
 }: ProductCardProps) {
@@ -96,18 +96,18 @@ export function ProductCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const isMultiStore = product.product_stores.length > 1;
+  const isDbProduct = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(product.id);
 
-  // Get external product URL if available (for scraped products)
-  // Multi-store cards should not link to external store — trigger comparison instead
+  // Get external product URL if available (for scraped products not in DB)
   const externalProductUrl = !isMultiStore
     ? (product.product_stores[0]?.product_url || product.product_stores[0]?.affiliate_url)
     : null;
   const isExternalLink = externalProductUrl && (externalProductUrl.startsWith('http://') || externalProductUrl.startsWith('https://'));
 
-  // Determine the link destination
-  const productLink = isExternalLink
-    ? externalProductUrl
-    : `/${currentLocale}/products/${product.slug}`;
+  // DB products go to detail page; scraped-only products link externally
+  const productLink = isDbProduct
+    ? `/${currentLocale}/products/${product.slug}`
+    : (isExternalLink ? externalProductUrl : `/${currentLocale}/products/${product.slug}`);
 
   // Get available images
   const availableImages = product.image_urls?.filter(Boolean) || [];
@@ -151,28 +151,11 @@ export function ProductCard({
   const currentImageUrl = availableImages[currentImageIndex] || null;
   let imageSrc = imageError || !currentImageUrl ? PLACEHOLDER_IMAGE : currentImageUrl;
 
-  // Render link wrapper - external link for scraped products, internal for database products
-  // Multi-store cards use div wrapper (comparison click handled by CTA)
+  // DB products use internal Link; scraped-only products open external store
   const LinkWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (isMultiStore) {
+    if (!isDbProduct && isExternalLink) {
       return (
-        <button
-          type="button"
-          className="flex flex-col h-full cursor-pointer text-start w-full"
-          onClick={() => onComparePrices?.(product.id)}
-        >
-          {children}
-        </button>
-      );
-    }
-    if (isExternalLink) {
-      return (
-        <a
-          href={productLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col h-full"
-        >
+        <a href={productLink} target="_blank" rel="noopener noreferrer" className="flex flex-col h-full">
           {children}
         </a>
       );
@@ -362,10 +345,12 @@ export function ProductCard({
               variant="default"
               size="sm"
               className="flex-1 inline-flex items-center justify-center gap-1 text-xs"
-              onClick={() => onComparePrices?.(product.id)}
+              asChild
             >
-              <BarChart3 className="w-3 h-3 shrink-0" />
-              {t('products.comparePrices', { count: String(storeCount) })}
+              <Link href={productLink}>
+                <BarChart3 className="w-3 h-3 shrink-0" />
+                {t('products.comparePrices', { count: String(storeCount) })}
+              </Link>
             </Button>
           ) : externalProductUrl ? (
             <Button
@@ -411,11 +396,11 @@ export function ProductCard({
             <Button
               variant="outline"
               size="sm"
-              className="shrink-0 px-2"
+              className={cn('shrink-0 px-2', isInCompare && 'text-primary-600 border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20')}
               aria-label={t('product.addToCompare')}
               onClick={() => onCompare(product.id)}
             >
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className={cn('w-4 h-4', isInCompare && 'fill-current')} />
             </Button>
           )}
         </div>

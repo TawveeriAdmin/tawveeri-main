@@ -78,7 +78,7 @@ export const checkDatabaseConnection = async () => {
       return false;
     }
 
-    console.log('✅ Database connection successful');
+    console.log('Database connection successful');
     return true;
   } catch (error) {
     console.error('Failed to connect to database:', error);

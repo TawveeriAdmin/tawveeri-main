@@ -358,7 +358,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>مرحباً بك في توفيري! 🎉</h2>
+            <h2>مرحباً بك في توفيري!</h2>
             <p>عزيزي ${data.full_name || 'العميل'},</p>
             <p>نحن سعداء جداً بانضمامك إلى منصة توفيري - أفضل منصة لمقارنة الأسعار في المملكة العربية السعودية.</p>
             <p>مع توفيري، يمكنك:</p>
@@ -371,7 +371,7 @@ function getEmailTemplate(
             <a href="${process.env.NEXT_PUBLIC_APP_URL}" class="button">ابدأ التصفح الآن</a>
           `
           : `
-            <h2>Welcome to Tawveeri! 🎉</h2>
+            <h2>Welcome to Tawveeri!</h2>
             <p>Dear ${data.full_name || 'Customer'},</p>
             <p>We're excited to have you join Tawveeri - the best price comparison platform in Saudi Arabia.</p>
             <p>With Tawveeri, you can:</p>
@@ -412,13 +412,13 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>تم تغيير كلمة المرور بنجاح ✓</h2>
+            <h2>تم تغيير كلمة المرور بنجاح</h2>
             <p>تم تغيير كلمة المرور الخاصة بحسابك بنجاح.</p>
             <p>إذا لم تقم بهذا التغيير، يرجى الاتصال بنا فوراً.</p>
             <p><strong>الوقت:</strong> ${new Date().toLocaleString('ar-SA')}</p>
           `
           : `
-            <h2>Password Changed Successfully ✓</h2>
+            <h2>Password Changed Successfully</h2>
             <p>Your account password has been changed successfully.</p>
             <p>If you didn't make this change, please contact us immediately.</p>
             <p><strong>Time:</strong> ${new Date().toLocaleString('en-US')}</p>
@@ -458,7 +458,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>تنبيه انخفاض السعر! 🔔</h2>
+            <h2>تنبيه انخفاض السعر!</h2>
             <p>السعر انخفض للمنتج الذي تتابعه:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0;">${data.product_name}</h3>
@@ -471,7 +471,7 @@ function getEmailTemplate(
             <a href="${data.product_link}" class="button">عرض المنتج</a>
           `
           : `
-            <h2>Price Drop Alert! 🔔</h2>
+            <h2>Price Drop Alert!</h2>
             <p>The price has dropped for a product you're watching:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0;">${data.product_name}</h3>
@@ -490,7 +490,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>عاد للمخزون! 🎉</h2>
+            <h2>عاد للمخزون!</h2>
             <p>المنتج الذي تنتظره أصبح متوفراً الآن:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0;">${data.product_name}</h3>
@@ -500,7 +500,7 @@ function getEmailTemplate(
             <a href="${data.product_link}" class="button">اشتري الآن</a>
           `
           : `
-            <h2>Back in Stock! 🎉</h2>
+            <h2>Back in Stock!</h2>
             <p>The product you've been waiting for is now available:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <h3 style="margin: 0 0 10px 0;">${data.product_name}</h3>
@@ -516,7 +516,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>عروض اليوم! 🔥</h2>
+            <h2>عروض اليوم!</h2>
             <p>اكتشف أفضل العروض المختارة لك اليوم:</p>
             <div style="margin: 20px 0;">
               ${data.deals
@@ -534,7 +534,7 @@ function getEmailTemplate(
             <a href="${process.env.NEXT_PUBLIC_APP_URL}/deals" class="button">عرض جميع العروض</a>
           `
           : `
-            <h2>Today's Deals! 🔥</h2>
+            <h2>Today's Deals!</h2>
             <p>Discover the best deals curated for you today:</p>
             <div style="margin: 20px 0;">
               ${data.deals
@@ -602,7 +602,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>تحذير: كوبون على وشك الانتهاء ⏰</h2>
+            <h2>تحذير: كوبون على وشك الانتهاء</h2>
             <p>الكوبون التالي سينتهي قريباً:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>الكود:</strong> ${data.coupon_code}</p>
@@ -612,7 +612,7 @@ function getEmailTemplate(
             <p>يرجى تجديد الكوبون أو تعديله إذا لزم الأمر.</p>
           `
           : `
-            <h2>Warning: Coupon Expiring Soon ⏰</h2>
+            <h2>Warning: Coupon Expiring Soon</h2>
             <p>The following coupon is about to expire:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>Code:</strong> ${data.coupon_code}</p>
@@ -628,7 +628,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>كوبون جديد لمنتج في قائمة أمنياتك! 🎁</h2>
+            <h2>كوبون جديد لمنتج في قائمة أمنياتك!</h2>
             <p>تم إضافة كوبون خصم جديد لمنتج في قائمة أمنياتك:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>المنتج:</strong> ${data.product_name}</p>
@@ -638,7 +638,7 @@ function getEmailTemplate(
             <a href="${process.env.NEXT_PUBLIC_APP_URL}" class="button">عرض المنتج</a>
           `
           : `
-            <h2>New Coupon for Your Wishlisted Product! 🎁</h2>
+            <h2>New Coupon for Your Wishlisted Product!</h2>
             <p>A new discount coupon has been added for a product in your wishlist:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>Product:</strong> ${data.product_name}</p>
@@ -654,7 +654,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>تسجيل دخول من جهاز جديد 🔐</h2>
+            <h2>تسجيل دخول من جهاز جديد</h2>
             <p>تم تسجيل دخول إلى حسابك من جهاز جديد:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>الجهاز:</strong> ${data.device_info || 'غير معروف'}</p>
@@ -663,7 +663,7 @@ function getEmailTemplate(
             <p>إذا لم تكن أنت من قام بتسجيل الدخول، يرجى تغيير كلمة المرور فوراً.</p>
           `
           : `
-            <h2>Login from New Device 🔐</h2>
+            <h2>Login from New Device</h2>
             <p>Your account was accessed from a new device:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>Device:</strong> ${data.device_info || 'Unknown'}</p>
@@ -678,7 +678,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>نتائج جديدة لبحثك المحفوظ! 🔍</h2>
+            <h2>نتائج جديدة لبحثك المحفوظ!</h2>
             <p>تم العثور على نتائج جديدة لبحثك المحفوظ:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>البحث:</strong> ${data.search_name}</p>
@@ -687,7 +687,7 @@ function getEmailTemplate(
             <a href="${data.search_link || process.env.NEXT_PUBLIC_APP_URL}" class="button">عرض النتائج</a>
           `
           : `
-            <h2>New Results for Your Saved Search! 🔍</h2>
+            <h2>New Results for Your Saved Search!</h2>
             <p>New results have been found for your saved search:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>Search:</strong> ${data.search_name}</p>
@@ -708,7 +708,7 @@ function getEmailTemplate(
       return baseTemplate(
         isRTL
           ? `
-            <h2>${label.ar} 🏷️</h2>
+            <h2>${label.ar}</h2>
             <p>قام المشرف بإجراء تغيير على كوبون في متجرك:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>الإجراء:</strong> ${label.ar}</p>
@@ -718,7 +718,7 @@ function getEmailTemplate(
             <p>يرجى مراجعة الكوبونات في لوحة التحكم الخاصة بك.</p>
           `
           : `
-            <h2>${label.en} 🏷️</h2>
+            <h2>${label.en}</h2>
             <p>An admin has made a change to a coupon in your store:</p>
             <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>Action:</strong> ${label.en}</p>

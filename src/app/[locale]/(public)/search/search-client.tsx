@@ -80,17 +80,26 @@ const COMPARE_STORAGE_KEY = 'compare_products';
 const COMPARE_CACHE_STORAGE_KEY = 'compare_products_cache';
 const SEARCH_CACHE_KEY = 'search_results_cache';
 
+const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Session-storage helpers for persisting search results across navigation
-function getSearchCache(): { query: string; category: string; products: Product[] } | null {
+function getSearchCache(): { query: string; category: string; products: Product[]; timestamp: number } | null {
   try {
     const raw = sessionStorage.getItem(SEARCH_CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Expire after TTL
+    if (parsed.timestamp && Date.now() - parsed.timestamp > SEARCH_CACHE_TTL) {
+      sessionStorage.removeItem(SEARCH_CACHE_KEY);
+      return null;
+    }
+    return parsed;
   } catch { return null; }
 }
 
 function setSearchCache(query: string, category: string, products: Product[]) {
   try {
-    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, products }));
+    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, products, timestamp: Date.now() }));
   } catch { /* quota exceeded — ignore */ }
 }
 
@@ -444,14 +453,8 @@ export default function SearchClient() {
     }
   }, [filters, selectedCategory, locale, router, searchParams]);
 
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-      setCurrentPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // Note: debouncedQuery is set explicitly on form submit / handleSearch.
+  // No auto-debounce — search only triggers on Enter or button click.
 
   // Update URL when search changes
   useEffect(() => {
@@ -548,7 +551,7 @@ export default function SearchClient() {
     }
   }
 
-  // Fetch products when query/category changes, with sessionStorage cache restore on mount
+  // Fetch products when query/category changes, with sessionStorage cache restore
   const mountedRef = useRef(false);
   const cacheSkipRef = useRef(false);
   useEffect(() => {
@@ -564,21 +567,30 @@ export default function SearchClient() {
       const cached = getSearchCache();
       if (cached && cached.products.length > 0) {
         const q = debouncedQuery;
-        if (q && cached.query === q) {
-          // URL had matching query — just restore products, skip scrape
+        if (q && cached.query === q && cached.category === selectedCategory) {
+          // URL had matching query+category — restore products, skip scrape
           setRawProducts(cached.products);
           return;
         }
         if (!q && cached.query) {
           // URL had no query (back-nav stripped ?q=) — restore everything
           setRawProducts(cached.products);
-          // These state changes will re-trigger this effect once (React batches them)
           cacheSkipRef.current = true;
           setSearchQuery(cached.query);
           setDebouncedQuery(cached.query);
           setSelectedCategory(cached.category as ProductCategory | 'all');
           return;
         }
+      }
+    } else {
+      // After mount: check cache before scraping (same query+category = skip)
+      const cached = getSearchCache();
+      if (cached && cached.products.length > 0 && cached.query === debouncedQuery && cached.category === selectedCategory) {
+        // Already have fresh results for this query — don't re-scrape
+        if (rawProducts.length === 0) {
+          setRawProducts(cached.products);
+        }
+        return;
       }
     }
 
@@ -769,7 +781,7 @@ export default function SearchClient() {
     filters.availability.forEach(a => chips.push({ label: a, type: 'availability', value: a }));
     if (filters.dealsOnly) chips.push({ label: t('search.filters.showDealsOnly'), type: 'deals' });
     if (filters.freeDeliveryOnly) chips.push({ label: t('search.filters.freeDeliveryOnly'), type: 'freeDelivery' });
-    if (filters.minRating && filters.minRating > 0) chips.push({ label: `${filters.minRating}+ ⭐`, type: 'rating' });
+    if (filters.minRating && filters.minRating > 0) chips.push({ label: `${filters.minRating}+`, type: 'rating' });
     if (filters.discount) chips.push({ label: `+${filters.discount}%`, type: 'discount' });
     filters.condition?.forEach(c => chips.push({ label: c, type: 'condition', value: c }));
     filters.shipping?.forEach(s => chips.push({ label: s, type: 'shipping', value: s }));
@@ -1137,7 +1149,6 @@ export default function SearchClient() {
                             product={product}
                             locale={locale}
                             onCompare={handleAddToCompare}
-                            onComparePrices={handleComparePrices}
                             onSave={handleSaveToWishlist}
                             isSaved={savedProductNames.has(product.name_en)}
                           />

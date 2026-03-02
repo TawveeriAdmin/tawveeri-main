@@ -32,6 +32,7 @@ import {
  Edit,
  Gift,
  ExternalLink,
+ Check,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Image from 'next/image';
@@ -229,7 +230,7 @@ export default function CartPage() {
  >
  <Edit className="h-3 w-3 mr-1" />
  {t('cart.note')}
- {item.notes && ' ✓'}
+ {item.notes && <Check className="h-3 w-3 inline ml-1" />}
  </Button>
  <div className="flex items-center gap-2">
  <Checkbox

@@ -162,14 +162,21 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
   }, [user, pathname]);
 
   /* ── Navigation links ── */
-  const navLinks = [
-    { href: `/${locale}`, label: t('common.home'), icon: Home },
-    { href: `/${locale}/search`, label: t('button.search'), icon: Search },
-    { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
-    { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
-    { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
-    ...(user ? [{ href: `/${locale}/dashboard`, label: t('nav.dashboard'), icon: LayoutDashboard }] : []),
-  ];
+  const navLinks = user
+    ? [
+        { href: `/${locale}/dashboard`, label: t('nav.dashboard'), icon: LayoutDashboard },
+        { href: `/${locale}/search`, label: t('button.search'), icon: Search },
+        { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
+        { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
+        { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
+      ]
+    : [
+        { href: `/${locale}`, label: t('common.home'), icon: Home },
+        { href: `/${locale}/search`, label: t('button.search'), icon: Search },
+        { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
+        { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
+        { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
+      ];
 
   /* ── User info ── */
   const isFakeEmail = user?.email?.startsWith('phone_') ?? false;

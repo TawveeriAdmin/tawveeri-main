@@ -81,7 +81,10 @@ export default function DealsClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('discount');
   const [filteredProducts, setFilteredProducts] = useState<DealProduct[]>([]);
-  const [compareCount, setCompareCount] = useState(0);
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+  const [savedProductIds, setSavedProductIds] = useState<Set<string>>(new Set());
+
+  const compareCount = compareIds.size;
 
   const fetchErrorFallback =
     locale === 'ar' ? 'تعذر تحميل العروض حالياً.' : 'Failed to load deals right now.';
@@ -135,9 +138,9 @@ export default function DealsClient() {
       try {
         const stored = window.localStorage.getItem(COMPARE_STORAGE_KEY);
         const ids: string[] = stored ? JSON.parse(stored) : [];
-        setCompareCount(Array.from(new Set(ids)).slice(0, MAX_COMPARE_PRODUCTS).length);
+        setCompareIds(new Set(ids.slice(0, MAX_COMPARE_PRODUCTS)));
       } catch {
-        setCompareCount(0);
+        setCompareIds(new Set());
       }
     };
 
@@ -158,6 +161,20 @@ export default function DealsClient() {
       window.removeEventListener('compare-products-updated', handleCompareUpdate);
     };
   }, []);
+
+  // Fetch user's wishlist to show saved state on cards
+  useEffect(() => {
+    if (!user || !supabase) { setSavedProductIds(new Set()); return; }
+    supabase
+      .from('user_wishlists')
+      .select('product_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) {
+          setSavedProductIds(new Set(data.map(d => d.product_id).filter(Boolean)));
+        }
+      });
+  }, [user, supabase]);
 
   useEffect(() => {
     if (!supabase) {
@@ -184,6 +201,8 @@ export default function DealsClient() {
               is_deal,
               deal_expires_at,
               coupon_code,
+              product_url,
+              affiliate_url,
               stores(
                 id,
                 name_ar,
@@ -203,8 +222,7 @@ export default function DealsClient() {
             `
           )
           .eq('is_deal', true)
-          .gte('deal_expires_at', new Date().toISOString())
-          .order('deal_expires_at', { ascending: true });
+          .order('created_at', { ascending: false });
 
         if (queryError) throw queryError;
 
@@ -239,6 +257,8 @@ export default function DealsClient() {
             is_deal: storeProduct.is_deal,
             deal_expires_at: storeProduct.deal_expires_at,
             coupon_code: (storeProduct as any).coupon_code || null,
+            product_url: (storeProduct as any).product_url || null,
+            affiliate_url: (storeProduct as any).affiliate_url || null,
             availability: storeProduct.availability as AvailabilityStatus,
             stores: storeProduct.stores,
           });
@@ -405,6 +425,7 @@ export default function DealsClient() {
       });
 
       if (saveError && saveError.code === '23505') {
+        setSavedProductIds(prev => new Set(prev).add(productId));
         toast({
           title: t('products.saved'),
           description: uiCopy.alreadySaved,
@@ -413,6 +434,8 @@ export default function DealsClient() {
       }
 
       if (saveError) throw saveError;
+
+      setSavedProductIds(prev => new Set(prev).add(productId));
 
       incrementSaveCount(productId).catch((err) => {
         console.error('Error incrementing save count:', err);
@@ -574,8 +597,8 @@ export default function DealsClient() {
       </section>
 
       {loading && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, index) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, index) => (
             <div key={index} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
               <Skeleton className="h-32 w-full rounded-lg" />
               <Skeleton className="h-4 w-3/4" />
@@ -601,7 +624,7 @@ export default function DealsClient() {
       )}
 
       {!loading && !error && filteredProducts.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
@@ -609,8 +632,9 @@ export default function DealsClient() {
               locale={locale}
               onCompare={handleAddToCompare}
               onSave={handleSaveToWishlist}
+              isSaved={savedProductIds.has(product.id)}
+              isInCompare={compareIds.has(product.id)}
               onAddToCart={handleAddToCart}
-              showActions={true}
             />
           ))}
         </div>
