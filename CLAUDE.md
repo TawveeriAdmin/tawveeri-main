@@ -147,19 +147,21 @@ Phase 2 - Plan:
 - **Charts**: ECharts (`echarts-for-react`) for admin dashboard, Recharts for other analytics
 
 ### Mobile (`mobile/`)
-- **Framework**: Expo SDK 52+ with Expo Router (file-based routing), TypeScript
+- **Framework**: Expo SDK 54 with Expo Router (file-based routing), TypeScript
 - **New Architecture**: Enabled (`newArchEnabled: true` in app.json) — required by `react-native-reanimated` v4
 - **Styling**: StyleSheet + Apple HIG typography scale (no NativeWind)
-- **UI**: Lucide React Native icons, `expo-blur`, `expo-haptics`, `expo-image`
-- **State**: Zustand + AsyncStorage for cart, React Context for auth/theme/i18n
+- **UI**: Lucide React Native icons, `expo-blur`, `expo-haptics`, `expo-image`, `@shopify/flash-list`
+- **State**: Zustand + AsyncStorage for cart & compare, React Context for auth/theme/i18n
 - **Auth tokens**: `expo-secure-store` adapter for Supabase session persistence
 - **Fonts**: Inter (English) + IBM Plex Sans Arabic — same as web, loaded via `expo-font`
+- **Charts**: `victory-native` for price history charts
 - **Notifications**: `expo-notifications` with push token registration
+- **Monitoring**: Sentry (`@sentry/react-native`) for error tracking
 
 ## Commands
 
 ```bash
-npm run dev              # Dev server (localhost:3000, Turbopack)
+npm run dev              # Dev server (localhost:3000)
 npm run build            # Production build (TS/ESLint errors ignored in config)
 npm run lint             # ESLint
 npm test                 # Run all tests
@@ -230,7 +232,7 @@ Default: Arabic (RTL), light theme, system detection disabled.
 
 Translations are JSON files in `messages/{ar,en}/` organized by feature. Loaded via `Promise.allSettled` dynamic imports in `src/app/[locale]/layout.tsx` and provided through `SimpleIntlProvider` (`src/lib/simple-intl-provider.tsx`).
 
-**Namespaces loaded** (19 files): common, landing, auth, products, dashboard, profile, stores, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart. If adding a new namespace file, add its dynamic import in the locale layout and spread it into the `messages` object.
+**Namespaces loaded** (20 files): common, landing, auth, products, dashboard, profile, stores, deals, product, store, search, wishlist, compare, settings, notifications, admin, checkout, priceAlerts, cart, coupons. If adding a new namespace file, add its dynamic import in the locale layout and spread it into the `messages` object.
 
 **Usage in components:**
 ```tsx
@@ -253,10 +255,11 @@ t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
   - Phone OTP: `sendPhoneOtp(phone)` then `signInWithPhone(phone, token)`
   - OAuth: `signInWithOAuth('google' | 'facebook' | 'apple')`
 - **Server**: `src/lib/auth/server.ts` — `getSession()`, `getUser()`, `getUserProfile()`, `requireAuth()`, `requireAdmin()`, `requireStore()`, `isAdmin()`, `isStore()`. Uses React `cache()` for request deduplication.
-- **Middleware**: `src/middleware.ts` handles route protection:
+- **Middleware**: `src/middleware.ts` handles route protection + API rate limiting:
   - Protected routes: `/dashboard`, `/profile`, `/wishlist`, `/notifications`, `/price-alerts`, `/settings`
   - Admin routes: `/admin/*` (requires `admin` role)
-  - Store routes: `/store/dashboard`, `/store/products`, `/store/analytics` (requires `store` or `admin` role)
+  - Store routes: `/store/dashboard`, `/store/products`, `/store/analytics` (requires `store` or `admin` role). Additional store pages (`/store/coupons`, `/store/transactions`) are protected by `requireStore()` in the store layout.
+  - **API rate limiting**: In-process limiter on all `/api/` routes — 15 req/min for `/api/search/scrape`, 30 req/min for others. `/api/health` and `/api/cron/*` are exempt. Returns 429 with `Retry-After` header. Limits are halved because PM2 runs 2 cluster instances in production.
   - **Cookie preservation**: Middleware uses a `createRedirect()` helper that copies Supabase SSR cookies (e.g., refreshed tokens) onto redirect responses. Without this, token refreshes done in middleware are lost and the browser client cannot establish a session. Always use `createRedirect(url)` instead of bare `NextResponse.redirect(url)` when redirecting in the middleware.
 - **Roles**: `admin`, `customer`, `store`, `guest` (defined in `src/lib/database/types.ts`)
 - **Bootstrap admin**: Env vars `ADMIN_EMAILS` / `ADMIN_EMAIL` / `NEXT_PUBLIC_ADMIN_EMAILS` auto-promote matching emails to admin role (fallback: jfr3sam@gmail.com). Applied in middleware and `getUserProfile()`.
@@ -268,9 +271,9 @@ Supabase with typed client. Types in `src/lib/database/types.ts`. Two client pat
 - **Browser**: `getSupabaseBrowserClient()` from `src/lib/database/` (singleton, uses anon key)
 - **Server**: `createServerClient()` from `src/lib/database/` (uses service role key, no session persistence)
 
-Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`, `coupons` (store/product coupons with discount metadata).
+Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`, `coupons` (store/product coupons with discount metadata), `login_sessions` (device fingerprints for new-device detection).
 
-Schema migrations are numbered SQL files in `scripts/database/` (01 through 10). Note: some prefixes are duplicated (e.g., two `04-*`, two `05-*`, two `06-*` files). When adding new migrations, use the next available number after 10.
+Schema migrations are numbered SQL files in `scripts/database/` (01 through 13). Note: some prefixes are duplicated (e.g., two `04-*`, two `05-*`, two `06-*`, two `12-*`, two `13-*` files). When adding new migrations, use the next available number after 13.
 
 ### Coupon System
 
@@ -284,7 +287,7 @@ Schema migrations are numbered SQL files in `scripts/database/` (01 through 10).
 - `GET/POST /api/admin/coupons` — admin list + create
 - `PATCH/DELETE /api/admin/coupons/[id]` — admin update + soft-delete
 
-**Auth helper:** `src/lib/auth/api-auth.ts` supports both cookie-based (web) and Bearer token (mobile app) auth. Use `requireRequestAdmin(request)` and `getRequestUser(request)` in API routes that need mobile compatibility.
+**Auth helper:** `src/lib/auth/api-auth.ts` supports both cookie-based (web) and Bearer token (mobile app) auth. Exports: `requireRequestAdmin(request)`, `requireRequestStore(request)`, `requireRequestAuth(request)`, `getRequestUser(request)`.
 
 **UI component:** `CouponBadge` (`src/components/ui/coupon-badge.tsx`) — compact (for cards) and expanded (for detail pages) variants with copy-to-clipboard.
 
@@ -294,7 +297,7 @@ Schema migrations are numbered SQL files in `scripts/database/` (01 through 10).
 
 Every user-facing action must include:
 1. **In-App Notification** — insert into `notifications` table with bilingual `title_ar`/`title_en` and `message_ar`/`message_en`
-2. **Email Notification** — via `sendEmailNotification()` from `src/lib/auth/notifications.ts`, which invokes the `send-email` Supabase Edge Function. Templates: `welcome`, `password_reset`, `password_changed`, `email_verification`, `price_drop_alert`, `back_in_stock`, `daily_deals`. Helper functions: `sendWelcomeEmail()`, `sendPasswordResetEmail()`, `sendPriceDropEmail()`.
+2. **Email Notification** — via `sendEmailNotification()` from `src/lib/auth/notifications.ts`, which calls SendGrid's REST API directly (`SENDGRID_API_KEY` env var, from address `noreply@styloforge.com`). Templates: `welcome`, `password_reset`, `password_changed`, `email_verification`, `price_drop_alert`, `back_in_stock`, `daily_deals`, `role_changed`, `account_deleted`, `coupon_expiry_warning`, `new_coupon_alert`, `new_device_login`, `saved_search_results`, `coupon_admin_action`. Key helpers: `sendWelcomeEmail()`, `sendPasswordResetEmail()`, `sendPriceDropEmail()`, `sendRoleChangedEmail()`, `sendNewDeviceLoginEmail()`, `sendCouponExpiryEmail()`, `sendSavedSearchResultsEmail()`.
 3. **Audit Log** — insert into `admin_logs` via `createAuditLog()` from `src/lib/auth/audit.ts`
 
 Use `createNotification()` from `src/lib/auth/notifications.ts` (types: `price_drop`, `back_in_stock`, `deal`, `system`, `account`) and `createAuditLog()` with standard actions from `AUDIT_ACTIONS` constant. Audit logging fails silently to avoid blocking user actions.
@@ -324,22 +327,24 @@ Store configs are JSON in `src/lib/scraping/config/store-configs/`. The orchestr
 
 Legacy Python/Flask scrapers (`scripts/scraping/`) still exist but are no longer used by the app.
 
-API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`, `src/app/api/cron/check-price-alerts/route.ts`.
+API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`, `src/app/api/cron/check-price-alerts/route.ts`, `src/app/api/cron/check-coupon-expiry/route.ts`, `src/app/api/cron/check-coupon-wishlists/route.ts`, `src/app/api/cron/check-saved-searches/route.ts`.
 
 ### API Routes
 
 All routes live under `src/app/api/`. Key routes by domain:
 
 - **Search**: `POST /api/search/scrape` (main search), `POST /api/search/scrape/clear-cache`
-- **Cron**: `POST /api/cron/update-prices`, `POST /api/cron/discover-products`, `POST /api/cron/check-price-alerts`
-- **Products**: `GET /api/products/[id]/comparison` (multi-store price comparison), `POST /api/products/[id]/view` (track product view)
-- **Auth**: `POST /api/auth/send-phone-otp`, `POST /api/auth/verify-phone-otp`, `POST /api/auth/reset-password-phone`
+- **Cron**: `POST /api/cron/update-prices`, `POST /api/cron/discover-products`, `POST /api/cron/check-price-alerts`, `POST /api/cron/check-coupon-expiry`, `POST /api/cron/check-coupon-wishlists`, `POST /api/cron/check-saved-searches`. All cron routes require `Authorization: Bearer <CRON_SECRET>` header.
+- **Products**: `GET /api/products/[id]/comparison` (multi-store price comparison), `POST /api/products/[id]/view` (track product view), `POST /api/products/ensure` (upsert scraped product into DB, returns DB product ID)
+- **Auth**: `POST /api/auth/send-phone-otp`, `POST /api/auth/verify-phone-otp`, `POST /api/auth/reset-password-phone`, `POST /api/auth/check-device` (new device detection), `POST /api/auth/delete-account`, `POST /api/auth/password-changed-notify`, `POST /api/auth/send-email-otp`, `POST /api/auth/verify-email-otp`, `POST /api/auth/verify-profile-phone-otp`
 - **Coupons**: `GET /api/coupons` (public list), `POST /api/coupons/[id]/copy` (track copy)
 - **Admin**: `GET/POST /api/admin/coupons`, `PATCH/DELETE /api/admin/coupons/[id]`, `PATCH /api/admin/users/[id]/role` (change user role), `GET /api/admin/transactions/export` (CSV export)
 - **Store owner**: `GET/POST /api/store/coupons`, `PATCH/DELETE /api/store/coupons/[id]`, `POST /api/store/products/bulk-update`, `POST /api/store/sync/[storeId]` (trigger store product sync)
 - **Transactions**: `POST /api/transactions/conversion` (affiliate conversion tracking)
+- **Push**: `POST/DELETE /api/push/web/subscribe` (browser push notification subscription management)
+- **Utility**: `POST /api/audit` (client-side audit logging), `GET /api/health` (health check, exempt from rate limiting)
 
-All admin/store routes use `requireRequestAdmin(request)` or `getRequestUser(request)` from `src/lib/auth/api-auth.ts` to support both cookie-based (web) and Bearer token (mobile) auth.
+All admin/store routes use `requireRequestAdmin(request)`, `requireRequestStore(request)`, `requireRequestAuth(request)`, or `getRequestUser(request)` from `src/lib/auth/api-auth.ts` to support both cookie-based (web) and Bearer token (mobile) auth.
 
 ### Search & Filtering
 
@@ -351,7 +356,7 @@ The search pipeline flows: `SearchBar` → `search/page.tsx` → `POST /api/sear
 
 **Spec filtering**: Dynamic per-category. The `FilterSidebar` component reads `CATEGORY_SPEC_FILTERS[category]` to render appropriate filter sections (e.g., smartphone shows RAM/storage, TV shows resolution/panel type). Specs are extracted client-side from product titles via `extractSpecsFromTitle()`. Additional filters: discount %, condition (new/renewed/used), shipping speed.
 
-**ProductCard comparison mode**: When `product_stores.length > 1`, the card shows "from X SAR", store initial circles, and a "Compare N Stores" CTA that expands an inline `StoreComparisonPanel` (`src/components/search/store-comparison-panel.tsx`). Single-store cards show "View at Store" with external link. Action buttons (wishlist, compare) are rendered outside the link wrapper to avoid click interception.
+**ProductCard navigation**: All product cards navigate to the internal product detail page (`/products/{slug}`) for DB products (UUID IDs). Scraped-only products with external URLs link to the store's page. Multi-store cards show "from X SAR" with store circles and a "Compare N Stores" CTA linking to the product detail. Action buttons (wishlist, compare) are rendered outside the link wrapper to avoid click interception.
 
 **Compare list**: Products can be added to a comparison list (max 4) stored in `localStorage['compare_products']`. The header tracks the count via a `compare-products-updated` custom event. Full comparison view at `/(dashboard)/compare`.
 
@@ -359,7 +364,7 @@ The search pipeline flows: `SearchBar` → `search/page.tsx` → `POST /api/sear
 
 `src/app/globals.css` uses CSS custom properties for theming with `:root` and `.dark` scopes. Dark mode is class-based: `@custom-variant dark (&:where(.dark, .dark *))`.
 
-**Color tokens** (CSS variables): `--color-primary-*`, `--color-secondary-*`, `--color-tertiary-*` (amber, for deals/featured), `--color-success-*`, `--color-warning-*`, `--color-error-*`. Surface hierarchy: `--color-surface-{lowest,low,high,highest}`. Domain-specific: `--color-deal`, `--color-price-savings`.
+**Color tokens** (CSS variables): `--color-primary-*`, `--color-secondary-*`, `--color-tertiary-*` (amber, for deals/featured), `--color-success-*`, `--color-warning-*`, `--color-error-*`. Surface hierarchy (Material Design 3): `--color-surface-container-{lowest,low,,high,highest}`, `--color-surface-{dim,bright,tint}`. Semantic text: `--color-on-primary`, `--color-on-secondary`, `--color-on-surface`, `--color-on-surface-variant`, `--color-outline`, `--color-outline-variant`. Domain-specific: `--color-deal`, `--color-price-savings`.
 
 Colors are mapped in the `@theme` block. Extensive `!important` overrides exist because Tailwind v4's OKLCH color space produces incorrect colors — when adding new color utility combinations, you may need to add corresponding overrides.
 
@@ -387,6 +392,26 @@ Two Google Fonts loaded in the locale layout:
 
 The body class switches based on locale: `font-sans-ar` for Arabic, `font-sans` for English.
 
+### Phone OTP via Authentica
+
+`src/lib/auth/authentica.ts` — `AuthenticaService` class calls `api.authentica.sa` for OTP SMS delivery in Saudi Arabia. Used in `POST /api/auth/send-phone-otp` instead of Supabase's built-in phone auth. Requires `AUTHENTICA_API_KEY` env var.
+
+### Web Push Notifications
+
+Browser push via the `web-push` npm package. Server-side: `src/lib/push/web-push.ts`. Client hook: `src/lib/push/use-web-push.ts`. Service worker: `public/sw.js` (served with `Cache-Control: no-store` via `next.config.ts`). Subscriptions stored in `user_preferences` table. API: `POST/DELETE /api/push/web/subscribe`. Requires `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_CONTACT_EMAIL` env vars.
+
+### Error Monitoring (Sentry)
+
+`@sentry/nextjs` integrated via `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation.ts`, `src/instrumentation-client.ts`. Requires `NEXT_PUBLIC_SENTRY_DSN` env var.
+
+### SEO
+
+`src/lib/seo/` — `json-ld.tsx` (structured data), `metadata.ts` (page metadata), `product-data.ts`, `store-data.ts`. JSON-LD for products and stores.
+
+### Production Deployment
+
+`ecosystem.config.js` — PM2 config with 2 cluster instances, `max_memory_restart: '1G'`. Runs `next start` (port 3000). Rate limits in middleware are halved to account for 2 processes.
+
 ### Environment Variables
 
 See `.env.example`. Required:
@@ -395,6 +420,11 @@ See `.env.example`. Required:
 - `SUPABASE_DB_URL` — Direct PostgreSQL connection for migration scripts
 - `NEXT_PUBLIC_APP_URL` — App URL for auth callbacks and emails
 - `ADMIN_EMAILS` or `ADMIN_EMAIL` — Bootstrap admin email(s), comma-separated
+- `SENDGRID_API_KEY` — Email delivery via SendGrid
+- `AUTHENTICA_API_KEY` — SMS OTP delivery
+- `CRON_SECRET` — Bearer token for cron API routes
+- `NEXT_PUBLIC_SENTRY_DSN` — Sentry error monitoring
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — Web push notifications
 
 ### Image Domains
 
@@ -412,10 +442,10 @@ mobile/app/
   (tabs)/
     _layout.tsx            # Tab navigator with CustomTabBar
     index.tsx              # Home (trending, deals, categories)
-    search.tsx             # Search with debounce + category chips
+    search.tsx             # Search with barcode scanner + category chips
     deals.tsx              # Deals listing
-    cart.tsx               # Multi-store cart (Zustand)
-    profile.tsx            # Profile/dashboard
+    compare.tsx            # Product comparison (Zustand store)
+    profile.tsx            # Profile, settings, dashboard
   (auth)/
     _layout.tsx            # Modal stack (slide from bottom)
     login.tsx              # Phone OTP + email + OAuth
@@ -423,14 +453,15 @@ mobile/app/
     forgot-password.tsx    # 3-step phone reset flow
   (stack)/
     _layout.tsx            # Push stack
-    product/[slug].tsx     # Product detail + price history
+    product/[slug].tsx     # Product detail + price history (victory-native charts)
     store/[slug].tsx       # Store detail
     stores/index.tsx       # Store listing
-    compare.tsx            # Product comparison
+    cart.tsx               # Multi-store cart (Zustand)
+    coupons.tsx            # Coupon browsing
+    saved-searches.tsx     # Saved search management
     wishlist.tsx           # Saved products
     notifications.tsx      # Notification list (formSheet presentation)
     price-alerts.tsx       # Price alert management
-    settings.tsx           # Language, theme, account
     edit-profile.tsx       # Profile editing
   auth/callback.tsx        # OAuth deep link handler
 ```
@@ -470,13 +501,14 @@ mobile/app/
 - Email/password: standard `supabase.auth.signInWithPassword()`
 - Auto-creates user profile in `users` table on first login
 
-### Mobile Cart (Zustand)
+### Mobile Zustand Stores
 
-`mobile/src/lib/cart/cart-store.ts` — Zustand store (not React Context like web) with AsyncStorage persistence via `zustand/middleware/persist`. Pure cart functions ported from web's `multi-store-cart.ts`. Multi-store grouping: items organized by store with per-store subtotals.
+- **Cart**: `mobile/src/lib/cart/cart-store.ts` — Zustand + AsyncStorage persistence. Multi-store grouping: items organized by store with per-store subtotals.
+- **Compare**: `mobile/src/lib/compare/compare-store.ts` — Zustand + AsyncStorage persistence. Max 4 products for side-by-side comparison.
 
 ### Mobile i18n
 
-`mobile/src/lib/i18n/provider.tsx` — ported from web's `SimpleIntlProvider`. Same 19 translation namespaces as web, bundled as static `require()` imports from `messages/{ar,en}/`. Same message-spreading logic (common.json top-level, landing.json top-level, admin.json extracted namespace).
+`mobile/src/lib/i18n/provider.tsx` — ported from web's `SimpleIntlProvider`. Same 20 translation namespaces as web, bundled as static `require()` imports from `messages/{ar,en}/`. Same message-spreading logic (common.json top-level, landing.json top-level, admin.json extracted namespace).
 
 **RTL handling**: Native `I18nManager` is **disabled** (`forceRTL(false)`, `allowRTL(false)` in root `_layout.tsx`). All RTL is handled in JavaScript via the `useRTL()` hook. A one-time auto-reload in `_layout.tsx` handles the transition from old `forceRTL(true)` sessions. Default locale: Arabic.
 
@@ -491,7 +523,7 @@ Usage: `const { colors, isDark } = useTheme()` + inline styles, not utility clas
 
 ### Mobile UI Components
 
-`mobile/src/components/ui/` — `Card`, `Price`, `Badge`, `EmptyState`, `Skeleton`, `SkeletonCard`, `BottomSheet`, `StatusBar` — all styled with inline StyleSheet, supporting RTL and dark mode.
+`mobile/src/components/ui/` — `Card`, `Price`, `Badge`, `Button`, `Input`, `EmptyState`, `Skeleton`, `SkeletonCard`, `StatusBar`, `CouponBadge`, `SARSymbol`, `OfflineBanner` — all styled with inline StyleSheet, supporting RTL and dark mode.
 
 `mobile/src/components/navigation/CustomTabBar.tsx` — custom tab bar with `expo-blur` frosted glass, haptic feedback, bounce animation, bilingual labels, cart badge.
 
