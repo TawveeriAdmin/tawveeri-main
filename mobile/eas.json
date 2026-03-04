@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -25,20 +26,18 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://tawveeri.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://tawveeri.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ffpsjjazsluolysgithg.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmcHNqamF6c2x1b2x5c2dpdGhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MjYzNTgsImV4cCI6MjA3NzMwMjM1OH0.OxUqt-h0DO-jwMhujwPCWBNApXVU96xB_EiWZKkcH9E"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      },
-      "android": {
-        "serviceAccountKeyPath": "",
-        "track": "internal"
+        "appleId": "poison.owl1@gmail.com",
+        "ascAppId": "6760044729",
+        "appleTeamId": "N45F2HJ7L4"
       }
     }
   }

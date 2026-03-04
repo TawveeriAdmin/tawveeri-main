@@ -18,11 +18,19 @@
       "bundleIdentifier": "com.tawveeri.app",
       "associatedDomains": [
         "applinks:tawveeri.com",
+        "applinks:www.tawveeri.com",
+        "applinks:tawveeri.com",
         "applinks:www.tawveeri.com"
       ],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
-        "CFBundleLocalizations": ["ar", "en"]
+        "CFBundleLocalizations": [
+          "ar",
+          "en",
+          "ar",
+          "en"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -48,8 +56,15 @@
               "pathPrefix": "/auth"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -87,8 +102,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
-    }
+        "projectId": "e9de9e2a-6a92-41c1-88b3-832f289ea506"
+      },
+      "router": {}
+    },
+    "owner": "aalhashim"
   }
 }
