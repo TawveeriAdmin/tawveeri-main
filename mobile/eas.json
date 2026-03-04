@@ -20,13 +20,13 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://tawveeri.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://tawveeri.etlaq.sa"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://tawveeri.com",
+        "EXPO_PUBLIC_API_BASE_URL": "https://tawveeri.etlaq.sa",
         "EXPO_PUBLIC_SUPABASE_URL": "https://ffpsjjazsluolysgithg.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmcHNqamF6c2x1b2x5c2dpdGhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MjYzNTgsImV4cCI6MjA3NzMwMjM1OH0.OxUqt-h0DO-jwMhujwPCWBNApXVU96xB_EiWZKkcH9E"
       }
