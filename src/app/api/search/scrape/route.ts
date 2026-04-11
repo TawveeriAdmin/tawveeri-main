@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchAllStores } from '@/lib/scraping/search/search-orchestrator';
+import { searchAllStores, sortGroupedProducts } from '@/lib/scraping/search/search-orchestrator';
 import { searchCache } from '@/lib/scraping/cache';
 import { filterTechProducts } from '@/lib/scraping/product-filter';
 import { DEFAULT_SEARCH_STORES, normalizeSearchStores } from '@/lib/scraping/search/store-registry';
+import { fetchFirecrawlSearchGroups } from '@/lib/firecrawl/search-enrichment';
 
 /**
  * POST /api/search/scrape
@@ -43,6 +44,45 @@ export async function POST(request: NextRequest) {
     // Run TypeScript scrapers directly
     const result = await searchAllStores(query.trim(), normalizedStores, normalizedPages, normalizedSort, category || undefined);
 
+    // Merge Firecrawl listing extractions (same URLs as demo), query-matched, up to 5 per site
+    if (process.env.FIRECRAWL_API_KEY) {
+      try {
+        const { groups: fcGroups, errors: fcErrors, storeCounts: fcStoreCounts } =
+          await fetchFirecrawlSearchGroups(query.trim());
+
+        const urlSet = new Set<string>();
+        for (const g of result.products) {
+          urlSet.add(g.product_url);
+          for (const s of g.stores) urlSet.add(s.product_url);
+        }
+        const deduped = fcGroups.filter((g) => !urlSet.has(g.product_url));
+
+        if (deduped.length > 0) {
+          result.products = [...deduped, ...result.products];
+          for (const [slug, count] of Object.entries(fcStoreCounts)) {
+            result.storeResults[slug] = (result.storeResults[slug] || 0) + count;
+          }
+          sortGroupedProducts(result.products, normalizedSort, query.trim(), new Map());
+          const prices = result.products.map((p) => p.best_price).filter((p) => p > 0);
+          result.priceStats = {
+            min: prices.length > 0 ? Math.min(...prices) : null,
+            max: prices.length > 0 ? Math.max(...prices) : null,
+            avg: prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
+          };
+        }
+
+        if (Object.keys(fcErrors).length > 0) {
+          result.errors = { ...(result.errors || {}), ...fcErrors };
+        }
+      } catch (fcErr) {
+        console.warn('[Scrape API] Firecrawl enrichment failed:', fcErr);
+        result.errors = {
+          ...(result.errors || {}),
+          firecrawl: fcErr instanceof Error ? fcErr.message : 'Firecrawl enrichment failed',
+        };
+      }
+    }
+
     // Filter non-tech products
     const originalCount = result.products.length;
     result.products = filterTechProducts(result.products);
@@ -51,6 +91,21 @@ export async function POST(request: NextRequest) {
     if (originalCount !== result.count) {
       console.log(`[Scrape API] Filtered ${originalCount - result.count} non-tech products (${originalCount} -> ${result.count})`);
     }
+
+    const pricesFinal = result.products.map((p) => p.best_price).filter((p) => p > 0);
+    result.priceStats = {
+      min: pricesFinal.length > 0 ? Math.min(...pricesFinal) : null,
+      max: pricesFinal.length > 0 ? Math.max(...pricesFinal) : null,
+      avg: pricesFinal.length > 0 ? pricesFinal.reduce((a, b) => a + b, 0) / pricesFinal.length : null,
+    };
+
+    const recount: Record<string, number> = {};
+    for (const g of result.products) {
+      for (const s of g.stores) {
+        recount[s.store] = (recount[s.store] || 0) + 1;
+      }
+    }
+    result.storeResults = recount;
 
     // Store in cache
     if (searchCache) {

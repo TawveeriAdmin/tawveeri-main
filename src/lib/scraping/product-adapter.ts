@@ -17,6 +17,16 @@ const STORE_NAMES_BILINGUAL: Record<string, { name_ar: string; name_en: string }
   jarir: { name_ar: 'مكتبة جرير', name_en: 'Jarir' },
   extra: { name_ar: 'اكسترا', name_en: 'Extra' },
   almanea: { name_ar: 'المنيع', name_en: 'Almanea' },
+  samsung_ksa: { name_ar: 'سامسونج السعودية', name_en: 'Samsung KSA' },
+  shaker: { name_ar: 'شاكر', name_en: 'Shaker' },
+  zagzoog: { name_ar: 'الزقزوق', name_en: 'Zagzoog' },
+  alesayi: { name_ar: 'العيسائي للإلكترونيات', name_en: 'Alesayi Electronics' },
+  swsg: { name_ar: 'سواسق', name_en: 'SWSG' },
+  alkhunaizan: { name_ar: 'الخنيزان', name_en: 'Alkhunaizan' },
+  bukhamsen: { name_ar: 'بخمسين', name_en: 'Bukhamsen' },
+  alghanim: { name_ar: 'الغانم', name_en: 'Alghanim' },
+  alsaif_gallery: { name_ar: 'السيف غاليري', name_en: 'Alsaif Gallery' },
+  lulu_gcc: { name_ar: 'لولو هايبرماركت', name_en: 'Lulu Hypermarket' },
 };
 
 /**

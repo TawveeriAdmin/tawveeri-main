@@ -139,7 +139,7 @@ export async function searchAllStores(
  * Sort grouped products. Uses two-tier classification + scoring for relevance.
  * Price sort uses best_price (min price across stores).
  */
-function sortGroupedProducts(
+export function sortGroupedProducts(
   groups: GroupedSearchProduct[],
   sort: string,
   query?: string,
