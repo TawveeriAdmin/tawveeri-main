@@ -68,8 +68,10 @@ import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { StoreComparisonPanel } from '@/components/search/store-comparison-panel';
 import {
   DEFAULT_SEARCH_STORES,
+  SUPPORTED_SEARCH_STORES,
   isSupportedSearchStore,
 } from '@/lib/scraping/search/store-registry';
+import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
 
 type Product = ProductCardProduct;
@@ -383,16 +385,14 @@ export default function SearchClient() {
   ], [t]);
 
   const currentSortOption = sortOptions.find(o => o.value === sortBy) || sortOptions[0];
-  const storeLabels = useMemo(
-    () => ({
-      amazon: locale === 'ar' ? 'أمازون' : 'Amazon',
-      noon: locale === 'ar' ? 'نون' : 'Noon',
-      jarir: locale === 'ar' ? 'جرير' : 'Jarir',
-      extra: locale === 'ar' ? 'اكسترا' : 'Extra',
-      almanea: locale === 'ar' ? 'المنيع' : 'Almanea',
-    }),
-    [locale]
-  );
+  const storeLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    for (const slug of SUPPORTED_SEARCH_STORES) {
+      const n = SEARCH_STORE_DISPLAY_NAMES[slug];
+      labels[slug] = locale === 'ar' ? (n?.name_ar ?? slug) : (n?.name_en ?? slug);
+    }
+    return labels;
+  }, [locale]);
 
   // Extract filter-related params from URL string (excluding 'q' parameter)
   const filterParamsString = useMemo(() => {
@@ -611,7 +611,7 @@ export default function SearchClient() {
         return;
       }
 
-      await searchWithScraping(debouncedQuery, DEFAULT_SEARCH_STORES, 5, ac.signal);
+      await searchWithScraping(debouncedQuery, [...DEFAULT_SEARCH_STORES], 5, ac.signal);
     }
     fetchProducts();
 
@@ -933,12 +933,14 @@ export default function SearchClient() {
             <div className="flex flex-col items-center gap-3">
               <span className="text-xs font-medium text-on-surface-variant">{t('search.weSearchAcross')}</span>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {['Amazon', 'Noon', 'Jarir', 'Extra', 'Almanea'].map((store) => (
+                {SUPPORTED_SEARCH_STORES.map((slug) => (
                   <span
-                    key={store}
+                    key={slug}
                     className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-on-surface dark:border-gray-700 dark:bg-gray-800"
                   >
-                    {store}
+                    {locale === 'ar'
+                      ? (SEARCH_STORE_DISPLAY_NAMES[slug]?.name_ar ?? slug)
+                      : (SEARCH_STORE_DISPLAY_NAMES[slug]?.name_en ?? slug)}
                   </span>
                 ))}
               </div>

@@ -15,6 +15,16 @@ const STORE_LOGOS: Record<string, string> = {
   jarir: '/logos/jarir.png',
   extra: '/logos/extra.png',
   almanea: '/logos/almanea.png',
+  samsung_ksa: '/logos/samsung_ksa.png',
+  shaker: '/logos/shaker.png',
+  zagzoog: '/logos/zagzoog.png',
+  alesayi: '/logos/alesayi.png',
+  swsg: '/logos/swsg.png',
+  alkhunaizan: '/logos/alkhunaizan.png',
+  bukhamsen: '/logos/bukhamsen.png',
+  alghanim: '/logos/alghanim.png',
+  alsaif_gallery: '/logos/alsaif_gallery.png',
+  lulu_gcc: '/logos/lulu_gcc.png',
 };
 
 interface StoreComparisonPanelProps {

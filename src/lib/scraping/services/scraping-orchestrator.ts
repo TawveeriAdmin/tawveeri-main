@@ -11,6 +11,16 @@ import { AmazonScraper } from '../stores/amazon-scraper';
 import { NoonScraper } from '../stores/noon-scraper';
 import { ExtraScraper } from '../stores/extra-scraper';
 import { AlmaneaScraper } from '../stores/almanea-scraper';
+import { SamsungKsaScraper } from '../stores/samsung-ksa-scraper';
+import { ShakerScraper } from '../stores/shaker-scraper';
+import { ZagzoogScraper } from '../stores/zagzoog-scraper';
+import { AlesayiScraper } from '../stores/alesayi-scraper';
+import { SwsgScraper } from '../stores/swsg-scraper';
+import { AlkhunaizanScraper } from '../stores/alkhunaizan-scraper';
+import { BukhamsenScraper } from '../stores/bukhamsen-scraper';
+import { AlghanimScraper } from '../stores/alghanim-scraper';
+import { AlsaifGalleryScraper } from '../stores/alsaif-gallery-scraper';
+import { LuluGccScraper } from '../stores/lulu-gcc-scraper';
 import { ProductService } from './product-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
@@ -263,6 +273,26 @@ export class ScrapingOrchestrator {
         return new ExtraScraper();
       case 'almanea':
         return new AlmaneaScraper();
+      case 'samsung_ksa':
+        return new SamsungKsaScraper();
+      case 'shaker':
+        return new ShakerScraper();
+      case 'zagzoog':
+        return new ZagzoogScraper();
+      case 'alesayi':
+        return new AlesayiScraper();
+      case 'swsg':
+        return new SwsgScraper();
+      case 'alkhunaizan':
+        return new AlkhunaizanScraper();
+      case 'bukhamsen':
+        return new BukhamsenScraper();
+      case 'alghanim':
+        return new AlghanimScraper();
+      case 'alsaif_gallery':
+        return new AlsaifGalleryScraper();
+      case 'lulu_gcc':
+        return new LuluGccScraper();
       default:
         return null;
     }

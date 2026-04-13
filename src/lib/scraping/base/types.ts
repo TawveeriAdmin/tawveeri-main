@@ -59,6 +59,15 @@ export interface RateLimitConfig {
 /**
  * Complete scraper configuration for a store
  */
+/** How to append page index when crawling discovery URLs (page 1 = base URL only). */
+export type DiscoveryPaginationStyle =
+  | 'wordpress_paged'
+  | 'query_page'
+  | 'magento_p'
+  | 'lulu_page_index'
+  | 'samsung_page'
+  | 'zagzoog_page';
+
 export interface ScraperConfig {
   store_slug: string;
   store_name_ar: string;
@@ -70,6 +79,8 @@ export interface ScraperConfig {
   requires_js: boolean;
   user_agents: string[];
   timeout_ms?: number;
+  /** Discovery listing pagination (default: query_page). */
+  discovery_pagination?: DiscoveryPaginationStyle;
 }
 
 /**

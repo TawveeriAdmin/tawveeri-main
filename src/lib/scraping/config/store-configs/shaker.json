@@ -1,0 +1,40 @@
+{
+  "store_slug": "shaker",
+  "store_name_ar": "شاكر",
+  "store_name_en": "Shaker",
+  "base_url": "https://shakersa.com",
+  "requires_js": false,
+  "discovery_pagination": "wordpress_paged",
+  "rate_limit": {
+    "min_delay_ms": 2500,
+    "max_delay_ms": 5000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://shakersa.com/?s=smartphone"],
+    "laptop": ["https://shakersa.com/?s=laptop"],
+    "tv": ["https://shakersa.com/?s=television"],
+    "tablet": ["https://shakersa.com/?s=tablet"],
+    "audio": ["https://shakersa.com/?s=audio"],
+    "camera": ["https://shakersa.com/?s=camera"],
+    "gaming": ["https://shakersa.com/?s=gaming"],
+    "accessories": ["https://shakersa.com/?s=accessories"]
+  },
+  "selectors": {
+    "product_list": ".product",
+    "product_link": "a",
+    "product_name": ".product-title",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".stock",
+    "pagination": null,
+    "next_page": null
+  }
+}

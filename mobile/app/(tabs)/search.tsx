@@ -59,6 +59,7 @@ import { useTranslations, useLocale } from '@/src/lib/i18n/provider';
 import { useRTL } from '@/src/lib/rtl/useRTL';
 import { useAuth } from '@/src/lib/auth/auth-context';
 import { apiClient } from '@/src/lib/api/client';
+import { DEFAULT_SEARCH_STORES } from '../../../src/lib/scraping/search/store-registry';
 import { supabase } from '@/src/lib/supabase/client';
 import { typography, spacing, radii } from '@/src/lib/theme/typography';
 import { Card, Price, Badge, EmptyState, SkeletonCard, KeyedProductImage } from '@/src/components/ui';
@@ -348,7 +349,7 @@ export default function SearchScreen() {
         const data = await apiClient.post<{ products: any[] }>('/api/search/scrape', {
           query: q.trim(),
           category: cat === 'all' ? undefined : cat,
-          stores: ['amazon', 'noon', 'jarir', 'extra', 'almanea'],
+          stores: [...DEFAULT_SEARCH_STORES],
           pages: 1,
         });
         const mapped: SearchResult[] = (data.products || []).map((p: any) => ({

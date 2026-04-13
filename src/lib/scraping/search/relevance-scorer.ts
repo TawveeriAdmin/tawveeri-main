@@ -2,6 +2,7 @@ import type { SearchProduct } from './types';
 import type { GroupedSearchProduct } from './product-grouper';
 import { BRAND_ALIASES } from './product-grouper';
 import { determineCategory } from '../utils/category-utils';
+import { getBilingualRelevanceBoost } from './search-query-bilingual';
 
 // ─── Accessory Keywords ─────────────────────────────────────────────────────
 
@@ -358,6 +359,9 @@ function scoreRelevance(product: SearchProduct, query: string, ctx: ScoringConte
   });
   const wordOverlap = matchedWords.length / queryWords.length;
   score += wordOverlap * 20;
+
+  // English query vs Arabic (or mixed) product titles — Gulf retailers
+  score += getBilingualRelevanceBoost(q, title);
 
   // Bigram match (+10 max)
   let bigramScore = 0;

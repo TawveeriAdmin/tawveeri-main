@@ -5,6 +5,7 @@ import { NoonSearchScraper } from './noon-search-scraper';
 import { JarirSearchScraper } from './jarir-search-scraper';
 import { ExtraSearchScraper } from './extra-search-scraper';
 import { AlmaneaSearchScraper } from './almanea-search-scraper';
+import { EXTENDED_SEARCH_SCRAPERS } from './extended-merchants-registry';
 import { matchesCategory } from '../utils/category-utils';
 import type { ProductCategory } from '@/lib/database/types';
 import { groupSearchProducts, type GroupedSearchProduct } from './product-grouper';
@@ -17,6 +18,7 @@ const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: nu
   jarir: () => new JarirSearchScraper(),
   extra: () => new ExtraSearchScraper(),
   almanea: () => new AlmaneaSearchScraper(),
+  ...EXTENDED_SEARCH_SCRAPERS,
 };
 
 const STORE_SEARCH_TIMEOUT_MS = 60_000;
@@ -47,6 +49,9 @@ export async function searchAllStores(
   const startTime = Date.now();
 
   const validStores = normalizeSearchStores(stores).filter(s => s in SCRAPERS);
+  console.log(
+    `[SearchOrchestrator] Running ${validStores.length} store scrapers in parallel: ${validStores.join(', ')}`,
+  );
   if (validStores.length === 0) {
     return {
       products: [],
@@ -89,9 +94,12 @@ export async function searchAllStores(
       }
       allProducts.push(...products);
       if (error) errors[store] = error;
+      const warn = error ? ` | note: ${error}` : '';
+      console.log(`[SearchOrchestrator] ${store}: ${products.length} products${warn}`);
     } else {
       storeResults[store] = 0;
       errors[store] = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      console.log(`[SearchOrchestrator] ${store}: FAILED — ${errors[store]}`);
     }
   }
 

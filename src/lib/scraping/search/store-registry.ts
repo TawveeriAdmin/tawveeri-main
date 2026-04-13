@@ -4,6 +4,16 @@ export const SUPPORTED_SEARCH_STORES = [
   'jarir',
   'extra',
   'almanea',
+  'samsung_ksa',
+  'shaker',
+  'zagzoog',
+  'alesayi',
+  'swsg',
+  'alkhunaizan',
+  'bukhamsen',
+  'alghanim',
+  'alsaif_gallery',
+  'lulu_gcc',
 ] as const;
 
 export type SearchStoreSlug = (typeof SUPPORTED_SEARCH_STORES)[number];

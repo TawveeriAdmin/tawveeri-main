@@ -7,6 +7,7 @@ const config = getDefaultConfig(__dirname);
 const monorepoRoot = path.resolve(__dirname, '..');
 config.watchFolders = [
   path.resolve(monorepoRoot, 'messages'),
+  path.resolve(monorepoRoot, 'src'),
 ];
 
 // Resolve node_modules ONLY from mobile's own directory

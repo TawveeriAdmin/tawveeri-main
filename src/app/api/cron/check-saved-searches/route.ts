@@ -4,7 +4,7 @@ import { createNotification, sendSavedSearchResultsEmail } from '@/lib/auth/noti
 import { createAuditLog } from '@/lib/auth/audit';
 import { searchAllStores } from '@/lib/scraping/search/search-orchestrator';
 
-const ALL_STORES = ['amazon', 'noon', 'jarir', 'extra', 'almanea'];
+import { DEFAULT_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
 
 /**
  * POST /api/cron/check-saved-searches
@@ -41,7 +41,13 @@ export async function POST(request: NextRequest) {
         const category = filters.category || undefined;
 
         // Run lightweight search (1 page only)
-        const result = await searchAllStores(search.search_query, ALL_STORES, 1, 'relevance', category);
+        const result = await searchAllStores(
+          search.search_query,
+          [...DEFAULT_SEARCH_STORES],
+          1,
+          'relevance',
+          category,
+        );
         const newCount = result.count;
         const previousCount = search.last_result_count || 0;
 

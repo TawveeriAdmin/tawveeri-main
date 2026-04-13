@@ -18,13 +18,23 @@ import { useParams } from 'next/navigation';
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
 
-/** Store logo paths */
+/** Store logo paths (`/public/logos/{slug}.png`) */
 const STORE_LOGOS: Record<string, string> = {
   amazon: '/logos/amazon.png',
   noon: '/logos/noon.png',
   jarir: '/logos/jarir.png',
   extra: '/logos/extra.png',
   almanea: '/logos/almanea.png',
+  samsung_ksa: '/logos/samsung_ksa.png',
+  shaker: '/logos/shaker.png',
+  zagzoog: '/logos/zagzoog.png',
+  alesayi: '/logos/alesayi.png',
+  swsg: '/logos/swsg.png',
+  alkhunaizan: '/logos/alkhunaizan.png',
+  bukhamsen: '/logos/bukhamsen.png',
+  alghanim: '/logos/alghanim.png',
+  alsaif_gallery: '/logos/alsaif_gallery.png',
+  lulu_gcc: '/logos/lulu_gcc.png',
 };
 
 interface ProductStore {

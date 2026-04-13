@@ -1,0 +1,40 @@
+{
+  "store_slug": "alkhunaizan",
+  "store_name_ar": "الخنيزان",
+  "store_name_en": "Alkhunaizan",
+  "base_url": "https://www.alkhunaizan.sa",
+  "requires_js": false,
+  "discovery_pagination": "wordpress_paged",
+  "rate_limit": {
+    "min_delay_ms": 2500,
+    "max_delay_ms": 5000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://www.alkhunaizan.sa/?s=smartphone"],
+    "laptop": ["https://www.alkhunaizan.sa/?s=laptop"],
+    "tv": ["https://www.alkhunaizan.sa/?s=television"],
+    "tablet": ["https://www.alkhunaizan.sa/?s=tablet"],
+    "audio": ["https://www.alkhunaizan.sa/?s=audio"],
+    "camera": ["https://www.alkhunaizan.sa/?s=camera"],
+    "gaming": ["https://www.alkhunaizan.sa/?s=gaming"],
+    "accessories": ["https://www.alkhunaizan.sa/?s=accessories"]
+  },
+  "selectors": {
+    "product_list": ".product",
+    "product_link": "a",
+    "product_name": ".product-title",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".stock",
+    "pagination": null,
+    "next_page": null
+  }
+}

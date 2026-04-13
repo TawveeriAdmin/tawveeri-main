@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchAllStores, sortGroupedProducts } from '@/lib/scraping/search/search-orchestrator';
+import { searchAllStores } from '@/lib/scraping/search/search-orchestrator';
 import { searchCache } from '@/lib/scraping/cache';
 import { filterTechProducts } from '@/lib/scraping/product-filter';
-import { DEFAULT_SEARCH_STORES, normalizeSearchStores } from '@/lib/scraping/search/store-registry';
-import { fetchFirecrawlSearchGroups } from '@/lib/firecrawl/search-enrichment';
-
+import { DEFAULT_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
 /**
  * POST /api/search/scrape
  * Search for products across stores using TypeScript scrapers
@@ -14,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { query, stores, pages, sort, category } = body;
+    const { query, pages, sort, category } = body;
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json(
@@ -23,7 +21,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedStores = normalizeSearchStores(stores);
+    // Always run all configured search scrapers (15: original five + extended ten).
+    // Do not use `body.stores`: legacy/mobile clients still send only five slugs, which
+    // previously limited the API to those five via normalizeSearchStores().
+    const normalizedStores = [...DEFAULT_SEARCH_STORES];
     const normalizedPages = pages || 1;
     const normalizedSort = sort || 'relevance';
 
@@ -43,50 +44,6 @@ export async function POST(request: NextRequest) {
 
     // Run TypeScript scrapers directly
     const result = await searchAllStores(query.trim(), normalizedStores, normalizedPages, normalizedSort, category || undefined);
-
-    // Merge Firecrawl listing extractions (same URLs as demo), query-matched, up to 5 per site
-    if (process.env.FIRECRAWL_API_KEY) {
-      try {
-        const fcStart = Date.now();
-        console.log(`[Scrape API] Firecrawl enrichment starting for query="${query.trim()}"`);
-        const { groups: fcGroups, errors: fcErrors, storeCounts: fcStoreCounts } =
-          await fetchFirecrawlSearchGroups(query.trim());
-        console.log(
-          `[Scrape API] Firecrawl enrichment done in ${Date.now() - fcStart}ms (groups=${fcGroups.length})`,
-        );
-
-        const urlSet = new Set<string>();
-        for (const g of result.products) {
-          urlSet.add(g.product_url);
-          for (const s of g.stores) urlSet.add(s.product_url);
-        }
-        const deduped = fcGroups.filter((g) => !urlSet.has(g.product_url));
-
-        if (deduped.length > 0) {
-          result.products = [...deduped, ...result.products];
-          for (const [slug, count] of Object.entries(fcStoreCounts)) {
-            result.storeResults[slug] = (result.storeResults[slug] || 0) + count;
-          }
-          sortGroupedProducts(result.products, normalizedSort, query.trim(), new Map());
-          const prices = result.products.map((p) => p.best_price).filter((p) => p > 0);
-          result.priceStats = {
-            min: prices.length > 0 ? Math.min(...prices) : null,
-            max: prices.length > 0 ? Math.max(...prices) : null,
-            avg: prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
-          };
-        }
-
-        if (Object.keys(fcErrors).length > 0) {
-          result.errors = { ...(result.errors || {}), ...fcErrors };
-        }
-      } catch (fcErr) {
-        console.warn('[Scrape API] Firecrawl enrichment failed:', fcErr);
-        result.errors = {
-          ...(result.errors || {}),
-          firecrawl: fcErr instanceof Error ? fcErr.message : 'Firecrawl enrichment failed',
-        };
-      }
-    }
 
     // Filter non-tech products
     const originalCount = result.products.length;

@@ -1,0 +1,40 @@
+{
+  "store_slug": "alsaif_gallery",
+  "store_name_ar": "السيف غاليري",
+  "store_name_en": "Alsaif Gallery",
+  "base_url": "https://alsaifgallery.com",
+  "requires_js": false,
+  "discovery_pagination": "query_page",
+  "rate_limit": {
+    "min_delay_ms": 2500,
+    "max_delay_ms": 5000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://alsaifgallery.com/SA_en/search?keyword=smartphone"],
+    "laptop": ["https://alsaifgallery.com/SA_en/search?keyword=laptop"],
+    "tv": ["https://alsaifgallery.com/SA_en/search?keyword=television"],
+    "tablet": ["https://alsaifgallery.com/SA_en/search?keyword=tablet"],
+    "audio": ["https://alsaifgallery.com/SA_en/search?keyword=audio"],
+    "camera": ["https://alsaifgallery.com/SA_en/search?keyword=camera"],
+    "gaming": ["https://alsaifgallery.com/SA_en/search?keyword=gaming"],
+    "accessories": ["https://alsaifgallery.com/SA_en/search?keyword=accessories"]
+  },
+  "selectors": {
+    "product_list": ".product-item",
+    "product_link": "a",
+    "product_name": ".product-name",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".availability",
+    "pagination": null,
+    "next_page": null
+  }
+}

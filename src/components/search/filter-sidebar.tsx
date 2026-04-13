@@ -8,7 +8,8 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/utils';
-import { isSupportedSearchStore } from '@/lib/scraping/search/store-registry';
+import { SUPPORTED_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
+import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
 import {
   Tag,
   DollarSign,
@@ -27,10 +28,10 @@ import {
   ShieldCheck,
   Zap,
   Check,
+  Cpu,
 } from 'lucide-react';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { CATEGORY_SPEC_FILTERS, type SpecFilterDefinition } from '@/lib/scraping/config/spec-configs';
-import { Cpu } from 'lucide-react';
 
 export interface SearchFilters {
   brands: string[];
@@ -96,11 +97,15 @@ function FilterSection({
           open && 'rotate-180'
         )} />
       </button>
-      <div className={cn(
-        'overflow-hidden transition-all duration-200',
-        open ? 'max-h-[500px] opacity-100 pb-3' : 'max-h-0 opacity-0'
-      )}>
-        <div className="px-1">
+      <div
+        className={cn(
+          'transition-all duration-200',
+          // Open: no inner scroll — parent `.flex-1.overflow-y-auto` scrolls the whole sidebar.
+          // Inner overflow-y + max-h was clipping long lists (e.g. 15 stores) to ~5 rows.
+          open ? 'max-h-[8000px] opacity-100 pb-3 overflow-visible' : 'max-h-0 overflow-hidden opacity-0',
+        )}
+      >
+        <div className="px-1 min-h-0">
           {children}
         </div>
       </div>
@@ -216,8 +221,27 @@ export function FilterSidebar({
   const supabase = getSupabase();
 
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
-  const [availableStores, setAvailableStores] = useState<Array<{ id: string; slug: string; name_ar: string; name_en: string }>>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
+
+  // All search scrape targets (see `SUPPORTED_SEARCH_STORES`), not the `stores` DB table — so extended
+  // merchants appear here even before they are seeded in Supabase.
+  const availableStores = useMemo(() => {
+    return [...SUPPORTED_SEARCH_STORES]
+      .map((slug) => {
+        const names = SEARCH_STORE_DISPLAY_NAMES[slug];
+        return {
+          id: slug,
+          slug,
+          name_ar: names?.name_ar ?? slug,
+          name_en: names?.name_en ?? slug,
+        };
+      })
+      .sort((a, b) => {
+        const aLabel = locale === 'ar' ? a.name_ar : a.name_en;
+        const bLabel = locale === 'ar' ? b.name_ar : b.name_en;
+        return aLabel.localeCompare(bLabel, locale === 'ar' ? 'ar' : 'en');
+      });
+  }, [locale]);
 
   // Fetch available brands
   useEffect(() => {
@@ -243,30 +267,6 @@ export function FilterSidebar({
     }
     fetchBrands();
   }, [category, supabase]);
-
-  // Fetch available stores
-  useEffect(() => {
-    async function fetchStores() {
-      if (!supabase) return;
-      try {
-        const { data } = await supabase
-          .from('stores')
-          .select('id, slug, name_ar, name_en')
-          .eq('status', 'active')
-          .returns<Array<{ id: string; slug: string; name_ar: string; name_en: string }>>();
-
-        if (data) {
-          const supportedStores = data
-            .map((store) => ({ ...store, slug: store.slug.trim().toLowerCase() }))
-            .filter((store) => isSupportedSearchStore(store.slug));
-          setAvailableStores(supportedStores);
-        }
-      } catch (error) {
-        console.error('Error fetching stores:', error);
-      }
-    }
-    fetchStores();
-  }, [supabase]);
 
   // Fetch price range
   useEffect(() => {
@@ -591,7 +591,7 @@ export function FilterSidebar({
             title={t('search.filters.stores')}
             badge={filters.stores.length}
           >
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+            <div className="space-y-1">
               {availableStores.map((store) => {
                 const storeName = locale === 'ar' ? store.name_ar : store.name_en;
                 const isChecked = filters.stores.includes(store.slug);
@@ -616,6 +616,9 @@ export function FilterSidebar({
                       width={20}
                       height={20}
                       className="rounded object-contain shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.visibility = 'hidden';
+                      }}
                     />
                     <span className="text-sm text-on-surface">{storeName}</span>
                   </label>

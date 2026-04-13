@@ -1,0 +1,40 @@
+{
+  "store_slug": "samsung_ksa",
+  "store_name_ar": "سامسونج السعودية",
+  "store_name_en": "Samsung KSA",
+  "base_url": "https://www.samsung.com",
+  "requires_js": true,
+  "discovery_pagination": "samsung_page",
+  "rate_limit": {
+    "min_delay_ms": 3000,
+    "max_delay_ms": 6000,
+    "requests_per_minute": 15
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 45000,
+  "category_urls": {
+    "smartphone": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=smartphone"],
+    "laptop": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=laptop"],
+    "tv": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=television"],
+    "tablet": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=tablet"],
+    "audio": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=audio"],
+    "camera": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=camera"],
+    "gaming": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=gaming"],
+    "accessories": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=accessories"]
+  },
+  "selectors": {
+    "product_list": ".product-item",
+    "product_link": "a",
+    "product_name": ".product-name",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".availability",
+    "pagination": null,
+    "next_page": null
+  }
+}

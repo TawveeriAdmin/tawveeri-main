@@ -1,0 +1,40 @@
+{
+  "store_slug": "swsg",
+  "store_name_ar": "سواسق",
+  "store_name_en": "SWSG",
+  "base_url": "https://swsg.co",
+  "requires_js": false,
+  "discovery_pagination": "wordpress_paged",
+  "rate_limit": {
+    "min_delay_ms": 2500,
+    "max_delay_ms": 5000,
+    "requests_per_minute": 20
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": ["https://swsg.co/?s=smartphone"],
+    "laptop": ["https://swsg.co/?s=laptop"],
+    "tv": ["https://swsg.co/?s=television"],
+    "tablet": ["https://swsg.co/?s=tablet"],
+    "audio": ["https://swsg.co/?s=audio"],
+    "camera": ["https://swsg.co/?s=camera"],
+    "gaming": ["https://swsg.co/?s=gaming"],
+    "accessories": ["https://swsg.co/?s=accessories"]
+  },
+  "selectors": {
+    "product_list": ".product",
+    "product_link": "a",
+    "product_name": ".product-title",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".stock",
+    "pagination": null,
+    "next_page": null
+  }
+}

@@ -9,9 +9,10 @@ interface ScrapedProductWithStore extends ScrapedProduct {
 }
 
 /**
- * Bilingual store name mapping
+ * Bilingual store name mapping (search scrape slugs + UI filters).
+ * Exported for filter sidebar / search page; keep in sync with `SUPPORTED_SEARCH_STORES`.
  */
-const STORE_NAMES_BILINGUAL: Record<string, { name_ar: string; name_en: string }> = {
+export const SEARCH_STORE_DISPLAY_NAMES: Record<string, { name_ar: string; name_en: string }> = {
   amazon: { name_ar: 'أمازون السعودية', name_en: 'Amazon SA' },
   noon: { name_ar: 'نون', name_en: 'Noon' },
   jarir: { name_ar: 'مكتبة جرير', name_en: 'Jarir' },
@@ -28,6 +29,8 @@ const STORE_NAMES_BILINGUAL: Record<string, { name_ar: string; name_en: string }
   alsaif_gallery: { name_ar: 'السيف غاليري', name_en: 'Alsaif Gallery' },
   lulu_gcc: { name_ar: 'لولو هايبرماركت', name_en: 'Lulu Hypermarket' },
 };
+
+const STORE_NAMES_BILINGUAL = SEARCH_STORE_DISPLAY_NAMES;
 
 /**
  * Map ScrapedProduct to ProductCardProduct format for UI display
