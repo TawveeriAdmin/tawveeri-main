@@ -70,6 +70,7 @@ import {
   DEFAULT_SEARCH_STORES,
   isSupportedSearchStore,
 } from '@/lib/scraping/search/store-registry';
+import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
 
 type Product = ProductCardProduct;
 
@@ -481,7 +482,8 @@ export default function SearchClient() {
   async function searchWithScraping(
     query: string,
     stores: string[] = DEFAULT_SEARCH_STORES,
-    pages: number = 5
+    pages: number = 5,
+    signal?: AbortSignal,
   ) {
     setLoading(true);
     setError(null);
@@ -492,6 +494,7 @@ export default function SearchClient() {
       const response = await fetch('/api/search/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal,
         body: JSON.stringify({
           query: query.trim(),
           stores,
@@ -537,6 +540,11 @@ export default function SearchClient() {
       setScrapingProgress('');
 
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setLoading(false);
+        setScrapingProgress('');
+        return;
+      }
       console.error('Error scraping products:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to scrape products';
       setError(errorMessage);
@@ -594,6 +602,8 @@ export default function SearchClient() {
       }
     }
 
+    const ac = new AbortController();
+
     async function fetchProducts() {
       if (!debouncedQuery.trim()) {
         setRawProducts([]);
@@ -601,9 +611,11 @@ export default function SearchClient() {
         return;
       }
 
-      await searchWithScraping(debouncedQuery, DEFAULT_SEARCH_STORES, 5);
+      await searchWithScraping(debouncedQuery, DEFAULT_SEARCH_STORES, 5, ac.signal);
     }
     fetchProducts();
+
+    return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, selectedCategory]);
 
@@ -854,9 +866,9 @@ export default function SearchClient() {
                 const q = searchQuery.trim();
                 if (q) { setDebouncedQuery(q); setCurrentPage(1); }
               }}
-              className="mx-auto flex max-w-xl items-center gap-2"
+              className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2"
             >
-              <div className="relative flex-1">
+              <div className="relative min-w-[200px] flex-1">
                 <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
                   value={searchQuery}
@@ -866,6 +878,10 @@ export default function SearchClient() {
                   autoFocus
                 />
               </div>
+              <SearchVoiceBarcodeActions
+                locale={locale}
+                onQuery={(q) => handleSearch(q)}
+              />
               <button
                 type="submit"
                 className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-600"

@@ -1,24 +1,55 @@
-import type { FirecrawlSiteStatus } from '@/lib/firecrawl/types';
-
-interface FirecrawlScrapeResult {
-  ok: boolean;
-  status: FirecrawlSiteStatus;
-  markdown: string;
-  links: string[];
-  error?: string;
-}
+import type { FirecrawlScrapeResult, FirecrawlSiteStatus } from '@/lib/firecrawl/types';
+import { PRODUCT_LIST_EXTRACT_PROMPT, PRODUCT_LIST_JSON_SCHEMA } from '@/lib/firecrawl/extract-schema';
 
 interface FirecrawlScrapeResponse {
   success?: boolean;
   data?: {
     markdown?: string;
     links?: string[];
+    json?: Record<string, unknown>;
   };
   error?: string;
 }
 
-const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v1';
-const REQUEST_TIMEOUT_MS = 15000;
+const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
+
+/** LLM JSON extract is slow and often exceeds short timeouts; opt-in via env. */
+function useLlmExtract(): boolean {
+  return process.env.FIRECRAWL_USE_LLM_EXTRACT === 'true';
+}
+
+/**
+ * Default timeouts: markdown+links only fits ~45s; with LLM use 120s unless overridden.
+ * @see https://docs.firecrawl.dev/features/llm-extract
+ */
+function scrapeTimeoutMs(llm: boolean): number {
+  const raw = process.env.FIRECRAWL_SCRAPE_TIMEOUT_MS;
+  if (raw) {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 1000) return Math.min(n, 300_000);
+  }
+  return llm ? 120_000 : 45_000;
+}
+
+function buildFormats(): Array<
+  | { type: 'markdown' }
+  | { type: 'links' }
+  | { type: 'json'; schema: typeof PRODUCT_LIST_JSON_SCHEMA; prompt: string }
+> {
+  const base: Array<{ type: 'markdown' } | { type: 'links' }> = [
+    { type: 'markdown' },
+    { type: 'links' },
+  ];
+  if (!useLlmExtract()) return base;
+  return [
+    ...base,
+    {
+      type: 'json',
+      schema: PRODUCT_LIST_JSON_SCHEMA,
+      prompt: PRODUCT_LIST_EXTRACT_PROMPT,
+    },
+  ];
+}
 
 function getApiKey(): string {
   const apiKey = process.env.FIRECRAWL_API_KEY;
@@ -47,6 +78,9 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, tim
 
 export async function scrapeWebsite(url: string): Promise<FirecrawlScrapeResult> {
   const apiKey = getApiKey();
+  const llm = useLlmExtract();
+  const timeoutMs = scrapeTimeoutMs(llm);
+  const formats = buildFormats();
 
   const callApi = async () => {
     const response = await fetchWithTimeout(
@@ -59,12 +93,13 @@ export async function scrapeWebsite(url: string): Promise<FirecrawlScrapeResult>
         },
         body: JSON.stringify({
           url,
-          formats: ['markdown', 'links'],
+          formats,
           onlyMainContent: false,
-          waitFor: 1500,
+          waitFor: llm ? 2000 : 1500,
+          timeout: timeoutMs,
         }),
       },
-      REQUEST_TIMEOUT_MS
+      timeoutMs + 5000
     );
 
     const payload = (await response.json().catch(() => ({}))) as FirecrawlScrapeResponse;
@@ -87,18 +122,28 @@ export async function scrapeWebsite(url: string): Promise<FirecrawlScrapeResult>
         status: toStatus(response.status),
         markdown: '',
         links: [],
+        extractedJson: null,
         error: payload.error || `Firecrawl error (${response.status})`,
       };
     }
 
     const markdown = payload.data?.markdown || '';
     const links = Array.isArray(payload.data?.links) ? payload.data.links : [];
+    const extractedJson =
+      payload.data?.json && typeof payload.data.json === 'object'
+        ? payload.data.json
+        : null;
+
+    const hasMarkdown = markdown.trim().length > 0;
+    const hasJson = extractedJson !== null && Object.keys(extractedJson).length > 0;
+    const status: FirecrawlSiteStatus = hasMarkdown || hasJson ? 'success' : 'empty';
 
     return {
       ok: true,
-      status: markdown.trim() ? 'success' : 'empty',
+      status,
       markdown,
       links,
+      extractedJson,
     };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
@@ -107,6 +152,7 @@ export async function scrapeWebsite(url: string): Promise<FirecrawlScrapeResult>
         status: 'failed',
         markdown: '',
         links: [],
+        extractedJson: null,
         error: 'Request timed out',
       };
     }
@@ -116,6 +162,7 @@ export async function scrapeWebsite(url: string): Promise<FirecrawlScrapeResult>
       status: 'failed',
       markdown: '',
       links: [],
+      extractedJson: null,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }

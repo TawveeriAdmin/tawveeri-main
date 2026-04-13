@@ -95,7 +95,8 @@
         {
           "cameraPermission": "Allow Tawveeri to use your camera to scan barcodes and search for products."
         }
-      ]
+      ],
+      "expo-speech-recognition"
     ],
     "experiments": {
       "typedRoutes": true

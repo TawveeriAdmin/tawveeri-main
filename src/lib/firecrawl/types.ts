@@ -14,3 +14,13 @@ export interface FirecrawlDemoProduct {
   imageUrl?: string;
   category?: string;
 }
+
+/** v2 /scrape may return LLM JSON under data.json */
+export interface FirecrawlScrapeResult {
+  ok: boolean;
+  status: FirecrawlSiteStatus;
+  markdown: string;
+  links: string[];
+  extractedJson: Record<string, unknown> | null;
+  error?: string;
+}

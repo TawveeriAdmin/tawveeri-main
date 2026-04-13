@@ -47,8 +47,13 @@ export async function POST(request: NextRequest) {
     // Merge Firecrawl listing extractions (same URLs as demo), query-matched, up to 5 per site
     if (process.env.FIRECRAWL_API_KEY) {
       try {
+        const fcStart = Date.now();
+        console.log(`[Scrape API] Firecrawl enrichment starting for query="${query.trim()}"`);
         const { groups: fcGroups, errors: fcErrors, storeCounts: fcStoreCounts } =
           await fetchFirecrawlSearchGroups(query.trim());
+        console.log(
+          `[Scrape API] Firecrawl enrichment done in ${Date.now() - fcStart}ms (groups=${fcGroups.length})`,
+        );
 
         const urlSet = new Set<string>();
         for (const g of result.products) {

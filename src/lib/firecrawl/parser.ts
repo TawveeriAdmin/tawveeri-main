@@ -1,8 +1,10 @@
 import type { FirecrawlDemoProduct } from '@/lib/firecrawl/types';
+import { isUrlLikeTitle } from '@/lib/firecrawl/validation';
 
 const PRICE_REGEX =
   /(([\d\u0660-\u0669][\d\u0660-\u0669,.\u060c]*)\s*(SAR|ر\.س|ريال|SR)|(?:SAR|ر\.س|ريال|SR)\s*([\d\u0660-\u0669][\d\u0660-\u0669,.\u060c]*))/i;
-const PRODUCT_WORD_REGEX = /(tv|تلفزيون|ثلاجة|freezer|fridge|laptop|air fryer|مكيف|غسالة|microwave|oven|فرن|شاشة|washer|dryer|dishwasher|vacuum|مكنسة)/i;
+const PRODUCT_WORD_REGEX =
+  /(tv|تلفزيون|ثلاجة|freezer|fridge|laptop|air fryer|مكيف|غسالة|غساله|microwave|oven|فرن|شاشة|washer|washing|dryer|dishwasher|vacuum|مكنسة|machine|نشافة|مجفف)/i;
 const NON_PRODUCT_IMAGE_REGEX =
   /(logo|favicon|icon|sprite|avatar|brand|placeholder|banner|header|footer|social|tracking|pixel)/i;
 
@@ -20,18 +22,24 @@ function scoreLine(line: string): number {
 }
 
 function resolveProductUrl(sourceUrl: string, links: string[], title: string): string {
-  const normalizedTitle = title.toLowerCase();
-  const match = links.find((link) => {
+  const pathMatch = links.find((link) => {
     const lower = link.toLowerCase();
     return (
       lower.includes('/product') ||
       lower.includes('/item/') ||
       lower.includes('/p/') ||
-      lower.includes('/shop/') ||
-      lower.includes(normalizedTitle.slice(0, 16).replace(/\s+/g, '-'))
+      lower.includes('/shop/')
     );
   });
-  if (match) return match;
+  if (pathMatch) return pathMatch;
+  if (!isUrlLikeTitle(title)) {
+    const normalizedTitle = title.toLowerCase();
+    const slice = normalizedTitle.slice(0, 16).replace(/\s+/g, '-');
+    if (slice.length > 2) {
+      const fuzzy = links.find((link) => link.toLowerCase().includes(slice));
+      if (fuzzy) return fuzzy;
+    }
+  }
   return sourceUrl;
 }
 
@@ -99,10 +107,15 @@ export function extractTopProducts(
     const priceMatch = line.match(PRICE_REGEX);
     const next = lines[i + 1] || '';
     const prev = lines[i - 1] || '';
-    const priceText = priceMatch?.[1] || (PRICE_REGEX.test(next) ? next : PRICE_REGEX.test(prev) ? prev : '');
+    const priceOnLine = !!priceMatch;
+    const priceOnNext = PRICE_REGEX.test(next);
+    const priceOnPrev = PRICE_REGEX.test(prev);
+    if (!priceOnLine && !priceOnNext && !priceOnPrev) continue;
+
+    const priceText = priceMatch?.[1] || (priceOnNext ? next : priceOnPrev ? prev : '');
 
     const title = line.replace(PRICE_REGEX, '').trim();
-    if (!title) continue;
+    if (!title || isUrlLikeTitle(title)) continue;
 
     candidates.push({
       title: title.slice(0, 180),

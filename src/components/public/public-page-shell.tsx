@@ -35,6 +35,7 @@ import {
   Ticket,
   User,
 } from 'lucide-react';
+import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
 
 const COMPARE_STORAGE_KEY = 'compare_products';
 const MAX_COMPARE_PRODUCTS = 4;
@@ -204,6 +205,13 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
     router.push(query ? `/${locale}/search?q=${encodeURIComponent(query)}` : `/${locale}/search`);
   };
 
+  const applyQueryFromVoiceOrBarcode = (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    setSearchQuery(trimmed);
+    router.push(`/${locale}/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
   /* ── Sign out ── */
   const handleSignOut = async () => {
     await signOut();
@@ -271,6 +279,11 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                     className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400 dark:focus:bg-gray-900"
                   />
                 </div>
+                <SearchVoiceBarcodeActions
+                  locale={locale}
+                  onQuery={applyQueryFromVoiceOrBarcode}
+                  compact
+                />
                 <button
                   type="submit"
                   className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-on-primary transition-colors hover:bg-primary-600"
@@ -438,6 +451,11 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
                 className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
               />
             </div>
+            <SearchVoiceBarcodeActions
+              locale={locale}
+              onQuery={applyQueryFromVoiceOrBarcode}
+              compact
+            />
             <button
               type="submit"
               className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-on-primary transition-colors hover:bg-primary-600"

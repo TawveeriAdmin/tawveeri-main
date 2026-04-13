@@ -51,6 +51,7 @@ import {
   Mic,
 } from 'lucide-react-native';
 import { saveSearch } from '@/src/lib/search/saved-searches';
+import { useVoiceSearch } from '@/src/lib/search/use-voice-search';
 import { BarcodeScanner } from '@/src/components/search/BarcodeScanner';
 import { useNetwork } from '@/src/lib/network/use-network';
 import { useTheme } from '@/src/lib/theme/theme-context';
@@ -422,6 +423,11 @@ export default function SearchScreen() {
     [category, doSearch],
   );
 
+  const { isListening, toggleListening } = useVoiceSearch({
+    locale,
+    onFinalTranscript: performSearch,
+  });
+
   const handleSaveSearch = useCallback(async () => {
     if (!user || !query.trim()) return;
     try {
@@ -546,13 +552,28 @@ export default function SearchScreen() {
             )}
             <Pressable
               onPress={() => {
-                inputRef.current?.focus();
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                toggleListening();
               }}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isListening
+                  ? locale === 'ar'
+                    ? 'إيقاف البحث الصوتي'
+                    : 'Stop voice search'
+                  : locale === 'ar'
+                    ? 'بحث صوتي'
+                    : 'Voice search'
+              }
+              accessibilityState={{ busy: isListening }}
               style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
             >
-              <Mic size={20} color={colors.secondaryLabel} strokeWidth={2} />
+              <Mic
+                size={20}
+                color={isListening ? colors.primary : colors.secondaryLabel}
+                strokeWidth={2}
+              />
             </Pressable>
             <Pressable
               onPress={() => {
