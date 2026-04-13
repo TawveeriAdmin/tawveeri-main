@@ -980,7 +980,7 @@ export default function SearchClient() {
             <div className="flex gap-6">
               {/* Desktop Filter Sidebar */}
               <div className="hidden lg:block w-72 shrink-0">
-                <div className="sticky top-[120px] max-h-[calc(100vh-148px)] overflow-y-auto flex flex-col gap-4 scrollbar-hide">
+                <div className="sticky top-[120px] max-h-[calc(100vh-148px)] min-h-0 overflow-y-auto flex flex-col gap-4 scrollbar-hide">
                   <FilterSidebar
                     filters={filters}
                     onFilterChange={setFilters}

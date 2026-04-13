@@ -8,8 +8,26 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/utils';
-import { SUPPORTED_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
 import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
+
+/** Search filter checklist (must match `SUPPORTED_SEARCH_STORES` in `store-registry.ts`). Inlined here so the UI cannot depend on a partial/cached registry chunk. */
+const ALL_SEARCH_FILTER_SLUGS = [
+  'amazon',
+  'noon',
+  'jarir',
+  'extra',
+  'almanea',
+  'samsung_ksa',
+  'shaker',
+  'zagzoog',
+  'alesayi',
+  'swsg',
+  'alkhunaizan',
+  'bukhamsen',
+  'alghanim',
+  'alsaif_gallery',
+  'lulu_gcc',
+] as const;
 import {
   Tag,
   DollarSign,
@@ -97,17 +115,9 @@ function FilterSection({
           open && 'rotate-180'
         )} />
       </button>
-      <div
-        className={cn(
-          'transition-all duration-200',
-          // Open: no inner scroll — parent `.flex-1.overflow-y-auto` scrolls the whole sidebar.
-          // Inner overflow-y + max-h was clipping long lists (e.g. 15 stores) to ~5 rows.
-          open ? 'max-h-[8000px] opacity-100 pb-3 overflow-visible' : 'max-h-0 overflow-hidden opacity-0',
-        )}
-      >
-        <div className="px-1 min-h-0">
-          {children}
-        </div>
+      {/* No max-height animation — `max-h-0` + `overflow-hidden` clips tall lists (~5 rows visible) in some layouts. */}
+      <div className={cn(!open && 'hidden', 'pb-3')}>
+        <div className="px-1 min-h-0">{children}</div>
       </div>
     </div>
   );
@@ -223,10 +233,9 @@ export function FilterSidebar({
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
 
-  // All search scrape targets (see `SUPPORTED_SEARCH_STORES`), not the `stores` DB table — so extended
-  // merchants appear here even before they are seeded in Supabase.
+  // All search scrape targets — not the `stores` DB table.
   const availableStores = useMemo(() => {
-    return [...SUPPORTED_SEARCH_STORES]
+    return [...ALL_SEARCH_FILTER_SLUGS]
       .map((slug) => {
         const names = SEARCH_STORE_DISPLAY_NAMES[slug];
         return {
@@ -449,7 +458,10 @@ export function FilterSidebar({
   }, [filters]);
 
   return (
-    <aside aria-label={t('search.filtersTitle')} className="flex flex-col flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+    <aside
+      aria-label={t('search.filtersTitle')}
+      className="flex w-full flex-col rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+    >
       {/* Top content (results count + sort) */}
       {topContent && (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
@@ -506,8 +518,8 @@ export function FilterSidebar({
         />
       </div>
 
-      {/* Filter sections */}
-      <div className="flex-1 overflow-y-auto px-3" style={{ scrollbarWidth: 'none' }}>
+      {/* Filter sections — scroll the whole aside via parent `.sticky.overflow-y-auto` on search page */}
+      <div className="px-3 pb-3">
         {/* Sort */}
         {onSortChange && (
           <FilterSection icon={ArrowUpDown} title={t('search.sortBy')} defaultOpen>
@@ -591,7 +603,7 @@ export function FilterSidebar({
             title={t('search.filters.stores')}
             badge={filters.stores.length}
           >
-            <div className="space-y-1">
+            <div className="space-y-1" data-store-filter-count={availableStores.length}>
               {availableStores.map((store) => {
                 const storeName = locale === 'ar' ? store.name_ar : store.name_en;
                 const isChecked = filters.stores.includes(store.slug);
