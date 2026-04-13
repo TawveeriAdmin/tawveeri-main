@@ -74,6 +74,32 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.dev-almanea.com',
       },
+      // AliExpress (search result images)
+      {
+        protocol: 'https',
+        hostname: '**.aliexpress.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.aliexpress-media.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ae-pic-a1.aliexpress-media.com',
+      },
+      // Najm / Salla CDNs
+      {
+        protocol: 'https',
+        hostname: '**.salla.sa',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.assets.salla.network',
+      },
+      {
+        protocol: 'https',
+        hostname: 'najm.store',
+      },
     ],
   },
   async headers() {

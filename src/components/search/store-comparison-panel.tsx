@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
 
+import { getSearchStoreLogoPath } from '@/lib/scraping/product-adapter';
+
 const STORE_LOGOS: Record<string, string> = {
   amazon: '/logos/amazon.png',
   noon: '/logos/noon.png',
@@ -25,6 +27,8 @@ const STORE_LOGOS: Record<string, string> = {
   alghanim: '/logos/alghanim.png',
   alsaif_gallery: '/logos/alsaif_gallery.png',
   lulu_gcc: '/logos/lulu_gcc.png',
+  najm_store: getSearchStoreLogoPath('najm_store'),
+  aliexpress_ar: getSearchStoreLogoPath('aliexpress_ar'),
 };
 
 interface StoreComparisonPanelProps {

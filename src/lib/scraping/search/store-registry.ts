@@ -14,6 +14,8 @@ export const SUPPORTED_SEARCH_STORES = [
   'alghanim',
   'alsaif_gallery',
   'lulu_gcc',
+  'najm_store',
+  'aliexpress_ar',
 ] as const;
 
 export type SearchStoreSlug = (typeof SUPPORTED_SEARCH_STORES)[number];

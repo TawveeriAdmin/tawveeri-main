@@ -48,6 +48,26 @@ function parsePrice(priceStr: string | null | undefined): number | null {
   return isNaN(num) ? null : num;
 }
 
+/** AliExpress item links embed SAR list/sale prices in `pdp_npi` / `dis!SAR!` */
+export function extractAliExpressPricesFromHref(href: string): { current: number | null; original: number | null } {
+  try {
+    const decoded = decodeURIComponent(href);
+    const m = decoded.match(/dis!SAR!([\d.]+)!([\d.]+)/i);
+    if (m) {
+      const a = parseFloat(m[1]);
+      const b = parseFloat(m[2]);
+      if (Number.isFinite(a) && Number.isFinite(b)) {
+        const lo = Math.min(a, b);
+        const hi = Math.max(a, b);
+        return { current: lo, original: hi > lo ? hi : null };
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return { current: null, original: null };
+}
+
 /**
  * WooCommerce-style markup: sale price in `ins`, original in `del`, amounts in `bdi`.
  * Reading the whole `.price` node concatenates multiple formatted SAR amounts (e.g. 5,429 + 5,429 → 54,295,429).
@@ -117,6 +137,7 @@ function extractSkuFromUrl(url: string): string | null {
   const matches = [
     url.match(/\/p\/([a-z0-9_-]{4,})/i),
     url.match(/\/product\/([a-z0-9_-]{4,})/i),
+    url.match(/\/item\/(\d{6,})/i),
     url.match(/[?&](sku|id|pid)=([a-z0-9_-]{4,})/i),
   ];
 
@@ -198,6 +219,9 @@ function parseHtmlProducts(html: string, sourceUrl: string, baseUrl: string): Sc
   const products: ScrapedProduct[] = [];
 
   const selectors = [
+    'a.search-card-item',
+    's-product-card',
+    '[class*="s-product-card"]',
     '.product-item',
     '.product-card',
     '.product',
@@ -207,6 +231,7 @@ function parseHtmlProducts(html: string, sourceUrl: string, baseUrl: string): Sc
     'li.product',
     "a[href*='/product/']",
     "a[href*='/p/']",
+    "a[href*='/item/']",
     '.woocommerce-LoopProduct-link',
   ];
 
@@ -230,18 +255,36 @@ function parseHtmlProduct(
   card: cheerio.Cheerio<unknown>,
   sourceUrl: string,
   baseUrl: string,
+  options?: { allowMissingPrice?: boolean },
 ): ScrapedProduct | null {
-  const title = card
+  const allowMissingPrice = options?.allowMissingPrice === true;
+
+  let title = card
     .find('.product-name, .product-title, .woocommerce-loop-product__title, h2, h3, [class*="title"]')
     .first()
     .text()
     .trim();
 
+  if (!title) {
+    const imgAlt = card.find('img[alt]').first().attr('alt')?.trim();
+    if (imgAlt && imgAlt.length > 8) title = imgAlt;
+  }
+
   if (!title) return null;
 
-  const link =
-    card.find("a[href*='/product/'], a[href*='/p/'], a[href*='/dp/'], a[href]").first().attr('href') || '';
+  let link = '';
+  if (card.is('a[href]')) {
+    link = card.attr('href') || '';
+  }
+  if (!link) {
+    link =
+      card
+        .find("a[href*='/product/'], a[href*='/p/'], a[href*='/dp/'], a[href*='/item/'], a[href]")
+        .first()
+        .attr('href') || '';
+  }
   const productUrl = normalizeUrl(link, sourceUrl);
+  if (!link.trim() || !productUrl) return null;
 
   const priceBlock = card.find('.price').first();
   let price: number | null = null;
@@ -259,7 +302,26 @@ function parseHtmlProduct(
       .text();
     price = parsePrice(priceText);
   }
-  if (!price || price <= 0) return null;
+  if ((!price || price <= 0) && link.includes('aliexpress.com/item')) {
+    const ae = extractAliExpressPricesFromHref(link);
+    if (ae.current && ae.current > 0) {
+      price = ae.current;
+      if (ae.original && ae.original > 0) originalPrice = ae.original;
+    }
+  }
+  if (!price || price <= 0) {
+    if (allowMissingPrice) {
+      const blob = card.text().replace(/\s+/g, ' ');
+      const m = blob.match(/([\d,]+(?:\.\d+)?)\s*(?:SAR|ر\.س|ريال|﷼)/i);
+      if (m) {
+        price = parsePrice(m[1].replace(/,/g, ''));
+      }
+    }
+  }
+  if (!price || price <= 0) {
+    if (!allowMissingPrice) return null;
+    price = 0;
+  }
 
   if (originalPrice == null || originalPrice <= 0) {
     const originalPriceText = card
@@ -285,7 +347,9 @@ function parseHtmlProduct(
   const brand = extractBrand(title, brandText || null);
 
   const outOfStock = card.text().toLowerCase().includes('out of stock');
-  const isDeal = Boolean(originalPrice && originalPrice > price);
+  const isDeal = Boolean(
+    price > 0 && originalPrice && originalPrice > price,
+  );
 
   return {
     name_ar: title,
@@ -304,6 +368,47 @@ function parseHtmlProduct(
     description_en: null,
     is_deal: isDeal,
   };
+}
+
+/**
+ * WooCommerce `ul.products li.product` loop — used by dedicated WordPress store search scrapers.
+ */
+export function parseWooCommerceShopLoop(html: string, pageUrl: string, baseUrl: string): ScrapedProduct[] {
+  const $ = cheerio.load(html);
+  const products: ScrapedProduct[] = [];
+  $('ul.products li.product').each((_, el) => {
+    const p = parseHtmlProduct($, $(el), pageUrl, baseUrl, { allowMissingPrice: true });
+    if (p) products.push(p);
+  });
+  if (products.length > 0) return products;
+  $('li.product').each((_, el) => {
+    const p = parseHtmlProduct($, $(el), pageUrl, baseUrl, { allowMissingPrice: true });
+    if (p) products.push(p);
+  });
+  return products;
+}
+
+/**
+ * Samsung / Alsaif-style product tiles (`.product-item`, AEM cards).
+ */
+export function parseProductItemGrid(html: string, pageUrl: string, baseUrl: string): ScrapedProduct[] {
+  const $ = cheerio.load(html);
+  const products: ScrapedProduct[] = [];
+  const grids = [
+    '.product-item',
+    '.cmp-product-card',
+    '[data-modelcode]',
+    '.pd03-product-card',
+    '.product-card__item',
+  ];
+  for (const sel of grids) {
+    $(sel).each((_, el) => {
+      const p = parseHtmlProduct($, $(el), pageUrl, baseUrl, { allowMissingPrice: true });
+      if (p) products.push(p);
+    });
+    if (products.length > 0) break;
+  }
+  return products;
 }
 
 function parseObjectProduct(item: Record<string, unknown>, baseUrl: string): ScrapedProduct | null {

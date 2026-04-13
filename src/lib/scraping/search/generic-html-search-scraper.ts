@@ -17,6 +17,10 @@ export interface GenericHtmlSiteConfig {
    * Slower; reuses one browser for all pages in a search.
    */
   requiresBrowser?: boolean;
+  /** After navigation, wait for selector (e.g. Salla storefronts that hydrate product lists). */
+  puppeteerWaitForSelector?: string;
+  /** Extra delay (ms) after load before reading HTML (hydration). */
+  puppeteerWaitMs?: number;
 }
 
 /**
@@ -111,6 +115,14 @@ export class GenericHtmlSearchScraper extends BaseSearchScraper {
             const url = buildUrl(q, pageNum);
             try {
               await ppage.goto(url, { waitUntil: 'networkidle2', timeout: 60_000 });
+              if (this.site.puppeteerWaitMs && this.site.puppeteerWaitMs > 0) {
+                await new Promise((r) => setTimeout(r, this.site.puppeteerWaitMs));
+              }
+              if (this.site.puppeteerWaitForSelector) {
+                await ppage
+                  .waitForSelector(this.site.puppeteerWaitForSelector, { timeout: 25_000 })
+                  .catch(() => {});
+              }
               const html = await ppage.content();
               pageProducts = this.parsePage(html, url);
               if (pageProducts.length > 0) break;

@@ -8,26 +8,8 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/utils';
-import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
-
-/** Search filter checklist (must match `SUPPORTED_SEARCH_STORES` in `store-registry.ts`). Inlined here so the UI cannot depend on a partial/cached registry chunk. */
-const ALL_SEARCH_FILTER_SLUGS = [
-  'amazon',
-  'noon',
-  'jarir',
-  'extra',
-  'almanea',
-  'samsung_ksa',
-  'shaker',
-  'zagzoog',
-  'alesayi',
-  'swsg',
-  'alkhunaizan',
-  'bukhamsen',
-  'alghanim',
-  'alsaif_gallery',
-  'lulu_gcc',
-] as const;
+import { SEARCH_STORE_DISPLAY_NAMES, getSearchStoreLogoPath } from '@/lib/scraping/product-adapter';
+import { SUPPORTED_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
 import {
   Tag,
   DollarSign,
@@ -233,9 +215,9 @@ export function FilterSidebar({
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
 
-  // All search scrape targets — not the `stores` DB table.
+  // All search scrape targets — not the `stores` DB table (single source: `store-registry.ts`).
   const availableStores = useMemo(() => {
-    return [...ALL_SEARCH_FILTER_SLUGS]
+    return [...SUPPORTED_SEARCH_STORES]
       .map((slug) => {
         const names = SEARCH_STORE_DISPLAY_NAMES[slug];
         return {
@@ -623,7 +605,7 @@ export function FilterSidebar({
                       onCheckedChange={() => handleStoreToggle(store.slug)}
                     />
                     <img
-                      src={`/logos/${store.slug}.png`}
+                      src={getSearchStoreLogoPath(store.slug)}
                       alt=""
                       width={20}
                       height={20}

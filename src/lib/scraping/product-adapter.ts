@@ -28,7 +28,20 @@ export const SEARCH_STORE_DISPLAY_NAMES: Record<string, { name_ar: string; name_
   alghanim: { name_ar: 'الغانم', name_en: 'Alghanim' },
   alsaif_gallery: { name_ar: 'السيف غاليري', name_en: 'Alsaif Gallery' },
   lulu_gcc: { name_ar: 'لولو هايبرماركت', name_en: 'Lulu Hypermarket' },
+  najm_store: { name_ar: 'نجم الأجهزة', name_en: 'Najm Store' },
+  aliexpress_ar: { name_ar: 'علي إكسبرس', name_en: 'AliExpress' },
 };
+
+/** `/public/logos/{base}.png` when the file base name differs from the store slug */
+export const SEARCH_STORE_LOGO_BASENAME: Partial<Record<string, string>> = {
+  najm_store: 'najm',
+  aliexpress_ar: 'ali_express',
+};
+
+export function getSearchStoreLogoPath(slug: string): string {
+  const base = SEARCH_STORE_LOGO_BASENAME[slug] ?? slug;
+  return `/logos/${base}.png`;
+}
 
 const STORE_NAMES_BILINGUAL = SEARCH_STORE_DISPLAY_NAMES;
 

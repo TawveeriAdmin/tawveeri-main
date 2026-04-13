@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
+import { getSearchStoreLogoPath } from '@/lib/scraping/product-adapter';
 
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
@@ -35,6 +36,8 @@ const STORE_LOGOS: Record<string, string> = {
   alghanim: '/logos/alghanim.png',
   alsaif_gallery: '/logos/alsaif_gallery.png',
   lulu_gcc: '/logos/lulu_gcc.png',
+  najm_store: getSearchStoreLogoPath('najm_store'),
+  aliexpress_ar: getSearchStoreLogoPath('aliexpress_ar'),
 };
 
 interface ProductStore {
