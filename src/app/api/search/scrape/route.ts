@@ -3,6 +3,10 @@ import { searchAllStores } from '@/lib/scraping/search/search-orchestrator';
 import { searchCache } from '@/lib/scraping/cache';
 import { filterTechProducts } from '@/lib/scraping/product-filter';
 import { DEFAULT_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
+
+export const maxDuration = 240;
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/search/scrape
  * Search for products across stores using TypeScript scrapers

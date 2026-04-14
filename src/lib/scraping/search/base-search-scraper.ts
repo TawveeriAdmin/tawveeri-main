@@ -18,7 +18,8 @@ export abstract class BaseSearchScraper {
   protected async fetchHtml(url: string, headers?: Record<string, string>): Promise<string> {
     const response = await fetch(url, {
       headers: headers || getBrowserHeaders(),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(45_000),
+      cache: 'no-store',
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} fetching ${url}`);
@@ -29,7 +30,8 @@ export abstract class BaseSearchScraper {
   protected async fetchJson<T>(url: string, headers?: Record<string, string>): Promise<T> {
     const response = await fetch(url, {
       headers: headers || getBrowserHeaders(),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(45_000),
+      cache: 'no-store',
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} fetching ${url}`);
@@ -95,4 +97,30 @@ export abstract class BaseSearchScraper {
       error,
     };
   }
+}
+
+export function formatScrapeError(err: unknown): string {
+  if (err instanceof Error) {
+    const name = err.name && err.name !== 'Error' ? `${err.name}: ` : '';
+    const msg = err.message || err.toString();
+    return `${name}${msg}`;
+  }
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object') {
+    const e = err as { message?: unknown; name?: unknown; toString?: () => string };
+    if (typeof e.message === 'string' && e.message.length > 0) {
+      const n = typeof e.name === 'string' ? `${e.name}: ` : '';
+      return `${n}${e.message}`;
+    }
+    try {
+      const str = JSON.stringify(err, Object.getOwnPropertyNames(err as object));
+      if (str && str !== '{}') return str;
+    } catch {}
+    try {
+      const s = String(err);
+      if (s && s !== '[object Object]') return s;
+    } catch {}
+    return Object.prototype.toString.call(err);
+  }
+  return String(err);
 }

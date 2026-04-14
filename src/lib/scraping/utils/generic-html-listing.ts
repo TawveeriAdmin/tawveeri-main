@@ -290,10 +290,29 @@ function parseHtmlProduct(
   let price: number | null = null;
   let originalPrice: number | null = null;
 
-  const woo = priceBlock.length ? extractWooStylePriceTexts(priceBlock) : null;
+  // Magento: data-price-amount attributes carry canonical numeric prices
+  const specialAttr = card.find('.special-price [data-price-amount]').first().attr('data-price-amount');
+  const oldAttr = card.find('.old-price [data-price-amount]').first().attr('data-price-amount');
+  if (specialAttr) {
+    const v = parseFloat(specialAttr);
+    if (!isNaN(v) && v > 0) price = v;
+  }
+  if (oldAttr) {
+    const v = parseFloat(oldAttr);
+    if (!isNaN(v) && v > 0) originalPrice = v;
+  }
+  if ((!price || price <= 0)) {
+    const finalAttr = card.find('[data-price-type="finalPrice"][data-price-amount]').first().attr('data-price-amount');
+    if (finalAttr) {
+      const v = parseFloat(finalAttr);
+      if (!isNaN(v) && v > 0) price = v;
+    }
+  }
+
+  const woo = (!price && priceBlock.length) ? extractWooStylePriceTexts(priceBlock) : null;
   if (woo) {
     price = parsePrice(woo.currentText);
-    originalPrice = woo.originalText ? parsePrice(woo.originalText) : null;
+    originalPrice = woo.originalText ? parsePrice(woo.originalText) : originalPrice;
   }
   if (!price || price <= 0) {
     const priceText = card
@@ -331,11 +350,27 @@ function parseHtmlProduct(
     originalPrice = parsePrice(originalPriceText);
   }
 
-  const image =
-    card.find('img').first().attr('src') ||
-    card.find('img').first().attr('data-src') ||
-    card.find('img').first().attr('data-lazy-src') ||
-    null;
+  const img = card.find('img').first();
+  const srcCandidates = [
+    img.attr('data-wood-src'),
+    img.attr('data-src'),
+    img.attr('data-lazy-src'),
+    img.attr('data-original'),
+    img.attr('data-amsrc'),
+    img.attr('src'),
+  ];
+  const srcset = img.attr('data-srcset') || img.attr('srcset');
+  if (srcset) {
+    const firstUrl = srcset.split(',')[0]?.trim().split(/\s+/)[0];
+    if (firstUrl) srcCandidates.unshift(firstUrl);
+  }
+  let image: string | null = null;
+  for (const c of srcCandidates) {
+    if (!c) continue;
+    if (c.startsWith('data:') || c.includes('lazy.png') || c.includes('placeholder')) continue;
+    image = c;
+    break;
+  }
 
   const sku =
     card.attr('data-product-id') ||
@@ -376,15 +411,30 @@ function parseHtmlProduct(
 export function parseWooCommerceShopLoop(html: string, pageUrl: string, baseUrl: string): ScrapedProduct[] {
   const $ = cheerio.load(html);
   const products: ScrapedProduct[] = [];
-  $('ul.products li.product').each((_, el) => {
-    const p = parseHtmlProduct($, $(el), pageUrl, baseUrl, { allowMissingPrice: true });
-    if (p) products.push(p);
-  });
-  if (products.length > 0) return products;
-  $('li.product').each((_, el) => {
-    const p = parseHtmlProduct($, $(el), pageUrl, baseUrl, { allowMissingPrice: true });
-    if (p) products.push(p);
-  });
+  const containers = [
+    'ul.products li.product',
+    'li.product',
+    '.wd-products-holder .product',
+    '.products .product',
+    '.product-grid-item',
+    'article.product',
+    '.product-block',
+    '.product-entry',
+    '.product-small',
+    '.productholder',
+    '.item-product',
+    '.products-grid .product-item',
+    '.product-item',
+    '[data-product-id]',
+    '.product',
+  ];
+  for (const sel of containers) {
+    $(sel).each((_, el) => {
+      const p = parseHtmlProduct($, $(el), pageUrl, baseUrl, { allowMissingPrice: true });
+      if (p) products.push(p);
+    });
+    if (products.length > 0) return products;
+  }
   return products;
 }
 

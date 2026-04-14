@@ -1,9 +1,9 @@
 import type { ScrapedProduct } from '../base/types';
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { getBrowserHeaders } from './user-agents';
 import { expandQueriesForRetailSearch } from './search-query-bilingual';
-import { parseWooCommerceShopLoop } from '../utils/generic-html-listing';
+import { parseWooCommerceShopLoop, parseGenericHtmlListing } from '../utils/generic-html-listing';
 
 export interface WooCommerceSiteSearchConfig {
   slug: string;
@@ -27,9 +27,11 @@ export class BaseWooCommerceSearchScraper extends BaseSearchScraper {
     const seen = new Set<string>();
     const queries = expandQueriesForRetailSearch(query);
 
+    const maxPages = pages;
     try {
       for (const q of queries) {
-        for (let page = 1; page <= pages; page++) {
+        if (allProducts.length > 0) break;
+        for (let page = 1; page <= maxPages; page++) {
           if (page > 1) await this.delay(600, 1800);
 
           let pageProducts: ScrapedProduct[] = [];
@@ -42,6 +44,9 @@ export class BaseWooCommerceSearchScraper extends BaseSearchScraper {
                 : `${this.site.baseUrl}/`;
               const html = await this.fetchHtml(url, getBrowserHeaders(referer));
               pageProducts = parseWooCommerceShopLoop(html, url, this.site.baseUrl);
+              if (pageProducts.length === 0) {
+                pageProducts = parseGenericHtmlListing(html, url, this.site.baseUrl);
+              }
               if (pageProducts.length > 0) {
                 gotAny = true;
                 break;
@@ -56,7 +61,7 @@ export class BaseWooCommerceSearchScraper extends BaseSearchScraper {
 
           if (!gotAny || pageProducts.length === 0) {
             console.log(
-              `[${this.storeSlug}] Page ${page}: 0 items (no WooCommerce rows — stopping pagination)`,
+              `[${this.storeSlug}] Page ${page}: 0 items (no product rows parsed — stopping pagination)`,
             );
             break;
           }
@@ -76,7 +81,7 @@ export class BaseWooCommerceSearchScraper extends BaseSearchScraper {
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[${this.storeSlug}] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }

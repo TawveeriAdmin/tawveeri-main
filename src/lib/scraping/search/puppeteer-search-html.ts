@@ -1,4 +1,20 @@
 import type { Browser } from 'puppeteer';
+import { existsSync } from 'node:fs';
+
+const SYSTEM_CHROME_PATHS = [
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium-browser',
+  '/usr/bin/chromium',
+];
+
+function findSystemChrome(): string | null {
+  for (const p of SYSTEM_CHROME_PATHS) {
+    if (existsSync(p)) return p;
+  }
+  return null;
+}
 
 export interface PuppeteerSearchFetchOptions {
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2';
@@ -6,19 +22,48 @@ export interface PuppeteerSearchFetchOptions {
   extraWaitMs?: number;
 }
 
+const MAX_CONCURRENT = 3;
+let inflight = 0;
+const waiters: Array<() => void> = [];
+
+async function acquireSlot(): Promise<void> {
+  if (inflight < MAX_CONCURRENT) {
+    inflight++;
+    return;
+  }
+  await new Promise<void>((resolve) => waiters.push(resolve));
+  inflight++;
+}
+
+function releaseSlot(): void {
+  inflight--;
+  const next = waiters.shift();
+  if (next) next();
+}
+
 /**
- * Full HTML after JS render — one browser per call (same cost model as legacy GenericHtmlSearchScraper).
+ * Full HTML after JS render. Serializes browser launches via a global mutex to
+ * avoid Chromium ECONNRESET crashes when multiple stores run in parallel.
  */
 export async function fetchSearchHtmlWithPuppeteer(
   url: string,
   options: PuppeteerSearchFetchOptions = {},
 ): Promise<string> {
-  const puppeteer = await import('puppeteer');
-  const browser: Browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+  await acquireSlot();
+  let browser: Browser | null = null;
   try {
+    const puppeteer = await import('puppeteer');
+    browser = await puppeteer.launch({
+      headless: 'new' as unknown as boolean,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || findSystemChrome() || undefined,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-blink-features=AutomationControlled',
+      ],
+    });
     const page = await browser.newPage();
     await page.setViewport({ width: 1365, height: 900 });
     await page.setUserAgent(
@@ -36,6 +81,7 @@ export async function fetchSearchHtmlWithPuppeteer(
     }
     return await page.content();
   } finally {
-    await browser.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+    releaseSlot();
   }
 }

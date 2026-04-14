@@ -1,4 +1,4 @@
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { getBrowserHeaders } from './user-agents';
 
@@ -22,7 +22,7 @@ export class AmazonSearchScraper extends BaseSearchScraper {
         try {
           html = await this.fetchHtml(url, getBrowserHeaders());
         } catch (err) {
-          console.error(`[Amazon] Page ${page} fetch failed:`, err instanceof Error ? err.message : err);
+          console.error(`[Amazon] Page ${page} fetch failed:`, formatScrapeError(err));
           break;
         }
 
@@ -39,7 +39,7 @@ export class AmazonSearchScraper extends BaseSearchScraper {
         console.log(`[Amazon] Page ${page}: ${items.length} items found`);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[Amazon] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }

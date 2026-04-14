@@ -36,6 +36,15 @@ export const SEARCH_STORE_DISPLAY_NAMES: Record<string, { name_ar: string; name_
 export const SEARCH_STORE_LOGO_BASENAME: Partial<Record<string, string>> = {
   najm_store: 'najm',
   aliexpress_ar: 'ali_express',
+  // DB-slug aliases used by UI store filters
+  najm: 'najm',
+  aliexpress: 'ali_express',
+  'ibrahim-shaker': 'shaker',
+  samsung: 'samsung_ksa',
+  'al-eissaei': 'alesayi',
+  alsaifgallery: 'alsaif_gallery',
+  lulu: 'lulu_gcc',
+  bukhamseen: 'bukhamsen',
 };
 
 export function getSearchStoreLogoPath(slug: string): string {

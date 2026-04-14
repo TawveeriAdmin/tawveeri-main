@@ -1,4 +1,4 @@
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 
 const UNBXD_API = 'https://search.unbxd.io';
@@ -33,7 +33,7 @@ export class ExtraSearchScraper extends BaseSearchScraper {
         console.log(`[Extra] Page ${page}: ${products.length} items found`);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[Extra] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }

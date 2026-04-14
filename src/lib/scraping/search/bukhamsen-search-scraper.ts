@@ -8,6 +8,7 @@ export class BukhamsenSearchScraper extends BaseWooCommerceSearchScraper {
       displayName: 'Bukhamsen',
       baseUrl: 'https://bukhamsen.com',
       searchUrlBuilders: [
+        (q, p) => `https://bukhamsen.com/?s=${qenc(q)}&post_type=product${p > 1 ? `&paged=${p}` : ''}`,
         (q, p) => `https://bukhamsen.com/?s=${qenc(q)}${p > 1 ? `&paged=${p}` : ''}`,
       ],
     });

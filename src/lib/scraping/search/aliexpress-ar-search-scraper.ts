@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { expandQueriesForRetailSearch } from './search-query-bilingual';
 import { aliexpressWholesaleSlug } from './retail-search-url';
@@ -19,13 +19,15 @@ export class AliexpressArSearchScraper extends BaseSearchScraper {
 
   async search(options: StoreSearchOptions): Promise<StoreSearchResult> {
     const { pages } = options;
+    const pageLimit = Math.min(pages, 5);
     const allProducts: SearchProduct[] = [];
     const seen = new Set<string>();
     const queries = expandQueriesForRetailSearch(options.query);
 
     try {
       for (const q of queries) {
-        for (let page = 1; page <= pages; page++) {
+        if (allProducts.length > 0) break;
+        for (let page = 1; page <= pageLimit; page++) {
           if (page > 1) await this.delay(1000, 2400);
 
           const slug = aliexpressWholesaleSlug(q);
@@ -55,7 +57,7 @@ export class AliexpressArSearchScraper extends BaseSearchScraper {
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[${this.storeSlug}] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }

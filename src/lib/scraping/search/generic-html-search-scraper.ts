@@ -1,5 +1,5 @@
 import type { Browser } from 'puppeteer';
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { SearchProduct, StoreSearchOptions, StoreSearchResult } from './types';
 import { getBrowserHeaders } from './user-agents';
 import { parseGenericHtmlListing } from '../utils/generic-html-listing';
@@ -66,7 +66,7 @@ export class GenericHtmlSearchScraper extends BaseSearchScraper {
         }
       }
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
+      lastError = formatScrapeError(err);
       console.error(`[${this.site.slug}] Search error:`, lastError);
       if (allProducts.length === 0) {
         return this.errorResult(lastError);
@@ -150,7 +150,7 @@ export class GenericHtmlSearchScraper extends BaseSearchScraper {
         }
       }
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
+      lastError = formatScrapeError(err);
       console.error(`[${this.site.slug}] Search error:`, lastError);
       if (allProducts.length === 0) {
         return this.errorResult(lastError);
@@ -183,7 +183,7 @@ export class GenericHtmlSearchScraper extends BaseSearchScraper {
         const parsed = this.parsePage(html, url);
         if (parsed.length > 0) return parsed;
       } catch (err) {
-        lastError = err instanceof Error ? err.message : String(err);
+        lastError = formatScrapeError(err);
       }
     }
 

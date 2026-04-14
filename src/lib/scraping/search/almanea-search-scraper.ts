@@ -1,4 +1,4 @@
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { SearchProduct, StoreSearchOptions, StoreSearchResult } from './types';
 import { getBrowserHeaders } from './user-agents';
 
@@ -63,7 +63,7 @@ export class AlmaneaSearchScraper extends BaseSearchScraper {
         console.log(`[Almanea] Page ${page}: ${products.length} items found`);
       }
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
+      lastError = formatScrapeError(err);
       console.error(`[Almanea] Search error:`, lastError);
       if (allProducts.length === 0) {
         return this.errorResult(lastError);
@@ -91,7 +91,7 @@ export class AlmaneaSearchScraper extends BaseSearchScraper {
           return parsed;
         }
       } catch (err) {
-        lastError = err instanceof Error ? err.message : String(err);
+        lastError = formatScrapeError(err);
       }
     }
 

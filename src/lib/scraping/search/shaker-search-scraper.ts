@@ -8,6 +8,7 @@ export class ShakerSearchScraper extends BaseWooCommerceSearchScraper {
       displayName: 'Shaker',
       baseUrl: 'https://shakersa.com',
       searchUrlBuilders: [
+        (q, p) => `https://shakersa.com/?s=${qenc(q)}&post_type=product${p > 1 ? `&paged=${p}` : ''}`,
         (q, p) => `https://shakersa.com/?s=${qenc(q)}${p > 1 ? `&paged=${p}` : ''}`,
       ],
     });

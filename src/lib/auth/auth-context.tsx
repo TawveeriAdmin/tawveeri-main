@@ -127,11 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) {
+        const raw = JSON.stringify(error, Object.getOwnPropertyNames(error as object));
         console.error('Error fetching user profile:', {
           code: error.code,
           message: error.message,
           details: error.details,
           hint: error.hint,
+          name: (error as { name?: string }).name,
+          raw,
           userId: authUser.id,
         });
         return getDefaultProfile();

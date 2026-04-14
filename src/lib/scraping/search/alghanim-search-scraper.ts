@@ -8,6 +8,7 @@ export class AlghanimSearchScraper extends BaseWooCommerceSearchScraper {
       displayName: 'Alghanim',
       baseUrl: 'https://alghanim-store.com',
       searchUrlBuilders: [
+        (q, p) => `https://alghanim-store.com/?s=${qenc(q)}&post_type=product${p > 1 ? `&paged=${p}` : ''}`,
         (q, p) => `https://alghanim-store.com/?s=${qenc(q)}${p > 1 ? `&paged=${p}` : ''}`,
       ],
     });

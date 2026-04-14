@@ -1,5 +1,5 @@
 import type { ScrapedProduct } from '../base/types';
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { getBrowserHeaders } from './user-agents';
 import { expandQueriesForRetailSearch } from './search-query-bilingual';
@@ -67,7 +67,7 @@ export class AlsaifGallerySearchScraper extends BaseSearchScraper {
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[${this.storeSlug}] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }

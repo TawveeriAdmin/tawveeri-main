@@ -1,4 +1,4 @@
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { getApiHeaders, getBrowserHeaders } from './user-agents';
 
@@ -35,7 +35,7 @@ export class NoonSearchScraper extends BaseSearchScraper {
         console.log(`[Noon] Page ${page}: ${products.length} items found`);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[Noon] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }
@@ -72,7 +72,7 @@ export class NoonSearchScraper extends BaseSearchScraper {
 
         return hits.map(item => this.parseApiProduct(item)).filter((p): p is SearchProduct => p !== null);
       } catch (err) {
-        console.error(`[Noon] API attempt ${attempt + 1}/${maxRetries} failed:`, err instanceof Error ? err.message : err);
+        console.error(`[Noon] API attempt ${attempt + 1}/${maxRetries} failed:`, formatScrapeError(err));
         if (attempt === maxRetries - 1) return [];
       }
     }
@@ -100,7 +100,7 @@ export class NoonSearchScraper extends BaseSearchScraper {
 
       return [];
     } catch (err) {
-      console.error(`[Noon] HTML fallback failed:`, err instanceof Error ? err.message : err);
+      console.error(`[Noon] HTML fallback failed:`, formatScrapeError(err));
       return [];
     }
   }

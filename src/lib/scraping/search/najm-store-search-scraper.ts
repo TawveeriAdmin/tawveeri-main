@@ -1,4 +1,4 @@
-import { BaseSearchScraper } from './base-search-scraper';
+import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { expandQueriesForRetailSearch } from './search-query-bilingual';
 import { qenc } from './retail-search-url';
@@ -11,7 +11,7 @@ import {
 const BASE_URL = 'https://najm.store';
 
 /** Puppeteer search is heavy — cap pages to avoid orchestrator timeouts. */
-const MAX_SEARCH_PAGES = 4;
+const MAX_SEARCH_PAGES = 5;
 
 /** Najm (Salla) — SPA storefront; Puppeteer + Woo/Salla-style listing parse. */
 export class NajmStoreSearchScraper extends BaseSearchScraper {
@@ -28,6 +28,7 @@ export class NajmStoreSearchScraper extends BaseSearchScraper {
 
     try {
       for (const q of queries) {
+        if (allProducts.length > 0) break;
         for (let page = 1; page <= pageLimit; page++) {
           if (page > 1) await this.delay(900, 2100);
 
@@ -63,7 +64,7 @@ export class NajmStoreSearchScraper extends BaseSearchScraper {
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatScrapeError(err);
       console.error(`[${this.storeSlug}] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }
