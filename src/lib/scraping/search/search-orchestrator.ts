@@ -22,8 +22,10 @@ const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: nu
 };
 
 const DEFAULT_STORE_TIMEOUT_MS = 60_000;
-const SLOW_STORE_TIMEOUT_MS = 30_000;
-const SLOW_STORES = new Set(['bukhamsen', 'samsung_ksa']);
+const STORE_TIMEOUTS: Partial<Record<string, number>> = {
+  bukhamsen: 90_000,
+  samsung_ksa: 60_000,
+};
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, store: string): Promise<T> {
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
@@ -72,7 +74,7 @@ export async function searchAllStores(
       const scraper = SCRAPERS[store]();
       return withTimeout(
         scraper.search({ query, pages }),
-        SLOW_STORES.has(store) ? SLOW_STORE_TIMEOUT_MS : DEFAULT_STORE_TIMEOUT_MS,
+        STORE_TIMEOUTS[store] ?? DEFAULT_STORE_TIMEOUT_MS,
         store
       );
     }),

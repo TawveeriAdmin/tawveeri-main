@@ -309,14 +309,15 @@ function parseHtmlProduct(
     }
   }
 
-  const woo = (!price && priceBlock.length) ? extractWooStylePriceTexts(priceBlock) : null;
+  const wooScope = priceBlock.length ? priceBlock : card;
+  const woo = !price ? extractWooStylePriceTexts(wooScope) : null;
   if (woo) {
     price = parsePrice(woo.currentText);
     originalPrice = woo.originalText ? parsePrice(woo.originalText) : originalPrice;
   }
   if (!price || price <= 0) {
     const priceText = card
-      .find('.woocommerce-Price-amount bdi, .woocommerce-Price-amount, .product-price, .special-price, [class*="price"]')
+      .find('.woocommerce-Price-amount bdi, .woocommerce-Price-amount, .product-price, .special-price')
       .first()
       .text();
     price = parsePrice(priceText);
@@ -336,6 +337,10 @@ function parseHtmlProduct(
         price = parsePrice(m[1].replace(/,/g, ''));
       }
     }
+  }
+  // Sanity check: price > 150,000 SAR is a concatenation artifact (two prices merged into one number)
+  if (price && price > 150_000) {
+    price = null;
   }
   if (!price || price <= 0) {
     if (!allowMissingPrice) return null;

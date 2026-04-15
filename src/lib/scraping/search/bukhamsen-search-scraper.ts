@@ -7,6 +7,7 @@ export class BukhamsenSearchScraper extends BaseWooCommerceSearchScraper {
       slug: 'bukhamsen',
       displayName: 'Bukhamsen',
       baseUrl: 'https://bukhamsen.com',
+      maxPages: 3,
       searchUrlBuilders: [
         (q, p) => `https://bukhamsen.com/?s=${qenc(q)}&post_type=product${p > 1 ? `&paged=${p}` : ''}`,
         (q, p) => `https://bukhamsen.com/?s=${qenc(q)}${p > 1 ? `&paged=${p}` : ''}`,

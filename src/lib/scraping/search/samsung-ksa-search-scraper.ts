@@ -41,8 +41,9 @@ export class SamsungKsaSearchScraper extends BaseSearchScraper {
           }`;
 
           const html = await fetchSearchHtmlWithPuppeteer(url, {
+            waitUntil: 'domcontentloaded',
             waitForSelector: '.product-item, [data-modelcode], .cmp-product-card, a[href*="/sa/"]',
-            extraWaitMs: 2800,
+            extraWaitMs: 1500,
           });
 
           let scraped: ScrapedProduct[] = parseProductItemGrid(html, url, BASE_URL);

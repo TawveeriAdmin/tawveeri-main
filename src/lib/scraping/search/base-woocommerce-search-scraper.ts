@@ -9,6 +9,7 @@ export interface WooCommerceSiteSearchConfig {
   slug: string;
   displayName: string;
   baseUrl: string;
+  maxPages?: number;
   searchUrlBuilders: Array<(q: string, page: number) => string>;
 }
 
@@ -27,7 +28,7 @@ export class BaseWooCommerceSearchScraper extends BaseSearchScraper {
     const seen = new Set<string>();
     const queries = expandQueriesForRetailSearch(query);
 
-    const maxPages = pages;
+    const maxPages = this.site.maxPages ? Math.min(pages, this.site.maxPages) : pages;
     try {
       for (const q of queries) {
         if (allProducts.length > 0) break;
