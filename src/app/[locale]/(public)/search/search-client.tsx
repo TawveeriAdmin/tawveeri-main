@@ -447,30 +447,34 @@ export default function SearchClient() {
     return labels;
   }, [locale]);
 
-  // Extract filter-related params from URL string (excluding 'q' parameter)
+  // Extract ONLY filter-related params from URL (excludes q, page, sort, category)
+  // so that pagination/sort/category changes don't trigger the filter sync effect
   const filterParamsString = useMemo(() => {
     const p = new URLSearchParams(searchParams.toString());
-    p.delete('q');
+    ['q', 'page', 'sort', 'category'].forEach(k => p.delete(k));
     return p.toString();
   }, [searchParams]);
 
-  // Load filters from URL when filter params change
+  // Load filters from URL when filter params change — reads from filterParamsString
+  // so only actual filter changes (not page/sort) trigger this
   useEffect(() => {
-    const storesFromUrl = (searchParams.get('stores')?.split(',') || [])
+    const p = new URLSearchParams(filterParamsString);
+    const storesFromUrl = (p.get('stores')?.split(',') || [])
       .map((store) => store.trim().toLowerCase())
       .filter(isSupportedSearchStore);
 
     const urlFilters: SearchFilters = {
-      brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
+      brands: p.get('brands')?.split(',').filter(Boolean) || [],
       stores: storesFromUrl,
-      availability: (searchParams.get('availability')?.split(',').filter(Boolean) || []) as AvailabilityStatus[],
-      dealsOnly: searchParams.get('deals') === 'true',
-      freeDeliveryOnly: searchParams.get('freeDelivery') === 'true',
-      minRating: searchParams.get('rating') ? parseFloat(searchParams.get('rating') || '0') : undefined,
+      availability: (p.get('availability')?.split(',').filter(Boolean) || []) as AvailabilityStatus[],
+      dealsOnly: p.get('deals') === 'true',
+      freeDeliveryOnly: p.get('freeDelivery') === 'true',
+      minRating: p.get('rating') ? parseFloat(p.get('rating') || '0') : undefined,
     };
     filtersFromUrlRef.current = true;
     setFilters(urlFilters);
-  }, [filterParamsString, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterParamsString]);
 
   // Update URL when filters change (skip if change came from URL sync)
   useEffect(() => {
