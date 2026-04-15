@@ -426,7 +426,7 @@ export function SearchBar({
             variant="outline"
             onClick={() => setScannerOpen(true)}
           >
-            <QrCode className="w-4 h-4 mr-2" />
+            <QrCode className="w-4 h-4 me-2" />
             <span className="whitespace-nowrap">{t('search.barcode.start')}</span>
           </Button>
 
@@ -450,7 +450,7 @@ export function SearchBar({
                   <button
                     key={recent.id}
                     onClick={() => handleRecentSearchClick(recent)}
-                    className="w-full text-left px-3 py-2 hover:bg-on-surface/8 rounded flex items-center gap-2 text-sm"
+                    className="w-full text-start px-3 py-2 hover:bg-on-surface/8 rounded flex items-center gap-2 text-sm"
                   >
                     <Clock className="w-4 h-4 text-outline" />
                     <span>{recent.search_query}</span>
@@ -473,7 +473,7 @@ export function SearchBar({
                     <button
                       key={idx}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full text-left px-3 py-2 hover:bg-on-surface/8 rounded flex items-center gap-2 text-sm"
+                      className="w-full text-start px-3 py-2 hover:bg-on-surface/8 rounded flex items-center gap-2 text-sm"
                     >
                       <Search className="w-4 h-4 text-outline" />
                       <div className="flex-1">

@@ -9,27 +9,7 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
 
-import { getSearchStoreLogoPath } from '@/lib/scraping/product-adapter';
-
-const STORE_LOGOS: Record<string, string> = {
-  amazon: '/logos/amazon.png',
-  noon: '/logos/noon.png',
-  jarir: '/logos/jarir.png',
-  extra: '/logos/extra.png',
-  almanea: '/logos/almanea.png',
-  samsung_ksa: '/logos/samsung_ksa.png',
-  shaker: '/logos/shaker.png',
-  zagzoog: '/logos/zagzoog.png',
-  alesayi: '/logos/alesayi.png',
-  swsg: '/logos/swsg.png',
-  alkhunaizan: '/logos/alkhunaizan.png',
-  bukhamsen: '/logos/bukhamsen.png',
-  alghanim: '/logos/alghanim.png',
-  alsaif_gallery: '/logos/alsaif_gallery.png',
-  lulu_gcc: '/logos/lulu_gcc.png',
-  najm_store: getSearchStoreLogoPath('najm_store'),
-  aliexpress_ar: getSearchStoreLogoPath('aliexpress_ar'),
-};
+import { StoreLogo } from '@/components/ui/store-logo';
 
 interface StoreComparisonPanelProps {
   product: ProductCardProduct;
@@ -82,13 +62,13 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
               )}
             >
               {/* Store logo */}
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-white dark:bg-gray-800 shrink-0 flex items-center justify-center">
-                {STORE_LOGOS[ps.stores.id] ? (
-                  <img src={STORE_LOGOS[ps.stores.id]} alt={storeName} className="w-full h-full object-contain" />
-                ) : (
-                  <span className="text-xs font-bold text-gray-500">{storeInitial}</span>
-                )}
-              </div>
+              <StoreLogo
+                slug={ps.stores.id}
+                size="md"
+                alt={storeName}
+                locale={locale as 'ar' | 'en'}
+              />
+              <span className="sr-only">{storeInitial}</span>
 
               {/* Store info */}
               <div className="flex-1 min-w-0">

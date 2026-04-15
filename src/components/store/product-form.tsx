@@ -274,7 +274,7 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
                         ? selectedProduct.name_ar
                         : selectedProduct.name_en
                       : t('store.dashboard.products.selectProduct')}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0">
@@ -301,7 +301,7 @@ export function ProductForm({ mode, initialData, storeId, locale, onSuccess }: P
                           >
                             <Check
                               className={cn(
-                                'mr-2 h-4 w-4',
+                                'me-2 h-4 w-4',
                                 selectedProduct?.id === product.id ? 'opacity-100' : 'opacity-0'
                               )}
                             />

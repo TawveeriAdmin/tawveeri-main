@@ -128,7 +128,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
           {t('search.history.title') || 'Recent Searches'}
         </div>
         <Button variant="ghost" size="sm" onClick={handleClearHistory}>
-          <Trash2 className="w-4 h-4 mr-2" />
+          <Trash2 className="w-4 h-4 me-2" />
           {t('search.history.clear') || 'Clear'}
         </Button>
       </div>
@@ -141,7 +141,7 @@ export function SearchHistory({ limit = 10, onSelectQuery }: SearchHistoryProps)
           >
             <button
               type="button"
-              className="flex items-center gap-3 text-left text-sm text-on-surface-variant hover:text-primary transition-colors"
+              className="flex items-center gap-3 text-start text-sm text-on-surface-variant hover:text-primary transition-colors"
               onClick={() => handleSelect(item.search_query)}
             >
               <Clock1 className="w-4 h-4 text-outline" />

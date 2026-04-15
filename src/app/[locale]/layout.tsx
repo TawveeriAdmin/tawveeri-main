@@ -4,7 +4,7 @@ import { SimpleIntlProvider } from '@/lib/simple-intl-provider';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 
 const locales = ['ar', 'en'] as const;
-import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { Cairo } from 'next/font/google';
 import { ThemeProvider } from '../providers/theme-provider';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { Toaster } from '@/components/ui/toaster';
@@ -36,19 +36,11 @@ export async function generateMetadata({
   };
 }
 
-// English font
-const inter = Inter({
- weight: ['400', '500', '600', '700', '800'],
- subsets: ['latin'],
- variable: '--font-inter',
- display: 'swap',
-});
-
-// Arabic font
-const ibmPlexArabic = IBM_Plex_Sans_Arabic({
- weight: ['400', '500', '600', '700'],
- subsets: ['arabic'],
- variable: '--font-ibm-plex-arabic',
+// Brand font — single family for both Arabic & English per brand guidelines
+const cairo = Cairo({
+ weight: ['300', '400', '600', '700', '900'],
+ subsets: ['latin', 'arabic'],
+ variable: '--font-cairo',
  display: 'swap',
 });
 
@@ -160,9 +152,7 @@ export default async function LocaleLayout({
  <div
  lang={locale}
  dir={locale === 'ar' ? 'rtl' : 'ltr'}
- className={`${inter.variable} ${ibmPlexArabic.variable} ${
- locale === 'ar' ? 'font-sans-ar' : 'font-sans'
- } antialiased`}
+ className={`${cairo.variable} font-sans antialiased`}
  >
  <SimpleIntlProvider key={locale} messages={messages} locale={locale}>
  <ThemeProvider

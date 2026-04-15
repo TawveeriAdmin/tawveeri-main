@@ -47,7 +47,7 @@ export default function UnauthorizedPage() {
  variant="default"
  className="flex-1"
  >
- <Home className="h-4 w-4 mr-2" />
+ <Home className="h-4 w-4 me-2" />
  {t('common.goToHome')}
  </Button>
 
@@ -57,7 +57,7 @@ export default function UnauthorizedPage() {
  variant="outline"
  className="flex-1"
  >
- <LogIn className="h-4 w-4 mr-2" />
+ <LogIn className="h-4 w-4 me-2" />
  {t('common.login')}
  </Button>
  )}

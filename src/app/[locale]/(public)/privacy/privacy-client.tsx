@@ -69,7 +69,7 @@ export default function PrivacyClient() {
  3. كيفية استخدام المعلومات
  </h2>
  <p>نستخدم المعلومات التي نجمعها لـ:</p>
- <ul className="list-disc list-inside space-y-1 ml-4">
+ <ul className="list-disc list-inside space-y-1 ms-4">
  <li>توفير وتحسين خدماتنا</li>
  <li>إرسال إشعارات حول تغييرات الأسعار والعروض</li>
  <li>تحليل استخدام الموقع لتحسين تجربة المستخدم</li>
@@ -179,7 +179,7 @@ export default function PrivacyClient() {
  3. How We Use Information
  </h2>
  <p>We use the information we collect to:</p>
- <ul className="list-disc list-inside space-y-1 ml-4">
+ <ul className="list-disc list-inside space-y-1 ms-4">
  <li>Provide and improve our services</li>
  <li>Send notifications about price changes and deals</li>
  <li>Analyze site usage to improve user experience</li>

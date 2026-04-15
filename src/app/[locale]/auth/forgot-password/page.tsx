@@ -287,7 +287,7 @@ export default function ForgotPasswordPage() {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder={t('auth.phonePlaceholder')}
-                className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                 required
                 dir="ltr"
               />
@@ -409,7 +409,7 @@ export default function ForgotPasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t('auth.passwordPlaceholder')}
-                className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                className={`w-full ${isRTL ? 'pe-12 ps-12' : 'ps-12 pe-12'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                 required
                 minLength={8}
               />
@@ -439,7 +439,7 @@ export default function ForgotPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={t('auth.passwordPlaceholder')}
-                className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                 required
                 minLength={8}
               />
@@ -581,7 +581,7 @@ export default function ForgotPasswordPage() {
  value={formData.email}
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
  placeholder={t('auth.emailPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
  required
  />
  </div>

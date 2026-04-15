@@ -314,7 +314,7 @@ export default function NotificationPreferencesPage() {
  <h3 className="font-semibold text-on-surface">
  {t('notifications.priceDropAlerts')}
  </h3>
- <div className="space-y-2 pl-4">
+ <div className="space-y-2 ps-4">
  <div className="flex items-center justify-between">
  <Label htmlFor="price_drop_email">{t('notifications.email')}</Label>
  <Switch
@@ -350,7 +350,7 @@ export default function NotificationPreferencesPage() {
  <h3 className="font-semibold text-on-surface">
  {t('notifications.dealsDiscounts')}
  </h3>
- <div className="space-y-2 pl-4">
+ <div className="space-y-2 ps-4">
  <div className="flex items-center justify-between">
  <Label htmlFor="deals_email">{t('notifications.email')}</Label>
  <Switch
@@ -386,7 +386,7 @@ export default function NotificationPreferencesPage() {
  <h3 className="font-semibold text-on-surface">
  {t('notifications.backInStock')}
  </h3>
- <div className="space-y-2 pl-4">
+ <div className="space-y-2 ps-4">
  <div className="flex items-center justify-between">
  <Label htmlFor="back_in_stock_email">{t('notifications.email')}</Label>
  <Switch
@@ -422,7 +422,7 @@ export default function NotificationPreferencesPage() {
  <h3 className="font-semibold text-on-surface">
  {t('notifications.accountUpdates')}
  </h3>
- <div className="space-y-2 pl-4">
+ <div className="space-y-2 ps-4">
  <div className="flex items-center justify-between">
  <Label htmlFor="account_updates_email">{t('notifications.email')}</Label>
  <Switch

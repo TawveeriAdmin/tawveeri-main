@@ -36,6 +36,7 @@ import {
   User,
 } from 'lucide-react';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
+import { Footer } from '@/components/layout/footer';
 
 const COMPARE_STORAGE_KEY = 'compare_products';
 const MAX_COMPARE_PRODUCTS = 4;
@@ -44,12 +45,14 @@ const subscribe = () => () => {};
 interface PublicPageShellProps {
   locale: string;
   children: React.ReactNode;
+  /** When true, `main` is rendered without the shell's container padding — used by the landing for full-bleed sections. */
+  fullBleed?: boolean;
 }
 
 const isActivePath = (pathname: string, href: string) =>
   pathname === href || pathname.startsWith(`${href}/`);
 
-export function PublicPageShell({ locale, children }: PublicPageShellProps) {
+export function PublicPageShell({ locale, children, fullBleed = false }: PublicPageShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -232,7 +235,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
     'inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100';
 
   return (
-    <div className="min-h-screen bg-surface-container transition-colors duration-300">
+    <div className="min-h-screen bg-[color:var(--color-surface)] transition-colors duration-300">
       {/* Skip to main content link */}
       <a
         href="#main-content"
@@ -247,7 +250,7 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
 
       {/* ═══ Unified Header ═══ */}
       <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/95 backdrop-blur-md dark:border-gray-800/80 dark:bg-gray-950/95">
-        <div className="mx-auto w-full max-w-[1900px] px-3 py-3 md:px-6">
+        <div className="mx-auto w-full max-w-[1600px] px-3 py-3 md:px-6">
           {/* Row 1: Logo | Search (centered) | Actions */}
           <div className="flex items-center gap-2 md:gap-3">
             {/* Logo */}
@@ -508,9 +511,18 @@ export function PublicPageShell({ locale, children }: PublicPageShellProps) {
       </header>
 
       {/* ═══ Content ═══ */}
-      <main id="main-content" className="mx-auto max-w-[1900px] px-4 py-6 md:px-6">
+      <main
+        id="main-content"
+        className={
+          fullBleed
+            ? ''
+            : 'mx-auto max-w-[1600px] px-4 py-6 md:px-8'
+        }
+      >
         {children}
       </main>
+
+      <Footer />
     </div>
   );
 }

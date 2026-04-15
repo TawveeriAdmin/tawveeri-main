@@ -139,7 +139,7 @@ export function SavedSearches({
               onClick={() => setSaveDialogOpen(true)}
               disabled={!currentQuery && !currentFilters}
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="w-4 h-4 me-1" />
               {t('search.savedSearches.save')}
             </Button>
           </div>

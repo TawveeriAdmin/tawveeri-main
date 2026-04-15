@@ -397,7 +397,7 @@ export default function LoginPage() {
  value={formData.phone}
  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
  placeholder={t('auth.phonePlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
  required
  disabled={otpSent}
  />
@@ -440,7 +440,7 @@ export default function LoginPage() {
  value={formData.fullName}
  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
  placeholder={t('auth.fullNamePlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
  required
  />
  </div>
@@ -460,7 +460,7 @@ export default function LoginPage() {
  value={formData.email}
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
  placeholder={t('auth.emailPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
  required
  />
  </div>
@@ -488,7 +488,7 @@ export default function LoginPage() {
  onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/[^0-9]/g, '') })}
  placeholder="123456"
  maxLength={6}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono`}
  required
  />
  </div>
@@ -524,7 +524,7 @@ export default function LoginPage() {
  value={formData.email}
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
  placeholder={t('auth.emailPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
  required
  />
  </div>
@@ -545,7 +545,7 @@ export default function LoginPage() {
  value={formData.password}
  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
  placeholder={t('auth.passwordPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-12' : 'ps-12 pe-12'} py-3.5 bg-surface-container border border-outline-variant rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
  required
  />
  <button

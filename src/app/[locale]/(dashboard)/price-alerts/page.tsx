@@ -256,7 +256,7 @@ export default function PriceAlertsPage() {
  </p>
  </div>
  <Button onClick={() => setAlertDialogOpen(true)}>
- <Plus className="h-4 w-4 mr-2" />
+ <Plus className="h-4 w-4 me-2" />
  {isRTL ? 'إضافة تنبيه' : 'Add Alert'}
  </Button>
  </div>
@@ -285,7 +285,7 @@ export default function PriceAlertsPage() {
  {t('priceAlerts.noAlerts')}
  </p>
  <Button onClick={() => setAlertDialogOpen(true)}>
- <Plus className="h-4 w-4 mr-2" />
+ <Plus className="h-4 w-4 me-2" />
  {t('priceAlerts.addAlert')}
  </Button>
  </div>

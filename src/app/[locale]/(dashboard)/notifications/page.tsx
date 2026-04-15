@@ -257,7 +257,7 @@ export default function NotificationsPage() {
  >
  {tn(`filters.${key}`)}
  {key === 'unread' && (
- <Badge variant="secondary" className="ml-2">
+ <Badge variant="secondary" className="ms-2">
  {notifications.filter((n) => !n.is_read).length}
  </Badge>
  )}
@@ -325,7 +325,7 @@ export default function NotificationsPage() {
  </p>
  </div>
  ) : (
- <ScrollArea className="max-h-[70vh] pr-3">
+ <ScrollArea className="max-h-[70vh] pe-3">
  <div className="space-y-4">
  {filteredNotifications.map((notification) => {
  const title = getNotificationTitle(notification);
@@ -386,7 +386,7 @@ export default function NotificationsPage() {
  </div>
  </div>
 
- <div className="flex flex-col gap-2 md:items-end md:text-right">
+ <div className="flex flex-col gap-2 md:items-end md:text-end">
  <div className="flex gap-2">
  <Button
  variant="outline"
@@ -395,12 +395,12 @@ export default function NotificationsPage() {
  >
  {notification.is_read ? (
  <>
- <X className="w-4 h-4 mr-2" />
+ <X className="w-4 h-4 me-2" />
  {tn('actions.markUnread')}
  </>
  ) : (
  <>
- <Check className="w-4 h-4 mr-2" />
+ <Check className="w-4 h-4 me-2" />
  {tn('actions.markRead')}
  </>
  )}
@@ -410,14 +410,14 @@ export default function NotificationsPage() {
  size="sm"
  onClick={() => handleDelete(notification.id)}
  >
- <Trash2 className="w-4 h-4 mr-2" />
+ <Trash2 className="w-4 h-4 me-2" />
  {tn('actions.delete')}
  </Button>
  </div>
  {primaryLink && (
  <Button asChild size="sm" className="mt-2">
  <Link href={primaryLink}>
- <ExternalLink className="w-4 h-4 mr-2" />
+ <ExternalLink className="w-4 h-4 me-2" />
  {notification.products
  ? tn('viewProduct')
  : tn('viewStore')}

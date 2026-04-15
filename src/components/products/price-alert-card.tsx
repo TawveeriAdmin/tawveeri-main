@@ -130,12 +130,12 @@ export function PriceAlertCard({
               >
                 {alert.is_active ? (
                   <>
-                    <Power className="h-4 w-4 mr-1" />
+                    <Power className="h-4 w-4 me-1" />
                     {t('products.priceAlert.active')}
                   </>
                 ) : (
                   <>
-                    <PowerOff className="h-4 w-4 mr-1" />
+                    <PowerOff className="h-4 w-4 me-1" />
                     {t('products.priceAlert.inactive')}
                   </>
                 )}
@@ -145,7 +145,7 @@ export function PriceAlertCard({
                 size="sm"
                 onClick={() => onEdit(alert)}
               >
-                <Edit className="h-4 w-4 mr-1" />
+                <Edit className="h-4 w-4 me-1" />
                 {t('products.priceAlert.edit')}
               </Button>
               <Button
@@ -154,7 +154,7 @@ export function PriceAlertCard({
                 onClick={() => onDelete(alert.id)}
                 className="text-destructive hover:text-destructive"
               >
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 me-1" />
                 {t('products.priceAlert.delete')}
               </Button>
             </div>

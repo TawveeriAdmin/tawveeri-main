@@ -130,14 +130,14 @@ export function CouponBadge({ coupon, variant = 'compact', locale, onCopy }: Cou
           e.stopPropagation();
           handleCopy();
         }}
-        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-tertiary-500/50 bg-tertiary-50 px-2 py-1 text-xs transition-colors hover:bg-tertiary-100 dark:bg-tertiary-950/30 dark:hover:bg-tertiary-900/40"
+        className="inline-flex items-center gap-1.5 rounded-full border-2 border-dashed border-[var(--brand-gold)] bg-[var(--brand-gold)]/10 px-2.5 py-1 text-xs font-semibold text-[var(--brand-gold-dark)] transition-colors hover:bg-[var(--brand-gold)]/20"
       >
-        <Ticket className="h-3 w-3 text-tertiary-600 dark:text-tertiary-400" />
-        <span className="font-mono font-semibold text-tertiary-700 dark:text-tertiary-300">
+        <Ticket className="h-3 w-3 text-[var(--brand-gold-dark)]" />
+        <span className="font-mono font-bold text-[var(--brand-gold-dark)]">
           {coupon.code}
         </span>
         {discountLabel && (
-          <Badge variant="outline" className="text-[10px] px-1 py-0 border-tertiary-300 text-tertiary-600 dark:border-tertiary-600 dark:text-tertiary-400">
+          <Badge variant="outline" className="text-[10px] px-1 py-0 border-[var(--brand-gold)]/60 text-[var(--brand-gold-dark)]">
             {discountLabel}
           </Badge>
         )}
@@ -154,12 +154,12 @@ export function CouponBadge({ coupon, variant = 'compact', locale, onCopy }: Cou
   const expiryInfo = getExpiryInfo(coupon.expires_at, t);
 
   return (
-    <div className="rounded-lg border border-dashed border-tertiary-300 bg-tertiary-50/50 px-3 py-2 dark:border-tertiary-700 dark:bg-tertiary-950/20">
+    <div className="rounded-[var(--radius-md)] border-2 border-dashed border-[var(--brand-gold)]/60 bg-[var(--brand-gold)]/8 px-3 py-2">
       {/* Discount + expiry row */}
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <Ticket className="h-3.5 w-3.5 text-tertiary-600 dark:text-tertiary-400 shrink-0" />
-          <span className="text-sm font-semibold text-tertiary-700 dark:text-tertiary-300">
+          <Ticket className="h-3.5 w-3.5 text-[var(--brand-gold-dark)] shrink-0" />
+          <span className="text-sm font-semibold text-[var(--brand-gold-dark)]">
             {discountLabel}
           </span>
         </div>
@@ -181,7 +181,7 @@ export function CouponBadge({ coupon, variant = 'compact', locale, onCopy }: Cou
 
       {/* Code + copy */}
       <div className="flex items-center gap-1.5 mb-1">
-        <code className="rounded-md border border-dashed border-tertiary-400 bg-white px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-on-surface dark:bg-gray-900 dark:border-tertiary-600">
+        <code className="rounded-[var(--radius-sm)] border-2 border-dashed border-[var(--brand-gold)] bg-[color:var(--color-surface)] px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-on-surface">
           {coupon.code}
         </code>
         <Button

@@ -25,6 +25,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { ProductReviews } from '@/components/products/product-reviews';
 import { ProductRatingDisplay } from '@/components/products/product-rating-display';
 import { ProductSpecifications } from '@/components/products/product-specifications';
+import { ComparisonTable } from '@/components/products/comparison-table';
+import { BestPriceCard } from '@/components/products/best-price-card';
 import {
  Heart,
  BarChart3,
@@ -604,32 +606,16 @@ export default function ProductDetailClient() {
  )}
  </div>
 
- {/* Best Price */}
+ {/* Best price hero card (gold-outlined, primary CTA to winning store) */}
  {bestPriceStore && (
- <div className="flex items-baseline gap-3">
- <Price
- amount={bestPriceStore.current_price}
- className="text-4xl font-bold"
- symbolClassName="w-7 h-7"
+ <BestPriceCard
+ store={bestPriceStore.stores}
+ currentPrice={bestPriceStore.current_price}
+ originalPrice={bestPriceStore.original_price}
+ availability={bestPriceStore.availability}
+ url={bestPriceStore.affiliate_url || bestPriceStore.product_url}
+ onClick={() => handleViewAtStore(bestPriceStore)}
  />
- {bestPriceStore.original_price && bestPriceStore.original_price > bestPriceStore.current_price && (
- <>
- <Price
- amount={bestPriceStore.original_price}
- className="text-xl text-outline line-through"
- symbolClassName="w-5 h-5"
- />
- <Badge variant="success-light" className="text-sm">
- <PiggyBank className="w-3 h-3 inline" /> {t('price.save')}{' '}
- <Price
- amount={calculateSavings(bestPriceStore.original_price, bestPriceStore.current_price)}
- className="text-label-lg"
- symbolClassName="w-3 h-3"
- />
- </Badge>
- </>
- )}
- </div>
  )}
 
  {/* Action Buttons */}
@@ -640,7 +626,7 @@ export default function ProductDetailClient() {
  disabled={!bestPriceStore}
  className="flex-1 sm:flex-initial"
  >
- <ShoppingCart className="w-4 h-4 mr-2" />
+ <ShoppingCart className="w-4 h-4 me-2" />
  {t('product.addToCart')}
  </Button>
  <Button
@@ -648,7 +634,7 @@ export default function ProductDetailClient() {
  onClick={() => handleAddToCompare(product.id)}
  className="flex-1 sm:flex-initial"
  >
- <BarChart3 className="w-4 h-4 mr-2" />
+ <BarChart3 className="w-4 h-4 me-2" />
  {t('product.addToCompare')}
  </Button>
  <Button
@@ -656,15 +642,15 @@ export default function ProductDetailClient() {
  onClick={() => handleSaveToWishlist(product.id)}
  className="flex-1 sm:flex-initial"
  >
- <Heart className="w-4 h-4 mr-2" />
+ <Heart className="w-4 h-4 me-2" />
  {t('product.saveToWishlist')}
  </Button>
  <Button variant="outline" onClick={handleSetPriceAlert} className="flex-1 sm:flex-initial">
- <Bell className="w-4 h-4 mr-2" />
+ <Bell className="w-4 h-4 me-2" />
  {t('product.setPriceAlert')}
  </Button>
  <Button variant="outline" onClick={handleShare} className="flex-1 sm:flex-initial">
- <Share2 className="w-4 h-4 mr-2" />
+ <Share2 className="w-4 h-4 me-2" />
  {t('product.share')}
  </Button>
  <GiftOption productName={productName} shareUrl={shareUrl} />
@@ -750,119 +736,26 @@ export default function ProductDetailClient() {
  </Tabs>
  )}
 
- {/* Available Stores */}
- <Card className="mb-8">
- <CardHeader>
- <CardTitle>{t('product.availableStores')}</CardTitle>
- </CardHeader>
- <CardContent>
- {product.product_stores.length === 0 ? (
- <p className="text-on-surface-variant">
- {locale === 'ar' ? 'لا توجد متاجر متاحة' : 'No stores available'}
- </p>
- ) : (
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
- {product.product_stores.map((productStore) => {
- const storeName = locale === 'ar' ? productStore.stores.name_ar : productStore.stores.name_en;
- const isBestPrice = productStore.id === bestPriceStore?.id;
- const savings = productStore.original_price
- ? calculateSavings(productStore.original_price, productStore.current_price)
- : 0;
-
- return (
- <div key={productStore.id} className="border rounded-lg p-4 space-y-3">
- <div className="flex items-center justify-between">
- <h3 className="font-semibold text-lg">{storeName}</h3>
- {isBestPrice && (
- <Badge variant="success">{t('product.bestPrice')}</Badge>
- )}
- </div>
-
- <div className="flex items-baseline gap-2">
- <Price
- amount={productStore.current_price}
- className="text-headline-md"
- symbolClassName="w-6 h-6"
- />
- {productStore.original_price &&
- productStore.original_price > productStore.current_price && (
- <Price
- amount={productStore.original_price}
- className="text-sm text-outline line-through"
- symbolClassName="w-4 h-4"
- />
- )}
- </div>
-
- {savings > 0 && (
- <Badge variant="success-light" className="text-body-sm">
- <PiggyBank className="w-3 h-3 inline" /> {t('price.save')} <Price amount={savings} className="text-body-sm" symbolClassName="w-3 h-3" />
- </Badge>
- )}
-
- <div className="space-y-2 text-sm">
- {productStore.availability === 'in_stock' && (
- <div className="flex items-center gap-2 text-success">
- <Package className="w-4 h-4" />
- <span>{t('product.inStock')}</span>
- </div>
- )}
- {productStore.delivery_time_days && (
- <div className="flex items-center gap-2 text-on-surface-variant">
- <Clock className="w-4 h-4" />
- <span>
- {productStore.delivery_time_days}{' '}
- {locale === 'ar' ? 'أيام' : productStore.delivery_time_days === 1 ? 'day' : 'days'}
+ {/* Full store comparison table — main brand moment for product detail */}
+ <section className="mb-8">
+ <div className="mb-4 flex items-end justify-between gap-4">
+ <h2 className="t-h2 text-on-surface">{t('product.availableStores')}</h2>
+ {product.product_stores.length > 0 && (
+ <span className="t-small text-on-surface-variant">
+ {locale === 'ar'
+ ? `${product.product_stores.length} متجر`
+ : `${product.product_stores.length} stores`}
  </span>
- </div>
- )}
- {productStore.is_free_delivery ? (
- <div className="flex items-center gap-2 text-success">
- <Truck className="w-4 h-4" />
- <span>{t('product.freeDelivery')}</span>
- </div>
- ) : (
- <div className="flex items-center gap-2 text-on-surface-variant">
- <Truck className="w-4 h-4" />
- <span>
- {t('product.deliveryCost')}: <Price amount={productStore.delivery_cost} className="text-body-sm" />
- </span>
- </div>
- )}
- {productStore.coupon_code && (
- <div className="flex items-center gap-2">
- <Badge variant="outline" className="font-mono">
- {productStore.coupon_code}
- </Badge>
- <Button
- variant="ghost"
- size="sm"
- onClick={() => handleCopyCoupon(productStore.coupon_code!)}
- >
- {copiedCoupon === productStore.coupon_code ? (
- <Check className="w-4 h-4" />
- ) : (
- <Copy className="w-4 h-4" />
- )}
- </Button>
- </div>
  )}
  </div>
-
- <Button
- onClick={() => handleViewAtStore(productStore)}
- className="w-full"
- variant={isBestPrice ? 'default' : 'outline'}
- >
- {t('product.viewAtStore')} <ExternalLink className="w-4 h-4 ml-2" />
- </Button>
- </div>
- );
- })}
- </div>
- )}
- </CardContent>
- </Card>
+ <ComparisonTable
+ productStores={product.product_stores}
+ onStoreClick={(productStoreId) => {
+ const ps = product.product_stores.find((s) => s.id === productStoreId);
+ if (ps) handleViewAtStore(ps);
+ }}
+ />
+ </section>
 
  {/* Available Coupons */}
  {productCoupons.length > 0 && (

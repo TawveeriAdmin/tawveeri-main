@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProductCard } from '@/components/products/product-card';
+import { StoreLogo } from '@/components/ui/store-logo';
 import { StoreReviewCard, type StoreReview } from '@/components/stores/store-review-card';
 import { StoreReviewForm } from '@/components/stores/store-review-form';
 import { getSupabaseBrowserClient } from '@/lib/database';
@@ -116,7 +117,6 @@ interface StoreProduct {
 }
 
 export default function StoreDetailClient() {
- const supabase = getSupabaseBrowserClient();
  const params = useParams();
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
@@ -137,6 +137,7 @@ export default function StoreDetailClient() {
  useEffect(() => {
  async function fetchStoreDetails() {
  if (!slug) return;
+ const supabase = getSupabaseBrowserClient();
 
  setLoading(true);
  setError(null);
@@ -324,32 +325,30 @@ export default function StoreDetailClient() {
  <CardContent className="p-6">
  <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
  <div className="flex items-center gap-4">
- <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-surface-container-highest border-2 border-outline-variant">
- <img
- src={
- store.logo_url ||
- 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5TdG9yZTwvdGV4dD48L3N2Zz4='
- }
+ <div className="relative flex h-24 w-24 items-center justify-center rounded-[var(--radius-lg)] overflow-hidden bg-[color:var(--color-surface)] border-[1.5px] border-[var(--brand-green-light)] shadow-[var(--elevation-1)]">
+ <StoreLogo
+ slug={store.slug}
+ size="lg"
  alt={storeName}
- className="w-full h-full object-contain p-3"
+ locale={locale as 'ar' | 'en'}
+ className="!h-20 !w-20 object-contain"
  />
  </div>
  <div>
+ {(store.is_featured || store.is_premium) && (
  <div className="flex flex-wrap items-center gap-2 mb-2">
- <Badge variant="outline" className="text-sm">
- {locale === 'ar' ? 'المتجر' : 'Store'}
- </Badge>
- {store.is_featured && (
- <Badge variant="warning" className="text-body-sm">
- {locale === 'ar' ? 'مميز' : 'Featured'}
- </Badge>
- )}
- {store.is_premium && (
- <Badge variant="success" className="text-body-sm">
+ {store.is_premium ? (
+ <Badge variant="best" className="t-caption gap-1">
+ <Star className="h-3.5 w-3.5" fill="white" stroke="white" />
  {locale === 'ar' ? 'ممتاز' : 'Premium'}
  </Badge>
- )}
+ ) : store.is_featured ? (
+ <Badge variant="featured" className="t-caption">
+ {locale === 'ar' ? 'مميز' : 'Featured'}
+ </Badge>
+ ) : null}
  </div>
+ )}
  <h1 className="text-headline-lg text-on-surface mb-2">{storeName}</h1>
  {description && (
  <p className="text-on-surface-variant max-w-2xl whitespace-pre-line">{description}</p>
@@ -357,7 +356,7 @@ export default function StoreDetailClient() {
  </div>
  </div>
 
- <div className="flex flex-col gap-3 self-stretch lg:items-end">
+ <div className="flex flex-col gap-3 self-stretch items-end justify-start ms-auto">
  {store.average_rating !== null && (
  <div className="flex items-center gap-2 text-title-lg text-on-surface">
  <Star className="w-6 h-6 fill-featured-400 text-featured-400" />
@@ -369,9 +368,8 @@ export default function StoreDetailClient() {
  )}
  </div>
  )}
-
  {store.website_url && (
- <Button asChild className="w-full lg:w-auto">
+ <Button asChild>
  <a href={store.website_url} target="_blank" rel="noopener noreferrer">
  <Globe className="w-4 h-4 me-2" />
  {t('store.visitWebsite')}
@@ -383,52 +381,9 @@ export default function StoreDetailClient() {
  </CardContent>
  </Card>
 
- {/* Quick Stats */}
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-label-lg text-on-surface-variant flex items-center gap-2">
- <Star className="w-4 h-4" /> {t('store.averageRating')}
- </CardTitle>
- </CardHeader>
- <CardContent>
- <p className="text-headline-lg text-on-surface">
- {store.average_rating !== null ? store.average_rating.toFixed(1) : '--'}
- </p>
- <p className="text-sm text-on-surface-variant">
- {store.total_reviews || 0} {t('store.totalReviews')}
- </p>
- </CardContent>
- </Card>
+ {/* Quick Stats removed — rating, product count, and premium status are already in the header card. */}
 
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-label-lg text-on-surface-variant flex items-center gap-2">
- <Package className="w-4 h-4" /> {t('store.totalProducts')}
- </CardTitle>
- </CardHeader>
- <CardContent>
- <p className="text-headline-lg text-on-surface">{store.total_products || 0}</p>
- <p className="text-sm text-on-surface-variant">{t('store.activeProducts')}</p>
- </CardContent>
- </Card>
-
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-label-lg text-on-surface-variant flex items-center gap-2">
- <Award className="w-4 h-4" /> {t('store.statusTitle')}
- </CardTitle>
- </CardHeader>
- <CardContent>
- <p className="text-title-lg text-on-surface">
- {store.is_premium ? t('store.premiumStore') : t('store.standardStore')}
- </p>
- <p className="text-sm text-on-surface-variant">{t('store.statusDescription')}</p>
- </CardContent>
- </Card>
- </div>
-
- {/* Policies and Contact */}
+ {/* Policies and Contact — hidden for now until real store data is available
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
  <Card className="h-full">
  <CardHeader>
@@ -524,6 +479,7 @@ export default function StoreDetailClient() {
  </CardContent>
  </Card>
  </div>
+ */}
 
  {/* Coupons */}
  {coupons.length > 0 && (
@@ -575,7 +531,7 @@ export default function StoreDetailClient() {
  description={t('store.noProductsDescription')}
  />
  ) : (
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+ <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
  {products.map((product) => (
  <ProductCard key={product.id} product={product} locale={locale} showActions={false} />
  ))}

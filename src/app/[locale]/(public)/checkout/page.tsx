@@ -137,7 +137,7 @@ export default function CheckoutPage() {
  </AlertDescription>
  </Alert>
  <Button onClick={() => router.push(`/${locale}/cart`)} className="mt-4">
- <ArrowLeft className="h-4 w-4 mr-2" />
+ <ArrowLeft className="h-4 w-4 me-2" />
  {t('checkout.backToCart')}
  </Button>
  </div>
@@ -253,7 +253,7 @@ export default function CheckoutPage() {
  size="lg"
  >
  {t('checkout.proceedToStore', { storeName: store.storeName })}
- <ExternalLink className="h-5 w-5 ml-2" />
+ <ExternalLink className="h-5 w-5 ms-2" />
  </Button>
  </div>
  </CardContent>
@@ -271,7 +271,7 @@ export default function CheckoutPage() {
  onClick={() => router.push(`/${locale}/cart`)}
  className="w-full mt-4"
  >
- <ArrowLeft className="h-4 w-4 mr-2" />
+ <ArrowLeft className="h-4 w-4 me-2" />
  {t('checkout.backToCart')}
  </Button>
  </div>

@@ -98,7 +98,7 @@ export function CartSummary({ locale, onCheckout }: CartSummaryProps) {
                     variant="default"
                   >
                     {t('cart.checkoutFrom', { storeName: store.storeName })}
-                    <ExternalLink className="h-4 w-4 ml-2" />
+                    <ExternalLink className="h-4 w-4 ms-2" />
                   </Button>
                 )}
               </div>

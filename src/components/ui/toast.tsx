@@ -60,7 +60,7 @@ const ToastAction = React.forwardRef<
     className={cn(
       'state-layer inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-outline-variant bg-transparent px-3 text-label-lg transition-colors',
       'hover:bg-on-surface/8',
-      'focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2',
+      'focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold)] focus:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-38',
       'group-[.success]:border-success group-[.success]:text-on-success-container',
       'group-[.destructive]:border-error group-[.destructive]:text-on-error-container',

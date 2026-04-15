@@ -124,10 +124,10 @@ export function ProductSpecifications({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                <TableHead className={isRTL ? 'text-end' : 'text-start'}>
                   {t('products.specifications.specification')}
                 </TableHead>
-                <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                <TableHead className={isRTL ? 'text-end' : 'text-start'}>
                   {t('products.specifications.value')}
                 </TableHead>
               </TableRow>

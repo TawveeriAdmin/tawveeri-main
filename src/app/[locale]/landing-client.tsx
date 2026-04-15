@@ -1,1381 +1,567 @@
 'use client';
 
+import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, usePathname, useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
-import { useTranslations } from '@/lib/simple-intl-provider';
-import { useAuth } from '@/lib/auth/auth-context';
+import { useRouter } from 'next/navigation';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Price } from '@/components/ui/price';
-import {
-  ArrowRight,
-  Award,
-  BarChart3,
-  Bell,
-  Check,
-  ChevronDown,
-  Gift,
-  Globe,
-  Headphones,
-  Heart,
-  Languages,
-  Laptop,
-  Lock,
-  LogOut,
-  Mail,
-  Moon,
-  Percent,
   Search,
-  Settings,
-  Shield,
-  ShoppingCart,
-  Smartphone,
-  Sparkles,
-  Star,
-  Store,
-  Sun,
-  Target,
-  User,
-  Users,
-  X,
+  ArrowRight,
   Zap,
-  Menu,
+  Bell,
+  Ticket,
+  TrendingDown,
+  Store,
+  Smartphone,
+  Laptop,
+  Tv,
+  Headphones,
+  Gamepad2,
+  Camera,
+  Refrigerator,
+  WashingMachine,
+  Sparkles,
+  ShieldCheck,
+  RefreshCw,
+  Star,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { StoreLogo } from '@/components/ui/store-logo';
+import { SARSymbol } from '@/components/ui/price';
+import { useLocale } from '@/lib/simple-intl-provider';
+import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
 
-const EMOJI_REGEX =
-  /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu;
-
-function stripEmojis(value: string): string {
-  return value.replace(EMOJI_REGEX, '').replace(/\s{2,}/g, ' ').trim();
-}
-
-function parseNumber(value: string): number {
-  const cleaned = value.replace(/[^\d.]/g, '');
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-/* ─── Gradient palettes for feature icons ─── */
-const FEATURE_GRADIENTS = [
-  'from-blue-500 to-cyan-400',
-  'from-amber-500 to-orange-400',
-  'from-emerald-500 to-teal-400',
-  'from-violet-500 to-purple-400',
-  'from-rose-500 to-pink-400',
-  'from-sky-500 to-indigo-400',
+/** Brand-voice static ticker items — v2 will replace with SSR `notifications` feed */
+const TICKER_SAMPLES_AR = [
+  { product: 'iPhone 15 Pro Max 256GB', drop: 450, store: 'Amazon SA' },
+  { product: 'غسالة سامسونج أوتوماتيك 9 كيلو', drop: 320, store: 'Extra' },
+  { product: 'MacBook Air M3 13-inch', drop: 800, store: 'Jarir' },
+  { product: 'شاشة LG OLED 55 بوصة', drop: 1200, store: 'Almanea' },
+  { product: 'Sony PS5 Standard', drop: 250, store: 'Noon' },
+  { product: 'مكيف سبليت 24000 وحدة', drop: 550, store: 'Shaker' },
+  { product: 'Samsung Galaxy S24 Ultra', drop: 600, store: 'Samsung SA' },
+  { product: 'ثلاجة LG جانبية 26 قدم', drop: 900, store: 'Alghanim' },
 ];
 
-const AVATAR_GRADIENTS = [
-  'from-blue-600 to-cyan-500',
-  'from-violet-600 to-purple-500',
-  'from-amber-600 to-orange-500',
+const TICKER_SAMPLES_EN = [
+  { product: 'iPhone 15 Pro Max 256GB', drop: 450, store: 'Amazon SA' },
+  { product: 'Samsung 9kg Front Load Washer', drop: 320, store: 'Extra' },
+  { product: 'MacBook Air M3 13-inch', drop: 800, store: 'Jarir' },
+  { product: 'LG OLED 55" TV', drop: 1200, store: 'Almanea' },
+  { product: 'Sony PS5 Standard', drop: 250, store: 'Noon' },
+  { product: 'Split AC 24000 BTU', drop: 550, store: 'Shaker' },
+  { product: 'Samsung Galaxy S24 Ultra', drop: 600, store: 'Samsung SA' },
+  { product: 'LG Side-by-Side Fridge 26cu.ft', drop: 900, store: 'Alghanim' },
+];
+
+const CATEGORIES = [
+  { slug: 'smartphone', icon: Smartphone, emoji: '📱', labelAr: 'هواتف', labelEn: 'Phones' },
+  { slug: 'laptop', icon: Laptop, emoji: '💻', labelAr: 'لابتوب', labelEn: 'Laptops' },
+  { slug: 'tv', icon: Tv, emoji: '📺', labelAr: 'تلفزيونات', labelEn: 'TVs' },
+  { slug: 'audio', icon: Headphones, emoji: '🎧', labelAr: 'صوتيات', labelEn: 'Audio' },
+  { slug: 'gaming', icon: Gamepad2, emoji: '🎮', labelAr: 'ألعاب', labelEn: 'Gaming' },
+  { slug: 'camera', icon: Camera, emoji: '📷', labelAr: 'كاميرات', labelEn: 'Cameras' },
+  { slug: 'washing_machine', icon: WashingMachine, emoji: '🫧', labelAr: 'غسالات', labelEn: 'Washers' },
+  { slug: 'refrigerator', icon: Refrigerator, emoji: '🧊', labelAr: 'ثلاجات', labelEn: 'Fridges' },
+] as const;
+
+const FEATURED_COMPARISONS_AR = [
+  { title: 'iPhone 15 Pro Max', subtitle: 'قارن بين 5 متاجر', savings: 750, gradient: 'from-[var(--brand-green-dark)] to-[var(--brand-green)]', href: '/compare?product=iphone-15-pro-max' },
+  { title: 'غسالة 10kg أوتوماتيك', subtitle: 'أفضل 4 متاجر', savings: 620, gradient: 'from-[var(--brand-green)] to-[var(--brand-gold)]', href: '/compare?category=washing_machine' },
+  { title: 'MacBook Air M3', subtitle: 'قارن المتاجر', savings: 900, gradient: 'from-[var(--brand-gold-dark)] to-[var(--brand-gold)]', href: '/compare?product=macbook-air-m3' },
+];
+
+const FEATURED_COMPARISONS_EN = [
+  { title: 'iPhone 15 Pro Max', subtitle: 'Compared across 5 stores', savings: 750, gradient: 'from-[var(--brand-green-dark)] to-[var(--brand-green)]', href: '/compare?product=iphone-15-pro-max' },
+  { title: '10kg Front Load Washer', subtitle: 'Top 4 stores', savings: 620, gradient: 'from-[var(--brand-green)] to-[var(--brand-gold)]', href: '/compare?category=washing_machine' },
+  { title: 'MacBook Air M3', subtitle: 'Compare stores', savings: 900, gradient: 'from-[var(--brand-gold-dark)] to-[var(--brand-gold)]', href: '/compare?product=macbook-air-m3' },
+];
+
+const VALUE_PROPS_AR = [
+  { icon: Zap, title: 'مقارنة فورية', description: 'ابحث مرة، واحصل على كل الأسعار من 19 متجر في ثوانٍ.' },
+  { icon: Bell, title: 'تنبيهات ذكية', description: 'اضبط سعرك المستهدف ونحن ننبّهك لحظة انخفاضه.' },
+  { icon: Ticket, title: 'كوبونات نشطة', description: 'كوبونات تُطبَّق تلقائيًا على أفضل سعر قبل الشراء.' },
+];
+
+const VALUE_PROPS_EN = [
+  { icon: Zap, title: 'Instant comparison', description: 'Search once, get every price from 19 stores in seconds.' },
+  { icon: Bell, title: 'Smart alerts', description: 'Set your target price and we notify you the moment it drops.' },
+  { icon: Ticket, title: 'Live coupons', description: 'Coupons applied automatically to the best price before you buy.' },
+];
+
+const FEATURED_STORES: string[] = [
+  'amazon', 'noon', 'jarir', 'extra', 'almanea',
+  'samsung_ksa', 'shaker', 'zagzoog', 'alesayi', 'swsg',
+  'alkhunaizan', 'bukhamsen', 'alghanim', 'alsaif_gallery', 'lulu_gcc',
+  'najm_store', 'aliexpress_ar',
 ];
 
 export default function LandingPageClient() {
-  const t = useTranslations();
-  const pathname = usePathname();
-  const params = useParams();
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
-  const { user, loading: authLoading, signOut } = useAuth();
-
-  const [mounted, setMounted] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typingText, setTypingText] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const locale = (params?.locale as string) || 'ar';
-  const isRTL = locale === 'ar';
-
-  const tx = (key: string) => stripEmojis(String(t(key)));
-
-  /* ─── Mount & scroll ─── */
-  useEffect(() => {
-    const mountTimer = window.setTimeout(() => setMounted(true), 0);
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.clearTimeout(mountTimer);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  /* ─── Typing animation for search placeholder ─── */
-  useEffect(() => {
-    if (!mounted) return;
-
-    const products = isRTL
-      ? ['آيفون 15 برو ماكس', 'ماك بوك اير M3', 'سوني WH-1000XM5', 'سامسونج جالكسي S24', 'آيباد برو M4']
-      : ['iPhone 15 Pro Max', 'MacBook Air M3', 'Sony WH-1000XM5', 'Samsung Galaxy S24', 'iPad Pro M4'];
-    let idx = 0;
-    let charIdx = 0;
-    let deleting = false;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const tick = () => {
-      const word = products[idx];
-      if (!deleting) {
-        charIdx++;
-        setTypingText(word.slice(0, charIdx));
-        if (charIdx === word.length) {
-          deleting = true;
-          timer = setTimeout(tick, 2000);
-          return;
-        }
-        timer = setTimeout(tick, 80);
-      } else {
-        charIdx--;
-        setTypingText(word.slice(0, charIdx));
-        if (charIdx === 0) {
-          deleting = false;
-          idx = (idx + 1) % products.length;
-          timer = setTimeout(tick, 400);
-          return;
-        }
-        timer = setTimeout(tick, 40);
-      }
-    };
-
-    timer = setTimeout(tick, 800);
-    return () => clearTimeout(timer);
-  }, [mounted]);
-
-  /* ─── Intersection Observer for scroll-triggered reveals ─── */
-  useEffect(() => {
-    if (!mounted) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.08, rootMargin: '0px 0px -60px 0px' }
-    );
-
-    requestAnimationFrame(() => {
-      document.querySelectorAll('.scroll-reveal').forEach((el) => observer.observe(el));
-    });
-
-    return () => observer.disconnect();
-  }, [mounted]);
-
-  const switchLocale = () => {
-    const nextLocale = locale === 'ar' ? 'en' : 'ar';
-    if (!pathname) {
-      router.push(`/${nextLocale}`);
-      return;
-    }
-    const nextPath = pathname.startsWith(`/${locale}`)
-      ? pathname.replace(`/${locale}`, `/${nextLocale}`)
-      : `/${nextLocale}`;
-    router.push(nextPath);
-  };
-
-  const handleSearch = (forcedQuery?: string) => {
-    const query = (forcedQuery ?? searchQuery).trim();
-    if (!query) {
-      router.push(`/${locale}/products`);
-      return;
-    }
-    router.push(`/${locale}/search?q=${encodeURIComponent(query)}`);
-  };
-
-  /* ─── Data ─── */
-
-  const menuCopy = useMemo(
-    () => ({
-      dashboard: isRTL ? 'لوحة التحكم' : 'Dashboard',
-      settings: isRTL ? 'الإعدادات' : 'Settings',
-      signOut: isRTL ? 'تسجيل الخروج' : 'Sign Out',
-      profileFallback: isRTL ? 'مستخدم' : 'User',
-      compareNow: isRTL ? 'قارن الآن' : 'Compare Now',
-      liveScan: isRTL ? 'فحص مباشر للأسعار' : 'Live Price Scan',
-    }),
-    [isRTL]
+  return (
+    <div className="bg-[color:var(--color-surface)]">
+      <Hero />
+      <CategoryRail />
+      <PriceDropTicker />
+      <FeaturedComparisons />
+      <PopularCategories />
+      <FeaturedStores />
+      <ValueProps />
+      <SavingsStat />
+      <AppCta />
+    </div>
   );
+}
 
-  const navLinks = [
-    { href: '#features', label: tx('nav.features') },
-    { href: '#how-it-works', label: tx('nav.howItWorks') },
-    { href: '#stores', label: tx('nav.stores') },
-    { href: '#testimonials', label: tx('nav.testimonials') },
-  ];
+/* ───────────────────────── Hero ───────────────────────── */
 
-  const quickSearches = isRTL
-    ? [
-        { icon: <Smartphone className="h-4 w-4" />, query: 'آيفون 15 برو' },
-        { icon: <Laptop className="h-4 w-4" />, query: 'ماك بوك اير M3' },
-        { icon: <Headphones className="h-4 w-4" />, query: 'سوني WH-1000XM5' },
-      ]
-    : [
-        { icon: <Smartphone className="h-4 w-4" />, query: 'iPhone 15 Pro' },
-        { icon: <Laptop className="h-4 w-4" />, query: 'MacBook Air M3' },
-        { icon: <Headphones className="h-4 w-4" />, query: 'Sony WH-1000XM5' },
-      ];
+function Hero() {
+  const { isRTL, locale } = useLocale();
+  const router = useRouter();
+  const [query, setQuery] = useState('');
 
-  const heroStats = [
-    { icon: <Users className="h-5 w-5" />, value: '100K+', label: tx('stats.activeUsers') },
-    { icon: <Star className="h-5 w-5" />, value: '4.9', label: tx('stats.rating') },
-    { icon: <Store className="h-5 w-5" />, value: '5+', label: tx('stats.trustedStores') },
-    { icon: <Percent className="h-5 w-5" />, value: '60%', label: tx('stats.avgSavings') },
-  ];
-
-  const stores = [
-    { name: 'Amazon.sa', icon: Globe, tone: 'from-amber-500/20 to-orange-500/20' },
-    { name: 'Noon', icon: Sparkles, tone: 'from-primary/20 to-secondary/20' },
-    { name: 'Jarir', icon: Store, tone: 'from-rose-500/20 to-red-500/20' },
-    { name: 'Extra', icon: ShoppingCart, tone: 'from-cyan-500/20 to-primary/20' },
-    { name: 'Almanea', icon: Shield, tone: 'from-emerald-500/20 to-success/20' },
-  ];
-
-  const marqueeStoreCycles = 4;
-  const marqueeStores = Array.from({ length: marqueeStoreCycles }, () => stores).flat();
-
-  const features = [
-    {
-      icon: Zap,
-      title: tx('features.instant.title'),
-      description: tx('features.instant.description'),
-      stat: tx('features.instant.stats'),
-    },
-    {
-      icon: Bell,
-      title: tx('features.alerts.title'),
-      description: tx('features.alerts.description'),
-      stat: tx('features.alerts.stats'),
-    },
-    {
-      icon: Shield,
-      title: tx('features.trusted.title'),
-      description: tx('features.trusted.description'),
-      stat: tx('features.trusted.stats'),
-    },
-    {
-      icon: BarChart3,
-      title: tx('features.analytics.title'),
-      description: tx('features.analytics.description'),
-      stat: tx('features.analytics.stats'),
-    },
-    {
-      icon: Heart,
-      title: tx('features.wishlist.title'),
-      description: tx('features.wishlist.description'),
-      stat: tx('features.wishlist.stats'),
-    },
-    {
-      icon: Gift,
-      title: tx('features.deals.title'),
-      description: tx('features.deals.description'),
-      stat: tx('features.deals.stats'),
-    },
-  ];
-
-  const steps = [
-    {
-      step: '01',
-      icon: Search,
-      title: tx('howItWorks.step1.title'),
-      description: tx('howItWorks.step1.description'),
-    },
-    {
-      step: '02',
-      icon: BarChart3,
-      title: tx('howItWorks.step2.title'),
-      description: tx('howItWorks.step2.description'),
-    },
-    {
-      step: '03',
-      icon: Target,
-      title: tx('howItWorks.step3.title'),
-      description: tx('howItWorks.step3.description'),
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: tx('testimonials.user1.name'),
-      role: tx('testimonials.user1.role'),
-      comment: tx('testimonials.user1.comment'),
-      saved: parseNumber(tx('testimonials.user1.saved')),
-    },
-    {
-      name: tx('testimonials.user2.name'),
-      role: tx('testimonials.user2.role'),
-      comment: tx('testimonials.user2.comment'),
-      saved: parseNumber(tx('testimonials.user2.saved')),
-    },
-    {
-      name: tx('testimonials.user3.name'),
-      role: tx('testimonials.user3.role'),
-      comment: tx('testimonials.user3.comment'),
-      saved: parseNumber(tx('testimonials.user3.saved')),
-    },
-  ];
-
-  const footerPrimary = [
-    { href: `/${locale}/products`, label: tx('footer.products') },
-    { href: `/${locale}/stores`, label: tx('footer.stores') },
-    { href: `/${locale}/deals`, label: tx('footer.deals') },
-    { href: `/${locale}/search`, label: tx('button.search') },
-  ];
-
-  const footerSupport = [
-    { href: `/${locale}/privacy`, label: tx('footer.privacy') },
-    { href: `/${locale}/terms`, label: tx('footer.terms') },
-    { href: `/${locale}/auth/login`, label: tx('nav.login') },
-    { href: `/${locale}/auth/signup`, label: tx('nav.startFree') },
-  ];
-
-  /* ═══════════════════════════════════════════
-     JSX
-     ═══════════════════════════════════════════ */
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/${locale}/search?q=${encodeURIComponent(q)}` : `/${locale}/search`);
+  };
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-surface text-on-surface">
-      {/* ─── Animated Gradient Mesh Background ─── */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="gradient-mesh absolute inset-0 opacity-60" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(100,116,139,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(100,116,139,0.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
-      </div>
-
-      {/* ═══════════════════════════════════════════
-          HEADER
-          ═══════════════════════════════════════════ */}
-      <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-          scrollY > 16
-            ? 'border-b border-outline-variant/50 bg-surface/80 shadow-sm backdrop-blur-2xl'
-            : 'bg-transparent backdrop-blur-sm'
-        }`}
-      >
-        <div className="container mx-auto flex h-[4.5rem] items-center justify-between px-4">
-          {/* Logo with glow ring on hover */}
-          <Link href={`/${locale}`} className="group flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute -inset-1.5 rounded-2xl bg-primary/20 opacity-0 blur-lg transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0a2f7e] to-primary text-lg font-black text-white shadow-sm shadow-primary/15">
-                {tx('app.initial')}
-              </div>
-            </div>
-            <span className="text-lg font-bold tracking-tight text-on-surface">
-              {tx('app.name')}
-            </span>
-          </Link>
-
-          {/* Nav — pill-shaped hover indicator */}
-          <nav className="hidden items-center gap-1 md:flex">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="relative rounded-full px-4 py-2 text-sm font-medium text-on-surface-variant transition-all duration-200 hover:bg-primary/10 hover:text-primary"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="rounded-xl border border-outline-variant/50 bg-surface-container-low/50 p-2.5 backdrop-blur-sm transition hover:border-primary/40 hover:bg-surface-container"
-              aria-label="Toggle theme"
-            >
-              {mounted ? (
-                theme === 'dark' ? (
-                  <Sun className="h-5 w-5 text-warning" />
-                ) : (
-                  <Moon className="h-5 w-5 text-primary" />
-                )
-              ) : (
-                <div className="h-5 w-5" />
-              )}
-            </button>
-
-            <button
-              onClick={switchLocale}
-              className="flex items-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-low/50 px-3 py-2.5 text-sm font-semibold text-on-surface backdrop-blur-sm transition hover:border-primary/40 hover:bg-surface-container"
-              aria-label="Toggle language"
-            >
-              <Languages className="h-4 w-4 text-primary" />
-              <span>{locale === 'ar' ? 'EN' : 'AR'}</span>
-            </button>
-
-            {/* Mobile hamburger — after theme & language buttons */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-xl border border-outline-variant/50 bg-surface-container-low/50 p-2.5 backdrop-blur-sm transition hover:border-primary/40 hover:bg-surface-container md:hidden"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-5 w-5 text-on-surface" />
-              ) : (
-                <Menu className="h-5 w-5 text-on-surface" />
-              )}
-            </button>
-
-            {authLoading ? (
-              <div className="h-9 w-9 animate-pulse rounded-full bg-surface-container-high" />
-            ) : user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-low px-2 py-1.5 transition hover:bg-surface-container">
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage
-                        src={user.avatar_url || undefined}
-                        alt={user.full_name || user.email || menuCopy.profileFallback}
-                      />
-                      <AvatarFallback className="bg-primary text-xs text-white">
-                        {user.full_name
-                          ? user.full_name
-                              .split(' ')
-                              .map((part) => part[0])
-                              .join('')
-                              .toUpperCase()
-                              .slice(0, 2)
-                          : user.email?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden max-w-28 truncate text-sm text-on-surface-variant sm:block">
-                      {user.full_name || user.email?.split('@')[0] || menuCopy.profileFallback}
-                    </span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-semibold">
-                        {user.full_name || menuCopy.profileFallback}
-                      </p>
-                      <p className="truncate text-xs text-on-surface-variant">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/${locale}/dashboard`} className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span>{menuCopy.dashboard}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/${locale}/profile`} className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      <span>{menuCopy.settings}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      await signOut();
-                      router.push(`/${locale}`);
-                    }}
-                    className="flex cursor-pointer items-center gap-2 text-red-600"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>{menuCopy.signOut}</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="hidden items-center gap-2 sm:flex">
-                <Link
-                  href={`/${locale}/auth/login`}
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-on-surface-variant transition hover:text-primary"
-                >
-                  {tx('nav.login')}
-                </Link>
-                <Link
-                  href={`/${locale}/auth/signup`}
-                  className="shimmer-btn relative overflow-hidden rounded-full bg-gradient-to-r from-[#0a2f7e] to-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/15 transition hover:shadow-md hover:shadow-primary/20"
-                >
-                  <span className="relative z-10">{tx('nav.startFree')}</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile menu panel */}
+    <section className="relative overflow-hidden bg-[color:var(--color-surface-container)]">
       <div
-        className={`fixed inset-x-0 top-[4.5rem] z-40 transform transition-all duration-300 md:hidden ${
-          mobileMenuOpen
-            ? 'translate-y-0 opacity-100'
-            : '-translate-y-4 pointer-events-none opacity-0'
-        }`}
-      >
-        <div className="mx-4 rounded-2xl border-2 border-gray-300 bg-gray-50 shadow-2xl dark:border-gray-500 dark:bg-[#1a1a2e] dark:shadow-black/50">
-          <nav className="flex flex-col p-3 gap-1">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-xl px-4 py-3 text-sm font-medium text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          {!user && !authLoading && (
-            <div className="flex flex-col gap-2 border-t border-outline-variant/30 p-3">
-              <Link
-                href={`/${locale}/auth/login`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container"
-              >
-                {tx('nav.login')}
-              </Link>
-              <Link
-                href={`/${locale}/auth/signup`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-xl bg-gradient-to-r from-[#0a2f7e] to-primary px-4 py-3 text-center text-sm font-semibold text-white shadow-sm"
-              >
-                {tx('nav.startFree')}
-              </Link>
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background:
+            'radial-gradient(ellipse at top, rgba(85,178,149,0.18), transparent 60%), radial-gradient(ellipse at bottom, rgba(226,187,78,0.10), transparent 60%)',
+        }}
+      />
+      <div className="relative mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-24 lg:py-28">
+        <div className="flex flex-col items-center text-center">
+          <Badge variant="secondary" className="mb-6">
+            <Sparkles className="h-3 w-3 me-1.5" />
+            {isRTL ? 'الجديد في توفيري' : 'New on Tawveeri'} · {isRTL ? '19 متجر' : '19 stores'}
+          </Badge>
+
+          <h1 className="t-h1 md:text-[52px] md:leading-[60px] text-on-surface max-w-[820px] font-black">
+            {isRTL ? (
+              <>
+                قارن الأسعار.
+                <span className="text-[var(--brand-green-dark)]"> وفّر المال. </span>
+                اشترِ بذكاء.
+              </>
+            ) : (
+              <>
+                Compare prices.
+                <span className="text-[var(--brand-green-dark)]"> Save money. </span>
+                Shop smart.
+              </>
+            )}
+          </h1>
+
+          <p className="mt-5 max-w-[620px] t-body text-on-surface-variant">
+            {isRTL
+              ? 'أكبر منصة مقارنة أسعار للإلكترونيات والأجهزة المنزلية في السعودية. من أمازون إلى اكسترا، كل الأسعار في مكان واحد.'
+              : 'Saudi Arabia\'s largest price comparison platform for electronics and home appliances. Every price from every store, in one search.'}
+          </p>
+
+          <form onSubmit={onSubmit} className="mt-8 w-full max-w-2xl">
+            <div className="group relative flex items-center overflow-hidden rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] shadow-[var(--elevation-1)] transition-shadow focus-within:shadow-[var(--elevation-3)] focus-within:border-[var(--brand-green)]">
+              <Search className="pointer-events-none absolute start-5 h-5 w-5 text-on-surface-variant" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  isRTL
+                    ? 'ابحث عن iPhone 15، ثلاجة LG، مكيف سبليت...'
+                    : 'Search for iPhone 15, LG fridge, Split AC...'
+                }
+                className="min-w-0 flex-1 bg-transparent py-4 text-[16px] text-on-surface outline-none placeholder:text-on-surface-variant/70 ps-14 pe-3"
+                aria-label={isRTL ? 'البحث عن منتج' : 'Search for a product'}
+              />
+              <Button type="submit" size="lg" className="m-1.5 shrink-0 px-6">
+                {isRTL ? 'بحث' : 'Search'}
+                <ArrowRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
+              </Button>
             </div>
-          )}
+          </form>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <TrustChip icon={Store}>{isRTL ? '19 متجر سعودي' : '19 Saudi stores'}</TrustChip>
+            <TrustChip icon={RefreshCw}>{isRTL ? 'تحديث يومي' : 'Daily updates'}</TrustChip>
+            <TrustChip icon={ShieldCheck}>{isRTL ? 'بدون رسوم' : 'No fees'}</TrustChip>
+          </div>
         </div>
       </div>
+    </section>
+  );
+}
 
-      {/* ═══════════════════════════════════════════
-          MAIN
-          ═══════════════════════════════════════════ */}
-      <main className="relative">
-        {/* ─── Hero Section — Split Layout ─── */}
-        <section className="relative overflow-hidden pt-32 pb-28 sm:pt-36 lg:pt-40 lg:pb-36">
-          {/* Parallax glow ring */}
-          <div
-            className="pointer-events-none absolute start-1/2 top-0 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/20 via-secondary/10 to-transparent blur-3xl"
-            style={{ transform: `translateY(${scrollY * 0.12}px)` }}
-          />
+function TrustChip({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)]/80 px-3 py-1.5 t-small text-on-surface-variant">
+      <Icon className="h-3.5 w-3.5 text-[var(--brand-green-dark)]" />
+      {children}
+    </span>
+  );
+}
 
-          <div className="container mx-auto px-4">
-            <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-              {/* ── Left: Text + Search ── */}
-              <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-start">
-                {/* Badge with shimmer */}
-                <div className="scroll-reveal inline-flex">
-                  <span className="shimmer-badge relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
-                    <Sparkles className="h-4 w-4" />
-                    <span>{tx('hero.badge')}</span>
-                  </span>
-                </div>
+/* ───────────────────────── Category rail ───────────────────────── */
 
-                {/* Headline */}
-                <h1 className="scroll-reveal mt-6 text-balance text-4xl font-black leading-[1.1] sm:text-5xl lg:text-7xl">
-                  <span className="text-on-surface">{tx('hero.saveUpTo')} </span>
-                  <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] bg-clip-text text-transparent">
-                    60%
-                  </span>
-                  <br />
-                  <span className="text-on-surface">{tx('hero.onPurchases')}</span>
-                </h1>
+function CategoryRail() {
+  const { isRTL, locale } = useLocale();
 
-                {/* Description */}
-                <p className="scroll-reveal mx-auto mt-6 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg lg:mx-0">
-                  {tx('hero.description')}{' '}
-                  <span className="font-semibold text-on-surface">{tx('hero.descriptionBold')}</span>{' '}
-                  {tx('hero.descriptionEnd')}. {tx('hero.tagline')}
-                </p>
-
-                {/* Search bar — pill-shaped with animated glow border */}
-                <div className="scroll-reveal relative mx-auto mt-8 max-w-xl lg:mx-0">
-                  <div className="search-glow-border rounded-full p-[2px] transition-shadow focus-within:shadow-[0_0_0_3px_rgba(13,71,161,0.25)]">
-                    <div className="flex items-center gap-3 rounded-full bg-surface py-2 pe-2 ps-5 shadow-sm">
-                      <Search className="h-5 w-5 shrink-0 text-primary" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') handleSearch();
-                        }}
-                        placeholder={mounted && typingText ? typingText : tx('hero.searchPlaceholder')}
-                        style={{ outline: 'none' }}
-                        className={`min-w-0 flex-1 bg-transparent py-2 text-base font-medium text-on-surface placeholder:text-on-surface-variant/60 sm:text-lg ${
-                          isRTL ? 'text-right' : 'text-left'
-                        }`}
-                      />
-                      <button
-                        onClick={() => handleSearch()}
-                        disabled={!searchQuery.trim()}
-                        className={`group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold transition sm:px-8 ${
-                          searchQuery.trim()
-                            ? 'bg-gradient-to-r from-[#0a2f7e] to-primary text-white shadow-sm shadow-primary/15 hover:shadow-md hover:shadow-primary/20'
-                            : 'bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed'
-                        }`}
-                      >
-                        <span className="hidden sm:inline">{tx('button.search')}</span>
-                        <ArrowRight
-                          className={`h-4 w-4 transition-transform group-hover:translate-x-0.5 ${
-                            isRTL ? 'rotate-180 group-hover:-translate-x-0.5' : ''
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick searches */}
-                <div className="scroll-reveal mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                  <span className="me-1 text-xs font-medium text-on-surface-variant">
-                    {tx('hero.popular')}
-                  </span>
-                  {quickSearches.map((item) => (
-                    <button
-                      key={item.query}
-                      onClick={() => {
-                        setSearchQuery(item.query);
-                        handleSearch(item.query);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant/60 bg-surface/80 px-3 py-1.5 text-xs font-medium text-on-surface-variant backdrop-blur-sm transition hover:border-primary/40 hover:text-primary"
-                    >
-                      {item.icon}
-                      <span>{item.query}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Action buttons */}
-                <div className="scroll-reveal mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-                  <Link
-                    href={`/${locale}/products`}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0a2f7e] to-primary px-6 py-3.5 text-sm font-semibold text-white shadow-sm shadow-primary/15 transition hover:shadow-md hover:shadow-primary/20"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    <span>{tx('button.browseProducts')}</span>
-                  </Link>
-                  <Link
-                    href="#how-it-works"
-                    className="inline-flex items-center gap-2 rounded-full border border-outline-variant/60 bg-surface/80 px-6 py-3.5 text-sm font-semibold text-on-surface backdrop-blur-sm transition hover:border-primary/40 hover:text-primary"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                    <span>{tx('button.howItWorks')}</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* ── Right: Floating Price Comparison Mockup ── */}
-              <div className="hidden lg:flex lg:items-center lg:justify-center">
-                <div className="mockup-float relative">
-                  {/* Glow behind card */}
-                  <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-primary/10 via-secondary/5 to-success/10 blur-3xl" />
-
-                  <div className="relative w-[340px] rounded-2xl border border-outline-variant/30 bg-surface/90 p-5 shadow-sm backdrop-blur-xl">
-                    {/* Product header */}
-                    <div className="flex items-center gap-3 border-b border-outline-variant/40 pb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                        <Smartphone className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-on-surface">{isRTL ? 'آيفون 15 برو ماكس' : 'iPhone 15 Pro Max'}</p>
-                        <p className="text-xs text-on-surface-variant">{isRTL ? '256 جيجا · تيتانيوم طبيعي' : '256GB · Natural Titanium'}</p>
-                      </div>
-                    </div>
-
-                    {/* Store prices */}
-                    <div className="mt-4 space-y-2">
-                      {/* Best price */}
-                      <div className="flex items-center justify-between rounded-xl border border-success/20 bg-success/10 px-3.5 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-amber-500" />
-                          <span className="text-sm font-medium text-on-surface">Amazon.sa</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Check className="h-3.5 w-3.5 text-success" />
-                          <Price
-                            amount={4199}
-                            className="text-sm font-bold tabular-nums text-success"
-                            symbolClassName="h-3.5 w-3.5 fill-success"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-3.5 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium text-on-surface">Noon</span>
-                        </div>
-                        <Price
-                          amount={4399}
-                          className="text-sm font-medium tabular-nums text-on-surface-variant"
-                          symbolClassName="h-3.5 w-3.5"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-xl bg-surface-container-low px-3.5 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <Store className="h-4 w-4 text-rose-500" />
-                          <span className="text-sm font-medium text-on-surface">Jarir</span>
-                        </div>
-                        <Price
-                          amount={4599}
-                          className="text-sm font-medium tabular-nums text-on-surface-variant"
-                          symbolClassName="h-3.5 w-3.5"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Savings */}
-                    <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-success/10 px-4 py-3">
-                      <Percent className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-semibold text-on-surface">{isRTL ? 'وفّر حتى' : 'Save up to'}</span>
-                      <Price
-                        amount={400}
-                        className="text-sm font-bold text-success"
-                        symbolClassName="h-3.5 w-3.5 fill-success"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── Stats Floating Bar — Glass Morphism ─── */}
-        <div className="relative z-10 -mt-14">
-          <div className="container mx-auto px-4">
-            <div className="scroll-reveal mx-auto max-w-5xl rounded-2xl border border-outline-variant/40 bg-surface/70 p-6 shadow-sm backdrop-blur-xl sm:p-8">
-              <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-                {heroStats.map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <div className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      {stat.icon}
-                    </div>
-                    <p className="text-2xl font-bold tabular-nums text-on-surface">{stat.value}</p>
-                    <p className="text-xs text-on-surface-variant">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════
-            STORES — Infinite Marquee
-            ═══════════════════════════════════════════ */}
-        <section id="stores" className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="scroll-reveal mx-auto mb-12 max-w-2xl text-center">
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                <Store className="h-4 w-4" />
-                {tx('stores.title')}
-              </p>
-              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">{tx('stores.subtitle')}</h2>
-            </div>
-          </div>
-
-          {/* Marquee */}
-          <div className="marquee-container relative overflow-hidden px-4 py-4" dir="ltr">
-            <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-16 bg-gradient-to-r from-surface to-transparent sm:w-24" />
-            <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-16 bg-gradient-to-l from-surface to-transparent sm:w-24" />
-
-            <div
-              className={`marquee-track ${isRTL ? 'marquee-rtl' : ''}`}
-              style={{ '--marquee-duration': `${marqueeStoreCycles * 30}s` } as React.CSSProperties}
-            >
-              {[0, 1].map((duplicateIndex) => (
-                <div key={`stores-strip-${duplicateIndex}`} className="marquee-group">
-                  {marqueeStores.map((store, storeIndex) => (
-                    <div
-                      key={`${store.name}-${duplicateIndex}-${storeIndex}`}
-                      className="group relative flex w-52 shrink-0 flex-col gap-4 overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 transition-transform duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-md dark:bg-surface-container"
-                      aria-hidden={duplicateIndex === 1 || storeIndex >= stores.length ? 'true' : undefined}
-                      dir={isRTL ? 'rtl' : 'ltr'}
-                    >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${store.tone} opacity-0 transition group-hover:opacity-100`} />
-                      <div className="relative z-10 flex flex-col gap-3">
-                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-primary transition group-hover:scale-110 dark:bg-surface-container-high">
-                          <store.icon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold text-on-surface">{store.name}</p>
-                          <p className="text-sm text-on-surface-variant">{tx('features.trusted.stats')}</p>
-                        </div>
-                        <div className="inline-flex items-center gap-1 text-xs font-medium text-success">
-                          <Check className="h-4 w-4" />
-                          <span>{tx('features.trusted.title')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ═══════════════════════════════════════════
-            FEATURES — Bento Grid
-            ═══════════════════════════════════════════ */}
-        <section id="features" className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="scroll-reveal mx-auto mb-14 max-w-2xl text-center">
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-secondary/20 bg-secondary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                <Sparkles className="h-4 w-4" />
-                {tx('features.badge')}
-              </p>
-              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">
-                {tx('features.title')}{' '}
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  {tx('features.titleBrand')}
-                </span>{' '}
-                {tx('features.titleEnd')}
-              </h2>
-              <p className="mt-4 text-base text-on-surface-variant sm:text-lg">{tx('features.subtitle')}</p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature, index) => (
-                <article
-                  key={feature.title}
-                  className="scroll-reveal group rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-md dark:bg-surface-container"
-                  style={{ '--reveal-delay': `${index * 80}ms` } as React.CSSProperties}
-                >
-                  <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${FEATURE_GRADIENTS[index]} text-white transition group-hover:scale-110`}>
-                    <feature.icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold text-on-surface">{feature.title}</h3>
-                  <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">{feature.description}</p>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-outline-variant/50 bg-surface-container-low px-3 py-1.5 text-xs font-medium text-on-surface-variant">
-                    <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                    <span>{feature.stat}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ═══════════════════════════════════════════
-            HOW IT WORKS — Horizontal Timeline
-            ═══════════════════════════════════════════ */}
-        <section id="how-it-works" className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="scroll-reveal mx-auto mb-14 max-w-2xl text-center">
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-success">
-                <Target className="h-4 w-4" />
-                {tx('howItWorks.badge')}
-              </p>
-              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">{tx('howItWorks.title')}</h2>
-              <p className="mt-4 text-base text-on-surface-variant sm:text-lg">{tx('howItWorks.subtitle')}</p>
-            </div>
-
-            {/* Desktop: Horizontal Timeline */}
-            <div className="hidden lg:block">
-              <div className="relative mx-auto max-w-5xl">
-                {/* Connecting dashed line */}
-                <div className="timeline-line absolute top-[3.5rem] h-[2px] border-t-2 border-dashed border-primary/30" style={{ insetInlineStart: '16.67%', insetInlineEnd: '16.67%' }} />
-
-                <div className="grid grid-cols-3 gap-8">
-                  {steps.map((step, index) => (
-                    <div key={step.step} className="scroll-reveal group relative text-center" style={{ '--reveal-delay': `${index * 150}ms` } as React.CSSProperties}>
-                      {/* Step number */}
-                      <div className="relative z-10 mx-auto mb-6 flex h-[7rem] w-[7rem] items-center justify-center rounded-3xl bg-gradient-to-br from-[#0a2f7e] to-primary text-4xl font-black text-white shadow-md shadow-primary/15 transition group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-primary/20">
-                        {step.step}
-                      </div>
-                      <div className="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <step.icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="mb-2 text-lg font-bold text-on-surface">{step.title}</h3>
-                      <p className="mx-auto max-w-xs text-sm leading-relaxed text-on-surface-variant">{step.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile: Vertical Timeline */}
-            <div className="lg:hidden">
-              <div className="relative space-y-8">
-                {/* Vertical dashed line */}
-                <div className="absolute bottom-0 top-0 w-[2px] border-s-2 border-dashed border-primary/30" style={{ insetInlineStart: '1.75rem' }} />
-
-                {steps.map((step, index) => (
-                  <div key={step.step} className="scroll-reveal relative flex gap-5" style={{ '--reveal-delay': `${index * 120}ms` } as React.CSSProperties}>
-                    <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0a2f7e] to-primary text-xl font-black text-white shadow-sm shadow-primary/15">
-                      {step.step}
-                    </div>
-                    <div className="pt-2">
-                      <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <step.icon className="h-4 w-4" />
-                      </div>
-                      <h3 className="mb-1 text-lg font-bold text-on-surface">{step.title}</h3>
-                      <p className="text-sm leading-relaxed text-on-surface-variant">{step.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="scroll-reveal mt-12 text-center">
+  return (
+    <section className="border-b border-[color:var(--color-outline-variant)]/50">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
+        <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory">
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            return (
               <Link
-                href={user ? `/${locale}/dashboard` : `/${locale}/auth/signup`}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0a2f7e] to-primary px-7 py-3.5 text-sm font-semibold text-white shadow-sm shadow-primary/15 transition hover:shadow-md hover:shadow-primary/20"
+                key={cat.slug}
+                href={`/${locale}/search?category=${cat.slug}`}
+                className="group shrink-0 snap-start inline-flex items-center gap-2 rounded-full border-[1.5px] border-[var(--brand-green-light)] bg-[var(--brand-green)]/5 px-4 py-2 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-green)] hover:text-white hover:shadow-[var(--elevation-2)]"
               >
-                <span>{tx('button.startSavingNow')}</span>
-                <ArrowRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ═══════════════════════════════════════════
-            TESTIMONIALS — Stacked Cards
-            ═══════════════════════════════════════════ */}
-        <section id="testimonials" className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="scroll-reveal mx-auto mb-14 max-w-2xl text-center">
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                <Award className="h-4 w-4" />
-                {tx('testimonials.badge')}
-              </p>
-              <h2 className="text-3xl font-black text-on-surface sm:text-4xl">
-                {tx('testimonials.title')}{' '}
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  {tx('testimonials.titleBrand')}
-                </span>{' '}
-                {tx('testimonials.titleEnd')}
-              </h2>
-              <p className="mt-4 text-base text-on-surface-variant sm:text-lg">{tx('testimonials.subtitle')}</p>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-              {testimonials.map((testimonial, index) => {
-                const rotation = index === 0 ? 'lg:-rotate-2' : index === 2 ? 'lg:rotate-2' : '';
-                return (
-                  <article
-                    key={testimonial.name}
-                    className={`scroll-reveal group rounded-2xl border border-outline-variant/50 bg-surface/80 p-6 backdrop-blur-sm transition-all duration-300 hover:rotate-0 hover:-translate-y-2 hover:shadow-md ${rotation}`}
-                    style={{ '--reveal-delay': `${index * 100}ms` } as React.CSSProperties}
-                  >
-                    {/* Star rating — gold gradient */}
-                    <div className="mb-4 flex items-center gap-1">
-                      {Array.from({ length: 5 }).map((_, starIndex) => (
-                        <Star key={starIndex} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-
-                    <p className="mb-6 text-sm leading-relaxed text-on-surface-variant">
-                      &ldquo;{testimonial.comment}&rdquo;
-                    </p>
-
-                    {/* Author */}
-                    <div className="mb-4 flex items-center gap-3">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${AVATAR_GRADIENTS[index]} text-sm font-bold text-white`}>
-                        {testimonial.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-on-surface">{testimonial.name}</p>
-                        <p className="text-xs text-on-surface-variant">{testimonial.role}</p>
-                      </div>
-                    </div>
-
-                    {/* Savings badge with pulse */}
-                    <div className="savings-pulse inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1.5">
-                      <Percent className="h-4 w-4 text-success" />
-                      <span className="text-xs font-medium text-on-surface-variant">{tx('testimonials.saved')}</span>
-                      <Price
-                        amount={testimonial.saved}
-                        className="text-sm font-semibold text-success"
-                        symbolClassName="h-4 w-4 fill-success"
-                      />
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ═══════════════════════════════════════════
-            CTA — Full-Bleed Gradient
-            ═══════════════════════════════════════════ */}
-        <section className="relative overflow-hidden py-24">
-          {/* Gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#071a3e] via-[#0a2f7e] to-primary" />
-
-          {/* Floating decorative circles */}
-          <div className="pointer-events-none absolute -start-20 top-10 h-72 w-72 rounded-full bg-white/[0.06] blur-3xl" />
-          <div className="pointer-events-none absolute -end-20 bottom-10 h-56 w-56 rounded-full bg-white/[0.06] blur-3xl" />
-          <div className="pointer-events-none absolute end-1/3 top-1/4 h-40 w-40 rounded-full bg-secondary/20 blur-3xl" />
-
-          <div className="container relative z-10 mx-auto px-4">
-            <div className="scroll-reveal mx-auto max-w-3xl text-center">
-              <h2 className="text-balance text-3xl font-black text-white sm:text-5xl">
-                {tx('cta.title')}
-              </h2>
-              <p className="mt-5 text-base text-white/75 sm:text-lg">
-                {tx('cta.subtitle')}{' '}
-                <span className="font-semibold text-white">{tx('cta.subtitleBold')}</span>{' '}
-                {tx('cta.subtitleEnd')}
-              </p>
-
-              {/* Benefits */}
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                {[tx('cta.benefit1'), tx('cta.benefit2'), tx('cta.benefit3'), tx('cta.benefit4')].map(
-                  (benefit) => (
-                    <div
-                      key={benefit}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.07] px-4 py-2.5 text-sm text-white/90 backdrop-blur-sm"
-                    >
-                      <Check className="h-4 w-4 text-emerald-400" />
-                      <span>{benefit}</span>
-                    </div>
-                  )
-                )}
-              </div>
-
-              {/* Buttons — inverted style */}
-              <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-                {authLoading ? (
-                  <div className="h-12 w-48 animate-pulse rounded-full bg-white/20" />
-                ) : user ? (
-                  <Link
-                    href={`/${locale}/dashboard`}
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-primary shadow-sm transition hover:bg-white/90"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>{menuCopy.dashboard}</span>
-                  </Link>
-                ) : (
-                  <Link
-                    href={`/${locale}/auth/signup`}
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-primary shadow-sm transition hover:bg-white/90"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span>{tx('button.startFreeNow')}</span>
-                  </Link>
-                )}
-                <Link
-                  href={`/${locale}/products`}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-white/25 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  <span>{tx('button.browseProductsShort')}</span>
-                </Link>
-              </div>
-
-              <div className="mt-7 inline-flex items-center gap-2 text-xs text-white/60">
-                <Lock className="h-4 w-4" />
-                <span>{tx('cta.security')}</span>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* ═══════════════════════════════════════════
-          FOOTER — Modernized
-          ═══════════════════════════════════════════ */}
-      <footer className="border-t border-outline-variant bg-surface-container py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-10 md:grid-cols-4">
-            {/* Brand */}
-            <div>
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0a2f7e] to-primary text-lg font-black text-white">
-                  {tx('app.initial')}
-                </div>
-                <span className="text-lg font-bold text-on-surface">{tx('app.name')}</span>
-              </div>
-              <p className="text-sm leading-relaxed text-on-surface-variant">{tx('footer.description')}</p>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
-                {tx('footer.quickLinks')}
-              </h3>
-              <ul className="space-y-3">
-                {footerPrimary.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="inline-flex items-center gap-2 text-sm text-on-surface-variant transition hover:text-primary"
-                    >
-                      <ArrowRight className={`h-3.5 w-3.5 ${isRTL ? 'rotate-180' : ''}`} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h3 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
-                {tx('footer.support')}
-              </h3>
-              <ul className="space-y-3">
-                {footerSupport.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="inline-flex items-center gap-2 text-sm text-on-surface-variant transition hover:text-primary"
-                    >
-                      <ArrowRight className={`h-3.5 w-3.5 ${isRTL ? 'rotate-180' : ''}`} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Newsletter */}
-            <div>
-              <h3 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-on-surface-variant">
-                {tx('footer.newsletter')}
-              </h3>
-              <p className="mb-4 text-sm text-on-surface-variant">{tx('footer.newsletterDescription')}</p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Mail className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant ${isRTL ? 'right-3' : 'left-3'}`} />
-                  <input
-                    type="email"
-                    placeholder={tx('footer.emailPlaceholder')}
-                    className={`w-full rounded-xl border border-outline-variant bg-surface px-3 py-2.5 text-sm text-on-surface outline-none transition focus:border-primary focus:shadow-[0_0_0_3px_rgba(13,71,161,0.15)] ${isRTL ? 'pr-9' : 'pl-9'}`}
-                  />
-                </div>
-                <button className="rounded-xl bg-gradient-to-r from-[#0a2f7e] to-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md hover:shadow-primary/15">
-                  {tx('button.subscribe')}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="mt-12 flex flex-col gap-4 border-t border-outline-variant/60 pt-8 text-sm text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
-            <p>{tx('footer.copyright')}</p>
-            <div className="flex items-center gap-3">
-              {[Globe, Mail, Shield].map((Icon, i) => (
-                <span
-                  key={i}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-outline-variant/50 bg-surface text-on-surface-variant transition hover:border-primary/40 hover:text-primary"
-                >
-                  <Icon className="h-4 w-4" />
+                <Icon
+                  className="h-4 w-4 text-[var(--brand-green-dark)] transition-colors group-hover:text-white"
+                  strokeWidth={1.75}
+                />
+                <span className="t-body-strong text-on-surface group-hover:text-white transition-colors">
+                  {isRTL ? cat.labelAr : cat.labelEn}
                 </span>
-              ))}
-            </div>
-          </div>
+              </Link>
+            );
+          })}
         </div>
-      </footer>
+      </div>
+    </section>
+  );
+}
 
-      {/* ═══════════════════════════════════════════
-          ANIMATIONS
-          ═══════════════════════════════════════════ */}
-      <style jsx>{`
-        /* ── Pointer cursor on all clickable elements ── */
-        button:not(:disabled),
-        a,
-        [role="button"] {
-          cursor: pointer;
-        }
+/* ───────────────────────── Price-drop ticker ───────────────────────── */
 
-        /* ── Animated gradient mesh background ── */
-        .gradient-mesh {
-          background:
-            radial-gradient(ellipse 60% 50% at 20% 20%, rgba(13, 71, 161, 0.15), transparent 50%),
-            radial-gradient(ellipse 50% 60% at 80% 15%, rgba(16, 185, 129, 0.12), transparent 45%),
-            radial-gradient(ellipse 55% 45% at 50% 80%, rgba(79, 70, 229, 0.12), transparent 50%);
-          animation: gradient-shift 12s ease-in-out infinite alternate;
-        }
+function PriceDropTicker() {
+  const { isRTL, locale } = useLocale();
+  const items = isRTL ? TICKER_SAMPLES_AR : TICKER_SAMPLES_EN;
+  const [index, setIndex] = useState(0);
 
-        @keyframes gradient-shift {
-          0% {
-            background-position: 0% 0%, 100% 0%, 50% 100%;
-          }
-          50% {
-            background-position: 30% 20%, 70% 30%, 40% 70%;
-          }
-          100% {
-            background-position: 10% 40%, 90% 10%, 60% 90%;
-          }
-        }
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % items.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [items.length]);
 
-        /* ── Scroll reveal animation ── */
-        .scroll-reveal {
-          opacity: 0;
-          transform: translateY(24px);
-          transition: opacity 0.01s, transform 0.01s;
-        }
+  const current = items[index];
 
-        .scroll-reveal.revealed {
-          animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          animation-delay: var(--reveal-delay, 0ms);
-        }
+  return (
+    <section className="mx-auto w-full max-w-[1600px] px-4 md:px-8 mt-4">
+      <div className="rounded-[var(--radius-md)] border border-[var(--brand-gold)]/40 bg-[var(--brand-gold)]/8 backdrop-blur-sm">
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          <span className="inline-flex items-center gap-1.5 t-caption font-bold text-[var(--brand-gold-dark)] shrink-0">
+            <TrendingDown className="h-3.5 w-3.5" />
+            {isRTL ? 'انخفاض' : 'Live'}
+          </span>
+          <span aria-hidden className="h-4 w-px bg-[var(--brand-gold)]/30 shrink-0" />
+          <div key={index} className="flex flex-1 min-w-0 items-center justify-center overflow-hidden leading-none">
+            <p className="t-small text-on-surface truncate text-center my-0 animate-in fade-in duration-500">
+              <span className="font-semibold">{current.product}</span>
+              <span className="text-on-surface-variant mx-2">·</span>
+              <span className="inline-flex items-center gap-1 text-[var(--brand-gold-dark)] dark:text-[var(--brand-gold)] font-bold">
+                {isRTL ? 'وفّر' : 'Save'} {current.drop}
+                <SARSymbol className="w-3 h-3 fill-current" />
+              </span>
+              <span className="text-on-surface-variant mx-2">·</span>
+              <span className="text-on-surface-variant">{current.store}</span>
+            </p>
+          </div>
+          <Link
+            href={`/${locale}/deals`}
+            className="hidden md:inline-flex items-center gap-1 shrink-0 t-small font-semibold text-[var(--brand-green-dark)] dark:text-[var(--brand-green)] hover:text-[var(--brand-gold-dark)] transition-colors"
+          >
+            {isRTL ? 'عرض الكل' : 'See all'}
+            {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-        @keyframes reveal-up {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+/* ───────────────────────── Featured comparisons ───────────────────────── */
 
-        /* ── Floating mockup card ── */
-        .mockup-float {
-          animation: float 6s ease-in-out infinite;
-        }
+function FeaturedComparisons() {
+  const { isRTL, locale } = useLocale();
+  const items = isRTL ? FEATURED_COMPARISONS_AR : FEATURED_COMPARISONS_EN;
 
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
-        }
+  return (
+    <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="t-h2 text-on-surface">
+            {isRTL ? 'مقارنات مختارة' : "Editor's comparisons"}
+          </h2>
+          <p className="mt-2 t-body text-on-surface-variant max-w-lg">
+            {isRTL
+              ? 'قصص مقارنة حقيقية — نختار المنتج، نقارن المتاجر، ونعرض لك أين تشتري.'
+              : 'Real comparison stories — we pick the product, compare stores, and show you where to buy.'}
+          </p>
+        </div>
+        <Link
+          href={`/${locale}/compare`}
+          className="hidden md:inline-flex items-center gap-1 t-body-strong text-[var(--brand-green-dark)] hover:text-[var(--brand-green)]"
+        >
+          {isRTL ? 'كل المقارنات' : 'All comparisons'}
+          {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Link>
+      </div>
 
-        /* ── Shimmer effect for badges ── */
-        .shimmer-badge::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.15) 50%,
-            transparent 100%
+      <div className="grid gap-5 md:grid-cols-3">
+        {items.map((item) => (
+          <Link
+            key={item.title}
+            href={`/${locale}${item.href}`}
+            className={`group relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br ${item.gradient} p-6 text-white shadow-[var(--elevation-1)] transition-all hover:shadow-[var(--elevation-3)] hover:-translate-y-0.5`}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -end-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl"
+            />
+            <div className="relative">
+              <p className="t-caption text-white/80">{item.subtitle}</p>
+              <h3 className="t-h3 mt-2 font-bold">{item.title}</h3>
+            </div>
+            <div className="relative mt-6 flex items-end justify-between">
+              <div>
+                <p className="t-caption text-white/70">
+                  {isRTL ? 'أقصى توفير حتى الآن' : 'Max savings found'}
+                </p>
+                <p className="t-h3 mt-0.5 font-black inline-flex items-center gap-1.5">
+                  {item.savings}
+                  <SARSymbol className="w-5 h-5 fill-current" />
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 backdrop-blur px-3 py-1.5 t-small font-semibold">
+                {isRTL ? 'قارن' : 'Compare'}
+                {isRTL ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Popular categories ───────────────────────── */
+
+function PopularCategories() {
+  const { isRTL, locale } = useLocale();
+
+  return (
+    <section className="bg-[color:var(--color-surface-container)]/50">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+        <h2 className="t-h2 text-on-surface mb-2">
+          {isRTL ? 'فئات شائعة' : 'Popular categories'}
+        </h2>
+        <p className="t-body text-on-surface-variant mb-8 max-w-lg">
+          {isRTL
+            ? 'ابدأ من فئتك المفضلة وقارن الأسعار فورًا.'
+            : 'Start from your favorite category and compare prices instantly.'}
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <Link
+                key={cat.slug}
+                href={`/${locale}/search?category=${cat.slug}`}
+                className="group flex flex-col items-start gap-3 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-5 transition-all hover:border-[var(--brand-green)] hover:shadow-[var(--elevation-2)] hover:-translate-y-0.5"
+              >
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-green)]/10 text-[var(--brand-green-dark)] dark:text-[var(--brand-green)] transition-colors group-hover:bg-[var(--brand-gold)]/20 group-hover:text-[var(--brand-gold-dark)]">
+                  <Icon className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <div className="flex flex-col">
+                  <span className="t-body-strong text-on-surface">
+                    {isRTL ? cat.labelAr : cat.labelEn}
+                  </span>
+                  <span className="t-small text-on-surface-variant group-hover:text-[var(--brand-green-dark)]">
+                    {isRTL ? 'ابدأ المقارنة ←' : 'Start comparing →'}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Featured stores ───────────────────────── */
+
+function FeaturedStores() {
+  const { isRTL, locale } = useLocale();
+
+  return (
+    <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="t-h2 text-on-surface">
+            {isRTL ? 'متاجر مدعومة' : 'Supported stores'}
+          </h2>
+          <p className="mt-2 t-body text-on-surface-variant">
+            {isRTL
+              ? '19 متجر سعودي في مقارنة واحدة — الأكبر في المنطقة.'
+              : '19 Saudi stores in one comparison — the largest in the region.'}
+          </p>
+        </div>
+        <Link
+          href={`/${locale}/stores`}
+          className="hidden md:inline-flex items-center gap-1 t-body-strong text-[var(--brand-green-dark)] hover:text-[var(--brand-green)]"
+        >
+          {isRTL ? 'كل المتاجر' : 'All stores'}
+          {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+        {FEATURED_STORES.map((slug) => {
+          const name = SEARCH_STORE_DISPLAY_NAMES[slug];
+          const label = isRTL ? name?.name_ar : name?.name_en;
+          return (
+            <Link
+              key={slug}
+              href={`/${locale}/stores/${slug}`}
+              className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-4 transition-all hover:border-[var(--brand-green)] hover:shadow-[var(--elevation-1)]"
+              title={label}
+            >
+              <StoreLogo slug={slug} size="lg" locale={locale as 'ar' | 'en'} />
+              <span className="t-small text-on-surface-variant text-center line-clamp-1 group-hover:text-[var(--brand-green-dark)]">
+                {label || slug}
+              </span>
+            </Link>
           );
-          background-size: 200% 100%;
-          animation: shimmer 3s ease-in-out infinite;
-          border-radius: inherit;
-        }
+        })}
+      </div>
+    </section>
+  );
+}
 
-        /* ── Shimmer effect for CTA buttons ── */
-        .shimmer-btn::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.12) 50%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          animation: shimmer 2.5s ease-in-out infinite;
-          border-radius: inherit;
-        }
+/* ───────────────────────── Value props ───────────────────────── */
 
-        @keyframes shimmer {
-          0% { background-position: 200% center; }
-          100% { background-position: -200% center; }
-        }
+function ValueProps() {
+  const { isRTL } = useLocale();
+  const props = isRTL ? VALUE_PROPS_AR : VALUE_PROPS_EN;
 
-        /* ── Search bar glowing border ── */
-        .search-glow-border {
-          background: linear-gradient(
-            135deg,
-            rgba(13, 71, 161, 0.5),
-            rgba(79, 70, 229, 0.3),
-            rgba(16, 185, 129, 0.3),
-            rgba(13, 71, 161, 0.5)
-          );
-          background-size: 300% 300%;
-          animation: glow-rotate 4s ease infinite;
-        }
+  return (
+    <section className="bg-[color:var(--color-surface-container-low)]">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+        <div className="grid gap-6 md:grid-cols-3">
+          {props.map((p) => {
+            const Icon = p.icon;
+            return (
+              <div
+                key={p.title}
+                className="flex flex-col items-start gap-4 rounded-[var(--radius-lg)] bg-[color:var(--color-surface)] p-6 border border-[color:var(--color-outline-variant)]/50"
+              >
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-green)]/10 text-[var(--brand-green-dark)] dark:text-[var(--brand-green)]">
+                  <Icon className="h-6 w-6" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <h3 className="t-h4 text-on-surface">{p.title}</h3>
+                  <p className="mt-2 t-body text-on-surface-variant">{p.description}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-        @keyframes glow-rotate {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
+/* ───────────────────────── Savings stat ───────────────────────── */
 
-        /* ── Marquee ── */
-        .marquee-track {
-          display: flex;
-          width: max-content;
-          will-change: transform;
-          animation: marquee-ltr var(--marquee-duration, 30s) linear infinite;
-        }
+function SavingsStat() {
+  const { isRTL } = useLocale();
 
-        .marquee-group {
-          display: flex;
-          flex-shrink: 0;
-          gap: 1.25rem;
-          padding-inline-end: 1.25rem;
-        }
+  return (
+    <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--brand-green-dark)] via-[var(--brand-green)] to-[var(--brand-green-dark)] p-10 md:p-14 text-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -end-20 -top-20 h-80 w-80 rounded-full bg-[var(--brand-gold)]/15 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -start-20 -bottom-20 h-80 w-80 rounded-full bg-white/10 blur-3xl"
+        />
+        <div className="relative flex flex-col items-center text-center">
+          <Badge variant="best" className="mb-6">
+            <Star className="h-3 w-3 fill-current" />
+            {isRTL ? 'ثقة المستخدمين' : 'Trusted by shoppers'}
+          </Badge>
+          <p className="t-h2 md:text-[44px] md:leading-[52px] font-black">
+            {isRTL ? 'ساعدنا المتسوقين على توفير' : "We've helped shoppers save"}
+          </p>
+          <p className="mt-2 text-[64px] md:text-[96px] font-black leading-none tracking-tight text-[var(--brand-gold)] num-ltr inline-flex items-baseline gap-3 justify-center">
+            {isRTL ? '+1,250,000' : '1.25M+'}
+            <SARSymbol className="w-12 h-12 md:w-16 md:h-16 fill-current self-center" />
+          </p>
+          <p className="mt-4 t-body text-white/80 max-w-lg">
+            {isRTL
+              ? 'قارن مرة واحدة، وفّر دائمًا. نحن نُحدِّث الأسعار يوميًا عبر 19 متجرًا.'
+              : 'Compare once, save always. We refresh prices daily across 19 stores.'}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-        .marquee-rtl {
-          animation-name: marquee-rtl;
-        }
+/* ───────────────────────── App CTA ───────────────────────── */
 
-        .marquee-container:hover .marquee-track {
-          animation-play-state: paused;
-        }
+function AppCta() {
+  const { isRTL } = useLocale();
 
-        @keyframes marquee-ltr {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-
-        @keyframes marquee-rtl {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-
-        /* ── Timeline connecting line animation ── */
-        .timeline-line {
-          background-image: repeating-linear-gradient(
-            90deg,
-            transparent,
-            transparent 6px,
-            rgba(13, 71, 161, 0.3) 6px,
-            rgba(13, 71, 161, 0.3) 12px
-          );
-        }
-
-        /* ── Savings badge pulse ── */
-        .savings-pulse {
-          animation: pulse-soft 3s ease-in-out infinite;
-        }
-
-        @keyframes pulse-soft {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.15); }
-          50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-        }
-
-        /* ── Reduced motion ── */
-        @media (prefers-reduced-motion: reduce) {
-          .gradient-mesh,
-          .mockup-float,
-          .shimmer-badge::after,
-          .shimmer-btn::after,
-          .search-glow-border,
-          .marquee-track,
-          .savings-pulse {
-            animation: none !important;
-          }
-
-          .scroll-reveal {
-            opacity: 1 !important;
-            transform: none !important;
-          }
-
-          .scroll-reveal.revealed {
-            animation: none !important;
-            opacity: 1;
-            transform: none;
-          }
-        }
-      `}</style>
-    </div>
+  return (
+    <section className="mx-auto w-full max-w-[1600px] px-4 pb-16 md:px-8 md:pb-20">
+      <div className="grid gap-8 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--brand-gold)]/60 bg-[var(--brand-gold)]/8 p-8 md:grid-cols-[1fr_auto] md:items-center md:p-10">
+        <div>
+          <Badge variant="coupon" className="mb-3">
+            <Sparkles className="h-3 w-3" />
+            {isRTL ? 'قريبًا' : 'Coming soon'}
+          </Badge>
+          <h2 className="t-h3 text-on-surface">
+            {isRTL
+              ? 'توفيري على جوالك — تنبيهات فورية وأفضل الأسعار'
+              : 'Tawveeri on your phone — instant alerts and best prices'}
+          </h2>
+          <p className="mt-2 t-body text-on-surface-variant max-w-lg">
+            {isRTL
+              ? 'حمّل تطبيق توفيري وكن أول من يعرف بانخفاض الأسعار ونشر الكوبونات الجديدة.'
+              : 'Download the Tawveeri app to be first to know about price drops and new coupons.'}
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+          <Button variant="default" size="lg" className="shrink-0">
+            {isRTL ? 'تحميل iOS' : 'Download iOS'}
+          </Button>
+          <Button variant="outline" size="lg" className="shrink-0">
+            {isRTL ? 'تحميل Android' : 'Download Android'}
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }

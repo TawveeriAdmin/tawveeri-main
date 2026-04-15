@@ -293,7 +293,7 @@ export default function StoreProductsPage({
  </p>
  </div>
  <Button onClick={() => router.push(`/${locale}/store/products/new`)}>
- <Plus className="mr-2 h-4 w-4" />
+ <Plus className="me-2 h-4 w-4" />
  {t('store.dashboard.products.addProduct')}
  </Button>
  </div>

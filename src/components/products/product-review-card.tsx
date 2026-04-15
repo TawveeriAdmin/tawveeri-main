@@ -139,10 +139,10 @@ export function ProductReviewCard({
                 disabled={helpfulClicked}
                 className="h-8 text-sm"
               >
-                <ThumbsUp className="h-4 w-4 mr-1" />
+                <ThumbsUp className="h-4 w-4 me-1" />
                 {t('products.review.helpful')}
                 {review.helpful_count > 0 && (
-                  <span className="ml-1">({review.helpful_count})</span>
+                  <span className="ms-1">({review.helpful_count})</span>
                 )}
               </Button>
             </div>

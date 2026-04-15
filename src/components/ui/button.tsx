@@ -4,28 +4,30 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'state-layer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-label-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-38',
+  'state-layer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-label-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-38',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-on-primary',
+          'bg-[var(--brand-green)] text-white hover:bg-[var(--brand-green-dark)]',
+        accent:
+          'bg-[var(--brand-gold)] text-[var(--brand-dark-text)] hover:bg-[var(--brand-gold-dark)] hover:text-white',
         tonal:
-          'bg-secondary-container text-on-secondary-container',
+          'bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)] hover:bg-[color:var(--color-surface-container-high)]',
         success:
-          'bg-success text-on-success',
+          'bg-[var(--brand-green)] text-white hover:bg-[var(--brand-green-dark)]',
         warning:
           'bg-error text-on-error',
         destructive:
           'bg-error text-on-error',
         elevated:
-          'bg-surface-container-low text-primary elevation-1',
+          'bg-[color:var(--color-surface)] text-[var(--brand-green-dark)] shadow-[var(--elevation-1)] hover:shadow-[var(--elevation-2)]',
         outline:
-          'border border-outline text-primary bg-transparent hover:bg-primary/8',
+          'border border-[var(--brand-green)]/60 text-[var(--brand-green-dark)] bg-transparent hover:bg-[var(--brand-bg-green)]',
         ghost:
           'text-on-surface-variant hover:bg-on-surface/8',
         link:
-          'text-primary underline-offset-4 hover:underline',
+          'text-[var(--brand-green-dark)] underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-10 px-6 py-2.5',

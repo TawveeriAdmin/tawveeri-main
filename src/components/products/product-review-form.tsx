@@ -217,7 +217,7 @@ export function ProductReviewForm({
                 </button>
               ))}
               {rating > 0 && (
-                <span className="ml-2 text-sm text-on-surface-variant">
+                <span className="ms-2 text-sm text-on-surface-variant">
                   {rating}/5
                 </span>
               )}

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { bestPrice as bestPriceCopy, savings as savingsCopy, type Locale } from '@/lib/copy';
 
 const SAR_SVG_PATH_1 = 'M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z';
 const SAR_SVG_PATH_2 = 'M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z';
@@ -72,35 +73,81 @@ export function Price({
 interface PriceDisplayProps {
   currentPrice: number;
   originalPrice?: number;
+  /** When true, renders the gold "🏆 أفضل سعر" chip above the price row. */
+  isBest?: boolean;
+  /**
+   * Savings amount in SAR. When provided (and > 0) renders a gold "وفّر X ر.س" chip
+   * under the price row. If omitted but `originalPrice` > `currentPrice`, computed automatically.
+   */
+  savings?: number;
+  locale?: Locale;
   currentClassName?: string;
   originalClassName?: string;
   symbolClassName?: string;
+  className?: string;
 }
 
 /**
- * PriceDisplay component for showing current price with optional original price
- * Shows both prices with the Saudi Riyal SVG symbol
+ * PriceDisplay — primary price block used on product cards and product detail.
+ * Optionally renders a gold best-price chip and a savings chip to foreground
+ * the brand's "trust via numbers" principle.
  */
 export function PriceDisplay({
   currentPrice,
   originalPrice,
+  isBest = false,
+  savings,
+  locale = 'ar',
   currentClassName,
   originalClassName,
   symbolClassName,
+  className,
 }: PriceDisplayProps) {
+  const computedSavings =
+    typeof savings === 'number'
+      ? savings
+      : originalPrice && originalPrice > currentPrice
+        ? originalPrice - currentPrice
+        : 0;
+
   return (
-    <div className="flex items-baseline gap-3">
-      <Price
-        amount={currentPrice}
-        className={cn('text-5xl font-extrabold', currentClassName)}
-        symbolClassName={cn('w-10 h-10', symbolClassName)}
-      />
-      {originalPrice && (
+    <div className={cn('flex flex-col gap-2', className)}>
+      {isBest && (
+        <span
+          className={cn(
+            'inline-flex self-start items-center gap-1 rounded-full px-2.5 py-1',
+            'bg-[var(--brand-gold)]/15 text-[var(--brand-gold-dark)]',
+            'border border-[var(--brand-gold)]/40',
+            't-caption',
+          )}
+        >
+          {bestPriceCopy(locale)}
+        </span>
+      )}
+      <div className="flex items-baseline gap-3 flex-wrap">
         <Price
-          amount={originalPrice}
-          className={cn('text-lg text-on-surface-variant line-through', originalClassName)}
-          symbolClassName={cn('w-5 h-5', symbolClassName)}
+          amount={currentPrice}
+          className={cn('text-4xl font-extrabold text-on-surface', currentClassName)}
+          symbolClassName={cn('w-7 h-7', symbolClassName)}
         />
+        {originalPrice && originalPrice > currentPrice && (
+          <Price
+            amount={originalPrice}
+            className={cn('text-base text-on-surface-variant line-through', originalClassName)}
+            symbolClassName={cn('w-4 h-4', symbolClassName)}
+          />
+        )}
+      </div>
+      {computedSavings > 0 && (
+        <span
+          className={cn(
+            'inline-flex self-start items-center rounded-full px-2.5 py-1',
+            'bg-[var(--brand-gold)]/12 text-[var(--brand-gold-dark)]',
+            't-small font-semibold',
+          )}
+        >
+          {savingsCopy(computedSavings, locale)}
+        </span>
       )}
     </div>
   );

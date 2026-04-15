@@ -153,7 +153,7 @@ export function ProductReviews({
 
         {user && !userHasReview && (
           <Button onClick={() => setReviewDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="me-2 h-4 w-4" />
             {t('products.review.writeReview')}
           </Button>
         )}
@@ -195,7 +195,7 @@ export function ProductReviews({
           </p>
           {user && !userHasReview && (
             <Button onClick={() => setReviewDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="me-2 h-4 w-4" />
               {t('products.review.beFirstToReview')}
             </Button>
           )}

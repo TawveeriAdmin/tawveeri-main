@@ -7,38 +7,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Button } from '@/components/ui/button';
-import { Heart, BarChart3, ExternalLink, Store } from 'lucide-react';
+import { IconButton } from '@/components/ui/icon-button';
+import { Heart, BarChart3, ExternalLink, Store, Flame } from 'lucide-react';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { calculateSavings } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
-import { getSearchStoreLogoPath } from '@/lib/scraping/product-adapter';
+import { StoreLogo } from '@/components/ui/store-logo';
+import { bestPrice as bestPriceCopy, savings as savingsCopy } from '@/lib/copy';
 
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-
-/** Store logo paths (`/public/logos/{slug}.png`) */
-const STORE_LOGOS: Record<string, string> = {
-  amazon: '/logos/amazon.png',
-  noon: '/logos/noon.png',
-  jarir: '/logos/jarir.png',
-  extra: '/logos/extra.png',
-  almanea: '/logos/almanea.png',
-  samsung_ksa: '/logos/samsung_ksa.png',
-  shaker: '/logos/shaker.png',
-  zagzoog: '/logos/zagzoog.png',
-  alesayi: '/logos/alesayi.png',
-  swsg: '/logos/swsg.png',
-  alkhunaizan: '/logos/alkhunaizan.png',
-  bukhamsen: '/logos/bukhamsen.png',
-  alghanim: '/logos/alghanim.png',
-  alsaif_gallery: '/logos/alsaif_gallery.png',
-  lulu_gcc: '/logos/lulu_gcc.png',
-  najm_store: getSearchStoreLogoPath('najm_store'),
-  aliexpress_ar: getSearchStoreLogoPath('aliexpress_ar'),
-};
 
 interface ProductStore {
   id: string;
@@ -117,10 +98,8 @@ export function ProductCard({
     : null;
   const isExternalLink = externalProductUrl && (externalProductUrl.startsWith('http://') || externalProductUrl.startsWith('https://'));
 
-  // DB products go to detail page; scraped-only products link externally
-  const productLink = isDbProduct
-    ? `/${currentLocale}/products/${product.slug}`
-    : (isExternalLink ? externalProductUrl : `/${currentLocale}/products/${product.slug}`);
+  // Always route to OUR internal product detail page — no jumping to external stores.
+  const productLink = `/${currentLocale}/products/${product.slug}`;
 
   // Get available images
   const availableImages = product.image_urls?.filter(Boolean) || [];
@@ -164,21 +143,12 @@ export function ProductCard({
   const currentImageUrl = availableImages[currentImageIndex] || null;
   let imageSrc = imageError || !currentImageUrl ? PLACEHOLDER_IMAGE : currentImageUrl;
 
-  // DB products use internal Link; scraped-only products open external store
-  const LinkWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (!isDbProduct && isExternalLink) {
-      return (
-        <a href={productLink} target="_blank" rel="noopener noreferrer" className="flex flex-col h-full">
-          {children}
-        </a>
-      );
-    }
-    return (
-      <Link href={productLink} className="flex flex-col h-full">
-        {children}
-      </Link>
-    );
-  };
+  // Always use internal Link — clicks land on our product detail page.
+  const LinkWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Link href={productLink} className="flex flex-col h-full">
+      {children}
+    </Link>
+  );
 
   // Get unique store initials for display
   const storeInitials = product.product_stores
@@ -190,14 +160,38 @@ export function ProductCard({
     }))
     .filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i);
 
+  const isWinner = isMultiStore && bestPrice && storesWithPrices.length > 1;
+
   return (
-    <Card className="group transition-all duration-300 h-full flex flex-col">
+    <Card className="group relative transition-all duration-[var(--dur-med)] h-full flex flex-col overflow-hidden hover:border-[var(--brand-green)]/50">
+      {/* Wishlist heart — absolute, outside link wrapper for clickability */}
+      {showActions && onSave && (
+        <div className="absolute end-2 top-2 z-10">
+          <IconButton
+            variant={isSaved ? 'accent' : 'tonal'}
+            size="sm"
+            aria-label={t('product.saveToWishlist')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSave(product.id);
+            }}
+            className={cn(
+              'shadow-[var(--elevation-1)]',
+              isSaved && 'text-[var(--brand-dark-text)]',
+            )}
+          >
+            <Heart className={cn('h-4 w-4', isSaved && 'fill-current')} />
+          </IconButton>
+        </div>
+      )}
+
       <LinkWrapper>
         {/* Product Image */}
-        <div className="relative w-full aspect-square overflow-hidden rounded-t-xl bg-surface-container-highest">
+        <div className="relative w-full aspect-square overflow-hidden rounded-t-[var(--radius-lg)] bg-[color:var(--color-surface-container-low)]">
           {/* Loading skeleton */}
           {imageLoading && !imageError && (
-            <div className="absolute inset-0 bg-surface-container-highest animate-pulse" />
+            <div className="absolute inset-0 bg-[var(--brand-bg-green)] animate-pulse" />
           )}
 
           {/* Product Image */}
@@ -206,7 +200,7 @@ export function ProductCard({
             alt={productName}
             fill
             sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 100vw"
-            className={`object-cover group-hover:scale-110 transition-transform duration-300 ${
+            className={`object-contain p-3 group-hover:scale-105 transition-transform duration-[var(--dur-med)] ease-[var(--ease-out-brand)] ${
               imageLoading ? 'opacity-0' : 'opacity-100'
             }`}
             onError={handleImageError}
@@ -215,32 +209,40 @@ export function ProductCard({
             unoptimized={isExternalLink || imageSrc.includes('jarir.com')}
             priority={false}
           />
-          {/* Badges Overlay */}
-          <div className="absolute top-2 start-2 flex flex-col gap-2">
-            {isMultiStore && bestPrice && storesWithPrices.length > 1 && (
-              <Badge variant="success" className="text-xs">
-                {t('price.best')}
+          {/* Badges overlay (start-side) */}
+          <div className="absolute top-2 start-2 flex flex-col gap-1.5">
+            {isWinner && (
+              <Badge variant="best" className="shadow-[var(--elevation-1)]">
+                {bestPriceCopy(currentLocale as 'ar' | 'en')}
               </Badge>
             )}
-            {hasDeal && (
-              <Badge variant="warning" className="text-xs animate-pulse">
+            {hasDeal && !isWinner && (
+              <Badge
+                variant="best"
+                className="shadow-[var(--elevation-1)] gap-1 bg-[var(--brand-gold)] text-[var(--brand-dark-text)]"
+              >
+                <Flame
+                  className="h-3.5 w-3.5"
+                  style={{ fill: '#FF6B35', color: '#C4361A' }}
+                  strokeWidth={2}
+                />
                 {t('products.hotDeal')}
               </Badge>
             )}
             {isOutOfStock && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="outline" className="bg-[color:var(--color-surface)]/90 backdrop-blur-sm">
                 {t('products.outOfStock')}
               </Badge>
             )}
           </div>
 
-          {/* Multi-store badge (top-right) */}
+          {/* Multi-store count chip (end-side, below heart) */}
           {isMultiStore && (
-            <div className="absolute top-2 end-2">
-              <Badge variant="default" className="text-xs font-medium gap-1">
+            <div className="absolute bottom-2 end-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-surface)]/95 backdrop-blur-sm px-2 py-1 text-[11px] font-semibold text-[var(--brand-green-dark)] shadow-[var(--elevation-1)] border border-[color:var(--color-outline-variant)]/40">
                 <Store className="w-3 h-3" />
                 {storeCount}
-              </Badge>
+              </span>
             </div>
           )}
         </div>
@@ -248,39 +250,43 @@ export function ProductCard({
         <CardContent className="p-4 flex-1 flex flex-col">
           {/* Product Info */}
           <div className="flex-1 mb-3">
-            <h3 className="text-sm font-medium text-on-surface mb-1 line-clamp-2 min-h-[2.25rem]">
+            <h3 className="t-body-strong text-on-surface mb-1 line-clamp-2 min-h-[3rem] leading-tight">
               {productName}
             </h3>
-            <p className="text-sm text-on-surface-variant mb-2">
-              {product.brand} {product.model}
-            </p>
+            {(product.brand || product.model) && (
+              <p className="t-small text-on-surface-variant mb-3 line-clamp-1">
+                {[product.brand, product.model].filter(Boolean).join(' · ')}
+              </p>
+            )}
 
             {/* Price + Store row */}
-            <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-end justify-between gap-2 mb-1">
               {/* Price */}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 {bestPriceValue > 0 ? (
-                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <div className="flex flex-col gap-1">
                     {isMultiStore && (
-                      <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                      <span className="t-caption text-[var(--brand-green-dark)]">
                         {t('products.from')}
                       </span>
                     )}
-                    <Price
-                      amount={bestPriceValue}
-                      className="text-base font-bold text-on-surface"
-                      symbolClassName="w-4 h-4"
-                    />
-                    {originalPrice && originalPrice > bestPriceValue && (
+                    <div className="flex items-baseline gap-2 flex-wrap">
                       <Price
-                        amount={originalPrice}
-                        className="text-xs text-outline line-through"
-                        symbolClassName="w-3 h-3"
+                        amount={bestPriceValue}
+                        className="text-xl font-extrabold text-on-surface"
+                        symbolClassName="w-5 h-5"
                       />
-                    )}
+                      {originalPrice && originalPrice > bestPriceValue && (
+                        <Price
+                          amount={originalPrice}
+                          className="text-xs text-on-surface-variant line-through"
+                          symbolClassName="w-3 h-3"
+                        />
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-on-surface-variant">
+                  <p className="t-small text-on-surface-variant">
                     {t('products.priceNotAvailable')}
                   </p>
                 )}
@@ -291,17 +297,14 @@ export function ProductCard({
                 <div className="flex items-center gap-1 shrink-0">
                   <div className="flex -space-x-1 rtl:space-x-reverse">
                     {storeInitials.map((s) => (
-                      <div
+                      <StoreLogo
                         key={s.id}
-                        className="w-5 h-5 rounded-full border-2 border-white dark:border-gray-900 overflow-hidden bg-white dark:bg-gray-800"
-                        title={s.name}
-                      >
-                        {STORE_LOGOS[s.id] ? (
-                          <img src={STORE_LOGOS[s.id]} alt={s.name} className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="w-full h-full flex items-center justify-center text-[9px] font-bold text-gray-500">{s.initial}</span>
-                        )}
-                      </div>
+                        slug={s.id}
+                        size="xs"
+                        alt={s.name}
+                        locale={currentLocale as 'ar' | 'en'}
+                        className="border-2 border-[color:var(--color-surface)] bg-[color:var(--color-surface)]"
+                      />
                     ))}
                   </div>
                 </div>
@@ -313,13 +316,12 @@ export function ProductCard({
                     : product.product_stores[0]?.stores.name_en;
                   return (
                     <div className="flex items-center gap-1 shrink-0">
-                      <div className="w-5 h-5 rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                        {STORE_LOGOS[storeId] ? (
-                          <img src={STORE_LOGOS[storeId]} alt={storeName || ''} className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="w-full h-full flex items-center justify-center text-[9px] font-bold text-gray-500">{(storeName || '?')[0].toUpperCase()}</span>
-                        )}
-                      </div>
+                      <StoreLogo
+                        slug={storeId}
+                        size="xs"
+                        alt={storeName || storeId}
+                        locale={currentLocale as 'ar' | 'en'}
+                      />
                       <span className="text-[11px] text-on-surface-variant">
                         {storeName}
                       </span>
@@ -329,14 +331,14 @@ export function ProductCard({
               )}
             </div>
 
-            {/* Savings + Coupon */}
+            {/* Savings chip (gold) + Coupon */}
             {savings > 0 && (
-              <Badge variant="success-light" className="text-[10px] mb-1">
-                {t('price.save')} <Price amount={savings} className="text-[10px] font-semibold" symbolClassName="w-2.5 h-2.5" />
-              </Badge>
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-gold)]/12 text-[var(--brand-gold-dark)] px-2 py-0.5 t-small font-semibold mt-2">
+                {savingsCopy(savings, currentLocale as 'ar' | 'en')}
+              </span>
             )}
             {bestPrice?.coupon_code && (
-              <div className="mb-1">
+              <div className="mt-2">
                 <CouponBadge
                   coupon={{ code: bestPrice.coupon_code }}
                   variant="compact"
@@ -349,7 +351,7 @@ export function ProductCard({
         </CardContent>
       </LinkWrapper>
 
-      {/* Action Buttons — outside LinkWrapper so clicks work */}
+      {/* Action Row — outside LinkWrapper so clicks work */}
       {showActions && (
         <div className="px-4 pb-4 pt-0 flex items-center gap-2">
           {/* Primary CTA */}
@@ -357,11 +359,11 @@ export function ProductCard({
             <Button
               variant="default"
               size="sm"
-              className="flex-1 inline-flex items-center justify-center gap-1 text-xs"
+              className="flex-1 text-xs"
               asChild
             >
               <Link href={productLink}>
-                <BarChart3 className="w-3 h-3 shrink-0" />
+                <BarChart3 className="w-3.5 h-3.5 shrink-0" />
                 {t('products.comparePrices', { count: String(storeCount) })}
               </Link>
             </Button>
@@ -369,7 +371,7 @@ export function ProductCard({
             <Button
               variant="default"
               size="sm"
-              className="flex-1 inline-flex items-center justify-center gap-1 text-xs"
+              className="flex-1 text-xs"
               asChild
             >
               <a
@@ -377,7 +379,7 @@ export function ProductCard({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <ExternalLink className="w-3 h-3 shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 {t('products.viewAtStore')}
               </a>
             </Button>
@@ -385,36 +387,23 @@ export function ProductCard({
             <Button
               variant="default"
               size="sm"
-              className="flex-1 inline-flex items-center justify-center gap-1 text-xs"
+              className="flex-1 text-xs"
               disabled
             >
-              <ExternalLink className="w-3 h-3 shrink-0" />
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               {t('products.viewAtStore')}
             </Button>
           )}
-          {/* Wishlist */}
-          {onSave && (
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn('shrink-0 px-2', isSaved && 'text-red-500 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20')}
-              aria-label={t('product.saveToWishlist')}
-              onClick={() => onSave(product.id)}
-            >
-              <Heart className={cn('w-4 h-4', isSaved && 'fill-current')} />
-            </Button>
-          )}
-          {/* Compare */}
+          {/* Compare (heart is now an overlay above) */}
           {onCompare && (
-            <Button
-              variant="outline"
+            <IconButton
+              variant={isInCompare ? 'accent' : 'outline'}
               size="sm"
-              className={cn('shrink-0 px-2', isInCompare && 'text-primary-600 border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20')}
               aria-label={t('product.addToCompare')}
               onClick={() => onCompare(product.id)}
             >
               <BarChart3 className={cn('w-4 h-4', isInCompare && 'fill-current')} />
-            </Button>
+            </IconButton>
           )}
         </div>
       )}

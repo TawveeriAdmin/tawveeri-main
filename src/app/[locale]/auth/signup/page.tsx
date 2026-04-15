@@ -344,7 +344,7 @@ export default function SignupPage() {
  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
  onBlur={() => setTouched(prev => ({ ...prev, fullName: true }))}
  placeholder={t('auth.fullNamePlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border ${errors.fullName && touched.fullName ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.fullName && touched.fullName ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border ${errors.fullName && touched.fullName ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.fullName && touched.fullName ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
  />
  </div>
  {touched.fullName && <ErrorMessage message={errors.fullName} />}
@@ -368,7 +368,7 @@ export default function SignupPage() {
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
  onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
  placeholder={t('auth.emailPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border ${errors.email && touched.email ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.email && touched.email ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-4' : 'ps-12 pe-4'} py-3.5 bg-surface-container border ${errors.email && touched.email ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.email && touched.email ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
  />
  </div>
  {touched.email && <ErrorMessage message={errors.email} />}
@@ -390,7 +390,7 @@ export default function SignupPage() {
  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
  onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
  placeholder={t('auth.passwordPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-surface-container border ${errors.password && formData.password ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.password && formData.password ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-12' : 'ps-12 pe-12'} py-3.5 bg-surface-container border ${errors.password && formData.password ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.password && formData.password ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
  />
  <button
  type="button"
@@ -420,7 +420,7 @@ export default function SignupPage() {
  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
  onBlur={() => setTouched(prev => ({ ...prev, confirmPassword: true }))}
  placeholder={t('auth.passwordPlaceholder')}
- className={`w-full ${isRTL ? 'pr-12 pl-12' : 'pl-12 pr-12'} py-3.5 bg-surface-container border ${errors.confirmPassword && formData.confirmPassword ? 'border-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'border-success-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.confirmPassword && formData.confirmPassword ? 'focus:ring-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'focus:ring-success-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
+ className={`w-full ${isRTL ? 'pe-12 ps-12' : 'ps-12 pe-12'} py-3.5 bg-surface-container border ${errors.confirmPassword && formData.confirmPassword ? 'border-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'border-success-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.confirmPassword && formData.confirmPassword ? 'focus:ring-warning-500' : formData.confirmPassword && !errors.confirmPassword ? 'focus:ring-success-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
  />
  <button
  type="button"

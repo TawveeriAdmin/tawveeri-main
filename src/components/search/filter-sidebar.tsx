@@ -57,7 +57,6 @@ interface FilterSidebarProps {
   onSortChange?: (sort: SearchSortOption) => void;
   category?: ProductCategory;
   locale?: string;
-  topContent?: React.ReactNode;
 }
 
 // Collapsible filter section
@@ -196,7 +195,6 @@ export function FilterSidebar({
   onSortChange,
   category,
   locale: propLocale,
-  topContent,
 }: FilterSidebarProps) {
   const t = useTranslations();
   const params = useParams();
@@ -444,12 +442,6 @@ export function FilterSidebar({
       aria-label={t('search.filtersTitle')}
       className="flex w-full flex-col rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
     >
-      {/* Top content (results count + sort) */}
-      {topContent && (
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-          {topContent}
-        </div>
-      )}
       {/* Header */}
       <div className="px-4 py-3 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center justify-between">

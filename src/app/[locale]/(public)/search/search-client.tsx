@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -10,6 +10,13 @@ import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
+import { ActiveFilterChips } from '@/components/search/active-filter-chips';
+import { SortSelector } from '@/components/search/sort-selector';
+import { ResultsSkeleton } from '@/components/search/results-skeleton';
+import { ResultsMeta } from '@/components/search/results-meta';
+import { MobileFilterSheet } from '@/components/search/mobile-filter-sheet';
+import { EmptyState } from '@/components/ui/empty-state';
+import { getStoreDisplayName } from '@/lib/logos';
 import {
   Popover,
   PopoverContent,
@@ -110,6 +117,7 @@ export default function SearchClient() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const locale = (params?.locale as string) || 'ar';
   const isRTL = locale === 'ar';
   const t = useTranslations();
@@ -134,6 +142,7 @@ export default function SearchClient() {
   const [externalQueryKey, setExternalQueryKey] = useState(0);
   const [storeErrorsExpanded, setStoreErrorsExpanded] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [searchLatencyMs, setSearchLatencyMs] = useState<number | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
 
@@ -175,6 +184,50 @@ export default function SearchClient() {
       }
     }
   }, [searchParams]);
+
+  // ── URL write-back: mirror filter/sort/page state into the URL so reload + share preserve view ──
+  const urlSyncReadyRef = useRef(false);
+  useEffect(() => {
+    // Skip the very first run so we don't blow away the URL before initial state hydrates
+    if (!urlSyncReadyRef.current) {
+      urlSyncReadyRef.current = true;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set('q', debouncedQuery);
+    if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
+    if (filters.brands.length > 0) params.set('brand', filters.brands.join(','));
+    if (filters.stores.length > 0) params.set('stores', filters.stores.join(','));
+    if (filters.availability.length > 0) params.set('availability', filters.availability.join(','));
+    if (filters.minPrice !== undefined) params.set('priceMin', String(filters.minPrice));
+    if (filters.maxPrice !== undefined) params.set('priceMax', String(filters.maxPrice));
+    if (filters.dealsOnly) params.set('dealsOnly', '1');
+    if (filters.freeDeliveryOnly) params.set('freeDeliveryOnly', '1');
+    if (filters.minRating && filters.minRating > 0) params.set('minRating', String(filters.minRating));
+    if (filters.discount !== undefined) params.set('discount', String(filters.discount));
+    if (filters.condition?.length) params.set('condition', filters.condition.join(','));
+    if (filters.shipping?.length) params.set('shipping', filters.shipping.join(','));
+    if (filters.specs) {
+      for (const [key, vals] of Object.entries(filters.specs)) {
+        if (vals.length > 0) params.set(`spec:${key}`, vals.join(','));
+      }
+    }
+    if (sortBy && sortBy !== 'popularity') params.set('sort', sortBy);
+    if (currentPage > 1) params.set('page', String(currentPage));
+
+    const qs = params.toString();
+    const next = qs ? `${pathname}?${qs}` : pathname;
+    // Use replace so we don't bloat history on every chip toggle
+    router.replace(next, { scroll: false });
+  }, [
+    debouncedQuery,
+    selectedCategory,
+    filters,
+    sortBy,
+    currentPage,
+    pathname,
+    router,
+  ]);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -537,6 +590,10 @@ export default function SearchClient() {
       setRawProducts(mappedProducts);
       setSearchCache(query, selectedCategory || 'all', mappedProducts);
       setStoreErrors(data.errors || {});
+      // searchTime from API is in seconds; convert to ms
+      if (typeof data.searchTime === 'number') {
+        setSearchLatencyMs(Math.round(data.searchTime * 1000));
+      }
       setScrapingProgress('');
 
     } catch (err) {
@@ -823,27 +880,17 @@ export default function SearchClient() {
     <div>
       {/* ── Toolbar ── */}
 
-      {/* ── Store Errors (collapsible) ── */}
-      {storeErrors && Object.keys(storeErrors).length > 0 && (
-        <div className="mt-2">
-          <Alert variant="destructive" className="cursor-pointer" onClick={() => setStoreErrorsExpanded(!storeErrorsExpanded)}>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{t('search.someStoresFailed')}</span>
-                <ChevronDown className={cn('w-4 h-4 transition-transform', storeErrorsExpanded && 'rotate-180')} />
-              </div>
-              {storeErrorsExpanded && (
-                <div className="mt-2 space-y-1">
-                  {Object.entries(storeErrors).map(([store, err]) => (
-                    <p key={store} className="text-body-sm">{store}: {err}</p>
-                  ))}
-                </div>
-              )}
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
+      {/* Store errors are intentionally not surfaced to end-users. They are
+          still captured in `storeErrors` state for telemetry / dev console. */}
+      {process.env.NODE_ENV !== 'production' && storeErrors && Object.keys(storeErrors).length > 0 &&
+        (() => {
+          // Dev-only console hint, no UI render.
+          if (typeof window !== 'undefined') {
+            // eslint-disable-next-line no-console
+            console.warn('[search] some store scrapers reported errors:', storeErrors);
+          }
+          return null;
+        })()}
 
       {/* ── No-Query State ── */}
       {!debouncedQuery && !loading && (
@@ -979,8 +1026,8 @@ export default function SearchClient() {
           <div className="py-6">
             <div className="flex gap-6">
               {/* Desktop Filter Sidebar */}
-              <div className="hidden lg:block w-72 shrink-0">
-                <div className="sticky top-[120px] max-h-[calc(100vh-148px)] min-h-0 overflow-y-auto flex flex-col gap-4 scrollbar-hide">
+              <div className="hidden lg:block w-64 shrink-0">
+                <div className="sticky top-[120px] max-h-[calc(100vh-148px)] min-h-0 overflow-y-auto flex flex-col gap-3 scrollbar-hide">
                   <FilterSidebar
                     filters={filters}
                     onFilterChange={setFilters}
@@ -988,12 +1035,6 @@ export default function SearchClient() {
                     onSortChange={setSortBy}
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
-                    topContent={
-                      <div className="text-sm text-on-surface-variant">
-                        <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
-                        {t('search.resultsCount')}
-                      </div>
-                    }
                   />
                 </div>
               </div>
@@ -1004,117 +1045,57 @@ export default function SearchClient() {
                 <div className="mb-4">
                   {/* Mobile: results count, sort, filters button */}
                   <div className="flex items-center justify-between gap-4 lg:hidden">
-                    <div className="text-sm text-on-surface-variant shrink-0">
-                      <span className="tabular-nums font-bold text-primary-600">{totalCount}</span>{' '}
-                      {t('search.resultsCount')}
-                    </div>
+                    <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
                     <div className="flex items-center gap-2">
-                      <Popover open={sortOpen} onOpenChange={setSortOpen}>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg border-gray-200 dark:border-gray-700">
-                            <ArrowUpDown className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline text-xs">{currentSortOption.label}</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-52 p-1.5">
-                          {sortOptions.map(option => {
-                            const Icon = option.icon;
-                            const isActive = sortBy === option.value;
-                            return (
-                              <button
-                                key={option.value}
-                                onClick={() => { setSortBy(option.value); setSortOpen(false); }}
-                                className={cn(
-                                  'flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-start transition-colors',
-                                  isActive ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                                )}
-                              >
-                                <div className={cn(
-                                  'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
-                                  isActive ? 'bg-primary-100 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400' : 'bg-gray-100 dark:bg-gray-700 text-on-surface-variant'
-                                )}>
-                                  <Icon className="w-3.5 h-3.5" />
-                                </div>
-                                <p className={cn('flex-1 min-w-0 text-sm font-medium', isActive ? 'text-primary-700 dark:text-primary-300' : 'text-on-surface')}>
-                                  {option.label}
-                                </p>
-                                {isActive && <Check className="w-4 h-4 text-primary-500 shrink-0" />}
-                              </button>
-                            );
-                          })}
-                        </PopoverContent>
-                      </Popover>
-                      <Dialog open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="relative">
-                            <SlidersHorizontal className="w-4 h-4" />
-                            <span className="hidden sm:inline ms-1">{t('search.mobileFilters')}</span>
-                            {activeFilterCount > 0 && (
-                              <span className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">{activeFilterCount}</span>
-                            )}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-h-[85vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>{t('search.filtersTitle')}</DialogTitle>
-                          </DialogHeader>
-                          <FilterSidebar
-                            filters={filters}
-                            onFilterChange={(newFilters) => { setFilters(newFilters); setMobileFiltersOpen(false); }}
-                            sortBy={sortBy}
-                            onSortChange={(nextSort) => { setSortBy(nextSort); setMobileFiltersOpen(false); }}
-                            category={selectedCategory !== 'all' ? selectedCategory : undefined}
-                            locale={locale}
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="relative"
+                        onClick={() => setMobileFiltersOpen(true)}
+                      >
+                        <SlidersHorizontal className="w-4 h-4" />
+                        <span className="hidden sm:inline ms-1">{t('search.mobileFilters')}</span>
+                        {activeFilterCount > 0 && (
+                          <span className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-[var(--brand-gold)] text-[var(--brand-dark-text)] text-xs flex items-center justify-center font-bold">
+                            {activeFilterCount}
+                          </span>
+                        )}
+                      </Button>
                     </div>
                   </div>
-                  {filterChips.length > 0 && (
-                    <div className="flex items-center gap-2 mt-2 overflow-x-auto pb-1 scrollbar-hide">
-                      <span className="text-xs text-on-surface-variant shrink-0">{t('search.activeFilters')}:</span>
-                      {filterChips.map((chip, i) => (
-                        <button key={`${chip.type}-${chip.value || i}`} onClick={() => removeFilter(chip.type, chip.value)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-medium shrink-0 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors">
-                          {chip.label}
-                          <X className="w-3 h-3" />
-                        </button>
-                      ))}
-                      <button onClick={clearAllFilters} className="text-xs text-red-500 hover:text-red-600 font-medium shrink-0 transition-colors">{t('search.clearAll')}</button>
+                  <MobileFilterSheet
+                    open={mobileFiltersOpen}
+                    onOpenChange={setMobileFiltersOpen}
+                    filters={filters}
+                    onFilterChange={setFilters}
+                    onClearAll={clearAllFilters}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    category={selectedCategory !== 'all' ? selectedCategory : undefined}
+                    locale={locale}
+                    activeCount={activeFilterCount}
+                  />
+                  {/* Desktop sort + active chips row */}
+                  <div className="mt-3 hidden lg:flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                    </div>
+                    <SortSelector value={sortBy} onChange={setSortBy} />
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <div className="mt-3">
+                      <ActiveFilterChips
+                        filters={filters}
+                        onRemove={setFilters}
+                        onClearAll={clearAllFilters}
+                        storeNameResolver={(slug) => getStoreDisplayName(slug, locale as 'ar' | 'en')}
+                      />
                     </div>
                   )}
                 </div>
 
-                {/* Loading State */}
-                {loading && (
-                  <div className="space-y-6">
-                    {/* Progress banner */}
-                    <div className="flex items-center gap-3 rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 dark:border-primary-800 dark:bg-primary-900/20">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary-600 dark:text-primary-400" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                          {scrapingProgress || t('search.searchingStores')}
-                        </p>
-                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-primary-100 dark:bg-primary-800/40">
-                          <div className="h-full w-full animate-progress rounded-full bg-gradient-to-r from-primary-400 via-primary-600 to-primary-400 bg-[length:200%_100%]" />
-                        </div>
-                      </div>
-                    </div>
-                    {/* Skeleton grid */}
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
-                          <Skeleton className="h-40 w-full rounded-lg" />
-                          <Skeleton className="h-3.5 w-3/4" />
-                          <Skeleton className="h-3.5 w-1/2" />
-                          <div className="flex justify-between">
-                            <Skeleton className="h-5 w-20" />
-                            <Skeleton className="h-7 w-20 rounded-lg" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Loading State — skeleton grid only, no progress banner */}
+                {loading && <ResultsSkeleton count={8} />}
 
                 {/* Error State */}
                 {error && !loading && (
@@ -1126,25 +1107,22 @@ export default function SearchClient() {
 
                 {/* No Results */}
                 {!loading && !error && products.length === 0 && debouncedQuery && (
-                  <div className="mx-auto max-w-md text-center py-16 space-y-5">
-                    <div className="mx-auto w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Search className="w-6 h-6 text-on-surface-variant" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <h2 className="text-lg font-semibold text-on-surface">{t('search.noResults')}</h2>
-                      <p className="text-sm text-on-surface-variant">{t('search.noResultsFor').replace('{{query}}', debouncedQuery)}</p>
-                    </div>
-                    {/* Suggest categories */}
-                    <div className="flex flex-wrap justify-center gap-2 pt-2">
+                  <div className="space-y-4">
+                    <EmptyState
+                      variant="search"
+                      description={t('search.noResultsFor').replace('{{query}}', debouncedQuery)}
+                    />
+                    {/* Quick category suggestions */}
+                    <div className="flex flex-wrap justify-center gap-2">
                       {quickCategories.slice(0, 4).map((cat) => {
                         const Icon = cat.icon;
                         return (
                           <button
                             key={cat.key}
                             onClick={() => handleQuickCategory(cat.query)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-900/30"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] px-3 py-1.5 t-small font-medium text-on-surface transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)]"
                           >
-                            <Icon className="h-3.5 w-3.5 text-primary-500" />
+                            <Icon className="h-3.5 w-3.5 text-[var(--brand-green-dark)]" />
                             {t(`search.quickCategories.${cat.key}`)}
                           </button>
                         );

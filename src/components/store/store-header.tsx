@@ -72,7 +72,7 @@ export function StoreHeader({ userProfile, store, locale }: StoreHeaderProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleSignOut(); }} className="cursor-pointer">
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="me-2 h-4 w-4" />
               <span>{t('store.header.signOut')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import LandingPageClient from './landing-client';
+import { PublicPageShell } from '@/components/public/public-page-shell';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { JsonLd, buildWebSiteJsonLd } from '@/lib/seo/json-ld';
 
@@ -29,7 +30,9 @@ export default async function Page({
   return (
     <>
       <JsonLd data={buildWebSiteJsonLd(locale)} />
-      <LandingPageClient />
+      <PublicPageShell locale={locale} fullBleed>
+        <LandingPageClient />
+      </PublicPageShell>
     </>
   );
 }

@@ -108,7 +108,7 @@ export function StoreCard({ store, locale }: StoreCardProps) {
           {store.website_url && (
             <Button asChild variant="outline" className="w-full" size="sm">
               <a href={store.website_url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-2" />
+                <ExternalLink className="w-4 h-4 me-2" />
                 {t('stores.visitWebsite')}
               </a>
             </Button>

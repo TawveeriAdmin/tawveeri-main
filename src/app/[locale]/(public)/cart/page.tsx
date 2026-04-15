@@ -153,7 +153,7 @@ export default function CartPage() {
  onClick={() => handleCheckout(store.storeId)}
  >
  {t('cart.checkoutFromStore')}
- <ExternalLink className="h-4 w-4 ml-2" />
+ <ExternalLink className="h-4 w-4 ms-2" />
  </Button>
  </div>
  </CardHeader>
@@ -228,9 +228,9 @@ export default function CartPage() {
  size="sm"
  onClick={() => handleOpenNoteDialog(store.storeId, item.productId)}
  >
- <Edit className="h-3 w-3 mr-1" />
+ <Edit className="h-3 w-3 me-1" />
  {t('cart.note')}
- {item.notes && <Check className="h-3 w-3 inline ml-1" />}
+ {item.notes && <Check className="h-3 w-3 inline ms-1" />}
  </Button>
  <div className="flex items-center gap-2">
  <Checkbox
@@ -258,7 +258,7 @@ export default function CartPage() {
  onClick={() => removeItem(store.storeId, item.productId)}
  className="text-destructive hover:text-destructive"
  >
- <Trash2 className="h-3 w-3 mr-1" />
+ <Trash2 className="h-3 w-3 me-1" />
  {t('cart.remove')}
  </Button>
  </div>
@@ -271,7 +271,7 @@ export default function CartPage() {
  </div>
 
  {/* Item Total */}
- <div className="text-right">
+ <div className="text-end">
  <Price
  amount={item.price * item.quantity}
  className="font-bold text-lg"
