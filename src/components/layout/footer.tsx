@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useMemo } from 'react';
 import { Facebook, Instagram, Twitter, Linkedin, Youtube, Apple, Smartphone } from 'lucide-react';
 import { useLocale, useTranslations } from '@/lib/simple-intl-provider';
@@ -112,9 +113,13 @@ export function Footer() {
         {/* Top row: logo + tagline */}
         <div className="flex flex-col gap-8 border-b border-white/10 pb-10 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-green)] text-lg font-black text-white">
-              T
-            </span>
+            <Image
+              src="/logos/Tawveeri.png"
+              alt="Tawveeri"
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-[var(--radius-md)] object-contain"
+            />
             <div className="flex flex-col">
               <span className="t-h4 font-bold leading-none">
                 {isRTL ? 'توفيري' : 'Tawveeri'}

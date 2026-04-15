@@ -5,6 +5,10 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
+  icons: {
+    icon: '/logos/Tawveeri.png',
+    apple: '/logos/Tawveeri.png',
+  },
   title: {
     default: 'توفيري - Tawveeri | منصة مقارنة الأسعار',
     template: '%s | توفيري Tawveeri',

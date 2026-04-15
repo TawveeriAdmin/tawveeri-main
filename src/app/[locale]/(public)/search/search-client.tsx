@@ -131,7 +131,7 @@ export default function SearchClient() {
   const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!urlQuery);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [currentPage, setCurrentPage] = useState(1);
@@ -598,7 +598,6 @@ export default function SearchClient() {
 
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        setLoading(false);
         setScrapingProgress('');
         return;
       }
@@ -612,7 +611,7 @@ export default function SearchClient() {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }
 
@@ -635,6 +634,7 @@ export default function SearchClient() {
         if (q && cached.query === q && cached.category === selectedCategory) {
           // URL had matching query+category — restore products, skip scrape
           setRawProducts(cached.products);
+          setLoading(false);
           return;
         }
         if (!q && cached.query) {
@@ -1045,7 +1045,10 @@ export default function SearchClient() {
                 <div className="mb-4">
                   {/* Mobile: results count, sort, filters button */}
                   <div className="flex items-center justify-between gap-4 lg:hidden">
-                    <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                    {loading
+                      ? <p className="t-small text-on-surface-variant animate-pulse">{scrapingProgress}</p>
+                      : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                    }
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
@@ -1078,7 +1081,10 @@ export default function SearchClient() {
                   {/* Desktop sort + active chips row */}
                   <div className="mt-3 hidden lg:flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                      {loading
+                        ? <p className="t-small text-on-surface-variant animate-pulse">{scrapingProgress}</p>
+                        : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                      }
                     </div>
                     <SortSelector value={sortBy} onChange={setSortBy} />
                   </div>

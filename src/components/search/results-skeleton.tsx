@@ -21,7 +21,7 @@ export function ResultsSkeleton({ count = 8 }: ResultsSkeletonProps) {
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] overflow-hidden">
+    <div className="animate-pulse flex flex-col rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] overflow-hidden">
       <Skeleton className="aspect-square w-full !rounded-none" />
       <div className="flex flex-col gap-2 p-4">
         <Skeleton className="h-4 w-[85%]" />

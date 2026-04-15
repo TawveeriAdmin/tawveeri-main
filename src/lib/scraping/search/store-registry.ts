@@ -13,7 +13,6 @@ export const SUPPORTED_SEARCH_STORES = [
   'bukhamsen',
   'alghanim',
   'alsaif_gallery',
-  'lulu_gcc',
   'najm_store',
   'aliexpress_ar',
 ] as const;

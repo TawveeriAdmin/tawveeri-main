@@ -35,6 +35,7 @@ import {
   Ticket,
   User,
 } from 'lucide-react';
+import Image from 'next/image';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
 import { Footer } from '@/components/layout/footer';
 
@@ -258,9 +259,13 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               href={`/${locale}`}
               className="group inline-flex shrink-0 items-center gap-2 rounded-xl p-1 transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-800/70"
             >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-extrabold text-on-primary">
-                TV
-              </span>
+              <Image
+                src="/logos/Tawveeri.png"
+                alt="Tawveeri"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-lg object-contain"
+              />
               <span className="hidden text-sm font-semibold text-gray-900 dark:text-gray-100 sm:block">
                 {t('app.name')}
               </span>
