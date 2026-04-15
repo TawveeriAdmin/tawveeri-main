@@ -81,6 +81,9 @@ export function mapScrapedToProductCard(
     brand: scraped.brand,
     model: scraped.model,
     image_urls: scraped.image_urls.length > 0 ? scraped.image_urls : null,
+    description_ar: scraped.description_ar,
+    description_en: scraped.description_en,
+    specifications: scraped.specifications,
     product_stores: [
       {
         id: `store-${storeSlug}-${id}`,
@@ -168,6 +171,9 @@ export function mapGroupedToProductCard(
     brand: grouped.brand,
     model: grouped.model,
     image_urls: grouped.image_urls.length > 0 ? grouped.image_urls : null,
+    description_ar: grouped.description_ar,
+    description_en: grouped.description_en,
+    specifications: grouped.specifications,
     product_stores: productStores,
   };
 }

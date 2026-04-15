@@ -55,6 +55,9 @@ interface ProductCardProps {
     model: string;
     image_urls: string[] | null;
     product_stores: ProductStore[];
+    description_ar?: string | null;
+    description_en?: string | null;
+    specifications?: Record<string, unknown> | null;
   };
   locale: string;
   onCompare?: (productId: string) => void;
@@ -62,6 +65,7 @@ interface ProductCardProps {
   isSaved?: boolean;
   isInCompare?: boolean;
   onAddToCart?: (product: ProductCardProps['product']) => void;
+  onCardClick?: (product: ProductCardProps['product']) => void;
   showActions?: boolean;
 }
 
@@ -75,6 +79,7 @@ export function ProductCard({
   isSaved = false,
   isInCompare = false,
   onAddToCart,
+  onCardClick,
   showActions = true,
 }: ProductCardProps) {
   const t = useTranslations();
@@ -143,12 +148,21 @@ export function ProductCard({
   const currentImageUrl = availableImages[currentImageIndex] || null;
   let imageSrc = imageError || !currentImageUrl ? PLACEHOLDER_IMAGE : currentImageUrl;
 
-  // Always use internal Link — clicks land on our product detail page.
-  const LinkWrapper = ({ children }: { children: React.ReactNode }) => (
-    <Link href={productLink} className="flex flex-col h-full">
-      {children}
-    </Link>
-  );
+  // If onCardClick is provided open the detail sheet; otherwise navigate internally.
+  const LinkWrapper = ({ children }: { children: React.ReactNode }) =>
+    onCardClick ? (
+      <button
+        type="button"
+        onClick={() => onCardClick(product)}
+        className="flex flex-col h-full w-full text-start"
+      >
+        {children}
+      </button>
+    ) : (
+      <Link href={productLink} className="flex flex-col h-full">
+        {children}
+      </Link>
+    );
 
   // Get unique store initials for display
   const storeInitials = product.product_stores

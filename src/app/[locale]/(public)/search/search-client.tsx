@@ -80,6 +80,7 @@ import {
 } from '@/lib/scraping/search/store-registry';
 import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
+import { ProductDetailSheet } from '@/components/products/product-detail-sheet';
 
 type Product = ProductCardProduct;
 
@@ -145,6 +146,7 @@ export default function SearchClient() {
   const [searchLatencyMs, setSearchLatencyMs] = useState<number | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Fetch user's wishlist product names to show filled hearts
   useEffect(() => {
@@ -1157,6 +1159,7 @@ export default function SearchClient() {
                             onCompare={handleAddToCompare}
                             onSave={handleSaveToWishlist}
                             isSaved={savedProductNames.has(product.name_en)}
+                            onCardClick={(p) => setSelectedProduct(p)}
                           />
                           {/* Inline Store Comparison Panel */}
                           {expandedProductId === product.id && product.product_stores.length > 1 && (
@@ -1232,6 +1235,14 @@ export default function SearchClient() {
           </div>
         </>
       )}
+
+      {/* Product Detail Sheet */}
+      <ProductDetailSheet
+        product={selectedProduct}
+        open={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+        locale={locale}
+      />
 
       {/* CSS Animations */}
       <style jsx>{`
