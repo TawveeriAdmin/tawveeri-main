@@ -22,7 +22,7 @@ export interface PuppeteerSearchFetchOptions {
   extraWaitMs?: number;
 }
 
-const MAX_CONCURRENT = 3;
+const MAX_CONCURRENT = 4;
 let inflight = 0;
 const waiters: Array<() => void> = [];
 
@@ -67,11 +67,19 @@ export async function fetchSearchHtmlWithPuppeteer(
     const page = await browser.newPage();
     await page.setViewport({ width: 1365, height: 900 });
     await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
     );
+    // Stealth: override webdriver detection
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    });
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'ar-SA,ar;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    });
     await page.goto(url, {
       waitUntil: options.waitUntil ?? 'networkidle2',
-      timeout: 60_000,
+      timeout: 40_000,
     });
     if (options.extraWaitMs && options.extraWaitMs > 0) {
       await new Promise((r) => setTimeout(r, options.extraWaitMs));

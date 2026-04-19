@@ -147,6 +147,7 @@ export default function SearchClient() {
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
 
   // Fetch user's wishlist product names to show filled hearts
   useEffect(() => {
@@ -600,6 +601,12 @@ export default function SearchClient() {
       if (typeof data.searchTime === 'number') {
         setSearchLatencyMs(Math.round(data.searchTime * 1000));
       }
+      // Track store success/total for partial results banner
+      if (data.totalStores && data.successfulStores !== undefined) {
+        setStoreStats({ total: data.totalStores, successful: data.successfulStores });
+      } else {
+        setStoreStats(null);
+      }
       setScrapingProgress('');
 
     } catch (err) {
@@ -608,12 +615,32 @@ export default function SearchClient() {
         return;
       }
       console.error('Error scraping products:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to scrape products';
-      setError(errorMessage);
+      const rawMessage = err instanceof Error ? err.message : 'Failed to scrape products';
+      // Show user-friendly error messages instead of raw HTTP errors
+      let userMessage: string;
+      if (rawMessage.includes('504') || rawMessage.includes('timeout') || rawMessage.includes('Timed out')) {
+        userMessage = locale === 'ar'
+          ? 'استغرق البحث وقتاً طويلاً. يرجى المحاولة مرة أخرى.'
+          : 'Search took too long. Please try again.';
+      } else if (rawMessage.includes('429') || rawMessage.includes('Too many')) {
+        userMessage = locale === 'ar'
+          ? 'طلبات كثيرة جداً. يرجى الانتظار لحظة ثم المحاولة مرة أخرى.'
+          : 'Too many requests. Please wait a moment and try again.';
+      } else if (rawMessage.includes('500')) {
+        userMessage = locale === 'ar'
+          ? 'حدث خطأ في الخادم. يرجى المحاولة مرة أخرى.'
+          : 'A server error occurred. Please try again.';
+      } else {
+        userMessage = locale === 'ar'
+          ? 'فشل البحث. يرجى المحاولة مرة أخرى.'
+          : 'Search failed. Please try again.';
+      }
+      setError(userMessage);
       setScrapingProgress('');
+      setStoreStats(null);
       toast({
-        title: 'Scraping failed',
-        description: errorMessage,
+        title: locale === 'ar' ? 'فشل البحث' : 'Search failed',
+        description: userMessage,
         variant: 'destructive',
       });
     } finally {
@@ -886,17 +913,13 @@ export default function SearchClient() {
     <div>
       {/* ── Toolbar ── */}
 
-      {/* Store errors are intentionally not surfaced to end-users. They are
-          still captured in `storeErrors` state for telemetry / dev console. */}
-      {process.env.NODE_ENV !== 'production' && storeErrors && Object.keys(storeErrors).length > 0 &&
-        (() => {
-          // Dev-only console hint, no UI render.
-          if (typeof window !== 'undefined') {
-            // eslint-disable-next-line no-console
-            console.warn('[search] some store scrapers reported errors:', storeErrors);
-          }
-          return null;
-        })()}
+      {/* Store errors logged to console only — not shown to users */}
+      {!loading && storeErrors && Object.keys(storeErrors).length > 0 && (() => {
+        if (typeof window !== 'undefined') {
+          console.warn('[search] store errors:', storeErrors);
+        }
+        return null;
+      })()}
 
       {/* ── No-Query State ── */}
       {!debouncedQuery && !loading && (

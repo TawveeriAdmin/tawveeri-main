@@ -1,9 +1,9 @@
 import type { ScrapedProduct } from '../base/types';
 import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
-import { getBrowserHeaders } from './user-agents';
 import { expandQueriesForRetailSearch } from './search-query-bilingual';
 import { qenc } from './retail-search-url';
+import { fetchSearchHtmlWithPuppeteer } from './puppeteer-search-html';
 import {
   parseGenericHtmlListing,
   parseProductItemGrid,
@@ -11,7 +11,7 @@ import {
 
 const BASE_URL = 'https://alsaifgallery.com';
 
-/** Alsaif Gallery — Magento-style search; dedicated fetch + tile grid parsing. */
+/** Alsaif Gallery — Magento-style; plain fetch returns 418, so use Puppeteer. */
 export class AlsaifGallerySearchScraper extends BaseSearchScraper {
   constructor() {
     super('alsaif_gallery', 'Alsaif Gallery');
@@ -19,13 +19,15 @@ export class AlsaifGallerySearchScraper extends BaseSearchScraper {
 
   async search(options: StoreSearchOptions): Promise<StoreSearchResult> {
     const { pages } = options;
+    const pageLimit = Math.min(pages, 3);
     const allProducts: SearchProduct[] = [];
     const seen = new Set<string>();
     const queries = expandQueriesForRetailSearch(options.query);
 
     try {
       for (const q of queries) {
-        for (let page = 1; page <= pages; page++) {
+        if (allProducts.length > 0) break;
+        for (let page = 1; page <= pageLimit; page++) {
           if (page > 1) await this.delay(700, 1900);
 
           const urls = [
@@ -36,7 +38,10 @@ export class AlsaifGallerySearchScraper extends BaseSearchScraper {
           let scraped: ScrapedProduct[] = [];
           for (const url of urls) {
             try {
-              const html = await this.fetchHtml(url, getBrowserHeaders(`${BASE_URL}/`));
+              const html = await fetchSearchHtmlWithPuppeteer(url, {
+                waitForSelector: '.product-item, [class*="product"], a[href*="/p/"]',
+                extraWaitMs: 2500,
+              });
               scraped = parseProductItemGrid(html, url, BASE_URL);
               if (scraped.length === 0) {
                 scraped = parseGenericHtmlListing(html, url, BASE_URL);

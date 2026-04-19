@@ -27,8 +27,12 @@ export const EXTENDED_SEARCH_SCRAPERS: Record<string, () => SearchScraper> = {
   alkhunaizan: () => new AlkhunaizanSearchScraper(),
   bukhamsen: () => new BukhamsenSearchScraper(),
   alghanim: () => new AlghanimSearchScraper(),
-  alsaif_gallery: () => new AlsaifGallerySearchScraper(),
-  lulu_gcc: () => new LuluGccSearchScraper(),
   najm_store: () => new NajmStoreSearchScraper(),
   aliexpress_ar: () => new AliexpressArSearchScraper(),
+};
+
+/** Blocked stores — scrapers kept for future re-enable if WAF rules change */
+export const BLOCKED_SEARCH_SCRAPERS: Record<string, () => SearchScraper> = {
+  alsaif_gallery: () => new AlsaifGallerySearchScraper(),
+  lulu_gcc: () => new LuluGccSearchScraper(),
 };

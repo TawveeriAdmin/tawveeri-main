@@ -26,7 +26,7 @@ setInterval(() => {
 function getRateLimit(pathname: string): number | null {
   if (pathname.startsWith('/api/cron/')) return null; // authenticated by CRON_SECRET
   if (pathname === '/api/health') return null;
-  if (pathname.startsWith('/api/search/scrape')) return 15; // half of 30 (2 PM2 instances)
+  if (pathname.startsWith('/api/search/scrape')) return 30; // half of 60 (2 PM2 instances)
   return 30; // half of 60 (2 PM2 instances)
 }
 

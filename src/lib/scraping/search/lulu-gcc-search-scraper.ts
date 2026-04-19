@@ -42,8 +42,9 @@ export class LuluGccSearchScraper extends BaseSearchScraper {
           let scraped: ScrapedProduct[] = [];
           for (const url of urls) {
             const html = await fetchSearchHtmlWithPuppeteer(url, {
+              waitUntil: 'domcontentloaded',
               waitForSelector: '[class*="product"], a[href*="/p/"], a[href*="/product"]',
-              extraWaitMs: 3500,
+              extraWaitMs: 2500,
             });
             scraped = parseProductItemGrid(html, url, BASE_URL);
             if (scraped.length === 0) {

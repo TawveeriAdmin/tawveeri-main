@@ -25,8 +25,9 @@ export class AlesayiSearchScraper extends BaseSearchScraper {
         for (let page = 1; page <= pageLimit; page++) {
           const url = `${BASE_URL}/search?keyword=${qenc(q)}${page > 1 ? `&page=${page}` : ''}`;
           const html = await fetchSearchHtmlWithPuppeteer(url, {
+            waitUntil: 'domcontentloaded',
             waitForSelector: 'custom-salla-product-card',
-            extraWaitMs: 3500,
+            extraWaitMs: 2000,
           });
           const parsed = this.parseCards(html);
           if (parsed.length === 0) break;

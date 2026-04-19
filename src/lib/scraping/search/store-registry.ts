@@ -12,10 +12,12 @@ export const SUPPORTED_SEARCH_STORES = [
   'alkhunaizan',
   'bukhamsen',
   'alghanim',
-  'alsaif_gallery',
   'najm_store',
   'aliexpress_ar',
 ] as const;
+
+/** Stores removed from search due to anti-bot blocking (418/403). Keep scrapers for future re-enable. */
+export const BLOCKED_STORES = ['alsaif_gallery', 'lulu_gcc'] as const;
 
 export type SearchStoreSlug = (typeof SUPPORTED_SEARCH_STORES)[number];
 

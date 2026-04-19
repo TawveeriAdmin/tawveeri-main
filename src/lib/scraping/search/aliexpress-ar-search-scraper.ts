@@ -35,8 +35,9 @@ export class AliexpressArSearchScraper extends BaseSearchScraper {
           const url = page > 1 ? `${base}?page=${page}` : base;
 
           const html = await fetchSearchHtmlWithPuppeteer(url, {
+            waitUntil: 'domcontentloaded',
             waitForSelector: 'a[href*="item"], [class*="search-item"]',
-            extraWaitMs: 3000,
+            extraWaitMs: 2000,
           });
 
           const scraped = this.parseSearchResults(html, url);

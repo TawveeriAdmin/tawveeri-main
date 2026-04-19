@@ -94,7 +94,7 @@ const VALUE_PROPS_EN = [
 const FEATURED_STORES: string[] = [
   'amazon', 'noon', 'jarir', 'extra', 'almanea',
   'samsung_ksa', 'shaker', 'zagzoog', 'alesayi', 'swsg',
-  'alkhunaizan', 'bukhamsen', 'alghanim', 'alsaif_gallery', 'lulu_gcc',
+  'alkhunaizan', 'bukhamsen', 'alghanim',
   'najm_store', 'aliexpress_ar',
 ];
 

@@ -21,10 +21,27 @@ const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: nu
   ...EXTENDED_SEARCH_SCRAPERS,
 };
 
-const DEFAULT_STORE_TIMEOUT_MS = 60_000;
+const DEFAULT_STORE_TIMEOUT_MS = 30_000;
 const STORE_TIMEOUTS: Partial<Record<string, number>> = {
-  bukhamsen: 90_000,
-  samsung_ksa: 60_000,
+  // Primary stores — fast APIs / well-known HTML (plain fetch)
+  amazon: 30_000,
+  noon: 30_000,
+  jarir: 30_000,
+  extra: 30_000,
+  almanea: 30_000,
+  // Puppeteer-based stores need more time (browser launch + JS render)
+  samsung_ksa: 45_000,
+  aliexpress_ar: 45_000,
+  alkhunaizan: 45_000,
+  najm_store: 45_000,
+  alesayi: 45_000,
+  // Known slow WooCommerce stores
+  bukhamsen: 45_000,
+  shaker: 30_000,
+  // Fast WooCommerce / generic HTML stores
+  zagzoog: 20_000,
+  swsg: 20_000,
+  alghanim: 20_000,
 };
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, store: string): Promise<T> {
@@ -68,15 +85,26 @@ export async function searchAllStores(
     };
   }
 
-  // Run all scrapers in parallel
+  // Run all scrapers in parallel with per-store timing
+  const storeTimings: Record<string, number> = {};
+  const storeStartTime = Date.now();
+
   const results = await Promise.allSettled(
-    validStores.map(store => {
+    validStores.map(async (store) => {
+      const t0 = Date.now();
       const scraper = SCRAPERS[store]();
-      return withTimeout(
-        scraper.search({ query, pages }),
-        STORE_TIMEOUTS[store] ?? DEFAULT_STORE_TIMEOUT_MS,
-        store
-      );
+      try {
+        const result = await withTimeout(
+          scraper.search({ query, pages }),
+          STORE_TIMEOUTS[store] ?? DEFAULT_STORE_TIMEOUT_MS,
+          store
+        );
+        storeTimings[store] = Date.now() - t0;
+        return result;
+      } catch (err) {
+        storeTimings[store] = Date.now() - t0;
+        throw err;
+      }
     }),
   );
 
@@ -84,14 +112,17 @@ export async function searchAllStores(
   const storeResults: Record<string, number> = {};
   const errors: Record<string, string> = {};
   const storeRankMap = new Map<SearchProduct, number>();
+  let successfulStoreCount = 0;
 
   for (let i = 0; i < validStores.length; i++) {
     const store = validStores[i];
     const result = results[i];
+    const elapsed = storeTimings[store] ?? 0;
 
     if (result.status === 'fulfilled') {
       const { products, error } = result.value;
       storeResults[store] = products.length;
+      if (products.length > 0) successfulStoreCount++;
       // Track each product's position within its store's results
       for (let rank = 0; rank < products.length; rank++) {
         storeRankMap.set(products[rank], rank);
@@ -99,13 +130,17 @@ export async function searchAllStores(
       allProducts.push(...products);
       if (error) errors[store] = error;
       const warn = error ? ` | note: ${error}` : '';
-      console.log(`[SearchOrchestrator] ${store}: ${products.length} products${warn}`);
+      console.log(`[SearchOrchestrator] ${store}: ${products.length} products in ${elapsed}ms${warn}`);
     } else {
       storeResults[store] = 0;
-      errors[store] = result.reason instanceof Error ? result.reason.message : String(result.reason);
-      console.log(`[SearchOrchestrator] ${store}: FAILED — ${errors[store]}`);
+      const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      errors[store] = reason;
+      console.log(`[SearchOrchestrator] ${store}: FAILED in ${elapsed}ms — ${reason}`);
     }
   }
+
+  const totalElapsed = Date.now() - storeStartTime;
+  console.log(`[SearchOrchestrator] All stores completed in ${totalElapsed}ms — ${successfulStoreCount}/${validStores.length} succeeded, ${allProducts.length} total products`);
 
   // Filter by category if specified
   if (category) {
@@ -144,6 +179,8 @@ export async function searchAllStores(
     priceStats,
     searchTime: Math.round(searchTime * 100) / 100,
     errors: Object.keys(errors).length > 0 ? errors : null,
+    totalStores: validStores.length,
+    successfulStores: successfulStoreCount,
   };
 }
 

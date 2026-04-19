@@ -15,6 +15,10 @@ export interface ScrapedSearchResult {
   };
   searchTime: number;
   errors: Record<string, string> | null;
+  /** Total number of stores that were queried */
+  totalStores?: number;
+  /** Number of stores that returned results successfully */
+  successfulStores?: number;
 }
 
 

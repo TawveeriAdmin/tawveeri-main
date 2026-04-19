@@ -35,8 +35,9 @@ export class NajmStoreSearchScraper extends BaseSearchScraper {
           const url = `https://najm.store/search?q=${qenc(q)}${page > 1 ? `&page=${page}` : ''}`;
 
           const html = await fetchSearchHtmlWithPuppeteer(url, {
+            waitUntil: 'domcontentloaded',
             waitForSelector: 'a[href*="/p/"], salla-products-list, [class*="product-card"]',
-            extraWaitMs: 4000,
+            extraWaitMs: 2500,
           });
 
           let scraped = parseWooCommerceShopLoop(html, url, BASE_URL);
