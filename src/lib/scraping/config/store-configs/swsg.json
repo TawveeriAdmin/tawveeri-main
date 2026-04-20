@@ -6,23 +6,46 @@
   "requires_js": false,
   "discovery_pagination": "wordpress_paged",
   "rate_limit": {
-    "min_delay_ms": 2500,
-    "max_delay_ms": 5000,
-    "requests_per_minute": 20
+    "min_delay_ms": 800,
+    "max_delay_ms": 1500,
+    "requests_per_minute": 40
   },
   "user_agents": [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
   "timeout_ms": 30000,
+  "listing_selectors": {
+    "tile": "div.item-product",
+    "link": "a.product-item-link",
+    "name": "a.product-item-link",
+    "price": ".price-wrapper .price",
+    "image": "img"
+  },
+  "pagination": { "param": "p", "start": 1 },
   "category_urls": {
-    "smartphone": ["https://swsg.co/?s=smartphone"],
-    "laptop": ["https://swsg.co/?s=laptop"],
-    "tv": ["https://swsg.co/?s=television"],
-    "tablet": ["https://swsg.co/?s=tablet"],
-    "audio": ["https://swsg.co/?s=audio"],
-    "camera": ["https://swsg.co/?s=camera"],
-    "gaming": ["https://swsg.co/?s=gaming"],
-    "accessories": ["https://swsg.co/?s=accessories"]
+    "smartphone": [
+      "https://swsg.co/ar/moblie-accessories/smart-phones.html"
+    ],
+    "laptop": [
+      "https://swsg.co/ar/computers-peripherals/computers/laptops.html"
+    ],
+    "tablet": [
+      "https://swsg.co/ar/moblie-accessories/tablets.html"
+    ],
+    "tv": [
+      "https://swsg.co/ar/tvs-audios/tvs.html"
+    ],
+    "audio": [
+      "https://swsg.co/ar/tvs-audios/audios.html"
+    ],
+    "gaming": [
+      "https://swsg.co/ar/games/playstation.html",
+      "https://swsg.co/ar/games/game-consoles.html"
+    ],
+    "accessories": [
+      "https://swsg.co/ar/moblie-accessories/accessories.html",
+      "https://swsg.co/ar/computers-peripherals/computer-accessories.html"
+    ]
   },
   "selectors": {
     "product_list": ".product",

@@ -9,7 +9,13 @@ export class ProductMatcher {
   private supabase = createServerClient();
 
   /**
-   * Find existing product by various matching strategies
+   * Find existing product by various matching strategies.
+   *
+   * When SCRAPING_SKIP_FUZZY=true (set during bulk seed), the expensive
+   * third-tier fuzzy match is skipped. SKU + brand+model still run, which
+   * catches most real duplicates. Fuzzy mostly helps when brand/model parsing
+   * diverges across stores; during an initial seed nothing exists to match
+   * against, so it's pure overhead.
    */
   async findExistingProduct(scrapedProduct: ScrapedProduct): Promise<string | null> {
     // Strategy 1: Exact SKU match (highest confidence)
@@ -25,7 +31,9 @@ export class ProductMatcher {
     );
     if (brandModelMatch) return brandModelMatch;
 
-    // Strategy 3: Fuzzy matching (lower confidence)
+    // Strategy 3: Fuzzy matching (lower confidence) — skipped in bulk-seed mode
+    if (process.env.SCRAPING_SKIP_FUZZY === 'true') return null;
+
     const fuzzyMatch = await this.fuzzyMatch(scrapedProduct);
     if (fuzzyMatch && fuzzyMatch.confidence > 0.85) {
       return fuzzyMatch.productId;

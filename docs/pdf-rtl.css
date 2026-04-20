@@ -1,0 +1,113 @@
+/* RTL + Arabic font stylesheet for md-to-pdf */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+@page {
+  size: A4;
+  margin: 12mm 10mm;
+}
+
+html, body {
+  direction: rtl;
+  text-align: right;
+  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  font-size: 12pt;
+  line-height: 1.9;
+  color: #1f2937;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  width: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: #0D47A1;
+  margin-top: 1.4em;
+  margin-bottom: 0.6em;
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 22pt;
+  border-bottom: 2pt solid #0D47A1;
+  padding-bottom: 0.3em;
+}
+
+h2 {
+  font-size: 16pt;
+}
+
+h3 {
+  font-size: 14pt;
+}
+
+p {
+  margin: 0.6em 0;
+}
+
+ul, ol {
+  padding-right: 1.5em;
+  padding-left: 0;
+}
+
+li {
+  margin: 0.3em 0;
+}
+
+strong, b {
+  font-weight: 700;
+  color: #0D47A1;
+}
+
+code {
+  direction: ltr;
+  unicode-bidi: embed;
+  font-family: Menlo, Consolas, monospace;
+  background: #f3f4f6;
+  padding: 1pt 4pt;
+  border-radius: 3pt;
+  font-size: 0.9em;
+}
+
+hr {
+  border: none;
+  border-top: 1pt solid #e5e7eb;
+  margin: 1.5em 0;
+}
+
+table {
+  direction: rtl;
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  font-size: 0.95em;
+}
+
+th, td {
+  border: 1pt solid #e5e7eb;
+  padding: 6pt 10pt;
+  text-align: right;
+  vertical-align: top;
+}
+
+th {
+  background: #f3f4f6;
+  font-weight: 700;
+  color: #0D47A1;
+}
+
+blockquote {
+  border-right: 3pt solid #0D47A1;
+  border-left: none;
+  padding-right: 1em;
+  padding-left: 0;
+  margin-right: 0;
+  color: #4b5563;
+  font-style: normal;
+}
+
+/* Keep English text (brand names, product names) left-to-right embedded within RTL flow */
+[lang="en"] {
+  direction: ltr;
+  unicode-bidi: embed;
+}

@@ -6,42 +6,33 @@ import amazonConfig from './store-configs/amazon.json';
 import almaneaConfig from './store-configs/almanea.json';
 import samsungKsaConfig from './store-configs/samsung_ksa.json';
 import shakerConfig from './store-configs/shaker.json';
-import zagzoogConfig from './store-configs/zagzoog.json';
-import alesayiConfig from './store-configs/alesayi.json';
 import swsgConfig from './store-configs/swsg.json';
-import alkhunaizanConfig from './store-configs/alkhunaizan.json';
-import bukhamsenConfig from './store-configs/bukhamsen.json';
-import alghanimConfig from './store-configs/alghanim.json';
-import alsaifGalleryConfig from './store-configs/alsaif_gallery.json';
-import luluGccConfig from './store-configs/lulu_gcc.json';
+
+/**
+ * Active store scrapers (8 stores prioritized for MVP).
+ * Add a new store by adding its JSON config + TS scraper + entry here.
+ */
+const STORE_CONFIGS: Record<string, unknown> = {
+  jarir: jarirConfig,
+  extra: extraConfig,
+  noon: noonConfig,
+  amazon: amazonConfig,
+  almanea: almaneaConfig,
+  samsung_ksa: samsungKsaConfig,
+  shaker: shakerConfig,
+  swsg: swsgConfig,
+};
+
+export const ACTIVE_STORE_SLUGS = Object.keys(STORE_CONFIGS);
 
 /**
  * Load store configuration by slug
  */
 export function loadStoreConfig(storeSlug: string): ScraperConfig {
-  const configs: Record<string, unknown> = {
-    jarir: jarirConfig,
-    extra: extraConfig,
-    noon: noonConfig,
-    amazon: amazonConfig,
-    almanea: almaneaConfig,
-    samsung_ksa: samsungKsaConfig,
-    shaker: shakerConfig,
-    zagzoog: zagzoogConfig,
-    alesayi: alesayiConfig,
-    swsg: swsgConfig,
-    alkhunaizan: alkhunaizanConfig,
-    bukhamsen: bukhamsenConfig,
-    alghanim: alghanimConfig,
-    alsaif_gallery: alsaifGalleryConfig,
-    lulu_gcc: luluGccConfig,
-  };
-
-  const config = configs[storeSlug];
+  const config = STORE_CONFIGS[storeSlug];
   if (!config) {
     throw new Error(`No configuration found for store: ${storeSlug}`);
   }
-
   return validateConfig(config);
 }
 
@@ -55,7 +46,6 @@ export function validateConfig(config: unknown): ScraperConfig {
 
   const cfg = config as Record<string, unknown>;
 
-  // Required fields
   if (!cfg.store_slug || typeof cfg.store_slug !== 'string') {
     throw new Error('Configuration must have store_slug (string)');
   }
@@ -64,42 +54,20 @@ export function validateConfig(config: unknown): ScraperConfig {
     throw new Error('Configuration must have base_url (string)');
   }
 
-  // Return as ScraperConfig (type assertion after validation)
   return config as ScraperConfig;
 }
 
 /**
- * Get all store configurations
+ * Get all active store configurations
  */
 export function getAllStoreConfigs(): ScraperConfig[] {
-  const slugs = [
-    'jarir',
-    'extra',
-    'noon',
-    'amazon',
-    'almanea',
-    'samsung_ksa',
-    'shaker',
-    'zagzoog',
-    'alesayi',
-    'swsg',
-    'alkhunaizan',
-    'bukhamsen',
-    'alghanim',
-    'alsaif_gallery',
-    'lulu_gcc',
-  ];
   const configs: ScraperConfig[] = [];
-
-  for (const slug of slugs) {
+  for (const slug of ACTIVE_STORE_SLUGS) {
     try {
-      const config = loadStoreConfig(slug);
-      configs.push(config);
+      configs.push(loadStoreConfig(slug));
     } catch (error) {
       console.error(`Failed to load config for ${slug}:`, error);
     }
   }
-
   return configs;
 }
-

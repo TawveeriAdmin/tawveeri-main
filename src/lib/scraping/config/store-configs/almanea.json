@@ -5,23 +5,39 @@
   "base_url": "https://www.almanea.sa",
   "requires_js": true,
   "rate_limit": {
-    "min_delay_ms": 3000,
-    "max_delay_ms": 6000,
-    "requests_per_minute": 20
+    "min_delay_ms": 800,
+    "max_delay_ms": 1500,
+    "requests_per_minute": 40
   },
   "user_agents": [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
   "timeout_ms": 30000,
   "category_urls": {
-    "smartphone": ["https://www.almanea.sa/smartphones"],
-    "laptop": ["https://www.almanea.sa/laptops"],
-    "tv": ["https://www.almanea.sa/tv"],
-    "tablet": ["https://www.almanea.sa/tablets"],
-    "audio": ["https://www.almanea.sa/audio"],
-    "camera": ["https://www.almanea.sa/cameras"],
-    "gaming": ["https://www.almanea.sa/gaming"],
-    "accessories": ["https://www.almanea.sa/accessories"]
+    "smartphone": [
+      "https://www.almanea.sa/smartphones"
+    ],
+    "laptop": [
+      "https://www.almanea.sa/laptops"
+    ],
+    "tv": [
+      "https://www.almanea.sa/tv"
+    ],
+    "tablet": [
+      "https://www.almanea.sa/tablets"
+    ],
+    "audio": [
+      "https://www.almanea.sa/audio"
+    ],
+    "camera": [
+      "https://www.almanea.sa/cameras"
+    ],
+    "gaming": [
+      "https://www.almanea.sa/gaming"
+    ],
+    "accessories": [
+      "https://www.almanea.sa/accessories"
+    ]
   },
   "selectors": {
     "product_list": ".product-item",
@@ -37,9 +53,3 @@
     "next_page": ".pagination .next"
   }
 }
-
-
-
-
-
-

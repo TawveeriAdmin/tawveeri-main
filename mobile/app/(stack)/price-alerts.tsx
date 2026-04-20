@@ -36,7 +36,7 @@ export default function PriceAlertsScreen() {
     setLoading(true);
     const { data } = await supabase
       .from('price_alerts')
-      .select('*, products(name, name_ar, name_en, slug, image_url)')
+      .select('*, products(name_ar, name_en, slug, image_urls)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     setAlerts(data || []);
@@ -61,8 +61,11 @@ export default function PriceAlertsScreen() {
     );
   };
 
+  // An alert is considered "triggered" when check-price-alerts has fired
+  // (schema: is_active flipped to false and notified_at is populated).
+  const isTriggered = (a: any) => a.is_active === false && !!a.notified_at;
   const filteredAlerts = alerts.filter((a) =>
-    tab === 'active' ? !a.is_triggered : a.is_triggered
+    tab === 'active' ? !isTriggered(a) : isTriggered(a)
   );
 
   if (!user) {
@@ -140,8 +143,8 @@ export default function PriceAlertsScreen() {
                 accessibilityLabel={locale === 'ar' ? (product?.name_ar || product?.name) : (product?.name_en || product?.name)}
                 style={[styles.alertCard, { backgroundColor: colors.card, flexDirection: rtl.row }]}
               >
-                {product?.image_url && (
-                  <KeyedProductImage uri={product.image_url} style={styles.alertImage} contentFit="contain" />
+                {product?.image_urls?.[0] && (
+                  <KeyedProductImage uri={product.image_urls[0]} style={styles.alertImage} contentFit="contain" />
                 )}
                 <View style={{ flex: 1, marginLeft: rtl.isRTL ? 0 : spacing.md, marginRight: rtl.isRTL ? spacing.md : 0 }}>
                   <Text style={[typography.subheadline, { color: colors.label, fontWeight: '600' }]} numberOfLines={2}>

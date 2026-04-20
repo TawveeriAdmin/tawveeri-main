@@ -42,7 +42,7 @@ const TICKER_SAMPLES_AR = [
   { product: 'Sony PS5 Standard', drop: 250, store: 'Noon' },
   { product: 'مكيف سبليت 24000 وحدة', drop: 550, store: 'Shaker' },
   { product: 'Samsung Galaxy S24 Ultra', drop: 600, store: 'Samsung SA' },
-  { product: 'ثلاجة LG جانبية 26 قدم', drop: 900, store: 'Alghanim' },
+  { product: 'ثلاجة LG جانبية 26 قدم', drop: 900, store: 'SWSG' },
 ];
 
 const TICKER_SAMPLES_EN = [
@@ -53,7 +53,7 @@ const TICKER_SAMPLES_EN = [
   { product: 'Sony PS5 Standard', drop: 250, store: 'Noon' },
   { product: 'Split AC 24000 BTU', drop: 550, store: 'Shaker' },
   { product: 'Samsung Galaxy S24 Ultra', drop: 600, store: 'Samsung SA' },
-  { product: 'LG Side-by-Side Fridge 26cu.ft', drop: 900, store: 'Alghanim' },
+  { product: 'LG Side-by-Side Fridge 26cu.ft', drop: 900, store: 'SWSG' },
 ];
 
 const CATEGORIES = [
@@ -80,22 +80,19 @@ const FEATURED_COMPARISONS_EN = [
 ];
 
 const VALUE_PROPS_AR = [
-  { icon: Zap, title: 'مقارنة فورية', description: 'ابحث مرة، واحصل على كل الأسعار من 19 متجر في ثوانٍ.' },
+  { icon: Zap, title: 'مقارنة فورية', description: 'ابحث مرة، واحصل على الأسعار من 8 متاجر في ثوانٍ.' },
   { icon: Bell, title: 'تنبيهات ذكية', description: 'اضبط سعرك المستهدف ونحن ننبّهك لحظة انخفاضه.' },
   { icon: Ticket, title: 'كوبونات نشطة', description: 'كوبونات تُطبَّق تلقائيًا على أفضل سعر قبل الشراء.' },
 ];
 
 const VALUE_PROPS_EN = [
-  { icon: Zap, title: 'Instant comparison', description: 'Search once, get every price from 19 stores in seconds.' },
+  { icon: Zap, title: 'Instant comparison', description: 'Search once, get every price from 8 stores in seconds.' },
   { icon: Bell, title: 'Smart alerts', description: 'Set your target price and we notify you the moment it drops.' },
   { icon: Ticket, title: 'Live coupons', description: 'Coupons applied automatically to the best price before you buy.' },
 ];
 
 const FEATURED_STORES: string[] = [
-  'amazon', 'noon', 'jarir', 'extra', 'almanea',
-  'samsung_ksa', 'shaker', 'zagzoog', 'alesayi', 'swsg',
-  'alkhunaizan', 'bukhamsen', 'alghanim',
-  'najm_store', 'aliexpress_ar',
+  'amazon', 'noon', 'jarir', 'extra', 'almanea', 'shaker', 'samsung_ksa', 'swsg',
 ];
 
 export default function LandingPageClient() {
@@ -141,7 +138,7 @@ function Hero() {
         <div className="flex flex-col items-center text-center">
           <Badge variant="secondary" className="mb-6">
             <Sparkles className="h-3 w-3 me-1.5" />
-            {isRTL ? 'الجديد في توفيري' : 'New on Tawveeri'} · {isRTL ? '19 متجر' : '19 stores'}
+            {isRTL ? 'الجديد في توفيري' : 'New on Tawveeri'} · {isRTL ? '8 متاجر' : '8 stores'}
           </Badge>
 
           <h1 className="t-h1 md:text-[52px] md:leading-[60px] text-on-surface max-w-[820px] font-black">
@@ -188,7 +185,7 @@ function Hero() {
           </form>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <TrustChip icon={Store}>{isRTL ? '19 متجر سعودي' : '19 Saudi stores'}</TrustChip>
+            <TrustChip icon={Store}>{isRTL ? '8 متاجر سعودية' : '8 Saudi stores'}</TrustChip>
             <TrustChip icon={RefreshCw}>{isRTL ? 'تحديث يومي' : 'Daily updates'}</TrustChip>
             <TrustChip icon={ShieldCheck}>{isRTL ? 'بدون رسوم' : 'No fees'}</TrustChip>
           </div>
@@ -421,8 +418,8 @@ function FeaturedStores() {
           </h2>
           <p className="mt-2 t-body text-on-surface-variant">
             {isRTL
-              ? '19 متجر سعودي في مقارنة واحدة — الأكبر في المنطقة.'
-              : '19 Saudi stores in one comparison — the largest in the region.'}
+              ? '8 متاجر سعودية في مقارنة واحدة.'
+              : '8 Saudi stores in one comparison.'}
           </p>
         </div>
         <Link
@@ -520,8 +517,8 @@ function SavingsStat() {
           </p>
           <p className="mt-4 t-body text-white/80 max-w-lg">
             {isRTL
-              ? 'قارن مرة واحدة، وفّر دائمًا. نحن نُحدِّث الأسعار يوميًا عبر 19 متجرًا.'
-              : 'Compare once, save always. We refresh prices daily across 19 stores.'}
+              ? 'قارن مرة واحدة، وفّر دائمًا. نحن نُحدِّث الأسعار يوميًا عبر 8 متاجر.'
+              : 'Compare once, save always. We refresh prices daily across 8 stores.'}
           </p>
         </div>
       </div>

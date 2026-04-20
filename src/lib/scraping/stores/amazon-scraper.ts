@@ -16,36 +16,118 @@ export class AmazonScraper extends BaseScraper {
     super(loadStoreConfig('amazon'));
   }
 
+  /**
+   * Discover products from category search pages.
+   *
+   * Mirrors the Jarir pattern: SKU-based dedup, dynamic pagination cap via
+   * DOM parsing, consecutive-failure + consecutive-all-dupe break signals.
+   *
+   * Amazon has no equivalent of Jarir's `data-cnstrc-num-results` attribute,
+   * so the cap comes from parsing the pagination bar's last page number.
+   * If parsing fails (Amazon A/B-tests listing markup) the caller's
+   * `maxPages` acts as a safety ceiling.
+   *
+   * Listings render in static HTML when a real browser UA is sent, so plain
+   * cheerio fetch is sufficient for the majority of pages. The one edge case
+   * is page 1 occasionally returning a captcha/bot-check shell; if that
+   * produces zero tiles we retry page 1 once through Puppeteer. We do NOT
+   * apply the Puppeteer fallback beyond page 1 — cost would be too high.
+   */
   async discoverProducts(
     category: ProductCategory,
     maxPages: number = 10
   ): Promise<ScrapedProduct[]> {
     const products: ScrapedProduct[] = [];
     const categoryUrls = this.config.category_urls[category] || [];
+    if (categoryUrls.length === 0) return products;
 
-    if (categoryUrls.length === 0) {
-      throw new Error(`No category URLs configured for category: ${category}`);
-    }
+    // ASIN dedup spans ALL URLs within a category. Broad searches like
+    // `headphones` and `wireless earbuds` overlap significantly — without a
+    // shared set we'd re-scrape (and re-upsert) the same products multiple
+    // times per category. Moving this outside the URL loop cuts redundant
+    // DB round-trips by ~30–50% for multi-URL categories.
+    const seenAsins = new Set<string>();
 
     try {
       for (const baseUrl of categoryUrls) {
-        for (let page = 1; page <= maxPages; page++) {
-          try {
-            const pageProducts = await this.scrapeCategoryPage(baseUrl, page, category);
+        let consecutiveFailures = 0;
+        let consecutiveAllDupPages = 0;
+        let effectiveMaxPages = maxPages;
 
-            if (pageProducts.length === 0) {
-              break;
+        for (let page = 1; page <= effectiveMaxPages; page++) {
+          try {
+            const url = page === 1 ? baseUrl : `${baseUrl}&page=${page}&ref=sr_pg_${page}`;
+            let html = await this.fetchPage(url);
+            let pageProducts = this.parseListingResults(html, category);
+
+            // Page-1 only Puppeteer fallback. Amazon occasionally serves a
+            // bot-check shell to cheerio — a JS render usually recovers.
+            if (page === 1 && pageProducts.length === 0) {
+              console.log(`  [amazon/${category}] page 1 empty via fetch — retrying with Puppeteer…`);
+              try {
+                const jsPage = await this.fetchPageWithJS(url);
+                html = await jsPage.content();
+                pageProducts = this.parseListingResults(html, category);
+              } catch (err) {
+                console.warn(`  [amazon/${category}] Puppeteer fallback failed:`, err);
+              }
             }
 
-            products.push(...pageProducts);
+            // Read dynamic pagination cap from the page-1 DOM. Amazon shows
+            // numbered `.s-pagination-item` elements; the largest numeric
+            // text is the last page. Falls back to caller's maxPages on
+            // parse failure.
+            if (page === 1) {
+              const $ = this.getCheerio(html);
+              let lastPage = 0;
+              $('.s-pagination-item').each((_, el) => {
+                const text = $(el).text().trim();
+                const n = Number(text);
+                if (Number.isFinite(n) && n > lastPage) lastPage = n;
+              });
+              if (lastPage > 0) {
+                effectiveMaxPages = Math.min(maxPages, lastPage);
+                console.log(
+                  `  [amazon/${category}] pagination last-page=${lastPage}, scraping ${effectiveMaxPages}/${maxPages} pages`,
+                );
+              }
+            }
+
+            if (pageProducts.length === 0) break; // natural stop
+
+            const newOnThisPage = pageProducts.filter((p) => p.sku && !seenAsins.has(p.sku));
+            if (newOnThisPage.length === 0) {
+              consecutiveAllDupPages++;
+              console.log(
+                `  [amazon/${category}] page ${page}: 0 new (${consecutiveAllDupPages} consec. all-dupe)`,
+              );
+              if (consecutiveAllDupPages >= 2) break;
+              await this.delay();
+              continue;
+            }
+            consecutiveAllDupPages = 0;
+
+            for (const p of newOnThisPage) if (p.sku) seenAsins.add(p.sku);
+            products.push(...newOnThisPage);
+            consecutiveFailures = 0;
+
+            console.log(
+              `  [amazon/${category}] page ${page}: +${newOnThisPage.length} new (total: ${products.length})`,
+            );
+
             await this.delay();
           } catch (error) {
-            console.error(`[Amazon] Error scraping page ${page} of ${baseUrl}:`, error);
+            consecutiveFailures++;
+            console.error(`  [amazon/${category}] error page ${page} of ${baseUrl}:`, error);
+            if (consecutiveFailures >= 3) {
+              console.warn(`  [amazon/${category}] ${consecutiveFailures} consecutive failures, stopping pagination`);
+              break;
+            }
           }
         }
       }
     } finally {
-      await this.cleanup();
+      await this.cleanup().catch(() => {});
     }
 
     return products;
@@ -65,29 +147,20 @@ export class AmazonScraper extends BaseScraper {
     }
   }
 
-  private async scrapeCategoryPage(
-    baseUrl: string,
-    page: number,
-    category: ProductCategory,
-  ): Promise<ScrapedProduct[]> {
-    const url = page === 1 ? baseUrl : `${baseUrl}&page=${page}&ref=sr_pg_${page}`;
-    const products: ScrapedProduct[] = [];
-
-    // Use fetch for listing pages (no JS rendering needed for basic data)
-    const html = await this.fetchPage(url);
+  /**
+   * Parse every `data-component-type='s-search-result'` tile on a listing
+   * page into a ScrapedProduct. Sponsored tiles are filtered in
+   * `parseSearchResult` — the tile still appears in the DOM but the parser
+   * returns null so they never reach the DB.
+   */
+  private parseListingResults(html: string, category: ProductCategory): ScrapedProduct[] {
     const $ = this.getCheerio(html);
-
-    const items = $("div[data-component-type='s-search-result']");
-    if (items.length === 0) return [];
-
-    console.log(`[Amazon] Page ${page}: ${items.length} items found`);
-
-    items.each((_, el) => {
+    const out: ScrapedProduct[] = [];
+    $("div[data-component-type='s-search-result']").each((_, el) => {
       const product = this.parseSearchResult($, $(el), category);
-      if (product) products.push(product);
+      if (product) out.push(product);
     });
-
-    return products;
+    return out;
   }
 
   private parseSearchResult(
@@ -97,6 +170,13 @@ export class AmazonScraper extends BaseScraper {
   ): ScrapedProduct | null {
     const asin = el.attr('data-asin');
     if (!asin) return null;
+
+    // Skip sponsored placements — they double-count real products that also
+    // appear in organic results, and clutter the SKU dedup set. We keep the
+    // tile only when no Sponsored badge is present.
+    if (el.find('span[aria-label*="Sponsored"], .puis-sponsored-label-text').length > 0) {
+      return null;
+    }
 
     // Title
     const titleEl = el.find('h2 a span, h2 span').first();

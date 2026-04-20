@@ -6,23 +6,34 @@
   "requires_js": false,
   "discovery_pagination": "wordpress_paged",
   "rate_limit": {
-    "min_delay_ms": 2500,
-    "max_delay_ms": 5000,
-    "requests_per_minute": 20
+    "min_delay_ms": 600,
+    "max_delay_ms": 1200,
+    "requests_per_minute": 50
   },
   "user_agents": [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
   "timeout_ms": 30000,
   "category_urls": {
-    "smartphone": ["https://shakersa.com/?s=smartphone"],
-    "laptop": ["https://shakersa.com/?s=laptop"],
-    "tv": ["https://shakersa.com/?s=television"],
-    "tablet": ["https://shakersa.com/?s=tablet"],
-    "audio": ["https://shakersa.com/?s=audio"],
-    "camera": ["https://shakersa.com/?s=camera"],
-    "gaming": ["https://shakersa.com/?s=gaming"],
-    "accessories": ["https://shakersa.com/?s=accessories"]
+    "tv": ["https://shakersa.com/product-category/tv-entertaiment/"],
+    "appliance": [
+      "https://shakersa.com/product-category/large-appliances/",
+      "https://shakersa.com/product-category/air-conditioners/",
+      "https://shakersa.com/product-category/built-in/"
+    ],
+    "kitchen": ["https://shakersa.com/product-category/small-appliances/"]
+  },
+  "listing_selectors": {
+    "tile": ".product-wrapper",
+    "link": "a.product-image-link",
+    "name": ".wd-entities-title",
+    "price": ".price ins",
+    "original_price": ".price del",
+    "image": "img"
+  },
+  "pagination": {
+    "param": "product-page",
+    "start": 1
   },
   "selectors": {
     "product_list": ".product",

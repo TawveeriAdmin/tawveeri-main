@@ -551,13 +551,12 @@ export default function SearchClient() {
     setStoreErrors({});
 
     try {
-      const response = await fetch('/api/search/scrape', {
+      const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal,
         body: JSON.stringify({
           query: query.trim(),
-          stores,
           pages,
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
         }),

@@ -24,7 +24,7 @@ export class ExtraScraper extends BaseScraper {
     const categoryUrls = this.config.category_urls[category] || [];
 
     if (categoryUrls.length === 0) {
-      throw new Error(`No category URLs configured for category: ${category}`);
+      return products;
     }
 
     try {

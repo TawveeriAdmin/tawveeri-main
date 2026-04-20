@@ -8,6 +8,10 @@
 
 ---
 
+> **Update — 2026-04-19:** Per client direction, active store list narrowed to **8 stores**: Amazon SA, Noon, Jarir, Extra, Almanea, Shaker, Samsung KSA, Al-Shetaa Wal-Saif (SWSG). All references below to 17/15 stores, and the store tables listing Zagzoog, Alesayi, Alkhunaizan, Bukhamsen, Alghanim, Alsaif Gallery, Lulu GCC, Najm Store, AliExpress AR are **historical context only** — those stores are deactivated in the DB and removed from the code registry. See `CLAUDE.md` for current active list.
+
+---
+
 ## Context
 
 The client reviewed the platform and found gaps between the progress report (100% completion claimed) and the actual state. Additionally, cross-referencing the PDR requirements document against the codebase reveals further incomplete items. All tasks below must be resolved by **April 22, 2026** for UAT and contractual close-out.

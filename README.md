@@ -32,7 +32,7 @@
 **Tawveeri** (توفيري) is a price comparison website for electronics in Saudi Arabia. Think of it like Google Shopping, but specifically for Saudi stores.
 
 ### What It Does:
-- **Searches** multiple stores (Amazon SA, Noon, Jarir, Extra) at once
+- **Searches** 8 Saudi stores at once: Amazon SA, Noon, Jarir, Extra, Almanea, Shaker, Samsung KSA, Al-Shetaa Wal-Saif (SWSG)
 - **Compares prices** so users can find the best deal
 - **Tracks price history** to see if prices are going up or down
 - **Sends alerts** when prices drop

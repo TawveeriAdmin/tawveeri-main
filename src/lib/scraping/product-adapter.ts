@@ -20,31 +20,13 @@ export const SEARCH_STORE_DISPLAY_NAMES: Record<string, { name_ar: string; name_
   almanea: { name_ar: 'المنيع', name_en: 'Almanea' },
   samsung_ksa: { name_ar: 'سامسونج السعودية', name_en: 'Samsung KSA' },
   shaker: { name_ar: 'شاكر', name_en: 'Shaker' },
-  zagzoog: { name_ar: 'الزقزوق', name_en: 'Zagzoog' },
-  alesayi: { name_ar: 'العيسائي للإلكترونيات', name_en: 'Alesayi Electronics' },
-  swsg: { name_ar: 'سواسق', name_en: 'SWSG' },
-  alkhunaizan: { name_ar: 'الخنيزان', name_en: 'Alkhunaizan' },
-  bukhamsen: { name_ar: 'بخمسين', name_en: 'Bukhamsen' },
-  alghanim: { name_ar: 'الغانم', name_en: 'Alghanim' },
-  alsaif_gallery: { name_ar: 'السيف غاليري', name_en: 'Alsaif Gallery' },
-  lulu_gcc: { name_ar: 'لولو هايبرماركت', name_en: 'Lulu Hypermarket' },
-  najm_store: { name_ar: 'نجم الأجهزة', name_en: 'Najm Store' },
-  aliexpress_ar: { name_ar: 'علي إكسبرس', name_en: 'AliExpress' },
+  swsg: { name_ar: 'الشتاء والصيف', name_en: 'Al-Shetaa Wal-Saif' },
 };
 
 /** `/public/logos/{base}.png` when the file base name differs from the store slug */
 export const SEARCH_STORE_LOGO_BASENAME: Partial<Record<string, string>> = {
-  najm_store: 'najm',
-  aliexpress_ar: 'ali_express',
-  // DB-slug aliases used by UI store filters
-  najm: 'najm',
-  aliexpress: 'ali_express',
   'ibrahim-shaker': 'shaker',
   samsung: 'samsung_ksa',
-  'al-eissaei': 'alesayi',
-  alsaifgallery: 'alsaif_gallery',
-  lulu: 'lulu_gcc',
-  bukhamseen: 'bukhamsen',
 };
 
 export function getSearchStoreLogoPath(slug: string): string {

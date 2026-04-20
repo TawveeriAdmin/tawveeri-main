@@ -130,7 +130,7 @@ Phase 2 - Plan:
 
 ## Project Overview
 
-**Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Users compare prices across stores (Amazon SA, Noon, Jarir, Extra, Almanea), set price alerts, and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
+**Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Users compare prices across 8 Saudi retailers (Amazon SA, Noon, Jarir, Extra, Almanea, Samsung KSA, Shaker, SWSG), set price alerts, and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
 
 **Note:** The root `README.md` is outdated and describes a legacy Flask/Python architecture. This CLAUDE.md is the authoritative reference.
 
@@ -174,9 +174,12 @@ npm run db:schema        # Apply schema SQL
 npm run db:policies      # Apply RLS policies
 npm run db:seed          # Seed data
 npm run db:create-admin  # Create admin user
+npm run db:migrate       # Run a specific migration (04-fix-user-insert-policy.sql)
+npm run db:migrate-audit # Run audit-logs policy migration
+npm run db:clean-mock    # Delete mock products
 ```
 
-Development requires only **one terminal**: `npm run dev` on port 3000. All scraping runs as TypeScript inside Next.js.
+Development requires only **one terminal**: `npm run dev` on port 3000. All scraping runs as TypeScript inside Next.js. The `flask:*` scripts in package.json target the legacy Python scraper in `scripts/scraping/` and are **not** used by the app.
 
 ### Mobile Commands
 
@@ -306,18 +309,35 @@ Use `createNotification()` from `src/lib/auth/notifications.ts` (types: `price_d
 
 ### Scraping Architecture
 
-Two scraping subsystems, both TypeScript:
+Two scraping subsystems, both TypeScript. **8 supported stores**: `amazon`, `noon`, `jarir`, `extra`, `almanea`, `samsung_ksa`, `shaker`, `swsg` (canonical list in `src/lib/scraping/search/store-registry.ts` as `SUPPORTED_SEARCH_STORES`).
 
-1. **Search scrapers** (`src/lib/scraping/search/`) — lightweight fetch+cheerio scrapers for Amazon SA, Noon, Jarir, Extra. Run in-process via `searchAllStores()` orchestrator. Called from `POST /api/search/scrape`. Accepts optional `category` param to filter results via `matchesCategory()`.
+1. **Search scrapers** (`src/lib/scraping/search/`) — lightweight fetch+cheerio scrapers, one per store, all extending `BaseSearchScraper`. Run in-process via `searchAllStores()` (`search-orchestrator.ts`). Called from `POST /api/search/scrape`. Accepts optional `category` param to filter results via `matchesCategory()`.
+   - **Per-store timeouts** are configured in `search-orchestrator.ts` (`STORE_TIMEOUTS`) — tune here when a store's fetch is slow.
+   - **Bilingual queries**: `search-query-bilingual.ts` translates/expands queries so Arabic and English searches hit the same catalog.
+   - **Relevance scoring**: `relevance-scorer.ts` (`rankProducts()`) reorders combined cross-store results by query relevance.
+   - **Store registry**: `store-registry.ts` — single source of truth for supported slugs, default stores, and `normalizeSearchStores()`.
+   - **Generic bases**: `generic-html-search-scraper.ts` and `base-woocommerce-search-scraper.ts` allow adding new stores by config rather than a full custom scraper.
+   - **Puppeteer helper**: `puppeteer-search-html.ts` for stores that require JS rendering.
+   - **User agent rotation**: `user-agents.ts`.
+   - **URL builders**: `retail-search-url.ts`.
 
-2. **Cron scrapers** (`src/lib/scraping/stores/`) — all 5 stores implemented, each extending `BaseScraper`:
+2. **Cron scrapers** (`src/lib/scraping/stores/`) — one per store, each extending `BaseScraper`:
    - `JarirScraper` — HTML scraping with cheerio
    - `NoonScraper` — Noon's internal JSON API (`/_svc/catalog/api/v3/`), falls back to HTML. Uses `fetchJson<T>()` from BaseScraper.
    - `AmazonScraper` — cheerio for search pages, Puppeteer for product pages. ASIN-based SKU.
    - `ExtraScraper` — 3-strategy parser: `__NEXT_DATA__` JSON → inline script JSON → HTML selectors (Extra is Next.js-based).
    - `AlmaneaScraper` — HTML selectors + JSON-LD (`application/ld+json`) structured data fallback.
+   - `SamsungKsaScraper`, `ShakerScraper`, `SwsgScraper` — later additions.
+   - `GenericHtmlStoreScraper` — config-driven fallback for simple HTML catalogs.
 
 **BaseScraper** (`src/lib/scraping/base/base-scraper.ts`) provides: `fetchPage()` (plain fetch), `fetchPageWithJS()` (Puppeteer), `fetchJson<T>()` (API calls), cheerio helpers, `validateScrapedProduct()`, rate limiting via `delay()`. Subclasses implement abstract `discoverProducts(category, maxPages?)` and `updateProductPrice(productUrl)`.
+
+**Adding a new store** — do all of:
+1. Create `<slug>-search-scraper.ts` (or reuse a generic base) and `<slug>-scraper.ts` for cron.
+2. Add the slug to `SUPPORTED_SEARCH_STORES` in `store-registry.ts`.
+3. Register it in `SCRAPERS` map in `search-orchestrator.ts` and `getScraperForStore()` in `services/scraping-orchestrator.ts`.
+4. Add `<slug>.json` to `src/lib/scraping/config/store-configs/`.
+5. Add image CDN host(s) to `next.config.ts` `remotePatterns`.
 
 **Shared utilities**:
 - `src/lib/scraping/utils/category-utils.ts` — `determineCategory(title)` (keyword-based product categorization) and `matchesCategory(product, category)` (filtering). Used by both search and cron scrapers.

@@ -16,11 +16,7 @@ function buildDiscoveryUrl(baseUrl: string, page: number, style?: DiscoveryPagin
       return `${baseUrl}${sep}paged=${page}`;
     case 'magento_p':
       return `${baseUrl}${sep}p=${page}`;
-    case 'lulu_page_index':
-      return `${baseUrl}${sep}page=${page - 1}`;
     case 'samsung_page':
-      return `${baseUrl}${sep}page=${page}`;
-    case 'zagzoog_page':
       return `${baseUrl}${sep}page=${page}`;
     case 'query_page':
     default:
@@ -41,12 +37,16 @@ export class GenericHtmlStoreScraper extends BaseScraper {
     category: ProductCategory,
     maxPages: number = 10,
   ): Promise<ScrapedProduct[]> {
+    // New path: if the store config provides `listing_selectors`, use the
+    // fast, selector-driven extraction from BaseScraper (no per-product detail
+    // fetches). Falls back to the legacy generic parser otherwise.
+    if ((this.config as any).listing_selectors?.tile) {
+      return this.discoverByListingConfig(category, maxPages);
+    }
+
     const products: ScrapedProduct[] = [];
     const categoryUrls = this.config.category_urls[category] || [];
-
-    if (categoryUrls.length === 0) {
-      throw new Error(`No category URLs configured for category: ${category}`);
-    }
+    if (categoryUrls.length === 0) return products;
 
     const pagination = this.config.discovery_pagination;
 
@@ -60,13 +60,9 @@ export class GenericHtmlStoreScraper extends BaseScraper {
               : await this.fetchPage(url);
 
             const parsed = parseGenericHtmlListing(html, url, this.config.base_url);
-            if (parsed.length === 0) {
-              break;
-            }
+            if (parsed.length === 0) break;
 
-            for (const p of parsed) {
-              products.push({ ...p, category });
-            }
+            for (const p of parsed) products.push({ ...p, category });
 
             console.log(
               `[${this.config.store_slug}] discovery ${category} page ${page}: ${parsed.length} items`,

@@ -4,8 +4,8 @@ import type {
   PriceUpdateOptions,
   PriceUpdateResult,
   ScrapedProduct,
-  ProductCategory,
 } from '../base/types';
+import type { ProductCategory } from '@/lib/database/types';
 import { JarirScraper } from '../stores/jarir-scraper';
 import { AmazonScraper } from '../stores/amazon-scraper';
 import { NoonScraper } from '../stores/noon-scraper';
@@ -13,14 +13,7 @@ import { ExtraScraper } from '../stores/extra-scraper';
 import { AlmaneaScraper } from '../stores/almanea-scraper';
 import { SamsungKsaScraper } from '../stores/samsung-ksa-scraper';
 import { ShakerScraper } from '../stores/shaker-scraper';
-import { ZagzoogScraper } from '../stores/zagzoog-scraper';
-import { AlesayiScraper } from '../stores/alesayi-scraper';
 import { SwsgScraper } from '../stores/swsg-scraper';
-import { AlkhunaizanScraper } from '../stores/alkhunaizan-scraper';
-import { BukhamsenScraper } from '../stores/bukhamsen-scraper';
-import { AlghanimScraper } from '../stores/alghanim-scraper';
-import { AlsaifGalleryScraper } from '../stores/alsaif-gallery-scraper';
-import { LuluGccScraper } from '../stores/lulu-gcc-scraper';
 import { ProductService } from './product-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
@@ -30,6 +23,52 @@ import { sendPushToUser } from '@/lib/push/expo-push';
 import { sendWebPushToUser } from '@/lib/push/web-push';
 
 /**
+ * Retry an async operation with exponential backoff. Used around per-product
+ * scraper calls so a flaky network blip doesn't kill the product's coverage.
+ */
+async function retryAsync<T>(
+  fn: () => Promise<T>,
+  options: { maxAttempts: number; baseDelayMs: number }
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= options.maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === options.maxAttempts) break;
+      const delay = options.baseDelayMs * Math.pow(2, attempt - 1);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
+/**
+ * All product categories defined by the Postgres enum `product_category`
+ * (01-schema.sql:19). Used as the default when a discovery schedule leaves
+ * `categories` empty — we walk every category so the store is fully indexed.
+ */
+const ALL_PRODUCT_CATEGORIES: ProductCategory[] = [
+  'smartphone',
+  'laptop',
+  'tv',
+  'tablet',
+  'audio',
+  'camera',
+  'gaming',
+  'accessories',
+  'monitor',
+  'printer',
+  'networking',
+  'smart_home',
+  'wearable',
+  'appliance',
+  'kitchen',
+  'personal_care',
+];
+
+/**
  * Orchestrator for running scraping jobs
  */
 export class ScrapingOrchestrator {
@@ -37,119 +76,251 @@ export class ScrapingOrchestrator {
   private validator = new DataValidator();
 
   /**
-   * Run product discovery job
+   * Run product discovery job. Iterates every requested category, scraping
+   * each with the store's scraper. Aggregates counts across all categories
+   * into a single DiscoveryResult.
    */
   async runDiscoveryJob(options: DiscoveryOptions): Promise<DiscoveryResult> {
     const startTime = Date.now();
     const storeSlug = options.store_slug;
-    const category = options.category || 'smartphone'; // Default category
+
+    // Resolve which categories to scrape:
+    //   - explicit `categories` list wins
+    //   - else `category` (single) — legacy / admin manual runs
+    //   - else ALL product categories
+    const categories: ProductCategory[] = options.categories && options.categories.length > 0
+      ? options.categories
+      : options.category
+        ? [options.category]
+        : ALL_PRODUCT_CATEGORIES;
 
     try {
-      // Get store ID from slug
       const storeId = await this.getStoreId(storeSlug);
       if (!storeId) {
         throw new Error(`Store not found: ${storeSlug}`);
       }
-
-      // Get scraper for store
       const scraper = this.getScraperForStore(storeSlug);
       if (!scraper) {
         throw new Error(`Scraper not found for store: ${storeSlug}`);
       }
 
-      // Discover products
-      const scrapedProducts = await scraper.discoverProducts(
-        category as ProductCategory,
-        options.max_pages || 10
-      );
-
+      let productsDiscovered = 0;
       let productsCreated = 0;
       let productsLinked = 0;
       let errors = 0;
 
-      // Process each product
-      for (const scrapedProduct of scrapedProducts) {
+      // Category-level concurrency. Each category still respects the scraper's
+      // per-page rate limit internally, so total request rate = CONCURRENCY ×
+      // per-category rate. Default 4 keeps us under Jarir's ~40 req/min limit
+      // at peak while cutting wall-clock ~Nx. Tune via env.
+      //
+      // `only_supplemental` skips this entirely — used by seed-direct to run
+      // supplemental exactly once after all per-category calls finish.
+      const CATEGORY_CONCURRENCY = Math.max(
+        1,
+        parseInt(process.env.DISCOVERY_CATEGORY_CONCURRENCY ?? '4', 10) || 4
+      );
+
+      const scrapeCategory = async (category: ProductCategory) => {
         try {
-          // Validate product
-          const validation = this.validator.validateProduct(
-            scrapedProduct,
-            new URL(scraper.config.base_url).hostname
+          const scrapedProducts = await scraper.discoverProducts(
+            category,
+            options.max_pages || 10
           );
-
-          if (!validation.isValid && !options.dry_run) {
-            console.warn(`Product validation failed: ${validation.errors.join(', ')}`);
-            errors++;
-            continue;
+          if (scrapedProducts.length > 0) {
+            console.log(`    [${storeSlug}/${category}] scraped ${scrapedProducts.length} products — writing to DB…`);
           }
 
-          if (options.dry_run) {
-            // Just count, don't save
-            productsCreated++;
-            continue;
+          // Process products in parallel batches — DB latency dominates, so
+          // 12 concurrent round-trips cuts per-page time from ~10s to ~1s.
+          const hostname = new URL(scraper.config.base_url).hostname;
+          const BATCH = 12;
+          const dbStart = Date.now();
+          let localCreated = 0;
+          let localLinked = 0;
+          let localErrors = 0;
+          for (let i = 0; i < scrapedProducts.length; i += BATCH) {
+            const slice = scrapedProducts.slice(i, i + BATCH);
+            const results = await Promise.allSettled(
+              slice.map(async (scrapedProduct) => {
+                const validation = this.validator.validateProduct(scrapedProduct, hostname);
+                if (!validation.isValid && !options.dry_run) {
+                  return { kind: 'invalid' as const, errors: validation.errors };
+                }
+                if (options.dry_run) return { kind: 'dry' as const };
+                const r = await this.productService.createOrUpdateProduct(scrapedProduct, storeId);
+                return { kind: 'saved' as const, created: r.created };
+              })
+            );
+            for (const res of results) {
+              if (res.status === 'rejected') {
+                console.error(`[${storeSlug}/${category}] product error:`, res.reason);
+                localErrors++;
+                continue;
+              }
+              const v = res.value;
+              if (v.kind === 'invalid') {
+                console.warn(`[${storeSlug}/${category}] validation failed: ${v.errors.join(', ')}`);
+                localErrors++;
+              } else if (v.kind === 'dry' || v.kind === 'saved') {
+                if (v.kind === 'saved' && v.created) { localCreated++; }
+                else if (v.kind === 'saved') { localLinked++; }
+                else localCreated++;
+              }
+            }
           }
-
-          // Create or update product
-          const result = await this.productService.createOrUpdateProduct(
-            scrapedProduct,
-            storeId
-          );
-
-          if (result.created) {
-            productsCreated++;
-          } else {
-            productsLinked++;
+          if (scrapedProducts.length > 0) {
+            const dbMs = Date.now() - dbStart;
+            console.log(
+              `    [${storeSlug}/${category}] DB write done in ${(dbMs / 1000).toFixed(1)}s — created=${localCreated} linked=${localLinked} errors=${localErrors}`
+            );
           }
+          return {
+            discovered: scrapedProducts.length,
+            created: localCreated,
+            linked: localLinked,
+            errors: localErrors,
+          };
         } catch (error) {
-          console.error(`Error processing product:`, error);
+          // One category failing shouldn't abort the rest.
+          console.error(`[${storeSlug}/${category}] discovery failed:`, error);
+          return { discovered: 0, created: 0, linked: 0, errors: 1 };
+        }
+      };
+
+      if (!options.only_supplemental) {
+        console.log(
+          `[${storeSlug}] discovery: ${categories.length} categories, concurrency=${CATEGORY_CONCURRENCY}`
+        );
+        for (let i = 0; i < categories.length; i += CATEGORY_CONCURRENCY) {
+          const chunk = categories.slice(i, i + CATEGORY_CONCURRENCY);
+          const chunkResults = await Promise.all(chunk.map(scrapeCategory));
+          for (const r of chunkResults) {
+            productsDiscovered += r.discovered;
+            productsCreated += r.created;
+            productsLinked += r.linked;
+            errors += r.errors;
+          }
+        }
+      }
+
+      // Supplemental discovery — brand aggregate pages, new arrivals, etc.
+      // Opt-in per scraper: runs only if the store's scraper implements
+      // `discoverSupplementalProducts`. Products are classified by title
+      // (so a mix of categories on one page still lands in the right DB
+      // rows) and deduped by SKU against everything found in the category
+      // loop above.
+      //
+      // Callers that execute categories one-at-a-time (seed-direct's worker
+      // pool) should pass `skip_supplemental: true` on per-category calls
+      // and make ONE additional call with `only_supplemental: true` after
+      // all categories finish. Otherwise the supplemental pass multiplies by
+      // the category count and costs ~18 min of wasted work per full run.
+      const scraperWithSup = scraper as unknown as {
+        discoverSupplementalProducts?: (maxPages: number) => Promise<ScrapedProduct[]>;
+      };
+      if (!options.skip_supplemental && typeof scraperWithSup.discoverSupplementalProducts === 'function') {
+        try {
+          console.log(`[${storeSlug}] running supplemental discovery…`);
+          const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
+          if (supProducts.length > 0) {
+            console.log(`    [${storeSlug}/supplemental] scraped ${supProducts.length} products — writing to DB…`);
+            const hostname = new URL(scraper.config.base_url).hostname;
+            const BATCH = 12;
+            const dbStart = Date.now();
+            let supCreated = 0;
+            let supLinked = 0;
+            let supErrors = 0;
+            for (let i = 0; i < supProducts.length; i += BATCH) {
+              const slice = supProducts.slice(i, i + BATCH);
+              const results = await Promise.allSettled(
+                slice.map(async (sp) => {
+                  const validation = this.validator.validateProduct(sp, hostname);
+                  if (!validation.isValid && !options.dry_run) {
+                    return { kind: 'invalid' as const, errors: validation.errors };
+                  }
+                  if (options.dry_run) return { kind: 'dry' as const };
+                  const r = await this.productService.createOrUpdateProduct(sp, storeId);
+                  return { kind: 'saved' as const, created: r.created };
+                }),
+              );
+              for (const res of results) {
+                if (res.status === 'rejected') { supErrors++; continue; }
+                const v = res.value;
+                if (v.kind === 'invalid') supErrors++;
+                else if (v.kind === 'saved') {
+                  if (v.created) supCreated++;
+                  else supLinked++;
+                }
+              }
+            }
+            productsDiscovered += supProducts.length;
+            productsCreated += supCreated;
+            productsLinked += supLinked;
+            errors += supErrors;
+            const dbMs = Date.now() - dbStart;
+            console.log(
+              `    [${storeSlug}/supplemental] DB write done in ${(dbMs / 1000).toFixed(1)}s — created=${supCreated} linked=${supLinked} errors=${supErrors}`,
+            );
+          } else {
+            console.log(`[${storeSlug}] supplemental: no new products`);
+          }
+        } catch (err) {
+          console.error(`[${storeSlug}] supplemental discovery failed:`, err);
           errors++;
         }
       }
 
-      const duration = Date.now() - startTime;
-
       return {
         success: true,
         store: storeSlug,
-        category,
-        products_discovered: scrapedProducts.length,
+        category: categories.join(','),
+        products_discovered: productsDiscovered,
         products_created: productsCreated,
         products_linked: productsLinked,
         errors,
-        duration_ms: duration,
+        duration_ms: Date.now() - startTime,
       };
     } catch (error) {
-      const duration = Date.now() - startTime;
       return {
         success: false,
         store: storeSlug,
-        category: category || 'unknown',
+        category: categories.join(','),
         products_discovered: 0,
         products_created: 0,
         products_linked: 0,
         errors: 1,
-        duration_ms: duration,
+        duration_ms: Date.now() - startTime,
       };
     }
   }
 
   /**
-   * Run price update job
+   * Run price update job with production safeguards:
+   *   - excludes chronically failing products (consecutive_failures >= 5)
+   *   - retries transient failures with exponential backoff
+   *   - honors per-store rate limit between requests
+   *   - tracks per-product failure count for auto-demotion
    */
   async runPriceUpdateJob(options: PriceUpdateOptions): Promise<PriceUpdateResult> {
     const startTime = Date.now();
     const supabase = createServerClient();
 
     try {
-      // Get products that need price updates
       const olderThanHours = options.older_than_hours || 24;
       const cutoffTime = new Date();
       cutoffTime.setHours(cutoffTime.getHours() - olderThanHours);
 
+      // Skip chronically failing products (auto-demotion). They'll be re-tried
+      // after a cooldown (see resetFailureCooldown below) or manually via the
+      // admin UI's "reset failure count" action.
       let query = supabase
         .from('product_stores')
-        .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
+        .select('id, product_id, store_id, product_url, current_price, availability, consecutive_failures, stores!inner(slug, name_ar, name_en)')
         .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
-        .limit(options.max_products || 100);
+        .lt('consecutive_failures', 5)
+        .order('last_checked_at', { ascending: true, nullsFirst: true })
+        .limit(options.max_products || 500);
 
       if (options.store_slug) {
         query = query.eq('stores.slug', options.store_slug);
@@ -161,14 +332,11 @@ export class ScrapingOrchestrator {
         throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
       }
 
-      // Group by store
+      // Group by store so we can apply per-store rate limits.
       const byStore: Record<string, typeof productStores> = {};
       for (const ps of productStores) {
         const storeSlug = (ps as any).stores.slug;
-        if (!byStore[storeSlug]) {
-          byStore[storeSlug] = [];
-        }
-        byStore[storeSlug].push(ps);
+        (byStore[storeSlug] ||= []).push(ps);
       }
 
       let storesUpdated = 0;
@@ -176,66 +344,86 @@ export class ScrapingOrchestrator {
       let priceChanges = 0;
       let errors = 0;
 
-      // Update prices for each store
       for (const [storeSlug, products] of Object.entries(byStore)) {
-        try {
-          const scraper = this.getScraperForStore(storeSlug);
-          if (!scraper) {
-            console.warn(`Scraper not found for store: ${storeSlug}`);
-            continue;
-          }
+        const scraper = this.getScraperForStore(storeSlug);
+        if (!scraper) {
+          console.warn(`Scraper not found for store: ${storeSlug}`);
+          continue;
+        }
 
-          for (const productStore of products) {
-            try {
-              const scrapedProduct = await scraper.updateProductPrice(
-                (productStore as any).product_url
+        const rateLimit = (scraper as any).config?.rate_limit;
+        const minDelayMs: number = rateLimit?.min_delay_ms ?? 1000;
+        const maxDelayMs: number = rateLimit?.max_delay_ms ?? minDelayMs;
+
+        for (const productStore of products) {
+          const productStoreId = (productStore as any).id;
+          const productId = (productStore as any).product_id;
+          const storeId = (productStore as any).store_id;
+          const productUrl = (productStore as any).product_url;
+
+          try {
+            // Retry transient failures with exponential backoff. updateProductPrice
+            // may hit flaky network, slow Puppeteer, or transient 5xx — anything
+            // the scraper throws on.
+            const scrapedProduct = await retryAsync(
+              () => scraper.updateProductPrice(productUrl),
+              { maxAttempts: 3, baseDelayMs: 500 }
+            );
+
+            if (scrapedProduct) {
+              const oldPrice = (productStore as any).current_price;
+              const newPrice = scrapedProduct.current_price;
+
+              await this.productService.updateProductPrice(
+                productId,
+                storeId,
+                newPrice,
+                scrapedProduct.availability
               );
 
-              if (scrapedProduct) {
-                const oldPrice = (productStore as any).current_price;
-                const newPrice = scrapedProduct.current_price;
-
-                await this.productService.updateProductPrice(
-                  (productStore as any).product_id,
-                  (productStore as any).store_id,
-                  newPrice,
-                  scrapedProduct.availability
-                );
-
-                productsUpdated++;
-
-                if (oldPrice !== newPrice) {
-                  priceChanges++;
-                }
-
-                // Detect back-in-stock transition
-                const oldAvailability = (productStore as any).availability;
-                const newAvailability = scrapedProduct.availability;
-                if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
-                  const store = (productStore as any).stores;
-                  this.notifyBackInStock(
-                    supabase,
-                    (productStore as any).product_id,
-                    (productStore as any).store_id,
-                    newPrice,
-                    { name_ar: store.name_ar, name_en: store.name_en }
-                  ).catch((err) => console.error('Back-in-stock notification error:', err));
-                }
+              // Reset failure counter on success.
+              if ((productStore as any).consecutive_failures > 0) {
+                await supabase
+                  .from('product_stores')
+                  .update({ consecutive_failures: 0, last_error: null } as never)
+                  .eq('id', productStoreId);
               }
-            } catch (error) {
-              console.error(`Error updating product price:`, error);
+
+              productsUpdated++;
+              if (oldPrice !== newPrice) priceChanges++;
+
+              const oldAvailability = (productStore as any).availability;
+              const newAvailability = scrapedProduct.availability;
+              if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
+                const store = (productStore as any).stores;
+                this.notifyBackInStock(
+                  supabase, productId, storeId, newPrice,
+                  { name_ar: store.name_ar, name_en: store.name_en }
+                ).catch((err) => console.error('Back-in-stock notification error:', err));
+              }
+            } else {
+              // Scraper returned null — treat as a mild failure (page 404, product removed).
+              await this.recordFailure(productStoreId, 'scraper returned null');
               errors++;
             }
+          } catch (err) {
+            console.error(`[${storeSlug}] price update failed for ${productUrl}:`, err);
+            await this.recordFailure(
+              productStoreId,
+              err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500)
+            );
+            errors++;
           }
 
-          storesUpdated++;
-        } catch (error) {
-          console.error(`Error processing store ${storeSlug}:`, error);
-          errors++;
+          // Per-store rate limit.
+          const delay = minDelayMs + Math.floor(Math.random() * Math.max(0, maxDelayMs - minDelayMs));
+          if (delay > 0) {
+            await new Promise((r) => setTimeout(r, delay));
+          }
         }
-      }
 
-      const duration = Date.now() - startTime;
+        storesUpdated++;
+      }
 
       return {
         success: true,
@@ -243,18 +431,46 @@ export class ScrapingOrchestrator {
         products_updated: productsUpdated,
         price_changes: priceChanges,
         errors,
-        duration_ms: duration,
+        duration_ms: Date.now() - startTime,
       };
     } catch (error) {
-      const duration = Date.now() - startTime;
+      console.error('runPriceUpdateJob failed:', error);
       return {
         success: false,
         stores_updated: 0,
         products_updated: 0,
         price_changes: 0,
         errors: 1,
-        duration_ms: duration,
+        duration_ms: Date.now() - startTime,
       };
+    }
+  }
+
+  /**
+   * Increment the consecutive_failures counter on a product_stores row.
+   * After 5 consecutive failures the product is excluded from future runs
+   * until an admin resets it or the cooldown passes.
+   */
+  private async recordFailure(productStoreId: string, errorMsg: string): Promise<void> {
+    try {
+      const supabase = createServerClient();
+      // Pull current value, increment, and stamp last_failed_at.
+      const { data } = await supabase
+        .from('product_stores')
+        .select('consecutive_failures')
+        .eq('id', productStoreId)
+        .single();
+      const current = (data as { consecutive_failures?: number } | null)?.consecutive_failures ?? 0;
+      await supabase
+        .from('product_stores')
+        .update({
+          consecutive_failures: current + 1,
+          last_failed_at: new Date().toISOString(),
+          last_error: errorMsg,
+        } as never)
+        .eq('id', productStoreId);
+    } catch (err) {
+      console.error('recordFailure threw:', err);
     }
   }
 
@@ -277,22 +493,8 @@ export class ScrapingOrchestrator {
         return new SamsungKsaScraper();
       case 'shaker':
         return new ShakerScraper();
-      case 'zagzoog':
-        return new ZagzoogScraper();
-      case 'alesayi':
-        return new AlesayiScraper();
       case 'swsg':
         return new SwsgScraper();
-      case 'alkhunaizan':
-        return new AlkhunaizanScraper();
-      case 'bukhamsen':
-        return new BukhamsenScraper();
-      case 'alghanim':
-        return new AlghanimScraper();
-      case 'alsaif_gallery':
-        return new AlsaifGalleryScraper();
-      case 'lulu_gcc':
-        return new LuluGccScraper();
       default:
         return null;
     }

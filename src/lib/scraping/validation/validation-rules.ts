@@ -174,6 +174,14 @@ export function validateCategoryRule(category: string): ValidationResult {
     'camera',
     'gaming',
     'accessories',
+    'monitor',
+    'printer',
+    'networking',
+    'smart_home',
+    'wearable',
+    'appliance',
+    'kitchen',
+    'personal_care',
   ];
 
   if (!validCategories.includes(category)) {

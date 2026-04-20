@@ -254,6 +254,14 @@ export const AUDIT_ACTIONS = {
   COUPON_EXPIRY_WARNINGS_SENT: 'coupon_expiry_warnings_sent',
   COUPON_WISHLIST_ALERTS_SENT: 'coupon_wishlist_alerts_sent',
 
+  // Scraping
+  SCRAPING_SCHEDULE_CREATED: 'scraping_schedule_created',
+  SCRAPING_SCHEDULE_UPDATED: 'scraping_schedule_updated',
+  SCRAPING_SCHEDULE_DELETED: 'scraping_schedule_deleted',
+  SCRAPING_RUN_TRIGGERED: 'scraping_run_triggered',
+  SCRAPING_LIVE_SEARCH_EXECUTED: 'scraping_live_search_executed',
+  SCRAPING_LIVE_SEARCH_INGESTED: 'scraping_live_search_ingested',
+
   // System
   SYSTEM_ERROR: 'system_error',
   SECURITY_ALERT: 'security_alert',

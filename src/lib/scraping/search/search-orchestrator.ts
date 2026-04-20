@@ -5,7 +5,9 @@ import { NoonSearchScraper } from './noon-search-scraper';
 import { JarirSearchScraper } from './jarir-search-scraper';
 import { ExtraSearchScraper } from './extra-search-scraper';
 import { AlmaneaSearchScraper } from './almanea-search-scraper';
-import { EXTENDED_SEARCH_SCRAPERS } from './extended-merchants-registry';
+import { SamsungKsaSearchScraper } from './samsung-ksa-search-scraper';
+import { ShakerSearchScraper } from './shaker-search-scraper';
+import { SwsgSearchScraper } from './swsg-search-scraper';
 import { matchesCategory } from '../utils/category-utils';
 import type { ProductCategory } from '@/lib/database/types';
 import { groupSearchProducts, type GroupedSearchProduct } from './product-grouper';
@@ -18,7 +20,9 @@ const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: nu
   jarir: () => new JarirSearchScraper(),
   extra: () => new ExtraSearchScraper(),
   almanea: () => new AlmaneaSearchScraper(),
-  ...EXTENDED_SEARCH_SCRAPERS,
+  samsung_ksa: () => new SamsungKsaSearchScraper(),
+  shaker: () => new ShakerSearchScraper(),
+  swsg: () => new SwsgSearchScraper(),
 };
 
 const DEFAULT_STORE_TIMEOUT_MS = 30_000;
@@ -31,17 +35,9 @@ const STORE_TIMEOUTS: Partial<Record<string, number>> = {
   almanea: 30_000,
   // Puppeteer-based stores need more time (browser launch + JS render)
   samsung_ksa: 45_000,
-  aliexpress_ar: 45_000,
-  alkhunaizan: 45_000,
-  najm_store: 45_000,
-  alesayi: 45_000,
-  // Known slow WooCommerce stores
-  bukhamsen: 45_000,
+  // WooCommerce / generic HTML stores
   shaker: 30_000,
-  // Fast WooCommerce / generic HTML stores
-  zagzoog: 20_000,
   swsg: 20_000,
-  alghanim: 20_000,
 };
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, store: string): Promise<T> {

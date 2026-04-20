@@ -77,19 +77,55 @@ export abstract class BaseScraper {
       throw new Error(`Invalid URL: ${url}`);
     }
 
-    await this.rateLimiter.wait();
+    // Retry transient failures (timeout, 5xx, socket reset). 3 attempts with
+    // exponential backoff is enough to absorb most single-page blips without
+    // paying retry cost on permanent failures (404, etc.).
+    const timeoutMs = this.config.timeout_ms ?? 20000;
+    const maxAttempts = 3;
+    let lastError: unknown;
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': this.config.user_agents[0] || 'Mozilla/5.0',
-      },
-    });
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (attempt === 1) {
+        await this.rateLimiter.wait();
+      } else {
+        const backoffMs = 2000 * (attempt - 1);
+        console.log(`    [${this.config.store_slug}] retry ${attempt}/${maxAttempts} after ${backoffMs}ms backoff: ${shortUrl(url)}`);
+        await new Promise((r) => setTimeout(r, backoffMs));
+      }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const fetchStart = Date.now();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, {
+          headers: { 'User-Agent': this.config.user_agents[0] || 'Mozilla/5.0' },
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const text = await response.text();
+        const fetchMs = Date.now() - fetchStart;
+        if (fetchMs > 5000) {
+          console.log(`    [${this.config.store_slug}] slow fetch: ${fetchMs}ms ${shortUrl(url)}`);
+        }
+        return text;
+      } catch (err) {
+        lastError = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        const isPermanent = /HTTP 4\d\d/.test(msg);
+        if (isPermanent || attempt === maxAttempts) {
+          throw err;
+        }
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
-    return await response.text();
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
 
   /**
@@ -270,6 +306,191 @@ export abstract class BaseScraper {
   ): Promise<ScrapedProduct[]>;
 
   /**
+   * Config-driven listing extractor. Walks each category URL, paginates, and
+   * extracts ScrapedProduct directly from the listing page via
+   * `listing_selectors` in the store config — no per-product detail visits.
+   *
+   * Expected config shape (add `listing_selectors` to any store's JSON):
+   *   {
+   *     "listing_selectors": {
+   *       "tile":  ".product-item",              // repeating product container
+   *       "link":  "a.product-link",             // <a> inside tile (href extracted)
+   *       "name":  ".product-title",             // product name text
+   *       "price": ".price",                     // current price text
+   *       "original_price": ".old-price",        // optional strike-through price
+   *       "image": "img.product-image",          // optional product image
+   *       "sku":   "[data-product-id]",          // optional SKU attribute
+   *       "attr_name":  "data-product-name",     // optional: read name from an attr on `tile`
+   *       "attr_price": "data-product-price"     // optional: read price from an attr on `tile`
+   *     },
+   *     "pagination": { "param": "p", "start": 1 }  // ?p=1, ?p=2, ... (optional)
+   *   }
+   *
+   * Usage from a subclass:
+   *   async discoverProducts(category, maxPages) {
+   *     return this.discoverByListingConfig(category, maxPages);
+   *   }
+   */
+  protected async discoverByListingConfig(
+    category: ProductCategory,
+    maxPages: number = 10
+  ): Promise<ScrapedProduct[]> {
+    const products: ScrapedProduct[] = [];
+    const categoryUrls = this.config.category_urls[category] || [];
+    if (categoryUrls.length === 0) return products;
+
+    for (const baseUrl of categoryUrls) {
+      let consecutiveFailures = 0;
+      let consecutiveAllDupPages = 0;
+      const seenKeys = new Set<string>();
+      for (let page = 1; page <= maxPages; page++) {
+        try {
+          const url = this.buildListingUrl(baseUrl, page);
+          const html = await this.fetchPage(url);
+          const pageProducts = this.parseListingFromConfig(html, category);
+          if (pageProducts.length === 0) break; // natural stop
+
+          // Track products new to THIS run. Many stores return first-page
+          // fallback when you exceed real page count — detect it via
+          // consecutive all-duplicate pages, tolerating transient fetch blips.
+          const newProducts: ScrapedProduct[] = [];
+          for (const p of pageProducts) {
+            const key = p.sku || p.product_url;
+            if (!key || seenKeys.has(key)) continue;
+            seenKeys.add(key);
+            newProducts.push(p);
+          }
+          if (newProducts.length === 0) {
+            consecutiveAllDupPages++;
+            console.log(`  [${this.config.store_slug}/${category}] page ${page}: 0 new (${consecutiveAllDupPages} consec. all-dupe)`);
+            if (consecutiveAllDupPages >= 2) {
+              console.log(`  [${this.config.store_slug}/${category}] stopping (2+ consec. pages of all duplicates)`);
+              break;
+            }
+            await this.delay();
+            continue;
+          }
+          consecutiveAllDupPages = 0;
+          products.push(...newProducts);
+          consecutiveFailures = 0;
+          console.log(
+            `  [${this.config.store_slug}/${category}] page ${page}: +${newProducts.length} new (total: ${products.length})`
+          );
+          await this.delay();
+        } catch (err) {
+          consecutiveFailures++;
+          console.error(`[${this.config.store_slug}] listing fetch failed at page ${page} of ${baseUrl}:`, err);
+          if (consecutiveFailures >= 3) {
+            console.warn(`[${this.config.store_slug}] 3 consecutive failures at ${baseUrl}, stopping pagination`);
+            break;
+          }
+        }
+      }
+    }
+    return products;
+  }
+
+  protected buildListingUrl(baseUrl: string, page: number): string {
+    if (page === 1) return baseUrl;
+    const pagination = (this.config as any).pagination as { param?: string; start?: number } | undefined;
+    const param = pagination?.param ?? 'page';
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}${param}=${page}`;
+  }
+
+  protected parseListingFromConfig(html: string, category: ProductCategory): ScrapedProduct[] {
+    const selectors = (this.config as any).listing_selectors as Record<string, string> | undefined;
+    if (!selectors?.tile) return [];
+
+    const $ = this.getCheerio(html);
+    const out: ScrapedProduct[] = [];
+
+    $(selectors.tile).each((_, el) => {
+      const $tile = $(el);
+
+      // Name — from attribute (if configured) or text selector
+      let name = '';
+      if (selectors.attr_name) name = $tile.attr(selectors.attr_name) || '';
+      if (!name && selectors.name) name = $tile.find(selectors.name).first().text().trim();
+      if (!name) return;
+
+      // Price — from attribute (if configured) or text selector
+      let priceText = '';
+      if (selectors.attr_price) priceText = $tile.attr(selectors.attr_price) || '';
+      if (!priceText && selectors.price) priceText = $tile.find(selectors.price).first().text().trim();
+      const currentPrice = parsePrice(priceText);
+      if (!currentPrice || currentPrice <= 0) return;
+
+      // URL
+      const linkSelector = selectors.link || 'a';
+      const href = $tile.find(linkSelector).first().attr('href') || $tile.attr('href');
+      if (!href) return;
+      const productUrl = normalizeUrl(href, this.config.base_url);
+
+      // Optional fields
+      const originalPrice = selectors.original_price
+        ? parsePrice($tile.find(selectors.original_price).first().text().trim())
+        : null;
+
+      const imgEl = selectors.image ? $tile.find(selectors.image).first() : null;
+      const imgSrc = imgEl?.attr('src') || imgEl?.attr('data-src') || '';
+      const imageUrls = imgSrc && !imgSrc.includes('placeholder')
+        ? [normalizeUrl(imgSrc, this.config.base_url)]
+        : [];
+
+      const sku = selectors.sku
+        ? $tile.find(selectors.sku).attr('data-product-id')
+          ?? $tile.attr(selectors.sku.replace(/[[\]]/g, ''))
+          ?? null
+        : null;
+
+      const { brand, model } = this.extractBrandAndModelFromName(name);
+
+      out.push({
+        name_ar: name,
+        name_en: name,
+        brand,
+        model,
+        sku,
+        current_price: currentPrice,
+        original_price: originalPrice,
+        availability: 'in_stock',
+        product_url: productUrl,
+        image_urls: imageUrls,
+        specifications: {},
+        category,
+        description_ar: null,
+        description_en: null,
+      });
+    });
+
+    return out;
+  }
+
+  /**
+   * Best-effort brand + model extraction from a product name. Stores can
+   * override this if they have a better signal (e.g., a `brand` attribute).
+   */
+  protected extractBrandAndModelFromName(name: string): { brand: string; model: string } {
+    const words = name.trim().split(/\s+/);
+    const knownBrands = [
+      'Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Honor', 'OnePlus', 'Realme', 'Oppo', 'Vivo',
+      'Nothing', 'Motorola', 'Nokia', 'Google', 'Sony', 'LG', 'Panasonic', 'Toshiba',
+      'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'MSI', 'Razer', 'Microsoft',
+      'Canon', 'Nikon', 'Fujifilm', 'GoPro', 'DJI',
+      'JBL', 'Bose', 'Sennheiser', 'Beats', 'Anker', 'Philips',
+      'TCL', 'Hisense', 'Sharp', 'Haier', 'Midea',
+    ];
+    for (const b of knownBrands) {
+      if (name.toLowerCase().includes(b.toLowerCase())) {
+        const model = words.filter((w) => w.toLowerCase() !== b.toLowerCase()).join(' ').trim();
+        return { brand: b, model: model || name };
+      }
+    }
+    return { brand: words[0] || 'Unknown', model: words.slice(1).join(' ') || name };
+  }
+
+  /**
    * Abstract method: Update product price from product page
    * Must be implemented by store-specific scrapers
    */
@@ -332,6 +553,16 @@ export abstract class BaseScraper {
       if (value) attrs.push(value);
     });
     return attrs;
+  }
+}
+
+/** Shorten a URL for logging: keep path + query, drop origin. */
+function shortUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.pathname}${u.search}`;
+  } catch {
+    return url.slice(0, 80);
   }
 }
 

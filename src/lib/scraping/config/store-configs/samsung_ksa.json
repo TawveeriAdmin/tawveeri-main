@@ -6,23 +6,31 @@
   "requires_js": true,
   "discovery_pagination": "samsung_page",
   "rate_limit": {
-    "min_delay_ms": 3000,
-    "max_delay_ms": 6000,
-    "requests_per_minute": 15
+    "min_delay_ms": 1500,
+    "max_delay_ms": 3000,
+    "requests_per_minute": 25
   },
   "user_agents": [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
   "timeout_ms": 45000,
   "category_urls": {
-    "smartphone": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=smartphone"],
-    "laptop": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=laptop"],
-    "tv": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=television"],
-    "tablet": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=tablet"],
-    "audio": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=audio"],
-    "camera": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=camera"],
-    "gaming": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=gaming"],
-    "accessories": ["https://www.samsung.com/sa_en/aisearch/?searchvalue=accessories"]
+    "smartphone": [
+      "https://shop.samsung.com/sa_en/smartphones/all-smartphones/"
+    ],
+    "tablet": [
+      "https://shop.samsung.com/sa_en/tablets/all-tablets/"
+    ],
+    "tv": [
+      "https://shop.samsung.com/sa_en/tvs/all-tvs/"
+    ],
+    "audio": [
+      "https://shop.samsung.com/sa_en/audio-sound/all-audio-sound/"
+    ],
+    "accessories": [
+      "https://shop.samsung.com/sa_en/accessories/",
+      "https://shop.samsung.com/sa_en/watches/all-watches/"
+    ]
   },
   "selectors": {
     "product_list": ".product-item",

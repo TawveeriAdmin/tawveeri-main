@@ -1,3 +1,7 @@
+/**
+ * 8 prioritized stores for MVP launch. Add a new store here + its scraper
+ * in `./<slug>-search-scraper.ts` + the mapping in `search-orchestrator.ts`.
+ */
 export const SUPPORTED_SEARCH_STORES = [
   'amazon',
   'noon',
@@ -6,18 +10,10 @@ export const SUPPORTED_SEARCH_STORES = [
   'almanea',
   'samsung_ksa',
   'shaker',
-  'zagzoog',
-  'alesayi',
   'swsg',
-  'alkhunaizan',
-  'bukhamsen',
-  'alghanim',
-  'najm_store',
-  'aliexpress_ar',
 ] as const;
 
-/** Stores removed from search due to anti-bot blocking (418/403). Keep scrapers for future re-enable. */
-export const BLOCKED_STORES = ['alsaif_gallery', 'lulu_gcc'] as const;
+export const BLOCKED_STORES = [] as const;
 
 export type SearchStoreSlug = (typeof SUPPORTED_SEARCH_STORES)[number];
 

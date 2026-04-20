@@ -24,7 +24,9 @@ export class NoonScraper extends BaseScraper {
     const categoryUrls = this.config.category_urls[category] || [];
 
     if (categoryUrls.length === 0) {
-      throw new Error(`No category URLs configured for category: ${category}`);
+      // Store does not stock this category — skip silently so the orchestrator's
+      // all-categories iteration doesn't treat the gap as an error.
+      return products;
     }
 
     try {

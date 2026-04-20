@@ -46,6 +46,8 @@
       "logs": "Logs",
       "reviews": "Reviews",
       "coupons": "Coupons",
+      "scraping": "Scraping",
+      "scrapingHealth": "Scrape health",
       "collapse": "Collapse",
       "expand": "Expand"
     },

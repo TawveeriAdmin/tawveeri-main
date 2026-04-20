@@ -64,9 +64,7 @@ export type DiscoveryPaginationStyle =
   | 'wordpress_paged'
   | 'query_page'
   | 'magento_p'
-  | 'lulu_page_index'
-  | 'samsung_page'
-  | 'zagzoog_page';
+  | 'samsung_page';
 
 export interface ScraperConfig {
   store_slug: string;
@@ -143,9 +141,27 @@ export interface RetryOptions {
  */
 export interface DiscoveryOptions {
   store_slug: string;
+  /** Single category to scrape. Ignored if `categories` is provided. */
   category?: ProductCategory;
+  /** Whitelist of categories to iterate. If omitted/empty, iterates ALL categories. */
+  categories?: ProductCategory[];
   max_pages?: number;
   dry_run?: boolean;
+  /**
+   * If true, skip the supplemental-URL (brand aggregate) pass that normally
+   * runs after all categories complete. Set this when the caller is running
+   * categories one-at-a-time (e.g. the seed-direct worker pool) — otherwise
+   * the supplemental pass fires once per category, multiplying wall-clock
+   * by the category count. The caller should make one final call with
+   * `only_supplemental: true` after all categories finish.
+   */
+  skip_supplemental?: boolean;
+  /**
+   * If true, skip the category scrape entirely and run ONLY the
+   * supplemental-URL pass. Used by the seed-direct worker pool to run
+   * supplemental exactly once after all per-category calls complete.
+   */
+  only_supplemental?: boolean;
 }
 
 /**

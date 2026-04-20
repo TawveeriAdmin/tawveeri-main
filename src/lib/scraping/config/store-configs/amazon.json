@@ -3,25 +3,153 @@
   "store_name_ar": "أمازون السعودية",
   "store_name_en": "Amazon.sa",
   "base_url": "https://www.amazon.sa",
-  "requires_js": true,
+  "requires_js": false,
   "rate_limit": {
-    "min_delay_ms": 5000,
-    "max_delay_ms": 8000,
-    "requests_per_minute": 12
+    "min_delay_ms": 1200,
+    "max_delay_ms": 2200,
+    "requests_per_minute": 25
   },
   "user_agents": [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
-  "timeout_ms": 30000,
+  "timeout_ms": 45000,
   "category_urls": {
-    "smartphone": ["https://www.amazon.sa/s?k=smartphone"],
-    "laptop": ["https://www.amazon.sa/s?k=laptop"],
-    "tv": ["https://www.amazon.sa/s?k=tv"],
-    "tablet": ["https://www.amazon.sa/s?k=tablet"],
-    "audio": ["https://www.amazon.sa/s?k=audio"],
-    "camera": ["https://www.amazon.sa/s?k=camera"],
-    "gaming": ["https://www.amazon.sa/s?k=gaming"],
-    "accessories": ["https://www.amazon.sa/s?k=accessories"]
+    "smartphone": [
+      "https://www.amazon.sa/s?k=smartphone&i=electronics",
+      "https://www.amazon.sa/s?k=iphone&i=electronics",
+      "https://www.amazon.sa/s?k=samsung+galaxy+phone&i=electronics",
+      "https://www.amazon.sa/s?k=android+phone&i=electronics"
+    ],
+    "laptop": [
+      "https://www.amazon.sa/s?k=laptop&i=computers",
+      "https://www.amazon.sa/s?k=gaming+laptop&i=computers",
+      "https://www.amazon.sa/s?k=macbook&i=computers",
+      "https://www.amazon.sa/s?k=desktop+computer&i=computers",
+      "https://www.amazon.sa/s?k=chromebook&i=computers"
+    ],
+    "tablet": [
+      "https://www.amazon.sa/s?k=tablet&i=computers",
+      "https://www.amazon.sa/s?k=ipad&i=computers",
+      "https://www.amazon.sa/s?k=samsung+galaxy+tab&i=computers",
+      "https://www.amazon.sa/s?k=kindle+ereader&i=electronics"
+    ],
+    "tv": [
+      "https://www.amazon.sa/s?k=smart+tv&i=electronics",
+      "https://www.amazon.sa/s?k=4k+tv&i=electronics",
+      "https://www.amazon.sa/s?k=oled+tv&i=electronics",
+      "https://www.amazon.sa/s?k=qled+tv&i=electronics",
+      "https://www.amazon.sa/s?k=projector&i=electronics"
+    ],
+    "audio": [
+      "https://www.amazon.sa/s?k=headphones&i=electronics",
+      "https://www.amazon.sa/s?k=wireless+earbuds&i=electronics",
+      "https://www.amazon.sa/s?k=bluetooth+speaker&i=electronics",
+      "https://www.amazon.sa/s?k=soundbar&i=electronics",
+      "https://www.amazon.sa/s?k=microphone&i=electronics",
+      "https://www.amazon.sa/s?k=airpods&i=electronics"
+    ],
+    "camera": [
+      "https://www.amazon.sa/s?k=digital+camera&i=electronics",
+      "https://www.amazon.sa/s?k=mirrorless+camera&i=electronics",
+      "https://www.amazon.sa/s?k=dslr+camera&i=electronics",
+      "https://www.amazon.sa/s?k=drone&i=electronics",
+      "https://www.amazon.sa/s?k=action+camera&i=electronics",
+      "https://www.amazon.sa/s?k=security+camera&i=electronics",
+      "https://www.amazon.sa/s?k=camera+lens&i=electronics"
+    ],
+    "gaming": [
+      "https://www.amazon.sa/s?k=playstation&i=videogames",
+      "https://www.amazon.sa/s?k=xbox&i=videogames",
+      "https://www.amazon.sa/s?k=nintendo+switch&i=videogames",
+      "https://www.amazon.sa/s?k=video+games&i=videogames",
+      "https://www.amazon.sa/s?k=gaming+controller&i=videogames",
+      "https://www.amazon.sa/s?k=vr+headset&i=videogames"
+    ],
+    "accessories": [
+      "https://www.amazon.sa/s?k=power+bank&i=electronics",
+      "https://www.amazon.sa/s?k=phone+charger&i=electronics",
+      "https://www.amazon.sa/s?k=usb+cable&i=electronics",
+      "https://www.amazon.sa/s?k=hdmi+cable&i=electronics",
+      "https://www.amazon.sa/s?k=phone+case&i=electronics",
+      "https://www.amazon.sa/s?k=screen+protector&i=electronics",
+      "https://www.amazon.sa/s?k=car+charger&i=electronics",
+      "https://www.amazon.sa/s?k=memory+card&i=electronics",
+      "https://www.amazon.sa/s?k=usb+flash+drive&i=electronics",
+      "https://www.amazon.sa/s?k=computer+mouse&i=computers",
+      "https://www.amazon.sa/s?k=computer+keyboard&i=computers",
+      "https://www.amazon.sa/s?k=laptop+bag&i=computers",
+      "https://www.amazon.sa/s?k=webcam&i=computers",
+      "https://www.amazon.sa/s?k=ssd+internal&i=computers",
+      "https://www.amazon.sa/s?k=external+hard+drive&i=computers",
+      "https://www.amazon.sa/s?k=usb+hub&i=computers"
+    ],
+    "monitor": [
+      "https://www.amazon.sa/s?k=computer+monitor&i=computers",
+      "https://www.amazon.sa/s?k=gaming+monitor&i=computers",
+      "https://www.amazon.sa/s?k=4k+monitor&i=computers",
+      "https://www.amazon.sa/s?k=ultrawide+monitor&i=computers"
+    ],
+    "printer": [
+      "https://www.amazon.sa/s?k=printer&i=computers",
+      "https://www.amazon.sa/s?k=laser+printer&i=computers",
+      "https://www.amazon.sa/s?k=inkjet+printer&i=computers",
+      "https://www.amazon.sa/s?k=3d+printer&i=computers",
+      "https://www.amazon.sa/s?k=scanner&i=computers"
+    ],
+    "networking": [
+      "https://www.amazon.sa/s?k=wifi+router&i=computers",
+      "https://www.amazon.sa/s?k=mesh+wifi&i=computers",
+      "https://www.amazon.sa/s?k=wifi+extender&i=computers",
+      "https://www.amazon.sa/s?k=ethernet+switch&i=computers",
+      "https://www.amazon.sa/s?k=network+access+point&i=computers"
+    ],
+    "smart_home": [
+      "https://www.amazon.sa/s?k=smart+plug&i=electronics",
+      "https://www.amazon.sa/s?k=smart+bulb&i=electronics",
+      "https://www.amazon.sa/s?k=smart+lock&i=electronics",
+      "https://www.amazon.sa/s?k=alexa+echo&i=electronics",
+      "https://www.amazon.sa/s?k=google+home&i=electronics",
+      "https://www.amazon.sa/s?k=robot+vacuum&i=electronics",
+      "https://www.amazon.sa/s?k=smart+doorbell&i=electronics",
+      "https://www.amazon.sa/s?k=streaming+device&i=electronics",
+      "https://www.amazon.sa/s?k=smart+thermostat&i=electronics"
+    ],
+    "wearable": [
+      "https://www.amazon.sa/s?k=smartwatch&i=electronics",
+      "https://www.amazon.sa/s?k=apple+watch&i=electronics",
+      "https://www.amazon.sa/s?k=samsung+galaxy+watch&i=electronics",
+      "https://www.amazon.sa/s?k=fitness+tracker&i=electronics",
+      "https://www.amazon.sa/s?k=garmin+watch&i=electronics"
+    ],
+    "appliance": [
+      "https://www.amazon.sa/s?k=washing+machine&i=kitchen",
+      "https://www.amazon.sa/s?k=refrigerator&i=kitchen",
+      "https://www.amazon.sa/s?k=air+conditioner&i=kitchen",
+      "https://www.amazon.sa/s?k=vacuum+cleaner&i=kitchen",
+      "https://www.amazon.sa/s?k=fan&i=kitchen",
+      "https://www.amazon.sa/s?k=heater&i=kitchen",
+      "https://www.amazon.sa/s?k=water+dispenser&i=kitchen"
+    ],
+    "kitchen": [
+      "https://www.amazon.sa/s?k=coffee+machine&i=kitchen",
+      "https://www.amazon.sa/s?k=espresso+machine&i=kitchen",
+      "https://www.amazon.sa/s?k=air+fryer&i=kitchen",
+      "https://www.amazon.sa/s?k=microwave+oven&i=kitchen",
+      "https://www.amazon.sa/s?k=blender&i=kitchen",
+      "https://www.amazon.sa/s?k=food+processor&i=kitchen",
+      "https://www.amazon.sa/s?k=electric+kettle&i=kitchen",
+      "https://www.amazon.sa/s?k=toaster&i=kitchen",
+      "https://www.amazon.sa/s?k=rice+cooker&i=kitchen",
+      "https://www.amazon.sa/s?k=juicer&i=kitchen"
+    ],
+    "personal_care": [
+      "https://www.amazon.sa/s?k=hair+dryer&i=beauty",
+      "https://www.amazon.sa/s?k=electric+shaver&i=beauty",
+      "https://www.amazon.sa/s?k=hair+straightener&i=beauty",
+      "https://www.amazon.sa/s?k=hair+trimmer&i=beauty",
+      "https://www.amazon.sa/s?k=electric+toothbrush&i=beauty",
+      "https://www.amazon.sa/s?k=epilator&i=beauty"
+    ]
   },
   "selectors": {
     "product_list": "[data-component-type='s-search-result']",
@@ -37,9 +165,3 @@
     "next_page": ".s-pagination-next"
   }
 }
-
-
-
-
-
-
