@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { Star, ExternalLink, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
+import { getSearchStoreLogoPath, getStoreInitials } from '@/lib/logos';
 
 interface StoreCardProps {
   store: {
@@ -32,25 +34,45 @@ export function StoreCard({ store, locale }: StoreCardProps) {
   const currentLocale = locale || (params?.locale as string) || 'ar';
 
   const storeName = currentLocale === 'ar' ? store.name_ar : store.name_en;
-  const logoUrl = store.logo_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5TdG9yZTwvdGV4dD48L3N2Zz4=';
+  // Preferred logo chain: DB-managed URL (e.g. remote CDN) → local
+  // /logos/{slug}.png → brand-tinted initials. Many DB rows currently have
+  // no logo_url, so the local bundled PNGs in public/logos/ carry the day.
+  const localLogoPath = store.slug ? getSearchStoreLogoPath(store.slug) : null;
+  const [logoSrc, setLogoSrc] = useState<string | null>(
+    store.logo_url || localLogoPath,
+  );
+  const [triedLocalFallback, setTriedLocalFallback] = useState(false);
+  const handleLogoError = () => {
+    if (!triedLocalFallback && store.logo_url && localLogoPath) {
+      setLogoSrc(localLogoPath);
+      setTriedLocalFallback(true);
+      return;
+    }
+    setLogoSrc(null);
+  };
 
   return (
     <Card className="group transition-all duration-300 h-full flex flex-col hover:elevation-2">
       <CardContent className="p-6 flex flex-col h-full">
         {/* Store Logo */}
         <div className="flex items-center justify-center mb-4">
-          <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-surface-container-highest border-2 border-outline-variant group-hover:border-primary transition-colors">
-            <img
-              src={logoUrl}
-              alt={storeName}
-              className="w-full h-full object-contain p-2"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                if (target.src !== 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5TdG9yZTwvdGV4dD48L3N2Zz4=') {
-                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5TdG9yZTwvdGV4dD48L3N2Zz4=';
-                }
-              }}
-            />
+          <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-white dark:bg-gray-50 border-2 border-outline-variant group-hover:border-primary transition-colors">
+            {logoSrc ? (
+              <img
+                src={logoSrc}
+                alt={storeName}
+                className="w-full h-full object-contain p-3"
+                onError={handleLogoError}
+              />
+            ) : (
+              <span
+                aria-label={storeName}
+                role="img"
+                className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--brand-green-dark)] bg-[var(--brand-bg-green)]"
+              >
+                {getStoreInitials(store.slug || storeName)}
+              </span>
+            )}
           </div>
         </div>
 
