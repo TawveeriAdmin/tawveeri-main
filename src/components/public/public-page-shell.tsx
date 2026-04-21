@@ -54,6 +54,9 @@ const isActivePath = (pathname: string, href: string) =>
 
 export function PublicPageShell({ locale, children, fullBleed = false }: PublicPageShellProps) {
   const pathname = usePathname();
+  // The landing page already renders a prominent hero search — suppress the
+  // header search on that route so the client doesn't see two bars.
+  const isLandingPage = pathname === `/${locale}` || pathname === `/${locale}/`;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
@@ -243,8 +246,14 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               </span>
             </Link>
 
-            {/* Search bar — desktop (centered, max-width constrained) */}
-            <div className="hidden flex-1 justify-center md:flex">
+            {/* Search bar — desktop (centered, max-width constrained).
+                Hidden on the landing page since the hero has its own search. */}
+            <div
+              className={cn(
+                'hidden flex-1 justify-center md:flex',
+                isLandingPage && 'md:hidden',
+              )}
+            >
               <form
                 onSubmit={handleSearchSubmit}
                 className="flex w-full max-w-lg items-center gap-2"
@@ -425,8 +434,14 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             </div>
           </div>
 
-          {/* Search bar — mobile */}
-          <form onSubmit={handleSearchSubmit} className="mt-2 flex items-center gap-2 md:hidden">
+          {/* Search bar — mobile. Suppressed on the landing page (hero search). */}
+          <form
+            onSubmit={handleSearchSubmit}
+            className={cn(
+              'mt-2 flex items-center gap-2 md:hidden',
+              isLandingPage && 'hidden',
+            )}
+          >
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute start-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
