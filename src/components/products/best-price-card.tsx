@@ -110,13 +110,20 @@ export function BestPriceCard({
         </div>
       )}
 
-      {/* Plain anchor — guarantees label visibility regardless of Button internals */}
+      {/* Plain anchor — guarantees label visibility regardless of Button internals.
+          When the parent supplies onClick (affiliate tracking), cancel the default
+          navigation so only the tracked URL opens — no race, no duplicate tabs. */}
       {canBuy ? (
         <a
           href={url!}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onClick}
+          onClick={(e) => {
+            if (onClick) {
+              e.preventDefault();
+              onClick();
+            }
+          }}
           className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
         >
           <span>{ctaLabel}</span>

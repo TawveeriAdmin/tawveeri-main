@@ -96,9 +96,13 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
   const handleStoreLink = (e: React.MouseEvent, ps: ProductStore) => {
     const url = ps.affiliate_url || ps.product_url;
     if (!url) return;
-    onStoreClick?.(ps.id, url);
-    // Let the anchor handle navigation naturally
-    void e;
+    // When the parent wires up tracking, it's responsible for opening the
+    // tagged URL. Cancel the default anchor navigation so we don't race-open
+    // the raw URL in a second tab (stripping affiliate params + click_id).
+    if (onStoreClick) {
+      e.preventDefault();
+      onStoreClick(ps.id, url);
+    }
   };
 
   return (

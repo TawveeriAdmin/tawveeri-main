@@ -18,6 +18,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { bestPrice as bestPriceCopy, savings as savingsCopy } from '@/lib/copy';
+import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
@@ -39,6 +40,7 @@ interface ProductStore {
   coupon_code?: string | null;
   stores: {
     id: string;
+    slug?: string | null;
     name_ar: string;
     name_en: string;
     logo_url: string | null;
@@ -100,9 +102,17 @@ export function ProductCard({
   const isMultiStore = product.product_stores.length > 1;
   const isDbProduct = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(product.id);
 
-  // Get external product URL if available (for scraped products not in DB)
-  const externalProductUrl = !isMultiStore
+  // Get external product URL if available (for scraped products not in DB).
+  // Apply the per-store affiliate tag synchronously — scraped products have
+  // non-UUID ids so `generateAffiliateUrl()` can't run server-side lookup for
+  // them. For those, stores.id IS the slug; for DB rows we prefer stores.slug.
+  const primaryStore = product.product_stores[0]?.stores;
+  const primaryStoreSlug = primaryStore?.slug || primaryStore?.id || null;
+  const rawExternalUrl = !isMultiStore
     ? (product.product_stores[0]?.product_url || product.product_stores[0]?.affiliate_url)
+    : null;
+  const externalProductUrl = rawExternalUrl
+    ? (applyAffiliateTag(rawExternalUrl, primaryStoreSlug) ?? rawExternalUrl)
     : null;
   const isExternalLink = externalProductUrl && (externalProductUrl.startsWith('http://') || externalProductUrl.startsWith('https://'));
 

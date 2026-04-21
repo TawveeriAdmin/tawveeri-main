@@ -10,6 +10,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
 
 import { StoreLogo } from '@/components/ui/store-logo';
+import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 
 interface StoreComparisonPanelProps {
   product: ProductCardProduct;
@@ -52,7 +53,11 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
           const storeName = locale === 'ar' ? ps.stores.name_ar : ps.stores.name_en;
           const storeInitial = storeName.charAt(0).toUpperCase();
           const isBestPrice = ps.current_price === bestPriceValue;
-          const storeUrl = ps.product_url || ps.affiliate_url;
+          const rawStoreUrl = ps.product_url || ps.affiliate_url;
+          const storeSlug = ps.stores.slug || ps.stores.id || null;
+          const storeUrl = rawStoreUrl
+            ? (applyAffiliateTag(rawStoreUrl, storeSlug) ?? rawStoreUrl)
+            : null;
           return (
             <div
               key={ps.id}

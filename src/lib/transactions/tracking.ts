@@ -4,6 +4,7 @@
  */
 
 import { getSupabaseBrowserClient, createServerClient } from '@/lib/database';
+import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 
 const getSupabase = () =>
   typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient();
@@ -216,17 +217,28 @@ export async function generateAffiliateUrl(
   try {
     const supabase = getSupabase();
 
-    // Get product store details
+    // Fetch base URLs + store slug so we can inject per-store affiliate params
+    // (e.g. Amazon ?tag=tawveeri-21, Noon ?aff_code=DNC160) before click_id.
     const { data: productStore, error: psError } = await supabase
       .from('product_stores')
-      .select('affiliate_url, product_url')
+      .select('affiliate_url, product_url, stores(slug)')
       .eq('id', productStoreId)
       .single();
 
     if (psError) throw psError;
     if (!productStore) throw new Error('Product store not found');
 
-    // Track click first
+    const storeRecord = Array.isArray((productStore as any).stores)
+      ? (productStore as any).stores[0]
+      : (productStore as any).stores;
+    const storeSlug: string | null = storeRecord?.slug ?? null;
+
+    // Affiliate tag first, click_id second. The order matters so that the tag
+    // lands in the outbound URL even if click tracking fails below.
+    const rawBase = productStore.affiliate_url || productStore.product_url;
+    const taggedBase = applyAffiliateTag(rawBase, storeSlug) ?? rawBase;
+
+    // Track click
     const userAgent = typeof window !== 'undefined' ? navigator.userAgent : undefined;
     const referrer = typeof window !== 'undefined' ? document.referrer : undefined;
 
@@ -237,41 +249,38 @@ export async function generateAffiliateUrl(
     );
 
     if (trackError || !clickId) {
-      // If tracking fails, still return URL without tracking
-      const url = productStore.affiliate_url || productStore.product_url;
-      return { data: url, error: null };
+      // If tracking fails, still return the affiliate-tagged URL.
+      return { data: taggedBase, error: null };
     }
 
-    // Generate tracking URL
-    const baseUrl = productStore.affiliate_url || productStore.product_url;
     try {
-      const url = new URL(baseUrl);
-      
-      // Add click_id as query parameter
+      const url = new URL(taggedBase);
       url.searchParams.set('click_id', clickId);
       if (userId) {
         url.searchParams.set('user_id', userId);
       }
-
       return { data: url.toString(), error: null };
     } catch (urlError) {
-      // If URL parsing fails, append query params manually
-      const separator = baseUrl.includes('?') ? '&' : '?';
-      const trackingUrl = `${baseUrl}${separator}click_id=${clickId}${userId ? `&user_id=${userId}` : ''}`;
+      const separator = taggedBase.includes('?') ? '&' : '?';
+      const trackingUrl = `${taggedBase}${separator}click_id=${clickId}${userId ? `&user_id=${userId}` : ''}`;
       return { data: trackingUrl, error: null };
     }
   } catch (error) {
     console.error('Error generating affiliate URL:', error);
-    // Return base URL even if tracking fails
+    // Return affiliate-tagged base URL even if the outer flow fails.
     const supabase = getSupabase();
     const { data: productStore } = await supabase
       .from('product_stores')
-      .select('affiliate_url, product_url')
+      .select('affiliate_url, product_url, stores(slug)')
       .eq('id', productStoreId)
       .single();
-    
-    const url = productStore?.affiliate_url || productStore?.product_url || null;
-    return { data: url, error: error as Error };
+
+    const storeRecord = Array.isArray((productStore as any)?.stores)
+      ? (productStore as any).stores[0]
+      : (productStore as any)?.stores;
+    const rawBase = productStore?.affiliate_url || productStore?.product_url || null;
+    const taggedBase = rawBase ? (applyAffiliateTag(rawBase, storeRecord?.slug ?? null) ?? rawBase) : null;
+    return { data: taggedBase, error: error as Error };
   }
 }
 
