@@ -115,11 +115,16 @@ export default function StoresListingClient() {
     let cancelled = false;
 
     async function fetchStores() {
+      // Re-capture the client inside the closure so TS can narrow it against
+      // the outer null check — the `if (!supabase) return` above runs in a
+      // different scope, so the async body still sees the union type.
+      const sb = supabase;
+      if (!sb) return;
       setLoading(true);
       setError(null);
 
       try {
-        const { data, error: queryError } = await supabase
+        const { data, error: queryError } = await sb
           .from('stores')
           .select('*')
           .eq('status', 'active')
@@ -146,8 +151,36 @@ export default function StoresListingClient() {
 
         if (cancelled) return;
 
+        // Seed the UI with whatever total_products the DB carries (often stale
+        // or zero). Then fire one parallel count query per store to overwrite
+        // with a live count of active products, so the cards stop showing
+        // "0 products" when the rows actually exist.
         setStores(mappedStores);
         setFilteredStores(mappedStores);
+
+        const counts = await Promise.all(
+          mappedStores.map(async (store) => {
+            const { count } = await sb
+              .from('product_stores')
+              .select('id, products!inner(is_active)', {
+                count: 'exact',
+                head: true,
+              })
+              .eq('store_id', store.id)
+              .eq('products.is_active', true);
+            return [store.id, count ?? 0] as const;
+          }),
+        );
+
+        if (cancelled) return;
+
+        const countMap = new Map(counts);
+        const withCounts = mappedStores.map((s) => ({
+          ...s,
+          total_products: countMap.get(s.id) ?? s.total_products ?? 0,
+        }));
+        setStores(withCounts);
+        setFilteredStores(withCounts);
       } catch (err) {
         if (cancelled) return;
 
