@@ -14,11 +14,9 @@ import { ProductCard } from '@/components/products/product-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { PriceHistoryChart } from '@/components/products/price-history-chart';
 import { PriceAlertDialog } from '@/components/products/price-alert-dialog';
-import { GiftOption } from '@/components/products/gift-option';
 import { ImageGalleryModal } from '@/components/products/image-gallery-modal';
 import { ProductVideoPlayer } from '@/components/products/product-video-player';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,18 +30,8 @@ import {
  BarChart3,
  Bell,
  Share2,
- ExternalLink,
  AlertCircle,
- Copy,
- Check,
- Star,
- Package,
- Truck,
- ShieldCheck,
- Clock,
- ShoppingCart,
  Eye,
- PiggyBank,
 } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
@@ -59,7 +47,7 @@ type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
 type StoreSummary = Pick<
  Database['public']['Tables']['stores']['Row'],
- 'id' | 'name_ar' | 'name_en' | 'logo_url' | 'average_rating' | 'total_reviews'
+ 'id' | 'slug' | 'name_ar' | 'name_en' | 'logo_url' | 'average_rating' | 'total_reviews'
 >;
 
 interface ProductStore
@@ -128,19 +116,11 @@ export default function ProductDetailClient() {
  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
- const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
  const [productCoupons, setProductCoupons] = useState<any[]>([]);
  const [priceAlertOpen, setPriceAlertOpen] = useState(false);
  const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [galleryOpen, setGalleryOpen] = useState(false);
- const [shareUrl, setShareUrl] = useState<string>('');
  const [viewCount, setViewCount] = useState<number | null>(null);
-
- useEffect(() => {
- if (typeof window !== 'undefined') {
- setShareUrl(window.location.href);
- }
- }, []);
 
  // Track product view on page load
  useEffect(() => {
@@ -204,6 +184,7 @@ export default function ProductDetailClient() {
  coupon_code,
  stores(
  id,
+ slug,
  name_ar,
  name_en,
  logo_url,
@@ -474,42 +455,6 @@ export default function ProductDetailClient() {
  }
  };
 
- const handleCopyCoupon = async (couponCode: string) => {
- try {
- await navigator.clipboard.writeText(couponCode);
- setCopiedCoupon(couponCode);
- setTimeout(() => setCopiedCoupon(null), 2000);
- toast({
- title: t('products.copied'),
- description: t('products.couponCopied'),
- });
- } catch (err) {
- toast({
- title: t('common.error'),
- description: t('products.copyError'),
- variant: 'destructive',
- });
- }
- };
-
- const handleAddToCart = () => {
- if (!product) return;
- const cartItem = createCartItemFromProduct(product, locale);
- if (!cartItem) {
- toast({
- title: t('product.addToCartUnavailable'),
- variant: 'destructive',
- });
- return;
- }
- addItem(cartItem);
- toast({
- title: t('product.addedToCart'),
- description: cartItem.storeName,
- variant: 'default',
- });
- };
-
  const handleAddRelatedToCart = (relatedProduct: ProductCardProduct) => {
  const cartItem = createCartItemFromProduct(relatedProduct, locale);
  if (!cartItem) {
@@ -566,26 +511,45 @@ export default function ProductDetailClient() {
  .filter((ps) => ps.availability !== 'out_of_stock')
  .sort((a, b) => a.current_price - b.current_price);
  const bestPriceStore = storesWithPrices[0];
+ const highestPrice = storesWithPrices[storesWithPrices.length - 1]?.current_price ?? 0;
+ const priceRange = bestPriceStore && highestPrice > bestPriceStore.current_price
+   ? highestPrice - bestPriceStore.current_price
+   : 0;
+ const storeCount = product.product_stores.length;
+
+ // Brand / model display — hide when missing or "Unknown" from scrapers
+ const rawBrand = (product.brand || '').trim();
+ const brandLabel = rawBrand && rawBrand.toLowerCase() !== 'unknown' ? rawBrand : '';
+ const rawModel = (product.model || '').trim();
+ // Don't repeat the product name if model just duplicates it
+ const modelLabel =
+   rawModel && rawModel.toLowerCase() !== productName.toLowerCase() && !productName.toLowerCase().includes(rawModel.toLowerCase())
+     ? rawModel
+     : '';
+ const subtitleParts = [brandLabel, modelLabel].filter(Boolean);
 
  return (
  <div className="">
- <div className="container mx-auto px-4 py-8 max-w-7xl">
+ <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
  <PageBreadcrumbs items={[
-   { label: t('products.title'), href: `/${locale}/products` },
+   { label: t('common.home'), href: `/${locale}` },
+   { label: t('button.search'), href: `/${locale}/search` },
    { label: productName },
  ]} />
- {/* Main Product Info */}
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+
+ {/* Main Product Info — image sticky on desktop so the comparison table stays in view */}
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
  {/* Image Gallery */}
- <div className="space-y-4">
+ <div className="lg:sticky lg:top-24 lg:self-start space-y-3 min-w-0">
  <button
  onClick={() => setGalleryOpen(true)}
- className="relative aspect-square w-full rounded-xl overflow-hidden bg-surface-container-highest border-2 border-outline-variant cursor-pointer hover:border-primary transition-colors"
+ className="group relative aspect-square w-full max-w-lg mx-auto rounded-2xl overflow-hidden bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)]/60 cursor-zoom-in transition-colors hover:border-[var(--brand-green)]"
+ aria-label={locale === 'ar' ? 'تكبير الصورة' : 'Zoom image'}
  >
  <img
  src={currentImage}
  alt={productName}
- className="w-full h-full object-contain"
+ className="w-full h-full object-contain p-6 transition-transform duration-300 group-hover:scale-[1.02]"
  onError={(e) => {
  const target = e.target as HTMLImageElement;
  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
@@ -593,21 +557,21 @@ export default function ProductDetailClient() {
  />
  </button>
  {images.length > 1 && (
- <div className="grid grid-cols-4 gap-2">
- {images.map((img, idx) => (
+ <div className="grid grid-cols-5 gap-2 max-w-lg mx-auto">
+ {images.slice(0, 5).map((img, idx) => (
  <button
  key={idx}
  onClick={() => setCurrentImageIndex(idx)}
  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
  currentImageIndex === idx
- ? 'border-primary-600'
- : 'border-outline-variant'
+ ? 'border-[var(--brand-green)]'
+ : 'border-[color:var(--color-outline-variant)]/60 hover:border-[var(--brand-green)]/50'
  }`}
  >
  <img
  src={img}
  alt={`${productName} ${idx + 1}`}
- className="w-full h-full object-cover"
+ className="w-full h-full object-contain p-1"
  />
  </button>
  ))}
@@ -616,14 +580,29 @@ export default function ProductDetailClient() {
  </div>
 
  {/* Product Details */}
- <div className="space-y-6">
+ <div className="space-y-5">
  <div>
- <h1 className="text-headline-lg text-on-surface mb-2">{productName}</h1>
- <p className="text-lg text-on-surface-variant">
- {product.brand} - {product.model}
+ {/* Category chip */}
+ {product.category && (
+ <div className="mb-3">
+ <Badge variant="outline" className="text-xs">
+ {t(`products.categories.${product.category}`)}
+ </Badge>
+ </div>
+ )}
+
+ <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-on-surface leading-tight mb-3">
+ {productName}
+ </h1>
+
+ {subtitleParts.length > 0 && (
+ <p className="text-sm text-on-surface-variant">
+ {subtitleParts.join(' · ')}
  </p>
+ )}
+
  {product.sku && (
- <p className="text-sm text-on-surface-variant mt-1">
+ <p className="text-xs text-on-surface-variant mt-1">
  SKU: {product.sku}
  </p>
  )}
@@ -673,42 +652,82 @@ export default function ProductDetailClient() {
  />
  )}
 
- {/* Action Buttons */}
- <div className="flex flex-wrap gap-3">
- <Button
- variant="default"
- onClick={handleAddToCart}
- disabled={!bestPriceStore}
- className="flex-1 sm:flex-initial"
- >
- <ShoppingCart className="w-4 h-4 me-2" />
- {t('product.addToCart')}
- </Button>
- <Button
- variant="outline"
+ {/* Quick stats strip — surfaces the "why compare" value at a glance */}
+ {storeCount > 0 && (
+ <div className="grid grid-cols-3 gap-2 rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] p-3 text-center">
+ <div>
+ <div className="text-xs text-on-surface-variant mb-0.5">
+ {locale === 'ar' ? 'المتاجر' : 'Stores'}
+ </div>
+ <div className="text-lg font-bold text-on-surface tabular-nums">
+ {storeCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </div>
+ </div>
+ <div className="border-s border-e border-[color:var(--color-outline-variant)]/50">
+ <div className="text-xs text-on-surface-variant mb-0.5">
+ {locale === 'ar' ? 'أقل سعر' : 'Lowest'}
+ </div>
+ <div className="text-lg font-bold text-[var(--brand-green-dark)]">
+ <Price
+ amount={bestPriceStore?.current_price ?? 0}
+ className="justify-center"
+ symbolClassName="w-3.5 h-3.5"
+ />
+ </div>
+ </div>
+ <div>
+ <div className="text-xs text-on-surface-variant mb-0.5">
+ {locale === 'ar' ? 'توفير حتى' : 'Save up to'}
+ </div>
+ <div className="text-lg font-bold text-[var(--brand-gold-dark)]">
+ {priceRange > 0 ? (
+ <Price
+ amount={priceRange}
+ className="justify-center"
+ symbolClassName="w-3.5 h-3.5"
+ />
+ ) : (
+ <span className="text-on-surface-variant">—</span>
+ )}
+ </div>
+ </div>
+ </div>
+ )}
+
+ {/* Secondary actions — equal-width grid, all four span their column */}
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+ <button
+ type="button"
  onClick={() => handleAddToCompare(product.id)}
- className="flex-1 sm:flex-initial"
+ className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
  >
- <BarChart3 className="w-4 h-4 me-2" />
- {t('product.addToCompare')}
- </Button>
- <Button
- variant="outline"
+ <BarChart3 className="w-4 h-4 shrink-0" />
+ <span className="truncate">{t('product.addToCompare')}</span>
+ </button>
+ <button
+ type="button"
  onClick={() => handleSaveToWishlist(product.id)}
- className="flex-1 sm:flex-initial"
+ className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
  >
- <Heart className="w-4 h-4 me-2" />
- {t('product.saveToWishlist')}
- </Button>
- <Button variant="outline" onClick={handleSetPriceAlert} className="flex-1 sm:flex-initial">
- <Bell className="w-4 h-4 me-2" />
- {t('product.setPriceAlert')}
- </Button>
- <Button variant="outline" onClick={handleShare} className="flex-1 sm:flex-initial">
- <Share2 className="w-4 h-4 me-2" />
- {t('product.share')}
- </Button>
- <GiftOption productName={productName} shareUrl={shareUrl} />
+ <Heart className="w-4 h-4 shrink-0" />
+ <span className="truncate">{t('product.saveToWishlist')}</span>
+ </button>
+ <button
+ type="button"
+ onClick={handleSetPriceAlert}
+ className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
+ >
+ <Bell className="w-4 h-4 shrink-0" />
+ <span className="truncate">{t('product.setPriceAlert')}</span>
+ </button>
+ <button
+ type="button"
+ onClick={handleShare}
+ className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
+ >
+ <Share2 className="w-4 h-4 shrink-0" />
+ <span className="truncate">{t('product.share')}</span>
+ </button>
  </div>
 
  {/* Description */}
@@ -732,76 +751,23 @@ export default function ProductDetailClient() {
  </div>
 
 
- {/* Product Details Tabs — only show if there's data */}
- {(Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0 || (product.total_reviews || 0) > 0) && (
- <Tabs defaultValue={Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0 ? 'specifications' : 'reviews'} className="mb-8">
- <TabsList>
- {(Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0) && (
- <TabsTrigger value="specifications">
- {t('products.specifications.title')}
- </TabsTrigger>
- )}
- <TabsTrigger value="reviews">
- {locale === 'ar' ? 'التقييمات' : 'Reviews'} ({product.total_reviews || 0})
- </TabsTrigger>
- </TabsList>
-
- {(Object.keys(product.specifications || {}).length > 0 || product.product_stores.length > 0) && (
- <TabsContent value="specifications" className="space-y-6">
- {Object.keys(product.specifications || {}).length > 0 && (
- <ProductSpecifications
- specifications={product.specifications || {}}
- category={product.category}
- locale={locale}
- />
- )}
-
+ {/* Store comparison — the main moment for a price-comparison site */}
  {product.product_stores.length > 0 && (
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
- {product.product_stores.slice(0, 2).map((productStore) => {
- const storeName = locale === 'ar' ? productStore.stores.name_ar : productStore.stores.name_en;
- return (
- <PriceHistoryChart
- key={productStore.id}
- productStoreId={productStore.id}
- productName={productName}
- storeName={storeName}
- locale={locale}
- />
- );
- })}
- </div>
- )}
- </TabsContent>
- )}
-
- <TabsContent value="reviews">
- <Card>
- <CardContent className="pt-6">
- <ProductReviews
- productId={product.id}
- productName={productName}
- averageRating={product.average_rating || 0}
- totalReviews={product.total_reviews || 0}
- locale={locale}
- />
- </CardContent>
- </Card>
- </TabsContent>
- </Tabs>
- )}
-
- {/* Full store comparison table — main brand moment for product detail */}
- <section className="mb-8">
+ <section className="mb-10">
  <div className="mb-4 flex items-end justify-between gap-4">
+ <div>
  <h2 className="t-h2 text-on-surface">{t('product.availableStores')}</h2>
- {product.product_stores.length > 0 && (
- <span className="t-small text-on-surface-variant">
+ <p className="t-small text-on-surface-variant mt-1">
+ {locale === 'ar'
+ ? 'قارن السعر ووقت التوصيل والضمان بين كل المتاجر'
+ : 'Compare price, delivery time and warranty across every store'}
+ </p>
+ </div>
+ <span className="t-small font-semibold text-[var(--brand-green-dark)]">
  {locale === 'ar'
  ? `${product.product_stores.length} متجر`
- : `${product.product_stores.length} stores`}
+ : `${product.product_stores.length} store${product.product_stores.length === 1 ? '' : 's'}`}
  </span>
- )}
  </div>
  <ComparisonTable
  productStores={product.product_stores}
@@ -811,9 +777,34 @@ export default function ProductDetailClient() {
  }}
  />
  </section>
+ )}
+
+ {/* 90-day price history — single large chart for the best-price store */}
+ {bestPriceStore && (
+ <section className="mb-10">
+ <div className="mb-4">
+ <h2 className="t-h2 text-on-surface">
+ {locale === 'ar' ? 'سجل الأسعار' : 'Price history'}
+ </h2>
+ <p className="t-small text-on-surface-variant mt-1">
+ {locale === 'ar'
+ ? `آخر 90 يوم في ${locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}`
+ : `Last 90 days at ${locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}`}
+ </p>
+ </div>
+ <PriceHistoryChart
+ productStoreId={bestPriceStore.id}
+ productName={productName}
+ storeName={locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}
+ locale={locale}
+ height={320}
+ />
+ </section>
+ )}
 
  {/* Available Coupons */}
  {productCoupons.length > 0 && (
+ <section className="mb-10">
  <Card>
  <CardHeader>
  <CardTitle className="flex items-center gap-2">
@@ -843,15 +834,59 @@ export default function ProductDetailClient() {
  ))}
  </CardContent>
  </Card>
+ </section>
  )}
 
- {/* Related Products */}
+ {/* Specifications — collapsible accordion */}
+ {Object.keys(product.specifications || {}).length > 0 && (
+ <section className="mb-10">
+ <Accordion type="single" collapsible defaultValue="specs">
+ <AccordionItem value="specs">
+ <AccordionTrigger className="t-h2 text-on-surface">
+ {t('products.specifications.title')}
+ </AccordionTrigger>
+ <AccordionContent className="pt-2">
+ <ProductSpecifications
+ specifications={product.specifications || {}}
+ category={product.category}
+ locale={locale}
+ />
+ </AccordionContent>
+ </AccordionItem>
+ </Accordion>
+ </section>
+ )}
+
+ {/* Reviews — collapsible accordion (open if any exist) */}
+ <section className="mb-10">
+ <Accordion type="single" collapsible defaultValue={(product.total_reviews || 0) > 0 ? 'reviews' : undefined}>
+ <AccordionItem value="reviews">
+ <AccordionTrigger className="t-h2 text-on-surface">
+ {locale === 'ar' ? 'التقييمات' : 'Reviews'}
+ <span className="ms-2 t-small font-normal text-on-surface-variant">
+ ({product.total_reviews || 0})
+ </span>
+ </AccordionTrigger>
+ <AccordionContent className="pt-2">
+ <ProductReviews
+ productId={product.id}
+ productName={productName}
+ averageRating={product.average_rating || 0}
+ totalReviews={product.total_reviews || 0}
+ locale={locale}
+ />
+ </AccordionContent>
+ </AccordionItem>
+ </Accordion>
+ </section>
+
+ {/* Similar products — horizontal rail */}
  {relatedProducts.length > 0 && (
- <div>
- <h2 className="text-headline-md text-on-surface mb-6">
+ <section>
+ <h2 className="t-h2 text-on-surface mb-6">
  {t('product.relatedProducts')}
  </h2>
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+ <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
  {relatedProducts.map((relatedProduct) => (
  <ProductCard
  key={relatedProduct.id}
@@ -863,7 +898,7 @@ export default function ProductDetailClient() {
  />
  ))}
  </div>
- </div>
+ </section>
  )}
  </div>
 

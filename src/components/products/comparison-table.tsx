@@ -13,6 +13,7 @@ import type { AvailabilityStatus } from '@/lib/database/types';
 
 interface StoreSummary {
   id: string;
+  slug?: string | null;
   name_ar: string;
   name_en: string;
   logo_url: string | null;
@@ -150,13 +151,13 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
                   className={cn(
                     'border-t border-[color:var(--color-outline-variant)]/50 transition-colors',
                     isWinner
-                      ? 'bg-[var(--brand-bg-green)]/60 hover:bg-[var(--brand-bg-green)]'
-                      : 'hover:bg-[color:var(--color-surface-container-low)]',
+                      ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-900/40',
                   )}
                 >
                   <Td>
                     <div className="flex items-center gap-3">
-                      <StoreLogo slug={ps.stores.id} size="md" alt={storeName} locale={locale as 'ar' | 'en'} />
+                      <StoreLogo slug={ps.stores.slug || ps.stores.id} size="md" alt={storeName} locale={locale as 'ar' | 'en'} />
                       <div className="flex flex-col">
                         <span className="t-body-strong text-on-surface line-clamp-1">
                           {storeName}
@@ -250,12 +251,12 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
               key={ps.id}
               className={cn(
                 'p-4',
-                isWinner && 'bg-[var(--brand-bg-green)]/60',
+                isWinner && 'bg-emerald-50 dark:bg-emerald-900/20',
               )}
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">
-                  <StoreLogo slug={ps.stores.id} size="md" alt={storeName} locale={locale as 'ar' | 'en'} />
+                  <StoreLogo slug={ps.stores.slug || ps.stores.id} size="md" alt={storeName} locale={locale as 'ar' | 'en'} />
                   <div className="flex flex-col">
                     <span className="t-body-strong text-on-surface">{storeName}</span>
                     {isWinner && (

@@ -86,7 +86,6 @@ import {
 } from '@/lib/scraping/search/store-registry';
 import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
-import { ProductDetailSheet } from '@/components/products/product-detail-sheet';
 
 type Product = ProductCardProduct;
 
@@ -152,7 +151,6 @@ export default function SearchClient() {
   const [searchLatencyMs, setSearchLatencyMs] = useState<number | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
@@ -1355,7 +1353,6 @@ export default function SearchClient() {
                             onSave={handleSaveToWishlist}
                             isSaved={savedProductNames.has(product.name_en)}
                             isInCompare={compareIds.has(product.id)}
-                            onCardClick={(p) => setSelectedProduct(p)}
                           />
                           {/* Inline Store Comparison Panel */}
                           {expandedProductId === product.id && product.product_stores.length > 1 && (
@@ -1431,14 +1428,6 @@ export default function SearchClient() {
           </div>
         </>
       )}
-
-      {/* Product Detail Sheet */}
-      <ProductDetailSheet
-        product={selectedProduct}
-        open={selectedProduct !== null}
-        onClose={() => setSelectedProduct(null)}
-        locale={locale}
-      />
 
       {/* CSS Animations */}
       <style jsx>{`

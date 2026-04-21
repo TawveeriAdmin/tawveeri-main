@@ -166,6 +166,10 @@
   --color-error-container: #DC2626;
   --color-on-error-container: #FEE2E2;
 
+  /* Dark mode: override the brand bg-green so any `bg-[var(--brand-bg-green)]`
+   * utility renders as a dim green tint instead of the light #EBF8F4. */
+  --brand-bg-green: rgba(161, 210, 197, 0.12);
+
   --color-surface: #111513;
   --color-on-surface: #F3F4F3;
   --color-surface-variant: #1E2420;

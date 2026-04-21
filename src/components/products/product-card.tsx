@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
@@ -150,7 +151,51 @@ export function ProductCard({
   const currentImageUrl = availableImages[currentImageIndex] || null;
   let imageSrc = imageError || !currentImageUrl ? PLACEHOLDER_IMAGE : currentImageUrl;
 
+  const router = useRouter();
+  const [navigating, setNavigating] = useState(false);
+
+  // For scraped-only products (non-UUID IDs), upsert into DB via /api/products/ensure
+  // before navigating so the detail page can resolve the slug.
+  const handleEnsureAndNavigate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (navigating) return;
+    setNavigating(true);
+    try {
+      const res = await fetch('/api/products/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name_en: product.name_en,
+          name_ar: product.name_ar,
+          slug: product.slug,
+          category: product.category,
+          brand: product.brand,
+          model: product.model,
+          image_urls: product.image_urls,
+          product_stores: (product.product_stores || []).map((ps) => ({
+            store_slug: ps.stores?.id,
+            current_price: ps.current_price,
+            original_price: ps.original_price,
+            product_url: ps.product_url,
+            availability: ps.availability,
+            is_deal: ps.is_deal,
+            is_free_delivery: ps.is_free_delivery,
+          })),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      const dbSlug = json?.product?.slug || product.slug;
+      router.push(`/${currentLocale}/products/${dbSlug}`);
+    } catch {
+      // fall back to optimistic navigation — detail page shows not-found if needed
+      router.push(productLink);
+    } finally {
+      setNavigating(false);
+    }
+  };
+
   // If onCardClick is provided open the detail sheet; otherwise navigate internally.
+  // Scraped products need an ensure round-trip first so the detail page can load.
   const LinkWrapper = ({ children }: { children: React.ReactNode }) =>
     onCardClick ? (
       <button
@@ -160,10 +205,19 @@ export function ProductCard({
       >
         {children}
       </button>
-    ) : (
+    ) : isDbProduct ? (
       <Link href={productLink} className="flex flex-col h-full">
         {children}
       </Link>
+    ) : (
+      <button
+        type="button"
+        onClick={handleEnsureAndNavigate}
+        disabled={navigating}
+        className="flex flex-col h-full w-full text-start disabled:opacity-80"
+      >
+        {children}
+      </button>
     );
 
   // Get unique store initials for display
