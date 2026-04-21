@@ -172,6 +172,13 @@ export default function StoreDetailClient() {
 
  const [store, setStore] = useState<StoreDetails | null>(null);
  const [products, setProducts] = useState<StoreProduct[]>([]);
+ const [totalCount, setTotalCount] = useState(0);
+ const [productsLoading, setProductsLoading] = useState(true);
+ const [categoryCounts, setCategoryCounts] = useState<Array<[string, number]>>([]);
+ const [storeStats, setStoreStats] = useState<{ cheapest: number | null; totalProducts: number }>({
+ cheapest: null,
+ totalProducts: 0,
+ });
  const [reviews, setReviews] = useState<StoreReview[]>([]);
  const [coupons, setCoupons] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
@@ -240,94 +247,50 @@ export default function StoreDetailClient() {
  setStore(storeData);
  setReviews(storeData.store_reviews || []);
 
- // Fetch the full catalog in 1000-row batches (Supabase hard cap per
- // query). Hard ceiling of 20 batches (20k products) as a runaway
- // guard — no store currently comes close.
- const PRODUCTS_BATCH = 1000;
- const MAX_BATCHES = 20;
- const allProductRecords: unknown[] = [];
- for (let batch = 0; batch < MAX_BATCHES; batch++) {
- const from = batch * PRODUCTS_BATCH;
- const to = from + PRODUCTS_BATCH - 1;
- const { data: batchData, error: batchError } = await supabase
+ // Total active products for this store — one lightweight count query.
+ const { count: totalActive } = await supabase
  .from('product_stores')
- .select(
- `
- id,
- current_price,
- original_price,
- availability,
- product_url,
- affiliate_url,
- products!inner(
- id,
- name_ar,
- name_en,
- slug,
- category,
- brand,
- model,
- image_urls
- ),
- stores(
- id,
- slug,
- name_ar,
- name_en,
- logo_url
- )
- `
- )
+ .select('id, products!inner(is_active)', { count: 'exact', head: true })
+ .eq('store_id', storeData.id)
+ .eq('products.is_active', true);
+
+ // Cheapest in-stock price across the whole catalog — one tiny query.
+ const { data: cheapestRow } = await supabase
+ .from('product_stores')
+ .select('current_price, products!inner(is_active)')
+ .eq('store_id', storeData.id)
+ .eq('products.is_active', true)
+ .neq('availability', 'out_of_stock')
+ .order('current_price', { ascending: true })
+ .limit(1);
+
+ setStoreStats({
+ cheapest: cheapestRow?.[0]?.current_price ?? null,
+ totalProducts: totalActive ?? 0,
+ });
+
+ // Category counts for the chip row. Scan only the `category` column
+ // across the whole catalog (tiny payload per row). One-time on mount.
+ const CAT_BATCH = 1000;
+ const CAT_MAX_BATCHES = 20;
+ const counts = new Map<string, number>();
+ for (let batch = 0; batch < CAT_MAX_BATCHES; batch++) {
+ const from = batch * CAT_BATCH;
+ const to = from + CAT_BATCH - 1;
+ const { data: catRows } = await supabase
+ .from('product_stores')
+ .select('products!inner(category)')
  .eq('store_id', storeData.id)
  .eq('products.is_active', true)
  .range(from, to);
- if (batchError) throw batchError;
- if (!batchData || batchData.length === 0) break;
- allProductRecords.push(...batchData);
- if (batchData.length < PRODUCTS_BATCH) break;
- }
-
- const groupedProducts = new Map<string, StoreProduct>();
-
- (allProductRecords as unknown as ProductStoreResponse[]).forEach((record) => {
- if (!record.products || !record.stores) return;
-
- const existing = groupedProducts.get(record.products.id);
- const productStore = {
- id: record.id,
- current_price: record.current_price,
- original_price: record.original_price,
- availability: record.availability,
- product_url: record.product_url,
- affiliate_url: record.affiliate_url,
- stores: {
- id: record.stores.id,
- slug: record.stores.slug,
- name_ar: record.stores.name_ar,
- name_en: record.stores.name_en,
- logo_url: record.stores.logo_url,
- },
- };
-
- if (existing) {
- existing.product_stores.push(productStore);
- groupedProducts.set(existing.id, { ...existing });
- } else {
- groupedProducts.set(record.products.id, {
- id: record.products.id,
- name_ar: record.products.name_ar,
- name_en: record.products.name_en,
- slug: record.products.slug,
- category: record.products.category,
- brand: record.products.brand,
- model: record.products.model,
- image_urls: record.products.image_urls,
- product_stores: [productStore],
+ if (!catRows || catRows.length === 0) break;
+ catRows.forEach((row: any) => {
+ const category = row?.products?.category;
+ if (category) counts.set(category, (counts.get(category) ?? 0) + 1);
  });
+ if (catRows.length < CAT_BATCH) break;
  }
- });
-
- setProducts(Array.from(groupedProducts.values()));
+ setCategoryCounts(Array.from(counts.entries()).sort((a, b) => b[1] - a[1]));
 
  // Fetch store coupons
  const { data: couponsData } = await supabase
@@ -350,6 +313,150 @@ export default function StoreDetailClient() {
 
  fetchStoreDetails();
  }, [slug, t]);
+
+ // Server-side paginated + filtered product fetch. Re-runs whenever the
+ // active store, search query, filters, sort, or page change. This replaces
+ // the previous "load everything, filter client-side" approach.
+ useEffect(() => {
+ if (!store) return;
+ let cancelled = false;
+
+ async function fetchPage() {
+ if (!store) return;
+ setProductsLoading(true);
+ const supabase = getSupabaseBrowserClient();
+ try {
+ const from = (currentPage - 1) * STORE_PRODUCTS_PAGE_SIZE;
+ const to = from + STORE_PRODUCTS_PAGE_SIZE - 1;
+
+ let query = supabase
+ .from('product_stores')
+ .select(
+ `
+ id,
+ current_price,
+ original_price,
+ availability,
+ product_url,
+ affiliate_url,
+ products!inner(
+ id,
+ name_ar,
+ name_en,
+ slug,
+ category,
+ brand,
+ model,
+ image_urls,
+ is_active
+ ),
+ stores(
+ id,
+ slug,
+ name_ar,
+ name_en,
+ logo_url
+ )
+ `,
+ { count: 'exact' },
+ )
+ .eq('store_id', store.id)
+ .eq('products.is_active', true);
+
+ if (categoryFilter !== 'all') {
+ query = query.eq('products.category', categoryFilter);
+ }
+ if (inStockOnly) {
+ query = query.neq('availability', 'out_of_stock');
+ }
+ if (searchQuery) {
+ // PostgREST-escape any * or commas in the query so the or() string
+ // doesn't break. Spaces are fine inside ilike patterns.
+ const safe = searchQuery.replace(/[*,()]/g, ' ');
+ query = query.or(
+ `name_en.ilike.*${safe}*,name_ar.ilike.*${safe}*,brand.ilike.*${safe}*,model.ilike.*${safe}*`,
+ { referencedTable: 'products' },
+ );
+ }
+
+ // Server-side sort. 'discount' is a proxy — PostgREST can't compare
+ // two columns directly, so we surface rows with a non-null
+ // original_price ordered by that value descending (highest-priced
+ // original = biggest potential saving).
+ if (sortBy === 'price_asc') {
+ query = query.order('current_price', { ascending: true });
+ } else if (sortBy === 'price_desc') {
+ query = query.order('current_price', { ascending: false });
+ } else if (sortBy === 'name') {
+ query = query.order(locale === 'ar' ? 'name_ar' : 'name_en', {
+ ascending: true,
+ referencedTable: 'products',
+ });
+ } else if (sortBy === 'discount') {
+ query = query
+ .not('original_price', 'is', null)
+ .order('original_price', { ascending: false });
+ } else {
+ // recommended: availability asc ('in_stock' < 'limited_stock' < 'out_of_stock'
+ // alphabetically), then cheapest first as a tiebreaker.
+ query = query
+ .order('availability', { ascending: true })
+ .order('current_price', { ascending: true });
+ }
+
+ const { data, count, error: pageError } = await query.range(from, to);
+ if (pageError) throw pageError;
+ if (cancelled) return;
+
+ const records = (data ?? []) as unknown as ProductStoreResponse[];
+ const mapped: StoreProduct[] = records
+ .filter((r) => r.products && r.stores)
+ .map((record) => ({
+ id: record.products!.id,
+ name_ar: record.products!.name_ar,
+ name_en: record.products!.name_en,
+ slug: record.products!.slug,
+ category: record.products!.category,
+ brand: record.products!.brand,
+ model: record.products!.model,
+ image_urls: record.products!.image_urls,
+ product_stores: [
+ {
+ id: record.id,
+ current_price: record.current_price,
+ original_price: record.original_price,
+ availability: record.availability,
+ product_url: record.product_url,
+ affiliate_url: record.affiliate_url,
+ stores: {
+ id: record.stores!.id,
+ slug: record.stores!.slug,
+ name_ar: record.stores!.name_ar,
+ name_en: record.stores!.name_en,
+ logo_url: record.stores!.logo_url,
+ },
+ },
+ ],
+ }));
+
+ setProducts(mapped);
+ setTotalCount(count ?? 0);
+ } catch (err) {
+ if (cancelled) return;
+ console.error('Error fetching store products page:', err);
+ setProducts([]);
+ setTotalCount(0);
+ } finally {
+ if (!cancelled) setProductsLoading(false);
+ }
+ }
+
+ fetchPage();
+
+ return () => {
+ cancelled = true;
+ };
+ }, [store, searchQuery, categoryFilter, sortBy, inStockOnly, currentPage, locale]);
 
  const storeName = useMemo(() => {
  if (!store) return '';
@@ -420,87 +527,11 @@ export default function StoreDetailClient() {
  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
  }, [pathname, searchQuery, categoryFilter, sortBy, inStockOnly, currentPage, router]);
 
- // Unique categories that this store actually carries, with counts. Drives
- // the filter chip row — no dead chips for categories the store doesn't sell.
- const categoriesInCatalog = useMemo(() => {
- const counts = new Map<string, number>();
- products.forEach((p) => {
- if (!p.category) return;
- counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
- });
- return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
- }, [products]);
-
- // Filter → sort pipeline. All client-side since the whole catalog is in memory.
- const filteredProducts = useMemo(() => {
- const q = searchQuery.trim().toLowerCase();
- let result = products.filter((product) => {
- if (categoryFilter !== 'all' && product.category !== categoryFilter) return false;
- if (inStockOnly) {
- const hasStock = product.product_stores.some((ps) => ps.availability !== 'out_of_stock');
- if (!hasStock) return false;
- }
- if (q) {
- const haystack = [product.name_ar, product.name_en, product.brand, product.model]
- .filter(Boolean)
- .join(' ')
- .toLowerCase();
- if (!haystack.includes(q)) return false;
- }
- return true;
- });
-
- const bestPrice = (p: StoreProduct): number => {
- const prices = p.product_stores
- .filter((ps) => ps.current_price > 0)
- .map((ps) => ps.current_price);
- return prices.length > 0 ? Math.min(...prices) : Number.POSITIVE_INFINITY;
- };
- const bestSaving = (p: StoreProduct): number => {
- const gains = p.product_stores
- .filter((ps) => ps.original_price && ps.current_price && ps.original_price > ps.current_price)
- .map((ps) => (ps.original_price as number) - ps.current_price);
- return gains.length > 0 ? Math.max(...gains) : 0;
- };
- const isInStock = (p: StoreProduct): boolean =>
- p.product_stores.some((ps) => ps.availability !== 'out_of_stock');
-
- const sorted = [...result];
- if (sortBy === 'price_asc') {
- sorted.sort((a, b) => bestPrice(a) - bestPrice(b));
- } else if (sortBy === 'price_desc') {
- sorted.sort((a, b) => bestPrice(b) - bestPrice(a));
- } else if (sortBy === 'name') {
- sorted.sort((a, b) =>
- (locale === 'ar' ? a.name_ar : a.name_en).localeCompare(
- locale === 'ar' ? b.name_ar : b.name_en,
- locale,
- ),
- );
- } else if (sortBy === 'discount') {
- sorted.sort((a, b) => bestSaving(b) - bestSaving(a));
- } else {
- // recommended: in-stock first, then largest saving, then cheapest as tiebreaker.
- sorted.sort((a, b) => {
- const stock = Number(isInStock(b)) - Number(isInStock(a));
- if (stock !== 0) return stock;
- const saving = bestSaving(b) - bestSaving(a);
- if (saving !== 0) return saving;
- return bestPrice(a) - bestPrice(b);
- });
- }
- return sorted;
- }, [products, searchQuery, categoryFilter, sortBy, inStockOnly, locale]);
-
- const totalPages = Math.max(1, Math.ceil(filteredProducts.length / STORE_PRODUCTS_PAGE_SIZE));
- const paginatedProducts = useMemo(
- () =>
- filteredProducts.slice(
- (currentPage - 1) * STORE_PRODUCTS_PAGE_SIZE,
- currentPage * STORE_PRODUCTS_PAGE_SIZE,
- ),
- [filteredProducts, currentPage],
- );
+ // Server-provided total determines paging. The category chips come from a
+ // dedicated one-time scan done at mount; they don't depend on the current
+ // page so they don't collapse when the user filters or paginates.
+ const categoriesInCatalog = categoryCounts;
+ const totalPages = Math.max(1, Math.ceil(totalCount / STORE_PRODUCTS_PAGE_SIZE));
 
  // Compact page list with ellipses. Near the start we show 1 2 3 ... last;
  // near the end we show 1 ... last-2 last-1 last; in the middle we show
@@ -537,16 +568,11 @@ export default function StoreDetailClient() {
  }
  };
 
- // Header stats — derived for the currently filtered view.
- const gridStats = useMemo(() => {
- const prices = filteredProducts
- .flatMap((p) => p.product_stores.map((ps) => ps.current_price))
- .filter((price): price is number => typeof price === 'number' && price > 0);
- if (prices.length === 0) return { cheapest: null, avg: null };
- const cheapest = Math.min(...prices);
- const avg = Math.round(prices.reduce((sum, p) => sum + p, 0) / prices.length);
- return { cheapest, avg };
- }, [filteredProducts]);
+ // Header stats — store-wide (not per-page). Fetched once at mount via a
+ // tiny order-by-price limit-1 query. Dropped the per-filter avg badge
+ // since computing it would require fetching every row in the filtered
+ // set, which defeats the whole point of server-side pagination.
+ const gridStats = storeStats;
 
  const handleReset = () => {
  setSearchInput('');
@@ -557,16 +583,26 @@ export default function StoreDetailClient() {
  setCurrentPage(1);
  };
 
- // Surprise me — random in-stock product from the current filtered set.
- const handleSurpriseMe = useCallback(() => {
- const candidates = filteredProducts.filter((p) =>
- p.product_stores.some((ps) => ps.availability !== 'out_of_stock'),
- );
- const pool = candidates.length > 0 ? candidates : filteredProducts;
- if (pool.length === 0) return;
- const pick = pool[Math.floor(Math.random() * pool.length)];
- router.push(`/${locale}/products/${pick.slug}`);
- }, [filteredProducts, router, locale]);
+ // Surprise me — random in-stock product across the whole store catalog.
+ // Picks a random row offset in the same filter space as the grid so the
+ // surprise respects the user's active category/search narrowing.
+ const handleSurpriseMe = useCallback(async () => {
+ if (!store || totalCount === 0) return;
+ const supabase = getSupabaseBrowserClient();
+ const offset = Math.floor(Math.random() * totalCount);
+ let query = supabase
+ .from('product_stores')
+ .select('products!inner(slug, is_active)')
+ .eq('store_id', store.id)
+ .eq('products.is_active', true);
+ if (categoryFilter !== 'all') query = query.eq('products.category', categoryFilter);
+ // Always prefer in-stock for the surprise — picking out-of-stock would
+ // be a dud landing.
+ query = query.neq('availability', 'out_of_stock');
+ const { data } = await query.range(offset, offset);
+ const pickedSlug = (data?.[0] as any)?.products?.slug;
+ if (pickedSlug) router.push(`/${locale}/products/${pickedSlug}`);
+ }, [store, totalCount, categoryFilter, inStockOnly, router, locale]);
 
  const handleAddToCompare = (productId: string) => {
  if (typeof window === 'undefined') return;
@@ -917,11 +953,11 @@ export default function StoreDetailClient() {
  </div>
  <div className="flex flex-wrap items-center gap-2">
  <Badge variant="outline" className="text-sm">
- {filteredProducts.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
- {products.length !== filteredProducts.length && (
+ {totalCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ {storeStats.totalProducts !== totalCount && (
  <>
  {' / '}
- {products.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ {storeStats.totalProducts.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
  </>
  )}
  {' '}
@@ -942,22 +978,12 @@ export default function StoreDetailClient() {
  />
  </Badge>
  )}
- {gridStats.avg !== null && gridStats.avg !== gridStats.cheapest && (
- <Badge variant="outline" className="text-sm gap-1">
- <span className="opacity-70">{locale === 'ar' ? 'المتوسط' : 'avg'}</span>
- <Price
- amount={gridStats.avg}
- className="text-sm font-semibold tabular-nums"
- symbolClassName="w-3 h-3"
- />
- </Badge>
- )}
  <Button
  type="button"
  variant="outline"
  size="sm"
  onClick={handleSurpriseMe}
- disabled={filteredProducts.length === 0}
+ disabled={totalCount === 0 || productsLoading}
  title={locale === 'ar' ? 'افتح منتجاً عشوائياً' : 'Open a random product'}
  className="gap-1"
  >
@@ -1072,25 +1098,38 @@ export default function StoreDetailClient() {
  )}
  </div>
 
- {filteredProducts.length === 0 ? (
+ {productsLoading ? (
+ <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+ {Array.from({ length: STORE_PRODUCTS_PAGE_SIZE }).map((_, i) => (
+ <div
+ key={i}
+ className="space-y-2 rounded-xl border border-[color:var(--color-outline-variant)] p-3"
+ >
+ <Skeleton className="aspect-square w-full rounded-lg" />
+ <Skeleton className="h-4 w-3/4" />
+ <Skeleton className="h-3 w-1/2" />
+ </div>
+ ))}
+ </div>
+ ) : products.length === 0 ? (
  <EmptyState
  icon={<Package className="h-12 w-12" />}
  title={
- products.length === 0
+ storeStats.totalProducts === 0
  ? t('store.noProductsTitle')
  : locale === 'ar'
  ? 'لا توجد نتائج'
  : 'No matching products'
  }
  description={
- products.length === 0
+ storeStats.totalProducts === 0
  ? t('store.noProductsDescription')
  : locale === 'ar'
  ? 'جرّب تعديل البحث أو إزالة الفلاتر.'
  : 'Try adjusting your search or clearing filters.'
  }
  action={
- products.length > 0
+ storeStats.totalProducts > 0
  ? {
  label: locale === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset filters',
  onClick: handleReset,
@@ -1101,7 +1140,7 @@ export default function StoreDetailClient() {
  ) : (
  <>
  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
- {paginatedProducts.map((product) => (
+ {products.map((product) => (
  <ProductCard
  key={product.id}
  product={product}
