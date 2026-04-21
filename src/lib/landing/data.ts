@@ -37,6 +37,8 @@ export interface LandingData {
   stores: LandingStore[];
   categoryCounts: Record<string, number>;
   totalSavings: number;
+  totalStores: number;
+  totalProducts: number;
 }
 
 interface ProductStoreRow {
@@ -70,7 +72,7 @@ interface ProductWithStoresRow {
 export async function getLandingData(): Promise<LandingData> {
   const supabase = createServerClient();
 
-  const [dealsRes, featuredRes, storesRes, categoryRes] = await Promise.all([
+  const [dealsRes, featuredRes, storesRes, categoryRes, totalStoresRes, totalProductsRes] = await Promise.all([
     // Top deals — most recent products with a real discount.
     supabase
       .from('products')
@@ -109,6 +111,16 @@ export async function getLandingData(): Promise<LandingData> {
     supabase
       .from('products')
       .select('category', { head: false })
+      .eq('is_active', true),
+
+    supabase
+      .from('stores')
+      .select('slug', { count: 'exact', head: true })
+      .eq('is_active', true),
+
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
       .eq('is_active', true),
   ]);
 
@@ -192,5 +204,13 @@ export async function getLandingData(): Promise<LandingData> {
     return acc;
   }, 0);
 
-  return { topDeals, featured: featuredList, stores, categoryCounts, totalSavings };
+  return {
+    topDeals,
+    featured: featuredList,
+    stores,
+    categoryCounts,
+    totalSavings,
+    totalStores: totalStoresRes.count ?? stores.length,
+    totalProducts: totalProductsRes.count ?? 0,
+  };
 }

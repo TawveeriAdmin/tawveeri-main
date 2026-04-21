@@ -35,6 +35,8 @@ export default async function Page({
     stores: [],
     categoryCounts: {},
     totalSavings: 0,
+    totalStores: 0,
+    totalProducts: 0,
   }));
 
   return (

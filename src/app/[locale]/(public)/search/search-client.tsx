@@ -732,7 +732,9 @@ export default function SearchClient() {
     const ac = new AbortController();
 
     async function fetchProducts() {
-      if (!debouncedQuery.trim()) {
+      const hasQuery = debouncedQuery.trim().length > 0;
+      const hasCategory = selectedCategory && selectedCategory !== 'all';
+      if (!hasQuery && !hasCategory) {
         setRawProducts([]);
         setLoading(false);
         return;
@@ -1014,8 +1016,8 @@ export default function SearchClient() {
         return null;
       })()}
 
-      {/* ── No-Query State ── */}
-      {!debouncedQuery && !loading && (
+      {/* ── No-Query State ── hidden when browsing by category */}
+      {!debouncedQuery && !loading && (!selectedCategory || selectedCategory === 'all') && (
         <div className="py-8">
           <div className="mx-auto max-w-3xl space-y-8">
             {/* Hero */}
@@ -1141,8 +1143,8 @@ export default function SearchClient() {
         </div>
       )}
 
-      {/* ── Active Search State ── */}
-      {debouncedQuery && (
+      {/* ── Active Search State ── shows when user has a query OR is browsing a category */}
+      {(debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
         <>
           {/* ── Main Content ── */}
           <div className="py-6">
@@ -1247,11 +1249,17 @@ export default function SearchClient() {
                 )}
 
                 {/* No Results */}
-                {!loading && !error && products.length === 0 && debouncedQuery && (
+                {!loading && !error && products.length === 0 && (debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
                   <div className="space-y-6">
                     <EmptyState
                       variant="search"
-                      description={t('search.noResultsFor').replace('{{query}}', debouncedQuery)}
+                      description={
+                        debouncedQuery
+                          ? t('search.noResultsFor').replace('{{query}}', debouncedQuery)
+                          : (locale === 'ar'
+                              ? 'لا توجد منتجات في هذه الفئة حالياً.'
+                              : 'No products in this category yet.')
+                      }
                     />
                     {/* Quick category suggestions */}
                     <div className="flex flex-wrap justify-center gap-2">
