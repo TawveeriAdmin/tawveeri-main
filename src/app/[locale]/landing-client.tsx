@@ -5,24 +5,37 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { LandingData } from '@/lib/landing/data';
+import { cn } from '@/lib/utils';
 
-/**
- * Pick the best available name for the current locale. When the DB column for
- * the active language is empty or carries the other script (common with mixed
- * Amazon SA data that writes Arabic titles into both columns), fall back to
- * the other column. `localize('Blue')` on AR falls through because there are
- * no Arabic characters in the English value.
- */
-function localizeName(name_en: string, name_ar: string, locale: string): string {
-  const isArabic = (s: string) => /[؀-ۿ]/.test(s);
-  const isAscii = (s: string) => /[A-Za-z]/.test(s);
-  if (locale === 'ar') {
-    if (name_ar && isArabic(name_ar)) return name_ar;
-    return name_en || name_ar || '';
+const ARABIC_RE = /[؀-ۿ]/;
+const ASCII_LETTER_RE = /[A-Za-z]/;
+
+/** Returns the name that actually looks like English: ASCII letters present,
+ *  no Arabic characters. Picks from either column since the scraper sometimes
+ *  writes English text into `name_ar` and vice versa. Returns null when the
+ *  product has no English-readable name at all. */
+function pickEnglishName(name_en: string, name_ar: string): string | null {
+  for (const value of [name_en, name_ar]) {
+    if (value && ASCII_LETTER_RE.test(value) && !ARABIC_RE.test(value)) return value;
   }
-  if (name_en && isAscii(name_en) && !isArabic(name_en)) return name_en;
-  if (name_ar && isAscii(name_ar) && !isArabic(name_ar)) return name_ar;
-  return name_en || name_ar || '';
+  return null;
+}
+
+/** Symmetric for Arabic — returns null when nothing readable. */
+function pickArabicName(name_en: string, name_ar: string): string | null {
+  for (const value of [name_ar, name_en]) {
+    if (value && ARABIC_RE.test(value)) return value;
+  }
+  return null;
+}
+
+/** Strict locale-aware name picker. Returns null when the product has no
+ *  viable name in the requested language — callers should then skip the
+ *  item rather than showing the wrong language. */
+function localizeName(name_en: string, name_ar: string, locale: string): string | null {
+  return locale === 'ar'
+    ? pickArabicName(name_en, name_ar)
+    : pickEnglishName(name_en, name_ar);
 }
 import {
   Search,
@@ -69,24 +82,33 @@ import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
  * only renders keys that actually have products, so adding an unused entry is
  * harmless.
  */
-const CATEGORY_META: Record<string, { icon: typeof Smartphone; labelAr: string; labelEn: string }> = {
-  smartphone:    { icon: Smartphone,    labelAr: 'الهواتف',          labelEn: 'Phones' },
-  laptop:        { icon: Laptop,        labelAr: 'اللابتوبات',       labelEn: 'Laptops' },
-  tablet:        { icon: Tablet,        labelAr: 'الأجهزة اللوحية',   labelEn: 'Tablets' },
-  tv:            { icon: Tv,            labelAr: 'التلفزيونات',      labelEn: 'TVs' },
-  audio:         { icon: Headphones,    labelAr: 'الصوتيات',         labelEn: 'Audio' },
-  gaming:        { icon: Gamepad2,      labelAr: 'الألعاب',          labelEn: 'Gaming' },
-  camera:        { icon: Camera,        labelAr: 'الكاميرات',        labelEn: 'Cameras' },
-  monitor:       { icon: Monitor,       labelAr: 'الشاشات',          labelEn: 'Monitors' },
-  printer:       { icon: Printer,       labelAr: 'الطابعات',         labelEn: 'Printers' },
-  networking:    { icon: Wifi,          labelAr: 'الشبكات',          labelEn: 'Networking' },
-  smart_home:    { icon: Home,          labelAr: 'المنزل الذكي',     labelEn: 'Smart Home' },
-  wearable:      { icon: Watch,         labelAr: 'الأجهزة القابلة للارتداء', labelEn: 'Wearables' },
-  appliance:     { icon: WashingMachine, labelAr: 'الأجهزة المنزلية', labelEn: 'Appliances' },
-  kitchen:       { icon: CookingPot,    labelAr: 'المطبخ',           labelEn: 'Kitchen' },
-  personal_care: { icon: Sparkle,       labelAr: 'العناية الشخصية',  labelEn: 'Personal Care' },
-  accessories:   { icon: Package,       labelAr: 'الإكسسوارات',      labelEn: 'Accessories' },
-  refrigerator:  { icon: Refrigerator,  labelAr: 'الثلاجات',         labelEn: 'Fridges' },
+interface CategoryMeta {
+  icon: typeof Smartphone;
+  labelAr: string;
+  labelEn: string;
+  /** Curated hero image under `public/images/categories/`. Leave out to fall
+   *  back to the most-viewed DB product image, then the icon. */
+  staticImage?: string;
+}
+
+const CATEGORY_META: Record<string, CategoryMeta> = {
+  smartphone:    { icon: Smartphone,    labelAr: 'الهواتف',          labelEn: 'Phones',         staticImage: '/images/categories/phones.jpg' },
+  laptop:        { icon: Laptop,        labelAr: 'اللابتوبات',       labelEn: 'Laptops',        staticImage: '/images/categories/laptops.webp' },
+  tablet:        { icon: Tablet,        labelAr: 'الأجهزة اللوحية',   labelEn: 'Tablets',        staticImage: '/images/categories/tablets.png' },
+  tv:            { icon: Tv,            labelAr: 'التلفزيونات',      labelEn: 'TVs',            staticImage: '/images/categories/tv.jpg' },
+  audio:         { icon: Headphones,    labelAr: 'الصوتيات',         labelEn: 'Audio',          staticImage: '/images/categories/audio.png' },
+  gaming:        { icon: Gamepad2,      labelAr: 'الألعاب',          labelEn: 'Gaming',         staticImage: '/images/categories/gaming.jpg' },
+  camera:        { icon: Camera,        labelAr: 'الكاميرات',        labelEn: 'Cameras',        staticImage: '/images/categories/cameras.webp' },
+  monitor:       { icon: Monitor,       labelAr: 'الشاشات',          labelEn: 'Monitors',       staticImage: '/images/categories/monitors.jpg' },
+  printer:       { icon: Printer,       labelAr: 'الطابعات',         labelEn: 'Printers',       staticImage: '/images/categories/printers.png' },
+  networking:    { icon: Wifi,          labelAr: 'الشبكات',          labelEn: 'Networking',     staticImage: '/images/categories/networking.jpg' },
+  smart_home:    { icon: Home,          labelAr: 'المنزل الذكي',     labelEn: 'Smart Home',     staticImage: '/images/categories/smart_home.png' },
+  wearable:      { icon: Watch,         labelAr: 'الأجهزة القابلة للارتداء', labelEn: 'Wearables',      staticImage: '/images/categories/wearables.jpg' },
+  appliance:     { icon: WashingMachine, labelAr: 'الأجهزة المنزلية', labelEn: 'Appliances',    staticImage: '/images/categories/appliances.jpeg' },
+  kitchen:       { icon: CookingPot,    labelAr: 'المطبخ',           labelEn: 'Kitchen',        staticImage: '/images/categories/kitchen.webp' },
+  personal_care: { icon: Sparkle,       labelAr: 'العناية الشخصية',  labelEn: 'Personal Care',  staticImage: '/images/categories/personal_care.jpeg' },
+  accessories:   { icon: Package,       labelAr: 'الإكسسوارات',      labelEn: 'Accessories',    staticImage: '/images/categories/accessories.jpeg' },
+  refrigerator:  { icon: Refrigerator,  labelAr: 'الثلاجات',         labelEn: 'Fridges',        staticImage: '/images/categories/fridges.jpg' },
 };
 
 
@@ -97,9 +119,9 @@ interface LandingPageClientProps {
 export default function LandingPageClient({ data }: LandingPageClientProps = {}) {
   const safeData: LandingData = data ?? {
     topDeals: [],
-    featured: [],
     stores: [],
     categoryCounts: {},
+    categoryImages: {},
     totalSavings: 0,
     totalStores: 0,
     totalProducts: 0,
@@ -109,8 +131,7 @@ export default function LandingPageClient({ data }: LandingPageClientProps = {})
       <Hero totalStores={safeData.totalStores} totalProducts={safeData.totalProducts} />
       <CategoryRail categoryCounts={safeData.categoryCounts} />
       <PriceDropTicker deals={safeData.topDeals} />
-      <FeaturedComparisons featured={safeData.featured} />
-      <PopularCategories categoryCounts={safeData.categoryCounts} />
+      <PopularCategories categoryCounts={safeData.categoryCounts} categoryImages={safeData.categoryImages} />
       <FeaturedStores stores={safeData.stores} />
       <ValueProps />
       <SavingsStat
@@ -127,7 +148,7 @@ export default function LandingPageClient({ data }: LandingPageClientProps = {})
 function rankCategories(
   counts: Record<string, number>,
   limit: number,
-): Array<{ slug: string; count: number; icon: typeof Smartphone; labelAr: string; labelEn: string }> {
+): Array<{ slug: string; count: number } & CategoryMeta> {
   return Object.entries(counts)
     .filter(([slug, c]) => c > 0 && CATEGORY_META[slug])
     .sort((a, b) => b[1] - a[1])
@@ -259,7 +280,7 @@ function CategoryRail({ categoryCounts }: { categoryCounts: Record<string, numbe
   return (
     <section className="border-b border-[color:var(--color-outline-variant)]/50">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
-        <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory">
+        <div className="flex flex-wrap justify-center gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden overflow-x-auto lg:overflow-visible snap-x snap-mandatory">
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
@@ -290,12 +311,21 @@ function PriceDropTicker({ deals }: { deals: LandingData['topDeals'] }) {
   const { isRTL, locale } = useLocale();
   const items = useMemo(
     () =>
-      deals.map((d) => ({
-        product: localizeName(d.name_en, d.name_ar, locale),
-        drop: Math.round(d.savings),
-        store: isRTL ? d.store_name_ar : d.store_name_en,
-        productSlug: d.product_slug,
-      })),
+      deals
+        .map((d) => {
+          const product = localizeName(d.name_en, d.name_ar, locale);
+          if (!product) return null;
+          return {
+            product,
+            drop: Math.round(d.savings),
+            currentPrice: Math.round(d.current_price),
+            originalPrice: Math.round(d.original_price),
+            imageUrl: d.image_url,
+            store: isRTL ? d.store_name_ar : d.store_name_en,
+            productSlug: d.product_slug,
+          };
+        })
+        .filter((x): x is Exclude<typeof x, null> => x !== null),
     [deals, isRTL, locale],
   );
   const [index, setIndex] = useState(0);
@@ -304,223 +334,192 @@ function PriceDropTicker({ deals }: { deals: LandingData['topDeals'] }) {
     if (items.length <= 1) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % items.length);
-    }, 3500);
+    }, 5000);
     return () => clearInterval(timer);
   }, [items.length]);
 
-  // No real deals → don't show a ticker at all.
+  // No real deals → don't show the banner at all.
   if (!items.length) return null;
 
   const current = items[index % items.length];
 
   return (
-    <section className="mx-auto w-full max-w-[1600px] px-4 md:px-8 mt-4">
-      <div className="rounded-[var(--radius-md)] border border-[var(--brand-gold)]/40 bg-[var(--brand-gold)]/8 backdrop-blur-sm">
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <span className="inline-flex items-center gap-1.5 t-caption font-bold text-[var(--brand-gold-dark)] shrink-0">
-            <TrendingDown className="h-3.5 w-3.5" />
+    <section className="mx-auto w-full max-w-[1600px] px-4 md:px-8 mt-8">
+      <Link
+        key={index}
+        href={`/${locale}/products/${current.productSlug}`}
+        className="group relative grid grid-cols-[120px_1fr_auto] items-center gap-5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--brand-gold)]/40 bg-gradient-to-br from-[var(--brand-gold)]/20 via-[var(--brand-gold)]/10 to-transparent p-4 transition-all hover:shadow-[var(--elevation-2)] hover:border-[var(--brand-gold)]/70 sm:grid-cols-[160px_1fr_auto] sm:gap-6 sm:p-5"
+      >
+        {/* Decorative blurred echo of the image in the background */}
+        {current.imageUrl && (
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <Image
+              src={current.imageUrl}
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover scale-110 blur-3xl opacity-20"
+              unoptimized
+            />
+          </div>
+        )}
+
+        {/* Product image */}
+        <div className="relative h-24 w-full overflow-hidden rounded-[var(--radius-md)] bg-[color:var(--color-surface)] sm:h-28">
+          {current.imageUrl ? (
+            <Image
+              src={current.imageUrl}
+              alt=""
+              fill
+              sizes="(min-width: 640px) 160px, 120px"
+              className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[var(--brand-gold-dark)]">
+              <TrendingDown className="h-8 w-8" />
+            </div>
+          )}
+          <span className="absolute top-1.5 start-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--brand-gold)] px-2 py-0.5 t-caption font-bold text-[var(--brand-dark-text)] shadow-[var(--elevation-1)]">
+            <TrendingDown className="h-3 w-3" />
             {isRTL ? 'انخفاض' : 'Drop'}
           </span>
-          <span aria-hidden className="h-4 w-px bg-[var(--brand-gold)]/30 shrink-0" />
-          <div key={index} className="flex flex-1 min-w-0 items-center justify-center overflow-hidden leading-none">
-            <Link
-              href={`/${locale}/products/${current.productSlug}`}
-              className="t-small text-on-surface truncate text-center my-0 animate-in fade-in duration-500 hover:underline"
-            >
-              <span dir="auto" className="font-semibold">{current.product}</span>
-              <span className="text-on-surface-variant mx-2">·</span>
-              <span className="inline-flex items-center gap-1 text-[var(--brand-gold-dark)] dark:text-[var(--brand-gold)] font-bold">
-                {isRTL ? 'وفّر' : 'Save'} {current.drop}
-                <SARSymbol className="w-3 h-3 fill-current" />
-              </span>
-              <span className="text-on-surface-variant mx-2">·</span>
-              <span className="text-on-surface-variant">{current.store}</span>
-            </Link>
-          </div>
-          <Link
-            href={`/${locale}/deals`}
-            className="hidden md:inline-flex items-center gap-1 shrink-0 t-small font-semibold text-[var(--brand-green-dark)] dark:text-[var(--brand-green)] hover:text-[var(--brand-gold-dark)] transition-colors"
-          >
-            {isRTL ? 'عرض الكل' : 'See all'}
-            {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Link>
         </div>
-      </div>
-    </section>
-  );
-}
 
-/* ───────────────────────── Featured comparisons ───────────────────────── */
-
-const FEATURED_GRADIENTS = [
-  'from-[var(--brand-green-dark)] to-[var(--brand-green)]',
-  'from-[var(--brand-green)] to-[var(--brand-gold)]',
-  'from-[var(--brand-gold-dark)] to-[var(--brand-gold)]',
-  'from-[var(--brand-green-dark)] to-[var(--brand-gold-dark)]',
-  'from-[var(--brand-gold)] to-[var(--brand-green)]',
-  'from-[var(--brand-green)] to-[var(--brand-green-dark)]',
-] as const;
-
-interface FeaturedItem {
-  title: string;
-  storeCount: number;
-  savings: number;
-  bestPrice: number;
-  href: string;
-  imageUrl: string | null;
-}
-
-function FeaturedComparisons({ featured }: { featured: LandingData['featured'] }) {
-  const { isRTL, locale } = useLocale();
-  const items: FeaturedItem[] = featured.length
-    ? featured.slice(0, 6).map((f) => ({
-        title: localizeName(f.name_en, f.name_ar, locale),
-        storeCount: f.store_count,
-        savings: Math.round(f.max_savings),
-        bestPrice: Math.round(f.best_price),
-        href: `/products/${f.product_slug}`,
-        imageUrl: f.image_url,
-      }))
-    : [];
-
-  if (!items.length) return null;
-
-  return (
-    <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="t-h2 text-on-surface">
-            {isRTL ? 'مختارات المحرر' : "Editor's picks"}
-          </h2>
-          <p className="mt-2 t-body text-on-surface-variant max-w-lg">
-            {isRTL
-              ? 'منتجات اختارها فريقنا بعناية — صفحة تفاصيل واحدة، أسعار من كل المتاجر.'
-              : "Hand-picked products worth comparing — one page, every store's price."}
+        {/* Body */}
+        <div className="relative min-w-0">
+          <p
+            dir="auto"
+            className="truncate t-body-strong text-on-surface sm:text-[17px] leading-tight"
+            title={current.product}
+          >
+            {current.product}
           </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 t-small text-on-surface-variant">
+            <span className="inline-flex items-center gap-1 font-bold text-[var(--brand-gold-dark)] dark:text-[var(--brand-gold)]">
+              {isRTL ? 'وفّر' : 'Save'} {current.drop.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+              <SARSymbol className="w-3 h-3 fill-current" />
+            </span>
+            <span aria-hidden className="inline-block h-1 w-1 rounded-full bg-on-surface-variant/40" />
+            <span className="inline-flex items-baseline gap-1">
+              <span className="font-semibold text-on-surface">{current.currentPrice.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}</span>
+              <SARSymbol className="w-2.5 h-2.5 fill-current" />
+              <span className="line-through text-on-surface-variant">
+                {current.originalPrice.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+              </span>
+            </span>
+            <span aria-hidden className="inline-block h-1 w-1 rounded-full bg-on-surface-variant/40" />
+            <span className="text-on-surface-variant">{current.store}</span>
+          </div>
         </div>
-        <Link
-          href={`/${locale}/deals`}
-          className="hidden md:inline-flex items-center gap-1 t-body-strong text-[var(--brand-green-dark)] hover:text-[var(--brand-green)]"
-        >
-          {isRTL ? 'كل العروض' : 'All deals'}
+
+        {/* See-all affordance */}
+        <span className="relative hidden shrink-0 items-center gap-1 self-center t-small font-semibold text-[var(--brand-green-dark)] dark:text-[var(--brand-green)] sm:inline-flex">
+          {isRTL ? 'عرض الكل' : 'See all'}
           {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </Link>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.slice(0, 6).map((item) => (
-          <Link
-            key={`${item.href}`}
-            href={`/${locale}${item.href}`}
-            className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] transition-all hover:border-[var(--brand-green)] hover:shadow-[var(--elevation-2)] hover:-translate-y-0.5"
-          >
-            {/* Image area */}
-            <div className="relative aspect-[4/3] w-full overflow-hidden bg-[color:var(--color-surface-container-lowest)]">
-              {item.imageUrl ? (
-                <Image
-                  src={item.imageUrl}
-                  alt={item.title}
-                  fill
-                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="object-contain p-6 transition-transform duration-500 group-hover:scale-105"
-                  unoptimized
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-on-surface-variant/40">
-                  <Store className="h-10 w-10" strokeWidth={1.5} />
-                </div>
-              )}
-              {item.savings > 0 && (
-                <span className="absolute top-3 start-3 inline-flex items-center gap-1 rounded-full bg-[var(--brand-gold)] px-2.5 py-1 t-caption font-bold text-[var(--brand-dark-text)] shadow-[var(--elevation-1)]">
-                  {isRTL ? 'وفّر' : 'Save'} {item.savings}
-                  <SARSymbol className="w-2.5 h-2.5 fill-current" />
-                </span>
-              )}
-            </div>
-
-            {/* Body */}
-            <div className="flex flex-1 flex-col gap-3 p-4">
-              <h3
-                dir="auto"
-                className="text-sm font-semibold text-on-surface leading-snug text-start"
-                style={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  wordBreak: 'break-word',
-                  // Reserve space for exactly 2 lines so cards stay the same height.
-                  minHeight: 'calc(1.4em * 2)',
-                }}
-                title={item.title}
-              >
-                {item.title}
-              </h3>
-              <div className="mt-auto flex items-end justify-between gap-2">
-                <div>
-                  <p className="t-caption text-on-surface-variant">
-                    {isRTL ? 'أفضل سعر' : 'Best price'}
-                  </p>
-                  <p className="t-h4 font-black text-on-surface inline-flex items-baseline gap-1.5">
-                    {item.bestPrice.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
-                    <SARSymbol className="w-3.5 h-3.5 fill-current" />
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[var(--brand-green)]/30 bg-[var(--brand-green)]/8 px-2.5 py-1 t-small font-semibold text-[var(--brand-green-dark)]">
-                  <Store className="h-3 w-3" />
-                  {item.storeCount}
-                </span>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+        </span>
+      </Link>
     </section>
   );
 }
+
 
 /* ───────────────────────── Popular categories ───────────────────────── */
 
-function PopularCategories({ categoryCounts }: { categoryCounts: Record<string, number> }) {
+/**
+ * Fixed display order for the category directory. Keep this list as the
+ * editorial order of the section — it does NOT change based on DB counts.
+ * Any key added to CATEGORY_META but not listed here won't render.
+ */
+const CATEGORY_DISPLAY_ORDER: string[] = [
+  'smartphone',
+  'laptop',
+  'tablet',
+  'tv',
+  'audio',
+  'gaming',
+  'camera',
+  'monitor',
+  'wearable',
+  'networking',
+  'smart_home',
+  'printer',
+  'appliance',
+  'kitchen',
+  'refrigerator',
+  'personal_care',
+  'accessories',
+];
+
+function PopularCategories({
+  categoryCounts,
+  categoryImages,
+}: {
+  categoryCounts: Record<string, number>;
+  categoryImages: Record<string, string>;
+}) {
   const { isRTL, locale } = useLocale();
-  const categories = rankCategories(categoryCounts, 8);
-  if (!categories.length) return null;
+  const categories = CATEGORY_DISPLAY_ORDER
+    .filter((slug) => CATEGORY_META[slug])
+    .map((slug) => ({ slug, count: categoryCounts[slug] ?? 0, ...CATEGORY_META[slug] }));
 
   return (
-    <section className="bg-[color:var(--color-surface-container)]/50">
+    <section className="border-t border-[color:var(--color-outline-variant)]/40">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
         <h2 className="t-h2 text-on-surface mb-2">
-          {isRTL ? 'فئات شائعة' : 'Popular categories'}
+          {isRTL ? 'تسوّق حسب الفئة' : 'Shop by category'}
         </h2>
         <p className="t-body text-on-surface-variant mb-8 max-w-lg">
           {isRTL
-            ? 'الفئات الأكثر توفرًا حسب كتالوجنا المُحدّث.'
-            : 'Ranked by live product counts in our catalog.'}
+            ? 'تصفّح كل فئات المنتجات المدعومة في توفيري.'
+            : 'Browse every product category we cover.'}
         </p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
           {categories.map((cat) => {
             const Icon = cat.icon;
-            const countLabel = isRTL
-              ? `${cat.count.toLocaleString('ar-SA')} منتج`
-              : `${cat.count.toLocaleString('en-US')} products`;
+            const countLabel =
+              cat.count > 0
+                ? (isRTL
+                    ? `${cat.count.toLocaleString('ar-SA')} منتج`
+                    : `${cat.count.toLocaleString('en-US')} products`)
+                : (isRTL ? 'تصفّح' : 'Browse');
+            // Image priority: curated static asset → most-viewed DB product image → icon fallback
+            const imageUrl = cat.staticImage ?? categoryImages[cat.slug] ?? null;
+            const label = isRTL ? cat.labelAr : cat.labelEn;
             return (
               <Link
                 key={cat.slug}
                 href={`/${locale}/search?category=${cat.slug}`}
-                className="group flex flex-col items-start gap-3 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-5 transition-all hover:border-[var(--brand-green)] hover:shadow-[var(--elevation-2)] hover:-translate-y-0.5"
+                className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] transition-all hover:border-[var(--brand-green)] hover:shadow-[var(--elevation-1)]"
               >
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-green)]/10 text-[var(--brand-green-dark)] dark:text-[var(--brand-green)] transition-colors group-hover:bg-[var(--brand-gold)]/20 group-hover:text-[var(--brand-gold-dark)]">
-                  <Icon className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <div className="flex flex-col">
-                  <span className="t-body-strong text-on-surface">
-                    {isRTL ? cat.labelAr : cat.labelEn}
+                {/* Decorative blurred image — purely visual identity, no text overlay */}
+                <div className="relative h-14 w-full overflow-hidden bg-[color:var(--color-surface-container-lowest)]">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt=""
+                      aria-hidden
+                      fill
+                      sizes="(min-width: 1280px) 12vw, (min-width: 1024px) 17vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover scale-110 blur-sm opacity-75 transition-transform duration-500 group-hover:scale-125"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-[var(--brand-green)]/10" aria-hidden />
+                  )}
+                </div>
+                {/* Clean label panel */}
+                <div className="flex items-center gap-2 p-2.5">
+                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-green)]/10 text-[var(--brand-green-dark)]">
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </span>
-                  <span className="t-small text-on-surface-variant group-hover:text-[var(--brand-green-dark)]">
-                    {countLabel}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-on-surface truncate leading-tight">{label}</p>
+                    <p className="text-[10px] text-on-surface-variant group-hover:text-[var(--brand-green-dark)] leading-tight">
+                      {countLabel}
+                    </p>
+                  </div>
                 </div>
               </Link>
             );
@@ -539,7 +538,8 @@ function FeaturedStores({ stores }: { stores: LandingData['stores'] }) {
   if (!list.length) return null;
 
   return (
-    <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+    <section className="bg-[color:var(--color-surface-container-lowest)] border-t border-[color:var(--color-outline-variant)]/40">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <h2 className="t-h2 text-on-surface">
@@ -586,6 +586,7 @@ function FeaturedStores({ stores }: { stores: LandingData['stores'] }) {
           );
         })}
       </div>
+      </div>
     </section>
   );
 }
@@ -607,7 +608,7 @@ function ValueProps() {
       ];
 
   return (
-    <section className="bg-[color:var(--color-surface-container-low)]">
+    <section className="border-t border-[color:var(--color-outline-variant)]/40">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
         <div className="grid gap-6 md:grid-cols-3">
           {props.map((p) => {
@@ -676,7 +677,8 @@ function SavingsStat({
     : null;
 
   return (
-    <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
+    <section className="border-t border-[color:var(--color-outline-variant)]/40 bg-[color:var(--color-surface-container-lowest)]">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
       <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--brand-green-dark)] via-[var(--brand-green)] to-[var(--brand-green-dark)] p-10 md:p-14 text-white">
         <div
           aria-hidden
@@ -704,6 +706,7 @@ function SavingsStat({
               : `The sum of original-vs-current price gaps on discounted items${storesText && productsText ? `, across ${storesText} and ${productsText}` : ''}.`}
           </p>
         </div>
+      </div>
       </div>
     </section>
   );

@@ -34,6 +34,7 @@ export default async function Page({
     featured: [],
     stores: [],
     categoryCounts: {},
+    categoryImages: {},
     totalSavings: 0,
     totalStores: 0,
     totalProducts: 0,

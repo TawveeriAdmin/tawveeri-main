@@ -1,11 +1,26 @@
 import { createServerClient } from '@/lib/database';
 
+/**
+ * All category enum values (migrations 01 + 18). Kept in sync with
+ * the UI's CATEGORY_META in `landing-client.tsx`. Used to issue one
+ * parallel COUNT query per bucket so we don't hit Supabase's 1,000-row
+ * SELECT cap when the catalog is large.
+ */
+const KNOWN_CATEGORIES = [
+  'smartphone', 'laptop', 'tablet', 'tv', 'audio', 'camera', 'gaming',
+  'accessories', 'monitor', 'printer', 'networking', 'smart_home',
+  'wearable', 'appliance', 'kitchen', 'personal_care', 'refrigerator',
+] as const;
+
 export interface LandingDeal {
   product_id: string;
   product_slug: string;
   name_ar: string;
   name_en: string;
+  image_url: string | null;
   savings: number;
+  current_price: number;
+  original_price: number;
   store_slug: string;
   store_name_ar: string;
   store_name_en: string;
@@ -36,6 +51,8 @@ export interface LandingData {
   featured: LandingFeatured[];
   stores: LandingStore[];
   categoryCounts: Record<string, number>;
+  /** Representative image (from the most-viewed product) for each category. */
+  categoryImages: Record<string, string>;
   totalSavings: number;
   totalStores: number;
   totalProducts: number;
@@ -72,7 +89,15 @@ interface ProductWithStoresRow {
 export async function getLandingData(): Promise<LandingData> {
   const supabase = createServerClient();
 
-  const [dealsRes, featuredRes, storesRes, categoryRes, totalStoresRes, totalProductsRes] = await Promise.all([
+  const [
+    dealsRes,
+    featuredRes,
+    storesRes,
+    categoryRes,
+    totalStoresRes,
+    totalProductsRes,
+    categoryLeadsRes,
+  ] = await Promise.all([
     // Top deals — most recent products with a real discount.
     supabase
       .from('products')
@@ -107,11 +132,18 @@ export async function getLandingData(): Promise<LandingData> {
       .order('average_rating', { ascending: false, nullsFirst: false })
       .limit(12),
 
-    // Per-category active counts.
-    supabase
-      .from('products')
-      .select('category', { head: false })
-      .eq('is_active', true),
+    // Per-category active counts — server-side COUNT per bucket, run in
+    // parallel to sidestep Supabase's 1,000-row SELECT cap.
+    Promise.all(
+      KNOWN_CATEGORIES.map((cat) =>
+        supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true)
+          .eq('category', cat)
+          .then((res) => [cat, res.count ?? 0] as const),
+      ),
+    ),
 
     supabase
       .from('stores')
@@ -122,6 +154,16 @@ export async function getLandingData(): Promise<LandingData> {
       .from('products')
       .select('id', { count: 'exact', head: true })
       .eq('is_active', true),
+
+    // Most-viewed products (with images) — used to pick a representative
+    // thumbnail for each category bucket below.
+    supabase
+      .from('products')
+      .select('category, image_urls')
+      .eq('is_active', true)
+      .not('image_urls', 'is', null)
+      .order('view_count', { ascending: false })
+      .limit(400),
   ]);
 
   const dealsData: ProductWithStoresRow[] = dealsRes.data ?? [];
@@ -139,7 +181,10 @@ export async function getLandingData(): Promise<LandingData> {
         product_slug: p.slug,
         name_ar: p.name_ar,
         name_en: p.name_en,
+        image_url: p.image_urls?.[0] ?? null,
         savings,
+        current_price: ps.current_price,
+        original_price: ps.original_price,
         store_slug: ps.stores.slug,
         store_name_ar: ps.stores.name_ar,
         store_name_en: ps.stores.name_en,
@@ -178,7 +223,7 @@ export async function getLandingData(): Promise<LandingData> {
       if (b.store_count !== a.store_count) return b.store_count - a.store_count;
       return b.max_savings - a.max_savings;
     })
-    .slice(0, 6);
+    .slice(0, 10);
 
   const stores: LandingStore[] = (storesRes.data ?? []).map((s) => ({
     slug: s.slug,
@@ -189,10 +234,16 @@ export async function getLandingData(): Promise<LandingData> {
     total_reviews: s.total_reviews ?? null,
   }));
 
-  const categoryCounts: Record<string, number> = {};
-  for (const row of categoryRes.data ?? []) {
-    const key = (row as { category: string }).category;
-    categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
+  const categoryCounts: Record<string, number> = Object.fromEntries(categoryRes);
+
+  // Representative image per category — take the first image of the
+  // most-viewed product in each bucket. Works as a live "hero" that rotates
+  // naturally as catalog traffic shifts.
+  const categoryImages: Record<string, string> = {};
+  for (const row of (categoryLeadsRes.data ?? []) as Array<{ category: string; image_urls: string[] | null }>) {
+    if (categoryImages[row.category]) continue;
+    const url = row.image_urls?.[0];
+    if (url) categoryImages[row.category] = url;
   }
 
   // Total savings across all active deals.
@@ -209,6 +260,7 @@ export async function getLandingData(): Promise<LandingData> {
     featured: featuredList,
     stores,
     categoryCounts,
+    categoryImages,
     totalSavings,
     totalStores: totalStoresRes.count ?? stores.length,
     totalProducts: totalProductsRes.count ?? 0,
