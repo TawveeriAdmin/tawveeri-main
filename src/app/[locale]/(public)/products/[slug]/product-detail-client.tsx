@@ -32,6 +32,7 @@ import {
  Share2,
  AlertCircle,
  Eye,
+ X,
 } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
@@ -121,6 +122,33 @@ export default function ProductDetailClient() {
  const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [galleryOpen, setGalleryOpen] = useState(false);
  const [viewCount, setViewCount] = useState<number | null>(null);
+ const [compareIds, setCompareIds] = useState<Set<string>>(() => {
+ if (typeof window === 'undefined') return new Set();
+ try {
+ const raw = window.localStorage.getItem('compare_products');
+ return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+ } catch {
+ return new Set();
+ }
+ });
+
+ // Keep in-compare state in sync with the floating bar / other tabs.
+ useEffect(() => {
+ const sync = () => {
+ try {
+ const raw = window.localStorage.getItem('compare_products');
+ setCompareIds(new Set(raw ? (JSON.parse(raw) as string[]) : []));
+ } catch {
+ setCompareIds(new Set());
+ }
+ };
+ window.addEventListener('compare-products-updated', sync);
+ window.addEventListener('storage', sync);
+ return () => {
+ window.removeEventListener('compare-products-updated', sync);
+ window.removeEventListener('storage', sync);
+ };
+ }, []);
 
  // Track product view on page load
  useEffect(() => {
@@ -451,8 +479,26 @@ export default function ProductDetailClient() {
  const existing: string[] = stored ? JSON.parse(stored) : [];
  const unique = Array.from(new Set(existing));
 
+ // Toggle: if already in compare, remove it (matches search page behavior).
  if (unique.includes(productId)) {
- toast({ title: t('products.added'), description: t('compare.alreadyInCompare') });
+ const next = unique.filter((id) => id !== productId);
+ window.localStorage.setItem('compare_products', JSON.stringify(next));
+ try {
+ const cacheRaw = window.localStorage.getItem('compare_products_cache');
+ const cache: Record<string, unknown> = cacheRaw ? JSON.parse(cacheRaw) : {};
+ delete cache[productId];
+ window.localStorage.setItem('compare_products_cache', JSON.stringify(cache));
+ } catch {
+ // ignore
+ }
+ window.dispatchEvent(new Event('compare-products-updated'));
+ toast({
+ title: locale === 'ar' ? 'تمت الإزالة' : 'Removed',
+ description:
+ locale === 'ar'
+ ? 'تم حذف المنتج من المقارنة.'
+ : 'Removed from your compare list.',
+ });
  return;
  }
  if (unique.length >= 4) {
@@ -463,17 +509,23 @@ export default function ProductDetailClient() {
  const next = [productId, ...unique].slice(0, 4);
  window.localStorage.setItem('compare_products', JSON.stringify(next));
 
- // Seed cache so the floating bar renders without a DB round-trip.
- if (product) {
+ // Seed cache so the floating bar renders without a DB round-trip. Use the
+ // current product when available, otherwise pull the matching related
+ // product so the bar can render its thumbnail immediately.
+ const sourceProduct =
+ product?.id === productId
+ ? product
+ : relatedProducts.find((rp) => rp.id === productId);
+ if (sourceProduct) {
  try {
  const cacheRaw = window.localStorage.getItem('compare_products_cache');
  const cache: Record<string, unknown> = cacheRaw ? JSON.parse(cacheRaw) : {};
  cache[productId] = {
- id: product.id,
- name_ar: product.name_ar,
- name_en: product.name_en,
- slug: product.slug,
- image_urls: product.image_urls,
+ id: sourceProduct.id,
+ name_ar: sourceProduct.name_ar,
+ name_en: sourceProduct.name_en,
+ slug: sourceProduct.slug,
+ image_urls: sourceProduct.image_urls,
  };
  window.localStorage.setItem('compare_products_cache', JSON.stringify(cache));
  } catch {
@@ -827,14 +879,34 @@ export default function ProductDetailClient() {
 
  {/* Secondary actions — equal-width grid, all four span their column */}
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+ {(() => {
+ const inCompare = compareIds.has(product.id);
+ return (
  <button
  type="button"
  onClick={() => handleAddToCompare(product.id)}
- className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
+ aria-pressed={inCompare}
+ className={
+ inCompare
+ ? 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 px-3 text-sm font-semibold text-red-600 transition-all hover:border-red-400 hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
+ : 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100'
+ }
  >
+ {inCompare ? (
+ <X className="w-4 h-4 shrink-0" />
+ ) : (
  <BarChart3 className="w-4 h-4 shrink-0" />
- <span className="truncate">{t('product.addToCompare')}</span>
+ )}
+ <span className="truncate">
+ {inCompare
+ ? locale === 'ar'
+ ? 'إزالة من المقارنة'
+ : 'Remove from compare'
+ : t('product.addToCompare')}
+ </span>
  </button>
+ );
+ })()}
  <button
  type="button"
  onClick={() => handleSaveToWishlist(product.id)}
@@ -1026,6 +1098,7 @@ export default function ProductDetailClient() {
  onCompare={handleAddToCompare}
  onSave={handleSaveToWishlist}
  onAddToCart={handleAddRelatedToCart}
+ isInCompare={compareIds.has(relatedProduct.id)}
  />
  ))}
  </div>

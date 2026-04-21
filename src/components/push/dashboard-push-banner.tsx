@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useWebPush } from '@/lib/push/use-web-push';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,17 @@ interface DashboardPushBannerProps {
 
 export function DashboardPushBanner({ locale }: DashboardPushBannerProps) {
   const { status, isSupported, subscribe } = useWebPush();
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
+  // Start as "dismissed" on both server and first client render so SSR matches
+  // hydration, then read localStorage in an effect.
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
     try {
-      return window.localStorage.getItem(DISMISS_KEY) === '1';
+      setDismissed(window.localStorage.getItem(DISMISS_KEY) === '1');
     } catch {
-      return true;
+      setDismissed(true);
     }
-  });
+  }, []);
 
   const dismiss = () => {
     try {
