@@ -350,6 +350,25 @@ export default function ProductDetailClient() {
 
  const next = [productId, ...unique].slice(0, 4);
  window.localStorage.setItem('compare_products', JSON.stringify(next));
+
+ // Seed cache so the floating bar renders without a DB round-trip.
+ if (product) {
+ try {
+ const cacheRaw = window.localStorage.getItem('compare_products_cache');
+ const cache: Record<string, unknown> = cacheRaw ? JSON.parse(cacheRaw) : {};
+ cache[productId] = {
+ id: product.id,
+ name_ar: product.name_ar,
+ name_en: product.name_en,
+ slug: product.slug,
+ image_urls: product.image_urls,
+ };
+ window.localStorage.setItem('compare_products_cache', JSON.stringify(cache));
+ } catch {
+ // ignore — bar will DB-fetch as fallback
+ }
+ }
+
  window.dispatchEvent(new Event('compare-products-updated'));
 
  toast({

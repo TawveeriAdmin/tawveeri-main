@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
-import { Heart, BarChart3, ExternalLink, Store, Flame } from 'lucide-react';
+import { Heart, BarChart3, ExternalLink, Store, Flame, X } from 'lucide-react';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { calculateSavings } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -180,7 +180,13 @@ export function ProductCard({
   const isWinner = isMultiStore && bestPrice && storesWithPrices.length > 1;
 
   return (
-    <Card className="group relative transition-all duration-[var(--dur-med)] h-full flex flex-col overflow-hidden hover:border-[var(--brand-green)]/50">
+    <Card
+      className={cn(
+        'group relative transition-all duration-[var(--dur-med)] h-full flex flex-col overflow-hidden hover:border-[var(--brand-green)]/50',
+        isInCompare &&
+          'border-[var(--brand-green)] ring-2 ring-[var(--brand-green)]/30',
+      )}
+    >
       {/* Wishlist heart — absolute, outside link wrapper for clickability */}
       {showActions && onSave && (
         <div className="absolute end-2 top-2 z-10">
@@ -267,7 +273,20 @@ export function ProductCard({
         <CardContent className="p-4 flex-1 flex flex-col">
           {/* Product Info */}
           <div className="flex-1 mb-3">
-            <h3 className="t-body-strong text-on-surface mb-1 line-clamp-2 min-h-[3rem] leading-tight">
+            <h3
+              dir="auto"
+              title={productName}
+              className="t-body-strong text-on-surface mb-1 leading-tight"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                wordBreak: 'break-word',
+                minHeight: 'calc(1.4em * 2)',
+              }}
+            >
               {productName}
             </h3>
             {(product.brand || product.model) && (
@@ -405,25 +424,27 @@ export function ProductCard({
 
       {/* Action Row — outside LinkWrapper so clicks work */}
       {showActions && (
-        <div className="px-4 pb-4 pt-0 flex items-center gap-2">
+        <div className="px-4 pb-4 pt-0 flex flex-col gap-2">
           {/* Primary CTA */}
           {isMultiStore ? (
             <Button
               variant="default"
               size="sm"
-              className="flex-1 text-xs"
+              className="w-full text-xs"
               asChild
             >
               <Link href={productLink}>
                 <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-                {t('products.comparePrices', { count: String(storeCount) })}
+                <span className="truncate">
+                  {t('products.comparePrices', { count: String(storeCount) })}
+                </span>
               </Link>
             </Button>
           ) : externalProductUrl ? (
             <Button
               variant="default"
               size="sm"
-              className="flex-1 text-xs"
+              className="w-full text-xs"
               asChild
             >
               <a
@@ -432,30 +453,55 @@ export function ProductCard({
                 rel="noopener noreferrer"
               >
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                {t('products.viewAtStore')}
+                <span className="truncate">{t('products.viewAtStore')}</span>
               </a>
             </Button>
           ) : (
             <Button
               variant="default"
               size="sm"
-              className="flex-1 text-xs"
+              className="w-full text-xs"
               disabled
             >
               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-              {t('products.viewAtStore')}
+              <span className="truncate">{t('products.viewAtStore')}</span>
             </Button>
           )}
-          {/* Compare (heart is now an overlay above) */}
+          {/* Compare toggle — tonal secondary so it doesn't compete with the primary CTA */}
           {onCompare && (
-            <IconButton
-              variant={isInCompare ? 'accent' : 'outline'}
-              size="sm"
-              aria-label={t('product.addToCompare')}
+            <button
+              type="button"
               onClick={() => onCompare(product.id)}
+              aria-label={
+                isInCompare
+                  ? currentLocale === 'ar'
+                    ? 'إزالة من المقارنة'
+                    : 'Remove from compare'
+                  : t('product.addToCompare')
+              }
+              aria-pressed={isInCompare}
+              className={cn(
+                'inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-full border text-[11px] font-semibold transition-colors',
+                isInCompare
+                  ? 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
+                  : 'border-[color:var(--color-outline-variant)] bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50 hover:text-[var(--brand-green-dark)]',
+              )}
             >
-              <BarChart3 className={cn('w-4 h-4', isInCompare && 'fill-current')} />
-            </IconButton>
+              {isInCompare ? (
+                <X className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <span className="truncate">
+                {isInCompare
+                  ? currentLocale === 'ar'
+                    ? 'إزالة من المقارنة'
+                    : 'Remove from compare'
+                  : currentLocale === 'ar'
+                    ? 'إضافة للمقارنة'
+                    : 'Add to compare'}
+              </span>
+            </button>
           )}
         </div>
       )}

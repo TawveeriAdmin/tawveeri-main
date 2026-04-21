@@ -14,9 +14,6 @@ import {
   Tag,
   DollarSign,
   Store,
-  PackageCheck,
-  Flame,
-  Truck,
   Star,
   ArrowUpDown,
   ArrowDownNarrowWide,
@@ -25,8 +22,6 @@ import {
   ChevronDown,
   RotateCcw,
   Percent,
-  ShieldCheck,
-  Zap,
   Check,
   Cpu,
 } from 'lucide-react';
@@ -100,90 +95,6 @@ function FilterSection({
       <div className={cn(!open && 'hidden', 'pb-3')}>
         <div className="px-1 min-h-0">{children}</div>
       </div>
-    </div>
-  );
-}
-
-// Toggle pill for quick filters (deals, free delivery)
-function TogglePill({
-  icon: Icon,
-  label,
-  active,
-  onChange,
-  color = 'primary',
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  active: boolean;
-  onChange: (active: boolean) => void;
-  color?: 'primary' | 'amber' | 'green';
-}) {
-  const colorMap = {
-    primary: {
-      active: 'bg-primary-50 dark:bg-primary-900/30 border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300',
-      inactive: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-gray-300 dark:hover:border-gray-600',
-      icon: active ? 'text-primary-500' : 'text-on-surface-variant',
-    },
-    amber: {
-      active: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300',
-      inactive: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-gray-300 dark:hover:border-gray-600',
-      icon: active ? 'text-amber-500' : 'text-on-surface-variant',
-    },
-    green: {
-      active: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300',
-      inactive: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-gray-300 dark:hover:border-gray-600',
-      icon: active ? 'text-emerald-500' : 'text-on-surface-variant',
-    },
-  };
-
-  const colors = colorMap[color];
-
-  return (
-    <button
-      onClick={() => onChange(!active)}
-      aria-pressed={active}
-      className={cn(
-        'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200',
-        active ? colors.active : colors.inactive
-      )}
-    >
-      <Icon className={cn('w-4 h-4 transition-colors', colors.icon)} />
-      {label}
-    </button>
-  );
-}
-
-// Star rating selector
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (rating: number) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          onClick={() => onChange(value === star ? 0 : star)}
-          className="group p-0.5"
-          aria-label={`${star} ${star === 1 ? 'star' : 'stars'}`}
-          aria-pressed={star <= value}
-        >
-          <Star
-            className={cn(
-              'w-5 h-5 transition-all duration-150',
-              star <= value
-                ? 'fill-amber-400 text-amber-400 scale-110'
-                : 'text-gray-300 dark:text-gray-600 group-hover:text-amber-300 group-hover:scale-105'
-            )}
-          />
-        </button>
-      ))}
-      {value > 0 && (
-        <span className="text-xs text-on-surface-variant ms-1 tabular-nums">{value}+</span>
-      )}
     </div>
   );
 }
@@ -302,13 +213,6 @@ export function FilterSidebar({
     onFilterChange({ ...filters, stores: newStores });
   };
 
-  const handleAvailabilityToggle = (availability: AvailabilityStatus) => {
-    const newAvailability = filters.availability.includes(availability)
-      ? filters.availability.filter((a) => a !== availability)
-      : [...filters.availability, availability];
-    onFilterChange({ ...filters, availability: newAvailability });
-  };
-
   const handlePriceChange = (values: number[]) => {
     onFilterChange({
       ...filters,
@@ -347,22 +251,6 @@ export function FilterSidebar({
 
   const handleDiscountToggle = (value: number) => {
     onFilterChange({ ...filters, discount: filters.discount === value ? undefined : value });
-  };
-
-  const handleConditionToggle = (value: string) => {
-    const current = filters.condition || [];
-    const newCondition = current.includes(value)
-      ? current.filter(c => c !== value)
-      : [...current, value];
-    onFilterChange({ ...filters, condition: newCondition.length > 0 ? newCondition : undefined });
-  };
-
-  const handleShippingToggle = (value: string) => {
-    const current = filters.shipping || [];
-    const newShipping = current.includes(value)
-      ? current.filter(s => s !== value)
-      : [...current, value];
-    onFilterChange({ ...filters, shipping: newShipping.length > 0 ? newShipping : undefined });
   };
 
   const specFilters: SpecFilterDefinition[] = category ? (CATEGORY_SPEC_FILTERS[category] || []) : [];
@@ -472,24 +360,6 @@ export function FilterSidebar({
             </button>
           )}
         </div>
-      </div>
-
-      {/* Quick toggles */}
-      <div className="px-3 py-3 flex flex-col gap-2 border-b border-gray-100 dark:border-gray-800">
-        <TogglePill
-          icon={Flame}
-          label={t('search.filters.showDealsOnly')}
-          active={filters.dealsOnly}
-          onChange={(active) => onFilterChange({ ...filters, dealsOnly: active })}
-          color="amber"
-        />
-        <TogglePill
-          icon={Truck}
-          label={t('search.filters.freeDeliveryOnly')}
-          active={filters.freeDeliveryOnly || false}
-          onChange={(active) => onFilterChange({ ...filters, freeDeliveryOnly: active })}
-          color="green"
-        />
       </div>
 
       {/* Filter sections — scroll the whole aside via parent `.sticky.overflow-y-auto` on search page */}
@@ -648,56 +518,6 @@ export function FilterSidebar({
           </FilterSection>
         )}
 
-        {/* Availability */}
-        <FilterSection
-          icon={PackageCheck}
-          title={t('search.filters.availability')}
-          badge={filters.availability.length}
-        >
-          <div className="space-y-1">
-            {([
-              { value: 'in_stock' as AvailabilityStatus, label: 'product.inStock', dot: 'bg-emerald-500' },
-              { value: 'limited_stock' as AvailabilityStatus, label: 'product.limitedStock', dot: 'bg-amber-500' },
-              { value: 'out_of_stock' as AvailabilityStatus, label: 'product.outOfStock', dot: 'bg-red-500' },
-            ]).map((item) => {
-              const isChecked = filters.availability.includes(item.value);
-              return (
-                <label
-                  key={item.value}
-                  className={cn(
-                    'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
-                    isChecked
-                      ? 'bg-primary-50 dark:bg-primary-900/20'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
-                  )}
-                >
-                  <Checkbox
-                    id={`availability-${item.value}`}
-                    checked={isChecked}
-                    onCheckedChange={() => handleAvailabilityToggle(item.value)}
-                  />
-                  <span className={cn('w-2 h-2 rounded-full', item.dot)} />
-                  <span className="text-sm text-on-surface">{t(item.label)}</span>
-                </label>
-              );
-            })}
-          </div>
-        </FilterSection>
-
-        {/* Rating */}
-        <FilterSection
-          icon={Star}
-          title={t('search.filters.rating')}
-          badge={filters.minRating && filters.minRating > 0 ? 1 : undefined}
-        >
-          <div className="py-1">
-            <StarRating
-              value={filters.minRating || 0}
-              onChange={(rating) => onFilterChange({ ...filters, minRating: rating })}
-            />
-          </div>
-        </FilterSection>
-
         {/* Dynamic Spec Filters (based on category) */}
         {specFilters.map((spec) => {
           const specValues = filters.specs?.[spec.key] || [];
@@ -769,76 +589,6 @@ export function FilterSidebar({
           </div>
         </FilterSection>
 
-        {/* Condition */}
-        <FilterSection
-          icon={ShieldCheck}
-          title={locale === 'ar' ? 'الحالة' : 'Condition'}
-          badge={filters.condition?.length || undefined}
-        >
-          <div className="space-y-1">
-            {([
-              { value: 'new', label: locale === 'ar' ? 'جديد' : 'New', dot: 'bg-emerald-500' },
-              { value: 'renewed', label: locale === 'ar' ? 'مجدد' : 'Renewed', dot: 'bg-blue-500' },
-              { value: 'used', label: locale === 'ar' ? 'مستعمل' : 'Used', dot: 'bg-gray-400' },
-            ]).map((item) => {
-              const isChecked = filters.condition?.includes(item.value) || false;
-              return (
-                <label
-                  key={item.value}
-                  className={cn(
-                    'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
-                    isChecked
-                      ? 'bg-primary-50 dark:bg-primary-900/20'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
-                  )}
-                >
-                  <Checkbox
-                    id={`condition-${item.value}`}
-                    checked={isChecked}
-                    onCheckedChange={() => handleConditionToggle(item.value)}
-                  />
-                  <span className={cn('w-2 h-2 rounded-full', item.dot)} />
-                  <span className="text-sm text-on-surface">{item.label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </FilterSection>
-
-        {/* Shipping Speed */}
-        <FilterSection
-          icon={Zap}
-          title={locale === 'ar' ? 'سرعة الشحن' : 'Shipping Speed'}
-          badge={filters.shipping?.length || undefined}
-        >
-          <div className="space-y-1">
-            {([
-              { value: 'same_day', label: locale === 'ar' ? 'توصيل في نفس اليوم' : 'Same Day Delivery' },
-              { value: 'express', label: locale === 'ar' ? 'توصيل سريع (1-2 يوم)' : 'Express (1-2 days)' },
-              { value: 'standard', label: locale === 'ar' ? 'توصيل عادي (3-7 أيام)' : 'Standard (3-7 days)' },
-            ]).map((item) => {
-              const isChecked = filters.shipping?.includes(item.value) || false;
-              return (
-                <label
-                  key={item.value}
-                  className={cn(
-                    'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
-                    isChecked
-                      ? 'bg-primary-50 dark:bg-primary-900/20'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
-                  )}
-                >
-                  <Checkbox
-                    id={`shipping-${item.value}`}
-                    checked={isChecked}
-                    onCheckedChange={() => handleShippingToggle(item.value)}
-                  />
-                  <span className="text-sm text-on-surface">{item.label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </FilterSection>
       </div>
 
       {/* Footer — clear all */}

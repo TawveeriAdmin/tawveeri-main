@@ -158,6 +158,33 @@ export default function SearchClient() {
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [saveSearchName, setSaveSearchName] = useState('');
   const [savingSearch, setSavingSearch] = useState(false);
+  const [compareIds, setCompareIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = window.localStorage.getItem(COMPARE_STORAGE_KEY);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Keep the in-compare badge in sync with the floating bar / other tabs
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const raw = window.localStorage.getItem(COMPARE_STORAGE_KEY);
+        setCompareIds(new Set(raw ? (JSON.parse(raw) as string[]) : []));
+      } catch {
+        setCompareIds(new Set());
+      }
+    };
+    window.addEventListener('compare-products-updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('compare-products-updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   // Fetch user's wishlist product names to show filled hearts
   useEffect(() => {
@@ -626,10 +653,6 @@ export default function SearchClient() {
         return mapGroupedToProductCard(grouped) as Product;
       });
 
-      // Clear compare list from previous search
-      localStorage.removeItem(COMPARE_STORAGE_KEY);
-      localStorage.removeItem(COMPARE_CACHE_STORAGE_KEY);
-      window.dispatchEvent(new Event('compare-products-updated'));
 
       setRawProducts(mappedProducts);
       setSearchCache(query, selectedCategory || 'all', mappedProducts);
@@ -837,8 +860,22 @@ export default function SearchClient() {
       const unique = Array.from(new Set(existing));
       const selectedProduct = products.find((product) => product.id === productId);
 
+      // Toggle: if already in compare, remove it.
       if (unique.includes(productId)) {
-        toast({ title: t('products.added'), description: t('compare.alreadyInCompare') });
+        const next = unique.filter((id) => id !== productId);
+        const rawCache = window.localStorage.getItem(COMPARE_CACHE_STORAGE_KEY);
+        const existingCache: Record<string, Product> = rawCache ? JSON.parse(rawCache) : {};
+        delete existingCache[productId];
+        window.localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+        window.localStorage.setItem(COMPARE_CACHE_STORAGE_KEY, JSON.stringify(existingCache));
+        window.dispatchEvent(new Event('compare-products-updated'));
+        toast({
+          title: locale === 'ar' ? 'تمت الإزالة' : 'Removed',
+          description:
+            locale === 'ar'
+              ? 'تم حذف المنتج من المقارنة.'
+              : 'Removed from your compare list.',
+        });
         return;
       }
       if (unique.length >= 4) {
@@ -1292,6 +1329,7 @@ export default function SearchClient() {
                               onCompare={handleAddToCompare}
                               onSave={handleSaveToWishlist}
                               isSaved={savedProductNames.has(p.name_en)}
+                              isInCompare={compareIds.has(p.id)}
                             />
                           ))}
                         </div>
@@ -1316,6 +1354,7 @@ export default function SearchClient() {
                             onCompare={handleAddToCompare}
                             onSave={handleSaveToWishlist}
                             isSaved={savedProductNames.has(product.name_en)}
+                            isInCompare={compareIds.has(product.id)}
                             onCardClick={(p) => setSelectedProduct(p)}
                           />
                           {/* Inline Store Comparison Panel */}

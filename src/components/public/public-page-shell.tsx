@@ -38,9 +38,8 @@ import {
 import Image from 'next/image';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
 import { Footer } from '@/components/layout/footer';
+import { CompareFloatingBar } from '@/components/compare/compare-floating-bar';
 
-const COMPARE_STORAGE_KEY = 'compare_products';
-const MAX_COMPARE_PRODUCTS = 4;
 const subscribe = () => () => {};
 
 interface PublicPageShellProps {
@@ -60,7 +59,6 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   const { theme, setTheme } = useTheme();
   const t = useTranslations();
   const { user, signOut, loading: authLoading } = useAuth();
-  const [compareCount, setCompareCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -99,35 +97,6 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
           },
     [locale]
   );
-
-  /* ── Compare count from localStorage ── */
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const updateCompareCount = () => {
-      try {
-        const stored = window.localStorage.getItem(COMPARE_STORAGE_KEY);
-        const ids: string[] = stored ? JSON.parse(stored) : [];
-        setCompareCount(Array.from(new Set(ids)).slice(0, MAX_COMPARE_PRODUCTS).length);
-      } catch {
-        setCompareCount(0);
-      }
-    };
-
-    updateCompareCount();
-
-    const handleStorage = (event: StorageEvent) => {
-      if (!event.key || event.key === COMPARE_STORAGE_KEY) updateCompareCount();
-    };
-    const handleCompareUpdate = () => updateCompareCount();
-
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('compare-products-updated', handleCompareUpdate);
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('compare-products-updated', handleCompareUpdate);
-    };
-  }, [pathname]);
 
   /* ── Wishlist count from Supabase ── */
   useEffect(() => {
@@ -176,6 +145,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
         { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
         { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
         { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
+        { href: `/${locale}/compare`, label: copy.compare, icon: BarChart3 },
       ]
     : [
         { href: `/${locale}`, label: t('common.home'), icon: Home },
@@ -183,6 +153,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
         { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
         { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
         { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
+        { href: `/${locale}/compare`, label: copy.compare, icon: BarChart3 },
       ];
 
   /* ── User info ── */
@@ -225,7 +196,6 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   };
 
   /* ── URLs ── */
-  const compareHref = user ? `/${locale}/compare` : `/${locale}/auth/login?redirect=/compare`;
   const pathWithoutLocale = pathname.startsWith(`/${locale}`)
     ? pathname.slice(locale.length + 1) || '/'
     : pathname || '/';
@@ -507,18 +477,6 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               );
             })}
 
-            <div className="ms-auto flex shrink-0 items-center gap-2">
-              <Link
-                href={compareHref}
-                className="inline-flex h-9 items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700/70 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>{copy.compare}</span>
-                <Badge className="border-0 bg-amber-200 px-1.5 py-0 text-[10px] text-amber-900 dark:bg-amber-700/60 dark:text-amber-100">
-                  {compareCount}/{MAX_COMPARE_PRODUCTS}
-                </Badge>
-              </Link>
-            </div>
           </nav>
         </div>
       </header>
@@ -528,14 +486,17 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
         id="main-content"
         className={
           fullBleed
-            ? ''
-            : 'mx-auto max-w-[1600px] px-4 py-6 md:px-8'
+            ? 'pb-24'
+            : 'mx-auto max-w-[1600px] px-4 py-6 pb-24 md:px-8'
         }
       >
         {children}
       </main>
 
       <Footer />
+
+      {/* Persistent compare tray — visible on every page when the list has items */}
+      <CompareFloatingBar locale={locale} />
     </div>
   );
 }
