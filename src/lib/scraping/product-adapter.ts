@@ -20,7 +20,7 @@ export const SEARCH_STORE_DISPLAY_NAMES: Record<string, { name_ar: string; name_
   almanea: { name_ar: 'المنيع', name_en: 'Almanea' },
   samsung_ksa: { name_ar: 'سامسونج السعودية', name_en: 'Samsung KSA' },
   shaker: { name_ar: 'شاكر', name_en: 'Shaker' },
-  swsg: { name_ar: 'الشتاء والصيف', name_en: 'Al-Shetaa Wal-Saif' },
+  swsg: { name_ar: 'الشتاء والصيف', name_en: 'Winter & Summer' },
 };
 
 /** `/public/logos/{base}.png` when the file base name differs from the store slug */

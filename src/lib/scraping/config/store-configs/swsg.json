@@ -1,7 +1,7 @@
 {
   "store_slug": "swsg",
-  "store_name_ar": "سواسق",
-  "store_name_en": "SWSG",
+  "store_name_ar": "الشتاء والصيف",
+  "store_name_en": "Winter & Summer",
   "base_url": "https://swsg.co",
   "requires_js": false,
   "discovery_pagination": "wordpress_paged",
