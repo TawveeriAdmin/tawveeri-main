@@ -943,11 +943,11 @@ export default function StoreDetailClient() {
  : `Search ${storeName} products...`
  }
  aria-label={locale === 'ar' ? 'ابحث في المنتجات' : 'Search products'}
- className="h-10 ps-9"
+ className="h-10 ps-9 border-2 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] focus-visible:border-[var(--brand-green)]"
  />
  </div>
  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
- <SelectTrigger className="h-10 w-full md:w-[200px]">
+ <SelectTrigger className="h-10 w-full md:w-[200px] border-2 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]">
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
@@ -972,15 +972,15 @@ export default function StoreDetailClient() {
  type="button"
  onClick={() => setInStockOnly((v) => !v)}
  aria-pressed={inStockOnly}
- className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
+ className={`inline-flex h-10 items-center gap-2 rounded-md border-2 px-3 text-sm font-medium transition-colors ${
  inStockOnly
- ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300'
- : 'border-outline-variant bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50'
+ ? 'border-[var(--brand-green)] bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]'
+ : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] text-on-surface hover:border-[var(--brand-green)]'
  }`}
  >
  <span
  className={`inline-block h-2 w-2 rounded-full ${
- inStockOnly ? 'bg-emerald-500' : 'bg-outline'
+ inStockOnly ? 'bg-[var(--brand-green)]' : 'bg-[color:var(--color-outline)]'
  }`}
  />
  {locale === 'ar' ? 'متوفر فقط' : 'In stock only'}
@@ -988,10 +988,10 @@ export default function StoreDetailClient() {
  {(searchQuery || categoryFilter !== 'all' || sortBy !== 'recommended' || inStockOnly) && (
  <Button
  type="button"
- variant="ghost"
+ variant="outline"
  size="sm"
  onClick={handleReset}
- className="h-10 gap-1"
+ className="h-10 gap-1 border-2 border-[color:var(--color-outline-variant)]"
  title={locale === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset filters'}
  >
  <RotateCcw className="h-4 w-4" />
@@ -1006,10 +1006,10 @@ export default function StoreDetailClient() {
  <button
  type="button"
  onClick={() => setCategoryFilter('all')}
- className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+ className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
  categoryFilter === 'all'
  ? 'border-[var(--brand-green)] bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]'
- : 'border-outline-variant bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50'
+ : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] text-on-surface hover:border-[var(--brand-green)]'
  }`}
  >
  {locale === 'ar' ? 'الكل' : 'All'}
@@ -1020,10 +1020,10 @@ export default function StoreDetailClient() {
  key={category}
  type="button"
  onClick={() => setCategoryFilter(category)}
- className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+ className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
  categoryFilter === category
  ? 'border-[var(--brand-green)] bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]'
- : 'border-outline-variant bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50'
+ : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] text-on-surface hover:border-[var(--brand-green)]'
  }`}
  >
  {categoryLabel(category)}
