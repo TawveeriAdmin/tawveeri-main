@@ -28,6 +28,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -72,6 +74,10 @@ import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import { mapGroupedToProductCard } from '@/lib/scraping/product-adapter';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
+import { saveSearch } from '@/lib/search/saved-searches';
+import { createNotification } from '@/lib/auth/notifications';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { StoreComparisonPanel } from '@/components/search/store-comparison-panel';
 import {
   DEFAULT_SEARCH_STORES,
@@ -148,6 +154,10 @@ export default function SearchClient() {
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
+  const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
+  const [saveSearchOpen, setSaveSearchOpen] = useState(false);
+  const [saveSearchName, setSaveSearchName] = useState('');
+  const [savingSearch, setSavingSearch] = useState(false);
 
   // Fetch user's wishlist product names to show filled hearts
   useEffect(() => {
@@ -164,6 +174,25 @@ export default function SearchClient() {
         }
       });
   }, [user]);
+
+  // Fetch trending products once to render as fallback in empty search state.
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = getSupabaseBrowserClient();
+    supabase
+      .from('products')
+      .select(`id, name_ar, name_en, slug, category, brand, model, image_urls, specifications,
+        product_stores(id, current_price, original_price, availability, product_url,
+          stores(id, name_ar, name_en, logo_url, average_rating, total_reviews))`)
+      .eq('is_active', true)
+      .order('view_count', { ascending: false })
+      .limit(8)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setTrendingProducts((data as unknown as Product[]) || []);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const [filters, setFilters] = useState<SearchFilters>({
     brands: [],
@@ -379,14 +408,23 @@ export default function SearchClient() {
       });
     }
 
-    // Spec filters
+    // Spec filters — prefer DB-populated products.specifications JSONB; fall back
+    // to title-regex extraction for products the scraper hasn't enriched yet.
     if (filters.specs && Object.keys(filters.specs).length > 0) {
       result = result.filter(product => {
-        const title = product.name_en || product.name_ar || '';
-        const specs = extractSpecsFromTitle(title);
+        const dbSpecs = (product.specifications ?? null) as Record<string, unknown> | null;
+        const hasDbSpecs = dbSpecs && Object.keys(dbSpecs).length > 0;
+        const fallbackSpecs = hasDbSpecs
+          ? null
+          : extractSpecsFromTitle(product.name_en || product.name_ar || '');
         return Object.entries(filters.specs!).every(([key, values]) => {
           if (values.length === 0) return true;
-          return values.includes(specs[key] || '');
+          const dbValue = hasDbSpecs ? dbSpecs![key] : undefined;
+          const value =
+            dbValue !== undefined && dbValue !== null
+              ? String(dbValue).toLowerCase()
+              : fallbackSpecs?.[key] ?? '';
+          return values.map(v => v.toLowerCase()).includes(value);
         });
       });
     }
@@ -732,6 +770,62 @@ export default function SearchClient() {
   const handleComparePrices = useCallback((productId: string) => {
     setExpandedProductId(prev => prev === productId ? null : productId);
   }, []);
+
+  const handleSaveCurrentSearch = async () => {
+    if (!user || !saveSearchName.trim()) return;
+    setSavingSearch(true);
+    try {
+      const result = await saveSearch({
+        userId: user.id,
+        name: saveSearchName.trim(),
+        query: debouncedQuery,
+        filters: {
+          ...filters,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        },
+      });
+      if (result.error) throw result.error;
+
+      const savedId = result.data?.id ?? null;
+      createNotification({
+        user_id: user.id,
+        type: 'system',
+        title_ar: 'تم حفظ البحث',
+        title_en: 'Search saved',
+        message_ar: `تم حفظ البحث "${saveSearchName.trim()}" بنجاح.`,
+        message_en: `Search "${saveSearchName.trim()}" saved successfully.`,
+      }).catch(() => {});
+
+      fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'saved_search_created',
+          entity_type: 'saved_search',
+          entity_id: savedId,
+          details: { name: saveSearchName.trim(), query: debouncedQuery || null },
+        }),
+      }).catch(() => {});
+
+      toast({
+        title: locale === 'ar' ? 'تم حفظ البحث' : 'Search saved',
+        description:
+          locale === 'ar'
+            ? 'يمكنك العثور عليه في "عمليات البحث المحفوظة".'
+            : 'You can find it under "Saved searches".',
+      });
+      setSaveSearchOpen(false);
+      setSaveSearchName('');
+    } catch (err) {
+      toast({
+        title: t('common.error'),
+        description: err instanceof Error ? err.message : 'Failed to save search',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingSearch(false);
+    }
+  };
 
   const handleAddToCompare = (productId: string) => {
     if (typeof window === 'undefined') return;
@@ -1114,7 +1208,20 @@ export default function SearchClient() {
                         : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
                       }
                     </div>
-                    <SortSelector value={sortBy} onChange={setSortBy} />
+                    <div className="flex items-center gap-2">
+                      {user && (debouncedQuery || activeFilterCount > 0) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSaveSearchOpen(true)}
+                          className="text-xs"
+                        >
+                          <BadgeCheck className="h-3.5 w-3.5 me-1" />
+                          {locale === 'ar' ? 'حفظ البحث' : 'Save search'}
+                        </Button>
+                      )}
+                      <SortSelector value={sortBy} onChange={setSortBy} />
+                    </div>
                   </div>
                   {activeFilterCount > 0 && (
                     <div className="mt-3">
@@ -1141,7 +1248,7 @@ export default function SearchClient() {
 
                 {/* No Results */}
                 {!loading && !error && products.length === 0 && debouncedQuery && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <EmptyState
                       variant="search"
                       description={t('search.noResultsFor').replace('{{query}}', debouncedQuery)}
@@ -1162,6 +1269,26 @@ export default function SearchClient() {
                         );
                       })}
                     </div>
+                    {/* Trending products rail — fallback when user query yields no hits */}
+                    {trendingProducts.length > 0 && (
+                      <div className="space-y-3 pt-4">
+                        <h3 className="text-headline-sm text-on-surface">
+                          {locale === 'ar' ? 'منتجات رائجة' : 'Trending products'}
+                        </h3>
+                        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                          {trendingProducts.slice(0, 8).map((p) => (
+                            <ProductCard
+                              key={`trending-${p.id}`}
+                              product={p}
+                              locale={locale}
+                              onCompare={handleAddToCompare}
+                              onSave={handleSaveToWishlist}
+                              isSaved={savedProductNames.has(p.name_en)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1304,6 +1431,47 @@ export default function SearchClient() {
           scrollbar-width: none;
         }
       `}</style>
+
+      {/* Save-this-search dialog */}
+      <Dialog open={saveSearchOpen} onOpenChange={setSaveSearchOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {locale === 'ar' ? 'حفظ هذا البحث' : 'Save this search'}
+            </DialogTitle>
+            <DialogDescription>
+              {locale === 'ar'
+                ? 'امنحه اسماً لتتمكن من إعادة تشغيله لاحقاً من صفحة عمليات البحث المحفوظة.'
+                : 'Give it a name so you can rerun it later from Saved Searches.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="saveSearchName">
+              {locale === 'ar' ? 'اسم البحث' : 'Search name'}
+            </Label>
+            <Input
+              id="saveSearchName"
+              value={saveSearchName}
+              onChange={(e) => setSaveSearchName(e.target.value)}
+              placeholder={debouncedQuery || (locale === 'ar' ? 'بحثي المفضل' : 'My saved search')}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveSearchOpen(false)}>
+              {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              onClick={handleSaveCurrentSearch}
+              disabled={savingSearch || !saveSearchName.trim()}
+            >
+              {savingSearch
+                ? locale === 'ar' ? 'جاري الحفظ…' : 'Saving…'
+                : locale === 'ar' ? 'حفظ' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

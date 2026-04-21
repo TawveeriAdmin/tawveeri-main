@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { LandingData } from '@/lib/landing/data';
 import {
   Search,
   ArrowRight,
@@ -95,17 +96,28 @@ const FEATURED_STORES: string[] = [
   'amazon', 'noon', 'jarir', 'extra', 'almanea', 'shaker', 'samsung_ksa', 'swsg',
 ];
 
-export default function LandingPageClient() {
+interface LandingPageClientProps {
+  data?: LandingData;
+}
+
+export default function LandingPageClient({ data }: LandingPageClientProps = {}) {
+  const safeData: LandingData = data ?? {
+    topDeals: [],
+    featured: [],
+    stores: [],
+    categoryCounts: {},
+    totalSavings: 0,
+  };
   return (
     <div className="bg-[color:var(--color-surface)]">
       <Hero />
       <CategoryRail />
-      <PriceDropTicker />
-      <FeaturedComparisons />
-      <PopularCategories />
-      <FeaturedStores />
+      <PriceDropTicker deals={safeData.topDeals} />
+      <FeaturedComparisons featured={safeData.featured} />
+      <PopularCategories categoryCounts={safeData.categoryCounts} />
+      <FeaturedStores stores={safeData.stores} />
       <ValueProps />
-      <SavingsStat />
+      <SavingsStat totalSavings={safeData.totalSavings} />
       <AppCta />
     </div>
   );
@@ -245,19 +257,30 @@ function CategoryRail() {
 
 /* ───────────────────────── Price-drop ticker ───────────────────────── */
 
-function PriceDropTicker() {
+function PriceDropTicker({ deals }: { deals: LandingData['topDeals'] }) {
   const { isRTL, locale } = useLocale();
-  const items = isRTL ? TICKER_SAMPLES_AR : TICKER_SAMPLES_EN;
+  const fallbackItems = isRTL ? TICKER_SAMPLES_AR : TICKER_SAMPLES_EN;
+  const items = useMemo(() => {
+    if (!deals?.length) return null;
+    return deals.map((d) => ({
+      product: isRTL ? d.name_ar : d.name_en,
+      drop: Math.round(d.savings),
+      store: isRTL ? d.store_name_ar : d.store_name_en,
+      productSlug: d.product_slug,
+    }));
+  }, [deals, isRTL]);
+  const displayItems = items ?? fallbackItems;
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % items.length);
+      setIndex((i) => (i + 1) % displayItems.length);
     }, 3500);
     return () => clearInterval(timer);
-  }, [items.length]);
+  }, [displayItems.length]);
 
-  const current = items[index];
+  const current = displayItems[index];
+  const currentProductSlug = (current as { productSlug?: string })?.productSlug;
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-4 md:px-8 mt-4">
@@ -269,16 +292,32 @@ function PriceDropTicker() {
           </span>
           <span aria-hidden className="h-4 w-px bg-[var(--brand-gold)]/30 shrink-0" />
           <div key={index} className="flex flex-1 min-w-0 items-center justify-center overflow-hidden leading-none">
-            <p className="t-small text-on-surface truncate text-center my-0 animate-in fade-in duration-500">
-              <span className="font-semibold">{current.product}</span>
-              <span className="text-on-surface-variant mx-2">·</span>
-              <span className="inline-flex items-center gap-1 text-[var(--brand-gold-dark)] dark:text-[var(--brand-gold)] font-bold">
-                {isRTL ? 'وفّر' : 'Save'} {current.drop}
-                <SARSymbol className="w-3 h-3 fill-current" />
-              </span>
-              <span className="text-on-surface-variant mx-2">·</span>
-              <span className="text-on-surface-variant">{current.store}</span>
-            </p>
+            {currentProductSlug ? (
+              <Link
+                href={`/${locale}/products/${currentProductSlug}`}
+                className="t-small text-on-surface truncate text-center my-0 animate-in fade-in duration-500 hover:underline"
+              >
+                <span className="font-semibold">{current.product}</span>
+                <span className="text-on-surface-variant mx-2">·</span>
+                <span className="inline-flex items-center gap-1 text-[var(--brand-gold-dark)] dark:text-[var(--brand-gold)] font-bold">
+                  {isRTL ? 'وفّر' : 'Save'} {current.drop}
+                  <SARSymbol className="w-3 h-3 fill-current" />
+                </span>
+                <span className="text-on-surface-variant mx-2">·</span>
+                <span className="text-on-surface-variant">{current.store}</span>
+              </Link>
+            ) : (
+              <p className="t-small text-on-surface truncate text-center my-0 animate-in fade-in duration-500">
+                <span className="font-semibold">{current.product}</span>
+                <span className="text-on-surface-variant mx-2">·</span>
+                <span className="inline-flex items-center gap-1 text-[var(--brand-gold-dark)] dark:text-[var(--brand-gold)] font-bold">
+                  {isRTL ? 'وفّر' : 'Save'} {current.drop}
+                  <SARSymbol className="w-3 h-3 fill-current" />
+                </span>
+                <span className="text-on-surface-variant mx-2">·</span>
+                <span className="text-on-surface-variant">{current.store}</span>
+              </p>
+            )}
           </div>
           <Link
             href={`/${locale}/deals`}
@@ -295,9 +334,29 @@ function PriceDropTicker() {
 
 /* ───────────────────────── Featured comparisons ───────────────────────── */
 
-function FeaturedComparisons() {
+const FEATURED_GRADIENTS = [
+  'from-[var(--brand-green-dark)] to-[var(--brand-green)]',
+  'from-[var(--brand-green)] to-[var(--brand-gold)]',
+  'from-[var(--brand-gold-dark)] to-[var(--brand-gold)]',
+  'from-[var(--brand-green-dark)] to-[var(--brand-gold-dark)]',
+  'from-[var(--brand-gold)] to-[var(--brand-green)]',
+  'from-[var(--brand-green)] to-[var(--brand-green-dark)]',
+] as const;
+
+function FeaturedComparisons({ featured }: { featured: LandingData['featured'] }) {
   const { isRTL, locale } = useLocale();
-  const items = isRTL ? FEATURED_COMPARISONS_AR : FEATURED_COMPARISONS_EN;
+  const fallback = isRTL ? FEATURED_COMPARISONS_AR : FEATURED_COMPARISONS_EN;
+  const items = featured.length
+    ? featured.slice(0, 3).map((f, i) => ({
+        title: isRTL ? f.name_ar : f.name_en,
+        subtitle: isRTL
+          ? `قارن في ${f.store_count} ${f.store_count === 1 ? 'متجر' : 'متاجر'}`
+          : `Compared across ${f.store_count} store${f.store_count === 1 ? '' : 's'}`,
+        savings: Math.round(f.max_savings),
+        gradient: FEATURED_GRADIENTS[i % FEATURED_GRADIENTS.length],
+        href: `/products/${f.product_slug}`,
+      }))
+    : fallback;
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
@@ -360,7 +419,7 @@ function FeaturedComparisons() {
 
 /* ───────────────────────── Popular categories ───────────────────────── */
 
-function PopularCategories() {
+function PopularCategories({ categoryCounts }: { categoryCounts: Record<string, number> }) {
   const { isRTL, locale } = useLocale();
 
   return (
@@ -378,6 +437,10 @@ function PopularCategories() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
+            const count = categoryCounts[cat.slug] ?? 0;
+            const countLabel = count > 0
+              ? (isRTL ? `${count.toLocaleString('ar-SA')} منتج` : `${count.toLocaleString('en-US')} products`)
+              : (isRTL ? 'ابدأ المقارنة ←' : 'Start comparing →');
             return (
               <Link
                 key={cat.slug}
@@ -392,7 +455,7 @@ function PopularCategories() {
                     {isRTL ? cat.labelAr : cat.labelEn}
                   </span>
                   <span className="t-small text-on-surface-variant group-hover:text-[var(--brand-green-dark)]">
-                    {isRTL ? 'ابدأ المقارنة ←' : 'Start comparing →'}
+                    {countLabel}
                   </span>
                 </div>
               </Link>
@@ -406,8 +469,19 @@ function PopularCategories() {
 
 /* ───────────────────────── Featured stores ───────────────────────── */
 
-function FeaturedStores() {
+function FeaturedStores({ stores }: { stores: LandingData['stores'] }) {
   const { isRTL, locale } = useLocale();
+
+  const list = stores.length
+    ? stores.slice(0, 8)
+    : FEATURED_STORES.map((slug) => ({
+        slug,
+        name_ar: SEARCH_STORE_DISPLAY_NAMES[slug]?.name_ar ?? slug,
+        name_en: SEARCH_STORE_DISPLAY_NAMES[slug]?.name_en ?? slug,
+        logo_url: null,
+        average_rating: null as number | null,
+        total_reviews: null as number | null,
+      }));
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
@@ -418,8 +492,8 @@ function FeaturedStores() {
           </h2>
           <p className="mt-2 t-body text-on-surface-variant">
             {isRTL
-              ? '8 متاجر سعودية في مقارنة واحدة.'
-              : '8 Saudi stores in one comparison.'}
+              ? `${list.length} متاجر سعودية في مقارنة واحدة.`
+              : `${list.length} Saudi stores in one comparison.`}
           </p>
         </div>
         <Link
@@ -432,20 +506,27 @@ function FeaturedStores() {
       </div>
 
       <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-        {FEATURED_STORES.map((slug) => {
-          const name = SEARCH_STORE_DISPLAY_NAMES[slug];
-          const label = isRTL ? name?.name_ar : name?.name_en;
+        {list.map((s) => {
+          const label = isRTL ? s.name_ar : s.name_en;
+          const showRating =
+            typeof s.average_rating === 'number' && s.average_rating > 0;
           return (
             <Link
-              key={slug}
-              href={`/${locale}/stores/${slug}`}
+              key={s.slug}
+              href={`/${locale}/stores/${s.slug}`}
               className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-4 transition-all hover:border-[var(--brand-green)] hover:shadow-[var(--elevation-1)]"
               title={label}
             >
-              <StoreLogo slug={slug} size="lg" locale={locale as 'ar' | 'en'} />
+              <StoreLogo slug={s.slug} size="lg" locale={locale as 'ar' | 'en'} />
               <span className="t-small text-on-surface-variant text-center line-clamp-1 group-hover:text-[var(--brand-green-dark)]">
-                {label || slug}
+                {label || s.slug}
               </span>
+              {showRating && (
+                <span className="inline-flex items-center gap-0.5 t-caption text-[var(--brand-gold-dark)]">
+                  <Star className="h-3 w-3 fill-current" />
+                  {s.average_rating!.toFixed(1)}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -489,8 +570,29 @@ function ValueProps() {
 
 /* ───────────────────────── Savings stat ───────────────────────── */
 
-function SavingsStat() {
+function formatSavings(value: number, isRTL: boolean): string {
+  // Round to nearest thousand for a cleaner hero number.
+  const rounded = Math.round(value);
+  if (rounded >= 1_000_000) {
+    const m = rounded / 1_000_000;
+    return isRTL
+      ? `+${m.toFixed(m >= 10 ? 0 : 2).replace(/\.0+$/, '')} مليون`
+      : `${m.toFixed(m >= 10 ? 0 : 2).replace(/\.0+$/, '')}M+`;
+  }
+  if (rounded >= 1_000) {
+    const k = Math.round(rounded / 1_000);
+    return isRTL
+      ? `+${k.toLocaleString('ar-SA')}`
+      : `${k.toLocaleString('en-US')}K+`;
+  }
+  return rounded.toLocaleString(isRTL ? 'ar-SA' : 'en-US');
+}
+
+function SavingsStat({ totalSavings }: { totalSavings: number }) {
   const { isRTL } = useLocale();
+  const displaySavings = totalSavings > 0
+    ? formatSavings(totalSavings, isRTL)
+    : isRTL ? '+1,250,000' : '1.25M+';
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8 md:py-20">
@@ -512,7 +614,7 @@ function SavingsStat() {
             {isRTL ? 'ساعدنا المتسوقين على توفير' : "We've helped shoppers save"}
           </p>
           <p className="mt-2 text-[64px] md:text-[96px] font-black leading-none tracking-tight text-[var(--brand-gold)] num-ltr inline-flex items-baseline gap-3 justify-center">
-            {isRTL ? '+1,250,000' : '1.25M+'}
+            {displaySavings}
             <SARSymbol className="w-12 h-12 md:w-16 md:h-16 fill-current self-center" />
           </p>
           <p className="mt-4 t-body text-white/80 max-w-lg">

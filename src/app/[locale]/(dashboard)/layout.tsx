@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { PublicPageShell } from '@/components/public/public-page-shell';
+import { DashboardPushBanner } from '@/components/push/dashboard-push-banner';
 import { getUserProfile, requireAuth } from '@/lib/auth/server';
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
 
   return (
     <PublicPageShell locale={locale}>
+      <DashboardPushBanner locale={locale} />
       {children}
     </PublicPageShell>
   );

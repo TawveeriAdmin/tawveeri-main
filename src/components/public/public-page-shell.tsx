@@ -84,6 +84,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             profile: 'الملف الشخصي',
             wishlist: 'المفضلة',
             priceAlerts: 'تنبيهات الأسعار',
+            savedSearches: 'عمليات البحث المحفوظة',
             signOut: 'تسجيل الخروج',
           }
         : {
@@ -93,6 +94,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             profile: 'Profile',
             wishlist: 'Wishlist',
             priceAlerts: 'Price Alerts',
+            savedSearches: 'Saved Searches',
             signOut: 'Sign Out',
           },
     [locale]
@@ -412,6 +414,12 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                         <Link href={`/${locale}/price-alerts`}>
                           <SlidersHorizontal className="me-2 h-4 w-4" />
                           {copy.priceAlerts}
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href={`/${locale}/saved-searches`}>
+                          <Search className="me-2 h-4 w-4" />
+                          {copy.savedSearches}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

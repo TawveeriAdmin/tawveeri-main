@@ -132,6 +132,8 @@ export function mapGroupedToProductCard(
         name_ar: names.name_ar,
         name_en: names.name_en,
         logo_url: null as string | null,
+        average_rating: sp.rating ?? null,
+        total_reviews: sp.review_count ?? null,
       },
     };
   });

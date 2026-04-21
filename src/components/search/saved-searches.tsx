@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSavedSearches, deleteSavedSearch, saveSearch } from '@/lib/search/saved-searches';
+import { createNotification } from '@/lib/auth/notifications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -69,6 +70,28 @@ export function SavedSearches({
 
       if (result.error) throw result.error;
 
+      // Required Action Pattern: in-app notification + audit log (email skipped — no template)
+      const savedId = result.data?.id ?? null;
+      createNotification({
+        user_id: user.id,
+        type: 'system',
+        title_ar: 'تم حفظ البحث',
+        title_en: 'Search saved',
+        message_ar: `تم حفظ البحث "${searchName.trim()}" بنجاح.`,
+        message_en: `Search "${searchName.trim()}" saved successfully.`,
+      }).catch(() => {});
+
+      fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'saved_search_created',
+          entity_type: 'saved_search',
+          entity_id: savedId,
+          details: { name: searchName.trim(), query: currentQuery || null },
+        }),
+      }).catch(() => {});
+
       toast({
         title: t('search.savedSearches.saved'),
         description: t('search.savedSearches.searchSaved'),
@@ -97,6 +120,17 @@ export function SavedSearches({
     try {
       const result = await deleteSavedSearch(searchId, user.id);
       if (result.error) throw result.error;
+
+      // Audit log (deletion is a destructive action, worth tracking — notification skipped to avoid noise)
+      fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'saved_search_deleted',
+          entity_type: 'saved_search',
+          entity_id: searchId,
+        }),
+      }).catch(() => {});
 
       toast({
         title: t('search.savedSearches.deleted'),

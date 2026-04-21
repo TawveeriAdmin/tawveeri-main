@@ -41,6 +41,8 @@ interface ProductStore {
     name_ar: string;
     name_en: string;
     logo_url: string | null;
+    average_rating?: number | null;
+    total_reviews?: number | null;
   };
 }
 
@@ -171,6 +173,7 @@ export function ProductCard({
       id: ps.stores.id,
       initial: (currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en || '?').charAt(0).toUpperCase(),
       name: currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en,
+      rating: ps.stores.average_rating ?? null,
     }))
     .filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i);
 
@@ -310,32 +313,67 @@ export function ProductCard({
               {isMultiStore ? (
                 <div className="flex items-center gap-1 shrink-0">
                   <div className="flex -space-x-1 rtl:space-x-reverse">
-                    {storeInitials.map((s) => (
-                      <StoreLogo
-                        key={s.id}
-                        slug={s.id}
-                        size="xs"
-                        alt={s.name}
-                        locale={currentLocale as 'ar' | 'en'}
-                        className="border-2 border-[color:var(--color-surface)] bg-[color:var(--color-surface)]"
-                      />
-                    ))}
+                    {storeInitials.map((s) => {
+                      const showStar = typeof s.rating === 'number' && s.rating >= 4;
+                      const ratingTitle = showStar
+                        ? currentLocale === 'ar'
+                          ? `${s.name} · تقييم ${s.rating!.toFixed(1)}`
+                          : `${s.name} · ${s.rating!.toFixed(1)}★ rating`
+                        : s.name;
+                      return (
+                        <span key={s.id} className="relative inline-flex" title={ratingTitle}>
+                          <StoreLogo
+                            slug={s.id}
+                            size="xs"
+                            alt={ratingTitle}
+                            locale={currentLocale as 'ar' | 'en'}
+                            className="border-2 border-[color:var(--color-surface)] bg-[color:var(--color-surface)]"
+                          />
+                          {showStar && (
+                            <span
+                              aria-hidden="true"
+                              className="absolute -top-1 -end-1 inline-flex h-3 w-3 items-center justify-center rounded-full bg-[var(--brand-gold)] text-[8px] text-[var(--brand-dark-text)] shadow-[var(--elevation-1)]"
+                            >
+                              ★
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
                 storeCount > 0 && (() => {
-                  const storeId = product.product_stores[0]?.stores.id || '';
+                  const firstStore = product.product_stores[0]?.stores;
+                  const storeId = firstStore?.id || '';
                   const storeName = currentLocale === 'ar'
-                    ? product.product_stores[0]?.stores.name_ar
-                    : product.product_stores[0]?.stores.name_en;
+                    ? firstStore?.name_ar
+                    : firstStore?.name_en;
+                  const rating = firstStore?.average_rating ?? null;
+                  const showStar = typeof rating === 'number' && rating >= 4;
+                  const ratingTitle = showStar
+                    ? currentLocale === 'ar'
+                      ? `${storeName || storeId} · تقييم ${rating!.toFixed(1)}`
+                      : `${storeName || storeId} · ${rating!.toFixed(1)}★ rating`
+                    : (storeName || storeId);
                   return (
                     <div className="flex items-center gap-1 shrink-0">
-                      <StoreLogo
-                        slug={storeId}
-                        size="xs"
-                        alt={storeName || storeId}
-                        locale={currentLocale as 'ar' | 'en'}
-                      />
+                      <span className="relative inline-flex" title={ratingTitle}>
+                        <StoreLogo
+                          slug={storeId}
+                          size="xs"
+                          alt={storeName || storeId}
+                          locale={currentLocale as 'ar' | 'en'}
+                        />
+                        {showStar && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute -top-1 -end-1 inline-flex h-3 w-3 items-center justify-center rounded-full bg-[var(--brand-gold)] text-[8px] text-[var(--brand-dark-text)] shadow-[var(--elevation-1)]"
+                          >
+                            ★
+                          </span>
+                        )}
+                      </span>
                       <span className="text-[11px] text-on-surface-variant">
                         {storeName}
                       </span>

@@ -333,7 +333,32 @@ export default function ProductDetailClient() {
  }, [slug, t]);
 
  const handleAddToCompare = (productId: string) => {
- // TODO: Implement comparison functionality
+ if (typeof window === 'undefined') return;
+ try {
+ const stored = window.localStorage.getItem('compare_products');
+ const existing: string[] = stored ? JSON.parse(stored) : [];
+ const unique = Array.from(new Set(existing));
+
+ if (unique.includes(productId)) {
+ toast({ title: t('products.added'), description: t('compare.alreadyInCompare') });
+ return;
+ }
+ if (unique.length >= 4) {
+ toast({ title: t('common.error'), description: t('compare.maxProducts'), variant: 'destructive' });
+ return;
+ }
+
+ const next = [productId, ...unique].slice(0, 4);
+ window.localStorage.setItem('compare_products', JSON.stringify(next));
+ window.dispatchEvent(new Event('compare-products-updated'));
+
+ toast({
+ title: t('products.added'),
+ description: t('compare.addedToCompare'),
+ });
+ } catch {
+ // ignore storage errors
+ }
  };
 
  const handleSaveToWishlist = async (productId: string) => {
@@ -583,8 +608,8 @@ export default function ProductDetailClient() {
  SKU: {product.sku}
  </p>
  )}
- {/* Rating Display */}
- {product.average_rating && product.total_reviews && (
+ {/* Rating Display — Tawveeri-native reviews preferred; fall back to merchant rating */}
+ {product.average_rating && product.total_reviews ? (
  <div className="mt-3">
  <ProductRatingDisplay
  rating={product.average_rating}
@@ -592,7 +617,18 @@ export default function ProductDetailClient() {
  size="md"
  />
  </div>
- )}
+ ) : product.merchant_rating ? (
+ <div className="mt-3 flex items-center gap-2">
+ <ProductRatingDisplay
+ rating={product.merchant_rating}
+ totalReviews={product.merchant_review_count ?? 0}
+ size="md"
+ />
+ <span className="text-xs text-on-surface-variant">
+ {locale === 'ar' ? 'من المتجر' : 'from merchant'}
+ </span>
+ </div>
+ ) : null}
  {/* View Count */}
  {viewCount !== null && viewCount > 0 && (
  <div className="mt-2 flex items-center gap-2 text-sm text-on-surface-variant">

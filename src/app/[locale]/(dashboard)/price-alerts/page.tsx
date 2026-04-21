@@ -341,8 +341,28 @@ export default function PriceAlertsPage() {
  </TabsContent>
  </Tabs>
 
- {/* Price Alert Dialog - For adding new alerts, user needs to navigate to product page */}
- {/* Edit functionality will use the dialog but we need product context */}
+ <PriceAlertDialog
+ open={alertDialogOpen}
+ onOpenChange={(next) => {
+ setAlertDialogOpen(next);
+ if (!next) setEditingAlert(null);
+ }}
+ productId={editingAlert?.product_id ?? undefined}
+ productName={
+ editingAlert
+ ? (locale === 'ar'
+ ? (editingAlert as PriceAlertWithProduct).products?.name_ar
+ : (editingAlert as PriceAlertWithProduct).products?.name_en) || ''
+ : undefined
+ }
+ currentPrice={
+ editingAlert
+ ? (editingAlert as PriceAlertWithProduct).products?.product_stores?.[0]?.current_price ?? null
+ : null
+ }
+ locale={locale}
+ onSaved={loadAlerts}
+ />
  </div>
  );
 }

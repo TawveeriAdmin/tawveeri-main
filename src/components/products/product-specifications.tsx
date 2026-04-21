@@ -21,7 +21,10 @@ interface ProductSpecificationsProps {
 // Translation mapping for common specification keys
 const specTranslations: Record<string, { ar: string; en: string }> = {
   storage: { ar: 'سعة التخزين', en: 'Storage' },
+  storage_gb: { ar: 'سعة التخزين', en: 'Storage' },
+  storage_type: { ar: 'نوع التخزين', en: 'Storage Type' },
   ram: { ar: 'الذاكرة العشوائية', en: 'RAM' },
+  ram_gb: { ar: 'الذاكرة العشوائية', en: 'RAM' },
   screen_size: { ar: 'حجم الشاشة', en: 'Screen Size' },
   color: { ar: 'اللون', en: 'Color' },
   camera: { ar: 'الكاميرا', en: 'Camera' },
@@ -32,13 +35,21 @@ const specTranslations: Record<string, { ar: string; en: string }> = {
   display: { ar: 'الشاشة', en: 'Display' },
   resolution: { ar: 'دقة الشاشة', en: 'Resolution' },
   refresh_rate: { ar: 'معدل التحديث', en: 'Refresh Rate' },
+  panel_type: { ar: 'نوع الشاشة', en: 'Panel Type' },
   connectivity: { ar: 'الاتصال', en: 'Connectivity' },
+  sim_type: { ar: 'نوع الشريحة', en: 'SIM Type' },
   ports: { ar: 'المنافذ', en: 'Ports' },
   operating_system: { ar: 'نظام التشغيل', en: 'Operating System' },
   os: { ar: 'نظام التشغيل', en: 'OS' },
   dimensions: { ar: 'الأبعاد', en: 'Dimensions' },
   warranty: { ar: 'الضمان', en: 'Warranty' },
   audio: { ar: 'الصوت', en: 'Audio' },
+  audio_type: { ar: 'نوع الصوت', en: 'Audio Type' },
+  wireless: { ar: 'الاتصال اللاسلكي', en: 'Wireless' },
+  anc: { ar: 'إلغاء الضوضاء', en: 'Noise Cancellation' },
+  platform: { ar: 'المنصة', en: 'Platform' },
+  gaming_type: { ar: 'نوع المنتج', en: 'Type' },
+  condition: { ar: 'الحالة', en: 'Condition' },
   network: { ar: 'الشبكة', en: 'Network' },
 };
 

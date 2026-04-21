@@ -14,6 +14,8 @@
   "availability": "Availability",
   "viewProduct": "View Product",
   "maxProducts": "You can compare up to 4 products at a time",
+  "alreadyInCompare": "This product is already in your compare list",
+  "addedToCompare": "Added to compare. Open the compare page to view side-by-side.",
   "product": "product",
   "products": "products",
   "store": "store",

@@ -3,6 +3,9 @@ import LandingPageClient from './landing-client';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { JsonLd, buildWebSiteJsonLd } from '@/lib/seo/json-ld';
+import { getLandingData } from '@/lib/landing/data';
+
+export const revalidate = 300; // cache landing data for 5 min
 
 export async function generateMetadata({
   params,
@@ -26,12 +29,19 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const data = await getLandingData().catch(() => ({
+    topDeals: [],
+    featured: [],
+    stores: [],
+    categoryCounts: {},
+    totalSavings: 0,
+  }));
 
   return (
     <>
       <JsonLd data={buildWebSiteJsonLd(locale)} />
       <PublicPageShell locale={locale} fullBleed>
-        <LandingPageClient />
+        <LandingPageClient data={data} />
       </PublicPageShell>
     </>
   );

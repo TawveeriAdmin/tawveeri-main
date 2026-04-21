@@ -12,6 +12,7 @@ import { SARSymbol } from '@/components/ui/price';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { createNotification } from '@/lib/auth/notifications';
+import { ProductPicker, type PickedProduct } from '@/components/products/product-picker';
 import type { Database } from '@/lib/database/types';
 
 type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];
@@ -19,8 +20,9 @@ type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];
 interface PriceAlertDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  productId: string;
-  productName: string;
+  /** When omitted the dialog opens a picker first and resolves productId/productName/currentPrice from the chosen product. */
+  productId?: string;
+  productName?: string;
   locale: string;
   currentPrice?: number | null;
   onSaved?: () => void;
@@ -29,16 +31,23 @@ interface PriceAlertDialogProps {
 export function PriceAlertDialog({
   open,
   onOpenChange,
-  productId,
-  productName,
+  productId: productIdProp,
+  productName: productNameProp,
   locale,
-  currentPrice,
+  currentPrice: currentPriceProp,
   onSaved,
 }: PriceAlertDialogProps) {
   const t = useTranslations();
   const { toast } = useToast();
   const { user } = useAuth();
   const supabase = getSupabaseBrowserClient();
+
+  // Picker-selected product (only used when productIdProp is absent).
+  const [pickedProduct, setPickedProduct] = useState<PickedProduct | null>(null);
+  const productId = productIdProp ?? pickedProduct?.id ?? null;
+  const productName =
+    productNameProp ?? (pickedProduct ? (locale === 'ar' ? pickedProduct.name_ar : pickedProduct.name_en) : '');
+  const currentPrice = currentPriceProp ?? pickedProduct?.lowestPrice ?? null;
 
   const formattedCurrentPrice = useMemo(() => {
     if (typeof currentPrice !== 'number') return null;
@@ -51,9 +60,18 @@ export function PriceAlertDialog({
   const [existingAlert, setExistingAlert] = useState<PriceAlertRow | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Load existing alert when dialog opens
+  // Reset picker when the dialog closes so the next open is clean.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    if (!open || !user) {
+    if (!open) {
+      setPickedProduct(null);
+      setError(null);
+    }
+  }, [open]);
+
+  // Load existing alert when dialog opens AND we have a resolved productId.
+  useEffect(() => {
+    if (!open || !user || !productId) {
       return;
     }
 
@@ -101,6 +119,10 @@ export function PriceAlertDialog({
     event.preventDefault();
     if (!user) {
       handleClose();
+      return;
+    }
+    if (!productId) {
+      setError(locale === 'ar' ? 'اختر منتجاً أولاً.' : 'Pick a product first.');
       return;
     }
 
@@ -174,9 +196,29 @@ export function PriceAlertDialog({
     handleClose();
   };
 
+  const needsPicker = !productId;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
+        {needsPicker ? (
+          <div className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>{t('product.priceAlertTitle')}</DialogTitle>
+              <DialogDescription>
+                {locale === 'ar'
+                  ? 'ابحث عن المنتج الذي تريد تعيين تنبيه سعر له.'
+                  : 'Search for the product you want to set a price alert on.'}
+              </DialogDescription>
+            </DialogHeader>
+            <ProductPicker locale={locale} onPick={setPickedProduct} />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                {t('product.priceAlertCancel')}
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <DialogHeader>
             <DialogTitle>{t('product.priceAlertTitle')}</DialogTitle>
@@ -235,6 +277,7 @@ export function PriceAlertDialog({
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

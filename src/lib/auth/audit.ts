@@ -248,6 +248,8 @@ export const AUDIT_ACTIONS = {
   NEW_DEVICE_LOGIN: 'new_device_login',
 
   // Saved Searches
+  SAVED_SEARCH_CREATED: 'saved_search_created',
+  SAVED_SEARCH_DELETED: 'saved_search_deleted',
   SAVED_SEARCH_RESULTS: 'saved_search_results',
 
   // Cron
