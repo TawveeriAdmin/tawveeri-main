@@ -22,6 +22,15 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { AlertCircle, Flame, Heart, Percent, Search, Sparkles, Tag, TimerReset } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database } from '@/lib/database/types';
@@ -49,6 +58,7 @@ type SortOption = 'discount' | 'price' | 'newest';
 
 const COMPARE_STORAGE_KEY = 'compare_products';
 const MAX_COMPARE_PRODUCTS = 4;
+const DEALS_PAGE_SIZE = 20;
 
 const getDealDiscount = (product: DealProduct) => {
   const bestDeal = product.product_stores.find(
@@ -83,6 +93,7 @@ export default function DealsClient() {
   const [filteredProducts, setFilteredProducts] = useState<DealProduct[]>([]);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [savedProductIds, setSavedProductIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
 
   const compareCount = compareIds.size;
 
@@ -329,7 +340,42 @@ export default function DealsClient() {
     });
 
     setFilteredProducts(result);
+    // Filters changed — snap back to page 1 so the user sees the top results.
+    setCurrentPage(1);
   }, [products, searchQuery, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / DEALS_PAGE_SIZE));
+  const paginatedProducts = useMemo(
+    () =>
+      filteredProducts.slice(
+        (currentPage - 1) * DEALS_PAGE_SIZE,
+        currentPage * DEALS_PAGE_SIZE,
+      ),
+    [filteredProducts, currentPage],
+  );
+
+  // Build a compact page list with ellipses for long ranges (same shape as search).
+  const pageNumbers = useMemo<(number | 'ellipsis')[]>(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | 'ellipsis')[] = [1];
+    const windowStart = Math.max(2, currentPage - 1);
+    const windowEnd = Math.min(totalPages - 1, currentPage + 1);
+    if (windowStart > 2) pages.push('ellipsis');
+    for (let p = windowStart; p <= windowEnd; p++) pages.push(p);
+    if (windowEnd < totalPages - 1) pages.push('ellipsis');
+    pages.push(totalPages);
+    return pages;
+  }, [totalPages, currentPage]);
+
+  const handlePageChange = (next: number) => {
+    if (next < 1 || next > totalPages || next === currentPage) return;
+    setCurrentPage(next);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const maxDiscount = useMemo(
     () =>
@@ -397,9 +443,9 @@ export default function DealsClient() {
 
       const next = [productId, ...unique].slice(0, MAX_COMPARE_PRODUCTS);
       window.localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+      // The compare-products-updated listener above re-reads localStorage
+      // and refreshes compareIds — no need to set state manually here.
       window.dispatchEvent(new Event('compare-products-updated'));
-      setCompareCount(next.length);
-
     } catch (err) {
       console.error('Error adding product to comparison:', err);
       toast({
@@ -624,20 +670,73 @@ export default function DealsClient() {
       )}
 
       {!loading && !error && filteredProducts.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              locale={locale}
-              onCompare={handleAddToCompare}
-              onSave={handleSaveToWishlist}
-              isSaved={savedProductIds.has(product.id)}
-              isInCompare={compareIds.has(product.id)}
-              onAddToCart={handleAddToCart}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {paginatedProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                locale={locale}
+                onCompare={handleAddToCompare}
+                onSave={handleSaveToWishlist}
+                isSaved={savedProductIds.has(product.id)}
+                isInCompare={compareIds.has(product.id)}
+                onAddToCart={handleAddToCart}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-6">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currentPage - 1);
+                    }}
+                    aria-disabled={currentPage === 1}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+
+                {pageNumbers.map((p, idx) =>
+                  p === 'ellipsis' ? (
+                    <PaginationItem key={`ellipsis-${idx}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={p}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(p);
+                        }}
+                        isActive={p === currentPage}
+                      >
+                        {p.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currentPage + 1);
+                    }}
+                    aria-disabled={currentPage === totalPages}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
       )}
     </div>
   );
