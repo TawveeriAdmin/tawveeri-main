@@ -502,12 +502,26 @@ export default function StoreDetailClient() {
  [filteredProducts, currentPage],
  );
 
- // Compact page list with ellipses — same shape as deals-client.
+ // Compact page list with ellipses. Near the start we show 1 2 3 ... last;
+ // near the end we show 1 ... last-2 last-1 last; in the middle we show
+ // 1 ... current-1 current current+1 ... last. Keeps 3 consecutive numbers
+ // at whichever end is in focus so users can skip ahead a page or two
+ // without stepping through ellipses.
  const pageNumbers = useMemo<(number | 'ellipsis')[]>(() => {
  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
  const pages: (number | 'ellipsis')[] = [1];
- const start = Math.max(2, currentPage - 1);
- const end = Math.min(totalPages - 1, currentPage + 1);
+ let start: number;
+ let end: number;
+ if (currentPage <= 3) {
+ start = 2;
+ end = Math.min(totalPages - 1, 3);
+ } else if (currentPage >= totalPages - 2) {
+ start = Math.max(2, totalPages - 2);
+ end = totalPages - 1;
+ } else {
+ start = Math.max(2, currentPage - 1);
+ end = Math.min(totalPages - 1, currentPage + 1);
+ }
  if (start > 2) pages.push('ellipsis');
  for (let p = start; p <= end; p++) pages.push(p);
  if (end < totalPages - 1) pages.push('ellipsis');
