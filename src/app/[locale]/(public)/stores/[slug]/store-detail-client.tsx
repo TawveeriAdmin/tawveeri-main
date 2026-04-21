@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,20 @@ import { StoreReviewCard, type StoreReview } from '@/components/stores/store-rev
 import { StoreReviewForm } from '@/components/stores/store-review-form';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useToast } from '@/components/ui/use-toast';
+import { useMultiStoreCart } from '@/lib/cart/cart-context';
+import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
+import { incrementSaveCount } from '@/lib/wishlist/utils';
+import { Price } from '@/components/ui/price';
+import { Input } from '@/components/ui/input';
+import {
+ Select,
+ SelectContent,
+ SelectItem,
+ SelectTrigger,
+ SelectValue,
+} from '@/components/ui/select';
 import {
  AlertCircle,
  Award,
@@ -23,7 +37,10 @@ import {
  MapPin,
  Package,
  Phone,
+ RotateCcw,
+ Search,
  ShieldCheck,
+ Sparkles,
  Star,
  Store,
  Ticket,
@@ -44,6 +61,15 @@ import {
  AccordionItem,
  AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+ Pagination,
+ PaginationContent,
+ PaginationEllipsis,
+ PaginationItem,
+ PaginationLink,
+ PaginationNext,
+ PaginationPrevious,
+} from '@/components/ui/pagination';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 interface StoreDetails {
@@ -116,12 +142,27 @@ interface StoreProduct {
  }>;
 }
 
+type SortOption = 'recommended' | 'price_asc' | 'price_desc' | 'name' | 'discount';
+const STORE_PRODUCTS_PAGE_SIZE = 20;
+const COMPARE_STORAGE_KEY = 'compare_products';
+const MAX_COMPARE_PRODUCTS = 4;
+
+const VALID_SORTS: Readonly<SortOption[]> = ['recommended', 'price_asc', 'price_desc', 'name', 'discount'];
+
+const parseSort = (raw: string | null): SortOption =>
+ (VALID_SORTS as readonly string[]).includes(raw ?? '') ? (raw as SortOption) : 'recommended';
+
 export default function StoreDetailClient() {
  const params = useParams();
  const router = useRouter();
+ const pathname = usePathname();
+ const searchParams = useSearchParams();
  const locale = (params?.locale as string) || 'ar';
  const slug = params?.slug as string;
  const t = useTranslations();
+ const { user } = useAuth();
+ const { toast } = useToast();
+ const { addItem } = useMultiStoreCart();
 
  const [store, setStore] = useState<StoreDetails | null>(null);
  const [products, setProducts] = useState<StoreProduct[]>([]);
@@ -130,6 +171,23 @@ export default function StoreDetailClient() {
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+
+ // Hydrate filter state from URL so shared links restore the view.
+ const [searchInput, setSearchInput] = useState(() => searchParams?.get('q') ?? '');
+ const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') ?? '');
+ const [categoryFilter, setCategoryFilter] = useState(() => searchParams?.get('cat') ?? 'all');
+ const [sortBy, setSortBy] = useState<SortOption>(() => parseSort(searchParams?.get('sort') ?? null));
+ const [inStockOnly, setInStockOnly] = useState(() => searchParams?.get('in_stock') === '1');
+ const [currentPage, setCurrentPage] = useState(() => {
+ const raw = Number.parseInt(searchParams?.get('page') ?? '1', 10);
+ return Number.isFinite(raw) && raw > 0 ? raw : 1;
+ });
+
+ const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+ const [savedProductIds, setSavedProductIds] = useState<Set<string>>(new Set());
+
+ // Ref to the products section so pagination can scroll back to it.
+ const productsTopRef = useRef<HTMLDivElement | null>(null);
 
  type StoreDetailsResponse = StoreDetails & { store_reviews: StoreReview[] };
  type ProductStoreResponse = ProductStoreEntry;
@@ -184,7 +242,7 @@ export default function StoreDetailClient() {
  current_price,
  original_price,
  availability,
- products(
+ products!inner(
  id,
  name_ar,
  name_en,
@@ -204,13 +262,13 @@ export default function StoreDetailClient() {
  )
  .eq('store_id', storeData.id)
  .eq('products.is_active', true)
- .limit(24);
+ .limit(500);
 
  if (productsError) throw productsError;
 
  const groupedProducts = new Map<string, StoreProduct>();
 
- (productsData as ProductStoreResponse[] | null)?.forEach((record) => {
+ (productsData as unknown as ProductStoreResponse[] | null)?.forEach((record) => {
  if (!record.products || !record.stores) return;
 
  const existing = groupedProducts.get(record.products.id);
@@ -273,6 +331,304 @@ export default function StoreDetailClient() {
  if (!store) return '';
  return locale === 'ar' ? store.name_ar : store.name_en;
  }, [store, locale]);
+
+ // Sync compare-bar state with localStorage + events (matches deals/search).
+ useEffect(() => {
+ if (typeof window === 'undefined') return;
+ const sync = () => {
+ try {
+ const raw = window.localStorage.getItem(COMPARE_STORAGE_KEY);
+ setCompareIds(new Set(raw ? (JSON.parse(raw) as string[]).slice(0, MAX_COMPARE_PRODUCTS) : []));
+ } catch {
+ setCompareIds(new Set());
+ }
+ };
+ sync();
+ window.addEventListener('compare-products-updated', sync);
+ window.addEventListener('storage', sync);
+ return () => {
+ window.removeEventListener('compare-products-updated', sync);
+ window.removeEventListener('storage', sync);
+ };
+ }, []);
+
+ // Pull the user's saved product ids so hearts render filled.
+ useEffect(() => {
+ if (!user) {
+ setSavedProductIds(new Set());
+ return;
+ }
+ const supabase = getSupabaseBrowserClient();
+ supabase
+ .from('user_wishlists')
+ .select('product_id')
+ .eq('user_id', user.id)
+ .then(({ data }) => {
+ if (data) setSavedProductIds(new Set(data.map((r) => r.product_id).filter(Boolean)));
+ });
+ }, [user]);
+
+ // Debounce the search input → URL-committed query so typing doesn't thrash
+ // history. 300 ms is the same shape used in other search inputs in the app.
+ useEffect(() => {
+ const handle = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+ return () => clearTimeout(handle);
+ }, [searchInput]);
+
+ // Any filter change → back to page 1 so the user never lands on an empty page.
+ useEffect(() => {
+ setCurrentPage(1);
+ }, [searchQuery, categoryFilter, sortBy, inStockOnly]);
+
+ // Reflect filter state in the URL so the view is shareable and back/forward
+ // navigates through filter history. `scroll: false` keeps scroll position.
+ useEffect(() => {
+ if (typeof window === 'undefined' || !pathname) return;
+ const next = new URLSearchParams();
+ if (searchQuery) next.set('q', searchQuery);
+ if (categoryFilter && categoryFilter !== 'all') next.set('cat', categoryFilter);
+ if (sortBy !== 'recommended') next.set('sort', sortBy);
+ if (inStockOnly) next.set('in_stock', '1');
+ if (currentPage > 1) next.set('page', String(currentPage));
+ const qs = next.toString();
+ const current = typeof window !== 'undefined' ? window.location.search.replace(/^\?/, '') : '';
+ if (qs === current) return;
+ router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+ }, [pathname, searchQuery, categoryFilter, sortBy, inStockOnly, currentPage, router]);
+
+ // Unique categories that this store actually carries, with counts. Drives
+ // the filter chip row — no dead chips for categories the store doesn't sell.
+ const categoriesInCatalog = useMemo(() => {
+ const counts = new Map<string, number>();
+ products.forEach((p) => {
+ if (!p.category) return;
+ counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+ });
+ return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+ }, [products]);
+
+ // Filter → sort pipeline. All client-side since the whole catalog is in memory.
+ const filteredProducts = useMemo(() => {
+ const q = searchQuery.trim().toLowerCase();
+ let result = products.filter((product) => {
+ if (categoryFilter !== 'all' && product.category !== categoryFilter) return false;
+ if (inStockOnly) {
+ const hasStock = product.product_stores.some((ps) => ps.availability !== 'out_of_stock');
+ if (!hasStock) return false;
+ }
+ if (q) {
+ const haystack = [product.name_ar, product.name_en, product.brand, product.model]
+ .filter(Boolean)
+ .join(' ')
+ .toLowerCase();
+ if (!haystack.includes(q)) return false;
+ }
+ return true;
+ });
+
+ const bestPrice = (p: StoreProduct): number => {
+ const prices = p.product_stores
+ .filter((ps) => ps.current_price > 0)
+ .map((ps) => ps.current_price);
+ return prices.length > 0 ? Math.min(...prices) : Number.POSITIVE_INFINITY;
+ };
+ const bestSaving = (p: StoreProduct): number => {
+ const gains = p.product_stores
+ .filter((ps) => ps.original_price && ps.current_price && ps.original_price > ps.current_price)
+ .map((ps) => (ps.original_price as number) - ps.current_price);
+ return gains.length > 0 ? Math.max(...gains) : 0;
+ };
+ const isInStock = (p: StoreProduct): boolean =>
+ p.product_stores.some((ps) => ps.availability !== 'out_of_stock');
+
+ const sorted = [...result];
+ if (sortBy === 'price_asc') {
+ sorted.sort((a, b) => bestPrice(a) - bestPrice(b));
+ } else if (sortBy === 'price_desc') {
+ sorted.sort((a, b) => bestPrice(b) - bestPrice(a));
+ } else if (sortBy === 'name') {
+ sorted.sort((a, b) =>
+ (locale === 'ar' ? a.name_ar : a.name_en).localeCompare(
+ locale === 'ar' ? b.name_ar : b.name_en,
+ locale,
+ ),
+ );
+ } else if (sortBy === 'discount') {
+ sorted.sort((a, b) => bestSaving(b) - bestSaving(a));
+ } else {
+ // recommended: in-stock first, then largest saving, then cheapest as tiebreaker.
+ sorted.sort((a, b) => {
+ const stock = Number(isInStock(b)) - Number(isInStock(a));
+ if (stock !== 0) return stock;
+ const saving = bestSaving(b) - bestSaving(a);
+ if (saving !== 0) return saving;
+ return bestPrice(a) - bestPrice(b);
+ });
+ }
+ return sorted;
+ }, [products, searchQuery, categoryFilter, sortBy, inStockOnly, locale]);
+
+ const totalPages = Math.max(1, Math.ceil(filteredProducts.length / STORE_PRODUCTS_PAGE_SIZE));
+ const paginatedProducts = useMemo(
+ () =>
+ filteredProducts.slice(
+ (currentPage - 1) * STORE_PRODUCTS_PAGE_SIZE,
+ currentPage * STORE_PRODUCTS_PAGE_SIZE,
+ ),
+ [filteredProducts, currentPage],
+ );
+
+ // Compact page list with ellipses — same shape as deals-client.
+ const pageNumbers = useMemo<(number | 'ellipsis')[]>(() => {
+ if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+ const pages: (number | 'ellipsis')[] = [1];
+ const start = Math.max(2, currentPage - 1);
+ const end = Math.min(totalPages - 1, currentPage + 1);
+ if (start > 2) pages.push('ellipsis');
+ for (let p = start; p <= end; p++) pages.push(p);
+ if (end < totalPages - 1) pages.push('ellipsis');
+ pages.push(totalPages);
+ return pages;
+ }, [totalPages, currentPage]);
+
+ const handlePageChange = (next: number) => {
+ if (next < 1 || next > totalPages || next === currentPage) return;
+ setCurrentPage(next);
+ if (productsTopRef.current) {
+ productsTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ }
+ };
+
+ // Header stats — derived for the currently filtered view.
+ const gridStats = useMemo(() => {
+ const prices = filteredProducts
+ .flatMap((p) => p.product_stores.map((ps) => ps.current_price))
+ .filter((price): price is number => typeof price === 'number' && price > 0);
+ if (prices.length === 0) return { cheapest: null, avg: null };
+ const cheapest = Math.min(...prices);
+ const avg = Math.round(prices.reduce((sum, p) => sum + p, 0) / prices.length);
+ return { cheapest, avg };
+ }, [filteredProducts]);
+
+ const handleReset = () => {
+ setSearchInput('');
+ setSearchQuery('');
+ setCategoryFilter('all');
+ setSortBy('recommended');
+ setInStockOnly(false);
+ setCurrentPage(1);
+ };
+
+ // Surprise me — random in-stock product from the current filtered set.
+ const handleSurpriseMe = useCallback(() => {
+ const candidates = filteredProducts.filter((p) =>
+ p.product_stores.some((ps) => ps.availability !== 'out_of_stock'),
+ );
+ const pool = candidates.length > 0 ? candidates : filteredProducts;
+ if (pool.length === 0) return;
+ const pick = pool[Math.floor(Math.random() * pool.length)];
+ router.push(`/${locale}/products/${pick.slug}`);
+ }, [filteredProducts, router, locale]);
+
+ const handleAddToCompare = (productId: string) => {
+ if (typeof window === 'undefined') return;
+ try {
+ const stored = window.localStorage.getItem(COMPARE_STORAGE_KEY);
+ const existing: string[] = stored ? JSON.parse(stored) : [];
+ const unique = Array.from(new Set(existing));
+
+ if (unique.includes(productId)) {
+ // Toggle off — matches deals/search page behavior.
+ const next = unique.filter((id) => id !== productId);
+ window.localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+ window.dispatchEvent(new Event('compare-products-updated'));
+ toast({
+ title: locale === 'ar' ? 'تمت الإزالة' : 'Removed',
+ description:
+ locale === 'ar'
+ ? 'تم حذف المنتج من المقارنة.'
+ : 'Removed from your compare list.',
+ });
+ return;
+ }
+ if (unique.length >= MAX_COMPARE_PRODUCTS) {
+ toast({
+ title: t('common.error'),
+ description: t('compare.maxProducts'),
+ variant: 'destructive',
+ });
+ return;
+ }
+ const next = [productId, ...unique].slice(0, MAX_COMPARE_PRODUCTS);
+ window.localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(next));
+ window.dispatchEvent(new Event('compare-products-updated'));
+ toast({
+ title: t('products.added'),
+ description: t('compare.addedToCompare'),
+ });
+ } catch (err) {
+ console.error('Error updating compare list:', err);
+ }
+ };
+
+ const handleSaveToWishlist = async (productId: string) => {
+ if (!user) {
+ router.push(`/${locale}/auth/login?redirect=/stores/${slug}`);
+ return;
+ }
+ const supabase = getSupabaseBrowserClient();
+ try {
+ const { error: saveError } = await supabase
+ .from('user_wishlists')
+ .insert({ user_id: user.id, product_id: productId });
+ if (saveError && saveError.code === '23505') {
+ setSavedProductIds((prev) => new Set(prev).add(productId));
+ toast({
+ title: t('products.saved'),
+ description:
+ locale === 'ar'
+ ? 'المنتج موجود بالفعل في قائمة الأمنيات'
+ : 'Already in your wishlist',
+ });
+ return;
+ }
+ if (saveError) throw saveError;
+ setSavedProductIds((prev) => new Set(prev).add(productId));
+ incrementSaveCount(productId).catch((err) => {
+ console.error('Error incrementing save count:', err);
+ });
+ window.dispatchEvent(new Event('wishlist-updated'));
+ toast({
+ title: t('products.saved'),
+ description: t('products.savedToWishlist'),
+ });
+ } catch (err) {
+ toast({
+ title: t('common.error'),
+ description: err instanceof Error ? err.message : t('products.saveError'),
+ variant: 'destructive',
+ });
+ }
+ };
+
+ const handleAddToCart = (product: StoreProduct) => {
+ const cartItem = createCartItemFromProduct(product, locale);
+ if (!cartItem) {
+ toast({ title: t('product.addToCartUnavailable'), variant: 'destructive' });
+ return;
+ }
+ addItem(cartItem);
+ toast({ title: t('product.addedToCart'), description: cartItem.storeName });
+ };
+
+ const categoryLabel = useCallback(
+ (key: string): string => {
+ const maybe = t(`products.categories.${key}`);
+ if (maybe && !maybe.startsWith('products.categories.')) return maybe;
+ return key.replace(/_/g, ' ');
+ },
+ [t],
+ );
 
  if (loading) {
  return (
@@ -513,29 +869,263 @@ export default function StoreDetailClient() {
  )}
 
  {/* Products */}
- <section className="mb-12">
- <div className="flex items-center justify-between mb-6">
- <div>
+ <section className="mb-12" ref={productsTopRef}>
+ <div className="flex flex-col gap-4 mb-4">
+ {/* Title row — left: heading + subtitle; right: result meta + Surprise me */}
+ <div className="flex flex-wrap items-start justify-between gap-3">
+ <div className="min-w-0">
  <h2 className="text-headline-md text-on-surface">{t('store.products')}</h2>
  <p className="text-on-surface-variant">{t('store.productsSubtitle')}</p>
  </div>
+ <div className="flex flex-wrap items-center gap-2">
  <Badge variant="outline" className="text-sm">
- {products.length} {t('store.productsCountLabel')}
+ {filteredProducts.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ {products.length !== filteredProducts.length && (
+ <>
+ {' / '}
+ {products.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </>
+ )}
+ {' '}
+ {t('store.productsCountLabel')}
  </Badge>
+ {gridStats.cheapest !== null && (
+ <Badge
+ variant="outline"
+ className="text-sm gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300"
+ >
+ <span className="opacity-70">
+ {locale === 'ar' ? 'الأقل' : 'from'}
+ </span>
+ <Price
+ amount={gridStats.cheapest}
+ className="text-sm font-semibold tabular-nums"
+ symbolClassName="w-3 h-3"
+ />
+ </Badge>
+ )}
+ {gridStats.avg !== null && gridStats.avg !== gridStats.cheapest && (
+ <Badge variant="outline" className="text-sm gap-1">
+ <span className="opacity-70">{locale === 'ar' ? 'المتوسط' : 'avg'}</span>
+ <Price
+ amount={gridStats.avg}
+ className="text-sm font-semibold tabular-nums"
+ symbolClassName="w-3 h-3"
+ />
+ </Badge>
+ )}
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={handleSurpriseMe}
+ disabled={filteredProducts.length === 0}
+ title={locale === 'ar' ? 'افتح منتجاً عشوائياً' : 'Open a random product'}
+ className="gap-1"
+ >
+ <Sparkles className="h-4 w-4" />
+ {locale === 'ar' ? 'فاجئني' : 'Surprise me'}
+ </Button>
+ </div>
  </div>
 
- {products.length === 0 ? (
- <EmptyState
- icon={<Package className="h-12 w-12" />}
- title={t('store.noProductsTitle')}
- description={t('store.noProductsDescription')}
+ {/* Search + sort + in-stock toggle */}
+ <div className="flex flex-col gap-2 md:flex-row md:items-center">
+ <div className="relative flex-1">
+ <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+ <Input
+ type="text"
+ value={searchInput}
+ onChange={(e) => setSearchInput(e.target.value)}
+ placeholder={
+ locale === 'ar'
+ ? `ابحث في منتجات ${storeName}...`
+ : `Search ${storeName} products...`
+ }
+ aria-label={locale === 'ar' ? 'ابحث في المنتجات' : 'Search products'}
+ className="h-10 ps-9"
  />
- ) : (
- <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
- {products.map((product) => (
- <ProductCard key={product.id} product={product} locale={locale} showActions={false} />
+ </div>
+ <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+ <SelectTrigger className="h-10 w-full md:w-[200px]">
+ <SelectValue />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="recommended">
+ {locale === 'ar' ? 'موصى به' : 'Recommended'}
+ </SelectItem>
+ <SelectItem value="price_asc">
+ {locale === 'ar' ? 'السعر: الأقل أولاً' : 'Price: low to high'}
+ </SelectItem>
+ <SelectItem value="price_desc">
+ {locale === 'ar' ? 'السعر: الأعلى أولاً' : 'Price: high to low'}
+ </SelectItem>
+ <SelectItem value="name">
+ {locale === 'ar' ? 'الاسم' : 'Name'}
+ </SelectItem>
+ <SelectItem value="discount">
+ {locale === 'ar' ? 'أعلى خصم' : 'Biggest discount'}
+ </SelectItem>
+ </SelectContent>
+ </Select>
+ <button
+ type="button"
+ onClick={() => setInStockOnly((v) => !v)}
+ aria-pressed={inStockOnly}
+ className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
+ inStockOnly
+ ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300'
+ : 'border-outline-variant bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50'
+ }`}
+ >
+ <span
+ className={`inline-block h-2 w-2 rounded-full ${
+ inStockOnly ? 'bg-emerald-500' : 'bg-outline'
+ }`}
+ />
+ {locale === 'ar' ? 'متوفر فقط' : 'In stock only'}
+ </button>
+ {(searchQuery || categoryFilter !== 'all' || sortBy !== 'recommended' || inStockOnly) && (
+ <Button
+ type="button"
+ variant="ghost"
+ size="sm"
+ onClick={handleReset}
+ className="h-10 gap-1"
+ title={locale === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset filters'}
+ >
+ <RotateCcw className="h-4 w-4" />
+ {locale === 'ar' ? 'إعادة ضبط' : 'Reset'}
+ </Button>
+ )}
+ </div>
+
+ {/* Category chips — hidden when there's only one category (or none) in the catalog */}
+ {categoriesInCatalog.length > 1 && (
+ <div className="flex flex-wrap gap-2">
+ <button
+ type="button"
+ onClick={() => setCategoryFilter('all')}
+ className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+ categoryFilter === 'all'
+ ? 'border-[var(--brand-green)] bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]'
+ : 'border-outline-variant bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50'
+ }`}
+ >
+ {locale === 'ar' ? 'الكل' : 'All'}
+ <span className="text-xs opacity-70">{products.length}</span>
+ </button>
+ {categoriesInCatalog.map(([category, count]) => (
+ <button
+ key={category}
+ type="button"
+ onClick={() => setCategoryFilter(category)}
+ className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+ categoryFilter === category
+ ? 'border-[var(--brand-green)] bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]'
+ : 'border-outline-variant bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50'
+ }`}
+ >
+ {categoryLabel(category)}
+ <span className="text-xs opacity-70">{count}</span>
+ </button>
  ))}
  </div>
+ )}
+ </div>
+
+ {filteredProducts.length === 0 ? (
+ <EmptyState
+ icon={<Package className="h-12 w-12" />}
+ title={
+ products.length === 0
+ ? t('store.noProductsTitle')
+ : locale === 'ar'
+ ? 'لا توجد نتائج'
+ : 'No matching products'
+ }
+ description={
+ products.length === 0
+ ? t('store.noProductsDescription')
+ : locale === 'ar'
+ ? 'جرّب تعديل البحث أو إزالة الفلاتر.'
+ : 'Try adjusting your search or clearing filters.'
+ }
+ action={
+ products.length > 0
+ ? {
+ label: locale === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset filters',
+ onClick: handleReset,
+ }
+ : undefined
+ }
+ />
+ ) : (
+ <>
+ <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+ {paginatedProducts.map((product) => (
+ <ProductCard
+ key={product.id}
+ product={product}
+ locale={locale}
+ onCompare={handleAddToCompare}
+ onSave={handleSaveToWishlist}
+ isSaved={savedProductIds.has(product.id)}
+ isInCompare={compareIds.has(product.id)}
+ onAddToCart={handleAddToCart}
+ />
+ ))}
+ </div>
+
+ {totalPages > 1 && (
+ <Pagination className="mt-6">
+ <PaginationContent>
+ <PaginationItem>
+ <PaginationPrevious
+ href="#"
+ onClick={(e) => {
+ e.preventDefault();
+ handlePageChange(currentPage - 1);
+ }}
+ aria-disabled={currentPage === 1}
+ className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+ />
+ </PaginationItem>
+ {pageNumbers.map((p, idx) =>
+ p === 'ellipsis' ? (
+ <PaginationItem key={`ellipsis-${idx}`}>
+ <PaginationEllipsis />
+ </PaginationItem>
+ ) : (
+ <PaginationItem key={p}>
+ <PaginationLink
+ href="#"
+ onClick={(e) => {
+ e.preventDefault();
+ handlePageChange(p);
+ }}
+ isActive={p === currentPage}
+ >
+ {p.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </PaginationLink>
+ </PaginationItem>
+ ),
+ )}
+ <PaginationItem>
+ <PaginationNext
+ href="#"
+ onClick={(e) => {
+ e.preventDefault();
+ handlePageChange(currentPage + 1);
+ }}
+ aria-disabled={currentPage === totalPages}
+ className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+ />
+ </PaginationItem>
+ </PaginationContent>
+ </Pagination>
+ )}
+ </>
  )}
  </section>
 
