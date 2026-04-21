@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ProductCard } from '@/components/products/product-card';
+import { ProductCard, type ProductCardProduct } from '@/components/products/product-card';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { StoreReviewCard, type StoreReview } from '@/components/stores/store-review-card';
 import { StoreReviewForm } from '@/components/stores/store-review-form';
@@ -101,6 +101,8 @@ interface ProductStoreEntry {
  current_price: number;
  original_price: number | null;
  availability: AvailabilityStatus;
+ product_url: string | null;
+ affiliate_url: string | null;
  products: {
  id: string;
  name_ar: string;
@@ -113,6 +115,7 @@ interface ProductStoreEntry {
  } | null;
  stores: {
  id: string;
+ slug: string | null;
  name_ar: string;
  name_en: string;
  logo_url: string | null;
@@ -133,8 +136,11 @@ interface StoreProduct {
  current_price: number;
  original_price: number | null;
  availability: AvailabilityStatus;
+ product_url: string | null;
+ affiliate_url: string | null;
  stores: {
  id: string;
+ slug: string | null;
  name_ar: string;
  name_en: string;
  logo_url: string | null;
@@ -242,6 +248,8 @@ export default function StoreDetailClient() {
  current_price,
  original_price,
  availability,
+ product_url,
+ affiliate_url,
  products!inner(
  id,
  name_ar,
@@ -254,6 +262,7 @@ export default function StoreDetailClient() {
  ),
  stores(
  id,
+ slug,
  name_ar,
  name_en,
  logo_url
@@ -277,8 +286,11 @@ export default function StoreDetailClient() {
  current_price: record.current_price,
  original_price: record.original_price,
  availability: record.availability,
+ product_url: record.product_url,
+ affiliate_url: record.affiliate_url,
  stores: {
  id: record.stores.id,
+ slug: record.stores.slug,
  name_ar: record.stores.name_ar,
  name_en: record.stores.name_en,
  logo_url: record.stores.logo_url,
@@ -611,7 +623,7 @@ export default function StoreDetailClient() {
  }
  };
 
- const handleAddToCart = (product: StoreProduct) => {
+ const handleAddToCart = (product: ProductCardProduct) => {
  const cartItem = createCartItemFromProduct(product, locale);
  if (!cartItem) {
  toast({ title: t('product.addToCartUnavailable'), variant: 'destructive' });
