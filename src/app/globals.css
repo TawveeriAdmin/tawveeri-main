@@ -823,6 +823,16 @@ body {
   border-radius: 8px;
 }
 
+/* Inputs inside a wrapper that handles focus via `focus-within` must not
+ * render their own gold outline — the wrapper draws the focus signal. */
+input:focus-visible,
+input:focus,
+textarea:focus-visible,
+textarea:focus {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
 /* ============================================
    SELECTION (brand primary)
    ============================================ */

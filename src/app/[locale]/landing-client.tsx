@@ -222,7 +222,7 @@ function Hero({ totalStores, totalProducts }: { totalStores: number; totalProduc
           </p>
 
           <form onSubmit={onSubmit} className="mt-8 w-full max-w-2xl">
-            <div className="group relative flex items-center overflow-hidden rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] shadow-[var(--elevation-1)] transition-shadow focus-within:shadow-[var(--elevation-3)] focus-within:border-[var(--brand-green)]">
+            <div className="group relative flex items-center rounded-full border-2 border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] shadow-[var(--elevation-1)] transition-all focus-within:border-[var(--brand-green-dark)] focus-within:shadow-[var(--elevation-3)] focus-within:ring-4 focus-within:ring-[var(--brand-green)]/20">
               <Search className="pointer-events-none absolute start-5 h-5 w-5 text-on-surface-variant" />
               <input
                 value={query}
@@ -232,7 +232,7 @@ function Hero({ totalStores, totalProducts }: { totalStores: number; totalProduc
                     ? 'ابحث عن iPhone 15، ثلاجة LG، مكيف سبليت...'
                     : 'Search for iPhone 15, LG fridge, Split AC...'
                 }
-                className="min-w-0 flex-1 bg-transparent py-4 text-[16px] text-on-surface outline-none placeholder:text-on-surface-variant/70 ps-14 pe-3"
+                className="hero-search-input min-w-0 flex-1 bg-transparent py-4 text-[16px] text-on-surface placeholder:text-on-surface-variant/70 ps-14 pe-3"
                 aria-label={isRTL ? 'البحث عن منتج' : 'Search for a product'}
               />
               <Button type="submit" size="lg" className="m-1.5 shrink-0 px-6">
