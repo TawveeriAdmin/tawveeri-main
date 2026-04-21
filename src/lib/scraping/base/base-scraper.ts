@@ -15,6 +15,7 @@ import { RateLimiter } from '../utils/rate-limiter';
 import { RetryHandler } from '../utils/retry-handler';
 import { parsePrice, validatePrice } from '../utils/price-parser';
 import { normalizeUrl, isValidUrl } from '../utils/url-utils';
+import { getBrowserHeaders } from '../search/user-agents';
 
 /**
  * Base scraper class that all store-specific scrapers extend
@@ -77,11 +78,12 @@ export abstract class BaseScraper {
       throw new Error(`Invalid URL: ${url}`);
     }
 
-    // Retry transient failures (timeout, 5xx, socket reset). 3 attempts with
-    // exponential backoff is enough to absorb most single-page blips without
-    // paying retry cost on permanent failures (404, etc.).
+    // Retry transient failures (timeout, 5xx, socket reset). 6 attempts with
+    // exponential backoff absorbs both single-page blips and an entire
+    // rate-limit wave: when Amazon starts returning 429/503 we want the
+    // scraper to cool off for minutes, not seconds, and keep going.
     const timeoutMs = this.config.timeout_ms ?? 20000;
-    const maxAttempts = 3;
+    const maxAttempts = 6;
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -97,14 +99,15 @@ export abstract class BaseScraper {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
+        // Rotate UA + full real-browser header set per attempt. A stale UA
+        // pinned for an entire session was one of the signals Amazon flagged
+        // during the 200-minute full-coverage run; rotating per attempt is
+        // cheap and harmless for stores that don't care.
         const response = await fetch(url, {
-          headers: { 'User-Agent': this.config.user_agents[0] || 'Mozilla/5.0' },
+          headers: getBrowserHeaders(),
           signal: controller.signal,
         });
         if (!response.ok) {
-          if (response.status >= 400 && response.status < 500) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const text = await response.text();
@@ -116,9 +119,22 @@ export abstract class BaseScraper {
       } catch (err) {
         lastError = err;
         const msg = err instanceof Error ? err.message : String(err);
-        const isPermanent = /HTTP 4\d\d/.test(msg);
+        // 4xx is permanent EXCEPT 429 (rate limit) — previously we bailed on
+        // 429 after zero retries, which is exactly wrong for an anti-throttle
+        // pass. Treat 429 as transient-but-hostile and apply the long
+        // cool-off below.
+        const isPermanent = /HTTP 4\d\d/.test(msg) && !/HTTP 429/.test(msg);
         if (isPermanent || attempt === maxAttempts) {
           throw err;
+        }
+        // Rate-limit / service-unavailable: back off HARD and propagate the
+        // cool-off to the shared rate limiter so every other in-flight
+        // request in this scraper instance also waits it out.
+        if (/HTTP (429|503)/.test(msg)) {
+          const cool = Math.min(30000 * Math.pow(2, attempt - 1), 480000) + Math.floor(Math.random() * 5000);
+          console.log(`    [${this.config.store_slug}] cooldown ${Math.round(cool / 1000)}s after ${msg.match(/HTTP (429|503)/)?.[0]}: ${shortUrl(url)}`);
+          this.rateLimiter.setCooldownUntil(Date.now() + cool);
+          await new Promise((r) => setTimeout(r, cool));
         }
       } finally {
         clearTimeout(timer);

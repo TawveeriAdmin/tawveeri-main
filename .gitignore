@@ -56,3 +56,6 @@ mobile/android/
 mobile/ios/
 mobile/node_modules/
 
+# Scraper resume state (written live by enrichment scripts)
+.scrape-state/
+

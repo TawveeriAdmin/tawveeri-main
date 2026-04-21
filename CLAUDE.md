@@ -40,93 +40,13 @@ Only these user commands change mode:
 
 ### Mode Contracts
 
-#### RESEARCH (`do res`)
-
-Purpose: understand existing code and gather facts.
-
-- Allowed: read/search files, inspect context, ask clarifying questions.
-- Forbidden: planning, implementation, and code changes.
-
-#### INNOVATE (`do inn`)
-
-Purpose: brainstorm options before choosing an approach.
-
-- Allowed: possible approaches with pros/cons and trade-offs.
-- Forbidden: final decisions, step-by-step planning, code writing.
-
-#### PLAN (`do pla`)
-
-Purpose: produce an exhaustive implementation plan with no open decisions.
-
-- Allowed: exact file paths, symbols, technical steps, sequencing.
-- Forbidden: code writing.
-- Requirement: end with a numbered implementation checklist.
-
-Checklist format:
-
-1. [Specific action]
-2. [Specific action]
-3. [Specific action]
-
-#### EXECUTE (`do exe`)
-
-Purpose: implement only what was approved in `PLAN`.
-
-- Allowed: only planned steps.
-- Forbidden: unplanned improvements, refactors, or extra scope.
-- If any deviation is required: stop and request return to `PLAN`.
-
-#### REVIEW (`do rev`)
-
-Purpose: verify implementation strictly against plan.
-
-- Allowed: comparison and verification only.
-- Forbidden: new edits.
-- Must explicitly flag deviations using:
-  - `DEVIATION DETECTED: <description>`
-- End with one verdict:
-  - `IMPLEMENTATION MATCHES PLAN EXACTLY`
-  - `IMPLEMENTATION DEVIATES FROM PLAN`
-
-#### FAST (`do fas`)
-
-Purpose: minimal, rapid, scoped task execution.
-
-- Allowed: smallest possible change to complete assigned task.
-- Forbidden: refactors, optimizations, or behavior changes outside scope unless explicitly requested.
-- Principles: KISS and YAGNI.
-- If task grows beyond scope: return to `PLAN`.
-
-Response format in FAST:
-
-1. Problem
-2. Expected outcome
-3. Constraints
-4. Minimal solution
-5. Files changed
-
-#### RESEARCH PLAN (`do respla`)
-
-Purpose: deep research first, then assumption-free planning.
-
-Phase 1 - Research:
-
-1. Restate and clarify the problem.
-2. List constraints, requirements, and context.
-3. Gather only confirmed facts; ask when uncertain.
-4. Compare possible approaches.
-5. Note risks, edge cases, and trade-offs.
-6. Choose final approach only with evidence.
-
-Phase 2 - Plan:
-
-- Produce exhaustive implementation plan (no code).
-- Include files, functions, APIs, config, and data changes.
-- End with checklist:
-
-1. [Problem] [Expected Result] [Solution] [Files to change]
-2. [Problem] [Expected Result] [Solution] [Files to change]
-3. [Problem] [Expected Result] [Solution] [Files to change]
+- **RESEARCH (`do res`)**: read/search files, inspect, ask clarifying questions. No planning, implementation, or code changes.
+- **INNOVATE (`do inn`)**: brainstorm approaches with pros/cons/trade-offs. No final decisions, step-by-step planning, or code.
+- **PLAN (`do pla`)**: produce exhaustive implementation plan — exact file paths, symbols, sequencing. No code. End with a numbered checklist (`1. [Specific action]`).
+- **EXECUTE (`do exe`)**: implement only the approved PLAN. No unplanned improvements, refactors, or extra scope. On any needed deviation: stop and request return to PLAN.
+- **REVIEW (`do rev`)**: verify implementation strictly against plan. No new edits. Flag deviations as `DEVIATION DETECTED: <description>`. End with one verdict: `IMPLEMENTATION MATCHES PLAN EXACTLY` or `IMPLEMENTATION DEVIATES FROM PLAN`.
+- **FAST (`do fas`)**: minimal, scoped change (KISS/YAGNI). No refactors/optimizations outside scope. If task grows: return to PLAN. Response format: Problem → Expected outcome → Constraints → Minimal solution → Files changed.
+- **RESEARCH PLAN (`do respla`)**: Phase 1 research (restate problem, list constraints, gather confirmed facts, compare approaches, note risks, choose with evidence). Phase 2 exhaustive plan with checklist items formatted `[Problem] [Expected Result] [Solution] [Files to change]`.
 
 ## Project Overview
 
@@ -274,9 +194,9 @@ Supabase with typed client. Types in `src/lib/database/types.ts`. Two client pat
 - **Browser**: `getSupabaseBrowserClient()` from `src/lib/database/` (singleton, uses anon key)
 - **Server**: `createServerClient()` from `src/lib/database/` (uses service role key, no session persistence)
 
-Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`, `coupons` (store/product coupons with discount metadata), `login_sessions` (device fingerprints for new-device detection).
+Key tables: `users`, `products`, `stores`, `product_stores` (price per store), `price_history`, `notifications`, `admin_logs`, `transactions`, `user_wishlists`, `price_alerts`, `product_reviews`, `phone_otps`, `saved_searches`, `user_preferences`, `coupons` (store/product coupons with discount metadata), `login_sessions` (device fingerprints for new-device detection), `scraping_schedules` / `scraping_runs` (admin-controlled scraping jobs and execution history — see Scraping Dispatcher below).
 
-Schema migrations are numbered SQL files in `scripts/database/` (01 through 13). Note: some prefixes are duplicated (e.g., two `04-*`, two `05-*`, two `06-*`, two `12-*`, two `13-*` files). When adding new migrations, use the next available number after 13.
+Schema migrations are numbered SQL files in `scripts/database/` (01 through 18). Note: some prefixes are duplicated (e.g., two `04-*`, two `05-*`, two `06-*`, two `12-*`, two `13-*` files). When adding new migrations, use the next available number after 18. Migration 18 extends the `product_category` enum to cover all electronics — PostgreSQL requires each `ADD VALUE` outside a transaction, so if your migration runner wraps in `BEGIN`, split those statements into separate runs.
 
 ### Coupon System
 
@@ -347,22 +267,24 @@ Store configs are JSON in `src/lib/scraping/config/store-configs/`. The orchestr
 
 Legacy Python/Flask scrapers (`scripts/scraping/`) still exist but are no longer used by the app.
 
-API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`, `src/app/api/cron/check-price-alerts/route.ts`, `src/app/api/cron/check-coupon-expiry/route.ts`, `src/app/api/cron/check-coupon-wishlists/route.ts`, `src/app/api/cron/check-saved-searches/route.ts`.
+API routes: `src/app/api/search/scrape/route.ts`, `src/app/api/cron/update-prices/route.ts`, `src/app/api/cron/discover-products/route.ts`, `src/app/api/cron/check-price-alerts/route.ts`, `src/app/api/cron/check-coupon-expiry/route.ts`, `src/app/api/cron/check-coupon-wishlists/route.ts`, `src/app/api/cron/check-saved-searches/route.ts`, `src/app/api/cron/dispatch/route.ts`.
+
+### Scraping Dispatcher (admin-controlled schedules)
+
+Instead of hardcoded cron expressions, scraping runs are driven by DB rows in `scraping_schedules` (per-store/per-job config with cadence, coverage mode, and active window). `POST /api/cron/dispatch` (called every minute by the PM2 scheduler process) invokes `dispatchDueSchedules()` from `src/lib/scraping/services/schedule-dispatcher.ts`, which picks due schedules, fans out to the appropriate per-store cron route (`update-prices`, `discover-products`), and records each attempt in `scraping_runs`. A partial unique index enforces at most one `running` row per schedule. Migration 17 added per-product failure counters so chronically broken items get backed off, and coverage-mode config so a full catalog refresh can be auto-batched across runs to hit a target window.
 
 ### API Routes
 
-All routes live under `src/app/api/`. Key routes by domain:
+All routes live under `src/app/api/` (browse the filesystem for the full list). Key conventions:
 
-- **Search**: `POST /api/search/scrape` (main search), `POST /api/search/scrape/clear-cache`
-- **Cron**: `POST /api/cron/update-prices`, `POST /api/cron/discover-products`, `POST /api/cron/check-price-alerts`, `POST /api/cron/check-coupon-expiry`, `POST /api/cron/check-coupon-wishlists`, `POST /api/cron/check-saved-searches`. All cron routes require `Authorization: Bearer <CRON_SECRET>` header.
-- **Products**: `GET /api/products/[id]/comparison` (multi-store price comparison), `POST /api/products/[id]/view` (track product view), `POST /api/products/ensure` (upsert scraped product into DB, returns DB product ID)
-- **Auth**: `POST /api/auth/send-phone-otp`, `POST /api/auth/verify-phone-otp`, `POST /api/auth/reset-password-phone`, `POST /api/auth/check-device` (new device detection), `POST /api/auth/delete-account`, `POST /api/auth/password-changed-notify`, `POST /api/auth/send-email-otp`, `POST /api/auth/verify-email-otp`, `POST /api/auth/verify-profile-phone-otp`
-- **Coupons**: `GET /api/coupons` (public list), `POST /api/coupons/[id]/copy` (track copy)
-- **Admin**: `GET/POST /api/admin/coupons`, `PATCH/DELETE /api/admin/coupons/[id]`, `PATCH /api/admin/users/[id]/role` (change user role), `GET /api/admin/transactions/export` (CSV export)
-- **Store owner**: `GET/POST /api/store/coupons`, `PATCH/DELETE /api/store/coupons/[id]`, `POST /api/store/products/bulk-update`, `POST /api/store/sync/[storeId]` (trigger store product sync)
-- **Transactions**: `POST /api/transactions/conversion` (affiliate conversion tracking)
-- **Push**: `POST/DELETE /api/push/web/subscribe` (browser push notification subscription management)
-- **Utility**: `POST /api/audit` (client-side audit logging), `GET /api/health` (health check, exempt from rate limiting)
+- **Cron** routes (`/api/cron/*`) require `Authorization: Bearer <CRON_SECRET>` header and are exempt from rate limiting. `dispatch` is the scheduler tick (see Scraping Dispatcher); others handle prices, discovery, alerts, coupon expiry/wishlists, saved searches.
+- **Search**: `POST /api/search/scrape` (main search), `POST /api/search/scrape/clear-cache`.
+- **Products**: `GET /api/products/[id]/comparison`, `POST /api/products/[id]/view`, `POST /api/products/ensure` (upsert scraped product, returns DB ID).
+- **Auth**: phone/email OTP send+verify, password reset, device check, delete-account, password-changed-notify, verify-profile-phone-otp.
+- **Coupons**: `GET /api/coupons`, `POST /api/coupons/[id]/copy`. Admin/store routes under `/api/admin/coupons` and `/api/store/coupons` (list/create/update/delete).
+- **Admin**: user role changes, transaction CSV export, coupon CRUD.
+- **Store owner**: coupon CRUD, `POST /api/store/products/bulk-update`, `POST /api/store/sync/[storeId]`.
+- **Other**: `POST /api/transactions/conversion`, `POST/DELETE /api/push/web/subscribe`, `POST /api/audit`, `GET /api/health` (rate-limit exempt).
 
 All admin/store routes use `requireRequestAdmin(request)`, `requireRequestStore(request)`, `requireRequestAuth(request)`, or `getRequestUser(request)` from `src/lib/auth/api-auth.ts` to support both cookie-based (web) and Bearer token (mobile) auth.
 
@@ -456,35 +378,12 @@ Customer-facing screens only — no admin dashboard or store owner portal.
 
 ### Navigation (Expo Router)
 
-```
-mobile/app/
-  _layout.tsx              # Root: providers (Intl > Theme > Auth > Navigation)
-  (tabs)/
-    _layout.tsx            # Tab navigator with CustomTabBar
-    index.tsx              # Home (trending, deals, categories)
-    search.tsx             # Search with barcode scanner + category chips
-    deals.tsx              # Deals listing
-    compare.tsx            # Product comparison (Zustand store)
-    profile.tsx            # Profile, settings, dashboard
-  (auth)/
-    _layout.tsx            # Modal stack (slide from bottom)
-    login.tsx              # Phone OTP + email + OAuth
-    signup.tsx             # Name collection for new phone users
-    forgot-password.tsx    # 3-step phone reset flow
-  (stack)/
-    _layout.tsx            # Push stack
-    product/[slug].tsx     # Product detail + price history (victory-native charts)
-    store/[slug].tsx       # Store detail
-    stores/index.tsx       # Store listing
-    cart.tsx               # Multi-store cart (Zustand)
-    coupons.tsx            # Coupon browsing
-    saved-searches.tsx     # Saved search management
-    wishlist.tsx           # Saved products
-    notifications.tsx      # Notification list (formSheet presentation)
-    price-alerts.tsx       # Price alert management
-    edit-profile.tsx       # Profile editing
-  auth/callback.tsx        # OAuth deep link handler
-```
+Three route groups under `mobile/app/`:
+- `(tabs)/` — tab navigator (`CustomTabBar`): index (home), search (with barcode scanner), deals, compare, profile.
+- `(auth)/` — modal stack (slide-from-bottom): login (phone OTP + email + OAuth), signup, forgot-password (3-step phone reset).
+- `(stack)/` — push stack: `product/[slug]`, `store/[slug]`, `stores/index`, cart, coupons, saved-searches, wishlist, notifications (formSheet), price-alerts, edit-profile.
+
+Plus `auth/callback.tsx` for OAuth deep-link handling. Root `_layout.tsx` sets up providers.
 
 ### Mobile Provider Hierarchy
 
@@ -561,26 +460,14 @@ EXPO_PUBLIC_API_BASE_URL=https://tawveeri.com   # or http://localhost:3000 for d
 
 ### Mobile RTL Rules
 
-Native `I18nManager` is **disabled**. All RTL is handled via `useRTL()` hook (`mobile/src/lib/rtl/useRTL.ts`):
-
-```tsx
-const rtl = useRTL();
-// rtl.row          → 'row-reverse' for AR, 'row' for EN
-// rtl.textAlign    → 'right' for AR, 'left' for EN
-// rtl.writingDirection → 'rtl' for AR, 'ltr' for EN
-// rtl.isRTL        → boolean
-// rtl.alignStart   → 'flex-end' for AR, 'flex-start' for EN
-// rtl.flipIcon     → [{ scaleX: -1 }] for AR, [] for EN
-// rtl.position(16) → { right: 16 } for AR, { left: 16 } for EN
-```
+Native `I18nManager` is **disabled** — all RTL goes through the `useRTL()` hook (`mobile/src/lib/rtl/useRTL.ts`). Exposes: `row` (`'row-reverse'` for AR), `textAlign`, `writingDirection`, `isRTL`, `alignStart`, `flipIcon` (`[{ scaleX: -1 }]` for AR), `position(n)` (returns `{right: n}` for AR).
 
 Key rules:
-- **Do NOT** use `I18nManager.isRTL` — it's always `false`. Use `rtl.isRTL` from the hook.
-- **Do NOT** use `marginStart`/`paddingStart`/`start`/`end` — they won't flip since native RTL is off. Use explicit `marginLeft`/`marginRight` with `rtl.isRTL`.
-- Use `flexDirection: rtl.row` for rows that should flip in RTL.
-- Add `textAlign: rtl.textAlign, writingDirection: rtl.writingDirection` to all user-facing Text.
+- **Do NOT** use `I18nManager.isRTL` (always `false`) — use `rtl.isRTL`.
+- **Do NOT** use `marginStart`/`paddingStart`/`start`/`end` — they won't flip. Use explicit `marginLeft`/`marginRight` with `rtl.isRTL`.
+- Use `flexDirection: rtl.row` for flipping rows. Add `textAlign: rtl.textAlign, writingDirection: rtl.writingDirection` to user-facing Text.
 - Swap directional icons based on `rtl.isRTL`: `ArrowLeft`↔`ArrowRight`, `ChevronRight`↔`ChevronLeft`.
-- For stack headers: use `headerRight` for the back button in RTL, `headerLeft` in LTR (see `(stack)/_layout.tsx`).
+- Stack headers: `headerRight` for back button in RTL, `headerLeft` in LTR (see `(stack)/_layout.tsx`).
 
 ### Deep Linking
 

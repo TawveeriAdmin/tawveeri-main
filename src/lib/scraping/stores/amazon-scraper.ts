@@ -242,9 +242,14 @@ export class AmazonScraper extends BaseScraper {
   }
 
   private async scrapeProductPage(productUrl: string): Promise<ScrapedProduct | null> {
-    // Use Puppeteer for product pages (they need JS)
-    const page = await this.fetchPageWithJS(productUrl);
-    const html = await page.content();
+    // Amazon PDP renders in static HTML (server-side) — every selector we
+    // use (#productTitle, #acrPopover, #feature-bullets, #detailBullets_*)
+    // is in the initial response, so a plain fetch is sufficient AND avoids
+    // the Puppeteer ECONNRESET failures we hit during the long discovery
+    // run. Using fetchPage also inherits the 429/503 cooldown, UA rotation,
+    // and shared rate limiter we added in base-scraper — Puppeteer fallback
+    // is left in place only for discovery's page-1-captcha recovery path.
+    const html = await this.fetchPage(productUrl);
     const $ = this.getCheerio(html);
 
     const title = this.extractText($, '#productTitle') || '';
@@ -275,9 +280,6 @@ export class AmazonScraper extends BaseScraper {
                      this.extractText($, '.basisPrice .a-offscreen');
     if (origText) originalPrice = this.parsePrice(origText);
 
-    // Image
-    const imageUrl = this.extractAttr($, '#imgTagWrapperId img, #landingImage', 'src');
-
     // ASIN
     const asin = this.extractAttr($, 'input[name="ASIN"]', 'value') ||
                  productUrl.match(/\/dp\/([A-Z0-9]+)/i)?.[1] || null;
@@ -286,6 +288,12 @@ export class AmazonScraper extends BaseScraper {
     const availText = this.extractText($, '#availability span') || 'in_stock';
 
     const { brand, model } = this.extractBrandAndModel(title);
+
+    // Detail-page extras (rating, review count, full gallery, description,
+    // extended specs). Separated from the core price/availability extraction
+    // above so the existing price-update callers still work even if an extras
+    // field blows up — parseDetailPageExtras catches internally.
+    const extras = this.parseDetailPageExtras($);
 
     return {
       name_ar: title,
@@ -297,11 +305,162 @@ export class AmazonScraper extends BaseScraper {
       original_price: originalPrice,
       availability: this.parseAvailability(availText),
       product_url: productUrl,
-      image_urls: imageUrl ? [imageUrl] : [],
-      specifications: this.extractSpecs($),
+      image_urls: extras.image_urls,
+      specifications: extras.specifications,
       category: determineCategory(title),
-      description_ar: null,
-      description_en: this.extractText($, '#feature-bullets'),
+      description_ar: extras.description_ar,
+      description_en: extras.description_en,
+      merchant_rating: extras.merchant_rating,
+      merchant_review_count: extras.merchant_review_count,
+    };
+  }
+
+  /**
+   * Walk the known Amazon detail-page widgets and extract everything a search
+   * card leaves blank: merchant star rating, review count, full gallery,
+   * description, and an extended spec sheet. Every lookup is defensive — any
+   * single selector failing just leaves the corresponding field null/empty.
+   */
+  private parseDetailPageExtras($: ReturnType<typeof this.getCheerio>): {
+    merchant_rating: number | null;
+    merchant_review_count: number;
+    image_urls: string[];
+    description_ar: string | null;
+    description_en: string | null;
+    specifications: Record<string, unknown>;
+  } {
+    // --- Rating -------------------------------------------------------------
+    // Primary source: the `#acrPopover` element's `title` attr, which Amazon
+    // renders as e.g. "4.3 out of 5 stars". Fallback: the first
+    // `span.a-icon-alt` text (used on some variants of the PDP template).
+    let merchantRating: number | null = null;
+    const ratingCandidates = [
+      $('#acrPopover').attr('title'),
+      $('span.a-icon-alt').first().text(),
+      $('i.a-icon-star span.a-icon-alt').first().text(),
+    ];
+    for (const candidate of ratingCandidates) {
+      if (!candidate) continue;
+      const match = candidate.match(/([\d.]+)\s*out of\s*5/i);
+      if (match) {
+        const n = parseFloat(match[1]);
+        if (!Number.isNaN(n) && n >= 0 && n <= 5) {
+          merchantRating = Number(n.toFixed(2));
+          break;
+        }
+      }
+    }
+
+    // --- Review count -------------------------------------------------------
+    const reviewText = $('#acrCustomerReviewText').first().text().trim();
+    const reviewCount = reviewText
+      ? parseInt(reviewText.replace(/[^0-9]/g, ''), 10) || 0
+      : 0;
+
+    // --- Gallery ------------------------------------------------------------
+    // Strategy: collect thumbnail URLs from #altImages, then extract the
+    // higher-res variants from #imageBlock's `data-a-dynamic-image` JSON (a
+    // `{url: [w, h]}` map Amazon uses for responsive <img>). Upscale all
+    // URLs by stripping `_SY75_` / `_AC_US40_` style size hints. Cap at 10
+    // and dedupe. Main `#landingImage` goes first so existing UI that assumes
+    // image_urls[0] is the primary stays correct.
+    const galleryUrls = new Set<string>();
+    const upscale = (url: string): string =>
+      url.replace(/\._[A-Z0-9,_]+_\./g, '.').replace(/\?.*$/, '');
+    const isValid = (url: string | undefined | null): url is string => {
+      if (!url || typeof url !== 'string') return false;
+      if (!/^https?:\/\//i.test(url)) return false;
+      if (/sprite|play-button|transparent-pixel|grey-pixel/i.test(url)) return false;
+      return true;
+    };
+
+    const landing = $('#landingImage').attr('src') || $('#imgTagWrapperId img').attr('src');
+    if (isValid(landing)) galleryUrls.add(upscale(landing));
+
+    $('#altImages img, #imageBlockThumbs img').each((_, el) => {
+      const src = $(el).attr('src');
+      if (isValid(src)) galleryUrls.add(upscale(src));
+    });
+
+    // data-a-dynamic-image is a JSON-encoded map of URLs → [w,h]. The keys
+    // are the per-resolution image URLs; we take all of them and upscale.
+    $('#imageBlock img[data-a-dynamic-image], #landingImage[data-a-dynamic-image]').each((_, el) => {
+      const raw = $(el).attr('data-a-dynamic-image');
+      if (!raw) return;
+      try {
+        const map = JSON.parse(raw) as Record<string, unknown>;
+        for (const key of Object.keys(map)) {
+          if (isValid(key)) galleryUrls.add(upscale(key));
+        }
+      } catch {
+        // Amazon occasionally ships malformed JSON — skip silently.
+      }
+    });
+
+    const imageUrls = Array.from(galleryUrls).slice(0, 10);
+
+    // --- Description -------------------------------------------------------
+    // Compose from the most reliable PDP sections, in order of preference:
+    //   1. Feature bullets — short, always present on most PDPs.
+    //   2. #productDescription — longer prose.
+    //   3. A+ content block (#aplus_feature_div) as a last resort.
+    // We join with newlines so downstream markdown-ish rendering stays sane.
+    const descParts: string[] = [];
+    const bullets = $('#feature-bullets ul li span.a-list-item')
+      .map((_, el) => $(el).text().trim())
+      .get()
+      .filter(Boolean);
+    if (bullets.length > 0) descParts.push(bullets.join('\n'));
+
+    const productDescription = $('#productDescription').text().trim();
+    if (productDescription) descParts.push(productDescription);
+
+    if (descParts.length === 0) {
+      const aplus = $('#aplus_feature_div').text().trim();
+      if (aplus) descParts.push(aplus);
+    }
+
+    const description = descParts.length > 0 ? descParts.join('\n\n').slice(0, 8000) : null;
+
+    // --- Specs -------------------------------------------------------------
+    // extractSpecs already covers the classic tech-spec table + detailBullets.
+    // We also walk productDetails_detailBullets_sections1, the product
+    // overview feature div, and the detailBulletsWrapper list to pick up the
+    // extra rows Amazon renders on newer PDP templates. Keys already present
+    // take precedence (first-match wins) so we don't overwrite the primary
+    // spec table with noisier bullet text.
+    const specs = this.extractSpecs($);
+
+    $('#productDetails_detailBullets_sections1 tr').each((_, el) => {
+      const label = $(el).find('th').first().text().trim().replace(/[\s:]+$/, '');
+      const value = $(el).find('td').first().text().trim();
+      if (label && value && specs[label] === undefined) specs[label] = value;
+    });
+
+    $('#productOverview_feature_div tr').each((_, el) => {
+      const cells = $(el).find('td');
+      if (cells.length < 2) return;
+      const label = $(cells.get(0)).text().trim().replace(/[\s:]+$/, '');
+      const value = $(cells.get(1)).text().trim();
+      if (label && value && specs[label] === undefined) specs[label] = value;
+    });
+
+    $('#detailBulletsWrapper_feature_div li span.a-list-item').each((_, el) => {
+      const text = $(el).text().trim();
+      if (!text || !text.includes(':')) return;
+      const [labelRaw, ...rest] = text.split(':');
+      const label = labelRaw.trim().replace(/[\s:]+$/, '');
+      const value = rest.join(':').trim();
+      if (label && value && specs[label] === undefined) specs[label] = value;
+    });
+
+    return {
+      merchant_rating: merchantRating,
+      merchant_review_count: reviewCount,
+      image_urls: imageUrls,
+      description_ar: description,
+      description_en: description,
+      specifications: specs,
     };
   }
 

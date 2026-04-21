@@ -5,9 +5,9 @@
   "base_url": "https://www.amazon.sa",
   "requires_js": false,
   "rate_limit": {
-    "min_delay_ms": 1200,
-    "max_delay_ms": 2200,
-    "requests_per_minute": 25
+    "min_delay_ms": 1000,
+    "max_delay_ms": 2000,
+    "requests_per_minute": 30
   },
   "user_agents": [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

@@ -47,6 +47,13 @@ export class ProductService {
       if (classified) {
         await this.syncCategoryFromTitle(productId, classified);
       }
+      // Only run the expensive enrichment merge path when the scraper
+      // actually returned detail-page data. Search-card callers
+      // (description/specs empty, one image, no rating) are a no-op so the
+      // discovery hot path stays untouched.
+      if (this.hasEnrichmentPayload(scrapedProduct)) {
+        await this.updateEnrichedFields(productId, scrapedProduct);
+      }
     } else {
       productId = await this.createProduct(scrapedProduct);
       created = true;
@@ -153,6 +160,14 @@ export class ProductService {
     const nameAr = trunc(scrapedProduct.name_ar, 500) || '';
     const nameEn = trunc(scrapedProduct.name_en, 500) || '';
 
+    // Mark a product as enriched at insert time IF the scraper already
+    // supplied detail-page data (description or >1 image or non-zero rating).
+    // Discovery-time callers will leave enriched_at = null, so the enrichment
+    // script's `WHERE enriched_at IS NULL` scan continues to target them.
+    const enrichedAt = this.hasEnrichmentPayload(scrapedProduct)
+      ? new Date().toISOString()
+      : null;
+
     let lastError: string | null = null;
     for (const slug of candidates) {
       const { data, error } = await this.supabase
@@ -169,6 +184,9 @@ export class ProductService {
           description_en: scrapedProduct.description_en || null,
           image_urls: scrapedProduct.image_urls,
           specifications: mergedSpecs,
+          merchant_rating: scrapedProduct.merchant_rating ?? null,
+          merchant_review_count: scrapedProduct.merchant_review_count ?? 0,
+          enriched_at: enrichedAt,
           is_active: true,
         })
         .select('id')
@@ -332,6 +350,89 @@ export class ProductService {
     if (error) {
       console.error(`Failed to record price history: ${error.message}`);
       // Don't throw - price history is not critical
+    }
+  }
+
+  /**
+   * Detect whether a ScrapedProduct carries detail-page data. Search-card
+   * scrapes return a single image, no description, empty specs, and no
+   * rating — those stay in the "not yet enriched" bucket so the enrichment
+   * script knows to visit the PDP later. Detail-page scrapes (either the
+   * initial Amazon PDP visit or the enrichment pass) populate at least one
+   * of these signals.
+   */
+  private hasEnrichmentPayload(scrapedProduct: ScrapedProduct): boolean {
+    if (scrapedProduct.description_en && scrapedProduct.description_en.trim().length > 0) return true;
+    if (scrapedProduct.description_ar && scrapedProduct.description_ar.trim().length > 0) return true;
+    if (Array.isArray(scrapedProduct.image_urls) && scrapedProduct.image_urls.length > 1) return true;
+    if (scrapedProduct.merchant_rating != null) return true;
+    if ((scrapedProduct.merchant_review_count ?? 0) > 0) return true;
+    if (scrapedProduct.specifications && Object.keys(scrapedProduct.specifications).length >= 3) return true;
+    return false;
+  }
+
+  /**
+   * Merge detail-page enrichment into an existing product row.
+   *
+   * Semantics (each field is independent so a partial PDP scrape never wipes
+   * out prior data):
+   * - description_ar/en: fill only when the stored value is null/empty.
+   * - image_urls: replace ONLY when incoming length is strictly greater than
+   *   existing length (so a 10-image gallery wins over the 1-image
+   *   thumbnail, but a later 1-thumbnail re-scrape doesn't demote).
+   * - specifications: deep-merge; incoming keys win (the detail-page table
+   *   is authoritative over title-regex specs).
+   * - merchant_rating / merchant_review_count: always overwrite when
+   *   provided — the retailer's current numbers are more recent than what's
+   *   on disk.
+   * - enriched_at: stamped to now() whenever this method runs successfully.
+   */
+  async updateEnrichedFields(productId: string, scrapedProduct: ScrapedProduct): Promise<void> {
+    const { data: current } = await this.supabase
+      .from('products')
+      .select('description_ar, description_en, image_urls, specifications')
+      .eq('id', productId)
+      .single();
+
+    const update: Record<string, unknown> = {
+      enriched_at: new Date().toISOString(),
+    };
+
+    const incomingDescAr = (scrapedProduct.description_ar || '').trim();
+    if (incomingDescAr && !((current?.description_ar || '') as string).trim()) {
+      update.description_ar = incomingDescAr;
+    }
+
+    const incomingDescEn = (scrapedProduct.description_en || '').trim();
+    if (incomingDescEn && !((current?.description_en || '') as string).trim()) {
+      update.description_en = incomingDescEn;
+    }
+
+    const incomingImages = Array.isArray(scrapedProduct.image_urls) ? scrapedProduct.image_urls : [];
+    const currentImages = Array.isArray(current?.image_urls) ? (current?.image_urls as string[]) : [];
+    if (incomingImages.length > currentImages.length) {
+      update.image_urls = incomingImages;
+    }
+
+    if (scrapedProduct.specifications && Object.keys(scrapedProduct.specifications).length > 0) {
+      const currentSpecs = ((current?.specifications as Record<string, unknown> | null) || {});
+      update.specifications = { ...currentSpecs, ...scrapedProduct.specifications };
+    }
+
+    if (scrapedProduct.merchant_rating != null) {
+      update.merchant_rating = scrapedProduct.merchant_rating;
+    }
+    if (scrapedProduct.merchant_review_count != null) {
+      update.merchant_review_count = scrapedProduct.merchant_review_count;
+    }
+
+    const { error } = await this.supabase
+      .from('products')
+      .update(update)
+      .eq('id', productId);
+
+    if (error) {
+      throw new Error(`Failed to update enriched fields: ${error.message}`);
     }
   }
 

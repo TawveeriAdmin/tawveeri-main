@@ -8,15 +8,39 @@ export class RateLimiter {
   private config: RateLimitConfig;
   private requests: number[] = [];
   private lastReset: number = Date.now();
+  /**
+   * Millisecond epoch before which no request may fire. Set by fetchPage when
+   * the remote returns HTTP 429/503 so every concurrent caller in the same
+   * scraper instance honours the cool-off window, not just the one that got
+   * throttled.
+   */
+  private cooldownUntil: number = 0;
 
   constructor(config: RateLimitConfig) {
     this.config = config;
   }
 
   /**
+   * Propagate a rate-limit cool-off across the whole scraper instance. Always
+   * extends (never shortens) the window — callers race to report the longest
+   * backoff and we keep the latest.
+   */
+  setCooldownUntil(ts: number): void {
+    if (ts > this.cooldownUntil) this.cooldownUntil = ts;
+  }
+
+  /**
    * Wait for next allowed request based on rate limit
    */
   async wait(): Promise<void> {
+    // Honour any active rate-limit cool-off first — if fetchPage saw a 429/503
+    // and set a cooldown, every subsequent request (including ones queued in
+    // parallel) waits that window out before even counting against the
+    // per-minute budget.
+    if (this.cooldownUntil > Date.now()) {
+      await this.delay(this.cooldownUntil - Date.now());
+    }
+
     const now = Date.now();
     const oneMinuteAgo = now - 60000;
 

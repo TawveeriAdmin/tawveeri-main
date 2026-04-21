@@ -25,6 +25,15 @@ export interface ScrapedProduct {
   is_deal?: boolean;
   deal_expires_at?: string | null;
   coupon_code?: string | null;
+  /**
+   * Retailer-reported star rating (e.g. Amazon "4.3 out of 5"). Populated by
+   * the detail-page enrichment pass, not search-card scrapes. Stored in
+   * products.merchant_rating — kept separate from products.average_rating
+   * (which aggregates Tawveeri users' own reviews).
+   */
+  merchant_rating?: number | null;
+  /** Retailer-reported review/rating count. See merchant_rating. */
+  merchant_review_count?: number | null;
 }
 
 /**

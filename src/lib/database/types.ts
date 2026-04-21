@@ -186,6 +186,9 @@ export interface Database {
           comparison_count: number;
           average_rating: number | null;
           total_reviews: number | null;
+          merchant_rating: number | null;
+          merchant_review_count: number;
+          enriched_at: string | null;
           embedding: unknown;
           is_active: boolean;
           created_at: string;
@@ -210,6 +213,9 @@ export interface Database {
           comparison_count?: number;
           average_rating?: number | null;
           total_reviews?: number | null;
+          merchant_rating?: number | null;
+          merchant_review_count?: number;
+          enriched_at?: string | null;
           embedding?: unknown;
           is_active?: boolean;
           created_at?: string;
@@ -234,6 +240,9 @@ export interface Database {
           comparison_count?: number;
           average_rating?: number | null;
           total_reviews?: number | null;
+          merchant_rating?: number | null;
+          merchant_review_count?: number;
+          enriched_at?: string | null;
           embedding?: unknown;
           is_active?: boolean;
           created_at?: string;
