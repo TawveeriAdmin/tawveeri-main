@@ -232,12 +232,25 @@ export default function ProductDetailClient() {
  id,
  current_price,
  original_price,
+ currency,
  availability,
+ stock_quantity,
+ product_url,
+ affiliate_url,
+ delivery_time_days,
+ delivery_cost,
+ is_free_delivery,
+ is_deal,
+ deal_expires_at,
+ coupon_code,
  stores(
  id,
+ slug,
  name_ar,
  name_en,
- logo_url
+ logo_url,
+ average_rating,
+ total_reviews
  )
  )
  `
@@ -256,9 +269,46 @@ export default function ProductDetailClient() {
  // Fallback to category-based if RPC fails
  }
 
- // Fallback: category-based related products
+ // Fallback: name-token + brand search ACROSS categories so that e.g.
+ // "iPhone 17 Pro Max" surfaces "iPhone 17 Pro Max case" (accessories),
+ // not random same-category items.
  if (!relatedData || relatedData.length === 0) {
- const { data: fallbackData } = await supabase
+ const combinedName = `${productData.name_en || ''} ${productData.name_ar || ''}`.toLowerCase();
+ const STOPWORDS = new Set([
+ 'the', 'and', 'for', 'with', 'from', 'black', 'white', 'new',
+ 'في', 'من', 'إلى', 'على', 'مع', 'أسود', 'أبيض', 'جديد',
+ ]);
+ const tokens = Array.from(
+ new Set(
+ combinedName
+ .replace(/[,.()\-_/\\:"']/g, ' ')
+ .split(/\s+/)
+ .map((w) => w.trim())
+ .filter(
+ (w) =>
+ w.length >= 3 &&
+ /^[\w؀-ۿ]+$/.test(w) &&
+ !STOPWORDS.has(w),
+ ),
+ ),
+ ).slice(0, 6);
+
+ const sourceBrand = (productData.brand || '').trim().toLowerCase();
+ const brandForFilter =
+ sourceBrand && sourceBrand !== 'unknown' ? sourceBrand : '';
+
+ // OR filter: brand overlap OR any meaningful token appears in the product
+ // name in either language. Crosses category boundaries on purpose.
+ const orParts: string[] = [];
+ if (brandForFilter) orParts.push(`brand.ilike.*${brandForFilter}*`);
+ for (const tok of tokens) {
+ orParts.push(`name_en.ilike.*${tok}*`);
+ orParts.push(`name_ar.ilike.*${tok}*`);
+ }
+
+ let candidatePool: ProductQueryResult[] = [];
+ if (orParts.length > 0) {
+ const { data } = await supabase
  .from('products')
  .select(
  `
@@ -267,12 +317,86 @@ export default function ProductDetailClient() {
  id,
  current_price,
  original_price,
+ currency,
  availability,
+ stock_quantity,
+ product_url,
+ affiliate_url,
+ delivery_time_days,
+ delivery_cost,
+ is_free_delivery,
+ is_deal,
+ deal_expires_at,
+ coupon_code,
  stores(
  id,
+ slug,
  name_ar,
  name_en,
- logo_url
+ logo_url,
+ average_rating,
+ total_reviews
+ )
+ )
+ `
+ )
+ .neq('id', productData.id)
+ .eq('is_active', true)
+ .or(orParts.join(','))
+ .limit(100)
+ .returns<ProductQueryResult[]>();
+ candidatePool = data ?? [];
+ }
+
+ // Rank: token overlap drives the "iPhone 17 Pro Max → iPhone 17 Pro Max case"
+ // match, strong brand bonus keeps results Apple-heavy for an Apple product,
+ // same-category is a small tiebreaker.
+ const scored = candidatePool
+ .map((p) => {
+ const name = `${p.name_en || ''} ${p.name_ar || ''}`.toLowerCase();
+ const overlap = tokens.filter((tok) => name.includes(tok)).length;
+ const brandMatch =
+ brandForFilter && p.brand && p.brand.toLowerCase().includes(brandForFilter)
+ ? 3
+ : 0;
+ const sameCategory = p.category === productData.category ? 1 : 0;
+ return { p, score: overlap + brandMatch + sameCategory };
+ })
+ .filter((x) => x.score > 0)
+ .sort((a, b) => b.score - a.score)
+ .slice(0, 4)
+ .map((x) => x.p);
+
+ // Top-up with same-category popularity if scoring returned fewer than 4.
+ if (scored.length < 4) {
+ const { data: popularity } = await supabase
+ .from('products')
+ .select(
+ `
+ *,
+ product_stores(
+ id,
+ current_price,
+ original_price,
+ currency,
+ availability,
+ stock_quantity,
+ product_url,
+ affiliate_url,
+ delivery_time_days,
+ delivery_cost,
+ is_free_delivery,
+ is_deal,
+ deal_expires_at,
+ coupon_code,
+ stores(
+ id,
+ slug,
+ name_ar,
+ name_en,
+ logo_url,
+ average_rating,
+ total_reviews
  )
  )
  `
@@ -280,9 +404,16 @@ export default function ProductDetailClient() {
  .eq('category', productData.category)
  .neq('id', productData.id)
  .eq('is_active', true)
- .limit(4)
+ .order('view_count', { ascending: false, nullsFirst: false })
+ .limit(8)
  .returns<ProductQueryResult[]>();
- relatedData = fallbackData;
+
+ const seen = new Set(scored.map((p) => p.id));
+ const fillIns = (popularity ?? []).filter((p) => !seen.has(p.id));
+ relatedData = [...scored, ...fillIns].slice(0, 4);
+ } else {
+ relatedData = scored;
+ }
  }
 
  setRelatedProducts((relatedData || []).map(mapProductRecord));
