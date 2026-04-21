@@ -240,7 +240,16 @@ export default function StoreDetailClient() {
  setStore(storeData);
  setReviews(storeData.store_reviews || []);
 
- const { data: productsData, error: productsError } = await supabase
+ // Fetch the full catalog in 1000-row batches (Supabase hard cap per
+ // query). Hard ceiling of 20 batches (20k products) as a runaway
+ // guard — no store currently comes close.
+ const PRODUCTS_BATCH = 1000;
+ const MAX_BATCHES = 20;
+ const allProductRecords: unknown[] = [];
+ for (let batch = 0; batch < MAX_BATCHES; batch++) {
+ const from = batch * PRODUCTS_BATCH;
+ const to = from + PRODUCTS_BATCH - 1;
+ const { data: batchData, error: batchError } = await supabase
  .from('product_stores')
  .select(
  `
@@ -271,13 +280,16 @@ export default function StoreDetailClient() {
  )
  .eq('store_id', storeData.id)
  .eq('products.is_active', true)
- .limit(500);
-
- if (productsError) throw productsError;
+ .range(from, to);
+ if (batchError) throw batchError;
+ if (!batchData || batchData.length === 0) break;
+ allProductRecords.push(...batchData);
+ if (batchData.length < PRODUCTS_BATCH) break;
+ }
 
  const groupedProducts = new Map<string, StoreProduct>();
 
- (productsData as unknown as ProductStoreResponse[] | null)?.forEach((record) => {
+ (allProductRecords as unknown as ProductStoreResponse[]).forEach((record) => {
  if (!record.products || !record.stores) return;
 
  const existing = groupedProducts.get(record.products.id);
