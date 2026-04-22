@@ -21,19 +21,39 @@ import { cn } from '@/lib/utils';
 import {
   BarChart3,
   Bell,
+  Camera,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CookingPot,
+  Gamepad2,
+  Globe,
+  Headphones,
   Heart,
   Home,
-  Languages,
+  Laptop,
   LayoutDashboard,
+  LayoutGrid,
   LogOut,
+  Monitor,
   Moon,
+  Package,
+  Printer,
+  Refrigerator,
   Search,
   SlidersHorizontal,
+  Smartphone,
+  Sparkle,
   Store,
   Sun,
+  Tablet,
   Tag,
   Ticket,
+  Tv,
   User,
+  WashingMachine,
+  Watch,
+  Wifi,
 } from 'lucide-react';
 import Image from 'next/image';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
@@ -41,6 +61,36 @@ import { Footer } from '@/components/layout/footer';
 import { CompareFloatingBar } from '@/components/compare/compare-floating-bar';
 
 const subscribe = () => () => {};
+
+/**
+ * Categories surfaced inside the header's "Categories" dropdown. This is the
+ * complete taxonomy we support — keep it in sync with CATEGORY_META in the
+ * landing client. Slugs match the product_category enum values.
+ */
+const HEADER_CATEGORIES: Array<{ slug: string; icon: typeof Smartphone; labelAr: string; labelEn: string }> = [
+  { slug: 'smartphone',    icon: Smartphone,     labelAr: 'الهواتف',              labelEn: 'Phones' },
+  { slug: 'laptop',        icon: Laptop,         labelAr: 'اللابتوبات',           labelEn: 'Laptops' },
+  { slug: 'tablet',        icon: Tablet,         labelAr: 'الأجهزة اللوحية',      labelEn: 'Tablets' },
+  { slug: 'tv',            icon: Tv,             labelAr: 'التلفزيونات',          labelEn: 'TVs' },
+  { slug: 'audio',         icon: Headphones,     labelAr: 'الصوتيات',             labelEn: 'Audio' },
+  { slug: 'gaming',        icon: Gamepad2,       labelAr: 'الألعاب',              labelEn: 'Gaming' },
+  { slug: 'camera',        icon: Camera,         labelAr: 'الكاميرات',            labelEn: 'Cameras' },
+  { slug: 'monitor',       icon: Monitor,        labelAr: 'الشاشات',              labelEn: 'Monitors' },
+  { slug: 'wearable',      icon: Watch,          labelAr: 'الساعات الذكية',       labelEn: 'Wearables' },
+  { slug: 'networking',    icon: Wifi,           labelAr: 'الشبكات',              labelEn: 'Networking' },
+  { slug: 'smart_home',    icon: Home,           labelAr: 'المنزل الذكي',         labelEn: 'Smart Home' },
+  { slug: 'printer',       icon: Printer,        labelAr: 'الطابعات',             labelEn: 'Printers' },
+  { slug: 'appliance',     icon: WashingMachine, labelAr: 'الأجهزة المنزلية',     labelEn: 'Appliances' },
+  { slug: 'refrigerator',  icon: Refrigerator,   labelAr: 'الثلاجات',             labelEn: 'Fridges' },
+  { slug: 'kitchen',       icon: CookingPot,     labelAr: 'المطبخ',               labelEn: 'Kitchen' },
+  { slug: 'personal_care', icon: Sparkle,        labelAr: 'العناية الشخصية',      labelEn: 'Personal Care' },
+  { slug: 'accessories',   icon: Package,        labelAr: 'الإكسسوارات',          labelEn: 'Accessories' },
+];
+
+/** Top categories exposed directly as quick-links in the header's nav row.
+ *  Rakhys-style: 4-5 most-searched categories surfaced inline after the
+ *  Categories dropdown for one-click access. */
+const HEADER_QUICK_CATEGORIES: string[] = ['smartphone', 'laptop', 'tv', 'audio', 'appliance'];
 
 interface PublicPageShellProps {
   locale: string;
@@ -140,24 +190,29 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
     return () => window.removeEventListener('notifications-updated', handleUpdate);
   }, [user, pathname]);
 
-  /* ── Navigation links ── */
-  const navLinks = user
-    ? [
-        { href: `/${locale}/dashboard`, label: t('nav.dashboard'), icon: LayoutDashboard },
-        { href: `/${locale}/search`, label: t('button.search'), icon: Search },
-        { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
-        { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
-        { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
-        { href: `/${locale}/compare`, label: copy.compare, icon: BarChart3 },
-      ]
-    : [
-        { href: `/${locale}`, label: t('common.home'), icon: Home },
-        { href: `/${locale}/search`, label: t('button.search'), icon: Search },
-        { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
-        { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
-        { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
-        { href: `/${locale}/compare`, label: copy.compare, icon: BarChart3 },
-      ];
+  /* ── Primary section links + quick-category shortcuts ──
+     Categories themselves live in the dropdown next to these links. This
+     list is the flat secondary nav: Stores / Deals / Coupons, then a handful
+     of top categories surfaced inline for one-click browsing. */
+  const quickNavLinks: Array<{
+    href: string;
+    label: string;
+    icon?: typeof Store;
+  }> = [
+    { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
+    { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
+    { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
+    ...HEADER_QUICK_CATEGORIES.map((slug) => {
+      const meta = HEADER_CATEGORIES.find((c) => c.slug === slug);
+      return meta
+        ? {
+            href: `/${locale}/search?category=${slug}`,
+            label: isRTL ? meta.labelAr : meta.labelEn,
+            icon: meta.icon,
+          }
+        : null;
+    }).filter((x): x is { href: string; label: string; icon: typeof Store } => x !== null),
+  ];
 
   /* ── User info ── */
   const isFakeEmail = user?.email?.startsWith('phone_') ?? false;
@@ -169,12 +224,12 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
     userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
 
   /* ── Locale switch ── */
-  const switchLocale = () => {
-    const nextLocale = locale === 'ar' ? 'en' : 'ar';
-    if (!pathname) { router.push(`/${nextLocale}`); return; }
+  const goToLocale = (target: string) => {
+    if (target === locale) return;
+    if (!pathname) { router.push(`/${target}`); return; }
     const nextPath = pathname.startsWith(`/${locale}`)
-      ? pathname.replace(`/${locale}`, `/${nextLocale}`)
-      : `/${nextLocale}`;
+      ? pathname.replace(`/${locale}`, `/${target}`)
+      : `/${target}`;
     router.push(nextPath);
   };
 
@@ -228,11 +283,14 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
       <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/95 backdrop-blur-md dark:border-gray-800/80 dark:bg-gray-950/95">
         <div className="mx-auto w-full max-w-[1600px] px-3 py-3 md:px-6">
           {/* Row 1: Logo | Search (centered) | Actions */}
-          <div className="flex items-center gap-2 md:gap-3">
-            {/* Logo */}
+          <div className="flex items-center justify-between gap-2 md:gap-3">
+            {/* Logo — image + stacked name & tagline so first-time visitors
+                see what the site does in one glance. Tagline stays hidden on
+                narrow viewports to avoid crowding the action cluster. */}
             <Link
               href={`/${locale}`}
-              className="group inline-flex shrink-0 items-center gap-2 rounded-xl p-1 transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-800/70"
+              aria-label={t('app.name')}
+              className="group inline-flex shrink-0 items-center gap-2.5 rounded-xl p-1 transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-800/70"
             >
               <Image
                 src="/logos/Tawveeri.png"
@@ -241,71 +299,91 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                 height={32}
                 className="h-8 w-8 rounded-lg object-contain"
               />
-              <span className="hidden text-sm font-semibold text-gray-900 dark:text-gray-100 sm:block">
-                {t('app.name')}
+              <span className="hidden flex-col leading-tight sm:flex">
+                <span className="text-sm font-bold text-on-surface">
+                  {t('app.name')}
+                </span>
+                <span className="hidden text-[10px] font-medium text-on-surface-variant lg:block">
+                  {isRTL
+                    ? 'قارن أسعار الإلكترونيات في السعودية'
+                    : 'Compare electronics prices in Saudi Arabia'}
+                </span>
               </span>
             </Link>
 
-            {/* Search bar — desktop (centered, max-width constrained).
-                Hidden on the landing page since the hero has its own search. */}
-            <div
-              className={cn(
-                'hidden flex-1 justify-center md:flex',
-                isLandingPage && 'md:hidden',
-              )}
-            >
+            {/* Prominent search bar — desktop.
+                Structure matches the cleaner Rakhys-style pill: one search
+                icon absolutely-positioned inside the input at the logical
+                start, the input itself, a trailing voice/barcode pair, then
+                a large green submit button at the end. Taller (h-12), wider
+                max-width, and a stronger border so the pill dominates the
+                header row visually. */}
+            <div className="hidden flex-1 justify-center md:flex">
               <form
                 onSubmit={handleSearchSubmit}
-                className="flex w-full max-w-lg items-center gap-2"
+                className="relative flex h-12 w-full max-w-4xl items-stretch overflow-hidden rounded-full border-2 border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15"
               >
-                <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t('search.searchPlaceholder')}
-                    aria-label={t('search.searchPlaceholder')}
-                    className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400 dark:focus:bg-gray-900"
+                <Search
+                  aria-hidden
+                  className="pointer-events-none absolute start-5 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant"
+                />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('search.searchPlaceholder')}
+                  aria-label={t('search.searchPlaceholder')}
+                  className="min-w-0 flex-1 bg-transparent ps-12 pe-3 text-[14px] text-on-surface placeholder:text-on-surface-variant/70 outline-none"
+                />
+                <div className="flex shrink-0 items-center pe-1">
+                  <SearchVoiceBarcodeActions
+                    locale={locale}
+                    onQuery={applyQueryFromVoiceOrBarcode}
+                    compact
                   />
                 </div>
-                <SearchVoiceBarcodeActions
-                  locale={locale}
-                  onQuery={applyQueryFromVoiceOrBarcode}
-                  compact
-                />
                 <button
                   type="submit"
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-on-primary transition-colors hover:bg-primary-600"
+                  aria-label={t('button.search')}
+                  className="inline-flex h-full w-16 shrink-0 items-center justify-center bg-primary text-on-primary transition-colors hover:bg-primary-600"
                 >
-                  <Search className="h-3.5 w-3.5" />
-                  {t('button.search')}
+                  <Search className="h-5 w-5" strokeWidth={2.25} />
                 </button>
               </form>
             </div>
 
             {/* Actions */}
-            <div className="ms-auto flex items-center gap-1 md:ms-0 md:gap-1.5">
-              {/* Language toggle */}
+            <div className="flex items-center gap-1 md:gap-1.5">
+              {/* Language — compact single icon-button. Shows a globe and
+                  the *target* language code (i.e. the one you'd switch to),
+                  so the meaning reads "click to switch to EN" in Arabic mode
+                  and vice versa. Toggles on click. */}
               <button
-                onClick={switchLocale}
-                className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-                aria-label="Toggle language"
+                type="button"
+                onClick={() => goToLocale(locale === 'ar' ? 'en' : 'ar')}
+                aria-label={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
               >
-                <Languages className="h-4 w-4" />
-                <span className="hidden sm:inline">{locale === 'ar' ? 'EN' : 'AR'}</span>
+                <Globe className="h-4 w-4" strokeWidth={2} />
+                <span className="tracking-wide">{locale === 'ar' ? 'EN' : 'AR'}</span>
               </button>
 
-              {/* Theme toggle */}
+              {/* Theme — single icon toggle. Shows the *target* state
+                  (moon in light mode = "click for dark", sun in dark mode
+                  = "click for light") — GitHub/Vercel convention.
+                  Pre-hydration we render a transparent placeholder so the
+                  server HTML doesn't mismatch after next-themes reads
+                  localStorage on mount. */}
               <button
+                type="button"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className={iconBtnClass}
-                aria-label="Toggle theme"
+                aria-label={isHydrated && theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
               >
                 {isHydrated ? (
                   theme === 'dark' ? (
-                    <Sun className="h-4 w-4 text-amber-500" />
+                    <Sun className="h-4 w-4 text-amber-500" strokeWidth={2} />
                   ) : (
-                    <Moon className="h-4 w-4" />
+                    <Moon className="h-4 w-4" strokeWidth={2} />
                   )
                 ) : (
                   <span className="h-4 w-4" aria-hidden="true" />
@@ -434,64 +512,118 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             </div>
           </div>
 
-          {/* Search bar — mobile. Suppressed on the landing page (hero search). */}
+          {/* Search bar — mobile. Mirrors the desktop pill structure:
+              start-aligned search icon inside the input, trailing voice/
+              barcode cluster, distinct green submit button at the end. */}
           <form
             onSubmit={handleSearchSubmit}
-            className={cn(
-              'mt-2 flex items-center gap-2 md:hidden',
-              isLandingPage && 'hidden',
-            )}
+            className="relative mt-3 flex h-11 items-stretch overflow-hidden rounded-full border-2 border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 md:hidden"
           >
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute start-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('search.searchPlaceholder')}
-                aria-label={t('search.searchPlaceholder')}
-                className="h-8 w-full rounded-lg border border-gray-200 bg-gray-100/80 pe-3 ps-9 text-xs text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900/80 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-primary-400"
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute start-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-on-surface-variant"
+            />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('search.searchPlaceholder')}
+              aria-label={t('search.searchPlaceholder')}
+              className="min-w-0 flex-1 bg-transparent ps-10 pe-2 text-[13px] text-on-surface placeholder:text-on-surface-variant/70 outline-none"
+            />
+            <div className="flex shrink-0 items-center">
+              <SearchVoiceBarcodeActions
+                locale={locale}
+                onQuery={applyQueryFromVoiceOrBarcode}
+                compact
               />
             </div>
-            <SearchVoiceBarcodeActions
-              locale={locale}
-              onQuery={applyQueryFromVoiceOrBarcode}
-              compact
-            />
             <button
               type="submit"
-              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-on-primary transition-colors hover:bg-primary-600"
+              aria-label={t('button.search')}
+              className="inline-flex h-full w-12 shrink-0 items-center justify-center bg-primary text-on-primary transition-colors hover:bg-primary-600"
             >
-              <Search className="h-3.5 w-3.5" />
-              {t('button.search')}
+              <Search className="h-4 w-4" strokeWidth={2.25} />
             </button>
           </form>
 
-          {/* Row 2: Nav pills */}
-          <nav className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-            {navLinks.map((item) => {
+          {/* Row 2: Categories mega-dropdown + Stores + top-category quick-links */}
+          <nav className="mt-3 flex items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* Categories dropdown — opens a grid of every supported category */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-600"
+                >
+                  <LayoutGrid className="h-4 w-4" strokeWidth={2.25} />
+                  {isRTL ? 'الفئات' : 'Categories'}
+                  {isRTL ? <ChevronDown className="h-3.5 w-3.5 opacity-80" /> : <ChevronDown className="h-3.5 w-3.5 opacity-80" />}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align={isRTL ? 'end' : 'start'}
+                className="w-[min(560px,90vw)] p-3"
+              >
+                <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                  {HEADER_CATEGORIES.map((cat) => {
+                    const Icon = cat.icon;
+                    return (
+                      <DropdownMenuItem key={cat.slug} asChild className="cursor-pointer">
+                        <Link
+                          href={`/${locale}/search?category=${cat.slug}`}
+                          className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
+                        >
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-700">
+                            <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          </span>
+                          <span className="text-sm">
+                            {isRTL ? cat.labelAr : cat.labelEn}
+                          </span>
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </div>
+                <DropdownMenuSeparator className="my-2" />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link
+                    href={`/${locale}/search`}
+                    className="flex items-center justify-between px-2.5 py-2 text-sm font-semibold text-primary-700"
+                  >
+                    {isRTL ? 'تصفّح كل المنتجات' : 'Browse all products'}
+                    {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Divider */}
+            <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-outline-variant" />
+
+            {/* Section links + top-category quick-links. Secondary nav —
+                active state gets a primary-tinted chip, inactive is plain. */}
+            {quickNavLinks.map((item) => {
               const isActive =
                 item.href === `/${locale}`
                   ? pathname === item.href
                   : isActivePath(pathname, item.href);
-
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-3 text-sm font-medium transition-colors',
+                    'inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[13px] font-medium transition-colors',
                     isActive
-                      ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700/70 dark:bg-primary-900/30 dark:text-primary-300'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:text-gray-100'
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  {item.icon && <item.icon className="h-3.5 w-3.5" strokeWidth={1.75} />}
                   <span>{item.label}</span>
                 </Link>
               );
             })}
-
           </nav>
         </div>
       </header>
@@ -512,6 +644,66 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
       {/* Persistent compare tray — visible on every page when the list has items */}
       <CompareFloatingBar locale={locale} />
+    </div>
+  );
+}
+
+/**
+ * Compact segmented toggle. Shows every option at once; the active one gets
+ * a solid primary fill and inactive ones stay text-only. No opacity modifiers
+ * (this project's Tailwind setup misbehaves with `/N` suffixes on colors),
+ * no absolute-positioned indicator — just solid semantic tokens.
+ *
+ * `value` is optional so the caller can render the toggle before client-only
+ * state (e.g. next-themes' current theme) has resolved. When undefined, no
+ * button is marked active.
+ */
+type SegmentOption = {
+  value: string;
+  label?: string;
+  icon?: React.ReactNode;
+  ariaLabel?: string;
+};
+
+function SegmentedToggle({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  options: SegmentOption[];
+  value: string | undefined;
+  onChange: (value: string) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      className="inline-flex h-9 items-center gap-0.5 rounded-xl border border-outline-variant bg-surface-container-low p-0.5"
+    >
+      {options.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={opt.ariaLabel || opt.label || opt.value}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              'inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-150',
+              active
+                ? 'bg-primary text-on-primary'
+                : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
+            )}
+          >
+            {opt.icon}
+            {opt.label && <span>{opt.label}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }

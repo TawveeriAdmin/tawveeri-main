@@ -39,7 +39,7 @@ export function DashboardPushBanner({ locale }: DashboardPushBannerProps) {
   const isRTL = locale === 'ar';
 
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-900/30">
+    <div className="mb-4 flex items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-900/30">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-800/50">
         <Bell className="h-4 w-4 text-primary-700 dark:text-primary-300" />
       </div>
