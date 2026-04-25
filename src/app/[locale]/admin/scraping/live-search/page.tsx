@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SARSymbol } from '@/components/ui/price';
 import { useToast } from '@/components/ui/use-toast';
 import { Search, Download } from 'lucide-react';
 
@@ -199,7 +200,10 @@ export default function LiveSearchPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold tabular-nums">{g.best_price?.toLocaleString()} SAR</p>
+                    <p className="inline-flex items-center gap-1 text-sm font-semibold">
+                      <span className="tabular-nums">{g.best_price?.toLocaleString()}</span>
+                      <SARSymbol className="w-3.5 h-3.5" />
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {g.stores?.map((s: any) => s.store).join(', ')}
                     </p>

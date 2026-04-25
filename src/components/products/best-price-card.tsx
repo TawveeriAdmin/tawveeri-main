@@ -1,10 +1,10 @@
 'use client';
 
 import { ExternalLink, Trophy } from 'lucide-react';
-import { Price } from '@/components/ui/price';
+import { Price, SavingsLabel } from '@/components/ui/price';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { useLocale } from '@/lib/simple-intl-provider';
-import { savings as savingsCopy, bestPrice as bestPriceCopy } from '@/lib/copy';
+import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import type { AvailabilityStatus } from '@/lib/database/types';
 
 interface StoreSummary {
@@ -102,13 +102,15 @@ export function BestPriceCard({
         </div>
       </div>
 
+      {/* Savings chip temporarily hidden — restore when copy is finalized.
       {savings > 0 && (
         <div className="mb-4">
           <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-gold)]/15 text-[var(--brand-gold-dark)] px-2.5 py-1 text-xs font-bold border border-[var(--brand-gold)]/30">
-            {savingsCopy(savings, locale as 'ar' | 'en')}
+            <SavingsLabel amount={savings} locale={locale as 'ar' | 'en'} />
           </span>
         </div>
       )}
+      */}
 
       {/* Plain anchor — guarantees label visibility regardless of Button internals.
           When the parent supplies onClick (affiliate tracking), cancel the default

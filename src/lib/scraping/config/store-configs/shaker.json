@@ -15,11 +15,18 @@
   ],
   "timeout_ms": 30000,
   "category_urls": {
-    "tv": ["https://shakersa.com/product-category/tv-entertaiment/"],
+    "tv": [
+      "https://shakersa.com/product-category/tv-entertaiment/",
+      "https://shakersa.com/product-category/television-entertainment/"
+    ],
     "appliance": [
       "https://shakersa.com/product-category/large-appliances/",
       "https://shakersa.com/product-category/air-conditioners/",
-      "https://shakersa.com/product-category/built-in/"
+      "https://shakersa.com/product-category/air-conditioners-purifiers/",
+      "https://shakersa.com/product-category/built-in/",
+      "https://shakersa.com/product-category/built-in-appliances/",
+      "https://shakersa.com/product-category/%d9%85%d8%b9%d8%af%d8%a7%d8%aa/",
+      "https://shakersa.com/product-category/tools/"
     ],
     "kitchen": ["https://shakersa.com/product-category/small-appliances/"]
   },
@@ -30,10 +37,6 @@
     "price": ".price ins",
     "original_price": ".price del",
     "image": "img"
-  },
-  "pagination": {
-    "param": "product-page",
-    "start": 1
   },
   "selectors": {
     "product_list": ".product",

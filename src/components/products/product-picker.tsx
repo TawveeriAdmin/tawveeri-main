@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SARSymbol } from '@/components/ui/price';
 import { Search } from 'lucide-react';
 
 export interface PickedProduct {
@@ -144,8 +145,11 @@ export function ProductPicker({ locale, onPick, placeholder }: ProductPickerProp
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-on-surface">{name}</p>
                     {typeof p.lowestPrice === 'number' && p.lowestPrice > 0 && (
-                      <p className="text-xs text-on-surface-variant">
-                        {p.lowestPrice.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} {isRTL ? 'ر.س' : 'SAR'}
+                      <p className="inline-flex items-center gap-1 text-xs text-on-surface-variant">
+                        <span className="tabular-nums">
+                          {p.lowestPrice.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+                        </span>
+                        <SARSymbol className="w-3 h-3" />
                       </p>
                     )}
                   </div>

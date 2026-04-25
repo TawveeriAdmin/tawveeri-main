@@ -1,7 +1,8 @@
-import type { ScrapedProduct, ProductCategory } from '../base/types';
+import type { ScrapedProduct } from '../base/types';
+import type { ProductCategory } from '@/lib/database/types';
 import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
-import { determineCategory } from '../utils/category-utils';
+import { classifyFromTitle, determineCategory } from '../utils/category-utils';
 
 const NOON_API_URL = 'https://www.noon.com/_svc/catalog/api/v3/u/en-sa/search';
 const NOON_CDN = 'https://f.nooncdn.com/p';
@@ -21,32 +22,26 @@ export class NoonScraper extends BaseScraper {
     maxPages: number = 10
   ): Promise<ScrapedProduct[]> {
     const products: ScrapedProduct[] = [];
-    const categoryUrls = this.config.category_urls[category] || [];
 
-    if (categoryUrls.length === 0) {
-      // Store does not stock this category — skip silently so the orchestrator's
-      // all-categories iteration doesn't treat the gap as an error.
-      return products;
-    }
+    // Noon discovery is keyword-search driven via their internal catalog
+    // API, not URL-crawl driven. We only need a search query per category
+    // (resolved by extractCategoryQuery). The noon.json config's
+    // `category_urls` list is a historical artefact from the HTML-crawl
+    // fallback path — ignoring it here lets us cover every enum category
+    // (wearable, printer, monitor, smart_home, kitchen, refrigerator, etc.)
+    // without having to add dummy URL entries to the config.
+    const categoryQuery = this.extractCategoryQuery('', category);
+    if (!categoryQuery) return products;
 
     try {
-      for (const baseUrl of categoryUrls) {
-        // Extract category path for API query
-        const categoryQuery = this.extractCategoryQuery(baseUrl, category);
-
-        for (let page = 1; page <= maxPages; page++) {
-          try {
-            const pageProducts = await this.scrapeApiPage(categoryQuery, page, category);
-
-            if (pageProducts.length === 0) {
-              break;
-            }
-
-            products.push(...pageProducts);
-            await this.delay();
-          } catch (error) {
-            console.error(`[Noon] Error scraping page ${page}:`, error);
-          }
+      for (let page = 1; page <= maxPages; page++) {
+        try {
+          const pageProducts = await this.scrapeApiPage(categoryQuery, page, category);
+          if (pageProducts.length === 0) break;
+          products.push(...pageProducts);
+          await this.delay();
+        } catch (error) {
+          console.error(`[Noon] Error scraping page ${page}:`, error);
         }
       }
     } finally {
@@ -92,16 +87,31 @@ export class NoonScraper extends BaseScraper {
   }
 
   private extractCategoryQuery(baseUrl: string, category: ProductCategory): string {
-    // Map category to search terms for the API
+    // Map our internal category enum → a Noon-flavoured search query.
+    // Keep keywords broad so each category pulls thousands of candidate
+    // products from Noon's search index. Multi-word queries (e.g.
+    // "headphones speakers") widen the net on purpose — Noon's relevance
+    // ranker handles mixed results gracefully and our downstream
+    // `determineCategory()` re-classifies each product from its title
+    // anyway, so over-broad queries just mean more products, not noisy ones.
     const categoryMap: Record<string, string> = {
-      smartphone: 'smartphone',
-      laptop: 'laptop',
-      tv: 'television',
-      tablet: 'tablet',
-      audio: 'headphones speakers',
-      camera: 'camera',
-      gaming: 'gaming console',
-      accessories: 'electronics accessories',
+      smartphone:    'smartphone',
+      laptop:        'laptop',
+      tablet:        'tablet',
+      tv:            'television',
+      audio:         'headphones speakers',
+      gaming:        'gaming console',
+      camera:        'camera',
+      monitor:       'computer monitor',
+      printer:       'printer',
+      networking:    'router wifi',
+      smart_home:    'smart home',
+      wearable:      'smartwatch fitness tracker',
+      appliance:     'home appliances',
+      kitchen:       'kitchen appliances',
+      personal_care: 'personal care grooming',
+      refrigerator: 'refrigerator fridge',
+      accessories:   'electronics accessories',
     };
     return categoryMap[category] || category;
   }
@@ -206,7 +216,14 @@ export class NoonScraper extends BaseScraper {
       // Brand and model
       const brand = (item.brand || item.brand_name || 'Unknown') as string;
       const model = this.extractModelFromTitle(title, brand);
-      const category = defaultCategory || determineCategory(title);
+
+      // Electronics-only filter. Noon's relevance ranker leaks adjacent
+      // non-electronics ("coffee machine" search returns cups/beans too),
+      // so every hit is re-classified from its title. A null return means
+      // no specific electronics keyword matched → drop it rather than
+      // inherit the seed's category intent.
+      const category = classifyFromTitle(title);
+      if (!category) return null;
 
       const isExpress = !!(item.is_express || item.express_delivery);
       const hasDiscount = originalPrice !== null && originalPrice > price;

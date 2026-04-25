@@ -103,8 +103,17 @@ export abstract class BaseScraper {
         // pinned for an entire session was one of the signals Amazon flagged
         // during the 200-minute full-coverage run; rotating per attempt is
         // cheap and harmless for stores that don't care.
+        //
+        // Pass a same-origin referer so Cloudflare-protected stores (e.g.
+        // shakersa.com) don't drop the connection. A bare request with no
+        // Referer silently times out on their WAF even though the homepage
+        // is reachable. Using the URL's own origin mimics an on-site
+        // navigation and is strictly more permissive than no referer —
+        // stores that don't care continue to ignore it.
+        let refererOrigin: string | undefined;
+        try { refererOrigin = new URL(url).origin; } catch { /* invalid URL handled above */ }
         const response = await fetch(url, {
-          headers: getBrowserHeaders(),
+          headers: getBrowserHeaders(refererOrigin),
           signal: controller.signal,
         });
         if (!response.ok) {
@@ -408,7 +417,20 @@ export abstract class BaseScraper {
 
   protected buildListingUrl(baseUrl: string, page: number): string {
     if (page === 1) return baseUrl;
-    const pagination = (this.config as any).pagination as { param?: string; start?: number } | undefined;
+    // WordPress/WooCommerce archives ignore arbitrary query-string page
+    // params and instead paginate via `/page/N/` on the path. A config
+    // setting `discovery_pagination: "wordpress_paged"` is the switch:
+    // when set, append `page/N/` to the pathname so Shaker, SWSG, and any
+    // future WooCommerce store works out of the box. `new URL()` preserves
+    // existing query strings and fragments.
+    const style = (this.config as { discovery_pagination?: string }).discovery_pagination;
+    if (style === 'wordpress_paged') {
+      const u = new URL(baseUrl);
+      const path = u.pathname.endsWith('/') ? u.pathname : `${u.pathname}/`;
+      u.pathname = `${path}page/${page}/`;
+      return u.toString();
+    }
+    const pagination = (this.config as { pagination?: { param?: string } }).pagination;
     const param = pagination?.param ?? 'page';
     const separator = baseUrl.includes('?') ? '&' : '?';
     return `${baseUrl}${separator}${param}=${page}`;

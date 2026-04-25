@@ -5,10 +5,10 @@ import { ExternalLink, Truck, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Price } from '@/components/ui/price';
+import { Price, SARSymbol, SavingsLabel } from '@/components/ui/price';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { useLocale } from '@/lib/simple-intl-provider';
-import { savings as savingsCopy, bestPrice as bestPriceCopy } from '@/lib/copy';
+import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import type { AvailabilityStatus } from '@/lib/database/types';
 
 interface StoreSummary {
@@ -194,13 +194,16 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
                     </div>
                   </Td>
                   <Td>
+                    {/* Savings chip temporarily hidden — restore when copy is finalized.
                     {savings > 0 ? (
                       <span className="inline-flex items-center rounded-full bg-[var(--brand-gold)]/12 text-[var(--brand-gold-dark)] px-2 py-0.5 t-small font-semibold">
-                        {savingsCopy(savings, locale as 'ar' | 'en')}
+                        <SavingsLabel amount={savings} locale={locale as 'ar' | 'en'} />
                       </span>
                     ) : (
                       <span className="t-small text-on-surface-variant">—</span>
                     )}
+                    */}
+                    <span className="t-small text-on-surface-variant">—</span>
                   </Td>
                   {showDeliveryColumn && (
                     <Td>
@@ -290,11 +293,13 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mb-3">
+                {/* Savings chip temporarily hidden — restore when copy is finalized.
                 {savings > 0 && (
                   <span className="inline-flex items-center rounded-full bg-[var(--brand-gold)]/12 text-[var(--brand-gold-dark)] px-2 py-0.5 t-small font-semibold">
-                    {savingsCopy(savings, locale as 'ar' | 'en')}
+                    <SavingsLabel amount={savings} locale={locale as 'ar' | 'en'} />
                   </span>
                 )}
+                */}
                 <AvailabilityCell availability={ps.availability} stock={ps.stock_quantity} isRTL={isRTL} />
                 {showDeliveryColumn && (
                   <DeliveryCell ps={ps} isRTL={isRTL} compact />
@@ -371,14 +376,21 @@ function DeliveryCell({
       <span className="inline-flex items-center gap-1 t-small text-on-surface-variant">
         {!compact && <Truck className="h-3.5 w-3.5" />}
         {isRTL ? `${ps.delivery_time_days} يوم` : `${ps.delivery_time_days}d`}
-        {ps.delivery_cost != null && ps.delivery_cost > 0 && ` · ${ps.delivery_cost} ${isRTL ? 'ر.س' : 'SAR'}`}
+        {ps.delivery_cost != null && ps.delivery_cost > 0 && (
+          <>
+            {' · '}
+            <span className="tabular-nums">{ps.delivery_cost}</span>
+            <SARSymbol className="w-3 h-3" />
+          </>
+        )}
       </span>
     );
   }
   if (ps.delivery_cost != null && ps.delivery_cost > 0) {
     return (
-      <span className="t-small text-on-surface-variant">
-        {ps.delivery_cost} {isRTL ? 'ر.س' : 'SAR'}
+      <span className="inline-flex items-center gap-1 t-small text-on-surface-variant">
+        <span className="tabular-nums">{ps.delivery_cost}</span>
+        <SARSymbol className="w-3 h-3" />
       </span>
     );
   }

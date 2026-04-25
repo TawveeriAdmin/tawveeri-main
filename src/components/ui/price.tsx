@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { bestPrice as bestPriceCopy, savings as savingsCopy, type Locale } from '@/lib/copy';
+import { bestPrice as bestPriceCopy, type Locale } from '@/lib/copy';
 
 const SAR_SVG_PATH_1 = 'M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z';
 const SAR_SVG_PATH_2 = 'M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z';
@@ -32,6 +32,33 @@ export function sarSvgHtml(color: string = 'currentColor', size: number = 12): s
  */
 export function sarSvgDataUri(color: string = '#666'): string {
   return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1124.14 1256.39" fill="${color}"><path d="${SAR_SVG_PATH_1}"/><path d="${SAR_SVG_PATH_2}"/></svg>`)}`;
+}
+
+/**
+ * Savings label — renders "وفّر X" / "Save X" followed by the SAR SVG
+ * symbol, so the currency is always glyph-rendered rather than plain
+ * "ر.س" / "SAR" text. Used inside the savings chip on product cards,
+ * comparison table, best-price card, and product detail.
+ */
+export function SavingsLabel({
+  amount,
+  locale,
+  symbolClassName,
+}: {
+  amount: number;
+  locale: Locale;
+  symbolClassName?: string;
+}) {
+  const formatted = new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    maximumFractionDigits: 0,
+  }).format(Math.round(amount));
+  return (
+    <span className="inline-flex items-center gap-1 tabular-nums">
+      <span>{locale === 'ar' ? 'وفّر' : 'Save'}</span>
+      <span>{formatted}</span>
+      <SARSymbol className={cn('w-3 h-3', symbolClassName)} />
+    </span>
+  );
 }
 
 interface PriceProps {
@@ -138,6 +165,7 @@ export function PriceDisplay({
           />
         )}
       </div>
+      {/* Savings chip temporarily hidden — restore when copy is finalized.
       {computedSavings > 0 && (
         <span
           className={cn(
@@ -146,9 +174,10 @@ export function PriceDisplay({
             't-small font-semibold',
           )}
         >
-          {savingsCopy(computedSavings, locale)}
+          <SavingsLabel amount={computedSavings} locale={locale} />
         </span>
       )}
+      */}
     </div>
   );
 }

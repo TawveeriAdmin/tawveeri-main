@@ -11,12 +11,28 @@ export const dynamic = 'force-dynamic';
 interface SearchBody {
   query?: string;
   category?: ProductCategory | string;
+
+  // New contract — real pagination.
+  page?: number;
+  pageSize?: number;
+
+  // Legacy multiplier kept for backwards compatibility (mobile app / any
+  // older clients). If `page`/`pageSize` are absent and `pages` is present,
+  // we behave like the old endpoint: return `pages × 48` rows in one shot.
   pages?: number;
+
   sort?: string;
+
+  // Server-side filters.
   min_price?: number;
   max_price?: number;
-  brand?: string;
-  in_stock_only?: boolean;
+  brand?: string;                // single-brand legacy field
+  brands?: string[];             // multi-brand (new)
+  stores?: string[];             // store slug list (new)
+  availability?: string[];       // availability enum list (new)
+  deals_only?: boolean;          // new
+  free_delivery_only?: boolean;  // new
+  in_stock_only?: boolean;       // legacy — equivalent to availability=['in_stock']
   specs?: Record<string, string>;
 }
 
@@ -53,7 +69,12 @@ interface ProductStoreRow {
 /**
  * POST /api/search
  * DB-backed search over the products + product_stores catalog.
- * Shape-compatible with the legacy live scrape response so clients can swap URLs.
+ *
+ * Pagination: the new contract accepts { page, pageSize } and returns
+ * { total } — the exact match count across the whole catalog, so the
+ * client can render real pagination (not a client-side slice over the
+ * first N rows). The legacy { pages } body field is still honoured for
+ * older callers that haven't migrated yet.
  */
 export async function POST(request: NextRequest) {
   const started = Date.now();
@@ -71,7 +92,7 @@ export async function POST(request: NextRequest) {
         is_deal, is_free_delivery, delivery_time_days, delivery_cost, coupon_code,
         stores!inner (slug, name_ar, name_en, average_rating, total_reviews)
       )
-    `)
+    `, { count: 'exact' })
     .eq('is_active', true);
 
   if (rawQuery) {
@@ -84,15 +105,46 @@ export async function POST(request: NextRequest) {
   if (body.category && body.category !== 'all') {
     query = query.eq('category', body.category);
   }
-  if (body.brand) {
+
+  // Brand filter: prefer multi (`brands`) over single (`brand`).
+  if (body.brands && body.brands.length > 0) {
+    query = query.in('brand', body.brands);
+  } else if (body.brand) {
     query = query.ilike('brand', body.brand);
   }
+
   if (body.specs && Object.keys(body.specs).length > 0) {
     query = query.contains('specifications', body.specs);
   }
-  if (body.in_stock_only) {
+
+  // Store filter — filters the inner-joined product_stores so products
+  // without a row in any of the selected stores are dropped.
+  if (body.stores && body.stores.length > 0) {
+    query = query.in('product_stores.stores.slug', body.stores);
+  }
+
+  // Availability filter: if `availability[]` is set, use it; else honour
+  // the legacy `in_stock_only` boolean.
+  if (body.availability && body.availability.length > 0) {
+    const VALID_AVAILABILITY = ['in_stock', 'out_of_stock', 'limited_stock', 'pre_order'] as const;
+    type AvailabilityLit = typeof VALID_AVAILABILITY[number];
+    const filtered = body.availability.filter((a): a is AvailabilityLit =>
+      (VALID_AVAILABILITY as readonly string[]).includes(a)
+    );
+    if (filtered.length > 0) {
+      query = query.in('product_stores.availability', filtered);
+    }
+  } else if (body.in_stock_only) {
     query = query.eq('product_stores.availability', 'in_stock');
   }
+
+  if (body.deals_only) {
+    query = query.eq('product_stores.is_deal', true);
+  }
+  if (body.free_delivery_only) {
+    query = query.eq('product_stores.is_free_delivery', true);
+  }
+
   if (typeof body.min_price === 'number') {
     query = query.gte('product_stores.current_price', body.min_price);
   }
@@ -100,11 +152,28 @@ export async function POST(request: NextRequest) {
     query = query.lte('product_stores.current_price', body.max_price);
   }
 
-  const pages = body.pages ?? 1;
-  const pageSize = 48;
-  query = query.range(0, Math.max(pages, 1) * pageSize - 1);
+  // Pagination: new contract (page/pageSize) wins. Falls back to the old
+  // (pages × 48) multiplier for legacy callers.
+  let offsetStart: number;
+  let offsetEnd: number;
+  let currentPage: number;
+  let currentPageSize: number;
+  if (typeof body.page === 'number' || typeof body.pageSize === 'number') {
+    currentPage = Math.max(1, body.page ?? 1);
+    currentPageSize = Math.min(100, Math.max(1, body.pageSize ?? 25));
+    offsetStart = (currentPage - 1) * currentPageSize;
+    offsetEnd = currentPage * currentPageSize - 1;
+  } else {
+    // Legacy path — unchanged behaviour.
+    const pages = body.pages ?? 1;
+    currentPage = 1;
+    currentPageSize = Math.max(pages, 1) * 48;
+    offsetStart = 0;
+    offsetEnd = currentPageSize - 1;
+  }
+  query = query.range(offsetStart, offsetEnd);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     console.error('[search] error:', error.message);
@@ -119,9 +188,13 @@ export async function POST(request: NextRequest) {
   products.sort(compareBySort(body.sort || 'relevance'));
 
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
-  const result: ScrapedSearchResult = {
+  const total = typeof count === 'number' ? count : products.length;
+  const result: ScrapedSearchResult & { total: number; page: number; pageSize: number } = {
     products,
     count: products.length,
+    total,
+    page: currentPage,
+    pageSize: currentPageSize,
     query: rawQuery,
     storeResults: computeStoreResults(products),
     priceStats: {
@@ -204,8 +277,8 @@ function computeUniqueStores(products: GroupedSearchProduct[]): number {
 }
 
 function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearchProduct) => number {
-  if (sort === 'price_asc') return (a, b) => a.best_price - b.best_price;
-  if (sort === 'price_desc') return (a, b) => b.best_price - a.best_price;
+  if (sort === 'price_asc' || sort === 'price_low') return (a, b) => a.best_price - b.best_price;
+  if (sort === 'price_desc' || sort === 'price_high') return (a, b) => b.best_price - a.best_price;
   if (sort === 'rating') {
     return (a, b) => {
       const ar = Math.max(...a.stores.map((s) => s.rating ?? 0));

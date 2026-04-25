@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Price } from '@/components/ui/price';
+import { Price, SavingsLabel } from '@/components/ui/price';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { cn } from '@/lib/utils';
@@ -177,7 +177,7 @@ export function ProductDetailSheet({
                     {/* Store identity */}
                     <div className="flex items-center gap-2 min-w-0">
                       <StoreLogo
-                        slug={ps.stores.id}
+                        slug={ps.stores.slug ?? ps.stores.id}
                         size="sm"
                         alt={storeName}
                         locale={locale as 'ar' | 'en'}
@@ -218,11 +218,13 @@ export function ProductDetailSheet({
                               symbolClassName="w-2.5 h-2.5"
                             />
                           )}
+                          {/* Savings label temporarily hidden — restore when copy is finalized.
                           {storeSavings > 0 && (
                             <span className="t-caption text-[var(--brand-gold-dark)] font-semibold">
-                              {isRTL ? `وفّر ${storeSavings} ر.س` : `Save ${storeSavings} SAR`}
+                              <SavingsLabel amount={storeSavings} locale={isRTL ? 'ar' : 'en'} />
                             </span>
                           )}
+                          */}
                         </>
                       ) : (
                         <span className="t-small text-on-surface-variant">

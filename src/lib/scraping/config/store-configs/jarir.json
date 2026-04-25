@@ -32,8 +32,7 @@
     "printer": ["https://www.jarir.com/sa-en/printers-scanners.html"],
     "smart_home": ["https://www.jarir.com/sa-en/smart-home.html"],
     "wearable": [
-      "https://www.jarir.com/sa-en/smartwatches-wearables.html",
-      "https://www.jarir.com/sa-en/health-fitness.html"
+      "https://www.jarir.com/sa-en/smartwatches-wearables.html"
     ]
   },
   "supplemental_urls": [

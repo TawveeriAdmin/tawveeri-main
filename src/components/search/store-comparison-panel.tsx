@@ -68,7 +68,7 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
             >
               {/* Store logo */}
               <StoreLogo
-                slug={ps.stores.id}
+                slug={ps.stores.slug ?? ps.stores.id}
                 size="md"
                 alt={storeName}
                 locale={locale as 'ar' | 'en'}

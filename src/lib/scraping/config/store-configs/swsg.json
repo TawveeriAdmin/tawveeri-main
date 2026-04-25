@@ -4,7 +4,6 @@
   "store_name_en": "Winter & Summer",
   "base_url": "https://swsg.co",
   "requires_js": false,
-  "discovery_pagination": "wordpress_paged",
   "rate_limit": {
     "min_delay_ms": 800,
     "max_delay_ms": 1500,
@@ -24,27 +23,58 @@
   "pagination": { "param": "p", "start": 1 },
   "category_urls": {
     "smartphone": [
-      "https://swsg.co/ar/moblie-accessories/smart-phones.html"
-    ],
-    "laptop": [
-      "https://swsg.co/ar/computers-peripherals/computers/laptops.html"
+      "https://swsg.co/ar/moblie-accessories/smart-phones.html",
+      "https://swsg.co/en/moblie-accessories/smart-phones.html"
     ],
     "tablet": [
-      "https://swsg.co/ar/moblie-accessories/tablets.html"
+      "https://swsg.co/ar/moblie-accessories/tablets.html",
+      "https://swsg.co/en/moblie-accessories/tablets.html"
+    ],
+    "laptop": [
+      "https://swsg.co/ar/computers-peripherals/computers/laptops.html",
+      "https://swsg.co/ar/computers-peripherals/computers/gaming-laptops.html",
+      "https://swsg.co/ar/computers-peripherals/computers/desktop-computer.html",
+      "https://swsg.co/en/computers-peripherals/computers/laptops.html",
+      "https://swsg.co/en/computers-peripherals/computers/gaming-laptops.html",
+      "https://swsg.co/en/computers-peripherals/computers/desktop-computer.html"
+    ],
+    "monitor": [
+      "https://swsg.co/ar/computers-peripherals/computers/desktop-monitors.html",
+      "https://swsg.co/en/computers-peripherals/computers/desktop-monitors.html"
+    ],
+    "printer": [
+      "https://swsg.co/ar/computers-peripherals/computer-peripherals/printers.html",
+      "https://swsg.co/en/computers-peripherals/computer-peripherals/printers.html"
+    ],
+    "networking": [
+      "https://swsg.co/ar/computers-peripherals/computer-peripherals/routers.html",
+      "https://swsg.co/en/computers-peripherals/computer-peripherals/routers.html"
     ],
     "tv": [
-      "https://swsg.co/ar/tvs-audios/tvs.html"
+      "https://swsg.co/ar/tvs-audios.html",
+      "https://swsg.co/en/tvs-audios.html"
     ],
     "audio": [
-      "https://swsg.co/ar/tvs-audios/audios.html"
+      "https://swsg.co/ar/computers-peripherals/computer-accessories/headset-speakers.html",
+      "https://swsg.co/en/computers-peripherals/computer-accessories/headset-speakers.html"
     ],
     "gaming": [
-      "https://swsg.co/ar/games/playstation.html",
-      "https://swsg.co/ar/games/game-consoles.html"
+      "https://swsg.co/ar/games.html",
+      "https://swsg.co/en/games.html"
     ],
-    "accessories": [
-      "https://swsg.co/ar/moblie-accessories/accessories.html",
-      "https://swsg.co/ar/computers-peripherals/computer-accessories.html"
+    "appliance": [
+      "https://swsg.co/ar/home-appliances.html",
+      "https://swsg.co/ar/air-conditions.html",
+      "https://swsg.co/en/home-appliances.html",
+      "https://swsg.co/en/air-conditions.html"
+    ],
+    "kitchen": [
+      "https://swsg.co/ar/small-appliances.html",
+      "https://swsg.co/en/small-appliances.html"
+    ],
+    "personal_care": [
+      "https://swsg.co/ar/personal-products.html",
+      "https://swsg.co/en/personal-products.html"
     ]
   },
   "selectors": {

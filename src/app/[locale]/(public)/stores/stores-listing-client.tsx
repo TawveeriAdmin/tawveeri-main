@@ -12,13 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Search, ShieldCheck, Sparkles, Store } from 'lucide-react';
+import { AlertCircle, Search, Store, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Database } from '@/lib/database/types';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -43,10 +41,11 @@ type StoreFilter = 'all' | 'featured' | 'premium';
 
 export default function StoresListingClient() {
   const [supabase] = useState(() =>
-    typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
+    typeof window !== 'undefined' ? getSupabaseBrowserClient() : null,
   );
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
+  const isRTL = locale === 'ar';
   const t = useTranslations();
 
   const [stores, setStores] = useState<StoreSummary[]>([]);
@@ -58,52 +57,9 @@ export default function StoresListingClient() {
   const [storeFilter, setStoreFilter] = useState<StoreFilter>('all');
   const [filteredStores, setFilteredStores] = useState<StoreSummary[]>([]);
 
-  const fetchErrorFallback =
-    locale === 'ar' ? 'تعذر تحميل بيانات المتاجر حالياً.' : 'Failed to load stores right now.';
-
-  const uiCopy = useMemo(
-    () =>
-      locale === 'ar'
-        ? {
-            featured: 'شبكة متاجر موثوقة وتجربة اكتشاف سريعة',
-            searchAction: 'بحث',
-            searchHelper: 'ابحث عن المتجر المناسب بسرعة',
-            searchHint: 'اكتب اسم المتجر للعثور عليه فوراً',
-            featuredStores: 'متاجر مميزة',
-            premiumStores: 'متاجر بريميوم',
-            totalProducts: 'إجمالي المنتجات',
-            allStores: 'كل المتاجر',
-            allStoresHint: 'عرض جميع المتاجر بدون فلترة',
-            featuredHint: 'متاجر موصى بها مع تقييمات قوية',
-            premiumHint: 'متاجر موثقة بتجربة أعلى',
-            filterAll: 'الكل',
-            filterFeatured: 'مميزة',
-            filterPremium: 'بريميوم',
-            reset: 'تصفير',
-            resetHint: 'إرجاع الفلاتر والبحث إلى الوضع الافتراضي',
-            clearSearch: 'مسح البحث',
-          }
-        : {
-            featured: 'Trusted Store Network with Fast Discovery',
-            searchAction: 'Search',
-            searchHelper: 'Find the right store quickly',
-            searchHint: 'Type a store name to jump to it instantly',
-            featuredStores: 'Featured Stores',
-            premiumStores: 'Premium Stores',
-            totalProducts: 'Total Products',
-            allStores: 'All Stores',
-            allStoresHint: 'Show all stores with no filtering',
-            featuredHint: 'Recommended stores with strong ratings',
-            premiumHint: 'Verified stores with higher trust',
-            filterAll: 'All',
-            filterFeatured: 'Featured',
-            filterPremium: 'Premium',
-            reset: 'Reset',
-            resetHint: 'Return filters and search to default',
-            clearSearch: 'Clear Search',
-          },
-    [locale]
-  );
+  const fetchErrorFallback = isRTL
+    ? 'تعذر تحميل بيانات المتاجر حالياً.'
+    : 'Failed to load stores right now.';
 
   useEffect(() => {
     if (!supabase) {
@@ -115,9 +71,7 @@ export default function StoresListingClient() {
     let cancelled = false;
 
     async function fetchStores() {
-      // Re-capture the client inside the closure so TS can narrow it against
-      // the outer null check — the `if (!supabase) return` above runs in a
-      // different scope, so the async body still sees the union type.
+      // Re-capture the client inside the closure so TS narrows the union.
       const sb = supabase;
       if (!sb) return;
       setLoading(true);
@@ -134,38 +88,33 @@ export default function StoresListingClient() {
 
         if (queryError) throw queryError;
 
-        const mappedStores: StoreSummary[] = (data || []).map((store) => ({
-          id: store.id,
-          name_ar: store.name_ar,
-          name_en: store.name_en,
-          slug: store.slug,
-          logo_url: store.logo_url,
-          website_url: store.website_url,
-          average_rating: store.average_rating,
-          total_reviews: store.total_reviews,
-          total_products: store.total_products,
-          is_featured: store.is_featured,
-          is_premium: store.is_premium,
-          status: store.status,
+        const mapped: StoreSummary[] = (data || []).map((s) => ({
+          id: s.id,
+          name_ar: s.name_ar,
+          name_en: s.name_en,
+          slug: s.slug,
+          logo_url: s.logo_url,
+          website_url: s.website_url,
+          average_rating: s.average_rating,
+          total_reviews: s.total_reviews,
+          total_products: s.total_products,
+          is_featured: s.is_featured,
+          is_premium: s.is_premium,
+          status: s.status,
         }));
 
         if (cancelled) return;
+        setStores(mapped);
+        setFilteredStores(mapped);
 
-        // Seed the UI with whatever total_products the DB carries (often stale
-        // or zero). Then fire one parallel count query per store to overwrite
-        // with a live count of active products, so the cards stop showing
-        // "0 products" when the rows actually exist.
-        setStores(mappedStores);
-        setFilteredStores(mappedStores);
-
+        // Fire one parallel count query per store to overwrite the (often
+        // stale) DB total with a live active-product count. Keeps cards
+        // from showing "0 products" when rows actually exist.
         const counts = await Promise.all(
-          mappedStores.map(async (store) => {
+          mapped.map(async (store) => {
             const { count } = await sb
               .from('product_stores')
-              .select('id, products!inner(is_active)', {
-                count: 'exact',
-                head: true,
-              })
+              .select('id, products!inner(is_active)', { count: 'exact', head: true })
               .eq('store_id', store.id)
               .eq('products.is_active', true);
             return [store.id, count ?? 0] as const;
@@ -173,9 +122,8 @@ export default function StoresListingClient() {
         );
 
         if (cancelled) return;
-
         const countMap = new Map(counts);
-        const withCounts = mappedStores.map((s) => ({
+        const withCounts = mapped.map((s) => ({
           ...s,
           total_products: countMap.get(s.id) ?? s.total_products ?? 0,
         }));
@@ -183,74 +131,54 @@ export default function StoresListingClient() {
         setFilteredStores(withCounts);
       } catch (err) {
         if (cancelled) return;
-
         console.error('Error fetching stores:', err);
-        const errorMessage = err instanceof Error ? err.message : fetchErrorFallback;
-        setError(errorMessage);
+        const msg = err instanceof Error ? err.message : fetchErrorFallback;
+        setError(msg);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
     void fetchStores();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [supabase, fetchErrorFallback]);
 
   useEffect(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
     let result = [...stores];
 
-    if (normalizedQuery) {
+    if (q) {
       result = result.filter(
-        (store) =>
-          store.name_ar.toLowerCase().includes(normalizedQuery) ||
-          store.name_en.toLowerCase().includes(normalizedQuery)
+        (s) => s.name_ar.toLowerCase().includes(q) || s.name_en.toLowerCase().includes(q),
       );
     }
-
-    if (storeFilter === 'featured') {
-      result = result.filter((store) => Boolean(store.is_featured));
-    } else if (storeFilter === 'premium') {
-      result = result.filter((store) => Boolean(store.is_premium));
-    }
+    if (storeFilter === 'featured') result = result.filter((s) => Boolean(s.is_featured));
+    if (storeFilter === 'premium') result = result.filter((s) => Boolean(s.is_premium));
 
     result.sort((a, b) => {
       if (sortBy === 'name') {
-        const nameA = locale === 'ar' ? a.name_ar : a.name_en;
-        const nameB = locale === 'ar' ? b.name_ar : b.name_en;
+        const nameA = isRTL ? a.name_ar : a.name_en;
+        const nameB = isRTL ? b.name_ar : b.name_en;
         return nameA.localeCompare(nameB, locale);
       }
-
-      if (sortBy === 'rating') {
-        const ratingA = a.average_rating || 0;
-        const ratingB = b.average_rating || 0;
-        return ratingB - ratingA;
-      }
-
-      const productsA = a.total_products || 0;
-      const productsB = b.total_products || 0;
-      return productsB - productsA;
+      if (sortBy === 'rating') return (b.average_rating ?? 0) - (a.average_rating ?? 0);
+      return (b.total_products ?? 0) - (a.total_products ?? 0);
     });
 
     setFilteredStores(result);
-  }, [stores, searchQuery, sortBy, locale, storeFilter]);
+  }, [stores, searchQuery, sortBy, locale, storeFilter, isRTL]);
 
   const featuredCount = useMemo(
-    () => filteredStores.filter((store) => Boolean(store.is_featured)).length,
-    [filteredStores]
+    () => filteredStores.filter((s) => Boolean(s.is_featured)).length,
+    [filteredStores],
   );
-
   const premiumCount = useMemo(
-    () => filteredStores.filter((store) => Boolean(store.is_premium)).length,
-    [filteredStores]
+    () => filteredStores.filter((s) => Boolean(s.is_premium)).length,
+    [filteredStores],
   );
-
   const productsTotal = useMemo(
-    () => filteredStores.reduce((sum, store) => sum + (store.total_products || 0), 0),
-    [filteredStores]
+    () => filteredStores.reduce((sum, s) => sum + (s.total_products ?? 0), 0),
+    [filteredStores],
   );
 
   const handleReset = () => {
@@ -260,153 +188,157 @@ export default function StoresListingClient() {
     setStoreFilter('all');
   };
 
-  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setSearchQuery(searchInput.trim());
   };
 
+  const hasActiveFilters = storeFilter !== 'all' || searchQuery;
+
   return (
-    <div className="space-y-4">
-      {/* Compact header */}
-      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-cyan-500/10 via-white to-blue-500/10 p-4 shadow-sm dark:border-gray-800 dark:from-cyan-500/20 dark:via-gray-900 dark:to-blue-500/20 md:p-5">
-        <div className="pointer-events-none absolute -end-16 -top-14 h-36 w-36 rounded-full bg-cyan-500/20 blur-3xl dark:bg-cyan-400/20" />
-
-        <div className="relative z-10 space-y-4">
-          {/* Title + inline stats */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 md:text-2xl">
-                  {t('stores.title')}
-                </h1>
-                <Badge
-                  variant="outline"
-                  className="border-cyan-300 bg-cyan-50 text-cyan-700 dark:border-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
-                >
-                  <Sparkles className="me-1 h-3 w-3" />
-                  {uiCopy.featured}
-                </Badge>
-              </div>
-              <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
-                {t('stores.subtitle')}
-              </p>
-            </div>
-            {/* Inline stats */}
-            <div className="flex items-center gap-3 text-sm">
-              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
-                <Store className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : filteredStores.length}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.filterAll}</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
-                <Sparkles className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : featuredCount}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.featuredStores}</span>
-              </div>
-              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 sm:flex dark:border-gray-700 dark:bg-gray-900/75">
-                <ShieldCheck className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : premiumCount}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.premiumStores}</span>
-              </div>
-              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 md:flex dark:border-gray-700 dark:bg-gray-900/75">
-                <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : productsTotal.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.totalProducts}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Search + filters + sort row */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                <Input
-                  type="text"
-                  placeholder={t('stores.searchPlaceholder')}
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  className="h-9 rounded-lg border-cyan-200 bg-white ps-9 dark:border-cyan-800/70 dark:bg-gray-950/70"
-                />
-              </div>
-              <Button type="submit" size="sm" className="h-9 rounded-lg px-4">
-                {uiCopy.searchAction}
-              </Button>
-            </form>
-
-            <div className="flex items-center gap-2">
-              {/* Filter chips */}
-              <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-0.5 dark:border-gray-700">
-                {(['all', 'featured', 'premium'] as const).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setStoreFilter(filter)}
-                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                      storeFilter === filter
-                        ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    {filter === 'all' ? uiCopy.filterAll : filter === 'featured' ? uiCopy.filterFeatured : uiCopy.filterPremium}
-                  </button>
-                ))}
-              </div>
-
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                <SelectTrigger className="h-9 w-[140px] border-gray-200 dark:border-gray-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">{t('stores.sortName')}</SelectItem>
-                  <SelectItem value="rating">{t('stores.sortRating')}</SelectItem>
-                  <SelectItem value="products">{t('stores.sortProducts')}</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {(storeFilter !== 'all' || searchQuery) && (
-                <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2">
-                  <Search className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Results count */}
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
-              {filteredStores.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
-              {t('stores.resultsCount')}
+    <div className="space-y-5">
+      {/* Page header — everything on one row at lg+:
+            [Title (start)]  ──  [Search (middle)]  ──  [Controls (end)]
+          `justify-between` pins the first item to the inline-start, the
+          last to the inline-end, and the middle item sits between them
+          with equal gaps. On small screens `flex-wrap` takes over and the
+          search drops to its own row via `order-last`. */}
+      <div className="flex flex-wrap items-center gap-4 lg:flex-nowrap lg:justify-between">
+        {/* Title + meta — doesn't grow */}
+        <div className="min-w-0 shrink-0">
+          <h1 className="text-xl md:text-2xl font-black tracking-tight text-on-surface">
+            {t('stores.title')}
+            <span className="ms-2 text-sm font-semibold text-on-surface-variant tabular-nums">
+              ({loading ? '…' : filteredStores.length.toLocaleString(isRTL ? 'ar-SA' : 'en-US')})
             </span>
-            {searchQuery && (
-              <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs">
-                &ldquo;{searchQuery}&rdquo;
-                <button
-                  onClick={() => { setSearchInput(''); setSearchQuery(''); }}
-                  className="ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-          </div>
+          </h1>
+          <p className="mt-1 text-xs text-on-surface-variant">
+            {loading
+              ? t('stores.subtitle')
+              : [
+                  featuredCount > 0 && `${featuredCount.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ${isRTL ? 'مميزة' : 'featured'}`,
+                  premiumCount > 0 && `${premiumCount.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ${isRTL ? 'بريميوم' : 'premium'}`,
+                  productsTotal > 0 && `${productsTotal.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ${isRTL ? 'منتج' : 'products'}`,
+                ].filter(Boolean).join(isRTL ? ' · ' : ' · ') || t('stores.subtitle')}
+          </p>
         </div>
-      </section>
 
+        {/* Compact centered search — fixed max width, no flex-grow. The
+            parent's `justify-between` drops it in the middle at lg+. On
+            narrow screens `order-last` + `w-full` makes it the last
+            wrapped row so title and controls stay together on top. */}
+        <form
+          onSubmit={onSearchSubmit}
+          className="order-last w-full min-w-0 lg:order-none lg:w-80 lg:flex-none"
+        >
+          <div className="relative flex h-9 items-stretch overflow-hidden rounded-full border border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-on-surface-variant"
+            />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t('stores.searchPlaceholder')}
+              aria-label={t('stores.searchPlaceholder')}
+              className="min-w-0 flex-1 bg-transparent ps-9 pe-2 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none"
+            />
+            <button
+              type="submit"
+              aria-label={isRTL ? 'بحث' : 'Search'}
+              className="inline-flex h-full w-10 shrink-0 items-center justify-center bg-primary text-on-primary transition-colors hover:bg-primary-600"
+            >
+              <Search className="h-3.5 w-3.5" strokeWidth={2.25} />
+            </button>
+          </div>
+        </form>
+
+        {/* Controls — filter chips + sort + reset. The parent's
+            `justify-between` pins this block to the inline-end at lg+. */}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="inline-flex items-center rounded-full border border-outline-variant bg-surface-container-low p-0.5">
+            {(['all', 'featured', 'premium'] as const).map((filter) => {
+              const active = storeFilter === filter;
+              const label =
+                filter === 'all'
+                  ? (isRTL ? 'الكل' : 'All')
+                  : filter === 'featured'
+                    ? (isRTL ? 'مميزة' : 'Featured')
+                    : (isRTL ? 'بريميوم' : 'Premium');
+              return (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setStoreFilter(filter)}
+                  aria-pressed={active}
+                  className={cn(
+                    'inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold transition-colors',
+                    active
+                      ? 'bg-primary text-on-primary'
+                      : 'text-on-surface-variant hover:text-on-surface',
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="h-9 w-[140px] rounded-full border-outline-variant bg-surface-container-low text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rating">{t('stores.sortRating')}</SelectItem>
+              <SelectItem value="products">{t('stores.sortProducts')}</SelectItem>
+              <SelectItem value="name">{t('stores.sortName')}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleReset}
+              aria-label={isRTL ? 'تصفير' : 'Reset'}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant bg-surface-container-low text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Active-search indicator — only when there's a live query */}
+      {searchQuery && (
+        <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+          <span>{isRTL ? 'نتائج البحث عن' : 'Results for'}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+            &ldquo;{searchQuery}&rdquo;
+            <button
+              type="button"
+              onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+              aria-label={isRTL ? 'مسح البحث' : 'Clear search'}
+              className="inline-flex items-center justify-center rounded-full p-0.5 transition-colors hover:bg-primary-100 dark:hover:bg-primary-800/40"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        </div>
+      )}
+
+      {/* ─────────────── States ─────────────── */}
       {loading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-low p-6"
+            >
+              <Skeleton className="h-20 w-20 rounded-xl" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-1/3" />
+              <Skeleton className="mt-4 h-9 w-full rounded-full" />
             </div>
           ))}
         </div>
@@ -423,9 +355,7 @@ export default function StoresListingClient() {
         <EmptyState
           icon={<Store className="h-12 w-12" />}
           title={t('stores.noStores')}
-          description={
-            searchQuery ? t('stores.noStoresMatch', { query: searchQuery }) : undefined
-          }
+          description={searchQuery ? t('stores.noStoresMatch', { query: searchQuery }) : undefined}
         />
       )}
 
@@ -439,3 +369,4 @@ export default function StoresListingClient() {
     </div>
   );
 }
+

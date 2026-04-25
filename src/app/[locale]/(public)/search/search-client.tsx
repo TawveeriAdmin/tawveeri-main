@@ -98,8 +98,10 @@ const SEARCH_CACHE_KEY = 'search_results_cache';
 
 const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Session-storage helpers for persisting search results across navigation
-function getSearchCache(): { query: string; category: string; products: Product[]; timestamp: number } | null {
+// Session-storage helpers for persisting search results across navigation.
+// `total` is the server's exact match count so pagination can render
+// correctly after a cache-restored back-nav without a refetch.
+function getSearchCache(): { query: string; category: string; products: Product[]; total: number; timestamp: number } | null {
   try {
     const raw = sessionStorage.getItem(SEARCH_CACHE_KEY);
     if (!raw) return null;
@@ -109,13 +111,13 @@ function getSearchCache(): { query: string; category: string; products: Product[
       sessionStorage.removeItem(SEARCH_CACHE_KEY);
       return null;
     }
-    return parsed;
+    return { ...parsed, total: typeof parsed.total === 'number' ? parsed.total : (parsed.products?.length ?? 0) };
   } catch { return null; }
 }
 
-function setSearchCache(query: string, category: string, products: Product[]) {
+function setSearchCache(query: string, category: string, products: Product[], total: number) {
   try {
-    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, products, timestamp: Date.now() }));
+    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, products, total, timestamp: Date.now() }));
   } catch { /* quota exceeded — ignore */ }
 }
 
@@ -137,6 +139,9 @@ export default function SearchClient() {
   const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
+  // Server's exact match count across the whole catalog — drives real
+  // pagination (not the capped client-side slice we used to do).
+  const [serverTotal, setServerTotal] = useState(0);
   const [loading, setLoading] = useState(!!urlQuery);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
@@ -228,6 +233,22 @@ export default function SearchClient() {
     minRating: undefined,
   });
 
+  // Wrappers used on every user-initiated filter/sort change. They reset
+  // pagination to page 1 so the user doesn't land on "page 5" of a freshly
+  // filtered result set. Raw `setFilters` is still used by the URL-sync
+  // path (which carries page separately) and `removeFilter`/`clearAllFilters`
+  // (which explicitly reset page themselves).
+  const setFiltersAndResetPage = useCallback((
+    update: SearchFilters | ((prev: SearchFilters) => SearchFilters),
+  ) => {
+    setFilters(update);
+    setCurrentPage(1);
+  }, []);
+  const setSortByAndResetPage = useCallback((next: SortOption) => {
+    setSortBy(next);
+    setCurrentPage(1);
+  }, []);
+
   // Sync search query from URL params (e.g. when header search navigates here)
   const urlQueryRef = useRef(urlQuery);
   const filtersFromUrlRef = useRef(false);
@@ -304,8 +325,10 @@ export default function SearchClient() {
     return count;
   }, [filters]);
 
-  // Remove a single filter
+  // Remove a single filter (also resets to page 1 so the user doesn't
+  // land on a page that doesn't exist in the smaller result set).
   const removeFilter = useCallback((type: string, value?: string) => {
+    setCurrentPage(1);
     setFilters(prev => {
       const next = { ...prev };
       switch (type) {
@@ -361,6 +384,7 @@ export default function SearchClient() {
 
   // Clear all filters
   const clearAllFilters = useCallback(() => {
+    setCurrentPage(1);
     setFilters({
       brands: [],
       stores: [],
@@ -382,59 +406,28 @@ export default function SearchClient() {
     setCurrentPage(1);
   }, [filters, sortBy]);
 
-  // Client-side filtering, sorting, and pagination of cached scrape results
+  // Server-side pagination + filters + sort: the API does all the heavy
+  // lifting now, so `rawProducts` already holds exactly the current page
+  // and `serverTotal` holds the full match count across the catalog.
+  // Two filters remain client-side because the current schema has no
+  // precomputed column for them — applied to the current page only:
+  //   - `discount` (percentage threshold): computed from original_price/current_price.
+  //   - Spec filters when DB specs are empty: title-regex fallback via
+  //     extractSpecsFromTitle. Most Noon rows have no structured specs
+  //     yet, so this fallback keeps the filter chips useful until we
+  //     ingest specs during scraping.
   const { products, totalCount } = useMemo(() => {
-    let result = [...rawProducts];
+    let result = rawProducts;
 
-    // Store filter
-    if (filters.stores.length > 0) {
-      result = result.filter(p =>
-        p.product_stores.some(ps => filters.stores.includes(ps.stores.id))
-      );
-    }
-
-    // Brand filter
-    if (filters.brands.length > 0) {
-      result = result.filter(p =>
-        filters.brands.some(b => b.toLowerCase() === p.brand.toLowerCase())
-      );
-    }
-
-    // Availability filter
-    if (filters.availability.length > 0) {
-      result = result.filter(p =>
-        p.product_stores.some(ps => filters.availability.includes(ps.availability))
-      );
-    }
-
-    // Deals only
-    if (filters.dealsOnly) {
-      result = result.filter(p =>
-        p.product_stores.some(ps => ps.original_price != null && ps.current_price < ps.original_price)
-      );
-    }
-
-    // Free delivery only
-    if (filters.freeDeliveryOnly) {
-      result = result.filter(p =>
-        p.product_stores.some(ps => ps.is_free_delivery)
-      );
-    }
-
-    // Price range
-    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-      result = result.filter(p => {
-        const prices = p.product_stores.map(ps => ps.current_price).filter((pr): pr is number => pr != null && pr > 0);
-        if (prices.length === 0) return false;
-        const lowest = Math.min(...prices);
-        if (filters.minPrice !== undefined && lowest < filters.minPrice) return false;
-        if (filters.maxPrice !== undefined && lowest > filters.maxPrice) return false;
-        return true;
+    if (filters.discount) {
+      result = result.filter(product => {
+        const ps = product.product_stores[0];
+        if (!ps?.original_price || !ps.current_price) return false;
+        const pct = ((ps.original_price - ps.current_price) / ps.original_price) * 100;
+        return pct >= filters.discount!;
       });
     }
 
-    // Spec filters — prefer DB-populated products.specifications JSONB; fall back
-    // to title-regex extraction for products the scraper hasn't enriched yet.
     if (filters.specs && Object.keys(filters.specs).length > 0) {
       result = result.filter(product => {
         const dbSpecs = (product.specifications ?? null) as Record<string, unknown> | null;
@@ -454,36 +447,8 @@ export default function SearchClient() {
       });
     }
 
-    // Discount filter
-    if (filters.discount) {
-      result = result.filter(product => {
-        const ps = product.product_stores[0];
-        if (!ps?.original_price || !ps.current_price) return false;
-        const pct = ((ps.original_price - ps.current_price) / ps.original_price) * 100;
-        return pct >= filters.discount!;
-      });
-    }
-
-    // Sort
-    if (sortBy === 'price_low') {
-      result.sort((a, b) => {
-        const pa = Math.min(...a.product_stores.map(ps => ps.current_price || Infinity));
-        const pb = Math.min(...b.product_stores.map(ps => ps.current_price || Infinity));
-        return pa - pb;
-      });
-    } else if (sortBy === 'price_high') {
-      result.sort((a, b) => {
-        const pa = Math.min(...a.product_stores.map(ps => ps.current_price || 0));
-        const pb = Math.min(...b.product_stores.map(ps => ps.current_price || 0));
-        return pb - pa;
-      });
-    }
-
-    const totalCount = result.length;
-    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-    const products = result.slice(offset, offset + ITEMS_PER_PAGE);
-    return { products, totalCount };
-  }, [rawProducts, filters, sortBy, currentPage]);
+    return { products: result, totalCount: serverTotal };
+  }, [rawProducts, serverTotal, filters.discount, filters.specs]);
 
   // Quick category chips
   const quickCategories = useMemo(() => [
@@ -601,17 +566,26 @@ export default function SearchClient() {
     }
   }, [debouncedQuery, locale, router, searchParams]);
 
-  // Search with scraping
+  // Fetch one page from the DB-backed search API. Every page change,
+  // filter change, or sort change re-enters this function — the server
+  // owns pagination/filtering/sorting now, so the client just sends
+  // state and renders what comes back.
   async function searchWithScraping(
     query: string,
-    stores: string[] = DEFAULT_SEARCH_STORES,
-    pages: number = 5,
+    _unusedStores: string[] = DEFAULT_SEARCH_STORES,
+    _unusedPages: number = 5,
     signal?: AbortSignal,
   ) {
+    void _unusedStores;
+    void _unusedPages;
     setLoading(true);
     setError(null);
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
+
+    // Map the UI's sort values to the API's vocabulary. The API accepts
+    // both naming styles (`price_asc`/`price_low` etc.) so either works.
+    const sortForApi = sortBy === 'popularity' ? 'relevance' : sortBy;
 
     try {
       const response = await fetch('/api/search', {
@@ -620,8 +594,18 @@ export default function SearchClient() {
         signal,
         body: JSON.stringify({
           query: query.trim(),
-          pages,
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          brands: filters.brands.length > 0 ? filters.brands : undefined,
+          stores: filters.stores.length > 0 ? filters.stores : undefined,
+          availability: filters.availability.length > 0 ? filters.availability : undefined,
+          deals_only: filters.dealsOnly || undefined,
+          free_delivery_only: filters.freeDeliveryOnly || undefined,
+          min_price: filters.minPrice,
+          max_price: filters.maxPrice,
+          specs: filters.specs,
+          sort: sortForApi,
+          page: currentPage,
+          pageSize: ITEMS_PER_PAGE,
         }),
       });
 
@@ -645,15 +629,16 @@ export default function SearchClient() {
         throw new Error(errorMessage);
       }
 
-      const data: ScrapedSearchResult = await response.json();
+      const data: ScrapedSearchResult & { total?: number } = await response.json();
 
       const mappedProducts: Product[] = data.products.map((grouped) => {
         return mapGroupedToProductCard(grouped) as Product;
       });
 
-
+      const total = typeof data.total === 'number' ? data.total : mappedProducts.length;
       setRawProducts(mappedProducts);
-      setSearchCache(query, selectedCategory || 'all', mappedProducts);
+      setServerTotal(total);
+      setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});
       // searchTime from API is in seconds; convert to ms
       if (typeof data.searchTime === 'number') {
@@ -706,7 +691,10 @@ export default function SearchClient() {
     }
   }
 
-  // Fetch products when query/category changes, with sessionStorage cache restore
+  // Fetch products when query/category/filter/sort/page changes.
+  // The sessionStorage cache restore path only fires on first mount (for
+  // back-navigation); after that, every state change triggers a fresh
+  // server fetch since the server now owns filtering + pagination.
   const mountedRef = useRef(false);
   const cacheSkipRef = useRef(false);
   useEffect(() => {
@@ -716,37 +704,31 @@ export default function SearchClient() {
       return;
     }
 
-    // On first mount, try restoring from sessionStorage before scraping
+    // On first mount, try restoring from sessionStorage before scraping —
+    // only valid when filters/page/sort are still at defaults, because the
+    // cache doesn't remember filter state. If the user had filters set
+    // before navigating away, the URL will carry them and the effect will
+    // re-fire with non-default deps on the next render, fetching fresh.
     if (!mountedRef.current) {
       mountedRef.current = true;
       const cached = getSearchCache();
       if (cached && cached.products.length > 0) {
         const q = debouncedQuery;
         if (q && cached.query === q && cached.category === selectedCategory) {
-          // URL had matching query+category — restore products, skip scrape
           setRawProducts(cached.products);
+          setServerTotal(cached.total);
           setLoading(false);
           return;
         }
         if (!q && cached.query) {
-          // URL had no query (back-nav stripped ?q=) — restore everything
           setRawProducts(cached.products);
+          setServerTotal(cached.total);
           cacheSkipRef.current = true;
           setSearchQuery(cached.query);
           setDebouncedQuery(cached.query);
           setSelectedCategory(cached.category as ProductCategory | 'all');
           return;
         }
-      }
-    } else {
-      // After mount: check cache before scraping (same query+category = skip)
-      const cached = getSearchCache();
-      if (cached && cached.products.length > 0 && cached.query === debouncedQuery && cached.category === selectedCategory) {
-        // Already have fresh results for this query — don't re-scrape
-        if (rawProducts.length === 0) {
-          setRawProducts(cached.products);
-        }
-        return;
       }
     }
 
@@ -757,6 +739,7 @@ export default function SearchClient() {
       const hasCategory = selectedCategory && selectedCategory !== 'all';
       if (!hasQuery && !hasCategory) {
         setRawProducts([]);
+        setServerTotal(0);
         setLoading(false);
         return;
       }
@@ -767,7 +750,20 @@ export default function SearchClient() {
 
     return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, selectedCategory]);
+  }, [
+    debouncedQuery,
+    selectedCategory,
+    currentPage,
+    sortBy,
+    filters.brands,
+    filters.stores,
+    filters.availability,
+    filters.dealsOnly,
+    filters.freeDeliveryOnly,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.specs,
+  ]);
 
   const handleSearch = (query: string, category?: ProductCategory | 'all') => {
     setSearchQuery(query);
@@ -1189,9 +1185,9 @@ export default function SearchClient() {
                 <div className="sticky top-[120px] max-h-[calc(100vh-148px)] min-h-0 overflow-y-auto flex flex-col gap-3 scrollbar-hide">
                   <FilterSidebar
                     filters={filters}
-                    onFilterChange={setFilters}
+                    onFilterChange={setFiltersAndResetPage}
                     sortBy={sortBy}
-                    onSortChange={setSortBy}
+                    onSortChange={setSortByAndResetPage}
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
                   />
@@ -1229,10 +1225,10 @@ export default function SearchClient() {
                     open={mobileFiltersOpen}
                     onOpenChange={setMobileFiltersOpen}
                     filters={filters}
-                    onFilterChange={setFilters}
+                    onFilterChange={setFiltersAndResetPage}
                     onClearAll={clearAllFilters}
                     sortBy={sortBy}
-                    onSortChange={setSortBy}
+                    onSortChange={setSortByAndResetPage}
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
                     activeCount={activeFilterCount}
@@ -1257,14 +1253,14 @@ export default function SearchClient() {
                           {locale === 'ar' ? 'حفظ البحث' : 'Save search'}
                         </Button>
                       )}
-                      <SortSelector value={sortBy} onChange={setSortBy} />
+                      <SortSelector value={sortBy} onChange={setSortByAndResetPage} />
                     </div>
                   </div>
                   {activeFilterCount > 0 && (
                     <div className="mt-3">
                       <ActiveFilterChips
                         filters={filters}
-                        onRemove={setFilters}
+                        onRemove={setFiltersAndResetPage}
                         onClearAll={clearAllFilters}
                         storeNameResolver={(slug) => getStoreDisplayName(slug, locale as 'ar' | 'en')}
                       />

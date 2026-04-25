@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Price } from '@/components/ui/price';
+import { Price, SavingsLabel } from '@/components/ui/price';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Heart, BarChart3, ExternalLink, Store, Flame, X } from 'lucide-react';
@@ -17,7 +17,7 @@ import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useParams } from 'next/navigation';
 import { StoreLogo } from '@/components/ui/store-logo';
-import { bestPrice as bestPriceCopy, savings as savingsCopy } from '@/lib/copy';
+import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 
 const PLACEHOLDER_IMAGE =
@@ -230,11 +230,15 @@ export function ProductCard({
       </button>
     );
 
-  // Get unique store initials for display
+  // Unique stores for logo/initial display. Carries the slug alongside
+  // the id: the slug is what `<StoreLogo>` and the public/logos/ folder
+  // expect. For scraped-only products the scraper fills `stores.id` with
+  // the slug already, so `slug ?? id` reliably resolves either way.
   const storeInitials = product.product_stores
     .filter(ps => ps.stores)
     .map(ps => ({
       id: ps.stores.id,
+      slug: ps.stores.slug ?? ps.stores.id,
       initial: (currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en || '?').charAt(0).toUpperCase(),
       name: currentLocale === 'ar' ? ps.stores.name_ar : ps.stores.name_en,
       rating: ps.stores.average_rating ?? null,
@@ -406,7 +410,7 @@ export function ProductCard({
                       return (
                         <span key={s.id} className="relative inline-flex" title={ratingTitle}>
                           <StoreLogo
-                            slug={s.id}
+                            slug={s.slug}
                             size="xs"
                             alt={ratingTitle}
                             locale={currentLocale as 'ar' | 'en'}
@@ -429,6 +433,7 @@ export function ProductCard({
                 storeCount > 0 && (() => {
                   const firstStore = product.product_stores[0]?.stores;
                   const storeId = firstStore?.id || '';
+                  const storeSlug = firstStore?.slug ?? storeId;
                   const storeName = currentLocale === 'ar'
                     ? firstStore?.name_ar
                     : firstStore?.name_en;
@@ -436,16 +441,16 @@ export function ProductCard({
                   const showStar = typeof rating === 'number' && rating >= 4;
                   const ratingTitle = showStar
                     ? currentLocale === 'ar'
-                      ? `${storeName || storeId} · تقييم ${rating!.toFixed(1)}`
-                      : `${storeName || storeId} · ${rating!.toFixed(1)}★ rating`
-                    : (storeName || storeId);
+                      ? `${storeName || storeSlug} · تقييم ${rating!.toFixed(1)}`
+                      : `${storeName || storeSlug} · ${rating!.toFixed(1)}★ rating`
+                    : (storeName || storeSlug);
                   return (
                     <div className="flex items-center gap-1 shrink-0">
                       <span className="relative inline-flex" title={ratingTitle}>
                         <StoreLogo
-                          slug={storeId}
+                          slug={storeSlug}
                           size="xs"
-                          alt={storeName || storeId}
+                          alt={storeName || storeSlug}
                           locale={currentLocale as 'ar' | 'en'}
                         />
                         {showStar && (
@@ -467,11 +472,13 @@ export function ProductCard({
             </div>
 
             {/* Savings chip (gold) + Coupon */}
+            {/* Savings chip temporarily hidden — bring back when copy is finalized.
             {savings > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-gold)]/12 text-[var(--brand-gold-dark)] px-2 py-0.5 t-small font-semibold mt-2">
-                {savingsCopy(savings, currentLocale as 'ar' | 'en')}
+                <SavingsLabel amount={savings} locale={currentLocale as 'ar' | 'en'} />
               </span>
             )}
+            */}
             {bestPrice?.coupon_code && (
               <div className="mt-2">
                 <CouponBadge

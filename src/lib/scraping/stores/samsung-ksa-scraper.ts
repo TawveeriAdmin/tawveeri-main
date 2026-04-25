@@ -36,8 +36,34 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     const productLd = findProductJsonLd($);
     if (!productLd) return null;
 
-    const name = String(productLd.name || '').trim();
-    if (!name || name.length < 3) return null;
+    const baseName = String(productLd.name || '').trim();
+    if (!baseName || baseName.length < 3) return null;
+
+    // SKU first — we use it as the final title disambiguator.
+    const sku = typeof productLd.sku === 'string' && productLd.sku.trim()
+      ? productLd.sku.trim()
+      : (typeof productLd.mpn === 'string' ? productLd.mpn : null);
+
+    // Title composition. Samsung's JSON-LD ships the SAME `name` for every
+    // color / storage / regional SKU of a product family (e.g. "Galaxy S23+"
+    // appears on 6+ variants, each with a different price). Without a
+    // distinguishing suffix, ProductMatcher collapses them all into one
+    // product row based on title+brand.
+    //
+    // Two layers of disambiguation:
+    //   1. URL-slug tokens (color + storage + screen size) → human-readable
+    //      suffix like "Cream 512GB" or "65" Smart Tv".
+    //   2. SKU in parentheses at the end → catches the residual cases where
+    //      two SKUs share identical URL-visible attributes but differ in
+    //      regional / carrier / modem codes. Samsung distinguishes these
+    //      internally (different prices are common).
+    //
+    // The /buy/ URL twin of any base URL carries the exact same JSON-LD
+    // SKU and the exact same slug tokens, so it still collapses correctly
+    // into a single product row via ProductMatcher.
+    const variantSuffix = extractVariantSuffix(productUrl, baseName);
+    const withVariant = variantSuffix ? `${baseName} ${variantSuffix}` : baseName;
+    const name = sku ? `${withVariant} (${sku})` : withVariant;
 
     const offers = (productLd.offers as Record<string, unknown> | undefined) || {};
     const currentPrice = toNumber(offers.price);
@@ -58,10 +84,6 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     const brand = typeof brandRaw === 'string'
       ? brandRaw.trim()
       : (typeof brandRaw?.name === 'string' ? brandRaw.name.trim() : 'Samsung');
-
-    const sku = typeof productLd.sku === 'string' && productLd.sku.trim()
-      ? productLd.sku.trim()
-      : (typeof productLd.mpn === 'string' ? productLd.mpn : null);
 
     const availability = parseLdAvailability(offers.availability);
 
@@ -176,4 +198,111 @@ function toNumber(val: unknown): number | null {
   if (val === null || val === undefined) return null;
   const n = typeof val === 'number' ? val : parseFloat(String(val));
   return isNaN(n) ? null : n;
+}
+
+/**
+ * Pull variant tokens (color, storage, size) out of a Samsung product URL
+ * slug so we can append them to the product name and keep variants
+ * distinct in the ProductMatcher.
+ *
+ * Example — URL: `/sa_en/smartphones/galaxy-s/galaxy-s23-plus-cream-512gb-sm-s916bzecmea/`
+ *           title: `"Galaxy S23+"`
+ *           → returns `"512GB Cream"`
+ *
+ * Algorithm:
+ *   1. Take the last path segment (skip trailing `/buy/` if present).
+ *   2. Drop the Samsung SKU tail. SKUs have two shapes we handle:
+ *      • a prefixed pair like `sm-s911bzkamea` → strip from the first
+ *        prefix token onwards
+ *      • a glued token like `qa65q60cauxsa` or `ua43du7000uxsa` → strip
+ *        the single token that matches the prefix+digits+alpha pattern
+ *   3. Remove hyphenated words that are already in the title (so we don't
+ *      double-print "Galaxy S23 Plus" as both the base and the variant).
+ *   4. Stitch adjacent `<number>-inch` / `<number>-mm` back into one token
+ *      so "65-inch" becomes "65Inch".
+ *   5. Uppercase storage/size tokens (128GB, 1TB, 65INCH), title-case
+ *      color tokens (Cream, Graphite, Phantom, Black).
+ */
+export function extractVariantSuffix(productUrl: string, title: string): string {
+  try {
+    const parsed = new URL(productUrl);
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length === 0) return '';
+
+    let slug = parts[parts.length - 1];
+    if (slug === 'buy' && parts.length >= 2) slug = parts[parts.length - 2];
+    if (!slug) return '';
+
+    let tokens = slug.split('-').filter(Boolean);
+
+    // Drop SKU-prefix variants: -sm-…, -qa-…, -ua-… etc.
+    // First of these prefix tokens marks the start of the SKU tail.
+    const SKU_PREFIX_TOKENS = new Set([
+      'sm', 'qa', 'ua', 'qe', 'hw', 'ls', 'fa', 'vs', 'dv', 'ww', 'wf', 'wt',
+      'wd', 'rl', 'rt', 'rs', 'rf', 'rb', 'rh', 'rz', 'mc', 'mg', 'bn',
+    ]);
+    const prefixIdx = tokens.findIndex((t) => SKU_PREFIX_TOKENS.has(t.toLowerCase()));
+    if (prefixIdx !== -1) tokens = tokens.slice(0, prefixIdx);
+
+    // Drop SKUs that render as one glued token: e.g. `qa65q60cauxsa`.
+    // Heuristic: token ≥8 chars AND contains both letters and digits AND
+    // doesn't match a well-known non-SKU pattern (pure digits, storage
+    // units, "inch", etc.).
+    tokens = tokens.filter((t) => {
+      if (/^\d+$/.test(t)) return true;
+      if (/^\d+(gb|tb|mm)$/i.test(t)) return true;
+      if (/^(inch|mm)$/i.test(t)) return true;
+      if (t.length < 8) return true;
+      const hasLetter = /[a-z]/i.test(t);
+      const hasDigit = /\d/.test(t);
+      return !(hasLetter && hasDigit);
+    });
+
+    // Strip tokens already present in the base title so we don't echo them.
+    // Use a normalized-substring check (lowercased, alphanumerics only) so
+    // that glued slug tokens like "40mm" still match a title that writes
+    // them as "40 mm" (with a space). Falls back to hyphen-split word
+    // matching for everything else.
+    const titleNormalized = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const titleWords = new Set(
+      title
+        .toLowerCase()
+        .replace(/\+/g, '-plus')
+        .replace(/[^a-z0-9-]/g, '-')
+        .split('-')
+        .filter(Boolean),
+    );
+    tokens = tokens.filter((t) => {
+      const lc = t.toLowerCase();
+      if (titleWords.has(lc)) return false;
+      // Only use substring match for tokens long enough that a false positive
+      // is unlikely (3+ chars).
+      if (lc.length >= 3 && titleNormalized.includes(lc)) return false;
+      return true;
+    });
+
+    // Re-merge "<N>-inch" / "<N>-mm" pairs into one token.
+    const merged: string[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      if (i + 1 < tokens.length && /^\d+$/.test(tokens[i]) && /^(inch|mm)$/i.test(tokens[i + 1])) {
+        merged.push(tokens[i] + tokens[i + 1]);
+        i++;
+      } else {
+        merged.push(tokens[i]);
+      }
+    }
+
+    if (merged.length === 0) return '';
+
+    return merged
+      .map((t) => {
+        if (/^\d+(gb|tb|mm)$/i.test(t)) return t.toUpperCase();
+        if (/^\d+inch$/i.test(t)) return t.replace(/inch$/i, '"');
+        if (/^\d+$/.test(t)) return t;
+        return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+      })
+      .join(' ');
+  } catch {
+    return '';
+  }
 }

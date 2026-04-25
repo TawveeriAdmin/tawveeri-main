@@ -1,9 +1,50 @@
-import type { ScrapedProduct, ProductCategory } from '../base/types';
+import type { ScrapedProduct } from '../base/types';
+import type { ProductCategory } from '@/lib/database/types';
 import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
 import type * as cheerio from 'cheerio';
+
+/**
+ * Non-electronics block-list for Jarir titles.
+ *
+ * Jarir's configured category URLs are already electronics-focused
+ * (smartphones, laptops, TVs, audio, cameras, gaming, accessories,
+ * monitors, printers, smart home, wearables). The pollution we've seen
+ * comes from a small set of known-bad title patterns that slip into
+ * those listings — gift cards, vouchers, and Arabic books. Everything
+ * else on an electronics listing page IS electronics by site
+ * taxonomy, so we accept by default and only reject on an explicit
+ * token match.
+ *
+ * This is intentionally more permissive than Noon/Almanea's title
+ * classifier. Noon is a mixed retailer (perfume, fashion, food) so it
+ * needs a whitelist. Jarir's site is already curated — we only need to
+ * catch the specific categories that leak.
+ */
+const JARIR_NON_ELECTRONICS_TOKENS = [
+  // Gift cards / digital currency (all leak from /sa-en/video-pc-gaming/
+  // and /sa-en/digital-cards/)
+  'gift card', 'gift code', 'e-voucher', ' voucher', 'recharge card',
+  'playstation store', 'free fire', 'roblox', 'xbox gift', 'pubg uc',
+  'garena', 'steam wallet', 'google play gift', 'apple gift',
+  // E-books / paper books (main leak from /sa-en/health-fitness/ and
+  // brand-aggregate pages when a brand has a companion publication)
+  ' ebook', ' e-book', 'audio book', 'audio-book', 'audiobook',
+  ' novel',
+  // Arabic equivalents
+  'كتاب', 'رواية', 'مذكرات', 'قصة', 'ديوان', 'سيرة ذاتية',
+  // Misc non-electronic supplies that sometimes appear in brand pages
+  'school bag', 'stationery', 'pencil set', 'musical instrument',
+];
+
+function isElectronics(title: string): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  if (JARIR_NON_ELECTRONICS_TOKENS.some((kw) => t.includes(kw))) return false;
+  return true;
+}
 
 /**
  * Jarir Bookstore scraper
@@ -203,6 +244,9 @@ export class JarirScraper extends BaseScraper {
       const priceAttr = $tile.attr('data-cnstrc-item-price');
       const link = $tile.find('a.product-tile__link').attr('href') || '';
       if (!name || !priceAttr || !link) return;
+      // Drop books, gift cards, toys, and anything else whose title
+      // doesn't classify as a specific electronics category.
+      if (!isElectronics(name)) return;
 
       const currentPrice = Number(priceAttr);
       if (!Number.isFinite(currentPrice) || currentPrice <= 0) return;
@@ -253,6 +297,9 @@ export class JarirScraper extends BaseScraper {
       const link = $tile.find('a.product-tile__link').attr('href') || '';
 
       if (!name || !priceAttr || !link) return;
+      // Drop books, gift cards, toys, and any other non-electronics that
+      // slip into Jarir's category listings.
+      if (!isElectronics(name)) return;
 
       const currentPrice = Number(priceAttr);
       if (!Number.isFinite(currentPrice) || currentPrice <= 0) return;

@@ -1,8 +1,10 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { useLocale } from '@/lib/simple-intl-provider';
 import type { SearchFilters } from '@/components/search/filter-sidebar';
+import { SARSymbol } from '@/components/ui/price';
 
 interface ActiveFilterChipsProps {
   filters: SearchFilters;
@@ -14,7 +16,10 @@ interface ActiveFilterChipsProps {
 
 interface Chip {
   key: string;
+  /** Accessible plain-text label (used for aria-label and fallback). */
   label: string;
+  /** Optional rich label — when set, rendered instead of the plain text so chips can include inline SVG (e.g. the SAR glyph). */
+  labelNode?: ReactNode;
   remove: () => SearchFilters;
 }
 
@@ -39,7 +44,7 @@ export function ActiveFilterChips({
           className="group inline-flex items-center gap-1.5 rounded-full border border-[color:var(--brand-green)]/40 bg-[var(--brand-bg-green)] px-3 py-1 t-small font-medium text-[var(--brand-green-dark)] transition-colors hover:bg-[var(--brand-green)]/15"
           aria-label={isRTL ? `إزالة ${c.label}` : `Remove ${c.label}`}
         >
-          <span className="truncate max-w-[180px]">{c.label}</span>
+          <span className="truncate max-w-[180px]">{c.labelNode ?? c.label}</span>
           <X className="h-3.5 w-3.5 opacity-60 transition-opacity group-hover:opacity-100" />
         </button>
       ))}
@@ -84,9 +89,17 @@ function collectChips(
     });
   }
   if (filters.minPrice !== undefined) {
+    const plainLabel = `${isRTL ? 'الحد الأدنى' : 'Min'}: ${filters.minPrice} ${isRTL ? 'ر.س' : 'SAR'}`;
     chips.push({
       key: 'priceMin',
-      label: `${isRTL ? 'الحد الأدنى' : 'Min'}: ${filters.minPrice} ${isRTL ? 'ر.س' : 'SAR'}`,
+      label: plainLabel,
+      labelNode: (
+        <span className="inline-flex items-center gap-1">
+          <span>{isRTL ? 'الحد الأدنى' : 'Min'}:</span>
+          <span className="tabular-nums">{filters.minPrice}</span>
+          <SARSymbol className="w-3 h-3" />
+        </span>
+      ),
       remove: () => {
         const { ...rest } = filters;
         delete rest.minPrice;
@@ -95,9 +108,17 @@ function collectChips(
     });
   }
   if (filters.maxPrice !== undefined) {
+    const plainLabel = `${isRTL ? 'الحد الأقصى' : 'Max'}: ${filters.maxPrice} ${isRTL ? 'ر.س' : 'SAR'}`;
     chips.push({
       key: 'priceMax',
-      label: `${isRTL ? 'الحد الأقصى' : 'Max'}: ${filters.maxPrice} ${isRTL ? 'ر.س' : 'SAR'}`,
+      label: plainLabel,
+      labelNode: (
+        <span className="inline-flex items-center gap-1">
+          <span>{isRTL ? 'الحد الأقصى' : 'Max'}:</span>
+          <span className="tabular-nums">{filters.maxPrice}</span>
+          <SARSymbol className="w-3 h-3" />
+        </span>
+      ),
       remove: () => {
         const { ...rest } = filters;
         delete rest.maxPrice;
