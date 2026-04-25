@@ -44,6 +44,10 @@ next-env.d.ts
 prompts.txt
 images/
 !mobile/assets/images/
+!public/images/
+!public/images/categories/
+!public/images/categories/generated/
+!public/images/categories/generated/*.png
 md2pdf.py
 
 #Design systems
@@ -58,4 +62,3 @@ mobile/node_modules/
 
 # Scraper resume state (written live by enrichment scripts)
 .scrape-state/
-
