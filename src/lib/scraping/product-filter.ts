@@ -23,8 +23,9 @@ const TECH_CATEGORY_KEYWORDS = [
   'camera',
   'gaming',
   'console',
-  'accessories',
   'wearable',
+  'smart_home',
+  'smart home',
   'network',
   'printer',
   'electronics',
@@ -40,9 +41,18 @@ const TECH_CATEGORY_KEYWORDS = [
   'سماعات',
   'كاميرات',
   'شاشات',
-  'ملحقات',
   'العاب',
   'ألعاب',
+] as const;
+
+const TECH_ACCESSORY_CATEGORY_KEYWORDS = [
+  'accessories',
+  'accessory',
+  'mobile accessories',
+  'computer accessories',
+  'electronics accessories',
+  'ملحقات',
+  'إكسسوارات',
 ] as const;
 
 const NON_TECH_CATEGORY_KEYWORDS = [
@@ -79,6 +89,10 @@ const TECH_KEYWORDS = [
   'iphone',
   'ipad',
   'ipod',
+  'kindle',
+  'e-reader',
+  'ereader',
+  'electronic book reader',
   'macbook',
   'imac',
   'airpods',
@@ -94,7 +108,6 @@ const TECH_KEYWORDS = [
   'notebook',
   'chromebook',
   'desktop',
-  'pc',
   'monitor',
   'tv',
   'oled',
@@ -143,6 +156,27 @@ const TECH_KEYWORDS = [
   'projector',
   'smartwatch',
   'wearable',
+  'echo show',
+  'amazon echo',
+  'echo dot',
+  'alexa',
+  'ring video doorbell',
+  'video doorbell',
+  'smart doorbell',
+  'robot vacuum',
+  'robotic vacuum',
+  'neato robotics',
+  'usb',
+  'usb c',
+  'usb-c',
+  'type c',
+  'type-c',
+  'hdmi',
+  'lightning',
+  'charger',
+  'adapter',
+  'power bank',
+  'powerbank',
   'usb-c',
   'magsafe',
   'شاحن',
@@ -196,6 +230,43 @@ const NON_TECH_KEYWORDS = [
   'dolls',
   'plush',
   'stuffed animal',
+  'fridge magnet',
+  'refrigerator magnet',
+  'refrigerator sticker',
+  'acrylic refrigerator',
+  'coaster',
+  'coasters',
+  'lemon juicer',
+  'citrus juicer',
+  'manual juicer',
+  'magnetic towel holder',
+  'dishwasher magnet',
+  'toast tongs',
+  'toaster tongs',
+  'cooking tongs',
+  'kitchen tongs',
+  'kitchen utensil',
+  'bowl clip',
+  'plate lifter',
+  'rice spoon',
+  'rice paddle',
+  'napkin holder',
+  'tissue holder',
+  'food storage',
+  'fridge organizer',
+  'refrigerator organizer',
+  'egg holder',
+  'shelf liner',
+  'drawer liner',
+  'spice rack',
+  'lazy susan',
+  'fruit and vegetable',
+  'vegetable washing',
+  'rice washing',
+  'flower sticker',
+  'animal sticker',
+  'cat sticker',
+  'kitten',
   'fresh apple',
   'apple royal gala',
   'apple green',
@@ -216,6 +287,14 @@ const NON_TECH_KEYWORDS = [
   'عطور',
   'مكياج',
   'ألعاب أطفال',
+  'ملصقات ثلاجة',
+  'ملصقات للثلاجة',
+  'مغناطيس ثلاجة',
+  'عصارة ليمون',
+  'ملعقة أرز',
+  'ملعقة الرز',
+  'مناشف',
+  'للثلاجة',
 ] as const;
 
 const PRODUCE_TERMS = [
@@ -340,6 +419,7 @@ export function isTechProduct(
   const hasTechTitleKeyword = containsAny(normalizedTitle, TECH_KEYWORDS);
   const hasTechContextKeyword = containsAny(combinedText, TECH_KEYWORDS);
   const hasTechCategory = containsAny(normalizedCategory, TECH_CATEGORY_KEYWORDS);
+  const hasTechAccessoryCategory = containsAny(normalizedCategory, TECH_ACCESSORY_CATEGORY_KEYWORDS);
 
   const hasNonTechCategory = containsAny(normalizedCategory, NON_TECH_CATEGORY_KEYWORDS);
   const hasNonTechText = containsAny(combinedText, NON_TECH_KEYWORDS);
@@ -351,13 +431,17 @@ export function isTechProduct(
   if (hasTechBrand && !hasNonTechCategory && !isProduceLike) return true;
   if (hasNonTechCategory && !hasTechTitleKeyword && !hasTechBrand) return false;
   if (isProduceLike && !hasTechTitleKeyword && !hasTechBrand) return false;
+  if (hasTechAccessoryCategory && !hasTechTitleKeyword && !hasTechBrand && !hasTechContextKeyword) return false;
 
   if (techSignals >= 2) return true;
   if (nonTechSignals >= 2 && techSignals === 0) return false;
   if (hasTechContextKeyword && !hasNonTechCategory) return true;
   if (hasNonTechText && !hasTechTitleKeyword && !hasTechBrand) return false;
 
-  // Keep borderline products to avoid hiding electronics accessories.
+  // Keep borderline products to avoid hiding legitimate electronics
+  // accessories, especially Arabic titles where brand/device tokens are
+  // harder to normalize. Strong non-tech terms above still reject obvious
+  // home/kitchen/sticker leakage.
   return techSignals >= nonTechSignals;
 }
 

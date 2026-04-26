@@ -38,9 +38,11 @@
     "sidebar": {
       "adminPanel": "لوحة التحكم",
       "dashboard": "لوحة التحكم",
+      "profile": "الملف الشخصي",
       "users": "المستخدمين",
       "products": "المنتجات",
       "stores": "المتاجر",
+      "affiliate": "العمولات",
       "transactions": "المعاملات",
       "analytics": "التحليلات",
       "logs": "السجلات",
@@ -53,6 +55,7 @@
     },
     "header": {
       "adminDashboard": "لوحة التحكم",
+      "profile": "الملف الشخصي",
       "signOut": "تسجيل الخروج"
     },
     "userRoleDialog": {
@@ -294,4 +297,3 @@
     }
   }
 }
-

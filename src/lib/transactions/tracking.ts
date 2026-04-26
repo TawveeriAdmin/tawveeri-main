@@ -217,11 +217,11 @@ export async function generateAffiliateUrl(
   try {
     const supabase = getSupabase();
 
-    // Fetch base URLs + store slug so we can inject per-store affiliate params
-    // (e.g. Amazon ?tag=tawveeri-21, Noon ?aff_code=DNC160) before click_id.
+    // Fetch base URLs + store affiliate config so Admin-managed params are
+    // injected before click_id.
     const { data: productStore, error: psError } = await supabase
       .from('product_stores')
-      .select('affiliate_url, product_url, stores(slug)')
+      .select('affiliate_url, product_url, stores(slug, affiliate_config)')
       .eq('id', productStoreId)
       .single();
 
@@ -236,7 +236,7 @@ export async function generateAffiliateUrl(
     // Affiliate tag first, click_id second. The order matters so that the tag
     // lands in the outbound URL even if click tracking fails below.
     const rawBase = productStore.affiliate_url || productStore.product_url;
-    const taggedBase = applyAffiliateTag(rawBase, storeSlug) ?? rawBase;
+    const taggedBase = applyAffiliateTag(rawBase, storeSlug, storeRecord?.affiliate_config) ?? rawBase;
 
     // Track click
     const userAgent = typeof window !== 'undefined' ? navigator.userAgent : undefined;
@@ -271,7 +271,7 @@ export async function generateAffiliateUrl(
     const supabase = getSupabase();
     const { data: productStore } = await supabase
       .from('product_stores')
-      .select('affiliate_url, product_url, stores(slug)')
+      .select('affiliate_url, product_url, stores(slug, affiliate_config)')
       .eq('id', productStoreId)
       .single();
 
@@ -279,8 +279,9 @@ export async function generateAffiliateUrl(
       ? (productStore as any).stores[0]
       : (productStore as any)?.stores;
     const rawBase = productStore?.affiliate_url || productStore?.product_url || null;
-    const taggedBase = rawBase ? (applyAffiliateTag(rawBase, storeRecord?.slug ?? null) ?? rawBase) : null;
+    const taggedBase = rawBase
+      ? (applyAffiliateTag(rawBase, storeRecord?.slug ?? null, storeRecord?.affiliate_config) ?? rawBase)
+      : null;
     return { data: taggedBase, error: error as Error };
   }
 }
-

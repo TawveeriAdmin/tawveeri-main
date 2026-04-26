@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -31,7 +31,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { AlertCircle, Flame, Heart, Percent, Search, Sparkles, Tag, TimerReset } from 'lucide-react';
+import { AlertCircle, Flame, Heart, Percent, Search, Sparkles, Tag, TimerReset, X } from 'lucide-react';
 import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database } from '@/lib/database/types';
 import { useToast } from '@/components/ui/use-toast';
@@ -42,8 +42,16 @@ type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
 type StoreSummary = Pick<
   Database['public']['Tables']['stores']['Row'],
-  'id' | 'name_ar' | 'name_en' | 'logo_url'
+  'id' | 'slug' | 'name_ar' | 'name_en' | 'logo_url'
 >;
+
+type DealStoreRow = ProductStoreRow & {
+  coupon_code: string | null;
+  product_url: string | null;
+  affiliate_url: string | null;
+  stores: StoreSummary | null;
+  products: ProductRow | null;
+};
 
 type DealProduct = ProductCardProduct & {
   product_stores: Array<
@@ -72,6 +80,41 @@ const getDealDiscount = (product: DealProduct) => {
   return calculateSavings(bestDeal.original_price, bestDeal.current_price);
 };
 
+function DealMetric({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  tone: 'green' | 'gold' | 'ink';
+}) {
+  const toneClass =
+    tone === 'green'
+      ? 'bg-[color:var(--color-primary)] text-white'
+      : tone === 'gold'
+        ? 'bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)]'
+        : 'bg-[color:var(--color-foreground)] text-[color:var(--color-background)]';
+
+  return (
+    <div className="flex items-center gap-3 rounded-[1.15rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/88 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-xl dark:bg-[color:var(--color-card)]/70">
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${toneClass}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="font-mono text-xl font-black tracking-tight text-[color:var(--color-foreground)]">
+          {value}
+        </div>
+        <div className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--color-muted-foreground)]">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DealsClient() {
   const [supabase] = useState(() =>
     typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
@@ -90,7 +133,6 @@ export default function DealsClient() {
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('discount');
-  const [filteredProducts, setFilteredProducts] = useState<DealProduct[]>([]);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [savedProductIds, setSavedProductIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,6 +162,9 @@ export default function DealsClient() {
             clearSearch: 'مسح البحث',
             alreadyInCompare: 'المنتج مضاف بالفعل إلى المقارنة',
             alreadySaved: 'المنتج موجود بالفعل في قائمة الأمنيات',
+            controlDeck: 'لوحة التحكم بالعروض',
+            gridTitle: 'العروض المتاحة الآن',
+            searchLabel: 'ابحث في العروض',
           }
         : {
             featured: 'Premium Deals Surface with Live Updates',
@@ -138,6 +183,9 @@ export default function DealsClient() {
             clearSearch: 'Clear Search',
             alreadyInCompare: 'Product is already in compare',
             alreadySaved: 'Product is already in wishlist',
+            controlDeck: 'Deals Control Deck',
+            gridTitle: 'Available Deals Now',
+            searchLabel: 'Search deals',
           },
     [locale]
   );
@@ -175,7 +223,10 @@ export default function DealsClient() {
 
   // Fetch user's wishlist to show saved state on cards
   useEffect(() => {
-    if (!user || !supabase) { setSavedProductIds(new Set()); return; }
+    if (!user || !supabase) {
+      queueMicrotask(() => setSavedProductIds(new Set()));
+      return;
+    }
     supabase
       .from('user_wishlists')
       .select('product_id')
@@ -189,11 +240,14 @@ export default function DealsClient() {
 
   useEffect(() => {
     if (!supabase) {
-      setLoading(false);
-      setError(fetchErrorFallback);
+      queueMicrotask(() => {
+        setLoading(false);
+        setError(fetchErrorFallback);
+      });
       return;
     }
 
+    const client = supabase;
     let cancelled = false;
 
     async function fetchDeals() {
@@ -201,7 +255,7 @@ export default function DealsClient() {
       setError(null);
 
       try {
-        const { data, error: queryError } = await supabase
+        const { data, error: queryError } = await client
           .from('product_stores')
           .select(
             `
@@ -216,6 +270,7 @@ export default function DealsClient() {
               affiliate_url,
               stores(
                 id,
+                slug,
                 name_ar,
                 name_en,
                 logo_url
@@ -239,10 +294,7 @@ export default function DealsClient() {
 
         const productMap = new Map<string, DealProduct>();
         (data || []).forEach((item) => {
-          const storeProduct = item as ProductStoreRow & {
-            stores: StoreSummary | null;
-            products: ProductRow | null;
-          };
+          const storeProduct = item as unknown as DealStoreRow;
           if (!storeProduct.products || !storeProduct.stores) return;
 
           const productId = storeProduct.products.id;
@@ -267,9 +319,9 @@ export default function DealsClient() {
             original_price: storeProduct.original_price,
             is_deal: storeProduct.is_deal,
             deal_expires_at: storeProduct.deal_expires_at,
-            coupon_code: (storeProduct as any).coupon_code || null,
-            product_url: (storeProduct as any).product_url || null,
-            affiliate_url: (storeProduct as any).affiliate_url || null,
+            coupon_code: storeProduct.coupon_code || null,
+            product_url: storeProduct.product_url || null,
+            affiliate_url: storeProduct.affiliate_url || null,
             availability: storeProduct.availability as AvailabilityStatus,
             stores: storeProduct.stores,
           });
@@ -279,7 +331,6 @@ export default function DealsClient() {
 
         const deals = Array.from(productMap.values());
         setProducts(deals);
-        setFilteredProducts(deals);
       } catch (err) {
         if (cancelled) return;
 
@@ -298,7 +349,7 @@ export default function DealsClient() {
     };
   }, [supabase, fetchErrorFallback]);
 
-  useEffect(() => {
+  const filteredProducts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     let result = [...products];
 
@@ -339,10 +390,13 @@ export default function DealsClient() {
       return bDate.localeCompare(aDate);
     });
 
-    setFilteredProducts(result);
-    // Filters changed — snap back to page 1 so the user sees the top results.
-    setCurrentPage(1);
+    return result;
   }, [products, searchQuery, sortBy]);
+
+  useEffect(() => {
+    // Filters changed — snap back to page 1 so the user sees the top results.
+    queueMicrotask(() => setCurrentPage(1));
+  }, [searchQuery, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / DEALS_PAGE_SIZE));
   const paginatedProducts = useMemo(
@@ -513,140 +567,160 @@ export default function DealsClient() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Compact header */}
-      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-amber-500/15 via-white to-rose-500/10 p-4 shadow-sm dark:border-gray-800 dark:from-amber-500/20 dark:via-gray-900 dark:to-rose-500/20 md:p-5">
-        <div className="pointer-events-none absolute -end-16 -top-14 h-36 w-36 rounded-full bg-amber-500/20 blur-3xl dark:bg-amber-400/20" />
+    <div className="space-y-6">
+      <section className="relative overflow-hidden rounded-[1.75rem] border border-[color:var(--color-border)] bg-[color:var(--color-primary-container)] p-4 shadow-[0_20px_58px_-46px_rgba(61,132,104,0.75)] dark:bg-[color:var(--color-card)] md:p-5">
+        <div className="pointer-events-none absolute -end-16 -top-24 h-52 w-52 rounded-full bg-[color:var(--color-primary)]/18 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 start-10 h-44 w-44 rounded-full bg-[color:var(--color-secondary)]/18 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
 
-        <div className="relative z-10 space-y-4">
-          {/* Title + inline stats */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 md:text-2xl">
-                  {t('deals.title')}
-                </h1>
-                <Badge
-                  variant="outline"
-                  className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                >
-                  <Sparkles className="me-1 h-3 w-3" />
-                  {uiCopy.featured}
-                </Badge>
-              </div>
-              <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
-                {t('deals.subtitle')}
-              </p>
-            </div>
-            {/* Inline stats */}
-            <div className="flex items-center gap-3 text-sm">
-              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
-                <Flame className="h-3.5 w-3.5 text-rose-500" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : filteredProducts.length}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.activeDeals}</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
-                <Percent className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : maxDiscount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.maxDiscount}</span>
-              </div>
-              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 sm:flex dark:border-gray-700 dark:bg-gray-900/75">
-                <TimerReset className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : endingSoonCount}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{uiCopy.expiringSoon}</span>
-              </div>
-            </div>
+        <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-center">
+          <div className="max-w-3xl">
+            <Badge className="mb-3 rounded-full border border-[color:var(--color-primary)]/20 bg-white/70 px-3 py-1 text-xs text-[color:var(--color-primary)] shadow-none backdrop-blur dark:bg-white/10 dark:text-[color:var(--color-primary)]">
+              <Sparkles className="me-1.5 h-3 w-3" />
+              {uiCopy.featured}
+            </Badge>
+            <h1 className="max-w-2xl text-3xl font-black leading-tight tracking-tight text-[color:var(--color-foreground)] md:text-4xl">
+              {t('deals.title')}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-[color:var(--color-muted-foreground)] md:text-base">
+              {t('deals.subtitle')}
+            </p>
           </div>
 
-          {/* Search + sort + quick links row */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <DealMetric
+              icon={<Flame className="h-5 w-5" />}
+              label={uiCopy.activeDeals}
+              value={loading ? '...' : filteredProducts.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+              tone="green"
+            />
+            <DealMetric
+              icon={<Percent className="h-5 w-5" />}
+              label={uiCopy.maxDiscount}
+              value={loading ? '...' : maxDiscount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+              tone="gold"
+            />
+            <DealMetric
+              icon={<TimerReset className="h-5 w-5" />}
+              label={uiCopy.expiringSoon}
+              value={loading ? '...' : endingSoonCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+              tone="ink"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[1.75rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/92 p-3 shadow-[0_20px_55px_-44px_rgba(26,26,26,0.5)] backdrop-blur-xl dark:bg-[color:var(--color-card)]/72 md:p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <form onSubmit={handleSearchSubmit} className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-extrabold text-[color:var(--color-foreground)]">
+                {uiCopy.searchLabel}
+              </label>
+              <span className="hidden text-xs font-bold text-[color:var(--color-primary)] sm:inline">
+                {uiCopy.controlDeck}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1 rounded-[1.35rem] border-2 border-[color:var(--color-primary)]/35 bg-[color:var(--color-background)] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition-with-theme focus-within:border-[color:var(--color-primary)] focus-within:ring-4 focus-within:ring-[color:var(--color-primary)]/12 dark:bg-[color:var(--color-card)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[color:var(--color-primary)]" />
                 <Input
                   type="text"
                   placeholder={t('deals.searchPlaceholder')}
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  className="h-9 rounded-lg border-amber-200 bg-white ps-9 dark:border-amber-800/70 dark:bg-gray-950/70"
+                  className="h-[52px] rounded-[1.2rem] border-0 bg-transparent pe-12 ps-12 text-base font-semibold text-[color:var(--color-foreground)] shadow-none placeholder:text-[color:var(--color-muted-foreground)] focus-visible:ring-0"
                 />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearchQuery('');
+                    }}
+                    className="absolute end-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)] transition hover:bg-[color:var(--color-primary)] hover:text-white"
+                    aria-label={uiCopy.clearSearch}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              <Button type="submit" size="sm" className="h-9 rounded-lg px-4">
+              <Button type="submit" className="h-[52px] rounded-2xl px-7 font-extrabold active:scale-[0.98]">
                 {uiCopy.searchAction}
               </Button>
-            </form>
-
-            <div className="flex items-center gap-2">
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                <SelectTrigger className="h-9 w-[150px] border-gray-200 dark:border-gray-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="discount">{t('deals.sortDiscount')}</SelectItem>
-                  <SelectItem value="price">{t('deals.sortPrice')}</SelectItem>
-                  <SelectItem value="newest">{t('deals.sortNewest')}</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Link
-                href={user ? `/${locale}/compare` : `/${locale}/auth/login?redirect=/compare`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 text-xs font-medium text-gray-700 transition-colors hover:border-amber-300 hover:text-amber-700 dark:border-gray-700 dark:bg-gray-900/75 dark:text-gray-300 dark:hover:border-amber-700"
-              >
-                <Tag className="h-3.5 w-3.5" />
-                {uiCopy.compareCta}
-                <Badge className="border-0 bg-amber-200 px-1 py-0 text-[10px] text-amber-900 dark:bg-amber-700/60 dark:text-amber-100">
-                  {compareCount}/{MAX_COMPARE_PRODUCTS}
-                </Badge>
-              </Link>
-
-              <Link
-                href={user ? `/${locale}/wishlist` : `/${locale}/auth/login?redirect=/wishlist`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 text-xs font-medium text-gray-700 transition-colors hover:border-rose-300 hover:text-rose-600 dark:border-gray-700 dark:bg-gray-900/75 dark:text-gray-300 dark:hover:border-rose-700"
-              >
-                <Heart className="h-3.5 w-3.5" />
-                {uiCopy.wishlist}
-              </Link>
-
-              {searchQuery && (
-                <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2">
-                  <TimerReset className="h-4 w-4" />
-                </Button>
-              )}
             </div>
-          </div>
+            <p className="mt-2 text-sm text-[color:var(--color-muted-foreground)]">
+              {uiCopy.searchHint}
+            </p>
+          </form>
 
-          {/* Results count */}
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
+          <div className="grid gap-2 sm:grid-cols-3 lg:w-[520px]">
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="h-[52px] rounded-2xl border-[color:var(--color-border)] bg-[color:var(--color-background)]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="discount">{t('deals.sortDiscount')}</SelectItem>
+                <SelectItem value="price">{t('deals.sortPrice')}</SelectItem>
+                <SelectItem value="newest">{t('deals.sortNewest')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Link
+              href={user ? `/${locale}/compare` : `/${locale}/auth/login?redirect=/compare`}
+              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-background)] px-4 text-sm font-extrabold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-primary)] active:scale-[0.98]"
+            >
+              <Tag className="h-4 w-4 text-[color:var(--color-secondary)]" />
+              {uiCopy.compareCta}
+              <span className="rounded-full bg-[color:var(--color-secondary)] px-2 py-0.5 font-mono text-[11px] text-[color:var(--color-secondary-foreground)]">
+                {compareCount}/{MAX_COMPARE_PRODUCTS}
+              </span>
+            </Link>
+
+            <Link
+              href={user ? `/${locale}/wishlist` : `/${locale}/auth/login?redirect=/wishlist`}
+              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-background)] px-4 text-sm font-extrabold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-primary)] active:scale-[0.98]"
+            >
+              <Heart className="h-4 w-4 text-[color:var(--color-primary)]" />
+              {uiCopy.wishlist}
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] bg-[color:var(--color-muted)]/55 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
+            <span>
               {filteredProducts.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
               {t('deals.resultsCount')}
             </span>
             {searchQuery && (
-              <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs">
+              <Badge variant="outline" className="rounded-full border-[color:var(--color-border)] px-3 py-1">
                 &ldquo;{searchQuery}&rdquo;
                 <button
+                  type="button"
                   onClick={() => { setSearchInput(''); setSearchQuery(''); }}
-                  className="ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  className="ms-2 text-[color:var(--color-muted-foreground)] transition hover:text-[color:var(--color-foreground)]"
+                  aria-label={uiCopy.clearSearch}
                 >
                   ×
                 </button>
               </Badge>
             )}
           </div>
+          {(searchQuery || sortBy !== 'discount') && (
+            <Button variant="ghost" size="sm" onClick={handleReset} className="rounded-full font-bold">
+              <TimerReset className="me-2 h-4 w-4" />
+              {uiCopy.reset}
+            </Button>
+          )}
         </div>
       </section>
 
       {loading && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {Array.from({ length: 10 }).map((_, index) => (
-            <div key={index} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-              <Skeleton className="h-32 w-full rounded-lg" />
+            <div key={index} className="space-y-3 rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)] p-3">
+              <Skeleton className="h-36 w-full rounded-[1.15rem]" />
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
             </div>
@@ -671,20 +745,32 @@ export default function DealsClient() {
 
       {!loading && !error && filteredProducts.length > 0 && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {paginatedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                locale={locale}
-                onCompare={handleAddToCompare}
-                onSave={handleSaveToWishlist}
-                isSaved={savedProductIds.has(product.id)}
-                isInCompare={compareIds.has(product.id)}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
+          <section className="rounded-[2rem] border border-[color:var(--color-border)] bg-[color:var(--color-muted)]/35 p-3 md:p-4">
+            <div className="mb-4 flex items-center justify-between gap-3 px-1">
+              <div>
+                <h2 className="text-xl font-black tracking-tight text-[color:var(--color-foreground)]">
+                  {uiCopy.gridTitle}
+                </h2>
+                <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
+                  {uiCopy.searchHelper}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {paginatedProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  locale={locale}
+                  onCompare={handleAddToCompare}
+                  onSave={handleSaveToWishlist}
+                  isSaved={savedProductIds.has(product.id)}
+                  isInCompare={compareIds.has(product.id)}
+                  onAddToCart={handleAddToCart}
+                />
+              ))}
+            </div>
+          </section>
 
           {totalPages > 1 && (
             <Pagination className="mt-6">

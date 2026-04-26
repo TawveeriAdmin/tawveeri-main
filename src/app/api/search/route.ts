@@ -4,6 +4,7 @@ import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import type { GroupedSearchProduct } from '@/lib/scraping/search/product-grouper';
 import type { SearchProduct } from '@/lib/scraping/search/types';
 import type { ProductCategory } from '@/lib/database/types';
+import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,8 @@ interface SearchBody {
   deals_only?: boolean;          // new
   free_delivery_only?: boolean;  // new
   in_stock_only?: boolean;       // legacy — equivalent to availability=['in_stock']
-  specs?: Record<string, string>;
+  specs?: Record<string, string[]>;
+  discount?: number;
 }
 
 interface ProductRow {
@@ -113,9 +115,9 @@ export async function POST(request: NextRequest) {
     query = query.ilike('brand', body.brand);
   }
 
-  if (body.specs && Object.keys(body.specs).length > 0) {
-    query = query.contains('specifications', body.specs);
-  }
+  const hasPostFilters =
+    typeof body.discount === 'number' ||
+    (body.specs !== undefined && Object.keys(body.specs).length > 0);
 
   // Store filter — filters the inner-joined product_stores so products
   // without a row in any of the selected stores are dropped.
@@ -171,7 +173,14 @@ export async function POST(request: NextRequest) {
     offsetStart = 0;
     offsetEnd = currentPageSize - 1;
   }
-  query = query.range(offsetStart, offsetEnd);
+  if (hasPostFilters) {
+    // Spec and discount facets need product-store rows in memory because specs
+    // can fall back to parsed titles and discount is computed from two prices.
+    // Keep the DB filters above active, then paginate after post-filtering.
+    query = query.range(0, 4999);
+  } else {
+    query = query.range(offsetStart, offsetEnd);
+  }
 
   const { data, error, count } = await query;
 
@@ -181,22 +190,28 @@ export async function POST(request: NextRequest) {
   }
 
   const rows = (data ?? []) as unknown as ProductRow[];
-  const products: GroupedSearchProduct[] = rows
+  let products: GroupedSearchProduct[] = rows
     .map(toGroupedSearchProduct)
     .filter((p): p is GroupedSearchProduct => p !== null);
 
+  products = applyPostFilters(products, body);
   products.sort(compareBySort(body.sort || 'relevance'));
+  const total = hasPostFilters
+    ? products.length
+    : typeof count === 'number'
+      ? count
+      : products.length;
+  const pageProducts = hasPostFilters ? products.slice(offsetStart, offsetEnd + 1) : products;
 
-  const prices = products.map((p) => p.best_price).filter((n) => n > 0);
-  const total = typeof count === 'number' ? count : products.length;
+  const prices = pageProducts.map((p) => p.best_price).filter((n) => n > 0);
   const result: ScrapedSearchResult & { total: number; page: number; pageSize: number } = {
-    products,
-    count: products.length,
+    products: pageProducts,
+    count: pageProducts.length,
     total,
     page: currentPage,
     pageSize: currentPageSize,
     query: rawQuery,
-    storeResults: computeStoreResults(products),
+    storeResults: computeStoreResults(pageProducts),
     priceStats: {
       min: prices.length ? Math.min(...prices) : null,
       max: prices.length ? Math.max(...prices) : null,
@@ -204,11 +219,47 @@ export async function POST(request: NextRequest) {
     },
     searchTime: (Date.now() - started) / 1000,
     errors: null,
-    totalStores: computeUniqueStores(products),
-    successfulStores: computeUniqueStores(products),
+    totalStores: computeUniqueStores(pageProducts),
+    successfulStores: computeUniqueStores(pageProducts),
   };
 
   return NextResponse.json(result);
+}
+
+function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
+  let result = products;
+
+  if (typeof body.discount === 'number') {
+    result = result.filter((product) =>
+      product.stores.some((store) => {
+        if (!store.original_price || !store.current_price) return false;
+        const discount = ((store.original_price - store.current_price) / store.original_price) * 100;
+        return discount >= body.discount!;
+      })
+    );
+  }
+
+  if (body.specs && Object.keys(body.specs).length > 0) {
+    result = result.filter((product) => {
+      const dbSpecs = (product.specifications ?? null) as Record<string, unknown> | null;
+      const hasDbSpecs = dbSpecs && Object.keys(dbSpecs).length > 0;
+      const fallbackSpecs = hasDbSpecs
+        ? null
+        : extractSpecsFromTitle(product.name_en || product.name_ar || '');
+
+      return Object.entries(body.specs!).every(([key, values]) => {
+        if (!values || values.length === 0) return true;
+        const dbValue = hasDbSpecs ? dbSpecs![key] : undefined;
+        const value =
+          dbValue !== undefined && dbValue !== null
+            ? String(dbValue).toLowerCase()
+            : fallbackSpecs?.[key] ?? '';
+        return values.map((item) => item.toLowerCase()).includes(value);
+      });
+    });
+  }
+
+  return result;
 }
 
 function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {

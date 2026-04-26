@@ -7,9 +7,9 @@ import { Price } from '@/components/ui/price';
 import { Edit, Trash2, Power, PowerOff } from 'lucide-react';
 import { formatDate } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { Database } from '@/lib/database/types';
+import { ProductIdentity } from '@/components/products/shared-product-card';
 
 type PriceAlertRow = Database['public']['Tables']['price_alerts']['Row'];
 type ProductRow = Database['public']['Tables']['products']['Row'];
@@ -37,37 +37,28 @@ export function PriceAlertCard({
   const isRTL = locale === 'ar';
   const product = alert.products;
   const productName = product ? (locale === 'ar' ? product.name_ar : product.name_en) : 'Unknown Product';
-  const productImage = product?.image_urls?.[0] || '/placeholder-product.png';
   const priceDifference = currentPrice - alert.target_price;
   const pricePercentage = currentPrice > 0 ? ((priceDifference / currentPrice) * 100) : 0;
   const isTargetReached = currentPrice <= alert.target_price;
 
   return (
-    <Card>
+    <Card dir={isRTL ? 'rtl' : 'ltr'}>
       <CardContent className="p-6">
-        <div className="flex gap-4">
-          {/* Product Image */}
-          <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-surface-container-highest">
-            <Image
-              src={productImage}
-              alt={productName}
-              fill
-              className="object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder-product.png';
-              }}
-            />
-          </div>
-
+        <div className={cn('flex gap-4', isRTL && 'text-right')}>
           {/* Product Info */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-title-lg text-on-surface mb-2 truncate">
-              {productName}
-            </h3>
+            <ProductIdentity
+              product={product}
+              locale={locale}
+              name={productName}
+              imageSizeClassName="h-24 w-24"
+              titleClassName={cn('text-title-lg', isRTL && 'text-right')}
+              subtitleClassName={isRTL ? 'text-right' : undefined}
+              className={cn('mb-3 w-full items-start', isRTL && 'justify-start')}
+            />
 
             {/* Price Comparison */}
-            <div className="flex flex-col gap-2 mb-3">
+            <div className={cn('flex flex-col gap-2 mb-3', isRTL && 'items-end')}>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-on-surface-variant">
                   {t('products.priceAlert.currentPrice')}:
@@ -107,7 +98,7 @@ export function PriceAlertCard({
             </div>
 
             {/* Status & Date */}
-            <div className="flex items-center gap-4 text-sm text-on-surface-variant mb-4">
+            <div className={cn('flex flex-wrap items-center gap-4 text-sm text-on-surface-variant mb-4', isRTL && 'justify-end')}>
               <span>
                 {t('products.priceAlert.created')}: {formatDate(alert.created_at, locale)}
               </span>
@@ -119,7 +110,7 @@ export function PriceAlertCard({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className={cn('flex items-center gap-2 flex-wrap', isRTL && 'justify-end')}>
               <Button
                 variant="outline"
                 size="sm"
@@ -164,4 +155,3 @@ export function PriceAlertCard({
     </Card>
   );
 }
-

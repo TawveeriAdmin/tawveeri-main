@@ -7,7 +7,6 @@ import { useTheme } from 'next-themes';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -19,7 +18,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
-  BarChart3,
   Bell,
   Camera,
   ChevronDown,
@@ -104,9 +102,6 @@ const isActivePath = (pathname: string, href: string) =>
 
 export function PublicPageShell({ locale, children, fullBleed = false }: PublicPageShellProps) {
   const pathname = usePathname();
-  // The landing page already renders a prominent hero search — suppress the
-  // header search on that route so the client doesn't see two bars.
-  const isLandingPage = pathname === `/${locale}` || pathname === `/${locale}/`;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
@@ -119,7 +114,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   // Keep header search input in sync with URL ?q= param
   // (e.g. when user searches from the search page's own input)
   useEffect(() => {
-    setSearchQuery(searchParams.get('q') || '');
+    queueMicrotask(() => setSearchQuery(searchParams.get('q') || ''));
   }, [searchParams]);
   const isHydrated = useSyncExternalStore(subscribe, () => true, () => false);
 
@@ -153,7 +148,10 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
   /* ── Wishlist count from Supabase ── */
   useEffect(() => {
-    if (!user) { setWishlistCount(0); return; }
+    if (!user) {
+      queueMicrotask(() => setWishlistCount(0));
+      return;
+    }
 
     const supabase = getSupabaseBrowserClient();
     const fetchCount = async () => {
@@ -172,7 +170,10 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
   /* ── Unread notification count from Supabase ── */
   useEffect(() => {
-    if (!user) { setNotificationCount(0); return; }
+    if (!user) {
+      queueMicrotask(() => setNotificationCount(0));
+      return;
+    }
 
     const supabase = getSupabaseBrowserClient();
     const fetchCount = async () => {
@@ -219,6 +220,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   const userPhone = user?.phone || '';
   const realEmail = isFakeEmail ? '' : (user?.email || '');
   const userName = user?.full_name || (realEmail ? realEmail.split('@')[0] : userPhone) || '';
+  const userFirstName = userName.trim().split(/\s+/)[0] || userName;
   const userSubtitle = realEmail || userPhone;
   const userInitials =
     userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
@@ -263,7 +265,9 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
   /* ── Icon button style ── */
   const iconBtnClass =
-    'inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100';
+    'inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-on-surface-variant transition-colors hover:border-[color:var(--color-outline-variant)] hover:bg-surface-container-high hover:text-on-surface';
+  const profileMenuItemClass =
+    'group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-[var(--brand-bg-green)] focus:bg-[var(--brand-bg-green)]';
 
   return (
     <div className="min-h-screen bg-[color:var(--color-surface)] transition-colors duration-300">
@@ -276,29 +280,31 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
       </a>
 
       {/* Background gradients */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top,rgba(13,71,161,0.10),transparent_62%)] dark:bg-[radial-gradient(circle_at_top,rgba(96,165,250,0.16),transparent_58%)]" />
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 h-[320px] bg-[radial-gradient(circle_at_bottom,rgba(79,70,229,0.08),transparent_64%)] dark:bg-[radial-gradient(circle_at_bottom,rgba(165,180,252,0.14),transparent_60%)]" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_50%_0%,rgba(85,178,149,0.16),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(85,178,149,0.14),transparent_58%)]" />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 h-[320px] bg-[radial-gradient(circle_at_bottom,rgba(226,187,78,0.10),transparent_64%)] dark:bg-[radial-gradient(circle_at_bottom,rgba(226,187,78,0.10),transparent_60%)]" />
 
       {/* ═══ Unified Header ═══ */}
-      <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/95 backdrop-blur-md dark:border-gray-800/80 dark:bg-gray-950/95">
-        <div className="mx-auto w-full max-w-[1600px] px-3 py-3 md:px-6">
+      <header className="pointer-events-none fixed inset-x-0 top-3 z-40 px-4 md:px-8">
+        <div className="mx-auto w-full max-w-[1600px] rounded-[2rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)]/92 px-3 py-2.5 shadow-[0_22px_70px_-52px_rgba(26,26,26,0.65)] backdrop-blur-xl dark:bg-[color:var(--color-surface-container-low)]/92">
           {/* Row 1: Logo | Search (centered) | Actions */}
-          <div className="flex items-center justify-between gap-2 md:gap-3">
+          <div className="pointer-events-auto flex items-center justify-between gap-2 md:gap-3">
             {/* Logo — image + stacked name & tagline so first-time visitors
                 see what the site does in one glance. Tagline stays hidden on
                 narrow viewports to avoid crowding the action cluster. */}
             <Link
               href={`/${locale}`}
               aria-label={t('app.name')}
-              className="group inline-flex shrink-0 items-center gap-2.5 rounded-xl p-1 transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-800/70"
+              className="group inline-flex shrink-0 items-center gap-2.5 rounded-full p-1.5 transition-colors hover:bg-[color:var(--color-primary-container)] dark:hover:bg-[color:var(--color-surface-container-high)]"
             >
-              <Image
-                src="/logos/Tawveeri.png"
-                alt="Tawveeri"
-                width={32}
-                height={32}
-                className="h-8 w-8 rounded-lg object-contain"
-              />
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--color-primary-container)] ring-1 ring-[color:var(--color-primary)]/20 dark:bg-[color:var(--color-surface-container-high)]">
+                <Image
+                  src="/logos/Tawveeri.png"
+                  alt="Tawveeri"
+                  width={34}
+                  height={34}
+                  className="h-8 w-8 rounded-full object-contain"
+                />
+              </span>
               <span className="hidden flex-col leading-tight sm:flex">
                 <span className="text-sm font-bold text-on-surface">
                   {t('app.name')}
@@ -321,7 +327,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             <div className="hidden flex-1 justify-center md:flex">
               <form
                 onSubmit={handleSearchSubmit}
-                className="relative flex h-12 w-full max-w-4xl items-stretch overflow-hidden rounded-full border-2 border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15"
+                className="relative flex h-11 w-full max-w-2xl items-stretch overflow-hidden rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] transition-colors focus-within:border-[color:var(--color-primary)] focus-within:ring-4 focus-within:ring-[color:var(--color-primary)]/15 dark:bg-[color:var(--color-surface)]"
               >
                 <Search
                   aria-hidden
@@ -332,7 +338,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('search.searchPlaceholder')}
                   aria-label={t('search.searchPlaceholder')}
-                  className="min-w-0 flex-1 bg-transparent ps-12 pe-3 text-[14px] text-on-surface placeholder:text-on-surface-variant/70 outline-none"
+                  className="min-w-0 flex-1 bg-transparent ps-12 pe-3 text-[14px] font-semibold text-on-surface placeholder:text-on-surface-variant/70 outline-none"
                 />
                 <div className="flex shrink-0 items-center pe-1">
                   <SearchVoiceBarcodeActions
@@ -344,7 +350,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                 <button
                   type="submit"
                   aria-label={t('button.search')}
-                  className="inline-flex h-full w-16 shrink-0 items-center justify-center bg-primary text-on-primary transition-colors hover:bg-primary-600"
+                  className="m-1 inline-flex h-[calc(100%-0.5rem)] w-12 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-600"
                 >
                   <Search className="h-5 w-5" strokeWidth={2.25} />
                 </button>
@@ -361,7 +367,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                 type="button"
                 onClick={() => goToLocale(locale === 'ar' ? 'en' : 'ar')}
                 aria-label={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-transparent px-2.5 text-xs font-semibold text-on-surface-variant transition-colors hover:border-[color:var(--color-outline-variant)] hover:bg-surface-container-high hover:text-on-surface"
               >
                 <Globe className="h-4 w-4" strokeWidth={2} />
                 <span className="tracking-wide">{locale === 'ar' ? 'EN' : 'AR'}</span>
@@ -377,7 +383,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                 type="button"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 aria-label={isHydrated && theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent text-on-surface-variant transition-colors hover:border-[color:var(--color-outline-variant)] hover:bg-surface-container-high hover:text-on-surface"
               >
                 {isHydrated ? (
                   theme === 'dark' ? (
@@ -428,7 +434,14 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                   {/* User avatar dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="relative rounded-full p-0 transition-opacity hover:opacity-80">
+                      <button
+                        className="group inline-flex h-10 max-w-[220px] items-center gap-2 rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-0.5 ps-3 shadow-[var(--elevation-1)] transition-all hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)] active:scale-[0.98]"
+                        aria-label={copy.profile}
+                      >
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-on-surface-variant transition-transform group-data-[state=open]:rotate-180" />
+                        <span className="hidden min-w-0 max-w-[130px] truncate text-sm font-semibold text-on-surface lg:inline">
+                          {userFirstName}
+                        </span>
                         <Avatar className="h-9 w-9">
                           <AvatarImage src={user.avatar_url || ''} alt={userName} />
                           <AvatarFallback className="bg-primary-100 text-xs text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
@@ -437,58 +450,114 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                         </Avatar>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56" dir={isRTL ? 'rtl' : 'ltr'}>
-                      <DropdownMenuLabel>
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {userName}
-                          </p>
-                          <p className="truncate text-xs text-gray-500 dark:text-gray-400" dir="ltr">
-                            {userSubtitle}
-                          </p>
+                    <DropdownMenuContent
+                      align={isRTL ? 'start' : 'end'}
+                      sideOffset={10}
+                      className="w-[min(380px,calc(100vw-2rem))] rounded-[1.5rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-2 shadow-[0_24px_70px_-44px_rgba(26,26,26,0.45)]"
+                      style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+                    >
+                      <DropdownMenuLabel className="p-0">
+                        <div className="rounded-[1.25rem] bg-[color:var(--color-surface-container-low)] p-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12 ring-2 ring-[var(--brand-green)]/15">
+                              <AvatarImage src={user.avatar_url || ''} alt={userName} />
+                              <AvatarFallback className="bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                                {userInitials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-on-surface">
+                                {userName}
+                              </p>
+                              {userSubtitle && (
+                                <p className="truncate text-xs font-normal text-on-surface-variant" dir="ltr">
+                                  {userSubtitle}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <Link
+                              href={`/${locale}/wishlist`}
+                              className="rounded-xl border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-2 transition-colors hover:border-[var(--brand-green)]/45 hover:bg-[var(--brand-bg-green)]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-950/30">
+                                  <Heart className="h-3.5 w-3.5" />
+                                </span>
+                                <span className="text-lg font-black tabular-nums text-on-surface">
+                                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                                </span>
+                              </div>
+                              <p className="mt-1 truncate text-[11px] font-medium text-on-surface-variant">
+                                {copy.wishlist}
+                              </p>
+                            </Link>
+                            <Link
+                              href={`/${locale}/notifications`}
+                              className="rounded-xl border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-2 transition-colors hover:border-[var(--brand-green)]/45 hover:bg-[var(--brand-bg-green)]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]">
+                                  <Bell className="h-3.5 w-3.5" />
+                                </span>
+                                <span className="text-lg font-black tabular-nums text-on-surface">
+                                  {notificationCount > 99 ? '99+' : notificationCount}
+                                </span>
+                              </div>
+                              <p className="mt-1 truncate text-[11px] font-medium text-on-surface-variant">
+                                {t('dashboard.sidebar.notifications')}
+                              </p>
+                            </Link>
+                          </div>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/dashboard`}>
-                          <LayoutDashboard className="me-2 h-4 w-4" />
-                          {copy.dashboard}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/profile`}>
-                          <User className="me-2 h-4 w-4" />
-                          {copy.profile}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/wishlist`}>
-                          <Heart className="me-2 h-4 w-4" />
-                          {copy.wishlist}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/price-alerts`}>
-                          <SlidersHorizontal className="me-2 h-4 w-4" />
-                          {copy.priceAlerts}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/${locale}/saved-searches`}>
-                          <Search className="me-2 h-4 w-4" />
-                          {copy.savedSearches}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      <div className="mt-2 grid gap-1">
+                        <DropdownMenuItem asChild className={cn(profileMenuItemClass, isActivePath(pathname, `/${locale}/dashboard`) && 'bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]')}>
+                          <Link href={`/${locale}/dashboard`}>
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--color-surface-container-low)] text-[var(--brand-green-dark)] transition-colors group-hover:bg-[color:var(--color-surface)]">
+                              <LayoutDashboard className="h-4 w-4" />
+                            </span>
+                            <span>{copy.dashboard}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className={cn(profileMenuItemClass, isActivePath(pathname, `/${locale}/profile`) && 'bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]')}>
+                          <Link href={`/${locale}/profile`}>
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--color-surface-container-low)] text-[var(--brand-green-dark)] transition-colors group-hover:bg-[color:var(--color-surface)]">
+                              <User className="h-4 w-4" />
+                            </span>
+                            <span>{copy.profile}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className={cn(profileMenuItemClass, isActivePath(pathname, `/${locale}/price-alerts`) && 'bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]')}>
+                          <Link href={`/${locale}/price-alerts`}>
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--color-surface-container-low)] text-[var(--brand-green-dark)] transition-colors group-hover:bg-[color:var(--color-surface)]">
+                              <SlidersHorizontal className="h-4 w-4" />
+                            </span>
+                            <span>{copy.priceAlerts}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className={cn(profileMenuItemClass, isActivePath(pathname, `/${locale}/saved-searches`) && 'bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]')}>
+                          <Link href={`/${locale}/saved-searches`}>
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--color-surface-container-low)] text-[var(--brand-green-dark)] transition-colors group-hover:bg-[color:var(--color-surface)]">
+                              <Search className="h-4 w-4" />
+                            </span>
+                            <span>{copy.savedSearches}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+                      <DropdownMenuSeparator className="my-2" />
                       <DropdownMenuItem
                         onSelect={(e) => {
                           e.preventDefault();
                           handleSignOut();
                         }}
-                        className="cursor-pointer text-red-600 dark:text-red-400"
+                        className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/25 dark:focus:bg-red-950/25"
                       >
-                        <LogOut className="me-2 h-4 w-4" />
-                        {copy.signOut}
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                          <LogOut className="h-4 w-4" />
+                        </span>
+                        <span>{copy.signOut}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -497,13 +566,13 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                 <div className="flex items-center gap-1.5">
                   <Link
                     href={loginHref}
-                    className="inline-flex h-9 items-center rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:text-gray-100"
+                    className="inline-flex h-9 items-center rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-sm font-medium text-on-surface-variant transition-colors hover:text-on-surface dark:bg-[color:var(--color-surface-container)]"
                   >
                     {t('common.login')}
                   </Link>
                   <Link
                     href={signupHref}
-                    className="inline-flex h-9 items-center rounded-xl border border-primary-300 bg-primary-50 px-3 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-700 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/45"
+                    className="inline-flex h-9 items-center rounded-full bg-[color:var(--color-primary)] px-3.5 text-sm font-semibold text-[color:var(--color-on-primary)] transition-colors hover:bg-primary-600"
                   >
                     {copy.getStarted}
                   </Link>
@@ -517,7 +586,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               barcode cluster, distinct green submit button at the end. */}
           <form
             onSubmit={handleSearchSubmit}
-            className="relative mt-3 flex h-11 items-stretch overflow-hidden rounded-full border-2 border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 md:hidden"
+            className="pointer-events-auto relative mt-3 flex h-11 items-stretch overflow-hidden rounded-full border border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 md:hidden"
           >
             <Search
               aria-hidden
@@ -540,20 +609,20 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             <button
               type="submit"
               aria-label={t('button.search')}
-              className="inline-flex h-full w-12 shrink-0 items-center justify-center bg-primary text-on-primary transition-colors hover:bg-primary-600"
+              className="m-1 inline-flex h-[calc(100%-0.5rem)] w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-600"
             >
               <Search className="h-4 w-4" strokeWidth={2.25} />
             </button>
           </form>
 
           {/* Row 2: Categories mega-dropdown + Stores + top-category quick-links */}
-          <nav className="mt-3 flex items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <nav className="pointer-events-auto mt-3 flex items-center gap-1 overflow-x-auto rounded-full bg-[color:var(--color-surface-container-lowest)] p-1 [scrollbar-width:none] dark:bg-[color:var(--color-surface)] [&::-webkit-scrollbar]:hidden">
             {/* Categories dropdown — opens a grid of every supported category */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-600"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-3.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-600"
                 >
                   <LayoutGrid className="h-4 w-4" strokeWidth={2.25} />
                   {isRTL ? 'الفئات' : 'Categories'}
@@ -562,7 +631,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align={isRTL ? 'end' : 'start'}
-                className="w-[min(560px,90vw)] p-3"
+                className="w-[min(620px,90vw)] rounded-2xl border-[color:var(--color-outline-variant)] p-3 shadow-[0_24px_70px_-44px_rgba(26,26,26,0.45)]"
               >
                 <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
                   {HEADER_CATEGORIES.map((cat) => {
@@ -571,7 +640,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                       <DropdownMenuItem key={cat.slug} asChild className="cursor-pointer">
                         <Link
                           href={`/${locale}/search?category=${cat.slug}`}
-                          className="flex items-center gap-2.5 rounded-md px-2.5 py-2"
+                          className="flex items-center gap-2.5 rounded-xl px-2.5 py-2"
                         >
                           <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-700">
                             <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -598,7 +667,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             </DropdownMenu>
 
             {/* Divider */}
-            <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-outline-variant" />
+            <span aria-hidden className="mx-1 hidden h-5 w-px shrink-0 bg-outline-variant md:block" />
 
             {/* Section links + top-category quick-links. Secondary nav —
                 active state gets a primary-tinted chip, inactive is plain. */}
@@ -613,7 +682,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[13px] font-medium transition-colors',
+                    'inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-medium transition-colors',
                     isActive
                       ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
                       : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
@@ -634,7 +703,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
         className={
           fullBleed
             ? 'pb-24'
-            : 'mx-auto max-w-[1600px] px-4 py-6 pb-24 md:px-8'
+            : 'mx-auto max-w-[1600px] px-4 pb-24 pt-56 md:px-8 md:pt-48'
         }
       >
         {children}
@@ -644,66 +713,6 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
       {/* Persistent compare tray — visible on every page when the list has items */}
       <CompareFloatingBar locale={locale} />
-    </div>
-  );
-}
-
-/**
- * Compact segmented toggle. Shows every option at once; the active one gets
- * a solid primary fill and inactive ones stay text-only. No opacity modifiers
- * (this project's Tailwind setup misbehaves with `/N` suffixes on colors),
- * no absolute-positioned indicator — just solid semantic tokens.
- *
- * `value` is optional so the caller can render the toggle before client-only
- * state (e.g. next-themes' current theme) has resolved. When undefined, no
- * button is marked active.
- */
-type SegmentOption = {
-  value: string;
-  label?: string;
-  icon?: React.ReactNode;
-  ariaLabel?: string;
-};
-
-function SegmentedToggle({
-  options,
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  options: SegmentOption[];
-  value: string | undefined;
-  onChange: (value: string) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className="inline-flex h-9 items-center gap-0.5 rounded-xl border border-outline-variant bg-surface-container-low p-0.5"
-    >
-      {options.map((opt) => {
-        const active = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            aria-label={opt.ariaLabel || opt.label || opt.value}
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              'inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-150',
-              active
-                ? 'bg-primary text-on-primary'
-                : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
-            )}
-          >
-            {opt.icon}
-            {opt.label && <span>{opt.label}</span>}
-          </button>
-        );
-      })}
     </div>
   );
 }

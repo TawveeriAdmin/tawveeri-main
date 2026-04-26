@@ -39,14 +39,14 @@ export function MobileFilterSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="max-h-[85vh] flex flex-col gap-0 p-0"
+        className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-[2rem] border-[color:var(--color-border)] bg-[color:var(--color-background)] p-0"
       >
-        <SheetHeader className="border-b border-[color:var(--color-outline-variant)]/50 px-5 py-4">
+        <SheetHeader className="border-b border-[color:var(--color-border)] bg-[color:var(--color-primary-container)]/70 px-5 py-4 dark:bg-[color:var(--color-card)]">
           <div className="flex items-center justify-between gap-3">
             <SheetTitle className="flex items-center gap-2">
               {isRTL ? 'الفلاتر' : 'Filters'}
               {activeCount > 0 && (
-                <Badge variant="success" className="t-caption">
+                <Badge className="rounded-full bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)]">
                   {activeCount}
                 </Badge>
               )}
@@ -55,7 +55,7 @@ export function MobileFilterSheet({
               <button
                 type="button"
                 onClick={onClearAll}
-                className="t-small font-semibold text-[var(--brand-gold-dark)] hover:text-[var(--brand-green-dark)]"
+                className="text-sm font-extrabold text-[color:var(--color-primary)] hover:text-[color:var(--color-foreground)]"
               >
                 {isRTL ? 'امسح الكل' : 'Reset'}
               </button>
@@ -63,7 +63,7 @@ export function MobileFilterSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-2 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
           <FilterSidebar
             filters={filters}
             onFilterChange={onFilterChange}
@@ -74,10 +74,10 @@ export function MobileFilterSheet({
           />
         </div>
 
-        <div className="border-t border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface)] p-4 sticky bottom-0">
+        <div className="sticky bottom-0 border-t border-[color:var(--color-border)] bg-[color:var(--color-card)]/95 p-4 backdrop-blur">
           <Button
             size="lg"
-            className="w-full"
+            className="h-12 w-full rounded-2xl font-extrabold"
             onClick={() => onOpenChange(false)}
           >
             {isRTL ? 'تطبيق الفلاتر' : 'Apply filters'}

@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductIdentity } from '@/components/products/shared-product-card';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { useToast } from '@/components/ui/use-toast';
 import { Price } from '@/components/ui/price';
@@ -294,7 +295,7 @@ export default function AdminTransactionsPage({
         .range((page - 1) * rowsPerPage, page * rowsPerPage - 1);
 
       if (error) throw error;
-      setTransactions((data as Transaction[]) || []);
+      setTransactions((data as unknown as Transaction[]) || []);
       setTotal(count || 0);
     } catch (e) {
       console.error('Error loading transactions:', e);
@@ -658,9 +659,11 @@ export default function AdminTransactionsPage({
                           </TableCell>
                           {visibleCols.product && (
                             <TableCell>
-                              <span className="truncate text-sm font-medium text-on-surface">
-                                {product ? (isRTL ? product.name_ar : product.name_en) : '-'}
-                              </span>
+                              <ProductIdentity
+                                product={product}
+                                locale={locale}
+                                imageSizeClassName="h-9 w-9"
+                              />
                             </TableCell>
                           )}
                           {visibleCols.store && (
@@ -721,9 +724,11 @@ export default function AdminTransactionsPage({
                     <div key={tx.id} className="space-y-2 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-on-surface">
-                            {product ? (isRTL ? product.name_ar : product.name_en) : '-'}
-                          </p>
+                          <ProductIdentity
+                            product={product}
+                            locale={locale}
+                            imageSizeClassName="h-10 w-10"
+                          />
                           <p className="truncate text-xs text-on-surface-variant">
                             {store ? (isRTL ? store.name_ar : store.name_en) : '-'}
                           </p>

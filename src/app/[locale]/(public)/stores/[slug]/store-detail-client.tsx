@@ -1,9 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,18 +29,12 @@ import {
 } from '@/components/ui/select';
 import {
  AlertCircle,
- Award,
  Globe,
- Mail,
- MapPin,
  Package,
- Phone,
  RotateCcw,
  Search,
- ShieldCheck,
  Sparkles,
  Star,
- Store,
  Ticket,
 } from 'lucide-react';
 import { CouponBadge } from '@/components/ui/coupon-badge';
@@ -56,12 +48,6 @@ import {
  DialogTitle,
 } from '@/components/ui/dialog';
 import {
- Accordion,
- AccordionContent,
- AccordionItem,
- AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
  Pagination,
  PaginationContent,
  PaginationEllipsis,
@@ -71,6 +57,7 @@ import {
  PaginationPrevious,
 } from '@/components/ui/pagination';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
+import { isTechProduct } from '@/lib/scraping/product-filter';
 
 interface StoreDetails {
  id: string;
@@ -148,6 +135,34 @@ interface StoreProduct {
  }>;
 }
 
+interface StoreCoupon {
+ id: string;
+ code: string;
+ description_ar: string | null;
+ description_en: string | null;
+ discount_type: DiscountType;
+ discount_value: number;
+ min_purchase: number | null;
+ max_discount: number | null;
+ expires_at: string | null;
+}
+
+interface CategoryCountRow {
+ current_price?: number | null;
+ product_url: string | null;
+ products: {
+ id: string;
+ name_ar: string | null;
+ name_en: string | null;
+ category: string | null;
+ brand: string | null;
+ } | null;
+}
+
+interface SurpriseProductRow {
+ products: { slug: string | null } | null;
+}
+
 type SortOption = 'recommended' | 'price_asc' | 'price_desc' | 'name' | 'discount';
 const STORE_PRODUCTS_PAGE_SIZE = 20;
 const COMPARE_STORAGE_KEY = 'compare_products';
@@ -157,6 +172,45 @@ const VALID_SORTS: Readonly<SortOption[]> = ['recommended', 'price_asc', 'price_
 
 const parseSort = (raw: string | null): SortOption =>
  (VALID_SORTS as readonly string[]).includes(raw ?? '') ? (raw as SortOption) : 'recommended';
+
+function isElectronicsStoreProduct(record: {
+ product_url?: string | null;
+ products?: {
+ name_ar?: string | null;
+ name_en?: string | null;
+ category?: string | null;
+ brand?: string | null;
+ } | null;
+}): boolean {
+ const product = record.products;
+ if (!product) return false;
+ return isTechProduct(
+  product.name_en || product.name_ar || '',
+  product.brand || null,
+  product.category || '',
+  { product_url: '', url: '' },
+ );
+}
+
+function StoreHeroMetric({
+ value,
+ label,
+ icon,
+}: {
+ value: string;
+ label: string;
+ icon: ReactNode;
+}) {
+ return (
+ <div className="border-e border-[color:var(--color-outline-variant)] p-4 last:border-e-0">
+ <div className="flex items-center gap-2 text-[26px] font-black text-[color:var(--color-on-surface)]">
+ {icon}
+ <span>{value}</span>
+ </div>
+ <p className="mt-1 text-[11px] font-bold text-[color:var(--color-on-surface-variant)]">{label}</p>
+ </div>
+ );
+}
 
 export default function StoreDetailClient() {
  const params = useParams();
@@ -180,7 +234,7 @@ export default function StoreDetailClient() {
  totalProducts: 0,
  });
  const [reviews, setReviews] = useState<StoreReview[]>([]);
- const [coupons, setCoupons] = useState<any[]>([]);
+ const [coupons, setCoupons] = useState<StoreCoupon[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -247,26 +301,22 @@ export default function StoreDetailClient() {
  setStore(storeData);
  setReviews(storeData.store_reviews || []);
 
- // Total active products for this store — one lightweight count query.
- const { count: totalActive } = await supabase
- .from('product_stores')
- .select('id, products!inner(is_active)', { count: 'exact', head: true })
- .eq('store_id', storeData.id)
- .eq('products.is_active', true);
-
  // Cheapest in-stock price across the whole catalog — one tiny query.
  const { data: cheapestRow } = await supabase
  .from('product_stores')
- .select('current_price, products!inner(is_active)')
+ .select('current_price, product_url, products!inner(is_active, name_ar, name_en, category, brand)')
  .eq('store_id', storeData.id)
  .eq('products.is_active', true)
  .neq('availability', 'out_of_stock')
  .order('current_price', { ascending: true })
- .limit(1);
+ .limit(25)
+ .returns<CategoryCountRow[]>();
+
+ const cheapestTechRow = cheapestRow?.find(isElectronicsStoreProduct);
 
  setStoreStats({
- cheapest: cheapestRow?.[0]?.current_price ?? null,
- totalProducts: totalActive ?? 0,
+ cheapest: cheapestTechRow?.current_price ?? null,
+ totalProducts: 0,
  });
 
  // Category counts for the chip row. Scan only the `category` column
@@ -279,17 +329,21 @@ export default function StoreDetailClient() {
  const to = from + CAT_BATCH - 1;
  const { data: catRows } = await supabase
  .from('product_stores')
- .select('products!inner(category)')
+ .select('product_url, products!inner(id, name_ar, name_en, category, brand)')
  .eq('store_id', storeData.id)
  .eq('products.is_active', true)
- .range(from, to);
+ .range(from, to)
+ .returns<CategoryCountRow[]>();
  if (!catRows || catRows.length === 0) break;
- catRows.forEach((row: any) => {
+ catRows.forEach((row) => {
+ if (!isElectronicsStoreProduct(row)) return;
  const category = row?.products?.category;
  if (category) counts.set(category, (counts.get(category) ?? 0) + 1);
  });
  if (catRows.length < CAT_BATCH) break;
  }
+ const electronicsTotal = Array.from(counts.values()).reduce((sum, count) => sum + count, 0);
+ setStoreStats((prev) => ({ ...prev, totalProducts: electronicsTotal }));
  setCategoryCounts(Array.from(counts.entries()).sort((a, b) => b[1] - a[1]));
 
  // Fetch store coupons
@@ -299,7 +353,8 @@ export default function StoreDetailClient() {
  .eq('store_id', storeData.id)
  .eq('is_active', true)
  .or('expires_at.is.null,expires_at.gt.now()')
- .order('created_at', { ascending: false });
+ .order('created_at', { ascending: false })
+ .returns<StoreCoupon[]>();
 
  setCoupons(couponsData || []);
  } catch (err) {
@@ -411,6 +466,7 @@ export default function StoreDetailClient() {
  const records = (data ?? []) as unknown as ProductStoreResponse[];
  const mapped: StoreProduct[] = records
  .filter((r) => r.products && r.stores)
+ .filter(isElectronicsStoreProduct)
  .map((record) => ({
  id: record.products!.id,
  name_ar: record.products!.name_ar,
@@ -599,10 +655,10 @@ export default function StoreDetailClient() {
  // Always prefer in-stock for the surprise — picking out-of-stock would
  // be a dud landing.
  query = query.neq('availability', 'out_of_stock');
- const { data } = await query.range(offset, offset);
- const pickedSlug = (data?.[0] as any)?.products?.slug;
+ const { data } = await query.range(offset, offset).returns<SurpriseProductRow[]>();
+ const pickedSlug = data?.[0]?.products?.slug;
  if (pickedSlug) router.push(`/${locale}/products/${pickedSlug}`);
- }, [store, totalCount, categoryFilter, inStockOnly, router, locale]);
+ }, [store, totalCount, categoryFilter, router, locale]);
 
  const handleAddToCompare = (productId: string) => {
  if (typeof window === 'undefined') return;
@@ -739,23 +795,25 @@ export default function StoreDetailClient() {
  }
 
  const description = locale === 'ar' ? store.description_ar : store.description_en;
- const deliveryInfo = locale === 'ar' ? store.delivery_info_ar : store.delivery_info_en;
- const returnPolicy = locale === 'ar' ? store.return_policy_ar : store.return_policy_en;
- const warrantyInfo = locale === 'ar' ? store.warranty_info_ar : store.warranty_info_en;
 
  return (
- <div className="">
- <div className="container mx-auto px-4 py-8 max-w-6xl">
+ <div className="space-y-8">
  <PageBreadcrumbs items={[
    { label: t('nav.stores'), href: `/${locale}/stores` },
    { label: storeName },
  ]} />
- {/* Store Header */}
- <Card className="mb-8">
- <CardContent className="p-6">
- <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
- <div className="flex items-center gap-4">
- <div className="relative flex h-24 w-24 items-center justify-center rounded-[var(--radius-lg)] overflow-hidden bg-[color:var(--color-surface)] border-[1.5px] border-[var(--brand-green-light)] shadow-[var(--elevation-1)]">
+ <section className="relative overflow-hidden rounded-[2rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-primary-container)] p-5 dark:bg-[color:var(--color-surface-container-low)] md:p-8">
+ <div
+ aria-hidden
+ className="absolute inset-0 opacity-80 dark:opacity-40"
+ style={{
+ background:
+ 'radial-gradient(circle at 14% 16%, rgba(85,178,149,0.34), transparent 28%), radial-gradient(circle at 88% 14%, rgba(226,187,78,0.20), transparent 24%)',
+ }}
+ />
+ <div className="relative grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+ <div className="flex flex-col gap-5 md:flex-row md:items-center">
+ <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-[1.75rem] border border-[color:var(--color-outline-variant)] bg-white shadow-sm">
  <StoreLogo
  slug={store.slug}
  size="lg"
@@ -764,156 +822,58 @@ export default function StoreDetailClient() {
  className="!h-20 !w-20 object-contain"
  />
  </div>
- <div>
- {(store.is_featured || store.is_premium) && (
- <div className="flex flex-wrap items-center gap-2 mb-2">
- {store.is_premium ? (
- <Badge variant="best" className="t-caption gap-1">
- <Star className="h-3.5 w-3.5" fill="white" stroke="white" />
- {locale === 'ar' ? 'ممتاز' : 'Premium'}
- </Badge>
- ) : store.is_featured ? (
- <Badge variant="featured" className="t-caption">
- {locale === 'ar' ? 'مميز' : 'Featured'}
- </Badge>
- ) : null}
- </div>
+ <div className="min-w-0">
+ {store.is_featured && (
+ <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-[color:var(--color-tertiary)] px-3 py-1.5 text-[11px] font-black text-[color:var(--color-on-tertiary)]">
+ <Sparkles className="h-3.5 w-3.5" />
+ {locale === 'ar' ? 'متجر مميز' : 'Featured store'}
+ </span>
  )}
- <h1 className="text-headline-lg text-on-surface mb-2">{storeName}</h1>
- {description && (
- <p className="text-on-surface-variant max-w-2xl whitespace-pre-line">{description}</p>
- )}
+ <h1 className="text-[38px] font-black leading-tight text-[color:var(--color-on-surface)] md:text-[52px]">
+ {storeName}
+ </h1>
+ <p className="mt-3 max-w-2xl whitespace-pre-line text-[15px] leading-7 text-[color:var(--color-on-surface-variant)]">
+ {description || (locale === 'ar'
+ ? 'استعرض المنتجات، الأسعار، العروض، والتقييمات الخاصة بهذا المتجر.'
+ : 'Browse this store products, prices, offers, and customer ratings.')}
+ </p>
  </div>
  </div>
 
- <div className="flex flex-col gap-3 self-stretch items-end justify-start ms-auto">
- {store.average_rating !== null && (
- <div className="flex items-center gap-2 text-title-lg text-on-surface">
- <Star className="w-6 h-6 fill-featured-400 text-featured-400" />
- <span>{store.average_rating.toFixed(1)}</span>
- {store.total_reviews !== null && store.total_reviews > 0 && (
- <span className="text-sm text-on-surface-variant">
- ({store.total_reviews} {t('store.reviewsCount')})
- </span>
- )}
+ <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] dark:bg-[color:var(--color-surface-container)]">
+ <StoreHeroMetric
+ value={store.average_rating !== null ? store.average_rating.toFixed(1) : '-'}
+ label={locale === 'ar' ? 'التقييم' : 'Rating'}
+ icon={<Star className="h-4 w-4 fill-[color:var(--color-tertiary)] text-[color:var(--color-tertiary)]" />}
+ />
+ <StoreHeroMetric
+ value={storeStats.totalProducts.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ label={locale === 'ar' ? 'منتج' : 'Products'}
+ icon={<Package className="h-4 w-4 text-[color:var(--color-primary)]" />}
+ />
  </div>
- )}
+ </div>
+ <div className="relative mt-6 flex flex-wrap gap-3">
  {store.website_url && (
- <Button asChild>
+ <Button asChild className="rounded-full px-5">
  <a href={store.website_url} target="_blank" rel="noopener noreferrer">
  <Globe className="w-4 h-4 me-2" />
  {t('store.visitWebsite')}
  </a>
  </Button>
  )}
- </div>
- </div>
- </CardContent>
- </Card>
-
- {/* Quick Stats removed — rating, product count, and premium status are already in the header card. */}
-
- {/* Policies and Contact — hidden for now until real store data is available
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
- <Card className="h-full">
- <CardHeader>
- <CardTitle>{t('store.contactInfo')}</CardTitle>
- </CardHeader>
- <CardContent className="space-y-3 text-sm text-on-surface-variant">
- {store.contact_email ? (
- <div className="flex items-center gap-2">
- <Mail className="w-4 h-4" />
- <a href={`mailto:${store.contact_email}`} className="hover:underline">
- {store.contact_email}
- </a>
- </div>
- ) : (
- <div className="flex items-center gap-2 text-outline">
- <Mail className="w-4 h-4" />
- <span>{t('store.noEmail')}</span>
+ {gridStats.cheapest !== null && (
+ <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-4 py-2 text-[13px] font-bold text-[color:var(--color-on-surface)] dark:bg-[color:var(--color-surface-container)]">
+ <span className="text-[color:var(--color-on-surface-variant)]">{locale === 'ar' ? 'الأسعار من' : 'Prices from'}</span>
+ <Price amount={gridStats.cheapest} className="text-[14px] font-black" symbolClassName="w-3.5 h-3.5" />
  </div>
  )}
-
- {store.contact_phone ? (
- <div className="flex items-center gap-2">
- <Phone className="w-4 h-4" />
- <a href={`tel:${store.contact_phone}`} className="hover:underline">
- {store.contact_phone}
- </a>
  </div>
- ) : (
- <div className="flex items-center gap-2 text-outline">
- <Phone className="w-4 h-4" />
- <span>{t('store.noPhone')}</span>
- </div>
- )}
-
- <div className="flex items-center gap-2 text-outline">
- <MapPin className="w-4 h-4" />
- <span>{t('store.contactNote')}</span>
- </div>
- </CardContent>
- </Card>
-
- <Card className="h-full">
- <CardHeader>
- <CardTitle>{t('store.storePolicies')}</CardTitle>
- </CardHeader>
- <CardContent>
- <Accordion type="single" collapsible className="w-full">
- {deliveryInfo && (
- <AccordionItem value="delivery">
- <AccordionTrigger className="text-label-lg flex items-center gap-2">
- <Package className="w-4 h-4" />
- {t('store.deliveryInfo')}
- </AccordionTrigger>
- <AccordionContent>
- <p className="text-sm text-on-surface-variant whitespace-pre-line pt-2">
- {deliveryInfo}
- </p>
- </AccordionContent>
- </AccordionItem>
- )}
- {returnPolicy && (
- <AccordionItem value="return">
- <AccordionTrigger className="text-label-lg flex items-center gap-2">
- <ShieldCheck className="w-4 h-4" />
- {t('store.returnPolicy')}
- </AccordionTrigger>
- <AccordionContent>
- <p className="text-sm text-on-surface-variant whitespace-pre-line pt-2">
- {returnPolicy}
- </p>
- </AccordionContent>
- </AccordionItem>
- )}
- {warrantyInfo && (
- <AccordionItem value="warranty">
- <AccordionTrigger className="text-label-lg flex items-center gap-2">
- <Store className="w-4 h-4" />
- {t('store.warrantyInfo')}
- </AccordionTrigger>
- <AccordionContent>
- <p className="text-sm text-on-surface-variant whitespace-pre-line pt-2">
- {warrantyInfo}
- </p>
- </AccordionContent>
- </AccordionItem>
- )}
- {!deliveryInfo && !returnPolicy && !warrantyInfo && (
- <p className="text-sm text-on-surface-variant text-center py-4">
- {t('store.noPoliciesAvailable') || (locale === 'ar' ? 'لا توجد سياسات متاحة' : 'No policies available')}
- </p>
- )}
- </Accordion>
- </CardContent>
- </Card>
- </div>
- */}
+ </section>
 
  {/* Coupons */}
  {coupons.length > 0 && (
- <section className="mb-12">
+ <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-5 dark:bg-[color:var(--color-surface-container-low)]">
  <div className="flex items-center gap-2 mb-6">
  <Ticket className="h-5 w-5 text-tertiary-600 dark:text-tertiary-400" />
  <h2 className="text-headline-md text-on-surface">{t('coupons.availableCoupons')}</h2>
@@ -943,13 +903,16 @@ export default function StoreDetailClient() {
  )}
 
  {/* Products */}
- <section className="mb-12" ref={productsTopRef}>
- <div className="flex flex-col gap-4 mb-4">
+ <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-4 dark:bg-[color:var(--color-surface-container-low)]" ref={productsTopRef}>
+ <div className="flex flex-col gap-4 mb-5">
  {/* Title row — left: heading + subtitle; right: result meta + Surprise me */}
  <div className="flex flex-wrap items-start justify-between gap-3">
  <div className="min-w-0">
- <h2 className="text-headline-md text-on-surface">{t('store.products')}</h2>
- <p className="text-on-surface-variant">{t('store.productsSubtitle')}</p>
+ <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-primary)]">
+ {locale === 'ar' ? 'كتالوج المتجر' : 'Store catalog'}
+ </p>
+ <h2 className="mt-2 text-[28px] font-black text-on-surface">{t('store.products')}</h2>
+ <p className="mt-1 text-on-surface-variant">{t('store.productsSubtitle')}</p>
  </div>
  <div className="flex flex-wrap items-center gap-2">
  <Badge variant="outline" className="text-sm">
@@ -994,7 +957,8 @@ export default function StoreDetailClient() {
  </div>
 
  {/* Search + sort + in-stock toggle */}
- <div className="flex flex-col gap-2 md:flex-row md:items-center">
+ <div className="rounded-[1.35rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)] p-3 dark:bg-[color:var(--color-surface)]">
+ <div className="flex flex-col gap-3 md:flex-row md:items-center">
  <div className="relative flex-1">
  <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
  <Input
@@ -1007,11 +971,11 @@ export default function StoreDetailClient() {
  : `Search ${storeName} products...`
  }
  aria-label={locale === 'ar' ? 'ابحث في المنتجات' : 'Search products'}
- className="h-10 ps-9 border-2 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] focus-visible:border-[var(--brand-green)]"
+ className="h-12 rounded-full ps-9 border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] font-semibold focus-visible:border-[var(--brand-green)] dark:bg-[color:var(--color-surface-container-low)]"
  />
  </div>
  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
- <SelectTrigger className="h-10 w-full md:w-[200px] border-2 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]">
+ <SelectTrigger className="h-12 w-full rounded-full md:w-[210px] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] font-semibold dark:bg-[color:var(--color-surface-container-low)]">
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
@@ -1036,10 +1000,10 @@ export default function StoreDetailClient() {
  type="button"
  onClick={() => setInStockOnly((v) => !v)}
  aria-pressed={inStockOnly}
- className={`inline-flex h-10 items-center gap-2 rounded-md border-2 px-3 text-sm font-medium transition-colors ${
+ className={`inline-flex h-12 items-center gap-2 rounded-full border px-4 text-sm font-bold transition-colors ${
  inStockOnly
  ? 'border-[var(--brand-green)] bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]'
- : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] text-on-surface hover:border-[var(--brand-green)]'
+ : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] text-on-surface hover:border-[var(--brand-green)] dark:bg-[color:var(--color-surface-container-low)]'
  }`}
  >
  <span
@@ -1055,7 +1019,7 @@ export default function StoreDetailClient() {
  variant="outline"
  size="sm"
  onClick={handleReset}
- className="h-10 gap-1 border-2 border-[color:var(--color-outline-variant)]"
+ className="h-12 rounded-full gap-1 border border-[color:var(--color-outline-variant)]"
  title={locale === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset filters'}
  >
  <RotateCcw className="h-4 w-4" />
@@ -1066,7 +1030,7 @@ export default function StoreDetailClient() {
 
  {/* Category chips — hidden when there's only one category (or none) in the catalog */}
  {categoriesInCatalog.length > 1 && (
- <div className="flex flex-wrap gap-2">
+ <div className="mt-3 flex flex-wrap gap-2">
  <button
  type="button"
  onClick={() => setCategoryFilter('all')}
@@ -1097,9 +1061,10 @@ export default function StoreDetailClient() {
  </div>
  )}
  </div>
+ </div>
 
  {productsLoading ? (
- <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+	 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
  {Array.from({ length: STORE_PRODUCTS_PAGE_SIZE }).map((_, i) => (
  <div
  key={i}
@@ -1139,7 +1104,7 @@ export default function StoreDetailClient() {
  />
  ) : (
  <>
- <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+	 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
  {products.map((product) => (
  <ProductCard
  key={product.id}
@@ -1249,8 +1214,5 @@ export default function StoreDetailClient() {
  </DialogContent>
  </Dialog>
  </div>
- </div>
  );
 }
-
-

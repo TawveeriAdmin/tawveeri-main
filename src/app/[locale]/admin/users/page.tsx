@@ -53,6 +53,7 @@ import {
   MoreHorizontal,
   SlidersHorizontal,
   Columns3,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/lib/database/types';
@@ -81,6 +82,13 @@ type SortField = 'full_name' | 'email' | 'role' | 'is_active' | 'created_at';
 type SortDir = 'asc' | 'desc';
 type ColumnKey = 'name' | 'email' | 'phone' | 'role' | 'status' | 'joinedDate' | 'actions';
 
+function getErrorField(error: unknown, field: 'code' | 'message' | 'details' | 'hint' | 'status') {
+  if (typeof error === 'object' && error !== null && field in error) {
+    return (error as Record<string, unknown>)[field];
+  }
+  return undefined;
+}
+
 // ─── Sub-components ───────────────────────────────────────
 
 function StatsCard({
@@ -100,25 +108,27 @@ function StatsCard({
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 rounded-xl border p-4 text-start transition-all',
+        'group flex min-h-[104px] items-center gap-3 rounded-2xl border p-4 text-start transition-all duration-200 active:scale-[0.99]',
         active
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-          : 'border-outline-variant bg-surface-container-lowest hover:border-primary/40'
+          ? 'border-[#55b295] bg-[#eaf7f2] ring-1 ring-[#55b295]/25 dark:border-[#55b295] dark:bg-[#17382e] dark:ring-[#55b295]/20'
+          : 'border-[#d7ece5] bg-white hover:border-[#9fd9c9] dark:border-[#263b33] dark:bg-[#141c18] dark:hover:border-[#3f6657]'
       )}
     >
       <div
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-          active ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary'
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-colors',
+          active
+            ? 'bg-[#55b295] text-white'
+            : 'bg-[#eaf7f2] text-[#1f6f59] dark:bg-[#1d2a23] dark:text-[#9fe4d0]'
         )}
       >
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="tabular-nums text-xl font-bold text-on-surface">
+        <p className="font-mono text-2xl font-black tabular-nums text-on-surface dark:text-white">
           {value}
         </p>
-        <p className="truncate text-xs text-on-surface-variant">{title}</p>
+        <p className="truncate text-xs font-bold text-on-surface-variant dark:text-white/55">{title}</p>
       </div>
     </button>
   );
@@ -126,10 +136,10 @@ function StatsCard({
 
 function RoleBadge({ role, t }: { role: UserRole; t: (k: string) => string }) {
   const cfg: Record<string, string> = {
-    admin: 'bg-error/10 text-error',
-    customer: 'bg-primary/10 text-primary',
-    store: 'bg-tertiary/10 text-tertiary',
-    guest: 'bg-on-surface/10 text-on-surface-variant',
+    admin: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+    customer: 'bg-[#eaf7f2] text-[#1f6f59] dark:bg-[#17382e] dark:text-[#9fe4d0]',
+    store: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    guest: 'bg-slate-100 text-slate-600 dark:bg-white/8 dark:text-white/60',
   };
   const labels: Record<string, string> = {
     admin: t('admin.users.admin'),
@@ -140,7 +150,7 @@ function RoleBadge({ role, t }: { role: UserRole; t: (k: string) => string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black',
         cfg[role] || cfg.guest
       )}
     >
@@ -153,16 +163,16 @@ function StatusBadge({ active, t }: { active: boolean; t: (k: string) => string 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black',
         active
-          ? 'bg-success/10 text-success'
-          : 'bg-on-surface/10 text-on-surface-variant'
+          ? 'bg-[#eaf7f2] text-[#1f6f59] dark:bg-[#17382e] dark:text-[#9fe4d0]'
+          : 'bg-slate-100 text-slate-600 dark:bg-white/8 dark:text-white/60'
       )}
     >
       <span
         className={cn(
           'h-1.5 w-1.5 rounded-full',
-          active ? 'bg-success' : 'bg-on-surface-variant'
+          active ? 'bg-[#55b295]' : 'bg-slate-400'
         )}
       />
       {active ? t('admin.users.active') : t('admin.users.inactive')}
@@ -284,19 +294,19 @@ export default function AdminUsersPage({
           message: error.message,
           details: error.details,
           hint: error.hint,
-          status: (error as any).status,
+          status: getErrorField(error, 'status'),
         });
         return;
       }
       setUsers((data as User[]) || []);
       setTotal(count || 0);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Error loading users:', {
-        code: e?.code,
-        message: e?.message,
-        details: e?.details,
-        hint: e?.hint,
-        status: e?.status,
+        code: getErrorField(e, 'code'),
+        message: getErrorField(e, 'message'),
+        details: getErrorField(e, 'details'),
+        hint: getErrorField(e, 'hint'),
+        status: getErrorField(e, 'status'),
       });
     } finally {
       setLoading(false);
@@ -378,10 +388,55 @@ export default function AdminUsersPage({
   );
 
   const hasActiveFilter = roleFilter !== 'all' || statusFilter !== 'all' || searchQuery.trim() !== '';
+  const isRTL = locale === 'ar';
+  const activeFilterLabel = roleFilter !== 'all'
+    ? t(`admin.users.${roleFilter}`)
+    : statusFilter !== 'all'
+      ? t(`admin.users.${statusFilter}`)
+      : t('admin.users.allRoles');
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+  };
 
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      <section className="rounded-[1.35rem] border border-[#d7ece5] bg-white p-5 dark:border-[#263b33] dark:bg-[#141c18]">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#1f6f59] dark:text-[#9fe4d0]">
+              {isRTL ? 'إدارة الحسابات' : 'Account operations'}
+            </p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-on-surface md:text-3xl dark:text-white">
+              {t('admin.users.title')}
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-on-surface-variant dark:text-white/60">
+              {isRTL
+                ? 'راجع المستخدمين، غيّر الأدوار، وتابع حالة الحسابات من جدول واحد منظم.'
+                : 'Review users, adjust roles, and track account status from one organized table.'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-[#d7ece5] bg-[#f8fcfa] px-3 py-1.5 text-xs font-black text-on-surface-variant dark:border-[#263b33] dark:bg-[#101713] dark:text-white/60">
+              {formatNumber(total, locale)} {isRTL ? 'نتيجة' : 'results'}
+            </span>
+            {hasActiveFilter && (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe7dc] bg-[#eaf7f2] px-3 py-1.5 text-xs font-black text-[#1f6f59] transition-colors hover:border-[#55b295] dark:border-[#315145] dark:bg-[#17382e] dark:text-[#9fe4d0]"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span>{activeFilterLabel}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatsCard
@@ -429,18 +484,18 @@ export default function AdminUsersPage({
       </div>
 
       {/* ── DataTable Card ── */}
-      <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
+      <div className="overflow-hidden rounded-[1.35rem] border border-[#d7ece5] bg-white dark:border-[#263b33] dark:bg-[#141c18]">
 
         {/* ── Toolbar ── */}
-        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-[#e1f0eb] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#263b33]">
           {/* Search */}
           <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant dark:text-white/45" />
             <Input
               placeholder={t('admin.users.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="ps-9"
+              className="h-11 rounded-2xl border-[#d7ece5] bg-[#f8fcfa] ps-9 font-semibold dark:border-[#263b33] dark:bg-[#101713] dark:text-white dark:placeholder:text-white/35"
             />
           </div>
 
@@ -449,12 +504,19 @@ export default function AdminUsersPage({
             {/* Filters dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={cn('gap-1.5', hasActiveFilter && 'border-primary text-primary')}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-11 gap-1.5 rounded-2xl border-[#d7ece5] bg-white px-4 font-black dark:border-[#263b33] dark:bg-[#101713] dark:text-white',
+                    hasActiveFilter && 'border-[#55b295] text-[#1f6f59] dark:border-[#55b295] dark:text-[#9fe4d0]'
+                  )}
+                >
                   <SlidersHorizontal className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('admin.users.role')}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{t('admin.users.role')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {(['all', 'admin', 'customer', 'store', 'guest'] as const).map((r) => (
@@ -484,12 +546,12 @@ export default function AdminUsersPage({
             {/* Columns dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="outline" size="sm" className="h-11 gap-1.5 rounded-2xl border-[#d7ece5] bg-white px-4 font-black dark:border-[#263b33] dark:bg-[#101713] dark:text-white">
                   <Columns3 className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('admin.users.columns')}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
                 {(Object.keys(visibleCols) as ColumnKey[]).map((col) => (
                   <DropdownMenuCheckboxItem
                     key={col}
@@ -509,9 +571,9 @@ export default function AdminUsersPage({
         {/* ── Table ── */}
         {loading ? (
           <div className="space-y-px">
-            <div className="h-11 bg-surface-container-low" />
+            <div className="h-11 bg-[#f8fcfa] dark:bg-[#101713]" />
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 border-t border-outline-variant px-4 py-3">
+              <div key={i} className="flex items-center gap-4 border-t border-[#e1f0eb] px-4 py-3 dark:border-[#263b33]">
                 <Skeleton className="h-5 w-5 rounded" />
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1 space-y-1.5">
@@ -532,7 +594,7 @@ export default function AdminUsersPage({
             <div className="hidden md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+                  <TableRow className="border-[#e1f0eb] bg-[#f8fcfa] hover:bg-[#f8fcfa] dark:border-[#263b33] dark:bg-[#101713] dark:hover:bg-[#101713]">
                     <TableHead className="w-12">
                       <Checkbox
                         checked={users.length > 0 && selected.size === users.length}
@@ -542,7 +604,7 @@ export default function AdminUsersPage({
                     </TableHead>
                     {visibleCols.name && (
                       <TableHead>
-                        <button onClick={() => toggleSort('full_name')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('full_name')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.name}
                           <SortIcon field="full_name" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -550,20 +612,20 @@ export default function AdminUsersPage({
                     )}
                     {visibleCols.email && (
                       <TableHead>
-                        <button onClick={() => toggleSort('email')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('email')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.email}
                           <SortIcon field="email" sortField={sortField} sortDir={sortDir} />
                         </button>
                       </TableHead>
                     )}
                     {visibleCols.phone && (
-                      <TableHead className="hidden lg:table-cell">
+                      <TableHead className="hidden font-black text-on-surface-variant dark:text-white/60 lg:table-cell">
                         {colLabels.phone}
                       </TableHead>
                     )}
                     {visibleCols.role && (
                       <TableHead>
-                        <button onClick={() => toggleSort('role')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('role')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.role}
                           <SortIcon field="role" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -571,7 +633,7 @@ export default function AdminUsersPage({
                     )}
                     {visibleCols.status && (
                       <TableHead>
-                        <button onClick={() => toggleSort('is_active')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('is_active')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.status}
                           <SortIcon field="is_active" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -579,14 +641,14 @@ export default function AdminUsersPage({
                     )}
                     {visibleCols.joinedDate && (
                       <TableHead className="hidden xl:table-cell">
-                        <button onClick={() => toggleSort('created_at')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('created_at')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.joinedDate}
                           <SortIcon field="created_at" sortField={sortField} sortDir={sortDir} />
                         </button>
                       </TableHead>
                     )}
                     {visibleCols.actions && (
-                      <TableHead className="w-16 text-center">
+                      <TableHead className="w-16 text-center font-black text-on-surface-variant dark:text-white/60">
                         {colLabels.actions}
                       </TableHead>
                     )}
@@ -597,7 +659,7 @@ export default function AdminUsersPage({
                     <TableRow>
                       <TableCell
                         colSpan={Object.values(visibleCols).filter(Boolean).length + 1}
-                        className="py-20 text-center text-on-surface-variant"
+                        className="py-20 text-center text-on-surface-variant dark:text-white/60"
                       >
                         {t('admin.dashboard.noData')}
                       </TableCell>
@@ -607,6 +669,7 @@ export default function AdminUsersPage({
                       <TableRow
                         key={user.id}
                         data-state={selected.has(user.id) ? 'selected' : undefined}
+                        className="border-[#e1f0eb] transition-colors hover:bg-[#f8fcfa] data-[state=selected]:bg-[#eaf7f2] dark:border-[#263b33] dark:hover:bg-[#101713] dark:data-[state=selected]:bg-[#17382e]"
                       >
                         <TableCell className="w-12">
                           <Checkbox
@@ -618,22 +681,27 @@ export default function AdminUsersPage({
                         {visibleCols.name && (
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#eaf7f2] text-xs font-black text-[#1f6f59] dark:bg-[#17382e] dark:text-[#9fe4d0]">
                                 {(user.full_name || user.email || '?').substring(0, 2).toUpperCase()}
                               </div>
-                              <span className="truncate text-sm font-medium text-on-surface">
-                                {user.full_name || '-'}
-                              </span>
+                              <div className="min-w-0">
+                                <span className="block truncate text-sm font-black text-on-surface dark:text-white">
+                                  {user.full_name || '-'}
+                                </span>
+                                <span className="block truncate font-mono text-[11px] text-on-surface-variant dark:text-white/45">
+                                  {user.id.slice(0, 8)}
+                                </span>
+                              </div>
                             </div>
                           </TableCell>
                         )}
                         {visibleCols.email && (
-                          <TableCell className="text-sm text-on-surface-variant">
+                          <TableCell className="text-sm font-semibold text-on-surface-variant dark:text-white/60" dir="ltr">
                             {user.email || '-'}
                           </TableCell>
                         )}
                         {visibleCols.phone && (
-                          <TableCell className="hidden text-sm text-on-surface-variant lg:table-cell">
+                          <TableCell className="hidden text-sm text-on-surface-variant dark:text-white/55 lg:table-cell" dir="ltr">
                             {user.phone || '-'}
                           </TableCell>
                         )}
@@ -648,7 +716,7 @@ export default function AdminUsersPage({
                           </TableCell>
                         )}
                         {visibleCols.joinedDate && (
-                          <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
+                          <TableCell className="hidden text-sm font-semibold text-on-surface-variant dark:text-white/55 xl:table-cell">
                             {formatDate(user.created_at, locale)}
                           </TableCell>
                         )}
@@ -656,7 +724,7 @@ export default function AdminUsersPage({
                           <TableCell className="w-16 text-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl p-0 dark:text-white/70 dark:hover:bg-white/8">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -681,28 +749,28 @@ export default function AdminUsersPage({
             </div>
 
             {/* Mobile cards */}
-            <div className="divide-y divide-outline-variant md:hidden">
+            <div className="divide-y divide-[#e1f0eb] dark:divide-[#263b33] md:hidden">
               {users.length === 0 ? (
-                <div className="py-20 text-center text-on-surface-variant">
+                <div className="py-20 text-center text-on-surface-variant dark:text-white/60">
                   {t('admin.dashboard.noData')}
                 </div>
               ) : (
                 users.map((user) => (
                   <div key={user.id} className="flex items-start gap-3 p-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf7f2] text-xs font-black text-[#1f6f59] dark:bg-[#17382e] dark:text-[#9fe4d0]">
                       {(user.full_name || user.email || '?').substring(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-on-surface">
+                      <p className="truncate text-sm font-black text-on-surface dark:text-white">
                         {user.full_name || '-'}
                       </p>
-                      <p className="truncate text-xs text-on-surface-variant">
+                      <p className="truncate text-xs text-on-surface-variant dark:text-white/55" dir="ltr">
                         {user.email || user.phone || '-'}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <RoleBadge role={user.role} t={t} />
                         <StatusBadge active={user.is_active} t={t} />
-                        <span className="text-xs text-on-surface-variant">
+                        <span className="text-xs font-semibold text-on-surface-variant dark:text-white/50">
                           {new Date(user.created_at).toLocaleDateString(
                             locale === 'ar' ? 'ar-SA' : 'en-US',
                             { year: 'numeric', month: 'short', day: 'numeric' }
@@ -712,7 +780,7 @@ export default function AdminUsersPage({
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 shrink-0 p-0">
+                        <Button variant="ghost" size="sm" className="h-9 w-9 shrink-0 rounded-xl p-0 dark:text-white/70 dark:hover:bg-white/8">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -735,9 +803,9 @@ export default function AdminUsersPage({
         )}
 
         {/* ── Footer: Rows per page + Pagination ── */}
-        <div className="flex flex-col gap-3 border-t border-outline-variant px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-[#e1f0eb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-[#263b33]">
           {/* Rows per page */}
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <div className="flex items-center gap-2 text-sm font-semibold text-on-surface-variant dark:text-white/60">
             <span>{t('admin.users.rowsPerPage')}</span>
             <Select value={String(rowsPerPage)} onValueChange={(v) => setRowsPerPage(Number(v))}>
               <SelectTrigger className="h-8 w-[70px]">
@@ -753,7 +821,7 @@ export default function AdminUsersPage({
 
           {/* Info + controls */}
           <div className="flex items-center gap-4">
-            <span className="text-sm tabular-nums text-on-surface-variant">
+            <span className="font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60">
               {total === 0
                 ? t('admin.dashboard.noData')
                 : `${showFrom}-${showTo} / ${total}`}
@@ -779,7 +847,7 @@ export default function AdminUsersPage({
               >
                 <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
               </Button>
-              <span className="min-w-[4rem] text-center text-sm tabular-nums text-on-surface-variant">
+              <span className="min-w-[4rem] text-center font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60">
                 {page} / {totalPages}
               </span>
               <Button

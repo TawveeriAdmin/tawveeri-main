@@ -1,23 +1,37 @@
-/**
- * Per-store affiliate parameters, keyed by the `stores.slug` value.
- *
- * To update a code without a deploy we'd need a `stores.affiliate_config`
- * JSONB column + admin UI; that's deferred. For now edits here + redeploy.
- *
- * If Noon confirms a different query-param name for their partner program
- * (`aff_code` is an educated guess — the client supplied the value `DNC160`
- * without a param name), update `noon.param` and redeploy.
- */
-
 export interface AffiliateParam {
+  enabled?: boolean;
   param: string;
   value: string;
 }
 
-export const STORE_AFFILIATE_CONFIG: Record<string, AffiliateParam> = {
+export type AffiliateConfig = AffiliateParam | null;
+
+export const DEFAULT_STORE_AFFILIATE_CONFIG: Record<string, AffiliateParam> = {
   amazon: { param: 'tag', value: 'tawveeri-21' },
   noon: { param: 'aff_code', value: 'DNC160' },
 };
+
+export function normalizeAffiliateConfig(input: unknown): AffiliateConfig {
+  if (!input || typeof input !== 'object') return null;
+
+  const raw = input as Partial<AffiliateParam>;
+  const param = typeof raw.param === 'string' ? raw.param.trim() : '';
+  const value = typeof raw.value === 'string' ? raw.value.trim() : '';
+  const enabled = typeof raw.enabled === 'boolean' ? raw.enabled : true;
+
+  if (!param || !value) return null;
+  return { enabled, param, value };
+}
+
+export function getAffiliateConfig(
+  storeSlug: string | null | undefined,
+  affiliateConfig?: unknown,
+): AffiliateConfig {
+  const configured = normalizeAffiliateConfig(affiliateConfig);
+  if (configured) return configured;
+  if (!storeSlug) return null;
+  return DEFAULT_STORE_AFFILIATE_CONFIG[storeSlug] || null;
+}
 
 /**
  * Append the store's affiliate parameter to a product URL. No-op when the
@@ -27,12 +41,12 @@ export const STORE_AFFILIATE_CONFIG: Record<string, AffiliateParam> = {
 export function applyAffiliateTag(
   baseUrl: string | null | undefined,
   storeSlug: string | null | undefined,
+  affiliateConfig?: unknown,
 ): string | null {
   if (!baseUrl) return null;
-  if (!storeSlug) return baseUrl;
 
-  const config = STORE_AFFILIATE_CONFIG[storeSlug];
-  if (!config) return baseUrl;
+  const config = getAffiliateConfig(storeSlug, affiliateConfig);
+  if (!config || config.enabled === false) return baseUrl;
 
   try {
     const url = new URL(baseUrl);

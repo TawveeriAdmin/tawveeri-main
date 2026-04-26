@@ -19,7 +19,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Clock, Search, Sparkles, Store, Tag, Ticket, TimerReset } from 'lucide-react';
+import { AlertCircle, Clock, Percent, RotateCcw, Search, SlidersHorizontal, Sparkles, Store, Tag, Ticket } from 'lucide-react';
 import type { Database } from '@/lib/database/types';
 
 type CouponRow = Database['public']['Tables']['coupons']['Row'];
@@ -54,6 +54,7 @@ export default function CouponsClient() {
   const params = useParams();
   const locale = (params?.locale as string) || 'ar';
   const t = useTranslations();
+  const isRTL = locale === 'ar';
 
   const [coupons, setCoupons] = useState<CouponWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,154 +199,161 @@ export default function CouponsClient() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Compact header: title + search + filters + stats all in one card */}
-      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-emerald-500/15 via-white to-teal-500/10 p-4 shadow-sm dark:border-gray-800 dark:from-emerald-500/20 dark:via-gray-900 dark:to-teal-500/20 md:p-5">
-        <div className="pointer-events-none absolute -end-16 -top-14 h-36 w-36 rounded-full bg-emerald-500/20 blur-3xl dark:bg-emerald-400/20" />
-
-        <div className="relative z-10 space-y-4">
-          {/* Title row */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 md:text-2xl">
-                  {t('coupons.title')}
-                </h1>
-                <Badge
-                  variant="outline"
-                  className="border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                >
-                  <Sparkles className="me-1 h-3 w-3" />
-                  {t('coupons.featured')}
-                </Badge>
-              </div>
-              <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
-                {t('coupons.subtitle')}
-              </p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <section className="overflow-hidden rounded-[2rem] border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
+        <div className="grid gap-6 bg-[radial-gradient(circle_at_top_left,rgba(45,178,139,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,1),rgba(244,249,247,1))] p-5 dark:bg-[radial-gradient(circle_at_top_left,rgba(45,178,139,0.22),transparent_34%),linear-gradient(135deg,rgba(15,23,42,1),rgba(3,7,18,1))] md:p-7 xl:grid-cols-[minmax(0,1fr)_430px]">
+          <div className="min-w-0">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[var(--brand-green-dark)] shadow-sm dark:bg-gray-900/80 dark:text-emerald-300">
+              <Sparkles className="h-3.5 w-3.5" />
+              {t('coupons.featured')}
             </div>
-            {/* Inline stats */}
-            <div className="flex items-center gap-3 text-sm">
-              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
-                <Ticket className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : activeCouponsCount}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('coupons.totalActive')}</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 dark:border-gray-700 dark:bg-gray-900/75">
-                <Tag className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : highestDiscount > 0 ? `${highestDiscount}%` : '—'}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('coupons.highestDiscount')}</span>
-              </div>
-              <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1.5 sm:flex dark:border-gray-700 dark:bg-gray-900/75">
-                <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                <span className="font-bold tabular-nums text-gray-900 dark:text-gray-100">
-                  {loading ? '…' : expiringSoonCount}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('coupons.expiringSoon')}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Search + filters row */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <h1 className="max-w-3xl text-3xl font-bold tracking-normal text-gray-950 dark:text-white md:text-4xl">
+              {t('coupons.title')}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+              {t('coupons.subtitle')}
+            </p>
+            <form onSubmit={handleSearchSubmit} className="mt-6 flex max-w-2xl flex-col gap-2 rounded-[1.5rem] border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:flex-row">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <Input
                   type="text"
                   placeholder={t('coupons.searchPlaceholder')}
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  className="h-9 rounded-lg border-emerald-200 bg-white ps-9 dark:border-emerald-800/70 dark:bg-gray-950/70"
+                  className="h-12 rounded-2xl border-0 bg-gray-50 ps-11 shadow-none dark:bg-gray-900"
                 />
               </div>
-              <Button type="submit" size="sm" className="h-9 rounded-lg px-4">
+              <Button type="submit" className="h-12 rounded-2xl px-6">
                 {t('coupons.searchAction')}
               </Button>
             </form>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Select value={storeFilter} onValueChange={setStoreFilter}>
-                <SelectTrigger className="h-9 w-[140px] border-gray-200 dark:border-gray-700">
-                  <Store className="me-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                  <SelectValue placeholder={t('coupons.filterByStore')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('coupons.allStores')}</SelectItem>
-                  {availableStores.map((store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {locale === 'ar' ? store.name_ar : store.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {[
+              {
+                label: t('coupons.totalActive'),
+                value: loading ? '...' : activeCouponsCount.toLocaleString(isRTL ? 'ar-SA' : 'en-US'),
+                icon: Ticket,
+                className: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
+              },
+              {
+                label: t('coupons.highestDiscount'),
+                value: loading ? '...' : highestDiscount > 0 ? `${highestDiscount}%` : '-',
+                icon: Percent,
+                className: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300',
+              },
+              {
+                label: t('coupons.expiringSoon'),
+                value: loading ? '...' : expiringSoonCount.toLocaleString(isRTL ? 'ar-SA' : 'en-US'),
+                icon: Clock,
+                className: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
+              },
+            ].map(({ label, value, icon: Icon, className }) => (
+              <div key={label} className="flex items-center justify-between gap-4 rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/80">
+                <div>
+                  <p className="text-2xl font-bold tabular-nums text-gray-950 dark:text-white">{value}</p>
+                  <p className="mt-1 text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
+                </div>
+                <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${className}`}>
+                  <Icon className="h-5 w-5" />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-9 w-[130px] border-gray-200 dark:border-gray-700">
-                  <Tag className="me-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                  <SelectValue placeholder={t('coupons.filterByType')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('coupons.allTypes')}</SelectItem>
-                  <SelectItem value="percentage">{t('coupons.percentage')}</SelectItem>
-                  <SelectItem value="fixed_amount">{t('coupons.fixedAmount')}</SelectItem>
-                  <SelectItem value="free_shipping">{t('coupons.freeShipping')}</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                <SelectTrigger className="h-9 w-[140px] border-gray-200 dark:border-gray-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">{t('coupons.sortNewest')}</SelectItem>
-                  <SelectItem value="discount">{t('coupons.sortHighestDiscount')}</SelectItem>
-                  <SelectItem value="expiring">{t('coupons.sortExpiringSoon')}</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {(storeFilter !== 'all' || typeFilter !== 'all' || searchQuery) && (
-                <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2">
-                  <TimerReset className="h-4 w-4" />
-                </Button>
-              )}
+      <section className="rounded-[1.75rem] border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950 md:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <SlidersHorizontal className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold text-gray-950 dark:text-white">{t('coupons.availableCoupons')}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('coupons.searchHelper')}</p>
             </div>
           </div>
 
-          {/* Active filters / results count */}
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
-              {filteredCoupons.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}{' '}
-              {t('coupons.resultsCount')}
-            </span>
-            {searchQuery && (
-              <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs">
-                &ldquo;{searchQuery}&rdquo;
-                <button
-                  onClick={() => { setSearchInput(''); setSearchQuery(''); }}
-                  className="ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
+          <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:items-center">
+            <Select value={storeFilter} onValueChange={setStoreFilter}>
+              <SelectTrigger className="h-11 rounded-2xl border-gray-200 dark:border-gray-700 lg:w-[180px]">
+                <Store className="me-1.5 h-4 w-4 shrink-0 text-gray-400" />
+                <SelectValue placeholder={t('coupons.filterByStore')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('coupons.allStores')}</SelectItem>
+                {availableStores.map((store) => (
+                  <SelectItem key={store.id} value={store.id}>
+                    {isRTL ? store.name_ar : store.name_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-11 rounded-2xl border-gray-200 dark:border-gray-700 lg:w-[170px]">
+                <Tag className="me-1.5 h-4 w-4 shrink-0 text-gray-400" />
+                <SelectValue placeholder={t('coupons.filterByType')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('coupons.allTypes')}</SelectItem>
+                <SelectItem value="percentage">{t('coupons.percentage')}</SelectItem>
+                <SelectItem value="fixed_amount">{t('coupons.fixedAmount')}</SelectItem>
+                <SelectItem value="free_shipping">{t('coupons.freeShipping')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="h-11 rounded-2xl border-gray-200 dark:border-gray-700 lg:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">{t('coupons.sortNewest')}</SelectItem>
+                <SelectItem value="discount">{t('coupons.sortHighestDiscount')}</SelectItem>
+                <SelectItem value="expiring">{t('coupons.sortExpiringSoon')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="rounded-full bg-gray-50 px-3 py-1.5 font-medium text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+            {filteredCoupons.length.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} {t('coupons.resultsCount')}
+          </span>
+          {searchQuery && (
+            <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+              &ldquo;{searchQuery}&rdquo;
+              <button
+                type="button"
+                onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+                className="ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          {(storeFilter !== 'all' || typeFilter !== 'all' || searchQuery) && (
+            <Button variant="ghost" size="sm" onClick={handleReset} className="h-8 rounded-full px-3">
+              <RotateCcw className="me-1.5 h-3.5 w-3.5" />
+              {t('coupons.resetFilters')}
+            </Button>
+          )}
         </div>
       </section>
 
       {/* Loading state */}
       {loading && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+            <div key={index} className="space-y-3 rounded-3xl border border-gray-200 p-4 dark:border-gray-700">
               <div className="flex items-center gap-2">
-                <Skeleton className="h-7 w-7 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-2xl" />
                 <Skeleton className="h-4 w-24" />
               </div>
-              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
               <Skeleton className="h-4 w-16" />
             </div>
           ))}
@@ -365,13 +373,13 @@ export default function CouponsClient() {
         <EmptyState
           icon={<Ticket className="h-12 w-12" />}
           title={t('coupons.noCoupons')}
-          description={searchQuery ? t('coupons.noCouponsDesc') : undefined}
+          description={searchQuery ? t('coupons.noCouponsDesc') : t('coupons.noCouponsDescription')}
         />
       )}
 
       {/* Coupon cards grid */}
       {!loading && !error && filteredCoupons.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredCoupons.map((coupon) => {
             const storeName = coupon.stores
               ? locale === 'ar'
@@ -387,27 +395,32 @@ export default function CouponsClient() {
             return (
               <div
                 key={coupon.id}
-                className="overflow-hidden rounded-xl border border-gray-200 bg-white/90 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/75"
+                className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[var(--brand-green)]/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-950"
               >
-                <div className="space-y-2.5">
+                <div className="space-y-4">
                   {/* Store header */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {coupon.stores?.logo_url ? (
                       <Image
                         src={coupon.stores.logo_url}
                         alt={storeName}
-                        width={28}
-                        height={28}
-                        className="h-7 w-7 rounded-full border border-gray-200 object-contain dark:border-gray-700"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-2xl border border-gray-200 object-contain p-1 dark:border-gray-700"
                       />
                     ) : (
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                        <Store className="h-3.5 w-3.5 text-gray-400" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+                        <Store className="h-4 w-4 text-gray-400" />
                       </div>
                     )}
-                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {storeName}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-gray-950 dark:text-white">
+                        {storeName}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {coupon.product_id && productName ? t('coupons.productSpecific') : t('coupons.storeWide')}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Coupon badge (expanded) */}

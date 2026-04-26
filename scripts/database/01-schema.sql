@@ -97,6 +97,7 @@ CREATE TABLE stores (
 
     -- Monetization
     commission_rate DECIMAL(5,2) DEFAULT 0.00, -- Percentage
+    affiliate_config JSONB DEFAULT NULL,
     is_premium BOOLEAN DEFAULT FALSE,
     is_featured BOOLEAN DEFAULT FALSE,
 

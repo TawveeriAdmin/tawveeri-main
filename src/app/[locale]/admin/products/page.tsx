@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductIdentity } from '@/components/products/shared-product-card';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
@@ -62,6 +63,7 @@ import {
   MoreHorizontal,
   SlidersHorizontal,
   Columns3,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -109,25 +111,27 @@ function StatsCard({
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 rounded-xl border p-4 text-start transition-all',
+        'group flex min-h-[104px] items-center gap-3 rounded-2xl border p-4 text-start transition-all duration-200 active:scale-[0.99]',
         active
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-          : 'border-outline-variant bg-surface-container-lowest hover:border-primary/40'
+          ? 'border-[#55b295] bg-[#eaf7f2] ring-1 ring-[#55b295]/25 dark:border-[#55b295] dark:bg-[#17382e] dark:ring-[#55b295]/20'
+          : 'border-[#d7ece5] bg-white hover:border-[#9fd9c9] dark:border-[#263b33] dark:bg-[#141c18] dark:hover:border-[#3f6657]'
       )}
     >
       <div
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-          active ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary'
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-colors',
+          active
+            ? 'bg-[#55b295] text-white'
+            : 'bg-[#eaf7f2] text-[#1f6f59] dark:bg-[#1d2a23] dark:text-[#9fe4d0]'
         )}
       >
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="tabular-nums text-xl font-bold text-on-surface">
+        <p className="font-mono text-2xl font-black tabular-nums text-on-surface dark:text-white">
           {value}
         </p>
-        <p className="truncate text-xs text-on-surface-variant">{title}</p>
+        <p className="truncate text-xs font-bold text-on-surface-variant dark:text-white/55">{title}</p>
       </div>
     </button>
   );
@@ -135,8 +139,8 @@ function StatsCard({
 
 function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium capitalize text-primary">
-      {category}
+    <span className="inline-flex max-w-[180px] items-center rounded-full bg-[#eaf7f2] px-2.5 py-1 text-xs font-black capitalize text-[#1f6f59] dark:bg-[#17382e] dark:text-[#9fe4d0]">
+      <span className="truncate">{category || '-'}</span>
     </span>
   );
 }
@@ -220,11 +224,14 @@ export default function AdminProductsPage({
         sb.from('products').select('view_count'),
         sb.from('products').select('save_count'),
       ]);
+      const viewRows = (viewsRes.data || []) as Array<{ view_count: number | null }>;
+      const saveRows = (savesRes.data || []) as Array<{ save_count: number | null }>;
+
       setStats({
         total: totalRes.count || 0,
         withDeals: dealsRes.count || 0,
-        totalViews: (viewsRes.data || []).reduce((sum: number, p: any) => sum + (p.view_count || 0), 0),
-        totalSaves: (savesRes.data || []).reduce((sum: number, p: any) => sum + (p.save_count || 0), 0),
+        totalViews: viewRows.reduce((sum, p) => sum + (p.view_count || 0), 0),
+        totalSaves: saveRows.reduce((sum, p) => sum + (p.save_count || 0), 0),
       });
     } catch (e) {
       console.error('Error loading stats:', e);
@@ -238,8 +245,10 @@ export default function AdminProductsPage({
         sb.from('products').select('category'),
         sb.from('products').select('brand'),
       ]);
-      const uniqueCats = Array.from(new Set((catRes.data || []).map((p: any) => p.category).filter(Boolean)));
-      const uniqueBrands = Array.from(new Set((brandRes.data || []).map((p: any) => p.brand).filter(Boolean)));
+      const categoryRows = (catRes.data || []) as Array<{ category: string | null }>;
+      const brandRows = (brandRes.data || []) as Array<{ brand: string | null }>;
+      const uniqueCats = Array.from(new Set(categoryRows.map((p) => p.category).filter((value): value is string => Boolean(value))));
+      const uniqueBrands = Array.from(new Set(brandRows.map((p) => p.brand).filter((value): value is string => Boolean(value))));
       setCategories(uniqueCats.sort());
       setBrands(uniqueBrands.sort());
     } catch (e) {
@@ -274,7 +283,7 @@ export default function AdminProductsPage({
         .range((page - 1) * rowsPerPage, page * rowsPerPage - 1);
 
       if (error) throw error;
-      setProducts((data as Product[]) || []);
+      setProducts((data as unknown as Product[]) || []);
       setTotal(count || 0);
     } catch (e) {
       console.error('Error loading products:', e);
@@ -377,10 +386,54 @@ export default function AdminProductsPage({
   );
 
   const hasActiveFilter = categoryFilter !== 'all' || brandFilter !== 'all' || searchQuery.trim() !== '';
+  const activeFilterLabel = categoryFilter !== 'all'
+    ? categoryFilter
+    : brandFilter !== 'all'
+      ? brandFilter
+      : t('admin.products.allCategories');
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setBrandFilter('all');
+  };
 
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      <section className="rounded-[1.35rem] border border-[#d7ece5] bg-white p-5 dark:border-[#263b33] dark:bg-[#141c18]">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#1f6f59] dark:text-[#9fe4d0]">
+              {isRTL ? 'كتالوج المنتجات' : 'Catalog operations'}
+            </p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-on-surface md:text-3xl dark:text-white">
+              {t('admin.products.title')}
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-on-surface-variant dark:text-white/60">
+              {isRTL
+                ? 'راجع المنتجات، الفئات، العلامات، وحضور المنتج في المتاجر من مساحة واحدة واضحة.'
+                : 'Review products, categories, brands, and store coverage from one focused workspace.'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-[#d7ece5] bg-[#f8fcfa] px-3 py-1.5 text-xs font-black text-on-surface-variant dark:border-[#263b33] dark:bg-[#101713] dark:text-white/60">
+              {formatNumber(total, locale)} {isRTL ? 'نتيجة' : 'results'}
+            </span>
+            {hasActiveFilter && (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe7dc] bg-[#eaf7f2] px-3 py-1.5 text-xs font-black text-[#1f6f59] transition-colors hover:border-[#55b295] dark:border-[#315145] dark:bg-[#17382e] dark:text-[#9fe4d0]"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span className="max-w-[180px] truncate">{activeFilterLabel}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatsCard
@@ -406,18 +459,18 @@ export default function AdminProductsPage({
       </div>
 
       {/* ── DataTable Card ── */}
-      <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
+      <div className="overflow-hidden rounded-[1.35rem] border border-[#d7ece5] bg-white dark:border-[#263b33] dark:bg-[#141c18]">
 
         {/* ── Toolbar ── */}
-        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-[#e1f0eb] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#263b33]">
           {/* Search */}
           <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant dark:text-white/45" />
             <Input
               placeholder={t('admin.products.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="ps-9"
+              className="h-11 rounded-2xl border-[#d7ece5] bg-[#f8fcfa] ps-9 font-semibold dark:border-[#263b33] dark:bg-[#101713] dark:text-white dark:placeholder:text-white/35"
             />
           </div>
 
@@ -426,7 +479,14 @@ export default function AdminProductsPage({
             {/* Filters dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={cn('gap-1.5', hasActiveFilter && 'border-primary text-primary')}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-11 gap-1.5 rounded-2xl border-[#d7ece5] bg-white px-4 font-black dark:border-[#263b33] dark:bg-[#101713] dark:text-white',
+                    hasActiveFilter && 'border-[#55b295] text-[#1f6f59] dark:border-[#55b295] dark:text-[#9fe4d0]'
+                  )}
+                >
                   <SlidersHorizontal className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('admin.products.category')}</span>
                 </Button>
@@ -473,12 +533,12 @@ export default function AdminProductsPage({
             {/* Columns dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="outline" size="sm" className="h-11 gap-1.5 rounded-2xl border-[#d7ece5] bg-white px-4 font-black dark:border-[#263b33] dark:bg-[#101713] dark:text-white">
                   <Columns3 className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('admin.products.columns')}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
                 {(Object.keys(visibleCols) as ColumnKey[]).map((col) => (
                   <DropdownMenuCheckboxItem
                     key={col}
@@ -498,9 +558,9 @@ export default function AdminProductsPage({
         {/* ── Table ── */}
         {loading ? (
           <div className="space-y-px">
-            <div className="h-11 bg-surface-container-low" />
+            <div className="h-11 bg-[#f8fcfa] dark:bg-[#101713]" />
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 border-t border-outline-variant px-4 py-3">
+              <div key={i} className="flex items-center gap-4 border-t border-[#e1f0eb] px-4 py-3 dark:border-[#263b33]">
                 <Skeleton className="h-5 w-5 rounded" />
                 <Skeleton className="h-10 w-10 rounded" />
                 <div className="flex-1 space-y-1.5">
@@ -522,7 +582,7 @@ export default function AdminProductsPage({
             <div className="hidden md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+                  <TableRow className="border-[#e1f0eb] bg-[#f8fcfa] hover:bg-[#f8fcfa] dark:border-[#263b33] dark:bg-[#101713] dark:hover:bg-[#101713]">
                     <TableHead className="w-12">
                       <Checkbox
                         checked={products.length > 0 && selected.size === products.length}
@@ -532,7 +592,7 @@ export default function AdminProductsPage({
                     </TableHead>
                     {visibleCols.name && (
                       <TableHead>
-                        <button onClick={() => toggleSort('name_en')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('name_en')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.name}
                           <SortIcon field="name_en" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -540,7 +600,7 @@ export default function AdminProductsPage({
                     )}
                     {visibleCols.category && (
                       <TableHead>
-                        <button onClick={() => toggleSort('category')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('category')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.category}
                           <SortIcon field="category" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -548,20 +608,20 @@ export default function AdminProductsPage({
                     )}
                     {visibleCols.brand && (
                       <TableHead>
-                        <button onClick={() => toggleSort('brand')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('brand')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.brand}
                           <SortIcon field="brand" sortField={sortField} sortDir={sortDir} />
                         </button>
                       </TableHead>
                     )}
                     {visibleCols.stores && (
-                      <TableHead className="hidden lg:table-cell">
+                      <TableHead className="hidden font-black text-on-surface-variant dark:text-white/60 lg:table-cell">
                         {colLabels.stores}
                       </TableHead>
                     )}
                     {visibleCols.views && (
                       <TableHead className="hidden lg:table-cell">
-                        <button onClick={() => toggleSort('view_count')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('view_count')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.views}
                           <SortIcon field="view_count" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -569,7 +629,7 @@ export default function AdminProductsPage({
                     )}
                     {visibleCols.saves && (
                       <TableHead className="hidden lg:table-cell">
-                        <button onClick={() => toggleSort('save_count')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('save_count')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.saves}
                           <SortIcon field="save_count" sortField={sortField} sortDir={sortDir} />
                         </button>
@@ -577,14 +637,14 @@ export default function AdminProductsPage({
                     )}
                     {visibleCols.createdDate && (
                       <TableHead className="hidden xl:table-cell">
-                        <button onClick={() => toggleSort('created_at')} className="inline-flex items-center gap-1 hover:text-on-surface">
+                        <button onClick={() => toggleSort('created_at')} className="inline-flex items-center gap-1 font-black text-on-surface-variant hover:text-on-surface dark:text-white/60 dark:hover:text-white">
                           {colLabels.createdDate}
                           <SortIcon field="created_at" sortField={sortField} sortDir={sortDir} />
                         </button>
                       </TableHead>
                     )}
                     {visibleCols.actions && (
-                      <TableHead className="w-16 text-center">
+                      <TableHead className="w-16 text-center font-black text-on-surface-variant dark:text-white/60">
                         {colLabels.actions}
                       </TableHead>
                     )}
@@ -595,7 +655,7 @@ export default function AdminProductsPage({
                     <TableRow>
                       <TableCell
                         colSpan={Object.values(visibleCols).filter(Boolean).length + 1}
-                        className="py-20 text-center text-on-surface-variant"
+                        className="py-20 text-center text-on-surface-variant dark:text-white/60"
                       >
                         {t('admin.dashboard.noData')}
                       </TableCell>
@@ -605,6 +665,7 @@ export default function AdminProductsPage({
                       <TableRow
                         key={product.id}
                         data-state={selected.has(product.id) ? 'selected' : undefined}
+                        className="border-[#e1f0eb] transition-colors hover:bg-[#f8fcfa] data-[state=selected]:bg-[#eaf7f2] dark:border-[#263b33] dark:hover:bg-[#101713] dark:data-[state=selected]:bg-[#17382e]"
                       >
                         <TableCell className="w-12">
                           <Checkbox
@@ -615,22 +676,14 @@ export default function AdminProductsPage({
                         </TableCell>
                         {visibleCols.name && (
                           <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-container-low">
-                                {product.image_urls && product.image_urls[0] ? (
-                                  <img
-                                    src={product.image_urls[0]}
-                                    alt=""
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <Package className="h-5 w-5 text-on-surface-variant" />
-                                )}
-                              </div>
-                              <span className="truncate text-sm font-medium text-on-surface">
-                                {isRTL ? product.name_ar : product.name_en}
-                              </span>
-                            </div>
+                            <ProductIdentity
+                              product={product}
+                              locale={locale}
+                              imageSizeClassName="h-10 w-10"
+                              titleClassName="font-black dark:text-white"
+                              subtitleClassName="dark:text-white/50"
+                              fallbackIcon={<Package className="h-5 w-5" />}
+                            />
                           </TableCell>
                         )}
                         {visibleCols.category && (
@@ -639,27 +692,27 @@ export default function AdminProductsPage({
                           </TableCell>
                         )}
                         {visibleCols.brand && (
-                          <TableCell className="text-sm text-on-surface-variant">
+                          <TableCell className="text-sm font-semibold text-on-surface-variant dark:text-white/60">
                             {product.brand || '-'}
                           </TableCell>
                         )}
                         {visibleCols.stores && (
-                          <TableCell className="hidden text-sm tabular-nums text-on-surface-variant lg:table-cell">
+                          <TableCell className="hidden font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60 lg:table-cell">
                             {getStoresCount(product)}
                           </TableCell>
                         )}
                         {visibleCols.views && (
-                          <TableCell className="hidden text-sm tabular-nums text-on-surface-variant lg:table-cell">
+                          <TableCell className="hidden font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60 lg:table-cell">
                             {formatNumber(product.view_count, locale)}
                           </TableCell>
                         )}
                         {visibleCols.saves && (
-                          <TableCell className="hidden text-sm tabular-nums text-on-surface-variant lg:table-cell">
+                          <TableCell className="hidden font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60 lg:table-cell">
                             {formatNumber(product.save_count, locale)}
                           </TableCell>
                         )}
                         {visibleCols.createdDate && (
-                          <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
+                          <TableCell className="hidden text-sm font-semibold text-on-surface-variant dark:text-white/55 xl:table-cell">
                             {formatDate(product.created_at, locale)}
                           </TableCell>
                         )}
@@ -667,7 +720,7 @@ export default function AdminProductsPage({
                           <TableCell className="w-16 text-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl p-0 dark:text-white/70 dark:hover:bg-white/8">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -699,45 +752,36 @@ export default function AdminProductsPage({
             </div>
 
             {/* Mobile cards */}
-            <div className="divide-y divide-outline-variant md:hidden">
+            <div className="divide-y divide-[#e1f0eb] dark:divide-[#263b33] md:hidden">
               {products.length === 0 ? (
-                <div className="py-20 text-center text-on-surface-variant">
+                <div className="py-20 text-center text-on-surface-variant dark:text-white/60">
                   {t('admin.dashboard.noData')}
                 </div>
               ) : (
                 products.map((product) => (
                   <div key={product.id} className="flex items-start gap-3 p-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-container-low">
-                      {product.image_urls && product.image_urls[0] ? (
-                        <img
-                          src={product.image_urls[0]}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <Package className="h-5 w-5 text-on-surface-variant" />
-                      )}
-                    </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-on-surface">
-                        {isRTL ? product.name_ar : product.name_en}
-                      </p>
-                      <p className="truncate text-xs text-on-surface-variant">
-                        {product.brand || '-'}
-                      </p>
+                      <ProductIdentity
+                        product={product}
+                        locale={locale}
+                        imageSizeClassName="h-12 w-12"
+                        titleClassName="font-black dark:text-white"
+                        subtitleClassName="dark:text-white/50"
+                        fallbackIcon={<Package className="h-5 w-5" />}
+                      />
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <CategoryBadge category={product.category} />
-                        <span className="text-xs tabular-nums text-on-surface-variant">
+                        <span className="font-mono text-xs tabular-nums text-on-surface-variant dark:text-white/55">
                           {getStoresCount(product)} {t('admin.products.stores')}
                         </span>
-                        <span className="text-xs tabular-nums text-on-surface-variant">
+                        <span className="font-mono text-xs tabular-nums text-on-surface-variant dark:text-white/55">
                           {formatNumber(product.view_count, locale)} {t('admin.products.views')}
                         </span>
                       </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 shrink-0 p-0">
+                        <Button variant="ghost" size="sm" className="h-9 w-9 shrink-0 rounded-xl p-0 dark:text-white/70 dark:hover:bg-white/8">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -767,9 +811,9 @@ export default function AdminProductsPage({
         )}
 
         {/* ── Footer: Rows per page + Pagination ── */}
-        <div className="flex flex-col gap-3 border-t border-outline-variant px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-[#e1f0eb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-[#263b33]">
           {/* Rows per page */}
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <div className="flex items-center gap-2 text-sm font-semibold text-on-surface-variant dark:text-white/60">
             <span>{t('admin.products.rowsPerPage')}</span>
             <Select value={String(rowsPerPage)} onValueChange={(v) => setRowsPerPage(Number(v))}>
               <SelectTrigger className="h-8 w-[70px]">
@@ -785,7 +829,7 @@ export default function AdminProductsPage({
 
           {/* Info + controls */}
           <div className="flex items-center gap-4">
-            <span className="text-sm tabular-nums text-on-surface-variant">
+            <span className="font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60">
               {total === 0
                 ? t('admin.dashboard.noData')
                 : `${showFrom}-${showTo} / ${total}`}
@@ -811,7 +855,7 @@ export default function AdminProductsPage({
               >
                 <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
               </Button>
-              <span className="min-w-[4rem] text-center text-sm tabular-nums text-on-surface-variant">
+              <span className="min-w-[4rem] text-center font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60">
                 {page} / {totalPages}
               </span>
               <Button

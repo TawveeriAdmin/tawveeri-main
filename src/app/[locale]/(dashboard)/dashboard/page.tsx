@@ -7,6 +7,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { Price } from '@/components/ui/price';
+import { SharedProductRailCard, ProductIdentity } from '@/components/products/shared-product-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -311,62 +312,36 @@ export default function DashboardPage() {
 
   /* ── Horizontal scroll product card ── */
   const ProductScrollCard = ({ product, size = 'md' }: { product: DashboardProduct; size?: 'sm' | 'md' }) => {
-    const name = locale === 'ar' ? product.name_ar : product.name_en;
-    const price = product.product_stores?.[0]?.current_price;
-    const originalPrice = product.product_stores?.[0]?.original_price;
-    const isSm = size === 'sm';
     const FallbackIcon = getCategoryIcon(product.category);
 
     return (
-      <Link
+      <SharedProductRailCard
+        product={product}
+        locale={locale}
         href={`/${locale}/products/${product.slug}`}
-        className={`group shrink-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20 hover:-translate-y-0.5 ${
-          isSm ? 'w-[160px]' : 'w-[200px]'
-        }`}
-      >
-        <div className={`bg-gray-50 dark:bg-gray-800 overflow-hidden ${isSm ? 'aspect-square' : 'aspect-[4/3]'}`}>
-          {product.image_urls?.[0] ? (
-            <img
-              src={product.image_urls[0]}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
-              <FallbackIcon className={`text-gray-300 dark:text-gray-600 ${isSm ? 'w-8 h-8' : 'w-10 h-10'}`} />
-            </div>
-          )}
-        </div>
-        <div className={isSm ? 'p-2.5' : 'p-3'}>
-          <p className={`font-medium text-gray-900 dark:text-gray-100 line-clamp-2 ${isSm ? 'text-xs' : 'text-sm'}`}>
-            {name}
-          </p>
-          {price ? (
-            <div className="flex items-baseline gap-1.5 mt-1.5">
-              <Price amount={price} className={`font-bold text-primary-600 dark:text-primary-400 ${isSm ? 'text-xs' : 'text-sm'}`} symbolClassName={isSm ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
-              {originalPrice && originalPrice > price && (
-                <Price amount={originalPrice} className="text-[10px] text-gray-400 line-through" symbolClassName="w-2.5 h-2.5" />
-              )}
-            </div>
-          ) : (
-            <p className="text-[10px] text-gray-400 mt-1">{t('products.priceNotAvailable')}</p>
-          )}
-        </div>
-      </Link>
+        size={size}
+        priceUnavailableLabel={t('products.priceNotAvailable')}
+        fallbackIcon={<FallbackIcon className={size === 'sm' ? 'h-8 w-8' : 'h-10 w-10'} />}
+      />
     );
   };
 
   /* ── Section header ── */
   const SectionHeader = ({ title, href, badge }: { title: string; href?: string; badge?: React.ReactNode }) => (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-2">
-        <h2 className="font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
-        {badge}
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <h2 className="truncate text-lg font-black tracking-tight text-on-surface">{title}</h2>
+          {badge}
+        </div>
       </div>
       {href && (
-        <Link href={href} className="text-xs text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1">
+        <Link
+          href={href}
+          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--brand-green-dark)] transition-colors hover:bg-[var(--brand-bg-green)]"
+        >
           {t('dashboard.viewAll')}
-          <ChevronNav className="w-3.5 h-3.5" />
+          <ChevronNav className="h-3.5 w-3.5" />
         </Link>
       )}
     </div>
@@ -399,126 +374,122 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Greeting ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {getGreeting()}، {userName}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {t('dashboard.greeting.subtitle')}
-          </p>
+      {/* Hero + primary metrics */}
+      <section className="overflow-hidden rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] shadow-[var(--elevation-1)]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+          <div className="relative p-5 md:p-7">
+            <div className="absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_20%_0%,rgba(85,178,149,0.18),transparent_65%)]" />
+            <div className="relative">
+              <Badge variant="outline" className="mb-4 rounded-full border-[var(--brand-green)]/30 bg-[var(--brand-bg-green)] px-3 text-[var(--brand-green-dark)]">
+                {t('dashboard.title')}
+              </Badge>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h1 className="text-2xl font-black tracking-tight text-on-surface md:text-4xl">
+                    {getGreeting()}، {userName}
+                  </h1>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-on-surface-variant">
+                    {t('dashboard.greeting.subtitle')}
+                  </p>
+                </div>
+                <Link
+                  href={`/${locale}/search`}
+                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-on-primary transition-all hover:bg-primary-600 active:scale-[0.98]"
+                >
+                  <Search className="h-4 w-4" />
+                  {t('dashboard.quickAction.search')}
+                </Link>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <Link href={`/${locale}/wishlist`} className="group rounded-2xl border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface-container-low)] p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--brand-green)]/50">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-950/30">
+                      <Heart className="h-5 w-5" />
+                    </span>
+                    <ArrowNav className="h-4 w-4 text-on-surface-variant transition-transform group-hover:-translate-x-0.5 ltr:group-hover:translate-x-0.5" />
+                  </div>
+                  <p className="mt-3 text-2xl font-black tabular-nums text-on-surface">{wishlistCount}</p>
+                  <p className="text-xs font-medium text-on-surface-variant">{t('dashboard.wishlistItems')}</p>
+                </Link>
+                <Link href={`/${locale}/price-alerts`} className="group rounded-2xl border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface-container-low)] p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--brand-green)]/50">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/30">
+                      <TrendingDown className="h-5 w-5" />
+                    </span>
+                    <ArrowNav className="h-4 w-4 text-on-surface-variant transition-transform group-hover:-translate-x-0.5 ltr:group-hover:translate-x-0.5" />
+                  </div>
+                  <p className="mt-3 text-2xl font-black tabular-nums text-on-surface">{alertsCount}</p>
+                  <p className="text-xs font-medium text-on-surface-variant">{t('dashboard.activeAlerts')}</p>
+                </Link>
+                <Link href={`/${locale}/notifications`} className="group rounded-2xl border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface-container-low)] p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--brand-green)]/50">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]">
+                      <Bell className="h-5 w-5" />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </span>
+                    <ArrowNav className="h-4 w-4 text-on-surface-variant transition-transform group-hover:-translate-x-0.5 ltr:group-hover:translate-x-0.5" />
+                  </div>
+                  <p className="mt-3 text-2xl font-black tabular-nums text-on-surface">{notifications.length}</p>
+                  <p className="text-xs font-medium text-on-surface-variant">{t('dashboard.section.notifications')}</p>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] p-4 lg:border-s lg:border-t-0 md:p-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[color:var(--color-surface)] p-4">
+                <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-bg-green)] text-[var(--brand-green-dark)]">
+                  <TrendingDown className="h-5 w-5" />
+                </span>
+                <div className="text-2xl font-black tabular-nums text-[var(--brand-green-dark)]">
+                  {totalSavings > 0 ? (
+                    <Price amount={totalSavings} className="text-2xl font-black" symbolClassName="h-4 w-4" />
+                  ) : '0'}
+                </div>
+                <p className="mt-1 text-xs font-medium text-on-surface-variant">{t('dashboard.kpi.totalSavings')}</p>
+              </div>
+              <div className="rounded-2xl bg-[color:var(--color-surface)] p-4">
+                <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
+                  <BarChart3 className="h-5 w-5" />
+                </span>
+                <p className="text-2xl font-black tabular-nums text-on-surface">{productsTracked}</p>
+                <p className="mt-1 text-xs font-medium text-on-surface-variant">{t('dashboard.kpi.productsTracked')}</p>
+              </div>
+              <div className="rounded-2xl bg-[color:var(--color-surface)] p-4">
+                <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
+                  <Zap className="h-5 w-5" />
+                </span>
+                <p className="text-2xl font-black tabular-nums text-on-surface">{priceDropsCount}</p>
+                <p className="mt-1 text-xs font-medium text-on-surface-variant">{t('dashboard.kpi.priceDrops')}</p>
+              </div>
+              <div className="rounded-2xl bg-[color:var(--color-surface)] p-4">
+                <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-950/30">
+                  <Target className="h-5 w-5" />
+                </span>
+                <p className="text-2xl font-black tabular-nums text-on-surface">{triggeredAlertsCount}</p>
+                <p className="mt-1 text-xs font-medium text-on-surface-variant">{t('dashboard.kpi.alertsTriggered')}</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <Link
-          href={`/${locale}/search`}
-          className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Search className="w-4 h-4" />
-          {t('dashboard.quickAction.search')}
-        </Link>
-      </div>
+      </section>
 
-      {/* ── KPIs ── */}
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-          {/* Total Savings */}
-          <div className="text-center">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
-              <TrendingDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {totalSavings > 0 ? (
-                <Price amount={totalSavings} className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 inline" symbolClassName="w-4 h-4" />
-              ) : '0'}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.kpi.totalSavings')}</p>
-          </div>
-
-          {/* Products Tracked */}
-          <div className="text-center">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
-              <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{productsTracked}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.kpi.productsTracked')}</p>
-          </div>
-
-          {/* Price Drops Caught */}
-          <div className="text-center">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
-              <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{priceDropsCount}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.kpi.priceDrops')}</p>
-          </div>
-
-          {/* Alerts Triggered */}
-          <div className="text-center">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center mx-auto mb-2">
-              <Target className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{triggeredAlertsCount}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.kpi.alertsTriggered')}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Quick Nav ── */}
-      <div className="grid grid-cols-3 gap-3">
-        <Link
-          href={`/${locale}/wishlist`}
-          className="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 transition-all hover:shadow-md hover:-translate-y-0.5 flex items-center gap-3"
-        >
-          <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center shrink-0">
-            <Heart className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{wishlistCount}</p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{t('dashboard.wishlistItems')}</p>
-          </div>
-        </Link>
-        <Link
-          href={`/${locale}/price-alerts`}
-          className="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 transition-all hover:shadow-md hover:-translate-y-0.5 flex items-center gap-3"
-        >
-          <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
-            <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{alertsCount}</p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{t('dashboard.activeAlerts')}</p>
-          </div>
-        </Link>
-        <Link
-          href={`/${locale}/notifications`}
-          className="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 transition-all hover:shadow-md hover:-translate-y-0.5 flex items-center gap-3"
-        >
-          <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shrink-0 relative">
-            <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -end-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{notifications.length}</p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{t('dashboard.section.notifications')}</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* ── Price Alerts + Notifications Bento ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Price Alerts — wider */}
-        <div className="lg:col-span-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+      {/* Alerts + notifications */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-7">
           <SectionHeader title={t('dashboard.section.priceAlerts')} href={`/${locale}/price-alerts`} />
           {loading ? (
-            <div className="space-y-3">{[1, 2].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+            <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>
           ) : priceAlerts.length === 0 ? (
-            <EmptyState icon={<TrendingDown className="h-8 w-8" />} title={t('dashboard.noAlerts')} />
+            <EmptyState icon={<TrendingDown className="h-8 w-8" />} title={t('dashboard.noAlerts')} className="rounded-2xl bg-[color:var(--color-surface-container-low)] py-12" />
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {priceAlerts.slice(0, 4).map(alert => {
                 const name = locale === 'ar' ? alert.products.name_ar : alert.products.name_en;
                 const currentPrice = alert.products.product_stores?.[0]?.current_price || 0;
@@ -529,67 +500,60 @@ export default function DashboardPage() {
                   <Link
                     key={alert.id}
                     href={`/${locale}/products/${alert.products.slug}`}
-                    className={`flex items-center gap-3 rounded-xl border p-3 transition-all hover:-translate-y-0.5 ${
+                    className={`group block rounded-2xl border p-3 transition-all hover:-translate-y-0.5 ${
                       triggered
-                        ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
-                        : 'border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        ? 'border-[var(--brand-green)]/35 bg-[var(--brand-bg-green)]'
+                        : 'border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface-container-low)] hover:border-[var(--brand-green)]/35'
                     }`}
                   >
-                    {/* Product image */}
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0">
-                      {alert.products.image_urls?.[0] ? (
-                        <img src={alert.products.image_urls[0]} alt={name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <ProductIdentity
+                          product={alert.products}
+                          locale={locale}
+                          name={name}
+                          imageSizeClassName="h-14 w-14"
+                          imageClassName="object-contain"
+                          fallbackIcon={<Eye className="h-4 w-4" />}
+                          titleClassName="line-clamp-1 text-sm font-bold"
+                        />
+                      </div>
+                      {triggered && (
+                        <Badge className="shrink-0 border-0 bg-[var(--brand-green)] text-[10px] text-white">
+                          {t('dashboard.alertTriggered')}
+                        </Badge>
                       )}
                     </div>
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{name}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <div className="flex-1">
-                          <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${triggered ? 'bg-emerald-500' : 'bg-primary-500'}`}
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                        </div>
-                        <span className="text-[11px] text-gray-400 tabular-nums shrink-0">{progress}%</span>
+                    <div className="mt-3 flex items-center gap-3">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-surface)]">
+                        <div
+                          className={`h-full rounded-full transition-all ${triggered ? 'bg-[var(--brand-green)]' : 'bg-[var(--brand-gold)]'}`}
+                          style={{ width: `${progress}%` }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                        <span>{t('dashboard.targetPrice')}: <Price amount={alert.target_price} className="text-[11px] font-medium inline" symbolClassName="w-2.5 h-2.5" /></span>
-                        {currentPrice > 0 && (
-                          <>
-                            <span className="text-gray-300 dark:text-gray-600">·</span>
-                            <span>{t('dashboard.currentPrice')}: <Price amount={currentPrice} className="text-[11px] font-medium inline" symbolClassName="w-2.5 h-2.5" /></span>
-                          </>
-                        )}
-                      </div>
+                      <span className="w-10 text-end text-xs font-bold tabular-nums text-on-surface-variant">{progress}%</span>
                     </div>
-                    {triggered && (
-                      <Badge className="shrink-0 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-                        {t('dashboard.alertTriggered')}
-                      </Badge>
-                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant">
+                      <span>{t('dashboard.targetPrice')}: <Price amount={alert.target_price} className="inline text-xs font-bold" symbolClassName="h-3 w-3" /></span>
+                      {currentPrice > 0 && (
+                        <span>{t('dashboard.currentPrice')}: <Price amount={currentPrice} className="inline text-xs font-bold" symbolClassName="h-3 w-3" /></span>
+                      )}
+                    </div>
                   </Link>
                 );
               })}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Notifications — narrower */}
-        <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+        <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-5">
           <SectionHeader title={t('dashboard.section.notifications')} href={`/${locale}/notifications`} />
           {loading ? (
-            <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}</div>
+            <div className="space-y-3">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-14 rounded-2xl" />)}</div>
           ) : notifications.length === 0 ? (
-            <EmptyState icon={<Bell className="h-8 w-8" />} title={t('dashboard.noNotifications')} />
+            <EmptyState icon={<Bell className="h-8 w-8" />} title={t('dashboard.noNotifications')} className="rounded-2xl bg-[color:var(--color-surface-container-low)] py-12" />
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-2">
               {notifications.slice(0, 5).map(notif => {
                 const title = locale === 'ar' ? notif.title_ar : notif.title_en;
                 const message = locale === 'ar' ? notif.message_ar : notif.message_en;
@@ -600,119 +564,119 @@ export default function DashboardPage() {
                   <Link
                     key={notif.id}
                     href={link}
-                    className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="group flex items-start gap-3 rounded-2xl p-3 transition-colors hover:bg-[color:var(--color-surface-container-low)]"
                   >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${getNotifColor(notif.type)}`}>
-                      <Icon className="w-4 h-4" />
+                    <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${getNotifColor(notif.type)}`}>
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className={`text-sm line-clamp-1 ${notif.is_read ? 'text-gray-600 dark:text-gray-400' : 'font-medium text-gray-900 dark:text-gray-100'}`}>
+                        <p className={`line-clamp-1 text-sm ${notif.is_read ? 'text-on-surface-variant' : 'font-bold text-on-surface'}`}>
                           {title}
                         </p>
-                        {!notif.is_read && <div className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0" />}
+                        {!notif.is_read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-green)]" />}
                       </div>
-                      {message && <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{message}</p>}
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{timeAgo(notif.created_at)}</p>
+                      {message && <p className="mt-0.5 line-clamp-1 text-xs text-on-surface-variant">{message}</p>}
+                      <p className="mt-1 text-[10px] font-medium text-on-surface-variant">{timeAgo(notif.created_at)}</p>
                     </div>
                   </Link>
                 );
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
-      {/* ── Wishlist Favorites ── */}
-      {(loading || favorites.length > 0) && (
-        <div>
-          <SectionHeader title={t('dashboard.section.favorites')} href={`/${locale}/wishlist`} />
-          {loading ? (
-            <div className="flex gap-3 overflow-hidden">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="w-[200px] h-[220px] rounded-xl shrink-0" />)}
+      {/* Product rails */}
+      <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5">
+        <SectionHeader
+          title={t('dashboard.section.recommendations')}
+          badge={
+            <Badge variant="outline" className="rounded-full text-[10px]">
+              <Sparkles className="me-1 h-3 w-3" />
+              {recSource && recSource !== 'popularity'
+                ? (locale === 'ar' ? 'ذكي' : 'Smart')
+                : (locale === 'ar' ? 'رائج' : 'Trending')}
+            </Badge>
+          }
+        />
+        {loading ? (
+          <div className="flex gap-3 overflow-hidden">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[220px] w-[200px] shrink-0 rounded-xl" />)}
+          </div>
+        ) : recommendations.length > 0 ? (
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {recommendations.map(p => <ProductScrollCard key={`rec-${p.id}`} product={p} />)}
+          </div>
+        ) : (
+          <EmptyState icon={<ShoppingBag className="h-8 w-8" />} title={t('dashboard.noRecommendations')} className="py-10" />
+        )}
+      </section>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        {(loading || favorites.length > 0) && (
+          <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-7">
+            <SectionHeader title={t('dashboard.section.favorites')} href={`/${locale}/wishlist`} />
+            {loading ? (
+              <div className="flex gap-3 overflow-hidden">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-[220px] w-[200px] shrink-0 rounded-xl" />)}
+              </div>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {favorites.map(p => <ProductScrollCard key={`fav-${p.id}`} product={p} />)}
+              </div>
+            )}
+          </section>
+        )}
+
+        <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-5">
+          <SectionHeader title={t('dashboard.section.recentSearches')} />
+          {recentSearches.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {recentSearches.map(s => (
+                <Link
+                  key={s.id}
+                  href={`/${locale}/search?q=${encodeURIComponent(s.search_query)}`}
+                  className="group inline-flex max-w-full items-center gap-2 rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] px-3.5 py-2 text-sm font-medium text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
+                >
+                  <Clock3 className="h-3.5 w-3.5 shrink-0 text-on-surface-variant" />
+                  <span className="max-w-[220px] truncate">{s.search_query}</span>
+                  <ArrowNav className="h-3.5 w-3.5 shrink-0 text-on-surface-variant transition-transform group-hover:-translate-x-0.5 ltr:group-hover:translate-x-0.5" />
+                </Link>
+              ))}
             </div>
           ) : (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {favorites.map(p => <ProductScrollCard key={`fav-${p.id}`} product={p} />)}
-            </div>
+            <EmptyState icon={<Search className="h-8 w-8" />} title={t('dashboard.noRecentSearches')} className="py-10" />
           )}
-        </div>
-      )}
+        </section>
+      </div>
 
-      {/* ── Recommendations ── */}
-      {(loading || recommendations.length > 0) && (
-        <div>
-          <SectionHeader
-            title={t('dashboard.section.recommendations')}
-            badge={
-              <Badge variant="outline" className="text-[10px] border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                <Sparkles className="w-3 h-3 me-1" />
-                {recSource && recSource !== 'popularity'
-                  ? (locale === 'ar' ? 'ذكاء اصطناعي' : 'AI')
-                  : (locale === 'ar' ? 'رائج' : 'Trending')}
-              </Badge>
-            }
-          />
-          {loading ? (
-            <div className="flex gap-3 overflow-hidden">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="w-[200px] h-[220px] rounded-xl shrink-0" />)}
-            </div>
-          ) : (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {recommendations.map(p => <ProductScrollCard key={`rec-${p.id}`} product={p} />)}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Recently Viewed ── */}
       {recentlyViewed.length > 0 && (
-        <div>
+        <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5">
           <SectionHeader title={t('dashboard.section.recentlyViewed')} />
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {recentlyViewed.map(p => <ProductScrollCard key={`rv-${p.id}`} product={p} size="sm" />)}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* ── Recent Searches ── */}
-      {recentSearches.length > 0 && (
-        <div>
-          <SectionHeader title={t('dashboard.section.recentSearches')} />
-          <div className="flex flex-wrap gap-2">
-            {recentSearches.map(s => (
-              <Link
-                key={s.id}
-                href={`/${locale}/search?q=${encodeURIComponent(s.search_query)}`}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
-              >
-                <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span className="truncate max-w-[180px]">{s.search_query}</span>
-                <ArrowNav className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" />
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Empty state for new users ── */}
       {!loading && favorites.length === 0 && recommendations.length === 0 && recentlyViewed.length === 0 && recentSearches.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center">
-          <Search className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+        <section className="rounded-[1.75rem] border border-dashed border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-8 text-center">
+          <Search className="mx-auto mb-3 h-10 w-10 text-on-surface-variant/50" />
+          <h3 className="mb-1 text-lg font-black text-on-surface">
             {t('dashboard.startExploring')}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="mx-auto mb-5 max-w-md text-sm text-on-surface-variant">
             {t('dashboard.startExploringDescription')}
           </p>
           <Link
             href={`/${locale}/search`}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-600"
           >
-            <Search className="w-4 h-4" />
+            <Search className="h-4 w-4" />
             {t('dashboard.quickAction.search')}
           </Link>
-        </div>
+        </section>
       )}
 
       <style jsx global>{`

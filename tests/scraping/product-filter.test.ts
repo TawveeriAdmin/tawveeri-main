@@ -21,6 +21,36 @@ describe('isTechProduct', () => {
     ).toBe(true);
   });
 
+  it('keeps USB accessories from a generic accessories category', () => {
+    expect(
+      isTechProduct(
+        'USB C to USB A Adapter',
+        'Unknown',
+        'accessories'
+      )
+    ).toBe(true);
+  });
+
+  it('rejects non-tech products from a generic accessories category', () => {
+    expect(
+      isTechProduct(
+        'Vintage Fridge Magnet God Bless This Home',
+        'Unknown',
+        'accessories'
+      )
+    ).toBe(false);
+  });
+
+  it('keeps e-reader accessories from a generic accessories category', () => {
+    expect(
+      isTechProduct(
+        'Case for Kindle Paperwhite 12th Gen 2024 Released',
+        'Unknown',
+        'accessories'
+      )
+    ).toBe(true);
+  });
+
   it('rejects produce-style apple items', () => {
     expect(
       isTechProduct(

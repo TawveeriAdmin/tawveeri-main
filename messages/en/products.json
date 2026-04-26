@@ -101,7 +101,17 @@
     "smartphone": "Smartphone",
     "tablet": "Tablet",
     "audio": "Audio Devices",
-    "gaming": "Gaming Devices"
+    "gaming": "Gaming Devices",
+    "camera": "Cameras",
+    "monitor": "Monitors",
+    "printer": "Printers",
+    "networking": "Networking",
+    "smart_home": "Smart Home",
+    "wearable": "Wearables",
+    "appliance": "Appliances",
+    "kitchen": "Kitchen",
+    "personal_care": "Personal Care",
+    "accessories": "Accessories",
+    "refrigerator": "Refrigerators"
   }
 }
-

@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { ProductCard } from '@/components/products/product-card';
@@ -25,6 +23,7 @@ import { ProductRatingDisplay } from '@/components/products/product-rating-displ
 import { ProductSpecifications } from '@/components/products/product-specifications';
 import { ComparisonTable } from '@/components/products/comparison-table';
 import { BestPriceCard } from '@/components/products/best-price-card';
+import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import {
  Heart,
  BarChart3,
@@ -33,19 +32,23 @@ import {
  AlertCircle,
  Eye,
  X,
+ ZoomIn,
+ ShieldCheck,
+ Store,
+ TrendingDown,
 } from 'lucide-react';
-import { calculateSavings } from '@/lib/utils';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { Ticket } from 'lucide-react';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
-import { trackProductClick, generateAffiliateUrl } from '@/lib/transactions/tracking';
+import { generateAffiliateUrl } from '@/lib/transactions/tracking';
 import { incrementSaveCount } from '@/lib/wishlist/utils';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
 type ProductRow = Database['public']['Tables']['products']['Row'];
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
+type ProductCoupon = Database['public']['Tables']['coupons']['Row'];
 type StoreSummary = Pick<
  Database['public']['Tables']['stores']['Row'],
  'id' | 'slug' | 'name_ar' | 'name_en' | 'logo_url' | 'average_rating' | 'total_reviews'
@@ -117,7 +120,7 @@ export default function ProductDetailClient() {
  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
- const [productCoupons, setProductCoupons] = useState<any[]>([]);
+ const [productCoupons, setProductCoupons] = useState<ProductCoupon[]>([]);
  const [priceAlertOpen, setPriceAlertOpen] = useState(false);
  const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [galleryOpen, setGalleryOpen] = useState(false);
@@ -447,7 +450,9 @@ export default function ProductDetailClient() {
  setRelatedProducts((relatedData || []).map(mapProductRecord));
 
  // Fetch applicable coupons (product-specific + store-wide)
- const storeIds = (mappedProduct.product_stores || []).map((ps: any) => ps.stores?.id).filter(Boolean);
+ const storeIds = (mappedProduct.product_stores || [])
+ .map((ps) => ps.stores?.id)
+ .filter((id): id is string => Boolean(id));
  if (storeIds.length > 0) {
  const { data: couponsData } = await supabase
  .from('coupons')
@@ -593,7 +598,7 @@ export default function ProductDetailClient() {
  toast({
  title: t('product.productShared'),
  });
- } catch (err) {
+ } catch {
  toast({
  title: t('common.error'),
  description: t('products.linkCopyError'),
@@ -687,7 +692,7 @@ export default function ProductDetailClient() {
  const productName = locale === 'ar' ? product.name_ar : product.name_en;
  const productDescription = locale === 'ar' ? product.description_ar : product.description_en;
  const images = product.image_urls || [];
- const currentImage = images[currentImageIndex] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+ const currentImage = images[currentImageIndex] || PRODUCT_PLACEHOLDER_IMAGE;
 
  // Get best price
  const storesWithPrices = product.product_stores
@@ -720,110 +725,157 @@ export default function ProductDetailClient() {
    { label: productName },
  ]} />
 
- {/* Main Product Info — image sticky on desktop so the comparison table stays in view */}
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
- {/* Image Gallery */}
- <div className="lg:sticky lg:top-24 lg:self-start space-y-3 min-w-0">
+ {/* Main Product Info — first viewport focused on decision-making */}
+ <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8">
+ <div className="lg:sticky lg:top-24 lg:self-start">
+ <div className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-3 shadow-[var(--elevation-1)]">
  <button
+ type="button"
  onClick={() => setGalleryOpen(true)}
- className="group relative aspect-square w-full max-w-lg mx-auto rounded-2xl overflow-hidden bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)]/60 cursor-zoom-in transition-colors hover:border-[var(--brand-green)]"
+ className="group relative aspect-square w-full overflow-hidden rounded-[1.35rem] bg-[color:var(--color-surface-container-low)] cursor-zoom-in"
  aria-label={locale === 'ar' ? 'تكبير الصورة' : 'Zoom image'}
  >
- <img
+ <ProductImageFrame
  src={currentImage}
  alt={productName}
- className="w-full h-full object-contain p-6 transition-transform duration-300 group-hover:scale-[1.02]"
- onError={(e) => {
- const target = e.target as HTMLImageElement;
- target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
- }}
+ className="h-full w-full rounded-none bg-transparent"
+ imageClassName="p-7 group-hover:scale-[1.025]"
+ sizes="(min-width: 1024px) 42vw, 100vw"
+ unoptimized={currentImage.includes('jarir.com')}
  />
+ <span className="absolute end-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/85 text-[var(--brand-green-dark)] shadow-[var(--elevation-1)] backdrop-blur-sm transition-transform group-hover:scale-105 dark:border-white/10 dark:bg-black/35">
+ <ZoomIn className="h-4 w-4" />
+ </span>
  </button>
+
  {images.length > 1 && (
- <div className="grid grid-cols-5 gap-2 max-w-lg mx-auto">
+ <div className="mt-3 grid grid-cols-5 gap-2">
  {images.slice(0, 5).map((img, idx) => (
  <button
  key={idx}
+ type="button"
  onClick={() => setCurrentImageIndex(idx)}
- className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+ aria-label={`${productName} ${idx + 1}`}
+ className={`relative aspect-square overflow-hidden rounded-xl border transition-all ${
  currentImageIndex === idx
- ? 'border-[var(--brand-green)]'
+ ? 'border-[var(--brand-green)] ring-2 ring-[var(--brand-green)]/18'
  : 'border-[color:var(--color-outline-variant)]/60 hover:border-[var(--brand-green)]/50'
  }`}
  >
- <img
+ <ProductImageFrame
  src={img}
  alt={`${productName} ${idx + 1}`}
- className="w-full h-full object-contain p-1"
+ className="h-full w-full rounded-none bg-[color:var(--color-surface-container-low)]"
+ imageClassName="p-1.5"
+ sizes="96px"
+ unoptimized={img.includes('jarir.com')}
  />
  </button>
  ))}
  </div>
  )}
  </div>
+ </div>
 
- {/* Product Details */}
- <div className="space-y-5">
- <div>
- {/* Category chip */}
+ <div className="min-w-0 space-y-5">
+ <div className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5 shadow-[var(--elevation-1)] md:p-6">
+ <div className="mb-4 flex flex-wrap items-center gap-2">
  {product.category && (
- <div className="mb-3">
- <Badge variant="outline" className="text-xs">
+ <Badge variant="outline" className="h-8 rounded-full px-3 text-xs">
  {t(`products.categories.${product.category}`)}
  </Badge>
- </div>
  )}
-
- <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-on-surface leading-tight mb-3">
- {productName}
- </h1>
-
- {subtitleParts.length > 0 && (
- <p className="text-sm text-on-surface-variant">
- {subtitleParts.join(' · ')}
- </p>
- )}
-
- {product.sku && (
- <p className="text-xs text-on-surface-variant mt-1">
- SKU: {product.sku}
- </p>
- )}
- {/* Rating Display — Tawveeri-native reviews preferred; fall back to merchant rating */}
- {product.average_rating && product.total_reviews ? (
- <div className="mt-3">
- <ProductRatingDisplay
- rating={product.average_rating}
- totalReviews={product.total_reviews}
- size="md"
- />
- </div>
- ) : product.merchant_rating ? (
- <div className="mt-3 flex items-center gap-2">
- <ProductRatingDisplay
- rating={product.merchant_rating}
- totalReviews={product.merchant_review_count ?? 0}
- size="md"
- />
- <span className="text-xs text-on-surface-variant">
- {locale === 'ar' ? 'من المتجر' : 'from merchant'}
+ {bestPriceStore && (
+ <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--brand-bg-green)] px-3 text-xs font-semibold text-[var(--brand-green-dark)]">
+ <ShieldCheck className="h-3.5 w-3.5" />
+ {locale === 'ar' ? 'أفضل سعر مؤكد' : 'Best price checked'}
  </span>
- </div>
- ) : null}
- {/* View Count */}
+ )}
  {viewCount !== null && viewCount > 0 && (
- <div className="mt-2 flex items-center gap-2 text-sm text-on-surface-variant">
- <Eye className="w-4 h-4" />
- <span>
+ <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)]/60 px-3 text-xs font-medium text-on-surface-variant">
+ <Eye className="h-3.5 w-3.5" />
  {locale === 'ar'
  ? `${viewCount.toLocaleString('ar-SA')} مشاهدة`
  : `${viewCount.toLocaleString('en-US')} view${viewCount !== 1 ? 's' : ''}`}
  </span>
+ )}
+ </div>
+
+ <h1 dir="auto" className="mb-3 text-2xl font-black leading-tight tracking-tight text-on-surface md:text-4xl">
+ {productName}
+ </h1>
+
+ <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-on-surface-variant">
+ {subtitleParts.length > 0 && <span>{subtitleParts.join(' · ')}</span>}
+ {product.sku && (
+ <span className="rounded-full bg-[color:var(--color-surface-container-low)] px-2.5 py-1 text-xs tabular-nums">
+ SKU: {product.sku}
+ </span>
+ )}
+ </div>
+
+ {(product.average_rating && product.total_reviews) || product.merchant_rating ? (
+ <div className="mt-4 flex flex-wrap items-center gap-2">
+ <ProductRatingDisplay
+ rating={product.average_rating || product.merchant_rating || 0}
+ totalReviews={product.total_reviews || product.merchant_review_count || 0}
+ size="md"
+ />
+ {!product.average_rating && product.merchant_rating && (
+ <span className="text-xs text-on-surface-variant">
+ {locale === 'ar' ? 'من المتجر' : 'from merchant'}
+ </span>
+ )}
+ </div>
+ ) : null}
+
+ {storeCount > 0 && (
+ <div className="mt-5 grid grid-cols-1 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] sm:grid-cols-3">
+ <div className="flex items-center gap-3 p-4">
+ <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-surface)] text-[var(--brand-green-dark)]">
+ <Store className="h-5 w-5" />
+ </span>
+ <div>
+ <p className="text-xs text-on-surface-variant">{locale === 'ar' ? 'المتاجر' : 'Stores'}</p>
+ <p className="text-lg font-black tabular-nums text-on-surface">
+ {storeCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+ </p>
+ </div>
+ </div>
+ <div className="flex items-center gap-3 border-y border-[color:var(--color-outline-variant)]/50 p-4 sm:border-x sm:border-y-0">
+ <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-surface)] text-[var(--brand-green-dark)]">
+ <TrendingDown className="h-5 w-5" />
+ </span>
+ <div>
+ <p className="text-xs text-on-surface-variant">{locale === 'ar' ? 'أقل سعر' : 'Lowest'}</p>
+ <Price
+ amount={bestPriceStore?.current_price ?? 0}
+ className="text-lg font-black text-[var(--brand-green-dark)]"
+ symbolClassName="h-4 w-4"
+ />
+ </div>
+ </div>
+ <div className="flex items-center gap-3 p-4">
+ <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-surface)] text-[var(--brand-gold-dark)]">
+ <BarChart3 className="h-5 w-5" />
+ </span>
+ <div>
+ <p className="text-xs text-on-surface-variant">{locale === 'ar' ? 'فرق السعر' : 'Price spread'}</p>
+ {priceRange > 0 ? (
+ <Price
+ amount={priceRange}
+ className="text-lg font-black text-[var(--brand-gold-dark)]"
+ symbolClassName="h-4 w-4"
+ />
+ ) : (
+ <p className="text-lg font-black text-on-surface-variant">—</p>
+ )}
+ </div>
+ </div>
  </div>
  )}
  </div>
 
- {/* Best price hero card (gold-outlined, primary CTA to winning store) */}
  {bestPriceStore && (
  <BestPriceCard
  store={bestPriceStore.stores}
@@ -835,50 +887,7 @@ export default function ProductDetailClient() {
  />
  )}
 
- {/* Quick stats strip — surfaces the "why compare" value at a glance */}
- {storeCount > 0 && (
- <div className="grid grid-cols-3 gap-2 rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] p-3 text-center">
- <div>
- <div className="text-xs text-on-surface-variant mb-0.5">
- {locale === 'ar' ? 'المتاجر' : 'Stores'}
- </div>
- <div className="text-lg font-bold text-on-surface tabular-nums">
- {storeCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
- </div>
- </div>
- <div className="border-s border-e border-[color:var(--color-outline-variant)]/50">
- <div className="text-xs text-on-surface-variant mb-0.5">
- {locale === 'ar' ? 'أقل سعر' : 'Lowest'}
- </div>
- <div className="text-lg font-bold text-[var(--brand-green-dark)]">
- <Price
- amount={bestPriceStore?.current_price ?? 0}
- className="justify-center"
- symbolClassName="w-3.5 h-3.5"
- />
- </div>
- </div>
- <div>
- <div className="text-xs text-on-surface-variant mb-0.5">
- {locale === 'ar' ? 'توفير حتى' : 'Save up to'}
- </div>
- <div className="text-lg font-bold text-[var(--brand-gold-dark)]">
- {priceRange > 0 ? (
- <Price
- amount={priceRange}
- className="justify-center"
- symbolClassName="w-3.5 h-3.5"
- />
- ) : (
- <span className="text-on-surface-variant">—</span>
- )}
- </div>
- </div>
- </div>
- )}
-
- {/* Secondary actions — equal-width grid, all four span their column */}
- <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+ <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
  {(() => {
  const inCompare = compareIds.has(product.id);
  return (
@@ -888,15 +897,11 @@ export default function ProductDetailClient() {
  aria-pressed={inCompare}
  className={
  inCompare
- ? 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 px-3 text-sm font-semibold text-red-600 transition-all hover:border-red-400 hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
- : 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100'
+ ? 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-3 text-sm font-semibold text-red-600 transition-all hover:border-red-400 hover:bg-red-100 active:scale-[0.98] dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400'
+ : 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-sm font-semibold text-on-surface transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] active:scale-[0.98]'
  }
  >
- {inCompare ? (
- <X className="w-4 h-4 shrink-0" />
- ) : (
- <BarChart3 className="w-4 h-4 shrink-0" />
- )}
+ {inCompare ? <X className="h-4 w-4 shrink-0" /> : <BarChart3 className="h-4 w-4 shrink-0" />}
  <span className="truncate">
  {inCompare
  ? locale === 'ar'
@@ -907,42 +912,31 @@ export default function ProductDetailClient() {
  </button>
  );
  })()}
- <button
- type="button"
- onClick={() => handleSaveToWishlist(product.id)}
- className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
- >
- <Heart className="w-4 h-4 shrink-0" />
+ <button type="button" onClick={() => handleSaveToWishlist(product.id)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-sm font-semibold text-on-surface transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] active:scale-[0.98]">
+ <Heart className="h-4 w-4 shrink-0" />
  <span className="truncate">{t('product.saveToWishlist')}</span>
  </button>
- <button
- type="button"
- onClick={handleSetPriceAlert}
- className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
- >
- <Bell className="w-4 h-4 shrink-0" />
+ <button type="button" onClick={handleSetPriceAlert} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-sm font-semibold text-on-surface transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] active:scale-[0.98]">
+ <Bell className="h-4 w-4 shrink-0" />
  <span className="truncate">{t('product.setPriceAlert')}</span>
  </button>
- <button
- type="button"
- onClick={handleShare}
- className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-transparent px-3 text-sm font-semibold text-gray-800 transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] dark:border-gray-700 dark:text-gray-100"
- >
- <Share2 className="w-4 h-4 shrink-0" />
+ <button type="button" onClick={handleShare} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-sm font-semibold text-on-surface transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)] active:scale-[0.98]">
+ <Share2 className="h-4 w-4 shrink-0" />
  <span className="truncate">{t('product.share')}</span>
  </button>
  </div>
 
- {/* Description */}
  {productDescription && (
- <div className="prose max-w-none">
- <p className="text-on-surface-variant whitespace-pre-line">
+ <section className="rounded-[1.35rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5">
+ <h2 className="mb-2 text-base font-bold text-on-surface">
+ {locale === 'ar' ? 'نظرة عامة' : 'Overview'}
+ </h2>
+ <p className="whitespace-pre-line text-sm leading-7 text-on-surface-variant">
  {productDescription}
  </p>
- </div>
+ </section>
  )}
 
- {/* Video */}
  {product.video_url && (
  <ProductVideoPlayer
  videoUrl={product.video_url}
@@ -956,8 +950,8 @@ export default function ProductDetailClient() {
 
  {/* Store comparison — the main moment for a price-comparison site */}
  {product.product_stores.length > 0 && (
- <section className="mb-10">
- <div className="mb-4 flex items-end justify-between gap-4">
+ <section className="mb-10 rounded-[1.75rem] bg-[color:var(--color-surface-container-low)] p-3 md:p-5">
+ <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
  <div>
  <h2 className="t-h2 text-on-surface">{t('product.availableStores')}</h2>
  <p className="t-small text-on-surface-variant mt-1">
@@ -984,7 +978,7 @@ export default function ProductDetailClient() {
 
  {/* 90-day price history — single large chart for the best-price store */}
  {bestPriceStore && (
- <section className="mb-10">
+ <section className="mb-10 rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5 shadow-[var(--elevation-1)]">
  <div className="mb-4">
  <h2 className="t-h2 text-on-surface">
  {locale === 'ar' ? 'سجل الأسعار' : 'Price history'}
@@ -1008,7 +1002,7 @@ export default function ProductDetailClient() {
  {/* Available Coupons */}
  {productCoupons.length > 0 && (
  <section className="mb-10">
- <Card>
+ <Card className="rounded-[1.75rem]">
  <CardHeader>
  <CardTitle className="flex items-center gap-2">
  <Ticket className="h-5 w-5 text-tertiary-600 dark:text-tertiary-400" />
@@ -1017,7 +1011,7 @@ export default function ProductDetailClient() {
  </CardTitle>
  </CardHeader>
  <CardContent className="space-y-3">
- {productCoupons.map((coupon: any) => (
+ {productCoupons.map((coupon) => (
  <CouponBadge
  key={coupon.id}
  coupon={{
@@ -1042,7 +1036,7 @@ export default function ProductDetailClient() {
 
  {/* Specifications — collapsible accordion */}
  {Object.keys(product.specifications || {}).length > 0 && (
- <section className="mb-10">
+ <section className="mb-10 rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5 shadow-[var(--elevation-1)]">
  <Accordion type="single" collapsible defaultValue="specs">
  <AccordionItem value="specs">
  <AccordionTrigger className="t-h2 text-on-surface">
@@ -1061,7 +1055,7 @@ export default function ProductDetailClient() {
  )}
 
  {/* Reviews — collapsible accordion (open if any exist) */}
- <section className="mb-10">
+ <section className="mb-10 rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5 shadow-[var(--elevation-1)]">
  <Accordion type="single" collapsible defaultValue={(product.total_reviews || 0) > 0 ? 'reviews' : undefined}>
  <AccordionItem value="reviews">
  <AccordionTrigger className="t-h2 text-on-surface">
@@ -1085,11 +1079,11 @@ export default function ProductDetailClient() {
 
  {/* Similar products — horizontal rail */}
  {relatedProducts.length > 0 && (
- <section>
+ <section className="pb-4">
  <h2 className="t-h2 text-on-surface mb-6">
  {t('product.relatedProducts')}
  </h2>
- <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
  {relatedProducts.map((relatedProduct) => (
  <ProductCard
  key={relatedProduct.id}
@@ -1128,4 +1122,3 @@ export default function ProductDetailClient() {
  </div>
  );
 }
-

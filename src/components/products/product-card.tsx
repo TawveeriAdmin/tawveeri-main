@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Price, SavingsLabel } from '@/components/ui/price';
+import { Price } from '@/components/ui/price';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Heart, BarChart3, ExternalLink, Store, Flame, X } from 'lucide-react';
 import { CouponBadge } from '@/components/ui/coupon-badge';
-import { calculateSavings } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -19,9 +17,7 @@ import { useParams } from 'next/navigation';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
-
-const PLACEHOLDER_IMAGE =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 
 interface ProductStore {
   id: string;
@@ -83,7 +79,6 @@ export function ProductCard({
   onSave,
   isSaved = false,
   isInCompare = false,
-  onAddToCart,
   onCardClick,
   showActions = true,
 }: ProductCardProps) {
@@ -155,11 +150,10 @@ export function ProductCard({
   const storeCount = product.product_stores.length;
   const hasDeal = product.product_stores.some((ps) => ps.original_price && ps.original_price > ps.current_price);
   const isOutOfStock = product.product_stores.every((ps) => ps.availability === 'out_of_stock');
-  const savings = originalPrice ? calculateSavings(originalPrice, bestPriceValue) : 0;
 
   // Get current image or placeholder
   const currentImageUrl = availableImages[currentImageIndex] || null;
-  let imageSrc = imageError || !currentImageUrl ? PLACEHOLDER_IMAGE : currentImageUrl;
+  const imageSrc = imageError || !currentImageUrl ? PRODUCT_PLACEHOLDER_IMAGE : currentImageUrl;
 
   const router = useRouter();
   const [navigating, setNavigating] = useState(false);
@@ -280,23 +274,17 @@ export function ProductCard({
       <LinkWrapper>
         {/* Product Image */}
         <div className="relative w-full aspect-square overflow-hidden rounded-t-[var(--radius-lg)] bg-[color:var(--color-surface-container-low)]">
-          {/* Loading skeleton */}
-          {imageLoading && !imageError && (
-            <div className="absolute inset-0 bg-[var(--brand-bg-green)] animate-pulse" />
-          )}
-
-          {/* Product Image */}
-          <Image
+          <ProductImageFrame
             src={imageSrc}
             alt={productName}
-            fill
             sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 100vw"
-            className={`object-contain p-3 group-hover:scale-105 transition-transform duration-[var(--dur-med)] ease-[var(--ease-out-brand)] ${
+            className="h-full w-full rounded-none bg-transparent"
+            imageClassName={`p-3 group-hover:scale-105 ${
               imageLoading ? 'opacity-0' : 'opacity-100'
             }`}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-            loading="lazy"
+            onImageError={handleImageError}
+            onImageLoad={handleImageLoad}
+            loadingOverlay={imageLoading && !imageError}
             unoptimized={isExternalLink || imageSrc.includes('jarir.com')}
             priority={false}
           />
@@ -552,10 +540,10 @@ export function ProductCard({
               }
               aria-pressed={isInCompare}
               className={cn(
-                'inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-full border text-[11px] font-semibold transition-colors',
+                'inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border-2 text-[11px] font-semibold transition-colors',
                 isInCompare
-                  ? 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
-                  : 'border-[color:var(--color-outline-variant)] bg-transparent text-on-surface-variant hover:border-[var(--brand-green)]/50 hover:text-[var(--brand-green-dark)]',
+                  ? 'border-red-300 bg-red-50 text-red-600 hover:border-red-400 hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
+                  : 'border-[color:var(--brand-green)] bg-transparent text-[var(--brand-green-dark)] shadow-[inset_0_0_0_1px_var(--brand-green)] hover:bg-[var(--brand-bg-green)]',
               )}
             >
               {isInCompare ? (

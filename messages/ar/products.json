@@ -101,7 +101,17 @@
     "smartphone": "هاتف ذكي",
     "tablet": "تابلت",
     "audio": "أجهزة صوتية",
-    "gaming": "أجهزة ألعاب"
+    "gaming": "أجهزة ألعاب",
+    "camera": "كاميرات",
+    "monitor": "شاشات",
+    "printer": "طابعات",
+    "networking": "شبكات",
+    "smart_home": "منزل ذكي",
+    "wearable": "أجهزة قابلة للارتداء",
+    "appliance": "أجهزة منزلية",
+    "kitchen": "مطبخ",
+    "personal_care": "عناية شخصية",
+    "accessories": "إكسسوارات",
+    "refrigerator": "ثلاجات"
   }
 }
-

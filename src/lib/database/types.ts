@@ -96,6 +96,7 @@ export interface Database {
           total_reviews: number;
           total_products: number;
           commission_rate: number;
+          affiliate_config: Record<string, unknown> | null;
           is_premium: boolean;
           is_featured: boolean;
           created_at: string;
@@ -127,6 +128,7 @@ export interface Database {
           total_reviews?: number;
           total_products?: number;
           commission_rate?: number;
+          affiliate_config?: Record<string, unknown> | null;
           is_premium?: boolean;
           is_featured?: boolean;
           created_at?: string;
@@ -158,6 +160,7 @@ export interface Database {
           total_reviews?: number;
           total_products?: number;
           commission_rate?: number;
+          affiliate_config?: Record<string, unknown> | null;
           is_premium?: boolean;
           is_featured?: boolean;
           created_at?: string;

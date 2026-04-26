@@ -240,7 +240,7 @@ export default function WishlistPage() {
  return (
  <div className="space-y-6">
  <Skeleton className="h-8 w-48" />
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
  {Array.from({ length: 4 }).map((_, i) => (
  <div key={i} className="space-y-4">
  <Skeleton className="h-48 w-full rounded-xl" />
@@ -299,7 +299,7 @@ export default function WishlistPage() {
 
  {/* Products Grid */}
  {!loading && !error && products.length > 0 && (
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
  {products.map((product) => {
  const productName = locale === 'ar' ? product.name_ar : product.name_en;
  return (
@@ -360,4 +360,3 @@ export default function WishlistPage() {
  </div>
  );
 }
-

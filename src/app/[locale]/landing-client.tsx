@@ -107,17 +107,6 @@ const ALL_CATEGORIES = [
   'accessories',
 ];
 
-const HERO_STORE_LOGOS: LandingData['stores'] = [
-  { slug: 'amazon', name_ar: 'أمازون السعودية', name_en: 'Amazon SA', logo_url: null, average_rating: 4.7, total_reviews: 1280 },
-  { slug: 'noon', name_ar: 'نون', name_en: 'Noon', logo_url: null, average_rating: 4.5, total_reviews: 940 },
-  { slug: 'jarir', name_ar: 'مكتبة جرير', name_en: 'Jarir', logo_url: null, average_rating: 4.6, total_reviews: 820 },
-  { slug: 'extra', name_ar: 'اكسترا', name_en: 'Extra', logo_url: null, average_rating: 4.4, total_reviews: 610 },
-  { slug: 'almanea', name_ar: 'المنيع', name_en: 'Almanea', logo_url: null, average_rating: 4.3, total_reviews: 420 },
-  { slug: 'samsung_ksa', name_ar: 'سامسونج السعودية', name_en: 'Samsung KSA', logo_url: null, average_rating: 4.6, total_reviews: 510 },
-  { slug: 'shaker', name_ar: 'شاكر', name_en: 'Shaker', logo_url: null, average_rating: 4.2, total_reviews: 290 },
-  { slug: 'swsg', name_ar: 'الشتاء والصيف', name_en: 'Winter & Summer', logo_url: null, average_rating: 4.1, total_reviews: 260 },
-];
-
 interface LandingPageClientProps {
   data?: LandingData;
 }
@@ -140,7 +129,6 @@ export default function LandingPageClient({ data }: LandingPageClientProps = {})
         totalStores={safe.totalStores}
         totalProducts={safe.totalProducts}
         totalSavings={safe.totalSavings}
-        stores={safe.stores}
       />
       <CategoryShowcase categoryCounts={safe.categoryCounts} />
       <FeaturedProducts products={safe.featured} />
@@ -155,12 +143,10 @@ function Hero({
   totalStores,
   totalProducts,
   totalSavings,
-  stores,
 }: {
   totalStores: number;
   totalProducts: number;
   totalSavings: number;
-  stores: LandingData['stores'];
 }) {
   const { isRTL, locale } = useLocale();
   const router = useRouter();
@@ -182,8 +168,8 @@ function Hero({
             'radial-gradient(circle at 18% 18%, rgba(85,178,149,0.34), transparent 28%), radial-gradient(circle at 86% 12%, rgba(226,187,78,0.18), transparent 20%)',
         }}
       />
-      <div className="relative mx-auto grid w-full max-w-[1400px] gap-8 px-4 py-12 md:px-8 md:py-16 lg:grid-cols-[1fr_480px] lg:items-center">
-        <div className="landing-reveal max-w-2xl">
+      <div className="relative mx-auto flex w-full max-w-[980px] flex-col items-center px-4 pb-12 pt-56 text-center md:px-8 md:pb-16 md:pt-48">
+        <div className="landing-reveal w-full">
           <p className="inline-flex rounded-full bg-[color:var(--color-surface)] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-primary)] shadow-sm dark:bg-[color:var(--color-surface-container-high)]">
             Tawveeri · {isRTL ? 'قارن · وفّر · بذكاء' : 'Compare · Save · Smart'}
           </p>
@@ -192,13 +178,13 @@ function Hero({
             {isRTL ? 'قارن الأسعار من كل المتاجر' : 'Compare prices from every store'}
           </h1>
 
-          <p className="mt-4 max-w-xl text-[15px] leading-7 text-[color:var(--color-on-surface-variant)]">
+          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-7 text-[color:var(--color-on-surface-variant)]">
             {isRTL
               ? 'اعرف أرخص سعر، التوفر، والكوبونات في صفحة واحدة قبل ما تدفع.'
               : 'See the lowest price, stock status, and coupons on one page before you pay.'}
           </p>
 
-          <form onSubmit={onSubmit} className="mt-7 max-w-2xl">
+          <form onSubmit={onSubmit} className="mx-auto mt-7 max-w-2xl">
             <div className="flex min-h-[72px] items-center gap-3 rounded-full border border-[color:var(--color-primary)]/35 bg-[color:var(--color-surface)] p-2.5 shadow-[0_22px_70px_-45px_rgba(26,26,26,0.65)] ring-1 ring-[color:var(--color-primary)]/10 transition focus-within:border-[color:var(--color-primary)] focus-within:ring-[color:var(--color-primary)]/30 dark:bg-[color:var(--color-surface-container-high)]">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)] dark:bg-[color:var(--color-surface-container)]">
                 <Search className="h-5 w-5" strokeWidth={2} />
@@ -218,7 +204,7 @@ function Hero({
             </div>
           </form>
 
-          <div className="mt-6 grid max-w-xl grid-cols-3 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] dark:bg-[color:var(--color-surface-container-low)]">
+          <div className="mx-auto mt-6 grid max-w-xl grid-cols-3 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] dark:bg-[color:var(--color-surface-container-low)]">
             <HeroStat
               value={totalStores > 0 ? totalStores.toLocaleString(isRTL ? 'ar-SA' : 'en-US') : '8'}
               label={isRTL ? 'متاجر موثوقة' : 'Trusted stores'}
@@ -234,8 +220,6 @@ function Hero({
             />
           </div>
         </div>
-
-        <HeroStoreDeck stores={stores} totalStores={totalStores} />
       </div>
     </section>
   );
@@ -251,108 +235,6 @@ function HeroStat({ value, label, sar = false }: { value: string; label: string;
       <p className="mt-1 text-[11px] font-semibold text-[color:var(--color-on-surface-variant)]">{label}</p>
     </div>
   );
-}
-
-function HeroStoreDeck({
-  stores,
-  totalStores,
-}: {
-  stores: LandingData['stores'];
-  totalStores: number;
-}) {
-  const { isRTL, locale } = useLocale();
-  const deckStores = mergeHeroStores(stores);
-  const coverageCount = totalStores || stores.length || deckStores.length;
-
-  return (
-    <div className="landing-reveal relative">
-      <div
-        aria-hidden
-        className="absolute -inset-5 rounded-[2rem] bg-[radial-gradient(circle_at_20%_10%,rgba(226,187,78,0.22),transparent_30%),radial-gradient(circle_at_80%_86%,rgba(85,178,149,0.24),transparent_34%)] blur-2xl"
-      />
-      <Link
-        href={`/${locale}/stores`}
-        className="group relative block overflow-hidden rounded-[1.75rem] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-4 shadow-[0_24px_70px_-48px_rgba(26,26,26,0.58)] transition duration-300 hover:-translate-y-1 hover:border-[color:var(--color-primary)] dark:bg-[color:var(--color-surface-container-low)]"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-primary)]">
-              {isRTL ? 'المتاجر المتاحة' : 'Available stores'}
-            </p>
-            <h2 className="mt-3 text-[28px] font-black leading-tight text-[color:var(--color-on-surface)]">
-              {isRTL ? 'قارن من المتجر المناسب' : 'Compare from the right store'}
-            </h2>
-            <p className="mt-2 max-w-sm text-[13px] leading-6 text-[color:var(--color-on-surface-variant)]">
-              {isRTL
-                ? 'شوف السعر، التقييم، والتوفر من أكثر من متجر قبل ما تختار.'
-                : 'Check price, rating, and availability across stores before choosing.'}
-            </p>
-          </div>
-          <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)]">
-            <Home className="h-5 w-5" strokeWidth={1.8} />
-          </span>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-[color:var(--color-primary-container)] p-4 dark:bg-[color:var(--color-surface-container)]">
-            <p className="text-[11px] font-bold text-[color:var(--color-on-surface-variant)]">
-              {isRTL ? 'تغطية المتاجر' : 'Store coverage'}
-            </p>
-            <div className="mt-1 text-[30px] font-black text-[color:var(--color-on-surface)]">
-              {coverageCount.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
-            </div>
-          </div>
-          <div className="rounded-2xl bg-[color:var(--color-primary-container)] p-4 dark:bg-[color:var(--color-surface-container)]">
-            <p className="text-[11px] font-bold text-[color:var(--color-on-surface-variant)]">
-              {isRTL ? 'الحالة' : 'Status'}
-            </p>
-            <div className="mt-2 inline-flex rounded-full bg-[color:var(--color-tertiary)] px-3 py-1.5 text-[12px] font-black text-[color:var(--color-on-tertiary)]">
-              {isRTL ? 'جاهز للمقارنة' : 'Ready to compare'}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          {deckStores.map((store, index) => (
-            <div
-              key={`${store.slug}-${index}`}
-              className="flex min-h-[86px] flex-col items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)] p-2 text-center dark:bg-[color:var(--color-surface-container)]"
-            >
-              <StoreLogo slug={store.slug} size="lg" locale={locale as 'ar' | 'en'} />
-              <p className="line-clamp-1 w-full text-[11px] font-black text-[color:var(--color-on-surface)]">
-                {(isRTL ? store.name_ar : store.name_en) || store.slug}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-full bg-[color:var(--color-primary)] px-4 py-3 text-[color:var(--color-on-primary)]">
-          <span className="text-[13px] font-bold">{isRTL ? 'استعرض كل المتاجر' : 'Browse all stores'}</span>
-          {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </div>
-      </Link>
-    </div>
-  );
-}
-
-function mergeHeroStores(stores: LandingData['stores']): LandingData['stores'] {
-  const normalized = new Map<string, LandingData['stores'][number]>();
-
-  for (const store of [...stores, ...HERO_STORE_LOGOS]) {
-    const slug = normalizeHeroStoreSlug(store.slug);
-    if (!normalized.has(slug)) {
-      normalized.set(slug, { ...store, slug });
-    }
-  }
-
-  return Array.from(normalized.values());
-}
-
-function normalizeHeroStoreSlug(slug: string): string {
-  if (slug === 'amazon-sa') return 'amazon';
-  if (slug === 'samsung') return 'samsung_ksa';
-  if (slug === 'ibrahim-shaker') return 'shaker';
-  return slug;
 }
 
 function CategoryShowcase({ categoryCounts }: { categoryCounts: Record<string, number> }) {

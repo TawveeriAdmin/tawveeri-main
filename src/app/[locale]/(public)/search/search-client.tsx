@@ -98,6 +98,26 @@ const SEARCH_CACHE_KEY = 'search_results_cache';
 
 const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+function parseCsvParam(...values: Array<string | null>): string[] {
+  const raw = values.find((value) => value && value.trim().length > 0);
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function parseNumberParam(...values: Array<string | null>): number | undefined {
+  const raw = values.find((value) => value && value.trim().length > 0);
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseBooleanParam(...values: Array<string | null>): boolean {
+  return values.some((value) => value === '1' || value === 'true');
+}
+
 // Session-storage helpers for persisting search results across navigation.
 // `total` is the server's exact match count so pagination can render
 // correctly after a cache-restored back-nav without a refetch.
@@ -251,7 +271,6 @@ export default function SearchClient() {
 
   // Sync search query from URL params (e.g. when header search navigates here)
   const urlQueryRef = useRef(urlQuery);
-  const filtersFromUrlRef = useRef(false);
   useEffect(() => {
     const urlQuery = searchParams.get('q') || '';
     if (urlQuery !== urlQueryRef.current) {
@@ -401,6 +420,28 @@ export default function SearchClient() {
     });
   }, []);
 
+  const serverFilterKey = useMemo(() => JSON.stringify({
+    brands: filters.brands,
+    stores: filters.stores,
+    availability: filters.availability,
+    dealsOnly: filters.dealsOnly,
+    freeDeliveryOnly: filters.freeDeliveryOnly,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    discount: filters.discount,
+    specs: filters.specs,
+  }), [
+    filters.brands,
+    filters.stores,
+    filters.availability,
+    filters.dealsOnly,
+    filters.freeDeliveryOnly,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.discount,
+    filters.specs,
+  ]);
+
   // Reset page when filters or sort change
   useEffect(() => {
     setCurrentPage(1);
@@ -490,57 +531,34 @@ export default function SearchClient() {
   // so only actual filter changes (not page/sort) trigger this
   useEffect(() => {
     const p = new URLSearchParams(filterParamsString);
-    const storesFromUrl = (p.get('stores')?.split(',') || [])
-      .map((store) => store.trim().toLowerCase())
+    const specFilters: NonNullable<SearchFilters['specs']> = {};
+    for (const [key, value] of p.entries()) {
+      if (key.startsWith('spec:') && value) {
+        specFilters[key.replace('spec:', '')] = parseCsvParam(value);
+      }
+    }
+    const storesFromUrl = parseCsvParam(p.get('stores'))
+      .map((store) => store.toLowerCase())
       .filter(isSupportedSearchStore);
 
     const urlFilters: SearchFilters = {
-      brands: p.get('brands')?.split(',').filter(Boolean) || [],
+      brands: parseCsvParam(p.get('brand'), p.get('brands')),
       stores: storesFromUrl,
-      availability: (p.get('availability')?.split(',').filter(Boolean) || []) as AvailabilityStatus[],
-      dealsOnly: p.get('deals') === 'true',
-      freeDeliveryOnly: p.get('freeDelivery') === 'true',
-      minRating: p.get('rating') ? parseFloat(p.get('rating') || '0') : undefined,
+      availability: parseCsvParam(p.get('availability')) as AvailabilityStatus[],
+      dealsOnly: parseBooleanParam(p.get('dealsOnly'), p.get('deals')),
+      freeDeliveryOnly: parseBooleanParam(p.get('freeDeliveryOnly'), p.get('freeDelivery')),
+      minRating: parseNumberParam(p.get('minRating'), p.get('rating')),
+      minPrice: parseNumberParam(p.get('priceMin'), p.get('min_price')),
+      maxPrice: parseNumberParam(p.get('priceMax'), p.get('max_price')),
+      specs: Object.keys(specFilters).length > 0 ? specFilters : undefined,
+      discount: parseNumberParam(p.get('discount')),
+      condition: parseCsvParam(p.get('condition')),
+      shipping: parseCsvParam(p.get('shipping')),
     };
-    filtersFromUrlRef.current = true;
+    if (urlFilters.condition?.length === 0) urlFilters.condition = undefined;
+    if (urlFilters.shipping?.length === 0) urlFilters.shipping = undefined;
     setFilters(urlFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterParamsString]);
-
-  // Update URL when filters change (skip if change came from URL sync)
-  useEffect(() => {
-    if (filtersFromUrlRef.current) {
-      filtersFromUrlRef.current = false;
-      return;
-    }
-
-    const p = new URLSearchParams(searchParams.toString());
-
-    const currentQuery = searchParams.get('q');
-    if (currentQuery) p.set('q', currentQuery);
-
-    if (filters.brands.length > 0) p.set('brands', filters.brands.join(','));
-    else p.delete('brands');
-    if (filters.stores.length > 0) p.set('stores', filters.stores.join(','));
-    else p.delete('stores');
-    if (filters.availability.length > 0) p.set('availability', filters.availability.join(','));
-    else p.delete('availability');
-    if (filters.dealsOnly) p.set('deals', 'true');
-    else p.delete('deals');
-    if (filters.freeDeliveryOnly) p.set('freeDelivery', 'true');
-    else p.delete('freeDelivery');
-    if (filters.minRating && filters.minRating > 0) p.set('rating', filters.minRating.toString());
-    else p.delete('rating');
-    if (selectedCategory !== 'all') p.set('category', selectedCategory);
-    else p.delete('category');
-
-    const newUrl = `/${locale}/search?${p.toString()}`;
-    const currentUrl = `/${locale}/search?${searchParams.toString()}`;
-
-    if (newUrl !== currentUrl) {
-      router.replace(newUrl, { scroll: false });
-    }
-  }, [filters, selectedCategory, locale, router, searchParams]);
 
   // Note: debouncedQuery is set explicitly on form submit / handleSearch.
   // No auto-debounce — search only triggers on Enter or button click.
@@ -602,6 +620,7 @@ export default function SearchClient() {
           free_delivery_only: filters.freeDeliveryOnly || undefined,
           min_price: filters.minPrice,
           max_price: filters.maxPrice,
+          discount: filters.discount,
           specs: filters.specs,
           sort: sortForApi,
           page: currentPage,
@@ -755,14 +774,7 @@ export default function SearchClient() {
     selectedCategory,
     currentPage,
     sortBy,
-    filters.brands,
-    filters.stores,
-    filters.availability,
-    filters.dealsOnly,
-    filters.freeDeliveryOnly,
-    filters.minPrice,
-    filters.maxPrice,
-    filters.specs,
+    serverFilterKey,
   ]);
 
   const handleSearch = (query: string, category?: ProductCategory | 'all') => {
@@ -1177,12 +1189,69 @@ export default function SearchClient() {
       {/* ── Active Search State ── shows when user has a query OR is browsing a category */}
       {(debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
         <>
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-[color:var(--color-border)] bg-[color:var(--color-primary-container)] p-4 shadow-[0_22px_62px_-48px_rgba(61,132,104,0.85)] dark:bg-[color:var(--color-card)] md:p-5">
+            <div className="pointer-events-none absolute -end-20 -top-24 h-56 w-56 rounded-full bg-[color:var(--color-primary)]/18 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 start-12 h-44 w-44 rounded-full bg-[color:var(--color-secondary)]/16 blur-3xl" />
+            <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--color-primary)]">
+                  {locale === 'ar' ? 'بحث الأسعار' : 'Price search'}
+                </p>
+                <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-[color:var(--color-foreground)] md:text-4xl">
+                  {debouncedQuery
+                    ? debouncedQuery
+                    : locale === 'ar'
+                      ? 'تصفح الفئة'
+                      : 'Browse category'}
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-[color:var(--color-muted-foreground)] md:text-base">
+                  {locale === 'ar'
+                    ? 'قارن النتائج من المتاجر، رتّب حسب السعر أو التقييم، وضيّق الخيارات من لوحة الفلاتر.'
+                    : 'Compare store results, sort by price or rating, and narrow the list from the filter panel.'}
+                </p>
+              </div>
+
+              <div className="rounded-[1.35rem] border border-[color:var(--color-primary)]/30 bg-white p-3 ring-1 ring-[color:var(--color-primary)]/10 dark:bg-[color:var(--color-card)]">
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    handleSearch(searchQuery.trim(), selectedCategory);
+                  }}
+                  className="flex gap-2"
+                >
+                  <div className="relative flex-1 rounded-2xl border-2 border-[color:var(--color-primary)]/35 bg-[color:var(--color-primary-container)]/35 transition focus-within:border-[color:var(--color-primary)] focus-within:bg-white focus-within:ring-4 focus-within:ring-[color:var(--color-primary)]/15 dark:bg-[color:var(--color-background)]">
+                    <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-primary)]" />
+                    <input
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder={t('search.searchPlaceholder')}
+                      className="h-11 w-full rounded-2xl bg-transparent pe-3 ps-9 text-sm font-bold text-[color:var(--color-foreground)] outline-none placeholder:text-[color:var(--color-muted-foreground)]/80"
+                    />
+                  </div>
+                  <Button type="submit" className="h-11 rounded-2xl px-5 font-extrabold">
+                    {t('button.search')}
+                  </Button>
+                </form>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-[color:var(--color-muted-foreground)]">
+                  <span className="rounded-full bg-[color:var(--color-muted)] px-3 py-1">
+                    {totalCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')} {t('search.resultsCount')}
+                  </span>
+                  {activeFilterCount > 0 && (
+                    <span className="rounded-full bg-[color:var(--color-secondary)] px-3 py-1 text-[color:var(--color-secondary-foreground)]">
+                      {activeFilterCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')} {locale === 'ar' ? 'فلتر' : 'filters'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ── Main Content ── */}
           <div className="py-6">
-            <div className="flex gap-6">
+            <div className="flex gap-5">
               {/* Desktop Filter Sidebar */}
-              <div className="hidden lg:block w-64 shrink-0">
-                <div className="sticky top-[120px] max-h-[calc(100vh-148px)] min-h-0 overflow-y-auto flex flex-col gap-3 scrollbar-hide">
+              <div className="hidden w-[292px] shrink-0 lg:block">
+                <div className="sticky top-48 flex max-h-[calc(100dvh-13.5rem)] min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain pb-4 pe-1 [scrollbar-width:thin]">
                   <FilterSidebar
                     filters={filters}
                     onFilterChange={setFiltersAndResetPage}
@@ -1195,9 +1264,9 @@ export default function SearchClient() {
               </div>
 
               {/* Results Area */}
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 {/* Mobile toolbar + filter chips */}
-                <div className="mb-4">
+                <div className="mb-4 rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/82 p-3 shadow-[0_18px_44px_-40px_rgba(26,26,26,0.5)] backdrop-blur dark:bg-[color:var(--color-card)]/68">
                   {/* Mobile: results count, sort, filters button */}
                   <div className="flex items-center justify-between gap-4 lg:hidden">
                     {loading
@@ -1234,7 +1303,7 @@ export default function SearchClient() {
                     activeCount={activeFilterCount}
                   />
                   {/* Desktop sort + active chips row */}
-                  <div className="mt-3 hidden lg:flex items-center justify-between gap-3 flex-wrap">
+                  <div className="hidden items-center justify-between gap-3 lg:flex lg:flex-wrap">
                     <div className="flex items-center gap-3 flex-wrap">
                       {loading
                         ? <p className="t-small text-on-surface-variant animate-pulse">{scrapingProgress}</p>
@@ -1314,7 +1383,7 @@ export default function SearchClient() {
                         <h3 className="text-headline-sm text-on-surface">
                           {locale === 'ar' ? 'منتجات رائجة' : 'Trending products'}
                         </h3>
-                        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                           {trendingProducts.slice(0, 8).map((p) => (
                             <ProductCard
                               key={`trending-${p.id}`}
@@ -1335,7 +1404,7 @@ export default function SearchClient() {
                 {/* Products Grid */}
                 {!loading && !error && products.length > 0 && (
                   <>
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                       {products.map((product, index) => (
                         <div
                           key={`${product.id}-${index}`}

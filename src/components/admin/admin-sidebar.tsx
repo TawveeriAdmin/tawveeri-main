@@ -6,9 +6,11 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
+  User,
   Package,
   Store,
   CreditCard,
+  HandCoins,
   BarChart3,
   FileText,
   Ticket,
@@ -36,15 +38,22 @@ const STORAGE_KEY = 'tawveeri-admin-sidebar-collapsed';
 
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+  { href: '/admin/profile', icon: User, key: 'profile' },
   { href: '/admin/users', icon: Users, key: 'users' },
   { href: '/admin/products', icon: Package, key: 'products' },
   { href: '/admin/stores', icon: Store, key: 'stores' },
+  { href: '/admin/affiliate', icon: HandCoins, key: 'affiliate' },
   { href: '/admin/coupons', icon: Ticket, key: 'coupons' },
   { href: '/admin/scraping/schedules', icon: Bot, key: 'scraping' },
   { href: '/admin/scraping/health', icon: Activity, key: 'scrapingHealth' },
   { href: '/admin/transactions', icon: CreditCard, key: 'transactions' },
   { href: '/admin/analytics', icon: BarChart3, key: 'analytics' },
   { href: '/admin/logs', icon: FileText, key: 'logs' },
+];
+
+const navGroups = [
+  { key: 'core', items: navItems.slice(0, 7) },
+  { key: 'operations', items: navItems.slice(7) },
 ];
 
 export function AdminSidebar({ locale }: AdminSidebarProps) {
@@ -56,7 +65,9 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'true') setCollapsed(true);
+    if (stored === 'true') {
+      queueMicrotask(() => setCollapsed(true));
+    }
   }, []);
 
   const toggleCollapsed = useCallback(() => {
@@ -78,14 +89,14 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
         href={`/${locale}${item.href}`}
         onClick={() => setMobileOpen(false)}
         className={cn(
-          'state-layer flex items-center gap-3 rounded-full text-label-lg transition-colors',
+          'group flex items-center gap-3 rounded-2xl text-sm font-semibold transition-all duration-200',
           isActive
-            ? 'bg-secondary-container text-on-secondary-container font-medium'
-            : 'text-on-surface-variant hover:bg-on-surface/8',
-          showLabel ? 'px-4 py-3' : 'justify-center px-3 py-3'
+            ? 'bg-[#1f6f59] text-white shadow-[0_12px_30px_-18px_rgba(31,111,89,0.8)]'
+            : 'text-on-surface-variant hover:bg-white/70 hover:text-on-surface dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white',
+          showLabel ? 'px-3.5 py-3' : 'justify-center px-3 py-3'
         )}
       >
-        <Icon className="h-5 w-5 shrink-0" />
+        <Icon className="h-4.5 w-4.5 shrink-0" />
         {showLabel && <span>{label}</span>}
       </Link>
     );
@@ -95,64 +106,80 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
   const desktopSidebar = (
     <aside
       className={cn(
-        'hidden md:flex flex-col border-e border-outline-variant bg-surface-container-low transition-[width] duration-200 h-full',
-        collapsed ? 'w-[72px]' : 'w-64'
+        'hidden h-[100dvh] shrink-0 self-stretch md:flex flex-col border-e border-white/60 bg-white/90 shadow-[10px_0_40px_-35px_rgba(15,23,42,0.45)] backdrop-blur-xl transition-[width] duration-200 dark:border-[#263b33] dark:bg-[#121814]',
+        collapsed ? 'w-[76px]' : 'w-72'
       )}
     >
       {/* Logo / Brand */}
       <div className={cn(
-        'flex h-14 items-center border-b border-outline-variant',
-        collapsed ? 'justify-center px-2' : 'gap-3 px-4'
+        'flex h-20 items-center border-b border-[#d7ece5] dark:border-[#263b33]',
+        collapsed ? 'justify-center px-2' : 'gap-3 px-5'
       )}>
         <Link
           href={`/${locale}/admin/dashboard`}
           className={cn(
-            'inline-flex shrink-0 items-center gap-2.5 rounded-xl p-1 transition-colors hover:bg-on-surface/8',
+            'inline-flex shrink-0 items-center gap-3 rounded-2xl p-1 transition-colors hover:bg-[#eff8f5] dark:hover:bg-white/8',
             collapsed && 'justify-center'
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#0a2f7e] to-primary text-xs font-black text-white shadow-sm shadow-primary/15">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1f6f59] text-sm font-black text-white shadow-[0_14px_30px_-18px_rgba(31,111,89,0.95)]">
             {t('app.initial')}
           </div>
           {!collapsed && (
-            <span className="text-base font-bold tracking-tight text-on-surface">
-              {t('app.name')}
-            </span>
+            <div>
+              <span className="block text-base font-black tracking-tight text-on-surface dark:text-white">
+                {t('app.name')}
+              </span>
+              <span className="mt-0.5 block text-[11px] font-semibold text-on-surface-variant dark:text-white/55">
+                {locale === 'ar' ? 'مركز الإدارة' : 'Control center'}
+              </span>
+            </div>
           )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto p-3">
         <TooltipProvider delayDuration={0}>
-          {navItems.map((item) => {
-            const label = t(`admin.sidebar.${item.key}`);
+          {navGroups.map((group) => (
+            <div key={group.key} className="space-y-1.5">
+              {!collapsed && (
+                <p className="px-3 text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant/70 dark:text-white/40">
+                  {group.key === 'core'
+                    ? locale === 'ar' ? 'الأساسي' : 'Core'
+                    : locale === 'ar' ? 'التشغيل' : 'Operations'}
+                </p>
+              )}
+              {group.items.map((item) => {
+                const label = t(`admin.sidebar.${item.key}`);
 
-            if (collapsed) {
-              return (
-                <Tooltip key={item.key}>
-                  <TooltipTrigger asChild>{navLink(item, false)}</TooltipTrigger>
-                  <TooltipContent side={isRTL ? 'left' : 'right'} sideOffset={8}>
-                    {label}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
+                if (collapsed) {
+                  return (
+                    <Tooltip key={item.key}>
+                      <TooltipTrigger asChild>{navLink(item, false)}</TooltipTrigger>
+                      <TooltipContent side={isRTL ? 'left' : 'right'} sideOffset={8}>
+                        {label}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
 
-            return navLink(item, true);
-          })}
+                return navLink(item, true);
+              })}
+            </div>
+          ))}
         </TooltipProvider>
       </nav>
 
       {/* Collapse toggle */}
-      <div className="border-t border-outline-variant p-2">
+      <div className="border-t border-[#d7ece5] p-3 dark:border-[#263b33]">
         <TooltipProvider delayDuration={0}>
           {(() => {
             const btn = (
               <button
                 onClick={toggleCollapsed}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-full px-4 py-2.5 text-label-lg text-on-surface-variant transition-colors hover:bg-on-surface/8',
+                  'flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-white hover:text-on-surface dark:text-white/65 dark:hover:bg-white/8 dark:hover:text-white',
                   collapsed && 'justify-center px-3'
                 )}
               >

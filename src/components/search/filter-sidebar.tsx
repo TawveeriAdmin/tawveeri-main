@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { getSupabaseBrowserClient } from '@/lib/database';
@@ -71,29 +72,31 @@ function FilterSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+    <div className="border-b border-[color:var(--color-border)]/70 last:border-b-0">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2.5 py-3 px-1 text-start group"
+        className="group flex w-full items-center gap-2.5 rounded-xl px-2 py-3 text-start transition hover:bg-[color:var(--color-muted)]/60"
         aria-expanded={open}
       >
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 transition-colors">
-          <Icon className="w-3.5 h-3.5 text-on-surface-variant group-hover:text-primary-500 transition-colors" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)] transition group-hover:bg-[color:var(--color-primary)] group-hover:text-white dark:bg-[color:var(--color-muted)]">
+          <Icon className="h-3.5 w-3.5" />
         </div>
-        <span className="flex-1 text-sm font-medium text-on-surface">{title}</span>
+        <span className="flex-1 text-sm font-extrabold text-[color:var(--color-foreground)]">{title}</span>
         {badge !== undefined && badge > 0 && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 tabular-nums">
+          <span className="rounded-full bg-[color:var(--color-secondary)] px-2 py-0.5 font-mono text-[10px] font-black text-[color:var(--color-secondary-foreground)]">
             {badge}
           </span>
         )}
         <ChevronDown className={cn(
-          'w-4 h-4 text-on-surface-variant transition-transform duration-200',
+          'h-4 w-4 text-[color:var(--color-muted-foreground)] transition-transform duration-200',
           open && 'rotate-180'
         )} />
       </button>
       {/* No max-height animation — `max-h-0` + `overflow-hidden` clips tall lists (~5 rows visible) in some layouts. */}
       <div className={cn(!open && 'hidden', 'pb-3')}>
-        <div className="px-1 min-h-0">{children}</div>
+        <div className="ms-5 min-h-0 border-s border-[color:var(--color-border)]/70 ps-4 pe-1 pb-1">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -328,14 +331,15 @@ export function FilterSidebar({
   return (
     <aside
       aria-label={t('search.filtersTitle')}
-      className="flex w-full flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+      dir={locale === 'ar' ? 'rtl' : 'ltr'}
+      className="flex max-h-full w-full flex-col overflow-hidden rounded-[1.75rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/92 shadow-[0_14px_34px_-30px_rgba(26,26,26,0.42)] backdrop-blur-xl dark:bg-[color:var(--color-card)]/72"
     >
       {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
+      <div className="border-b border-[color:var(--color-border)] bg-[color:var(--color-primary-container)]/70 px-4 py-4 dark:bg-[color:var(--color-muted)]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary-100 dark:bg-primary-900/40">
-              <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[color:var(--color-primary)] text-white">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="4" x2="4" y1="21" y2="14" /><line x1="4" x2="4" y1="10" y2="3" />
                 <line x1="12" x2="12" y1="21" y2="12" /><line x1="12" x2="12" y1="8" y2="3" />
                 <line x1="20" x2="20" y1="21" y2="16" /><line x1="20" x2="20" y1="12" y2="3" />
@@ -343,9 +347,14 @@ export function FilterSidebar({
                 <line x1="18" x2="22" y1="16" y2="16" />
               </svg>
             </div>
-            <span className="text-sm font-bold text-on-surface">{t('search.filtersTitle')}</span>
+            <div>
+              <span className="block text-sm font-black text-[color:var(--color-foreground)]">{t('search.filtersTitle')}</span>
+              <span className="text-[11px] font-bold text-[color:var(--color-muted-foreground)]">
+                {locale === 'ar' ? 'ضيّق النتائج بسرعة' : 'Narrow results fast'}
+              </span>
+            </div>
             {activeFilterCount > 0 && (
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-500 text-white tabular-nums">
+              <span className="rounded-full bg-[color:var(--color-secondary)] px-2 py-0.5 font-mono text-[10px] font-black text-[color:var(--color-secondary-foreground)]">
                 {activeFilterCount}
               </span>
             )}
@@ -353,9 +362,9 @@ export function FilterSidebar({
           {activeFilterCount > 0 && (
             <button
               onClick={handleClearFilters}
-              className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
+              className="flex items-center gap-1 rounded-full bg-[color:var(--color-background)] px-3 py-1.5 text-xs font-extrabold text-[color:var(--color-primary)] transition hover:text-[color:var(--color-foreground)]"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="h-3 w-3" />
               {t('search.clearFilters')}
             </button>
           )}
@@ -363,7 +372,7 @@ export function FilterSidebar({
       </div>
 
       {/* Filter sections — scroll the whole aside via parent `.sticky.overflow-y-auto` on search page */}
-      <div className="px-3 pb-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-1 [scrollbar-width:thin]">
         {/* Sort */}
         {onSortChange && (
           <FilterSection icon={ArrowUpDown} title={t('search.sortBy')} defaultOpen>
@@ -376,18 +385,18 @@ export function FilterSidebar({
                     key={option.value}
                     onClick={() => onSortChange(option.value)}
                     className={cn(
-                      'w-full flex items-center gap-2.5 px-2 py-2 rounded-lg border text-start transition-colors',
+                      'flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-start transition',
                       isActive
-                        ? 'border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                        : 'border-transparent text-on-surface hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                        ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]'
+                        : 'border-transparent text-[color:var(--color-foreground)] hover:bg-[color:var(--color-muted)]/60'
                     )}
                   >
                     <Icon className={cn(
-                      'w-4 h-4',
-                      isActive ? 'text-primary-500' : 'text-on-surface-variant'
+                      'h-4 w-4',
+                      isActive ? 'text-[color:var(--color-primary)]' : 'text-[color:var(--color-muted-foreground)]'
                     )} />
-                    <span className="flex-1 text-sm font-medium">{option.label}</span>
-                    {isActive && <Check className="w-3.5 h-3.5 text-primary-500" />}
+                    <span className="flex-1 text-sm font-bold">{option.label}</span>
+                    {isActive && <Check className="h-3.5 w-3.5 text-[color:var(--color-primary)]" />}
                   </button>
                 );
               })}
@@ -416,10 +425,10 @@ export function FilterSidebar({
                       key={preset.key}
                       onClick={() => onFilterChange({ ...filters, minPrice: preset.min, maxPrice: preset.max })}
                       className={cn(
-                        'py-1.5 rounded-lg border text-xs font-medium transition-colors',
+                        'rounded-xl border py-2 text-xs font-bold transition',
                         isActive
-                          ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                          : 'border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700'
+                          ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]'
+                          : 'border-[color:var(--color-border)] text-[color:var(--color-muted-foreground)] hover:border-[color:var(--color-primary)] hover:bg-[color:var(--color-primary-container)]'
                       )}
                     >
                       {preset.label}
@@ -429,11 +438,11 @@ export function FilterSidebar({
               </div>
             )}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-center">
+              <div className="flex-1 rounded-xl bg-[color:var(--color-muted)] px-2.5 py-2 text-center">
                 <Price amount={filters.minPrice ?? priceRange[0]} className="text-xs font-semibold tabular-nums" />
               </div>
-              <span className="text-xs text-on-surface-variant">—</span>
-              <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-center">
+              <span className="text-xs text-[color:var(--color-muted-foreground)]">—</span>
+              <div className="flex-1 rounded-xl bg-[color:var(--color-muted)] px-2.5 py-2 text-center">
                 <Price amount={filters.maxPrice ?? priceRange[1]} className="text-xs font-semibold tabular-nums" />
               </div>
             </div>
@@ -447,7 +456,7 @@ export function FilterSidebar({
             title={t('search.filters.stores')}
             badge={filters.stores.length}
           >
-            <div className="space-y-1" data-store-filter-count={availableStores.length}>
+            <div className="max-h-72 space-y-1 overflow-y-auto overscroll-contain pe-1 [scrollbar-width:thin]" data-store-filter-count={availableStores.length}>
               {availableStores.map((store) => {
                 const storeName = locale === 'ar' ? store.name_ar : store.name_en;
                 const isChecked = filters.stores.includes(store.slug);
@@ -455,28 +464,30 @@ export function FilterSidebar({
                   <label
                     key={store.id}
                     className={cn(
-                      'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                      'flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 py-2.5 text-start transition',
                       isChecked
-                        ? 'bg-primary-50 dark:bg-primary-900/20'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                        ? 'bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]'
+                        : 'hover:bg-[color:var(--color-muted)]/60'
                     )}
                   >
                     <Checkbox
                       id={`store-${store.slug}`}
                       checked={isChecked}
                       onCheckedChange={() => handleStoreToggle(store.slug)}
+                      className="border-[color:var(--color-border)] bg-[color:var(--color-background)] data-[state=checked]:border-[color:var(--color-primary)] data-[state=checked]:bg-[color:var(--color-primary)]"
                     />
-                    <img
+                    <Image
                       src={getSearchStoreLogoPath(store.slug)}
                       alt=""
                       width={20}
                       height={20}
                       className="rounded object-contain shrink-0"
+                      unoptimized
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.visibility = 'hidden';
                       }}
                     />
-                    <span className="text-sm text-on-surface">{storeName}</span>
+                    <span className="min-w-0 flex-1 truncate text-start text-sm font-bold text-[color:var(--color-foreground)]">{storeName}</span>
                   </label>
                 );
               })}
@@ -484,33 +495,34 @@ export function FilterSidebar({
           </FilterSection>
         )}
 
-        {/* Brands */}
-        {availableBrands.length > 0 && (
+        {/* Brands hidden for now. Keep the data path above so it can be restored quickly later. */}
+        {false && availableBrands.length > 0 && (
           <FilterSection
             icon={Tag}
             title={t('search.filters.brands')}
             badge={filters.brands.length}
-            defaultOpen
+            defaultOpen={filters.brands.length > 0}
           >
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+            <div className="max-h-72 space-y-1 overflow-y-auto overscroll-contain pe-1 [scrollbar-width:thin]">
               {availableBrands.map((brand) => {
                 const isChecked = filters.brands.includes(brand);
                 return (
                   <label
                     key={brand}
                     className={cn(
-                      'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                      'flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 py-2.5 text-start transition',
                       isChecked
-                        ? 'bg-primary-50 dark:bg-primary-900/20'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                        ? 'bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]'
+                        : 'hover:bg-[color:var(--color-muted)]/60'
                     )}
                   >
                     <Checkbox
                       id={`brand-${brand}`}
                       checked={isChecked}
                       onCheckedChange={() => handleBrandToggle(brand)}
+                      className="border-[color:var(--color-border)] bg-[color:var(--color-background)] data-[state=checked]:border-[color:var(--color-primary)] data-[state=checked]:bg-[color:var(--color-primary)]"
                     />
-                    <span className="text-sm text-on-surface">{brand}</span>
+                    <span className="min-w-0 flex-1 truncate text-start text-sm font-bold text-[color:var(--color-foreground)]">{brand}</span>
                   </label>
                 );
               })}
@@ -527,26 +539,28 @@ export function FilterSidebar({
               icon={Cpu}
               title={locale === 'ar' ? spec.label_ar : spec.label_en}
               badge={specValues.length || undefined}
+              defaultOpen={specValues.length > 0}
             >
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="max-h-72 space-y-1 overflow-y-auto overscroll-contain pe-1 [scrollbar-width:thin]">
                 {spec.options.map((option) => {
                   const isChecked = specValues.includes(option.value);
                   return (
                     <label
                       key={option.value}
                       className={cn(
-                        'flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors',
+                        'flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 py-2.5 text-start transition-colors',
                         isChecked
-                          ? 'bg-primary-50 dark:bg-primary-900/20'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                          ? 'bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]'
+                          : 'hover:bg-[color:var(--color-muted)]/60'
                       )}
                     >
                       <Checkbox
                         id={`spec-${spec.key}-${option.value}`}
                         checked={isChecked}
                         onCheckedChange={() => handleSpecToggle(spec.key, option.value)}
+                        className="border-[color:var(--color-border)] bg-[color:var(--color-background)] data-[state=checked]:border-[color:var(--color-primary)] data-[state=checked]:bg-[color:var(--color-primary)]"
                       />
-                      <span className="text-sm text-on-surface">
+                      <span className="min-w-0 flex-1 truncate text-start text-sm font-bold text-[color:var(--color-foreground)]">
                         {locale === 'ar' ? option.label_ar : option.label_en}
                       </span>
                     </label>
@@ -576,10 +590,10 @@ export function FilterSidebar({
                   key={option.value}
                   onClick={() => handleDiscountToggle(option.value)}
                   className={cn(
-                    'py-2 rounded-lg border text-sm font-medium transition-all',
+                    'rounded-xl border py-2 text-sm font-bold transition',
                     isActive
-                      ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                      : 'border-gray-200 dark:border-gray-700 text-on-surface-variant hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-700'
+                      ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]'
+                      : 'border-[color:var(--color-border)] text-[color:var(--color-muted-foreground)] hover:border-[color:var(--color-primary)] hover:bg-[color:var(--color-primary-container)]'
                   )}
                 >
                   {option.label}
@@ -593,10 +607,10 @@ export function FilterSidebar({
 
       {/* Footer — clear all */}
       {activeFilterCount > 0 && (
-        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+        <div className="border-t border-[color:var(--color-border)] px-4 py-3">
           <button
             onClick={handleClearFilters}
-            className="w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-on-surface-variant hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="w-full rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-background)] py-2.5 text-sm font-extrabold text-[color:var(--color-muted-foreground)] transition hover:border-[color:var(--color-primary)] hover:text-[color:var(--color-primary)]"
           >
             {t('search.clearFilters')}
           </button>

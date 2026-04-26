@@ -7,8 +7,8 @@ export default function PublicLoading() {
       <Skeleton className="h-[180px] w-full rounded-2xl" />
 
       {/* Grid skeleton */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        {Array.from({ length: 10 }).map((_, i) => (
           <div
             key={i}
             className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700"

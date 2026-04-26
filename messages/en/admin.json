@@ -38,9 +38,11 @@
     "sidebar": {
       "adminPanel": "Admin Panel",
       "dashboard": "Dashboard",
+      "profile": "Profile",
       "users": "Users",
       "products": "Products",
       "stores": "Stores",
+      "affiliate": "Affiliate",
       "transactions": "Transactions",
       "analytics": "Analytics",
       "logs": "Logs",
@@ -53,6 +55,7 @@
     },
     "header": {
       "adminDashboard": "Admin Dashboard",
+      "profile": "Profile",
       "signOut": "Sign Out"
     },
     "userRoleDialog": {
@@ -294,4 +297,3 @@
     }
   }
 }
-

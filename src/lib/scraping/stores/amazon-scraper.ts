@@ -1,8 +1,10 @@
-import type { ScrapedProduct, ProductCategory } from '../base/types';
+import type { ScrapedProduct } from '../base/types';
+import type { ProductCategory } from '@/lib/database/types';
 import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
+import { isTechProduct } from '../product-filter';
 
 const BASE_URL = 'https://www.amazon.sa';
 
@@ -218,6 +220,10 @@ export class AmazonScraper extends BaseScraper {
 
     // Brand extraction
     const { brand, model } = this.extractBrandAndModel(title);
+    if (!isTechProduct(title, brand, category)) {
+      return null;
+    }
+
     const isPrime = el.find('i.a-icon-prime').length > 0;
     const hasDiscount = originalPrice !== null && originalPrice > price;
 
