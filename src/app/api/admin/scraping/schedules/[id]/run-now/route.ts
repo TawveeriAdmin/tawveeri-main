@@ -42,6 +42,14 @@ export async function POST(
     stores: { slug: string };
   };
 
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: 'CRON_SECRET is not configured. Set it before running scrapers manually.' },
+      { status: 503 },
+    );
+  }
+
   const runId = await startRun({
     store_id: s.store_id,
     job_type: s.job_type,
@@ -66,7 +74,6 @@ export async function POST(
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
-  const cronSecret = process.env.CRON_SECRET || '';
 
   // Fire-and-forget.
   fetch(`${baseUrl}${path}`, {

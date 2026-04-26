@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -13,6 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshCw, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScrapingAdminGuide } from '../scraping-admin-guide';
 
 interface StoreHealth {
   store_id: string;
@@ -38,9 +40,54 @@ interface Totals {
   chronic_failures: number;
 }
 
-function coverageBadge(pct: number | null) {
+const HEALTH_TEXT = {
+  en: {
+    title: 'Scraping health',
+    subtitle: 'Coverage and reliability per store. Auto-refreshes every 30s.',
+    refresh: 'Refresh',
+    totalProducts: 'Total products',
+    refreshed24h: 'Refreshed (24h)',
+    ofCatalog: 'of catalog',
+    stale48h: 'Stale (>48h)',
+    chronicFailures: 'Chronic failures',
+    store: 'Store',
+    products: 'Products',
+    coverage24h: '24h coverage',
+    staleColumn: 'Stale >48h',
+    chronicFails: 'Chronic fails',
+    runs24h: 'Runs (24h)',
+    errors24h: 'Errors (24h)',
+    oldestCheck: 'Oldest check',
+    noData: 'No stores with catalog data yet — run discovery to populate.',
+    noDataBadge: 'no data',
+    failed: 'failed',
+  },
+  ar: {
+    title: 'صحة السكرابر',
+    subtitle: 'تغطية وموثوقية التحديث لكل متجر. يتم التحديث تلقائيا كل 30 ثانية.',
+    refresh: 'تحديث',
+    totalProducts: 'إجمالي المنتجات',
+    refreshed24h: 'تم تحديثها (24س)',
+    ofCatalog: 'من الكتالوج',
+    stale48h: 'قديمة (>48س)',
+    chronicFailures: 'إخفاقات متكررة',
+    store: 'المتجر',
+    products: 'المنتجات',
+    coverage24h: 'تغطية 24س',
+    staleColumn: 'قديمة >48س',
+    chronicFails: 'إخفاقات متكررة',
+    runs24h: 'تشغيل (24س)',
+    errors24h: 'أخطاء (24س)',
+    oldestCheck: 'أقدم فحص',
+    noData: 'لا توجد بيانات كتالوج بعد. شغل الاكتشاف لإضافة المنتجات.',
+    noDataBadge: 'لا توجد بيانات',
+    failed: 'فشل',
+  },
+};
+
+function coverageBadge(pct: number | null, noDataLabel: string) {
   if (pct === null) {
-    return <span className="text-xs text-muted-foreground">no data</span>;
+    return <span className="text-xs text-muted-foreground">{noDataLabel}</span>;
   }
   if (pct >= 90) {
     return (
@@ -63,17 +110,24 @@ function coverageBadge(pct: number | null) {
   );
 }
 
-function relTime(iso: string | null): string {
+function relTime(iso: string | null, locale: string): string {
   if (!iso) return '—';
   const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diffMs / 60000);
-  if (mins < 60) return `${mins}m ago`;
+  const abs = Math.abs(diffMs);
+  const mins = Math.round(abs / 60000);
+  const isAr = locale === 'ar';
+  if (mins < 1) return isAr ? 'الآن' : 'just now';
+  if (mins < 60) return isAr ? `قبل ${mins}د` : `${mins}m ago`;
   const hours = Math.round(mins / 60);
-  if (hours < 48) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
+  if (hours < 48) return isAr ? `قبل ${hours}س` : `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return isAr ? `قبل ${days}ي` : `${days}d ago`;
 }
 
 export default function ScrapingHealthPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
+  const text = HEALTH_TEXT[locale === 'ar' ? 'ar' : 'en'];
   const [stores, setStores] = useState<StoreHealth[]>([]);
   const [totals, setTotals] = useState<Totals | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,37 +155,39 @@ export default function ScrapingHealthPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Scraping health</h1>
+          <h1 className="text-2xl font-semibold">{text.title}</h1>
           <p className="text-sm text-muted-foreground">
-            Coverage and reliability per store. Auto-refreshes every 30s.
+            {text.subtitle}
           </p>
         </div>
         <Button variant="outline" onClick={load} disabled={loading}>
           <RefreshCw className={loading ? 'animate-spin' : ''} size={14} />
-          Refresh
+          {text.refresh}
         </Button>
       </div>
+
+      <ScrapingAdminGuide page="health" locale={locale} />
 
       {/* Totals */}
       {totals && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Total products" value={totals.total_products.toLocaleString()} />
+          <StatCard label={text.totalProducts} value={totals.total_products.toLocaleString()} />
           <StatCard
-            label="Refreshed (24h)"
+            label={text.refreshed24h}
             value={totals.refreshed_last_24h.toLocaleString()}
             hint={
               totals.total_products > 0
-                ? `${Math.round((totals.refreshed_last_24h / totals.total_products) * 100)}% of catalog`
+                ? `${Math.round((totals.refreshed_last_24h / totals.total_products) * 100)}% ${text.ofCatalog}`
                 : undefined
             }
           />
           <StatCard
-            label="Stale (>48h)"
+            label={text.stale48h}
             value={totals.stale_over_48h.toLocaleString()}
             variant={totals.stale_over_48h > 0 ? 'warn' : 'ok'}
           />
           <StatCard
-            label="Chronic failures"
+            label={text.chronicFailures}
             value={totals.chronic_failures.toLocaleString()}
             variant={totals.chronic_failures > 0 ? 'bad' : 'ok'}
           />
@@ -151,21 +207,21 @@ export default function ScrapingHealthPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-                  <TableHead className="font-semibold">Store</TableHead>
-                  <TableHead className="font-semibold">Products</TableHead>
-                  <TableHead className="font-semibold">24h coverage</TableHead>
-                  <TableHead className="font-semibold">Stale {'>'}48h</TableHead>
-                  <TableHead className="font-semibold">Chronic fails</TableHead>
-                  <TableHead className="font-semibold">Runs (24h)</TableHead>
-                  <TableHead className="font-semibold">Errors (24h)</TableHead>
-                  <TableHead className="font-semibold">Oldest check</TableHead>
+                  <TableHead className="font-semibold">{text.store}</TableHead>
+                  <TableHead className="font-semibold">{text.products}</TableHead>
+                  <TableHead className="font-semibold">{text.coverage24h}</TableHead>
+                  <TableHead className="font-semibold">{text.staleColumn}</TableHead>
+                  <TableHead className="font-semibold">{text.chronicFails}</TableHead>
+                  <TableHead className="font-semibold">{text.runs24h}</TableHead>
+                  <TableHead className="font-semibold">{text.errors24h}</TableHead>
+                  <TableHead className="font-semibold">{text.oldestCheck}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {stores.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      No stores with catalog data yet — run discovery to populate.
+                      {text.noData}
                     </TableCell>
                   </TableRow>
                 )}
@@ -173,7 +229,7 @@ export default function ScrapingHealthPage() {
                   <TableRow key={s.store_id}>
                     <TableCell className="font-medium">{s.store_name_en || s.store_slug}</TableCell>
                     <TableCell className="tabular-nums">{s.total_products.toLocaleString()}</TableCell>
-                    <TableCell>{coverageBadge(s.coverage_pct_24h)}</TableCell>
+                    <TableCell>{coverageBadge(s.coverage_pct_24h, text.noDataBadge)}</TableCell>
                     <TableCell
                       className={cn(
                         'tabular-nums',
@@ -194,13 +250,13 @@ export default function ScrapingHealthPage() {
                       {s.runs_last_24h}
                       {s.failed_runs_last_24h > 0 && (
                         <span className="ms-1 text-xs text-red-600 dark:text-red-400">
-                          ({s.failed_runs_last_24h} failed)
+                          ({s.failed_runs_last_24h} {text.failed})
                         </span>
                       )}
                     </TableCell>
                     <TableCell className="tabular-nums">{s.total_errors_last_24h.toLocaleString()}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {relTime(s.oldest_check)}
+                      {relTime(s.oldest_check, locale)}
                     </TableCell>
                   </TableRow>
                 ))}

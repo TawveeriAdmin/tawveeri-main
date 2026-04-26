@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -21,6 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Eye } from 'lucide-react';
+import { ScrapingAdminGuide } from '../scraping-admin-guide';
 
 interface RunRow {
   id: string;
@@ -63,6 +64,8 @@ function fmtTime(iso: string | null): string {
 }
 
 export default function ScrapingRunsPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const searchParams = useSearchParams();
   const storeIdFilter = searchParams?.get('store_id') || null;
   const [rows, setRows] = useState<RunRow[]>([]);
@@ -129,6 +132,8 @@ export default function ScrapingRunsPage() {
         </div>
       </div>
 
+      <ScrapingAdminGuide page="runs" locale={locale} />
+
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -154,6 +159,13 @@ export default function ScrapingRunsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={11} className="py-10 text-center text-sm text-muted-foreground">
+                    No runs match the current filters.
+                  </TableCell>
+                </TableRow>
+              )}
               {rows.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.stores?.name_en || r.stores?.slug}</TableCell>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SARSymbol } from '@/components/ui/price';
 import { useToast } from '@/components/ui/use-toast';
 import { Search, Download } from 'lucide-react';
+import { ScrapingAdminGuide } from '../scraping-admin-guide';
 
 const ALL_STORES = [
   'amazon', 'noon', 'jarir', 'extra', 'almanea', 'shaker', 'samsung_ksa', 'swsg',
@@ -26,7 +28,25 @@ const CATEGORIES = [
   'appliance', 'kitchen', 'personal_care',
 ];
 
+interface LiveSearchStoreOffer {
+  store: string;
+  [key: string]: unknown;
+}
+
+interface LiveSearchResult {
+  image_urls?: string[];
+  name_en?: string;
+  name_ar?: string;
+  brand?: string;
+  store_count?: number;
+  category?: string;
+  best_price?: number;
+  stores?: LiveSearchStoreOffer[];
+}
+
 export default function LiveSearchPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('smartphone');
@@ -34,7 +54,7 @@ export default function LiveSearchPage() {
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<LiveSearchResult[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggleStore = (s: string) =>
@@ -83,7 +103,7 @@ export default function LiveSearchPage() {
     });
 
   const ingest = async () => {
-    const toIngest: any[] = [];
+    const toIngest: Array<LiveSearchStoreOffer & { store_slug: string }> = [];
     results.forEach((g, i) => {
       const key = `${i}`;
       if (!selected.has(key)) return;
@@ -123,6 +143,8 @@ export default function LiveSearchPage() {
         </p>
       </div>
 
+      <ScrapingAdminGuide page="live-search" locale={locale} />
+
       <div className="border rounded-lg p-4 space-y-3">
         <div className="flex gap-2">
           <Input
@@ -142,7 +164,7 @@ export default function LiveSearchPage() {
             type="number"
             className="w-20"
             value={pages}
-            onChange={(e) => setPages(parseInt(e.target.value) || 1)}
+            onChange={(e) => setPages(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
             min={1}
             max={5}
           />
@@ -205,7 +227,7 @@ export default function LiveSearchPage() {
                       <SARSymbol className="w-3.5 h-3.5" />
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {g.stores?.map((s: any) => s.store).join(', ')}
+                      {g.stores?.map((s) => s.store).join(', ')}
                     </p>
                   </div>
                 </label>

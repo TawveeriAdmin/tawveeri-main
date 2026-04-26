@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { ScrapingAdminGuide } from '../scraping-admin-guide';
 
 interface ScheduleRow {
   id: string;
@@ -68,7 +69,7 @@ interface ScheduleRow {
   stores: { id: string; slug: string; name_ar: string; name_en: string; logo_url: string | null };
 }
 
-function relTime(iso: string | null): string {
+function relTime(iso: string | null, locale: string): string {
   if (!iso) return '—';
   const diffMs = Date.now() - new Date(iso).getTime();
   const abs = Math.abs(diffMs);
@@ -76,12 +77,13 @@ function relTime(iso: string | null): string {
   const hours = Math.round(mins / 60);
   const days = Math.round(hours / 24);
   const future = diffMs < 0;
+  const isAr = locale === 'ar';
   let str: string;
-  if (mins < 1) str = 'just now';
-  else if (mins < 60) str = `${mins}m`;
-  else if (hours < 24) str = `${hours}h`;
-  else str = `${days}d`;
-  return future ? `in ${str}` : `${str} ago`;
+  if (mins < 1) return isAr ? 'الآن' : 'just now';
+  else if (mins < 60) str = isAr ? `${mins}د` : `${mins}m`;
+  else if (hours < 24) str = isAr ? `${hours}س` : `${hours}h`;
+  else str = isAr ? `${days}ي` : `${days}d`;
+  return future ? (isAr ? `بعد ${str}` : `in ${str}`) : (isAr ? `قبل ${str}` : `${str} ago`);
 }
 
 type ColumnKey =
@@ -97,18 +99,141 @@ type ColumnKey =
   | 'next_run'
   | 'last_run';
 
-const COLUMN_LABELS: Record<ColumnKey, string> = {
-  categories: 'Categories',
-  enabled: 'Enabled',
-  cron: 'Cron',
-  pages: 'Pages',
-  coverage: 'Coverage mode',
-  target_hours: 'Target refresh (h)',
-  max_products: 'Batch cap',
-  older_than_hours: 'Stale after (h)',
-  live_search: 'Live search',
-  next_run: 'Next run',
-  last_run: 'Last run',
+const SCHEDULE_TEXT = {
+  en: {
+    title: 'Scraping schedules',
+    subtitle: 'Enable, schedule, and tune the automatic scrapers per store.',
+    refresh: 'Refresh',
+    search: 'Search stores...',
+    filters: 'Filters',
+    columns: 'Columns',
+    jobType: 'Job type',
+    allJobs: 'All jobs',
+    discovery: 'Discovery',
+    priceUpdate: 'Price update',
+    status: 'Status',
+    all: 'All',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    store: 'Store',
+    job: 'Job',
+    categories: 'Categories',
+    cron: 'Cron',
+    pages: 'Pages',
+    coverage: 'Coverage mode',
+    target: 'Target (h)',
+    staleAfter: 'Stale after (h)',
+    nextRun: 'Next run',
+    lastRun: 'Last run',
+    actions: 'Actions',
+    legacyLive: 'Legacy live flag',
+    adminOnly: 'admin only',
+    noMatches: 'No schedules match the current filters.',
+    loading: 'Loading...',
+    rows: 'schedules',
+    allCategories: 'all (leave empty)',
+    batchCap: 'Batch cap',
+    columnLabels: {
+      categories: 'Categories',
+      enabled: 'Enabled',
+      cron: 'Cron',
+      pages: 'Pages',
+      coverage: 'Coverage mode',
+      target_hours: 'Target refresh (h)',
+      max_products: 'Batch cap',
+      older_than_hours: 'Stale after (h)',
+      live_search: 'Legacy live flag',
+      next_run: 'Next run',
+      last_run: 'Last run',
+    },
+    tooltips: {
+      pages: 'Discovery: max category-listing pages to crawl per run. Scrapers stop early when a page returns zero new products, so this is a safety cap.',
+      coverage: 'Price update only. When enabled, the dispatcher computes batch size so the catalog is refreshed inside the target window.',
+      target: "Price update only. Target SLA: every product's price gets re-checked within this many hours.",
+      batchCap: 'Price update only. Hard upper-bound on batch size for stores that need throttling.',
+      staleAfter: "Price update: only re-check products whose last_checked_at is older than this many hours.",
+      legacyLive: 'Legacy schedule flag only. Public live scraping is disabled; customer search reads the catalog.',
+      save: 'Save edits',
+      run: 'Run this schedule now',
+      history: 'View run history',
+      delete: 'Delete this schedule',
+    },
+    deleteDialog: {
+      title: 'Delete this schedule?',
+      descriptionPrefix: 'This removes the',
+      descriptionMiddle: 'schedule for',
+      descriptionSuffix: 'Run history is kept. The scraper for this store will stop running automatically until you create a new schedule.',
+      cancel: 'Cancel',
+      confirm: 'Delete',
+    },
+  },
+  ar: {
+    title: 'جداول السكرابر',
+    subtitle: 'تفعيل وجدولة وضبط السكرابر التلقائي لكل متجر.',
+    refresh: 'تحديث',
+    search: 'ابحث في المتاجر...',
+    filters: 'الفلاتر',
+    columns: 'الأعمدة',
+    jobType: 'نوع المهمة',
+    allJobs: 'كل المهام',
+    discovery: 'اكتشاف المنتجات',
+    priceUpdate: 'تحديث الأسعار',
+    status: 'الحالة',
+    all: 'الكل',
+    enabled: 'مفعل',
+    disabled: 'معطل',
+    store: 'المتجر',
+    job: 'المهمة',
+    categories: 'التصنيفات',
+    cron: 'كرون',
+    pages: 'الصفحات',
+    coverage: 'وضع التغطية',
+    target: 'الهدف (س)',
+    staleAfter: 'قديم بعد (س)',
+    nextRun: 'التشغيل القادم',
+    lastRun: 'آخر تشغيل',
+    actions: 'الإجراءات',
+    legacyLive: 'علامة مباشرة قديمة',
+    adminOnly: 'للمدير فقط',
+    noMatches: 'لا توجد جداول تطابق الفلاتر.',
+    loading: 'جار التحميل...',
+    rows: 'جدولا',
+    allCategories: 'الكل (اتركه فارغا)',
+    batchCap: 'حد الدفعة',
+    columnLabels: {
+      categories: 'التصنيفات',
+      enabled: 'مفعل',
+      cron: 'كرون',
+      pages: 'الصفحات',
+      coverage: 'وضع التغطية',
+      target_hours: 'هدف التحديث (س)',
+      max_products: 'حد الدفعة',
+      older_than_hours: 'قديم بعد (س)',
+      live_search: 'علامة مباشرة قديمة',
+      next_run: 'التشغيل القادم',
+      last_run: 'آخر تشغيل',
+    },
+    tooltips: {
+      pages: 'الاكتشاف: الحد الأقصى لصفحات التصنيفات في كل تشغيل. يتوقف السكرابر مبكرا عند عدم العثور على منتجات جديدة.',
+      coverage: 'تحديث الأسعار فقط. عند تفعيله يحسب النظام حجم الدفعة لتحديث الكتالوج داخل النافذة المستهدفة.',
+      target: 'تحديث الأسعار فقط. الهدف هو إعادة فحص سعر كل منتج خلال هذا العدد من الساعات.',
+      batchCap: 'تحديث الأسعار فقط. حد أعلى لحجم الدفعة للمتاجر التي تحتاج تهدئة.',
+      staleAfter: 'تحديث الأسعار: أعد فحص المنتجات التي مر على آخر فحص لها هذا العدد من الساعات.',
+      legacyLive: 'علامة جدول قديمة فقط. السكرابر المباشر العام معطل وبحث العملاء يقرأ من الكتالوج.',
+      save: 'حفظ التعديلات',
+      run: 'تشغيل هذا الجدول الآن',
+      history: 'عرض سجل التشغيل',
+      delete: 'حذف هذا الجدول',
+    },
+    deleteDialog: {
+      title: 'حذف هذا الجدول؟',
+      descriptionPrefix: 'سيتم حذف جدول',
+      descriptionMiddle: 'للمتجر',
+      descriptionSuffix: 'سيبقى سجل التشغيل محفوظا. سيتوقف السكرابر لهذا المتجر تلقائيا حتى يتم إنشاء جدول جديد.',
+      cancel: 'إلغاء',
+      confirm: 'حذف',
+    },
+  },
 };
 
 type SortField = 'store' | 'job_type' | 'is_enabled' | 'last_run_at' | 'next_run_at';
@@ -119,6 +244,7 @@ export default function ScrapingSchedulesPage() {
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
+  const text = SCHEDULE_TEXT[locale === 'ar' ? 'ar' : 'en'];
   const [rows, setRows] = useState<ScheduleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [edits, setEdits] = useState<Record<string, Partial<ScheduleRow>>>({});
@@ -305,23 +431,25 @@ export default function ScrapingSchedulesPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Scraping schedules</h1>
+          <h1 className="text-2xl font-semibold">{text.title}</h1>
           <p className="text-sm text-muted-foreground">
-            Enable, schedule, and tune the automatic scrapers per store.
+            {text.subtitle}
           </p>
         </div>
         <Button variant="outline" onClick={load} disabled={loading}>
           <RefreshCw className={loading ? 'animate-spin' : ''} size={14} />
-          Refresh
+          {text.refresh}
         </Button>
       </div>
+
+      <ScrapingAdminGuide page="schedules" locale={locale} />
 
       <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative max-w-sm flex-1">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
             <Input
-              placeholder="Search stores…"
+              placeholder={text.search}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="ps-9"
@@ -337,7 +465,7 @@ export default function ScrapingSchedulesPage() {
                   className={cn('gap-1.5', activeFilterCount > 0 && 'border-primary text-primary')}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
-                  <span className="hidden sm:inline">Filters</span>
+                  <span className="hidden sm:inline">{text.filters}</span>
                   {activeFilterCount > 0 && (
                     <span className="ms-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
                       {activeFilterCount}
@@ -346,7 +474,7 @@ export default function ScrapingSchedulesPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Job type</DropdownMenuLabel>
+                <DropdownMenuLabel>{text.jobType}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {(['all', 'discovery', 'price_update'] as const).map((v) => (
                   <DropdownMenuCheckboxItem
@@ -354,11 +482,11 @@ export default function ScrapingSchedulesPage() {
                     checked={jobTypeFilter === v}
                     onCheckedChange={() => setJobTypeFilter(v)}
                   >
-                    {v === 'all' ? 'All jobs' : v}
+                    {v === 'all' ? text.allJobs : v === 'discovery' ? text.discovery : text.priceUpdate}
                   </DropdownMenuCheckboxItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Status</DropdownMenuLabel>
+                <DropdownMenuLabel>{text.status}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {(['all', 'enabled', 'disabled'] as const).map((v) => (
                   <DropdownMenuCheckboxItem
@@ -366,7 +494,7 @@ export default function ScrapingSchedulesPage() {
                     checked={enabledFilter === v}
                     onCheckedChange={() => setEnabledFilter(v)}
                   >
-                    {v === 'all' ? 'All' : v.charAt(0).toUpperCase() + v.slice(1)}
+                    {v === 'all' ? text.all : v === 'enabled' ? text.enabled : text.disabled}
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
@@ -376,7 +504,7 @@ export default function ScrapingSchedulesPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <Columns3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Columns</span>
+                  <span className="hidden sm:inline">{text.columns}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -388,7 +516,7 @@ export default function ScrapingSchedulesPage() {
                       setVisibleCols((prev) => ({ ...prev, [col]: !!checked }))
                     }
                   >
-                    {COLUMN_LABELS[col]}
+                    {text.columnLabels[col]}
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
@@ -411,71 +539,78 @@ export default function ScrapingSchedulesPage() {
                   className="font-semibold cursor-pointer select-none"
                   onClick={() => toggleSort('store')}
                 >
-                  Store <SortIcon field="store" />
+                  {text.store} <SortIcon field="store" />
                 </TableHead>
                 <TableHead
                   className="font-semibold cursor-pointer select-none"
                   onClick={() => toggleSort('job_type')}
                 >
-                  Job <SortIcon field="job_type" />
+                  {text.job} <SortIcon field="job_type" />
                 </TableHead>
-                {visibleCols.categories && <TableHead className="font-semibold">Categories</TableHead>}
+                {visibleCols.categories && <TableHead className="font-semibold">{text.categories}</TableHead>}
                 {visibleCols.enabled && (
                   <TableHead
                     className="font-semibold cursor-pointer select-none"
                     onClick={() => toggleSort('is_enabled')}
                   >
-                    Enabled <SortIcon field="is_enabled" />
+                    {text.enabled} <SortIcon field="is_enabled" />
                   </TableHead>
                 )}
-                {visibleCols.cron && <TableHead className="font-semibold">Cron</TableHead>}
+                {visibleCols.cron && <TableHead className="font-semibold">{text.cron}</TableHead>}
                 {visibleCols.pages && (
                   <TableHead
                     className="font-semibold"
-                    title="Discovery: max category-listing pages to crawl per run. Scrapers stop early when a page returns zero new products, so this is a safety cap — set it high to scrape everything."
+                    title={text.tooltips.pages}
                   >
-                    Pages
+                    {text.pages}
                   </TableHead>
                 )}
                 {visibleCols.coverage && (
                   <TableHead
                     className="font-semibold"
-                    title="Price update only. When ON (recommended), the dispatcher computes batch size per run so the entire catalog is refreshed within the target window — scales automatically as the catalog grows."
+                    title={text.tooltips.coverage}
                   >
-                    Coverage mode
+                    {text.coverage}
                   </TableHead>
                 )}
                 {visibleCols.target_hours && (
                   <TableHead
                     className="font-semibold"
-                    title="Price update only. Target SLA: every product's price gets re-checked within this many hours. Default 24."
+                    title={text.tooltips.target}
                   >
-                    Target (h)
+                    {text.target}
                   </TableHead>
                 )}
                 {visibleCols.max_products && (
                   <TableHead
                     className="font-semibold"
-                    title="Price update only. Hard upper-bound on batch size (0 = uncapped). Only applied when Coverage mode is OFF, or as a ceiling in Coverage mode for stores you want to throttle."
+                    title={text.tooltips.batchCap}
                   >
-                    Batch cap
+                    {text.batchCap}
                   </TableHead>
                 )}
                 {visibleCols.older_than_hours && (
                   <TableHead
                     className="font-semibold"
-                    title="Price update: only re-check products whose last_checked_at is older than this many hours."
+                    title={text.tooltips.staleAfter}
                   >
-                    Stale after (h)
+                    {text.staleAfter}
                   </TableHead>
                 )}
-                {visibleCols.live_search && <TableHead className="font-semibold">Live search</TableHead>}
+                {visibleCols.live_search && (
+                  <TableHead
+                    className="font-semibold"
+                    title={text.tooltips.legacyLive}
+                  >
+                    {text.legacyLive}
+                  </TableHead>
+                )}
                 {visibleCols.next_run && (
                   <TableHead
                     className="font-semibold cursor-pointer select-none"
                     onClick={() => toggleSort('next_run_at')}
                   >
-                    Next run <SortIcon field="next_run_at" />
+                    {text.nextRun} <SortIcon field="next_run_at" />
                   </TableHead>
                 )}
                 {visibleCols.last_run && (
@@ -483,17 +618,17 @@ export default function ScrapingSchedulesPage() {
                     className="font-semibold cursor-pointer select-none"
                     onClick={() => toggleSort('last_run_at')}
                   >
-                    Last run <SortIcon field="last_run_at" />
+                    {text.lastRun} <SortIcon field="last_run_at" />
                   </TableHead>
                 )}
-                <TableHead className="font-semibold">Actions</TableHead>
+                <TableHead className="font-semibold">{text.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredSortedRows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
-                    No schedules match your filters.
+                    {text.noMatches}
                   </TableCell>
                 </TableRow>
               )}
@@ -502,14 +637,16 @@ export default function ScrapingSchedulesPage() {
                 const dirty = !!edits[r.id];
                 return (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.stores?.name_en || r.stores?.slug}</TableCell>
-                    <TableCell>{r.job_type}</TableCell>
+                    <TableCell className="font-medium">
+                      {locale === 'ar' ? r.stores?.name_ar || r.stores?.name_en || r.stores?.slug : r.stores?.name_en || r.stores?.slug}
+                    </TableCell>
+                    <TableCell>{r.job_type === 'discovery' ? text.discovery : text.priceUpdate}</TableCell>
                     {visibleCols.categories && (
                       <TableCell>
                         {r.job_type === 'discovery' ? (
                           <Input
                             className="w-48 text-xs"
-                            placeholder="all (leave empty)"
+                            placeholder={text.allCategories}
                             value={(e.categories ?? []).join(',')}
                             onChange={(ev) => {
                               const parsed = ev.target.value
@@ -611,20 +748,23 @@ export default function ScrapingSchedulesPage() {
                     )}
                     {visibleCols.live_search && (
                       <TableCell>
-                        <Switch
-                          checked={e.is_live_search_enabled}
-                          onCheckedChange={(v) => patch(r.id, { is_live_search_enabled: v })}
-                        />
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={e.is_live_search_enabled}
+                            onCheckedChange={(v) => patch(r.id, { is_live_search_enabled: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{text.adminOnly}</span>
+                        </div>
                       </TableCell>
                     )}
                     {visibleCols.next_run && (
                       <TableCell className="text-xs text-muted-foreground">
-                        {relTime(e.next_run_at)}
+                        {relTime(e.next_run_at, locale)}
                       </TableCell>
                     )}
                     {visibleCols.last_run && (
                       <TableCell className="text-xs text-muted-foreground">
-                        {relTime(r.last_run_at)}
+                        {relTime(r.last_run_at, locale)}
                       </TableCell>
                     )}
                     <TableCell>
@@ -634,7 +774,7 @@ export default function ScrapingSchedulesPage() {
                             size="sm"
                             onClick={() => save(r.id)}
                             disabled={savingId === r.id}
-                            title="Save edits"
+                            title={text.tooltips.save}
                           >
                             <Save size={14} />
                           </Button>
@@ -643,7 +783,7 @@ export default function ScrapingSchedulesPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => runNow(r.id)}
-                          title="Run this schedule now (manual test)"
+                          title={text.tooltips.run}
                         >
                           <Play size={14} />
                         </Button>
@@ -651,7 +791,7 @@ export default function ScrapingSchedulesPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => viewRuns(r.store_id)}
-                          title="View run history for this store"
+                          title={text.tooltips.history}
                         >
                           <ListChecks size={14} />
                         </Button>
@@ -659,7 +799,7 @@ export default function ScrapingSchedulesPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => setDeletingRow(r)}
-                          title="Delete this schedule"
+                          title={text.tooltips.delete}
                           className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                         >
                           <Trash2 size={14} />
@@ -677,8 +817,8 @@ export default function ScrapingSchedulesPage() {
         <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 text-sm text-muted-foreground">
           <span>
             {loading
-              ? 'Loading…'
-              : `${filteredSortedRows.length} of ${rows.length} schedules`}
+              ? text.loading
+              : `${filteredSortedRows.length} / ${rows.length} ${text.rows}`}
           </span>
         </div>
       </div>
@@ -686,25 +826,30 @@ export default function ScrapingSchedulesPage() {
       <AlertDialog open={!!deletingRow} onOpenChange={(open) => !open && setDeletingRow(null)}>
         <AlertDialogContent className="!bg-white dark:!bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-700 shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this schedule?</AlertDialogTitle>
+            <AlertDialogTitle>{text.deleteDialog.title}</AlertDialogTitle>
             <AlertDialogDescription>
               {deletingRow && (
                 <>
-                  This removes the <strong>{deletingRow.job_type}</strong> schedule for{' '}
-                  <strong>{deletingRow.stores?.name_en || deletingRow.stores?.slug}</strong>. Run
-                  history (in the Runs page) is kept. The scraper for this store will stop
-                  running automatically until you create a new schedule.
+                  {text.deleteDialog.descriptionPrefix}{' '}
+                  <strong>{deletingRow.job_type === 'discovery' ? text.discovery : text.priceUpdate}</strong>{' '}
+                  {text.deleteDialog.descriptionMiddle}{' '}
+                  <strong>
+                    {locale === 'ar'
+                      ? deletingRow.stores?.name_ar || deletingRow.stores?.name_en || deletingRow.stores?.slug
+                      : deletingRow.stores?.name_en || deletingRow.stores?.slug}
+                  </strong>
+                  . {text.deleteDialog.descriptionSuffix}
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{text.deleteDialog.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingRow && deleteSchedule(deletingRow.id)}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {text.deleteDialog.confirm}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
