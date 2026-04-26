@@ -143,7 +143,7 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
         <div className="min-w-0">
           <nav
             aria-label={isRTL ? 'مسار الصفحة' : 'Breadcrumb'}
-            className="flex min-w-0 items-center gap-1.5 text-sm font-black text-on-surface-variant dark:text-white/55"
+            className="hidden min-w-0 items-center gap-1.5 text-sm font-black text-on-surface-variant dark:text-white/55 sm:flex"
           >
             {breadcrumbs.map((crumb, index) => (
               <div key={`${crumb.href}-${index}`} className="flex min-w-0 items-center gap-1.5">
