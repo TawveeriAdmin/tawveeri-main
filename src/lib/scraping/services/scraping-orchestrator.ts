@@ -388,6 +388,7 @@ export class ScrapingOrchestrator {
         .select('id, product_id, store_id, product_url, current_price, availability, consecutive_failures, stores!inner(slug, name_ar, name_en)')
         .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
         .lt('consecutive_failures', 5)
+        .order('consecutive_failures', { ascending: true })
         .order('last_checked_at', { ascending: true, nullsFirst: true })
         .limit(options.max_products || 500);
 
@@ -672,5 +673,4 @@ export class ScrapingOrchestrator {
     return data.id;
   }
 }
-
 
