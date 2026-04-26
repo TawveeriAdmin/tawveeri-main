@@ -20,7 +20,9 @@ export function formatPrice(price: number, locale: 'ar' | 'en' = 'ar'): string {
  * This function is kept for backwards compatibility only
  */
 export function formatPriceWithCurrency(price: number, locale: 'ar' | 'en' = 'ar'): string {
-  const formatted = formatPrice(price, locale);
+  const formatted = price.toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  });
   return locale === 'ar' ? `${formatted} ر.س` : `SAR ${formatted}`;
 }
 

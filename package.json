@@ -19,9 +19,9 @@
     "db:migrate": "node scripts/run-migration.js scripts/database/04-fix-user-insert-policy.sql",
     "db:migrate-audit": "node scripts/run-migration.js scripts/database/05-fix-audit-logs-policy.sql",
     "db:clean-mock": "psql $SUPABASE_DB_URL -f scripts/database/06-delete-mock-products.sql",
-    "flask:install": "cd scripts/scraping && python3 -m pip install -r requirements.txt",
-    "flask:start": "cd scripts/scraping && python3 app.py",
-    "flask:dev": "cd scripts/scraping && FLASK_DEBUG=true python3 app.py",
+    "flask:install": "./scripts/scraping/install-flask.sh",
+    "flask:start": "./scripts/scraping/run-flask.sh",
+    "flask:dev": "FLASK_DEBUG=true ./scripts/scraping/run-flask.sh",
     "flask:check": "./scripts/scraping/check-flask.sh"
   },
   "dependencies": {

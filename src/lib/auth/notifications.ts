@@ -95,12 +95,7 @@ export async function getUserNotifications(
         products (
           name_ar,
           name_en,
-          image_url
-        ),
-        stores (
-          name_ar,
-          name_en,
-          logo_url
+          image_urls
         )
       `,
         { count: 'exact' }

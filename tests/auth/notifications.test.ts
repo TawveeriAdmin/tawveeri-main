@@ -13,6 +13,7 @@ import { createServerClient } from '@/lib/database';
 describe('Notification System', () => {
   let testUserId: string;
   let testNotificationId: string;
+  let createdTestUser = false;
   const supabase = createServerClient();
 
   beforeAll(async () => {
@@ -21,8 +22,35 @@ describe('Notification System', () => {
       .from('users')
       .select('id')
       .eq('role', 'admin')
+      .maybeSingle();
+
+    if (data?.id) {
+      testUserId = data.id;
+      return;
+    }
+
+    const testId = crypto.randomUUID();
+    const { data: created, error } = await supabase
+      .from('users')
+      .insert({
+        id: testId,
+        email: `notification-test-${Date.now()}@example.com`,
+        full_name: 'Notification Test User',
+        role: 'customer',
+      })
+      .select('id')
       .single();
-    testUserId = data?.id || '';
+
+    if (error) throw error;
+
+    testUserId = created.id;
+    createdTestUser = true;
+  });
+
+  afterAll(async () => {
+    if (createdTestUser && testUserId) {
+      await supabase.from('users').delete().eq('id', testUserId);
+    }
   });
 
   describe('createNotification', () => {

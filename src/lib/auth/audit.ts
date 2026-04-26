@@ -27,7 +27,7 @@ export async function createAuditLog(params: AuditLogParams) {
     // Client-side code cannot access service-role credentials.
     // Skip silently to avoid blocking auth flows like logout.
     if (typeof window !== 'undefined') {
-      return;
+      return { error: null, skipped: true };
     }
 
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -35,14 +35,14 @@ export async function createAuditLog(params: AuditLogParams) {
         console.warn('Audit logging disabled: SUPABASE_SERVICE_ROLE_KEY is not configured.');
         hasWarnedMissingServiceRoleKey = true;
       }
-      return;
+      return { error: null, skipped: true };
     }
 
     const supabase = createServerClient();
     // Validate required fields
     if (!params.action) {
       console.warn('createAuditLog: action is required');
-      return;
+      return { error: new Error('createAuditLog: action is required') };
     }
 
     const { error } = await supabase.from('admin_logs').insert({
@@ -65,10 +65,14 @@ export async function createAuditLog(params: AuditLogParams) {
         action: params.action,
         user_id: params.user_id,
       });
+      return { error };
     }
+
+    return { error: null };
   } catch (error) {
     // Catch any unexpected errors
     console.error('Unexpected error in createAuditLog:', error);
+    return { error: error as Error };
   }
 }
 

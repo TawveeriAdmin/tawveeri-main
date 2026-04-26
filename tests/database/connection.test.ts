@@ -13,24 +13,24 @@ describe('Database Connection', () => {
   });
 
   it('should have access to users table', async () => {
-    const { error } = await supabase.from('users').select('count').limit(1);
+    const { error } = await supabase.from('users').select('id').limit(1);
     expect(error).toBeNull();
   });
 
   it('should have access to stores table', async () => {
-    const { error } = await supabase.from('stores').select('count').limit(1);
+    const { error } = await supabase.from('stores').select('id').limit(1);
     expect(error).toBeNull();
   });
 
   it('should have access to products table', async () => {
-    const { error } = await supabase.from('products').select('count').limit(1);
+    const { error } = await supabase.from('products').select('id').limit(1);
     expect(error).toBeNull();
   });
 
   it('should have access to product_stores table', async () => {
     const { error } = await supabase
       .from('product_stores')
-      .select('count')
+      .select('id')
       .limit(1);
     expect(error).toBeNull();
   });

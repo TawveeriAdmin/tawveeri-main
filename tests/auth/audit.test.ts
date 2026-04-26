@@ -7,6 +7,7 @@ import { createServerClient } from '@/lib/database';
 
 describe('Audit Logging', () => {
   let testUserId: string;
+  let createdTestUser = false;
   const supabase = createServerClient();
 
   beforeAll(async () => {
@@ -15,8 +16,35 @@ describe('Audit Logging', () => {
       .from('users')
       .select('id')
       .eq('role', 'admin')
+      .maybeSingle();
+
+    if (data?.id) {
+      testUserId = data.id;
+      return;
+    }
+
+    const testId = crypto.randomUUID();
+    const { data: created, error } = await supabase
+      .from('users')
+      .insert({
+        id: testId,
+        email: `audit-test-${Date.now()}@example.com`,
+        full_name: 'Audit Test User',
+        role: 'customer',
+      })
+      .select('id')
       .single();
-    testUserId = data?.id || '';
+
+    if (error) throw error;
+
+    testUserId = created.id;
+    createdTestUser = true;
+  });
+
+  afterAll(async () => {
+    if (createdTestUser && testUserId) {
+      await supabase.from('users').delete().eq('id', testUserId);
+    }
   });
 
   describe('createAuditLog', () => {

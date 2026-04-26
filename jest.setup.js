@@ -1,5 +1,6 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
+import 'cross-fetch/polyfill'
 
 // Load environment variables from .env.local
 import dotenv from 'dotenv'

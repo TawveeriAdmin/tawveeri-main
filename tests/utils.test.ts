@@ -4,6 +4,8 @@
  */
 
 import {
+  cn,
+  formatPrice,
   formatPriceWithCurrency,
   calculateSavings,
   calculateSavingsPercentage,
@@ -11,6 +13,14 @@ import {
 } from '@/lib/utils';
 
 describe('Price Formatting', () => {
+  it('should format price without currency in Arabic', () => {
+    expect(formatPrice(3299, 'ar')).toBe('٣٬٢٩٩');
+  });
+
+  it('should format price without currency in English', () => {
+    expect(formatPrice(3299, 'en')).toBe('3,299');
+  });
+
   it('should format price in Arabic', () => {
     expect(formatPriceWithCurrency(3299, 'ar')).toBe('3,299 ر.س');
   });
@@ -25,6 +35,16 @@ describe('Price Formatting', () => {
 
   it('should handle decimal prices', () => {
     expect(formatPriceWithCurrency(99.99, 'ar')).toBe('99.99 ر.س');
+  });
+});
+
+describe('Class Name Merging', () => {
+  it('should merge conditional class names', () => {
+    expect(cn('px-2', false && 'hidden', 'py-1')).toBe('px-2 py-1');
+  });
+
+  it('should resolve conflicting Tailwind classes', () => {
+    expect(cn('px-2', 'px-4')).toBe('px-4');
   });
 });
 
