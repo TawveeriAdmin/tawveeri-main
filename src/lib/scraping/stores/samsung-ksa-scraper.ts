@@ -1,4 +1,5 @@
 import type { ScrapedProduct } from '../base/types';
+import type { ProductCategory } from '@/lib/database/types';
 import { loadStoreConfig } from '../config/scraper-config';
 import { determineCategory } from '../utils/category-utils';
 import { GenericHtmlStoreScraper } from './generic-html-store-scraper';
@@ -18,6 +19,24 @@ import { GenericHtmlStoreScraper } from './generic-html-store-scraper';
 export class SamsungKsaScraper extends GenericHtmlStoreScraper {
   constructor() {
     super(loadStoreConfig('samsung_ksa'));
+  }
+
+  async discoverProducts(category: ProductCategory, maxPages: number = 1): Promise<ScrapedProduct[]> {
+    const urls = await fetchSamsungSitemapUrls(category);
+    const limit = Math.max(1, maxPages) * 12;
+    const products: ScrapedProduct[] = [];
+
+    for (const url of urls.slice(0, limit)) {
+      try {
+        const product = await this.updateProductPrice(url);
+        if (product) products.push(product);
+      } catch (error) {
+        console.warn(`[Samsung KSA] sitemap product failed: ${url}`, error instanceof Error ? error.message : error);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    return products;
   }
 
   async updateProductPrice(productUrl: string): Promise<ScrapedProduct | null> {
@@ -144,6 +163,80 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
 // treatment, lift these into src/lib/scraping/utils/json-ld-extractor.ts.
 
 import type * as cheerio from 'cheerio';
+
+const SAMSUNG_SITEMAPS_BY_CATEGORY: Partial<Record<ProductCategory, string[]>> = {
+  smartphone: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
+  tablet: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
+  accessories: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
+  tv: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
+  audio: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
+  appliance: ['https://www.samsung.com/sa_en/da-sitemap.xml'],
+};
+
+async function fetchSamsungSitemapUrls(category: ProductCategory): Promise<string[]> {
+  const sitemapUrls = SAMSUNG_SITEMAPS_BY_CATEGORY[category] ?? [];
+  const urlSet = new Set<string>();
+
+  for (const sitemapUrl of sitemapUrls) {
+    const xml = await fetchXml(sitemapUrl);
+    for (const loc of extractLocs(xml)) {
+      const cleaned = loc.replace(/["\\\s]+$/, '').trim();
+      if (isSamsungKsaProductUrl(cleaned)) {
+        urlSet.add(cleaned);
+      }
+    }
+  }
+
+  return Array.from(urlSet).sort();
+}
+
+async function fetchXml(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'application/xml, text/xml, */*',
+    },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  return res.text();
+}
+
+function extractLocs(xml: string): string[] {
+  return (xml.match(/<loc>([^<]+)<\/loc>/g) || []).map((match) => match.replace(/<\/?loc>/g, '').trim());
+}
+
+const NON_PRODUCT_SLUGS = new Set([
+  'compare',
+  'buying-guide',
+  'tips',
+  'learn-about',
+  'explore',
+  'all',
+  'overview',
+  'offers',
+  'see-all',
+  'index',
+]);
+
+function isSamsungKsaProductUrl(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  if (!/samsung\.com$/i.test(parsed.hostname)) return false;
+  const parts = parsed.pathname.split('/').filter(Boolean);
+  if (parts.length < 4) return false;
+  if (parts[0].toLowerCase() !== 'sa_en') return false;
+
+  const terminal = parts[parts.length - 1].toLowerCase();
+  if (!terminal || NON_PRODUCT_SLUGS.has(terminal)) return false;
+  if (terminal.startsWith('all-') || terminal.startsWith('see-all')) return false;
+
+  return true;
+}
 
 function findProductJsonLd($: cheerio.CheerioAPI): Record<string, unknown> | null {
   const scripts = $('script[type="application/ld+json"]');

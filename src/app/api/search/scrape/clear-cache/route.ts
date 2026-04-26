@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchCache } from '@/lib/scraping/cache';
+import { requireRequestAdmin } from '@/lib/auth/api-auth';
 
 /**
  * POST /api/search/scrape/clear-cache
- * Clear the scraping cache
+ * Clear the scraping cache. Admin-only because the cache belongs to the live
+ * scraper surface.
  */
 export async function POST(request: NextRequest) {
   try {
-    // Optional: Add authentication check for admin users
-    // const authHeader = request.headers.get('authorization');
-    // if (!isAdmin(authHeader)) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    try {
+      await requireRequestAdmin(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Admin access required' },
+        { status: 403 },
+      );
+    }
 
     if (searchCache) {
       searchCache.clear();
@@ -41,7 +46,16 @@ export async function POST(request: NextRequest) {
  * GET /api/search/scrape/clear-cache
  * Get cache statistics
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  try {
+    await requireRequestAdmin(request);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Admin access required' },
+      { status: 403 },
+    );
+  }
+
   if (searchCache) {
     const stats = searchCache.getStats();
     return NextResponse.json({
@@ -55,5 +69,4 @@ export async function GET() {
     });
   }
 }
-
 

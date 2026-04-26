@@ -21,6 +21,10 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
+    if (!cronSecret) {
+      return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 503 });
+    }
+
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -32,6 +36,11 @@ export async function POST(request: NextRequest) {
       categories: Array.isArray(body.categories) && body.categories.length > 0 ? body.categories : undefined,
       max_pages: body.max_pages || 10,
       dry_run: body.dry_run || false,
+      skip_supplemental: body.skip_supplemental || false,
+      only_supplemental: body.only_supplemental || false,
+      mark_missing: body.mark_missing || false,
+      stale_after_misses: body.stale_after_misses,
+      out_of_stock_after_misses: body.out_of_stock_after_misses,
     };
 
     runId = body.run_id ?? null;

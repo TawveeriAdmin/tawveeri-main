@@ -3,38 +3,29 @@ import { searchAllStores } from '@/lib/scraping/search/search-orchestrator';
 import { searchCache } from '@/lib/scraping/cache';
 import { filterTechProducts } from '@/lib/scraping/product-filter';
 import { DEFAULT_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
-import { getRequestUserProfile } from '@/lib/auth/api-auth';
-import { createServerClient } from '@/lib/database';
+import { requireRequestAdmin } from '@/lib/auth/api-auth';
 
 export const maxDuration = 240;
 export const dynamic = 'force-dynamic';
 
 /**
- * Return the subset of stores that have is_live_search_enabled=true on their
- * schedule. Non-admins can only invoke live scrape for these stores.
- */
-async function getPubliclyAllowedStores(): Promise<string[]> {
-  const supabase = createServerClient();
-  const { data } = await supabase
-    .from('scraping_schedules')
-    .select('stores:store_id (slug), is_live_search_enabled')
-    .eq('is_live_search_enabled', true);
-
-  const slugs = new Set<string>();
-  for (const row of (data ?? []) as unknown as Array<{ stores: { slug: string } | null }>) {
-    if (row.stores?.slug) slugs.add(row.stores.slug);
-  }
-  return Array.from(slugs);
-}
-
-/**
  * POST /api/search/scrape
- * Search for products across stores using TypeScript scrapers
+ * Admin-only live product search across stores using TypeScript scrapers.
+ * Public search must use /api/search, which reads from the catalog.
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
+    try {
+      await requireRequestAdmin(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Admin access required' },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const { query, pages, sort, category } = body;
 
@@ -45,25 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Admins can hit every configured scraper. Non-admins can only run live
-    // search against stores that have is_live_search_enabled=true on their
-    // schedule. If none are allowlisted, reject.
-    const profile = await getRequestUserProfile(request);
-    const isAdmin = profile?.role === 'admin';
-
-    let normalizedStores: string[];
-    if (isAdmin) {
-      normalizedStores = [...DEFAULT_SEARCH_STORES];
-    } else {
-      const allowed = await getPubliclyAllowedStores();
-      if (allowed.length === 0) {
-        return NextResponse.json(
-          { disabled: true, error: 'Live search is disabled. Results come from the catalog only.' },
-          { status: 403 },
-        );
-      }
-      normalizedStores = allowed;
-    }
+    const normalizedStores = [...DEFAULT_SEARCH_STORES];
     const normalizedPages = pages || 1;
     const normalizedSort = sort || 'relevance';
 

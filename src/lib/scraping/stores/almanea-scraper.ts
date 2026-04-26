@@ -149,10 +149,9 @@ export class AlmaneaScraper extends BaseScraper {
    * SKU matches.
    */
   async discoverProducts(
-    _category: ProductCategory,
+    category: ProductCategory,
     maxPages: number = 50,
   ): Promise<ScrapedProduct[]> {
-    void _category;
     const products: ScrapedProduct[] = [];
     const enBySku = new Map<string, { name: string; brand?: string }>();
 
@@ -162,7 +161,7 @@ export class AlmaneaScraper extends BaseScraper {
       // Pass 1 — English index. Keeping this first so we can look up
       // English titles by SKU when processing AR hits below.
       try {
-        for await (const hit of this.iterateAlgolia(EN_INDEX, maxPages)) {
+        for await (const hit of this.iterateAlgolia(EN_INDEX, maxPages, category)) {
           const sku = firstString(hit.sku ?? hit.objectID);
           if (!sku || enBySku.has(sku)) continue;
           enBySku.set(sku, { name: firstString(hit.name), brand: firstString(hit.brand) });
@@ -174,7 +173,7 @@ export class AlmaneaScraper extends BaseScraper {
       // Pass 2 — Arabic index drives the product set. Products that
       // belong to multiple categories get yielded multiple times by the
       // category-facet iteration — skip SKUs we've already processed.
-      for await (const hit of this.iterateAlgolia(AR_INDEX, maxPages)) {
+      for await (const hit of this.iterateAlgolia(AR_INDEX, maxPages, category)) {
         const sku = firstString(hit.sku ?? hit.objectID);
         if (!sku || seenArSkus.has(sku)) continue;
         seenArSkus.add(sku);
@@ -218,15 +217,23 @@ export class AlmaneaScraper extends BaseScraper {
     }
   }
 
-  private async *iterateAlgolia(indexName: string, maxPagesPerCategory: number): AsyncGenerator<AlgoliaHit> {
+  private async *iterateAlgolia(
+    indexName: string,
+    maxPagesPerCategory: number,
+    category: ProductCategory,
+  ): AsyncGenerator<AlgoliaHit> {
     // Algolia's /query endpoint caps pagination at 1000 results regardless
     // of nbHits (paginationLimitedTo). The /browse endpoint is ACL-gated
     // and returns 403 for the public search key. Workaround: fan out by
     // category facet — every top-level+sub category has <1000 products
     // and products belonging to multiple categories get yielded multiple
     // times; the outer discoverProducts() dedupes by SKU.
-    const categoryIds = await this.fetchCategoryIds(indexName);
-    console.log(`[Almanea] ${indexName}: ${categoryIds.length} category facets to iterate`);
+    const availableCategoryIds = await this.fetchCategoryIds(indexName);
+    const targetCategoryIds = this.getCategoryFacetIds(category);
+    const categoryIds = targetCategoryIds.length > 0
+      ? targetCategoryIds.filter((id) => availableCategoryIds.includes(id))
+      : availableCategoryIds;
+    console.log(`[Almanea] ${indexName}: ${categoryIds.length} ${category} category facets to iterate`);
 
     for (let i = 0; i < categoryIds.length; i++) {
       const catId = categoryIds[i];
@@ -250,6 +257,12 @@ export class AlmaneaScraper extends BaseScraper {
       }
       await this.delay();
     }
+  }
+
+  private getCategoryFacetIds(category: ProductCategory): string[] {
+    return Object.entries(ALMANEA_CATEGORY_MAP)
+      .filter(([, mappedCategory]) => mappedCategory === category)
+      .map(([categoryId]) => categoryId);
   }
 
   /** Fetch the list of distinct categoryIds via Algolia facets. One request. */

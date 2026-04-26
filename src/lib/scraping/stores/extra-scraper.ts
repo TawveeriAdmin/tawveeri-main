@@ -5,6 +5,20 @@ import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
 
 const BASE_URL = 'https://www.extra.com';
+const EXTRA_SITEMAP_ROOT = 'https://www.extra.com/sitemap.xml';
+const EXTRA_SITEMAP_DISCOVERY_LIMIT = 12;
+const EXTRA_CATEGORY_SEGMENTS: Partial<Record<ProductCategory, string[]>> = {
+  smartphone: ['mobiles-tablets'],
+  tablet: ['mobiles-tablets'],
+  laptop: ['computer'],
+  audio: ['audio'],
+  tv: ['video', 'electronics'],
+  camera: ['cameras'],
+  gaming: ['electronic-games'],
+  accessories: ['accessories', 'keyboards-and-mice', 'input-d', 'hp-gaming', 'home-automation'],
+  appliance: ['white-goods', 'whitegoods-accessories'],
+  kitchen: ['small-appliances'],
+};
 
 /**
  * Extra store scraper.
@@ -48,7 +62,11 @@ export class ExtraScraper extends BaseScraper {
       await this.cleanup();
     }
 
-    return products;
+    if (products.length > 0) {
+      return products;
+    }
+
+    return this.discoverProductsFromSitemap(category, maxPages);
   }
 
   async updateProductPrice(productUrl: string): Promise<ScrapedProduct | null> {
@@ -130,6 +148,85 @@ export class ExtraScraper extends BaseScraper {
 
     // Strategy 3: HTML selectors
     return this.parseHtmlProducts($, category);
+  }
+
+  private async discoverProductsFromSitemap(
+    category: ProductCategory,
+    maxPages: number,
+  ): Promise<ScrapedProduct[]> {
+    const urls = await this.fetchSitemapProductUrls(category);
+    const limit = Math.max(1, maxPages) * EXTRA_SITEMAP_DISCOVERY_LIMIT;
+    const products: ScrapedProduct[] = [];
+
+    for (const url of urls.slice(0, limit)) {
+      try {
+        const product = await this.updateProductPrice(url);
+        if (product) products.push(product);
+      } catch (error) {
+        console.warn(`[Extra] sitemap product failed: ${url}`, error instanceof Error ? error.message : error);
+      }
+      await this.delay();
+    }
+
+    return products;
+  }
+
+  private async fetchSitemapProductUrls(category: ProductCategory): Promise<string[]> {
+    const segments = EXTRA_CATEGORY_SEGMENTS[category] ?? [];
+    if (segments.length === 0) return [];
+
+    const rootXml = await this.fetchXml(EXTRA_SITEMAP_ROOT);
+    const submapUrls = this.extractLocs(rootXml).filter((url) => /\/Product-/i.test(url));
+    const urlSet = new Set<string>();
+
+    for (const sitemapUrl of submapUrls) {
+      try {
+        const xml = await this.fetchXml(sitemapUrl);
+        for (const loc of this.extractLocs(xml)) {
+          if (!/\/p\/\d+/i.test(loc)) continue;
+          const normalized = this.forceEnglishLocale(loc);
+          const topLevel = this.getTopLevelSegment(normalized);
+          if (topLevel && segments.includes(topLevel)) {
+            urlSet.add(normalized);
+          }
+        }
+      } catch (error) {
+        console.warn(`[Extra] failed to fetch sitemap ${sitemapUrl}:`, error instanceof Error ? error.message : error);
+      }
+    }
+
+    return Array.from(urlSet).sort((a, b) => this.extractProductId(a).localeCompare(this.extractProductId(b)));
+  }
+
+  private async fetchXml(url: string): Promise<string> {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': this.config.user_agents[0] || 'Mozilla/5.0',
+        Accept: 'application/xml, text/xml, */*',
+      },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    return res.text();
+  }
+
+  private extractLocs(xml: string): string[] {
+    return (xml.match(/<loc>([^<]+)<\/loc>/g) || []).map((match) => match.replace(/<\/?loc>/g, '').trim());
+  }
+
+  private forceEnglishLocale(url: string): string {
+    return url
+      .replace(/\/ar-sa\//i, '/en-sa/')
+      .replace(/\/ar(?=\/|$)/i, '/en-sa');
+  }
+
+  private getTopLevelSegment(url: string): string | null {
+    const match = url.match(/^https?:\/\/[^/]+\/[a-z]{2}-[a-z]{2}\/([^/]+)\//i);
+    return match ? match[1].toLowerCase() : null;
+  }
+
+  private extractProductId(url: string): string {
+    const match = url.match(/\/p\/(\d+)/);
+    return match ? match[1] : url;
   }
 
   private parseJsonProduct(
