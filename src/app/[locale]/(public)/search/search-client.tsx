@@ -98,6 +98,32 @@ const SEARCH_CACHE_KEY = 'search_results_cache';
 
 const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+const CATEGORY_SEARCH_LABELS: Partial<Record<ProductCategory, { ar: string; en: string }>> = {
+  smartphone: { ar: 'الهواتف', en: 'Phones' },
+  laptop: { ar: 'اللابتوبات', en: 'Laptops' },
+  tablet: { ar: 'الأجهزة اللوحية', en: 'Tablets' },
+  tv: { ar: 'التلفزيونات', en: 'TVs' },
+  audio: { ar: 'الصوتيات', en: 'Audio' },
+  gaming: { ar: 'الألعاب', en: 'Gaming' },
+  camera: { ar: 'الكاميرات', en: 'Cameras' },
+  monitor: { ar: 'الشاشات', en: 'Monitors' },
+  wearable: { ar: 'الساعات الذكية', en: 'Wearables' },
+  networking: { ar: 'الشبكات', en: 'Networking' },
+  smart_home: { ar: 'المنزل الذكي', en: 'Smart Home' },
+  printer: { ar: 'الطابعات', en: 'Printers' },
+  appliance: { ar: 'الأجهزة المنزلية', en: 'Appliances' },
+  refrigerator: { ar: 'الثلاجات', en: 'Fridges' },
+  kitchen: { ar: 'المطبخ', en: 'Kitchen' },
+  personal_care: { ar: 'العناية الشخصية', en: 'Personal Care' },
+  accessories: { ar: 'الإكسسوارات', en: 'Accessories' },
+};
+
+function getCategorySearchLabel(category: ProductCategory | 'all' | null, locale: string) {
+  if (!category || category === 'all') return '';
+  const label = CATEGORY_SEARCH_LABELS[category];
+  return locale === 'ar' ? label?.ar || '' : label?.en || '';
+}
+
 function parseCsvParam(...values: Array<string | null>): string[] {
   const raw = values.find((value) => value && value.trim().length > 0);
   if (!raw) return [];
@@ -155,14 +181,15 @@ export default function SearchClient() {
 
   const urlQuery = searchParams.get('q') || '';
   const initialCategory = (searchParams.get('category') as ProductCategory | 'all') || 'all';
+  const initialDisplayQuery = urlQuery || getCategorySearchLabel(initialCategory, locale);
 
-  const [searchQuery, setSearchQuery] = useState(urlQuery);
-  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  const [searchQuery, setSearchQuery] = useState(initialDisplayQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
   // Server's exact match count across the whole catalog — drives real
   // pagination (not the capped client-side slice we used to do).
   const [serverTotal, setServerTotal] = useState(0);
-  const [loading, setLoading] = useState(!!urlQuery);
+  const [loading, setLoading] = useState(!!urlQuery || initialCategory !== 'all');
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [currentPage, setCurrentPage] = useState(1);
@@ -271,16 +298,21 @@ export default function SearchClient() {
 
   // Sync search query from URL params (e.g. when header search navigates here)
   const urlQueryRef = useRef(urlQuery);
+  const urlCategoryRef = useRef(initialCategory);
   useEffect(() => {
     const urlQuery = searchParams.get('q') || '';
-    if (urlQuery !== urlQueryRef.current) {
+    const urlCategory = (searchParams.get('category') as ProductCategory | 'all') || 'all';
+    const queryOrCategoryLabel = urlQuery || getCategorySearchLabel(urlCategory, locale);
+
+    if (urlQuery !== urlQueryRef.current || urlCategory !== urlCategoryRef.current) {
       urlQueryRef.current = urlQuery;
-      if (urlQuery !== searchQuery) {
-        setSearchQuery(urlQuery);
-        setDebouncedQuery(urlQuery);
-      }
+      urlCategoryRef.current = urlCategory;
+      setSearchQuery(queryOrCategoryLabel);
+      setDebouncedQuery(urlQuery);
+      setSelectedCategory(urlCategory);
+      setCurrentPage(1);
     }
-  }, [searchParams]);
+  }, [searchParams, locale]);
 
   // ── URL write-back: mirror filter/sort/page state into the URL so reload + share preserve view ──
   const urlSyncReadyRef = useRef(false);

@@ -55,6 +55,7 @@ export default async function AdminProductDetailPage({
 
  const productName = isRTL ? product.name_ar : product.name_en;
  const productImage = product.image_urls?.[0] || '';
+ const numberLocale = isRTL ? 'ar-SA' : 'en-US';
 
  const storesColumns: Column<any>[] = [
  {
@@ -68,7 +69,7 @@ export default async function AdminProductDetailPage({
  {
  key: 'current_price',
  label: isRTL ? 'السعر' : 'Price',
- render: (row) => `${Math.round(row.current_price).toLocaleString()}`,
+ render: (row) => `${Math.round(row.current_price).toLocaleString(numberLocale)}`,
  },
  {
  key: 'availability',
@@ -216,4 +217,3 @@ export default async function AdminProductDetailPage({
  </div>
  );
 }
-

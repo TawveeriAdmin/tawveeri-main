@@ -3,6 +3,7 @@ import type {
   DiscoveryResult,
   PriceUpdateOptions,
   PriceUpdateResult,
+  RateLimitConfig,
   ScrapedProduct,
 } from '../base/types';
 import type { ProductCategory } from '@/lib/database/types';
@@ -68,6 +69,44 @@ const ALL_PRODUCT_CATEGORIES: ProductCategory[] = [
   'personal_care',
 ];
 
+type PriceUpdateStoreRow = {
+  id: string;
+  product_id: string;
+  store_id: string;
+  product_url: string;
+  current_price: number;
+  availability: string | null;
+  consecutive_failures: number | null;
+  stores: {
+    slug: string;
+    name_ar: string;
+    name_en: string;
+  };
+};
+
+type BackInStockAlertRow = {
+  user_id: string;
+  users:
+    | {
+        id: string;
+        email: string | null;
+        full_name: string | null;
+        locale: string | null;
+      }
+    | Array<{
+        id: string;
+        email: string | null;
+        full_name: string | null;
+        locale: string | null;
+      }>
+    | null;
+};
+
+function getScraperBaseHostname(scraper: unknown): string {
+  const baseUrl = (scraper as { config?: { base_url?: string } }).config?.base_url;
+  return new URL(baseUrl || 'https://example.com').hostname;
+}
+
 /**
  * Orchestrator for running scraping jobs
  */
@@ -107,7 +146,10 @@ export class ScrapingOrchestrator {
       let productsDiscovered = 0;
       let productsCreated = 0;
       let productsLinked = 0;
+      let productsMarkedMissing = 0;
+      let productsMarkedOutOfStock = 0;
       let errors = 0;
+      const seenProductStoreIds = new Set<string>();
 
       // Category-level concurrency. Each category still respects the scraper's
       // per-page rate limit internally, so total request rate = CONCURRENCY ×
@@ -133,7 +175,7 @@ export class ScrapingOrchestrator {
 
           // Process products in parallel batches — DB latency dominates, so
           // 12 concurrent round-trips cuts per-page time from ~10s to ~1s.
-          const hostname = new URL(scraper.config.base_url).hostname;
+          const hostname = getScraperBaseHostname(scraper);
           const BATCH = 12;
           const dbStart = Date.now();
           let localCreated = 0;
@@ -149,6 +191,7 @@ export class ScrapingOrchestrator {
                 }
                 if (options.dry_run) return { kind: 'dry' as const };
                 const r = await this.productService.createOrUpdateProduct(scrapedProduct, storeId);
+                if (r.productStoreId) seenProductStoreIds.add(r.productStoreId);
                 return { kind: 'saved' as const, created: r.created };
               })
             );
@@ -225,7 +268,7 @@ export class ScrapingOrchestrator {
           const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
           if (supProducts.length > 0) {
             console.log(`    [${storeSlug}/supplemental] scraped ${supProducts.length} products — writing to DB…`);
-            const hostname = new URL(scraper.config.base_url).hostname;
+            const hostname = getScraperBaseHostname(scraper);
             const BATCH = 12;
             const dbStart = Date.now();
             let supCreated = 0;
@@ -241,6 +284,7 @@ export class ScrapingOrchestrator {
                   }
                   if (options.dry_run) return { kind: 'dry' as const };
                   const r = await this.productService.createOrUpdateProduct(sp, storeId);
+                  if (r.productStoreId) seenProductStoreIds.add(r.productStoreId);
                   return { kind: 'saved' as const, created: r.created };
                 }),
               );
@@ -271,6 +315,26 @@ export class ScrapingOrchestrator {
         }
       }
 
+      const shouldMarkMissing = !options.dry_run
+        && !options.only_supplemental
+        && seenProductStoreIds.size > 0
+        && (options.mark_missing || process.env.DISCOVERY_MARK_MISSING === 'true');
+
+      if (shouldMarkMissing) {
+        const missingResult = await this.productService.markMissingStoreOffers({
+          storeId,
+          seenProductStoreIds: Array.from(seenProductStoreIds),
+          categories,
+          staleAfterMisses: options.stale_after_misses,
+          outOfStockAfterMisses: options.out_of_stock_after_misses,
+        });
+        productsMarkedMissing = missingResult.markedMissing;
+        productsMarkedOutOfStock = missingResult.markedOutOfStock;
+        console.log(
+          `[${storeSlug}] discovery stale-marking: missing=${productsMarkedMissing} out_of_stock=${productsMarkedOutOfStock}`
+        );
+      }
+
       return {
         success: true,
         store: storeSlug,
@@ -278,10 +342,13 @@ export class ScrapingOrchestrator {
         products_discovered: productsDiscovered,
         products_created: productsCreated,
         products_linked: productsLinked,
+        products_marked_missing: productsMarkedMissing,
+        products_marked_out_of_stock: productsMarkedOutOfStock,
         errors,
         duration_ms: Date.now() - startTime,
       };
     } catch (error) {
+      console.error(`[${storeSlug}] discovery failed:`, error);
       return {
         success: false,
         store: storeSlug,
@@ -289,6 +356,8 @@ export class ScrapingOrchestrator {
         products_discovered: 0,
         products_created: 0,
         products_linked: 0,
+        products_marked_missing: 0,
+        products_marked_out_of_stock: 0,
         errors: 1,
         duration_ms: Date.now() - startTime,
       };
@@ -333,9 +402,10 @@ export class ScrapingOrchestrator {
       }
 
       // Group by store so we can apply per-store rate limits.
-      const byStore: Record<string, typeof productStores> = {};
-      for (const ps of productStores) {
-        const storeSlug = (ps as any).stores.slug;
+      const rows = productStores as unknown as PriceUpdateStoreRow[];
+      const byStore: Record<string, PriceUpdateStoreRow[]> = {};
+      for (const ps of rows) {
+        const storeSlug = ps.stores.slug;
         (byStore[storeSlug] ||= []).push(ps);
       }
 
@@ -351,15 +421,15 @@ export class ScrapingOrchestrator {
           continue;
         }
 
-        const rateLimit = (scraper as any).config?.rate_limit;
+        const rateLimit = (scraper as unknown as { config?: { rate_limit?: RateLimitConfig } }).config?.rate_limit;
         const minDelayMs: number = rateLimit?.min_delay_ms ?? 1000;
         const maxDelayMs: number = rateLimit?.max_delay_ms ?? minDelayMs;
 
         for (const productStore of products) {
-          const productStoreId = (productStore as any).id;
-          const productId = (productStore as any).product_id;
-          const storeId = (productStore as any).store_id;
-          const productUrl = (productStore as any).product_url;
+          const productStoreId = productStore.id;
+          const productId = productStore.product_id;
+          const storeId = productStore.store_id;
+          const productUrl = productStore.product_url;
 
           try {
             // Retry transient failures with exponential backoff. updateProductPrice
@@ -371,7 +441,7 @@ export class ScrapingOrchestrator {
             );
 
             if (scrapedProduct) {
-              const oldPrice = (productStore as any).current_price;
+              const oldPrice = productStore.current_price;
               const newPrice = scrapedProduct.current_price;
 
               await this.productService.updateProductPrice(
@@ -382,7 +452,7 @@ export class ScrapingOrchestrator {
               );
 
               // Reset failure counter on success.
-              if ((productStore as any).consecutive_failures > 0) {
+              if ((productStore.consecutive_failures ?? 0) > 0) {
                 await supabase
                   .from('product_stores')
                   .update({ consecutive_failures: 0, last_error: null } as never)
@@ -392,10 +462,10 @@ export class ScrapingOrchestrator {
               productsUpdated++;
               if (oldPrice !== newPrice) priceChanges++;
 
-              const oldAvailability = (productStore as any).availability;
+              const oldAvailability = productStore.availability;
               const newAvailability = scrapedProduct.availability;
               if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
-                const store = (productStore as any).stores;
+                const store = productStore.stores;
                 this.notifyBackInStock(
                   supabase, productId, storeId, newPrice,
                   { name_ar: store.name_ar, name_en: store.name_en }
@@ -523,9 +593,11 @@ export class ScrapingOrchestrator {
     const alerts = alertsResult.data;
     if (!product || !alerts?.length) return;
 
-    for (const alert of alerts) {
-      const user = (alert as any).users;
+    for (const alert of alerts as unknown as BackInStockAlertRow[]) {
+      const user = Array.isArray(alert.users) ? alert.users[0] : alert.users;
       const locale = (user?.locale || 'ar') as 'ar' | 'en';
+      const numberLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
+      const priceText = Math.round(price).toLocaleString(numberLocale);
       const productName = locale === 'ar' ? product.name_ar : product.name_en;
       const storeName = locale === 'ar' ? store.name_ar : store.name_en;
       const productLink = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/products/${product.slug}`;
@@ -536,8 +608,8 @@ export class ScrapingOrchestrator {
         type: 'back_in_stock',
         title_ar: `عاد للمخزون: ${product.name_ar}`,
         title_en: `Back in Stock: ${product.name_en}`,
-        message_ar: `${product.name_ar} أصبح متوفراً الآن في ${store.name_ar} بسعر ${Math.round(price).toLocaleString()} ر.س`,
-        message_en: `${product.name_en} is now available at ${store.name_en} for ${Math.round(price).toLocaleString()} SAR`,
+        message_ar: `${product.name_ar} أصبح متوفراً الآن في ${store.name_ar} بسعر ${priceText} ر.س`,
+        message_en: `${product.name_en} is now available at ${store.name_en} for ${priceText} SAR`,
         product_id: productId,
         store_id: storeId,
       }).catch((err) => console.error('Back-in-stock in-app notification error:', err));
@@ -555,8 +627,8 @@ export class ScrapingOrchestrator {
       // Mobile push
       const pushTitle = locale === 'ar' ? `عاد للمخزون: ${productName}` : `Back in Stock: ${productName}`;
       const pushBody = locale === 'ar'
-        ? `متوفر الآن في ${storeName} بسعر ${Math.round(price).toLocaleString()} ر.س`
-        : `Now available at ${storeName} for ${Math.round(price).toLocaleString()} SAR`;
+        ? `متوفر الآن في ${storeName} بسعر ${priceText} ر.س`
+        : `Now available at ${storeName} for ${priceText} SAR`;
 
       sendPushToUser(alert.user_id, {
         title: pushTitle,
@@ -600,9 +672,5 @@ export class ScrapingOrchestrator {
     return data.id;
   }
 }
-
-
-
-
 
 

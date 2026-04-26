@@ -46,6 +46,7 @@ export function BulkPriceUpdateDialog({
   const { toast } = useToast();
   const t = useTranslations();
   const isRTL = locale === 'ar';
+  const numberLocale = isRTL ? 'ar-SA' : 'en-US';
 
   const previewChanges = () => {
     if (!updateValue) return [];
@@ -142,12 +143,12 @@ export function BulkPriceUpdateDialog({
     {
       key: 'current_price',
       label: t('store.bulkPriceUpdate.currentPrice'),
-      render: (row) => `${Math.round(row.current_price).toLocaleString()}`,
+      render: (row) => `${Math.round(row.current_price).toLocaleString(numberLocale)}`,
     },
     {
       key: 'new_price',
       label: t('store.bulkPriceUpdate.newPrice'),
-      render: (row) => `${Math.round(row.new_price).toLocaleString()}`,
+      render: (row) => `${Math.round(row.new_price).toLocaleString(numberLocale)}`,
     },
   ];
 
@@ -187,7 +188,7 @@ export function BulkPriceUpdateDialog({
                     htmlFor={product.id}
                     className="flex-1 cursor-pointer"
                   >
-                    {product.name} - {Math.round(product.current_price).toLocaleString()}
+                    {product.name} - {Math.round(product.current_price).toLocaleString(numberLocale)}
                   </Label>
                 </div>
               ))}
@@ -251,4 +252,3 @@ export function BulkPriceUpdateDialog({
     </Dialog>
   );
 }
-

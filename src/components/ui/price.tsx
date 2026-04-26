@@ -1,3 +1,6 @@
+'use client';
+
+import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { bestPrice as bestPriceCopy, type Locale } from '@/lib/copy';
 
@@ -66,6 +69,7 @@ interface PriceProps {
   className?: string;
   symbolClassName?: string;
   showDecimals?: boolean;
+  locale?: Locale;
 }
 
 /**
@@ -77,10 +81,14 @@ export function Price({
   className,
   symbolClassName,
   showDecimals = false,
+  locale,
 }: PriceProps) {
+  const params = useParams<{ locale?: string }>();
+  const activeLocale = locale || params?.locale || 'ar';
+  const numberLocale = activeLocale === 'ar' ? 'ar-SA' : 'en-US';
   const formattedAmount = showDecimals
-    ? amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : Math.round(amount).toLocaleString('en-US');
+    ? amount.toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : Math.round(amount).toLocaleString(numberLocale);
 
   return (
     <span className={cn('inline-flex items-center gap-3', className)}>
@@ -154,12 +162,14 @@ export function PriceDisplay({
       <div className="flex items-baseline gap-3 flex-wrap">
         <Price
           amount={currentPrice}
+          locale={locale}
           className={cn('text-4xl font-extrabold text-on-surface', currentClassName)}
           symbolClassName={cn('w-7 h-7', symbolClassName)}
         />
         {originalPrice && originalPrice > currentPrice && (
           <Price
             amount={originalPrice}
+            locale={locale}
             className={cn('text-base text-on-surface-variant line-through', originalClassName)}
             symbolClassName={cn('w-4 h-4', symbolClassName)}
           />

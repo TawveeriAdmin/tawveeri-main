@@ -89,7 +89,10 @@ export async function POST(request: NextRequest) {
           const product = alert.products as any;
           const user = alert.users as any;
           const locale = (user?.locale || 'en') as 'ar' | 'en';
+          const numberLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
           const productName = locale === 'ar' ? product?.name_ar : product?.name_en || 'Product';
+          const currentPriceText = Math.round(currentPrice).toLocaleString(numberLocale);
+          const targetPriceText = Math.round(alert.target_price).toLocaleString(numberLocale);
 
           // Create in-app notification
           await createNotification({
@@ -97,8 +100,8 @@ export async function POST(request: NextRequest) {
             type: 'price_drop',
             title_ar: `انخفض سعر ${productName}!`,
             title_en: `${productName} price dropped!`,
-            message_ar: `انخفض سعر ${productName} إلى ${Math.round(currentPrice).toLocaleString()} ر.س (الهدف: ${Math.round(alert.target_price).toLocaleString()} ر.س)`,
-            message_en: `${productName} price dropped to ${Math.round(currentPrice).toLocaleString()} SAR (Target: ${Math.round(alert.target_price).toLocaleString()} SAR)`,
+            message_ar: `انخفض سعر ${productName} إلى ${currentPriceText} ر.س (الهدف: ${targetPriceText} ر.س)`,
+            message_en: `${productName} price dropped to ${currentPriceText} SAR (Target: ${targetPriceText} SAR)`,
             product_id: alert.product_id,
             link: `/products/${product?.slug || alert.product_id}`,
           });
@@ -106,8 +109,8 @@ export async function POST(request: NextRequest) {
           // Send push notification to mobile
           const pushTitle = locale === 'ar' ? `انخفض سعر ${productName}!` : `${productName} price dropped!`;
           const pushBody = locale === 'ar'
-            ? `السعر الآن ${Math.round(currentPrice).toLocaleString()} ر.س`
-            : `Now ${Math.round(currentPrice).toLocaleString()} SAR`;
+            ? `السعر الآن ${currentPriceText} ر.س`
+            : `Now ${currentPriceText} SAR`;
           await sendPushToUser(alert.user_id, {
             title: pushTitle,
             body: pushBody,
@@ -197,4 +200,3 @@ export async function GET() {
     message: 'Price alerts checker endpoint',
   });
 }
-

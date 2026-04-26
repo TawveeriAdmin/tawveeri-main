@@ -51,8 +51,8 @@ export function PriceAlertDialog({
 
   const formattedCurrentPrice = useMemo(() => {
     if (typeof currentPrice !== 'number') return null;
-    return Math.round(currentPrice).toLocaleString('en-US');
-  }, [currentPrice]);
+    return Math.round(currentPrice).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US');
+  }, [currentPrice, locale]);
 
   const [targetPrice, setTargetPrice] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
@@ -282,4 +282,3 @@ export function PriceAlertDialog({
     </Dialog>
   );
 }
-

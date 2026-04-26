@@ -70,6 +70,7 @@ export default function StoreProductsPage({
  const { toast } = useToast();
  const limit = 20;
  const isRTL = locale === 'ar';
+ const numberLocale = isRTL ? 'ar-SA' : 'en-US';
 
  useEffect(() => {
  params.then((p) => setLocale(p.locale));
@@ -237,12 +238,12 @@ export default function StoreProductsPage({
  {
  key: 'current_price',
  label: t('common.price'),
- render: (product) => `${Math.round(product.current_price).toLocaleString()}`,
+ render: (product) => `${Math.round(product.current_price).toLocaleString(numberLocale)}`,
  },
  {
  key: 'stock_quantity',
  label: t('store.dashboard.products.stock'),
- render: (product) => product.stock_quantity?.toLocaleString() || '-',
+ render: (product) => product.stock_quantity?.toLocaleString(numberLocale) || '-',
  },
  {
  key: 'availability',
@@ -370,4 +371,3 @@ export default function StoreProductsPage({
  </div>
  );
 }
-

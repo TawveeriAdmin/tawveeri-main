@@ -13,6 +13,18 @@ type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
 export class ProductService {
   private supabase = createServerClient();
   private productMatcher = new ProductMatcher();
+  private refreshTrackingSupported: Promise<boolean> | null = null;
+
+  private async supportsRefreshTracking(): Promise<boolean> {
+    if (!this.refreshTrackingSupported) {
+      this.refreshTrackingSupported = this.supabase
+        .from('product_stores')
+        .select('external_id,last_scraped_at,last_seen_at,consecutive_misses,scrape_status')
+        .limit(1)
+        .then(({ error }) => !error);
+    }
+    return this.refreshTrackingSupported;
+  }
 
   /**
    * Create or update product, returning product ID
@@ -20,7 +32,7 @@ export class ProductService {
   async createOrUpdateProduct(
     scrapedProduct: ScrapedProduct,
     storeId: string
-  ): Promise<{ productId: string; created: boolean }> {
+  ): Promise<{ productId: string; productStoreId: string | null; created: boolean }> {
     // Title-based classification — the single source of truth for category
     // on every scrape. When the title confidently maps to a specific category
     // we override the scraper's URL-derived category. This is what fixes
@@ -35,8 +47,15 @@ export class ProductService {
       scrapedProduct = { ...scrapedProduct, category: classified };
     }
 
-    // Try to find existing product
-    const existingProductId = await this.productMatcher.findExistingProduct(scrapedProduct);
+    const externalId = this.getStoreExternalId(scrapedProduct);
+    // First prefer the store-offer identity. This preserves the existing
+    // canonical product row even if the retailer title or parsed brand/model
+    // shifts between refreshes.
+    const existingProductId = await this.findExistingProductByStoreIdentity(
+      scrapedProduct,
+      storeId,
+      externalId
+    ) ?? await this.productMatcher.findExistingProduct(scrapedProduct);
 
     let productId: string;
     let created = false;
@@ -59,9 +78,37 @@ export class ProductService {
       created = true;
     }
 
-    await this.linkProductToStore(productId, storeId, scrapedProduct);
+    const productStoreId = await this.linkProductToStore(productId, storeId, scrapedProduct, externalId);
 
-    return { productId, created };
+    return { productId, productStoreId, created };
+  }
+
+  private async findExistingProductByStoreIdentity(
+    scrapedProduct: ScrapedProduct,
+    storeId: string,
+    externalId: string | null
+  ): Promise<string | null> {
+    if (externalId && await this.supportsRefreshTracking()) {
+      const { data } = await this.supabase
+        .from('product_stores')
+        .select('product_id')
+        .eq('store_id', storeId)
+        .eq('external_id', externalId)
+        .maybeSingle();
+      if (data?.product_id) return data.product_id;
+    }
+
+    const normalizedUrl = this.normalizeProductUrl(scrapedProduct.product_url);
+    if (!normalizedUrl) return null;
+
+    const { data } = await this.supabase
+      .from('product_stores')
+      .select('product_id, product_url')
+      .eq('store_id', storeId)
+      .limit(50);
+
+    const matched = data?.find((row) => this.normalizeProductUrl(row.product_url) === normalizedUrl);
+    return matched?.product_id ?? null;
   }
 
   /**
@@ -218,11 +265,14 @@ export class ProductService {
   async linkProductToStore(
     productId: string,
     storeId: string,
-    scrapedProduct: ScrapedProduct
-  ): Promise<void> {
+    scrapedProduct: ScrapedProduct,
+    externalId = this.getStoreExternalId(scrapedProduct)
+  ): Promise<string | null> {
     const skipHistory = process.env.SCRAPING_SKIP_PRICE_HISTORY === 'true';
+    const now = new Date().toISOString();
+    const supportsRefreshTracking = await this.supportsRefreshTracking();
 
-    const baseData = {
+    const baseData: Record<string, unknown> = {
       product_id: productId,
       store_id: storeId,
       current_price: scrapedProduct.current_price,
@@ -236,18 +286,28 @@ export class ProductService {
       is_deal: scrapedProduct.is_deal || false,
       deal_expires_at: scrapedProduct.deal_expires_at || null,
       coupon_code: scrapedProduct.coupon_code || null,
-      last_checked_at: new Date().toISOString(),
+      last_checked_at: now,
       currency: 'SAR',
     };
 
+    if (supportsRefreshTracking) {
+      baseData.last_scraped_at = now;
+      baseData.last_seen_at = now;
+      baseData.consecutive_misses = 0;
+      baseData.scrape_status = 'active';
+      baseData.external_id = externalId;
+    }
+
     if (skipHistory) {
-      const { error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('product_stores')
-        .upsert(baseData as never, { onConflict: 'product_id,store_id' });
+        .upsert(baseData as never, { onConflict: 'product_id,store_id' })
+        .select('id')
+        .single();
       if (error) {
         throw new Error(`Failed to upsert product_store: ${error.message}`);
       }
-      return;
+      return data?.id ?? null;
     }
 
     // Full path: preserves price-history tracking via initial select.
@@ -258,7 +318,7 @@ export class ProductService {
       .eq('store_id', storeId)
       .maybeSingle();
 
-    const updateData: Partial<ProductStoreRow> = baseData;
+    const updateData = baseData as Partial<ProductStoreRow>;
 
     if (existing) {
       // Track price change
@@ -278,19 +338,23 @@ export class ProductService {
       if (updateError) {
         throw new Error(`Failed to update product_store: ${updateError.message}`);
       }
+      return existing.id;
     } else {
       // Create new entry
-      const { error: insertError } = await this.supabase
+      const { data, error: insertError } = await this.supabase
         .from('product_stores')
         .insert({
           ...updateData,
           product_id: productId,
           store_id: storeId,
-        } as any);
+        } as never)
+        .select('id')
+        .single();
 
       if (insertError) {
         throw new Error(`Failed to create product_store: ${insertError.message}`);
       }
+      return data?.id ?? null;
     }
   }
 
@@ -316,9 +380,12 @@ export class ProductService {
 
     const updateData: Partial<ProductStoreRow> = {
       current_price: price,
-      availability: availability as any,
+      availability: availability as ProductStoreRow['availability'],
       last_checked_at: new Date().toISOString(),
     };
+    if (await this.supportsRefreshTracking()) {
+      updateData.last_scraped_at = new Date().toISOString();
+    }
 
     // Track price change
     if (existing.current_price !== price) {
@@ -350,6 +417,88 @@ export class ProductService {
     if (error) {
       console.error(`Failed to record price history: ${error.message}`);
       // Don't throw - price history is not critical
+    }
+  }
+
+  async markMissingStoreOffers(options: {
+    storeId: string;
+    seenProductStoreIds: string[];
+    categories?: string[];
+    staleAfterMisses?: number;
+    outOfStockAfterMisses?: number;
+  }): Promise<{ markedMissing: number; markedOutOfStock: number }> {
+    const seen = new Set(options.seenProductStoreIds.filter(Boolean));
+    if (seen.size === 0) return { markedMissing: 0, markedOutOfStock: 0 };
+    if (!await this.supportsRefreshTracking()) return { markedMissing: 0, markedOutOfStock: 0 };
+
+    const { data, error } = await this.supabase
+      .from('product_stores')
+      .select('id, consecutive_misses, products!inner(category)')
+      .eq('store_id', options.storeId);
+
+    if (error || !data) {
+      throw new Error(`Failed to fetch store offers for stale marking: ${error?.message || 'unknown'}`);
+    }
+
+    const categories = options.categories && options.categories.length > 0
+      ? new Set(options.categories)
+      : null;
+    const staleAfterMisses = options.staleAfterMisses ?? 3;
+    const outOfStockAfterMisses = options.outOfStockAfterMisses ?? 5;
+    const now = new Date().toISOString();
+    let markedMissing = 0;
+    let markedOutOfStock = 0;
+
+    for (const row of data as Array<{ id: string; consecutive_misses?: number | null; products?: { category?: string } | { category?: string }[] }>) {
+      if (seen.has(row.id)) continue;
+      const product = Array.isArray(row.products) ? row.products[0] : row.products;
+      if (categories && !categories.has(product?.category || '')) continue;
+
+      const nextMisses = (row.consecutive_misses || 0) + 1;
+      const update: Partial<ProductStoreRow> = {
+        consecutive_misses: nextMisses,
+        last_scraped_at: now,
+        scrape_status: nextMisses >= staleAfterMisses ? 'stale' : 'missed',
+      };
+      if (nextMisses >= outOfStockAfterMisses) {
+        update.availability = 'out_of_stock';
+        markedOutOfStock++;
+      }
+
+      const { error: updateError } = await this.supabase
+        .from('product_stores')
+        .update(update)
+        .eq('id', row.id);
+
+      if (updateError) {
+        throw new Error(`Failed to mark product_store missing: ${updateError.message}`);
+      }
+      markedMissing++;
+    }
+
+    return { markedMissing, markedOutOfStock };
+  }
+
+  getStoreExternalId(scrapedProduct: ScrapedProduct): string | null {
+    const sku = scrapedProduct.sku?.trim();
+    if (sku) return sku.slice(0, 500);
+
+    const normalizedUrl = this.normalizeProductUrl(scrapedProduct.product_url);
+    if (!normalizedUrl) return null;
+    return normalizedUrl.slice(0, 500);
+  }
+
+  private normalizeProductUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      parsed.hash = '';
+      parsed.search = '';
+      parsed.hostname = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      parsed.pathname = parsed.pathname.replace(/\/+$/, '');
+      return parsed.toString();
+    } catch {
+      return url.trim().split('#')[0].split('?')[0].replace(/\/+$/, '') || null;
     }
   }
 
@@ -448,8 +597,6 @@ export class ProductService {
       .replace(/^-|-$/g, '');
   }
 }
-
-
 
 
 

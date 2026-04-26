@@ -90,6 +90,13 @@ const HEADER_CATEGORIES: Array<{ slug: string; icon: typeof Smartphone; labelAr:
  *  Categories dropdown for one-click access. */
 const HEADER_QUICK_CATEGORIES: string[] = ['smartphone', 'laptop', 'tv', 'audio', 'appliance'];
 
+const getHeaderCategoryLabel = (slug: string | null, isRTL: boolean) => {
+  if (!slug) return '';
+  const category = HEADER_CATEGORIES.find((item) => item.slug === slug);
+  if (!category) return '';
+  return isRTL ? category.labelAr : category.labelEn;
+};
+
 interface PublicPageShellProps {
   locale: string;
   children: React.ReactNode;
@@ -109,16 +116,19 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   const { user, signOut, loading: authLoading } = useAuth();
   const [wishlistCount, setWishlistCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const isRTL = locale === 'ar';
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get('q') || getHeaderCategoryLabel(searchParams.get('category'), isRTL)
+  );
 
   // Keep header search input in sync with URL ?q= param
   // (e.g. when user searches from the search page's own input)
   useEffect(() => {
-    queueMicrotask(() => setSearchQuery(searchParams.get('q') || ''));
-  }, [searchParams]);
+    queueMicrotask(() => {
+      setSearchQuery(searchParams.get('q') || getHeaderCategoryLabel(searchParams.get('category'), isRTL));
+    });
+  }, [searchParams, isRTL]);
   const isHydrated = useSyncExternalStore(subscribe, () => true, () => false);
-
-  const isRTL = locale === 'ar';
 
   const copy = useMemo(
     () =>

@@ -11,8 +11,8 @@ export function cn(...inputs: ClassValue[]) {
  * @param price - The price value
  * @returns Formatted price string (number only)
  */
-export function formatPrice(price: number): string {
-  return Math.round(price).toLocaleString('en-US');
+export function formatPrice(price: number, locale: 'ar' | 'en' = 'ar'): string {
+  return Math.round(price).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US');
 }
 
 /**
@@ -20,7 +20,7 @@ export function formatPrice(price: number): string {
  * This function is kept for backwards compatibility only
  */
 export function formatPriceWithCurrency(price: number, locale: 'ar' | 'en' = 'ar'): string {
-  const formatted = Math.round(price).toLocaleString('en-US');
+  const formatted = formatPrice(price, locale);
   return locale === 'ar' ? `${formatted} ر.س` : `SAR ${formatted}`;
 }
 

@@ -35,6 +35,7 @@ export function PriceHistoryChart({
   const t = useTranslations();
   const params = useParams();
   const locale = propLocale || (params?.locale as string) || 'ar';
+  const numberLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
   const supabase = getSupabaseBrowserClient();
 
   const [priceHistory, setPriceHistory] = useState<PricePoint[]>([]);
@@ -172,11 +173,11 @@ export function PriceHistoryChart({
             <div className="flex justify-between text-xs text-on-surface-variant">
               <div>
                 <div>{t('products.priceHistory.lowest')}</div>
-                <div className="font-semibold inline-flex items-center gap-1">{Math.round(minPrice).toLocaleString()} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></div>
+                <div className="font-semibold inline-flex items-center gap-1">{Math.round(minPrice).toLocaleString(numberLocale)} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></div>
               </div>
               <div>
                 <div>{t('products.priceHistory.highest')}</div>
-                <div className="font-semibold inline-flex items-center gap-1">{Math.round(maxPrice).toLocaleString()} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></div>
+                <div className="font-semibold inline-flex items-center gap-1">{Math.round(maxPrice).toLocaleString(numberLocale)} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></div>
               </div>
             </div>
 
@@ -191,7 +192,7 @@ export function PriceHistoryChart({
                       day: 'numeric',
                     })}
                   </span>
-                  <span className="font-semibold inline-flex items-center gap-1">{Math.round(point.price).toLocaleString()} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></span>
+                  <span className="font-semibold inline-flex items-center gap-1">{Math.round(point.price).toLocaleString(numberLocale)} <SARSymbol className="w-2.5 h-2.5 fill-primary" /></span>
                 </div>
               ))}
             </div>
@@ -201,4 +202,3 @@ export function PriceHistoryChart({
     </Card>
   );
 }
-

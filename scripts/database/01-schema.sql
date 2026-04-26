@@ -195,7 +195,12 @@ CREATE TABLE product_stores (
 
     -- Metadata
     last_checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_scraped_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_price_change_at TIMESTAMP WITH TIME ZONE,
+    consecutive_misses INTEGER NOT NULL DEFAULT 0,
+    scrape_status VARCHAR(30) NOT NULL DEFAULT 'active',
+    external_id VARCHAR(500),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
@@ -208,6 +213,11 @@ CREATE INDEX idx_product_stores_store ON product_stores(store_id);
 CREATE INDEX idx_product_stores_price ON product_stores(current_price);
 CREATE INDEX idx_product_stores_availability ON product_stores(availability);
 CREATE INDEX idx_product_stores_deals ON product_stores(is_deal) WHERE is_deal = TRUE;
+CREATE INDEX idx_product_stores_seen ON product_stores(store_id, last_seen_at);
+CREATE INDEX idx_product_stores_scrape_status ON product_stores(scrape_status);
+CREATE UNIQUE INDEX idx_product_stores_external_id
+  ON product_stores(store_id, external_id)
+  WHERE external_id IS NOT NULL;
 
 -- ============================================================================
 -- PRICE_HISTORY (Track price changes)

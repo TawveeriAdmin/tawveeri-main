@@ -171,6 +171,16 @@ export interface DiscoveryOptions {
    * supplemental exactly once after all per-category calls complete.
    */
   only_supplemental?: boolean;
+  /**
+   * When true, after discovery finishes, store offers in the covered
+   * categories that were not seen in this run have consecutive_misses
+   * incremented. Keep false for partial/page-limited discovery jobs.
+   */
+  mark_missing?: boolean;
+  /** Miss count threshold before marking scrape_status='stale'. Default 3. */
+  stale_after_misses?: number;
+  /** Miss count threshold before marking availability='out_of_stock'. Default 5. */
+  out_of_stock_after_misses?: number;
 }
 
 /**
@@ -192,6 +202,8 @@ export interface DiscoveryResult {
   products_discovered: number;
   products_created: number;
   products_linked: number;
+  products_marked_missing?: number;
+  products_marked_out_of_stock?: number;
   errors: number;
   duration_ms: number;
 }
@@ -207,7 +219,6 @@ export interface PriceUpdateResult {
   errors: number;
   duration_ms: number;
 }
-
 
 
 
