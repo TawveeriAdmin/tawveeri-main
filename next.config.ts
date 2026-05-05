@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  output: 'standalone',
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
   },
