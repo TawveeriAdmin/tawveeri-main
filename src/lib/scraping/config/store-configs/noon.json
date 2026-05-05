@@ -1,0 +1,55 @@
+{
+  "store_slug": "noon",
+  "store_name_ar": "نون",
+  "store_name_en": "Noon",
+  "base_url": "https://www.noon.com/saudi-en",
+  "requires_js": true,
+  "rate_limit": {
+    "min_delay_ms": 800,
+    "max_delay_ms": 1500,
+    "requests_per_minute": 40
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "smartphone": [
+      "https://www.noon.com/saudi-en/smartphones/c/430"
+    ],
+    "laptop": [
+      "https://www.noon.com/saudi-en/laptops/c/436"
+    ],
+    "tv": [
+      "https://www.noon.com/saudi-en/tv/c/434"
+    ],
+    "tablet": [
+      "https://www.noon.com/saudi-en/tablets/c/433"
+    ],
+    "audio": [
+      "https://www.noon.com/saudi-en/audio/c/440"
+    ],
+    "camera": [
+      "https://www.noon.com/saudi-en/cameras/c/437"
+    ],
+    "gaming": [
+      "https://www.noon.com/saudi-en/gaming/c/439"
+    ],
+    "accessories": [
+      "https://www.noon.com/saudi-en/accessories/c/438"
+    ]
+  },
+  "selectors": {
+    "product_list": ".productItem",
+    "product_link": "a.productLink",
+    "product_name": ".productName",
+    "product_price": ".price",
+    "product_original_price": ".originalPrice",
+    "product_image": ".productImage img",
+    "product_sku": ".sku",
+    "product_specs": ".specifications",
+    "product_availability": ".availability",
+    "pagination": ".pagination",
+    "next_page": ".pagination .next"
+  }
+}

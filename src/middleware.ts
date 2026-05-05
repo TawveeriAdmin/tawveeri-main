@@ -1,0 +1,286 @@
+import { createServerClient } from '@supabase/ssr';
+import type { CookieMethodsServerDeprecated } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+import { createAuditLog } from '@/lib/auth/audit';
+import createIntlMiddleware from 'next-intl/middleware';
+import { locales, defaultLocale } from './i18n';
+
+/**
+ * Combined Middleware: i18n + Auth + API Rate Limiting
+ */
+
+// --- Rate Limiting ---
+const RATE_WINDOW_MS = 60_000; // 60 seconds
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Cleanup stale entries every 60s
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60_000);
+
+function getRateLimit(pathname: string): number | null {
+  if (pathname.startsWith('/api/cron/')) return null; // authenticated by CRON_SECRET
+  if (pathname === '/api/health') return null;
+  if (pathname.startsWith('/api/search/scrape')) return 30; // half of 60 (2 PM2 instances)
+  return 30; // half of 60 (2 PM2 instances)
+}
+
+function checkRateLimit(ip: string, pathname: string): { allowed: boolean; remaining: number; retryAfter?: number } {
+  const limit = getRateLimit(pathname);
+  if (limit === null) return { allowed: true, remaining: -1 };
+
+  const key = `${ip}:${pathname.startsWith('/api/search/scrape') ? 'scrape' : 'api'}`;
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_WINDOW_MS });
+    return { allowed: true, remaining: limit - 1 };
+  }
+
+  entry.count++;
+  if (entry.count > limit) {
+    const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
+    return { allowed: false, remaining: 0, retryAfter };
+  }
+
+  return { allowed: true, remaining: limit - entry.count };
+}
+
+// Routes that require authentication (without locale prefix)
+const protectedRoutes = [
+  '/dashboard',
+  '/profile',
+  '/wishlist',
+  '/notifications',
+  '/price-alerts',
+  '/settings',
+];
+
+// Routes that require admin role
+const adminRoutes = ['/admin'];
+
+// Routes that require store role
+const storeRoutes = ['/store/dashboard', '/store/products', '/store/analytics'];
+
+// Public routes that should redirect if already authenticated
+const authRoutes = ['/auth/login', '/auth/signup'];
+
+// Create the intl middleware
+const handleI18nRouting = createIntlMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'always',
+});
+
+const getConfiguredAdminEmails = (() => {
+  let cached: Set<string> | null = null;
+
+  return () => {
+    if (cached) return cached;
+
+    const raw = [
+      process.env.ADMIN_EMAILS,
+      process.env.ADMIN_EMAIL,
+      process.env.NEXT_PUBLIC_ADMIN_EMAILS,
+    ]
+      .filter(Boolean)
+      .join(',');
+
+    const parsed = raw
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+
+    cached = new Set(parsed);
+    return cached;
+  };
+})();
+
+const isConfiguredAdminEmail = (email?: string | null) => {
+  if (!email) return false;
+  return getConfiguredAdminEmails().has(email.trim().toLowerCase());
+};
+
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // API routes: apply rate limiting, then pass through
+  if (pathname.startsWith('/api/')) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+    const { allowed, remaining, retryAfter } = checkRateLimit(ip, pathname);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
+    const response = NextResponse.next();
+    if (remaining >= 0) {
+      response.headers.set('X-RateLimit-Remaining', String(remaining));
+    }
+    return response;
+  }
+
+  // First, let next-intl handle the routing
+  const response = handleI18nRouting(request);
+
+  // Get the pathname without locale prefix for route matching
+  const pathnameWithoutLocale = pathname.replace(/^\/(ar|en)/, '') || '/';
+
+  // Check if route requires authentication
+  const isProtectedRoute = protectedRoutes.some((route) => pathnameWithoutLocale.startsWith(route));
+  const isAdminRoute = adminRoutes.some((route) => pathnameWithoutLocale.startsWith(route));
+  const isStoreRoute = storeRoutes.some((route) => pathnameWithoutLocale.startsWith(route));
+  const isAuthRoute = authRoutes.some((route) => pathnameWithoutLocale.startsWith(route));
+
+  // If not a protected route, return intl response
+  if (!isProtectedRoute && !isAdminRoute && !isStoreRoute && !isAuthRoute) {
+    return response;
+  }
+
+  // For protected routes, add auth checks
+  const cookies: CookieMethodsServerDeprecated = {
+    get(name: string) {
+      return request.cookies.get(name)?.value;
+    },
+    set(name: string, value: string, options = {}) {
+      response.cookies.set(name, value, options);
+    },
+    remove(name: string, options = {}) {
+      response.cookies.set(name, '', { ...options, maxAge: 0 });
+    },
+  };
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies,
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isBootstrapAdmin = isConfiguredAdminEmail(user?.email ?? null);
+
+  let userRole: string | null | undefined;
+  const getUserRole = async (): Promise<string | null> => {
+    if (!user) return null;
+    if (isBootstrapAdmin) return 'admin';
+    if (userRole !== undefined) return userRole;
+
+    const { data } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    userRole = data?.role ?? null;
+    if (userRole !== 'admin' && isBootstrapAdmin) {
+      userRole = 'admin';
+    }
+    return userRole ?? null;
+  };
+
+  // Helper: create a redirect that preserves auth cookies set by Supabase SSR
+  // (e.g. refreshed access tokens). Without this, token refreshes done in the
+  // middleware are lost and the browser client cannot establish a session.
+  const createRedirect = (url: URL) => {
+    const redirectResponse = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
+  };
+
+  // Extract current locale from URL
+  const locale = request.nextUrl.pathname.split('/')[1];
+  const validLocale = locales.includes(locale as (typeof locales)[number]) ? locale : defaultLocale;
+
+  // Redirect to login if accessing protected route without user
+  if (isProtectedRoute && !user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/${validLocale}/auth/login`;
+    redirectUrl.searchParams.set('redirect', pathnameWithoutLocale);
+    return createRedirect(redirectUrl);
+  }
+
+  // Redirect to dashboard if accessing auth routes while logged in
+  if (isAuthRoute && user) {
+    const role = await getUserRole();
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname =
+      role === 'admin'
+        ? `/${validLocale}/admin/dashboard`
+        : `/${validLocale}/dashboard`;
+    return createRedirect(redirectUrl);
+  }
+
+  // Check role-based access for admin routes
+  if (isAdminRoute && user) {
+    const role = await getUserRole();
+
+    if (role !== 'admin') {
+      // Log unauthorized access attempt
+      await createAuditLog({
+        user_id: user.id,
+        action: 'security_alert',
+        entity_type: 'admin',
+        details: {
+          reason: 'unauthorized_admin_access_attempt',
+          path: pathnameWithoutLocale,
+        },
+      });
+
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = `/${validLocale}/unauthorized`;
+      return createRedirect(redirectUrl);
+    }
+  }
+
+  // Check role-based access for store routes
+  if (isStoreRoute && user) {
+    const role = await getUserRole();
+
+    if (role !== 'store' && role !== 'admin') {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = `/${validLocale}/unauthorized`;
+      return createRedirect(redirectUrl);
+    }
+  }
+
+  // Pass current pathname to server components via header
+  response.headers.set('x-pathname', pathnameWithoutLocale);
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};

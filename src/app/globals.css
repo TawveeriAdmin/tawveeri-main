@@ -1,0 +1,1001 @@
+/* ============================================
+   Tawveeri Global Styles — Brand v1.0
+   Tailwind CSS v4 + Brand Design Tokens
+   Primary Green #55B295 · Gold Accent #E2BB4E · Cairo
+   ============================================ */
+
+@import "tailwindcss";
+
+@keyframes landing-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.landing-reveal {
+  animation: landing-reveal 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 75ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal {
+    animation: none;
+  }
+}
+
+/* Keep dark-mode wiring (tokens defined below) even though v1 ships light-only */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+/* ============================================
+   BRAND COLOR TOKENS (light)
+   60% primary · 30% white · 10% accent
+   ============================================ */
+
+:root {
+  /* ---- Brand roles ---- */
+  --brand-green: #55B295;
+  --brand-green-dark: #3D8468;
+  --brand-green-light: #A1D2C5;
+  --brand-bg-green: #EBF8F4;
+  --brand-gold: #E2BB4E;
+  --brand-gold-dark: #B8963C;
+  --brand-dark-text: #1A1A1A;
+  --brand-gray: #9E9E9E;
+
+  /* ---- M3 role compatibility (primary = green) ---- */
+  --color-primary: var(--brand-green);
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: var(--brand-bg-green);
+  --color-on-primary-container: var(--brand-green-dark);
+
+  --color-secondary: var(--brand-green-dark);
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #D6F0E3;
+  --color-on-secondary-container: #1E4235;
+
+  /* ---- Gold accent takes the old "tertiary" role ---- */
+  --color-tertiary: var(--brand-gold);
+  --color-on-tertiary: var(--brand-dark-text);
+  --color-tertiary-container: #FCF7EB;
+  --color-on-tertiary-container: #665422;
+
+  /* ---- Error (kept red) ---- */
+  --color-error: #E53935;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #FDECEA;
+  --color-on-error-container: #8A1A17;
+
+  /* ---- Surfaces (white-first with brand-green tinted bg) ---- */
+  --color-surface: #FFFFFF;
+  --color-on-surface: var(--brand-dark-text);
+  --color-surface-variant: var(--brand-bg-green);
+  --color-on-surface-variant: #4B5560;
+
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #FAFBFA;
+  --color-surface-container: var(--brand-bg-green);
+  --color-surface-container-high: #DDEFE8;
+  --color-surface-container-highest: var(--brand-green-light);
+
+  --color-surface-dim: #E4ECE8;
+  --color-surface-bright: #FFFFFF;
+  --color-surface-tint: var(--brand-green);
+
+  /* ---- Outline (uses brand light green for subtle borders) ---- */
+  --color-outline: #6B7280;
+  --color-outline-variant: var(--brand-green-light);
+
+  /* ---- Inverse ---- */
+  --color-inverse-surface: var(--brand-dark-text);
+  --color-inverse-on-surface: #F3F4F3;
+  --color-inverse-primary: var(--brand-green-light);
+
+  /* ---- Scrim & Shadow ---- */
+  --color-scrim: #000000;
+  --color-shadow: #000000;
+
+  /* ---- Success = brand green (single truth) ---- */
+  --color-success: var(--brand-green);
+  --color-on-success: #FFFFFF;
+  --color-success-container: var(--brand-bg-green);
+  --color-on-success-container: var(--brand-green-dark);
+
+  /* ---- Warning = gold accent ---- */
+  --color-warning: var(--brand-gold);
+  --color-on-warning: var(--brand-dark-text);
+  --color-warning-container: #FCF7EB;
+  --color-on-warning-container: #665422;
+
+  /* ---- Domain-specific ---- */
+  --color-deal: var(--brand-gold);
+  --color-on-deal: var(--brand-dark-text);
+  --color-deal-container: #FCF7EB;
+  --color-price-savings: var(--brand-green-dark);
+  --color-price-savings-container: var(--brand-bg-green);
+  --color-best-price: var(--brand-gold);
+  --color-on-best-price: var(--brand-dark-text);
+
+  /* ---- Legacy semantic aliases ---- */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFBFA;
+  --bg-tertiary: var(--brand-bg-green);
+  --bg-elevated: #FFFFFF;
+  --bg-success: var(--brand-bg-green);
+  --bg-warning: #FDECEA;
+  --bg-featured: #FCF7EB;
+
+  --text-primary: var(--brand-dark-text);
+  --text-secondary: #4B5560;
+  --text-tertiary: var(--brand-gray);
+  --text-inverse: #FFFFFF;
+  --text-link: var(--brand-green-dark);
+  --text-success: var(--brand-green-dark);
+  --text-warning: #C62828;
+  --text-featured: #665422;
+
+  --border-light: var(--brand-green-light);
+  --border-medium: #D1D5D1;
+  --border-strong: var(--brand-gray);
+
+  --price-current: var(--brand-dark-text);
+  --price-original: var(--brand-gray);
+  --price-savings: var(--brand-green-dark);
+  --price-best: var(--brand-gold);
+
+  --shadow-sm: var(--elevation-1);
+  --shadow-md: var(--elevation-2);
+  --shadow-lg: var(--elevation-3);
+  --shadow-xl: var(--elevation-4);
+}
+
+/* ============================================
+   DARK MODE (stub — not polished for v1)
+   ============================================ */
+
+.dark {
+  --color-primary: #A1D2C5;
+  --color-on-primary: #0E281F;
+  --color-primary-container: #306B54;
+  --color-on-primary-container: var(--brand-bg-green);
+
+  --color-secondary: #A1D2C5;
+  --color-on-secondary: #0E281F;
+  --color-secondary-container: #265441;
+  --color-on-secondary-container: #D6F0E3;
+
+  --color-tertiary: #F7E08A;
+  --color-on-tertiary: #443716;
+  --color-tertiary-container: #8A7030;
+  --color-on-tertiary-container: #FCF7EB;
+
+  --color-error: #FCA5A5;
+  --color-on-error: #7F1D1D;
+  --color-error-container: #DC2626;
+  --color-on-error-container: #FEE2E2;
+
+  /* Dark mode: override the brand bg-green so any `bg-[var(--brand-bg-green)]`
+   * utility renders as a dim green tint instead of the light #EBF8F4. */
+  --brand-bg-green: rgba(161, 210, 197, 0.12);
+
+  --color-surface: #111513;
+  --color-on-surface: #F3F4F3;
+  --color-surface-variant: #1E2420;
+  --color-on-surface-variant: #B8C0BB;
+
+  --color-surface-container-lowest: #0A0D0C;
+  --color-surface-container-low: #121613;
+  --color-surface-container: #181D19;
+  --color-surface-container-high: #222823;
+  --color-surface-container-highest: #2C332D;
+
+  --color-surface-dim: #0E1210;
+  --color-surface-bright: #2C332D;
+  --color-surface-tint: #A1D2C5;
+
+  --color-outline: #6B7570;
+  --color-outline-variant: #2E3630;
+
+  --color-inverse-surface: #F3F4F3;
+  --color-inverse-on-surface: #111513;
+  --color-inverse-primary: var(--brand-green-dark);
+
+  --color-scrim: #000000;
+  --color-shadow: #000000;
+
+  --color-success: #A1D2C5;
+  --color-on-success: #0E281F;
+  --color-success-container: #306B54;
+  --color-on-success-container: var(--brand-bg-green);
+
+  --color-warning: #F7E08A;
+  --color-on-warning: #443716;
+  --color-warning-container: #8A7030;
+  --color-on-warning-container: #FCF7EB;
+
+  --color-deal: #F7E08A;
+  --color-on-deal: #443716;
+  --color-deal-container: #8A7030;
+  --color-price-savings: #A1D2C5;
+  --color-price-savings-container: #306B54;
+  --color-best-price: #F7E08A;
+  --color-on-best-price: #443716;
+
+  --bg-primary: #111513;
+  --bg-secondary: #181D19;
+  --bg-tertiary: #222823;
+  --bg-elevated: #181D19;
+  --bg-success: #306B54;
+  --bg-warning: #3F1F1F;
+  --bg-featured: #3F3516;
+
+  --text-primary: #F3F4F3;
+  --text-secondary: #B8C0BB;
+  --text-tertiary: #6B7570;
+  --text-inverse: #111513;
+  --text-link: #A1D2C5;
+  --text-success: #A1D2C5;
+  --text-warning: #FCA5A5;
+  --text-featured: #F7E08A;
+
+  --border-light: #2E3630;
+  --border-medium: #3E463F;
+  --border-strong: #6B7570;
+
+  --price-current: #F3F4F3;
+  --price-original: #6B7570;
+  --price-savings: #A1D2C5;
+  --price-best: #F7E08A;
+}
+
+/* ============================================
+   TAILWIND @theme — brand utilities + scales
+   ============================================ */
+
+@theme {
+  --color-scheme: light dark;
+  --breakpoint-3xl: 1800px;
+
+  /* ---- M3 role colors (legacy components still read these) ---- */
+  --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
+  --color-primary-container: var(--color-primary-container);
+  --color-on-primary-container: var(--color-on-primary-container);
+
+  --color-secondary: var(--color-secondary);
+  --color-on-secondary: var(--color-on-secondary);
+  --color-secondary-container: var(--color-secondary-container);
+  --color-on-secondary-container: var(--color-on-secondary-container);
+
+  --color-tertiary: var(--color-tertiary);
+  --color-on-tertiary: var(--color-on-tertiary);
+  --color-tertiary-container: var(--color-tertiary-container);
+  --color-on-tertiary-container: var(--color-on-tertiary-container);
+
+  --color-error: var(--color-error);
+  --color-on-error: var(--color-on-error);
+  --color-error-container: var(--color-error-container);
+  --color-on-error-container: var(--color-on-error-container);
+
+  --color-surface: var(--color-surface);
+  --color-on-surface: var(--color-on-surface);
+  --color-surface-variant: var(--color-surface-variant);
+  --color-on-surface-variant: var(--color-on-surface-variant);
+
+  --color-surface-container-lowest: var(--color-surface-container-lowest);
+  --color-surface-container-low: var(--color-surface-container-low);
+  --color-surface-container: var(--color-surface-container);
+  --color-surface-container-high: var(--color-surface-container-high);
+  --color-surface-container-highest: var(--color-surface-container-highest);
+
+  --color-surface-dim: var(--color-surface-dim);
+  --color-surface-bright: var(--color-surface-bright);
+  --color-surface-tint: var(--color-surface-tint);
+
+  --color-outline: var(--color-outline);
+  --color-outline-variant: var(--color-outline-variant);
+
+  --color-inverse-surface: var(--color-inverse-surface);
+  --color-inverse-on-surface: var(--color-inverse-on-surface);
+  --color-inverse-primary: var(--color-inverse-primary);
+
+  --color-scrim: var(--color-scrim);
+  --color-shadow: var(--color-shadow);
+
+  --color-success: var(--color-success);
+  --color-on-success: var(--color-on-success);
+  --color-success-container: var(--color-success-container);
+  --color-on-success-container: var(--color-on-success-container);
+
+  --color-warning: var(--color-warning);
+  --color-on-warning: var(--color-on-warning);
+  --color-warning-container: var(--color-warning-container);
+  --color-on-warning-container: var(--color-on-warning-container);
+
+  /* ---- Brand-named shortcuts ---- */
+  --color-accent: var(--brand-gold);
+  --color-on-accent: var(--brand-dark-text);
+  --color-accent-dark: var(--brand-gold-dark);
+  --color-brand: var(--brand-green);
+  --color-brand-dark: var(--brand-green-dark);
+  --color-brand-light: var(--brand-green-light);
+  --color-brand-bg: var(--brand-bg-green);
+
+  /* ---- Numeric scales (re-tinted to brand so legacy utilities still work) ---- */
+
+  /* Gray (neutral) */
+  --color-gray-50: #FAFBFA;
+  --color-gray-100: #F3F4F3;
+  --color-gray-200: #E4ECE8;
+  --color-gray-300: #D1D5D1;
+  --color-gray-400: #9E9E9E;
+  --color-gray-500: #6B7270;
+  --color-gray-600: #4B5560;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2723;
+  --color-gray-900: #1A1A1A;
+  --color-gray-950: #0E120F;
+
+  /* Primary (brand green) — replaces former blue scale */
+  --color-primary-50: #F0FAF5;
+  --color-primary-100: #D6F0E3;
+  --color-primary-200: #B0E1C7;
+  --color-primary-300: #84CEA8;
+  --color-primary-400: #66BD93;
+  --color-primary-500: #55B295;
+  --color-primary-600: #3D8468;
+  --color-primary-700: #306B54;
+  --color-primary-800: #265441;
+  --color-primary-900: #1E4235;
+  --color-primary-950: #0E281F;
+
+  /* Blue alias (legacy components still use bg-blue-600 etc → route to brand) */
+  --color-blue-50: #F0FAF5;
+  --color-blue-100: #D6F0E3;
+  --color-blue-200: #B0E1C7;
+  --color-blue-300: #84CEA8;
+  --color-blue-400: #66BD93;
+  --color-blue-500: #55B295;
+  --color-blue-600: #3D8468;
+  --color-blue-700: #306B54;
+  --color-blue-800: #265441;
+  --color-blue-900: #1E4235;
+  --color-blue-950: #0E281F;
+
+  /* Success / Green — same as primary (single brand green) */
+  --color-success-50: #F0FAF5;
+  --color-success-100: #D6F0E3;
+  --color-success-200: #B0E1C7;
+  --color-success-300: #84CEA8;
+  --color-success-400: #66BD93;
+  --color-success-500: #55B295;
+  --color-success-600: #3D8468;
+  --color-success-700: #306B54;
+  --color-success-800: #265441;
+  --color-success-900: #1E4235;
+  --color-success-950: #0E281F;
+
+  --color-green-50: #F0FAF5;
+  --color-green-100: #D6F0E3;
+  --color-green-200: #B0E1C7;
+  --color-green-300: #84CEA8;
+  --color-green-400: #66BD93;
+  --color-green-500: #55B295;
+  --color-green-600: #3D8468;
+  --color-green-700: #306B54;
+  --color-green-800: #265441;
+  --color-green-900: #1E4235;
+  --color-green-950: #0E281F;
+
+  /* Featured / Amber — brand gold */
+  --color-featured-50: #FCF7EB;
+  --color-featured-100: #F7ECCC;
+  --color-featured-200: #EED89A;
+  --color-featured-300: #E8C870;
+  --color-featured-400: #E4C05A;
+  --color-featured-500: #E2BB4E;
+  --color-featured-600: #B8963C;
+  --color-featured-700: #8A7030;
+  --color-featured-800: #665422;
+  --color-featured-900: #443716;
+  --color-featured-950: #221B0A;
+
+  --color-amber-50: #FCF7EB;
+  --color-amber-100: #F7ECCC;
+  --color-amber-200: #EED89A;
+  --color-amber-300: #E8C870;
+  --color-amber-400: #E4C05A;
+  --color-amber-500: #E2BB4E;
+  --color-amber-600: #B8963C;
+  --color-amber-700: #8A7030;
+  --color-amber-800: #665422;
+  --color-amber-900: #443716;
+  --color-amber-950: #221B0A;
+
+  /* Accent (brand gold, semantic name) */
+  --color-accent-50: #FCF7EB;
+  --color-accent-100: #F7ECCC;
+  --color-accent-200: #EED89A;
+  --color-accent-300: #E8C870;
+  --color-accent-400: #E4C05A;
+  --color-accent-500: #E2BB4E;
+  --color-accent-600: #B8963C;
+  --color-accent-700: #8A7030;
+  --color-accent-800: #665422;
+  --color-accent-900: #443716;
+  --color-accent-950: #221B0A;
+
+  /* Error / Red — kept */
+  --color-warning-50: #FDECEA;
+  --color-warning-100: #F9C9C4;
+  --color-warning-200: #F4A29B;
+  --color-warning-300: #ED7B70;
+  --color-warning-400: #E75A4D;
+  --color-warning-500: #E53935;
+  --color-warning-600: #C62828;
+  --color-warning-700: #A31E1D;
+  --color-warning-800: #7F1715;
+  --color-warning-900: #5C100F;
+  --color-warning-950: #320907;
+
+  --color-red-50: #FDECEA;
+  --color-red-100: #F9C9C4;
+  --color-red-200: #F4A29B;
+  --color-red-300: #ED7B70;
+  --color-red-400: #E75A4D;
+  --color-red-500: #E53935;
+  --color-red-600: #C62828;
+  --color-red-700: #A31E1D;
+  --color-red-800: #7F1715;
+  --color-red-900: #5C100F;
+  --color-red-950: #320907;
+
+  /* Base */
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-destructive: var(--color-error);
+
+  /* ---- Radius (brand scale: 4/8/12/16/100) ---- */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-full: 9999px;
+  --radius-pill: 100px;
+
+  /* ---- Spacing (brand scale) ---- */
+  --spacing-brand-xs: 4px;
+  --spacing-brand-s: 8px;
+  --spacing-brand-m: 16px;
+  --spacing-brand-l: 24px;
+  --spacing-brand-xl: 32px;
+  --spacing-brand-2xl: 48px;
+
+  /* ---- Font families (single Cairo family, both scripts) ---- */
+  --font-sans: var(--font-cairo), "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans-ar: var(--font-cairo), "Cairo", system-ui, sans-serif;
+  --font-display: var(--font-cairo), "Cairo", system-ui, sans-serif;
+
+  /* ---- Motion (brand easing/durations) ---- */
+  --ease-out-brand: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 150ms;
+  --dur-med: 240ms;
+  --dur-slow: 400ms;
+}
+
+/* ============================================
+   ELEVATION
+   ============================================ */
+
+:root {
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(26, 26, 26, 0.06), 0 1px 3px rgba(26, 26, 26, 0.04);
+  --elevation-2: 0 4px 8px -2px rgba(26, 26, 26, 0.08), 0 2px 4px -2px rgba(26, 26, 26, 0.04);
+  --elevation-3: 0 10px 20px -4px rgba(26, 26, 26, 0.08), 0 4px 8px -4px rgba(26, 26, 26, 0.04);
+  --elevation-4: 0 18px 32px -8px rgba(26, 26, 26, 0.10), 0 6px 12px -6px rgba(26, 26, 26, 0.05);
+  --elevation-5: 0 28px 56px -16px rgba(26, 26, 26, 0.16);
+}
+
+/* ============================================
+   BRAND TYPOGRAPHY UTILITIES
+   H1 36 · H2 28 · H3 22 · H4 18 · Body 15 · Small 13 · Caption 11
+   ============================================ */
+
+@utility t-h1 {
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+}
+
+@utility t-h2 {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+}
+
+@utility t-h3 {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+@utility t-h4 {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+@utility t-body {
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+@utility t-body-strong {
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+@utility t-small {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+@utility t-caption {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   LEGACY M3 TYPOGRAPHY UTILITIES
+   Kept so existing components don't break during migration;
+   values remapped to brand scale.
+   ============================================ */
+
+@utility text-display-lg {
+  font-size: 44px;
+  line-height: 52px;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+}
+
+@utility text-display-md {
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+}
+
+@utility text-display-sm {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+}
+
+@utility text-headline-lg {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
+}
+
+@utility text-headline-md {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+@utility text-headline-sm {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 600;
+}
+
+@utility text-title-lg {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 600;
+}
+
+@utility text-title-md {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+@utility text-title-sm {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+@utility text-body-lg {
+  font-size: 17px;
+  line-height: 26px;
+  font-weight: 400;
+}
+
+@utility text-body-md {
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+@utility text-body-sm {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+@utility text-label-lg {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+@utility text-label-md {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+@utility text-label-sm {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* ============================================
+   STATE LAYER (preserved)
+   ============================================ */
+
+@utility state-layer {
+  position: relative;
+  overflow: hidden;
+}
+
+@layer base {
+  .state-layer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    background: currentColor;
+    transition: opacity var(--dur-fast) var(--ease-out-brand);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .state-layer:hover::before { opacity: 0.08; }
+  .state-layer:focus-visible::before { opacity: 0.10; }
+  .state-layer:active::before { opacity: 0.12; }
+}
+
+/* ============================================
+   ELEVATION UTILITIES
+   ============================================ */
+
+@utility elevation-0 { box-shadow: var(--elevation-0); }
+@utility elevation-1 { box-shadow: var(--elevation-1); }
+@utility elevation-2 { box-shadow: var(--elevation-2); }
+@utility elevation-3 { box-shadow: var(--elevation-3); }
+@utility elevation-4 { box-shadow: var(--elevation-4); }
+@utility elevation-5 { box-shadow: var(--elevation-5); }
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+  border: 0 solid var(--color-outline-variant);
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  transition: background-color var(--dur-med) var(--ease-out-brand),
+              color var(--dur-med) var(--ease-out-brand);
+}
+
+/* ============================================
+   RTL — Arabic uses same Cairo family, looser leading for legibility
+   ============================================ */
+
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] body {
+  font-family: var(--font-sans-ar);
+  line-height: 1.7;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="ltr"] body {
+  font-family: var(--font-sans);
+}
+
+/* ============================================
+   HEADINGS (brand scale)
+   ============================================ */
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--color-on-surface);
+    letter-spacing: -0.15px;
+  }
+
+  h1 { font-size: 36px; line-height: 44px; }
+  h2 { font-size: 28px; line-height: 36px; }
+  h3 { font-size: 22px; line-height: 30px; font-weight: 600; }
+  h4 { font-size: 18px; line-height: 26px; font-weight: 600; }
+  h5 { font-size: 15px; line-height: 22px; font-weight: 600; }
+  h6 { font-size: 13px; line-height: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3,
+  [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
+    line-height: 1.45;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    color: var(--color-on-surface-variant);
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out-brand);
+  }
+
+  a:hover {
+    color: var(--color-secondary);
+  }
+
+  /* Pointer cursor for interactive controls */
+  a,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([data-disabled]):not([aria-disabled="true"]),
+  [role="menuitemcheckbox"]:not([data-disabled]):not([aria-disabled="true"]),
+  [role="menuitemradio"]:not([data-disabled]):not([aria-disabled="true"]),
+  [role="option"]:not([data-disabled]):not([aria-disabled="true"]),
+  [role="switch"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]),
+  [role="radio"]:not([aria-disabled="true"]),
+  summary,
+  label[for],
+  select,
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+
+  strong, b { font-weight: 700; }
+}
+
+/* ============================================
+   FOCUS (gold accent ring per brand)
+   ============================================ */
+
+:focus-visible {
+  outline: 2px solid var(--brand-gold);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Inputs inside a wrapper that handles focus via `focus-within` must not
+ * render their own gold outline — the wrapper draws the focus signal. */
+input:focus-visible,
+input:focus,
+textarea:focus-visible,
+textarea:focus {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+/* ============================================
+   SELECTION (brand primary)
+   ============================================ */
+
+::selection {
+  background-color: var(--brand-bg-green);
+  color: var(--brand-green-dark);
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-container-low);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-green-light);
+  border-radius: 9999px;
+  border: 2px solid var(--color-surface-container-low);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-green);
+}
+
+/* ============================================
+   PRICE — tabular numbers, always LTR inside RTL
+   ============================================ */
+
+.price,
+.price-display,
+.tabular-nums,
+[class*="price"] {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Numeric content inside RTL stays LTR for correct reading of prices */
+.num-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* ============================================
+   KEYFRAMES (brand shimmer for Skeleton)
+   ============================================ */
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes shimmer-rtl {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Container */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+@media (min-width: 640px) {
+  .container { max-width: 640px; }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container { max-width: 1280px; }
+}
+
+@media (min-width: 1536px) {
+  .container { max-width: 1440px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   PRINT
+   ============================================ */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

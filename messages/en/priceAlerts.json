@@ -1,0 +1,20 @@
+{
+  "title": "Price Alerts",
+  "description": "Track prices for your favorite products and get notified when prices drop",
+  "addAlert": "Add Alert",
+  "active": "Active",
+  "inactive": "Inactive",
+  "noAlerts": "No price alerts yet",
+  "noAlertsDescription": "Create your first price alert to get notified when prices drop",
+  "loadError": "Failed to load price alerts",
+  "deleteConfirm": "Are you sure you want to delete this alert?",
+  "deleted": "Deleted",
+  "deleteSuccess": "Alert deleted successfully",
+  "deleteError": "Failed to delete alert",
+  "updated": "Updated",
+  "activateSuccess": "Alert activated",
+  "deactivateSuccess": "Alert deactivated",
+  "updateError": "Failed to update alert",
+  "guestTitle": "Price Alerts",
+  "guestDescription": "Create an account to track prices for your favorite products and get notified when prices drop."
+}

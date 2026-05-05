@@ -1,0 +1,20 @@
+{
+  "title": "العروض اليومية",
+  "subtitle": "اكتشف أفضل العروض والخصومات",
+  "allDeals": "جميع العروض",
+  "searchPlaceholder": "البحث عن العروض...",
+  "sortBy": "الترتيب حسب",
+  "sortDiscount": "أكبر خصم",
+  "sortPrice": "السعر",
+  "sortNewest": "الأحدث",
+  "noDeals": "لا توجد عروض",
+  "loading": "جاري تحميل العروض...",
+  "error": "فشل تحميل العروض. الرجاء المحاولة لاحقاً.",
+  "expires": "ينتهي",
+  "discount": "خصم",
+  "save": "وفر",
+  "viewDeal": "عرض العرض",
+  "resultsCount": "عرض",
+  "noDealsMatch": "لا توجد عروض تطابق \"{{query}}\""
+}
+

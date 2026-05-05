@@ -1,0 +1,54 @@
+{
+  "store_slug": "shaker",
+  "store_name_ar": "شاكر",
+  "store_name_en": "Shaker",
+  "base_url": "https://shakersa.com",
+  "requires_js": false,
+  "discovery_pagination": "wordpress_paged",
+  "rate_limit": {
+    "min_delay_ms": 600,
+    "max_delay_ms": 1200,
+    "requests_per_minute": 50
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {
+    "tv": [
+      "https://shakersa.com/product-category/tv-entertaiment/",
+      "https://shakersa.com/product-category/television-entertainment/"
+    ],
+    "appliance": [
+      "https://shakersa.com/product-category/large-appliances/",
+      "https://shakersa.com/product-category/air-conditioners/",
+      "https://shakersa.com/product-category/air-conditioners-purifiers/",
+      "https://shakersa.com/product-category/built-in/",
+      "https://shakersa.com/product-category/built-in-appliances/",
+      "https://shakersa.com/product-category/%d9%85%d8%b9%d8%af%d8%a7%d8%aa/",
+      "https://shakersa.com/product-category/tools/"
+    ],
+    "kitchen": ["https://shakersa.com/product-category/small-appliances/"]
+  },
+  "listing_selectors": {
+    "tile": ".product-wrapper",
+    "link": "a.product-image-link",
+    "name": ".wd-entities-title",
+    "price": ".price ins",
+    "original_price": ".price del",
+    "image": "img"
+  },
+  "selectors": {
+    "product_list": ".product",
+    "product_link": "a",
+    "product_name": ".product-title",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".stock",
+    "pagination": null,
+    "next_page": null
+  }
+}

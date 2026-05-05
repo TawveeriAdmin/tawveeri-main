@@ -1,0 +1,93 @@
+{
+  "store_slug": "swsg",
+  "store_name_ar": "الشتاء والصيف",
+  "store_name_en": "Winter & Summer",
+  "base_url": "https://swsg.co",
+  "requires_js": false,
+  "rate_limit": {
+    "min_delay_ms": 800,
+    "max_delay_ms": 1500,
+    "requests_per_minute": 40
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 30000,
+  "listing_selectors": {
+    "tile": "div.item-product",
+    "link": "a.product-item-link",
+    "name": "a.product-item-link",
+    "price": ".price-wrapper .price",
+    "image": "img"
+  },
+  "pagination": { "param": "p", "start": 1 },
+  "category_urls": {
+    "smartphone": [
+      "https://swsg.co/ar/moblie-accessories/smart-phones.html",
+      "https://swsg.co/en/moblie-accessories/smart-phones.html"
+    ],
+    "tablet": [
+      "https://swsg.co/ar/moblie-accessories/tablets.html",
+      "https://swsg.co/en/moblie-accessories/tablets.html"
+    ],
+    "laptop": [
+      "https://swsg.co/ar/computers-peripherals/computers/laptops.html",
+      "https://swsg.co/ar/computers-peripherals/computers/gaming-laptops.html",
+      "https://swsg.co/ar/computers-peripherals/computers/desktop-computer.html",
+      "https://swsg.co/en/computers-peripherals/computers/laptops.html",
+      "https://swsg.co/en/computers-peripherals/computers/gaming-laptops.html",
+      "https://swsg.co/en/computers-peripherals/computers/desktop-computer.html"
+    ],
+    "monitor": [
+      "https://swsg.co/ar/computers-peripherals/computers/desktop-monitors.html",
+      "https://swsg.co/en/computers-peripherals/computers/desktop-monitors.html"
+    ],
+    "printer": [
+      "https://swsg.co/ar/computers-peripherals/computer-peripherals/printers.html",
+      "https://swsg.co/en/computers-peripherals/computer-peripherals/printers.html"
+    ],
+    "networking": [
+      "https://swsg.co/ar/computers-peripherals/computer-peripherals/routers.html",
+      "https://swsg.co/en/computers-peripherals/computer-peripherals/routers.html"
+    ],
+    "tv": [
+      "https://swsg.co/ar/tvs-audios.html",
+      "https://swsg.co/en/tvs-audios.html"
+    ],
+    "audio": [
+      "https://swsg.co/ar/computers-peripherals/computer-accessories/headset-speakers.html",
+      "https://swsg.co/en/computers-peripherals/computer-accessories/headset-speakers.html"
+    ],
+    "gaming": [
+      "https://swsg.co/ar/games.html",
+      "https://swsg.co/en/games.html"
+    ],
+    "appliance": [
+      "https://swsg.co/ar/home-appliances.html",
+      "https://swsg.co/ar/air-conditions.html",
+      "https://swsg.co/en/home-appliances.html",
+      "https://swsg.co/en/air-conditions.html"
+    ],
+    "kitchen": [
+      "https://swsg.co/ar/small-appliances.html",
+      "https://swsg.co/en/small-appliances.html"
+    ],
+    "personal_care": [
+      "https://swsg.co/ar/personal-products.html",
+      "https://swsg.co/en/personal-products.html"
+    ]
+  },
+  "selectors": {
+    "product_list": ".product",
+    "product_link": "a",
+    "product_name": ".product-title",
+    "product_price": ".price",
+    "product_original_price": ".old-price",
+    "product_image": "img",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ".stock",
+    "pagination": null,
+    "next_page": null
+  }
+}

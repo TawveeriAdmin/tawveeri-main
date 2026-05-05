@@ -1,0 +1,71 @@
+{
+  "store_slug": "jarir",
+  "store_name_ar": "مكتبة جرير",
+  "store_name_en": "Jarir Bookstore",
+  "base_url": "https://www.jarir.com",
+  "requires_js": false,
+  "rate_limit": {
+    "min_delay_ms": 800,
+    "max_delay_ms": 1500,
+    "requests_per_minute": 40
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  ],
+  "timeout_ms": 60000,
+  "category_urls": {
+    "smartphone": ["https://www.jarir.com/sa-en/smartphones.html"],
+    "laptop": ["https://www.jarir.com/sa-en/computers-tablets.html"],
+    "tablet": ["https://www.jarir.com/sa-en/computers-tablets.html"],
+    "tv": ["https://www.jarir.com/sa-en/smart-tv-accessories.html"],
+    "audio": ["https://www.jarir.com/sa-en/speakers-headsets-gadgets.html"],
+    "camera": [
+      "https://www.jarir.com/sa-en/cameras-camcorders.html",
+      "https://www.jarir.com/sa-en/drones.html"
+    ],
+    "gaming": ["https://www.jarir.com/sa-en/video-pc-gaming.html"],
+    "accessories": [
+      "https://www.jarir.com/sa-en/smartphone-accessories.html",
+      "https://www.jarir.com/sa-en/computer-supplies.html"
+    ],
+    "monitor": ["https://www.jarir.com/sa-en/monitors-projectors.html"],
+    "printer": ["https://www.jarir.com/sa-en/printers-scanners.html"],
+    "smart_home": ["https://www.jarir.com/sa-en/smart-home.html"],
+    "wearable": [
+      "https://www.jarir.com/sa-en/smartwatches-wearables.html"
+    ]
+  },
+  "supplemental_urls": [
+    "https://www.jarir.com/sa-en/apple.html",
+    "https://www.jarir.com/sa-en/samsung.html",
+    "https://www.jarir.com/sa-en/huawei.html",
+    "https://www.jarir.com/sa-en/xiaomi.html",
+    "https://www.jarir.com/sa-en/motorola.html",
+    "https://www.jarir.com/sa-en/honor.html",
+    "https://www.jarir.com/sa-en/oppo.html",
+    "https://www.jarir.com/sa-en/vivo.html"
+  ],
+  "selectors": {
+    "product_list": ".product-tile",
+    "product_link": "a.product-tile__link",
+    "product_name": ".product-title__title",
+    "product_price": ".product-tile__price",
+    "product_image": ".product-tile__image img",
+    "product_availability": ".product-tile__availability",
+    "pagination": ".pagination",
+    "next_page": ".pagination .next"
+  },
+  "listing_selectors": {
+    "tile": ".product-tile",
+    "link": "a.product-tile__link",
+    "name": ".product-title__title",
+    "attr_name": "data-cnstrc-item-name",
+    "attr_price": "data-cnstrc-item-price",
+    "price": ".product-tile__price",
+    "image": ".product-tile__image img"
+  },
+  "pagination": {
+    "param": "page",
+    "start": 1
+  }
+}

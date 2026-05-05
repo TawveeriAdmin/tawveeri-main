@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - FLASK_API_URL=http://flask:5000
+    depends_on:
+      - flask
+    restart: unless-stopped
+
+  flask:
+    build:
+      context: ./scripts/scraping
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - FLASK_DEBUG=false
+      - ALLOWED_ORIGINS=http://localhost:3000,http://nextjs:3000
+    restart: unless-stopped
+
+

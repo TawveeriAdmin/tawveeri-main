@@ -1,0 +1,20 @@
+{
+  "title": "المتاجر",
+  "subtitle": "تصفح جميع متاجرنا الشريكة",
+  "allStores": "جميع المتاجر",
+  "searchPlaceholder": "البحث عن المتاجر...",
+  "sortBy": "الترتيب حسب",
+  "sortName": "الاسم",
+  "sortRating": "التقييم",
+  "sortProducts": "عدد المنتجات",
+  "noStores": "لا توجد متاجر",
+  "loading": "جاري تحميل المتاجر...",
+  "error": "فشل تحميل المتاجر. الرجاء المحاولة لاحقاً.",
+  "rating": "التقييم",
+  "productsCount": "منتج",
+  "viewStore": "عرض المتجر",
+  "visitWebsite": "زيارة الموقع",
+  "resultsCount": "متجر",
+  "noStoresMatch": "لا توجد متاجر تطابق \"{{query}}\""
+}
+
