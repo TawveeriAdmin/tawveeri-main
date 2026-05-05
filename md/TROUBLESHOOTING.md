@@ -210,13 +210,13 @@ Admin authentication fails even with correct credentials.
 
 1. **Verify user created in Supabase Auth:**
    - Go to **Authentication** → **Users**
-   - Should see: `jfr3sam@gmail.com`
+   - Should see the configured `ADMIN_EMAIL`
    - If not there, create it manually
 
 2. **Create admin user:**
    - Click **Add user** in Supabase Auth
-   - Email: `jfr3sam@gmail.com`
-   - Password: `E1s2a3m4@`
+   - Email: value of `ADMIN_EMAIL`
+   - Password: value of `ADMIN_PASSWORD`
    - **Auto Confirm User:** ✅ Check this!
 
 3. **Check email verified:**

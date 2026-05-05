@@ -247,8 +247,8 @@ Test coverage includes:
 
 ## 👤 Admin Account
 
-**Email:** jfr3sam@gmail.com
-**Password:** E1s2a3m4@
+**Email:** value of `ADMIN_EMAIL`
+**Password:** value of `ADMIN_PASSWORD`
 **Role:** admin
 
 **Note:** Admin user needs to be created in Supabase Auth separately (documented in setup guide).

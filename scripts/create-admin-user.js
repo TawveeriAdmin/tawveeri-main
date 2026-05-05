@@ -7,13 +7,32 @@
  */
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-require('dotenv').config({ path: '.env.local' });
+const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
 
-// Admin credentials
-const ADMIN_EMAIL = 'jfr3sam@gmail.com';
-const ADMIN_PASSWORD = 'E1s2a3m4@';
-const ADMIN_NAME = 'System Administrator';
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.local', override: true });
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NAME = process.env.ADMIN_NAME?.trim() || 'System Administrator';
+const ADMIN_PREVIOUS_EMAIL = process.env.ADMIN_PREVIOUS_EMAIL?.trim().toLowerCase();
+
+function requireAdminConfig() {
+  const missing = [];
+
+  if (!ADMIN_EMAIL) missing.push('ADMIN_EMAIL');
+  if (!ADMIN_PASSWORD) missing.push('ADMIN_PASSWORD');
+
+  if (missing.length > 0) {
+    console.error('❌ Error: Missing admin configuration');
+    console.error('');
+    console.error('Required variables in .env.local:');
+    missing.forEach((name) => console.error(`  - ${name}`));
+    console.error('');
+    process.exit(1);
+  }
+}
 
 async function createAdminUser() {
   console.log('═════════════════════════════════════════════════════');
@@ -35,6 +54,8 @@ async function createAdminUser() {
     process.exit(1);
   }
 
+  requireAdminConfig();
+
   // Create Supabase admin client with service role key
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
@@ -45,7 +66,7 @@ async function createAdminUser() {
 
   console.log('📧 Admin User Details:');
   console.log(`   Email: ${ADMIN_EMAIL}`);
-  console.log(`   Password: ${ADMIN_PASSWORD}`);
+  console.log(`   Name: ${ADMIN_NAME}`);
   console.log('');
 
   try {
@@ -56,12 +77,32 @@ async function createAdminUser() {
       throw listError;
     }
 
-    const existingUser = existingUsers.users.find(u => u.email === ADMIN_EMAIL);
+    const adminEmailsToMatch = [ADMIN_EMAIL, ADMIN_PREVIOUS_EMAIL].filter(Boolean);
+    const existingUser = existingUsers.users.find((u) => (
+      u.email && adminEmailsToMatch.includes(u.email.trim().toLowerCase())
+    ));
 
     if (existingUser) {
       console.log('⚠️  Admin user already exists in Supabase Auth');
       console.log(`   User ID: ${existingUser.id}`);
       console.log('');
+
+      const { error: authUpdateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        email_confirm: true,
+        user_metadata: {
+          ...existingUser.user_metadata,
+          full_name: ADMIN_NAME,
+        },
+      });
+
+      if (authUpdateError) {
+        console.error('❌ Error updating auth user:', authUpdateError.message);
+        process.exit(1);
+      }
+
+      console.log('✅ Auth user email/password updated');
 
       // Update the user in the users table to ensure it's marked as admin
       const { error: updateError } = await supabase
@@ -170,7 +211,6 @@ async function createAdminUser() {
     console.log('');
     console.log('You can now login with:');
     console.log(`  Email: ${ADMIN_EMAIL}`);
-    console.log(`  Password: ${ADMIN_PASSWORD}`);
     console.log('');
     console.log('🚀 Next Steps:');
     console.log('  1. Run: npm run dev');

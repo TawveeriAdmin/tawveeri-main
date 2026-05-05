@@ -33,8 +33,8 @@ This single command will:
 
 After setup, you can login with:
 
-- **Email**: `jfr3sam@gmail.com`
-- **Password**: `E1s2a3m4@`
+- **Email**: value of `ADMIN_EMAIL`
+- **Password**: value of `ADMIN_PASSWORD`
 - **Role**: Admin
 
 ## Individual Scripts

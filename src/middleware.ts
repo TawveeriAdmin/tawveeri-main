@@ -97,10 +97,6 @@ const getConfiguredAdminEmails = (() => {
       .map((email) => email.trim().toLowerCase())
       .filter(Boolean);
 
-    if (parsed.length === 0) {
-      parsed.push('jfr3sam@gmail.com');
-    }
-
     cached = new Set(parsed);
     return cached;
   };

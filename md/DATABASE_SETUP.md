@@ -81,8 +81,8 @@ This will:
 3. Go to **Authentication** → **Users**
 4. Click **"Add user"** (top right)
 5. Fill in:
-   - **Email:** `jfr3sam@gmail.com`
-   - **Password:** `E1s2a3m4@`
+   - **Email:** value of `ADMIN_EMAIL`
+   - **Password:** value of `ADMIN_PASSWORD`
    - **Auto Confirm User:** ✅ **YES** (check this!)
 6. Click **"Create User"**
 
@@ -184,7 +184,7 @@ LIMIT 10;
 SELECT email, role, full_name FROM users WHERE role = 'admin';
 ```
 
-Should return: `jfr3sam@gmail.com`
+Should return the configured `ADMIN_EMAIL`.
 
 ## 🐛 Troubleshooting
 
@@ -251,7 +251,7 @@ Then re-run: `npm run db:setup`
 
 **Solutions:**
 1. Verify you created the user in Supabase Auth (not just the database)
-2. Check you used correct email: `jfr3sam@gmail.com`
+2. Check you used the configured `ADMIN_EMAIL`
 3. Ensure "Auto Confirm User" was checked
 4. Try password reset if needed
 
@@ -283,11 +283,11 @@ tawveeri/
 
 ## 🔐 Admin Credentials
 
-**Email:** `jfr3sam@gmail.com`
-**Password:** `E1s2a3m4@`
+**Email:** value of `ADMIN_EMAIL`
+**Password:** value of `ADMIN_PASSWORD`
 
 **⚠️ Important for Production:**
-- Change these credentials immediately
+- Keep these credentials in environment variables only
 - Use strong, unique passwords
 - Enable 2FA in Supabase
 - Keep service role key secret

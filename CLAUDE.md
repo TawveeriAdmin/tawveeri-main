@@ -185,7 +185,7 @@ t('greeting', { name: 'Ali' })   // {{name}} placeholder replacement
   - **API rate limiting**: In-process limiter on all `/api/` routes — 15 req/min for `/api/search/scrape`, 30 req/min for others. `/api/health` and `/api/cron/*` are exempt. Returns 429 with `Retry-After` header. Limits are halved because PM2 runs 2 cluster instances in production.
   - **Cookie preservation**: Middleware uses a `createRedirect()` helper that copies Supabase SSR cookies (e.g., refreshed tokens) onto redirect responses. Without this, token refreshes done in middleware are lost and the browser client cannot establish a session. Always use `createRedirect(url)` instead of bare `NextResponse.redirect(url)` when redirecting in the middleware.
 - **Roles**: `admin`, `customer`, `store`, `guest` (defined in `src/lib/database/types.ts`)
-- **Bootstrap admin**: Env vars `ADMIN_EMAILS` / `ADMIN_EMAIL` / `NEXT_PUBLIC_ADMIN_EMAILS` auto-promote matching emails to admin role (fallback: jfr3sam@gmail.com). Applied in middleware and `getUserProfile()`.
+- **Bootstrap admin**: Env vars `ADMIN_EMAILS` / `ADMIN_EMAIL` / `NEXT_PUBLIC_ADMIN_EMAILS` auto-promote matching emails to admin role. There is no hardcoded fallback admin email.
 - **Phone password reset**: 3-step flow in `forgot-password/page.tsx` (phone → OTP → new password). OTP verified server-side only at final step via `POST /api/auth/reset-password-phone`, which uses `supabase.auth.admin.updateUserById()`.
 
 ### Database

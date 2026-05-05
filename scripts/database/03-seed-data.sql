@@ -358,9 +358,8 @@ WHERE p.slug = 'samsung-qled-65-4k';
 -- ============================================================================
 -- SYSTEM ADMIN USER
 -- ============================================================================
--- Email: jfr3sam@gmail.com
--- Password: E1s2a3m4@
 -- Note: The admin user will be created in Supabase Auth by the setup script
+-- using ADMIN_EMAIL and ADMIN_PASSWORD from the environment.
 -- The user profile will be automatically created with the correct auth ID
 
 -- ============================================================================

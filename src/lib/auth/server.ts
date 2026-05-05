@@ -57,11 +57,6 @@ const getConfiguredAdminEmails = cache(() => {
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
 
-  // Legacy bootstrap fallback used in existing project setup notes.
-  if (parsed.length === 0) {
-    parsed.push('jfr3sam@gmail.com');
-  }
-
   return new Set(parsed);
 });
 

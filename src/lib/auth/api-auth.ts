@@ -11,6 +11,21 @@ import { createServerClient } from '@/lib/database';
 import type { UserRole } from '@/lib/database/types';
 import type { User } from '@supabase/supabase-js';
 
+function getConfiguredAdminEmails() {
+  return new Set(
+    [
+      process.env.ADMIN_EMAILS,
+      process.env.ADMIN_EMAIL,
+      process.env.NEXT_PUBLIC_ADMIN_EMAILS,
+    ]
+      .filter(Boolean)
+      .join(',')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
 /**
  * Get authenticated user from an API request.
  * 1. Tries cookie-based auth (web browser)
@@ -60,19 +75,8 @@ export async function getRequestUserProfile(request: Request) {
     .maybeSingle();
 
   if (!data) {
-    // Check bootstrap admin emails
-    const adminEmails = (
-      process.env.ADMIN_EMAILS ||
-      process.env.ADMIN_EMAIL ||
-      process.env.NEXT_PUBLIC_ADMIN_EMAILS ||
-      'jfr3sam@gmail.com'
-    )
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-
     const isBootstrapAdmin = user.email
-      ? adminEmails.includes(user.email.toLowerCase())
+      ? getConfiguredAdminEmails().has(user.email.toLowerCase())
       : false;
 
     return {

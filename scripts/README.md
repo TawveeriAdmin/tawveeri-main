@@ -37,11 +37,8 @@ This directory contains all database-related scripts for the Tawveeri platform.
    - Create admin user profile
 
 4. **Create admin user in Supabase Auth:**
-   - Go to: `https://app.supabase.com/project/YOUR_PROJECT/auth/users`
-   - Click "Add user"
-   - Email: `jfr3sam@gmail.com`
-   - Password: `E1s2a3m4@`
-   - Confirm email: Yes
+   - Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env.local`
+   - Run: `npm run db:create-admin`
 
 5. **Start the development server:**
    ```bash

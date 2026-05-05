@@ -779,10 +779,11 @@ npm run lint             # Check code quality
 
 ### Admin Credentials
 
-**Email**: jfr3sam@gmail.com  
-**Password**: E1s2a3m4@
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env.local`, then run:
 
-⚠️ **Change these in production!**
+```bash
+npm run db:create-admin
+```
 
 ---
 

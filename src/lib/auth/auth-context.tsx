@@ -569,15 +569,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userId = user?.id ?? null;
 
     try {
-      const { error: signOutError } = await supabase.auth.signOut();
+      const serverSignOut = fetch('/api/auth/signout', {
+        method: 'POST',
+        credentials: 'include',
+      }).catch((error) => {
+        console.warn('Server sign-out request failed:', error);
+      });
+
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
 
       if (signOutError) {
-        console.error('Global sign-out failed, attempting local sign-out:', signOutError);
-        const { error: localSignOutError } = await supabase.auth.signOut({ scope: 'local' });
-        if (localSignOutError) {
-          throw localSignOutError;
-        }
+        console.error('Client sign-out failed; continuing server cookie cleanup:', signOutError);
       }
+
+      await serverSignOut;
 
       setUser(null);
       setSession(null);

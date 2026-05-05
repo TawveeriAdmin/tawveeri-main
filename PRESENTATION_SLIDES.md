@@ -647,7 +647,7 @@
 **Contact Information:**
 - Project Repository: [Repository URL]
 - Documentation: Available in `/md` folder
-- Admin Access: jfr3sam@gmail.com
+- Admin Access: configured with `ADMIN_EMAIL`
 
 **Key Resources:**
 - 📚 Complete documentation
@@ -691,5 +691,4 @@
 ---
 
 **Note:** Customize dates, contact information, and repository URLs as needed. Add actual screenshots and diagrams for visual impact.
-
 
