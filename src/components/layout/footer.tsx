@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -104,13 +105,11 @@ export function Footer() {
     [locale, isRTL],
   );
 
-  // Suppress unused warning — kept for future i18n migration
   void t;
 
   return (
     <footer className="mt-24 bg-[color:var(--brand-dark-text)] text-white">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-16 md:px-8">
-        {/* Top row: logo + tagline */}
         <div className="flex flex-col gap-8 border-b border-white/10 pb-10 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Image
@@ -131,16 +130,14 @@ export function Footer() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Social */}
             <SocialIcon href="#" label="Instagram"><Instagram className="h-4 w-4" /></SocialIcon>
-            <SocialIcon href="#" label="Twitter"><Twitter className="h-4 w-4" /></SocialIcon>
+            <SocialIcon href="https://x.com/Tawveeri" label="Twitter"><Twitter className="h-4 w-4" /></SocialIcon>
             <SocialIcon href="#" label="Facebook"><Facebook className="h-4 w-4" /></SocialIcon>
             <SocialIcon href="#" label="LinkedIn"><Linkedin className="h-4 w-4" /></SocialIcon>
             <SocialIcon href="#" label="YouTube"><Youtube className="h-4 w-4" /></SocialIcon>
           </div>
         </div>
 
-        {/* Columns */}
         <div className="grid grid-cols-2 gap-10 py-12 md:grid-cols-4 md:gap-8">
           {columns.map((col) => (
             <div key={col.title}>
@@ -161,7 +158,6 @@ export function Footer() {
           ))}
         </div>
 
-        {/* App download CTAs */}
         <div className="flex flex-col items-start gap-4 border-t border-white/10 pt-10 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <a
