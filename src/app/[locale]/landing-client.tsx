@@ -88,23 +88,9 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
 };
 
 const ALL_CATEGORIES = [
-  'smartphone',
-  'laptop',
-  'tablet',
-  'tv',
-  'audio',
-  'gaming',
-  'camera',
-  'monitor',
-  'wearable',
-  'networking',
-  'smart_home',
-  'printer',
-  'appliance',
-  'refrigerator',
-  'kitchen',
-  'personal_care',
-  'accessories',
+  'smartphone','laptop','tablet','tv','audio','gaming','camera','monitor',
+  'wearable','networking','smart_home','printer','appliance','refrigerator',
+  'kitchen','personal_care','accessories',
 ];
 
 interface LandingPageClientProps {
@@ -134,6 +120,7 @@ export default function LandingPageClient({ data }: LandingPageClientProps = {})
       <FeaturedProducts products={safe.featured} />
       <TopDeals deals={safe.topDeals} />
       <StoresSection stores={safe.stores} />
+      <AIAssistantBanner />
       <TrustSection />
     </div>
   );
@@ -254,7 +241,6 @@ function CategoryShowcase({ categoryCounts }: { categoryCounts: Record<string, n
         title={isRTL ? 'ابدأ من الفئة المناسبة' : 'Start with the right category'}
         subtitle={isRTL ? 'كل الفئات الأساسية بحجم سريع للتصفح والمقارنة.' : 'All core categories in a compact browsing grid.'}
       />
-
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((category, index) => (
           <CategoryCard
@@ -282,7 +268,6 @@ function CategoryCard({
   className?: string;
 }) {
   const { isRTL } = useLocale();
-
   return (
     <Link
       href={href}
@@ -294,7 +279,6 @@ function CategoryCard({
       )}
     >
       <CategoryCardImage category={category} />
-
       <div className="relative shrink-0 border-t border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 py-2.5 dark:bg-[color:var(--color-surface-container-low)]">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -321,9 +305,7 @@ function getCategoryGridClass(index: number, total: number): string | undefined 
   return index === total - 2 ? 'xl:col-start-2' : 'xl:col-start-4';
 }
 
-function CategoryCardImage({ category }: {
-  category: CategoryMeta;
-}) {
+function CategoryCardImage({ category }: { category: CategoryMeta }) {
   if (category.image) {
     return (
       <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-[#f7faf8] dark:bg-[#f7faf8]">
@@ -339,7 +321,6 @@ function CategoryCardImage({ category }: {
       </div>
     );
   }
-
   const Icon = deviceIconMap[category.device] ?? Package;
   return (
     <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-[color:var(--color-primary-container)] dark:bg-[color:var(--color-surface-container-high)]">
@@ -354,23 +335,11 @@ function CategoryCardImage({ category }: {
 }
 
 const deviceIconMap: Record<CategoryMeta['device'], typeof Smartphone> = {
-  phone: Smartphone,
-  laptop: Laptop,
-  tv: Tv,
-  audio: Headphones,
-  appliance: WashingMachine,
-  gaming: Gamepad2,
-  tablet: Tablet,
-  camera: Camera,
-  monitor: Monitor,
-  printer: Printer,
-  network: Wifi,
-  home: Home,
-  watch: Watch,
-  kitchen: CookingPot,
-  care: Sparkle,
-  accessory: Package,
-  fridge: Refrigerator,
+  phone: Smartphone, laptop: Laptop, tv: Tv, audio: Headphones,
+  appliance: WashingMachine, gaming: Gamepad2, tablet: Tablet,
+  camera: Camera, monitor: Monitor, printer: Printer, network: Wifi,
+  home: Home, watch: Watch, kitchen: CookingPot, care: Sparkle,
+  accessory: Package, fridge: Refrigerator,
 };
 
 function FeaturedProducts({ products }: { products: LandingFeatured[] }) {
@@ -382,9 +351,7 @@ function FeaturedProducts({ products }: { products: LandingFeatured[] }) {
     })
     .filter((item): item is LandingFeatured & { name: string } => item !== null)
     .slice(0, 4);
-
   if (!items.length) return null;
-
   return (
     <section className="border-y border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)] dark:bg-[color:var(--color-surface-container-low)]">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-12 md:px-8">
@@ -393,7 +360,6 @@ function FeaturedProducts({ products }: { products: LandingFeatured[] }) {
           title={isRTL ? 'منتجات عليها مقارنة قوية' : 'Products with strong comparison coverage'}
           subtitle={isRTL ? 'بطاقات واضحة تعرض السعر، عدد المتاجر، وأقرب إجراء.' : 'Clear cards showing price, store count, and the next action.'}
         />
-
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {items.map((product) => (
             <Link
@@ -403,27 +369,16 @@ function FeaturedProducts({ products }: { products: LandingFeatured[] }) {
             >
               <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[color:var(--color-primary-container)] dark:bg-[color:var(--color-surface-container-high)]">
                 {product.image_url ? (
-                  <Image
-                    src={product.image_url}
-                    alt=""
-                    fill
-                    sizes="(min-width: 1024px) 25vw, 50vw"
-                    className="object-contain p-5 transition duration-300 group-hover:scale-[1.03]"
-                    unoptimized
-                  />
+                  <Image src={product.image_url} alt="" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-contain p-5 transition duration-300 group-hover:scale-[1.03]" unoptimized />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[color:var(--color-primary)]">
                     <Package className="h-14 w-14" strokeWidth={1.4} />
                   </div>
                 )}
               </div>
-              <h3 dir="auto" className="mt-4 line-clamp-2 min-h-[45px] text-[18px] font-bold leading-snug text-[color:var(--color-on-surface)]">
-                {product.name}
-              </h3>
+              <h3 dir="auto" className="mt-4 line-clamp-2 min-h-[45px] text-[18px] font-bold leading-snug text-[color:var(--color-on-surface)]">{product.name}</h3>
               <p className="mt-1 text-[13px] text-[color:var(--color-on-surface-variant)]">
-                {isRTL
-                  ? `أرخص سعر من ${product.store_count} متاجر`
-                  : `Lowest price from ${product.store_count} stores`}
+                {isRTL ? `أرخص سعر من ${product.store_count} متاجر` : `Lowest price from ${product.store_count} stores`}
               </p>
               <div className="mt-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-1 text-[22px] font-black text-[color:var(--color-on-surface)]">
@@ -451,9 +406,7 @@ function TopDeals({ deals }: { deals: LandingDeal[] }) {
     })
     .filter((item): item is LandingDeal & { name: string } => item !== null)
     .slice(0, 6);
-
   if (!items.length) return null;
-
   return (
     <section className="mx-auto w-full max-w-[1400px] px-4 py-12 md:px-8">
       <div className="flex items-end justify-between gap-4">
@@ -467,12 +420,10 @@ function TopDeals({ deals }: { deals: LandingDeal[] }) {
           {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Link>
       </div>
-
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((deal) => {
           const savings = Math.max(0, deal.original_price - deal.current_price);
           const discountPct = deal.original_price > 0 ? Math.round((savings / deal.original_price) * 100) : 0;
-
           return (
             <Link
               key={`${deal.product_id}-${deal.store_slug}`}
@@ -486,14 +437,7 @@ function TopDeals({ deals }: { deals: LandingDeal[] }) {
                   </span>
                 )}
                 {deal.image_url ? (
-                  <Image
-                    src={deal.image_url}
-                    alt=""
-                    fill
-                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-contain p-3 transition duration-300 group-hover:scale-[1.025]"
-                    unoptimized
-                  />
+                  <Image src={deal.image_url} alt="" fill sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-contain p-3 transition duration-300 group-hover:scale-[1.025]" unoptimized />
                 ) : (
                   <div className="flex h-full min-h-[150px] items-center justify-center text-[color:var(--color-primary)]">
                     <Package className="h-11 w-11" />
@@ -501,9 +445,7 @@ function TopDeals({ deals }: { deals: LandingDeal[] }) {
                 )}
               </div>
               <div className="min-w-0 p-1.5 pt-3">
-                <h3 dir="auto" className="line-clamp-2 min-h-[40px] text-[15px] font-bold leading-snug text-[color:var(--color-on-surface)]">
-                  {deal.name}
-                </h3>
+                <h3 dir="auto" className="line-clamp-2 min-h-[40px] text-[15px] font-bold leading-snug text-[color:var(--color-on-surface)]">{deal.name}</h3>
                 <p className="mt-1 truncate text-[13px] text-[color:var(--color-on-surface-variant)]">
                   {isRTL ? deal.store_name_ar : deal.store_name_en}
                 </p>
@@ -514,9 +456,7 @@ function TopDeals({ deals }: { deals: LandingDeal[] }) {
                       <SARSymbol className="h-4 w-4 fill-current" />
                     </div>
                     <p className="mt-1 text-[11px] font-bold text-[color:var(--color-primary)]">
-                      {isRTL
-                        ? `وفّر ${Math.round(savings).toLocaleString('ar-SA')} ريال`
-                        : `Save ${Math.round(savings).toLocaleString('en-US')} SAR`}
+                      {isRTL ? `وفّر ${Math.round(savings).toLocaleString('ar-SA')} ريال` : `Save ${Math.round(savings).toLocaleString('en-US')} SAR`}
                     </p>
                   </div>
                   <span className="rounded-full bg-[color:var(--color-primary)] px-3 py-2 text-[11px] font-bold text-[color:var(--color-on-primary)]">
@@ -536,7 +476,6 @@ function StoresSection({ stores }: { stores: LandingData['stores'] }) {
   const { isRTL, locale } = useLocale();
   const list = stores.slice(0, 8);
   if (!list.length) return null;
-
   return (
     <section className="mx-auto w-full max-w-[1400px] px-4 py-12 md:px-8">
       <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-6 dark:bg-[color:var(--color-surface-container-low)]">
@@ -551,7 +490,6 @@ function StoresSection({ stores }: { stores: LandingData['stores'] }) {
             {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Link>
         </div>
-
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
           {list.map((store) => (
             <Link
@@ -571,6 +509,42 @@ function StoresSection({ stores }: { stores: LandingData['stores'] }) {
   );
 }
 
+function AIAssistantBanner() {
+  const { isRTL, locale } = useLocale();
+  return (
+    <section className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8">
+      <Link
+        href={`/${locale}/assistant`}
+        className="group flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--color-primary)]/30 bg-gradient-to-l from-[color:var(--color-primary-container)] to-[color:var(--color-surface)] p-6 transition hover:border-[color:var(--color-primary)] hover:-translate-y-0.5 dark:bg-[color:var(--color-surface-container-low)]"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-primary)] text-3xl shadow-lg">
+            🤖
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-[18px] font-black text-[color:var(--color-on-surface)]">
+                {isRTL ? 'اسأل وفّر 🌟' : 'Ask Waffir 🌟'}
+              </h3>
+              <span className="rounded-full bg-[color:var(--color-primary)] px-2.5 py-0.5 text-[10px] font-bold text-[color:var(--color-on-primary)]">
+                {isRTL ? 'جديد' : 'New'}
+              </span>
+            </div>
+            <p className="mt-1 text-[13px] text-[color:var(--color-on-surface-variant)]">
+              {isRTL
+                ? 'قول لي وش تبي وأنا أدور لك أفضل سعر من 8 متاجر — بالعامية'
+                : "Tell me what you need and I'll find the best price from 8 stores"}
+            </p>
+          </div>
+        </div>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] transition group-hover:scale-110">
+          {isRTL ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+        </span>
+      </Link>
+    </section>
+  );
+}
+
 function TrustSection() {
   const { isRTL } = useLocale();
   const items = isRTL
@@ -586,17 +560,13 @@ function TrustSection() {
         { icon: Bell, title: 'Clear alerts', desc: 'Know when the product reaches the price you want.' },
         { icon: Ticket, title: 'Useful coupons', desc: 'Coupons appear with price and stock context.' },
       ];
-
   return (
     <section className="mx-auto w-full max-w-[1400px] px-4 pb-16 md:px-8">
       <div className="grid gap-4 md:grid-cols-4">
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-5 dark:bg-[color:var(--color-surface-container-low)]"
-            >
+            <div key={item.title} className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] p-5 dark:bg-[color:var(--color-surface-container-low)]">
               <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--color-primary-container)] text-[color:var(--color-primary)]">
                 <Icon className="h-5 w-5" strokeWidth={1.7} />
               </span>
@@ -610,28 +580,12 @@ function TrustSection() {
   );
 }
 
-function SectionHeader({
-  badge,
-  title,
-  subtitle,
-}: {
-  badge: string;
-  title: string;
-  subtitle?: string;
-}) {
+function SectionHeader({ badge, title, subtitle }: { badge: string; title: string; subtitle?: string }) {
   return (
     <div className="max-w-2xl">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-primary)]">
-        {badge}
-      </p>
-      <h2 className="mt-2 text-[28px] font-black leading-tight text-[color:var(--color-on-surface)]">
-        {title}
-      </h2>
-      {subtitle && (
-        <p className="mt-2 text-[15px] leading-7 text-[color:var(--color-on-surface-variant)]">
-          {subtitle}
-        </p>
-      )}
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-primary)]">{badge}</p>
+      <h2 className="mt-2 text-[28px] font-black leading-tight text-[color:var(--color-on-surface)]">{title}</h2>
+      {subtitle && <p className="mt-2 text-[15px] leading-7 text-[color:var(--color-on-surface-variant)]">{subtitle}</p>}
     </div>
   );
 }
