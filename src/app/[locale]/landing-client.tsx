@@ -116,11 +116,11 @@ export default function LandingPageClient({ data }: LandingPageClientProps = {})
         totalProducts={safe.totalProducts}
         totalSavings={safe.totalSavings}
       />
+      <AIAssistantBanner />
       <CategoryShowcase categoryCounts={safe.categoryCounts} />
       <FeaturedProducts products={safe.featured} />
       <TopDeals deals={safe.topDeals} />
       <StoresSection stores={safe.stores} />
-      <AIAssistantBanner />
       <TrustSection />
     </div>
   );
