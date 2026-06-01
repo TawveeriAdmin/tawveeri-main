@@ -4,59 +4,83 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const ARABIC_TO_SEARCH: Record<string, string> = {
-  'ايفون': 'iphone', 'آيفون': 'iphone', 'سامسونج': 'samsung',
-  'لابتوب': 'laptop', 'حاسوب': 'laptop', 'كمبيوتر': 'computer',
-  'تلفزيون': 'tv', 'شاشة': 'monitor', 'سماعات': 'headphones',
-  'مكيف': 'air conditioner', 'ثلاجة': 'refrigerator',
-  'غسالة': 'washing machine', 'مكنسة': 'vacuum', 'طابعة': 'printer',
-  'جوال': 'smartphone', 'هاتف': 'smartphone', 'تابلت': 'tablet',
-  'ساعة': 'smartwatch', 'كاميرا': 'camera', 'راوتر': 'router',
+  'مكيف': 'air conditioner split ac',
+  'مكيف سبليت': 'split air conditioner',
+  'مكيف شباك': 'window air conditioner',
+  'تكييف': 'air conditioner ac',
+  'ايفون': 'iphone',
+  'آيفون': 'iphone',
+  'سامسونج': 'samsung',
+  'هواوي': 'huawei',
+  'شاومي': 'xiaomi',
+  'لابتوب': 'laptop',
+  'حاسوب': 'laptop computer',
+  'كمبيوتر': 'computer desktop',
+  'تلفزيون': 'tv television',
+  'شاشة': 'monitor screen',
+  'سماعات': 'headphones earbuds',
+  'سماعه': 'headphones',
+  'ثلاجة': 'refrigerator fridge',
+  'غسالة': 'washing machine',
+  'مكنسة': 'vacuum cleaner',
+  'طابعة': 'printer',
+  'جوال': 'smartphone mobile',
+  'هاتف': 'smartphone phone',
+  'تابلت': 'tablet',
+  'ساعة ذكية': 'smartwatch',
+  'ساعه': 'smartwatch watch',
+  'كاميرا': 'camera',
+  'راوتر': 'router wifi',
+  'بلايستيشن': 'playstation ps5',
+  'اكس بوكس': 'xbox',
+  'برو': 'pro',
+  'ماكس': 'max',
+  'بلس': 'plus',
+  'الترا': 'ultra',
+  'ميني': 'mini',
+  'لايت': 'lite',
 };
 
 function extractSearchIntent(message: string): {
   query: string;
   maxPrice?: number;
   minPrice?: number;
-  category?: string;
 } {
-  let query = message;
   let maxPrice: number | undefined;
   let minPrice: number | undefined;
 
-  // Extract price constraints
-  const maxPriceMatch = message.match(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز|بحدود|حتى)\s*(\d+)/);
-  const minPriceMatch = message.match(/(?:أكثر من|فوق|من)\s*(\d+)/);
-  const exactPriceMatch = message.match(/(\d+)\s*(?:ريال|SAR|سعر)/);
+  const maxMatch = message.match(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز|بحدود|حتى)\s*(\d+)/);
+  const minMatch = message.match(/(?:أكثر من|فوق)\s*(\d+)/);
 
-  if (maxPriceMatch) maxPrice = parseInt(maxPriceMatch[1]);
-  else if (exactPriceMatch) maxPrice = parseInt(exactPriceMatch[1]) * 1.1;
-  if (minPriceMatch) minPrice = parseInt(minPriceMatch[1]);
+  if (maxMatch) maxPrice = parseInt(maxMatch[1]);
+  if (minMatch) minPrice = parseInt(minMatch[1]);
 
-  // Normalize Arabic to English for search
-  let searchQuery = message;
+  let searchQuery = message.toLowerCase();
+
+  // Apply Arabic to English mapping
   for (const [arabic, english] of Object.entries(ARABIC_TO_SEARCH)) {
-    searchQuery = searchQuery.replace(new RegExp(arabic, 'g'), english);
+    searchQuery = searchQuery.replace(new RegExp(arabic, 'gi'), english);
   }
 
-  // Clean up query — remove price mentions and common filler words
-  query = searchQuery
-    .replace(/(?:ابي|أبي|بغيت|أبغى|ابغى|بدي|عندي ميزانية|ميزانيتي)/g, '')
+  // Clean filler words
+  const query = searchQuery
+    .replace(/(?:ابي|أبي|بغيت|أبغى|ابغى|بدي|عندي|اريد|أريد)/g, '')
     .replace(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز)\s*\d+/g, '')
-    .replace(/\d+\s*(?:ريال|SAR)/g, '')
-    .replace(/(?:رخيص|غالي|جيد|كويس|ممتاز|عالي|منخفض)/g, '')
+    .replace(/\d+\s*(?:ريال|sar)/gi, '')
+    .replace(/(?:رخيص|غالي|جيد|كويس|ممتاز|عالي|منخفض|لغرفه|لغرفة|متر)/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  if (!query || query.length < 2) query = message.split(' ').slice(0, 3).join(' ');
-
-  return { query, maxPrice, minPrice };
+  return { query: query || message.slice(0, 30), maxPrice, minPrice };
 }
 
 async function searchProducts(intent: ReturnType<typeof extractSearchIntent>, baseUrl: string) {
   try {
     const body: Record<string, unknown> = {
       query: intent.query,
-      pageSize: 6,
+      pageSize: 5,
       sort: 'price_low',
+      in_stock_only: true,
     };
     if (intent.maxPrice) body.max_price = intent.maxPrice;
     if (intent.minPrice) body.min_price = intent.minPrice;
@@ -77,25 +101,23 @@ async function searchProducts(intent: ReturnType<typeof extractSearchIntent>, ba
 
 function formatProductsForAI(products: any[]): string {
   if (!products || products.length === 0) return '';
-
   return products.map((p, i) => {
-    const bestStore = p.stores?.sort((a: any, b: any) => a.current_price - b.current_price)[0];
-    const discount = bestStore?.original_price && bestStore.original_price > bestStore.current_price
-      ? Math.round(((bestStore.original_price - bestStore.current_price) / bestStore.original_price) * 100)
+    const stores = p.stores?.sort((a: any, b: any) => a.current_price - b.current_price) || [];
+    const best = stores[0];
+    const discount = best?.original_price && best.original_price > best.current_price
+      ? Math.round(((best.original_price - best.current_price) / best.original_price) * 100)
       : 0;
+    const allStores = stores.slice(0, 3).map((s: any) =>
+      `${s.store_name || s.store}: ${Math.round(s.current_price)} ريال → ${s.product_url}`
+    ).join('\n  ');
 
-    return `
-المنتج ${i + 1}:
-- الاسم: ${p.name_ar || p.name_en}
-- أفضل سعر: ${Math.round(p.best_price)} ريال${discount > 0 ? ` (خصم ${discount}%)` : ''}
-- السعر الأصلي: ${bestStore?.original_price ? Math.round(bestStore.original_price) + ' ريال' : 'غير متوفر'}
-- المتجر: ${bestStore?.store_name || bestStore?.store}
-- الرابط المباشر: ${bestStore?.product_url || ''}
-- التوفر: ${bestStore?.availability === 'in_stock' ? 'متوفر' : 'غير متوفر'}
-- عدد المتاجر: ${p.store_count}
-- الكوبون: ${bestStore?.coupon_code || 'لا يوجد'}
-`.trim();
-  }).join('\n\n---\n\n');
+    return `منتج ${i + 1}: ${p.name_ar || p.name_en}
+  أفضل سعر: ${Math.round(p.best_price)} ريال${discount > 0 ? ` (خصم ${discount}%)` : ''}
+  متوفر في ${p.store_count} متجر
+  المتاجر والأسعار والروابط:
+  ${allStores}
+  كوبون: ${best?.coupon_code || 'لا يوجد'}`;
+  }).join('\n\n');
 }
 export async function POST(request: NextRequest) {
   try {
@@ -111,41 +133,34 @@ export async function POST(request: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
-
-    // Extract intent and search real products
     const intent = extractSearchIntent(message);
     const products = await searchProducts(intent, baseUrl);
-    const productsContext = products ? formatProductsForAI(products) : '';
+    const productsContext = products?.length ? formatProductsForAI(products) : '';
 
     const systemPrompt = `أنت "وفّر" — مساعد التسوق الذكي لمنصة توفيري السعودية.
-شخصيتك: ذكي، ودود، تتكلم بالعامية السعودية، مباشر وعملي.
+شخصيتك: ذكي، ودود، عامية سعودية، مباشر.
 
-${productsContext ? `نتائج البحث الحقيقية من قاعدة بيانات توفيري (استخدمها فقط):
+${productsContext ? `✅ نتائج حقيقية من توفيري — استخدمها فقط ولا تخترع أسعاراً:
+
 ${productsContext}
 
-قواعد مهمة:
-- استخدم فقط المنتجات والأسعار الموجودة أعلاه — لا تخترع أسعاراً
-- الروابط الموجودة هي روابط مباشرة للمنتج في المتجر — استخدمها كما هي
-- إذا ما في نتائج مناسبة قل للمستخدم بصراحة` :
-`لم يتم العثور على نتائج في قاعدة البيانات. أخبر المستخدم بأدب أنك ما لقيت نتائج وأقترح عليه:
-1. البحث مباشرة في الموقع
+قواعد:
+- استخدم الأسعار والروابط أعلاه كما هي بدون تعديل
+- رتّب من الأرخص للأغلى
+- اذكر الكوبون إذا موجود` :
+`❌ ما لقيت نتائج في توفيري لهذا الطلب.
+أخبر المستخدم بلطف وأقترح:
+1. البحث مباشرة: https://tawveeri.com/ar/search
 2. تغيير كلمات البحث
 3. توسيع الميزانية`}
 
-قواعد التنسيق:
-1. استخدم هذا الشكل لكل منتج:
-
-**[اسم المنتج]** ${productsContext ? '← الأنسب لك' : ''}
-💰 السعر: X ريال
-🏪 المتجر: [اسم المتجر]
-✅ المميزات: [نقطتان مختصرتان]
-🔗 [عرض المنتج مباشرة](الرابط)
-
+شكل الرد:
+**[اسم المنتج]**
+💰 [السعر] ريال
+🏪 [المتجر]
+🔗 [عرض المنتج](الرابط المباشر)
 ---
-
-2. رتّب من الأرخص للأغلى
-3. في النهاية: "تبي أقارن أكثر أو عندك سؤال؟ 😊"
-4. إذا في كوبون — اذكره بوضوح`;
+في النهاية: "تبي أعرف أكثر عن أي منتج؟ 😊"`;
 
     const messages = [
       ...conversationHistory,
