@@ -511,36 +511,90 @@ function StoresSection({ stores }: { stores: LandingData['stores'] }) {
 
 function AIAssistantBanner() {
   const { isRTL, locale } = useLocale();
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+
+  const onAsk = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/${locale}/assistant?q=${encodeURIComponent(q)}` : `/${locale}/assistant`);
+  };
+
+  const suggestions = isRTL
+    ? ['ابي ارخص ايفون 16', 'مكيف لغرفة 25 متر', 'لابتوب للدراسة بأقل من 2500', 'سماعات تحت 500 ريال']
+    : ['Cheapest iPhone 16', 'AC for 25m room', 'Laptop under 2500 SAR', 'Earbuds under 500 SAR'];
+
   return (
-    <section className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8">
-      <Link
-        href={`/${locale}/assistant`}
-        className="group flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--color-primary)]/30 bg-gradient-to-l from-[color:var(--color-primary-container)] to-[color:var(--color-surface)] p-6 transition hover:border-[color:var(--color-primary)] hover:-translate-y-0.5 dark:bg-[color:var(--color-surface-container-low)]"
-      >
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-primary)] text-3xl shadow-lg">
-            🤖
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-[18px] font-black text-[color:var(--color-on-surface)]">
-                {isRTL ? 'اسأل وفّر 🌟' : 'Ask Waffir 🌟'}
-              </h3>
-              <span className="rounded-full bg-[color:var(--color-primary)] px-2.5 py-0.5 text-[10px] font-bold text-[color:var(--color-on-primary)]">
-                {isRTL ? 'جديد' : 'New'}
-              </span>
+    <section className="border-y border-[color:var(--color-outline-variant)] bg-gradient-to-b from-[color:var(--color-primary-container)]/40 to-[color:var(--color-surface)]">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-14 md:px-8">
+        <div className="flex flex-col items-center text-center">
+
+          {/* Avatar + Badge */}
+          <div className="relative mb-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[color:var(--color-primary)] text-4xl shadow-[0_0_0_6px_rgba(85,178,149,0.15),0_0_30px_rgba(85,178,149,0.2)]">
+              🤖
             </div>
-            <p className="mt-1 text-[13px] text-[color:var(--color-on-surface-variant)]">
-              {isRTL
-                ? 'قول لي وش تبي وأنا أدور لك أفضل سعر من 8 متاجر — بالعامية'
-                : "Tell me what you need and I'll find the best price from 8 stores"}
-            </p>
+            <span className="absolute -bottom-1 -end-1 rounded-full bg-[color:var(--color-tertiary)] px-2.5 py-1 text-[10px] font-black text-[color:var(--color-on-tertiary)] shadow-sm">
+              {isRTL ? 'AI' : 'AI'}
+            </span>
+            {/* Pulse */}
+            <span className="absolute -top-1 -start-1 flex h-4 w-4">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--color-primary)] opacity-40" />
+              <span className="relative inline-flex h-4 w-4 rounded-full bg-[color:var(--color-primary)]" />
+            </span>
           </div>
+
+          {/* Title */}
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-[28px] font-black text-[color:var(--color-on-surface)] md:text-[34px]">
+              {isRTL ? 'وفّر' : 'Waffir'}
+            </h2>
+            <span className="rounded-full border border-[color:var(--color-primary)]/40 bg-[color:var(--color-primary-container)] px-3 py-1 text-[12px] font-bold text-[color:var(--color-primary)]">
+              {isRTL ? 'مساعد ذكاء اصطناعي' : 'AI Assistant'}
+            </span>
+          </div>
+
+          <p className="mb-8 max-w-xl text-[15px] leading-7 text-[color:var(--color-on-surface-variant)]">
+            {isRTL
+              ? 'قول لي وش تبي بالعامية وأنا أدور لك أرخص سعر من 8 متاجر سعودية — فوري'
+              : 'Tell me what you need and I will find the lowest price from 8 Saudi stores instantly'}
+          </p>
+
+          {/* Search bar */}
+          <form onSubmit={onAsk} className="w-full max-w-2xl mb-6">
+            <div className="flex min-h-[64px] items-center gap-3 rounded-full border-2 border-[color:var(--color-primary)]/40 bg-[color:var(--color-surface)] p-2.5 shadow-[0_8px_40px_-20px_rgba(85,178,149,0.35)] transition focus-within:border-[color:var(--color-primary)] dark:bg-[color:var(--color-surface-container-high)]">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] text-xl">
+                🤖
+              </span>
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                placeholder={isRTL ? 'مثلاً: ابي مكيف لغرفة 25 متر بأقل من 2000 ريال...' : 'e.g. AC for 25sqm room under 2000 SAR...'}
+                className="min-w-0 flex-1 bg-transparent text-start text-[15px] font-semibold text-[color:var(--color-on-surface)] outline-none placeholder:text-[color:var(--color-on-surface-variant)]"/>
+              <Button type="submit" size="lg" className="h-11 shrink-0 rounded-full px-6 active:scale-[0.98]">
+                {isRTL ? 'اسأل وفّر' : 'Ask Waffir'}
+                <ArrowRight className={cn('h-4 w-4', isRTL && 'rotate-180')} />
+              </Button>
+            </div>
+          </form>
+
+          {/* Suggestions */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => router.push(`/${locale}/assistant?q=${encodeURIComponent(s)}`)}
+                className="rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-4 py-2 text-[13px] font-semibold text-[color:var(--color-on-surface-variant)] transition hover:border-[color:var(--color-primary)] hover:text-[color:var(--color-primary)] dark:bg-[color:var(--color-surface-container-low)]"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] transition group-hover:scale-110">
-          {isRTL ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-        </span>
-      </Link>
+      </div>
     </section>
   );
 }
