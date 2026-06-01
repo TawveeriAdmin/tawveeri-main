@@ -3,6 +3,100 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const ARABIC_TO_SEARCH: Record<string, string> = {
+  'ايفون': 'iphone', 'آيفون': 'iphone', 'سامسونج': 'samsung',
+  'لابتوب': 'laptop', 'حاسوب': 'laptop', 'كمبيوتر': 'computer',
+  'تلفزيون': 'tv', 'شاشة': 'monitor', 'سماعات': 'headphones',
+  'مكيف': 'air conditioner', 'ثلاجة': 'refrigerator',
+  'غسالة': 'washing machine', 'مكنسة': 'vacuum', 'طابعة': 'printer',
+  'جوال': 'smartphone', 'هاتف': 'smartphone', 'تابلت': 'tablet',
+  'ساعة': 'smartwatch', 'كاميرا': 'camera', 'راوتر': 'router',
+};
+
+function extractSearchIntent(message: string): {
+  query: string;
+  maxPrice?: number;
+  minPrice?: number;
+  category?: string;
+} {
+  let query = message;
+  let maxPrice: number | undefined;
+  let minPrice: number | undefined;
+
+  // Extract price constraints
+  const maxPriceMatch = message.match(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز|بحدود|حتى)\s*(\d+)/);
+  const minPriceMatch = message.match(/(?:أكثر من|فوق|من)\s*(\d+)/);
+  const exactPriceMatch = message.match(/(\d+)\s*(?:ريال|SAR|سعر)/);
+
+  if (maxPriceMatch) maxPrice = parseInt(maxPriceMatch[1]);
+  else if (exactPriceMatch) maxPrice = parseInt(exactPriceMatch[1]) * 1.1;
+  if (minPriceMatch) minPrice = parseInt(minPriceMatch[1]);
+
+  // Normalize Arabic to English for search
+  let searchQuery = message;
+  for (const [arabic, english] of Object.entries(ARABIC_TO_SEARCH)) {
+    searchQuery = searchQuery.replace(new RegExp(arabic, 'g'), english);
+  }
+
+  // Clean up query — remove price mentions and common filler words
+  query = searchQuery
+    .replace(/(?:ابي|أبي|بغيت|أبغى|ابغى|بدي|عندي ميزانية|ميزانيتي)/g, '')
+    .replace(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز)\s*\d+/g, '')
+    .replace(/\d+\s*(?:ريال|SAR)/g, '')
+    .replace(/(?:رخيص|غالي|جيد|كويس|ممتاز|عالي|منخفض)/g, '')
+    .trim();
+
+  if (!query || query.length < 2) query = message.split(' ').slice(0, 3).join(' ');
+
+  return { query, maxPrice, minPrice };
+}
+
+async function searchProducts(intent: ReturnType<typeof extractSearchIntent>, baseUrl: string) {
+  try {
+    const body: Record<string, unknown> = {
+      query: intent.query,
+      pageSize: 6,
+      sort: 'price_low',
+    };
+    if (intent.maxPrice) body.max_price = intent.maxPrice;
+    if (intent.minPrice) body.min_price = intent.minPrice;
+
+    const res = await fetch(`${baseUrl}/api/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.products?.slice(0, 4) || null;
+  } catch {
+    return null;
+  }
+}
+
+function formatProductsForAI(products: any[]): string {
+  if (!products || products.length === 0) return '';
+
+  return products.map((p, i) => {
+    const bestStore = p.stores?.sort((a: any, b: any) => a.current_price - b.current_price)[0];
+    const discount = bestStore?.original_price && bestStore.original_price > bestStore.current_price
+      ? Math.round(((bestStore.original_price - bestStore.current_price) / bestStore.original_price) * 100)
+      : 0;
+
+    return `
+المنتج ${i + 1}:
+- الاسم: ${p.name_ar || p.name_en}
+- أفضل سعر: ${Math.round(p.best_price)} ريال${discount > 0 ? ` (خصم ${discount}%)` : ''}
+- السعر الأصلي: ${bestStore?.original_price ? Math.round(bestStore.original_price) + ' ريال' : 'غير متوفر'}
+- المتجر: ${bestStore?.store_name || bestStore?.store}
+- الرابط المباشر: ${bestStore?.product_url || ''}
+- التوفر: ${bestStore?.availability === 'in_stock' ? 'متوفر' : 'غير متوفر'}
+- عدد المتاجر: ${p.store_count}
+- الكوبون: ${bestStore?.coupon_code || 'لا يوجد'}
+`.trim();
+  }).join('\n\n---\n\n');
+}
 export async function POST(request: NextRequest) {
   try {
     const { message, conversationHistory = [] } = await request.json();
@@ -16,41 +110,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
     }
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
+
+    // Extract intent and search real products
+    const intent = extractSearchIntent(message);
+    const products = await searchProducts(intent, baseUrl);
+    const productsContext = products ? formatProductsForAI(products) : '';
+
     const systemPrompt = `أنت "وفّر" — مساعد التسوق الذكي لمنصة توفيري السعودية.
 شخصيتك: ذكي، ودود، تتكلم بالعامية السعودية، مباشر وعملي.
 
-قدراتك:
-- تفهم أي طلب بالعامية أو الفصحى أو الإنجليزي
-- تسأل سؤالاً توضيحياً واحداً إذا الطلب غير واضح
-- تعرض أفضل 3-4 خيارات منظمة مع المواصفات والسعر والمتجر
-- تذكر ميزانية المستخدم وتلتزم بها
-- تقارن بين الخيارات بشكل واضح
+${productsContext ? `نتائج البحث الحقيقية من قاعدة بيانات توفيري (استخدمها فقط):
+${productsContext}
 
-المتاجر المتاحة في توفيري:
-أمازون SA | نون | جرير | إكسترا | المنيع | شاكر | سامسونج SA | الشتاء والصيف
+قواعد مهمة:
+- استخدم فقط المنتجات والأسعار الموجودة أعلاه — لا تخترع أسعاراً
+- الروابط الموجودة هي روابط مباشرة للمنتج في المتجر — استخدمها كما هي
+- إذا ما في نتائج مناسبة قل للمستخدم بصراحة` :
+`لم يتم العثور على نتائج في قاعدة البيانات. أخبر المستخدم بأدب أنك ما لقيت نتائج وأقترح عليه:
+1. البحث مباشرة في الموقع
+2. تغيير كلمات البحث
+3. توسيع الميزانية`}
 
-قواعد الرد:
-1. إذا الطلب واضح — أعطِ توصيات مباشرة بهذا الشكل:
+قواعد التنسيق:
+1. استخدم هذا الشكل لكل منتج:
 
-**[اسم المنتج]**
-⭐ التقييم: X/5
+**[اسم المنتج]** ${productsContext ? '← الأنسب لك' : ''}
 💰 السعر: X ريال
 🏪 المتجر: [اسم المتجر]
-✅ المميزات: [3 نقاط مختصرة]
-🔗 [عرض في المتجر](رابط البحث في المتجر)
+✅ المميزات: [نقطتان مختصرتان]
+🔗 [عرض المنتج مباشرة](الرابط)
 
 ---
 
-2. إذا عندك أفضل خيار — ضعه أول وقل "الأنسب لك"
-3. في النهاية اسأل: "تبي أقارن بينهم أو تبي تعرف أكثر عن أي منهم؟"
-4. إذا السعر ما يناسب الميزانية — قل بصراحة وأعطِ بدائل
-5. لا تخترع منتجات — استخدم فقط ما هو واقعي في السوق السعودي 2024-2025
-
-روابط البحث للمتاجر (استخدمها في الردود):
-- أمازون: https://www.amazon.sa/s?k=[اسم المنتج]
-- نون: https://www.noon.com/saudi-ar/search/?q=[اسم المنتج]
-- جرير: https://www.jarir.com/sa-ar/catalogsearch/result/?q=[اسم المنتج]
-- إكسترا: https://www.extrastores.com/ar/search?text=[اسم المنتج]`;
+2. رتّب من الأرخص للأغلى
+3. في النهاية: "تبي أقارن أكثر أو عندك سؤال؟ 😊"
+4. إذا في كوبون — اذكره بوضوح`;
 
     const messages = [
       ...conversationHistory,
