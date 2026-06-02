@@ -1,0 +1,33 @@
+# Tawveeri - توفيري
+# Price comparison platform for electronics and home appliances in Saudi Arabia
+
+> توفيري هي منصة سعودية لمقارنة أسعار الإلكترونيات والأجهزة المنزلية من أكبر 8 متاجر في المملكة العربية السعودية.
+
+## What is Tawveeri?
+Tawveeri (توفيري) is Saudi Arabia's price comparison platform for electronics and home appliances. We compare prices from 8 major Saudi stores including Amazon SA, Noon, Jarir, Extra, Al-Mannai, Shaker, Samsung SA, and Al-Shita Wal-Saif.
+
+## Key Features
+- Real-time price comparison from 8 Saudi stores
+- AI shopping assistant "Waffir" (وفّر) that understands Arabic dialects
+- Price alerts when products reach your target price
+- Coupon codes and deals
+- 85,000+ products in database
+
+## Stores We Compare
+Amazon Saudi Arabia (amazon.sa), Noon (noon.com), Jarir Bookstore (jarir.com), Extra Stores (extrastores.com), Al-Mannai, Shaker, Samsung SA, Al-Shita Wal-Saif
+
+## Categories
+Smartphones, Laptops, Tablets, TVs, Audio, Gaming, Cameras, Monitors, Wearables, Smart Home, Appliances, Refrigerators, Kitchen, Personal Care, Accessories
+
+## AI Assistant
+Waffir AI (وفّر) — Arabic-speaking AI shopping assistant that finds the lowest price from 8 Saudi stores. Available at tawveeri.com/ar/assistant
+
+## Website
+- Main: https://tawveeri.com
+- Arabic: https://tawveeri.com/ar
+- AI Assistant: https://tawveeri.com/ar/assistant
+- Search: https://tawveeri.com/ar/search
+- Deals: https://tawveeri.com/ar/deals
+
+## Social
+- X (Twitter): https://x.com/Tawveeri
