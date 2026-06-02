@@ -55,6 +55,9 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
+import { SearchAutocomplete } from '@/components/search/search-autocomplete';
+
+import { SearchAutocomplete } from '@/components/search/search-autocomplete';
 import { Footer } from '@/components/layout/footer';
 import { CompareFloatingBar } from '@/components/compare/compare-floating-bar';
 
