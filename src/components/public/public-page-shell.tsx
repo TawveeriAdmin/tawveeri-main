@@ -337,11 +337,18 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                 a large green submit button at the end. Taller (h-12), wider
                 max-width, and a stronger border so the pill dominates the
                 header row visually. */}
-            <div className="hidden flex-1 justify-center md:flex">
-              <form
                 onSubmit={handleSearchSubmit}
                 className="relative flex h-11 w-full max-w-2xl items-stretch overflow-hidden rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] transition-colors focus-within:border-[color:var(--color-primary)] focus-within:ring-4 focus-within:ring-[color:var(--color-primary)]/15 dark:bg-[color:var(--color-surface)]"
-              >
+              <div className="hidden flex-1 justify-center md:flex">
+  <SearchAutocomplete
+    locale={locale}
+    compact
+    initialQuery={searchQuery}
+    onQuery={applyQueryFromVoiceOrBarcode}
+    className="w-full max-w-2xl"
+  />
+</div>
+
                 <Search
                   aria-hidden
                   className="pointer-events-none absolute start-5 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant"
