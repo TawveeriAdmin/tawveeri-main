@@ -3,87 +3,55 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const ARABIC_TO_SEARCH: Record<string, string> = {
-  'مكيف': 'air conditioner split ac',
-  'مكيف سبليت': 'split air conditioner',
-  'مكيف شباك': 'window air conditioner',
-  'تكييف': 'air conditioner ac',
-  'ايفون': 'iphone',
-  'آيفون': 'iphone',
-  'سامسونج': 'samsung',
-  'هواوي': 'huawei',
-  'شاومي': 'xiaomi',
-  'لابتوب': 'laptop',
-  'حاسوب': 'laptop computer',
-  'كمبيوتر': 'computer desktop',
-  'تلفزيون': 'tv television',
-  'شاشة': 'monitor screen',
-  'سماعات': 'headphones earbuds',
-  'سماعه': 'headphones',
-  'ثلاجة': 'refrigerator fridge',
-  'غسالة': 'washing machine',
-  'مكنسة': 'vacuum cleaner',
-  'طابعة': 'printer',
-  'جوال': 'smartphone mobile',
-  'هاتف': 'smartphone phone',
-  'تابلت': 'tablet',
-  'ساعة ذكية': 'smartwatch',
-  'ساعه': 'smartwatch watch',
-  'كاميرا': 'camera',
-  'راوتر': 'router wifi',
-  'بلايستيشن': 'playstation ps5',
-  'اكس بوكس': 'xbox',
-  'برو': 'pro',
-  'ماكس': 'max',
-  'بلس': 'plus',
-  'الترا': 'ultra',
-  'ميني': 'mini',
-  'لايت': 'lite',
-};
-
-function extractSearchIntent(message: string): {
+async function extractSearchIntent(message: string, apiKey: string): Promise<{
   query: string;
   maxPrice?: number;
   minPrice?: number;
-} {
-  let maxPrice: number | undefined;
-  let minPrice: number | undefined;
-
-  const maxMatch = message.match(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز|بحدود|حتى)\s*(\d+)/);
-  const minMatch = message.match(/(?:أكثر من|فوق)\s*(\d+)/);
-
-  if (maxMatch) maxPrice = parseInt(maxMatch[1]);
-  if (minMatch) minPrice = parseInt(minMatch[1]);
-
-  let searchQuery = message.toLowerCase();
-
-  // Apply Arabic to English mapping
-  for (const [arabic, english] of Object.entries(ARABIC_TO_SEARCH)) {
-    searchQuery = searchQuery.replace(new RegExp(arabic, 'gi'), english);
+  category?: string;
+}> {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `استخرج من هذا الطلب: كلمات البحث بالإنجليزي، الميزانية القصوى، الميزانية الدنيا.
+الطلب: "${message}"
+رد بـ JSON فقط بهذا الشكل:
+{"query":"english search keywords","maxPrice":null,"minPrice":null}
+- query: اسم المنتج بالإنجليزي (مثل: iphone 15، samsung s25، air conditioner)
+- إذا ما في ميزانية اكتب null`,
+      }],
+    }),
+  });
+  
+  const data = await response.json();
+  const text = data.content?.[0]?.text || '{}';
+  try {
+    const clean = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch {
+    return { query: message };
   }
-
-  // Clean filler words
-  const query = searchQuery
-    .replace(/(?:ابي|أبي|بغيت|أبغى|ابغى|بدي|عندي|اريد|أريد)/g, '')
-    .replace(/(?:بأقل من|أقل من|تحت|ما يتجاوز|لا يتجاوز)\s*\d+/g, '')
-    .replace(/\d+\s*(?:ريال|sar)/gi, '')
-    .replace(/(?:رخيص|غالي|جيد|كويس|ممتاز|عالي|منخفض|لغرفه|لغرفة|متر)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  return { query: query || message.slice(0, 30), maxPrice, minPrice };
 }
 
-async function searchProducts(intent: ReturnType<typeof extractSearchIntent>, baseUrl: string) {
+async function searchProducts(query: string, maxPrice?: number, minPrice?: number) {
   try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
     const body: Record<string, unknown> = {
-      query: intent.query,
+      query,
       pageSize: 5,
       sort: 'price_low',
       in_stock_only: true,
     };
-    if (intent.maxPrice) body.max_price = intent.maxPrice;
-    if (intent.minPrice) body.min_price = intent.minPrice;
+    if (maxPrice) body.max_price = maxPrice;
+    if (minPrice) body.min_price = minPrice;
 
     const res = await fetch(`${baseUrl}/api/search`, {
       method: 'POST',
@@ -100,7 +68,7 @@ async function searchProducts(intent: ReturnType<typeof extractSearchIntent>, ba
 }
 
 function formatProductsForAI(products: any[]): string {
-  if (!products || products.length === 0) return '';
+  if (!products?.length) return '';
   return products.map((p, i) => {
     const stores = p.stores?.sort((a: any, b: any) => a.current_price - b.current_price) || [];
     const best = stores[0];
@@ -108,18 +76,17 @@ function formatProductsForAI(products: any[]): string {
       ? Math.round(((best.original_price - best.current_price) / best.original_price) * 100)
       : 0;
     const allStores = stores.slice(0, 3).map((s: any) =>
-      `${s.store_name || s.store}: ${Math.round(s.current_price)} ريال → ${s.product_url}`
+      `${s.store_name || s.store}: ${Math.round(s.current_price)} ريال — ${s.product_url}`
     ).join('\n  ');
 
     return `منتج ${i + 1}: ${p.name_ar || p.name_en}
   أفضل سعر: ${Math.round(p.best_price)} ريال${discount > 0 ? ` (خصم ${discount}%)` : ''}
   متوفر في ${p.store_count} متجر
-  المتاجر والأسعار والروابط:
+  المتاجر:
   ${allStores}
   كوبون: ${best?.coupon_code || 'لا يوجد'}`;
   }).join('\n\n');
-}
-export async function POST(request: NextRequest) {
+}export async function POST(request: NextRequest) {
   try {
     const { message, conversationHistory = [] } = await request.json();
 
@@ -132,22 +99,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
-    const intent = extractSearchIntent(message);
-    const products = await searchProducts(intent, baseUrl);
+    // Claude يستخرج كلمات البحث ذكياً
+    const intent = await extractSearchIntent(message, apiKey);
+    
+    // البحث في قاعدة البيانات بالكلمات المستخرجة
+    const products = intent.query 
+      ? await searchProducts(intent.query, intent.maxPrice, intent.minPrice)
+      : null;
+    
     const productsContext = products?.length ? formatProductsForAI(products) : '';
 
     const systemPrompt = `أنت "وفّر" — مساعد التسوق الذكي لمنصة توفيري السعودية.
-شخصيتك: ذكي، ودود، عامية سعودية، مباشر.
+شخصيتك: ذكي، ودود، عامية سعودية، مباشر وعملي.
 
-${productsContext ? `✅ نتائج حقيقية من توفيري — استخدمها فقط ولا تخترع أسعاراً:
+${productsContext ? `✅ نتائج حقيقية من توفيري — استخدمها فقط:
 
 ${productsContext}
 
 قواعد:
-- استخدم الأسعار والروابط أعلاه كما هي بدون تعديل
-- رتّب من الأرخص للأغلى
-- اذكر الكوبون إذا موجود` :
+- استخدم الأسعار والروابط أعلاه كما هي
+- رتّب من الأرخص للأغلى  
+- اذكر الكوبون إذا موجود
+- الروابط مباشرة للمنتج في المتجر` :
 `❌ ما لقيت نتائج في توفيري لهذا الطلب.
 أخبر المستخدم بلطف وأقترح:
 1. البحث مباشرة: https://tawveeri.com/ar/search
@@ -205,3 +178,4 @@ ${productsContext}
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
