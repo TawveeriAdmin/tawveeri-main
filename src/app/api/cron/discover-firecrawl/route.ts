@@ -53,8 +53,7 @@ async function scrapeWithSchema(url: string): Promise<any[]> {
    });
 
    if (!res.ok) {
-     const err = await res.text();
-     console.error(`[FC] ${res.status}: ${err}`);
+     console.error(`[FC] ${res.status}: ${await res.text()}`);
      return [];
    }
 
@@ -115,8 +114,8 @@ async function saveProducts(
 const STORES = [
  { slug: 'almanea', name: 'المنيع', url: 'https://www.almanea.sa/ar/mobiles-tablets', affiliate: (u: string) => u },
  { slug: 'extra', name: 'اكسترا', url: 'https://www.extra.com/ar-sa/c/smartphones', affiliate: (u: string) => u },
- { slug: 'jarir', name: 'جرير', url: 'https://www.jarir.com/sa-ar/computers-tablets.html', affiliate: (u: string) => u },
- { slug: 'amazon', name: 'أمازون', url: 'https://www.amazon.sa/s?i=electronics', affiliate: (u: string) => u + (u.includes('?') ? '&' : '?') + 'tag=tawveeri-21' },
+ { slug: 'jarir', name: 'جرير', url: 'https://www.jarir.com/sa-ar/computers-tablets', affiliate: (u: string) => u },
+ { slug: 'amazon', name: 'أمازون', url: 'https://www.amazon.sa/s?i=electronics&rh=n%3A11995771031', affiliate: (u: string) => u + (u.includes('?') ? '&' : '?') + 'tag=tawveeri-21' },
  { slug: 'noon', name: 'نون', url: 'https://www.noon.com/saudi-ar/mobiles-tablets/', affiliate: (u: string) => u },
 ];
 
