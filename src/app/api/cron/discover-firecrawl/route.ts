@@ -1,225 +1,238 @@
+// src/app/api/cron/discover-firecrawl/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 
 export const maxDuration = 900;
 export const dynamic = 'force-dynamic';
 
-// ─── Firecrawl SDK مباشرة بدون fetch يدوي ────────────────
-async function firecrawlScrape(url: string): Promise<string> {
-  const key = process.env.FIRECRAWL_API_KEY;
-  if (!key) throw new Error('FIRECRAWL_API_KEY missing');
-
-  const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
+// ─── Schema المنتج لـ Firecrawl v2 ──────────────────────────
+const PRODUCT_SCHEMA = {
+  type: 'object',
+  properties: {
+    products: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name_ar:       { type: 'string', description: 'اسم المنتج بالعربي كاملاً' },
+          name_en:       { type: 'string', description: 'Product name in English if available' },
+          brand:         { type: 'string', description: 'العلامة التجارية (مثل: سامسونج، أبل، هواوي...)' },
+          current_price: { type: 'number', description: 'السعر الحالي رقم فقط بدون ريال أو أي نص' },
+          original_price:{ type: ['number', 'null'], description: 'السعر الأصلي قبل الخصم أو null' },
+          product_url:   { type: 'string', description: 'الرابط الكامل للمنتج يبدأ بـ https' },
+          image_url:     { type: ['string', 'null'], description: 'رابط صورة المنتج أو null' },
+          category:      { type: 'string', description: 'smartphone|laptop|tv|audio|appliance|kitchen|accessories' },
+          availability:  { type: 'string', description: 'in_stock أو out_of_stock' },
+        },
+        required: ['name_ar', 'current_price', 'product_url'],
+      },
     },
-    body: JSON.stringify({
-      url,
-      formats: ['markdown'],
-      onlyMainContent: true,
-      timeout: 60000,
-    }),
-  });
+  },
+  required: ['products'],
+};
 
-  if (!res.ok) {
-    console.error(`[Firecrawl] ${res.status} for ${url}`);
-    return '';
+// ─── Firecrawl JSON extraction (v2) ─────────────────────
+async function scrapeWithSchema(url: string): Promise<any[]> {
+  const key = process.env.FIRECRAWL_API_KEY;
+  if (!key) {
+    console.error('[Firecrawl] API key missing');
+    return [];
   }
 
-  const data = await res.json();
-  return data.data?.markdown || data.markdown || '';
-}
+  console.log(`[Firecrawl] Scraping: ${url}`);
 
-// ─── Claude يستخرج المنتجات من الـ Markdown ──────────────
-async function extractProducts(markdown: string, storeName: string): Promise<any[]> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key || markdown.length < 200) return [];
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 3000,
-      messages: [{
-        role: 'user',
-        content: `أنت مساعد استخراج بيانات. استخرج المنتجات من هذا النص لمتجر ${storeName}.
-
-النص:
-${markdown.slice(0, 6000)}
-
-أرجع JSON array فقط بدون أي نص آخر:
-[{"name_ar":"اسم المنتج","name_en":"product name","brand":"العلامة","category":"smartphone|laptop|tv|audio|appliance|accessories","current_price":0,"product_url":"https://...","availability":"in_stock"}]
-
-شروط:
-- current_price رقم فقط بدون ريال
-- product_url رابط كامل يبدأ بـ https
-- إذا ما في منتجات واضحة أرجع []`,
-      }],
-    }),
-  });
-
-  if (!res.ok) return [];
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '[]';
   try {
-    const clean = text.replace(/```json|```/g, '').trim();
-    const result = JSON.parse(clean);
-    return Array.isArray(result) ? result : [];
-  } catch { return []; }
+    const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        url,
+        formats: [
+          'markdown', // للـ debugging
+          {
+            type: 'json',
+            schema: PRODUCT_SCHEMA,
+            prompt: 'استخرج جميع المنتجات المعروضة في الصفحة بشكل دقيق. ركز على قائمة المنتجات الرئيسية فقط، واستخرج الأسماء والأسعار والروابط والصور.',
+          }
+        ],
+        onlyMainContent: true,
+        timeout: 60000,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`[Firecrawl] Error ${res.status}: ${err}`);
+      return [];
+    }
+
+    const data = await res.json();
+    console.log(`[Firecrawl] Success: ${data.success || false}`);
+
+    // استخراج المنتجات (حسب هيكل الرد في v2)
+    const products = data.data?.json?.products 
+                  || data.json?.products 
+                  || data.data?.products 
+                  || data.products 
+                  || [];
+
+    console.log(`[Firecrawl] Found ${products.length} products from ${url}`);
+    return Array.isArray(products) ? products : [];
+  } catch (err) {
+    console.error(`[Firecrawl] Exception:`, err);
+    return [];
+  }
 }
-// ─── حفظ فوري في Supabase ────────────────────────────────
-async function saveToSupabase(
- products: any[],
- storeName: string,
- affiliateFn: (url: string) => string
+
+// ─── حفظ في Supabase ──────────────────────────────────────
+async function saveProducts(
+  products: any[],
+  storeName: string,
+  affiliateFn: (url: string) => string
 ): Promise<number> {
- const supabase = createServerClient();
- let saved = 0;
+  const supabase = createServerClient();
+  let saved = 0;
 
- for (const p of products) {
-   if (!p.name_ar || !p.current_price || p.current_price <= 0) continue;
-   if (!p.product_url?.startsWith('http')) continue;
+  for (const p of products) {
+    if (!p.name_ar || !p.current_price || p.current_price <= 0) continue;
+    if (!p.product_url?.startsWith('http')) continue;
 
-   try {
-     // ١. أضف كود الـ affiliate
-     const finalUrl = affiliateFn(p.product_url);
+    try {
+      const finalUrl = affiliateFn(p.product_url);
 
-     // ٢. احفظ المنتج
-     const { data: product, error: pErr } = await supabase
-       .from('products')
-       .upsert({
-         name_ar: p.name_ar,
-         name_en: p.name_en || p.name_ar,
-         brand: p.brand || 'Unknown',
-         category: p.category || 'accessories',
-         is_active: true,
-       }, { onConflict: 'name_ar' })
-       .select('id')
-       .single();
+      const { data: product, error } = await supabase
+        .from('products')
+        .upsert({
+          name_ar: p.name_ar.trim(),
+          name_en: p.name_en || p.name_ar,
+          brand: p.brand || 'Unknown',
+          category: p.category || 'accessories',
+          is_active: true,
+        }, { onConflict: 'name_ar' })
+        .select('id')
+        .single();
 
-     if (pErr || !product) {
-       console.error('[Save] product error:', pErr?.message);
-       continue;
-     }
+      if (error || !product) {
+        console.error('[Save] error:', error?.message);
+        continue;
+      }
 
-     // ٣. احفظ السعر في المتجر
-     await supabase
-       .from('product_stores')
-       .upsert({
-         product_id: product.id,
-         store_name: storeName,
-         current_price: p.current_price,
-         product_url: finalUrl,
-         availability: p.availability || 'in_stock',
-         updated_at: new Date().toISOString(),
-       }, { onConflict: 'product_id,store_name' });
+      await supabase
+        .from('product_stores')
+        .upsert({
+          product_id: product.id,
+          store_name: storeName,
+          current_price: p.current_price,
+          original_price: p.original_price || null,
+          product_url: finalUrl,
+          availability: p.availability || 'in_stock',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'product_id,store_name' });
 
-     saved++;
-   } catch (err) {
-     console.error('[Save] error:', err);
-   }
- }
-
- return saved;
+      saved++;
+      console.log(`[Save] ✅ ${p.name_ar} - ${p.current_price} ريال`);
+    } catch (err) {
+      console.error('[Save] exception:', err);
+    }
+  }
+  return saved;
 }
 
-// ─── المتاجر ─────────────────────────────────────────────
+// ─── المتاجر ──────────────────────────────────────────────
 const STORES = [
- {
-   slug: 'almanea',
-   name: 'المنيع',
-   url: 'https://www.almanea.sa/ar/mobiles-tablets',
-   affiliate: (u: string) => u,
- },
- {
-   slug: 'extra',
-   name: 'اكسترا',
-   url: 'https://www.extra.com/ar-sa/c/electronics',
-   affiliate: (u: string) => u,
- },
- {
-   slug: 'jarir',
-   name: 'جرير',
-   url: 'https://www.jarir.com/sa-ar/computers-tablets.html',
-   affiliate: (u: string) => u,
- },
- {
-   slug: 'amazon',
-   name: 'أمازون',
-   url: 'https://www.amazon.sa/s?i=electronics',
-   affiliate: (u: string) =>
-     u + (u.includes('?') ? '&' : '?') + 'tag=tawveeri-21',
- },
- {
-   slug: 'noon',
-   name: 'نون',
-   url: 'https://www.noon.com/saudi-ar/electronics/',
-   affiliate: (u: string) => u,
- },
+  {
+    slug: 'almanea',
+    name: 'المنيع',
+    url: 'https://www.almanea.sa/ar/mobiles-tablets',
+    affiliate: (u: string) => u,
+  },
+  {
+    slug: 'extra',
+    name: 'اكسترا',
+    url: 'https://www.extra.com/ar-sa/c/smartphones',
+    affiliate: (u: string) => u,
+  },
+  {
+    slug: 'jarir',
+    name: 'جرير',
+    url: 'https://www.jarir.com/sa-ar/computers-tablets.html',
+    affiliate: (u: string) => u,
+  },
+  {
+    slug: 'amazon',
+    name: 'أمازون',
+    url: 'https://www.amazon.sa/s?i=electronics&rh=n%3A11995771031',
+    affiliate: (u: string) => u + (u.includes('?') ? '&' : '?') + 'tag=tawveeri-21',
+  },
+  {
+    slug: 'noon',
+    name: 'نون',
+    url: 'https://www.noon.com/saudi-ar/mobiles-tablets/',
+    affiliate: (u: string) => u,
+  },
 ];
 
 // ─── MAIN ─────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
- const auth = request.headers.get('authorization');
- const secret = process.env.CRON_SECRET;
- if (secret && auth !== `Bearer ${secret}`) {
-   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
- }
+  const auth = request.headers.get('authorization');
+  const secret = process.env.CRON_SECRET;
 
- const body = await request.json().catch(() => ({}));
- const targetSlug = body.store_slug;
- const stores = targetSlug
-   ? STORES.filter(s => s.slug === targetSlug)
-   : STORES;
+  if (secret && auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
- const results: Record<string, any> = {};
- let totalSaved = 0;
+  const body = await request.json().catch(() => ({}));
+  const targetSlug = body.store_slug;
+  const stores = targetSlug 
+    ? STORES.filter(s => s.slug === targetSlug) 
+    : STORES;
 
- for (const store of stores) {
-   console.log(`[discover] Starting: ${store.name}`);
-   try {
-     // Firecrawl يجلب الصفحة
-     const markdown = await firecrawlScrape(store.url);
-     console.log(`[discover] ${store.name}: ${markdown.length} chars`);
+  const results: Record<string, any> = {};
+  let totalSaved = 0;
 
-     if (markdown.length < 200) {
-       results[store.slug] = { store: store.name, saved: 0, error: 'empty markdown' };
-       continue;
-     }
+  for (const store of stores) {
+    console.log(`\n[discover] ═══ ${store.name} ═══`);
 
-     // Claude يستخرج المنتجات
-     const products = await extractProducts(markdown, store.name);
-     console.log(`[discover] ${store.name}: ${products.length} products extracted`);
+    try {
+      const products = await scrapeWithSchema(store.url);
 
-     // حفظ فوري في Supabase
-     const saved = await saveToSupabase(products, store.name, store.affiliate);
-     console.log(`[discover] ${store.name}: ${saved} saved`);
+      if (products.length === 0) {
+        results[store.slug] = { store: store.name, saved: 0, note: 'no products found' };
+        continue;
+      }
 
-     results[store.slug] = { store: store.name, saved };
-     totalSaved += saved;
-   } catch (err) {
-     console.error(`[discover] ${store.name} failed:`, err);
-     results[store.slug] = { error: String(err) };
-   }
+      const saved = await saveProducts(products, store.name, store.affiliate);
+      results[store.slug] = { 
+        store: store.name, 
+        extracted: products.length, 
+        saved 
+      };
+      totalSaved += saved;
+    } catch (err) {
+      console.error(`[discover] ${store.name} failed:`, err);
+      results[store.slug] = { error: String(err) };
+    }
 
-   // rate limit بين المتاجر
-   await new Promise(r => setTimeout(r, 3000));
- }
+    // تأخير بسيط بين المتاجر
+    await new Promise(r => setTimeout(r, 2000));
+  }
 
- return NextResponse.json({ success: true, total_saved: totalSaved, results });
+  console.log(`\n[discover] Total saved: ${totalSaved}`);
+  return NextResponse.json({ 
+    success: true, 
+    total_saved: totalSaved, 
+    results 
+  });
 }
 
 export async function GET() {
- return NextResponse.json({
-   status: 'ok',
-   message: 'Firecrawl discovery endpoint',
-   stores: STORES.map(s => s.slug),
- });
+  return NextResponse.json({
+    status: 'ok',
+    message: 'Firecrawl discovery endpoint (v2)',
+    stores: STORES.map(s => s.slug),
+  });
 }
