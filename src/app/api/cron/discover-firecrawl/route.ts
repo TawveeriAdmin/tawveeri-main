@@ -12,15 +12,15 @@ const PRODUCT_SCHEMA = {
      items: {
        type: 'object',
        properties: {
-         name_ar:       { type: 'string', description: 'اسم المنتج بالعربي كاملاً' },
-         name_en:       { type: 'string' },
-         brand:         { type: 'string' },
-         current_price: { type: 'number' },
-         original_price:{ type: ['number', 'null'] },
-         product_url:   { type: 'string' },
-         image_url:     { type: ['string', 'null'] },
-         category:      { type: 'string' },
-         availability:  { type: 'string' },
+         name_ar:        { type: 'string',           description: 'اسم المنتج بالعربي كاملاً' },
+         name_en:        { type: 'string',           description: 'Product name in English' },
+         brand:          { type: 'string',           description: 'العلامة التجارية' },
+         current_price:  { type: 'number',           description: 'السعر الحالي رقم فقط' },
+         original_price: { type: ['number', 'null'], description: 'السعر الأصلي قبل الخصم' },
+         product_url:    { type: 'string',           description: 'رابط المنتج الكامل https' },
+         image_url:      { type: ['string', 'null'], description: 'رابط صورة المنتج' },
+         category:       { type: 'string',           description: 'smartphone|laptop|tv|audio|appliance|accessories' },
+         availability:   { type: 'string',           description: 'in_stock أو out_of_stock' },
        },
        required: ['name_ar', 'current_price', 'product_url'],
      },
@@ -42,32 +42,37 @@ async function scrapeWithSchema(url: string): Promise<any[]> {
      },
      body: JSON.stringify({
        url,
-       formats: ['extract'],
-       extract: {
-         schema: PRODUCT_SCHEMA,
-         prompt: 'استخرج كل المنتجات في الصفحة مع أسمائها وأسعارها وروابطها',
-       },
+       formats: [
+         {
+           type: 'json',
+           schema: PRODUCT_SCHEMA,
+           prompt: 'استخرج كل المنتجات المعروضة في الصفحة مع أسمائها وأسعارها الحالية والأصلية وروابطها وصورها',
+         }
+       ],
        onlyMainContent: true,
        timeout: 60000,
      }),
    });
 
    if (!res.ok) {
-     console.error(`[Firecrawl] ${res.status}`);
+     console.error(`[Firecrawl] ${res.status}: ${await res.text()}`);
      return [];
    }
 
    const data = await res.json();
+   console.log('[Firecrawl] raw response:', JSON.stringify(data).slice(0, 800));
+
    const products =
+     data.data?.json?.products ||
      data.data?.extract?.products ||
+     data.json?.products ||
      data.extract?.products ||
-     data.data?.products ||
      [];
 
-   console.log(`[Firecrawl] ${url}: ${products.length} products`);
+   console.log(`[Firecrawl] extracted ${products.length} products from ${url}`);
    return Array.isArray(products) ? products : [];
  } catch (err) {
-   console.error('[Firecrawl] error:', err);
+   console.error('[Firecrawl] exception:', err);
    return [];
  }
 }
@@ -99,15 +104,17 @@ async function saveProducts(
 
      if (!product) continue;
 
-     await supabase.from('product_stores').upsert({
-       product_id: product.id,
-       store_name: storeName,
-       current_price: p.current_price,
-       original_price: p.original_price || null,
-       product_url: affiliateFn(p.product_url),
-       availability: p.availability || 'in_stock',
-       updated_at: new Date().toISOString(),
-     }, { onConflict: 'product_id,store_name' });
+     await supabase
+       .from('product_stores')
+       .upsert({
+         product_id: product.id,
+         store_name: storeName,
+         current_price: p.current_price,
+         original_price: p.original_price || null,
+         product_url: affiliateFn(p.product_url),
+         availability: p.availability || 'in_stock',
+         updated_at: new Date().toISOString(),
+       }, { onConflict: 'product_id,store_name' });
 
      saved++;
      console.log(`[Save] ✅ ${p.name_ar} - ${p.current_price}`);
@@ -119,11 +126,31 @@ async function saveProducts(
 }
 
 const STORES = [
- { slug: 'almanea', name: 'المنيع', url: 'https://www.almanea.sa/ar/mobiles-tablets', affiliate: (u: string) => u },
- { slug: 'extra', name: 'اكسترا', url: 'https://www.extra.com/ar-sa/c/smartphones', affiliate: (u: string) => u },
- { slug: 'jarir', name: 'جرير', url: 'https://www.jarir.com/sa-ar/computers-tablets.html', affiliate: (u: string) => u },
- { slug: 'amazon', name: 'أمازون', url: 'https://www.amazon.sa/s?i=electronics&rh=n%3A11995771031', affiliate: (u: string) => u + (u.includes('?') ? '&' : '?') + 'tag=tawveeri-21' },
- { slug: 'noon', name: 'نون', url: 'https://www.noon.com/saudi-ar/mobiles-tablets/', affiliate: (u: string) => u },
+ {
+   slug: 'almanea', name: 'المنيع',
+   url: 'https://www.almanea.sa/ar/mobiles-tablets',
+   affiliate: (u: string) => u,
+ },
+ {
+   slug: 'extra', name: 'اكسترا',
+   url: 'https://www.extra.com/ar-sa/c/smartphones',
+   affiliate: (u: string) => u,
+ },
+ {
+   slug: 'jarir', name: 'جرير',
+   url: 'https://www.jarir.com/sa-ar/computers-tablets.html',
+   affiliate: (u: string) => u,
+ },
+ {
+   slug: 'amazon', name: 'أمازون',
+   url: 'https://www.amazon.sa/s?i=electronics&rh=n%3A11995771031',
+   affiliate: (u: string) => u + (u.includes('?') ? '&' : '?') + 'tag=tawveeri-21',
+ },
+ {
+   slug: 'noon', name: 'نون',
+   url: 'https://www.noon.com/saudi-ar/mobiles-tablets/',
+   affiliate: (u: string) => u,
+ },
 ];
 
 export async function GET(request: NextRequest) {
@@ -139,7 +166,13 @@ export async function GET(request: NextRequest) {
 
  const products = await scrapeWithSchema(store.url);
  const saved = await saveProducts(products, store.name, store.affiliate);
- return NextResponse.json({ success: true, store: store.name, extracted: products.length, saved });
+
+ return NextResponse.json({
+   success: true,
+   store: store.name,
+   extracted: products.length,
+   saved,
+ });
 }
 
 export async function POST(request: NextRequest) {
