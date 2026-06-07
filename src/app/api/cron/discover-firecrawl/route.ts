@@ -4,7 +4,6 @@ import { createServerClient } from '@/lib/database';
 export const maxDuration = 900;
 export const dynamic = 'force-dynamic';
 
-// ─── Algolia — المنيع ─────────────────────────────────────
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
 const AR_INDEX = 'prod_headless_ar_products';
@@ -68,7 +67,6 @@ async function fetchAlmanea(maxPages = 3): Promise<any[]> {
  return products;
 }
 
-// ─── نون API ──────────────────────────────────────────────
 const NOON_API = 'https://www.noon.com/_svc/catalog/api/v3/u/en-sa/search';
 const NOON_CDN = 'https://f.nooncdn.com/p';
 const NOON_BASE = 'https://www.noon.com/saudi-en';
@@ -119,7 +117,6 @@ async function fetchNoon(maxPages = 2): Promise<any[]> {
  return products;
 }
 
-// ─── حفظ في Supabase ──────────────────────────────────────
 async function saveProducts(products: any[], storeName: string): Promise<number> {
  const sb = createServerClient();
  let saved = 0;
@@ -127,23 +124,39 @@ async function saveProducts(products: any[], storeName: string): Promise<number>
    if (!p.name_ar?.trim() || !p.current_price || p.current_price <= 0) continue;
    if (!p.product_url?.startsWith('http')) continue;
    try {
-     const { data: prod } = await sb.from('products')
-       .upsert({ name_ar: p.name_ar.trim(), name_en: p.name_en || p.name_ar, brand: p.brand || 'Unknown', category: p.category || 'accessories', is_active: true }, { onConflict: 'name_ar' })
-       .select('id').single();
-     if (!prod) continue;
+     // بحث أولاً
+     let productId: string | null = null;
+     const { data: existing } = await sb.from('products')
+       .select('id').eq('name_ar', p.name_ar.trim()).single();
+
+     if (existing) {
+       productId = existing.id;
+     } else {
+       const { data: inserted } = await sb.from('products')
+         .insert({ name_ar: p.name_ar.trim(), name_en: p.name_en || p.name_ar, brand: p.brand || 'Unknown', category: p.category || 'accessories', is_active: true })
+         .select('id').single();
+       productId = inserted?.id || null;
+     }
+
+     if (!productId) continue;
+
      await sb.from('product_stores').upsert({
-       product_id: prod.id, store_name: storeName,
-       current_price: p.current_price, original_price: p.original_price || null,
+       product_id: productId,
+       store_name: storeName,
+       current_price: p.current_price,
+       original_price: p.original_price || null,
        product_url: p.product_url,
-       availability: p.availability || 'in_stock', updated_at: new Date().toISOString(),
+       availability: p.availability || 'in_stock',
+       updated_at: new Date().toISOString(),
      }, { onConflict: 'product_id,store_name' });
+
      saved++;
+     console.log(`[Save] ✅ ${p.name_ar} - ${p.current_price}`);
    } catch (e) { console.error('[Save]', e); }
  }
  return saved;
 }
 
-// ─── MAIN ─────────────────────────────────────────────────
 const STORES = [
  { slug: 'almanea', name: 'المنيع', url: 'https://www.almanea.sa/ar/mobiles-tablets', affiliate: (u: string) => u },
  { slug: 'extra', name: 'اكسترا', url: 'https://www.extra.com/ar-sa/c/smartphones', affiliate: (u: string) => u },
@@ -153,14 +166,26 @@ const STORES = [
 ];
 
 export async function GET(request: NextRequest) {
- const slug = new URL(request.url).searchParams.get('store_slug');
+ const url = new URL(request.url);
+ const slug = url.searchParams.get('store_slug');
+ const sync = url.searchParams.get('sync');
 
  if (slug === 'almanea-direct') {
+   if (sync) {
+     const products = await fetchAlmanea(1);
+     const saved = await saveProducts(products, 'المنيع');
+     return NextResponse.json({ success: true, store: 'almanea', fetched: products.length, saved });
+   }
    fetchAlmanea(1).then(products => saveProducts(products, 'المنيع')).catch(console.error);
    return NextResponse.json({ success: true, message: 'almanea scraping started in background' });
  }
 
  if (slug === 'noon-direct') {
+   if (sync) {
+     const products = await fetchNoon(1);
+     const saved = await saveProducts(products, 'نون');
+     return NextResponse.json({ success: true, store: 'noon', fetched: products.length, saved });
+   }
    fetchNoon(1).then(products => saveProducts(products, 'نون')).catch(console.error);
    return NextResponse.json({ success: true, message: 'noon scraping started in background' });
  }
