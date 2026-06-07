@@ -4,8 +4,7 @@
  "private": true,
  "scripts": {
    "dev": "next dev",
-   "build": "rm -rf .next && next build && npm run build:standalone-assets",
-   "build:standalone-assets": "rm -rf .next/standalone/.next/static .next/standalone/public && mkdir -p .next/standalone/.next && cp -R .next/static .next/standalone/.next/static && cp -R public .next/standalone/public",
+   "build": "next build",
    "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
    "lint": "eslint",
    "test": "jest",
