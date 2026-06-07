@@ -217,6 +217,7 @@ async function scrapeWithSchema(url: string): Promise<any[]> {
    if (!res.ok) return [];
    const data = await res.json();
    return data.data?.products || data.products || [];
- } catch { return []; }// Force cache bust to rebuild stores
-
+ } catch { return []; }
 }
+
+// Force cache bust to rebuild stores
