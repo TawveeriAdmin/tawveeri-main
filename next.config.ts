@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
    ignoreDuringBuilds: true,
  },
  output: 'standalone',
- // force-rebuild: 2026-06-07
  generateBuildId: async () => {
    return `build-${Date.now()}`;
  },
