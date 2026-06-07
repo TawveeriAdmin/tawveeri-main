@@ -1,6 +1,7 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "npm run build"
+nixpacksConfigPath = ""
 
 [deploy]
 startCommand = "HOSTNAME=0.0.0.0 node .next/standalone/server.js"
