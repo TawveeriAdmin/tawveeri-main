@@ -124,7 +124,7 @@ async function saveProducts(products: any[]): Promise<any> {
   const rows = Array.from(unique.values());
   let saved = 0;
   const errors: any[] = [];
-  const chunkSize = 100;
+  const chunkSize = 10;
 
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
