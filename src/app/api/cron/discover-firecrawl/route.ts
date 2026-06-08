@@ -8,12 +8,11 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-08-v1';
+const VERSION = 'tawveeri-cron-2026-06-08-v2-products-only';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
 const AR_INDEX = 'prod_headless_ar_products';
-const ALMANEA_BASE = 'https://www.almanea.sa';
 const CATEGORY_IDS = ['7423','7424','7434','7436','522','7426','7364','523','534','536','538','519'];
 
 function json(data: Record<string, any>, status = 200) {
@@ -72,10 +71,7 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
           body,
         });
 
-        if (!res.ok) {
-          console.error(`[Almanea] HTTP ${res.status} cat=${catId} page=${page}`);
-          break;
-        }
+        if (!res.ok) break;
 
         const data = await res.json();
         const hits = data.hits ?? [];
@@ -86,36 +82,26 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
           if (!sku || seen.has(sku)) continue;
           seen.add(sku);
 
-          const pricing = hit.prices_with_tax || {};
-          const price = Number(pricing.price ?? hit.price ?? 0);
-          if (!price || price <= 0) continue;
-
           const nameAr = firstStr(hit.name).trim();
           if (!nameAr || nameAr.length < 3) continue;
 
-          const rewriteUrl = firstStr(hit.rewrite_url);
-          const productUrl = rewriteUrl ? `${ALMANEA_BASE}/${rewriteUrl}` : `${ALMANEA_BASE}/product/${sku}`;
-          const originalPrice = Number(pricing.original_price ?? 0);
-          const hasStock = hit.stock_region_ids
-            ? Object.values(hit.stock_region_ids as Record<string, number>).some(q => q > 0)
-            : true;
+          const pricing = hit.prices_with_tax || {};
+          const price = Number(pricing.price ?? hit.price ?? 0);
+          if (!price || price <= 0) continue;
 
           products.push({
             name_ar: nameAr,
             name_en: nameAr,
             brand: firstStr(hit.brand) || 'Unknown',
             category: 'accessories',
-            current_price: price,
-            original_price: originalPrice > price ? originalPrice : null,
-            product_url: productUrl,
-            availability: hasStock ? 'in_stock' : 'out_of_stock',
+            image_url: firstStr(hit.image_url ?? hit.image ?? hit.thumbnail) || null,
           });
         }
 
         if (page + 1 >= (data.nbPages ?? 0)) break;
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 100));
       } catch (err) {
-        console.error(`[Almanea] cat ${catId} page ${page}:`, err);
+        console.error('[Almanea Fetch Error]', err);
         break;
       }
     }
@@ -125,94 +111,46 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
   return products;
 }
 
-async function saveProducts(products: any[], storeName: string): Promise<number> {
+async function saveProducts(products: any[]): Promise<number> {
   const sb = createServerClient();
+
+  const rows = products
+    .filter(p => p.name_ar?.trim())
+    .map(p => ({
+      name_ar: p.name_ar.trim(),
+      name_en: p.name_en || p.name_ar.trim(),
+      brand: p.brand || 'Unknown',
+      category: p.category || 'accessories',
+      image_url: p.image_url || null,
+      is_active: true,
+    }));
+
   let saved = 0;
+  const chunkSize = 100;
 
-  for (const p of products) {
-    if (!p.name_ar?.trim() || !p.current_price || p.current_price <= 0) continue;
-    if (!p.product_url?.startsWith('http')) continue;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
 
-    try {
-      const nameAr = p.name_ar.trim();
+    const { data, error } = await sb
+      .from('products')
+      .upsert(chunk, { onConflict: 'name_ar' })
+      .select('id');
 
-      let productId: string | null = null;
-
-      const { data: existing, error: selectError } = await sb
-        .from('products')
-        .select('id')
-        .eq('name_ar', nameAr)
-        .maybeSingle();
-
-      if (selectError) {
-        console.error('[Save Select Error]', selectError);
-        continue;
-      }
-
-      if (existing?.id) {
-        productId = existing.id;
-      } else {
-        const { data: inserted, error: insertError } = await sb
-          .from('products')
-          .insert({
-            name_ar: nameAr,
-            name_en: p.name_en || nameAr,
-            brand: p.brand || 'Unknown',
-            category: p.category || 'accessories',
-            is_active: true,
-          })
-          .select('id')
-          .single();
-
-        if (insertError) {
-          console.error('[Save Insert Error]', insertError, { product: nameAr });
-          continue;
-        }
-
-        productId = inserted?.id || null;
-      }
-
-      if (!productId) {
-        console.error('[Save Error] Missing productId', { product: nameAr });
-        continue;
-      }
-
-      const { error: upsertError } = await sb.from('product_stores').upsert(
-        {
-          product_id: productId,
-          store_name: storeName,
-          current_price: p.current_price,
-          original_price: p.original_price || null,
-          product_url: p.product_url,
-          availability: p.availability || 'in_stock',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'product_id,store_name' }
-      );
-
-      if (upsertError) {
-        console.error('[Save Store Upsert Error]', upsertError, { product: nameAr });
-        continue;
-      }
-
-      saved++;
-    } catch (e) {
-      console.error('[Save Fatal Error]', e);
+    if (error) {
+      console.error('[Products Batch Upsert Error]', error);
+      continue;
     }
+
+    saved += data?.length || chunk.length;
   }
 
-  console.log(`[Save] Saved ${saved}/${products.length}`);
+  console.log(`[Products Saved] ${saved}/${rows.length}`);
   return saved;
 }
 
 const STORES = [
   { slug: 'almanea-direct', name: 'المنيع مباشر' },
-  { slug: 'noon-direct', name: 'نون مباشر' },
   { slug: 'almanea', name: 'المنيع' },
-  { slug: 'extra', name: 'اكسترا' },
-  { slug: 'jarir', name: 'جرير' },
-  { slug: 'amazon', name: 'أمازون' },
-  { slug: 'noon', name: 'نون' },
 ];
 
 export async function GET(request: NextRequest) {
@@ -226,17 +164,18 @@ export async function GET(request: NextRequest) {
   if (!slug) {
     return json({
       status: 'ok',
+      mode: 'products-only',
       stores: STORES.map(s => s.slug),
     });
   }
 
   if (slug === 'almanea-direct') {
     const products = await fetchAlmanea(pages);
-    const saved = sync ? await saveProducts(products, 'المنيع') : 0;
+    const saved = sync ? await saveProducts(products) : 0;
 
     return json({
       success: true,
-      mode: sync ? 'sync' : 'fetch-only',
+      mode: sync ? 'sync-products-only' : 'fetch-only',
       store: 'almanea-direct',
       fetched: products.length,
       saved,
@@ -254,10 +193,11 @@ export async function POST(request: NextRequest) {
   }
 
   const almaneaProducts = await fetchAlmanea(10);
-  const almaneaSaved = await saveProducts(almaneaProducts, 'المنيع');
+  const almaneaSaved = await saveProducts(almaneaProducts);
 
   return json({
     success: true,
+    mode: 'products-only',
     total_saved: almaneaSaved,
     results: {
       almanea: {
