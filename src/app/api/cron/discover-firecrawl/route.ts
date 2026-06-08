@@ -8,7 +8,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-08-v2-products-only';
+const VERSION = 'tawveeri-cron-2026-06-08-v3-debug-save';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
@@ -95,6 +95,7 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
             brand: firstStr(hit.brand) || 'Unknown',
             category: 'accessories',
             image_url: firstStr(hit.image_url ?? hit.image ?? hit.thumbnail) || null,
+            current_price: price,
           });
         }
 
@@ -111,11 +112,12 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
   return products;
 }
 
-async function saveProducts(products: any[]): Promise<number> {
+async function saveProducts(products: any[]): Promise<any> {
   const sb = createServerClient();
 
   const rows = products
     .filter(p => p.name_ar?.trim())
+    .slice(0, 5)
     .map(p => ({
       name_ar: p.name_ar.trim(),
       name_en: p.name_en || p.name_ar.trim(),
@@ -125,27 +127,34 @@ async function saveProducts(products: any[]): Promise<number> {
       is_active: true,
     }));
 
-  let saved = 0;
-  const chunkSize = 100;
+  console.log('[DEBUG SAVE ROWS]', rows.length, rows[0]);
 
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunk = rows.slice(i, i + chunkSize);
-
-    const { data, error } = await sb
-      .from('products')
-      .upsert(chunk, { onConflict: 'name_ar' })
-      .select('id');
-
-    if (error) {
-      console.error('[Products Batch Upsert Error]', error);
-      continue;
-    }
-
-    saved += data?.length || chunk.length;
+  if (!rows.length) {
+    return {
+      saved: 0,
+      error: 'No valid rows after filtering',
+      sampleProduct: products[0] || null,
+    };
   }
 
-  console.log(`[Products Saved] ${saved}/${rows.length}`);
-  return saved;
+  const { data, error } = await sb
+    .from('products')
+    .upsert(rows, { onConflict: 'name_ar' })
+    .select('id, name_ar');
+
+  if (error) {
+    console.error('[DEBUG SAVE ERROR]', error);
+    return {
+      saved: 0,
+      error,
+      sampleRow: rows[0],
+    };
+  }
+
+  return {
+    saved: data?.length || 0,
+    data,
+  };
 }
 
 const STORES = [
@@ -164,21 +173,23 @@ export async function GET(request: NextRequest) {
   if (!slug) {
     return json({
       status: 'ok',
-      mode: 'products-only',
+      mode: 'debug-save',
       stores: STORES.map(s => s.slug),
     });
   }
 
   if (slug === 'almanea-direct') {
     const products = await fetchAlmanea(pages);
-    const saved = sync ? await saveProducts(products) : 0;
+    const saveResult = sync ? await saveProducts(products) : { saved: 0 };
 
     return json({
       success: true,
-      mode: sync ? 'sync-products-only' : 'fetch-only',
+      mode: sync ? 'sync-debug-save' : 'fetch-only',
       store: 'almanea-direct',
       fetched: products.length,
-      saved,
+      saved: saveResult.saved,
+      saveResult,
+      sampleFetched: products[0] || null,
     });
   }
 
@@ -193,16 +204,17 @@ export async function POST(request: NextRequest) {
   }
 
   const almaneaProducts = await fetchAlmanea(10);
-  const almaneaSaved = await saveProducts(almaneaProducts);
+  const saveResult = await saveProducts(almaneaProducts);
 
   return json({
     success: true,
-    mode: 'products-only',
-    total_saved: almaneaSaved,
+    mode: 'debug-save',
+    total_saved: saveResult.saved,
+    saveResult,
     results: {
       almanea: {
         fetched: almaneaProducts.length,
-        saved: almaneaSaved,
+        saved: saveResult.saved,
       },
     },
   });
