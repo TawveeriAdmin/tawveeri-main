@@ -8,12 +8,12 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-08-v3-debug-save';
+const VERSION = 'tawveeri-cron-2026-06-08-v4-no-image';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
 const AR_INDEX = 'prod_headless_ar_products';
-const CATEGORY_IDS = ['7423','7424','7434','7436','522','7426','7364','523','534','536','538','519'];
+const CATEGORY_IDS = ['7423', '7424', '7434', '7436', '522', '7426', '7364', '523', '534', '536', '538', '519'];
 
 function json(data: Record<string, any>, status = 200) {
   return NextResponse.json(
@@ -33,6 +33,7 @@ function firstStr(val: unknown): string {
   if (!val) return '';
   if (typeof val === 'string') return val;
   if (typeof val === 'number') return String(val);
+
   if (Array.isArray(val)) {
     for (const v of val) {
       const s = firstStr(v);
@@ -40,12 +41,14 @@ function firstStr(val: unknown): string {
     }
     return '';
   }
+
   if (typeof val === 'object') {
     for (const v of Object.values(val as Record<string, unknown>)) {
       const s = firstStr(v);
       if (s) return s;
     }
   }
+
   return '';
 }
 
@@ -94,13 +97,12 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
             name_en: nameAr,
             brand: firstStr(hit.brand) || 'Unknown',
             category: 'accessories',
-            image_url: firstStr(hit.image_url ?? hit.image ?? hit.thumbnail) || null,
             current_price: price,
           });
         }
 
         if (page + 1 >= (data.nbPages ?? 0)) break;
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (err) {
         console.error('[Almanea Fetch Error]', err);
         break;
@@ -117,43 +119,48 @@ async function saveProducts(products: any[]): Promise<any> {
 
   const rows = products
     .filter(p => p.name_ar?.trim())
-    .slice(0, 5)
     .map(p => ({
       name_ar: p.name_ar.trim(),
       name_en: p.name_en || p.name_ar.trim(),
       brand: p.brand || 'Unknown',
       category: p.category || 'accessories',
-      image_url: p.image_url || null,
       is_active: true,
     }));
-
-  console.log('[DEBUG SAVE ROWS]', rows.length, rows[0]);
 
   if (!rows.length) {
     return {
       saved: 0,
-      error: 'No valid rows after filtering',
+      errors: [{ message: 'No valid rows after filtering' }],
       sampleProduct: products[0] || null,
     };
   }
 
-  const { data, error } = await sb
-    .from('products')
-    .upsert(rows, { onConflict: 'name_ar' })
-    .select('id, name_ar');
+  let saved = 0;
+  const errors: any[] = [];
+  const chunkSize = 100;
 
-  if (error) {
-    console.error('[DEBUG SAVE ERROR]', error);
-    return {
-      saved: 0,
-      error,
-      sampleRow: rows[0],
-    };
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+
+    const { data, error } = await sb
+      .from('products')
+      .upsert(chunk, { onConflict: 'name_ar' })
+      .select('id, name_ar');
+
+    if (error) {
+      console.error('[Products Upsert Error]', error);
+      errors.push(error);
+      continue;
+    }
+
+    saved += data?.length || chunk.length;
   }
 
   return {
-    saved: data?.length || 0,
-    data,
+    saved,
+    errors,
+    totalRows: rows.length,
+    sampleRow: rows[0] || null,
   };
 }
 
@@ -173,7 +180,7 @@ export async function GET(request: NextRequest) {
   if (!slug) {
     return json({
       status: 'ok',
-      mode: 'debug-save',
+      mode: 'no-image',
       stores: STORES.map(s => s.slug),
     });
   }
@@ -184,7 +191,7 @@ export async function GET(request: NextRequest) {
 
     return json({
       success: true,
-      mode: sync ? 'sync-debug-save' : 'fetch-only',
+      mode: sync ? 'sync-no-image' : 'fetch-only',
       store: 'almanea-direct',
       fetched: products.length,
       saved: saveResult.saved,
@@ -208,7 +215,7 @@ export async function POST(request: NextRequest) {
 
   return json({
     success: true,
-    mode: 'debug-save',
+    mode: 'no-image',
     total_saved: saveResult.saved,
     saveResult,
     results: {
