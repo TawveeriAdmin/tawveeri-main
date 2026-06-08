@@ -8,7 +8,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-08-v4-no-image';
+const VERSION = 'tawveeri-cron-2026-06-08-v5-no-conflict';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
@@ -18,14 +18,7 @@ const CATEGORY_IDS = ['7423', '7424', '7434', '7436', '522', '7426', '7364', '52
 function json(data: Record<string, any>, status = 200) {
   return NextResponse.json(
     { version: VERSION, build: BUILD_SHA, ...data },
-    {
-      status,
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
-      },
-    }
+    { status, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
   );
 }
 
@@ -33,7 +26,6 @@ function firstStr(val: unknown): string {
   if (!val) return '';
   if (typeof val === 'string') return val;
   if (typeof val === 'number') return String(val);
-
   if (Array.isArray(val)) {
     for (const v of val) {
       const s = firstStr(v);
@@ -41,14 +33,12 @@ function firstStr(val: unknown): string {
     }
     return '';
   }
-
   if (typeof val === 'object') {
     for (const v of Object.values(val as Record<string, unknown>)) {
       const s = firstStr(v);
       if (s) return s;
     }
   }
-
   return '';
 }
 
@@ -110,50 +100,63 @@ async function fetchAlmanea(maxPages = 10): Promise<any[]> {
     }
   }
 
-  console.log(`[Almanea] Total: ${products.length}`);
   return products;
 }
 
 async function saveProducts(products: any[]): Promise<any> {
   const sb = createServerClient();
 
-  const rows = products
-    .filter(p => p.name_ar?.trim())
-    .map(p => ({
-      name_ar: p.name_ar.trim(),
-      name_en: p.name_en || p.name_ar.trim(),
+  const unique = new Map<string, any>();
+
+  for (const p of products) {
+    const nameAr = p.name_ar?.trim();
+    if (!nameAr) continue;
+
+    unique.set(nameAr, {
+      name_ar: nameAr,
+      name_en: p.name_en || nameAr,
       brand: p.brand || 'Unknown',
       category: p.category || 'accessories',
       is_active: true,
-    }));
-
-  if (!rows.length) {
-    return {
-      saved: 0,
-      errors: [{ message: 'No valid rows after filtering' }],
-      sampleProduct: products[0] || null,
-    };
+    });
   }
 
+  const rows = Array.from(unique.values());
   let saved = 0;
   const errors: any[] = [];
   const chunkSize = 100;
 
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
+    const names = chunk.map(r => r.name_ar);
 
-    const { data, error } = await sb
+    const { data: existing, error: selectError } = await sb
       .from('products')
-      .upsert(chunk, { onConflict: 'name_ar' })
-      .select('id, name_ar');
+      .select('name_ar')
+      .in('name_ar', names);
 
-    if (error) {
-      console.error('[Products Upsert Error]', error);
-      errors.push(error);
+    if (selectError) {
+      errors.push(selectError);
       continue;
     }
 
-    saved += data?.length || chunk.length;
+    const existingNames = new Set((existing || []).map(r => r.name_ar));
+    const newRows = chunk.filter(r => !existingNames.has(r.name_ar));
+
+    if (!newRows.length) continue;
+
+    const { data, error } = await sb
+      .from('products')
+      .insert(newRows)
+      .select('id, name_ar');
+
+    if (error) {
+      errors.push(error);
+      console.error('[Products Insert Error]', error);
+      continue;
+    }
+
+    saved += data?.length || newRows.length;
   }
 
   return {
@@ -175,12 +178,10 @@ export async function GET(request: NextRequest) {
   const sync = url.searchParams.get('sync');
   const pages = Number(url.searchParams.get('pages') || 10);
 
-  console.log('[Cron GET]', { version: VERSION, build: BUILD_SHA, slug, sync, pages });
-
   if (!slug) {
     return json({
       status: 'ok',
-      mode: 'no-image',
+      mode: 'no-conflict',
       stores: STORES.map(s => s.slug),
     });
   }
@@ -191,7 +192,7 @@ export async function GET(request: NextRequest) {
 
     return json({
       success: true,
-      mode: sync ? 'sync-no-image' : 'fetch-only',
+      mode: sync ? 'sync-no-conflict' : 'fetch-only',
       store: 'almanea-direct',
       fetched: products.length,
       saved: saveResult.saved,
@@ -210,17 +211,17 @@ export async function POST(request: NextRequest) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  const almaneaProducts = await fetchAlmanea(10);
-  const saveResult = await saveProducts(almaneaProducts);
+  const products = await fetchAlmanea(10);
+  const saveResult = await saveProducts(products);
 
   return json({
     success: true,
-    mode: 'no-image',
+    mode: 'no-conflict',
     total_saved: saveResult.saved,
     saveResult,
     results: {
       almanea: {
-        fetched: almaneaProducts.length,
+        fetched: products.length,
         saved: saveResult.saved,
       },
     },
