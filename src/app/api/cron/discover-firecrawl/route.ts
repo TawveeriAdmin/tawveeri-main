@@ -8,7 +8,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-09-v11-stateful';
+const VERSION = 'tawveeri-cron-2026-06-11-v12-memory';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
@@ -50,6 +50,80 @@ async function updateSyncState(storeName: string, updates: Record<string, any>) 
    ...updates,
    updated_at: new Date().toISOString(),
  }, { onConflict: 'store_name' });
+}
+
+// ── Memory Layer (dual-write — معزولة، لا توقف الـ sync أبداً) ──
+async function writeRawObservations(products: any[]): Promise<number> {
+ try {
+   const sb = createServerClient();
+   const rows = products.map(p => ({
+     store_name: 'المنيع',
+     source_method: 'algolia',
+     raw_name: p.name_ar,
+     raw_url: p.product_url,
+     price: p.current_price,
+     original_price: p.original_price,
+     availability: p.availability,
+     payload: p._raw ?? null,
+   }));
+   if (!rows.length) return 0;
+   const { error } = await sb.from('raw_observations').insert(rows);
+   if (error) { console.error('[memory:raw]', error.message); return 0; }
+   return rows.length;
+ } catch (e: any) {
+   console.error('[memory:raw:fatal]', String(e?.message || e));
+   return 0;
+ }
+}
+
+async function ensureCanonicalProduct(nameAr: string, p: any): Promise<string | null> {
+ try {
+   const sb = createServerClient();
+   const { data: existing } = await sb
+     .from('canonical_products')
+     .select('id')
+     .eq('name_ar', nameAr)
+     .maybeSingle();
+   if (existing?.id) return existing.id;
+
+   const { data: inserted, error } = await sb
+     .from('canonical_products')
+     .insert({
+       name_ar: nameAr,
+       name_en: p.name_en || nameAr,
+       brand: p.brand || 'Unknown',
+       category: p.category || 'accessories',
+     })
+     .select('id')
+     .single();
+   if (error || !inserted?.id) {
+     if (error) console.error('[memory:canonical]', error.message);
+     return null;
+   }
+   return inserted.id;
+ } catch (e: any) {
+   console.error('[memory:canonical:fatal]', String(e?.message || e));
+   return null;
+ }
+}
+
+async function writePriceSnapshot(canonicalId: string, p: any): Promise<boolean> {
+ try {
+   const sb = createServerClient();
+   const { error } = await sb.from('price_history').insert({
+     canonical_product_id: canonicalId,
+     store_name: 'المنيع',
+     price: p.current_price,
+     original_price: p.original_price || null,
+     effective_price: p.current_price,
+     availability: p.availability || 'in_stock',
+   });
+   if (error) { console.error('[memory:price]', error.message); return false; }
+   return true;
+ } catch (e: any) {
+   console.error('[memory:price:fatal]', String(e?.message || e));
+   return false;
+ }
 }
 
 // ── Fetch ────────────────────────────────────────────────────
@@ -115,6 +189,7 @@ async function fetchAlmanea(startPage = 0, maxItems = BATCH_SIZE): Promise<{ pro
            original_price: originalPrice > price ? originalPrice : null,
            product_url: productUrl,
            availability: hasStock ? 'in_stock' : 'out_of_stock',
+           _raw: hit,
          });
        }
        if (p + 1 >= (data.nbPages ?? 0)) break;
@@ -143,6 +218,7 @@ async function saveProducts(products: any[]): Promise<any> {
  const rows = Array.from(unique.values());
  let savedProducts = 0;
  let savedStores = 0;
+ let memorySnapshots = 0;
  const errors: any[] = [];
 
  for (const p of rows) {
@@ -173,12 +249,23 @@ async function saveProducts(products: any[]): Promise<any> {
 
      if (storeErr) { errors.push({ step: 'upsert_store', error: storeErr }); continue; }
      savedStores++;
+
+     // ── Memory Layer: canonical + price snapshot (معزولة) ──
+     try {
+       const canonicalId = await ensureCanonicalProduct(nameAr, p);
+       if (canonicalId) {
+         const ok = await writePriceSnapshot(canonicalId, p);
+         if (ok) memorySnapshots++;
+       }
+     } catch (memErr: any) {
+       console.error('[memory:loop]', String(memErr?.message || memErr));
+     }
    } catch (e: any) {
      errors.push({ step: 'fatal', error: String(e?.message || e) });
    }
  }
 
- return { saved: savedProducts, savedProducts, savedStores, errors: errors.length ? errors.slice(0, 3) : undefined, totalRows: rows.length };
+ return { saved: savedProducts, savedProducts, savedStores, memorySnapshots, errors: errors.length ? errors.slice(0, 3) : undefined, totalRows: rows.length };
 }
 
 // ── Routes ───────────────────────────────────────────────────
@@ -196,6 +283,8 @@ export async function GET(request: NextRequest) {
 
  if (slug === 'almanea-direct') {
    const { products } = await fetchAlmanea(0, limit);
+   let rawWritten = 0;
+   if (sync) rawWritten = await writeRawObservations(products);
    const saveResult = sync ? await saveProducts(products) : { saved: 0, note: 'add &sync=1 to save' };
    return json({
      success: true,
@@ -203,8 +292,9 @@ export async function GET(request: NextRequest) {
      store: 'almanea-direct',
      fetched: products.length,
      saved: saveResult.saved,
+     rawWritten,
      saveResult,
-     sampleFetched: products[0] || null,
+     sampleFetched: products[0] ? { ...products[0], _raw: undefined } : null,
    });
  }
 
@@ -216,11 +306,9 @@ export async function POST(request: NextRequest) {
  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`)
    return json({ error: 'Unauthorized' }, 401);
 
- // جلب حالة الـ sync
  const state = await getSyncState('المنيع');
  const nextPage = state?.next_page ?? 0;
 
- // تحديث الحالة: جاري
  await updateSyncState('المنيع', {
    status: 'syncing',
    last_started_at: new Date().toISOString(),
@@ -228,12 +316,15 @@ export async function POST(request: NextRequest) {
 
  try {
    const { products, nextPage: newNextPage, done } = await fetchAlmanea(nextPage, BATCH_SIZE);
+
+   // ── Memory Layer: raw observations (معزولة) ──
+   const rawWritten = await writeRawObservations(products);
+
    const saveResult = await saveProducts(products);
 
-   // تحديث الحالة بعد الانتهاء
    await updateSyncState('المنيع', {
      status: done ? 'completed' : 'syncing',
-     next_page: done ? 0 : newNextPage, // إذا انتهى يرجع من البداية
+     next_page: done ? 0 : newNextPage,
      last_finished_at: new Date().toISOString(),
      total_fetched: (state?.total_fetched ?? 0) + products.length,
      total_saved: (state?.total_saved ?? 0) + saveResult.savedProducts,
@@ -242,7 +333,13 @@ export async function POST(request: NextRequest) {
 
    return json({
      success: true,
-     batch: { fetched: products.length, savedProducts: saveResult.savedProducts, savedStores: saveResult.savedStores },
+     batch: {
+       fetched: products.length,
+       savedProducts: saveResult.savedProducts,
+       savedStores: saveResult.savedStores,
+       rawWritten,
+       memorySnapshots: saveResult.memorySnapshots,
+     },
      nextPage: done ? 0 : newNextPage,
      done,
      totalFetchedSoFar: (state?.total_fetched ?? 0) + products.length,
