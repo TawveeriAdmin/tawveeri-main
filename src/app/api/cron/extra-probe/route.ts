@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-// Probe نهائي: جلب صفحة فئة حقيقية + استخراج بنية بطاقة المنتج
+// Probe: استخراج مقطع HTML خام حول أول بطاقة منتج لتحديد البنية الكاملة
 export async function GET() {
   const url = 'https://www.extra.com/ar-sa/white-goods/air-conditioner/cp/4-402?pageSize=24&pg=0';
   const controller = new AbortController();
@@ -22,24 +22,21 @@ export async function GET() {
     });
     const html = await res.text();
 
-    // ابحث عن JSON-LD المنتجات (Hybris غالباً يحقنه — أنظف من CSS)
-    const ldMatches = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g) || [];
-    const ldSamples = ldMatches.slice(0, 3).map(m => m.replace(/<[^>]+>/g, '').slice(0, 400));
+    // أول ظهور لـ product-price: نقتطع 1500 حرف قبله و500 بعده
+    // هذا يكشف بطاقة المنتج كاملة: الحاوية، الاسم، الرابط، الكود
+    const idx = html.indexOf('product-price');
+    const snippet = idx > -1
+      ? html.slice(Math.max(0, idx - 1500), idx + 500)
+      : 'product-price not found';
 
-    // ابحث عن أنماط بطاقة المنتج الشائعة في Hybris
-    const hasProductTile = /class="[^"]*product[^"]*tile/i.test(html);
-    const hasItemCode = /data-product-code|data-code|data-sku/i.test(html);
-    const priceClasses = (html.match(/class="[^"]*price[^"]*"/gi) || []).slice(0, 5);
+    // وأيضاً: أي data-attributes للمنتجات (Hybris يحب data-product-*)
+    const dataAttrs = [...new Set(html.match(/data-[a-z-]*(?:product|code|sku|price|name)[a-z-]*/gi) || [])].slice(0, 15);
 
     return NextResponse.json({
-      probe: 'extra-final',
+      probe: 'extra-snippet',
       status: res.status,
-      htmlLength: html.length,
-      jsonLdFound: ldMatches.length,
-      jsonLdSamples: ldSamples,
-      hasProductTile,
-      hasItemCode,
-      priceClassSamples: priceClasses,
+      snippet,
+      dataAttributes: dataAttrs,
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e: any) {
     return NextResponse.json({ error: e?.name === 'AbortError' ? 'timeout' : String(e?.message || e) });
