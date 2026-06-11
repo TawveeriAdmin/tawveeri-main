@@ -8,13 +8,22 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-11-v12-memory';
+const VERSION = 'tawveeri-cron-2026-06-11-v13-noon';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
 const AR_INDEX = 'prod_headless_ar_products';
 const CATEGORY_IDS = ['7423','7424','7434','7436','522','7426','7364','523','534','536','538','519'];
 const BATCH_SIZE = 300;
+
+const NOON_API_URL = 'https://www.noon.com/_svc/catalog/api/v3/u/en-sa/search';
+const NOON_CDN = 'https://f.nooncdn.com/p';
+const NOON_BASE = 'https://www.noon.com/saudi-en';
+const NOON_QUERIES = [
+  'smartphone','laptop','television','headphones','tablet','smartwatch',
+  'gaming console','camera','home appliances','kitchen appliances',
+  'refrigerator','air conditioner',
+];
 
 function json(data: Record<string, any>, status = 200) {
  return NextResponse.json(
@@ -30,6 +39,12 @@ function firstStr(val: unknown): string {
  if (Array.isArray(val)) { for (const v of val) { const s = firstStr(v); if (s) return s; } return ''; }
  if (typeof val === 'object') { for (const v of Object.values(val as Record<string, unknown>)) { const s = firstStr(v); if (s) return s; } }
  return '';
+}
+
+function toNum(val: unknown): number | null {
+ if (val === null || val === undefined) return null;
+ const n = typeof val === 'number' ? val : parseFloat(String(val));
+ return isNaN(n) ? null : n;
 }
 
 // ── Sync State ──────────────────────────────────────────────
@@ -52,13 +67,13 @@ async function updateSyncState(storeName: string, updates: Record<string, any>) 
  }, { onConflict: 'store_name' });
 }
 
-// ── Memory Layer (dual-write — معزولة، لا توقف الـ sync أبداً) ──
-async function writeRawObservations(products: any[]): Promise<number> {
+// ── Memory Layer (معزولة — لا توقف الـ sync أبداً) ──
+async function writeRawObservations(products: any[], storeName: string): Promise<number> {
  try {
    const sb = createServerClient();
    const rows = products.map(p => ({
-     store_name: 'المنيع',
-     source_method: 'algolia',
+     store_name: storeName,
+     source_method: p._source || 'api',
      raw_name: p.name_ar,
      raw_url: p.product_url,
      price: p.current_price,
@@ -107,12 +122,12 @@ async function ensureCanonicalProduct(nameAr: string, p: any): Promise<string | 
  }
 }
 
-async function writePriceSnapshot(canonicalId: string, p: any): Promise<boolean> {
+async function writePriceSnapshot(canonicalId: string, p: any, storeName: string): Promise<boolean> {
  try {
    const sb = createServerClient();
    const { error } = await sb.from('price_history').insert({
      canonical_product_id: canonicalId,
-     store_name: 'المنيع',
+     store_name: storeName,
      price: p.current_price,
      original_price: p.original_price || null,
      effective_price: p.current_price,
@@ -126,7 +141,7 @@ async function writePriceSnapshot(canonicalId: string, p: any): Promise<boolean>
  }
 }
 
-// ── Fetch ────────────────────────────────────────────────────
+// ── Fetch: Almanea (Algolia) ─────────────────────────────────
 async function fetchAlmanea(startPage = 0, maxItems = BATCH_SIZE): Promise<{ products: any[]; nextPage: number; done: boolean }> {
  const products: any[] = [];
  const seen = new Set<string>();
@@ -190,6 +205,7 @@ async function fetchAlmanea(startPage = 0, maxItems = BATCH_SIZE): Promise<{ pro
            product_url: productUrl,
            availability: hasStock ? 'in_stock' : 'out_of_stock',
            _raw: hit,
+           _source: 'algolia',
          });
        }
        if (p + 1 >= (data.nbPages ?? 0)) break;
@@ -205,8 +221,93 @@ async function fetchAlmanea(startPage = 0, maxItems = BATCH_SIZE): Promise<{ pro
  return { products, nextPage: 0, done };
 }
 
-// ── Save ─────────────────────────────────────────────────────
-async function saveProducts(products: any[]): Promise<any> {
+// ── Fetch: Noon (internal catalog API) ───────────────────────
+// state encoding: next_page = queryIndex * 1000 + page
+async function fetchNoon(startState = 0, maxItems = BATCH_SIZE): Promise<{ products: any[]; nextState: number; done: boolean }> {
+ const products: any[] = [];
+ const seen = new Set<string>();
+ let qIdx = Math.floor(startState / 1000);
+ let startPg = (startState % 1000) || 1;
+
+ for (let i = qIdx; i < NOON_QUERIES.length; i++) {
+   const query = NOON_QUERIES[i];
+   const firstPage = i === qIdx ? startPg : 1;
+
+   for (let pg = firstPage; pg <= 30; pg++) {
+     if (products.length >= maxItems) {
+       return { products, nextState: i * 1000 + pg, done: false };
+     }
+     try {
+       const url = `${NOON_API_URL}?q=${encodeURIComponent(query)}&page=${pg}&limit=50&sort%5Bby%5D=relevance&sort%5Bdir%5D=desc`;
+       const res = await fetch(url, {
+         cache: 'no-store',
+         headers: {
+           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+           'Accept': 'application/json',
+           'x-locale': 'en-sa',
+           'x-platform': 'web',
+           'x-content': 'desktop',
+         },
+       });
+       if (!res.ok) { console.error(`[Noon] HTTP ${res.status} q=${query} p=${pg}`); break; }
+       const data = await res.json();
+       const hits = (data.hits || data.results || data.products || data?.data?.hits || data?.data?.products || []) as any[];
+       if (!hits.length) break;
+
+       for (const item of hits) {
+         if (products.length >= maxItems) return { products, nextState: i * 1000 + pg, done: false };
+         const title = String(item.name || item.title || '').trim();
+         if (!title || title.length < 3) continue;
+         const sku = String(item.sku || item.id || item.product_id || '');
+         if (!sku || seen.has(sku)) continue;
+         seen.add(sku);
+
+         let price: number | null = null;
+         let originalPrice: number | null = null;
+         const pd = item.price;
+         if (pd && typeof pd === 'object') {
+           price = toNum(pd.now ?? pd.current ?? pd.price);
+           originalPrice = toNum(pd.was ?? pd.original);
+         } else {
+           price = toNum(item.sale_price ?? pd);
+           if (item.sale_price && typeof item.price === 'number' && item.price !== item.sale_price) {
+             originalPrice = toNum(item.price);
+           }
+         }
+         if (!price || price <= 0) continue;
+
+         const slug = String(item.slug || item.url_key || '');
+         let productUrl = '';
+         if (slug && sku) productUrl = `${NOON_BASE}/${slug}/${sku}/p/`;
+         else if (sku) productUrl = `${NOON_BASE}/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}/${sku}/p/`;
+         if (!productUrl) continue;
+
+         products.push({
+           name_ar: title,
+           name_en: title,
+           brand: String(item.brand || item.brand_name || 'Unknown'),
+           category: 'accessories',
+           current_price: price,
+           original_price: originalPrice && originalPrice > price ? originalPrice : null,
+           product_url: productUrl,
+           availability: (item.in_stock === false || item.is_available === false) ? 'out_of_stock' : 'in_stock',
+           _raw: item,
+           _source: 'noon_api',
+         });
+       }
+       await new Promise(r => setTimeout(r, 400));
+     } catch (err) {
+       console.error('[Noon]', err);
+       break;
+     }
+   }
+ }
+
+ return { products, nextState: 0, done: true };
+}
+
+// ── Save (لأي متجر) ──────────────────────────────────────────
+async function saveProducts(products: any[], storeName: string): Promise<any> {
  const sb = createServerClient();
  const unique = new Map<string, any>();
  for (const p of products) {
@@ -239,7 +340,7 @@ async function saveProducts(products: any[]): Promise<any> {
 
      const { error: storeErr } = await sb.from('product_stores').upsert({
        product_id: productId,
-       store_name: 'المنيع',
+       store_name: storeName,
        current_price: p.current_price,
        original_price: p.original_price || null,
        product_url: p.product_url,
@@ -250,11 +351,10 @@ async function saveProducts(products: any[]): Promise<any> {
      if (storeErr) { errors.push({ step: 'upsert_store', error: storeErr }); continue; }
      savedStores++;
 
-     // ── Memory Layer: canonical + price snapshot (معزولة) ──
      try {
        const canonicalId = await ensureCanonicalProduct(nameAr, p);
        if (canonicalId) {
-         const ok = await writePriceSnapshot(canonicalId, p);
+         const ok = await writePriceSnapshot(canonicalId, p, storeName);
          if (ok) memorySnapshots++;
        }
      } catch (memErr: any) {
@@ -268,32 +368,74 @@ async function saveProducts(products: any[]): Promise<any> {
  return { saved: savedProducts, savedProducts, savedStores, memorySnapshots, errors: errors.length ? errors.slice(0, 3) : undefined, totalRows: rows.length };
 }
 
+// ── Sync runner لكل متجر ─────────────────────────────────────
+async function runStoreSync(storeName: string, fetcher: (start: number, max: number) => Promise<{ products: any[]; nextState?: number; nextPage?: number; done: boolean }>) {
+ const state = await getSyncState(storeName);
+ const start = state?.next_page ?? 0;
+
+ await updateSyncState(storeName, {
+   status: 'syncing',
+   last_started_at: new Date().toISOString(),
+ });
+
+ const result = await fetcher(start, BATCH_SIZE);
+ const next = (result as any).nextState ?? (result as any).nextPage ?? 0;
+ const rawWritten = await writeRawObservations(result.products, storeName);
+ const saveResult = await saveProducts(result.products, storeName);
+
+ await updateSyncState(storeName, {
+   status: result.done ? 'completed' : 'syncing',
+   next_page: result.done ? 0 : next,
+   last_finished_at: new Date().toISOString(),
+   total_fetched: (state?.total_fetched ?? 0) + result.products.length,
+   total_saved: (state?.total_saved ?? 0) + saveResult.savedProducts,
+   last_error: null,
+ });
+
+ return {
+   store: storeName,
+   fetched: result.products.length,
+   savedProducts: saveResult.savedProducts,
+   savedStores: saveResult.savedStores,
+   rawWritten,
+   memorySnapshots: saveResult.memorySnapshots,
+   done: result.done,
+ };
+}
+
 // ── Routes ───────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
  const url = new URL(request.url);
  const slug = url.searchParams.get('store_slug');
  const sync = url.searchParams.get('sync');
- const pages = Math.min(Number(url.searchParams.get('pages') || 1), 2);
  const limit = Math.min(Number(url.searchParams.get('limit') || 50), 200);
 
  if (!slug) {
-   const state = await getSyncState('المنيع');
-   return json({ status: 'ok', stores: ['almanea-direct'], syncState: state });
+   const almanea = await getSyncState('المنيع');
+   const noon = await getSyncState('نون');
+   return json({ status: 'ok', stores: ['almanea-direct', 'noon-direct'], syncState: { almanea, noon } });
  }
 
  if (slug === 'almanea-direct') {
    const { products } = await fetchAlmanea(0, limit);
    let rawWritten = 0;
-   if (sync) rawWritten = await writeRawObservations(products);
-   const saveResult = sync ? await saveProducts(products) : { saved: 0, note: 'add &sync=1 to save' };
+   if (sync) rawWritten = await writeRawObservations(products, 'المنيع');
+   const saveResult = sync ? await saveProducts(products, 'المنيع') : { saved: 0, note: 'add &sync=1 to save' };
    return json({
-     success: true,
-     mode: sync ? 'sync' : 'fetch-only',
-     store: 'almanea-direct',
-     fetched: products.length,
-     saved: saveResult.saved,
-     rawWritten,
-     saveResult,
+     success: true, mode: sync ? 'sync' : 'fetch-only', store: 'almanea-direct',
+     fetched: products.length, rawWritten, saveResult,
+     sampleFetched: products[0] ? { ...products[0], _raw: undefined } : null,
+   });
+ }
+
+ if (slug === 'noon-direct') {
+   const { products } = await fetchNoon(0, limit);
+   let rawWritten = 0;
+   if (sync) rawWritten = await writeRawObservations(products, 'نون');
+   const saveResult = sync ? await saveProducts(products, 'نون') : { saved: 0, note: 'add &sync=1 to save' };
+   return json({
+     success: true, mode: sync ? 'sync' : 'fetch-only', store: 'noon-direct',
+     fetched: products.length, rawWritten, saveResult,
      sampleFetched: products[0] ? { ...products[0], _raw: undefined } : null,
    });
  }
@@ -306,46 +448,22 @@ export async function POST(request: NextRequest) {
  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`)
    return json({ error: 'Unauthorized' }, 401);
 
- const state = await getSyncState('المنيع');
- const nextPage = state?.next_page ?? 0;
-
- await updateSyncState('المنيع', {
-   status: 'syncing',
-   last_started_at: new Date().toISOString(),
- });
+ const results: any[] = [];
 
  try {
-   const { products, nextPage: newNextPage, done } = await fetchAlmanea(nextPage, BATCH_SIZE);
-
-   // ── Memory Layer: raw observations (معزولة) ──
-   const rawWritten = await writeRawObservations(products);
-
-   const saveResult = await saveProducts(products);
-
-   await updateSyncState('المنيع', {
-     status: done ? 'completed' : 'syncing',
-     next_page: done ? 0 : newNextPage,
-     last_finished_at: new Date().toISOString(),
-     total_fetched: (state?.total_fetched ?? 0) + products.length,
-     total_saved: (state?.total_saved ?? 0) + saveResult.savedProducts,
-     last_error: null,
-   });
-
-   return json({
-     success: true,
-     batch: {
-       fetched: products.length,
-       savedProducts: saveResult.savedProducts,
-       savedStores: saveResult.savedStores,
-       rawWritten,
-       memorySnapshots: saveResult.memorySnapshots,
-     },
-     nextPage: done ? 0 : newNextPage,
-     done,
-     totalFetchedSoFar: (state?.total_fetched ?? 0) + products.length,
-   });
+   results.push(await runStoreSync('المنيع', (s, m) => fetchAlmanea(s, m)));
  } catch (e: any) {
    await updateSyncState('المنيع', { status: 'failed', last_error: String(e?.message || e) });
-   return json({ success: false, error: String(e?.message || e) }, 500);
+   results.push({ store: 'المنيع', error: String(e?.message || e) });
  }
+
+ try {
+   results.push(await runStoreSync('نون', (s, m) => fetchNoon(s, m)));
+ } catch (e: any) {
+   await updateSyncState('نون', { status: 'failed', last_error: String(e?.message || e) });
+   results.push({ store: 'نون', error: String(e?.message || e) });
+ }
+
+ const anySuccess = results.some(r => !r.error);
+ return json({ success: anySuccess, results }, anySuccess ? 200 : 500);
 }
