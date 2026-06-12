@@ -5,8 +5,8 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1';
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || '';
+const VERSION = 'tawveeri-match-2026-06-13-v1.1-bilingual';
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const MAX_OFFERS = 30;
 
@@ -19,32 +19,62 @@ function json(data: Record<string, any>, status = 200) {
   return NextResponse.json({ version: VERSION, ...data }, { status, headers: { 'Cache-Control': 'no-store' } });
 }
 
-const clean = (s: string) => s.replace(/[%_]/g, ' ').trim();
+const clean = (s: string) => s.replace(/[%_,()]/g, ' ').replace(/\s+/g, ' ').trim();
 const arDigits = (s: string) => s.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
 
-// ── 1) مرشّحون من المخزون الحي ─────────────────────────────
+// ── الجسر اللغوي: عربي ⇄ إنجليزي ────────────────────────────
+const AR_EN: Record<string, string[]> = {
+  'مكيف': ['split ac', 'air conditioner', 'ac'], 'سبليت': ['split'], 'شباك': ['window'],
+  'ثلاجة': ['refrigerator', 'fridge'], 'فريزر': ['freezer'], 'غسالة': ['washer', 'washing machine'],
+  'نشافة': ['dryer'], 'جوال': ['phone', 'smartphone'], 'تلفزيون': ['tv', 'television'],
+  'شاشة': ['tv', 'monitor'], 'لابتوب': ['laptop', 'notebook'], 'سماعة': ['headphone', 'earbuds', 'speaker'],
+  'سماعات': ['headphones', 'earbuds'], 'مكنسة': ['vacuum'], 'مايكروويف': ['microwave'], 'ميكروويف': ['microwave'],
+  'فرن': ['oven'], 'تابلت': ['tablet'], 'ساعة': ['watch'], 'ذكية': ['smart'], 'كاميرا': ['camera'],
+  'ايفون': ['iphone'], 'آيفون': ['iphone'], 'جالكسي': ['galaxy'], 'جلكسي': ['galaxy'],
+  'برو': ['pro'], 'ماكس': ['max'], 'بلس': ['plus'], 'الترا': ['ultra'], 'ميني': ['mini'], 'اير': ['air'],
+  'سامسونج': ['samsung'], 'ابل': ['apple'], 'آبل': ['apple'], 'شاومي': ['xiaomi'], 'هواوي': ['huawei'],
+  'سوني': ['sony'], 'هايسنس': ['hisense'], 'توشيبا': ['toshiba'], 'ميديا': ['midea'], 'هاير': ['haier'],
+  'جري': ['gree'], 'دايكن': ['daikin'], 'لينوفو': ['lenovo'], 'ديل': ['dell'], 'اسوس': ['asus'],
+  'ايسر': ['acer'], 'انكر': ['anker'], 'بوز': ['bose'], 'نوت': ['note'], 'بكسل': ['pixel'],
+};
+const EN_AR: Record<string, string[]> = {};
+for (const [ar, ens] of Object.entries(AR_EN))
+  for (const en of ens) { (EN_AR[en] ||= []).push(ar); }
+EN_AR['lg'] = ['ال جي', 'إل جي']; AR_EN['ال جي'] = ['lg']; AR_EN['إل جي'] = ['lg'];
+EN_AR['classpro'] = ['كلاس برو']; AR_EN['كلاس برو'] = ['classpro', 'class pro'];
+
+function expand(token: string): string[] {
+  const t = token.toLowerCase();
+  const out = new Set<string>([token]);
+  for (const v of AR_EN[t] || []) out.add(v);
+  for (const v of EN_AR[t] || []) out.add(v);
+  // أرقام: "17500" يبحث أيضاً كـ"17 500" (صيغة اكسترا)
+  if (/^\d{4,6}$/.test(t)) out.add(`${t.slice(0, -3)} ${t.slice(-3)}`);
+  return [...out];
+}
+
+// ── 1) مرشّحون — بحث ثنائي اللغة ────────────────────────────
 async function findCandidates(qRaw: string): Promise<Offer[]> {
   const sb = createServerClient();
   const q = clean(arDigits(qRaw));
   const sel = 'id,name_ar,name_en,brand,product_stores!inner(store_name,current_price,original_price,product_url)';
   const seen = new Map<string, any>();
-
   const grab = (rows: any[] | null) => { for (const r of rows || []) if (!seen.has(r.id)) seen.set(r.id, r); };
 
-  const { data: full } = await sb.from('products').select(sel)
-    .or(`name_ar.ilike.%${q}%,name_en.ilike.%${q}%`).limit(25);
-  grab(full);
-
-  if (seen.size < 6) {
-    const tokens = q.split(/\s+/).filter(t => t.length >= 2).slice(0, 4);
-    if (tokens.length > 1) {
-      let qa = sb.from('products').select(sel);
-      for (const t of tokens) qa = qa.ilike('name_ar', `%${t}%`);
-      grab((await qa.limit(20)).data);
-      let qe = sb.from('products').select(sel);
-      for (const t of tokens) qe = qe.ilike('name_en', `%${t}%`);
-      grab((await qe.limit(20)).data);
+  const tokens = q.split(/\s+/).filter(t => t.length >= 2).slice(0, 5);
+  if (tokens.length) {
+    // AND عبر الكلمات، OR داخل ترجمات كل كلمة — استعلام واحد ذكي
+    let qq = sb.from('products').select(sel);
+    for (const t of tokens) {
+      const ors = expand(t).flatMap(v => [`name_ar.ilike.%${v}%`, `name_en.ilike.%${v}%`]).join(',');
+      qq = qq.or(ors);
     }
+    grab((await qq.limit(30)).data);
+  }
+  if (seen.size < 4) {
+    const { data } = await sb.from('products').select(sel)
+      .or(`name_ar.ilike.%${q}%,name_en.ilike.%${q}%`).limit(20);
+    grab(data);
   }
 
   const offers: Offer[] = [];
@@ -68,7 +98,7 @@ async function canonicalMap(names: string[]): Promise<Map<string, string>> {
   return map;
 }
 
-// ── 3) القاموس: روابط محفوظة (union-find) ──────────────────
+// ── 3) القاموس المحفوظ (union-find) ─────────────────────────
 async function dictionaryGroups(cids: string[]): Promise<Map<string, string>> {
   const sb = createServerClient();
   const parent = new Map<string, string>();
@@ -84,17 +114,18 @@ async function dictionaryGroups(cids: string[]): Promise<Map<string, string>> {
   return parent;
 }
 
-// ── 4) وفّر يحكم (Claude API + prompt caching) ─────────────
+// ── 4) حكم وفّر ──────────────────────────────────────────────
 const SYSTEM = `أنت محرك مطابقة منتجات لمنصة توفيري السعودية. تقرر أي العروض تمثل نفس المنتج الفيزيائي عبر متاجر مختلفة.
 قواعد صارمة:
 1. نفس الماركة شرط أساسي. الماركة العربية تكافئ الإنجليزية (سامسونج=Samsung، كلاس برو=ClassPro، هايسنس=HISENSE، ال جي=LG، ميديا=Midea، هاير=Haier).
-2. أرقام السعة/الموديل/المقاس يجب أن تتطابق تماماً. "17 500" تعني 17500. 17500 ≠ 20500 ≠ 18000 — رقم مختلف = منتج مختلف، حتى لو تشابه كل شيء آخر.
+2. أرقام السعة/الموديل/المقاس يجب أن تتطابق تماماً. "17 500" تعني 17500. 17500 ≠ 20500 ≠ 18000 — رقم مختلف = منتج مختلف.
 3. الاسم العربي والإنجليزي لنفس المنتج يتطابقان: "مكيف سامسونج سبليت ١٨٠٠٠" = "Samsung Split AC 18 000 BTU".
-4. فرق سعر أكبر من 40% بين عرضين = خفّض الثقة تحت 0.8 إلا إذا تطابق الموديل حرفياً.
-5. لا تطابق إلا بيقين. الشك = لا تجمع.
-أرجع JSON فقط بلا أي نص آخر:
+4. اختلاف النوع (بارد فقط ≠ حار وبارد) أو التقنية (WindFree ≠ Digital Inverter) = منتجات مختلفة.
+5. فرق سعر أكبر من 40% = خفّض الثقة تحت 0.8 إلا بتطابق الموديل حرفياً.
+6. الشك = لا تجمع.
+أرجع JSON فقط:
 {"groups":[{"ids":["..."],"label_ar":"اسم موحّد مختصر","confidence":0.95,"reason_ar":"سبب موجز"}],"summary_ar":"جملة سعودية ودودة تلخص أفضل سعر"}
-ids فقط من القائمة المعطاة. مجموعة = منتج واحد بعدة عروض.`;
+ids فقط من القائمة المعطاة.`;
 
 async function waffarJudge(offers: Offer[]): Promise<any | null> {
   if (!ANTHROPIC_KEY) return null;
@@ -116,7 +147,7 @@ async function waffarJudge(offers: Offer[]): Promise<any | null> {
   catch { console.error('[match:parse]', text.slice(0, 300)); return null; }
 }
 
-// ── 5) الحفظ: المطابقة تصير ذاكرة دائمة ────────────────────
+// ── 5) الحفظ في القاموس الدائم ──────────────────────────────
 async function saveLinks(groups: any[], nameToCid: Map<string, string>, offers: Offer[]): Promise<number> {
   const sb = createServerClient();
   const byId = new Map(offers.map(o => [o.product_id, o]));
@@ -151,7 +182,6 @@ export async function GET(request: NextRequest) {
   const cids = [...new Set([...nameToCid.values()])];
   const parent = await dictionaryGroups(cids);
 
-  // مجموعات القاموس (عابرة المتاجر فقط)
   const cidToOffers = new Map<string, Offer[]>();
   for (const o of offers) {
     const cid = nameToCid.get(o.name_ar); if (!cid) continue;
@@ -168,7 +198,6 @@ export async function GET(request: NextRequest) {
     groups.push({ source: 'dictionary', label_ar: members[0].name_ar, confidence: 1, offers: members.map((m, i) => ({ ...m, cheapest: i === 0 })) });
   }
 
-  // الباقي → حكم وفّر (لو السر صحيح وفيه متجرين+)
   let llmUsed = false, savedLinks = 0, summary_ar: string | null = null;
   const rest = offers.filter(o => !grouped.has(o.product_id));
   const authorized = !!secret && secret === process.env.CRON_SECRET;
