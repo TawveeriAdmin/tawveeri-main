@@ -5,9 +5,10 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.1-bilingual';
+const VERSION = 'tawveeri-match-2026-06-13-v1.2';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
+const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
 const MAX_OFFERS = 30;
 
 type Offer = {
@@ -30,7 +31,7 @@ const AR_EN: Record<string, string[]> = {
   'شاشة': ['tv', 'monitor'], 'لابتوب': ['laptop', 'notebook'], 'سماعة': ['headphone', 'earbuds', 'speaker'],
   'سماعات': ['headphones', 'earbuds'], 'مكنسة': ['vacuum'], 'مايكروويف': ['microwave'], 'ميكروويف': ['microwave'],
   'فرن': ['oven'], 'تابلت': ['tablet'], 'ساعة': ['watch'], 'ذكية': ['smart'], 'كاميرا': ['camera'],
-  'ايفون': ['iphone'], 'آيفون': ['iphone'], 'جالكسي': ['galaxy'], 'جلكسي': ['galaxy'],
+  'ايفون': ['iphone'], 'آيفون': ['iphone'], 'جالكسي': ['galaxy'], 'جلكسي': ['galaxy'], 'جالاكسي': ['galaxy'],
   'برو': ['pro'], 'ماكس': ['max'], 'بلس': ['plus'], 'الترا': ['ultra'], 'ميني': ['mini'], 'اير': ['air'],
   'سامسونج': ['samsung'], 'ابل': ['apple'], 'آبل': ['apple'], 'شاومي': ['xiaomi'], 'هواوي': ['huawei'],
   'سوني': ['sony'], 'هايسنس': ['hisense'], 'توشيبا': ['toshiba'], 'ميديا': ['midea'], 'هاير': ['haier'],
@@ -48,12 +49,11 @@ function expand(token: string): string[] {
   const out = new Set<string>([token]);
   for (const v of AR_EN[t] || []) out.add(v);
   for (const v of EN_AR[t] || []) out.add(v);
-  // أرقام: "17500" يبحث أيضاً كـ"17 500" (صيغة اكسترا)
   if (/^\d{4,6}$/.test(t)) out.add(`${t.slice(0, -3)} ${t.slice(-3)}`);
   return [...out];
 }
 
-// ── 1) مرشّحون — بحث ثنائي اللغة ────────────────────────────
+// ── 1) مرشّحون — بحث ثنائي اللغة + توازن بين المتاجر ─────────
 async function findCandidates(qRaw: string): Promise<Offer[]> {
   const sb = createServerClient();
   const q = clean(arDigits(qRaw));
@@ -63,29 +63,39 @@ async function findCandidates(qRaw: string): Promise<Offer[]> {
 
   const tokens = q.split(/\s+/).filter(t => t.length >= 2).slice(0, 5);
   if (tokens.length) {
-    // AND عبر الكلمات، OR داخل ترجمات كل كلمة — استعلام واحد ذكي
     let qq = sb.from('products').select(sel);
     for (const t of tokens) {
       const ors = expand(t).flatMap(v => [`name_ar.ilike.%${v}%`, `name_en.ilike.%${v}%`]).join(',');
       qq = qq.or(ors);
     }
-    grab((await qq.limit(30)).data);
+    grab((await qq.limit(60)).data);
   }
   if (seen.size < 4) {
     const { data } = await sb.from('products').select(sel)
-      .or(`name_ar.ilike.%${q}%,name_en.ilike.%${q}%`).limit(20);
+      .or(`name_ar.ilike.%${q}%,name_en.ilike.%${q}%`).limit(30);
     grab(data);
   }
 
-  const offers: Offer[] = [];
+  const all: Offer[] = [];
   for (const p of seen.values())
     for (const s of p.product_stores || [])
-      offers.push({
+      all.push({
         product_id: p.id, name_ar: p.name_ar, name_en: p.name_en, brand: p.brand,
         store_name: s.store_name, price: Number(s.current_price),
         original_price: s.original_price ? Number(s.original_price) : null, url: s.product_url,
       });
-  return offers.slice(0, MAX_OFFERS);
+
+  // توازن: round-robin بين المتاجر حتى السقف — يضمن حضور كل المتاجر
+  const byStore = new Map<string, Offer[]>();
+  for (const o of all) { if (!byStore.has(o.store_name)) byStore.set(o.store_name, []); byStore.get(o.store_name)!.push(o); }
+  const buckets = [...byStore.values()];
+  const balanced: Offer[] = [];
+  for (let i = 0; balanced.length < MAX_OFFERS; i++) {
+    let added = false;
+    for (const b of buckets) if (b[i]) { balanced.push(b[i]); added = true; if (balanced.length >= MAX_OFFERS) break; }
+    if (!added) break;
+  }
+  return balanced;
 }
 
 // ── 2) جسر الهوية: products ⇄ canonical_products ───────────
@@ -119,8 +129,8 @@ const SYSTEM = `أنت محرك مطابقة منتجات لمنصة توفير�
 قواعد صارمة:
 1. نفس الماركة شرط أساسي. الماركة العربية تكافئ الإنجليزية (سامسونج=Samsung، كلاس برو=ClassPro، هايسنس=HISENSE، ال جي=LG، ميديا=Midea، هاير=Haier).
 2. أرقام السعة/الموديل/المقاس يجب أن تتطابق تماماً. "17 500" تعني 17500. 17500 ≠ 20500 ≠ 18000 — رقم مختلف = منتج مختلف.
-3. الاسم العربي والإنجليزي لنفس المنتج يتطابقان: "مكيف سامسونج سبليت ١٨٠٠٠" = "Samsung Split AC 18 000 BTU".
-4. اختلاف النوع (بارد فقط ≠ حار وبارد) أو التقنية (WindFree ≠ Digital Inverter) = منتجات مختلفة.
+3. الاسم العربي والإنجليزي لنفس المنتج يتطابقان: "جالاكسي اس 25 الترا 256 جيجا" = "Galaxy S25 Ultra 256GB".
+4. اختلاف النوع (بارد فقط ≠ حار وبارد) أو السعة (128 ≠ 256 جيجا) = منتجات مختلفة. اختلاف اللون فقط مع تطابق كل شيء = نفس المنتج.
 5. فرق سعر أكبر من 40% = خفّض الثقة تحت 0.8 إلا بتطابق الموديل حرفياً.
 6. الشك = لا تجمع.
 أرجع JSON فقط:
@@ -171,11 +181,11 @@ async function saveLinks(groups: any[], nameToCid: Map<string, string>, offers: 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const q = url.searchParams.get('q')?.trim();
-  const secret = url.searchParams.get('secret');
-  if (!q) return json({ usage: '/api/match?q=اسم المنتج — أضف &secret=... لتفعيل حكم وفّر' });
+  const secret = url.searchParams.get('secret')?.trim();
+  if (!q) return json({ usage: '/api/match?q=اسم المنتج — أضف &secret=... لتفعيل حكم وفّر', secretConfigured: !!SECRET });
 
   const offers = await findCandidates(q);
-  if (!offers.length) return json({ q, offers: 0, groups: [], note: 'لا نتائج في المخزون' });
+  if (!offers.length) return json({ q, offers: 0, groups: [], secretConfigured: !!SECRET, note: 'لا نتائج في المخزون' });
 
   const names = [...new Set(offers.map(o => o.name_ar))];
   const nameToCid = await canonicalMap(names);
@@ -200,7 +210,7 @@ export async function GET(request: NextRequest) {
 
   let llmUsed = false, savedLinks = 0, summary_ar: string | null = null;
   const rest = offers.filter(o => !grouped.has(o.product_id));
-  const authorized = !!secret && secret === process.env.CRON_SECRET;
+  const authorized = !!secret && !!SECRET && secret === SECRET;
   if (authorized && new Set(rest.map(o => o.store_name)).size >= 2) {
     const verdict = await waffarJudge(rest);
     if (verdict) {
@@ -218,5 +228,5 @@ export async function GET(request: NextRequest) {
   }
 
   const singles = offers.filter(o => !grouped.has(o.product_id));
-  return json({ q, totalOffers: offers.length, llmUsed, llmAuthorized: authorized, savedLinks, summary_ar, groups, singles });
+  return json({ q, totalOffers: offers.length, stores: [...new Set(offers.map(o => o.store_name))].length, secretConfigured: !!SECRET, llmAuthorized: authorized, llmUsed, savedLinks, summary_ar, groups, singles });
 }
