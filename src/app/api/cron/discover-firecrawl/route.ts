@@ -8,7 +8,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const BUILD_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || 'no-sha';
-const VERSION = 'tawveeri-cron-2026-06-12-v14-extra';
+const VERSION = 'tawveeri-cron-2026-06-12-v14.1-extra-ar';
 
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
@@ -142,7 +142,8 @@ async function fetchAlmanea(startPage = 0, maxItems = BATCH_SIZE): Promise<{ pro
          products.push({
            name_ar: nameAr, name_en: nameAr, brand: firstStr(hit.brand) || 'Unknown', category: 'accessories',
            current_price: price, original_price: originalPrice > price ? originalPrice : null,
-           product_url: productUrl, availability: hasStock ? 'in_stock' : 'out_of_stock', _raw: hit, _source: 'algolia',
+           product_url: productUrl, availability: hasStock ? 'in_stock' : 'out_of_stock',
+           barcode: null, _raw: hit, _source: 'algolia',
          });
        }
        if (p + 1 >= (data.nbPages ?? 0)) break;
@@ -162,6 +163,10 @@ async function fetchExtra(startState = 0, maxItems = BATCH_SIZE): Promise<{ prod
  let qIdx = Math.floor(startState / 1000);
  let startPg = (startState % 1000) || 1;
  const ROWS = 50;
+
+ // Unbxd يرجّع كل حقل كـ array أحياناً — هذي تتعامل مع الحالتين
+ const pick = (v: any): string => Array.isArray(v) ? String(v[0] ?? '') : String(v ?? '');
+ const pickNum = (v: any): number | null => toNum(Array.isArray(v) ? v[0] : v);
 
  for (let i = qIdx; i < EXTRA_QUERIES.length; i++) {
    const query = EXTRA_QUERIES[i];
@@ -183,25 +188,33 @@ async function fetchExtra(startState = 0, maxItems = BATCH_SIZE): Promise<{ prod
        if (!items.length) break;
        for (const item of items) {
          if (products.length >= maxItems) return { products, nextState: i * 1000 + pg, done: false, lastError };
-         const title = String(item.title || item.nameAr || item.name || '').trim();
-         if (!title || title.length < 3) continue;
-         const uniqueId = String(item.uniqueId || item.sku || item.productId || item.id || '');
+         const titleEn = pick(item.title) || pick(item.name);
+         const titleAr = pick(item.autosuggest) || titleEn;
+         const name = titleAr.trim();
+         if (!name || name.length < 3) continue;
+         const uniqueId = pick(item.uniqueId) || pick(item.sku) || pick(item._root_) || pick(item.productId);
          if (!uniqueId || seen.has(uniqueId)) continue;
          seen.add(uniqueId);
-         const price = toNum(item.price ?? item.minPrice ?? item.sellingPrice);
+         const price = pickNum(item.basicPriceValueDiscount) ?? pickNum(item.price) ?? pickNum(item.basicPrimePrice);
          if (!price || price <= 0) continue;
-         const wasPrice = toNum(item.wasPrice ?? item.mrp ?? item.listPrice);
-         const brand = String(item.brand || item.brandAr || item.manufacturer || 'Unknown');
-         let productUrl = String(item.productUrl || item.url || '');
+         const wasPrice = pickNum(item.basicPrice) ?? pickNum(item.wasPrice) ?? pickNum(item.mrp);
+         const brandAr = pick(item.brandAr) || pick(item.brand) || 'Unknown';
+         const barcode = pick(item.barcode);
+         let productUrl = pick(item.productUrl) || pick(item.url);
          if (productUrl && productUrl.startsWith('/')) productUrl = `https://www.extra.com${productUrl}`;
          if (!productUrl && uniqueId) productUrl = `https://www.extra.com/ar-sa/p/${uniqueId}`;
          products.push({
-           name_ar: title, name_en: String(item.title_en || item.nameEn || title),
-           brand, category: 'accessories', current_price: price,
+           name_ar: name,
+           name_en: titleEn || name,
+           brand: brandAr,
+           category: 'accessories',
+           current_price: price,
            original_price: wasPrice && wasPrice > price ? wasPrice : null,
            product_url: productUrl,
-           availability: (item.availability === 'false' || item.inStock === false) ? 'out_of_stock' : 'in_stock',
-           _raw: item, _source: 'unbxd_extra',
+           availability: (pick(item.available) === 'false') ? 'out_of_stock' : 'in_stock',
+           barcode: barcode || null,
+           _raw: item,
+           _source: 'unbxd_extra',
          });
        }
        await new Promise(r => setTimeout(r, 300));
