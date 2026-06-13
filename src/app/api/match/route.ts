@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.2';
+const VERSION = 'tawveeri-match-2026-06-13-v1.3';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
@@ -209,7 +209,9 @@ export async function GET(request: NextRequest) {
   }
 
   let llmUsed = false, savedLinks = 0, summary_ar: string | null = null;
-  const rest = offers.filter(o => !grouped.has(o.product_id));
+  // مرحلة البناء: وفّر يحكم على كل العروض لبناء القاموس من الصفر
+  // (لاحقاً نرجّعها إلى: offers.filter(o => !grouped.has(o.product_id)) ليحكم فقط على ما لم يطابقه القاموس)
+  const rest = offers;
   const authorized = !!secret && !!SECRET && secret === SECRET;
   if (authorized && new Set(rest.map(o => o.store_name)).size >= 2) {
     const verdict = await waffarJudge(rest);
