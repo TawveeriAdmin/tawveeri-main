@@ -45,18 +45,15 @@ interface ProductRow {
   product_stores: ProductStoreRow[];
 }
 
+// الهيكلة الموحّدة: اسم المتجر نص مباشر في product_stores (لا join مع stores)
 interface ProductStoreRow {
   id: string;
+  store_name: string | null;
   current_price: number;
   original_price: number | null;
-  availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
+  availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order' | null;
   product_url: string;
-  is_deal: boolean | null;
-  is_free_delivery: boolean | null;
-  delivery_time_days: number | null;
-  delivery_cost: number | null;
   coupon_code: string | null;
-  stores: { slug: string; name_ar: string; name_en: string; average_rating: number | null; total_reviews: number | null } | null;
 }
 
 type DecisionTopMatch = {
@@ -91,7 +88,7 @@ function normalizeArabic(text: string): string {
     .trim();
 }
 
-// ── الجسر اللغوي: عربي → إنجليزي (موسّع، منقول من api/match) ──────
+// ── الجسر اللغوي: عربي → إنجليزي (منقول من api/match) ──────
 const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'جوال': ['phone', 'smartphone', 'mobile'],
   'هاتف': ['phone', 'smartphone', 'mobile'],
@@ -129,7 +126,7 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'اير': ['air'],
 };
 
-// إشارات الملحقات: تُستخدم للترتيب (دفن) فقط — لا للحذف
+// إشارات الملحقات: للترتيب (دفن) فقط — لا للحذف
 const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك'];
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket'];
 
@@ -140,7 +137,7 @@ function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
     ACCESSORY_HINTS_EN.some((h) => en.includes(h));
 }
 
-// إشارة أن المنتج "مكيف رئيسي" — كلمات كاملة لتفادي مطابقة "ac" داخل jacket
+// إشارة "مكيف رئيسي" — كلمات كاملة لتفادي مطابقة ac داخل كلمة أخرى
 function hasACSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
@@ -149,7 +146,6 @@ function hasACSignal(nameAr: string, nameEn: string): boolean {
   return arHit || enHit;
 }
 
-// يبني قائمة كلمات إنجليزية موسّعة من الاستعلام العربي/الإنجليزي
 function expandToEnglish(words: string[]): string[] {
   const out = new Set<string>();
   for (const w of words) {
@@ -161,13 +157,11 @@ function expandToEnglish(words: string[]): string[] {
   return [...out];
 }
 
-function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[]; englishVector: string } {
+function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[] } {
   const normalized = normalizeArabic(raw);
   const words = normalized.split(/\s+/).filter(Boolean);
-  const englishTerms = expandToEnglish(words); // ['split ac','air conditioner','ac', ...]
-  // لـ textSearch نحتاج كلمات مفردة
-  const englishVector = [...new Set(englishTerms.flatMap((p) => p.split(/\s+/)).filter(Boolean))].join(' ');
-  return { arabicQuery: normalized, englishTerms, englishVector };
+  const englishTerms = expandToEnglish(words);
+  return { arabicQuery: normalized, englishTerms };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -175,7 +169,8 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   if (body.category && body.category !== 'all') query = query.eq('category', body.category);
   if (body.brands && body.brands.length > 0) query = query.in('brand', body.brands);
   else if (body.brand) query = query.ilike('brand', body.brand);
-  if (body.stores && body.stores.length > 0) query = query.in('product_stores.stores.slug', body.stores);
+  // فلتر المتجر الآن على الاسم النصي مباشرة (الهيكلة الموحّدة)
+  if (body.stores && body.stores.length > 0) query = query.in('product_stores.store_name', body.stores);
   if (body.availability && body.availability.length > 0) {
     const VALID = ['in_stock', 'out_of_stock', 'limited_stock', 'pre_order'] as const;
     type A = typeof VALID[number];
@@ -184,22 +179,22 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   } else if (body.in_stock_only) {
     query = query.eq('product_stores.availability', 'in_stock');
   }
-  if (body.deals_only) query = query.eq('product_stores.is_deal', true);
-  if (body.free_delivery_only) query = query.eq('product_stores.is_free_delivery', true);
+  // ملاحظة: حذفنا فلاتر product_stores.is_deal و is_free_delivery لأنها غير مضمونة الوجود
+  // في الهيكلة الموحّدة. الخصم يُطبّق لاحقاً عبر فرق السعر في applyPostFilters عند الحاجة.
   if (typeof body.min_price === 'number') query = query.gte('product_stores.current_price', body.min_price);
   if (typeof body.max_price === 'number') query = query.lte('product_stores.current_price', body.max_price);
   return query;
 }
 
-// ── الترتيب: رفع المنتج الأساسي + دفن الملحقات (لا حذف) ──────────
+// ── الترتيب: رفع المنتج الأساسي + دفن الملحقات (لا حذف) ──────
 function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number): number {
   const isAccessory = hasAccessoryHint(p.name_ar || '', p.name_en || '');
   const acSignal = hasACSignal(p.name_ar || '', p.name_en || '');
 
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 25 : 0;
   const storeBoost = Math.min(p.store_count * 6, 18);
-  const dealBoost = p.stores.some((s) => s.is_deal) ? 8 : 0;
-  const freeDeliveryBoost = p.stores.some((s) => s.is_free_delivery) ? 4 : 0;
+  // الخصم يُكتشف من فرق السعر مباشرة (بدل الاعتماد على عمود is_deal)
+  const dealBoost = p.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price) ? 8 : 0;
   const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
   const ratingBoost = rating > 0 ? rating * 3 : 0;
 
@@ -210,26 +205,21 @@ function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: numbe
     pricePenalty = 0;
   }
 
-  // دفن قوي للملحقات (60) يضمن نزولها تحت كل المنتجات الأساسية مهما علت بقية عواملها
   const accessoryPenalty = isAccessory ? 60 : 0;
   const acBoost = acSignal ? 10 : 0;
 
-  return inStockBoost + storeBoost + dealBoost + freeDeliveryBoost + ratingBoost + acBoost - pricePenalty - accessoryPenalty;
+  return inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost - pricePenalty - accessoryPenalty;
 }
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
   if (isCheapest) parts.push('أرخص سعر');
   if (p.store_count >= 2) parts.push(`متوفر في ${p.store_count} متاجر`);
-  const dealStore = p.stores.find(
-    (s) => s.is_deal && s.original_price && s.current_price && s.original_price > s.current_price
-  );
+  const dealStore = p.stores.find((s) => s.original_price && s.current_price && s.original_price > s.current_price);
   if (dealStore && dealStore.original_price) {
     const pct = Math.round(((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100);
     if (pct > 0) parts.push(`خصم ${pct}%`);
   }
-  const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
-  if (rating >= 4) parts.push(`تقييم ${rating.toFixed(1)}`);
   const inStock = p.stores.some((s) => s.availability === 'in_stock');
   if (inStock && parts.length === 0) parts.push('متوفر الآن');
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
@@ -274,13 +264,12 @@ export async function POST(request: NextRequest) {
   const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
   const supabase = createServerClient();
 
+  // ملاحظة: نقرأ store_name مباشرة من product_stores (الهيكلة الموحّدة) — لا join مع جدول stores
   const selectClause = `
     id, name_ar, name_en, slug, brand, model, category, sku,
     image_urls, specifications, description_ar, description_en,
     product_stores!inner (
-      id, current_price, original_price, availability, product_url,
-      is_deal, is_free_delivery, delivery_time_days, delivery_cost, coupon_code,
-      stores!inner (slug, name_ar, name_en, average_rating, total_reviews)
+      id, store_name, current_price, original_price, availability, product_url, coupon_code
     )
   `;
 
@@ -308,9 +297,10 @@ export async function POST(request: NextRequest) {
 
   let rows: ProductRow[] = [];
   let totalCount = 0;
+  let dbError: string | null = null;
 
   if (rawQuery) {
-    const { arabicQuery, englishTerms, englishVector } = buildSearchQueries(rawQuery);
+    const { arabicQuery, englishTerms } = buildSearchQueries(rawQuery);
     const arabicWords = arabicQuery.split(/\s+/).filter(Boolean);
 
     // المسار 1: عربي ilike على name_ar/name_en/brand
@@ -325,15 +315,14 @@ export async function POST(request: NextRequest) {
     }
     q1 = applyCommonFilters(q1, body);
     q1 = q1.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-    const { data: d1, count: c1 } = await q1;
+    const { data: d1, error: e1 } = await q1;
+    if (e1) { console.error('[search:q1]', e1.message); dbError = e1.message; }
     const pass1Rows = (d1 ?? []) as unknown as ProductRow[];
 
-    // المسار 2 (الإصلاح الحاسم): توسيع إنجليزي عبر ilike مباشر على name_en
-    // هذا يحل مشكلة "صفر نتائج": "مكيف" → split/ac يطابق منتجات إكسترا الإنجليزية
+    // المسار 2 (الإصلاح اللغوي): توسيع إنجليزي عبر ilike مباشر على name_en
     let pass2Rows: ProductRow[] = [];
     if (englishTerms.length > 0) {
       const orParts = englishTerms.flatMap((term) => {
-        // كل مصطلح قد يكون عبارة ("split ac") — نبحث بالكلمة المميزة منه
         const tokens = term.split(/\s+/).filter((t) => t.length >= 2);
         return tokens.map((t) => `name_en.ilike.%${t}%`);
       });
@@ -342,25 +331,15 @@ export async function POST(request: NextRequest) {
         let q2 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true).or(uniqueOr);
         q2 = applyCommonFilters(q2, body);
         q2 = q2.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-        const { data: d2 } = await q2;
+        const { data: d2, error: e2 } = await q2;
+        if (e2) { console.error('[search:q2]', e2.message); dbError = dbError || e2.message; }
         pass2Rows = (d2 ?? []) as unknown as ProductRow[];
       }
     }
 
-    // المسار 3: full-text كطبقة إضافية (يساعد للاستعلامات الإنجليزية الطبيعية)
-    let pass3Rows: ProductRow[] = [];
-    if (englishVector) {
-      let q3 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true)
-        .textSearch('search_vector', englishVector, { type: 'websearch', config: 'english' });
-      q3 = applyCommonFilters(q3, body);
-      q3 = q3.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-      const { data: d3 } = await q3;
-      pass3Rows = (d3 ?? []) as unknown as ProductRow[];
-    }
-
     const seen = new Set<string>();
     const merged: ProductRow[] = [];
-    for (const row of [...pass1Rows, ...pass2Rows, ...pass3Rows]) {
+    for (const row of [...pass1Rows, ...pass2Rows]) {
       if (!seen.has(row.id)) {
         seen.add(row.id);
         merged.push(row);
@@ -427,7 +406,7 @@ export async function POST(request: NextRequest) {
       avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
     },
     searchTime: (Date.now() - started) / 1000,
-    errors: null,
+    errors: dbError,
     totalStores: computeUniqueStores(pageProducts),
     successfulStores: computeUniqueStores(pageProducts),
     decisionCard: decision.decisionCard,
@@ -439,6 +418,13 @@ export async function POST(request: NextRequest) {
 
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
   let result = products;
+
+  // عروض فقط: يُطبّق عبر فرق السعر (بدل عمود is_deal غير المضمون)
+  if (body.deals_only) {
+    result = result.filter((product) =>
+      product.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price)
+    );
+  }
 
   if (typeof body.discount === 'number') {
     result = result.filter((product) =>
@@ -470,7 +456,7 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
 }
 
 function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
-  const productStores = (row.product_stores || []).filter((ps) => ps.stores);
+  const productStores = (row.product_stores || []).filter((ps) => ps && ps.current_price != null);
   if (productStores.length === 0) return null;
 
   const storeEntries: SearchProduct[] = productStores.map((ps) => ({
@@ -480,23 +466,23 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     model: row.model,
     sku: row.sku,
     current_price: Number(ps.current_price),
-    original_price: ps.original_price !== null ? Number(ps.original_price) : null,
-    availability: ps.availability,
+    original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
+    availability: ps.availability || 'in_stock',
     product_url: ps.product_url,
     image_urls: row.image_urls || [],
     specifications: (row.specifications || {}) as Record<string, unknown>,
     category: row.category as ProductCategory,
     description_ar: row.description_ar,
     description_en: row.description_en,
-    is_free_delivery: ps.is_free_delivery ?? false,
-    delivery_time_days: ps.delivery_time_days,
-    delivery_cost: ps.delivery_cost !== null ? Number(ps.delivery_cost) : 0,
-    is_deal: ps.is_deal ?? false,
-    coupon_code: ps.coupon_code,
-    store: ps.stores!.slug,
-    store_name: ps.stores!.name_en,
-    rating: ps.stores!.average_rating !== null ? Number(ps.stores!.average_rating) : null,
-    review_count: ps.stores!.total_reviews,
+    is_free_delivery: false,
+    delivery_time_days: null,
+    delivery_cost: 0,
+    is_deal: !!(ps.original_price && ps.current_price && ps.original_price > ps.current_price),
+    coupon_code: ps.coupon_code ?? null,
+    store: ps.store_name || 'unknown',
+    store_name: ps.store_name || '',
+    rating: null,
+    review_count: null,
   }));
 
   const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
@@ -532,13 +518,6 @@ function computeUniqueStores(products: GroupedSearchProduct[]): number {
 function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearchProduct) => number {
   if (sort === 'price_asc' || sort === 'price_low') return (a, b) => a.best_price - b.best_price;
   if (sort === 'price_desc' || sort === 'price_high') return (a, b) => b.best_price - a.best_price;
-  if (sort === 'rating') {
-    return (a, b) => {
-      const ar = Math.max(...a.stores.map((s) => s.rating ?? 0));
-      const br = Math.max(...b.stores.map((s) => s.rating ?? 0));
-      return br - ar;
-    };
-  }
   return (a, b) => {
     if (b.store_count !== a.store_count) return b.store_count - a.store_count;
     return a.best_price - b.best_price;
@@ -546,5 +525,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true });
+  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name' });
 }
