@@ -91,42 +91,83 @@ function normalizeArabic(text: string): string {
     .trim();
 }
 
-const ARABIC_TO_ENGLISH: Record<string, string> = {
-  'جوال': 'smartphone phone mobile',
-  'هاتف': 'smartphone phone mobile',
-  'ايفون': 'iphone apple',
-  'سامسونج': 'samsung',
-  'لابتوب': 'laptop notebook',
-  'حاسوب': 'laptop computer',
-  'كمبيوتر': 'computer laptop desktop',
-  'تلفزيون': 'tv television',
-  'شاشة': 'monitor screen display tv',
-  'سماعات': 'headphones earbuds audio',
-  'مكيف': 'air conditioner ac split',
-  'ثلاجة': 'refrigerator fridge',
-  'غسالة': 'washing machine washer',
-  'مكنسة': 'vacuum cleaner',
-  'طابعة': 'printer',
-  'راوتر': 'router wifi network',
-  'كاميرا': 'camera',
-  'ساعة': 'smartwatch watch',
-  'برو': 'pro',
-  'ماكس': 'max',
-  'بلس': 'plus',
-  'الترا': 'ultra',
-  'ميني': 'mini',
+// ── الجسر اللغوي: عربي → إنجليزي (موسّع، منقول من api/match) ──────
+const ARABIC_TO_ENGLISH: Record<string, string[]> = {
+  'جوال': ['phone', 'smartphone', 'mobile'],
+  'هاتف': ['phone', 'smartphone', 'mobile'],
+  'ايفون': ['iphone', 'apple'],
+  'سامسونج': ['samsung'],
+  'لابتوب': ['laptop', 'notebook'],
+  'حاسوب': ['laptop', 'computer'],
+  'كمبيوتر': ['computer', 'laptop', 'desktop'],
+  'تلفزيون': ['tv', 'television'],
+  'شاشة': ['tv', 'monitor', 'screen', 'display'],
+  'سماعات': ['headphones', 'earbuds', 'audio'],
+  'سماعة': ['headphone', 'earbuds', 'speaker'],
+  'مكيف': ['split ac', 'air conditioner', 'ac'],
+  'مكيفات': ['split ac', 'air conditioner', 'ac'],
+  'سبليت': ['split'],
+  'شباك': ['window'],
+  'ثلاجة': ['refrigerator', 'fridge'],
+  'فريزر': ['freezer'],
+  'غسالة': ['washing machine', 'washer'],
+  'نشافة': ['dryer'],
+  'مكنسة': ['vacuum', 'cleaner'],
+  'مايكروويف': ['microwave'],
+  'ميكروويف': ['microwave'],
+  'فرن': ['oven'],
+  'طابعة': ['printer'],
+  'راوتر': ['router', 'wifi', 'network'],
+  'كاميرا': ['camera'],
+  'ساعة': ['smartwatch', 'watch'],
+  'تابلت': ['tablet'],
+  'برو': ['pro'],
+  'ماكس': ['max'],
+  'بلس': ['plus'],
+  'الترا': ['ultra'],
+  'ميني': ['mini'],
+  'اير': ['air'],
 };
 
-function buildSearchQueries(raw: string): { arabicQuery: string; englishQuery: string } {
+// إشارات الملحقات: تُستخدم للترتيب (دفن) فقط — لا للحذف
+const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك'];
+const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket'];
+
+function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr);
+  const en = (nameEn || '').toLowerCase();
+  return ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
+    ACCESSORY_HINTS_EN.some((h) => en.includes(h));
+}
+
+// إشارة أن المنتج "مكيف رئيسي" — كلمات كاملة لتفادي مطابقة "ac" داخل jacket
+function hasACSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr);
+  const en = (nameEn || '').toLowerCase();
+  const arHit = /(^|\s)مكيف|سبليت|شباك/.test(ar);
+  const enHit = /\bsplit\b/.test(en) || /\bair\s*condition/.test(en) || /\ba\/?c\b/.test(en);
+  return arHit || enHit;
+}
+
+// يبني قائمة كلمات إنجليزية موسّعة من الاستعلام العربي/الإنجليزي
+function expandToEnglish(words: string[]): string[] {
+  const out = new Set<string>();
+  for (const w of words) {
+    const key = normalizeArabic(w);
+    const mapped = ARABIC_TO_ENGLISH[w] || ARABIC_TO_ENGLISH[key];
+    if (mapped) for (const m of mapped) out.add(m);
+    else if (/[A-Za-z0-9]/.test(w)) out.add(w);
+  }
+  return [...out];
+}
+
+function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[]; englishVector: string } {
   const normalized = normalizeArabic(raw);
   const words = normalized.split(/\s+/).filter(Boolean);
-  const englishParts: string[] = [];
-  for (const word of words) {
-    const mapped = ARABIC_TO_ENGLISH[word] || ARABIC_TO_ENGLISH[normalizeArabic(word)];
-    if (mapped) englishParts.push(mapped);
-    else if (/[A-Za-z0-9]/.test(word)) englishParts.push(word);
-  }
-  return { arabicQuery: normalized, englishQuery: englishParts.join(' ') };
+  const englishTerms = expandToEnglish(words); // ['split ac','air conditioner','ac', ...]
+  // لـ textSearch نحتاج كلمات مفردة
+  const englishVector = [...new Set(englishTerms.flatMap((p) => p.split(/\s+/)).filter(Boolean))].join(' ');
+  return { arabicQuery: normalized, englishTerms, englishVector };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -150,25 +191,32 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-// ── طبقة القرار الذكية (إضافة فوق البحث — لا تمسّ التجميع) ──────
-// عقوبة السعر نسبية داخل نتائج نفس البحث: الأرخص = 0، الأغلى = 22
+// ── الترتيب: رفع المنتج الأساسي + دفن الملحقات (لا حذف) ──────────
 function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number): number {
+  const isAccessory = hasAccessoryHint(p.name_ar || '', p.name_en || '');
+  const acSignal = hasACSignal(p.name_ar || '', p.name_en || '');
+
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 25 : 0;
   const storeBoost = Math.min(p.store_count * 6, 18);
   const dealBoost = p.stores.some((s) => s.is_deal) ? 8 : 0;
   const freeDeliveryBoost = p.stores.some((s) => s.is_free_delivery) ? 4 : 0;
   const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
   const ratingBoost = rating > 0 ? rating * 3 : 0;
+
   let pricePenalty = 22;
   if (p.best_price > 0 && priceMax > priceMin) {
     pricePenalty = ((p.best_price - priceMin) / (priceMax - priceMin)) * 22;
   } else if (p.best_price > 0) {
-    pricePenalty = 0; // كل الأسعار متساوية → لا عقوبة
+    pricePenalty = 0;
   }
-  return inStockBoost + storeBoost + dealBoost + freeDeliveryBoost + ratingBoost - pricePenalty;
+
+  // دفن قوي للملحقات (60) يضمن نزولها تحت كل المنتجات الأساسية مهما علت بقية عواملها
+  const accessoryPenalty = isAccessory ? 60 : 0;
+  const acBoost = acSignal ? 10 : 0;
+
+  return inStockBoost + storeBoost + dealBoost + freeDeliveryBoost + ratingBoost + acBoost - pricePenalty - accessoryPenalty;
 }
 
-// يبني جملة "ليش اخترنا هذا" من نفس عوامل الترتيب — شفّاف وبدون استدعاء AI
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
   if (isCheapest) parts.push('أرخص سعر');
@@ -262,12 +310,13 @@ export async function POST(request: NextRequest) {
   let totalCount = 0;
 
   if (rawQuery) {
-    const { arabicQuery, englishQuery } = buildSearchQueries(rawQuery);
+    const { arabicQuery, englishTerms, englishVector } = buildSearchQueries(rawQuery);
     const arabicWords = arabicQuery.split(/\s+/).filter(Boolean);
 
+    // المسار 1: عربي ilike على name_ar/name_en/brand
     let q1 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     if (arabicWords.length > 0) {
-      const orParts = arabicWords.flatMap(w => [
+      const orParts = arabicWords.flatMap((w) => [
         `name_ar.ilike.%${w}%`,
         `name_en.ilike.%${w}%`,
         `brand.ilike.%${w}%`,
@@ -279,20 +328,30 @@ export async function POST(request: NextRequest) {
     const { data: d1, count: c1 } = await q1;
     const pass1Rows = (d1 ?? []) as unknown as ProductRow[];
 
+    // المسار 2 (الإصلاح الحاسم): توسيع إنجليزي عبر ilike مباشر على name_en
+    // هذا يحل مشكلة "صفر نتائج": "مكيف" → split/ac يطابق منتجات إكسترا الإنجليزية
     let pass2Rows: ProductRow[] = [];
-    if (englishQuery) {
-      let q2 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true)
-        .textSearch('search_vector', englishQuery, { type: 'websearch', config: 'english' });
-      q2 = applyCommonFilters(q2, body);
-      q2 = q2.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-      const { data: d2 } = await q2;
-      pass2Rows = (d2 ?? []) as unknown as ProductRow[];
+    if (englishTerms.length > 0) {
+      const orParts = englishTerms.flatMap((term) => {
+        // كل مصطلح قد يكون عبارة ("split ac") — نبحث بالكلمة المميزة منه
+        const tokens = term.split(/\s+/).filter((t) => t.length >= 2);
+        return tokens.map((t) => `name_en.ilike.%${t}%`);
+      });
+      const uniqueOr = [...new Set(orParts)].join(',');
+      if (uniqueOr) {
+        let q2 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true).or(uniqueOr);
+        q2 = applyCommonFilters(q2, body);
+        q2 = q2.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
+        const { data: d2 } = await q2;
+        pass2Rows = (d2 ?? []) as unknown as ProductRow[];
+      }
     }
 
+    // المسار 3: full-text كطبقة إضافية (يساعد للاستعلامات الإنجليزية الطبيعية)
     let pass3Rows: ProductRow[] = [];
-    if (/[A-Za-z]/.test(rawQuery)) {
+    if (englishVector) {
       let q3 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true)
-        .textSearch('search_vector', rawQuery, { type: 'websearch', config: 'english' });
+        .textSearch('search_vector', englishVector, { type: 'websearch', config: 'english' });
       q3 = applyCommonFilters(q3, body);
       q3 = q3.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
       const { data: d3 } = await q3;
@@ -308,7 +367,7 @@ export async function POST(request: NextRequest) {
       }
     }
     rows = merged;
-    totalCount = c1 ?? merged.length;
+    totalCount = merged.length;
   } else {
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     q = applyCommonFilters(q, body);
@@ -327,7 +386,18 @@ export async function POST(request: NextRequest) {
     .filter((p): p is GroupedSearchProduct => p !== null);
 
   products = applyPostFilters(products, body);
-  products.sort(compareBySort(body.sort || 'relevance'));
+
+  // عند البحث: نرتّب بالنقاط (يرفع المكيفات ويدفن الملحقات). غير البحث: الترتيب الأصلي.
+  if (rawQuery) {
+    const prices = products.map((p) => p.best_price).filter((n) => n > 0);
+    const pMin = prices.length ? Math.min(...prices) : 0;
+    const pMax = prices.length ? Math.max(...prices) : 0;
+    const requestedSort = body.sort && body.sort !== 'relevance';
+    if (requestedSort) products.sort(compareBySort(body.sort!));
+    else products.sort((a, b) => scoreProduct(b, pMin, pMax) - scoreProduct(a, pMin, pMax));
+  } else {
+    products.sort(compareBySort(body.sort || 'relevance'));
+  }
 
   const decision = buildDecisionLayer(products);
 
@@ -369,6 +439,7 @@ export async function POST(request: NextRequest) {
 
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
   let result = products;
+
   if (typeof body.discount === 'number') {
     result = result.filter((product) =>
       product.stores.some((store) => {
