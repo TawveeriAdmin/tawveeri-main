@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.7-corrected';
+const VERSION = 'tawveeri-match-2026-06-13-v1.7-fixed';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
@@ -198,13 +198,14 @@ async function waffarJudge(offers: Offer[]): Promise<{ verdict: any | null; reas
   }
 }
 
-// ── 5) الحفظ في القاموس الدائم ──────────────────────────────
+// ── 5) الحفظ في القاموس الدائم (مُصّحّح: threshold 0.7 بدل 0.8) ──────────────────────────────
 async function saveLinks(groups: any[], nameToCid: Map<string, string>, offers: Offer[]): Promise<number> {
   const sb = createServerClient();
   const byId = new Map(offers.map(o => [o.product_id, o]));
   const rows: any[] = [];
   for (const g of groups || []) {
-    if (!Array.isArray(g.ids) || g.ids.length < 2 || (g.confidence ?? 0) < 0.8) continue;
+    // ✅ خفّض threshold من 0.8 إلى 0.7
+    if (!Array.isArray(g.ids) || g.ids.length < 2 || (g.confidence ?? 0) < 0.7) continue;
     const cids = [...new Set(g.ids.map((id: string) => nameToCid.get(byId.get(id)?.name_ar || '')).filter(Boolean))] as string[];
     if (cids.length < 2) continue;
     cids.sort();
