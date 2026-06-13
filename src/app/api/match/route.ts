@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.5-diag';
+const VERSION = 'tawveeri-match-2026-06-13-v1.6';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
@@ -162,8 +162,16 @@ async function waffarJudge(offers: Offer[]): Promise<{ verdict: any | null; reas
   }
   const data = await res.json();
   const text = (data.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
-  try { return { verdict: JSON.parse(text.replace(/```json|```/g, '').trim()), reason: 'ok' }; }
-  catch { console.error('[match:parse]', text.slice(0, 300)); return { verdict: null, reason: `parse_fail:${text.slice(0, 150)}` }; }
+  // استخراج كتلة JSON بين أول { وآخر } — يتجاهل ```json والنصوص حوله
+  try {
+    const s = text.indexOf('{');
+    const e = text.lastIndexOf('}');
+    const jsonStr = (s >= 0 && e > s) ? text.slice(s, e + 1) : text.replace(/```json|```/g, '').trim();
+    return { verdict: JSON.parse(jsonStr), reason: 'ok' };
+  } catch {
+    console.error('[match:parse]', text.slice(0, 300));
+    return { verdict: null, reason: `parse_fail:${text.slice(0, 150)}` };
+  }
 }
 
 // ── 5) الحفظ في القاموس الدائم ──────────────────────────────
