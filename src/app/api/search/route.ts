@@ -68,6 +68,7 @@ type DecisionTopMatch = {
   rating: number;
   product_url: string;
   store_name: string;
+  reason_ar: string;
 };
 
 type DecisionLayer = {
@@ -149,19 +150,49 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-function scoreProduct(p: GroupedSearchProduct): number {
+// ── طبقة القرار الذكية (إضافة فوق البحث — لا تمسّ التجميع) ──────
+// عقوبة السعر نسبية داخل نتائج نفس البحث: الأرخص = 0، الأغلى = 22
+function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number): number {
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 25 : 0;
   const storeBoost = Math.min(p.store_count * 6, 18);
   const dealBoost = p.stores.some((s) => s.is_deal) ? 8 : 0;
   const freeDeliveryBoost = p.stores.some((s) => s.is_free_delivery) ? 4 : 0;
   const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
   const ratingBoost = rating > 0 ? rating * 3 : 0;
-  const pricePenalty = p.best_price > 0 ? Math.min(p.best_price / 120, 20) : 20;
+  let pricePenalty = 22;
+  if (p.best_price > 0 && priceMax > priceMin) {
+    pricePenalty = ((p.best_price - priceMin) / (priceMax - priceMin)) * 22;
+  } else if (p.best_price > 0) {
+    pricePenalty = 0; // كل الأسعار متساوية → لا عقوبة
+  }
   return inStockBoost + storeBoost + dealBoost + freeDeliveryBoost + ratingBoost - pricePenalty;
 }
 
+// يبني جملة "ليش اخترنا هذا" من نفس عوامل الترتيب — شفّاف وبدون استدعاء AI
+function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
+  const parts: string[] = [];
+  if (isCheapest) parts.push('أرخص سعر');
+  if (p.store_count >= 2) parts.push(`متوفر في ${p.store_count} متاجر`);
+  const dealStore = p.stores.find(
+    (s) => s.is_deal && s.original_price && s.current_price && s.original_price > s.current_price
+  );
+  if (dealStore && dealStore.original_price) {
+    const pct = Math.round(((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100);
+    if (pct > 0) parts.push(`خصم ${pct}%`);
+  }
+  const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
+  if (rating >= 4) parts.push(`تقييم ${rating.toFixed(1)}`);
+  const inStock = p.stores.some((s) => s.availability === 'in_stock');
+  if (inStock && parts.length === 0) parts.push('متوفر الآن');
+  return parts.length ? parts.join(' · ') : 'خيار مناسب';
+}
+
 function buildDecisionLayer(products: GroupedSearchProduct[]): DecisionLayer {
-  const ranked = [...products].sort((a, b) => scoreProduct(b) - scoreProduct(a));
+  const prices = products.map((p) => p.best_price).filter((n) => n > 0);
+  const priceMin = prices.length ? Math.min(...prices) : 0;
+  const priceMax = prices.length ? Math.max(...prices) : 0;
+
+  const ranked = [...products].sort((a, b) => scoreProduct(b, priceMin, priceMax) - scoreProduct(a, priceMin, priceMax));
   const top3 = ranked.slice(0, 3);
 
   const best = top3[0] || null;
@@ -183,6 +214,7 @@ function buildDecisionLayer(products: GroupedSearchProduct[]): DecisionLayer {
     rating: Math.max(...p.stores.map((s) => s.rating ?? 0)),
     product_url: p.stores.find((s) => s.current_price === p.best_price)?.product_url || p.stores[0]?.product_url || '',
     store_name: p.stores.find((s) => s.current_price === p.best_price)?.store_name || p.stores[0]?.store_name || '',
+    reason_ar: buildReasonAr(p, p.best_price === priceMin && priceMin > 0),
   }));
 
   return { decisionCard, topMatches };
