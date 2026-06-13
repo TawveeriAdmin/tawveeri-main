@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.6';
+const VERSION = 'tawveeri-match-2026-06-13-v1.7';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
@@ -133,44 +133,72 @@ const SYSTEM = `أنت محرك مطابقة منتجات لمنصة توفير�
 4. اختلاف النوع (بارد فقط ≠ حار وبارد) أو السعة (128 ≠ 256 جيجا) = منتجات مختلفة. اختلاف اللون فقط مع تطابق كل شيء = نفس المنتج.
 5. فرق سعر أكبر من 40% = خفّض الثقة تحت 0.8 إلا بتطابق الموديل حرفياً.
 6. الشك = لا تجمع.
-أرجع JSON فقط:
+أرجع JSON فقط بدون أي شرح أو نص قبله أو بعده. ابدأ مباشرة بالقوس { وانتهِ بالقوس }.
+الصيغة:
 {"groups":[{"ids":["..."],"label_ar":"اسم موحّد مختصر","confidence":0.95,"reason_ar":"سبب موجز"}],"summary_ar":"جملة سعودية ودودة تلخص أفضل سعر"}
-ids فقط من القائمة المعطاة.`;
+ids فقط من القائمة المعطاة. reason_ar مختصر جداً (٦ كلمات كحد أقصى).`;
+
+// يستخرج كتلة JSON من نص النموذج (مع إرجاع القوس البادئ المحذوف بالـ prefill)
+function parseVerdict(raw: string): any {
+  const text = '{' + raw;
+  const s = text.indexOf('{');
+  const e = text.lastIndexOf('}');
+  const jsonStr = (s >= 0 && e > s) ? text.slice(s, e + 1) : text;
+  return JSON.parse(jsonStr);
+}
+
+async function callAnthropic(lines: string, system: any[], temperature: number): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4000,
+      temperature,
+      system,
+      messages: [
+        { role: 'user', content: `العروض:\n${lines} — أرجع JSON فقط بدون شرح.` },
+        { role: 'assistant', content: '{' }, // prefill: يبدأ من القوس مباشرة، يمنع المقدمة
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`api_${res.status}:${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return (data.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
+}
 
 async function waffarJudge(offers: Offer[]): Promise<{ verdict: any | null; reason: string }> {
   if (!ANTHROPIC_KEY) return { verdict: null, reason: 'no_anthropic_key' };
   const lines = offers.map(o =>
     `${o.product_id} | ${o.store_name} | ${o.brand || '-'} | ${o.name_ar} | ${o.name_en || '-'} | ${o.price} ريال`).join('\n');
-  let res: Response;
+
+  const systemMain = [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }];
+
+  // المحاولة الأولى — prefill + JSON صارم
+  let firstRaw = '';
   try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: MODEL, max_tokens: 1200, temperature: 0,
-        system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `العروض:\n${lines}` }],
-      }),
-    });
+    firstRaw = await callAnthropic(lines, systemMain, 0);
   } catch (e: any) {
-    return { verdict: null, reason: `fetch_threw:${String(e?.message || e).slice(0, 150)}` };
+    console.error('[match:llm]', String(e?.message || e));
+    return { verdict: null, reason: String(e?.message || e).slice(0, 200) };
   }
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    console.error('[match:llm]', res.status, body);
-    return { verdict: null, reason: `api_${res.status}:${body.slice(0, 200)}` };
-  }
-  const data = await res.json();
-  const text = (data.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
-  // استخراج كتلة JSON بين أول { وآخر } — يتجاهل ```json والنصوص حوله
   try {
-    const s = text.indexOf('{');
-    const e = text.lastIndexOf('}');
-    const jsonStr = (s >= 0 && e > s) ? text.slice(s, e + 1) : text.replace(/```json|```/g, '').trim();
-    return { verdict: JSON.parse(jsonStr), reason: 'ok' };
+    return { verdict: parseVerdict(firstRaw), reason: 'ok' };
   } catch {
-    console.error('[match:parse]', text.slice(0, 300));
-    return { verdict: null, reason: `parse_fail:${text.slice(0, 150)}` };
+    console.error('[match:parse]', ('{' + firstRaw).slice(0, 300));
+  }
+
+  // إعادة المحاولة — system مخفّف + temperature 0.1
+  const systemRetry = [{ type: 'text', text: SYSTEM.replace('أرجع JSON فقط بدون أي شرح أو نص قبله أو بعده. ابدأ مباشرة بالقوس { وانتهِ بالقوس }.', '') }];
+  try {
+    const secondRaw = await callAnthropic(lines, systemRetry, 0.1);
+    return { verdict: parseVerdict(secondRaw), reason: 'ok_retry' };
+  } catch (err2: any) {
+    console.error('[match:parse_retry]', String(err2?.message || err2));
+    return { verdict: null, reason: `parse_fail_retry:${('{' + firstRaw).slice(0, 150)}` };
   }
 }
 
