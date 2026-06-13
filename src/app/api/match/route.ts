@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.3';
+const VERSION = 'tawveeri-match-2026-06-13-v1.5-diag';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
@@ -137,24 +137,33 @@ const SYSTEM = `أنت محرك مطابقة منتجات لمنصة توفير�
 {"groups":[{"ids":["..."],"label_ar":"اسم موحّد مختصر","confidence":0.95,"reason_ar":"سبب موجز"}],"summary_ar":"جملة سعودية ودودة تلخص أفضل سعر"}
 ids فقط من القائمة المعطاة.`;
 
-async function waffarJudge(offers: Offer[]): Promise<any | null> {
-  if (!ANTHROPIC_KEY) return null;
+async function waffarJudge(offers: Offer[]): Promise<{ verdict: any | null; reason: string }> {
+  if (!ANTHROPIC_KEY) return { verdict: null, reason: 'no_anthropic_key' };
   const lines = offers.map(o =>
     `${o.product_id} | ${o.store_name} | ${o.brand || '-'} | ${o.name_ar} | ${o.name_en || '-'} | ${o.price} ريال`).join('\n');
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: MODEL, max_tokens: 1200, temperature: 0,
-      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: `العروض:\n${lines}` }],
-    }),
-  });
-  if (!res.ok) { console.error('[match:llm]', res.status, await res.text().catch(() => '')); return null; }
+  let res: Response;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL, max_tokens: 1200, temperature: 0,
+        system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: `العروض:\n${lines}` }],
+      }),
+    });
+  } catch (e: any) {
+    return { verdict: null, reason: `fetch_threw:${String(e?.message || e).slice(0, 150)}` };
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error('[match:llm]', res.status, body);
+    return { verdict: null, reason: `api_${res.status}:${body.slice(0, 200)}` };
+  }
   const data = await res.json();
   const text = (data.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
-  try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
-  catch { console.error('[match:parse]', text.slice(0, 300)); return null; }
+  try { return { verdict: JSON.parse(text.replace(/```json|```/g, '').trim()), reason: 'ok' }; }
+  catch { console.error('[match:parse]', text.slice(0, 300)); return { verdict: null, reason: `parse_fail:${text.slice(0, 150)}` }; }
 }
 
 // ── 5) الحفظ في القاموس الدائم ──────────────────────────────
@@ -182,10 +191,10 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const q = url.searchParams.get('q')?.trim();
   const secret = url.searchParams.get('secret')?.trim();
-  if (!q) return json({ usage: '/api/match?q=اسم المنتج — أضف &secret=... لتفعيل حكم وفّر', secretConfigured: !!SECRET });
+  if (!q) return json({ usage: '/api/match?q=اسم المنتج — أضف &secret=... لتفعيل حكم وفّر', secretConfigured: !!SECRET, hasAnthropicKey: !!ANTHROPIC_KEY });
 
   const offers = await findCandidates(q);
-  if (!offers.length) return json({ q, offers: 0, groups: [], secretConfigured: !!SECRET, note: 'لا نتائج في المخزون' });
+  if (!offers.length) return json({ q, offers: 0, groups: [], secretConfigured: !!SECRET, hasAnthropicKey: !!ANTHROPIC_KEY, note: 'لا نتائج في المخزون' });
 
   const names = [...new Set(offers.map(o => o.name_ar))];
   const nameToCid = await canonicalMap(names);
@@ -209,12 +218,19 @@ export async function GET(request: NextRequest) {
   }
 
   let llmUsed = false, savedLinks = 0, summary_ar: string | null = null;
+  let llmReason = 'not_attempted';
   // مرحلة البناء: وفّر يحكم على كل العروض لبناء القاموس من الصفر
-  // (لاحقاً نرجّعها إلى: offers.filter(o => !grouped.has(o.product_id)) ليحكم فقط على ما لم يطابقه القاموس)
+  // (لاحقاً نرجّعها إلى: offers.filter(o => !grouped.has(o.product_id)))
   const rest = offers;
   const authorized = !!secret && !!SECRET && secret === SECRET;
-  if (authorized && new Set(rest.map(o => o.store_name)).size >= 2) {
-    const verdict = await waffarJudge(rest);
+  const restStores = new Set(rest.map(o => o.store_name)).size;
+  if (!authorized) {
+    llmReason = 'not_authorized';
+  } else if (restStores < 2) {
+    llmReason = `one_store_only:${restStores}`;
+  } else {
+    const { verdict, reason } = await waffarJudge(rest);
+    llmReason = reason;
     if (verdict) {
       llmUsed = true; summary_ar = verdict.summary_ar || null;
       savedLinks = await saveLinks(verdict.groups, nameToCid, rest);
@@ -230,5 +246,5 @@ export async function GET(request: NextRequest) {
   }
 
   const singles = offers.filter(o => !grouped.has(o.product_id));
-  return json({ q, totalOffers: offers.length, stores: [...new Set(offers.map(o => o.store_name))].length, secretConfigured: !!SECRET, llmAuthorized: authorized, llmUsed, savedLinks, summary_ar, groups, singles });
+  return json({ q, totalOffers: offers.length, stores: [...new Set(offers.map(o => o.store_name))].length, secretConfigured: !!SECRET, hasAnthropicKey: !!ANTHROPIC_KEY, llmAuthorized: authorized, llmUsed, llmReason, savedLinks, summary_ar, groups, singles });
 }
