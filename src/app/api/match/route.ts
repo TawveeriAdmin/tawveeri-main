@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const VERSION = 'tawveeri-match-2026-06-13-v1.7';
+const VERSION = 'tawveeri-match-2026-06-13-v1.7-corrected';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = process.env.MATCH_MODEL || 'claude-sonnet-4-6';
 const SECRET = process.env.MATCH_SECRET || process.env.CRON_SECRET || '';
@@ -85,7 +85,6 @@ async function findCandidates(qRaw: string): Promise<Offer[]> {
         original_price: s.original_price ? Number(s.original_price) : null, url: s.product_url,
       });
 
-  // توازن: round-robin بين المتاجر حتى السقف — يضمن حضور كل المتاجر
   const byStore = new Map<string, Offer[]>();
   for (const o of all) { if (!byStore.has(o.store_name)) byStore.set(o.store_name, []); byStore.get(o.store_name)!.push(o); }
   const buckets = [...byStore.values()];
@@ -124,7 +123,7 @@ async function dictionaryGroups(cids: string[]): Promise<Map<string, string>> {
   return parent;
 }
 
-// ── 4) حكم وفّر ──────────────────────────────────────────────
+// ── 4) حكم وفّر (مُصّحّح: بدون assistant prefill) ──────────────────────────────────────────────
 const SYSTEM = `أنت محرك مطابقة منتجات لمنصة توفيري السعودية. تقرر أي العروض تمثل نفس المنتج الفيزيائي عبر متاجر مختلفة.
 قواعد صارمة:
 1. نفس الماركة شرط أساسي. الماركة العربية تكافئ الإنجليزية (سامسونج=Samsung، كلاس برو=ClassPro، هايسنس=HISENSE، ال جي=LG، ميديا=Midea، هاير=Haier).
@@ -133,14 +132,13 @@ const SYSTEM = `أنت محرك مطابقة منتجات لمنصة توفير�
 4. اختلاف النوع (بارد فقط ≠ حار وبارد) أو السعة (128 ≠ 256 جيجا) = منتجات مختلفة. اختلاف اللون فقط مع تطابق كل شيء = نفس المنتج.
 5. فرق سعر أكبر من 40% = خفّض الثقة تحت 0.8 إلا بتطابق الموديل حرفياً.
 6. الشك = لا تجمع.
-أرجع JSON فقط بدون أي شرح أو نص قبله أو بعده. ابدأ مباشرة بالقوس { وانتهِ بالقوس }.
+⚠️ أرجع JSON فقط بدون أي شرح أو نص قبله أو بعده. ابدأ مباشرة بـ { وانتهِ بـ }.
 الصيغة:
 {"groups":[{"ids":["..."],"label_ar":"اسم موحّد مختصر","confidence":0.95,"reason_ar":"سبب موجز"}],"summary_ar":"جملة سعودية ودودة تلخص أفضل سعر"}
 ids فقط من القائمة المعطاة. reason_ar مختصر جداً (٦ كلمات كحد أقصى).`;
 
-// يستخرج كتلة JSON من نص النموذج (مع إرجاع القوس البادئ المحذوف بالـ prefill)
 function parseVerdict(raw: string): any {
-  const text = '{' + raw;
+  const text = raw;  // ✅ لا prefill = لا نضيف {
   const s = text.indexOf('{');
   const e = text.lastIndexOf('}');
   const jsonStr = (s >= 0 && e > s) ? text.slice(s, e + 1) : text;
@@ -157,8 +155,8 @@ async function callAnthropic(lines: string, system: any[], temperature: number):
       temperature,
       system,
       messages: [
-        { role: 'user', content: `العروض:\n${lines} — أرجع JSON فقط بدون شرح.` },
-        { role: 'assistant', content: '{' }, // prefill: يبدأ من القوس مباشرة، يمنع المقدمة
+        { role: 'user', content: `العروض:\n${lines} — أرجع JSON فقط بدون شرح، ابدأ بـ { مباشرة.` },
+        // ✅ احذف assistant prefill (الموديل لا يدعمه)
       ],
     }),
   });
@@ -177,7 +175,6 @@ async function waffarJudge(offers: Offer[]): Promise<{ verdict: any | null; reas
 
   const systemMain = [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }];
 
-  // المحاولة الأولى — prefill + JSON صارم
   let firstRaw = '';
   try {
     firstRaw = await callAnthropic(lines, systemMain, 0);
@@ -188,17 +185,16 @@ async function waffarJudge(offers: Offer[]): Promise<{ verdict: any | null; reas
   try {
     return { verdict: parseVerdict(firstRaw), reason: 'ok' };
   } catch {
-    console.error('[match:parse]', ('{' + firstRaw).slice(0, 300));
+    console.error('[match:parse]', firstRaw.slice(0, 300));
   }
 
-  // إعادة المحاولة — system مخفّف + temperature 0.1
-  const systemRetry = [{ type: 'text', text: SYSTEM.replace('أرجع JSON فقط بدون أي شرح أو نص قبله أو بعده. ابدأ مباشرة بالقوس { وانتهِ بالقوس }.', '') }];
+  const systemRetry = [{ type: 'text', text: SYSTEM.replace('⚠️ أرجع JSON فقط بدون أي شرح أو نص قبله أو بعده. ابدأ مباشرة بـ { وانتهِ بـ }.', '') }];
   try {
     const secondRaw = await callAnthropic(lines, systemRetry, 0.1);
     return { verdict: parseVerdict(secondRaw), reason: 'ok_retry' };
   } catch (err2: any) {
     console.error('[match:parse_retry]', String(err2?.message || err2));
-    return { verdict: null, reason: `parse_fail_retry:${('{' + firstRaw).slice(0, 150)}` };
+    return { verdict: null, reason: `parse_fail_retry:${firstRaw.slice(0, 150)}` };
   }
 }
 
@@ -255,8 +251,6 @@ export async function GET(request: NextRequest) {
 
   let llmUsed = false, savedLinks = 0, summary_ar: string | null = null;
   let llmReason = 'not_attempted';
-  // مرحلة البناء: وفّر يحكم على كل العروض لبناء القاموس من الصفر
-  // (لاحقاً نرجّعها إلى: offers.filter(o => !grouped.has(o.product_id)))
   const rest = offers;
   const authorized = !!secret && !!SECRET && secret === SECRET;
   const restStores = new Set(rest.map(o => o.store_name)).size;
