@@ -4,7 +4,7 @@ import { firstStr } from './types';
 const ALGOLIA_APP_ID = 'WCK19QC65I';
 const ALGOLIA_KEY = 'be7745237f5f94f715b088f48b1708b8';
 const AR_INDEX = 'prod_headless_ar_products';
-const CATEGORY_IDS = ['7423','7424','7434','7436','522','7426','7364','523','534','536','538','519'];
+const CATEGORY_IDS = ['535','7423','7424','7434','7436','522','7426','7364','523','534','536','538','519'];
 
 export const almaneaAdapter: StoreAdapter = {
   slug: 'almanea',
