@@ -34,9 +34,9 @@ interface ProductRow {
   name_ar: string;
   name_en: string;
   brand: string;
-  model?: string | null;
   category: string;
-  sku: string | null;
+  sku?: string | null;
+  model?: string | null;
   image_urls: string[] | null;
   specifications: Record<string, unknown> | null;
   description_ar: string | null;
@@ -77,7 +77,7 @@ type DecisionLayer = {
   topMatches: DecisionTopMatch[];
 };
 
-type IntentType = 'price' | 'compare' | 'brand' | 'model' | 'category' | 'fallback';
+type IntentType = 'price' | 'compare' | 'brand' | 'category' | 'fallback';
 
 function normalizeArabic(text: string): string {
   return text
@@ -103,18 +103,9 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'سماعة': ['headphone', 'earbuds', 'speaker'],
   'مكيف': ['split ac', 'air conditioner', 'ac'],
   'مكيفات': ['split ac', 'air conditioner', 'ac'],
-  'سبليت': ['split'],
-  'شباك': ['window'],
   'ثلاجة': ['refrigerator', 'fridge'],
-  'فريزر': ['freezer'],
   'غسالة': ['washing machine', 'washer'],
-  'نشافة': ['dryer'],
-  'مكنسة': ['vacuum', 'cleaner'],
-  'مايكروويف': ['microwave'],
-  'ميكروويف': ['microwave'],
-  'فرن': ['oven'],
   'طابعة': ['printer'],
-  'راوتر': ['router', 'wifi', 'network'],
   'كاميرا': ['camera'],
   'ساعة': ['smartwatch', 'watch'],
   'تابلت': ['tablet'],
@@ -125,9 +116,6 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'ميني': ['mini'],
   'اير': ['air'],
 };
-
-const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك'];
-const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket'];
 
 const BRAND_BOOSTS: Record<string, number> = {
   samsung: 8,
@@ -150,57 +138,27 @@ const BRAND_BOOSTS: Record<string, number> = {
 function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
-  return ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
-    ACCESSORY_HINTS_EN.some((h) => en.includes(h));
-}
-
-function hasACSignal(nameAr: string, nameEn: string): boolean {
-  const ar = normalizeArabic(nameAr);
-  const en = (nameEn || '').toLowerCase();
-  const arHit = /(^|\s)مكيف|سبليت|شباك/.test(ar);
-  const enHit = /\bsplit\b/.test(en) || /\bair\s*condition/.test(en) || /\ba\/?c\b/.test(en);
-  return arHit || enHit;
-}
-
-function expandToEnglish(words: string[]): string[] {
-  const out = new Set<string>();
-  for (const w of words) {
-    const key = normalizeArabic(w);
-    const mapped = ARABIC_TO_ENGLISH[w] || ARABIC_TO_ENGLISH[key];
-    if (mapped) for (const m of mapped) out.add(m);
-    else if (/[A-Za-z0-9]/.test(w)) out.add(w);
-  }
-  return [...out];
+  return ['حامل', 'غطاء', 'كفر', 'ملحق', 'شاحن', 'كيبل', 'سلك'].some((h) => ar.includes(h)) ||
+    ['accessory', 'cover', 'mount', 'holder', 'adapter', 'charger', 'cable', 'case', 'bracket'].some((h) => en.includes(h));
 }
 
 function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[]; queryWords: string[] } {
   const normalized = normalizeArabic(raw);
   const words = normalized.split(/\s+/).filter(Boolean);
-  const englishTerms = expandToEnglish(words);
+  const englishTerms = [...new Set(words.flatMap((w) => ARABIC_TO_ENGLISH[w] || ARABIC_TO_ENGLISH[normalizeArabic(w)] || (/[A-Za-z0-9]/.test(w) ? [w] : [])))];
   const queryWords = [...new Set([...words, ...englishTerms.flatMap((t) => t.split(/\s+/))])];
   return { arabicQuery: normalized, englishTerms, queryWords };
 }
 
-function detectIntent(query: string): { intent: IntentType; confidence: number } {
+function detectIntent(query: string): IntentType {
   const text = normalizeArabic(query).toLowerCase();
   const tokens = text.split(/\s+/).filter(Boolean);
 
-  const score = { price: 0, compare: 0, brand: 0, model: 0, category: 0 };
-
-  if (/(أرخص|ارخص|سعر|price|cheapest|lowest)/i.test(text)) score.price += 3;
-  if (/(قارن|مقارنة|compare|vs|versus)/i.test(text)) score.compare += 3;
-  if (tokens.some((t) => Object.keys(BRAND_BOOSTS).includes(t))) score.brand += 2;
-  if (tokens.some((t) => /\d/.test(t))) score.model += 2;
-  if (Object.keys(ARABIC_TO_ENGLISH).some((k) => text.includes(normalizeArabic(k)))) score.category += 2;
-
-  const intent = (Object.entries(score).sort((a, b) => b[1] - a[1])[0]?.[0] || 'fallback') as IntentType;
-  const best = score[intent as keyof typeof score] || 0;
-  const total = Object.values(score).reduce((a, b) => a + b, 0) || 1;
-
-  return {
-    intent: best > 0 ? intent : 'fallback',
-    confidence: Number((best / total).toFixed(2)),
-  };
+  if (/(أرخص|ارخص|سعر|price|cheapest|lowest)/i.test(text)) return 'price';
+  if (/(قارن|مقارنة|compare|vs|versus)/i.test(text)) return 'compare';
+  if (tokens.some((t) => Object.keys(BRAND_BOOSTS).includes(t))) return 'brand';
+  if (Object.keys(ARABIC_TO_ENGLISH).some((k) => text.includes(normalizeArabic(k)))) return 'category';
+  return 'fallback';
 }
 
 function applyCommonFilters(query: any, body: SearchBody): any {
@@ -221,51 +179,38 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-function scoreProduct(p: GroupedSearchProduct, queryWords: string[], priceMin: number, priceMax: number, intent: IntentType): number {
+function scoreProduct(p: GroupedSearchProduct, queryWords: string[], intent: IntentType): number {
   const nameAr = normalizeArabic(p.name_ar || '');
   const nameEn = (p.name_en || '').toLowerCase();
-  const modelText = normalizeArabic((p as any).model || '');
   const isAccessory = hasAccessoryHint(nameAr, nameEn);
-  const acSignal = hasACSignal(nameAr, nameEn);
 
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 30 : 0;
-  const storeBoost = Math.min(p.store_count * 7, 24);
+  const storeBoost = Math.min(p.store_count * 6, 24);
   const dealBoost = p.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price) ? 12 : 0;
-  const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
-  const ratingBoost = rating > 0 ? rating * 4 : 0;
+  const queryBoost = queryWords.reduce((acc, w) => {
+    const t = normalizeArabic(w);
+    if (!t) return acc;
+    if (nameAr.includes(t)) return acc + 6;
+    if (nameEn.includes(t.toLowerCase())) return acc + 4;
+    return acc;
+  }, 0);
 
   const brandBoost = Object.entries(BRAND_BOOSTS).reduce((acc, [brand, boost]) => {
     const hit = nameAr.includes(normalizeArabic(brand)) || nameEn.includes(brand);
     return hit ? acc + boost : acc;
   }, 0);
 
-  const queryBoost = queryWords.reduce((acc, w) => {
-    const t = normalizeArabic(w);
-    if (!t) return acc;
-    if (nameAr.includes(t)) return acc + 6;
-    if (nameEn.includes(t.toLowerCase())) return acc + 4;
-    if (modelText && modelText.includes(t)) return acc + 5;
-    return acc;
-  }, 0);
+  const priceBoost = p.best_price > 0 ? 6 : 0;
+  const accessoryPenalty = isAccessory ? 40 : 0;
 
-  let pricePenalty = 18;
-  if (p.best_price > 0 && priceMax > priceMin) {
-    pricePenalty = ((p.best_price - priceMin) / (priceMax - priceMin)) * 18;
-  } else if (p.best_price > 0) {
-    pricePenalty = 0;
-  }
-
-  const accessoryPenalty = isAccessory ? 50 : 0;
-  const acBoost = acSignal ? 14 : 0;
   const intentBoost =
-    intent === 'price' ? (p.best_price > 0 ? 8 : 0) :
-    intent === 'compare' ? storeBoost + ratingBoost :
-    intent === 'brand' ? brandBoost * 0.25 :
-    intent === 'model' ? queryBoost * 0.35 :
-    intent === 'category' ? queryBoost * 0.2 :
+    intent === 'price' ? priceBoost :
+    intent === 'compare' ? storeBoost + dealBoost :
+    intent === 'brand' ? brandBoost * 0.3 :
+    intent === 'category' ? queryBoost * 0.3 :
     0;
 
-  return inStockBoost + storeBoost + dealBoost + ratingBoost + brandBoost + queryBoost + acBoost + intentBoost - pricePenalty - accessoryPenalty;
+  return inStockBoost + storeBoost + dealBoost + brandBoost + queryBoost + priceBoost + intentBoost - accessoryPenalty;
 }
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
@@ -277,19 +222,15 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
     const pct = Math.round(((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100);
     if (pct > 0) parts.push(`خصم ${pct}%`);
   }
-  const inStock = p.stores.some((s) => s.availability === 'in_stock');
-  if (inStock && parts.length === 0) parts.push('متوفر الآن');
+  if (p.stores.some((s) => s.availability === 'in_stock') && parts.length === 0) parts.push('متوفر الآن');
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
 function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType, queryWords: string[]): DecisionLayer {
-  const prices = products.map((p) => p.best_price).filter((n) => n > 0);
-  const priceMin = prices.length ? Math.min(...prices) : 0;
-  const priceMax = prices.length ? Math.max(...prices) : 0;
-  const ranked = [...products].sort((a, b) => scoreProduct(b, queryWords, priceMin, priceMax, intent) - scoreProduct(a, queryWords, priceMin, priceMax, intent));
+  const ranked = [...products].sort((a, b) => scoreProduct(b, queryWords, intent) - scoreProduct(a, queryWords, intent));
   const top3 = ranked.slice(0, 3);
-
   const best = top3[0] || null;
+
   const decisionCard = best
     ? {
         title: best.name_ar,
@@ -308,7 +249,7 @@ function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType
     rating: Math.max(...p.stores.map((s) => s.rating ?? 0)),
     product_url: p.stores.find((s) => s.current_price === p.best_price)?.product_url || p.stores[0]?.product_url || '',
     store_name: p.stores.find((s) => s.current_price === p.best_price)?.store_name || p.stores[0]?.store_name || '',
-    reason_ar: buildReasonAr(p, p.best_price === priceMin && priceMin > 0),
+    reason_ar: buildReasonAr(p, p.best_price === Math.min(...products.map((x) => x.best_price).filter((n) => n > 0))),
   }));
 
   return { decisionCard, topMatches };
@@ -320,8 +261,8 @@ function mergeProducts(rows: ProductRow[]): GroupedSearchProduct[] {
   for (const row of rows) {
     const grouped = toGroupedSearchProduct(row);
     if (!grouped) continue;
-
     const existing = groupedMap.get(grouped.product_id);
+
     if (!existing) {
       groupedMap.set(grouped.product_id, grouped);
       continue;
@@ -329,7 +270,6 @@ function mergeProducts(rows: ProductRow[]): GroupedSearchProduct[] {
 
     const mergedStores = [...existing.stores, ...grouped.stores];
     const uniqueStores = new Map<string, SearchProduct>();
-
     for (const s of mergedStores) {
       const key = `${s.store_name || s.store}-${s.product_url}-${s.current_price}`;
       if (!uniqueStores.has(key)) uniqueStores.set(key, s);
@@ -352,202 +292,8 @@ function mergeProducts(rows: ProductRow[]): GroupedSearchProduct[] {
   return [...groupedMap.values()].filter((p) => p.stores.length > 0);
 }
 
-function toTsQuery(raw: string): string {
-  const words = normalizeArabic(raw).split(/\s+/).filter(Boolean).map((w) => w.replace(/'/g, "''"));
-  if (!words.length) return '';
-  return words.join(' & ');
-}
-
 function joinOr(parts: string[]): string {
   return [...new Set(parts)].join(',');
-}
-
-export async function POST(request: NextRequest) {
-  const started = Date.now();
-  const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
-  const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
-  const supabase = createServerClient();
-  const intent = rawQuery ? detectIntent(rawQuery).intent : 'fallback';
-
-  const selectClause = `
-    id, name_ar, name_en, brand, category, sku,
-    image_urls, specifications, description_ar, description_en,
-    product_stores!inner (
-      id, store_name, current_price, original_price, availability, product_url, coupon_code
-    )
-  `;
-
-  const hasPostFilters = typeof body.discount === 'number' || (body.specs !== undefined && Object.keys(body.specs).length > 0);
-
-  let currentPage: number;
-  let currentPageSize: number;
-  let offsetStart: number;
-  let offsetEnd: number;
-
-  if (typeof body.page === 'number' || typeof body.pageSize === 'number') {
-    currentPage = Math.max(1, body.page ?? 1);
-    currentPageSize = Math.min(100, Math.max(1, body.pageSize ?? 25));
-    offsetStart = (currentPage - 1) * currentPageSize;
-    offsetEnd = currentPage * currentPageSize - 1;
-  } else {
-    const pages = body.pages ?? 1;
-    currentPage = 1;
-    currentPageSize = Math.max(pages, 1) * 48;
-    offsetStart = 0;
-    offsetEnd = currentPageSize - 1;
-  }
-
-  let rows: ProductRow[] = [];
-  let totalCount = 0;
-  let dbError: string | null = null;
-  let queryWords: string[] = [];
-
-  if (rawQuery) {
-    const built = buildSearchQueries(rawQuery);
-    const arabicQuery = built.arabicQuery;
-    const englishTerms = built.englishTerms;
-    queryWords = built.queryWords;
-    const tsQuery = toTsQuery(rawQuery);
-
-    const baseFields = selectClause;
-    let collected: ProductRow[] = [];
-
-    if (tsQuery) {
-      let ftsQuery = supabase
-        .from('products')
-        .select(baseFields, { count: 'exact' })
-        .eq('is_active', true)
-        .or(joinOr([
-          `name_ar.ilike.%${arabicQuery}%`,
-          `name_en.ilike.%${rawQuery}%`,
-          `brand.ilike.%${rawQuery}%`,
-          `sku.ilike.%${rawQuery}%`,
-        ]));
-
-      ftsQuery = applyCommonFilters(ftsQuery, body);
-      ftsQuery = ftsQuery.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-
-      const { data: ftsData, error: ftsError } = await ftsQuery;
-      if (ftsError) {
-        console.error('[search:fts]', ftsError.message);
-        dbError = ftsError.message;
-      }
-      collected.push(...((ftsData ?? []) as unknown as ProductRow[]));
-
-      let q2 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
-      if (englishTerms.length > 0) {
-        const englishOr = englishTerms.flatMap((term) => term.split(/\s+/).filter((t) => t.length >= 2).map((t) => `name_en.ilike.%${t}%`));
-        const uniqueEnglishOr = joinOr(englishOr);
-        if (uniqueEnglishOr) q2 = q2.or(uniqueEnglishOr);
-      }
-      q2 = applyCommonFilters(q2, body);
-      q2 = q2.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-
-      const { data: d2, error: e2 } = await q2;
-      if (e2) {
-        console.error('[search:q2]', e2.message);
-        dbError = dbError || e2.message;
-      }
-      collected.push(...((d2 ?? []) as unknown as ProductRow[]));
-    } else {
-      let q1 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
-      if (arabicQuery.length > 0) {
-        q1 = q1.or(joinOr(arabicQuery.split(/\s+/).filter(Boolean).flatMap((w) => [
-          `name_ar.ilike.%${w}%`,
-          `name_en.ilike.%${w}%`,
-          `brand.ilike.%${w}%`,
-          `sku.ilike.%${w}%`,
-        ])));
-      }
-      q1 = applyCommonFilters(q1, body);
-      q1 = q1.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-      const { data: d1, error: e1 } = await q1;
-      if (e1) {
-        console.error('[search:q1]', e1.message);
-        dbError = e1.message;
-      }
-      collected.push(...((d1 ?? []) as unknown as ProductRow[]));
-    }
-
-    const seen = new Map<string, ProductRow>();
-    for (const row of collected) if (!seen.has(row.id)) seen.set(row.id, row);
-    rows = [...seen.values()];
-    totalCount = rows.length;
-  } else {
-    let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
-    q = applyCommonFilters(q, body);
-    q = q.range(hasPostFilters ? 0 : offsetStart, hasPostFilters ? 4999 : offsetEnd);
-    const { data, error, count } = await q;
-    if (error) {
-      console.error('[search] error:', error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    rows = (data ?? []) as unknown as ProductRow[];
-    totalCount = count ?? rows.length;
-  }
-
-  let products = mergeProducts(rows);
-  products = applyPostFilters(products, body);
-
-  if (products.length === 0 && rawQuery) {
-    const fallbackQuery = supabase
-      .from('products')
-      .select(selectClause, { count: 'exact' })
-      .eq('is_active', true)
-      .limit(20);
-    const { data: fb, error: fbErr } = await fallbackQuery;
-    if (fbErr) dbError = dbError || fbErr.message;
-    products = mergeProducts((fb ?? []) as unknown as ProductRow[]);
-  }
-
-  const pricesForSort = products.map((p) => p.best_price).filter((n) => n > 0);
-  const pMin = pricesForSort.length ? Math.min(...pricesForSort) : 0;
-  const pMax = pricesForSort.length ? Math.max(...pricesForSort) : 0;
-
-  if (rawQuery) {
-    const requestedSort = body.sort && body.sort !== 'relevance';
-    if (requestedSort) products.sort(compareBySort(body.sort!));
-    else products.sort((a, b) => scoreProduct(b, queryWords, pMin, pMax, intent) - scoreProduct(a, queryWords, pMin, pMax, intent));
-  } else {
-    products.sort(compareBySort(body.sort || 'relevance'));
-  }
-
-  const decision = buildDecisionLayer(products, intent, queryWords);
-
-  const total = hasPostFilters ? products.length : totalCount;
-  const pageProducts = hasPostFilters ? products.slice(offsetStart, offsetEnd + 1) : products.slice(0, currentPageSize);
-
-  const prices = pageProducts.map((p) => p.best_price).filter((n) => n > 0);
-  const result: ScrapedSearchResult & {
-    total: number;
-    page: number;
-    pageSize: number;
-    decisionCard: DecisionLayer['decisionCard'];
-    topMatches: DecisionTopMatch[];
-    intent?: IntentType;
-  } = {
-    products: pageProducts,
-    count: pageProducts.length,
-    total,
-    page: currentPage,
-    pageSize: currentPageSize,
-    query: rawQuery,
-    storeResults: computeStoreResults(pageProducts),
-    priceStats: {
-      min: prices.length ? Math.min(...prices) : null,
-      max: prices.length ? Math.max(...prices) : null,
-      avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
-    },
-    searchTime: (Date.now() - started) / 1000,
-    errors: dbError,
-    totalStores: computeUniqueStores(pageProducts),
-    successfulStores: computeUniqueStores(pageProducts),
-    decisionCard: decision.decisionCard,
-    topMatches: decision.topMatches,
-    intent,
-  };
-
-  return NextResponse.json(result);
 }
 
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
@@ -595,7 +341,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     name_en: row.name_en,
     brand: row.brand,
     model: row.model ?? null,
-    sku: row.sku,
+    sku: row.sku ?? null,
     current_price: Number(ps.current_price),
     original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
     availability: ps.availability || 'in_stock',
@@ -652,4 +398,142 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
     if (b.store_count !== a.store_count) return b.store_count - a.store_count;
     return a.best_price - b.best_price;
   };
+}
+
+export async function POST(request: NextRequest) {
+  const started = Date.now();
+  const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
+  const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
+  const supabase = createServerClient();
+  const intent = rawQuery ? detectIntent(rawQuery) : 'fallback';
+
+  const selectClause = `
+    id, name_ar, name_en, brand, category,
+    image_urls, specifications, description_ar, description_en,
+    product_stores!inner (
+      id, store_name, current_price, original_price, availability, product_url, coupon_code
+    )
+  `;
+
+  const hasPostFilters = typeof body.discount === 'number' || (body.specs !== undefined && Object.keys(body.specs).length > 0);
+
+  const currentPage = typeof body.page === 'number' ? Math.max(1, body.page) : 1;
+  const currentPageSize = typeof body.pageSize === 'number' ? Math.min(100, Math.max(1, body.pageSize)) : 25;
+  const offsetStart = (currentPage - 1) * currentPageSize;
+  const offsetEnd = currentPage * currentPageSize - 1;
+
+  let rows: ProductRow[] = [];
+  let totalCount = 0;
+  let dbError: string | null = null;
+  let queryWords: string[] = [];
+
+  if (rawQuery) {
+    const built = buildSearchQueries(rawQuery);
+    const arabicQuery = built.arabicQuery;
+    const englishTerms = built.englishTerms;
+    queryWords = built.queryWords;
+
+    const baseFields = selectClause;
+    const fieldTerms = [
+      `name_ar.ilike.%${arabicQuery}%`,
+      `name_en.ilike.%${rawQuery}%`,
+      `brand.ilike.%${rawQuery}%`,
+    ];
+
+    let collected: ProductRow[] = [];
+
+    let q1 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
+    if (arabicQuery.length > 0) q1 = q1.or(joinOr(fieldTerms));
+    q1 = applyCommonFilters(q1, body).range(0, hasPostFilters ? 4999 : offsetEnd + 200);
+
+    const { data: d1, error: e1 } = await q1;
+    if (e1) {
+      console.error('[search:q1]', e1.message);
+      dbError = e1.message;
+    }
+    collected.push(...((d1 ?? []) as unknown as ProductRow[]));
+
+    if (englishTerms.length > 0) {
+      let q2 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
+      const englishOr = englishTerms.flatMap((term) =>
+        term.split(/\s+/).filter((t) => t.length >= 2).flatMap((t) => [
+          `name_en.ilike.%${t}%`,
+          `brand.ilike.%${t}%`,
+        ])
+      );
+      const uniqueEnglishOr = joinOr(englishOr);
+      if (uniqueEnglishOr) q2 = q2.or(uniqueEnglishOr);
+      q2 = applyCommonFilters(q2, body).range(0, hasPostFilters ? 4999 : offsetEnd + 200);
+
+      const { data: d2, error: e2 } = await q2;
+      if (e2) {
+        console.error('[search:q2]', e2.message);
+        dbError = dbError || e2.message;
+      }
+      collected.push(...((d2 ?? []) as unknown as ProductRow[]));
+    }
+
+    const seen = new Map<string, ProductRow>();
+    for (const row of collected) if (!seen.has(row.id)) seen.set(row.id, row);
+    rows = [...seen.values()];
+    totalCount = rows.length;
+  } else {
+    let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
+    q = applyCommonFilters(q, body);
+    q = q.range(hasPostFilters ? 0 : offsetStart, hasPostFilters ? 4999 : offsetEnd);
+    const { data, error, count } = await q;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    rows = (data ?? []) as unknown as ProductRow[];
+    totalCount = count ?? rows.length;
+  }
+
+  let products = mergeProducts(rows);
+  products = applyPostFilters(products, body);
+
+  if (products.length === 0 && rawQuery) {
+    const fallbackQuery = supabase
+      .from('products')
+      .select(selectClause, { count: 'exact' })
+      .eq('is_active', true)
+      .limit(20);
+    const { data: fb, error: fbErr } = await fallbackQuery;
+    if (fbErr) dbError = dbError || fbErr.message;
+    products = mergeProducts((fb ?? []) as unknown as ProductRow[]);
+  }
+
+  const decision = buildDecisionLayer(products, intent, queryWords);
+  const prices = products.map((p) => p.best_price).filter((n) => n > 0);
+
+  const pageProducts = hasPostFilters ? products.slice(offsetStart, offsetEnd + 1) : products.slice(0, currentPageSize);
+
+  const result: ScrapedSearchResult & {
+    total: number;
+    page: number;
+    pageSize: number;
+    decisionCard: DecisionLayer['decisionCard'];
+    topMatches: DecisionTopMatch[];
+    intent?: IntentType;
+  } = {
+    products: pageProducts,
+    count: pageProducts.length,
+    total: hasPostFilters ? products.length : totalCount,
+    page: currentPage,
+    pageSize: currentPageSize,
+    query: rawQuery,
+    storeResults: computeStoreResults(pageProducts),
+    priceStats: {
+      min: prices.length ? Math.min(...prices) : null,
+      max: prices.length ? Math.max(...prices) : null,
+      avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
+    },
+    searchTime: (Date.now() - started) / 1000,
+    errors: dbError,
+    totalStores: computeUniqueStores(pageProducts),
+    successfulStores: computeUniqueStores(pageProducts),
+    decisionCard: decision.decisionCard,
+    topMatches: decision.topMatches,
+    intent,
+  };
+
+  return NextResponse.json(result);
 }
