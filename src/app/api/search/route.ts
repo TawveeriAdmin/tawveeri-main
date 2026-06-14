@@ -77,6 +77,8 @@ type DecisionLayer = {
   topMatches: DecisionTopMatch[];
 };
 
+type IntentType = 'price' | 'compare' | 'brand' | 'model' | 'category' | 'fallback';
+
 function normalizeArabic(text: string): string {
   return text
     .replace(/[\u064B-\u065F\u0670]/g, '')
@@ -171,11 +173,40 @@ function expandToEnglish(words: string[]): string[] {
   return [...out];
 }
 
-function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[] } {
+function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[]; queryWords: string[] } {
   const normalized = normalizeArabic(raw);
   const words = normalized.split(/\s+/).filter(Boolean);
   const englishTerms = expandToEnglish(words);
-  return { arabicQuery: normalized, englishTerms };
+  const queryWords = [...new Set([...words, ...englishTerms.flatMap((t) => t.split(/\s+/))])];
+  return { arabicQuery: normalized, englishTerms, queryWords };
+}
+
+function detectIntent(query: string): { intent: IntentType; confidence: number } {
+  const text = normalizeArabic(query).toLowerCase();
+  const tokens = text.split(/\s+/).filter(Boolean);
+
+  const score = {
+    price: 0,
+    compare: 0,
+    brand: 0,
+    model: 0,
+    category: 0,
+  };
+
+  if (/(أرخص|ارخص|سعر|price|cheapest|lowest)/i.test(text)) score.price += 3;
+  if (/(قارن|مقارنة|compare|vs|versus)/i.test(text)) score.compare += 3;
+  if (tokens.some((t) => Object.keys(BRAND_BOOSTS).includes(t))) score.brand += 2;
+  if (tokens.some((t) => /\d/.test(t))) score.model += 2;
+  if (Object.keys(ARABIC_TO_ENGLISH).some((k) => text.includes(normalizeArabic(k)))) score.category += 2;
+
+  const intent = (Object.entries(score).sort((a, b) => b[1] - a[1])[0]?.[0] || 'fallback') as IntentType;
+  const best = score[intent as keyof typeof score] || 0;
+  const total = Object.values(score).reduce((a, b) => a + b, 0) || 1;
+
+  return {
+    intent: best > 0 ? intent : 'fallback',
+    confidence: Number((best / total).toFixed(2)),
+  };
 }
 
 function applyCommonFilters(query: any, body: SearchBody): any {
@@ -196,7 +227,7 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-function scoreProduct(p: GroupedSearchProduct, queryWords: string[], priceMin: number, priceMax: number): number {
+function scoreProduct(p: GroupedSearchProduct, queryWords: string[], priceMin: number, priceMax: number, intent: IntentType): number {
   const nameAr = normalizeArabic(p.name_ar || '');
   const nameEn = (p.name_en || '').toLowerCase();
   const isAccessory = hasAccessoryHint(nameAr, nameEn);
@@ -230,8 +261,15 @@ function scoreProduct(p: GroupedSearchProduct, queryWords: string[], priceMin: n
 
   const accessoryPenalty = isAccessory ? 50 : 0;
   const acBoost = acSignal ? 14 : 0;
+  const intentBoost =
+    intent === 'price' ? (p.best_price > 0 ? 8 : 0) :
+    intent === 'compare' ? storeBoost + ratingBoost :
+    intent === 'brand' ? brandBoost * 0.25 :
+    intent === 'model' ? queryBoost * 0.35 :
+    intent === 'category' ? queryBoost * 0.2 :
+    0;
 
-  return inStockBoost + storeBoost + dealBoost + ratingBoost + brandBoost + queryBoost + acBoost - pricePenalty - accessoryPenalty;
+  return inStockBoost + storeBoost + dealBoost + ratingBoost + brandBoost + queryBoost + acBoost + intentBoost - pricePenalty - accessoryPenalty;
 }
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
@@ -248,12 +286,12 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
-function buildDecisionLayer(products: GroupedSearchProduct[]): DecisionLayer {
+function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType, queryWords: string[]): DecisionLayer {
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
   const priceMin = prices.length ? Math.min(...prices) : 0;
   const priceMax = prices.length ? Math.max(...prices) : 0;
 
-  const ranked = [...products].sort((a, b) => scoreProduct(b, [], priceMin, priceMax) - scoreProduct(a, [], priceMin, priceMax));
+  const ranked = [...products].sort((a, b) => scoreProduct(b, queryWords, priceMin, priceMax, intent) - scoreProduct(a, queryWords, priceMin, priceMax, intent));
   const top3 = ranked.slice(0, 3);
 
   const best = top3[0] || null;
@@ -334,6 +372,7 @@ export async function POST(request: NextRequest) {
   const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
   const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
   const supabase = createServerClient();
+  const intent = rawQuery ? detectIntent(rawQuery).intent : 'fallback';
 
   const selectClause = `
     id, name_ar, name_en, brand, model, category, sku,
@@ -368,21 +407,14 @@ export async function POST(request: NextRequest) {
   let rows: ProductRow[] = [];
   let totalCount = 0;
   let dbError: string | null = null;
+  let queryWords: string[] = [];
 
   if (rawQuery) {
-    const { arabicQuery, englishTerms } = buildSearchQueries(rawQuery);
-    const arabicWords = arabicQuery.split(/\s+/).filter(Boolean);
-    const queryWords = [...new Set([...arabicWords, ...englishTerms.flatMap((t) => t.split(/\s+/))])];
+    const built = buildSearchQueries(rawQuery);
+    const arabicQuery = built.arabicQuery;
+    const englishTerms = built.englishTerms;
+    queryWords = built.queryWords;
     const tsQuery = toTsQuery(rawQuery);
-
-    const ftsSelect = `
-      id, name_ar, name_en, brand, model, category, sku,
-      image_urls, specifications, description_ar, description_en,
-      product_stores!inner (
-        id, store_name, current_price, original_price, availability, product_url, coupon_code
-      ),
-      search_rank
-    `;
 
     const baseFields = `
       id, name_ar, name_en, brand, model, category, sku,
@@ -395,15 +427,6 @@ export async function POST(request: NextRequest) {
     let collected: ProductRow[] = [];
 
     if (tsQuery) {
-      const rankExpr = `ts_rank(
-        setweight(to_tsvector('simple', coalesce(name_ar, '')), 'A') ||
-        setweight(to_tsvector('simple', coalesce(name_en, '')), 'A') ||
-        setweight(to_tsvector('simple', coalesce(brand, '')), 'B') ||
-        setweight(to_tsvector('simple', coalesce(model, '')), 'C') ||
-        setweight(to_tsvector('simple', coalesce(description_en, '')), 'D'),
-        websearch_to_tsquery('simple', '${tsQuery}')
-      )`;
-
       let ftsQuery = supabase
         .from('products')
         .select(baseFields, { count: 'exact' })
@@ -445,8 +468,8 @@ export async function POST(request: NextRequest) {
       collected.push(...((d2 ?? []) as unknown as ProductRow[]));
     } else {
       let q1 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
-      if (arabicWords.length > 0) {
-        q1 = q1.or(joinOr(arabicWords.flatMap((w) => [
+      if (arabicQuery.length > 0) {
+        q1 = q1.or(joinOr(arabicQuery.split(/\s+/).filter(Boolean).flatMap((w) => [
           `name_ar.ilike.%${w}%`,
           `name_en.ilike.%${w}%`,
           `brand.ilike.%${w}%`,
@@ -482,21 +505,21 @@ export async function POST(request: NextRequest) {
   }
 
   let products = mergeProducts(rows);
-
   products = applyPostFilters(products, body);
 
+  const pricesForSort = products.map((p) => p.best_price).filter((n) => n > 0);
+  const pMin = pricesForSort.length ? Math.min(...pricesForSort) : 0;
+  const pMax = pricesForSort.length ? Math.max(...pricesForSort) : 0;
+
   if (rawQuery) {
-    const prices = products.map((p) => p.best_price).filter((n) => n > 0);
-    const pMin = prices.length ? Math.min(...prices) : 0;
-    const pMax = prices.length ? Math.max(...prices) : 0;
     const requestedSort = body.sort && body.sort !== 'relevance';
     if (requestedSort) products.sort(compareBySort(body.sort!));
-    else products.sort((a, b) => scoreProduct(b, queryWords, pMin, pMax) - scoreProduct(a, queryWords, pMin, pMax));
+    else products.sort((a, b) => scoreProduct(b, queryWords, pMin, pMax, intent) - scoreProduct(a, queryWords, pMin, pMax, intent));
   } else {
     products.sort(compareBySort(body.sort || 'relevance'));
   }
 
-  const decision = buildDecisionLayer(products);
+  const decision = buildDecisionLayer(products, intent, queryWords);
 
   const total = hasPostFilters ? products.length : totalCount;
   const pageProducts = hasPostFilters
@@ -510,6 +533,7 @@ export async function POST(request: NextRequest) {
     pageSize: number;
     decisionCard: DecisionLayer['decisionCard'];
     topMatches: DecisionTopMatch[];
+    intent?: IntentType;
   } = {
     products: pageProducts,
     count: pageProducts.length,
@@ -529,6 +553,7 @@ export async function POST(request: NextRequest) {
     successfulStores: computeUniqueStores(pageProducts),
     decisionCard: decision.decisionCard,
     topMatches: decision.topMatches,
+    intent,
   };
 
   return NextResponse.json(result);
