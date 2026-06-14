@@ -34,7 +34,7 @@ interface ProductRow {
   name_ar: string;
   name_en: string;
   brand: string;
-  model: string;
+  model?: string | null;
   category: string;
   sku: string | null;
   image_urls: string[] | null;
@@ -185,13 +185,7 @@ function detectIntent(query: string): { intent: IntentType; confidence: number }
   const text = normalizeArabic(query).toLowerCase();
   const tokens = text.split(/\s+/).filter(Boolean);
 
-  const score = {
-    price: 0,
-    compare: 0,
-    brand: 0,
-    model: 0,
-    category: 0,
-  };
+  const score = { price: 0, compare: 0, brand: 0, model: 0, category: 0 };
 
   if (/(أرخص|ارخص|سعر|price|cheapest|lowest)/i.test(text)) score.price += 3;
   if (/(قارن|مقارنة|compare|vs|versus)/i.test(text)) score.compare += 3;
@@ -230,6 +224,7 @@ function applyCommonFilters(query: any, body: SearchBody): any {
 function scoreProduct(p: GroupedSearchProduct, queryWords: string[], priceMin: number, priceMax: number, intent: IntentType): number {
   const nameAr = normalizeArabic(p.name_ar || '');
   const nameEn = (p.name_en || '').toLowerCase();
+  const modelText = normalizeArabic((p as any).model || '');
   const isAccessory = hasAccessoryHint(nameAr, nameEn);
   const acSignal = hasACSignal(nameAr, nameEn);
 
@@ -249,6 +244,7 @@ function scoreProduct(p: GroupedSearchProduct, queryWords: string[], priceMin: n
     if (!t) return acc;
     if (nameAr.includes(t)) return acc + 6;
     if (nameEn.includes(t.toLowerCase())) return acc + 4;
+    if (modelText && modelText.includes(t)) return acc + 5;
     return acc;
   }, 0);
 
@@ -290,7 +286,6 @@ function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
   const priceMin = prices.length ? Math.min(...prices) : 0;
   const priceMax = prices.length ? Math.max(...prices) : 0;
-
   const ranked = [...products].sort((a, b) => scoreProduct(b, queryWords, priceMin, priceMax, intent) - scoreProduct(a, queryWords, priceMin, priceMax, intent));
   const top3 = ranked.slice(0, 3);
 
@@ -375,16 +370,14 @@ export async function POST(request: NextRequest) {
   const intent = rawQuery ? detectIntent(rawQuery).intent : 'fallback';
 
   const selectClause = `
-    id, name_ar, name_en, brand, model, category, sku,
+    id, name_ar, name_en, brand, category, sku,
     image_urls, specifications, description_ar, description_en,
     product_stores!inner (
       id, store_name, current_price, original_price, availability, product_url, coupon_code
     )
   `;
 
-  const hasPostFilters =
-    typeof body.discount === 'number' ||
-    (body.specs !== undefined && Object.keys(body.specs).length > 0);
+  const hasPostFilters = typeof body.discount === 'number' || (body.specs !== undefined && Object.keys(body.specs).length > 0);
 
   let currentPage: number;
   let currentPageSize: number;
@@ -416,14 +409,7 @@ export async function POST(request: NextRequest) {
     queryWords = built.queryWords;
     const tsQuery = toTsQuery(rawQuery);
 
-    const baseFields = `
-      id, name_ar, name_en, brand, model, category, sku,
-      image_urls, specifications, description_ar, description_en,
-      product_stores!inner (
-        id, store_name, current_price, original_price, availability, product_url, coupon_code
-      )
-    `;
-
+    const baseFields = selectClause;
     let collected: ProductRow[] = [];
 
     if (tsQuery) {
@@ -435,6 +421,7 @@ export async function POST(request: NextRequest) {
           `name_ar.ilike.%${arabicQuery}%`,
           `name_en.ilike.%${rawQuery}%`,
           `brand.ilike.%${rawQuery}%`,
+          `sku.ilike.%${rawQuery}%`,
         ]));
 
       ftsQuery = applyCommonFilters(ftsQuery, body);
@@ -445,9 +432,7 @@ export async function POST(request: NextRequest) {
         console.error('[search:fts]', ftsError.message);
         dbError = ftsError.message;
       }
-
-      const pass1 = (ftsData ?? []) as unknown as ProductRow[];
-      collected.push(...pass1);
+      collected.push(...((ftsData ?? []) as unknown as ProductRow[]));
 
       let q2 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
       if (englishTerms.length > 0) {
@@ -455,7 +440,6 @@ export async function POST(request: NextRequest) {
         const uniqueEnglishOr = joinOr(englishOr);
         if (uniqueEnglishOr) q2 = q2.or(uniqueEnglishOr);
       }
-
       q2 = applyCommonFilters(q2, body);
       q2 = q2.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
 
@@ -464,7 +448,6 @@ export async function POST(request: NextRequest) {
         console.error('[search:q2]', e2.message);
         dbError = dbError || e2.message;
       }
-
       collected.push(...((d2 ?? []) as unknown as ProductRow[]));
     } else {
       let q1 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
@@ -473,6 +456,7 @@ export async function POST(request: NextRequest) {
           `name_ar.ilike.%${w}%`,
           `name_en.ilike.%${w}%`,
           `brand.ilike.%${w}%`,
+          `sku.ilike.%${w}%`,
         ])));
       }
       q1 = applyCommonFilters(q1, body);
@@ -486,9 +470,7 @@ export async function POST(request: NextRequest) {
     }
 
     const seen = new Map<string, ProductRow>();
-    for (const row of collected) {
-      if (!seen.has(row.id)) seen.set(row.id, row);
-    }
+    for (const row of collected) if (!seen.has(row.id)) seen.set(row.id, row);
     rows = [...seen.values()];
     totalCount = rows.length;
   } else {
@@ -507,6 +489,17 @@ export async function POST(request: NextRequest) {
   let products = mergeProducts(rows);
   products = applyPostFilters(products, body);
 
+  if (products.length === 0 && rawQuery) {
+    const fallbackQuery = supabase
+      .from('products')
+      .select(selectClause, { count: 'exact' })
+      .eq('is_active', true)
+      .limit(20);
+    const { data: fb, error: fbErr } = await fallbackQuery;
+    if (fbErr) dbError = dbError || fbErr.message;
+    products = mergeProducts((fb ?? []) as unknown as ProductRow[]);
+  }
+
   const pricesForSort = products.map((p) => p.best_price).filter((n) => n > 0);
   const pMin = pricesForSort.length ? Math.min(...pricesForSort) : 0;
   const pMax = pricesForSort.length ? Math.max(...pricesForSort) : 0;
@@ -522,9 +515,7 @@ export async function POST(request: NextRequest) {
   const decision = buildDecisionLayer(products, intent, queryWords);
 
   const total = hasPostFilters ? products.length : totalCount;
-  const pageProducts = hasPostFilters
-    ? products.slice(offsetStart, offsetEnd + 1)
-    : products.slice(0, currentPageSize);
+  const pageProducts = hasPostFilters ? products.slice(offsetStart, offsetEnd + 1) : products.slice(0, currentPageSize);
 
   const prices = pageProducts.map((p) => p.best_price).filter((n) => n > 0);
   const result: ScrapedSearchResult & {
@@ -586,9 +577,7 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
       return Object.entries(body.specs!).every(([key, values]) => {
         if (!values || values.length === 0) return true;
         const dbValue = hasDbSpecs ? dbSpecs![key] : undefined;
-        const value = dbValue !== undefined && dbValue !== null
-          ? String(dbValue).toLowerCase()
-          : fallbackSpecs?.[key] ?? '';
+        const value = dbValue !== undefined && dbValue !== null ? String(dbValue).toLowerCase() : fallbackSpecs?.[key] ?? '';
         return values.map((item) => item.toLowerCase()).includes(value);
       });
     });
@@ -605,7 +594,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     name_ar: row.name_ar,
     name_en: row.name_en,
     brand: row.brand,
-    model: row.model,
+    model: row.model ?? null,
     sku: row.sku,
     current_price: Number(ps.current_price),
     original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
