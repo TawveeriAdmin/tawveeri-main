@@ -4,7 +4,6 @@ import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import type { GroupedSearchProduct } from '@/lib/scraping/search/product-grouper';
 import type { SearchProduct } from '@/lib/scraping/search/types';
 import type { ProductCategory } from '@/lib/database/types';
-import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -29,20 +28,15 @@ interface SearchBody {
   discount?: number;
 }
 
+// ✅ Schema-safe: only columns that exist in products table
 interface ProductRow {
   id: string;
   name_ar: string;
   name_en: string;
   brand: string;
   category: string;
-  sku?: string | null;
-  model?: string | null;
-  image_urls: string[] | null;
-  specifications: Record<string, unknown> | null;
-  description_ar: string | null;
-  description_en: string | null;
+  image_url: string | null;
   product_stores: ProductStoreRow[];
-  search_rank?: number | null;
 }
 
 interface ProductStoreRow {
@@ -138,22 +132,38 @@ const BRAND_BOOSTS: Record<string, number> = {
 function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
-  return ['حامل', 'غطاء', 'كفر', 'ملحق', 'شاحن', 'كيبل', 'سلك'].some((h) => ar.includes(h)) ||
-    ['accessory', 'cover', 'mount', 'holder', 'adapter', 'charger', 'cable', 'case', 'bracket'].some((h) => en.includes(h));
+  return (
+    ['حامل', 'غطاء', 'كفر', 'ملحق', 'شاحن', 'كيبل', 'سلك'].some((h) => ar.includes(h)) ||
+    ['accessory', 'cover', 'mount', 'holder', 'adapter', 'charger', 'cable', 'case', 'bracket'].some((h) => en.includes(h))
+  );
 }
 
-function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[]; queryWords: string[] } {
+function buildSearchQueries(raw: string): {
+  arabicQuery: string;
+  englishTerms: string[];
+  queryWords: string[];
+} {
   const normalized = normalizeArabic(raw);
   const words = normalized.split(/\s+/).filter(Boolean);
-  const englishTerms = [...new Set(words.flatMap((w) => ARABIC_TO_ENGLISH[w] || ARABIC_TO_ENGLISH[normalizeArabic(w)] || (/[A-Za-z0-9]/.test(w) ? [w] : [])))];
-  const queryWords = [...new Set([...words, ...englishTerms.flatMap((t) => t.split(/\s+/))])];
+  const englishTerms = [
+    ...new Set(
+      words.flatMap(
+        (w) =>
+          ARABIC_TO_ENGLISH[w] ||
+          ARABIC_TO_ENGLISH[normalizeArabic(w)] ||
+          (/[A-Za-z0-9]/.test(w) ? [w] : [])
+      )
+    ),
+  ];
+  const queryWords = [
+    ...new Set([...words, ...englishTerms.flatMap((t) => t.split(/\s+/))]),
+  ];
   return { arabicQuery: normalized, englishTerms, queryWords };
 }
 
 function detectIntent(query: string): IntentType {
   const text = normalizeArabic(query).toLowerCase();
   const tokens = text.split(/\s+/).filter(Boolean);
-
   if (/(أرخص|ارخص|سعر|price|cheapest|lowest)/i.test(text)) return 'price';
   if (/(قارن|مقارنة|compare|vs|versus)/i.test(text)) return 'compare';
   if (tokens.some((t) => Object.keys(BRAND_BOOSTS).includes(t))) return 'brand';
@@ -168,7 +178,7 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   if (body.stores && body.stores.length > 0) query = query.in('product_stores.store_name', body.stores);
   if (body.availability && body.availability.length > 0) {
     const VALID = ['in_stock', 'out_of_stock', 'limited_stock', 'pre_order'] as const;
-    type A = typeof VALID[number];
+    type A = (typeof VALID)[number];
     const filtered = body.availability.filter((a): a is A => (VALID as readonly string[]).includes(a));
     if (filtered.length > 0) query = query.in('product_stores.availability', filtered);
   } else if (body.in_stock_only) {
@@ -179,14 +189,20 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-function scoreProduct(p: GroupedSearchProduct, queryWords: string[], intent: IntentType): number {
+function scoreProduct(
+  p: GroupedSearchProduct,
+  queryWords: string[],
+  intent: IntentType
+): number {
   const nameAr = normalizeArabic(p.name_ar || '');
   const nameEn = (p.name_en || '').toLowerCase();
   const isAccessory = hasAccessoryHint(nameAr, nameEn);
 
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 30 : 0;
   const storeBoost = Math.min(p.store_count * 6, 24);
-  const dealBoost = p.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price) ? 12 : 0;
+  const dealBoost = p.stores.some(
+    (s) => s.original_price && s.current_price && s.original_price > s.current_price
+  ) ? 12 : 0;
   const queryBoost = queryWords.reduce((acc, w) => {
     const t = normalizeArabic(w);
     if (!t) return acc;
@@ -194,15 +210,12 @@ function scoreProduct(p: GroupedSearchProduct, queryWords: string[], intent: Int
     if (nameEn.includes(t.toLowerCase())) return acc + 4;
     return acc;
   }, 0);
-
   const brandBoost = Object.entries(BRAND_BOOSTS).reduce((acc, [brand, boost]) => {
     const hit = nameAr.includes(normalizeArabic(brand)) || nameEn.includes(brand);
     return hit ? acc + boost : acc;
   }, 0);
-
   const priceBoost = p.best_price > 0 ? 6 : 0;
   const accessoryPenalty = isAccessory ? 40 : 0;
-
   const intentBoost =
     intent === 'price' ? priceBoost :
     intent === 'compare' ? storeBoost + dealBoost :
@@ -210,24 +223,38 @@ function scoreProduct(p: GroupedSearchProduct, queryWords: string[], intent: Int
     intent === 'category' ? queryBoost * 0.3 :
     0;
 
-  return inStockBoost + storeBoost + dealBoost + brandBoost + queryBoost + priceBoost + intentBoost - accessoryPenalty;
+  return (
+    inStockBoost + storeBoost + dealBoost + brandBoost +
+    queryBoost + priceBoost + intentBoost - accessoryPenalty
+  );
 }
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
   if (isCheapest) parts.push('أرخص سعر');
   if (p.store_count >= 2) parts.push(`متوفر في ${p.store_count} متاجر`);
-  const dealStore = p.stores.find((s) => s.original_price && s.current_price && s.original_price > s.current_price);
+  const dealStore = p.stores.find(
+    (s) => s.original_price && s.current_price && s.original_price > s.current_price
+  );
   if (dealStore && dealStore.original_price) {
-    const pct = Math.round(((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100);
+    const pct = Math.round(
+      ((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100
+    );
     if (pct > 0) parts.push(`خصم ${pct}%`);
   }
-  if (p.stores.some((s) => s.availability === 'in_stock') && parts.length === 0) parts.push('متوفر الآن');
+  if (p.stores.some((s) => s.availability === 'in_stock') && parts.length === 0)
+    parts.push('متوفر الآن');
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
-function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType, queryWords: string[]): DecisionLayer {
-  const ranked = [...products].sort((a, b) => scoreProduct(b, queryWords, intent) - scoreProduct(a, queryWords, intent));
+function buildDecisionLayer(
+  products: GroupedSearchProduct[],
+  intent: IntentType,
+  queryWords: string[]
+): DecisionLayer {
+  const ranked = [...products].sort(
+    (a, b) => scoreProduct(b, queryWords, intent) - scoreProduct(a, queryWords, intent)
+  );
   const top3 = ranked.slice(0, 3);
   const best = top3[0] || null;
 
@@ -235,8 +262,12 @@ function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType
     ? {
         title: best.name_ar,
         best_price: best.best_price,
-        store_name: best.stores.find((s) => s.current_price === best.best_price)?.store_name || best.stores[0]?.store_name || '',
-        product_url: best.stores.find((s) => s.current_price === best.best_price)?.product_url || best.stores[0]?.product_url || '',
+        store_name:
+          best.stores.find((s) => s.current_price === best.best_price)?.store_name ||
+          best.stores[0]?.store_name || '',
+        product_url:
+          best.stores.find((s) => s.current_price === best.best_price)?.product_url ||
+          best.stores[0]?.product_url || '',
       }
     : null;
 
@@ -247,12 +278,69 @@ function buildDecisionLayer(products: GroupedSearchProduct[], intent: IntentType
     store_count: p.store_count,
     availability: p.availability,
     rating: Math.max(...p.stores.map((s) => s.rating ?? 0)),
-    product_url: p.stores.find((s) => s.current_price === p.best_price)?.product_url || p.stores[0]?.product_url || '',
-    store_name: p.stores.find((s) => s.current_price === p.best_price)?.store_name || p.stores[0]?.store_name || '',
-    reason_ar: buildReasonAr(p, p.best_price === Math.min(...products.map((x) => x.best_price).filter((n) => n > 0))),
+    product_url:
+      p.stores.find((s) => s.current_price === p.best_price)?.product_url ||
+      p.stores[0]?.product_url || '',
+    store_name:
+      p.stores.find((s) => s.current_price === p.best_price)?.store_name ||
+      p.stores[0]?.store_name || '',
+    reason_ar: buildReasonAr(
+      p,
+      p.best_price === Math.min(...products.map((x) => x.best_price).filter((n) => n > 0))
+    ),
   }));
 
   return { decisionCard, topMatches };
+}
+
+// ✅ Fixed: only uses columns that exist in the DB schema
+function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
+  const productStores = (row.product_stores || []).filter(
+    (ps) => ps && ps.current_price != null
+  );
+  if (productStores.length === 0) return null;
+
+  const storeEntries: SearchProduct[] = productStores.map((ps) => ({
+    name_ar: row.name_ar,
+    name_en: row.name_en,
+    brand: row.brand,
+    model: '',
+    sku: null,
+    current_price: Number(ps.current_price),
+    original_price: ps.original_price != null ? Number(ps.original_price) : null,
+    availability: ps.availability || 'in_stock',
+    product_url: ps.product_url,
+    image_urls: row.image_url ? [row.image_url] : [],
+    specifications: {},
+    category: row.category as ProductCategory,
+    description_ar: null,
+    description_en: null,
+    is_free_delivery: false,
+    delivery_time_days: null,
+    delivery_cost: 0,
+    is_deal: !!(ps.original_price && ps.current_price && ps.original_price > ps.current_price),
+    coupon_code: ps.coupon_code ?? null,
+    store: ps.store_name || 'unknown',
+    store_name: ps.store_name || '',
+    rating: null,
+    review_count: null,
+  }));
+
+  const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
+  const bestPrice = prices.length ? Math.min(...prices) : 0;
+  const anyInStock = storeEntries.some((e) => e.availability === 'in_stock');
+  const uniqueStores = new Set(storeEntries.map((e) => e.store)).size;
+  const rep = storeEntries[0];
+
+  return {
+    ...rep,
+    current_price: bestPrice,
+    availability: anyInStock ? 'in_stock' : rep.availability,
+    stores: storeEntries,
+    best_price: bestPrice,
+    store_count: uniqueStores,
+    product_id: row.id,
+  } as unknown as GroupedSearchProduct;
 }
 
 function mergeProducts(rows: ProductRow[]): GroupedSearchProduct[] {
@@ -296,12 +384,17 @@ function joinOr(parts: string[]): string {
   return [...new Set(parts)].join(',');
 }
 
-function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
+function applyPostFilters(
+  products: GroupedSearchProduct[],
+  body: SearchBody
+): GroupedSearchProduct[] {
   let result = products;
 
   if (body.deals_only) {
     result = result.filter((product) =>
-      product.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price)
+      product.stores.some(
+        (s) => s.original_price && s.current_price && s.original_price > s.current_price
+      )
     );
   }
 
@@ -309,74 +402,14 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
     result = result.filter((product) =>
       product.stores.some((store) => {
         if (!store.original_price || !store.current_price) return false;
-        const discount = ((store.original_price - store.current_price) / store.original_price) * 100;
+        const discount =
+          ((store.original_price - store.current_price) / store.original_price) * 100;
         return discount >= body.discount!;
       })
     );
   }
 
-  if (body.specs && Object.keys(body.specs).length > 0) {
-    result = result.filter((product) => {
-      const dbSpecs = (product.specifications ?? null) as Record<string, unknown> | null;
-      const hasDbSpecs = dbSpecs && Object.keys(dbSpecs).length > 0;
-      const fallbackSpecs = hasDbSpecs ? null : extractSpecsFromTitle(product.name_en || product.name_ar || '');
-      return Object.entries(body.specs!).every(([key, values]) => {
-        if (!values || values.length === 0) return true;
-        const dbValue = hasDbSpecs ? dbSpecs![key] : undefined;
-        const value = dbValue !== undefined && dbValue !== null ? String(dbValue).toLowerCase() : fallbackSpecs?.[key] ?? '';
-        return values.map((item) => item.toLowerCase()).includes(value);
-      });
-    });
-  }
-
   return result;
-}
-
-function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
-  const productStores = (row.product_stores || []).filter((ps) => ps && ps.current_price != null);
-  if (productStores.length === 0) return null;
-
-  const storeEntries: SearchProduct[] = productStores.map((ps) => ({
-    name_ar: row.name_ar,
-    name_en: row.name_en,
-    brand: row.brand,
-    model: row.model ?? null,
-    sku: row.sku ?? null,
-    current_price: Number(ps.current_price),
-    original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
-    availability: ps.availability || 'in_stock',
-    product_url: ps.product_url,
-    image_urls: row.image_urls || [],
-    specifications: (row.specifications || {}) as Record<string, unknown>,
-    category: row.category as ProductCategory,
-    description_ar: row.description_ar,
-    description_en: row.description_en,
-    is_free_delivery: false,
-    delivery_time_days: null,
-    delivery_cost: 0,
-    is_deal: !!(ps.original_price && ps.current_price && ps.original_price > ps.current_price),
-    coupon_code: ps.coupon_code ?? null,
-    store: ps.store_name || 'unknown',
-    store_name: ps.store_name || '',
-    rating: null,
-    review_count: null,
-  }));
-
-  const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
-  const bestPrice = prices.length ? Math.min(...prices) : 0;
-  const anyInStock = storeEntries.some((e) => e.availability === 'in_stock');
-  const uniqueStores = new Set(storeEntries.map((e) => e.store)).size;
-  const rep = storeEntries[0];
-
-  return {
-    ...rep,
-    current_price: bestPrice,
-    availability: anyInStock ? 'in_stock' : rep.availability,
-    stores: storeEntries,
-    best_price: bestPrice,
-    store_count: uniqueStores,
-    product_id: row.id,
-  } as unknown as GroupedSearchProduct;
 }
 
 function computeStoreResults(products: GroupedSearchProduct[]): Record<string, number> {
@@ -400,6 +433,16 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
   };
 }
 
+// ✅ Schema-safe selectClause — only real columns
+const selectClause = `
+  id, name_ar, name_en, brand, category,
+  image_url,
+  product_stores!inner (
+    id, store_name, current_price, original_price,
+    availability, product_url, coupon_code
+  )
+`;
+
 export async function POST(request: NextRequest) {
   const started = Date.now();
   const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
@@ -407,18 +450,9 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient();
   const intent = rawQuery ? detectIntent(rawQuery) : 'fallback';
 
-  const selectClause = `
-    id, name_ar, name_en, brand, category,
-    image_urls, specifications, description_ar, description_en,
-    product_stores!inner (
-      id, store_name, current_price, original_price, availability, product_url, coupon_code
-    )
-  `;
-
-  const hasPostFilters = typeof body.discount === 'number' || (body.specs !== undefined && Object.keys(body.specs).length > 0);
-
   const currentPage = typeof body.page === 'number' ? Math.max(1, body.page) : 1;
-  const currentPageSize = typeof body.pageSize === 'number' ? Math.min(100, Math.max(1, body.pageSize)) : 25;
+  const currentPageSize =
+    typeof body.pageSize === 'number' ? Math.min(100, Math.max(1, body.pageSize)) : 25;
   const offsetStart = (currentPage - 1) * currentPageSize;
   const offsetEnd = currentPage * currentPageSize - 1;
 
@@ -433,7 +467,6 @@ export async function POST(request: NextRequest) {
     const englishTerms = built.englishTerms;
     queryWords = built.queryWords;
 
-    const baseFields = selectClause;
     const fieldTerms = [
       `name_ar.ilike.%${arabicQuery}%`,
       `name_en.ilike.%${rawQuery}%`,
@@ -442,9 +475,13 @@ export async function POST(request: NextRequest) {
 
     let collected: ProductRow[] = [];
 
-    let q1 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
+    // Path 1: Arabic ilike
+    let q1 = supabase
+      .from('products')
+      .select(selectClause, { count: 'exact' })
+      .eq('is_active', true);
     if (arabicQuery.length > 0) q1 = q1.or(joinOr(fieldTerms));
-    q1 = applyCommonFilters(q1, body).range(0, hasPostFilters ? 4999 : offsetEnd + 200);
+    q1 = applyCommonFilters(q1, body).range(0, offsetEnd + 200);
 
     const { data: d1, error: e1 } = await q1;
     if (e1) {
@@ -453,17 +490,21 @@ export async function POST(request: NextRequest) {
     }
     collected.push(...((d1 ?? []) as unknown as ProductRow[]));
 
+    // Path 2: English terms ilike
     if (englishTerms.length > 0) {
-      let q2 = supabase.from('products').select(baseFields, { count: 'exact' }).eq('is_active', true);
+      let q2 = supabase
+        .from('products')
+        .select(selectClause, { count: 'exact' })
+        .eq('is_active', true);
       const englishOr = englishTerms.flatMap((term) =>
-        term.split(/\s+/).filter((t) => t.length >= 2).flatMap((t) => [
-          `name_en.ilike.%${t}%`,
-          `brand.ilike.%${t}%`,
-        ])
+        term
+          .split(/\s+/)
+          .filter((t) => t.length >= 2)
+          .flatMap((t) => [`name_en.ilike.%${t}%`, `brand.ilike.%${t}%`])
       );
       const uniqueEnglishOr = joinOr(englishOr);
       if (uniqueEnglishOr) q2 = q2.or(uniqueEnglishOr);
-      q2 = applyCommonFilters(q2, body).range(0, hasPostFilters ? 4999 : offsetEnd + 200);
+      q2 = applyCommonFilters(q2, body).range(0, offsetEnd + 200);
 
       const { data: d2, error: e2 } = await q2;
       if (e2) {
@@ -473,14 +514,18 @@ export async function POST(request: NextRequest) {
       collected.push(...((d2 ?? []) as unknown as ProductRow[]));
     }
 
+    // Deduplicate by id
     const seen = new Map<string, ProductRow>();
     for (const row of collected) if (!seen.has(row.id)) seen.set(row.id, row);
     rows = [...seen.values()];
     totalCount = rows.length;
   } else {
-    let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
+    let q = supabase
+      .from('products')
+      .select(selectClause, { count: 'exact' })
+      .eq('is_active', true);
     q = applyCommonFilters(q, body);
-    q = q.range(hasPostFilters ? 0 : offsetStart, hasPostFilters ? 4999 : offsetEnd);
+    q = q.range(offsetStart, offsetEnd);
     const { data, error, count } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     rows = (data ?? []) as unknown as ProductRow[];
@@ -490,21 +535,25 @@ export async function POST(request: NextRequest) {
   let products = mergeProducts(rows);
   products = applyPostFilters(products, body);
 
+  // Fallback: if still 0 results, return latest products
   if (products.length === 0 && rawQuery) {
-    const fallbackQuery = supabase
+    const { data: fb, error: fbErr } = await supabase
       .from('products')
-      .select(selectClause, { count: 'exact' })
+      .select(selectClause)
       .eq('is_active', true)
       .limit(20);
-    const { data: fb, error: fbErr } = await fallbackQuery;
     if (fbErr) dbError = dbError || fbErr.message;
     products = mergeProducts((fb ?? []) as unknown as ProductRow[]);
   }
 
+  // Sort
+  if (body.sort) {
+    products.sort(compareBySort(body.sort));
+  }
+
   const decision = buildDecisionLayer(products, intent, queryWords);
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
-
-  const pageProducts = hasPostFilters ? products.slice(offsetStart, offsetEnd + 1) : products.slice(0, currentPageSize);
+  const pageProducts = products.slice(offsetStart, offsetEnd + 1);
 
   const result: ScrapedSearchResult & {
     total: number;
@@ -516,7 +565,7 @@ export async function POST(request: NextRequest) {
   } = {
     products: pageProducts,
     count: pageProducts.length,
-    total: hasPostFilters ? products.length : totalCount,
+    total: totalCount,
     page: currentPage,
     pageSize: currentPageSize,
     query: rawQuery,
