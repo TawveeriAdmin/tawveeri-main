@@ -28,7 +28,6 @@ interface SearchBody {
   discount?: number;
 }
 
-// ✅ Schema-safe: only columns that exist in products table
 interface ProductRow {
   id: string;
   name_ar: string;
@@ -86,30 +85,33 @@ function normalizeArabic(text: string): string {
 const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'جوال': ['phone', 'smartphone', 'mobile'],
   'هاتف': ['phone', 'smartphone', 'mobile'],
-  'ايفون': ['iphone', 'apple'],
+  'ايفون': ['iphone'],
   'سامسونج': ['samsung'],
   'لابتوب': ['laptop', 'notebook'],
   'حاسوب': ['laptop', 'computer'],
   'كمبيوتر': ['computer', 'laptop', 'desktop'],
-  'تلفزيون': ['tv', 'television'],
-  'شاشة': ['tv', 'monitor', 'screen', 'display'],
-  'سماعات': ['headphones', 'earbuds', 'audio'],
-  'سماعة': ['headphone', 'earbuds', 'speaker'],
-  'مكيف': ['split ac', 'air conditioner', 'ac'],
-  'مكيفات': ['split ac', 'air conditioner', 'ac'],
-  'ثلاجة': ['refrigerator', 'fridge'],
-  'غسالة': ['washing machine', 'washer'],
-  'طابعة': ['printer'],
+  'تلفزيون': ['television'],
+  'شاشه': ['monitor', 'screen', 'display'],
+  'سماعات': ['headphones', 'earbuds'],
+  'سماعه': ['headphone', 'earbuds', 'speaker'],
+  'مكيف': ['air conditioner', 'conditioner'],
+  'مكيفات': ['air conditioner', 'conditioner'],
+  'ثلاجه': ['refrigerator', 'fridge'],
+  'غساله': ['washing machine', 'washer'],
+  'طابعه': ['printer'],
   'كاميرا': ['camera'],
-  'ساعة': ['smartwatch', 'watch'],
+  'ساعه': ['smartwatch'],
   'تابلت': ['tablet'],
-  'برو': ['pro'],
-  'ماكس': ['max'],
-  'بلس': ['plus'],
-  'الترا': ['ultra'],
-  'ميني': ['mini'],
-  'اير': ['air'],
 };
+
+const ARABIC_STOPWORDS = new Set(
+  [
+    'ابي', 'ابغى', 'ابغا', 'اريد', 'ارخص', 'اغلى', 'افضل', 'احسن',
+    'سعر', 'اسعار', 'كم', 'وش', 'ايش', 'في', 'من', 'الى', 'على',
+    'لي', 'قدم', 'اعطني', 'اعطيني', 'هات', 'بكم', 'تقدر', 'ممكن',
+    'جديد', 'حق', 'مع', 'او', 'بدون', 'الان', 'عن', 'هل', 'ايه',
+  ].map(normalizeArabic)
+);
 
 const BRAND_BOOSTS: Record<string, number> = {
   samsung: 8,
@@ -133,39 +135,52 @@ function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
   return (
-    ['حامل', 'غطاء', 'كفر', 'ملحق', 'شاحن', 'كيبل', 'سلك'].some((h) => ar.includes(h)) ||
-    ['accessory', 'cover', 'mount', 'holder', 'adapter', 'charger', 'cable', 'case', 'bracket'].some((h) => en.includes(h))
+    ['حامل', 'غطاء', 'كفر', 'ملحق', 'شاحن', 'كيبل', 'سلك', 'واقي', 'لزقه', 'لاصقه'].some((h) =>
+      ar.includes(normalizeArabic(h))
+    ) ||
+    ['accessory', 'cover', 'mount', 'holder', 'adapter', 'charger', 'cable', 'case', 'bracket', 'protector', 'screen guard'].some(
+      (h) => en.includes(h)
+    )
   );
 }
 
 function buildSearchQueries(raw: string): {
   arabicQuery: string;
+  arabicTokens: string[];
   englishTerms: string[];
-  queryWords: string[];
+  latinTokens: string[];
 } {
   const normalized = normalizeArabic(raw);
   const words = normalized.split(/\s+/).filter(Boolean);
-  const englishTerms = [
-    ...new Set(
-      words.flatMap(
-        (w) =>
-          ARABIC_TO_ENGLISH[w] ||
-          ARABIC_TO_ENGLISH[normalizeArabic(w)] ||
-          (/[A-Za-z0-9]/.test(w) ? [w] : [])
-      )
-    ),
-  ];
-  const queryWords = [
-    ...new Set([...words, ...englishTerms.flatMap((t) => t.split(/\s+/))]),
-  ];
-  return { arabicQuery: normalized, englishTerms, queryWords };
+
+  const arabicTokens: string[] = [];
+  const latinTokens: string[] = [];
+  const englishTerms: string[] = [];
+
+  for (const w of words) {
+    if (ARABIC_STOPWORDS.has(w)) continue;
+    if (/^[A-Za-z0-9]+$/.test(w)) {
+      if (w.length >= 2) latinTokens.push(w.toLowerCase());
+      continue;
+    }
+    if (w.length >= 2) arabicTokens.push(w);
+    const syn = ARABIC_TO_ENGLISH[w];
+    if (syn) englishTerms.push(...syn);
+  }
+
+  return {
+    arabicQuery: normalized,
+    arabicTokens: [...new Set(arabicTokens)],
+    englishTerms: [...new Set(englishTerms)],
+    latinTokens: [...new Set(latinTokens)],
+  };
 }
 
 function detectIntent(query: string): IntentType {
   const text = normalizeArabic(query).toLowerCase();
   const tokens = text.split(/\s+/).filter(Boolean);
-  if (/(أرخص|ارخص|سعر|price|cheapest|lowest)/i.test(text)) return 'price';
-  if (/(قارن|مقارنة|compare|vs|versus)/i.test(text)) return 'compare';
+  if (/(ارخص|سعر|price|cheapest|lowest)/i.test(text)) return 'price';
+  if (/(قارن|مقارنه|compare|vs|versus)/i.test(text)) return 'compare';
   if (tokens.some((t) => Object.keys(BRAND_BOOSTS).includes(t))) return 'brand';
   if (Object.keys(ARABIC_TO_ENGLISH).some((k) => text.includes(normalizeArabic(k)))) return 'category';
   return 'fallback';
@@ -189,43 +204,81 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
+// RELEVANCE GATE — كل كلمة عربية لازم تظهر في الاسم (AND)
+function isRelevant(
+  p: GroupedSearchProduct,
+  arabicTokens: string[],
+  latinTokens: string[]
+): boolean {
+  const nameAr = normalizeArabic(p.name_ar || '');
+  const nameEn = (p.name_en || '').toLowerCase();
+  const brand = (p.brand || '').toLowerCase();
+
+  for (const tok of arabicTokens) {
+    const directAr = nameAr.includes(tok);
+    const syn = ARABIC_TO_ENGLISH[tok] || [];
+    const viaSyn = syn.some((s) =>
+      s.split(/\s+/).filter((x) => x.length >= 3).every((x) => nameEn.includes(x))
+    );
+    if (!directAr && !viaSyn) return false;
+  }
+
+  for (const tok of latinTokens) {
+    if (!nameEn.includes(tok) && !brand.includes(tok)) return false;
+  }
+
+  return true;
+}
+
+function relevanceScore(
+  p: GroupedSearchProduct,
+  arabicTokens: string[],
+  latinTokens: string[],
+  englishTerms: string[]
+): number {
+  const nameAr = normalizeArabic(p.name_ar || '');
+  const nameEn = (p.name_en || '').toLowerCase();
+  let score = 0;
+  for (const tok of arabicTokens) if (nameAr.includes(tok)) score += 20;
+  for (const tok of latinTokens) if (nameEn.includes(tok)) score += 20;
+  for (const term of englishTerms) {
+    const parts = term.split(/\s+/).filter((x) => x.length >= 3);
+    if (parts.length && parts.every((x) => nameEn.includes(x))) score += 10;
+  }
+  return score;
+}
+
 function scoreProduct(
   p: GroupedSearchProduct,
-  queryWords: string[],
+  arabicTokens: string[],
+  latinTokens: string[],
+  englishTerms: string[],
   intent: IntentType
 ): number {
   const nameAr = normalizeArabic(p.name_ar || '');
   const nameEn = (p.name_en || '').toLowerCase();
   const isAccessory = hasAccessoryHint(nameAr, nameEn);
 
-  const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 30 : 0;
-  const storeBoost = Math.min(p.store_count * 6, 24);
+  const relevance = relevanceScore(p, arabicTokens, latinTokens, englishTerms);
+  const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 15 : 0;
+  const storeBoost = Math.min(p.store_count * 4, 16);
   const dealBoost = p.stores.some(
     (s) => s.original_price && s.current_price && s.original_price > s.current_price
-  ) ? 12 : 0;
-  const queryBoost = queryWords.reduce((acc, w) => {
-    const t = normalizeArabic(w);
-    if (!t) return acc;
-    if (nameAr.includes(t)) return acc + 6;
-    if (nameEn.includes(t.toLowerCase())) return acc + 4;
-    return acc;
-  }, 0);
+  ) ? 8 : 0;
   const brandBoost = Object.entries(BRAND_BOOSTS).reduce((acc, [brand, boost]) => {
-    const hit = nameAr.includes(normalizeArabic(brand)) || nameEn.includes(brand);
+    const hit = nameEn.includes(brand) || (p.brand || '').toLowerCase().includes(brand);
     return hit ? acc + boost : acc;
   }, 0);
-  const priceBoost = p.best_price > 0 ? 6 : 0;
-  const accessoryPenalty = isAccessory ? 40 : 0;
+  const priceBoost = p.best_price > 0 ? 4 : 0;
+  const accessoryPenalty = isAccessory ? 50 : 0;
   const intentBoost =
     intent === 'price' ? priceBoost :
     intent === 'compare' ? storeBoost + dealBoost :
-    intent === 'brand' ? brandBoost * 0.3 :
-    intent === 'category' ? queryBoost * 0.3 :
     0;
 
   return (
-    inStockBoost + storeBoost + dealBoost + brandBoost +
-    queryBoost + priceBoost + intentBoost - accessoryPenalty
+    relevance * 3 + inStockBoost + storeBoost + dealBoost +
+    brandBoost + priceBoost + intentBoost - accessoryPenalty
   );
 }
 
@@ -247,15 +300,8 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
-function buildDecisionLayer(
-  products: GroupedSearchProduct[],
-  intent: IntentType,
-  queryWords: string[]
-): DecisionLayer {
-  const ranked = [...products].sort(
-    (a, b) => scoreProduct(b, queryWords, intent) - scoreProduct(a, queryWords, intent)
-  );
-  const top3 = ranked.slice(0, 3);
+function buildDecisionLayer(products: GroupedSearchProduct[]): DecisionLayer {
+  const top3 = products.slice(0, 3);
   const best = top3[0] || null;
 
   const decisionCard = best
@@ -271,29 +317,28 @@ function buildDecisionLayer(
       }
     : null;
 
+  const validPrices = products.map((x) => x.best_price).filter((n) => n > 0);
+  const minPrice = validPrices.length ? Math.min(...validPrices) : 0;
+
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
     product_id: p.product_id,
     name_ar: p.name_ar,
     best_price: p.best_price,
     store_count: p.store_count,
     availability: p.availability,
-    rating: Math.max(...p.stores.map((s) => s.rating ?? 0)),
+    rating: Math.max(0, ...p.stores.map((s) => s.rating ?? 0)),
     product_url:
       p.stores.find((s) => s.current_price === p.best_price)?.product_url ||
       p.stores[0]?.product_url || '',
     store_name:
       p.stores.find((s) => s.current_price === p.best_price)?.store_name ||
       p.stores[0]?.store_name || '',
-    reason_ar: buildReasonAr(
-      p,
-      p.best_price === Math.min(...products.map((x) => x.best_price).filter((n) => n > 0))
-    ),
+    reason_ar: buildReasonAr(p, p.best_price === minPrice),
   }));
 
   return { decisionCard, topMatches };
 }
 
-// ✅ Fixed: only uses columns that exist in the DB schema
 function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
   const productStores = (row.product_stores || []).filter(
     (ps) => ps && ps.current_price != null
@@ -424,16 +469,6 @@ function computeUniqueStores(products: GroupedSearchProduct[]): number {
   return set.size;
 }
 
-function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearchProduct) => number {
-  if (sort === 'price_asc' || sort === 'price_low') return (a, b) => a.best_price - b.best_price;
-  if (sort === 'price_desc' || sort === 'price_high') return (a, b) => b.best_price - a.best_price;
-  return (a, b) => {
-    if (b.store_count !== a.store_count) return b.store_count - a.store_count;
-    return a.best_price - b.best_price;
-  };
-}
-
-// ✅ Schema-safe selectClause — only real columns
 const selectClause = `
   id, name_ar, name_en, brand, category,
   image_url,
@@ -459,66 +494,80 @@ export async function POST(request: NextRequest) {
   let rows: ProductRow[] = [];
   let totalCount = 0;
   let dbError: string | null = null;
-  let queryWords: string[] = [];
+
+  let arabicTokens: string[] = [];
+  let latinTokens: string[] = [];
+  let englishTerms: string[] = [];
 
   if (rawQuery) {
     const built = buildSearchQueries(rawQuery);
-    const arabicQuery = built.arabicQuery;
-    const englishTerms = built.englishTerms;
-    queryWords = built.queryWords;
-
-    const fieldTerms = [
-      `name_ar.ilike.%${arabicQuery}%`,
-      `name_en.ilike.%${rawQuery}%`,
-      `brand.ilike.%${rawQuery}%`,
-    ];
+    arabicTokens = built.arabicTokens;
+    latinTokens = built.latinTokens;
+    englishTerms = built.englishTerms;
 
     let collected: ProductRow[] = [];
 
-    // Path 1: Arabic ilike
-    let q1 = supabase
-      .from('products')
-      .select(selectClause, { count: 'exact' })
-      .eq('is_active', true);
-    if (arabicQuery.length > 0) q1 = q1.or(joinOr(fieldTerms));
-    q1 = applyCommonFilters(q1, body).range(0, offsetEnd + 200);
-
-    const { data: d1, error: e1 } = await q1;
-    if (e1) {
-      console.error('[search:q1]', e1.message);
-      dbError = e1.message;
+    // Path 1: AND across Arabic tokens (chained ilike = AND)
+    if (arabicTokens.length > 0) {
+      let q1 = supabase
+        .from('products')
+        .select(selectClause, { count: 'exact' })
+        .eq('is_active', true);
+      for (const tok of arabicTokens) {
+        q1 = q1.ilike('name_ar', `%${tok}%`);
+      }
+      q1 = applyCommonFilters(q1, body).range(0, 999);
+      const { data: d1, error: e1 } = await q1;
+      if (e1) {
+        console.error('[search:q1-arabic-AND]', e1.message);
+        dbError = e1.message;
+      }
+      collected.push(...((d1 ?? []) as unknown as ProductRow[]));
     }
-    collected.push(...((d1 ?? []) as unknown as ProductRow[]));
 
-    // Path 2: English terms ilike
-    if (englishTerms.length > 0) {
+    // Path 2: latin tokens (each must hit name_en or brand)
+    if (latinTokens.length > 0) {
       let q2 = supabase
         .from('products')
         .select(selectClause, { count: 'exact' })
         .eq('is_active', true);
-      const englishOr = englishTerms.flatMap((term) =>
-        term
-          .split(/\s+/)
-          .filter((t) => t.length >= 2)
-          .flatMap((t) => [`name_en.ilike.%${t}%`, `brand.ilike.%${t}%`])
-      );
-      const uniqueEnglishOr = joinOr(englishOr);
-      if (uniqueEnglishOr) q2 = q2.or(uniqueEnglishOr);
-      q2 = applyCommonFilters(q2, body).range(0, offsetEnd + 200);
-
+      for (const tok of latinTokens) {
+        q2 = q2.or(`name_en.ilike.%${tok}%,brand.ilike.%${tok}%`);
+      }
+      q2 = applyCommonFilters(q2, body).range(0, 999);
       const { data: d2, error: e2 } = await q2;
       if (e2) {
-        console.error('[search:q2]', e2.message);
+        console.error('[search:q2-latin]', e2.message);
         dbError = dbError || e2.message;
       }
       collected.push(...((d2 ?? []) as unknown as ProductRow[]));
     }
 
-    // Deduplicate by id
+    // Path 3: English synonym recall (full phrase >= 4 chars)
+    if (englishTerms.length > 0) {
+      const phraseTerms = englishTerms
+        .map((t) => t.trim())
+        .filter((t) => t.length >= 4)
+        .map((t) => `name_en.ilike.%${t}%`);
+      if (phraseTerms.length > 0) {
+        let q3 = supabase
+          .from('products')
+          .select(selectClause, { count: 'exact' })
+          .eq('is_active', true)
+          .or(joinOr(phraseTerms));
+        q3 = applyCommonFilters(q3, body).range(0, 999);
+        const { data: d3, error: e3 } = await q3;
+        if (e3) {
+          console.error('[search:q3-synonym]', e3.message);
+          dbError = dbError || e3.message;
+        }
+        collected.push(...((d3 ?? []) as unknown as ProductRow[]));
+      }
+    }
+
     const seen = new Map<string, ProductRow>();
     for (const row of collected) if (!seen.has(row.id)) seen.set(row.id, row);
     rows = [...seen.values()];
-    totalCount = rows.length;
   } else {
     let q = supabase
       .from('products')
@@ -533,27 +582,41 @@ export async function POST(request: NextRequest) {
   }
 
   let products = mergeProducts(rows);
+
+  // RELEVANCE GATE
+  if (rawQuery && (arabicTokens.length > 0 || latinTokens.length > 0)) {
+    const gated = products.filter((p) => isRelevant(p, arabicTokens, latinTokens));
+    products = gated.length > 0 ? gated : [];
+  }
+
   products = applyPostFilters(products, body);
 
-  // Fallback: if still 0 results, return latest products
-  if (products.length === 0 && rawQuery) {
-    const { data: fb, error: fbErr } = await supabase
-      .from('products')
-      .select(selectClause)
-      .eq('is_active', true)
-      .limit(20);
-    if (fbErr) dbError = dbError || fbErr.message;
-    products = mergeProducts((fb ?? []) as unknown as ProductRow[]);
+  // RANK BY RELEVANCE, then optional price sort
+  if (rawQuery) {
+    products.sort(
+      (a, b) =>
+        scoreProduct(b, arabicTokens, latinTokens, englishTerms, intent) -
+        scoreProduct(a, arabicTokens, latinTokens, englishTerms, intent)
+    );
+    if (body.sort === 'price_asc' || body.sort === 'price_low') {
+      products.sort((a, b) => a.best_price - b.best_price);
+    } else if (body.sort === 'price_desc' || body.sort === 'price_high') {
+      products.sort((a, b) => b.best_price - a.best_price);
+    }
+  } else if (body.sort) {
+    if (body.sort === 'price_asc' || body.sort === 'price_low')
+      products.sort((a, b) => a.best_price - b.best_price);
+    else if (body.sort === 'price_desc' || body.sort === 'price_high')
+      products.sort((a, b) => b.best_price - a.best_price);
   }
 
-  // Sort
-  if (body.sort) {
-    products.sort(compareBySort(body.sort));
-  }
+  totalCount = rawQuery ? products.length : totalCount;
 
-  const decision = buildDecisionLayer(products, intent, queryWords);
+  const decision = buildDecisionLayer(products);
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
-  const pageProducts = products.slice(offsetStart, offsetEnd + 1);
+  const pageProducts = rawQuery
+    ? products.slice(offsetStart, offsetEnd + 1)
+    : products.slice(0, currentPageSize);
 
   const result: ScrapedSearchResult & {
     total: number;
