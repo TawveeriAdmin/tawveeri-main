@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
           triggeredCount++;
         }
       } catch (error) {
-        const alertId = (alert as any).id;
+        const alertId = (alertData as any).id;
         console.error(`Error processing alert ${alertId}:`, error);
         // Continue with next alert
       }
