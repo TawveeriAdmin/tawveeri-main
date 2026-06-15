@@ -33,7 +33,7 @@ interface ProductRow {
   id: string;
   name_ar: string;
   name_en: string;
-  slug: string;
+  // slug عمود غير موجود في الجدول — أُزيل
   brand: string;
   model: string;
   category: string;
@@ -286,8 +286,9 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient();
 
   // نقرأ store_name مباشرة من product_stores (الهيكلة الموحّدة) — لا join مع جدول stores
+  // ملاحظة: slug غير موجود في جدول products، لذا أُزيل من الأعمدة
   const selectClause = `
-    id, name_ar, name_en, slug, brand, model, category, sku,
+    id, name_ar, name_en, brand, model, category, sku,
     image_urls, specifications, description_ar, description_en,
     product_stores!inner (
       id, store_name, current_price, original_price, availability, product_url, coupon_code
@@ -519,7 +520,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     best_price: bestPrice,
     store_count: uniqueStores,
     product_id: row.id,
-    product_slug: row.slug,
+    product_slug: row.id,
   } as unknown as GroupedSearchProduct;
 }
 
@@ -545,5 +546,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v2-accessory-gate' });
+  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v3-no-slug' });
 }
