@@ -33,15 +33,9 @@ interface ProductRow {
   id: string;
   name_ar: string;
   name_en: string;
-  // slug عمود غير موجود في الجدول — أُزيل
-  brand: string;
-  // model عمود غير موجود — أُزيل
-  category: string;
-  sku: string | null;
-  image_urls: string[] | null;
-  specifications: Record<string, unknown> | null;
-  description_ar: string | null;
-  description_en: string | null;
+  brand: string | null;
+  category: string | null;
+  image_url: string | null;
   product_stores: ProductStoreRow[];
 }
 
@@ -285,11 +279,10 @@ export async function POST(request: NextRequest) {
   const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
   const supabase = createServerClient();
 
+  // أعمدة جدول products الحقيقية فقط: id, name_ar, name_en, brand, category, image_url
   // نقرأ store_name مباشرة من product_stores (الهيكلة الموحّدة) — لا join مع جدول stores
-  // ملاحظة: slug و model غير موجودين في جدول products، لذا أُزيلا من الأعمدة
   const selectClause = `
-    id, name_ar, name_en, brand, category, sku,
-    image_urls, specifications, description_ar, description_en,
+    id, name_ar, name_en, brand, category, image_url,
     product_stores!inner (
       id, store_name, current_price, original_price, availability, product_url, coupon_code
     )
@@ -459,15 +452,10 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
 
   if (body.specs && Object.keys(body.specs).length > 0) {
     result = result.filter((product) => {
-      const dbSpecs = (product.specifications ?? null) as Record<string, unknown> | null;
-      const hasDbSpecs = dbSpecs && Object.keys(dbSpecs).length > 0;
-      const fallbackSpecs = hasDbSpecs ? null : extractSpecsFromTitle(product.name_en || product.name_ar || '');
+      const fallbackSpecs = extractSpecsFromTitle(product.name_en || product.name_ar || '');
       return Object.entries(body.specs!).every(([key, values]) => {
         if (!values || values.length === 0) return true;
-        const dbValue = hasDbSpecs ? dbSpecs![key] : undefined;
-        const value = dbValue !== undefined && dbValue !== null
-          ? String(dbValue).toLowerCase()
-          : fallbackSpecs?.[key] ?? '';
+        const value = fallbackSpecs?.[key] ?? '';
         return values.map((item) => item.toLowerCase()).includes(value);
       });
     });
@@ -483,18 +471,18 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
   const storeEntries: SearchProduct[] = productStores.map((ps) => ({
     name_ar: row.name_ar,
     name_en: row.name_en,
-    brand: row.brand,
+    brand: row.brand || '',
     model: '',
-    sku: row.sku,
+    sku: null,
     current_price: Number(ps.current_price),
     original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
     availability: ps.availability || 'in_stock',
     product_url: ps.product_url,
-    image_urls: row.image_urls || [],
-    specifications: (row.specifications || {}) as Record<string, unknown>,
-    category: row.category as ProductCategory,
-    description_ar: row.description_ar,
-    description_en: row.description_en,
+    image_urls: row.image_url ? [row.image_url] : [],
+    specifications: {} as Record<string, unknown>,
+    category: (row.category || '') as ProductCategory,
+    description_ar: null,
+    description_en: null,
     is_free_delivery: false,
     delivery_time_days: null,
     delivery_cost: 0,
@@ -546,5 +534,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v4-no-model' });
+  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v5-real-columns' });
 }
