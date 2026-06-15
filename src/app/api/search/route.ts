@@ -121,8 +121,8 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
 };
 
 // إشارات الملحقات: للترتيب (دفن) فقط — لا للحذف
-const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند'];
-const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin'];
+const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة'];
+const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens'];
 
 // ── أنواع المنتجات الرئيسية: لو البحث عن واحد منها، الملحق يُسحق للقاع ──────
 const MAIN_PRODUCT_TYPES = new Set<string>([
@@ -160,22 +160,35 @@ function hasACSignal(nameAr: string, nameEn: string): boolean {
   return arHit || enHit;
 }
 
-function expandToEnglish(words: string[]): string[] {
-  const out = new Set<string>();
-  for (const w of words) {
-    const key = normalizeArabic(w);
-    const mapped = ARABIC_TO_ENGLISH[w] || ARABIC_TO_ENGLISH[key];
-    if (mapped) for (const m of mapped) out.add(m);
-    else if (/[A-Za-z0-9]/.test(w)) out.add(w);
-  }
-  return [...out];
-}
+// كلمات يجب تجاهلها (لا تُطابَق): تفضيلات/روابط لا توجد في أسماء المنتجات
+const STOPWORDS = new Set<string>([
+  'افضل', 'احسن', 'ارخص', 'اغلى', 'رخيص', 'غالي', 'الافضل', 'الارخص',
+  'جديد', 'الجديد', 'قديم', 'عرض', 'عروض', 'سعر', 'اسعار', 'الاسعار',
+  'بكم', 'كم', 'في', 'من', 'على', 'مع', 'الى', 'او', 'و', 'ابي', 'ابغى', 'اريد', 'ودي',
+  'best', 'cheapest', 'cheap', 'price', 'prices', 'new', 'offer', 'offers', 'deal', 'deals',
+  'the', 'a', 'an', 'in', 'of', 'for', 'with', 'and', 'or', 'want',
+]);
 
-function buildSearchQueries(raw: string): { arabicQuery: string; englishTerms: string[] } {
-  const normalized = normalizeArabic(raw);
-  const words = normalized.split(/\s+/).filter(Boolean);
-  const englishTerms = expandToEnglish(words);
-  return { arabicQuery: normalized, englishTerms };
+// بناء شرط كلمة واحدة: تتطابق في name_ar أو name_en أو brand (+ الترجمة الإنجليزية للكلمة).
+// تجميع كل شروط الكلمات بـ AND يضمن أن المنتج يحقق كل كلمات البحث (مطابقة صارمة).
+function buildWordClause(word: string): string {
+  const clean = word.replace(/[(),]/g, ' ').trim();
+  if (!clean) return '';
+  const norm = normalizeArabic(clean);
+  const parts: string[] = [
+    `name_ar.ilike.%${clean}%`,
+    `name_en.ilike.%${clean}%`,
+    `brand.ilike.%${clean}%`,
+  ];
+  const mapped = ARABIC_TO_ENGLISH[clean] || ARABIC_TO_ENGLISH[norm];
+  if (mapped) {
+    for (const m of mapped) {
+      for (const tok of m.split(/\s+/)) {
+        if (tok.length >= 2) parts.push(`name_en.ilike.%${tok}%`);
+      }
+    }
+  }
+  return [...new Set(parts)].join(',');
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -315,53 +328,24 @@ export async function POST(request: NextRequest) {
   let dbError: string | null = null;
 
   if (rawQuery) {
-    const { arabicQuery, englishTerms } = buildSearchQueries(rawQuery);
-    const arabicWords = arabicQuery.split(/\s+/).filter(Boolean);
+    // مطابقة صارمة (AND): المنتج يجب أن يحقق كل كلمات البحث المعنوية.
+    // كل كلمة تُطابَق في name_ar/name_en/brand + ترجمتها الإنجليزية (الجسر اللغوي).
+    const normalized = normalizeArabic(rawQuery);
+    const allWords = normalized.split(/\s+/).filter(Boolean);
+    const meaningful = allWords.filter((w) => !STOPWORDS.has(w));
+    const words = meaningful.length > 0 ? meaningful : allWords;
 
-    // المسار 1: عربي ilike على name_ar/name_en/brand
-    let q1 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
-    if (arabicWords.length > 0) {
-      const orParts = arabicWords.flatMap((w) => [
-        `name_ar.ilike.%${w}%`,
-        `name_en.ilike.%${w}%`,
-        `brand.ilike.%${w}%`,
-      ]).join(',');
-      q1 = q1.or(orParts);
+    let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
+    for (const word of words) {
+      const clause = buildWordClause(word);
+      if (clause) q = q.or(clause); // كل .or() تُجمَع مع غيرها بـ AND
     }
-    q1 = applyCommonFilters(q1, body);
-    q1 = q1.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-    const { data: d1, error: e1 } = await q1;
-    if (e1) { console.error('[search:q1]', e1.message); dbError = e1.message; }
-    const pass1Rows = (d1 ?? []) as unknown as ProductRow[];
-
-    // المسار 2 (الجسر اللغوي): توسيع إنجليزي عبر ilike مباشر على name_en — يلتقط منتجات اكسترا الإنجليزية
-    let pass2Rows: ProductRow[] = [];
-    if (englishTerms.length > 0) {
-      const orParts = englishTerms.flatMap((term) => {
-        const tokens = term.split(/\s+/).filter((t) => t.length >= 2);
-        return tokens.map((t) => `name_en.ilike.%${t}%`);
-      });
-      const uniqueOr = [...new Set(orParts)].join(',');
-      if (uniqueOr) {
-        let q2 = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true).or(uniqueOr);
-        q2 = applyCommonFilters(q2, body);
-        q2 = q2.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-        const { data: d2, error: e2 } = await q2;
-        if (e2) { console.error('[search:q2]', e2.message); dbError = dbError || e2.message; }
-        pass2Rows = (d2 ?? []) as unknown as ProductRow[];
-      }
-    }
-
-    const seen = new Set<string>();
-    const merged: ProductRow[] = [];
-    for (const row of [...pass1Rows, ...pass2Rows]) {
-      if (!seen.has(row.id)) {
-        seen.add(row.id);
-        merged.push(row);
-      }
-    }
-    rows = merged;
-    totalCount = merged.length;
+    q = applyCommonFilters(q, body);
+    q = q.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
+    const { data, error, count } = await q;
+    if (error) { console.error('[search:and]', error.message); dbError = error.message; }
+    rows = (data ?? []) as unknown as ProductRow[];
+    totalCount = count ?? rows.length;
   } else {
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     q = applyCommonFilters(q, body);
@@ -534,5 +518,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v5-real-columns' });
+  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v6-and-match' });
 }
