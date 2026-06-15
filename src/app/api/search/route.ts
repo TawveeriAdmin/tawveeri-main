@@ -169,26 +169,50 @@ const STOPWORDS = new Set<string>([
   'the', 'a', 'an', 'in', 'of', 'for', 'with', 'and', 'or', 'want',
 ]);
 
-// بناء شرط كلمة واحدة: تتطابق في name_ar أو name_en أو brand (+ الترجمة الإنجليزية للكلمة).
-// تجميع كل شروط الكلمات بـ AND يضمن أن المنتج يحقق كل كلمات البحث (مطابقة صارمة).
-function buildWordClause(word: string): string {
-  const clean = word.replace(/[(),]/g, ' ').trim();
-  if (!clean) return '';
-  const norm = normalizeArabic(clean);
-  const parts: string[] = [
-    `name_ar.ilike.%${clean}%`,
-    `name_en.ilike.%${clean}%`,
-    `brand.ilike.%${clean}%`,
-  ];
-  const mapped = ARABIC_TO_ENGLISH[clean] || ARABIC_TO_ENGLISH[norm];
+// توسيع كلمة بحث إلى كل صيغ المطابقة (عربي مطبّع + إنجليزي مترجم) — تُستخدم للمطابقة في JS.
+function expandWordTerms(word: string): string[] {
+  const norm = normalizeArabic(word).toLowerCase();
+  const terms = new Set<string>();
+  if (norm) terms.add(norm);
+  const mapped = ARABIC_TO_ENGLISH[word] || ARABIC_TO_ENGLISH[normalizeArabic(word)];
   if (mapped) {
     for (const m of mapped) {
       for (const tok of m.split(/\s+/)) {
-        if (tok.length >= 2) parts.push(`name_en.ilike.%${tok}%`);
+        if (tok.length >= 2) terms.add(tok.toLowerCase());
+      }
+    }
+  }
+  return [...terms];
+}
+
+// أجزاء OR لجلب مجموعة المرشّحين من قاعدة البيانات (واسعة، نفس أسلوب النسخة الناجحة).
+function buildOrPool(words: string[]): string {
+  const parts: string[] = [];
+  for (const word of words) {
+    const clean = word.replace(/[(),]/g, ' ').trim();
+    if (!clean) continue;
+    parts.push(`name_ar.ilike.%${clean}%`, `name_en.ilike.%${clean}%`, `brand.ilike.%${clean}%`);
+    const norm = normalizeArabic(clean);
+    const mapped = ARABIC_TO_ENGLISH[clean] || ARABIC_TO_ENGLISH[norm];
+    if (mapped) {
+      for (const m of mapped) {
+        for (const tok of m.split(/\s+/)) {
+          if (tok.length >= 2) parts.push(`name_en.ilike.%${tok}%`);
+        }
       }
     }
   }
   return [...new Set(parts)].join(',');
+}
+
+// المطابقة الصارمة (AND) في JS: المنتج يطابق كل كلمات البحث — كل كلمة موجودة بإحدى صيغها.
+function productMatchesAllWords(row: ProductRow, wordTermsList: string[][]): boolean {
+  const hay = (
+    normalizeArabic(row.name_ar || '') + ' ' +
+    normalizeArabic(row.name_en || '') + ' ' +
+    normalizeArabic(row.brand || '')
+  ).toLowerCase();
+  return wordTermsList.every((terms) => terms.some((t) => hay.includes(t)));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -329,23 +353,28 @@ export async function POST(request: NextRequest) {
 
   if (rawQuery) {
     // مطابقة صارمة (AND): المنتج يجب أن يحقق كل كلمات البحث المعنوية.
-    // كل كلمة تُطابَق في name_ar/name_en/brand + ترجمتها الإنجليزية (الجسر اللغوي).
     const normalized = normalizeArabic(rawQuery);
     const allWords = normalized.split(/\s+/).filter(Boolean);
     const meaningful = allWords.filter((w) => !STOPWORDS.has(w));
     const words = meaningful.length > 0 ? meaningful : allWords;
 
+    // 1) جلب مجموعة مرشّحين واسعة بـ OR (مضمون يرجّع نتائج)
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
-    for (const word of words) {
-      const clause = buildWordClause(word);
-      if (clause) q = q.or(clause); // كل .or() تُجمَع مع غيرها بـ AND
-    }
+    const orPool = buildOrPool(words);
+    if (orPool) q = q.or(orPool);
     q = applyCommonFilters(q, body);
-    q = q.range(0, hasPostFilters ? 4999 : offsetEnd + 200);
-    const { data, error, count } = await q;
-    if (error) { console.error('[search:and]', error.message); dbError = error.message; }
-    rows = (data ?? []) as unknown as ProductRow[];
-    totalCount = count ?? rows.length;
+    q = q.range(0, 1500);
+    const { data, error } = await q;
+    if (error) { console.error('[search:pool]', error.message); dbError = error.message; }
+    let candidateRows = (data ?? []) as unknown as ProductRow[];
+
+    // 2) المطابقة الصارمة (AND) في JS — كل كلمة بحث يجب أن تتطابق
+    const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
+    if (wordTermsList.length > 0) {
+      candidateRows = candidateRows.filter((row) => productMatchesAllWords(row, wordTermsList));
+    }
+    rows = candidateRows;
+    totalCount = candidateRows.length;
   } else {
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     q = applyCommonFilters(q, body);
@@ -518,5 +547,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v6-and-match' });
+  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v7-js-and' });
 }
