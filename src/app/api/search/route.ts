@@ -35,7 +35,7 @@ interface ProductRow {
   name_en: string;
   // slug عمود غير موجود في الجدول — أُزيل
   brand: string;
-  model: string;
+  // model عمود غير موجود — أُزيل
   category: string;
   sku: string | null;
   image_urls: string[] | null;
@@ -286,9 +286,9 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient();
 
   // نقرأ store_name مباشرة من product_stores (الهيكلة الموحّدة) — لا join مع جدول stores
-  // ملاحظة: slug غير موجود في جدول products، لذا أُزيل من الأعمدة
+  // ملاحظة: slug و model غير موجودين في جدول products، لذا أُزيلا من الأعمدة
   const selectClause = `
-    id, name_ar, name_en, brand, model, category, sku,
+    id, name_ar, name_en, brand, category, sku,
     image_urls, specifications, description_ar, description_en,
     product_stores!inner (
       id, store_name, current_price, original_price, availability, product_url, coupon_code
@@ -484,7 +484,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     name_ar: row.name_ar,
     name_en: row.name_en,
     brand: row.brand,
-    model: row.model,
+    model: '',
     sku: row.sku,
     current_price: Number(ps.current_price),
     original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
@@ -546,5 +546,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v3-no-slug' });
+  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v4-no-model' });
 }
