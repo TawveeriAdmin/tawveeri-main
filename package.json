@@ -3,6 +3,7 @@
  "version": "0.2.2",
  "private": true,
  "scripts": {
+   "algolia:sync": "npx tsx scripts/algolia-sync.ts",
    "dev": "next dev",
    "build": "next build && cp -R .next/static .next/standalone/.next/static && cp -R public .next/standalone/public",
    "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
