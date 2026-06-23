@@ -1,7 +1,7 @@
 [build]
 builder = "RAILPACK"
-buildCommand = "npm install --legacy-peer-deps && npx tsx scripts/algolia-sync.ts"
+buildCommand = "npm install --legacy-peer-deps && npm run build"
 
 [deploy]
-startCommand = "echo 'Algolia Sync completed successfully!'"
-restartPolicyType = "NEVER"
+startCommand = "npm run start"
+restartPolicyType = "ON_FAILURE"
