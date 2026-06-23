@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import type { ScrapedSearchResult } from '@/lib/scraping/search-types';
 import type { GroupedSearchProduct } from '@/lib/scraping/search/product-grouper';
 import type { SearchProduct } from '@/lib/scraping/search/types';
 import type { ProductCategory } from '@/lib/database/types';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
+import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -295,7 +296,7 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
     : null;
 
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
-    product_id: p.product_id,
+    product_id: (p as unknown as { product_id?: string }).product_id || '',
     name_ar: p.name_ar,
     best_price: p.best_price,
     store_count: p.store_count,
@@ -307,6 +308,55 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
   }));
 
   return { decisionCard, topMatches };
+}
+
+// ── تحويل سجل Algolia إلى GroupedSearchProduct (مع تعبئة stores كاملة بالأسعار والمتاجر) ──────
+function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
+  const validStores = (hit.stores || []).filter((s) => s.current_price != null);
+  if (validStores.length === 0) return null;
+
+  const storeEntries: SearchProduct[] = validStores.map((s) => ({
+    name_ar: hit.name_ar,
+    name_en: hit.name_en,
+    brand: hit.brand || '',
+    model: '',
+    sku: null,
+    current_price: Number(s.current_price),
+    original_price: s.original_price != null ? Number(s.original_price) : null,
+    availability: (s.availability || 'in_stock') as SearchProduct['availability'],
+    product_url: s.product_url || '',
+    image_urls: hit.image_url ? [hit.image_url] : [],
+    specifications: {} as Record<string, unknown>,
+    category: '' as ProductCategory,
+    description_ar: null,
+    description_en: null,
+    is_free_delivery: false,
+    delivery_time_days: null,
+    delivery_cost: 0,
+    is_deal: !!(s.original_price && s.current_price && s.original_price > s.current_price),
+    coupon_code: s.coupon_code ?? null,
+    store: s.store_name || 'unknown',
+    store_name: s.store_name || '',
+    rating: null,
+    review_count: null,
+  }));
+
+  const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
+  const bestPrice = prices.length ? Math.min(...prices) : 0;
+  const anyInStock = storeEntries.some((e) => e.availability === 'in_stock');
+  const uniqueStores = new Set(storeEntries.map((e) => e.store)).size;
+  const rep = storeEntries[0];
+
+  return {
+    ...rep,
+    current_price: bestPrice,
+    availability: anyInStock ? 'in_stock' : rep.availability,
+    stores: storeEntries,
+    best_price: bestPrice,
+    store_count: uniqueStores,
+    product_id: hit.objectID,
+    product_slug: hit.objectID,
+  } as unknown as GroupedSearchProduct;
 }
 
 export async function POST(request: NextRequest) {
@@ -351,7 +401,38 @@ export async function POST(request: NextRequest) {
   let totalCount = 0;
   let dbError: string | null = null;
 
-  if (rawQuery) {
+  // ── محاولة Algolia أولاً (بحث ذكي + تسامح إملائي) ──────
+  let algoliaProducts: GroupedSearchProduct[] | null = null;
+  if (rawQuery && isAlgoliaConfigured()) {
+    console.log('[Algolia] search started:', rawQuery);
+    try {
+      const algoliaRes = await searchAlgolia({
+        query: rawQuery,
+        brands: body.brands,
+        stores: body.stores,
+        minPrice: body.min_price,
+        maxPrice: body.max_price,
+        inStockOnly: body.in_stock_only,
+        dealsOnly: body.deals_only,
+        hitsPerPage: 100,
+      });
+      console.log('[Algolia] hits count:', algoliaRes?.hits?.length ?? 'null');
+      if (algoliaRes?.hits?.length) {
+        const mapped = algoliaRes.hits
+          .map(algoliaHitToGrouped)
+          .filter((p): p is GroupedSearchProduct => p !== null);
+        if (mapped.length > 0) {
+          algoliaProducts = mapped;
+          console.log('[Algolia] using Algolia results:', mapped.length);
+        }
+      }
+    } catch (e) {
+      console.error('[Algolia] error:', e);
+    }
+    if (!algoliaProducts) console.log('[Algolia] falling back to Supabase');
+  }
+
+  if (rawQuery && !algoliaProducts) {
     // مطابقة صارمة (AND): المنتج يجب أن يحقق كل كلمات البحث المعنوية.
     const normalized = normalizeArabic(rawQuery);
     const allWords = normalized.split(/\s+/).filter(Boolean);
@@ -375,7 +456,7 @@ export async function POST(request: NextRequest) {
     }
     rows = candidateRows;
     totalCount = candidateRows.length;
-  } else {
+  } else if (!rawQuery) {
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     q = applyCommonFilters(q, body);
     q = q.range(hasPostFilters ? 0 : offsetStart, hasPostFilters ? 4999 : offsetEnd);
@@ -388,9 +469,11 @@ export async function POST(request: NextRequest) {
     totalCount = count ?? rows.length;
   }
 
-  let products: GroupedSearchProduct[] = rows
-    .map(toGroupedSearchProduct)
-    .filter((p): p is GroupedSearchProduct => p !== null);
+  let products: GroupedSearchProduct[] = algoliaProducts
+    ? algoliaProducts
+    : rows
+        .map(toGroupedSearchProduct)
+        .filter((p): p is GroupedSearchProduct => p !== null);
 
   products = applyPostFilters(products, body);
 
@@ -408,7 +491,7 @@ export async function POST(request: NextRequest) {
 
   const decision = buildDecisionLayer(products, queryIsMainProduct);
 
-  const total = hasPostFilters ? products.length : totalCount;
+  const total = hasPostFilters ? products.length : (algoliaProducts ? products.length : totalCount);
   const pageProducts = hasPostFilters
     ? products.slice(offsetStart, offsetEnd + 1)
     : products.slice(0, currentPageSize);
@@ -434,7 +517,7 @@ export async function POST(request: NextRequest) {
       avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
     },
     searchTime: (Date.now() - started) / 1000,
-    errors: dbError,
+    errors: dbError ? { search: dbError } : null,
     totalStores: computeUniqueStores(pageProducts),
     successfulStores: computeUniqueStores(pageProducts),
     decisionCard: decision.decisionCard,
@@ -547,5 +630,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'db', arabic: true, store: 'inline-name', v: 'final-v7-js-and' });
+  return NextResponse.json({ status: 'ok', engine: 'algolia+db', arabic: true, store: 'inline-name', v: 'v8-algolia' });
 }
