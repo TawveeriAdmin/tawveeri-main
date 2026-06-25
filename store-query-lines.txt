@@ -1,0 +1,136 @@
+﻿
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:42:import type { AvailabilityStatus, 
+ProductCategory } from '@/lib/database/types';
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:67: logo_url: string | null;
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:79: average_rating: number | null;
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:90: availability: AvailabilityStatus;
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:108: logo_url: string | null;
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:121: product_stores: Array<{
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:125: availability: AvailabilityStatus;
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:133: logo_url: string | null;
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:259: type StoreDetailsResponse = StoreDetails & { 
+store_reviews: StoreReview[] };
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:272: .from('stores')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:273: .select(
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:276: store_reviews(
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:289: .eq('slug', slug)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:290: .eq('status', 'active')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:302: setReviews(storeData.store_reviews || []);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:306: .from('product_stores')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:307: .select('current_price, product_url, 
+products!inner(is_active, name_ar, name_en, category, 
+brand)')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:308: .eq('store_id', storeData.id)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:309: .eq('products.is_active', true)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:311: .order('current_price', { ascending: true })
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:331: .from('product_stores')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:332: .select('product_url, products!inner(id, 
+name_ar, name_en, category, brand)')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:333: .eq('store_id', storeData.id)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:334: .eq('products.is_active', true)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:345: const electronicsTotal = 
+Array.from(counts.values()).reduce((sum, count) => sum + 
+count, 0);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:347: 
+setCategoryCounts(Array.from(counts.entries()).sort((a, 
+b) => b[1] - a[1]));
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:351: .from('coupons')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:352: .select('*')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:353: .eq('store_id', storeData.id)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:354: .eq('is_active', true)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:356: .order('created_at', { ascending: false })
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:388: .from('product_stores')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:389: .select(
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:413: logo_url
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:418: .eq('store_id', store.id)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:419: .eq('products.is_active', true);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:422: query = query.eq('products.category', 
+categoryFilter);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:442: query = query.order('current_price', { 
+ascending: true });
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:444: query = query.order('current_price', { 
+ascending: false });
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:446: query = query.order(locale === 'ar' ? 
+'name_ar' : 'name_en', {
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:453: .order('original_price', { ascending: false });
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:458: .order('availability', { ascending: true })
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:459: .order('current_price', { ascending: true });
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:479: product_stores: [
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:492: logo_url: record.stores!.logo_url,
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:550: .from('user_wishlists')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:551: .select('product_id')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:552: .eq('user_id', user.id)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:598: if (totalPages <= 7) return Array.from({ 
+length: totalPages }, (_, i) => i + 1);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:650: .from('product_stores')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:651: .select('products!inner(slug, is_active)')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:652: .eq('store_id', store.id)
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:653: .eq('products.is_active', true);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:654: if (categoryFilter !== 'all') query = 
+query.eq('products.category', categoryFilter);
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:668: const unique = Array.from(new Set(existing));
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:712: .from('user_wishlists')
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:845: value={store.average_rating !== null ? 
+store.average_rating.toFixed(1) : '-'}
+src\app\[locale]\(public)\stores\[slug]\store-detail-clien
+t.tsx:1068: {Array.from({ length: 
+STORE_PRODUCTS_PAGE_SIZE }).map((_, i) => (
+
+
