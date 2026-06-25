@@ -3,36 +3,29 @@ import { createServerClient } from '@/lib/database';
 
 export const getStoreSeoData = cache(async (slug: string) => {
   const supabase = createServerClient();
+
   const { data } = await supabase
     .from('stores')
-    .select(`
-      name_ar,
-      name_en,
-      slug,
-      description_ar,
-      description_en,
-      logo_url,
-      website_url,
-      average_rating,
-      total_reviews,
-      total_products
-    `)
+    .select('id, name, slug, offer, coupon_code, link, category')
     .eq('slug', slug)
-    .eq('status', 'active')
     .single();
 
   if (!data) return null;
 
   return {
-    name_ar: data.name_ar,
-    name_en: data.name_en,
+    id: data.id,
+    name_ar: data.name,
+    name_en: data.name,
     slug: data.slug,
-    description_ar: data.description_ar,
-    description_en: data.description_en,
-    logo_url: data.logo_url,
-    website_url: data.website_url,
-    average_rating: data.average_rating,
-    total_reviews: data.total_reviews,
-    total_products: data.total_products,
+    description_ar: data.offer || '',
+    description_en: data.offer || '',
+    logo_url: null,
+    website_url: data.link,
+    average_rating: null,
+    total_reviews: null,
+    total_products: null,
+    offer: data.offer,
+    coupon_code: data.coupon_code,
+    category: data.category,
   };
 });

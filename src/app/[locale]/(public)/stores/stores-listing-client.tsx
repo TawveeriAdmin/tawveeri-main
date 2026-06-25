@@ -89,14 +89,26 @@ export default function StoresListingClient() {
       setError(null);
 
       try {
-        const { data, error: queryError } = await sb
-          .from('stores')
-          .select('*')
-          .eq('status', 'active')
-          .order('is_featured', { ascending: false })
-          .order('average_rating', { ascending: false })
-          .returns<StoreRow[]>();
+        
+const { data: rawStores, error: queryError } = await sb
+  .from('stores')
+  .select('id, name, offer, coupon_code, link, category, slug')
+  .order('name', { ascending: true });
 
+const data = (rawStores || []).map((s: any) => ({
+  id: s.id,
+  name_ar: s.name,
+  name_en: s.name,
+  slug: s.slug,
+  logo_url: null,
+  website_url: s.link,
+  average_rating: null,
+  total_reviews: null,
+  total_products: null,
+  is_featured: false,
+  is_premium: false,
+  status: 'active',
+}));
         if (queryError) throw queryError;
 
         const mapped: StoreSummary[] = (data || []).map((store) => ({

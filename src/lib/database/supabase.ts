@@ -3,72 +3,42 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './types';
 
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vyceqrzttspyycdpojtn.supabase.co';
+
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5Y2Vxcnp0dHNweXljZHBvanRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNjczNjgsImV4cCI6MjA4NTc0MzM2OH0.eSfmDJukU9y4h-yEtAS9OfGXV443eBL82a99O0kwr14';
+
 let browserClient: SupabaseClient<Database> | null = null;
 
 export const getBrowserClient = () => {
-  if (typeof window === 'undefined') {
-    throw new Error('getBrowserClient must be called in a browser environment.');
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables.');
-  }
-
   if (!browserClient) {
-    browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
+    browserClient = createBrowserClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       db: { schema: 'public' },
       global: { headers: { 'x-application-name': 'tawveeri' } },
     });
   }
-
   return browserClient;
 };
 
 export const createServerClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serviceKey || SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables.');
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+  return createClient<Database>(SUPABASE_URL, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
     db: { schema: 'public' },
   });
 };
 
 export const checkDatabaseConnection = async () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const client =
-    typeof window === 'undefined'
-      ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
-          auth: { persistSession: false, autoRefreshToken: false },
-          db: { schema: 'public' },
-        })
-      : getBrowserClient();
-
   try {
-    const { data, error } = await client.from('users').select('count').limit(1);
-    if (error) { console.error('Database connection error:', error); return false; }
-    console.log('Database connection successful');
-    return true;
-  } catch (error) {
-    console.error('Failed to connect to database:', error);
+    const client = createServerClient();
+    const { error } = await client.from('products').select('id').limit(1);
+    return !error;
+  } catch {
     return false;
   }
 };
