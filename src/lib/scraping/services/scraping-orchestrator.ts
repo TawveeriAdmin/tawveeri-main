@@ -23,10 +23,6 @@ import { createAuditLog } from '@/lib/auth/audit';
 import { sendPushToUser } from '@/lib/push/expo-push';
 import { sendWebPushToUser } from '@/lib/push/web-push';
 
-/**
- * Retry an async operation with exponential backoff. Used around per-product
- * scraper calls so a flaky network blip doesn't kill the product's coverage.
- */
 async function retryAsync<T>(
   fn: () => Promise<T>,
   options: { maxAttempts: number; baseDelayMs: number }
@@ -45,11 +41,6 @@ async function retryAsync<T>(
   throw lastErr;
 }
 
-/**
- * All product categories defined by the Postgres enum `product_category`
- * (01-schema.sql:19). Used as the default when a discovery schedule leaves
- * `categories` empty — we walk every category so the store is fully indexed.
- */
 const ALL_PRODUCT_CATEGORIES: ProductCategory[] = [
   'smartphone',
   'laptop',
@@ -107,26 +98,25 @@ function getScraperBaseHostname(scraper: unknown): string {
   return new URL(baseUrl || 'https://example.com').hostname;
 }
 
-/**
- * Orchestrator for running scraping jobs
- */
+function describeReason(reason: unknown): string {
+  if (reason instanceof Error) {
+    return `${reason.message} | STACK: ${reason.stack ?? 'no stack'}`;
+  }
+  try {
+    return JSON.stringify(reason);
+  } catch {
+    return String(reason);
+  }
+}
+
 export class ScrapingOrchestrator {
   private productService = new ProductService();
   private validator = new DataValidator();
 
-  /**
-   * Run product discovery job. Iterates every requested category, scraping
-   * each with the store's scraper. Aggregates counts across all categories
-   * into a single DiscoveryResult.
-   */
   async runDiscoveryJob(options: DiscoveryOptions): Promise<DiscoveryResult> {
     const startTime = Date.now();
     const storeSlug = options.store_slug;
 
-    // Resolve which categories to scrape:
-    //   - explicit `categories` list wins
-    //   - else `category` (single) — legacy / admin manual runs
-    //   - else ALL product categories
     const categories: ProductCategory[] = options.categories && options.categories.length > 0
       ? options.categories
       : options.category
@@ -151,13 +141,6 @@ export class ScrapingOrchestrator {
       let errors = 0;
       const seenProductStoreIds = new Set<string>();
 
-      // Category-level concurrency. Each category still respects the scraper's
-      // per-page rate limit internally, so total request rate = CONCURRENCY ×
-      // per-category rate. Default 4 keeps us under Jarir's ~40 req/min limit
-      // at peak while cutting wall-clock ~Nx. Tune via env.
-      //
-      // `only_supplemental` skips this entirely — used by seed-direct to run
-      // supplemental exactly once after all per-category calls finish.
       const CATEGORY_CONCURRENCY = Math.max(
         1,
         parseInt(process.env.DISCOVERY_CATEGORY_CONCURRENCY ?? '4', 10) || 4
@@ -173,8 +156,6 @@ export class ScrapingOrchestrator {
             console.log(`    [${storeSlug}/${category}] scraped ${scrapedProducts.length} products — writing to DB…`);
           }
 
-          // Process products in parallel batches — DB latency dominates, so
-          // 12 concurrent round-trips cuts per-page time from ~10s to ~1s.
           const hostname = getScraperBaseHostname(scraper);
           const BATCH = 12;
           const dbStart = Date.now();
@@ -197,7 +178,7 @@ export class ScrapingOrchestrator {
             );
             for (const res of results) {
               if (res.status === 'rejected') {
-                console.error(`[${storeSlug}/${category}] product error:`, res.reason);
+                console.error(`[${storeSlug}/${category}] PRODUCT ERROR FULL: ${describeReason(res.reason)}`);
                 localErrors++;
                 continue;
               }
@@ -225,7 +206,6 @@ export class ScrapingOrchestrator {
             errors: localErrors,
           };
         } catch (error) {
-          // One category failing shouldn't abort the rest.
           console.error(`[${storeSlug}/${category}] discovery failed:`, error);
           return { discovered: 0, created: 0, linked: 0, errors: 1 };
         }
@@ -247,18 +227,6 @@ export class ScrapingOrchestrator {
         }
       }
 
-      // Supplemental discovery — brand aggregate pages, new arrivals, etc.
-      // Opt-in per scraper: runs only if the store's scraper implements
-      // `discoverSupplementalProducts`. Products are classified by title
-      // (so a mix of categories on one page still lands in the right DB
-      // rows) and deduped by SKU against everything found in the category
-      // loop above.
-      //
-      // Callers that execute categories one-at-a-time (seed-direct's worker
-      // pool) should pass `skip_supplemental: true` on per-category calls
-      // and make ONE additional call with `only_supplemental: true` after
-      // all categories finish. Otherwise the supplemental pass multiplies by
-      // the category count and costs ~18 min of wasted work per full run.
       const scraperWithSup = scraper as unknown as {
         discoverSupplementalProducts?: (maxPages: number) => Promise<ScrapedProduct[]>;
       };
@@ -289,7 +257,11 @@ export class ScrapingOrchestrator {
                 }),
               );
               for (const res of results) {
-                if (res.status === 'rejected') { supErrors++; continue; }
+                if (res.status === 'rejected') {
+                  console.error(`[${storeSlug}/supplemental] PRODUCT ERROR FULL: ${describeReason(res.reason)}`);
+                  supErrors++;
+                  continue;
+                }
                 const v = res.value;
                 if (v.kind === 'invalid') supErrors++;
                 else if (v.kind === 'saved') {
@@ -364,13 +336,6 @@ export class ScrapingOrchestrator {
     }
   }
 
-  /**
-   * Run price update job with production safeguards:
-   *   - excludes chronically failing products (consecutive_failures >= 5)
-   *   - retries transient failures with exponential backoff
-   *   - honors per-store rate limit between requests
-   *   - tracks per-product failure count for auto-demotion
-   */
   async runPriceUpdateJob(options: PriceUpdateOptions): Promise<PriceUpdateResult> {
     const startTime = Date.now();
     const supabase = createServerClient();
@@ -380,9 +345,6 @@ export class ScrapingOrchestrator {
       const cutoffTime = new Date();
       cutoffTime.setHours(cutoffTime.getHours() - olderThanHours);
 
-      // Skip chronically failing products (auto-demotion). They'll be re-tried
-      // after a cooldown (see resetFailureCooldown below) or manually via the
-      // admin UI's "reset failure count" action.
       let query = supabase
         .from('product_stores')
         .select('id, product_id, store_id, product_url, current_price, availability, consecutive_failures, stores!inner(slug, name_ar, name_en)')
@@ -402,7 +364,6 @@ export class ScrapingOrchestrator {
         throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
       }
 
-      // Group by store so we can apply per-store rate limits.
       const rows = productStores as unknown as PriceUpdateStoreRow[];
       const byStore: Record<string, PriceUpdateStoreRow[]> = {};
       for (const ps of rows) {
@@ -433,9 +394,6 @@ export class ScrapingOrchestrator {
           const productUrl = productStore.product_url;
 
           try {
-            // Retry transient failures with exponential backoff. updateProductPrice
-            // may hit flaky network, slow Puppeteer, or transient 5xx — anything
-            // the scraper throws on.
             const scrapedProduct = await retryAsync(
               () => scraper.updateProductPrice(productUrl),
               { maxAttempts: 3, baseDelayMs: 500 }
@@ -452,7 +410,6 @@ export class ScrapingOrchestrator {
                 scrapedProduct.availability
               );
 
-              // Reset failure counter on success.
               if ((productStore.consecutive_failures ?? 0) > 0) {
                 await supabase
                   .from('product_stores')
@@ -473,7 +430,6 @@ export class ScrapingOrchestrator {
                 ).catch((err) => console.error('Back-in-stock notification error:', err));
               }
             } else {
-              // Scraper returned null — treat as a mild failure (page 404, product removed).
               await this.recordFailure(productStoreId, 'scraper returned null');
               errors++;
             }
@@ -486,7 +442,6 @@ export class ScrapingOrchestrator {
             errors++;
           }
 
-          // Per-store rate limit.
           const delay = minDelayMs + Math.floor(Math.random() * Math.max(0, maxDelayMs - minDelayMs));
           if (delay > 0) {
             await new Promise((r) => setTimeout(r, delay));
@@ -517,15 +472,9 @@ export class ScrapingOrchestrator {
     }
   }
 
-  /**
-   * Increment the consecutive_failures counter on a product_stores row.
-   * After 5 consecutive failures the product is excluded from future runs
-   * until an admin resets it or the cooldown passes.
-   */
   private async recordFailure(productStoreId: string, errorMsg: string): Promise<void> {
     try {
       const supabase = createServerClient();
-      // Pull current value, increment, and stamp last_failed_at.
       const { data } = await supabase
         .from('product_stores')
         .select('consecutive_failures')
@@ -545,9 +494,6 @@ export class ScrapingOrchestrator {
     }
   }
 
-  /**
-   * Get scraper instance for store
-   */
   getScraperForStore(storeSlug: string) {
     switch (storeSlug) {
       case 'jarir':
@@ -571,9 +517,6 @@ export class ScrapingOrchestrator {
     }
   }
 
-  /**
-   * Notify users with active price alerts when a product comes back in stock
-   */
   private async notifyBackInStock(
     supabase: ReturnType<typeof createServerClient>,
     productId: string,
@@ -603,7 +546,6 @@ export class ScrapingOrchestrator {
       const storeName = locale === 'ar' ? store.name_ar : store.name_en;
       const productLink = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/products/${product.slug}`;
 
-      // In-app notification
       createNotification({
         user_id: alert.user_id,
         type: 'back_in_stock',
@@ -615,7 +557,6 @@ export class ScrapingOrchestrator {
         store_id: storeId,
       }).catch((err) => console.error('Back-in-stock in-app notification error:', err));
 
-      // Email
       if (user?.email) {
         sendBackInStockEmail(user.email, {
           product_name: productName,
@@ -625,7 +566,6 @@ export class ScrapingOrchestrator {
         }, locale).catch((err) => console.error('Back-in-stock email error:', err));
       }
 
-      // Mobile push
       const pushTitle = locale === 'ar' ? `عاد للمخزون: ${productName}` : `Back in Stock: ${productName}`;
       const pushBody = locale === 'ar'
         ? `متوفر الآن في ${storeName} بسعر ${priceText} ر.س`
@@ -638,7 +578,6 @@ export class ScrapingOrchestrator {
         channelId: 'price-alerts',
       }).catch((err) => console.error('Back-in-stock push error:', err));
 
-      // Web push
       sendWebPushToUser(alert.user_id, {
         title: pushTitle,
         body: pushBody,
@@ -649,7 +588,6 @@ export class ScrapingOrchestrator {
       }).catch((err) => console.error('Back-in-stock web push error:', err));
     }
 
-    // Audit log for back-in-stock alert batch
     createAuditLog({
       action: 'back_in_stock_alert_sent',
       entity_type: 'product',
@@ -658,9 +596,6 @@ export class ScrapingOrchestrator {
     }).catch(() => {});
   }
 
-  /**
-   * Get store ID from slug
-   */
   private async getStoreId(storeSlug: string): Promise<string | null> {
     const supabase = createServerClient();
     const { data, error } = await supabase
@@ -673,4 +608,3 @@ export class ScrapingOrchestrator {
     return data.id;
   }
 }
-
