@@ -59,6 +59,10 @@ interface ProductCardProps {
     description_ar?: string | null;
     description_en?: string | null;
     specifications?: Record<string, unknown> | null;
+    // TPS Enrichment
+    tps_compare_url?: string | null;
+    tps_identity_key?: string | null;
+    has_tps_comparison?: boolean;
   };
   locale: string;
   onCompare?: (productId: string) => void;
@@ -84,11 +88,9 @@ export function ProductCard({
 }: ProductCardProps) {
   const t = useTranslations();
 
-  // Get locale from params if not provided
   const params = useParams();
   const currentLocale = locale || (params?.locale as string) || 'ar';
 
-  // Get product name based on locale
   const productName = currentLocale === 'ar' ? product.name_ar : product.name_en;
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -97,10 +99,6 @@ export function ProductCard({
   const isMultiStore = product.product_stores.length > 1;
   const isDbProduct = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(product.id);
 
-  // Get external product URL if available (for scraped products not in DB).
-  // Apply the per-store affiliate tag synchronously — scraped products have
-  // non-UUID ids so `generateAffiliateUrl()` can't run server-side lookup for
-  // them. For those, stores.id IS the slug; for DB rows we prefer stores.slug.
   const primaryStore = product.product_stores[0]?.stores;
   const primaryStoreSlug = primaryStore?.slug || primaryStore?.id || null;
   const rawExternalUrl = !isMultiStore
@@ -111,10 +109,8 @@ export function ProductCard({
     : null;
   const isExternalLink = externalProductUrl && (externalProductUrl.startsWith('http://') || externalProductUrl.startsWith('https://'));
 
-  // Always route to OUR internal product detail page — no jumping to external stores.
   const productLink = `/${currentLocale}/products/${product.slug}`;
 
-  // Get available images
   const availableImages = product.image_urls?.filter(Boolean) || [];
 
   useEffect(() => {
@@ -123,7 +119,6 @@ export function ProductCard({
     setCurrentImageIndex(0);
   }, [product.id]);
 
-  // Try next image if current one fails
   const handleImageError = () => {
     if (currentImageIndex < availableImages.length - 1) {
       setCurrentImageIndex(prev => prev + 1);
@@ -139,7 +134,6 @@ export function ProductCard({
     setImageError(false);
   };
 
-  // Get best price from all stores
   const storesWithPrices = product.product_stores
     .filter((ps) => ps.availability !== 'out_of_stock')
     .sort((a, b) => a.current_price - b.current_price);
@@ -151,15 +145,12 @@ export function ProductCard({
   const hasDeal = product.product_stores.some((ps) => ps.original_price && ps.original_price > ps.current_price);
   const isOutOfStock = product.product_stores.every((ps) => ps.availability === 'out_of_stock');
 
-  // Get current image or placeholder
   const currentImageUrl = availableImages[currentImageIndex] || null;
   const imageSrc = imageError || !currentImageUrl ? PRODUCT_PLACEHOLDER_IMAGE : currentImageUrl;
 
   const router = useRouter();
   const [navigating, setNavigating] = useState(false);
 
-  // For scraped-only products (non-UUID IDs), upsert into DB via /api/products/ensure
-  // before navigating so the detail page can resolve the slug.
   const handleEnsureAndNavigate = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (navigating) return;
@@ -191,15 +182,12 @@ export function ProductCard({
       const dbSlug = json?.product?.slug || product.slug;
       router.push(`/${currentLocale}/products/${dbSlug}`);
     } catch {
-      // fall back to optimistic navigation — detail page shows not-found if needed
       router.push(productLink);
     } finally {
       setNavigating(false);
     }
   };
 
-  // If onCardClick is provided open the detail sheet; otherwise navigate internally.
-  // Scraped products need an ensure round-trip first so the detail page can load.
   const LinkWrapper = ({ children }: { children: React.ReactNode }) =>
     onCardClick ? (
       <button
@@ -224,10 +212,6 @@ export function ProductCard({
       </button>
     );
 
-  // Unique stores for logo/initial display. Carries the slug alongside
-  // the id: the slug is what `<StoreLogo>` and the public/logos/ folder
-  // expect. For scraped-only products the scraper fills `stores.id` with
-  // the slug already, so `slug ?? id` reliably resolves either way.
   const storeInitials = product.product_stores
     .filter(ps => ps.stores)
     .map(ps => ({
@@ -249,7 +233,6 @@ export function ProductCard({
           'border-[var(--brand-green)] ring-2 ring-[var(--brand-green)]/30',
       )}
     >
-      {/* Wishlist heart — absolute, outside link wrapper for clickability */}
       {showActions && onSave && (
         <div className="absolute end-2 top-2 z-10">
           <IconButton
@@ -272,7 +255,6 @@ export function ProductCard({
       )}
 
       <LinkWrapper>
-        {/* Product Image */}
         <div className="relative w-full aspect-square overflow-hidden rounded-t-[var(--radius-lg)] bg-[color:var(--color-surface-container-low)]">
           <ProductImageFrame
             src={imageSrc}
@@ -288,7 +270,6 @@ export function ProductCard({
             unoptimized={isExternalLink || imageSrc.includes('jarir.com')}
             priority={false}
           />
-          {/* Badges overlay (start-side) */}
           <div className="absolute top-2 start-2 flex flex-col gap-1.5">
             {isWinner && (
               <Badge variant="best" className="shadow-[var(--elevation-1)]">
@@ -315,7 +296,6 @@ export function ProductCard({
             )}
           </div>
 
-          {/* Multi-store count chip (end-side, below heart) */}
           {isMultiStore && (
             <div className="absolute bottom-2 end-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-surface)]/95 backdrop-blur-sm px-2 py-1 text-[11px] font-semibold text-[var(--brand-green-dark)] shadow-[var(--elevation-1)] border border-[color:var(--color-outline-variant)]/40">
@@ -327,7 +307,6 @@ export function ProductCard({
         </div>
 
         <CardContent className="p-4 flex-1 flex flex-col">
-          {/* Product Info */}
           <div className="flex-1 mb-3">
             <h3
               dir="auto"
@@ -351,9 +330,7 @@ export function ProductCard({
               </p>
             )}
 
-            {/* Price + Store row */}
             <div className="flex items-end justify-between gap-2 mb-1">
-              {/* Price */}
               <div className="min-w-0 flex-1">
                 {bestPriceValue > 0 ? (
                   <div className="flex flex-col gap-1">
@@ -384,7 +361,6 @@ export function ProductCard({
                 )}
               </div>
 
-              {/* Store */}
               {isMultiStore ? (
                 <div className="flex items-center gap-1 shrink-0">
                   <div className="flex -space-x-1 rtl:space-x-reverse">
@@ -459,14 +435,6 @@ export function ProductCard({
               )}
             </div>
 
-            {/* Savings chip (gold) + Coupon */}
-            {/* Savings chip temporarily hidden — bring back when copy is finalized.
-            {savings > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-gold)]/12 text-[var(--brand-gold-dark)] px-2 py-0.5 t-small font-semibold mt-2">
-                <SavingsLabel amount={savings} locale={currentLocale as 'ar' | 'en'} />
-              </span>
-            )}
-            */}
             {bestPrice?.coupon_code && (
               <div className="mt-2">
                 <CouponBadge
@@ -477,21 +445,27 @@ export function ProductCard({
               </div>
             )}
           </div>
-
         </CardContent>
       </LinkWrapper>
 
       {/* Action Row — outside LinkWrapper so clicks work */}
       {showActions && (
         <div className="px-4 pb-4 pt-0 flex flex-col gap-2">
+
+          {/* ── TPS Compare Button ── يظهر فقط عند وجود tps_compare_url */}
+          {product.tps_compare_url && (
+            <Link
+              href={product.tps_compare_url}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] text-[11px] font-bold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
+            >
+              <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+              {currentLocale === 'ar' ? 'قارن الأسعار' : 'Compare Prices'}
+            </Link>
+          )}
+
           {/* Primary CTA */}
           {isMultiStore ? (
-            <Button
-              variant="default"
-              size="sm"
-              className="w-full text-xs"
-              asChild
-            >
+            <Button variant="default" size="sm" className="w-full text-xs" asChild>
               <Link href={productLink}>
                 <BarChart3 className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">
@@ -500,42 +474,26 @@ export function ProductCard({
               </Link>
             </Button>
           ) : externalProductUrl ? (
-            <Button
-              variant="default"
-              size="sm"
-              className="w-full text-xs"
-              asChild
-            >
-              <a
-                href={externalProductUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+            <Button variant="default" size="sm" className="w-full text-xs" asChild>
+              <a href={externalProductUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{t('products.viewAtStore')}</span>
               </a>
             </Button>
           ) : (
-            <Button
-              variant="default"
-              size="sm"
-              className="w-full text-xs"
-              disabled
-            >
+            <Button variant="default" size="sm" className="w-full text-xs" disabled>
               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{t('products.viewAtStore')}</span>
             </Button>
           )}
-          {/* Compare toggle — tonal secondary so it doesn't compete with the primary CTA */}
+
           {onCompare && (
             <button
               type="button"
               onClick={() => onCompare(product.id)}
               aria-label={
                 isInCompare
-                  ? currentLocale === 'ar'
-                    ? 'إزالة من المقارنة'
-                    : 'Remove from compare'
+                  ? currentLocale === 'ar' ? 'إزالة من المقارنة' : 'Remove from compare'
                   : t('product.addToCompare')
               }
               aria-pressed={isInCompare}
@@ -546,19 +504,14 @@ export function ProductCard({
                   : 'border-[color:var(--brand-green)] bg-transparent text-[var(--brand-green-dark)] shadow-[inset_0_0_0_1px_var(--brand-green)] hover:bg-[var(--brand-bg-green)]',
               )}
             >
-              {isInCompare ? (
-                <X className="h-3.5 w-3.5 shrink-0" />
-              ) : (
-                <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-              )}
+              {isInCompare
+                ? <X className="h-3.5 w-3.5 shrink-0" />
+                : <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+              }
               <span className="truncate">
                 {isInCompare
-                  ? currentLocale === 'ar'
-                    ? 'إزالة من المقارنة'
-                    : 'Remove from compare'
-                  : currentLocale === 'ar'
-                    ? 'إضافة للمقارنة'
-                    : 'Add to compare'}
+                  ? currentLocale === 'ar' ? 'إزالة من المقارنة' : 'Remove from compare'
+                  : currentLocale === 'ar' ? 'إضافة للمقارنة' : 'Add to compare'}
               </span>
             </button>
           )}
