@@ -86,11 +86,6 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'جوال': ['phone', 'smartphone', 'mobile'],
   'هاتف': ['phone', 'smartphone', 'mobile'],
   'ايفون': ['iphone', 'apple'],
-  'ابل': ['apple', 'iphone'],
-  'أبل': ['apple', 'iphone'],
-  'آبل': ['apple', 'iphone'],
-  'جالاكسي': ['galaxy', 'samsung'],
-  'قالاكسي': ['galaxy', 'samsung'],
   'سامسونج': ['samsung'],
   'لابتوب': ['laptop', 'notebook'],
   'حاسوب': ['laptop', 'computer'],
@@ -129,15 +124,13 @@ const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holde
 
 const MAIN_PRODUCT_TYPES = new Set<string>([
   'جوال', 'هاتف', 'ايفون', 'جوالات', 'هواتف',
-  'جالاكسي', 'قالاكسي', 'ابل', 'سامسونج',
   'مكيف', 'مكيفات', 'سبليت',
   'لابتوب', 'حاسوب', 'كمبيوتر',
   'تلفزيون', 'شاشه', 'شاشات',
   'ثلاجه', 'فريزر', 'غساله', 'نشافه', 'مكنسه',
   'مايكروويف', 'ميكروويف', 'فرن', 'طابعه', 'راوتر', 'كاميرا', 'ساعه', 'تابلت',
   'سماعه', 'سماعات',
-  'phone', 'iphone', 'smartphone', 'mobile', 'apple', 'galaxy', 'samsung',
-  'laptop', 'tv', 'television',
+  'phone', 'iphone', 'smartphone', 'mobile', 'laptop', 'tv', 'television',
   'refrigerator', 'fridge', 'freezer', 'washer', 'dryer', 'vacuum',
   'microwave', 'oven', 'printer', 'router', 'camera', 'tablet', 'headphones',
 ]);
@@ -153,12 +146,6 @@ function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const en = (nameEn || '').toLowerCase();
   return ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
     ACCESSORY_HINTS_EN.some((h) => en.includes(h));
-}
-
-function isAccessoryIntentQuery(raw: string): boolean {
-  const norm = normalizeArabic(raw).toLowerCase();
-  return ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
-    ACCESSORY_HINTS_EN.some((h) => norm.includes(h));
 }
 
 function hasACSignal(nameAr: string, nameEn: string): boolean {
@@ -242,23 +229,19 @@ function applyCommonFilters(query: any, body: SearchBody): any {
 function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number, queryIsMainProduct: boolean): number {
   const isAccessory = hasAccessoryHint(p.name_ar || '', p.name_en || '');
   const acSignal = hasACSignal(p.name_ar || '', p.name_en || '');
-
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 25 : 0;
   const storeBoost = Math.min(p.store_count * 6, 18);
   const dealBoost = p.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price) ? 8 : 0;
   const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
   const ratingBoost = rating > 0 ? rating * 3 : 0;
-
   let pricePenalty = 22;
   if (p.best_price > 0 && priceMax > priceMin) {
     pricePenalty = ((p.best_price - priceMin) / (priceMax - priceMin)) * 22;
   } else if (p.best_price > 0) {
     pricePenalty = 0;
   }
-
   const accessoryPenalty = isAccessory ? (queryIsMainProduct ? 1000 : 60) : 0;
   const acBoost = acSignal ? 10 : 0;
-
   return inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost - pricePenalty - accessoryPenalty;
 }
 
@@ -280,10 +263,8 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
   const priceMin = prices.length ? Math.min(...prices) : 0;
   const priceMax = prices.length ? Math.max(...prices) : 0;
-
   const ranked = [...products].sort((a, b) => scoreProduct(b, priceMin, priceMax, queryIsMainProduct) - scoreProduct(a, priceMin, priceMax, queryIsMainProduct));
   const top3 = ranked.slice(0, 3);
-
   const best = top3[0] || null;
   const decisionCard = best
     ? {
@@ -293,7 +274,6 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
         product_url: best.stores.find((s) => s.current_price === best.best_price)?.product_url || best.stores[0]?.product_url || '',
       }
     : null;
-
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
     product_id: (p as unknown as { product_id?: string }).product_id || '',
     name_ar: p.name_ar,
@@ -305,14 +285,12 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
     store_name: p.stores.find((s) => s.current_price === p.best_price)?.store_name || p.stores[0]?.store_name || '',
     reason_ar: buildReasonAr(p, p.best_price === priceMin && priceMin > 0),
   }));
-
   return { decisionCard, topMatches };
 }
 
 function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
   const validStores = (hit.stores || []).filter((s) => s.current_price != null);
   if (validStores.length === 0) return null;
-
   const storeEntries: SearchProduct[] = validStores.map((s) => ({
     name_ar: hit.name_ar,
     name_en: hit.name_en,
@@ -338,13 +316,11 @@ function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
     rating: null,
     review_count: null,
   }));
-
   const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
   const bestPrice = prices.length ? Math.min(...prices) : 0;
   const anyInStock = storeEntries.some((e) => e.availability === 'in_stock');
   const uniqueStores = new Set(storeEntries.map((e) => e.store)).size;
   const rep = storeEntries[0];
-
   return {
     ...rep,
     current_price: bestPrice,
@@ -357,11 +333,63 @@ function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
   } as unknown as GroupedSearchProduct;
 }
 
+// ── TPS Enrichment — Model Number Matching ────────────────────
+// طلب واحد للكل — Fallback آمن إذا فشل
+const MODEL_CODE_REGEX = /\b([A-Z]{2}\d{2}[A-Z0-9]{4,}(?:\/[A-Z0-9]+)?)\b/g;
+
+async function enrichWithTPS(
+  products: GroupedSearchProduct[],
+  supabase: ReturnType<typeof createServerClient>
+): Promise<GroupedSearchProduct[]> {
+  if (!products.length) return products;
+  try {
+    const productModels = products.map((p, idx) => {
+      const text = `${p.name_en || ''} ${p.name_ar || ''}`;
+      const codes = [...text.matchAll(MODEL_CODE_REGEX)].map(m => m[1].toUpperCase());
+      return { idx, codes };
+    });
+    const allCodes = [...new Set(productModels.flatMap(p => p.codes))];
+    if (!allCodes.length) return products;
+
+    const { data: tpsRows } = await supabase
+      .from('tps_product_projection')
+      .select('model_number, compare_url, tps_identity_key, has_comparison')
+      .eq('has_comparison', true)
+      .in('model_number', allCodes);
+
+    if (!tpsRows?.length) return products;
+
+    const tpsMap = new Map<string, typeof tpsRows[0]>();
+    for (const row of tpsRows) {
+      if (row.model_number) tpsMap.set(row.model_number.toUpperCase(), row);
+    }
+
+    return products.map((p, idx) => {
+      for (const code of productModels[idx].codes) {
+        const tps = tpsMap.get(code);
+        if (tps) {
+          return {
+            ...p,
+            tps_compare_url:    tps.compare_url,
+            tps_identity_key:   tps.tps_identity_key,
+            has_tps_comparison: true,
+          };
+        }
+      }
+      return p;
+    });
+  } catch (err) {
+    console.error('[TPS Enrichment] failed:', err);
+    return products;
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   const started = Date.now();
   const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
   const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
-  const queryIsMainProduct = isMainProductTypeQuery(rawQuery) && !isAccessoryIntentQuery(rawQuery);
+  const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
   const supabase = createServerClient();
 
   const selectClause = `
@@ -432,7 +460,6 @@ export async function POST(request: NextRequest) {
     const allWords = normalized.split(/\s+/).filter(Boolean);
     const meaningful = allWords.filter((w) => !STOPWORDS.has(w));
     const words = meaningful.length > 0 ? meaningful : allWords;
-
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     const orPool = buildOrPool(words);
     if (orPool) q = q.or(orPool);
@@ -441,7 +468,6 @@ export async function POST(request: NextRequest) {
     const { data, error } = await q;
     if (error) { console.error('[search:pool]', error.message); dbError = error.message; }
     let candidateRows = (data ?? []) as unknown as ProductRow[];
-
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
     if (wordTermsList.length > 0) {
       candidateRows = candidateRows.filter((row) => productMatchesAllWords(row, wordTermsList));
@@ -469,13 +495,6 @@ export async function POST(request: NextRequest) {
 
   products = applyPostFilters(products, body);
 
-  if (queryIsMainProduct) {
-    const mainOnly = products.filter(
-      (p) => !hasAccessoryHint(p.name_ar || '', p.name_en || '')
-    );
-    if (mainOnly.length > 0) products = mainOnly;
-  }
-
   if (rawQuery) {
     const prices = products.map((p) => p.best_price).filter((n) => n > 0);
     const pMin = prices.length ? Math.min(...prices) : 0;
@@ -490,11 +509,16 @@ export async function POST(request: NextRequest) {
   const decision = buildDecisionLayer(products, queryIsMainProduct);
 
   const total = hasPostFilters ? products.length : (algoliaProducts ? products.length : totalCount);
+
   const pageProducts = hasPostFilters
     ? products.slice(offsetStart, offsetEnd + 1)
     : products.slice(0, currentPageSize);
 
-  const prices = pageProducts.map((p) => p.best_price).filter((n) => n > 0);
+  // ── TPS Enrichment Layer ──────────────────────────────────────
+  const enrichedProducts = await enrichWithTPS(pageProducts, supabase);
+  // ─────────────────────────────────────────────────────────────
+
+  const prices = enrichedProducts.map((p) => p.best_price).filter((n) => n > 0);
   const result: ScrapedSearchResult & {
     total: number;
     page: number;
@@ -502,24 +526,24 @@ export async function POST(request: NextRequest) {
     decisionCard: DecisionLayer['decisionCard'];
     topMatches: DecisionTopMatch[];
   } = {
-    products: pageProducts,
-    count: pageProducts.length,
+    products:          enrichedProducts,
+    count:             enrichedProducts.length,
     total,
-    page: currentPage,
-    pageSize: currentPageSize,
-    query: rawQuery,
-    storeResults: computeStoreResults(pageProducts),
+    page:              currentPage,
+    pageSize:          currentPageSize,
+    query:             rawQuery,
+    storeResults:      computeStoreResults(enrichedProducts),
     priceStats: {
       min: prices.length ? Math.min(...prices) : null,
       max: prices.length ? Math.max(...prices) : null,
       avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
     },
-    searchTime: (Date.now() - started) / 1000,
-    errors: dbError ? { search: dbError } : null,
-    totalStores: computeUniqueStores(pageProducts),
-    successfulStores: computeUniqueStores(pageProducts),
-    decisionCard: decision.decisionCard,
-    topMatches: decision.topMatches,
+    searchTime:        (Date.now() - started) / 1000,
+    errors:            dbError ? { search: dbError } : null,
+    totalStores:       computeUniqueStores(enrichedProducts),
+    successfulStores:  computeUniqueStores(enrichedProducts),
+    decisionCard:      decision.decisionCard,
+    topMatches:        decision.topMatches,
   };
 
   return NextResponse.json(result);
@@ -527,13 +551,11 @@ export async function POST(request: NextRequest) {
 
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
   let result = products;
-
   if (body.deals_only) {
     result = result.filter((product) =>
       product.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price)
     );
   }
-
   if (typeof body.discount === 'number') {
     result = result.filter((product) =>
       product.stores.some((store) => {
@@ -543,7 +565,6 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
       })
     );
   }
-
   if (body.specs && Object.keys(body.specs).length > 0) {
     result = result.filter((product) => {
       const fallbackSpecs = extractSpecsFromTitle(product.name_en || product.name_ar || '');
@@ -554,14 +575,12 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
       });
     });
   }
-
   return result;
 }
 
 function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
   const productStores = (row.product_stores || []).filter((ps) => ps && ps.current_price != null);
   if (productStores.length === 0) return null;
-
   const storeEntries: SearchProduct[] = productStores.map((ps) => ({
     name_ar: row.name_ar,
     name_en: row.name_en,
@@ -587,13 +606,11 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     rating: null,
     review_count: null,
   }));
-
   const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
   const bestPrice = prices.length ? Math.min(...prices) : 0;
   const anyInStock = storeEntries.some((e) => e.availability === 'in_stock');
   const uniqueStores = new Set(storeEntries.map((e) => e.store)).size;
   const rep = storeEntries[0];
-
   return {
     ...rep,
     current_price: bestPrice,
@@ -628,5 +645,5 @@ function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearch
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', engine: 'algolia+db', arabic: true, store: 'inline-name', v: 'v9-main-product-filter' });
+  return NextResponse.json({ status: 'ok', engine: 'algolia+db', arabic: true, store: 'inline-name', v: 'v8-algolia-tps' });
 }
