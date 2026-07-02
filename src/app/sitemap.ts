@@ -1,17 +1,28 @@
+// src/app/sitemap.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// Sitemap ديناميكي موحّد — يدمج:
+//   1. الصفحات الثابتة الفعلية (مع hreflang alternates)
+//   2. كتالوج TPS الجديد: /mobiles + صفحات /product/{slug} من canonical_products
+// ملاحظة: أُزيلت مسارات جدول products القديم (بنية Etlaq السابقة) —
+// الفهرسة الآن حصرياً من canonical_products (مصدر الحقيقة الجديد).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import type { MetadataRoute } from 'next';
-import { createServerClient } from '@/lib/database';
+import { getAllProductSlugs } from '@/lib/catalog/getProductComparison';
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://tawveeri.com';
+const locales = ['ar', 'en'] as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
-  const locales = ['ar', 'en'] as const;
+  const now = new Date();
 
-  // Static pages
-  const staticPages = ['', '/search', '/deals', '/stores', '/coupons', '/privacy', '/terms'];
+  // 1) الصفحات الثابتة (الموجودة فعلاً في الموقع)
+  const staticPages = ['', '/search', '/how-it-works', '/privacy', '/terms'];
   const staticEntries: MetadataRoute.Sitemap = staticPages.flatMap((path) =>
     locales.map((locale) => ({
       url: `${baseUrl}/${locale}${path}`,
-      lastModified: new Date(),
-      changeFrequency: path === '' ? 'daily' as const : 'weekly' as const,
+      lastModified: now,
+      changeFrequency: path === '' ? ('daily' as const) : ('weekly' as const),
       priority: path === '' ? 1.0 : 0.7,
       alternates: {
         languages: {
@@ -22,65 +33,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
   );
 
-  // Dynamic: products
+  // 2) كتالوج الجوالات
+  const catalogEntries: MetadataRoute.Sitemap = locales.map((locale) => ({
+    url: `${baseUrl}/${locale}/mobiles`,
+    lastModified: now,
+    changeFrequency: 'daily' as const, // الأسعار تتحدث كل 6 ساعات
+    priority: 0.9,
+    alternates: {
+      languages: {
+        ar: `${baseUrl}/ar/mobiles`,
+        en: `${baseUrl}/en/mobiles`,
+      },
+    },
+  }));
+
+  // 3) صفحات المنتجات — من canonical_products (كتالوج TPS)
   let productEntries: MetadataRoute.Sitemap = [];
   try {
-    const supabase = createServerClient();
-    const { data: products } = await supabase
-      .from('products')
-      .select('slug, updated_at')
-      .eq('is_active', true)
-      .order('updated_at', { ascending: false })
-      .limit(5000);
-
-    if (products) {
-      productEntries = products.flatMap((product) =>
-        locales.map((locale) => ({
-          url: `${baseUrl}/${locale}/products/${product.slug}`,
-          lastModified: new Date(product.updated_at),
-          changeFrequency: 'daily' as const,
-          priority: 0.8,
-          alternates: {
-            languages: {
-              ar: `${baseUrl}/ar/products/${product.slug}`,
-              en: `${baseUrl}/en/products/${product.slug}`,
-            },
+    const products = await getAllProductSlugs();
+    productEntries = products.flatMap((p) =>
+      locales.map((locale) => ({
+        url: `${baseUrl}/${locale}/product/${p.slug}`,
+        lastModified: now,
+        changeFrequency: 'daily' as const,
+        priority: 0.8,
+        alternates: {
+          languages: {
+            ar: `${baseUrl}/ar/product/${p.slug}`,
+            en: `${baseUrl}/en/product/${p.slug}`,
           },
-        }))
-      );
-    }
+        },
+      }))
+    );
   } catch {
     // DB unavailable — skip dynamic entries
   }
 
-  // Dynamic: stores
-  let storeEntries: MetadataRoute.Sitemap = [];
-  try {
-    const supabase = createServerClient();
-    const { data: stores } = await supabase
-      .from('stores')
-      .select('slug, updated_at')
-      .eq('status', 'active');
-
-    if (stores) {
-      storeEntries = stores.flatMap((store) =>
-        locales.map((locale) => ({
-          url: `${baseUrl}/${locale}/stores/${store.slug}`,
-          lastModified: new Date(store.updated_at),
-          changeFrequency: 'weekly' as const,
-          priority: 0.7,
-          alternates: {
-            languages: {
-              ar: `${baseUrl}/ar/stores/${store.slug}`,
-              en: `${baseUrl}/en/stores/${store.slug}`,
-            },
-          },
-        }))
-      );
-    }
-  } catch {
-    // DB unavailable — skip dynamic entries
-  }
-
-  return [...staticEntries, ...productEntries, ...storeEntries];
+  return [...staticEntries, ...catalogEntries, ...productEntries];
 }

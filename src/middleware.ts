@@ -137,6 +137,16 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // مسارات تقنية locale-independent — تتجاوز i18n والمصادقة:
+  // /go (redirect layer) + sitemap.xml + robots.txt
+  if (
+    pathname.startsWith('/go/') ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/robots.txt'
+  ) {
+    return NextResponse.next();
+  }
+
   // First, let next-intl handle the routing
   const response = handleI18nRouting(request);
 
@@ -276,11 +286,13 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - go (redirect layer — locale-independent)
+     * - sitemap.xml / robots.txt (SEO files — locale-independent)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!go/|sitemap.xml|robots.txt|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

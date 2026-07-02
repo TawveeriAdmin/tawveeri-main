@@ -1,3 +1,12 @@
+// src/app/robots.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// robots ديناميكي — يسمح بفهرسة صفحات المحتوى، ويمنع:
+//   - المسارات التقنية (/api, /go)
+//   - الصفحات الخاصة/المحمية (dashboard, profile, auth...)
+// /go/ ممنوع عمداً: redirect layer للتتبع والعمولة — ليس محتوى؛
+// فهرسته تهدر ميزانية الزحف وتشوش التتبع.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import type { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
@@ -9,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
+          '/go/',              // ← الإضافة الوحيدة: redirect layer (تتبع + عمولة)
           '/admin/',
           '/store/',
           '/*/dashboard/',
