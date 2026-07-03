@@ -6,7 +6,7 @@ import { getProductComparison } from "@/lib/catalog/getProductComparison";
 import { getProductSEO } from "@/lib/catalog/getProductSEO";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-
+import { getPriceIntelligence } from "@/lib/intelligence/getPriceIntelligence";
 export const dynamic = "force-dynamic";
 
 // ═══ Metadata ديناميكي — من المولّد المركزي ═══
@@ -34,7 +34,7 @@ export default async function ProductPage({
 }) {
   const product = await getProductComparison(params.slug);
   if (!product) notFound();
-
+const intel = await getPriceIntelligence(product.id);
   const seo = getProductSEO(product, params.locale);
 
   const specs: { label: string; value: string }[] = [];
@@ -74,7 +74,22 @@ export default async function ProductPage({
           <p className="text-green-600 text-sm mt-1">بمقارنة الأسعار بين المتاجر</p>
         </div>
       )}
-
+{/* ذكاء الأسعار — Tawveeri Intelligence */}
+      {intel && (
+        <div className={`mt-3 rounded-xl border p-4 ${
+          intel.dealRating === "excellent" ? "border-orange-300 bg-orange-50" :
+          intel.dealRating === "good" ? "border-green-300 bg-green-50" :
+          intel.dealRating === "high" ? "border-red-200 bg-red-50" :
+          "border-gray-200 bg-gray-50"
+        }`}>
+          <p className="text-sm font-semibold text-gray-800">{intel.dealText}</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <span>أقل سعر مسجّل: {intel.lowestEver.toLocaleString("ar-SA")} ريال</span>
+            <span>المتوسط: {intel.average.toLocaleString("ar-SA")} ريال</span>
+            <span>الاتجاه: {intel.trend === "falling" ? "في انخفاض ↓" : intel.trend === "rising" ? "في ارتفاع ↑" : "مستقر"}</span>
+          </div>
+        </div>
+      )}
       {/* جدول الأسعار */}
       <section className="mt-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-3">قارن الأسعار</h2>
