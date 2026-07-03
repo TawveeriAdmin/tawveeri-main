@@ -16,6 +16,7 @@ import { SamsungKsaScraper } from '../stores/samsung-ksa-scraper';
 import { ShakerScraper } from '../stores/shaker-scraper';
 import { SwsgScraper } from '../stores/swsg-scraper';
 import { ProductService } from './product-service';
+import { IngestionService } from './ingestion-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
 import { createNotification, sendBackInStockEmail } from '@/lib/auth/notifications';
@@ -111,7 +112,9 @@ function describeReason(reason: unknown): string {
 
 export class ScrapingOrchestrator {
   private productService = new ProductService();
+  private ingestion = new IngestionService();
   private validator = new DataValidator();
+  
 
   async runDiscoveryJob(options: DiscoveryOptions): Promise<DiscoveryResult> {
     const startTime = Date.now();
@@ -152,6 +155,9 @@ export class ScrapingOrchestrator {
             category,
             options.max_pages || 10
           );
+          if (!options.dry_run) {
+  await this.ingestion.ingestBatch(storeSlug, scrapedProducts);
+}
           if (scrapedProducts.length > 0) {
             console.log(`    [${storeSlug}/${category}] scraped ${scrapedProducts.length} products — writing to DB…`);
           }
@@ -234,6 +240,9 @@ export class ScrapingOrchestrator {
         try {
           console.log(`[${storeSlug}] running supplemental discovery…`);
           const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
+          if (!options.dry_run) {
+  await this.ingestion.ingestBatch(storeSlug, supProducts);
+}
           if (supProducts.length > 0) {
             console.log(`    [${storeSlug}/supplemental] scraped ${supProducts.length} products — writing to DB…`);
             const hostname = getScraperBaseHostname(scraper);
