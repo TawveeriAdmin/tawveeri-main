@@ -10,14 +10,26 @@
 import type { MetadataRoute } from 'next';
 import { getAllProductSlugs } from '@/lib/catalog/getProductComparison';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://tawveeri.com';
+const baseUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  'https://tawveeri.com';
+
 const locales = ['ar', 'en'] as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // 1) الصفحات الثابتة (الموجودة فعلاً في الموقع)
-  const staticPages = ['', '/search', '/how-it-works', '/privacy', '/terms'];
+  const staticPages = [
+    '',
+    '/search',
+    '/deals',
+    '/how-it-works',
+    '/privacy',
+    '/terms',
+  ];
+
   const staticEntries: MetadataRoute.Sitemap = staticPages.flatMap((path) =>
     locales.map((locale) => ({
       url: `${baseUrl}/${locale}${path}`,
@@ -37,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const catalogEntries: MetadataRoute.Sitemap = locales.map((locale) => ({
     url: `${baseUrl}/${locale}/mobiles`,
     lastModified: now,
-    changeFrequency: 'daily' as const, // الأسعار تتحدث كل 6 ساعات
+    changeFrequency: 'daily' as const,
     priority: 0.9,
     alternates: {
       languages: {
@@ -49,8 +61,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 3) صفحات المنتجات — من canonical_products (كتالوج TPS)
   let productEntries: MetadataRoute.Sitemap = [];
+
   try {
     const products = await getAllProductSlugs();
+
     productEntries = products.flatMap((p) =>
       locales.map((locale) => ({
         url: `${baseUrl}/${locale}/product/${p.slug}`,
@@ -69,5 +83,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unavailable — skip dynamic entries
   }
 
-  return [...staticEntries, ...catalogEntries, ...productEntries];
+  return [
+    ...staticEntries,
+    ...catalogEntries,
+    ...productEntries,
+  ];
 }

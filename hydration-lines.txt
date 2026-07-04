@@ -1,9 +1,0 @@
-﻿
-
-Path       : C:\Users\Hp\Downloads\Tawveeri-Official\src\app\[locale]\(public)\stores\stores-li
-             sting-client.tsx
-LineNumber : 216
-Line       :                 ? 'قارن المتاجر والعروض من متاجر السعودية في صفحة واحدة واضحة.'
-
-
-

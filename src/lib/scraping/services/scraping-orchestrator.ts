@@ -242,7 +242,7 @@ export class ScrapingOrchestrator {
           const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
           if (!options.dry_run) {
   await this.ingestion.ingestBatch(storeSlug, supProducts);
-}
+`
           if (supProducts.length > 0) {
             console.log(`    [${storeSlug}/supplemental] scraped ${supProducts.length} products — writing to DB…`);
             const hostname = getScraperBaseHostname(scraper);
