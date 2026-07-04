@@ -114,7 +114,6 @@ export class ScrapingOrchestrator {
   private productService = new ProductService();
   private ingestion = new IngestionService();
   private validator = new DataValidator();
-  
 
   async runDiscoveryJob(options: DiscoveryOptions): Promise<DiscoveryResult> {
     const startTime = Date.now();
@@ -156,8 +155,8 @@ export class ScrapingOrchestrator {
             options.max_pages || 10
           );
           if (!options.dry_run) {
-  await this.ingestion.ingestBatch(storeSlug, scrapedProducts);
-}
+            await this.ingestion.ingestBatch(storeSlug, scrapedProducts);
+          }
           if (scrapedProducts.length > 0) {
             console.log(`    [${storeSlug}/${category}] scraped ${scrapedProducts.length} products — writing to DB…`);
           }
@@ -241,8 +240,9 @@ export class ScrapingOrchestrator {
           console.log(`[${storeSlug}] running supplemental discovery…`);
           const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
           if (!options.dry_run) {
-  await this.ingestion.ingestBatch(storeSlug, supProducts);
-`
+            await this.ingestion.ingestBatch(storeSlug, supProducts);
+          }
+
           if (supProducts.length > 0) {
             console.log(`    [${storeSlug}/supplemental] scraped ${supProducts.length} products — writing to DB…`);
             const hostname = getScraperBaseHostname(scraper);
@@ -345,7 +345,9 @@ export class ScrapingOrchestrator {
     }
   }
 
+  // باقي الكلاس (runPriceUpdateJob + الدوال الخاصة) بدون تغيير
   async runPriceUpdateJob(options: PriceUpdateOptions): Promise<PriceUpdateResult> {
+    // ... (نفس الكود السابق بدون تغيير)
     const startTime = Date.now();
     const supabase = createServerClient();
 
