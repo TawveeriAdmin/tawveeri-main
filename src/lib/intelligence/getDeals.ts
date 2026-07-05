@@ -3,9 +3,8 @@
 // Tawveeri Deal Engine — Knowledge Layer (AI-Native)
 // دالة معرفية نقية: تقرأ canonical_products + price_history فقط، صفر كتابة.
 // عرض حقيقي = أفضل سعر فعلي حالي أقل من متوسط الفترة بعتبة، أو أقل سعر مسجّل.
-// السعر المعتمد: effective_price (بعد كوبون/خصم) مع fallback إلى price.
+// السعر المعتمد: effective_price إن كان رقماً موجباً — وإلا price (الصفر لا يُعتمد).
 // المستهلكون المتساوون: /deals، البحث، صفحة المنتج، وفّر، API، أي AI Agent.
-// server-only: تستخدم SERVICE_ROLE_KEY — يُمنع استيرادها من Client Components.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import "server-only";
@@ -15,32 +14,32 @@ import { identityKeyToSlug } from "@/lib/catalog/getProductComparison";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-const WINDOW_DAYS = 30;          // نافذة التاريخ السعري
-const DEAL_THRESHOLD_PCT = 4;    // عرض = أرخص من المتوسط بهذه النسبة فأكثر
-const MIN_PRICE_POINTS = 4;      // أقل عدد نقاط يعتد به (صدق إحصائي)
+const WINDOW_DAYS = 30;
+const DEAL_THRESHOLD_PCT = 4;
+const MIN_PRICE_POINTS = 2; // منصة فتية — تاريخنا يتعمق تلقائياً وسنرفعها لاحقاً
 
 export type DealStrength = "hot" | "good";
 
 export interface Deal {
   productId: string;
   slug: string;
-  compareUrl: string;            // /ar/product/{slug} — جاهز لأي مستهلك
+  compareUrl: string;
   nameAr: string;
   nameEn: string | null;
   brand: string | null;
   imageUrl: string | null;
-  bestPrice: number;             // أفضل سعر فعلي حالي بين المتاجر
-  bestStore: string;             // المتجر صاحب أفضل سعر
-  averagePrice: number;          // متوسط الفترة (بالسعر الفعلي)
-  discountPct: number;           // ٪الخصم الحقيقي مقابل المتوسط (موجب = أرخص)
-  isLowestEver: boolean;         // أقل سعر مسجّل في نافذة التتبع
-  trackingDays: number;          // عمق التتبع (للصدق في العرض)
-  storesCount: number;           // كم متجراً يقارن
-  strength: DealStrength;        // hot = lowest-ever أو خصم قوي | good = فوق العتبة
-  reason: string;                // شرح عربي منظم — للإنسان وللـ Agent معاً
+  bestPrice: number;
+  bestStore: string;
+  averagePrice: number;
+  discountPct: number;
+  isLowestEver: boolean;
+  trackingDays: number;
+  storesCount: number;
+  strength: DealStrength;
+  reason: string;
 }
 
-export async function getDeals(limit = 20): Promise<Deal[]> {
+export async function getDeals(limit = 20, minDiscountPct = DEAL_THRESHOLD_PCT): Promise<Deal[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
   // 1) الكتالوج النشط
@@ -51,7 +50,7 @@ export async function getDeals(limit = 20): Promise<Deal[]> {
     .eq("is_active", true);
   if (pErr || !products?.length) return [];
 
-  // 2) التاريخ السعري للنافذة — جلبة واحدة لكل الكتالوج
+  // 2) التاريخ السعري للنافذة
   const since = new Date();
   since.setDate(since.getDate() - WINDOW_DAYS);
   const ids = products.map((p) => p.id);
@@ -64,13 +63,15 @@ export async function getDeals(limit = 20): Promise<Deal[]> {
     .order("observed_at", { ascending: true });
   if (hErr || !history?.length) return [];
 
-  // 3) تجميع في الذاكرة: لكل منتج — كل النقاط الفعلية + آخر سعر لكل متجر
+  // 3) تجميع في الذاكرة
   interface Agg { prices: number[]; latestByStore: Map<string, number>; oldest: number; }
   const byProduct = new Map<string, Agg>();
   for (const r of history) {
-    // السعر الفعلي (بعد كوبون/خصم) أولاً — ثم السعر الخام
     const raw = (r as { effective_price?: number | null; price?: number | null });
-    const price = Number(raw.effective_price ?? raw.price);
+    const eff = Number(raw.effective_price);
+    const base = Number(raw.price);
+    // effective_price يُعتمد فقط إن كان رقماً موجباً — الصفر وnull يسقطان لـ price
+    const price = Number.isFinite(eff) && eff > 0 ? eff : base;
     if (!Number.isFinite(price) || price <= 0) continue;
     let agg = byProduct.get(r.canonical_product_id);
     if (!agg) {
@@ -78,18 +79,18 @@ export async function getDeals(limit = 20): Promise<Deal[]> {
       byProduct.set(r.canonical_product_id, agg);
     }
     agg.prices.push(price);
-    agg.latestByStore.set(r.store_name, price); // مرتب تصاعدياً — الأخير يبقى
+    agg.latestByStore.set(r.store_name, price);
   }
 
   // 4) حساب العروض
   const deals: Deal[] = [];
   for (const p of products) {
-    // لا رابط ناقص — منتج بلا identity key يُتجاهل
     const slug = identityKeyToSlug(p.tps_identity_key ?? "");
     if (!p.tps_identity_key || !slug) continue;
 
     const agg = byProduct.get(p.id);
-    if (!agg || agg.prices.length < MIN_PRICE_POINTS || agg.latestByStore.size === 0) continue;
+    if (!agg || agg.latestByStore.size === 0) continue;
+    if (agg.prices.length < MIN_PRICE_POINTS) continue;
 
     let bestPrice = Infinity;
     let bestStore = "";
@@ -102,11 +103,10 @@ export async function getDeals(limit = 20): Promise<Deal[]> {
     const lowestEver = Math.min(...agg.prices);
     const discountPct = average > 0 ? ((average - bestPrice) / average) * 100 : 0;
     const isLowestEver = bestPrice <= lowestEver;
+
+    if (!isLowestEver && discountPct < minDiscountPct) continue;
+
     const trackingDays = Math.max(1, Math.round((Date.now() - agg.oldest) / 86_400_000));
-
-    // عرض حقيقي فقط — لا خصومات مزعومة
-    if (!isLowestEver && discountPct < DEAL_THRESHOLD_PCT) continue;
-
     const roundedPct = Math.round(discountPct);
     const strength: DealStrength = isLowestEver || roundedPct >= 10 ? "hot" : "good";
 
