@@ -10,26 +10,39 @@ export function normalizeStoreUrl(
 
     // Handle dev-almanea.com → almanea.sa
     if (host.includes("dev-almanea.com")) {
-      // Extract product ID from -p-{id} at the end of pathname
       const match = url.pathname.match(/-p-(\d+)(?:\?.*|#.*)?$/);
 
       if (match && match[1]) {
         const productId = match[1];
 
-        // Validate productId is 15 digits (Almanea standard)
         if (/^\d{15}$/.test(productId)) {
           return `https://www.almanea.sa/en/product/p-${productId}`;
         }
       }
 
-      // Fallback: only replace the domain
       return rawUrl.replace(url.origin, "https://www.almanea.sa");
     }
 
-    // Other stores: keep URL unchanged
+    // Amazon.sa: clean product URL to /dp/ASIN + affiliate tag
+    if (
+      storeName === "أمازون" ||
+      storeName.toLowerCase() === "amazon" ||
+      host.includes("amazon.sa")
+    ) {
+      const asinMatch =
+        url.pathname.match(/\/dp\/([A-Z0-9]{10})/i) ||
+        url.pathname.match(/\/gp\/product\/([A-Z0-9]{10})/i);
+
+      if (asinMatch && asinMatch[1]) {
+        return `https://www.amazon.sa/dp/${asinMatch[1].toUpperCase()}?tag=tawveeri-21`;
+      }
+
+      url.searchParams.set("tag", "tawveeri-21");
+      return url.toString();
+    }
+
     return url.toString();
   } catch {
-    // Invalid URL: return as-is
     return rawUrl;
   }
 }

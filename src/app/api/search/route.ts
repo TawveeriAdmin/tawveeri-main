@@ -52,6 +52,19 @@ interface ProductStoreRow {
   stores?: { name: string | null } | null;
 }
 
+interface CanonicalProductRow {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  brand: string | null;
+  image_url: string | null;
+  model_number: string | null;
+  tps_identity_key: string | null;
+  // compare_url قد لا يكون موجوداً، لذا نجعله optional
+  compare_url?: string | null;
+  category?: string | null;
+}
+
 type DecisionTopMatch = {
   product_id: string;
   name_ar: string;
@@ -244,7 +257,8 @@ function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: numbe
   }
   const accessoryPenalty = isAccessory ? (queryIsMainProduct ? 1000 : 60) : 0;
   const acBoost = acSignal ? 10 : 0;
-  return inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost - pricePenalty - accessoryPenalty;
+  const tpsBonus = (p.has_tps_comparison || !!p.tps_compare_url) ? 5 : 0;
+  return inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost + tpsBonus - pricePenalty - accessoryPenalty;
 }
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
@@ -277,7 +291,7 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
       }
     : null;
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
-    product_id: (p as unknown as { product_id?: string }).product_id || '',
+    product_id: p.product_id || '',
     name_ar: p.name_ar,
     best_price: p.best_price,
     store_count: p.store_count,
@@ -332,11 +346,22 @@ function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
     store_count: uniqueStores,
     product_id: hit.objectID,
     product_slug: hit.objectID,
-  } as unknown as GroupedSearchProduct;
+  } as GroupedSearchProduct;
 }
 
-// ── TPS Enrichment — Model Number Matching ────────────────────
-// طلب واحد للكل — Fallback آمن إذا فشل
+// ── Deduplication ─────────────────────────────────────────────
+function deduplicateProducts(products: GroupedSearchProduct[]): GroupedSearchProduct[] {
+  const seen = new Set<string>();
+  return products.filter((p) => {
+    const key = p.tps_identity_key || p.product_id || normalizeArabic(p.name_ar || '');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+// ─────────────────────────────────────────────────────────────
+
+// ── TPS Enrichment (Type-safe) ────────────────────
 const MODEL_CODE_REGEX = /\b([A-Z]{2}\d{2}[A-Z0-9]{4,}(?:\/[A-Z0-9]+)?)\b/g;
 
 async function enrichWithTPS(
@@ -344,41 +369,58 @@ async function enrichWithTPS(
   supabase: ReturnType<typeof createServerClient>
 ): Promise<GroupedSearchProduct[]> {
   if (!products.length) return products;
+
   try {
     const productModels = products.map((p, idx) => {
       const text = `${p.name_en || ''} ${p.name_ar || ''}`;
       const codes = [...text.matchAll(MODEL_CODE_REGEX)].map(m => m[1].toUpperCase());
       return { idx, codes };
     });
+
     const allCodes = [...new Set(productModels.flatMap(p => p.codes))];
     if (!allCodes.length) return products;
 
-    const { data: tpsRows } = await supabase
-      .from('tps_product_projection')
-      .select('model_number, compare_url, tps_identity_key, has_comparison')
-      .eq('has_comparison', true)
-      .in('model_number', allCodes);
+    const { data: canonicalRows } = await supabase
+      .from('canonical_products')
+      .select(`
+        id,
+        name_ar,
+        name_en,
+        brand,
+        image_url,
+        model_number,
+        tps_identity_key
+      `)
+      .in('model_number', allCodes)
+      .eq('is_active', true);
 
-    if (!tpsRows?.length) return products;
+    if (!canonicalRows?.length) return products;
 
-    const tpsMap = new Map<string, typeof tpsRows[0]>();
-    for (const row of tpsRows) {
-      if (row.model_number) tpsMap.set(row.model_number.toUpperCase(), row);
+    const canonicalMap = new Map<string, CanonicalProductRow>();
+    for (const row of canonicalRows) {
+      if (row.model_number) {
+        canonicalMap.set(row.model_number.toUpperCase(), row as CanonicalProductRow);
+      }
     }
 
     return products.map((p, idx) => {
+      let enriched = { ...p };
+
       for (const code of productModels[idx].codes) {
-        const tps = tpsMap.get(code);
-        if (tps) {
-          return {
-            ...p,
-            tps_compare_url:    tps.compare_url,
-            tps_identity_key:   tps.tps_identity_key,
+        const canonical = canonicalMap.get(code);
+        if (canonical) {
+          const slug = identityKeyToSlug(canonical.tps_identity_key || '');
+          enriched = {
+            ...enriched,
+            tps_compare_url: `/ar/product/${slug}`,
+            tps_identity_key: canonical.tps_identity_key,
             has_tps_comparison: true,
-          };
+            product_id: enriched.product_id || canonical.id,
+          } as GroupedSearchProduct;
+          break;
         }
       }
-      return p;
+      return enriched;
     });
   } catch (err) {
     console.error('[TPS Enrichment] failed:', err);
@@ -387,7 +429,7 @@ async function enrichWithTPS(
 }
 // ─────────────────────────────────────────────────────────────
 
-// ── TPS Canonical Search — كتالوج المقارنة الموحد يدخل نتائج البحث ──
+// ── TPS Canonical Search ──────────────────────────────────────
 async function searchTPSCanonical(
   words: string[],
   supabase: ReturnType<typeof createServerClient>
@@ -396,9 +438,10 @@ async function searchTPSCanonical(
     if (!words.length) return [];
     const { data: prods } = await supabase
       .from('canonical_products')
-      .select('id, name_ar, name_en, brand, image_url, tps_identity_key')
+      .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number')
       .eq('category', 'mobile')
       .eq('is_active', true);
+
     if (!prods?.length) return [];
 
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
@@ -428,18 +471,29 @@ async function searchTPSCanonical(
       if (!byStore || byStore.size === 0) continue;
       const slug = identityKeyToSlug(p.tps_identity_key ?? '');
       const storeEntries: SearchProduct[] = [...byStore.entries()].map(([storeName, v]) => ({
-        name_ar: p.name_ar, name_en: p.name_en || '', brand: p.brand || '', model: '', sku: null,
-        current_price: v.price, original_price: null,
+        name_ar: p.name_ar, 
+        name_en: p.name_en || '', 
+        brand: p.brand || '', 
+        model: '', 
+        sku: null,
+        current_price: v.price, 
+        original_price: null,
         availability: 'in_stock' as const,
         product_url: `/go/${v.obsId}`,
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
         category: 'smartphone' as ProductCategory,
-        description_ar: null, description_en: null,
-        is_free_delivery: false, delivery_time_days: null, delivery_cost: 0,
-        is_deal: false, coupon_code: null,
-        store: storeName, store_name: storeName,
-        rating: null, review_count: null,
+        description_ar: null, 
+        description_en: null,
+        is_free_delivery: false, 
+        delivery_time_days: null, 
+        delivery_cost: 0,
+        is_deal: false, 
+        coupon_code: null,
+        store: storeName, 
+        store_name: storeName,
+        rating: null, 
+        review_count: null,
       }));
       const ps2 = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
       const bestPrice = ps2.length ? Math.min(...ps2) : 0;
@@ -455,7 +509,7 @@ async function searchTPSCanonical(
         tps_compare_url: `/ar/product/${slug}`,
         tps_identity_key: p.tps_identity_key,
         has_tps_comparison: true,
-      } as unknown as GroupedSearchProduct);
+      } as GroupedSearchProduct);
     }
     return out;
   } catch (e) {
@@ -548,7 +602,7 @@ export async function POST(request: NextRequest) {
     q = q.range(0, 1500);
     const { data, error } = await q;
     if (error) { console.error('[search:pool]', error.message); dbError = error.message; }
-    let candidateRows = (data ?? []) as unknown as ProductRow[];
+    let candidateRows = (data ?? []) as ProductRow[];
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
     if (wordTermsList.length > 0) {
       candidateRows = candidateRows.filter((row) => productMatchesAllWords(row, wordTermsList));
@@ -564,7 +618,7 @@ export async function POST(request: NextRequest) {
       console.error('[search] error:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    rows = (data ?? []) as unknown as ProductRow[];
+    rows = (data ?? []) as ProductRow[];
     totalCount = count ?? rows.length;
   }
 
@@ -574,7 +628,7 @@ export async function POST(request: NextRequest) {
         .map(toGroupedSearchProduct)
         .filter((p): p is GroupedSearchProduct => p !== null);
 
-  // ── TPS Canonical أولاً — كتالوج المقارنة الموحد يدخل النتائج ──
+  // TPS Canonical Search
   if (rawQuery) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
@@ -585,7 +639,9 @@ export async function POST(request: NextRequest) {
       console.log('[TPS Search] injected:', tpsProducts.length);
     }
   }
-  // ─────────────────────────────────────────────────────────────
+
+  // Deduplication after TPS merge
+  products = deduplicateProducts(products);
 
   products = applyPostFilters(products, body);
 
@@ -602,15 +658,19 @@ export async function POST(request: NextRequest) {
 
   const decision = buildDecisionLayer(products, queryIsMainProduct);
 
-  const total = hasPostFilters ? products.length : (algoliaProducts ? products.length : totalCount);
+  // ✅ تم تصحيح حساب total بعد دمج TPS
+  const total = rawQuery
+    ? products.length
+    : hasPostFilters
+    ? products.length
+    : totalCount;
 
   const pageProducts = hasPostFilters
     ? products.slice(offsetStart, offsetEnd + 1)
     : products.slice(0, currentPageSize);
 
-  // ── TPS Enrichment Layer ──────────────────────────────────────
+  // TPS Enrichment
   const enrichedProducts = await enrichWithTPS(pageProducts, supabase);
-  // ─────────────────────────────────────────────────────────────
 
   const prices = enrichedProducts.map((p) => p.best_price).filter((n) => n > 0);
   const result: ScrapedSearchResult & {
@@ -714,7 +774,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     store_count: uniqueStores,
     product_id: row.id,
     product_slug: row.id,
-  } as unknown as GroupedSearchProduct;
+  } as GroupedSearchProduct;
 }
 
 function computeStoreResults(products: GroupedSearchProduct[]): Record<string, number> {

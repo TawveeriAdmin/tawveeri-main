@@ -266,11 +266,24 @@ async function fetchMobiles(limit: number): Promise<RawRow[]> {
     process.exit(1);
   }
 
+  const { data: az, error: e4 } = await supabase
+    .from("raw_observations")
+    .select("id, store_name, raw_name, payload")
+    .eq("store_name", "أمازون")
+    .or(f(kw))
+    .order("id", { ascending: true })
+    .limit(limit);
+
+  if (e4) {
+    console.error("❌ أمازون:", e4.message);
+    process.exit(1);
+  }
+
   console.log(
-    `   المنيع: ${(a ?? []).length} | إكسترا (Mobiles): ${extraRows.length} | جرير: ${(j ?? []).length}`
+    `   المنيع: ${(a ?? []).length} | إكسترا (Mobiles): ${extraRows.length} | جرير: ${(j ?? []).length} | أمازون: ${(az ?? []).length}`
   );
 
-  return [...(a ?? []), ...extraRows, ...(j ?? [])] as RawRow[];
+  return [...(a ?? []), ...extraRows, ...(j ?? []), ...(az ?? [])] as RawRow[];
 }
 
 function priceGapRatio(offers: Offer[]): number | null {

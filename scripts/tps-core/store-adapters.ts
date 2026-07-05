@@ -15,8 +15,6 @@ export interface AdaptedRow {
   sku: string | null;
   model: string | null;
   adapterVersion: string;
-
-  // جديد
   isCompleteVariant: boolean;
 }
 
@@ -34,7 +32,6 @@ const firstOfArray = (v: unknown): string | null => {
   if (Array.isArray(v) && v.length) return s(v[0]);
 
   const str = s(v);
-
   if (str?.startsWith("[")) {
     try {
       const a = JSON.parse(str);
@@ -71,7 +68,6 @@ const TRACKING_PARAMS = [
 
 const cleanUrl = (v: unknown): string | null => {
   const raw = s(v);
-
   if (!raw) return null;
 
   try {
@@ -94,7 +90,6 @@ const cleanModel = (v: unknown): string | null => {
   return m ? m.replace(/\s+/g, " ").trim().toUpperCase() : null;
 };
 
-// جرير أحياناً يضع السعة داخل model
 const STORAGE_RE =
   /(\d+(?:\.\d+)?)\s*(TB|GB|تيرا(?:بايت)?|جيجا(?:بايت)?)/i;
 
@@ -102,7 +97,6 @@ const storageFromModel = (model: string | null): string | null => {
   if (!model) return null;
 
   const m = model.match(/(\d+(?:\.\d+)?)\s*(TB|GB)/i);
-
   return m ? `${m[1]}${m[2].toUpperCase()}` : null;
 };
 
@@ -120,7 +114,6 @@ export const STORE_ADAPTERS: Record<
     sku: s(p.sku),
     model: cleanModel(p.model),
     adapterVersion: "almanea-v1",
-
     isCompleteVariant: true,
   }),
 
@@ -134,7 +127,6 @@ export const STORE_ADAPTERS: Record<
     sku: s(p.sku),
     model: cleanModel(p.model),
     adapterVersion: "extra-v1",
-
     isCompleteVariant: true,
   }),
 
@@ -155,9 +147,7 @@ export const STORE_ADAPTERS: Record<
       }
     }
 
-    const hasStorage = STORAGE_RE.test(
-      `${nameAr} ${nameEn} ${model ?? ""}`
-    );
+    const hasStorage = STORAGE_RE.test(`${nameAr} ${nameEn} ${model ?? ""}`);
 
     return {
       nameAr,
@@ -169,7 +159,31 @@ export const STORE_ADAPTERS: Record<
       sku: s(p.sku),
       model,
       adapterVersion: "jarir-v3",
+      isCompleteVariant: hasStorage,
+    };
+  },
 
+  "أمازون": (p, rawName) => {
+    let nameEn = cleanName(s(p.name_en) ?? s(p.name_ar) ?? rawName);
+    const model = cleanModel(p.model);
+
+    if (!STORAGE_RE.test(nameEn)) {
+      const st = storageFromModel(model);
+      if (st) nameEn = `${nameEn} ${st}`;
+    }
+
+    const hasStorage = STORAGE_RE.test(`${nameEn} ${model ?? ""}`);
+
+    return {
+      nameAr: "",
+      nameEn,
+      brand: cleanBrand(p.brand),
+      price: num(p.current_price) ?? num(p.original_price),
+      url: cleanUrl(p.product_url),
+      image: firstOfArray(p.image_urls),
+      sku: s(p.sku),
+      model,
+      adapterVersion: "amazon-v1",
       isCompleteVariant: hasStorage,
     };
   },
@@ -181,6 +195,5 @@ export function adaptStoreRow(
   rawName: string | null
 ): AdaptedRow | null {
   const adapter = STORE_ADAPTERS[storeName];
-
   return adapter ? adapter(payload, rawName) : null;
 }
