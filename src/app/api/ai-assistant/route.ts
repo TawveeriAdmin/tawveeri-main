@@ -34,6 +34,7 @@ async function extractSearchIntent(
 ): Promise<{
   type: 'search' | 'deals' | 'advice';
   query: string;
+  store?: string | null;
   maxPrice?: number;
   minPrice?: number;
 }> {
@@ -52,12 +53,13 @@ async function extractSearchIntent(
           {
             role: 'user',
             content: `صنّف هذا الطلب واستخرج منه:
-- type: "deals" لو يسأل عن العروض/التخفيضات/الخصومات بشكل عام، "advice" لو يسأل هل يشتري الآن أو ينتظر أو هل السعر جيد لمنتج معين، "search" لأي بحث عن منتج.
-- query: كلمات البحث بالإنجليزي (فارغة لو deals عام).
+- type: "deals" لو يسأل عن العروض/التخفيضات/الخصومات عموماً، "advice" لو يسأل هل يشتري الآن أو ينتظر أو هل السعر جيد لمنتج معين، "search" لأي بحث عن منتج.
+- query: **اسم المنتج فقط بالإنجليزي** — احذف حتماً: أسماء المتاجر (amazon, jarir, extra, almanea, noon, أمازون, جرير, اكسترا, المنيع, نون) وكلمات مثل price/سعر/بكم/كم. مثال: "iPhone 17 Amazon price" → query="iphone 17". (فارغة لو deals عام).
+- store: اسم المتجر بالعربي إن ذكره المستخدم (أمازون/جرير/اكسترا/المنيع/نون) وإلا null.
 - maxPrice/minPrice: الميزانية إن ذُكرت.
 الطلب: "${message}"
 رد بـ JSON فقط:
-{"type":"search","query":"english keywords","maxPrice":null,"minPrice":null}`,
+{"type":"search","query":"iphone 17","store":null,"maxPrice":null,"minPrice":null}`,
           },
         ],
       }),
@@ -70,7 +72,7 @@ async function extractSearchIntent(
     return parsed;
   } catch (e) {
     console.error('[AI] extractSearchIntent failed, fallback to search:', e);
-    return { type: 'search', query: message };
+    return { type: 'search', query: message, store: null };
   }
 }
 
@@ -200,6 +202,11 @@ export async function POST(request: NextRequest) {
     const intent = await extractSearchIntent(message, apiKey);
     console.log('[AI] Step 1 — intent:', JSON.stringify(intent));
 
+    // توجيه المتجر: لو ذكر المستخدم متجراً بعينه، نوجّه وفّر لإبرازه
+    const storeHint = intent.store
+      ? `\n\nملاحظة: المستخدم يسأل عن متجر "${intent.store}" تحديداً — أبرز سعر هذا المتجر من قائمة المتاجر في النتائج أولاً، وقارنه بالبقية. لو المتجر غير موجود في النتائج، أخبره بصدق واعرض المتاجر المتوفرة.`
+      : '';
+
     let dynamicContext = '';
 
     if (intent.type === 'deals') {
@@ -267,13 +274,13 @@ ${isStrictDeals ? 'وأكد أنها عروض محسوبة من تاريخ ال�
 - لو أعلى من المتوسط: "انتظر — السعر مرتفع حالياً"
 واذكر: أقل سعر مسجّل، المتوسط، الاتجاه، ورابط المقارنة.
 
-${products?.length ? `وهذه نتائج البحث للسياق:\n\n${formatProductsForAI(products)}` : ''}`;
+${products?.length ? `وهذه نتائج البحث للسياق:\n\n${formatProductsForAI(products)}` : ''}${storeHint}`;
       } else if (products?.length) {
         dynamicContext = `
 
 ✅ نتائج حقيقية من توفيري — استخدمها فقط (لا يتوفر ذكاء سعري لهذا المنتج بعد، فانصح بناءً على مقارنة الأسعار بين المتاجر بصراحة وتواضع):
 
-${formatProductsForAI(products)}`;
+${formatProductsForAI(products)}${storeHint}`;
       } else {
         dynamicContext = `
 
@@ -302,7 +309,7 @@ ${productsContext}
 تعليمات العرض:
 أبرز الأرخص 🏆،
 وأضف 📊 رابط المقارنة،
-ولا تخترع مقدار التوفير إذا لم يكن موجوداً في البيانات.`
+ولا تخترع مقدار التوفير إذا لم يكن موجوداً في البيانات.${storeHint}`
         : `
 
 ❌ ما لقيت نتائج. أخبر المستخدم بلطف واقترح:
@@ -319,7 +326,7 @@ ${productsContext}
       },
     ];
 
-    // system: البلوك الأساسي (cached) + البلوك الديناميكي فقط إن كان غير فارغ (منع خطأ empty text block)
+    // system: البلوك الأساسي (cached) + البلوك الديناميكي فقط إن كان غير فارغ
     const systemBlocks: Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }> = [
       {
         type: 'text',

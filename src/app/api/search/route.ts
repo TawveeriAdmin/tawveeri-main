@@ -790,9 +790,17 @@ function computeUniqueStores(products: GroupedSearchProduct[]): number {
 }
 
 function compareBySort(sort: string): (a: GroupedSearchProduct, b: GroupedSearchProduct) => number {
-  if (sort === 'price_asc' || sort === 'price_low') return (a, b) => a.best_price - b.best_price;
-  if (sort === 'price_desc' || sort === 'price_high') return (a, b) => b.best_price - a.best_price;
+  // الإكسسوارات تنزل لذيل النتائج دائماً — حتى مع الفرز السعري
+  // (يمنع كفر بـ119 ريال من تصدّر بحث "ايفون 17" ولبس شارة أفضل سعر)
+  const acc = (p: GroupedSearchProduct) =>
+    hasAccessoryHint(p.name_ar || '', p.name_en || '') ? 1 : 0;
+
+  if (sort === 'price_asc' || sort === 'price_low')
+    return (a, b) => acc(a) - acc(b) || a.best_price - b.best_price;
+  if (sort === 'price_desc' || sort === 'price_high')
+    return (a, b) => acc(a) - acc(b) || b.best_price - a.best_price;
   return (a, b) => {
+    if (acc(a) !== acc(b)) return acc(a) - acc(b);
     if (b.store_count !== a.store_count) return b.store_count - a.store_count;
     return a.best_price - b.best_price;
   };

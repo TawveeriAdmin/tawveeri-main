@@ -1,5 +1,6 @@
 // scripts/tps-matcher/mobile-matcher-v2-dry.ts
 // WRITE MODE عبر RPC ذرّية. DRY_RUN=true افتراضياً.
+// TIP Module #1 مدمج: Condition جزء من الهوية القانونية (الميثاق — المادة 2).
 
 import { config } from "dotenv";
 import { resolve } from "path";
@@ -11,6 +12,7 @@ import { mobilePlugin } from "../tps-plugins/mobile";
 import { canonicalizeBrand } from "../tps-core/brand-map";
 import { normalizeStoreUrl } from "../../src/lib/catalog/normalizeStoreUrl";
 import { adaptStoreRow } from "../tps-core/store-adapters";
+import { detectCondition } from "../tps-core/condition-detector";
 
 const DRY_RUN = process.env.DRY_RUN !== "false";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -64,19 +66,8 @@ interface BaseGroup {
 
 const PRICE_GAP_THRESHOLD = 1.6;
 const ACCESSORY_WORDS = [
-  "case",
-  "cover",
-  "protector",
-  "charger",
-  "cable",
-  "earphone",
-  "screen protector",
-  "كفر",
-  "غطاء",
-  "واقي",
-  "شاحن",
-  "كابل",
-  "سماعة",
+  "case", "cover", "protector", "charger", "cable", "earphone",
+  "screen protector", "كفر", "غطاء", "واقي", "شاحن", "كابل", "سماعة",
 ];
 
 const isAccessory = (t: string) =>
@@ -135,21 +126,10 @@ function stableUuid(seed: string): string {
 }
 
 const BRAND_AR: Record<string, string> = {
-  apple: "آبل",
-  samsung: "سامسونج",
-  huawei: "هواوي",
-  xiaomi: "شاومي",
-  honor: "هونر",
-  oppo: "أوبو",
-  vivo: "فيفو",
-  realme: "ريلمي",
-  nokia: "نوكيا",
-  google: "قوقل",
-  oneplus: "ون بلس",
-  motorola: "موتورولا",
-  tecno: "تكنو",
-  infinix: "إنفينكس",
-  hmd: "إتش إم دي",
+  apple: "آبل", samsung: "سامسونج", huawei: "هواوي", xiaomi: "شاومي",
+  honor: "هونر", oppo: "أوبو", vivo: "فيفو", realme: "ريلمي",
+  nokia: "نوكيا", google: "قوقل", oneplus: "ون بلس", motorola: "موتورولا",
+  tecno: "تكنو", infinix: "إنفينكس", hmd: "إتش إم دي",
 };
 
 const FAMILY_AR: Record<string, string> = {
@@ -169,16 +149,50 @@ const VARIANT_AR: Record<string, string> = {
   Standard: "",
 };
 
+// ═══ TIP: أجزاء الهوية الخاصة — نبحث عنها بالمحتوى لا بالموضع ═══
+const CONDITION_AR: Record<string, string> = {
+  "renewed": "مجدد",
+  "renewed-premium": "مجدد بريميوم",
+  "renewed-a": "مجدد درجة أ",
+  "renewed-b": "مجدد درجة ب",
+  "renewed-c": "مجدد درجة ج",
+  "refurbished": "مُصلَح مصنعياً",
+  "open-box": "علبة مفتوحة",
+  "used": "مستعمل",
+};
+
+const CONDITION_EN: Record<string, string> = {
+  "renewed": "Renewed",
+  "renewed-premium": "Renewed Premium",
+  "renewed-a": "Renewed Grade A",
+  "renewed-b": "Renewed Grade B",
+  "renewed-c": "Renewed Grade C",
+  "refurbished": "Refurbished",
+  "open-box": "Open Box",
+  "used": "Used",
+};
+
+function findRamPart(parts: string[]): string | null {
+  return parts.find((p) => p.startsWith("ram=")) ?? null;
+}
+
+function findConditionPart(parts: string[]): string | null {
+  return parts.find((p) => p in CONDITION_AR) ?? null;
+}
+
 function buildCanonicalNameAr(parts: string[]): string {
   const [brand, family, gen, variant, storage] = parts;
   const brandAr = BRAND_AR[brand] ?? brand;
   const familyAr = FAMILY_AR[family] ?? family;
   const variantAr = VARIANT_AR[variant] ?? variant;
-  const ramPart = parts[5]?.startsWith("ram=")
-    ? ` رام ${parts[5].replace("ram=", "")} جيجا`
-    : "";
 
-  return `${brandAr} ${familyAr} ${gen} ${variantAr} ${storage} جيجابايت${ramPart}`
+  const ramRaw = findRamPart(parts);
+  const ramPart = ramRaw ? ` رام ${ramRaw.replace("ram=", "")} جيجا` : "";
+
+  const condRaw = findConditionPart(parts);
+  const condPart = condRaw ? ` — ${CONDITION_AR[condRaw]}` : "";
+
+  return `${brandAr} ${familyAr} ${gen} ${variantAr} ${storage} جيجابايت${ramPart}${condPart}`
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -187,11 +201,14 @@ function buildCanonicalNameEn(parts: string[]): string {
   const [brand, family, gen, variant, storage] = parts;
   const brandEn = brand.charAt(0).toUpperCase() + brand.slice(1);
   const variantClean = variant === "Standard" ? "" : `${variant} `;
-  const ramPart = parts[5]?.startsWith("ram=")
-    ? ` ${parts[5].replace("ram=", "")}GB RAM`
-    : "";
 
-  return `${brandEn} ${family} ${gen} ${variantClean}${storage}GB${ramPart}`
+  const ramRaw = findRamPart(parts);
+  const ramPart = ramRaw ? ` ${ramRaw.replace("ram=", "")}GB RAM` : "";
+
+  const condRaw = findConditionPart(parts);
+  const condPart = condRaw ? ` (${CONDITION_EN[condRaw]})` : "";
+
+  return `${brandEn} ${family} ${gen} ${variantClean}${storage}GB${ramPart}${condPart}`
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -321,7 +338,7 @@ async function main() {
   const now = new Date().toISOString();
 
   console.log("═".repeat(72));
-  console.log(`MATCHER v2 — WRITE  [DRY_RUN=${DRY_RUN}]`);
+  console.log(`MATCHER v2 — WRITE  [DRY_RUN=${DRY_RUN}]  (TIP: Condition-in-Identity)`);
   console.log(DRY_RUN ? "⚠️ محاكاة — لا كتابة." : "🔴 كتابة فعلية.");
   console.log("═".repeat(72));
 
@@ -329,6 +346,7 @@ async function main() {
   console.log(`\nجُلب ${rows.length} صفاً.\n`);
 
   const baseGroups = new Map<string, BaseGroup>();
+  let renewedCount = 0;
 
   for (const row of rows) {
     const store = row.store_name ?? "?";
@@ -336,8 +354,11 @@ async function main() {
 
     const adapted = adaptStoreRow(store, p, row.raw_name);
     if (!adapted) continue;
-
     if (!adapted.isCompleteVariant) continue;
+
+    // ═══ TIP Module #1: الحالة جزء من الهوية — المجدد ليس هو الجديد ═══
+    const cond = detectCondition(adapted.nameAr, adapted.nameEn, adapted.model);
+    if (!cond.isNew) renewedCount++;
 
     const { nameAr, nameEn, brand } = adapted;
 
@@ -349,6 +370,9 @@ async function main() {
 
     if (identity.status !== "valid" || !identity.key) continue;
 
+    // الحالة تُلحق بالمفتاح: الجديد suffix فارغ (المفاتيح الحالية لا تتغير)
+    const groupKey = identity.key + cond.identitySuffix;
+
     const ram = cb === "apple" ? null : extractRam(nameAr, nameEn, p);
     const conf = mobilePlugin.scoreConfidence(
       brand,
@@ -357,15 +381,15 @@ async function main() {
       norm.ambiguity_flags ?? []
     );
 
-    if (!baseGroups.has(identity.key)) {
-      baseGroups.set(identity.key, {
-        baseKey: identity.key,
+    if (!baseGroups.has(groupKey)) {
+      baseGroups.set(groupKey, {
+        baseKey: groupKey,
         offers: [],
         stores: new Set(),
       });
     }
 
-    const g = baseGroups.get(identity.key)!;
+    const g = baseGroups.get(groupKey)!;
     const offerUrl = normalizeStoreUrl(store, adapted.url);
     const offerImage = adapted.image;
 
@@ -390,6 +414,8 @@ async function main() {
 
     g.stores.add(store);
   }
+
+  console.log(`ℹ️ صفوف بحالة غير جديدة (مجدد/مستعمل/...): ${renewedCount}\n`);
 
   interface FG {
     key: string;
@@ -421,7 +447,6 @@ async function main() {
   }
 
   console.log(`✅ منتجات نظيفة: ${clean.length}\n`);
-
   const canonicalRows: any[] = [];
   const normalizedRows: any[] = [];
   const matchRows: any[] = [];
@@ -445,135 +470,71 @@ async function main() {
       : g.offers.find((o) => o.image)?.image ?? null;
 
     canonicalRows.push({
-      id: canonicalId,
-      name_ar: nameAr,
-      name_en: nameEn,
-      brand: parts[0],
-      model_number: null,
-      category: "mobile",
-      image_url: canonicalImage,
+      id: canonicalId, name_ar: nameAr, name_en: nameEn, brand: parts[0],
+      model_number: null, category: "mobile", image_url: canonicalImage,
       attributes: {
-        family: parts[1],
-        generation: parts[2],
-        variant: parts[3],
-        storage: parts[4],
-        ram_in_key: g.ramInKey,
-        ram: g.ramInKey ? g.ramValues[0] : null,
-        ram_values: g.ramValues,
-        identity_key: g.key,
-        stores: [...g.stores],
+        family: parts[1], generation: parts[2], variant: parts[3],
+        storage: parts[4], ram_in_key: g.ramInKey, ram: g.ramInKey ? g.ramValues[0] : null,
+        ram_values: g.ramValues, identity_key: g.key, stores: [...g.stores],
         offers_count: g.offers.length,
         colors: [...new Set(g.offers.map((o) => o.color).filter(Boolean))],
         parser_version: "mobile-v1",
       },
-      is_active: true,
-      tps_identity_key: g.key,
-      tps_version: "mobile-v1",
-      variant_key: g.key,
-      identity_confidence: 95,
-      data_quality_score: 90,
-      created_at: now,
-      data_updated_at: now,
+      is_active: true, tps_identity_key: g.key, tps_version: "mobile-v1",
+      variant_key: g.key, identity_confidence: 95, data_quality_score: 90,
+      created_at: now, data_updated_at: now,
     });
 
     for (const o of g.offers) {
       const normId = stableUuid(`norm:raw_observations:${o.observationId}`);
       o._normId = normId;
-
       normalizedRows.push({
-        id: normId,
-        source_table: "raw_observations",
+        id: normId, source_table: "raw_observations",
         source_record_id: stableUuid(`raw_observations:${o.observationId}`),
-        store_id: o.store,
-        canonical_product_id: canonicalId,
-        raw_name: o.nameAr || o.nameEn,
-        detected_category: "mobile",
-        language: o.nameAr ? "ar" : "en",
-        brand: o.brandCanonical,
-        model_number: o.model,
-        color: o.color,
-        identity_key: g.key,
+        store_id: o.store, canonical_product_id: canonicalId,
+        raw_name: o.nameAr || o.nameEn, detected_category: "mobile",
+        language: o.nameAr ? "ar" : "en", brand: o.brandCanonical,
+        model_number: o.model, color: o.color, identity_key: g.key,
         identity_key_status: "valid",
         normalized_payload: {
-          ...(o.normalizedPayload ?? {}),
-          _raw_id: o.observationId,
-          _url: o.url,
-          _image: o.image,
-          _sku: o.sku,
-          _model: o.model,
-          _adapter_version: o.adapterVersion,
+          ...(o.normalizedPayload ?? {}), _raw_id: o.observationId,
+          _url: o.url, _image: o.image, _sku: o.sku,
+          _model: o.model, _adapter_version: o.adapterVersion,
         },
-        confidence: o.confidence,
-        missing_critical: [],
-        ambiguity_flags: [],
-        needs_llm: false,
-        ignored_terms: [],
-        normalizer_version: "mobile-v1",
-        tps_version: "mobile-v1",
-        observed_at: now,
-        plugin_version: "mobile-v1",
+        confidence: o.confidence, missing_critical: [], ambiguity_flags: [],
+        needs_llm: false, ignored_terms: [], normalizer_version: "mobile-v1",
+        tps_version: "mobile-v1", observed_at: now, plugin_version: "mobile-v1",
       });
     }
 
     for (const store of g.stores) {
       const so = g.offers.filter((o) => o.store === store);
       const priced = so.filter((o) => o.price !== null);
-      const rep = priced.length
-        ? priced.reduce((a, b) => (a.price! <= b.price! ? a : b))
-        : so[0];
+      const rep = priced.length ? priced.reduce((a, b) => (a.price! <= b.price! ? a : b)) : so[0];
 
       matchRows.push({
-        raw_observation_id: rep._normId,
-        canonical_product_id: canonicalId,
-        match_method: "tps_identity_key",
-        confidence: 95,
-        is_verified: false,
-        matched_at: now,
-        identity_resolution_event_id: null,
+        raw_observation_id: rep._normId, canonical_product_id: canonicalId,
+        match_method: "tps_identity_key", confidence: 95, is_verified: false,
+        matched_at: now, identity_resolution_event_id: null,
       });
 
       if (priced.length) {
         priceRows.push({
-          canonical_product_id: canonicalId,
-          store_name: store,
-          price: rep.price,
-          tps_observation_id: rep._normId,
-          observed_at: now,
+          canonical_product_id: canonicalId, store_name: store,
+          price: rep.price, tps_observation_id: rep._normId, observed_at: now,
         });
       }
     }
-  }
-
-  console.log(
-    `سيُكتب: canonical=${canonicalRows.length} | normalized=${normalizedRows.length} | matches=${matchRows.length} | price(قبل الفلترة)=${priceRows.length}`
-  );
-
-  const withImg = canonicalRows.filter((c) => c.image_url).length;
-  console.log(`صور المنتجات: ${withImg}/${canonicalRows.length}`);
-  console.log(`مثال اسم عربي: ${canonicalRows[0]?.name_ar ?? "—"}`);
-
-  const almaneaUrls = normalizedRows.filter(
-    (n) => n.store_id === "المنيع" && (n.normalized_payload?._url ?? "").includes("almanea.sa")
-  ).length;
-
-  const almaneaTotal = normalizedRows.filter((n) => n.store_id === "المنيع").length;
-
-  console.log(`روابط المنيع المطبّعة (almanea.sa): ${almaneaUrls}/${almaneaTotal}\n`);
+  } // نهاية الحلقة الرئيسية
 
   const lastPriceMap = new Map<string, number>();
-
   if (canonicalIds.length) {
-    const { data: history, error } = await supabase
-      .from("price_history")
+    const { data: history, error } = await supabase.from("price_history")
       .select("canonical_product_id, store_name, price, observed_at")
       .in("canonical_product_id", canonicalIds)
       .order("observed_at", { ascending: false });
 
-    if (error) {
-      console.error("❌ جلب الأسعار:", error.message);
-      process.exit(1);
-    }
-
+    if (error) { console.error("❌ جلب الأسعار:", error.message); process.exit(1); }
     for (const h of history ?? []) {
       const k = `${h.canonical_product_id}|${h.store_name}`;
       if (!lastPriceMap.has(k)) lastPriceMap.set(k, Number(h.price));
@@ -585,37 +546,22 @@ async function main() {
     return last === undefined || last !== Number(pr.price);
   });
 
-  console.log(`price_history: ${changedPrices.length} متغيّر من ${priceRows.length}\n`);
+  console.log(
+    `📦 canonical=${canonicalRows.length} | normalized=${normalizedRows.length} | matches=${matchRows.length} | price(متغيّر)=${changedPrices.length}/${priceRows.length}\n`
+  );
 
   if (DRY_RUN) {
-    console.log('⚠️ DRY_RUN — لم تُكتب أي بيانات. للكتابة: $env:DRY_RUN="false"');
+    console.log("⚠️ DRY_RUN — لم تُكتب أي بيانات.");
     return;
   }
 
-  console.log("🔴 استدعاء write_mobile_batch (transaction ذرّية)...\n");
-
   const { data: result, error: rpcError } = await supabase.rpc("write_mobile_batch", {
-    p_canonical: canonicalRows,
-    p_normalized: normalizedRows,
-    p_matches: matchRows,
-    p_prices: changedPrices,
-    p_canonical_ids: canonicalIds,
+    p_canonical: canonicalRows, p_normalized: normalizedRows,
+    p_matches: matchRows, p_prices: changedPrices, p_canonical_ids: canonicalIds,
   });
 
-  if (rpcError) {
-    console.error("❌ فشل write_mobile_batch:", rpcError.message);
-    console.error("   (transaction تراجعت — لا partial writes)");
-    process.exit(1);
-  }
-
-  console.log("✅ اكتملت الكتابة الذرّية:");
-  console.log(
-    `   canonical=${result.canonical} | normalized=${result.normalized} | matches=${result.matches} | prices=${result.prices}`
-  );
-
-  console.log("\n" + "═".repeat(72));
-  console.log("🎉 روابط المنيع الإنتاجية محفوظة — جاهزون للنشر.");
-  console.log("═".repeat(72));
+  if (rpcError) { console.error("❌ فشل:", rpcError.message); process.exit(1); }
+  console.log("✅ اكتملت الكتابة بنجاح:", result);
 }
 
 main().catch((e) => {
