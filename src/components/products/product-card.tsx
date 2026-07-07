@@ -464,16 +464,7 @@ export function ProductCard({
           )}
 
           {/* Primary CTA */}
-          {isMultiStore ? (
-            <Button variant="default" size="sm" className="w-full text-xs" asChild>
-              <Link href={productLink}>
-                <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">
-                  {t('products.comparePrices', { count: String(storeCount) })}
-                </span>
-              </Link>
-            </Button>
-          ) : externalProductUrl ? (
+          {externalProductUrl ? (
             <Button variant="default" size="sm" className="w-full text-xs" asChild>
               <a href={externalProductUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
