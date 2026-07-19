@@ -109,7 +109,10 @@ export function ProductCard({
     : null;
   const isExternalLink = externalProductUrl && (externalProductUrl.startsWith('http://') || externalProductUrl.startsWith('https://'));
 
-  const productLink = `/${currentLocale}/products/${product.slug}`;
+  // TPS أولاً، ثم رابط المتجر مباشرة، وأخيراً صفحات العالم القديم
+  const productLink = product.tps_compare_url
+    ? product.tps_compare_url
+    : (externalProductUrl || `/${currentLocale}/products/${product.slug}`);
 
   const availableImages = product.image_urls?.filter(Boolean) || [];
 
@@ -154,6 +157,9 @@ export function ProductCard({
   const handleEnsureAndNavigate = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (navigating) return;
+    // TPS أو المتجر مباشرة — لا نمر بمسار ensure القديم إلا اضطراراً
+    if (product.tps_compare_url) { router.push(product.tps_compare_url); return; }
+    if (externalProductUrl) { window.open(externalProductUrl, '_blank', 'noopener'); return; }
     setNavigating(true);
     try {
       const res = await fetch('/api/products/ensure', {
@@ -198,9 +204,15 @@ export function ProductCard({
         {children}
       </button>
     ) : isDbProduct ? (
-      <Link href={productLink} className="flex flex-col h-full">
-        {children}
-      </Link>
+      productLink.startsWith('http') ? (
+        <a href={productLink} target="_blank" rel="noopener noreferrer" className="flex flex-col h-full">
+          {children}
+        </a>
+      ) : (
+        <Link href={productLink} className="flex flex-col h-full">
+          {children}
+        </Link>
+      )
     ) : (
       <button
         type="button"
@@ -270,6 +282,7 @@ export function ProductCard({
             unoptimized={isExternalLink || imageSrc.includes('jarir.com')}
             priority={false}
           />
+
           <div className="absolute top-2 start-2 flex flex-col gap-1.5">
             {isWinner && (
               <Badge variant="best" className="shadow-[var(--elevation-1)]">
@@ -452,7 +465,7 @@ export function ProductCard({
       {showActions && (
         <div className="px-4 pb-4 pt-0 flex flex-col gap-2">
 
-          {/* ── TPS Compare Button ── يظهر فقط عند وجود tps_compare_url */}
+          {/* TPS Compare Button */}
           {product.tps_compare_url && (
             <Link
               href={product.tps_compare_url}
