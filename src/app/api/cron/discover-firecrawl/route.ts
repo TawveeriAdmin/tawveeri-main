@@ -90,12 +90,32 @@ async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, store
 }
 
 // ── Save (لأي متجر) ─────────────────────────────────────────
+/**
+ * Persist offers.
+ *
+ * Counter semantics — deliberately explicit, because the historical `savedProducts`
+ * metric was read as a success rate when it only ever counted NEW product inserts:
+ *   fetched        offers received from the adapter
+ *   skipped        offers discarded before persistence (missing name_ar, or a
+ *                  duplicate name within the same batch)
+ *   inserted       products created for the first time
+ *   updated        product_stores rows written for products that already existed
+ *   persisted      inserted + updated — the real success count
+ *   failed         offers that errored during persistence
+ *   priceRows      price_history rows written
+ */
 async function saveProducts(offers: NormalizedOffer[], storeName: string, runId: number | null): Promise<any> {
   const sb = createServerClient();
   const unique = new Map<string, NormalizedOffer>();
-  for (const p of offers) { const nameAr = p.name_ar?.trim(); if (!nameAr) continue; unique.set(nameAr, p); }
+  let skippedNoName = 0;
+  for (const p of offers) {
+    const nameAr = p.name_ar?.trim();
+    if (!nameAr) { skippedNoName++; continue; }
+    unique.set(nameAr, p);
+  }
   const rows = Array.from(unique.values());
-  let savedProducts = 0, savedStores = 0, memorySnapshots = 0;
+  const skippedDuplicate = offers.length - skippedNoName - rows.length;
+  let savedProducts = 0, savedStores = 0, memorySnapshots = 0, failed = 0;
   const errors: any[] = [];
   for (const p of rows) {
     try {
@@ -106,7 +126,7 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, runId:
         const { data: inserted, error: insertErr } = await sb.from('products')
           .insert({ name_ar: nameAr, name_en: p.name_en || nameAr, brand: p.brand || 'Unknown', category: p.category || 'accessories' })
           .select('id').single();
-        if (insertErr || !inserted?.id) { errors.push({ step: 'insert_product', error: insertErr }); continue; }
+        if (insertErr || !inserted?.id) { failed++; errors.push({ step: 'insert_product', error: insertErr }); continue; }
         productId = inserted.id; savedProducts++;
       }
       const { error: storeErr } = await sb.from('product_stores').upsert({
@@ -114,15 +134,30 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, runId:
         original_price: p.original_price || null, product_url: p.product_url,
         availability: p.availability || 'in_stock', updated_at: new Date().toISOString(),
       }, { onConflict: 'product_id,store_name' });
-      if (storeErr) { errors.push({ step: 'upsert_store', error: storeErr }); continue; }
+      if (storeErr) { failed++; errors.push({ step: 'upsert_store', error: storeErr }); continue; }
       savedStores++;
       try {
         const canonicalId = await ensureCanonicalProduct(nameAr, p);
         if (canonicalId) { const ok = await writePriceSnapshot(canonicalId, p, storeName, runId); if (ok) memorySnapshots++; }
       } catch (memErr: any) { console.error('[memory:loop]', String(memErr?.message || memErr)); }
-    } catch (e: any) { errors.push({ step: 'fatal', error: String(e?.message || e) }); }
+    } catch (e: any) { failed++; errors.push({ step: 'fatal', error: String(e?.message || e) }); }
   }
-  return { saved: savedProducts, savedProducts, savedStores, memorySnapshots, errors: errors.length ? errors.slice(0, 3) : undefined, totalRows: rows.length };
+  return {
+    fetched: offers.length,
+    deduped: rows.length,
+    skipped: skippedNoName + skippedDuplicate,
+    skippedNoName,
+    skippedDuplicate,
+    inserted: savedProducts,
+    updated: savedStores,
+    persisted: savedProducts + savedStores,
+    failed,
+    priceRows: memorySnapshots,
+    errors: errors.length ? errors.slice(0, 3) : undefined,
+    // Legacy aliases — `savedProducts` counts NEW inserts only and must not be
+    // read as a success rate. Retained so store_sync_status keeps its meaning.
+    savedProducts, savedStores, memorySnapshots, totalRows: rows.length,
+  };
 }
 
 // ── Sync runner — يشغّل أي محوّل من البروتوكول ──────────────
@@ -153,21 +188,36 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
       total_saved: (state?.total_saved ?? 0) + saveResult.savedProducts, last_error: result.lastError || null,
     });
 
+    // A run that fetched nothing is 'success' only if the adapter says it is
+    // finished; otherwise it is a zero-result run and must be visible as such.
+    const zeroResult = result.offers.length === 0 && !result.done;
+    const status = result.lastError ? 'partial' : zeroResult ? 'partial' : 'success';
+
     if (runId !== null) {
       await finishRun({
         run_id: runId,
-        status: result.lastError ? 'partial' : 'success',
+        status,
         products_discovered: result.offers.length,
-        products_new: saveResult.savedProducts,
-        products_updated: saveResult.savedStores,
-        products_failed: saveResult.errors?.length ?? 0,
-        price_changes_detected: saveResult.memorySnapshots,
+        products_new: saveResult.inserted,
+        products_updated: saveResult.updated,
+        products_failed: saveResult.failed,
+        price_changes_detected: saveResult.priceRows,
         errors_count: result.lastError ? 1 : 0,
-        error_summary: result.lastError ? { message: String(result.lastError) } : null,
+        error_summary: result.lastError
+          ? { message: String(result.lastError) }
+          : zeroResult
+            ? { message: 'zero-result run: adapter returned no offers and did not report completion' }
+            : null,
       });
     }
 
-    return { store: storeName, slug: adapter.slug, runId, fetched: result.offers.length, savedProducts: saveResult.savedProducts, savedStores: saveResult.savedStores, rawWritten, memorySnapshots: saveResult.memorySnapshots, done: result.done };
+    return {
+      store: storeName, slug: adapter.slug, runId, done: result.done, zeroResult,
+      fetched: saveResult.fetched, skipped: saveResult.skipped,
+      inserted: saveResult.inserted, updated: saveResult.updated,
+      persisted: saveResult.persisted, failed: saveResult.failed,
+      rawObservationsWritten: rawWritten, priceRowsWritten: saveResult.priceRows,
+    };
   } catch (err: any) {
     if (runId !== null) {
       await finishRun({

@@ -225,6 +225,16 @@ Scheduler defined in the database rather than version control (addressed by E4) 
 
 ### Architectural contradictions
 
+**C0 — BLOCKING for E6/E7: canonical identity is being created outside the TPS rules, live, every six hours.**
+Confirmed during E1 by reading `src/app/api/cron/discover-firecrawl/route.ts`. `ensureCanonicalProduct()`:
+- creates canonical products by **exact `name_ar` string match** — no normalisation, no plugin, no identity key;
+- **defaults `category` to `'accessories'`**, which is the direct cause of the ~40 % accessories skew in `canonical_products`;
+- **bypasses corroboration entirely** — a canonical product is created from a single store's listing, violating invariant I3 (≥2 distinct stores) and the confidence gate.
+
+This is a **live** violation, not a historical one: it runs on every adapter sync. It must be treated as a blocking correctness issue in E6/E7 and resolved before the pipeline is automated at volume — automating on top of it would industrialise the defect.
+
+**It was deliberately NOT fixed in E1.** Changing identity creation is outside E1's scope; E1 only made the behaviour observable.
+
 **C1 — 80.4 % of canonical linkage bypassed the corroboration invariant.**
 `price_history.canonical_product_id` was populated for 48,188 rows by migration `005_link_products` using **name + brand matching**, not by the TPS identity process. Blueprint invariant I3 requires corroborated identity (≥2 stores, confidence-gated, decision recorded in `identity_resolution_events` — of which there are only 37). **The canonical graph's quality is therefore largely unvalidated.** This is not a process gap; it is a correctness question about data the entire intelligence layer already rests on. E6 must include an audit of bulk-linked rows, not merely automate future ones.
 
@@ -236,7 +246,7 @@ Scheduler defined in the database rather than version control (addressed by E4) 
 
 ### Hidden risks
 
-**H1 — Ingestion save-rate is very low and unexplained.** `store_sync_status` shows Extra fetched 27,140 and saved 633 (2.3 %); Almanea fetched 29,400, saved 444 (1.5 %). Whether this is deduplication working correctly or silent data loss is **unknown** and should be answered in E1 before E12 multiplies the pattern across six more stores.
+**H1 — RESOLVED in E1. The low "save rate" was a misleading metric, not data loss.** `saveProducts()` increments `savedProducts` only when a product is **inserted for the first time**; offers for products that already exist are persisted via `product_stores` upsert without incrementing it. So `total_saved / total_fetched` measures *novelty*, not success — a mature catalog will always show a low figure. Observability now reports `fetched`, `skipped`, `inserted`, `updated`, `persisted` (= inserted + updated, the real success count) and `failed` as distinct counters, with `inserted` explicitly annotated as not a success rate.
 
 **H2 — Third-party keys are hardcoded and merchant-controlled.** Almanea's Algolia keys and Extra's Unbxd site key sit in source. A merchant rotating them stops ingestion — and until E1 lands, silently.
 
