@@ -43,6 +43,34 @@
 **Rollback** Mapping layer is additive; disable the resolver and legacy keys still read.
 **Op risk** **Medium — silent correctness defect being corrected on live data** · **Deploy risk** Low · **Prod impact** Improves join correctness; no user-visible change · **Complexity** M · **Duration** 3–5 · **Success** Joins on store identity return complete results.
 
+### E2 investigation findings (completed; implementation blocked — see below)
+
+**Canonical model chosen: `stores.id` (integer FK).** Not the slug, and not any name. An integer key is immune to language, spelling and display-form drift, it already exists as the identity in `product_stores` and `scraping_runs`, and it gives referential integrity that a text key cannot. The slug remains the human-facing handle in routes and adapters; `stores` is the only place the two are related.
+
+**Method: expand-and-contract, never rewrite.** `store_id` is added as a nullable column to `raw_observations`, `price_history` and `store_sync_status`, then backfilled. **`store_name` is preserved verbatim** as the historical record of what each producer wrote. This satisfies invariant I4 (append-only history): no price, timestamp or observation value is modified — only a previously-null identity column is populated. Rollback is `DROP COLUMN`.
+
+**Three naming conventions confirmed in the data, none agreeing:**
+
+| Table | Labels present |
+|---|---|
+| `raw_observations` | `جرير` 50,288 · `اكسترا` 39,540 · `المنيع` 33,380 · `أمازون` 2,029 — Arabic short names only |
+| `price_history` | `المنيع` 31,278 · `اكسترا` 17,150 · **`jarir` 11,734** · `جرير` 18 · `amazon` 55 · `أمازون` 15 — mixed Arabic and latin |
+| `product_stores` | `store_name` on adapter rows; `store_id` on legacy rows — **mutually exclusive populations** |
+| `stores` | display names (`مكتبة جرير`, `إكسترا`) matching neither |
+
+**Producers:** `adapters/*.ts` (`dbName`, Arabic) → `discover-firecrawl`; `ScrapingOrchestrator`/`IngestionService` → `discover-products`; `run-logger` (writes the slug since E1).
+**Consumers:** health endpoint (alias expansion), `store_sync_status` lookup, `/api/search` store filter (`product_stores.store_name`), **`/api/match` corroboration counting (`new Set(members.map(m => m.store_name)).size < 2`)** — the ≥2-store rule is evaluated on raw label equality, so label drift can under- or over-count corroboration.
+
+**NEW FINDING — E2 scope limit.** The `product_stores` upsert conflict target is `(product_id, store_name)`. Legacy rows carry a **null** `store_name`, and a null can never satisfy a unique constraint, so every legacy write inserted instead of upserting. Result: **38 products hold 2,379 rows between them — 47.3 % of the legacy population** — one product carrying 186 rows.
+
+These are **not** simple duplicates. A sample of the worst case shows **four distinct `product_url`s and different prices** under a single `product_id`: genuinely different merchant offers (an *instax mini evo* and an *instax mini wide evo*) matched onto one canonical product. Collapsing on `(product_id, store_id)` would destroy real offers.
+
+**Therefore E2 must not change the `product_stores` upsert key.** It backfills `store_id` for readability only. The remedy is a matching problem and belongs to E6/E7. Recorded as C2 below.
+
+**Deliverables staged (not applied):** `scripts/database/knowledge-db/006_store_identity_precheck.sql` (read-only audit), `006_store_identity.sql` (expand + backfill + validate, with a fail-loud guard), `006_store_identity_rollback.sql`.
+
+**BLOCKED — cannot apply.** The knowledge database exposes no DDL path from this environment: `SUPABASE_DB_URL` is unset, `psql` is not installed, and the only RPCs available (`show_trgm`, `write_mobile_batch`, `smart_search`, `discover_schema`, `show_limit`) cannot execute DDL. Applying `006` requires a direct connection string or Supabase SQL-editor access. Until then the alias shim in the health endpoint must remain, because historical labels are unnormalised and removing it would report actively-ingesting stores as never ingested.
+
 ### E3 — RLS Remediation on System B
 **Objective** Close the live PII exposure.
 **Outcome** `phone_otps` (94), `login_sessions` (12) and the three analytics views no longer readable with the public anon key.
@@ -241,6 +269,9 @@ Confirmed during E1 by reading `src/app/api/cron/discover-firecrawl/route.ts`. `
 This is a **live** violation, not a historical one: it runs on every adapter sync. It must be treated as a blocking correctness issue in E6/E7 and resolved before the pipeline is automated at volume — automating on top of it would industrialise the defect.
 
 **It was deliberately NOT fixed in E1.** Changing identity creation is outside E1's scope; E1 only made the behaviour observable.
+
+**C2 — `product_stores` holds many rows per (product, store), and some are different products.**
+Discovered during E2. The upsert conflict target `(product_id, store_name)` is defeated by null `store_name` on legacy rows, so writes insert rather than upsert: 2,379 rows across 38 products, 47.3 % of the legacy population, one product with 186 rows. Sampling shows four distinct `product_url`s and differing prices under a single `product_id` — distinct merchant offers matched onto one canonical product. This is a **matching** defect surfaced by store identity work, and fixing it requires deciding which offers are genuinely the same product. It blocks any change to the `product_stores` conflict key, and therefore belongs to E6/E7 alongside C0 and C1.
 
 **C1 — 80.4 % of canonical linkage bypassed the corroboration invariant.**
 `price_history.canonical_product_id` was populated for 48,188 rows by migration `005_link_products` using **name + brand matching**, not by the TPS identity process. Blueprint invariant I3 requires corroborated identity (≥2 stores, confidence-gated, decision recorded in `identity_resolution_events` — of which there are only 37). **The canonical graph's quality is therefore largely unvalidated.** This is not a process gap; it is a correctness question about data the entire intelligence layer already rests on. E6 must include an audit of bulk-linked rows, not merely automate future ones.
