@@ -18,9 +18,9 @@
 │       body {"store_slug":"jarir","max_pages":3}  auth secrets.CRON_SECRET   │
 │       STATUS: PARTIALLY VERIFIED                                           │
 │                                                                            │
-│  [T2] UNKNOWN TRIGGER  → POST tawveeri.com/api/cron/discover-firecrawl      │
+│  [T2] Supabase pg_cron (System A) → POST /api/cron/discover-firecrawl       │
 │       fires 00:00 / 06:00 / 12:00 / 18:00 UTC, second-accurate             │
-│       STATUS: UNKNOWN                                                      │
+│       STATUS: VERIFIED — owner-confirmed 2026-07-20                        │
 │                                                                            │
 │  [T3] PM2 scheduler (scripts/scheduler.js) → /api/cron/dispatch            │
 │       STATUS: VERIFIED NOT RUNNING against System A                        │
@@ -88,7 +88,7 @@
 ### P2 — Extra + Almanea discovery
 | | |
 |---|---|
-| **Trigger** | **UNKNOWN** — fires at 00:00/06:00/12:00/18:00 UTC, second-accurate |
+| **Trigger** | **Supabase pg_cron on System A** (owner-confirmed 2026-07-20), firing 00:00/06:00/12:00/18:00 UTC via pg_net HTTP call — **VERIFIED** |
 | **Runtime** | Next.js route on Railway |
 | **Deployment** | `tawveeri.com` |
 | **Source code** | `src/app/api/cron/discover-firecrawl/route.ts` → `getEnabledAdapters()` → `adapters/almanea.ts`, `adapters/extra.ts` |
@@ -167,11 +167,13 @@ Zero price observations in 30 days; `product_stores.last_checked_at` zero update
 | What writes to System A | **VERIFIED** — two routes, both repository code, proven by `source_method` matching adapter source strings and by session correlation |
 | Ingestion volumes and cadence | **VERIFIED** — exact counts and second-level timing |
 | Jarir trigger | **PARTIALLY VERIFIED** — workflow exists and targets it; run history unreadable |
-| Extra/Almanea trigger | **UNKNOWN** — three candidates remain, none discriminable from the repository |
+| Extra/Almanea trigger | **VERIFIED** — Supabase pg_cron, owner-confirmed 2026-07-20. The earlier inference (pg_cron + pg_net, based on both schemas existing while migration 12 was never applied) is confirmed correct |
 | TPS pipeline trigger | **VERIFIED ABSENT** |
 | Algolia sync trigger | **VERIFIED ABSENT** |
 | PM2 / in-app scheduling | **VERIFIED NOT PARTICIPATING** |
 | Embedding pipeline | **VERIFIED NOT DEPLOYED** |
 | System B activity | **VERIFIED DORMANT** |
 
-**One trigger remains unproven.** Architecture Reconciliation is therefore **not complete**. No assumption in this document is labelled "likely": P2's trigger is stated as UNKNOWN with the excluded candidates and the exact checks required to close it.
+**All production execution paths are now accounted for.** Architecture Reconciliation is **COMPLETE** as of 2026-07-20, when the owner confirmed Supabase pg_cron as the trigger for `/api/cron/discover-firecrawl`.
+
+**Consequence of the pg_cron finding — carried into the transition plan:** the platform's primary scheduler is defined **inside the database**, not in version control. The schedule is therefore invisible to code review, absent from the repository, and lost on any database restore or migration. This is recorded as a first-class technical debt item (see `ENGINEERING-TRANSITION-PLAN.md`, phase E4).
