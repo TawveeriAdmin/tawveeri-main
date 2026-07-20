@@ -5,6 +5,14 @@
 **Basis:** Architecture Reconciliation (complete 2026-07-20) + Production Execution Topology (complete).
 **Durations** are engineering estimates in working days, not commitments. **Complexity** is S / M / L / XL.
 
+## Verification methodology (governs all milestones)
+
+- **All production and legacy verification is strictly read-only** unless the product owner explicitly approves a write. No INSERT/UPDATE/DELETE/UPSERT/RPC on any environment without explicit approval.
+- **The production database is the only source of truth for any gate verdict.** Every PASS/FAIL is based on a fresh direct read-only query against production at verification time.
+- **Project identity is proven before acting**, every time — decode the anon-key JWT `ref`, or run the `to_regclass` fingerprint in a SQL session — because both a probe and a SQL-editor session have previously been mis-targeted at the wrong project.
+- **Background watchers are optional instrumentation, never part of the evidence chain.** A watcher may only shorten the wait to the next check. If it is stopped, unconfirmed, or the session has ended, that is stated explicitly; continued monitoring is never inferred, and watcher unavailability never lowers the confidence of a production verdict.
+- **Production and legacy are separate workstreams** and their evidence is never mixed.
+
 ---
 
 ## Phase register
