@@ -145,6 +145,21 @@ The same function therefore executed with **service-role privileges on the serve
 
 **Blocked on access, again:** applying the remediation needs SQL access to `ffpsjjazsluolysgithg`, which this environment does not have (no service-role key, no connection string). The exposure remains live until it is run.
 
+### E3 Gate 8 — redefined for the current architecture (2026-07-20)
+
+An initial Gate 8 verification incorrectly targeted the **legacy** project `ffpsjjazsluolysgithg` using the legacy anon key, and reported failure. That conclusion was void: it measured a project that is neither the production system E1–E3 was deployed to, nor necessarily where the remediation was applied. Proven by decoding the JWT `ref` claim of each anon key (legacy `ref=ffpsjjazsluolysgithg` vs production `ref=vyceqrzttspyycdpojtn`).
+
+**The five sensitive objects do not exist on production `vyceqrzttspyycdpojtn`** — confirmed 404 via both service role and anon. They are legacy-only, consistent with the reconciliation finding that production carries no user/auth/commerce schema. The original Gate 8, which assumed those objects exist, is therefore not applicable to production.
+
+**Gate 8 is redefined as three production checks, all read-only:**
+- **8.1** No legacy-sensitive objects exist on production. Verified: `phone_otps`, `login_sessions`, all three `mv_*`, plus `users`/`transactions`/`coupons`/`user_wishlists` — all 404. **PASS.**
+- **8.2** No unintended anon exposure. Verified: 12 operational/provenance tables (`raw_observations`, `tps_product_projection`, `outbound_clicks`, `scraping_runs`, `store_name_resolution`, `schema_migrations`, …) all return 0 rows to the anon key, while the 7 intended-public catalog tables remain readable so search works. **PASS.**
+- **8.3** Admin/store server paths intact via service role. **PASS.**
+
+The E3 *definition* fixes (`08-`, `12-`, `05-`) remain correct and necessary: they protect these objects when **E9** creates them on production. The E3 fix does not become moot; it becomes forward-looking.
+
+**Gate 8 (production): PASS.**
+
 ### E4 — Scheduler Consolidation & Infrastructure-as-Code
 **Objective** One scheduler, defined in version control.
 **Outcome** pg_cron job definitions live in the repository; the GitHub Action is retired; all triggers route through `/api/cron/dispatch` with claim-locking.
@@ -153,6 +168,9 @@ The same function therefore executed with **service-role privileges on the serve
 **Verification** Schedule reproducible from the repository on a fresh database; exactly one run per store per window; no double-runs.
 **Rollback** Re-enable the GitHub Action; restore prior pg_cron entries from the versioned copy.
 **Op risk** **Medium — a scheduling gap stops all ingestion** · **Deploy risk** Medium · **Prod impact** None if cadence is preserved · **Complexity** M · **Duration** 3–5 · **Success** Schedule is code; no trigger exists outside version control.
+
+**E4 backlog — Must Fix:**
+- **Unauthenticated GET write endpoint.** `GET /api/cron/discover-firecrawl?store_slug=X&sync=1` performs database writes (`raw_observations`, `products`, `product_stores`, `price_history`) with **no authentication** — the `POST` handler checks `CRON_SECRET`, the `GET` handler does not. An unauthenticated write/trigger surface on production. Pre-existing, not introduced by E1–E3. Fold into E4 as a trigger-surface fix (require `CRON_SECRET` on the `sync=1` path, or remove the write capability from GET). **Do not modify until E1–E3 production verification is formally complete.**
 
 ### E5 — Algolia Sync Restoration
 **Objective** Restore the index producer lost at commit `d386ede`.
