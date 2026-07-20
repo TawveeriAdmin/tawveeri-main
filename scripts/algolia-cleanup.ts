@@ -8,7 +8,7 @@ import { algoliasearch } from "algoliasearch";
 
 const DRY_RUN = process.env.DRY_RUN !== "false";
 const APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || "";
-const ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY || process.env.ALGOLIA_ADMIN_API_KEY || "";
+const ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY || "";
 const INDEX_NAME = process.env.ALGOLIA_INDEX_NAME || "products";
 
 if (!APP_ID || !ADMIN_KEY) {

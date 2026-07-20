@@ -16,11 +16,8 @@ import { detectCondition } from "../tps-core/condition-detector";
 
 const DRY_RUN = process.env.DRY_RUN !== "false";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "";
+// Service role only — an anon fallback would return RLS-filtered rows as if complete.
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error("❌ لا يوجد Supabase في .env.local");

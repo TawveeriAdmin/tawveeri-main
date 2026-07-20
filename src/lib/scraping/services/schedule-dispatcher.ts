@@ -4,7 +4,7 @@ import { startRun } from './run-logger';
 
 export interface DueSchedule {
   schedule_id: string;
-  store_id: string;
+  store_id: number;
   store_slug: string;
   job_type: 'discovery' | 'price_update';
   max_pages: number | null;
@@ -58,7 +58,7 @@ export async function fetchDueSchedules(limit = 20): Promise<DueSchedule[]> {
 
   return (data as unknown as Array<{
     id: string;
-    store_id: string;
+    store_id: number;
     job_type: 'discovery' | 'price_update';
     max_pages: number | null;
     max_products: number | null;
@@ -117,7 +117,7 @@ async function computeCoverageBatch(sched: DueSchedule): Promise<number> {
   const { count } = await supabase
     .from('product_stores')
     .select('id', { count: 'exact', head: true })
-    .eq('store_id', sched.store_id);
+    .eq('store_id', sched.store_id as unknown as string); // integer key on the knowledge DB
 
   const total = count ?? 0;
   if (total === 0) return sched.max_products ?? 100;
@@ -187,7 +187,7 @@ async function invokeCronRoute(params: {
 
 export interface DispatchResult {
   due_count: number;
-  dispatched: Array<{ schedule_id: string; store_slug: string; job_type: string; run_id: string | null }>;
+  dispatched: Array<{ schedule_id: string; store_slug: string; job_type: string; run_id: number | null }>;
 }
 
 /**
@@ -214,6 +214,7 @@ export async function dispatchDueSchedules(): Promise<DispatchResult> {
     if (!claimed) continue;
 
     const runId = await startRun({
+      store_name: sched.store_slug,
       store_id: sched.store_id,
       job_type: sched.job_type,
       schedule_id: sched.schedule_id,

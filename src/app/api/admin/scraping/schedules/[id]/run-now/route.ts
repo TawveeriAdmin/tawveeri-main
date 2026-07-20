@@ -51,7 +51,8 @@ export async function POST(
   }
 
   const runId = await startRun({
-    store_id: s.store_id,
+    store_name: s.stores.slug,
+    store_id: Number(s.store_id), // stores.id is integer on the knowledge DB
     job_type: s.job_type,
     schedule_id: s.id,
     triggered_by: 'manual',

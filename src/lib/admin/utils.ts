@@ -3,10 +3,18 @@
  * Functions for admin dashboard statistics and analytics
  */
 
-import { getSupabaseBrowserClient, createServerClient } from '@/lib/database';
-
-const getSupabase = () =>
-  typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient();
+// Server-only. These functions read administrative aggregates
+// (mv_user_analytics, mv_product_analytics, mv_store_analytics), which are
+// revoked from anon and authenticated and readable only by the service role.
+//
+// This module previously chose its client by render context:
+//   typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient()
+// The same function therefore ran with service-role privileges on the server and
+// anon privileges in the browser — an invisible change of authority determined by
+// where it happened to be called. Importing 'server-only' turns a client-side
+// import into a build error instead of a silent privilege downgrade.
+import 'server-only';
+import { createServerClient } from '@/lib/database';
 
 export interface AdminStats {
   totalUsers: number;
@@ -47,7 +55,7 @@ export interface StoreAnalytics {
  */
 export async function getAdminStats(): Promise<{ data: AdminStats | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
 
     // Fetch all stats in parallel
     const [usersResult, productsResult, storesResult, transactionsResult, revenueResult] =
@@ -96,7 +104,7 @@ export async function getUserAnalytics(
   userId: string
 ): Promise<{ data: UserAnalytics | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
     const { data, error } = await supabase
       .from('mv_user_analytics')
       .select('*')
@@ -118,7 +126,7 @@ export async function getProductAnalytics(
   productId: string
 ): Promise<{ data: ProductAnalytics | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
     const { data, error } = await supabase
       .from('mv_product_analytics')
       .select('*')
@@ -140,7 +148,7 @@ export async function getStoreAnalytics(
   storeId: string
 ): Promise<{ data: StoreAnalytics | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
     const { data, error } = await supabase
       .from('mv_store_analytics')
       .select('*')
@@ -160,7 +168,7 @@ export async function getStoreAnalytics(
  */
 export async function refreshAnalyticsViews(): Promise<{ error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
     const { error } = await supabase.rpc('refresh_analytics_views');
 
     if (error) throw error;

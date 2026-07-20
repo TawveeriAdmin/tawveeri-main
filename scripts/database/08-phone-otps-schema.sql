@@ -20,3 +20,26 @@ CREATE INDEX IF NOT EXISTS idx_phone_otps_phone_active ON phone_otps(phone, is_u
 -- Add comment
 COMMENT ON TABLE phone_otps IS 'Temporary storage for phone OTP codes sent via Authentica SMS';
 
+-- ─────────────────────────────────────────────────────────────
+-- Row Level Security
+--
+-- This table was originally created WITHOUT RLS. In Supabase, a public-schema
+-- table with RLS disabled is readable by anyone holding the anon key — which is
+-- published in the web bundle and the mobile binary. That exposed live phone
+-- numbers and OTP codes.
+--
+-- Deny-all is the correct policy: every access is server-side through
+-- createServerClient() (service role), and the service role bypasses RLS. No
+-- client should ever read or write this table directly, now or in future.
+-- Enabling RLS with no policy therefore changes no application behaviour and
+-- closes the exposure permanently.
+-- ─────────────────────────────────────────────────────────────
+
+ALTER TABLE phone_otps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE phone_otps FORCE ROW LEVEL SECURITY;
+
+-- No CREATE POLICY by design: with RLS enabled and no policy, every non-service
+-- role is denied. Adding a policy here would be a mistake, not an omission.
+
+REVOKE ALL ON phone_otps FROM anon, authenticated;
+

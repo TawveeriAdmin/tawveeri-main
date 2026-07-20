@@ -13,7 +13,7 @@ export const maxDuration = 300;
  * run is still recorded in scraping_runs.
  */
 export async function POST(request: NextRequest) {
-  let runId: string | null = null;
+  let runId: number | null = null;
 
   try {
     const authHeader = request.headers.get('authorization');
@@ -39,16 +39,14 @@ export async function POST(request: NextRequest) {
     // If no run_id was passed but we have a store_slug, create one so manual
     // invocations still appear in the history.
     if (!runId && options.store_slug) {
-      const storeId = await lookupStoreId(options.store_slug);
-      if (storeId) {
-        runId = await startRun({
-          store_id: storeId,
-          job_type: 'price_update',
-          schedule_id: body.schedule_id ?? null,
-          triggered_by: body.schedule_id ? 'schedule' : 'manual',
-          triggered_by_user_id: body.triggered_by_user_id ?? null,
-        });
-      }
+      runId = await startRun({
+        store_name: options.store_slug,
+        store_id: await lookupStoreId(options.store_slug),
+        job_type: 'price_update',
+        schedule_id: body.schedule_id ?? null,
+        triggered_by: body.schedule_id ? 'schedule' : 'manual',
+        triggered_by_user_id: body.triggered_by_user_id ?? null,
+      });
     }
 
     const orchestrator = new ScrapingOrchestrator();
@@ -81,10 +79,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function lookupStoreId(storeSlug: string): Promise<string | null> {
+async function lookupStoreId(storeSlug: string): Promise<number | null> {
   const supabase = createServerClient();
   const { data } = await supabase.from('stores').select('id').eq('slug', storeSlug).single();
-  return (data as { id?: string } | null)?.id ?? null;
+  return (data as { id?: number } | null)?.id ?? null;
 }
 
 export async function GET() {

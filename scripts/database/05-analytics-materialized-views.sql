@@ -77,3 +77,30 @@ $$ LANGUAGE plpgsql;
 -- Grant execute permission on refresh function
 GRANT EXECUTE ON FUNCTION refresh_analytics_views() TO authenticated;
 
+-- ─────────────────────────────────────────────────────────────
+-- Access control
+--
+-- Materialized views CANNOT have row level security. Access is therefore
+-- controlled by grants alone, and Supabase grants SELECT on public-schema
+-- objects to anon and authenticated by default. These views were left at that
+-- default, so mv_user_analytics — which contains user_id alongside wishlist,
+-- search, alert and comparison counts — was readable by anyone holding the
+-- public anon key.
+--
+-- These are administrative aggregates. Nothing user-facing reads them; the only
+-- consumers are the admin dashboard and the store-owner dashboard, both of which
+-- must read them server-side through the service role.
+--
+-- anon is revoked unconditionally.
+--
+-- authenticated is ALSO revoked: an ordinary customer is `authenticated`, and
+-- mv_user_analytics exposes other users' identifiers and activity. Restricting
+-- to admins is not expressible through a grant, because Postgres grants are
+-- per-role and every logged-in user shares the `authenticated` role. Server-side
+-- reads through the service role are the only correct access path.
+-- ─────────────────────────────────────────────────────────────
+
+REVOKE ALL ON mv_user_analytics    FROM anon, authenticated;
+REVOKE ALL ON mv_product_analytics FROM anon, authenticated;
+REVOKE ALL ON mv_store_analytics   FROM anon, authenticated;
+

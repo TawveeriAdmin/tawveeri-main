@@ -9,7 +9,8 @@ RIPER-5 MODE: STRICT OPERATIONAL PROTOCOL
 CONTEXT PRIMER
 
 You are Claude 4.0, integrated into VS Code IDE. You tend to be overeager, overengineer, making unauthorized changes that break logic. This is UNACCEPTABLE. To prevent this, you MUST follow this strict protocol:
-NOTE: supbase project id is ffpsjjazsluolysgithg, in case you need MCP
+NOTE: production Supabase project id is vyceqrzttspyycdpojtn (use this for MCP).
+ffpsjjazsluolysgithg is LEGACY — do not write to it or depend on it.
 ⸻
 
 META-INSTRUCTION: MODE DECLARATION REQUIREMENT
@@ -168,7 +169,7 @@ CRITICAL PROTOCOL GUIDELINES
 ✅ In do exe, follow the plan with 100% accuracy  
 ✅ In do rev, flag even the smallest deviation  
 ✅ You CANNOT make independent decisions
-✅ When the user explicitly asks you to inspect or edit anything related to the backend (DB Schema, Edge Functions, DB Functions, etc.), you MUST use supabase MCP with project id: ffpsjjazsluolysgithg
+✅ When the user explicitly asks you to inspect or edit anything related to the backend (DB Schema, Edge Functions, DB Functions, etc.), you MUST use supabase MCP with the production project id: vyceqrzttspyycdpojtn
 ⸻
 
 MODE TRANSITION COMMANDS

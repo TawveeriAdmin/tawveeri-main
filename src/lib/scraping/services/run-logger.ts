@@ -5,7 +5,10 @@ export type ScrapingRunStatus = 'pending' | 'running' | 'success' | 'failed' | '
 export type ScrapingTriggerSource = 'schedule' | 'manual' | 'api';
 
 export interface StartRunParams {
-  store_id: string;
+  /** NOT NULL in scraping_runs — always supplied explicitly, never left to a default. */
+  store_name: string;
+  /** FK to stores.id (integer). Optional: not every ingestion path resolves a store row. */
+  store_id?: number | null;
   job_type: ScrapingJobType;
   schedule_id?: string | null;
   triggered_by?: ScrapingTriggerSource;
@@ -13,10 +16,13 @@ export interface StartRunParams {
 }
 
 export interface FinishRunParams {
-  run_id: string;
+  /** scraping_runs.id is bigint. */
+  run_id: number;
   status: ScrapingRunStatus;
   products_discovered?: number;
+  products_new?: number;
   products_updated?: number;
+  products_failed?: number;
   price_changes_detected?: number;
   errors_count?: number;
   error_summary?: unknown;
@@ -27,17 +33,21 @@ export interface FinishRunParams {
  * Never throws — if logging fails, the caller should proceed and rely on
  * orchestrator-level error handling.
  */
-export async function startRun(params: StartRunParams): Promise<string | null> {
+export async function startRun(params: StartRunParams): Promise<number | null> {
   try {
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from('scraping_runs')
       .insert({
-        store_id: params.store_id,
-        job_type: params.job_type,
-        schedule_id: params.schedule_id ?? null,
+        // NOT NULL columns, always supplied explicitly:
+        store_name: params.store_name,
+        run_type: params.job_type,
         status: 'running',
         started_at: new Date().toISOString(),
+        // Optional / newer columns:
+        store_id: params.store_id ?? null,
+        job_type: params.job_type,
+        schedule_id: params.schedule_id ?? null,
         triggered_by: params.triggered_by ?? 'manual',
         triggered_by_user_id: params.triggered_by_user_id ?? null,
       } as never)
@@ -48,7 +58,7 @@ export async function startRun(params: StartRunParams): Promise<string | null> {
       console.error('[run-logger] startRun failed:', error?.message);
       return null;
     }
-    return (data as { id: string }).id;
+    return Number((data as { id: number | string }).id);
   } catch (err) {
     console.error('[run-logger] startRun threw:', err);
     return null;
@@ -66,7 +76,7 @@ export async function finishRun(params: FinishRunParams): Promise<void> {
     const { data: existing } = await supabase
       .from('scraping_runs')
       .select('started_at, schedule_id')
-      .eq('id', params.run_id)
+      .eq('id', params.run_id as unknown as string)
       .single();
 
     const startedAt = (existing as { started_at?: string } | null)?.started_at;
@@ -80,12 +90,17 @@ export async function finishRun(params: FinishRunParams): Promise<void> {
         finished_at: finishedAt.toISOString(),
         duration_ms: durationMs,
         products_discovered: params.products_discovered ?? 0,
+        products_new: params.products_new ?? 0,
         products_updated: params.products_updated ?? 0,
+        products_failed: params.products_failed ?? 0,
         price_changes_detected: params.price_changes_detected ?? 0,
         errors_count: params.errors_count ?? 0,
         error_summary: (params.error_summary as never) ?? null,
       } as never)
-      .eq('id', params.run_id);
+      // types.ts still describes the legacy application database (uuid keys).
+      // scraping_runs.id is bigint in the knowledge database; cast at the boundary
+      // until types are regenerated post-consolidation.
+      .eq('id', params.run_id as unknown as string);
 
     const scheduleId = (existing as { schedule_id?: string | null } | null)?.schedule_id;
     if (scheduleId) {
@@ -100,7 +115,7 @@ export async function finishRun(params: FinishRunParams): Promise<void> {
   }
 }
 
-export async function failRun(runId: string, error: unknown): Promise<void> {
+export async function failRun(runId: number, error: unknown): Promise<void> {
   const summary = {
     message: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,

@@ -21,11 +21,8 @@ import { canonicalizeBrand } from "../tps-core/brand-map";
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "";
+// Service role only — an anon fallback would return RLS-filtered rows as if complete.
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error("❌ لم أجد بيانات Supabase في .env.local");

@@ -534,4 +534,8 @@ All user-visible text stored in the database uses paired `_ar`/`_en` suffix colu
 
 ## Supabase Project
 
-Project ID: `ffpsjjazsluolysgithg` (for MCP/CLI operations)
+**Production (sole authority):** `vyceqrzttspyycdpojtn` — use this for all MCP/CLI operations, migrations, scripts, Web, and Mobile.
+
+**Legacy (do not use):** `ffpsjjazsluolysgithg` — retained for reference only. Do not write to it, migrate from it, or depend on it except for an explicitly authorized legacy-data comparison.
+
+Credentials come from the environment only; no Supabase URL or key may be hardcoded in source. See `docs/ENVIRONMENT-AUTHORITY.md`.
