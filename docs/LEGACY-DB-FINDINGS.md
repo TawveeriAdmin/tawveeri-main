@@ -36,17 +36,21 @@ That is the production fingerprint. The SQL "no rows" therefore describes produc
 
 **The only valid legacy evidence is the HTTP verification**, which is cryptographically tied to legacy (anon JWT `ref = ffpsjjazsluolysgithg`, endpoint `https://ffpsjjazsluolysgithg.supabase.co`). It shows all five objects still anon-readable. **Legacy Gate 8 remains FAIL.** No claim is made about *why* the remediation did not take effect on legacy — the earlier "RLS not enabled / REVOKE didn't persist" inference is also withdrawn, because it too rested on evidence that turned out to be production's.
 
+**Status of the remediation script:** UNVERIFIED ON LEGACY. It has never been confirmed to run to completion against the confirmed legacy project, so neither its success nor its correctness is established. Do not describe it as "correct" — describe it as unverified on legacy until an execution against a fingerprint-confirmed legacy session, followed by read-only re-verification, proves otherwise.
+
 **What is now known, strictly from verified fingerprints:**
 - Legacy (`ffpsjjazsluolysgithg`): the five objects exist and are anon-readable. Exposure is live.
 - Production (`vyceqrzttspyycdpojtn`): the five objects do not exist. The SQL session that "succeeded" ran here.
 - Where the remediation SQL was actually applied is **unverified** — it may have been run against production (where its `ALTER TABLE phone_otps …` would error on a non-existent table and roll back the transaction), or against legacy without effect. Not determinable from current evidence.
 
-**To resolve (owner) — pin the project first:**
+**To resolve (owner) — pin the project first.** The remediation is UNVERIFIED on legacy; the sequence below both applies and verifies it:
 1. In the SQL Editor, select the **legacy** project `ffpsjjazsluolysgithg` explicitly (check the project name in the editor header).
 2. Run the `to_regclass` fingerprint there and confirm it returns the *legacy* shape: `phone_otps` and `users` non-null, `canonical_products` and `raw_observations` NULL. Do not proceed until this confirms legacy.
 3. Only then run `scripts/database/app-db/e3_rls_remediation.sql`.
 4. Run its embedded verification query (`relrowsecurity`, `has_table_privilege('anon', …)`) in that same confirmed-legacy session.
 5. Ping for an independent read-only HTTP re-verification against legacy.
+
+**Legacy discussion is closed pending explicit owner request. No further legacy work will be performed unless requested.**
 
 ## L2 — `phone_otps` was anon-WRITABLE (potential auth bypass)
 
