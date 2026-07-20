@@ -27,6 +27,13 @@
 **Rollback** Revert instrumentation; ingestion unaffected (logging is additive).
 **Op risk** Low · **Deploy risk** Low · **Prod impact** None (additive writes) · **Complexity** M · **Duration** 3–5 · **Success** No ingestion run can fail silently.
 
+**Remaining limitations — known, accepted, and intentionally deferred**
+1. **The health endpoint trades efficiency for correctness.** It issues per-store, per-alias fan-out queries against `raw_observations` and `price_history` — four queries per alias, so up to a dozen per store. This was a deliberate choice during E1: correctness of the operational picture mattered more than the cost of an admin-only endpoint. **Do not optimise it now.**
+2. **Alias matching is temporary.** The `STORE_NAME_ALIASES` map exists only because three naming conventions are in use and none agree (slug, `stores.name`, and the value ingestion writes). Without it the view reported Extra as "never ingested" while it was ingesting ~1,200 observations a day.
+3. **E2/E3 store normalisation must replace alias-based lookup with a single canonical store identifier.** The slug becomes the one key across `raw_observations`, `price_history`, `product_stores` and `scraping_runs`.
+4. **After normalisation, this endpoint must be rewritten** to query on the canonical store key with no per-alias fan-out — one grouped query per table rather than a query per alias. The `STORE_NAME_ALIASES` constant is deleted at that point.
+5. **Not yet observed:** a genuine *scheduled* production run. The deployed Railway build predates these changes; the first real evidence arrives at the next pg_cron fire after deployment. All E1 verification to date exercised the contracts directly against the production database.
+
 ### E2 — Store Identity Normalisation *(fixes D1)*
 **Objective** One store key across all tables.
 **Outcome** `store_name` resolved to a single canonical slug everywhere; historical rows reconciled.
@@ -217,7 +224,7 @@ E12 (adapter completion — coverage grows incrementally) · E13 (semantic tier 
 E8 (decision-layer surfacing — high user value, zero architectural dependency; genuinely optional to *sequencing*, not to product quality).
 
 **Technical debt** (carry explicitly; do not let it disappear)
-Scheduler defined in the database rather than version control (addressed by E4) · `algolia-sync.ts` misnamed and mis-scripted (E5) · `types.ts` describing a system being retired (E16) · duplicated AR↔EN dictionaries, saved-search and spec modules · two design systems · `docker-compose.yml` provisioning retired Flask · `railway.json` superseded by `railway.toml` · backup and tmp tables in production (`canonical_products_backup`, `products_category_backup_20260626`, `tmp_ac_matches`, `tmp_matches`) · nine production tables with no repository representation.
+Admin health endpoint performs per-store, per-alias fan-out queries against `raw_observations` and `price_history` — accepted during E1 as correctness over efficiency; rewrite to a single canonical store key with no fan-out once E2/E3 normalisation lands, and delete `STORE_NAME_ALIASES` · Scheduler defined in the database rather than version control (addressed by E4) · `algolia-sync.ts` misnamed and mis-scripted (E5) · `types.ts` describing a system being retired (E16) · duplicated AR↔EN dictionaries, saved-search and spec modules · two design systems · `docker-compose.yml` provisioning retired Flask · `railway.json` superseded by `railway.toml` · backup and tmp tables in production (`canonical_products_backup`, `products_category_backup_20260626`, `tmp_ac_matches`, `tmp_matches`) · nine production tables with no repository representation.
 
 ---
 

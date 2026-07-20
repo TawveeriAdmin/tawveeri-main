@@ -17,6 +17,15 @@ import { createServerClient } from '@/lib/database';
  * Arabic and latin slugs. Until that is normalised, every store is matched
  * against a set of aliases and the aliases are returned so the inconsistency
  * is visible rather than silently under-counting.
+ *
+ * KNOWN TECHNICAL DEBT — intentionally deferred, do not optimise in place.
+ * This endpoint issues per-store, per-alias fan-out queries (four per alias)
+ * against raw_observations and price_history. That trades efficiency for
+ * correctness, which was the right call while the store key was ambiguous and
+ * this is an admin-only endpoint. It will not scale as stores and observation
+ * volume grow. Once store-identity normalisation lands (E2/E3) and the slug is
+ * the single canonical key, rewrite this to one grouped query per table on that
+ * key, with no per-alias fan-out, and delete STORE_NAME_ALIASES below.
  */
 
 const STALE_HOURS = 24;
