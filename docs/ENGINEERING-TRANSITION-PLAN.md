@@ -69,7 +69,42 @@ These are **not** simple duplicates. A sample of the worst case shows **four dis
 
 **Deliverables staged (not applied):** `scripts/database/knowledge-db/006_store_identity_precheck.sql` (read-only audit), `006_store_identity.sql` (expand + backfill + validate, with a fail-loud guard), `006_store_identity_rollback.sql`.
 
-**BLOCKED — cannot apply.** The knowledge database exposes no DDL path from this environment: `SUPABASE_DB_URL` is unset, `psql` is not installed, and the only RPCs available (`show_trgm`, `write_mobile_batch`, `smart_search`, `discover_schema`, `show_limit`) cannot execute DDL. Applying `006` requires a direct connection string or Supabase SQL-editor access. Until then the alias shim in the health endpoint must remain, because historical labels are unnormalised and removing it would report actively-ingesting stores as never ingested.
+### E2 completion (migration applied 2026-07-20)
+
+`006_store_identity.sql` was run in the Supabase SQL editor by the product owner. Precheck queries 5 and 6 both returned zero rows; no fail-loud guard fired.
+
+**Migration result:** `store_id` added and backfilled on `raw_observations`, `price_history`, `store_sync_status`; existing `store_id` populated on `product_stores` and `scraping_runs`. Coverage after the follow-up gap backfill: **100 % on all five tables — zero null `store_id`.**
+
+**Cutover completed.** Producers now write `store_id`; consumers now read it.
+
+| Component | Before | After |
+|---|---|---|
+| `IngestionService` | `STORE_SLUG_TO_NAME` hardcoded map (which used `samsung-ksa` where the registry has `samsung_ksa`, so those rows could never join) | resolves `store_id` from the registry; refuses to ingest an unregistered slug |
+| `discover-firecrawl` | wrote `store_name` only | writes `store_id` on `raw_observations`, `price_history`, `product_stores`, `store_sync_status`; resolves once per run and aborts if the slug is unregistered |
+| Health endpoint | per-alias fan-out, up to 12 queries per store | **4 queries per store, keyed on `store_id`** |
+| `store_sync_status` read | `.eq('store_name', …)` | `.eq('store_id', …)` |
+| `STORE_NAME_ALIASES` | 8 stores × up to 3 labels | **deleted** |
+
+**Technical debt removed:** three disagreeing hardcoded name maps (`STORE_NAME_ALIASES`, `STORE_SLUG_TO_NAME`, alias derivation from `stores.name`); per-alias query fan-out; every name-based identity lookup in `src/` — `grep "eq('store_name'"` now returns nothing.
+
+**Deliberately retained:**
+- `store_name` on all observation tables, as **provenance**. It records what each producer wrote and is never read for identity. Producers still write their existing labels, so no historical value changes meaning.
+- The `store_sync_status` upsert still conflicts on `store_name`, because that is where the unique constraint lives. Changing the written label would orphan each store's paging state (Extra is at `next_page = 3009`). `store_id` is written alongside. Moving the constraint to `store_id` is a later, separate change.
+- `store_name_resolution` table — retained as the auditable record of how each historical label was mapped, and used by `006b_backfill_gap.sql`.
+
+**Verification (against production):**
+- Backfill coverage 100 %: `raw_observations` 125,805 · `price_history` 60,397 · `product_stores` 7,192 · `store_sync_status` 2 — zero nulls in each.
+- Zero orphan `store_id` values: every identity resolves to a registered store.
+- Label spans now irrelevant: `store_id = 2` covers both `amazon` and `أمازون`; `store_id = 1` covers `jarir` and `جرير`. One key, many historical labels.
+- Health output by `store_id`: jarir 0.2 h / 2,701 raw / 637 price · extra 1.6 h / 1,200 / 301 · almanea 1.6 h / 1,200 / 1,096 · amazon `stale_ingestion` (348 h) · noon, samsung_ksa, shaker, swsg `never_ingested`.
+- Typecheck **325 errors, four fewer than the 329 baseline** — removing the alias code removed pre-existing errors. Zero introduced.
+- Tests unchanged: 28 failed / 45 passed.
+
+**Remaining limitations:**
+1. **A gap reopens until deployment.** The deployed Railway build still writes `store_name` only, so rows ingested between now and deployment will have a null `store_id`. `006b_backfill_gap.sql` is idempotent — run it until the new build is live, then retire it. 358 raw and 107 price rows were already closed this way.
+2. **`product_stores` upsert key unchanged** — see C2. It still conflicts on `(product_id, store_name)`.
+3. **`store_sync_status` unique constraint still on `store_name`.**
+4. Adapters still carry `dbName`. It is now provenance only; nothing resolves identity from it.
 
 ### E3 — RLS Remediation on System B
 **Objective** Close the live PII exposure.
@@ -252,7 +287,7 @@ E12 (adapter completion — coverage grows incrementally) · E13 (semantic tier 
 E8 (decision-layer surfacing — high user value, zero architectural dependency; genuinely optional to *sequencing*, not to product quality).
 
 **Technical debt** (carry explicitly; do not let it disappear)
-Admin health endpoint performs per-store, per-alias fan-out queries against `raw_observations` and `price_history` — accepted during E1 as correctness over efficiency; rewrite to a single canonical store key with no fan-out once E2/E3 normalisation lands, and delete `STORE_NAME_ALIASES` · Scheduler defined in the database rather than version control (addressed by E4) · `algolia-sync.ts` misnamed and mis-scripted (E5) · `types.ts` describing a system being retired (E16) · duplicated AR↔EN dictionaries, saved-search and spec modules · two design systems · `docker-compose.yml` provisioning retired Flask · `railway.json` superseded by `railway.toml` · backup and tmp tables in production (`canonical_products_backup`, `products_category_backup_20260626`, `tmp_ac_matches`, `tmp_matches`) · nine production tables with no repository representation.
+Scheduler defined in the database rather than version control (addressed by E4) · `algolia-sync.ts` misnamed and mis-scripted (E5) · `types.ts` describing a system being retired (E16) · duplicated AR↔EN dictionaries, saved-search and spec modules · two design systems · `docker-compose.yml` provisioning retired Flask · `railway.json` superseded by `railway.toml` · backup and tmp tables in production (`canonical_products_backup`, `products_category_backup_20260626`, `tmp_ac_matches`, `tmp_matches`) · nine production tables with no repository representation.
 
 ---
 

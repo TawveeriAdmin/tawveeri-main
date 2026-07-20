@@ -12,49 +12,16 @@ import { createServerClient } from '@/lib/database';
  * exist on the knowledge database, so the endpoint returned 500. It is now
  * computed directly and depends on no database objects being created.
  *
- * Store-name matching note: ingestion paths do not yet agree on a store key —
- * raw_observations records Arabic display names while price_history mixes
- * Arabic and latin slugs. Until that is normalised, every store is matched
- * against a set of aliases and the aliases are returned so the inconsistency
- * is visible rather than silently under-counting.
- *
- * KNOWN TECHNICAL DEBT — intentionally deferred, do not optimise in place.
- * This endpoint issues per-store, per-alias fan-out queries (four per alias)
- * against raw_observations and price_history. That trades efficiency for
- * correctness, which was the right call while the store key was ambiguous and
- * this is an admin-only endpoint. It will not scale as stores and observation
- * volume grow. Once store-identity normalisation lands (E2/E3) and the slug is
- * the single canonical key, rewrite this to one grouped query per table on that
- * key, with no per-alias fan-out, and delete STORE_NAME_ALIASES below.
+ * Store identity: every lookup is keyed on the canonical stores.id. The alias
+ * map and per-alias fan-out this endpoint used before E2 are gone — four
+ * queries per store now, regardless of how many labels a store has ever been
+ * written under. store_name remains in the data as provenance and is never
+ * read for identity.
  */
 
 const STALE_HOURS = 24;
 const CONSECUTIVE_FAILURE_ALERT = 2;
 
-/**
- * Observed store_name values per slug.
- *
- * Three naming conventions are currently in use and none of them agree:
- *   - the slug            e.g. 'jarir'
- *   - stores.name         e.g. 'مكتبة جرير'
- *   - the value ingestion writes  e.g. 'جرير'
- *
- * Deriving aliases from `stores` alone makes actively-ingesting stores appear
- * as "never ingested" (Extra ingests ~1,200 observations a day but its display
- * name 'إكسترا' never matches the ingested 'اكسترا'). This map is a temporary
- * shim so the health view reports reality. It is removed by the store-identity
- * normalisation phase, which makes the slug the single key.
- */
-const STORE_NAME_ALIASES: Record<string, string[]> = {
-  jarir: ['jarir', 'جرير', 'مكتبة جرير'],
-  extra: ['extra', 'اكسترا', 'إكسترا'],
-  almanea: ['almanea', 'المنيع'],
-  amazon: ['amazon', 'أمازون', 'أمازون السعودية'],
-  noon: ['noon', 'نون'],
-  samsung_ksa: ['samsung_ksa', 'سامسونج', 'سامسونج السعودية'],
-  shaker: ['shaker', 'شاكر'],
-  swsg: ['swsg', 'الشتاء والصيف'],
-};
 
 type RunRow = {
   id: number;
@@ -110,13 +77,7 @@ export async function GET(request: NextRequest) {
 
   const perStore = await Promise.all(
     stores.map(async (store) => {
-      const aliases = Array.from(
-        new Set([...(STORE_NAME_ALIASES[store.slug] ?? []), store.slug, store.name].filter(Boolean))
-      );
-
-      const storeRuns = runs.filter(
-        (r) => r.store_id === store.id || (r.store_name != null && aliases.includes(r.store_name))
-      );
+      const storeRuns = runs.filter((r) => r.store_id === store.id);
 
       const lastRun = storeRuns[0] ?? null;
       const lastSuccess = storeRuns.find((r) => r.status === 'success') ?? null;
@@ -136,47 +97,38 @@ export async function GET(request: NextRequest) {
       const sum = (k: keyof RunRow) =>
         runs24h.reduce((a, r) => a + (Number(r[k]) || 0), 0);
 
-      // Freshness and written volumes, counted per alias then summed.
-      let rawNewest: string | null = null;
-      let priceNewest: string | null = null;
-      let rawWritten24h = 0;
-      let priceWritten24h = 0;
+      // Four queries per store, keyed on canonical store_id. No fan-out.
+      const [rawNew, priceNew, rawCount, priceCount] = await Promise.all([
+        (supabase as any)
+          .from('raw_observations')
+          .select('scraped_at')
+          .eq('store_id', store.id)
+          .order('scraped_at', { ascending: false })
+          .limit(1),
+        (supabase as any)
+          .from('price_history')
+          .select('observed_at')
+          .eq('store_id', store.id)
+          .order('observed_at', { ascending: false })
+          .limit(1),
+        (supabase as any)
+          .from('raw_observations')
+          .select('id', { count: 'exact', head: true })
+          .eq('store_id', store.id)
+          .gte('scraped_at', sinceIso),
+        (supabase as any)
+          .from('price_history')
+          .select('id', { count: 'exact', head: true })
+          .eq('store_id', store.id)
+          .gte('observed_at', sinceIso),
+      ]);
 
-      for (const alias of aliases) {
-        const [rawNew, priceNew, rawCount, priceCount] = await Promise.all([
-          (supabase as any)
-            .from('raw_observations')
-            .select('scraped_at')
-            .eq('store_name', alias)
-            .order('scraped_at', { ascending: false })
-            .limit(1),
-          (supabase as any)
-            .from('price_history')
-            .select('observed_at')
-            .eq('store_name', alias)
-            .order('observed_at', { ascending: false })
-            .limit(1),
-          (supabase as any)
-            .from('raw_observations')
-            .select('id', { count: 'exact', head: true })
-            .eq('store_name', alias)
-            .gte('scraped_at', sinceIso),
-          (supabase as any)
-            .from('price_history')
-            .select('id', { count: 'exact', head: true })
-            .eq('store_name', alias)
-            .gte('observed_at', sinceIso),
-        ]);
+      const rawNewest: string | null = rawNew.data?.[0]?.scraped_at ?? null;
+      const priceNewest: string | null = priceNew.data?.[0]?.observed_at ?? null;
+      const rawWritten24h = rawCount.count ?? 0;
+      const priceWritten24h = priceCount.count ?? 0;
 
-        const rn = rawNew.data?.[0]?.scraped_at ?? null;
-        const pn = priceNew.data?.[0]?.observed_at ?? null;
-        if (rn && (!rawNewest || rn > rawNewest)) rawNewest = rn;
-        if (pn && (!priceNewest || pn > priceNewest)) priceNewest = pn;
-        rawWritten24h += rawCount.count ?? 0;
-        priceWritten24h += priceCount.count ?? 0;
-      }
-
-      const syncState = syncStates.find((s) => aliases.includes(s.store_name)) ?? null;
+      const syncState = syncStates.find((s) => s.store_id === store.id) ?? null;
 
       const freshestIngestion =
         rawNewest && priceNewest ? (rawNewest > priceNewest ? rawNewest : priceNewest) : rawNewest ?? priceNewest;
@@ -194,7 +146,6 @@ export async function GET(request: NextRequest) {
         store_id: store.id,
         slug: store.slug,
         name: store.name,
-        store_name_aliases: aliases,
 
         // Freshness
         last_raw_observation_at: rawNewest,

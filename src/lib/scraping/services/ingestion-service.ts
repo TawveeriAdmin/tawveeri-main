@@ -7,19 +7,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createServerClient } from '@/lib/database';
+import { resolveStoreId } from '../store-identity';
 import type { ScrapedProduct } from '../base/types';
-
-// أسماء المتاجر الموحدة (عربي — نفس نمط raw_observations الحالي)
-const STORE_SLUG_TO_NAME: Record<string, string> = {
-  jarir: 'جرير',
-  amazon: 'أمازون',
-  noon: 'نون',
-  extra: 'اكسترا',
-  almanea: 'المنيع',
-  shaker: 'شاكر',
-  'samsung-ksa': 'سامسونج',
-  swsg: 'الشتاء والصيف',
-};
 
 export class IngestionService {
   private supabase = createServerClient();
@@ -27,10 +16,22 @@ export class IngestionService {
   /** يحفظ دفعة منتجات خام لمتجر واحد. يرجع عدد الصفوف المحفوظة. */
   async ingestBatch(storeSlug: string, products: ScrapedProduct[]): Promise<number> {
     if (!products.length) return 0;
-    const storeName = STORE_SLUG_TO_NAME[storeSlug] ?? storeSlug;
+
+    // Canonical identity. store_name is written as the slug purely as
+    // provenance — identity is store_id and nothing resolves from the label.
+    // This replaces a hardcoded slug→Arabic-name map that disagreed with the
+    // stores registry (it used 'samsung-ksa' where the registry has
+    // 'samsung_ksa', so those rows could never be joined).
+    const storeId = await resolveStoreId(storeSlug);
+    if (storeId === null) {
+      console.error(`[IngestionService] unknown store slug '${storeSlug}' — not in stores registry; refusing to ingest unidentifiable observations`);
+      return 0;
+    }
+    const storeName = storeSlug;
     const now = new Date().toISOString();
 
     const rows = products.map((p) => ({
+      store_id: storeId,
       store_name: storeName,
       raw_name: p.name_ar || p.name_en || '',
       payload: {
