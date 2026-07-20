@@ -7,7 +7,7 @@ import { startRun, finishRun, failRun } from '@/lib/scraping/services/run-logger
 export const maxDuration = 900;
 
 export async function POST(request: NextRequest) {
-  let runId: string | null = null;
+  let runId: number | null = null;
 
   try {
     console.log("=== CRON DEBUG ===");
@@ -45,16 +45,16 @@ export async function POST(request: NextRequest) {
     runId = body.run_id ?? null;
 
     if (!runId && !options.dry_run) {
-      const storeId = await lookupStoreId(options.store_slug);
-      if (storeId) {
-        runId = await startRun({
-          store_id: storeId,
-          job_type: 'discovery',
-          schedule_id: body.schedule_id ?? null,
-          triggered_by: body.schedule_id ? 'schedule' : 'manual',
-          triggered_by_user_id: body.triggered_by_user_id ?? null,
-        });
-      }
+      // store_name is logged as the canonical slug so runs are joinable
+      // regardless of the display name a scraper happens to use.
+      runId = await startRun({
+        store_name: options.store_slug,
+        store_id: await lookupStoreId(options.store_slug),
+        job_type: 'discovery',
+        schedule_id: body.schedule_id ?? null,
+        triggered_by: body.schedule_id ? 'schedule' : 'manual',
+        triggered_by_user_id: body.triggered_by_user_id ?? null,
+      });
     }
 
     const orchestrator = new ScrapingOrchestrator();
@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function lookupStoreId(storeSlug: string): Promise<string | null> {
+async function lookupStoreId(storeSlug: string): Promise<number | null> {
   const supabase = createServerClient();
-  const { data } = await supabase.from('stores').select('id').eq('slug', storeSlug).single();
-  return (data as { id?: string } | null)?.id ?? null;
+  const { data } = await supabase.from('stores').select('id').eq('slug', storeSlug).maybeSingle();
+  return (data as { id?: number } | null)?.id ?? null;
 }
 
 export async function GET(request: NextRequest) {

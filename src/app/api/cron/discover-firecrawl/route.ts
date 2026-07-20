@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { getEnabledAdapters, getAdapterBySlug } from '@/lib/scraping/adapters';
 import type { StoreAdapter, NormalizedOffer } from '@/lib/scraping/adapters';
+import { startRun, finishRun } from '@/lib/scraping/services/run-logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 900;
@@ -20,6 +21,17 @@ function json(data: Record<string, any>, status = 200) {
   );
 }
 
+/** Resolve stores.id (integer) from a slug. Optional — run logging proceeds without it. */
+async function lookupStoreId(slug: string): Promise<number | null> {
+  try {
+    const sb = createServerClient();
+    const { data } = await sb.from('stores').select('id').eq('slug', slug).maybeSingle();
+    return (data as { id: number } | null)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Sync State ───────────────────────────────────────────────
 async function getSyncState(storeName: string) {
   const sb = createServerClient();
@@ -35,13 +47,14 @@ async function updateSyncState(storeName: string, updates: Record<string, any>) 
 }
 
 // ── Memory Layer (معزولة) ───────────────────────────────────
-async function writeRawObservations(offers: NormalizedOffer[], storeName: string): Promise<number> {
+async function writeRawObservations(offers: NormalizedOffer[], storeName: string, runId: number | null): Promise<number> {
   try {
     const sb = createServerClient();
     const rows = offers.map(p => ({
       store_name: storeName, source_method: p._source || 'api',
       raw_name: p.name_ar, raw_url: p.product_url, price: p.current_price,
       original_price: p.original_price, availability: p.availability, payload: p._raw ?? null,
+      scraping_run_id: runId,
     }));
     if (!rows.length) return 0;
     const { error } = await sb.from('raw_observations').insert(rows);
@@ -63,13 +76,13 @@ async function ensureCanonicalProduct(nameAr: string, p: NormalizedOffer): Promi
   } catch (e: any) { console.error('[memory:canonical:fatal]', String(e?.message || e)); return null; }
 }
 
-async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, storeName: string): Promise<boolean> {
+async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, storeName: string, runId: number | null): Promise<boolean> {
   try {
     const sb = createServerClient();
     const { error } = await sb.from('price_history').insert({
       canonical_product_id: canonicalId, store_name: storeName, price: p.current_price,
       original_price: p.original_price || null, effective_price: p.current_price,
-      availability: p.availability || 'in_stock',
+      availability: p.availability || 'in_stock', scraping_run_id: runId,
     });
     if (error) { console.error('[memory:price]', error.message); return false; }
     return true;
@@ -77,7 +90,7 @@ async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, store
 }
 
 // ── Save (لأي متجر) ─────────────────────────────────────────
-async function saveProducts(offers: NormalizedOffer[], storeName: string): Promise<any> {
+async function saveProducts(offers: NormalizedOffer[], storeName: string, runId: number | null): Promise<any> {
   const sb = createServerClient();
   const unique = new Map<string, NormalizedOffer>();
   for (const p of offers) { const nameAr = p.name_ar?.trim(); if (!nameAr) continue; unique.set(nameAr, p); }
@@ -105,7 +118,7 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string): Promi
       savedStores++;
       try {
         const canonicalId = await ensureCanonicalProduct(nameAr, p);
-        if (canonicalId) { const ok = await writePriceSnapshot(canonicalId, p, storeName); if (ok) memorySnapshots++; }
+        if (canonicalId) { const ok = await writePriceSnapshot(canonicalId, p, storeName, runId); if (ok) memorySnapshots++; }
       } catch (memErr: any) { console.error('[memory:loop]', String(memErr?.message || memErr)); }
     } catch (e: any) { errors.push({ step: 'fatal', error: String(e?.message || e) }); }
   }
@@ -113,21 +126,59 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string): Promi
 }
 
 // ── Sync runner — يشغّل أي محوّل من البروتوكول ──────────────
-async function runAdapterSync(adapter: StoreAdapter) {
+async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | 'manual' | 'api' = 'schedule') {
   const storeName = adapter.dbName;
   const state = await getSyncState(storeName);
   const start = state?.next_page ?? 0;
-  await updateSyncState(storeName, { status: 'syncing', last_started_at: new Date().toISOString() });
-  const result = await adapter.fetchBatch(start, BATCH_SIZE);
-  const rawWritten = await writeRawObservations(result.offers, storeName);
-  const saveResult = await saveProducts(result.offers, storeName);
-  await updateSyncState(storeName, {
-    status: result.done ? 'completed' : 'syncing', next_page: result.done ? 0 : result.nextState,
-    last_finished_at: new Date().toISOString(),
-    total_fetched: (state?.total_fetched ?? 0) + result.offers.length,
-    total_saved: (state?.total_saved ?? 0) + saveResult.savedProducts, last_error: result.lastError || null,
+
+  // Observability: every ingestion run is recorded, so a failure can never be silent.
+  // Logging never blocks ingestion — startRun returns null on failure and we continue.
+  const runId = await startRun({
+    store_name: storeName,
+    store_id: await lookupStoreId(adapter.slug),
+    job_type: 'discovery',
+    triggered_by: triggeredBy,
   });
-  return { store: storeName, slug: adapter.slug, fetched: result.offers.length, savedProducts: saveResult.savedProducts, savedStores: saveResult.savedStores, rawWritten, memorySnapshots: saveResult.memorySnapshots, done: result.done };
+
+  await updateSyncState(storeName, { status: 'syncing', last_started_at: new Date().toISOString() });
+
+  try {
+    const result = await adapter.fetchBatch(start, BATCH_SIZE);
+    const rawWritten = await writeRawObservations(result.offers, storeName, runId);
+    const saveResult = await saveProducts(result.offers, storeName, runId);
+    await updateSyncState(storeName, {
+      status: result.done ? 'completed' : 'syncing', next_page: result.done ? 0 : result.nextState,
+      last_finished_at: new Date().toISOString(),
+      total_fetched: (state?.total_fetched ?? 0) + result.offers.length,
+      total_saved: (state?.total_saved ?? 0) + saveResult.savedProducts, last_error: result.lastError || null,
+    });
+
+    if (runId !== null) {
+      await finishRun({
+        run_id: runId,
+        status: result.lastError ? 'partial' : 'success',
+        products_discovered: result.offers.length,
+        products_new: saveResult.savedProducts,
+        products_updated: saveResult.savedStores,
+        products_failed: saveResult.errors?.length ?? 0,
+        price_changes_detected: saveResult.memorySnapshots,
+        errors_count: result.lastError ? 1 : 0,
+        error_summary: result.lastError ? { message: String(result.lastError) } : null,
+      });
+    }
+
+    return { store: storeName, slug: adapter.slug, runId, fetched: result.offers.length, savedProducts: saveResult.savedProducts, savedStores: saveResult.savedStores, rawWritten, memorySnapshots: saveResult.memorySnapshots, done: result.done };
+  } catch (err: any) {
+    if (runId !== null) {
+      await finishRun({
+        run_id: runId,
+        status: 'failed',
+        errors_count: 1,
+        error_summary: { message: String(err?.message || err) },
+      });
+    }
+    throw err;
+  }
 }
 
 // ── Routes ───────────────────────────────────────────────────
@@ -151,8 +202,28 @@ export async function GET(request: NextRequest) {
 
   const { offers, lastError } = await adapter.fetchBatch(0, limit);
   let rawWritten = 0;
-  if (sync) rawWritten = await writeRawObservations(offers, adapter.dbName);
-  const saveResult = sync ? await saveProducts(offers, adapter.dbName) : { saved: 0, note: 'add &sync=1' };
+  let manualRunId: number | null = null;
+  if (sync) {
+    manualRunId = await startRun({
+      store_name: adapter.dbName,
+      store_id: await lookupStoreId(adapter.slug),
+      job_type: 'discovery',
+      triggered_by: 'manual',
+    });
+    rawWritten = await writeRawObservations(offers, adapter.dbName, manualRunId);
+  }
+  const saveResult = sync ? await saveProducts(offers, adapter.dbName, manualRunId) : { saved: 0, note: 'add &sync=1' };
+  if (sync && manualRunId !== null) {
+    await finishRun({
+      run_id: manualRunId,
+      status: lastError ? 'partial' : 'success',
+      products_discovered: offers.length,
+      products_new: (saveResult as any).savedProducts ?? 0,
+      products_updated: (saveResult as any).savedStores ?? 0,
+      errors_count: lastError ? 1 : 0,
+      error_summary: lastError ? { message: String(lastError) } : null,
+    });
+  }
   return json({
     success: true, mode: sync ? 'sync' : 'fetch-only', store: `${adapter.slug}-direct`, storeName: adapter.dbName,
     fetched: offers.length, lastError, rawWritten, saveResult,
