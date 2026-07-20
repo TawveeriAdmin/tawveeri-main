@@ -7,12 +7,36 @@
 
 ## 1. Supabase project authority
 
-| Role | Project ref | Usage |
-|---|---|---|
-| **Production — sole authority** | `vyceqrzttspyycdpojtn` | Web, Mobile, all scripts, all tooling, MCP/CLI, migrations, future roadmap execution |
-| **Legacy — do not use** | `ffpsjjazsluolysgithg` | Reference only. Do not write to it, migrate from it, or depend on it, except for an explicitly authorized legacy-data comparison. |
+> **M1 CORRECTION — VERIFIED AGAINST LIVE SYSTEMS.**
+> The two projects are not "production" and "legacy". They are **two halves of one product,
+> each serving live traffic through its own deployment.** Neither is currently a complete
+> production database. Resolution is an open Product Owner decision; see §1.1.
 
-Before M0, the Mobile production build profile pointed at the legacy project while Web pointed at production. Mobile is now aligned to production.
+| Project ref | What it actually contains (verified) | Deployment serving it |
+|---|---|---|
+| `vyceqrzttspyycdpojtn` | **Knowledge / TPS platform.** 26 tables: `raw_observations` (123,925), `canonical_products` (2,168), `price_history` (59,818), `normalized_product_observations`, `product_matches`, `identity_resolution_events`, `tps_product_projection`, `outbound_clicks` (31), plus `products` (4,817), `product_stores` (7,124), `stores` (8). **No user, auth, or commerce schema.** | `https://tawveeri.com` — runs current repository code (returns `decisionCard` / `topMatches`) |
+| `ffpsjjazsluolysgithg` | **Application platform.** Full user/commerce schema: `users`, `user_wishlists`, `price_alerts`, `notifications`, `coupons`, `saved_searches`, `product_views`, `transactions`, plus `products`, `product_stores`, `stores`, `price_history`. **No `canonical_products` — no TPS.** | `https://tawveeri.etlaq.sa` — runs older code (no decision layer; health route reports `db: connected`). **Mobile targets this system.** |
+
+### 1.1 Verified consequence
+
+Each deployment is functional only for its own half:
+
+| Capability | `tawveeri.com` (TPS DB) | `tawveeri.etlaq.sa` (App DB) |
+|---|---|---|
+| Search | ✅ 200, TPS-enriched, decision layer present | ✅ 200, legacy catalog, no decision layer |
+| `/api/compare` (canonical) | ✅ route present, TPS-backed | ❌ route absent in that build |
+| `/api/coupons` | ❌ **500 — table does not exist** | ✅ 200 |
+| Users / auth / wishlists / alerts / transactions | ❌ **schema absent** | ✅ present |
+
+**This is an open architectural decision.** Until it is resolved, `types.ts`, application code, tests, and migrations must NOT be aligned to either database alone — doing so would delete the contract for whichever half is not chosen.
+
+### 1.2 Migration history divergence
+
+`vyceqrzttspyycdpojtn` tracks its own migrations in a `schema_migrations` table — six entries, all dated 2026-06-26, all TPS-focused (`001A_foundation`, `001B_align_runs`, `002_price_history`, `003_bridge`, `004_dedup_canonical`, `005_link_products`). This history is unrelated to the 27 numbered files in `scripts/database/`, which describe the application schema present in `ffpsjjazsluolysgithg`.
+
+### 1.3 Scheduler status
+
+`scraping_runs` = 0 and `scraping_schedules` = 0 in `vyceqrzttspyycdpojtn`. The PM2 dispatcher has never recorded a run against the TPS project.
 
 ---
 
