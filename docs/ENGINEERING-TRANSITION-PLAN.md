@@ -116,6 +116,35 @@ These are **not** simple duplicates. A sample of the worst case shows **four dis
 **Op risk** Low · **Deploy risk** Low · **Prod impact** Security improvement · **Complexity** S · **Duration** 1 · **Success** No PII readable without authentication.
 **Note** Independent of consolidation. Do not defer behind it.
 
+### E3 findings and outcome
+
+**Root cause — a definition defect, not a configuration drift.** A static audit of all 21 tables in `scripts/database/` found **exactly two created without RLS**: `phone_otps` (migration 08) and `login_sessions` (migration 12). The other nineteen enable RLS and carry between 1 and 8 policies each. Both offenders were added later than the original schema by someone not following the established pattern, and nothing checked.
+
+This matters far beyond the legacy database: **E9 replays these same files into the knowledge database.** Patching only the live system would have replicated the exposure into the destination.
+
+**Materialized views are a separate class of defect.** `mv_user_analytics`, `mv_product_analytics` and `mv_store_analytics` *cannot* carry RLS — Postgres does not support it. Access is by grant alone, and Supabase grants SELECT on public-schema objects to `anon` by default. They were left at that default, so `mv_user_analytics` exposed user ids and activity counts publicly.
+
+**Why the fix is safe.** Every consumer of all five objects is server-side through the service role, which bypasses RLS and is unaffected by grants:
+- `phone_otps` — `send-phone-otp`, `verify-phone-otp`, `send-email-otp`, `reset-password-phone`
+- `login_sessions` — `check-device`
+- `mv_*` — the admin and store dashboards, whose only callers are server components
+
+Verified by import analysis, not assumption: no client component imports any of them.
+
+**Architectural weakness found and removed — dual-client authority.** `src/lib/admin/utils.ts` and `src/lib/store/utils.ts` selected their Supabase client by render context:
+
+```
+typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient()
+```
+
+The same function therefore executed with **service-role privileges on the server and anon privileges in the browser** — an invisible change of authority determined by where it happened to be called. That is duplicated authority in the security dimension, and it is precisely what would have made the `mv_*` revoke look like a regression rather than a fix. Both modules now `import 'server-only'` and use `createServerClient()` unconditionally: a future client-side import is a **build error**, not a silent privilege downgrade. Removing the browser-client branch also resolved 19 pre-existing type errors.
+
+**Guard added.** `tests/database/rls-coverage.test.ts` reads the schema definitions statically and fails if any created table omits RLS, if any materialized view omits a REVOKE from `anon`, or if a credential/session table is granted to `anon`. Proven non-vacuous: reintroducing the original defect fails two assertions naming the exact table and file. This is the check that was missing when migrations 08 and 12 were written.
+
+**Deliverables:** repo definitions fixed (`08-phone-otps-schema.sql`, `12-login-sessions.sql`, `05-analytics-materialized-views.sql`); `scripts/database/app-db/e3_rls_remediation.sql` for the live legacy database, with an inline verification query and a rollback block.
+
+**Blocked on access, again:** applying the remediation needs SQL access to `ffpsjjazsluolysgithg`, which this environment does not have (no service-role key, no connection string). The exposure remains live until it is run.
+
 ### E4 — Scheduler Consolidation & Infrastructure-as-Code
 **Objective** One scheduler, defined in version control.
 **Outcome** pg_cron job definitions live in the repository; the GitHub Action is retired; all triggers route through `/api/cron/dispatch` with claim-locking.

@@ -3,11 +3,11 @@
  * Functions for store owner dashboard statistics and analytics
  */
 
-import { getSupabaseBrowserClient, createServerClient } from '@/lib/database';
+// Server-only — see the note in @/lib/admin/utils. This module reads
+// mv_store_analytics, which is revoked from anon and authenticated.
+import 'server-only';
+import { createServerClient } from '@/lib/database';
 import type { StoreAnalytics } from '@/lib/admin/utils';
-
-const getSupabase = () =>
-  typeof window === 'undefined' ? createServerClient() : getSupabaseBrowserClient();
 
 export interface StoreOwnerStats {
   totalProducts: number;
@@ -43,7 +43,7 @@ export async function getStoreOwnerStats(
   userId: string
 ): Promise<{ data: StoreOwnerStats | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
 
     // Verify user owns the store
     const { data: store, error: storeError } = await supabase
@@ -126,7 +126,7 @@ export async function getStoreProductAnalytics(
   storeId: string
 ): Promise<{ data: StoreProductAnalytics[] | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
     
     // Get products with analytics
     const { data, error } = await supabase
@@ -195,7 +195,7 @@ export async function getStoreRevenue(
   endDate?: Date
 ): Promise<{ data: StoreRevenueData[] | null; error: Error | null }> {
   try {
-    const supabase = getSupabase();
+    const supabase = createServerClient();
 
     // Get product store IDs for this store
     const { data: productStores, error: psError } = await supabase
