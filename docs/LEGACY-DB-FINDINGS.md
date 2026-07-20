@@ -25,7 +25,28 @@ Probed with the legacy public anon key (`ref=ffpsjjazsluolysgithg`, ships in the
 - The three `mv_*` are materialized views, which cannot carry RLS; their only control is the `REVOKE`. They remain readable, so the **`REVOKE ALL … FROM anon` did not persist** either.
 - Both failing together points to the whole script not having committed against this project: a transaction that errored and rolled back, a partial run, or execution in a session that did not commit. Not a PostgREST cache issue — RLS and grants are enforced in Postgres and take effect immediately.
 
-**To resolve (owner):** re-run `scripts/database/app-db/e3_rls_remediation.sql` and share the output of its embedded verification query — `relrowsecurity` (must be true for the two tables) and `has_table_privilege('anon', …, 'SELECT')` (must be false for all five). That query is the definitive check; if Postgres reports RLS on and anon revoked while PostgREST still returns rows, escalate as a platform anomaly. Current evidence says Postgres itself still has them open.
+**WITHDRAWN — an interim SQL diagnosis was based on the wrong project.** A round of SQL metadata checks (`pg_class`, `information_schema.tables`, `pg_policies`) returned "no rows," which was briefly read as evidence about legacy. A `to_regclass` fingerprint run in that same SQL Editor session proved the editor was connected to **production `vyceqrzttspyycdpojtn`**, not legacy:
+
+```
+phone_otps=NULL  login_sessions=NULL  users=NULL
+canonical_products=canonical_products  raw_observations=raw_observations  tps_product_projection=tps_product_projection
+```
+
+That is the production fingerprint. The SQL "no rows" therefore describes production (where these five objects have never existed — confirmed 404 via service role and anon) and says **nothing** about legacy. It is withdrawn as legacy evidence.
+
+**The only valid legacy evidence is the HTTP verification**, which is cryptographically tied to legacy (anon JWT `ref = ffpsjjazsluolysgithg`, endpoint `https://ffpsjjazsluolysgithg.supabase.co`). It shows all five objects still anon-readable. **Legacy Gate 8 remains FAIL.** No claim is made about *why* the remediation did not take effect on legacy — the earlier "RLS not enabled / REVOKE didn't persist" inference is also withdrawn, because it too rested on evidence that turned out to be production's.
+
+**What is now known, strictly from verified fingerprints:**
+- Legacy (`ffpsjjazsluolysgithg`): the five objects exist and are anon-readable. Exposure is live.
+- Production (`vyceqrzttspyycdpojtn`): the five objects do not exist. The SQL session that "succeeded" ran here.
+- Where the remediation SQL was actually applied is **unverified** — it may have been run against production (where its `ALTER TABLE phone_otps …` would error on a non-existent table and roll back the transaction), or against legacy without effect. Not determinable from current evidence.
+
+**To resolve (owner) — pin the project first:**
+1. In the SQL Editor, select the **legacy** project `ffpsjjazsluolysgithg` explicitly (check the project name in the editor header).
+2. Run the `to_regclass` fingerprint there and confirm it returns the *legacy* shape: `phone_otps` and `users` non-null, `canonical_products` and `raw_observations` NULL. Do not proceed until this confirms legacy.
+3. Only then run `scripts/database/app-db/e3_rls_remediation.sql`.
+4. Run its embedded verification query (`relrowsecurity`, `has_table_privilege('anon', …)`) in that same confirmed-legacy session.
+5. Ping for an independent read-only HTTP re-verification against legacy.
 
 ## L2 — `phone_otps` was anon-WRITABLE (potential auth bypass)
 
