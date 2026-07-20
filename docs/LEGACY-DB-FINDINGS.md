@@ -18,7 +18,14 @@ Probed with the legacy public anon key (`ref=ffpsjjazsluolysgithg`, ships in the
 | `mv_product_analytics` | 7 |
 | `mv_store_analytics` | 5 |
 
-Remediation `scripts/database/app-db/e3_rls_remediation.sql` exists but its application status on this project is unconfirmed. Re-verify read-only after the owner confirms where it was run.
+**Legacy Gate 8 (read-only re-verification, 2026-07-20, after owner confirmed the remediation was run against this project):** still FAIL. All five objects remain anon-readable — `phone_otps` 92, `login_sessions` 12, `mv_user_analytics` 2, `mv_product_analytics` 7, `mv_store_analytics` 5. Project identity confirmed (anon-key JWT `ref = ffpsjjazsluolysgithg`).
+
+**Diagnosis (read-only inference, no writes):** the remediation did not take effect at the Postgres level.
+- `phone_otps` returns 92 rows to anon. A table with RLS *enabled* and no policy returns **0 rows** to anon (RLS denies silently), not an error and not rows. Getting rows back means **RLS is not enabled** on the table — the `ALTER TABLE … ENABLE ROW LEVEL SECURITY` did not persist.
+- The three `mv_*` are materialized views, which cannot carry RLS; their only control is the `REVOKE`. They remain readable, so the **`REVOKE ALL … FROM anon` did not persist** either.
+- Both failing together points to the whole script not having committed against this project: a transaction that errored and rolled back, a partial run, or execution in a session that did not commit. Not a PostgREST cache issue — RLS and grants are enforced in Postgres and take effect immediately.
+
+**To resolve (owner):** re-run `scripts/database/app-db/e3_rls_remediation.sql` and share the output of its embedded verification query — `relrowsecurity` (must be true for the two tables) and `has_table_privilege('anon', …, 'SELECT')` (must be false for all five). That query is the definitive check; if Postgres reports RLS on and anon revoked while PostgREST still returns rows, escalate as a platform anomaly. Current evidence says Postgres itself still has them open.
 
 ## L2 — `phone_otps` was anon-WRITABLE (potential auth bypass)
 
