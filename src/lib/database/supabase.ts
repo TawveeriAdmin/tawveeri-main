@@ -3,18 +3,32 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './types';
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vyceqrzttspyycdpojtn.supabase.co';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5Y2Vxcnp0dHNweXljZHBvanRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNjczNjgsImV4cCI6MjA4NTc0MzM2OH0.eSfmDJukU9y4h-yEtAS9OfGXV443eBL82a99O0kwr14';
+/**
+ * Fail fast on missing Supabase configuration.
+ * No credential defaults are embedded in source — the environment is the only
+ * authority for which Supabase project this process talks to.
+ */
+const requireEnv = (name: string, value: string | undefined): string => {
+  if (!value) {
+    throw new Error(
+      `[supabase] Missing required environment variable: ${name}. ` +
+        'Configure it for this environment before starting the application.'
+    );
+  }
+  return value;
+};
 
 let browserClient: SupabaseClient<Database> | null = null;
 
 export const getBrowserClient = () => {
   if (!browserClient) {
-    browserClient = createBrowserClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const url = requireEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE_URL);
+    const anonKey = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', SUPABASE_ANON_KEY);
+
+    browserClient = createBrowserClient<Database>(url, anonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       db: { schema: 'public' },
       global: { headers: { 'x-application-name': 'tawveeri' } },
@@ -24,10 +38,12 @@ export const getBrowserClient = () => {
 };
 
 export const createServerClient = () => {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const key = serviceKey || SUPABASE_ANON_KEY;
+  const url = requireEnv('NEXT_PUBLIC_SUPABASE_URL', SUPABASE_URL);
+  // Service role is required: silently falling back to the anon key would
+  // downgrade privileges and return RLS-filtered results as if they were complete.
+  const key = requireEnv('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  return createClient<Database>(SUPABASE_URL, key, {
+  return createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
     db: { schema: 'public' },
   });

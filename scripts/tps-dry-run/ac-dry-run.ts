@@ -22,16 +22,13 @@ import { acPlugin } from "../tps-plugins/ac";
 // ─── 1. Supabase (Read Only) ─── نفس متغيرات المشروع في .env.local
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "";
+// Service role only — an anon fallback would return RLS-filtered rows as if complete.
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error(
     "❌ لم أجد بيانات Supabase في البيئة. تأكد أن .env.local يحوي " +
-      "NEXT_PUBLIC_SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY (أو ANON_KEY)."
+      "NEXT_PUBLIC_SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY."
   );
   process.exit(1);
 }
