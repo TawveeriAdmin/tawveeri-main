@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-019 — E6 Phase 4/5: category readiness audit — only mobile is production-ready; no new category executed · Accepted (2026-07-21)
+**Audit (read-only) against 13 readiness gates:** TPS plugins exist only for `ac` and `mobile`; the only atomic write RPC is `write_mobile_batch`; the only writing matcher is `mobile-matcher-v2`; there are no automated TPS verification tests.
+- **mobile → READY_FOR_BOUNDED_PRODUCTION** (12/13; only formal automated tests missing — but production-verified manually and already live).
+- **air_conditioner → PARTIALLY_READY**: has identity contract + parser + bounded dry-run (`ac-dry-run.ts`) + projection support, but **no atomic write path** (`write_ac_batch` does not exist), no bounded write-matcher, no processing-status support.
+- **tv, refrigerator/appliance, laptop, tablet, audio, monitor, camera, smartwatch → NOT_READY**: no TPS identity contract or pipeline components.
+**Phase 5 decision:** no non-mobile category passes every gate, so — per the directive "do not fabricate or generalize a matcher" — **no additional category was executed.** Building AC's write path (atomic `write_ac_batch` RPC + bounded AC matcher + status support) is documented as the concrete next unit, deliberately not fabricated here.
+
 ### ADR-018 — E6 Phase 3: raw_observations processing-status semantics, linked to committed batches · Accepted (2026-07-21)
 **Context:** the matcher never updated `raw_observations.processing_status`, so all 131,015 stayed `pending`; no code reads the column (informational). The check constraint defines the vocabulary: **`pending | processing | done | failed | skipped`** (an attempt to write `processed` failed the constraint — caught by verification, not assumption).
 **Semantics adopted:** `pending` = default/not yet canonicalized; `done` = included in a **successfully committed** `write_mobile_batch`; `failed`/`skipped`/`processing` reserved. Only the observations actually canonicalized in a batch are marked `done`, and **only after** the atomic RPC succeeds — a failed write exits first, leaving them `pending`. Idempotent; never touches the wider backlog.
