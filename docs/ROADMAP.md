@@ -32,7 +32,7 @@ The path from the current two-system reality to the unified platform. Full detai
 | **E3** | RLS at the definition layer + production exposure audit | ✅ **Complete — production-verified** (legacy remediation tracked separately) |
 | **E4** | Scheduler consolidation, ingestion-trigger security, overlap protection, scheduler-as-code | ✅ **Complete — production-verified** (run 94); Must-Fix closed (two unauthenticated GET write paths eliminated) |
 | **E5** | Algolia sync restoration (feed the owned TPS index) | Pending |
-| **E6** | TPS pipeline automation + **canonical-quality audit** (resolves the identity-invariant debt) | **Audit COMPLETE (ADR-011)**; Phase 2 writes **HALTED by dry-run evidence (ADR-012)** — category taxonomy corrupt (~73% of `accessories` are real products); needs read-only category re-derivation before any quarantine/ingestion write. Zero writes performed. |
+| **E6** | TPS pipeline automation + **canonical-quality audit** (resolves the identity-invariant debt) | **Audit COMPLETE (ADR-011)**; re-derivation done + first reversible correction **SHIPPED & VERIFIED (ADR-013)** — 253 mislabeled ACs fixed (`accessories`→`air_conditioner`). Remaining: enum-extension migration (refrigerator/washer) + de-dup (`ac`/`mobile`), corroboration-gated badges, bounded ingestion automation. |
 | **E7** | Canonical linkage on ingestion | Pending |
 | **E8** | Surface the decision layer in web search ("Smart Pick") + accessory-relevance trust hardening | ✅ **Complete — production-verified** (build 6d4745a); trustworthy Smart Pick live for covered queries |
 | **E9** | Create user/auth/commerce schema on System A (RLS from the start) | Pending |

@@ -6,6 +6,15 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-013 — E6 category re-derivation: first reversible correction shipped (253 mislabeled ACs); enum duplication + missing enum values recorded · Accepted (2026-07-21)
+**Context:** after ADR-012 halted bulk quarantine, founder authorized a read-only category re-derivation. Paginated over all **2,168** canonicals, each classified into a proposed category with confidence + evidence (artifact retained). Reliable findings (full census, not the 1,000-row-capped sample):
+- Current distribution is polluted and **taxonomy has duplicate enum members**: `air_conditioner` (158) **and** `ac` (3); `smartphone` (212) **and** `mobile` (36) — two labels for one concept.
+- **253** canonicals labelled `accessories` are unmistakably **air conditioners** (confidence 0.95: BTU rating *and* cooling terms both present).
+- Proposed census implies large mislabel volumes for **refrigerator (~263)** and **washer (~176)** — but neither `refrigerator` nor `washer` exists in the `product_category` enum, so those rows cannot be corrected without an enum-extension migration.
+**Decision:** execute only the highest-confidence, enum-safe, reversible slice now — **recategorize the 253 `accessories`→`air_conditioner`** (existing enum value; prior state snapshotted for rollback). Defer refrigerator/washer (needs an enum-extension migration, owner-applied, `ADD VALUE` outside a transaction) and enum de-duplication (needs a canonical-value decision) to follow-up.
+**Alternatives:** correct everything the re-derivation proposed — rejected: refrigerator/washer targets don't exist in the enum (writes would fail), and lower-confidence proposals aren't yet review-clean.
+**Consequences:** 253 real ACs are no longer buried under `accessories`; verified in production (`accessories` 1079→826, `air_conditioner` 158→411). This is a moat/data-integrity gain; user-facing surfacing is gated on the TPS projection (currently ~3 rows — a separate E6 gap). No deletion; fully reversible via the retained id snapshot. Remaining E6: (1) enum-extension migration for refrigerator/washer + de-dup `ac`/`mobile`; (2) corroboration-gated badge eligibility (ADR-011 decision 2, still ~0 corroborated); (3) bounded ingestion automation on the corrected taxonomy.
+
 ### ADR-012 — E6 Phase 2 halted by dry-run evidence: canonical category taxonomy is corrupt; no criterion safely bulk-quarantines · Proposed (2026-07-21)
 **Context:** founder approved E6 Phase 2 writes under strict constraints (quarantine-only, dry-run-first, ≤500 raw_observations/one category, per-batch audit + rollback, ≥2-store corroboration for badge eligibility, verify corroboration across all evidence sources). The mandated **dry run** (read-only) surfaced two disqualifying facts before any write:
 - **The category label is corrupt.** In a 1,000-row sample, **~73% of `canonical_products` with `category='accessories'` are actually main products** — predominantly air conditioners (e.g. *"مكيف سبليت … 18000 وحدة"*). Quarantining by category would have deactivated hundreds of legitimate products.
