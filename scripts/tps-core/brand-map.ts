@@ -100,6 +100,21 @@ const BRAND_ALIASES: Record<string, string> = {
   "class pro": "classpro", "classpro": "classpro", "كلاس برو": "classpro",
   "crafft": "crafft", "كرافت": "crafft",
   "haam": "haam", "هام": "haam",
+
+  // ── Laptop brands (bilingual). Evidence-backed transliterations only; unknown
+  //    brands fall through to lowercase raw (never guessed). Apple/Samsung/Huawei/LG
+  //    already mapped above and shared across categories.
+  "lenovo": "lenovo", "لينوفو": "lenovo",
+  "hp": "hp", "اتش بي": "hp", "إتش بي": "hp", "hewlett packard": "hp", "hewlett-packard": "hp", "اش بي": "hp",
+  "dell": "dell", "ديل": "dell",
+  "asus": "asus", "اسوس": "asus", "أسوس": "asus", "ايسوس": "asus", "إيسوس": "asus",
+  "acer": "acer", "ايسر": "acer", "أيسر": "acer", "ايسير": "acer",
+  "msi": "msi", "ام اس اي": "msi", "إم إس آي": "msi", "ام اس آي": "msi",
+  "microsoft": "microsoft", "مايكروسوفت": "microsoft", "surface": "microsoft", "سيرفس": "microsoft",
+  "gigabyte": "gigabyte", "جيجابايت": "gigabyte",
+  "razer": "razer", "ريزر": "razer",
+  "toshiba": "toshiba", "توشيبا": "toshiba",
+  "dynabook": "dynabook", "داينابوك": "dynabook",
 };
 
 /**
