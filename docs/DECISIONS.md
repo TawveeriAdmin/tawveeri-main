@@ -6,6 +6,15 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-017 — E6 Phase 2: `mobile` vs `smartphone` resolved via the two-plane model; ADR-014 dedup regression fixed · Accepted (2026-07-21)
+**Context:** `product_category` contains both `mobile` and `smartphone`. Investigation of every producer/consumer showed this is an **intentional two-plane model**, not a duplicate:
+- **Canonical/TPS plane → `mobile`** — the mobile plugin (`category:"mobile"`), matcher v1/v2, normalized observations, and critically the search route's canonical lookup `searchTPSCanonical` (`route.ts:466` → `.eq('category','mobile')`).
+- **Search/UI plane → `smartphone`** — `determineCategory`, `CATEGORY_SPEC_FILTERS`, the UI category dropdown, autocomplete; the search route **bridges** canonical→UI at `route.ts:509` (`category:'smartphone'`). The two planes connect via `tps_identity_key`, **not** a shared category value.
+**Regression found:** ADR-014's `mobile→smartphone` dedup on `canonical_products` moved phone canonicals onto the wrong plane, **hiding 21 TPS-keyed phones** (iPhone 13/14/15/16 variants, Galaxy Z Fold) from `searchTPSCanonical`.
+**Decision & action:** `mobile` is authoritative for the canonical plane; reversed the dedup. Precision-gated migration (TPS key OR phone-name signal; spelling variant `جالكسي` included; accessories/watches excluded) moved 277 phone canonicals `smartphone→mobile`; the 7 residual non-phones were routed correctly (3 Galaxy Watches→smartwatch, 4 cases/SmartTag→accessories). Result: **canonical `smartphone`=0, `mobile`=294**; normalized `smartphone`=0; projection `{mobile:38, air_conditioner:3}`, no `smartphone`.
+**Verification:** TPS-visible phones **17→38**; live Smart Pick now returns previously-hidden phones — "ايفون 14"→iPhone 14 Pro Max (2 stores), "ايفون 13"→iPhone 13 (2 stores). All snapshotted/reversible.
+**Cannot reappear:** all three canonical producers hardcode `category:"mobile"`; the only `smartphone` write is the non-canonical UI bridge. Future matcher runs keep phones on `mobile`. **Consumers must never dedup canonical phones to `smartphone`.**
+
 ### ADR-016 — E6 Phase 1: tps_product_projection rebuilt & user-visible · Accepted (2026-07-21)
 **Context:** `write_mobile_batch` doesn't build the projection; `scripts/build-tps-projection.ts` does (reads `canonical_products` WHERE `tps_identity_key IS NOT NULL` + `price_history` WHERE `tps_observation_id IS NOT NULL`; upsert on `tps_identity_key`; **no deletes**; `has_comparison = store_count ≥ 2`). It didn't self-load env — added `.env.local` loading (consistent with the matcher).
 **Dry-run (read-only):** 41 candidates (21 smartphone + 17 mobile + 3 AC), all with linked prices and ≥2 stores, 0 duplicate keys, 0 accessory/SSD contamination; to-update 3, to-add 38, remove 0. Snapshot of the prior 3 rows taken.
