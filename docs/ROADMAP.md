@@ -12,7 +12,7 @@ Two views: *where the product is on the capability ladder*, and *the engineering
 |---|---|---|
 | **L1** | **Discovery** — users find products | ✅ Live |
 | **L2** | **Comparison** — stores, prices, availability, offers | ✅ Live (canonical comparison for covered categories) |
-| **L3** | **Knowledge** — specs, differences, guides, FAQs, buying advice | 🟡 Partial — decision layer computed but not yet surfaced everywhere; TPS covers `mobile`/`ac` |
+| **L3** | **Knowledge** — specs, differences, guides, FAQs, buying advice | 🟡 Partial — decision layer now surfaced as Smart Pick in search; TPS covers `mobile`/`ac` |
 | **L4** | **AI Shopping** — Waffar reasons, compares, explains, recommends | 🟡 Present on web; deterministic-engine-backed; not yet on all clients |
 | **L5** | **Commerce Intelligence** — market understanding, prediction, merchant & consumer intelligence, APIs | ⚪ Foundational data exists; capabilities not yet built |
 
@@ -34,7 +34,7 @@ The path from the current two-system reality to the unified platform. Full detai
 | **E5** | Algolia sync restoration (feed the owned TPS index) | Pending |
 | **E6** | TPS pipeline automation + **canonical-quality audit** (resolves the identity-invariant debt) | Pending — highest-value knowledge work |
 | **E7** | Canonical linkage on ingestion | Pending |
-| **E8** | Surface the decision layer in web search | Pending — highest user-visible value, no dependency |
+| **E8** | Surface the decision layer in web search ("Smart Pick") + accessory-relevance trust hardening | ✅ **Complete — production-verified** (build 6d4745a); trustworthy Smart Pick live for covered queries |
 | **E9** | Create user/auth/commerce schema on System A (RLS from the start) | Pending |
 | **E10** | Migrate user data System B → A | Pending |
 | **E11** | Mobile convergence — true platform client, measured exits | Pending |
@@ -51,7 +51,6 @@ The path from the current two-system reality to the unified platform. Full detai
 ## 3. Near-term priorities
 
 1. **E5 — Algolia sync restoration** (owned TPS index producer).
-2. **E8 — surface the decision layer** (independent, high user value).
 3. **E6 — automate knowledge construction and audit the canonical graph** — the platform's moat currently grows only when a human runs a script; this is the single highest-leverage architectural change.
 
 ---

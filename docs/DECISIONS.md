@@ -6,6 +6,12 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-010 — Surface the decision layer as a trust-gated "Smart Pick" · Accepted (2026-07-21)
+**Context:** the search API computed a decision layer (best pick + evidence) that the client discarded. Surfacing it naively was unsafe: the accessory detector missed compatibility phrasing (magsafe / "compatible with" / "for phone"), so a phone case surfaced as the top result and "smart pick" for "iphone 15".
+**Decision:** extend accessory/compatibility detection so accessories are demoted for product queries (improves the relevance order every user sees); gate the decision card server-side to null when the best match is an accessory for a main-product query; render a SmartPickCard that displays only the gated, evidence-bearing pick (reason, store count, TPS badge). The surface renders; it never re-judges (deterministic engine decides — ADR-002).
+**Alternatives:** surface the card unconditionally (rejected — violates truth-before-convenience); tighten to a full query-relevance model (deferred — larger; coverage gaps for uncatalogued models are E6/E12).
+**Consequences:** trustworthy Smart Pick live for covered Saudi-electronics queries; the specific accessory-as-pick trust failure is closed. Residual: for queries with no catalog coverage (e.g. a model not yet ingested) results remain weak — a coverage problem, not a decision defect. Verified on build 6d4745a.
+
 ### ADR-009 — pg_cron is the single authoritative scheduler; GET can never trigger a write · Accepted (2026-07-21)
 **Context:** two uncoordinated trigger mechanisms (Supabase pg_cron for adapters, GitHub Actions for Jarir), a dormant DB-driven dispatch path, and two unauthenticated GET write paths (discover-firecrawl `?sync=1`; discover-products GET self-injecting CRON_SECRET). The pg_cron schedule lived only in the Supabase dashboard, outside version control.
 **Decision:** Supabase pg_cron is the single authoritative scheduling mechanism; its schedule is captured in version control (`007_scheduler.sql`). Every scheduled call is an authenticated POST with the Bearer secret from Vault. GET on ingestion routes is read-only and can never write. Overlap protection (`hasActiveRun`) skips a store already running. The GitHub Actions Jarir trigger is retained with justification until `007` moves Jarir onto pg_cron and is verified live — retiring it earlier would stop Jarir ingestion.
