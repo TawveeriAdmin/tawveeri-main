@@ -7,6 +7,12 @@ export interface GroupedSearchProduct extends ScrapedProduct {
   stores: SearchProduct[];
   best_price: number;
   store_count: number;
+  // Optional identity/TPS enrichment attached by the search route.
+  product_id?: string;
+  tps_identity_key?: string;
+  model_number?: string;
+  has_tps_comparison?: boolean;
+  tps_compare_url?: string;
 }
 
 /**

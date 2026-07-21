@@ -83,6 +83,9 @@ type DecisionLayer = {
     best_price: number;
     store_name: string;
     product_url: string;
+    store_count: number;
+    reason_ar: string;
+    is_tps: boolean;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -134,8 +137,15 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'اير': ['air'],
 };
 
-const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة'];
-const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens'];
+const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة', 'ماجسيف', 'جراب', 'سماعه اذن'];
+const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered'];
+
+// Compatibility phrasing is a strong accessory signal: an item described as
+// "compatible with" or "for" a phone IS an accessory for that phone, not the
+// phone itself. These patterns caught real trust failures in production
+// (a phone case surfaced as the top result and "smart pick" for "iphone 15").
+const ACCESSORY_COMPAT_AR = /متوافق|مخصص\s+ل|(?:^|\s)ل(?:هاتف|جوال|ايفون|آيفون|سامسونج|جالاكسي)/;
+const ACCESSORY_COMPAT_EN = /\bcompatible\b|\bfor\s+(?:iphone|samsung|galaxy|apple|xiaomi|huawei)\b/;
 
 const MAIN_PRODUCT_TYPES = new Set<string>([
   'جوال', 'هاتف', 'ايفون', 'جوالات', 'هواتف',
@@ -160,7 +170,9 @@ function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
   return ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
-    ACCESSORY_HINTS_EN.some((h) => en.includes(h));
+    ACCESSORY_HINTS_EN.some((h) => en.includes(h)) ||
+    ACCESSORY_COMPAT_AR.test(ar) ||
+    ACCESSORY_COMPAT_EN.test(en);
 }
 
 function hasACSignal(nameAr: string, nameEn: string): boolean {
@@ -282,12 +294,24 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
   const ranked = [...products].sort((a, b) => scoreProduct(b, priceMin, priceMax, queryIsMainProduct) - scoreProduct(a, priceMin, priceMax, queryIsMainProduct));
   const top3 = ranked.slice(0, 3);
   const best = top3[0] || null;
-  const decisionCard = best
+
+  // Trust gate: never present an accessory as the "smart pick" for a
+  // main-product query (Constitution: truth before convenience; a phone case
+  // is not a defensible answer to "iphone 15"). When the best available match
+  // is an accessory for a product search, we show no smart-pick card rather
+  // than a misleading one — the ranked results still render below it.
+  const bestIsAccessory = best ? hasAccessoryHint(best.name_ar || '', best.name_en || '') : false;
+  const trustworthyPick = !!best && best.best_price > 0 && !(queryIsMainProduct && bestIsAccessory);
+
+  const decisionCard = trustworthyPick && best
     ? {
         title: best.name_ar,
         best_price: best.best_price,
         store_name: best.stores.find((s) => s.current_price === best.best_price)?.store_name || best.stores[0]?.store_name || '',
         product_url: best.stores.find((s) => s.current_price === best.best_price)?.product_url || best.stores[0]?.product_url || '',
+        store_count: best.store_count,
+        reason_ar: buildReasonAr(best, best.best_price === priceMin && priceMin > 0),
+        is_tps: !!(best.has_tps_comparison || best.tps_compare_url),
       }
     : null;
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({

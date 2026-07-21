@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
 import { ProductCard } from '@/components/products/product-card';
+import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
@@ -204,6 +205,7 @@ export default function SearchClient() {
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
   const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
+  const [smartPick, setSmartPick] = useState<SmartPick | null>(null);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [saveSearchName, setSaveSearchName] = useState('');
@@ -630,6 +632,7 @@ export default function SearchClient() {
     void _unusedPages;
     setLoading(true);
     setError(null);
+    setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
 
@@ -689,6 +692,10 @@ export default function SearchClient() {
       const total = typeof data.total === 'number' ? data.total : mappedProducts.length;
       setRawProducts(mappedProducts);
       setServerTotal(total);
+      // Smart Pick — the decision layer's trustworthy pick. The API gates this
+      // server-side (null when the best match is an accessory for a product
+      // query), so we render it verbatim without re-judging.
+      setSmartPick(((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null);
       setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});
       // searchTime from API is in seconds; convert to ms
@@ -1431,6 +1438,11 @@ export default function SearchClient() {
                       </div>
                     )}
                   </div>
+                )}
+
+                {/* Smart Pick — the decision layer's trustworthy pick, gated server-side */}
+                {!loading && !error && smartPick && products.length > 0 && (
+                  <SmartPickCard pick={smartPick} locale={locale} />
                 )}
 
                 {/* Products Grid */}
