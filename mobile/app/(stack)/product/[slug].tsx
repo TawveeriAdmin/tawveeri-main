@@ -13,6 +13,7 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import { openMeasuredExit } from '@/src/lib/exit/measured-exit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft, ArrowRight, Heart, ShoppingCart, Share2, Bell, ExternalLink,
@@ -678,8 +679,13 @@ function StorePriceCard({ productStore, isBest, colors, locale }: {
 }) {
   const store = productStore.stores;
   const openStore = () => {
-    const url = productStore.affiliate_url || productStore.product_url;
-    if (url) Linking.openURL(url);
+    // Measured via /go when an offerId (TPS observation) is present; else falls
+    // back to the raw URL until platform contracts supply offerIds to mobile.
+    openMeasuredExit({
+      offerId: productStore.offer_id ?? productStore.tps_observation_id,
+      url: productStore.affiliate_url || productStore.product_url,
+      source: 'mobile',
+    });
   };
 
   const storeName = locale === 'ar' ? (store?.name_ar || store?.name) : (store?.name_en || store?.name);

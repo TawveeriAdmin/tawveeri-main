@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, SectionList, StyleSheet, Pressable, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { openMeasuredExit } from '@/src/lib/exit/measured-exit';
 import { Heart, Trash2, ExternalLink } from 'lucide-react-native';
 import * as Linking from 'expo-linking';
 import { useTheme } from '@/src/lib/theme/theme-context';
@@ -182,7 +183,7 @@ export default function WishlistScreen() {
         const saved = item.data;
         return (
           <Pressable
-            onPress={() => Linking.openURL(saved.url)}
+            onPress={() => openMeasuredExit({ offerId: saved.offer_id, url: saved.url, source: 'mobile' })}
             accessibilityRole="link"
             accessibilityLabel={saved.title}
             style={[styles.card, { backgroundColor: colors.card, flexDirection: rtl.row }]}

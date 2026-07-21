@@ -74,13 +74,17 @@ export async function GET(
 
   const { finalUrl, program } = applyAffiliate(cleanUrl);
 
+  // Channel attribution: ?source=mobile|web|product_page|... (validated, defaulted).
+  const rawSource = req.nextUrl.searchParams.get("source") || "product_page";
+  const source = /^[a-z_]{1,32}$/.test(rawSource) ? rawSource : "product_page";
+
   supabase.from("outbound_clicks").insert({
     offer_id: offer.id,
     canonical_product_id: offer.canonical_product_id,
     store_name: offer.store_id,
     destination_url: finalUrl,
     affiliate_program: program,
-    source: "product_page",
+    source,
     user_agent: req.headers.get("user-agent") ?? null,
     referrer: req.headers.get("referer") ?? null,
   }).then(({ error: e }) => { if (e) console.error("outbound_clicks insert failed:", e.message); });

@@ -6,6 +6,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-029 — E11: mobile measured-exit groundwork; full convergence gated · Proposed (2026-07-21)
+**Context:** E11 (mobile convergence, XL) requires mobile to exit via `/go` for attribution. Today mobile exits via `Linking.openURL(raw product_url)` — **unattributed**. Full measured exits need `offerId = normalized_product_observations.id`, which the mobile catalog (raw `products`/`product_stores`) doesn't carry.
+**Shipped:** `/go` now accepts `?source=` (channel attribution → `outbound_clicks.source`, default `product_page`, no regression). `mobile/src/lib/exit/measured-exit.ts` (`openMeasuredExit`) routes through `/go/{offerId}?source=mobile` when an offerId is present, else falls back to the raw URL; wired at **all 4 mobile exit surfaces** (product, deals, search, wishlist) reading `item.offer_id`.
+**Gated (not complete):** real measured exits need a **platform-contract change** — the mobile search/product API must return TPS canonical offers with `offer_id` (like web `searchTPSCanonical`); plus the 45 direct catalog-read replacements, canonical identity, decision-object rendering, the **E10 prerequisite** (🔒 legacy creds), and an **app-store release** (external review, outside engineering control). Full plan in `docs/HANDOFF-E11.md`. E11 is XL and not a code-only single-session milestone.
+
 ### ADR-028 — E12: all 8 stores on the adapter contract · Accepted (2026-07-21)
 **Evidence:** only 4 stores actually ingest TPS data — Extra (40,740), Almanea (34,580), Jarir (50,856), Amazon (2,029); Noon/Samsung-KSA/Shaker/SWSG have **0** observations. Extra+Almanea were on the `StoreAdapter` contract; Jarir+Amazon were the real gap.
 **Decision & build:** `src/lib/scraping/adapters/scraper-wrapped.ts` — a reusable factory that wraps each store's proven `search()` scraper in the resumable `fetchBatch` contract (reuse tested fetch logic, not reimplement). Registered **all 8** in `adapters/index.ts`: `extra`, `almanea` (bespoke API adapters), **`jarir`, `amazon` enabled** (data-bearing, wrapped + live-verified), and `noon`, `samsung_ksa`, `shaker`, `swsg` as **`enabled:false`** stubs (registered for contract completeness; enable after a validated ingestion run, since they have no pipeline data yet).

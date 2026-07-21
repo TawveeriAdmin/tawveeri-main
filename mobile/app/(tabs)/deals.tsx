@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, RefreshControl, Dimensions, Pressable, StyleSheet, Linking } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
+import { openMeasuredExit } from '@/src/lib/exit/measured-exit';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Zap, Percent, Package, Heart, BarChart3, ExternalLink } from 'lucide-react-native';
@@ -221,7 +222,7 @@ function DealCard({ item, colors, rtl, locale }: { item: any; colors: any; rtl: 
           </Pressable>
           {item.product_url && (
             <Pressable
-              onPress={(e) => { e.stopPropagation(); Linking.openURL(item.product_url); }}
+              onPress={(e) => { e.stopPropagation(); openMeasuredExit({ offerId: item.offer_id, url: item.product_url, source: 'mobile' }); }}
               style={[styles.cardActionBtn, { backgroundColor: colors.background + 'E6' }]}
               hitSlop={4}
             >

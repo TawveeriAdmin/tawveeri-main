@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
+import { openMeasuredExit } from '@/src/lib/exit/measured-exit';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1091,7 +1092,7 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
   };
 
   return (
-    <Card onPress={() => Linking.openURL(item.url)} style={{ flex: 1 }} padding="xs">
+    <Card onPress={() => openMeasuredExit({ offerId: item.offer_id, url: item.url, source: 'mobile' })} style={{ flex: 1 }} padding="xs">
       <View
         style={{
           height: 130,
@@ -1129,7 +1130,7 @@ function GridResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
             <BarChart3 size={14} color={isInCompare ? colors.primary : colors.secondaryLabel} strokeWidth={2} />
           </Pressable>
           <Pressable
-            onPress={(e) => { e.stopPropagation(); Linking.openURL(item.url); }}
+            onPress={(e) => { e.stopPropagation(); openMeasuredExit({ offerId: item.offer_id, url: item.url, source: 'mobile' }); }}
             style={[styles.cardActionBtn, { backgroundColor: colors.background + 'E6' }]}
             hitSlop={4}
           >
@@ -1297,7 +1298,7 @@ function ListResultCard({ item, colors, rtl }: { item: SearchResult; colors: any
               </Text>
             </Pressable>
             <Pressable
-              onPress={(e) => { e.stopPropagation(); Linking.openURL(item.url); }}
+              onPress={(e) => { e.stopPropagation(); openMeasuredExit({ offerId: item.offer_id, url: item.url, source: 'mobile' }); }}
               style={[styles.listActionBtn, { backgroundColor: colors.tertiaryFill }]}
               hitSlop={4}
             >
