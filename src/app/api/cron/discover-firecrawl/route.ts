@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { getEnabledAdapters, getAdapterBySlug } from '@/lib/scraping/adapters';
 import type { StoreAdapter, NormalizedOffer } from '@/lib/scraping/adapters';
-import { startRun, finishRun } from '@/lib/scraping/services/run-logger';
+import { startRun, finishRun, hasActiveRun } from '@/lib/scraping/services/run-logger';
 import { resolveStoreId } from '@/lib/scraping/store-identity';
 
 export const runtime = 'nodejs';
@@ -164,6 +164,13 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
     throw new Error(`store slug '${adapter.slug}' is not in the stores registry — refusing to ingest unidentifiable observations`);
   }
 
+  // Overlap protection: if this store already has a run in progress (e.g. the
+  // scheduler fired again before a long run finished), skip rather than double-
+  // scrape. Returns a skipped marker so the caller records it without error.
+  if (await hasActiveRun(storeId)) {
+    return { store: storeName, slug: adapter.slug, skipped: true, reason: 'active run in progress' };
+  }
+
   const state = await getSyncState(storeId);
   const start = state?.next_page ?? 0;
 
@@ -233,11 +240,27 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
 }
 
 // ── Routes ───────────────────────────────────────────────────
+/**
+ * Read-only descriptor / preview.
+ *
+ * SECURITY: this GET previously accepted `?sync=1` and wrote raw_observations,
+ * products, product_stores and price_history with no authentication. Ingestion
+ * is a production write and must only run through the authenticated POST below
+ * (Authorization: Bearer CRON_SECRET). GET performs no database writes; `sync`
+ * is rejected here and directed to POST.
+ */
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const slugParam = url.searchParams.get('store_slug');
   const sync = url.searchParams.get('sync');
   const limit = Math.min(Number(url.searchParams.get('limit') || 50), 200);
+
+  if (sync) {
+    return json({
+      error: 'sync writes are not permitted over GET',
+      remediation: 'POST /api/cron/discover-firecrawl with Authorization: Bearer <CRON_SECRET>',
+    }, 405);
+  }
 
   if (!slugParam) {
     const adapters = getEnabledAdapters();
@@ -246,43 +269,16 @@ export async function GET(request: NextRequest) {
     return json({ status: 'ok', protocol: 'StoreAdapter v1', stores: adapters.map(a => `${a.slug}-direct`), syncState });
   }
 
-  // يدعم 'almanea-direct' و 'almanea' معاً
+  // Fetch-only preview — no database writes. يدعم 'almanea-direct' و 'almanea' معاً
   const slug = slugParam.replace(/-direct$/, '');
   const adapter = getAdapterBySlug(slug);
   if (!adapter) return json({ error: 'Store not found', slug: slugParam }, 404);
 
-  const storeId = await resolveStoreId(adapter.slug);
-  if (sync && storeId === null) {
-    return json({ error: `store slug '${adapter.slug}' is not in the stores registry`, slug: adapter.slug }, 409);
-  }
-
   const { offers, lastError } = await adapter.fetchBatch(0, limit);
-  let rawWritten = 0;
-  let manualRunId: number | null = null;
-  if (sync) {
-    manualRunId = await startRun({
-      store_name: adapter.dbName,
-      store_id: storeId,
-      job_type: 'discovery',
-      triggered_by: 'manual',
-    });
-    rawWritten = await writeRawObservations(offers, adapter.dbName, storeId, manualRunId);
-  }
-  const saveResult = sync ? await saveProducts(offers, adapter.dbName, storeId, manualRunId) : { saved: 0, note: 'add &sync=1' };
-  if (sync && manualRunId !== null) {
-    await finishRun({
-      run_id: manualRunId,
-      status: lastError ? 'partial' : 'success',
-      products_discovered: offers.length,
-      products_new: (saveResult as any).savedProducts ?? 0,
-      products_updated: (saveResult as any).savedStores ?? 0,
-      errors_count: lastError ? 1 : 0,
-      error_summary: lastError ? { message: String(lastError) } : null,
-    });
-  }
   return json({
-    success: true, mode: sync ? 'sync' : 'fetch-only', store: `${adapter.slug}-direct`, storeName: adapter.dbName,
-    fetched: offers.length, lastError, rawWritten, saveResult,
+    success: true, mode: 'fetch-only', store: `${adapter.slug}-direct`, storeName: adapter.dbName,
+    fetched: offers.length, lastError,
+    note: 'GET is read-only. To ingest, POST with CRON_SECRET.',
     sampleFetched: offers[0] ? { ...offers[0], _raw: undefined } : null,
   });
 }

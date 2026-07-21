@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ScrapingOrchestrator } from '@/lib/scraping/services/scraping-orchestrator';
 import type { DiscoveryOptions } from '@/lib/scraping/base/types';
 import { createServerClient } from '@/lib/database';
-import { startRun, finishRun, failRun } from '@/lib/scraping/services/run-logger';
+import { startRun, finishRun, failRun, hasActiveRun } from '@/lib/scraping/services/run-logger';
 
 export const maxDuration = 900;
 
@@ -10,13 +10,6 @@ export async function POST(request: NextRequest) {
   let runId: number | null = null;
 
   try {
-    console.log("=== CRON DEBUG ===");
-    console.log("Authorization:", request.headers.get("authorization"));
-    console.log("Secret exists:", !!process.env.CRON_SECRET);
-    console.log("Secret length:", process.env.CRON_SECRET?.length);
-    console.log("Secret first4:", process.env.CRON_SECRET?.slice(0, 4));
-    console.log("Header first10:", request.headers.get("authorization")?.slice(0, 10));
-
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
@@ -45,11 +38,24 @@ export async function POST(request: NextRequest) {
     runId = body.run_id ?? null;
 
     if (!runId && !options.dry_run) {
+      const storeId = await lookupStoreId(options.store_slug);
+
+      // Overlap protection: if this store already has a run in progress, skip
+      // rather than double-scrape. The dispatcher supplies its own run_id, so
+      // this guards only self-started (schedule/manual) runs.
+      if (storeId !== null && (await hasActiveRun(storeId))) {
+        return NextResponse.json({
+          skipped: true,
+          reason: 'active run in progress for this store',
+          store_slug: options.store_slug,
+        });
+      }
+
       // store_name is logged as the canonical slug so runs are joinable
       // regardless of the display name a scraper happens to use.
       runId = await startRun({
         store_name: options.store_slug,
-        store_id: await lookupStoreId(options.store_slug),
+        store_id: storeId,
         job_type: 'discovery',
         schedule_id: body.schedule_id ?? null,
         triggered_by: body.schedule_id ? 'schedule' : 'manual',
@@ -95,20 +101,20 @@ async function lookupStoreId(storeSlug: string): Promise<number | null> {
   return (data as { id?: number } | null)?.id ?? null;
 }
 
-export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const store = url.searchParams.get('store') || 'amazon';
-  const pages = Number(url.searchParams.get('pages') || 1);
-  const dry = url.searchParams.get('dry') !== 'false';
-
-  const mockRequest = new NextRequest(request.url, {
-    method: 'POST',
-    headers: {
-      'authorization': `Bearer ${process.env.CRON_SECRET}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ store_slug: store, max_pages: pages, dry_run: dry }),
+/**
+ * Read-only descriptor.
+ *
+ * SECURITY: this GET previously constructed a POST that injected the server's
+ * own CRON_SECRET and ran a full discovery — an unauthenticated write trigger.
+ * Discovery is a production write and must only run through the authenticated
+ * POST below (Authorization: Bearer CRON_SECRET). GET performs no writes.
+ */
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    route: '/api/cron/discover-products',
+    method: 'POST required',
+    auth: 'Authorization: Bearer <CRON_SECRET>',
+    note: 'Discovery is a write operation; GET is read-only and cannot trigger ingestion.',
   });
-
-  return POST(mockRequest);
 }

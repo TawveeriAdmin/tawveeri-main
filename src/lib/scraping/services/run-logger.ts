@@ -15,6 +15,39 @@ export interface StartRunParams {
   triggered_by_user_id?: string | null;
 }
 
+/**
+ * Overlap protection. Returns true if the store already has a run in a
+ * non-terminal state (`running` or `pending`) that started recently.
+ *
+ * A run older than `staleAfterMinutes` is treated as dead (the process crashed
+ * without a terminal status) and does NOT block a new run, so a single stuck
+ * row can never freeze a store's ingestion permanently.
+ *
+ * Fails open (returns false) on query error: preventing a legitimate run is
+ * worse than a rare double-run, which the per-store sync state tolerates.
+ */
+export async function hasActiveRun(storeId: number, staleAfterMinutes = 120): Promise<boolean> {
+  try {
+    const supabase = createServerClient();
+    const cutoff = new Date(Date.now() - staleAfterMinutes * 60_000).toISOString();
+    const { data, error } = await (supabase as any)
+      .from('scraping_runs')
+      .select('id')
+      .eq('store_id', storeId)
+      .in('status', ['running', 'pending'])
+      .gte('started_at', cutoff)
+      .limit(1);
+    if (error) {
+      console.error('[run-logger] hasActiveRun error:', error.message);
+      return false;
+    }
+    return (data?.length ?? 0) > 0;
+  } catch (err) {
+    console.error('[run-logger] hasActiveRun threw:', err);
+    return false;
+  }
+}
+
 export interface FinishRunParams {
   /** scraping_runs.id is bigint. */
   run_id: number;
