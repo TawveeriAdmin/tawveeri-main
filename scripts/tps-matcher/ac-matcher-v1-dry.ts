@@ -30,7 +30,8 @@ function adaptRow(row: RawRow) {
   const nameAr = asString(p.nameAr) ?? asString(p.summaryAr) ?? asString(p.name) ?? asString(p.name_ar) ?? asString(row.raw_name) ?? "";
   const nameEn = asString(p.nameEn) ?? asString(p.title) ?? asString(p.name_en) ?? "";
   const brand = asString(p.brandEn) ?? asString(p.brandAr) ?? asString(p.brand) ?? null;
-  return { nameAr, nameEn, brand };
+  const url = asString(p.urlAr) ?? asString(p.urlEn) ?? asString(p.url) ?? asString(p.product_url) ?? asString(p.link) ?? null;
+  return { nameAr, nameEn, brand, url };
 }
 function extractPrice(p: Record<string, unknown>): number | null {
   for (const c of [p.current_price, p.sellingPrice, p.price, p.wasPrice, p.original_price]) {
@@ -83,9 +84,9 @@ export async function runAcBatch(opts: TpsBatchOptions): Promise<TpsBatchResult>
     // HARD BOUND assertion — total observations can never exceed the requested limit.
     if (R.fetched > opts.limit) throw new Error(`bound violation: fetched ${R.fetched} > limit ${opts.limit}`);
 
-    const offers: { obsId: number; storeId: number | null; store: string; key: string; status: string; price: number | null; name: string; payload: Record<string, unknown> }[] = [];
+    const offers: { obsId: number; storeId: number | null; store: string; key: string; status: string; price: number | null; name: string; url: string | null; payload: Record<string, unknown> }[] = [];
     for (const row of rows) {
-      const { nameAr, nameEn, brand } = adaptRow(row);
+      const { nameAr, nameEn, brand, url } = adaptRow(row);
       if (!acPlugin.detect(nameAr, nameEn)) continue;
       R.considered++;
       const norm = acPlugin.normalize(nameAr, nameEn, brand);
@@ -93,7 +94,7 @@ export async function runAcBatch(opts: TpsBatchOptions): Promise<TpsBatchResult>
       if (identity.status === "invalid") { R.parserFailures++; continue; }
       if (identity.status === "low_confidence_candidate") R.lowConfidence++;
       if (!identity.key) continue;
-      offers.push({ obsId: row.id, storeId: row.store_id, store: row.store_name ?? "?", key: identity.key, status: identity.status, price: extractPrice(row.payload ?? {}), name: (nameAr || nameEn), payload: norm.payload as Record<string, unknown> });
+      offers.push({ obsId: row.id, storeId: row.store_id, store: row.store_name ?? "?", key: identity.key, status: identity.status, price: extractPrice(row.payload ?? {}), name: (nameAr || nameEn), url, payload: norm.payload as Record<string, unknown> });
     }
 
     const groups = new Map<string, { storeIds: Set<number>; offers: typeof offers }>();
@@ -115,7 +116,7 @@ export async function runAcBatch(opts: TpsBatchOptions): Promise<TpsBatchResult>
       for (const o of g.offers) {
         const normId = stableUuid(`norm:raw_observations:${o.obsId}`);
         (o as { _normId?: string })._normId = normId; processedObsIds.add(o.obsId);
-        normalizedRows.push({ id: normId, source_table: "raw_observations", source_record_id: stableUuid(`raw_observations:${o.obsId}`), store_id: String(o.storeId), canonical_product_id: canonicalId, raw_name: o.name, detected_category: "ac", language: "ar", brand: parts[0], model_number: null, color: null, identity_key: key, identity_key_status: o.status, normalized_payload: { ...(o.payload || {}), _raw_id: o.obsId }, confidence: 80, missing_critical: [], ambiguity_flags: [], needs_llm: false, ignored_terms: [], normalizer_version: "ac-v1", tps_version: "ac-v1", observed_at: now, plugin_version: "ac-v1" });
+        normalizedRows.push({ id: normId, source_table: "raw_observations", source_record_id: stableUuid(`raw_observations:${o.obsId}`), store_id: String(o.storeId), canonical_product_id: canonicalId, raw_name: o.name, detected_category: "ac", language: "ar", brand: parts[0], model_number: null, color: null, identity_key: key, identity_key_status: o.status, normalized_payload: { ...(o.payload || {}), _raw_id: o.obsId, _url: o.url }, confidence: 80, missing_critical: [], ambiguity_flags: [], needs_llm: false, ignored_terms: [], normalizer_version: "ac-v1", tps_version: "ac-v1", observed_at: now, plugin_version: "ac-v1" });
       }
       for (const sid of g.storeIds) {
         const so = g.offers.filter((o) => o.storeId === sid);
