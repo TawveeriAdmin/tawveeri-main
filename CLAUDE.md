@@ -1,6 +1,34 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file is the **engineering operating manual** for anyone — human or AI — working in this repository. It governs *how we work*. It does not define *what Tawveeri is* or *why*: that is the Constitution.
+
+## Constitutional governance (read this first)
+
+Tawveeri is governed by a constitutional document set. Precedence, highest first:
+
+1. **`TAWVEERI_CONSTITUTION.md`** — vision, the twelve principles, governance. **Single Source of Truth.**
+2. **`docs/ARCHITECTURE.md`** — layered platform model and architectural invariants.
+3. **`docs/TPS.md`** — the product-identity standard.
+4. **`docs/ROADMAP.md`** — capability maturity and execution status.
+5. **This file (`CLAUDE.md`)** — how to work in the repo.
+6. **`docs/DECISIONS.md`** — the Decision Register.
+
+`docs/README.md` is the full index. **Where code conflicts with a higher authority, the code is debt to fix, not the authority to override.** Every significant decision gets an ADR in `docs/DECISIONS.md`.
+
+**Non-negotiable engineering rules** (derived from the Constitution — never violate without founder approval):
+- Never fabricate a product, attribute, offer, price, link, or verdict. Unknown beats incorrect.
+- One canonical identity (`tps_identity_key`); one canonical store identity (`stores.id`); one authority per question.
+- `raw_observations` immutable; `price_history` append-only; provenance never dropped.
+- Deterministic engines decide; LLMs only phrase, with supplied facts.
+- Commercial interest never enters ranking. Every merchant exit is measured via `/go`.
+- Every table enables RLS in its schema definition; credential/session tables are never granted to `anon`.
+- Precision over recall: corroborate (≥2 stores) before asserting identity.
+
+**Verification methodology** (governs all milestones): all production/legacy verification is **read-only** unless the founder approves a write; the **production database is the only source of truth** for any verdict; prove project identity before acting (`vyceqrzttspyycdpojtn` = production, `ffpsjjazsluolysgithg` = legacy); background watchers are optional instrumentation, never evidence. Full detail in `docs/ENGINEERING-TRANSITION-PLAN.md`.
+
+**Current reality** (do not assume the app is a single system): production runs on two databases mid-convergence — System A (knowledge/TPS, `vyceqrzttspyycdpojtn`, Railway/`tawveeri.com`) and System B (legacy app, `ffpsjjazsluolysgithg`). Target and status: `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`. The "Project Overview" and tech-stack sections below describe the application surface and may predate the reconciliation; the architecture docs are authoritative where they differ.
+
+---
 
 ## RIPER-5 Operational Protocol (Terminal)
 
