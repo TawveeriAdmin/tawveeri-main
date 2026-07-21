@@ -3,6 +3,7 @@
 // technology_inferred يُستقبَل عبر normalizeMeta (وفق عقد CategoryPlugin)
 
 import type { IdentityResult } from "../../tps-core/types";
+import { canonicalizeBrand } from "../../tps-core/brand-map";
 
 export function buildIdentityKey(
   brand: string | null,
@@ -17,14 +18,18 @@ export function buildIdentityKey(
   if (!brand) nulls.unshift("brand");
   if (nulls.length > 0) return { key: null, status: "invalid", reason: `null in critical: ${nulls.join(", ")}` };
 
+  // Canonicalize brand (Arabic↔English of the same brand → one canonical form)
+  // so cross-store corroboration works. Shared, evidence-backed only (brand-map).
+  const cb = canonicalizeBrand(brand);
+
   if (technology_inferred)
-    return { key: `${brand}|${p.ac_type}|NO_SERIES|${p.capacity_btu}|${p.technology}|${p.cooling_mode}`,
+    return { key: `${cb}|${p.ac_type}|NO_SERIES|${p.capacity_btu}|${p.technology}|${p.cooling_mode}`,
              status: "low_confidence_candidate", reason: "technology inferred from compressor_type" };
 
   if (!p.series_or_platform)
-    return { key: `${brand}|${p.ac_type}|NO_SERIES|${p.capacity_btu}|${p.technology}|${p.cooling_mode}`,
+    return { key: `${cb}|${p.ac_type}|NO_SERIES|${p.capacity_btu}|${p.technology}|${p.cooling_mode}`,
              status: "low_confidence_candidate", reason: "series_or_platform missing" };
 
-  return { key: `${brand}|${p.ac_type}|${p.series_or_platform}|${p.capacity_btu}|${p.technology}|${p.cooling_mode}`,
+  return { key: `${cb}|${p.ac_type}|${p.series_or_platform}|${p.capacity_btu}|${p.technology}|${p.cooling_mode}`,
            status: "valid" };
 }

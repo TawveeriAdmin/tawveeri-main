@@ -79,6 +79,27 @@ const BRAND_ALIASES: Record<string, string> = {
   "infinix": "infinix",
   "انفينكس": "infinix",
   "إنفينكس": "infinix",
+
+  // ── AC brands (bilingual — Arabic/English of the same well-known brands).
+  //    Evidence-backed transliterations only; unknown brands fall through to
+  //    lowercase raw (never guessed). Unlocks Arabic↔English AC corroboration.
+  "lg": "lg", "إل جي": "lg", "ال جي": "lg", "الجي": "lg",
+  "gree": "gree", "جري": "gree", "قري": "gree",
+  "midea": "midea", "ميديا": "midea",
+  "tcl": "tcl", "تى سى ال": "tcl", "تي سي ال": "tcl", "تيسيال": "tcl",
+  "aux": "aux", "أوكس": "aux", "اوكس": "aux",
+  "haier": "haier", "هاير": "haier",
+  "hisense": "hisense", "هايسنس": "hisense", "هايسينس": "hisense",
+  "samsung ": "samsung",
+  "westinghouse": "westinghouse", "white westinghouse": "westinghouse",
+  "ويستنج هاوس": "westinghouse", "ويستنجهاوس": "westinghouse", "وايت ويستنجهاوس": "westinghouse",
+  "general": "general", "جنرال": "general",
+  "zamil": "zamil", "زامل": "zamil",
+  "kelvinator": "kelvinator", "كلفينيتور": "kelvinator",
+  "mtc": "mtc", "إم تي سي": "mtc", "ام تي سي": "mtc",
+  "class pro": "classpro", "classpro": "classpro", "كلاس برو": "classpro",
+  "crafft": "crafft", "كرافت": "crafft",
+  "haam": "haam", "هام": "haam",
 };
 
 /**
