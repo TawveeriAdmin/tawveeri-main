@@ -4,6 +4,10 @@
 // يكتب في: tps_product_projection (upsert)
 // لا يلمس affiliate_best_url — يُعبَّأ من سكربت مستقل لاحقاً
 
+import { config } from "dotenv";
+import { resolve } from "path";
+config({ path: resolve(process.cwd(), ".env.local") });
+
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
