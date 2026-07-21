@@ -116,6 +116,15 @@ const BRAND_ALIASES: Record<string, string> = {
   "toshiba": "toshiba", "توشيبا": "toshiba",
   "dynabook": "dynabook", "داينابوك": "dynabook",
 
+  // ── Audio brands (bilingual). Apple/Samsung/Huawei/Sony already/also mapped.
+  "jbl": "jbl", "جي بي ال": "jbl", "جي بي إل": "jbl", "جيبيال": "jbl",
+  "bose": "bose", "بوز": "bose", "بوس": "bose",
+  "beats": "beats", "بيتس": "beats",
+  "anker": "anker", "انكر": "anker", "أنكر": "anker", "soundcore": "anker", "ساوند كور": "anker", "ساوندكور": "anker",
+  "sennheiser": "sennheiser", "سنهايزر": "sennheiser",
+  "marshall": "marshall", "مارشال": "marshall",
+  "jabra": "jabra", "جابرا": "jabra",
+
   // ── TV brands (bilingual). Samsung/LG/Huawei/Toshiba already mapped above.
   "sony": "sony", "سوني": "sony",
   "nikai": "nikai", "نيكاي": "nikai",
