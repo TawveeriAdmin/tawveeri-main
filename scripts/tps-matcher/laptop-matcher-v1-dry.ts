@@ -57,7 +57,7 @@ function stableUuid(seed: string): string {
 
 const BRAND_AR: Record<string, string> = { apple: "ابل", lenovo: "لينوفو", hp: "اتش بي", dell: "ديل", asus: "أسوس", acer: "أيسر", msi: "إم إس آي", huawei: "هواوي", samsung: "سامسونج", microsoft: "مايكروسوفت", gigabyte: "جيجابايت", razer: "ريزر", toshiba: "توشيبا", dynabook: "داينابوك", lg: "إل جي" };
 // Human-readable canonical names built deterministically from the identity key.
-function buildNames(key: string): { nameAr: string; nameEn: string } {
+export function buildNames(key: string): { nameAr: string; nameEn: string } {
   const parts = key.split("|");
   const brand = parts[0];
   const bAr = BRAND_AR[brand] ?? brand;

@@ -1,0 +1,89 @@
+// scripts/tps-core/category-registry.ts
+// Single source of truth for progressive batching: maps each evidence-backed TPS
+// category to its plugin, store set, raw_observations filter, canonical display
+// names (reused from the verified matchers so the progressive engine produces
+// IDENTICAL canonical rows — no regression), and a key→attributes decoder that
+// matches each matcher's `attributes` shape. Mobile is intentionally excluded:
+// it has a mature v2 matcher with RAM/condition logic; its progressive batching
+// is a separate follow-up on that matcher.
+import type { CategoryPlugin, NormalizeResult } from "./types";
+import { tvPlugin, normalize as tvN } from "../tps-plugins/tv";
+import { tabletPlugin, normalize as tabletN } from "../tps-plugins/tablet";
+import { audioPlugin, normalize as audioN } from "../tps-plugins/audio";
+import { cameraPlugin, normalize as cameraN } from "../tps-plugins/camera";
+import { acPlugin } from "../tps-plugins/ac";
+import { laptopPlugin, normalize as laptopN } from "../tps-plugins/laptop";
+import { buildNames as tvNames } from "../tps-matcher/tv-matcher-v1-dry";
+import { buildNames as tabletNames } from "../tps-matcher/tablet-matcher-v1-dry";
+import { buildNames as audioNames } from "../tps-matcher/audio-matcher-v1-dry";
+import { buildNames as cameraNames } from "../tps-matcher/camera-matcher-v1-dry";
+import { buildNames as acNames } from "../tps-matcher/ac-matcher-v1-dry";
+import { buildNames as laptopNames } from "../tps-matcher/laptop-matcher-v1-dry";
+
+export const TPS_STORES = [{ id: 1, name: "جرير" }, { id: 4, name: "اكسترا" }, { id: 2, name: "أمازون" }, { id: 5, name: "المنيع" }];
+
+export interface CategoryDef {
+  category: string;                 // canonical_products.category
+  detected: string;                 // normalized_product_observations.detected_category
+  plugin: CategoryPlugin;
+  // payload-aware normalize (Almanea structured fields); falls back to plugin.normalize
+  normalize: (nameAr: string, nameEn: string, brand: string | null, payload: Record<string, unknown>) => NormalizeResult;
+  filterKeywords: string[];         // raw_name ILIKE %kw%
+  version: string;                  // tps_version / plugin_version stamp
+  names: (key: string, payload: Record<string, unknown>) => { nameAr: string; nameEn: string };
+  attrs: (key: string, payload: Record<string, unknown>) => Record<string, unknown>;
+  // stableUuid seeds — MUST match the original matchers exactly so the progressive
+  // engine upserts the same canonical/normalized ids (no duplicates).
+  canonSeed: (key: string) => string;
+  normSeed: (obsId: number) => string;
+  requireValidTier: boolean;  // corroborate only status==='valid' (tv/tablet/audio/camera)
+  priceBand: number | null;   // drop offers > band*min before >=2-store check
+}
+
+const P = (v: unknown) => (v === undefined ? null : v);
+
+export const CATEGORY_DEFS: Record<string, CategoryDef> = {
+  tv: {
+    category: "tv", detected: "tv", plugin: tvPlugin, normalize: tvN, version: "tv-v1",
+    filterKeywords: ["tv", "تلفزيون", "television", "smart tv", "شاشة"],
+    names: (k) => tvNames(k),
+    attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { screen_size: Number(p[1]), resolution: p[2] === "NO_RES" ? null : p[2], panel: p[3] === "NO_PANEL" ? null : p[3], refresh_rate: p[4] && p[4] !== "NO_HZ" ? Number(p[4]) : null }; },
+    canonSeed: (k) => `canonical:tv:${k}`, normSeed: (o) => `norm:tv:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
+  },
+  tablet: {
+    category: "tablet", detected: "tablet", plugin: tabletPlugin, normalize: tabletN, version: "tablet-v1",
+    filterKeywords: ["tablet", "تابلت", "ipad", "ايباد", "galaxy tab", "جالكسي تاب", "matepad"],
+    names: (k) => tabletNames(k),
+    attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { line: p[1], gen: p[2] === "NO_GEN" ? null : p[2], storage: Number(p[3]), connectivity: p[4] === "NO_CONN" ? null : p[4], screen_size: p[5] === "NO_SIZE" ? null : Number(p[5]) }; },
+    canonSeed: (k) => `canonical:tablet:${k}`, normSeed: (o) => `norm:tablet:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
+  },
+  audio: {
+    category: "audio", detected: "audio", plugin: audioPlugin, normalize: audioN, version: "audio-v1",
+    filterKeywords: ["headphone", "سماعة", "earbuds", "airpods", "speaker", "مكبر صوت", "earphone", "buds"],
+    names: (k, pl) => audioNames(k, (pl.type as string) ?? null),
+    attrs: (k, pl) => ({ model: k.split("|")[1], type: P(pl.type) }),
+    canonSeed: (k) => `canonical:audio:${k}`, normSeed: (o) => `norm:audio:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
+  },
+  camera: {
+    category: "camera", detected: "camera", plugin: cameraPlugin, normalize: cameraN, version: "camera-v1",
+    filterKeywords: ["camera", "كاميرا", "dslr", "mirrorless", "eos", "كانون"],
+    names: (k) => cameraNames(k),
+    attrs: (k) => { const p = k.split("|"); return { model: p[1], config: p[2] }; },
+    canonSeed: (k) => `canonical:camera:${k}`, normSeed: (o) => `norm:camera:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
+  },
+  air_conditioner: {
+    category: "air_conditioner", detected: "ac", plugin: acPlugin,
+    normalize: (a, b, br) => acPlugin.normalize(a, b, br), version: "ac-v1",
+    filterKeywords: ["مكيف جداري", "مكيف سبليت", "Split Air Conditioner", "Split AC"],
+    names: (k) => acNames(k),
+    attrs: (k) => { const p = k.split("|"); return { ac_type: p[1], series_or_platform: p[2] === "NO_SERIES" ? null : p[2], capacity_btu: Number(p[3]), technology: p[4], cooling_mode: p[5] }; },
+    canonSeed: (k) => `canonical:${k}`, normSeed: (o) => `norm:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  laptop: {
+    category: "laptop", detected: "laptop", plugin: laptopPlugin, normalize: laptopN, version: "laptop-v1",
+    filterKeywords: ["laptop", "لابتوب", "لاب توب", "notebook", "macbook", "ماك بوك"],
+    names: (k) => laptopNames(k),
+    attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { family: p[1] === "NO_FAMILY" ? null : p[1], cpu: p[2], ram: Number(p[3]), storage: Number(p[4]), screen: p[5] === "NO_SCREEN" ? null : Number(p[5]), gpu: p[6] }; },
+    canonSeed: (k) => `canonical:laptop:${k}`, normSeed: (o) => `norm:laptop:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+};

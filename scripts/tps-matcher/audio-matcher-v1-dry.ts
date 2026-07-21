@@ -47,7 +47,7 @@ function stableUuid(seed: string): string {
 const BRAND_AR: Record<string, string> = { apple: "ابل", sony: "سوني", bose: "بوز", jbl: "جي بي إل", samsung: "سامسونج", anker: "أنكر", huawei: "هواوي", sennheiser: "سنهايزر", marshall: "مارشال", jabra: "جابرا", beats: "بيتس" };
 const TYPE_EN: Record<string, string> = { earbuds: "Earbuds", over_ear: "Headphones", speaker: "Speaker" };
 const TYPE_AR: Record<string, string> = { earbuds: "سماعات أذن", over_ear: "سماعة رأس", speaker: "مكبر صوت" };
-function buildNames(key: string, type: string | null): { nameAr: string; nameEn: string } {
+export function buildNames(key: string, type: string | null): { nameAr: string; nameEn: string } {
   const [brand, model] = key.split("|");
   const bAr = BRAND_AR[brand] ?? brand;
   const bEn = brand.charAt(0).toUpperCase() + brand.slice(1);

@@ -48,7 +48,7 @@ function stableUuid(seed: string): string {
 const BRAND_AR: Record<string, string> = { lg: "إل جي", gree: "جري", samsung: "سامسونج", tcl: "تي سي إل", westinghouse: "وايت وستنجهاوس", midea: "ميديا", haier: "هاير", hisense: "هايسنس", aux: "أوكس", general: "جنرال", zamil: "زامل", kelvinator: "كلفينيتور", mtc: "إم تي سي", classpro: "كلاس برو", crafft: "كرافت", haam: "هام" };
 const COOL_AR: Record<string, string> = { cool_only: "بارد فقط", hot_cold: "حار وبارد" };
 const TECH_AR: Record<string, string> = { Inverter: "انفرتر", Standard: "عادي" };
-function buildNames(key: string) {
+export function buildNames(key: string) {
   const [brand, acType, series, cap, tech, cool] = key.split("|");
   const bAr = BRAND_AR[brand] ?? brand;
   const bEn = brand.charAt(0).toUpperCase() + brand.slice(1);

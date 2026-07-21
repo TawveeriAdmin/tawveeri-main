@@ -47,7 +47,7 @@ function stableUuid(seed: string): string {
 }
 const BRAND_AR: Record<string, string> = { apple: "ابل", samsung: "سامسونج", huawei: "هواوي", lenovo: "لينوفو", honor: "هونر", xiaomi: "شاومي", nokia: "نوكيا" };
 const CONN_EN: Record<string, string> = { wifi: "Wi-Fi", "5g": "5G", "4g": "4G/LTE", cellular: "Cellular" };
-function buildNames(key: string): { nameAr: string; nameEn: string } {
+export function buildNames(key: string): { nameAr: string; nameEn: string } {
   const parts = key.split("|");
   const brand = parts[0];
   const bAr = BRAND_AR[brand] ?? brand;

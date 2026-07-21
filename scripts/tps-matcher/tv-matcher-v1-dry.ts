@@ -49,7 +49,7 @@ function stableUuid(seed: string): string {
 const BRAND_AR: Record<string, string> = { samsung: "سامسونج", lg: "إل جي", sony: "سوني", tcl: "تي سي إل", hisense: "هايسنس", toshiba: "توشيبا", nikai: "نيكاي", panasonic: "باناسونيك", philips: "فيليبس", dansat: "دان سات", skyworth: "سكاي ورث", haier: "هاير", vision: "فيجن" };
 const RES_EN: Record<string, string> = { "8k": "8K", "4k": "4K UHD", fhd: "Full HD", hd: "HD" };
 const PANEL_EN: Record<string, string> = { neo_qled: "Neo QLED", oled: "OLED", qned: "QNED", nanocell: "NanoCell", mini_led: "Mini LED", qled: "QLED", crystal: "Crystal UHD", led: "LED" };
-function buildNames(key: string): { nameAr: string; nameEn: string } {
+export function buildNames(key: string): { nameAr: string; nameEn: string } {
   const parts = key.split("|");
   const brand = parts[0];
   const bAr = BRAND_AR[brand] ?? brand;

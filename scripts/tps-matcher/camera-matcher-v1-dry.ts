@@ -45,7 +45,7 @@ function stableUuid(seed: string): string {
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
 const BRAND_AR: Record<string, string> = { canon: "كانون", nikon: "نيكون", sony: "سوني", fujifilm: "فوجي فيلم", panasonic: "باناسونيك", gopro: "جو برو", dji: "دي جي آي" };
-function buildNames(key: string): { nameAr: string; nameEn: string } {
+export function buildNames(key: string): { nameAr: string; nameEn: string } {
   const [brand, model, config] = key.split("|");
   const bAr = BRAND_AR[brand] ?? brand;
   const bEn = brand.charAt(0).toUpperCase() + brand.slice(1);
