@@ -264,6 +264,9 @@ async function fetchMobiles(limit: number): Promise<RawRow[]> {
       }
     }
 
+    // E6 bounded-batch guarantee: make إكسترا respect `limit` like the other
+    // three stores, so a run cannot exceed 4 * limit observations (provable bound).
+    if (extraRows.length >= limit) break;
     if (page.length < PAGE) break;
   }
 
@@ -297,7 +300,7 @@ async function fetchMobiles(limit: number): Promise<RawRow[]> {
     `   المنيع: ${(a ?? []).length} | إكسترا (Mobiles): ${extraRows.length} | جرير: ${(j ?? []).length} | أمازون: ${(az ?? []).length}`
   );
 
-  return [...(a ?? []), ...extraRows, ...(j ?? []), ...(az ?? [])] as RawRow[];
+  return [...(a ?? []), ...extraRows.slice(0, limit), ...(j ?? []), ...(az ?? [])] as RawRow[];
 }
 
 function priceGapRatio(offers: Offer[]): number | null {
@@ -549,6 +552,15 @@ async function main() {
 
   if (DRY_RUN) {
     console.log("⚠️ DRY_RUN — لم تُكتب أي بيانات.");
+    if (process.env.DUMP_IDS) {
+      require("fs").writeFileSync(process.env.DUMP_IDS, JSON.stringify({
+        canonicalIds,
+        canonicalSummary: canonicalRows.map((c) => ({ id: c.id, name_ar: c.name_ar, stores: (c.attributes as any).stores, key: c.tps_identity_key })),
+        normalizedIds: normalizedRows.map((n) => n.id),
+        changedPrices: changedPrices.map((p) => ({ canonical: p.canonical_product_id, store: p.store_name, price: p.price })),
+      }, null, 2));
+      console.log(`📝 dumped ${canonicalIds.length} candidate IDs -> ${process.env.DUMP_IDS}`);
+    }
     return;
   }
 
