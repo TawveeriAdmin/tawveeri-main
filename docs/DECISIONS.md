@@ -6,6 +6,12 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-018 — E6 Phase 3: raw_observations processing-status semantics, linked to committed batches · Accepted (2026-07-21)
+**Context:** the matcher never updated `raw_observations.processing_status`, so all 131,015 stayed `pending`; no code reads the column (informational). The check constraint defines the vocabulary: **`pending | processing | done | failed | skipped`** (an attempt to write `processed` failed the constraint — caught by verification, not assumption).
+**Semantics adopted:** `pending` = default/not yet canonicalized; `done` = included in a **successfully committed** `write_mobile_batch`; `failed`/`skipped`/`processing` reserved. Only the observations actually canonicalized in a batch are marked `done`, and **only after** the atomic RPC succeeds — a failed write exits first, leaving them `pending`. Idempotent; never touches the wider backlog.
+**Implementation:** the matcher collects `processedObsIds` (the offers that entered `normalizedRows`) and, post-RPC, updates exactly those to `done` in chunks.
+**Verification (bounded batch):** `marked 123/123 done`; `done=123, pending=130892, total=131015` — reconciles exactly; 123 distinct observation IDs; bounded ≤500. Re-running is a no-op.
+
 ### ADR-017 — E6 Phase 2: `mobile` vs `smartphone` resolved via the two-plane model; ADR-014 dedup regression fixed · Accepted (2026-07-21)
 **Context:** `product_category` contains both `mobile` and `smartphone`. Investigation of every producer/consumer showed this is an **intentional two-plane model**, not a duplicate:
 - **Canonical/TPS plane → `mobile`** — the mobile plugin (`category:"mobile"`), matcher v1/v2, normalized observations, and critically the search route's canonical lookup `searchTPSCanonical` (`route.ts:466` → `.eq('category','mobile')`).

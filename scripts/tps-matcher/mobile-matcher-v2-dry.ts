@@ -452,6 +452,9 @@ async function main() {
   const matchRows: any[] = [];
   const priceRows: any[] = [];
   const canonicalIds: string[] = [];
+  // Phase 3: track only the observations actually canonicalized in this batch,
+  // so we mark exactly those 'processed' after a successful atomic write.
+  const processedObsIds = new Set<number>();
 
   for (const g of clean) {
     const parts = g.key.split("|");
@@ -488,6 +491,7 @@ async function main() {
     for (const o of g.offers) {
       const normId = stableUuid(`norm:raw_observations:${o.observationId}`);
       o._normId = normId;
+      processedObsIds.add(o.observationId);
       normalizedRows.push({
         id: normId, source_table: "raw_observations",
         source_record_id: stableUuid(`raw_observations:${o.observationId}`),
@@ -571,6 +575,23 @@ async function main() {
 
   if (rpcError) { console.error("❌ فشل:", rpcError.message); process.exit(1); }
   console.log("✅ اكتملت الكتابة بنجاح:", result);
+
+  // Phase 3: mark ONLY the committed observations 'done' — after the atomic
+  // write succeeded. Status vocabulary is the schema's check constraint:
+  // pending | processing | done | failed | skipped. A failed write exits above,
+  // leaving observations 'pending'. Never touches the wider backlog; idempotent.
+  const obsIds = [...processedObsIds];
+  let marked = 0;
+  for (let i = 0; i < obsIds.length; i += 200) {
+    const chunk = obsIds.slice(i, i + 200);
+    const { error: stErr } = await supabase
+      .from("raw_observations")
+      .update({ processing_status: "done" })
+      .in("id", chunk);
+    if (stErr) { console.error("⚠️ status update failed:", stErr.message); break; }
+    marked += chunk.length;
+  }
+  console.log(`🏷️ marked ${marked}/${obsIds.length} observations done.`);
 }
 
 main().catch((e) => {
