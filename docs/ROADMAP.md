@@ -36,10 +36,10 @@ The path from the current two-system reality to the unified platform. Full detai
 | **E7** | Canonical linkage on ingestion | Pending |
 | **E8** | Surface the decision layer in web search ("Smart Pick") + accessory-relevance trust hardening | ✅ **Complete — production-verified** (build 6d4745a); trustworthy Smart Pick live for covered queries |
 | **E9** | Create user/auth/commerce schema on System A (RLS from the start) | ✅ **Complete — production-verified (ADR-026)**: 13 auth/commerce tables on System A, RLS-first, credential table (`login_sessions`) deny-all to anon, FKs reconciled to A. E10 (data migration) gated. |
-| **E10** | Migrate user data System B → A | Pending |
+| **E10** | Migrate user data System B → A | ✅ **Resolved — no-substantial-data / near-superseded (ADR-031)**: System A has 0 users; System B is a pre-launch base (~2 active users, 12 sessions, evidence in LEGACY-DB-FINDINGS). No authoritative user base to migrate; sessions/OTPs must not migrate. Does not gate E14/E15. |
 | **E11** | Mobile convergence — true platform client, measured exits | 🟡 **Core PRODUCTION-VERIFIED (ADR-029)** — Platform API Contract v1 (`/api/v1/tps/search` → offer_id + go_url), measured-exit loop verified (endpoint→/go 302→outbound_clicks source=mobile, affiliate tag). **Remaining:** mobile 45 catalog-read replacements, E10 auth prereq (🔒), app-store release. |
 | **E12** | Adapter completion — all 8 stores on the adapter contract | ✅ **Complete — verified (ADR-028)**: all 8 registered on the `StoreAdapter` contract; 4 data-bearing enabled + live-verified (extra, almanea, jarir, amazon); 4 no-data stores registered `enabled:false` pending a validated ingestion run. |
-| **E13** | Recommendations & embeddings re-keyed to canonical identity | Pending |
+| **E13** | Recommendations & embeddings re-keyed to canonical identity | 🚧 **In progress (ADR-030)** — deterministic canonical recommender `/api/v1/tps/recommendations` (explainable, category-aware, accessory-safe, no embeddings; Gemini NOT required — none available, and Constitution ADR-002 = deterministic decides). Embeddings deferred (optional, needs a key). |
 | **E14** | Owned search index authority cutover | Pending |
 | **E15** | Legacy retirement (System B, VPS) | Pending — after observation |
 | **E16** | Contracts & documentation alignment (regenerate types) | Continuous |
