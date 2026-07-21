@@ -13,20 +13,22 @@ import { canonicalizeBrand } from "../tps-core/brand-map";
 import { normalizeStoreUrl } from "../../src/lib/catalog/normalizeStoreUrl";
 import { adaptStoreRow } from "../tps-core/store-adapters";
 import { detectCondition } from "../tps-core/condition-detector";
+import {
+  type TpsBatchOptions, type TpsBatchResult,
+  assertBatchInvariants, assertFingerprint, perStoreLimit,
+} from "../tps-core/tps-batch";
 
-const DRY_RUN = process.env.DRY_RUN !== "false";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 // Service role only — an anon fallback would return RLS-filtered rows as if complete.
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("❌ لا يوجد Supabase في .env.local");
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: false },
-});
+// env is validated inside runMobileBatch (importable); no module-level exit.
+// Placeholder fallbacks keep createClient from throwing at import when env is
+// absent (e.g. build analysis); a real query is gated by the fingerprint check.
+const supabase = createClient(
+  SUPABASE_URL || "https://placeholder.supabase.co",
+  SUPABASE_KEY || "placeholder-key",
+  { auth: { persistSession: false } },
+);
 
 interface RawRow {
   id: number;
@@ -333,16 +335,27 @@ function resolveRam(g: BaseGroup): { addToKey: number | null; ramValues: number[
   return { addToKey: null, ramValues: all };
 }
 
-async function main() {
-  const LIMIT = Number(process.env.MATCHER_LIMIT || 1000);
+export async function runMobileBatch(opts: TpsBatchOptions): Promise<TpsBatchResult> {
+  const t0 = Date.now();
+  const R: TpsBatchResult = {
+    category: "mobile", requestedLimit: opts.limit, effectiveHardLimit: opts.limit,
+    fetched: 0, considered: 0, parserFailures: 0, lowConfidence: 0, conflicts: 0,
+    proposedCanonicals: 0, writtenCanonicals: 0, normalized: 0, matches: 0, prices: 0,
+    statusUpdates: 0, skipped: 0, durationMs: 0, success: false, dryRun: opts.dryRun, error: null,
+  };
+  try {
+  if (opts.category !== "mobile") throw new Error("category isolation: runMobileBatch only handles mobile");
+  assertBatchInvariants(opts);
+  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("no supabase env");
+  assertFingerprint(SUPABASE_URL, opts.expectedFingerprint);
+  const dryRun = opts.dryRun;
+  const LIMIT = perStoreLimit(opts.limit, 4);
   const now = new Date().toISOString();
 
-  console.log("═".repeat(72));
-  console.log(`MATCHER v2 — WRITE  [DRY_RUN=${DRY_RUN}]  (TIP: Condition-in-Identity)`);
-  console.log(DRY_RUN ? "⚠️ محاكاة — لا كتابة." : "🔴 كتابة فعلية.");
-  console.log("═".repeat(72));
-
   const rows = await fetchMobiles(LIMIT);
+  R.fetched = rows.length; R.considered = rows.length;
+  // HARD BOUND — total observations can never exceed the requested limit.
+  if (R.fetched > opts.limit) throw new Error(`bound violation: fetched ${R.fetched} > limit ${opts.limit}`);
   console.log(`\nجُلب ${rows.length} صفاً.\n`);
 
   const baseGroups = new Map<string, BaseGroup>();
@@ -550,51 +563,54 @@ async function main() {
     return last === undefined || last !== Number(pr.price);
   });
 
-  console.log(
-    `📦 canonical=${canonicalRows.length} | normalized=${normalizedRows.length} | matches=${matchRows.length} | price(متغيّر)=${changedPrices.length}/${priceRows.length}\n`
-  );
+  R.proposedCanonicals = canonicalRows.length;
+  R.normalized = normalizedRows.length;
+  R.matches = matchRows.length;
+  R.prices = changedPrices.length;
 
-  if (DRY_RUN) {
-    console.log("⚠️ DRY_RUN — لم تُكتب أي بيانات.");
-    if (process.env.DUMP_IDS) {
-      require("fs").writeFileSync(process.env.DUMP_IDS, JSON.stringify({
+  if (dryRun) {
+    if (opts.dumpIdsPath) {
+      require("fs").writeFileSync(opts.dumpIdsPath, JSON.stringify({
         canonicalIds,
-        canonicalSummary: canonicalRows.map((c) => ({ id: c.id, name_ar: c.name_ar, stores: (c.attributes as any).stores, key: c.tps_identity_key })),
         normalizedIds: normalizedRows.map((n) => n.id),
-        changedPrices: changedPrices.map((p) => ({ canonical: p.canonical_product_id, store: p.store_name, price: p.price })),
+        processedObsIds: [...processedObsIds],
       }, null, 2));
-      console.log(`📝 dumped ${canonicalIds.length} candidate IDs -> ${process.env.DUMP_IDS}`);
     }
-    return;
+    R.success = true; R.durationMs = Date.now() - t0; return R;
   }
+  if (canonicalRows.length === 0) { R.success = true; R.durationMs = Date.now() - t0; return R; }
 
   const { data: result, error: rpcError } = await supabase.rpc("write_mobile_batch", {
     p_canonical: canonicalRows, p_normalized: normalizedRows,
     p_matches: matchRows, p_prices: changedPrices, p_canonical_ids: canonicalIds,
   });
+  // A failed write throws BEFORE any status update — observations stay pending.
+  if (rpcError) throw new Error(`write_mobile_batch: ${rpcError.message}`);
+  const w = result as { canonical: number; normalized: number; matches: number; prices: number };
+  R.writtenCanonicals = w.canonical; R.normalized = w.normalized; R.matches = w.matches; R.prices = w.prices;
 
-  if (rpcError) { console.error("❌ فشل:", rpcError.message); process.exit(1); }
-  console.log("✅ اكتملت الكتابة بنجاح:", result);
-
-  // Phase 3: mark ONLY the committed observations 'done' — after the atomic
-  // write succeeded. Status vocabulary is the schema's check constraint:
-  // pending | processing | done | failed | skipped. A failed write exits above,
-  // leaving observations 'pending'. Never touches the wider backlog; idempotent.
+  // Mark ONLY the committed observations 'done', after the atomic write. Idempotent.
   const obsIds = [...processedObsIds];
-  let marked = 0;
   for (let i = 0; i < obsIds.length; i += 200) {
-    const chunk = obsIds.slice(i, i + 200);
-    const { error: stErr } = await supabase
-      .from("raw_observations")
-      .update({ processing_status: "done" })
-      .in("id", chunk);
-    if (stErr) { console.error("⚠️ status update failed:", stErr.message); break; }
-    marked += chunk.length;
+    const { error: stErr } = await supabase.from("raw_observations").update({ processing_status: "done" }).in("id", obsIds.slice(i, i + 200));
+    if (stErr) { R.error = `status update: ${stErr.message}`; break; }
+    R.statusUpdates += Math.min(200, obsIds.length - i);
   }
-  console.log(`🏷️ marked ${marked}/${obsIds.length} observations done.`);
+  R.success = true; R.durationMs = Date.now() - t0; return R;
+  } catch (e) {
+    R.error = e instanceof Error ? e.message : String(e); R.success = false; R.durationMs = Date.now() - t0; return R;
+  }
 }
 
-main().catch((e) => {
-  console.error("❌ فشل غير متوقع:", e);
-  process.exit(1);
-});
+// CLI usage preserved (MATCHER_LIMIT stays per-store; total = 4 × per-store).
+if (require.main === module) {
+  runMobileBatch({
+    category: "mobile",
+    dryRun: process.env.DRY_RUN !== "false",
+    limit: Number(process.env.MOBILE_TOTAL_LIMIT || (Number(process.env.MATCHER_LIMIT || 125) * 4)),
+    expectedFingerprint: "vyceqrzttspyycdpojtn",
+    source: "manual",
+    dumpIdsPath: process.env.DUMP_IDS,
+  }).then((r) => { console.log(JSON.stringify(r, null, 2)); process.exit(r.success ? 0 : 1); })
+    .catch((e) => { console.error(e); process.exit(1); });
+}
