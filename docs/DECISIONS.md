@@ -6,6 +6,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-027 — E5: Algolia sync restoration — owned TPS index built from the projection · Accepted (2026-07-21)
+**Context:** the search goal (E14 — owned search index authority) requires an owned index fed from `tps_product_projection`. The existing `scripts/algolia-sync.ts` is misnamed (it's identity-resolution logic, not a sync); no real projection→index sync existed.
+**Decision & build:** `scripts/tps-algolia-sync.ts` (`syncTpsIndex()` + CLI + npm `tps:algolia-sync`) reads the whole projection and does an **atomic full rebuild** (`replaceAllObjects`, deterministic `objectID = canonical_id`) of the owned index **`tawveeri_tps_products`** (write client via `ALGOLIA_ADMIN_KEY`), sets searchable/faceting/custom-ranking settings, and stamps `tps_product_projection.algolia_synced_at`. Schedulable via authenticated `POST /api/cron/tps-algolia-sync` (Bearer `CRON_SECRET`).
+**Verified:** synced=48, stamped=48; index record count = **48** (= projection count); searches return canonical products ("ايفون 15"→iPhone 15 2599 SAR 2st, "مكيف جري"→GREE 2249 2st, "lg"→LG AC 2499 2st); reproducible (atomic replace). **Zero live-search impact** — the live search still uses the `products` index; E14 cutover to `tawveeri_tps_products` is separate. Chose E5 because E10 (needs legacy creds) and E13 (needs `GOOGLE_AI_API_KEY`) are blocked on founder-supplied secrets, and E5 is the low-risk, in-context prerequisite for E14.
+
 ### ADR-026 — E9: user/auth/commerce schema created on System A (RLS-first) · Accepted (2026-07-21)
 **Ratified by** ADR-003 (consolidate onto System A). E9 creates the auth/commerce layer on System A (`vyceqrzttspyycdpojtn`); it does **not** migrate data (E10) or touch legacy (`ffpsjjazsluolysgithg` stays closed).
 **Reconciliation (E9 ≠ apply the legacy SQL verbatim):** adapted the ratified app schema to A — `users.id → auth.users(id)` (Supabase integration); `store_reviews.store_id`/`coupons.store_id` are **INTEGER** → `stores(id)` (ADR-004; legacy used UUID); `products`/`product_stores` refs are UUID (match A); `search_history.category` is TEXT (avoid enum coupling); `role` is a column (no separate `user_roles` table). Migration: `scripts/database/knowledge-db/010_e9_auth_commerce_schema.sql` (additive, reversible = drop; owner-applied over the direct connection).
