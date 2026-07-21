@@ -5,6 +5,17 @@
 **Basis:** Architecture Reconciliation (complete 2026-07-20) + Production Execution Topology (complete).
 **Durations** are engineering estimates in working days, not commitments. **Complexity** is S / M / L / XL.
 
+## E1–E3 status: COMPLETE (production-verified 2026-07-21)
+
+Deployed to production (Railway, tawveeri.com). Gates verified against the production database vyceqrzttspyycdpojtn, read-only, based on post-remediation rows.
+
+- **Gate 5 PASS** — scraping_runs recording. Run 92 (jarir, store_id 1): status success, started 07:17:55Z, finished 07:24:46Z, duration 411700ms, discovered 701, updated 699, failed 0.
+- **Gate 6 PASS** — all 701 post-remediation Jarir raw_observations carry store_id (0 null) and scraping_run_id (0 null); all 701 linked to run 92.
+- **Gate 7 PASS** — 0 post-remediation NULL store_id in raw_observations and price_history; 164 Jarir price_history rows written with store_id, 0 null.
+- Historical evidence preserved untouched: 703 pre-boundary raw_observations with null scraping_run_id and 165 price_history with null store_id remain.
+- Two deploys: fcda8fe (E1–E3 initial, exposed the discover-products gaps on run 89) and 74c8ae7 (discover-products propagation fix, verified on run 92).
+- Adapter path (Almanea/Extra via discover-firecrawl) was correct from the first deploy and unchanged by the fix.
+
 ## Verification methodology (governs all milestones)
 
 - **All production and legacy verification is strictly read-only** unless the product owner explicitly approves a write. No INSERT/UPDATE/DELETE/UPSERT/RPC on any environment without explicit approval.
