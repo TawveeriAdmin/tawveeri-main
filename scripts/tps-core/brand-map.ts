@@ -115,6 +115,15 @@ const BRAND_ALIASES: Record<string, string> = {
   "razer": "razer", "ريزر": "razer",
   "toshiba": "toshiba", "توشيبا": "toshiba",
   "dynabook": "dynabook", "داينابوك": "dynabook",
+
+  // ── TV brands (bilingual). Samsung/LG/Huawei/Toshiba already mapped above.
+  "sony": "sony", "سوني": "sony",
+  "nikai": "nikai", "نيكاي": "nikai",
+  "panasonic": "panasonic", "باناسونيك": "panasonic",
+  "philips": "philips", "فيليبس": "philips",
+  "dansat": "dansat", "دان سات": "dansat", "دانسات": "dansat",
+  "skyworth": "skyworth", "سكاي ورث": "skyworth",
+  "vision": "vision", "فيجن": "vision",
 };
 
 /**

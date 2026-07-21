@@ -34,7 +34,7 @@ describe('hard-bound + validation invariants', () => {
     expect(() => assertBatchInvariants(base({ limit: -5 }))).toThrow(/below minimum/);
   });
   it('rejects an unsupported category', () => {
-    expect(() => assertBatchInvariants(base({ category: 'tv' as never }))).toThrow(/invalid category/);
+    expect(() => assertBatchInvariants(base({ category: 'refrigerator' as never }))).toThrow(/invalid category/);
     expect(() => assertBatchInvariants(base({ category: 'all' as never }))).toThrow(/invalid category/);
   });
   it('requires an expected fingerprint', () => {

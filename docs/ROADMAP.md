@@ -12,7 +12,7 @@ Two views: *where the product is on the capability ladder*, and *the engineering
 |---|---|---|
 | **L1** | **Discovery** — users find products | ✅ Live |
 | **L2** | **Comparison** — stores, prices, availability, offers | ✅ Live (canonical comparison for covered categories) |
-| **L3** | **Knowledge** — specs, differences, guides, FAQs, buying advice | 🟡 Partial — decision layer surfaced as Smart Pick in search; TPS **comparison** covers `mobile`/`ac`; `laptop` plugin built + precise but catalog yields 0 cross-store corroboration (ADR-032); TV is the next buildable category (ADR-033) |
+| **L3** | **Knowledge** — specs, differences, guides, FAQs, buying advice | 🟡 Partial — decision layer surfaced as Smart Pick in search; TPS **comparison** covers `mobile`/`ac`/`tv` (3 live categories); `laptop` plugin built + precise but catalog yields 0 cross-store corroboration (ADR-032); tablet/audio/camera queued (ADR-033) |
 | **L4** | **AI Shopping** — Waffar reasons, compares, explains, recommends | 🟡 Present on web; deterministic-engine-backed; not yet on all clients |
 | **L5** | **Commerce Intelligence** — market understanding, prediction, merchant & consumer intelligence, APIs | ⚪ Foundational data exists; capabilities not yet built |
 
@@ -40,7 +40,7 @@ The path from the current two-system reality to the unified platform. Full detai
 | **E11** | Mobile convergence — true platform client, measured exits | 🟡 **Core PRODUCTION-VERIFIED (ADR-029)** — Platform API Contract v1 (`/api/v1/tps/search` → offer_id + go_url), measured-exit loop verified (endpoint→/go 302→outbound_clicks source=mobile, affiliate tag). **Remaining:** mobile 45 catalog-read replacements, E10 auth prereq (🔒), app-store release. |
 | **E12** | Adapter completion — all 8 stores on the adapter contract | ✅ **Complete — verified (ADR-028)**: all 8 registered on the `StoreAdapter` contract; 4 data-bearing enabled + live-verified (extra, almanea, jarir, amazon); 4 no-data stores registered `enabled:false` pending a validated ingestion run. |
 | **E13** | Recommendations & embeddings re-keyed to canonical identity | ✅ **Complete — production-verified (ADR-030)**: deterministic canonical recommender `/api/v1/tps/recommendations` verified on mobile (best-value reasons, conf 93-95) + AC (same-family, conf 80); 0 accessory contamination; category-aware; no embeddings/Gemini. Semantic embeddings deferred (optional). |
-| **E14** | Owned search index authority cutover | ⛔ **Gated on catalog coverage (not a secret):** owned TPS index = **48 of 4,821 catalog products (~1%)**. Coverage is gated by **cross-store corroboration, not plugin count** — the laptop plugin is built + precise yet the Saudi laptop catalog has **0 genuine ≥2-store matches** (store-exclusive SKUs, no shared model identifier — ADR-032). Evidence-based buildable categories by corroboration ceiling: **TV=32, Tablet=13, Audio=9, Camera=4, Appliance=0** (ADR-033). TV is next. The cutover needs corroboration-bearing categories scaled up; Smart-Pick overlay already live for mobile+ac. See **§6 TPS Category Coverage**. |
+| **E14** | Owned search index authority cutover | ⛔ **Gated on catalog coverage (not a secret):** owned TPS index = **56** corroborated canonicals (mobile+ac+tv). Coverage is gated by **cross-store corroboration, not plugin count** — the laptop plugin is built + precise yet the Saudi laptop catalog has **0 genuine ≥2-store matches** (ADR-032). Corroboration ceilings: **TV✅ shipped, Tablet=13, Audio=9, Camera=4, Appliance=0** (ADR-033/034). Cutover still needs corroboration-bearing categories scaled up (and each TV batch is bounded ≤500 — more batches will grow TV beyond the first 8); Smart-Pick overlay live for mobile+ac+tv. See **§6 TPS Category Coverage**. |
 | **E15** | Legacy retirement (System B, VPS) | ⛔ **Gated on E14** (catalog coverage). Legacy DATA aspect resolved (E10 superseded — no data to migrate). Retirement of the owned-search-authority gate awaits catalog-scale TPS coverage. |
 | **E16** | Contracts & documentation alignment (regenerate types) | Continuous |
 
@@ -69,8 +69,8 @@ Comparison coverage grows **only where cross-store corroboration genuinely exist
 |---|---|---|---|
 | **mobile** | ✅ Live (Smart Pick) | corroborated | first TPS category |
 | **air_conditioner** | ✅ Live (Smart Pick) | 7 canonicals | unlocked by brand normalization (ADR-022/023) |
+| **tv** | ✅ **Live — production-verified** | **8 canonicals** (bounded run) | 3rd live category; brand\|size\|res\|panel\|refresh + price-band guard; live search AR/EN + measured exit (ADR-034) |
 | **laptop** | 🟢 Plugin built + precise; ⛔ comparison-blocked | **0 genuine** | store-exclusive SKUs; all 5 spec-overlaps proven-different models (ADR-032) |
-| **TV** | ⏭️ **Next build** | **32** (proxy floor) | Hisense/TCL/LG 65"/75" 4K — real commodity matches (ADR-033) |
 | **tablet** | Queued | 13 | iPad Air / Huawei |
 | **audio** | Queued | 9 | AirPods Pro/AirPods |
 | **camera** | Queued | 4 | Canon EOS R-series |
