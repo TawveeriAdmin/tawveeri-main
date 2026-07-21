@@ -7,32 +7,36 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createServerClient } from '@/lib/database';
-import { resolveStoreId } from '../store-identity';
 import type { ScrapedProduct } from '../base/types';
 
 export class IngestionService {
   private supabase = createServerClient();
 
-  /** يحفظ دفعة منتجات خام لمتجر واحد. يرجع عدد الصفوف المحفوظة. */
-  async ingestBatch(storeSlug: string, products: ScrapedProduct[]): Promise<number> {
+  /**
+   * يحفظ دفعة منتجات خام لمتجر واحد. يرجع عدد الصفوف المحفوظة.
+   *
+   * store_id and scrapingRunId are resolved by the caller (the orchestrator,
+   * which already resolves the canonical store id and owns the active
+   * scraping_runs.id) and passed in explicitly. Identity is NOT re-resolved
+   * here — a single authoritative value flows down the ingestion chain, and
+   * both ids are written at insert time. store_name is written as the slug for
+   * provenance only; nothing resolves from the label.
+   */
+  async ingestBatch(
+    storeSlug: string,
+    products: ScrapedProduct[],
+    storeId: number,
+    scrapingRunId: number | null
+  ): Promise<number> {
     if (!products.length) return 0;
 
-    // Canonical identity. store_name is written as the slug purely as
-    // provenance — identity is store_id and nothing resolves from the label.
-    // This replaces a hardcoded slug→Arabic-name map that disagreed with the
-    // stores registry (it used 'samsung-ksa' where the registry has
-    // 'samsung_ksa', so those rows could never be joined).
-    const storeId = await resolveStoreId(storeSlug);
-    if (storeId === null) {
-      console.error(`[IngestionService] unknown store slug '${storeSlug}' — not in stores registry; refusing to ingest unidentifiable observations`);
-      return 0;
-    }
     const storeName = storeSlug;
     const now = new Date().toISOString();
 
     const rows = products.map((p) => ({
       store_id: storeId,
       store_name: storeName,
+      scraping_run_id: scrapingRunId,
       raw_name: p.name_ar || p.name_en || '',
       payload: {
         ...p,                          // الخام كاملاً كما وصل — بما فيه sku/mpn إن وُجدا

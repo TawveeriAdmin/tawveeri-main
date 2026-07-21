@@ -115,7 +115,10 @@ export class ScrapingOrchestrator {
   private ingestion = new IngestionService();
   private validator = new DataValidator();
 
-  async runDiscoveryJob(options: DiscoveryOptions): Promise<DiscoveryResult> {
+  async runDiscoveryJob(
+    options: DiscoveryOptions,
+    scrapingRunId: number | null = null
+  ): Promise<DiscoveryResult> {
     const startTime = Date.now();
     const storeSlug = options.store_slug;
 
@@ -155,7 +158,9 @@ export class ScrapingOrchestrator {
             options.max_pages || 10
           );
           if (!options.dry_run) {
-            await this.ingestion.ingestBatch(storeSlug, scrapedProducts);
+            // storeId resolved once upstream; scrapingRunId owned by the caller.
+            // Both written into raw_observations at insert time.
+            await this.ingestion.ingestBatch(storeSlug, scrapedProducts, Number(storeId), scrapingRunId);
           }
           if (scrapedProducts.length > 0) {
             console.log(`    [${storeSlug}/${category}] scraped ${scrapedProducts.length} products — writing to DB…`);
@@ -240,7 +245,7 @@ export class ScrapingOrchestrator {
           console.log(`[${storeSlug}] running supplemental discovery…`);
           const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
           if (!options.dry_run) {
-            await this.ingestion.ingestBatch(storeSlug, supProducts);
+            await this.ingestion.ingestBatch(storeSlug, supProducts, Number(storeId), scrapingRunId);
           }
 
           if (supProducts.length > 0) {

@@ -58,7 +58,9 @@ export async function POST(request: NextRequest) {
     }
 
     const orchestrator = new ScrapingOrchestrator();
-    const result = await orchestrator.runDiscoveryJob(options);
+    // Propagate the active scraping_runs.id so raw_observations written by the
+    // ingestion service are linked to this run at insert time.
+    const result = await orchestrator.runDiscoveryJob(options, runId);
 
     if (runId) {
       await finishRun({

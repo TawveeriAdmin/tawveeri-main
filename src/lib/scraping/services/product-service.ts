@@ -400,6 +400,11 @@ export class ProductService {
         .insert({
           product_store_id: productStoreId,
           canonical_product_id: null,
+          // Canonical store identity, taken from the product_store this price
+          // belongs to (its store_id is the authoritative value written upstream
+          // when the offer was linked). Written at insert time so price_history
+          // is joinable on store_id without backfill.
+          store_id: storeId,
           store_name: storeName,
           price,
           original_price: options?.originalPrice ?? null,
