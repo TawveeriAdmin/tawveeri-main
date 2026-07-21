@@ -6,6 +6,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-024 — E6 AC: surfaced in live search via category-aware TPS routing · Accepted (2026-07-21)
+**Support-table discrepancy resolved authoritatively (direct DB, not PostgREST):** `to_regclass` + `pg_class` across all schemas confirm `ac_identity_state` and `conflict_review` **physically do not exist** (PGRST205 was correct here); `identity_resolution_events` (37 rows) and `parser_improvement_queue` (0 rows) exist and are API-exposed. **ADR-023/HANDOFF-E6 need no correction.**
+**Change:** `searchTPSCanonical` was hardcoded to `category='mobile'`, so AC canonicals were never surfaced. Added `detectCanonicalCategory(query)` → **one** canonical category per query: accessory query → none (no Smart Pick); clearly-AC (مكيف/سبليت/split ac/…) → `air_conditioner`; everything else → `mobile` (unchanged, so **zero mobile regression**). `searchTPSCanonical(words, supabase, category)` now takes the category; the UI bridge maps `mobile→smartphone`, `air_conditioner→air_conditioner` (was hardcoded `smartphone`). Never fetches both categories.
+**Tests:** `tests/scraping/search-category-routing.test.ts` (9/9) — mobile/AC/accessory/unknown routing, one-category-per-query, UI bridge, and route-wiring drift guards. Targeted 24/24 pass. Full suite 89 passed (+9); **28 failures unchanged — all environment/DB-integration (users/stores/auth), 0 touched by this change, 0 new.**
+
 ### ADR-023 — E6 AC: `write_ac_batch` built + first bounded AC batch SHIPPED & PRODUCTION-VERIFIED · Accepted (2026-07-21)
 **Support tables:** verified `ac_identity_state` and `conflict_review` **do NOT exist** (PGRST205) — corrects the handoff; only `parser_improvement_queue` + `identity_resolution_events` exist. So `write_ac_batch` uses existing schema only.
 **`write_ac_batch` (Phase 4):** created via DDL (`scripts/database/knowledge-db/008_write_ac_batch.sql`) — category-specific mirror of the proven `write_mobile_batch`: upsert canonical/normalized by deterministic id, delete-by-batch-ids + insert matches, append changed prices; single atomic transaction; `security invoker`; **service_role/postgres only, anon/authenticated revoked**. **Atomic rollback verified** (a bad-price payload → whole tx rolled back, 0 residue).

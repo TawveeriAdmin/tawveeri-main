@@ -166,6 +166,25 @@ function isMainProductTypeQuery(raw: string): boolean {
   return words.some((w) => MAIN_PRODUCT_TYPES.has(w));
 }
 
+// Determine the SINGLE canonical category to search for a query, so we never
+// fetch both mobile and AC canonicals indiscriminately. Accessory queries get
+// no TPS canonical (a Smart Pick must not surface for an accessory search).
+// Clearly-AC queries → air_conditioner. Everything else → mobile (preserves all
+// existing mobile behavior; non-matching queries simply return []).
+const AC_QUERY_WORDS = new Set(['مكيف', 'مكيفات', 'سبليت', 'شباك', 'كاسيت', 'دولابي', 'ac']);
+function detectCanonicalCategory(raw: string): 'mobile' | 'air_conditioner' | null {
+  const norm = normalizeArabic(raw).toLowerCase();
+  const words = norm.split(/\s+/).filter(Boolean);
+  if (
+    ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
+    ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
+    ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
+  ) return null;
+  const isAC = words.some((w) => AC_QUERY_WORDS.has(w)) || /split\s*ac|air\s*condition/.test(norm);
+  if (isAC) return 'air_conditioner';
+  return 'mobile';
+}
+
 function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
@@ -456,14 +475,17 @@ async function enrichWithTPS(
 // ── TPS Canonical Search ──────────────────────────────────────
 async function searchTPSCanonical(
   words: string[],
-  supabase: ReturnType<typeof createServerClient>
+  supabase: ReturnType<typeof createServerClient>,
+  category: 'mobile' | 'air_conditioner',
 ): Promise<GroupedSearchProduct[]> {
   try {
     if (!words.length) return [];
+    // canonical plane is 'mobile'/'air_conditioner'; UI plane maps mobile→smartphone.
+    const uiCategory: ProductCategory = category === 'mobile' ? 'smartphone' : (category as ProductCategory);
     const { data: prods } = await supabase
       .from('canonical_products')
       .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number')
-      .eq('category', 'mobile')
+      .eq('category', category)
       .eq('is_active', true);
 
     if (!prods?.length) return [];
@@ -506,7 +528,7 @@ async function searchTPSCanonical(
         product_url: `/go/${v.obsId}`,
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
-        category: 'smartphone' as ProductCategory,
+        category: uiCategory,
         description_ar: null, 
         description_en: null,
         is_free_delivery: false, 
@@ -652,15 +674,16 @@ export async function POST(request: NextRequest) {
         .map(toGroupedSearchProduct)
         .filter((p): p is GroupedSearchProduct => p !== null);
 
-  // TPS Canonical Search
-  if (rawQuery) {
+  // TPS Canonical Search — one category per query, derived from the query.
+  const tpsCategory = rawQuery ? detectCanonicalCategory(rawQuery) : null;
+  if (rawQuery && tpsCategory) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
     const mw = aw.filter((w) => !STOPWORDS.has(w));
-    const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase);
+    const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategory);
     if (tpsProducts.length) {
       products = [...tpsProducts, ...products];
-      console.log('[TPS Search] injected:', tpsProducts.length);
+      console.log('[TPS Search] injected:', tpsProducts.length, '(', tpsCategory, ')');
     }
   }
 
