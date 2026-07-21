@@ -30,7 +30,7 @@ The path from the current two-system reality to the unified platform. Full detai
 | **E1** | Observability & run logging | ✅ **Complete — production-verified** (run 92) |
 | **E2** | Canonical store identity (`stores.id`) | ✅ **Complete — production-verified** |
 | **E3** | RLS at the definition layer + production exposure audit | ✅ **Complete — production-verified** (legacy remediation tracked separately) |
-| **E4** | Scheduler consolidation & Infrastructure-as-Code | ⏭ **Next.** Includes Must-Fix: unauthenticated `GET /api/cron/discover-firecrawl?…&sync=1` write endpoint |
+| **E4** | Scheduler consolidation, ingestion-trigger security, overlap protection, scheduler-as-code | ✅ **Complete — production-verified** (run 94); Must-Fix closed (two unauthenticated GET write paths eliminated) |
 | **E5** | Algolia sync restoration (feed the owned TPS index) | Pending |
 | **E6** | TPS pipeline automation + **canonical-quality audit** (resolves the identity-invariant debt) | Pending — highest-value knowledge work |
 | **E7** | Canonical linkage on ingestion | Pending |
@@ -50,7 +50,7 @@ The path from the current two-system reality to the unified platform. Full detai
 
 ## 3. Near-term priorities
 
-1. **E4 — one version-controlled scheduler** and close the unauthenticated write endpoint.
+1. **E5 — Algolia sync restoration** (owned TPS index producer).
 2. **E8 — surface the decision layer** (independent, high user value).
 3. **E6 — automate knowledge construction and audit the canonical graph** — the platform's moat currently grows only when a human runs a script; this is the single highest-leverage architectural change.
 

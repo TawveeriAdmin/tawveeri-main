@@ -6,6 +6,12 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-009 — pg_cron is the single authoritative scheduler; GET can never trigger a write · Accepted (2026-07-21)
+**Context:** two uncoordinated trigger mechanisms (Supabase pg_cron for adapters, GitHub Actions for Jarir), a dormant DB-driven dispatch path, and two unauthenticated GET write paths (discover-firecrawl `?sync=1`; discover-products GET self-injecting CRON_SECRET). The pg_cron schedule lived only in the Supabase dashboard, outside version control.
+**Decision:** Supabase pg_cron is the single authoritative scheduling mechanism; its schedule is captured in version control (`007_scheduler.sql`). Every scheduled call is an authenticated POST with the Bearer secret from Vault. GET on ingestion routes is read-only and can never write. Overlap protection (`hasActiveRun`) skips a store already running. The GitHub Actions Jarir trigger is retained with justification until `007` moves Jarir onto pg_cron and is verified live — retiring it earlier would stop Jarir ingestion.
+**Alternatives:** make the DB-driven dispatch/`scraping_schedules` path authoritative (requires a schema migration + adapter-mechanism unification — that is E12/later, higher risk now).
+**Consequences:** no unauthenticated write surface; no silent scheduler outside VCS; safe double-trigger handling. Full mechanism unification (one dispatch entry, all stores on adapters) deferred to E12. Verified on run 94.
+
 ### ADR-008 — Constitutional documentation set as Single Source of Truth · Accepted (2026-07-21)
 **Context:** the founder ratified a 7-part Constitution; the repo had accurate but scattered analysis docs and a drifted `CLAUDE.md`.
 **Decision:** consolidate into `TAWVEERI_CONSTITUTION.md` (root) governing `ARCHITECTURE.md`, `TPS.md`, `ROADMAP.md`, `GLOSSARY.md`, this register, and `CLAUDE.md`, with `docs/README.md` defining precedence. Deep analysis docs (Blueprint, transition plan, reconciliation) become the dated evidence layer.
