@@ -6,6 +6,14 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-038 — Camera TPS Plugin SHIPPED & PRODUCTION-VERIFIED (6th live category); category sweep complete · Accepted (2026-07-22)
+**Context:** camera was the last evidence-backed corroborating category (ADR-033, ceiling 4). Marginal but genuine (Canon EOS, Jarir↔Amazon).
+**Built (Camera Identity Contract v1):** `scripts/tps-plugins/camera/*` + `scripts/tps-matcher/camera-matcher-v1-dry.ts`. Identity: `brand | model(line + variant) | config(kit-lens focal | body)`. Detector rejects accessories (lens-only, bag, tripod, battery, charger, filter, SD card) and non-cameras (security/IP/webcam).
+**Precision handled (audit-proven, verified before write):** EOS R50 ≠ **R50 V** (variant captured in model); body ≠ kit ≠ different kit (focal config); the price-band guard dropped a 2000D **double-lens kit** (2799) that would have inflated the single-kit canonical (1648-1649).
+**Production write (bounded, idempotent, rollback):** **3 corroborated Canon canonicals** — EOS 2000D 18-55, EOS R100 18-45, EOS R50 18-45 (Jarir↔Amazon; near-identical cross-store prices). Projection + owned index **71→74**.
+**PRODUCTION-VERIFIED (live):** `/api/v1/tps/search` returns cameras for `كاميرا`, `canon`, `eos r100`; measured exit `/go` → **HTTP 302 → jarir.com/canon-eos-2000d**. Regression clean (audio/TV/…). Tests: camera 6/6, full suite **120/120**. Camera is the **6th live TPS category**.
+**Milestone — category sweep COMPLETE:** every evidence-backed corroborating category is now live (mobile, ac, tv, tablet, audio, camera). laptop = built + precise but 0 catalog corroboration (ADR-032); appliance = deferred (0, single-store). The **cross-store corroboration ceiling of the current 4-store catalog is reached (~74 corroborated canonicals of ~4,821 raw products)** — confirming most Saudi retail products are structurally single-store. This is the evidence base for the E14 **hybrid** search authority (canonical comparison for the corroborated set + labelled discovery for the single-store remainder), not a sole-index cutover.
+
 ### ADR-037 — Audio TPS Plugin SHIPPED & PRODUCTION-VERIFIED (5th live category) · Accepted (2026-07-22)
 **Context:** audio was the next evidence-selected category (ADR-033, corroboration ceiling 9) after tablet.
 **Built (Audio Identity Contract v1):** `scripts/tps-plugins/audio/*` + `scripts/tps-matcher/audio-matcher-v1-dry.ts`. Identity: `brand | model(line + generation)` — the model token includes the generation (the core audio precision risk). Detector hard-rejects the heavy accessory contamination (a Promate MagSafe **charger** matched "AirPods Pro" in the audit): chargers, cases, ear tips, cushions, cables, stands, replacements. Colour/bundle are commercial.

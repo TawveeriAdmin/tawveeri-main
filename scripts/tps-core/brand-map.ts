@@ -125,6 +125,13 @@ const BRAND_ALIASES: Record<string, string> = {
   "marshall": "marshall", "مارشال": "marshall",
   "jabra": "jabra", "جابرا": "jabra",
 
+  // ── Camera brands (bilingual). Sony/Panasonic already mapped.
+  "canon": "canon", "كانون": "canon",
+  "nikon": "nikon", "نيكون": "nikon",
+  "fujifilm": "fujifilm", "fuji": "fujifilm", "فوجي": "fujifilm", "فوجي فيلم": "fujifilm",
+  "gopro": "gopro", "جو برو": "gopro", "قو برو": "gopro",
+  "dji": "dji", "دي جي اي": "dji",
+
   // ── TV brands (bilingual). Samsung/LG/Huawei/Toshiba already mapped above.
   "sony": "sony", "سوني": "sony",
   "nikai": "nikai", "نيكاي": "nikai",

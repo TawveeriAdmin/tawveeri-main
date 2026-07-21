@@ -3,7 +3,7 @@
 // Category-isolated: a mobile invocation can only touch mobile canonicals,
 // an AC invocation only air_conditioner. Total observations can never exceed 500.
 
-export type TpsCategory = 'mobile' | 'air_conditioner' | 'laptop' | 'tv' | 'tablet' | 'audio';
+export type TpsCategory = 'mobile' | 'air_conditioner' | 'laptop' | 'tv' | 'tablet' | 'audio' | 'camera';
 
 export const TPS_MAX_OBSERVATIONS = 500;
 export const TPS_MIN_OBSERVATIONS = 1;
@@ -46,7 +46,7 @@ export interface TpsBatchResult {
 
 /** Validate the bound invariants BEFORE any fetch/write. Throws on violation. */
 export function assertBatchInvariants(opts: TpsBatchOptions): void {
-  if (!['mobile', 'air_conditioner', 'laptop', 'tv', 'tablet', 'audio'].includes(opts.category)) {
+  if (!['mobile', 'air_conditioner', 'laptop', 'tv', 'tablet', 'audio', 'camera'].includes(opts.category)) {
     throw new Error(`invalid category: ${opts.category}`);
   }
   if (!Number.isInteger(opts.limit)) throw new Error('limit must be an integer');
