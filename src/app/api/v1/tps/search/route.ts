@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
+import { algoliasearch } from 'algoliasearch';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const ALGOLIA_APP = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || process.env.ALGOLIA_APP_ID || '';
+const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '';
+const TPS_INDEX = process.env.ALGOLIA_TPS_INDEX || 'tawveeri_tps_products';
 
 /**
  * GET /api/v1/tps/search?q=...&limit=20  — Platform API Contract v1 (E11).
@@ -17,26 +22,48 @@ function normalizeArabic(s: string): string {
 }
 const STORE_SLUG: Record<string, string> = { 'اكسترا': 'extra', 'المنيع': 'almanea', 'جرير': 'jarir', 'أمازون': 'amazon', 'نون': 'noon' };
 
+interface Canon {
+  canonical_id: string; tps_identity_key: string;
+  display_name_ar: string | null; display_name_en: string | null;
+  brand: string | null; category: string | null; image_url: string | null;
+  lowest_price: number | null; highest_price: number | null; saving: number | null;
+  price_spread_pct: number | null; cheapest_store: string | null;
+  store_count: number | null; has_comparison: boolean | null;
+  compare_url: string | null; identity_confidence: number | null; updated_at: string | null;
+}
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') || '').trim();
   const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 20));
   const supabase = createServerClient();
 
-  // Canonical search over the projection (owned canonical data; E14 will back this with the owned index).
-  let query = supabase
-    .from('tps_product_projection')
-    .select('canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, lowest_price, highest_price, saving, price_spread_pct, cheapest_store, store_count, has_comparison, compare_url, identity_confidence, updated_at')
-    .eq('has_comparison', true)
-    .order('store_count', { ascending: false })
-    .limit(limit);
-  if (q) {
-    const terms = normalizeArabic(q).split(/\s+/).filter(Boolean);
-    for (const t of terms) query = query.ilike('text_for_search', `%${t}%`);
+  // Canonical search over the OWNED TPS index (Algolia handles Arabic/typo
+  // normalization). Falls back to the projection if Algolia isn't configured.
+  let canon: Canon[] = [];
+  if (ALGOLIA_APP && ALGOLIA_SEARCH_KEY) {
+    try {
+      const client = algoliasearch(ALGOLIA_APP, ALGOLIA_SEARCH_KEY);
+      const res = await client.searchSingleIndex({ indexName: TPS_INDEX, searchParams: { query: q, hitsPerPage: limit, filters: 'has_comparison:true' } });
+      canon = (res.hits as unknown as (Record<string, unknown> & { objectID: string })[]).map((h) => ({
+        canonical_id: h.objectID, tps_identity_key: (h.tps_identity_key as string) ?? '',
+        display_name_ar: (h.display_name_ar as string) ?? null, display_name_en: (h.display_name_en as string) ?? null,
+        brand: (h.brand as string) ?? null, category: (h.category as string) ?? null, image_url: (h.image_url as string) ?? null,
+        lowest_price: (h.lowest_price as number) ?? null, highest_price: (h.highest_price as number) ?? null, saving: (h.saving as number) ?? null,
+        price_spread_pct: (h.price_spread_pct as number) ?? null, cheapest_store: (h.cheapest_store as string) ?? null,
+        store_count: (h.store_count as number) ?? null, has_comparison: (h.has_comparison as boolean) ?? null,
+        compare_url: (h.compare_url as string) ?? null, identity_confidence: (h.identity_confidence as number) ?? null, updated_at: null,
+      }));
+    } catch (e) { console.error('[v1/tps/search] algolia:', e instanceof Error ? e.message : e); }
   }
-  const { data: canon, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!canon.length) {
+    const { data } = await supabase
+      .from('tps_product_projection')
+      .select('canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, lowest_price, highest_price, saving, price_spread_pct, cheapest_store, store_count, has_comparison, compare_url, identity_confidence, updated_at')
+      .eq('has_comparison', true).order('store_count', { ascending: false }).limit(limit);
+    canon = (data ?? []) as Canon[];
+  }
 
-  const ids = (canon ?? []).map((c) => c.canonical_id);
+  const ids = canon.map((c) => c.canonical_id);
   // Offers = normalized observations (offer_id) + latest price per store.
   const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; price: number | null; go_url: string; availability: string }[]>();
   if (ids.length) {
@@ -66,7 +93,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const results = (canon ?? []).map((c, i) => ({
+  const results = canon.map((c, i) => ({
     canonical_id: c.canonical_id,
     tps_identity_key: c.tps_identity_key,
     title_ar: c.display_name_ar, title_en: c.display_name_en,
