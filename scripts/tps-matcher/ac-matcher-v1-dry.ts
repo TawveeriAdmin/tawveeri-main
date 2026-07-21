@@ -11,6 +11,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
+import { pickBestUrl } from "../tps-core/url-util";
 import { acPlugin } from "../tps-plugins/ac";
 import {
   type TpsBatchOptions, type TpsBatchResult,
@@ -30,7 +31,7 @@ function adaptRow(row: RawRow) {
   const nameAr = asString(p.nameAr) ?? asString(p.summaryAr) ?? asString(p.name) ?? asString(p.name_ar) ?? asString(row.raw_name) ?? "";
   const nameEn = asString(p.nameEn) ?? asString(p.title) ?? asString(p.name_en) ?? "";
   const brand = asString(p.brandEn) ?? asString(p.brandAr) ?? asString(p.brand) ?? null;
-  const url = asString(p.urlAr) ?? asString(p.urlEn) ?? asString(p.url) ?? asString(p.product_url) ?? asString(p.link) ?? null;
+  const url = pickBestUrl(p);
   return { nameAr, nameEn, brand, url };
 }
 function extractPrice(p: Record<string, unknown>): number | null {

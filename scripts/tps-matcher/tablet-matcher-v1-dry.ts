@@ -1,13 +1,10 @@
-// scripts/tps-matcher/laptop-matcher-v1-dry.ts
-// Category-specific LAPTOP matcher (Laptop Identity Contract v1). Importable
-// (runLaptopBatch) + CLI. Uses laptopPlugin ONLY (never mobile/ac parsing).
-// Balanced multi-store fetch (Jarir + Extra + Amazon + Almanea) by canonical
-// store_id, hard-capped so total <= limit (<=500); no single store monopolizes.
-// Writes ONLY >=2-store-corroborated candidates via the atomic (category-agnostic)
-// write_ac_batch RPC with category='laptop'. Single-store SKUs and parser-invalid
-// rows are never written — precision over recall. Marks committed observations
-// 'done' after a successful atomic write. Dry-run-first; idempotent; rollback via
-// the canonical_ids delete path in the RPC.
+// scripts/tps-matcher/tablet-matcher-v1-dry.ts
+// Category-specific TABLET matcher (Tablet Identity Contract v1). Importable
+// (runTabletBatch) + CLI. Uses tabletPlugin ONLY. Balanced multi-store fetch
+// (Jarir + Extra + Amazon + Almanea), hard-capped so total <= limit (<=500).
+// Writes ONLY >=2-store-corroborated, VALID-tier candidates via the atomic
+// category-agnostic write_ac_batch RPC with category='tablet'. Price-band guard
+// strips sibling outliers. Dry-run-first; idempotent; rollback via canonical_ids.
 import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
@@ -15,7 +12,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 import { pickBestUrl } from "../tps-core/url-util";
-import { laptopPlugin, normalize as laptopNormalize } from "../tps-plugins/laptop";
+import { tabletPlugin, normalize as tabletNormalize } from "../tps-plugins/tablet";
 import {
   type TpsBatchOptions, type TpsBatchResult,
   assertBatchInvariants, assertFingerprint, perStoreLimit,
@@ -24,14 +21,8 @@ import {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-const LAPTOP_STORES = [
-  { id: 1, name: "جرير" }, { id: 4, name: "اكسترا" },
-  { id: 2, name: "أمازون" }, { id: 5, name: "المنيع" },
-];
-const LAPTOP_FILTER = [
-  "raw_name.ilike.%laptop%", "raw_name.ilike.%لابتوب%", "raw_name.ilike.%لاب توب%",
-  "raw_name.ilike.%notebook%", "raw_name.ilike.%macbook%", "raw_name.ilike.%ماك بوك%",
-].join(",");
+const TABLET_STORES = [{ id: 1, name: "جرير" }, { id: 4, name: "اكسترا" }, { id: 2, name: "أمازون" }, { id: 5, name: "المنيع" }];
+const TABLET_FILTER = ["raw_name.ilike.%tablet%", "raw_name.ilike.%تابلت%", "raw_name.ilike.%ipad%", "raw_name.ilike.%ايباد%", "raw_name.ilike.%galaxy tab%", "raw_name.ilike.%جالكسي تاب%", "raw_name.ilike.%matepad%"].join(",");
 
 interface RawRow { id: number; store_id: number | null; store_name: string | null; raw_name: string | null; payload: Record<string, unknown> | null; }
 const asString = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -54,9 +45,8 @@ function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
-
-const BRAND_AR: Record<string, string> = { apple: "ابل", lenovo: "لينوفو", hp: "اتش بي", dell: "ديل", asus: "أسوس", acer: "أيسر", msi: "إم إس آي", huawei: "هواوي", samsung: "سامسونج", microsoft: "مايكروسوفت", gigabyte: "جيجابايت", razer: "ريزر", toshiba: "توشيبا", dynabook: "داينابوك", lg: "إل جي" };
-// Human-readable canonical names built deterministically from the identity key.
+const BRAND_AR: Record<string, string> = { apple: "ابل", samsung: "سامسونج", huawei: "هواوي", lenovo: "لينوفو", honor: "هونر", xiaomi: "شاومي", nokia: "نوكيا" };
+const CONN_EN: Record<string, string> = { wifi: "Wi-Fi", "5g": "5G", "4g": "4G/LTE", cellular: "Cellular" };
 function buildNames(key: string): { nameAr: string; nameEn: string } {
   const parts = key.split("|");
   const brand = parts[0];
@@ -64,37 +54,38 @@ function buildNames(key: string): { nameAr: string; nameEn: string } {
   const bEn = brand.charAt(0).toUpperCase() + brand.slice(1);
   if (parts[1]?.startsWith("MODEL:")) {
     const model = parts[1].slice(6);
-    return { nameAr: `لابتوب ${bAr} ${model}`.replace(/\s+/g, " ").trim(), nameEn: `${bEn} ${model} Laptop`.replace(/\s+/g, " ").trim() };
+    return { nameAr: `تابلت ${bAr} ${model}`.trim(), nameEn: `${bEn} ${model} Tablet`.trim() };
   }
-  const [, family, cpu, ram, storage, screen, gpu] = parts;
-  const fam = family === "NO_FAMILY" ? "" : ` ${family}`;
-  const scr = screen === "NO_SCREEN" ? "" : ` ${screen}"`;
-  const g = gpu && gpu !== "igpu" ? ` ${gpu.toUpperCase()}` : "";
+  const [, line, gen, storage, conn, size] = parts;
+  const g = gen && gen !== "NO_GEN" ? ` ${gen.toUpperCase()}` : "";
+  const sz = size && size !== "NO_SIZE" ? ` ${size}"` : "";
+  const c = conn && conn !== "NO_CONN" ? ` ${CONN_EN[conn] ?? conn}` : "";
   const sto = storage ? (Number(storage) >= 1024 ? `${Number(storage) / 1024}TB` : `${storage}GB`) : "";
-  const nameEn = `${bEn}${fam} ${cpu} ${ram}GB ${sto}${scr}${g} Laptop`.replace(/\s+/g, " ").trim();
-  const nameAr = `لابتوب ${bAr}${fam}، ${cpu}، ${ram}GB رام، ${sto}${scr ? "،" + scr : ""}${g}`.replace(/\s+/g, " ").trim();
+  const lineTitle = line.replace(/\b\w/g, (m) => m.toUpperCase());
+  const nameEn = `${bEn} ${lineTitle}${g}${sz} ${sto}${c}`.replace(/\s+/g, " ").trim();
+  const nameAr = `تابلت ${bAr} ${lineTitle}${g}${sz} ${sto}${c}`.replace(/\s+/g, " ").trim();
   return { nameAr, nameEn };
 }
 
-export async function runLaptopBatch(opts: TpsBatchOptions): Promise<TpsBatchResult> {
+export async function runTabletBatch(opts: TpsBatchOptions): Promise<TpsBatchResult> {
   const t0 = Date.now();
   const R: TpsBatchResult = {
-    category: "laptop", requestedLimit: opts.limit, effectiveHardLimit: opts.limit,
+    category: "tablet", requestedLimit: opts.limit, effectiveHardLimit: opts.limit,
     fetched: 0, considered: 0, parserFailures: 0, lowConfidence: 0, conflicts: 0,
     proposedCanonicals: 0, writtenCanonicals: 0, normalized: 0, matches: 0, prices: 0,
     statusUpdates: 0, skipped: 0, durationMs: 0, success: false, dryRun: opts.dryRun, error: null,
   };
   try {
-    if (opts.category !== "laptop") throw new Error("category isolation: runLaptopBatch only handles laptop");
+    if (opts.category !== "tablet") throw new Error("category isolation: runTabletBatch only handles tablet");
     assertBatchInvariants(opts);
     if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("no supabase env");
     assertFingerprint(SUPABASE_URL, opts.expectedFingerprint);
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-    const perStore = perStoreLimit(opts.limit, LAPTOP_STORES.length);
+    const perStore = perStoreLimit(opts.limit, TABLET_STORES.length);
     const rows: RawRow[] = [];
-    for (const s of LAPTOP_STORES) {
-      const { data, error } = await supabase.from("raw_observations").select("id, store_id, store_name, raw_name, payload").eq("store_id", s.id).or(LAPTOP_FILTER).order("id", { ascending: true }).limit(perStore);
+    for (const s of TABLET_STORES) {
+      const { data, error } = await supabase.from("raw_observations").select("id, store_id, store_name, raw_name, payload").eq("store_id", s.id).or(TABLET_FILTER).order("id", { ascending: true }).limit(perStore);
       if (error) throw new Error(`fetch store ${s.id}: ${error.message}`);
       rows.push(...((data ?? []) as RawRow[]));
     }
@@ -104,21 +95,31 @@ export async function runLaptopBatch(opts: TpsBatchOptions): Promise<TpsBatchRes
     const offers: { obsId: number; storeId: number | null; store: string; key: string; status: string; price: number | null; name: string; url: string | null; confidence: number; payload: Record<string, unknown> }[] = [];
     for (const row of rows) {
       const { nameAr, nameEn, brand, url, payload } = adaptRow(row);
-      if (!laptopPlugin.detect(nameAr, nameEn)) continue;
+      if (!tabletPlugin.detect(nameAr, nameEn)) continue;
       R.considered++;
-      const norm = laptopNormalize(nameAr, nameEn, brand, payload);
-      const identity = laptopPlugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
+      const norm = tabletNormalize(nameAr, nameEn, brand, payload);
+      const identity = tabletPlugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
       if (identity.status === "invalid") { R.parserFailures++; continue; }
       if (identity.status === "low_confidence_candidate") R.lowConfidence++;
       if (!identity.key) continue;
-      const conf = laptopPlugin.scoreConfidence(brand, norm.payload, norm.model_number, norm.ambiguity_flags);
+      const conf = tabletPlugin.scoreConfidence(brand, norm.payload, norm.model_number, norm.ambiguity_flags);
       offers.push({ obsId: row.id, storeId: row.store_id, store: row.store_name ?? "?", key: identity.key, status: identity.status, price: extractPrice(payload), name: (nameEn || nameAr), url, confidence: conf.confidence, payload: norm.payload });
     }
 
-    const groups = new Map<string, { storeIds: Set<number>; offers: typeof offers }>();
-    for (const o of offers) { if (!groups.has(o.key)) groups.set(o.key, { storeIds: new Set(), offers: [] }); const g = groups.get(o.key)!; if (o.storeId != null) g.storeIds.add(o.storeId); g.offers.push(o); }
-    // Precision gate: only >=2-store-corroborated identities become canonicals.
-    const safe = [...groups.entries()].filter(([, g]) => g.storeIds.size >= 2);
+    // Only VALID-tier offers (full brand|line|storage|connectivity) form canonicals.
+    const groups = new Map<string, { offers: typeof offers }>();
+    for (const o of offers) { if (o.status !== "valid") continue; if (!groups.has(o.key)) groups.set(o.key, { offers: [] }); groups.get(o.key)!.offers.push(o); }
+    // Price-band precision guard (same as TV): drop priced outliers > 1.5x group
+    // min, then re-check >=2-store. Strips sibling models the fallback can't split.
+    const PRICE_BAND = 1.5;
+    const safe: [string, { storeIds: Set<number>; offers: typeof offers }][] = [];
+    for (const [key, g] of groups) {
+      const priced = g.offers.filter((o) => o.price != null).map((o) => o.price as number);
+      const minP = priced.length ? Math.min(...priced) : null;
+      const kept = minP == null ? g.offers : g.offers.filter((o) => o.price == null || (o.price as number) <= minP * PRICE_BAND);
+      const storeIds = new Set<number>(); for (const o of kept) if (o.storeId != null) storeIds.add(o.storeId);
+      if (storeIds.size >= 2) safe.push([key, { storeIds, offers: kept }]);
+    }
     R.skipped = groups.size - safe.length;
     R.proposedCanonicals = safe.length;
 
@@ -126,36 +127,34 @@ export async function runLaptopBatch(opts: TpsBatchOptions): Promise<TpsBatchRes
     const canonicalRows: Record<string, unknown>[] = [], normalizedRows: Record<string, unknown>[] = [], matchRows: Record<string, unknown>[] = [], priceRows: Record<string, unknown>[] = [], canonicalIds: string[] = [];
     const processedObsIds = new Set<number>();
     for (const [key, g] of safe) {
-      const canonicalId = stableUuid(`canonical:laptop:${key}`); canonicalIds.push(canonicalId);
+      const canonicalId = stableUuid(`canonical:tablet:${key}`); canonicalIds.push(canonicalId);
       const { nameAr, nameEn } = buildNames(key);
       const parts = key.split("|");
       const isPrimary = parts[1]?.startsWith("MODEL:");
-      const groupConf = Math.min(95, Math.round(g.offers.reduce((a, b) => a + b.confidence, 0) / g.offers.length) + (g.storeIds.size >= 2 ? 5 : 0));
-      const rep = g.offers[0];
+      const groupConf = Math.min(95, Math.round(g.offers.reduce((a, b) => a + b.confidence, 0) / g.offers.length) + 5);
       canonicalRows.push({
         id: canonicalId, name_ar: nameAr, name_en: nameEn, brand: parts[0],
-        model_number: isPrimary ? parts[1].slice(6) : null, category: "laptop", image_url: null,
+        model_number: isPrimary ? parts[1].slice(6) : null, category: "tablet", image_url: null,
         attributes: {
-          family: isPrimary ? null : (parts[1] === "NO_FAMILY" ? null : parts[1]),
-          cpu: isPrimary ? null : parts[2], ram: isPrimary ? null : Number(parts[3]),
-          storage: isPrimary ? null : Number(parts[4]), screen: isPrimary || parts[5] === "NO_SCREEN" ? null : Number(parts[5]),
-          gpu: isPrimary ? null : parts[6], identity_key: key, identity_tier: isPrimary ? "primary" : "fallback",
-          stores: [...g.storeIds], offers_count: g.offers.length, parser_version: "laptop-v1",
+          line: isPrimary ? null : parts[1], gen: isPrimary || parts[2] === "NO_GEN" ? null : parts[2],
+          storage: isPrimary ? null : Number(parts[3]), connectivity: isPrimary || parts[4] === "NO_CONN" ? null : parts[4],
+          screen_size: isPrimary || parts[5] === "NO_SIZE" ? null : Number(parts[5]),
+          identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...g.storeIds], offers_count: g.offers.length, parser_version: "tablet-v1",
         },
-        is_active: true, tps_identity_key: key, tps_version: "laptop-v1", variant_key: key,
+        is_active: true, tps_identity_key: key, tps_version: "tablet-v1", variant_key: key,
         identity_confidence: groupConf, data_quality_score: Math.max(60, groupConf - 10), created_at: now, data_updated_at: now,
       });
       for (const o of g.offers) {
-        const normId = stableUuid(`norm:laptop:raw_observations:${o.obsId}`);
+        const normId = stableUuid(`norm:tablet:raw_observations:${o.obsId}`);
         (o as { _normId?: string })._normId = normId; processedObsIds.add(o.obsId);
         normalizedRows.push({
           id: normId, source_table: "raw_observations", source_record_id: stableUuid(`raw_observations:${o.obsId}`),
-          store_id: String(o.storeId), canonical_product_id: canonicalId, raw_name: o.name, detected_category: "laptop",
+          store_id: String(o.storeId), canonical_product_id: canonicalId, raw_name: o.name, detected_category: "tablet",
           language: "ar", brand: parts[0], model_number: isPrimary ? parts[1].slice(6) : null, color: (o.payload.color as string) ?? null,
           identity_key: key, identity_key_status: o.status,
           normalized_payload: { ...(o.payload || {}), _raw_id: o.obsId, _url: o.url },
           confidence: o.confidence, missing_critical: [], ambiguity_flags: [], needs_llm: false, ignored_terms: [],
-          normalizer_version: "laptop-v1", tps_version: "laptop-v1", observed_at: now, plugin_version: "laptop-v1",
+          normalizer_version: "tablet-v1", tps_version: "tablet-v1", observed_at: now, plugin_version: "tablet-v1",
         });
       }
       for (const sid of g.storeIds) {
@@ -165,7 +164,6 @@ export async function runLaptopBatch(opts: TpsBatchOptions): Promise<TpsBatchRes
         matchRows.push({ raw_observation_id: r._normId, canonical_product_id: canonicalId, match_method: "tps_identity_key", confidence: groupConf, is_verified: false, matched_at: now, identity_resolution_event_id: null });
         if (priced.length) priceRows.push({ canonical_product_id: canonicalId, store_name: r.store, price: r.price, tps_observation_id: r._normId, observed_at: now });
       }
-      void rep;
     }
     R.normalized = normalizedRows.length; R.matches = matchRows.length;
 
@@ -178,14 +176,14 @@ export async function runLaptopBatch(opts: TpsBatchOptions): Promise<TpsBatchRes
     R.prices = changedPrices.length;
 
     if (opts.dumpIdsPath) {
-      require("fs").writeFileSync(opts.dumpIdsPath, JSON.stringify({ canonicalIds, normalizedIds: normalizedRows.map((n) => n.id), processedObsIds: [...processedObsIds] }, null, 2));
+      require("fs").writeFileSync(opts.dumpIdsPath, JSON.stringify({ canonicalIds, normalizedIds: normalizedRows.map((n) => n.id), processedObsIds: [...processedObsIds], keys: safe.map(([k, g]) => ({ key: k, stores: [...g.storeIds], offers: g.offers.length })) }, null, 2));
     }
 
     if (opts.dryRun) { R.success = true; R.durationMs = Date.now() - t0; return R; }
     if (canonicalRows.length === 0) { R.success = true; R.durationMs = Date.now() - t0; return R; }
 
     const { data: result, error } = await supabase.rpc("write_ac_batch", { p_canonical: canonicalRows, p_normalized: normalizedRows, p_matches: matchRows, p_prices: changedPrices, p_canonical_ids: canonicalIds });
-    if (error) throw new Error(`write_ac_batch(laptop): ${error.message}`);
+    if (error) throw new Error(`write_ac_batch(tablet): ${error.message}`);
     const w = result as { canonical: number; normalized: number; matches: number; prices: number };
     R.writtenCanonicals = w.canonical; R.normalized = w.normalized; R.matches = w.matches; R.prices = w.prices;
     const obsIds = [...processedObsIds];
@@ -201,10 +199,10 @@ export async function runLaptopBatch(opts: TpsBatchOptions): Promise<TpsBatchRes
 }
 
 if (require.main === module) {
-  runLaptopBatch({
-    category: "laptop",
+  runTabletBatch({
+    category: "tablet",
     dryRun: process.env.DRY_RUN !== "false",
-    limit: Number(process.env.LAPTOP_TOTAL_LIMIT || 500),
+    limit: Number(process.env.TABLET_TOTAL_LIMIT || 500),
     expectedFingerprint: "vyceqrzttspyycdpojtn",
     source: "manual",
     dumpIdsPath: process.env.DUMP_IDS,

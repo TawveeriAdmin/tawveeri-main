@@ -13,6 +13,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeStoreUrl } from "@/lib/catalog/normalizeStoreUrl";
 
+// A measured exit is per-request and must never be cached (each hit records an
+// outbound click and resolves the current offer URL). Force dynamic + Node runtime.
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
@@ -73,6 +78,14 @@ export async function GET(
   const cleanUrl = normalizeStoreUrl(offer.store_id ?? "", rawUrl) ?? rawUrl;
 
   const { finalUrl, program } = applyAffiliate(cleanUrl);
+
+  // Defensive: a non-absolute destination (legacy relative store URL) would make
+  // NextResponse.redirect throw (500). Never crash a measured exit — fall back to
+  // home. The write path now stores absolute URLs (pickBestUrl), so this is a
+  // guard for legacy rows only.
+  if (!/^https?:\/\//i.test(finalUrl)) {
+    return NextResponse.redirect(new URL("/", req.url), 302);
+  }
 
   // Channel attribution: ?source=mobile|web|product_page|... (validated, defaulted).
   const rawSource = req.nextUrl.searchParams.get("source") || "product_page";
