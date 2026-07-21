@@ -6,6 +6,12 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-028 — E12: all 8 stores on the adapter contract · Accepted (2026-07-21)
+**Evidence:** only 4 stores actually ingest TPS data — Extra (40,740), Almanea (34,580), Jarir (50,856), Amazon (2,029); Noon/Samsung-KSA/Shaker/SWSG have **0** observations. Extra+Almanea were on the `StoreAdapter` contract; Jarir+Amazon were the real gap.
+**Decision & build:** `src/lib/scraping/adapters/scraper-wrapped.ts` — a reusable factory that wraps each store's proven `search()` scraper in the resumable `fetchBatch` contract (reuse tested fetch logic, not reimplement). Registered **all 8** in `adapters/index.ts`: `extra`, `almanea` (bespoke API adapters), **`jarir`, `amazon` enabled** (data-bearing, wrapped + live-verified), and `noon`, `samsung_ksa`, `shaker`, `swsg` as **`enabled:false`** stubs (registered for contract completeness; enable after a validated ingestion run, since they have no pipeline data yet).
+**Verified:** registry lists 8 (4 enabled); Jarir `fetchBatch(0,5)` → 5 real offers (مفكك 69 SAR…), Amazon → 5 real offers (YORK Split AC 4999 SAR…), both resumable (`done=false`, `nextState` advances). Additive; no route/deploy-path change; no regression to E6.
+**Follow-up:** enable the 4 no-data stores after confirming their scrapers return offers + a bounded ingestion run; brand extraction is weak in some scrapers (the TPS matcher re-derives brand from names, so not blocking).
+
 ### ADR-027 — E5: Algolia sync restoration — owned TPS index built from the projection · Accepted (2026-07-21)
 **Context:** the search goal (E14 — owned search index authority) requires an owned index fed from `tps_product_projection`. The existing `scripts/algolia-sync.ts` is misnamed (it's identity-resolution logic, not a sync); no real projection→index sync existed.
 **Decision & build:** `scripts/tps-algolia-sync.ts` (`syncTpsIndex()` + CLI + npm `tps:algolia-sync`) reads the whole projection and does an **atomic full rebuild** (`replaceAllObjects`, deterministic `objectID = canonical_id`) of the owned index **`tawveeri_tps_products`** (write client via `ALGOLIA_ADMIN_KEY`), sets searchable/faceting/custom-ranking settings, and stamps `tps_product_projection.algolia_synced_at`. Schedulable via authenticated `POST /api/cron/tps-algolia-sync` (Bearer `CRON_SECRET`).

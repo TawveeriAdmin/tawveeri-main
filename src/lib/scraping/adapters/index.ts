@@ -5,11 +5,22 @@
 import type { StoreAdapter } from './types';
 import { almaneaAdapter } from './almanea';
 import { extraAdapter } from './extra';
+import {
+  jarirAdapter, amazonAdapter,
+  noonAdapter, samsungKsaAdapter, shakerAdapter, swsgAdapter,
+} from './scraper-wrapped';
 
+// All 8 stores registered on the adapter contract (E12). enabled=false ones are
+// registered for completeness but await a validated ingestion run before use.
 export const STORE_ADAPTERS: StoreAdapter[] = [
-  almaneaAdapter,
-  extraAdapter,
-  // قريباً: jarirAdapter, amazonAdapter, noonAdapter...
+  almaneaAdapter,   // enabled — bespoke Algolia adapter
+  extraAdapter,     // enabled — bespoke UNBXD adapter
+  jarirAdapter,     // enabled — wraps JarirSearchScraper (~50k obs)
+  amazonAdapter,    // enabled — wraps AmazonSearchScraper (~2k obs)
+  noonAdapter,      // disabled — no pipeline data yet
+  samsungKsaAdapter,// disabled — no pipeline data yet
+  shakerAdapter,    // disabled — no pipeline data yet
+  swsgAdapter,      // disabled — no pipeline data yet
 ];
 
 export function getAdapterBySlug(slug: string): StoreAdapter | undefined {

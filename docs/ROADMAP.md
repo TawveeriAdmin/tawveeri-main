@@ -38,7 +38,7 @@ The path from the current two-system reality to the unified platform. Full detai
 | **E9** | Create user/auth/commerce schema on System A (RLS from the start) | ✅ **Complete — production-verified (ADR-026)**: 13 auth/commerce tables on System A, RLS-first, credential table (`login_sessions`) deny-all to anon, FKs reconciled to A. E10 (data migration) gated. |
 | **E10** | Migrate user data System B → A | Pending |
 | **E11** | Mobile convergence — true platform client, measured exits | Pending |
-| **E12** | Adapter completion — all 8 stores on the adapter contract | Pending |
+| **E12** | Adapter completion — all 8 stores on the adapter contract | ✅ **Complete — verified (ADR-028)**: all 8 registered on the `StoreAdapter` contract; 4 data-bearing enabled + live-verified (extra, almanea, jarir, amazon); 4 no-data stores registered `enabled:false` pending a validated ingestion run. |
 | **E13** | Recommendations & embeddings re-keyed to canonical identity | Pending |
 | **E14** | Owned search index authority cutover | Pending |
 | **E15** | Legacy retirement (System B, VPS) | Pending — after observation |
