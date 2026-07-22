@@ -17,12 +17,23 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 async function main() {
   console.log("TPS Layer 5 — Building Projection v2...\n");
 
-  const { data: canonicals, error: cpErr } = await supabase
-    .from("canonical_products")
-    .select("id, name_ar, name_en, brand, category, tps_identity_key, identity_confidence, attributes")
-    .not("tps_identity_key", "is", null);
-
-  if (cpErr || !canonicals) { console.error("Failed:", cpErr); process.exit(1); }
+  // Paginate — PostgREST caps a single select at 1000 rows; canonical_products
+  // now exceeds that, so an unpaginated read silently drops the newest canonicals
+  // (which is exactly how appliance categories went missing). Fail loud on error.
+  const canonicals: any[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error: cpErr } = await supabase
+      .from("canonical_products")
+      .select("id, name_ar, name_en, brand, category, tps_identity_key, identity_confidence, attributes")
+      .not("tps_identity_key", "is", null)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (cpErr) { console.error("Failed reading canonical_products:", cpErr.message); process.exit(1); }
+    if (!data || data.length === 0) break;
+    canonicals.push(...data);
+    if (data.length < PAGE) break;
+  }
   console.log(`Found ${canonicals.length} canonical products`);
 
   let built = 0, errors = 0;

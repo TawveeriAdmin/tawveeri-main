@@ -17,21 +17,38 @@ const STORE_NAME: Record<number, string> = { 1: "Jarir", 2: "Amazon", 4: "Extra"
  * (from the Coverage Ledger), per-category coverage, agent-supported categories,
  * and a per-store summary. Read-only, deterministic, ranking-blind.
  */
+// Paginated full-table read — PostgREST caps a single select at 1000 rows; the
+// projection (>1000) and staging (~25k) both exceed it, so an unpaginated read
+// silently undercounts. Fail-loud on error rather than return a partial total.
+async function selectAll<T>(sb: ReturnType<typeof createServerClient>, table: string, cols: string, notNull?: string): Promise<T[]> {
+  const out: T[] = []; const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    let q = sb.from(table).select(cols).range(from, from + PAGE - 1);
+    if (notNull) q = q.not(notNull, "is", null);
+    const { data, error } = await q;
+    if (error) throw new Error(`dashboard read ${table} failed: ${error.message}`);
+    if (!data || data.length === 0) break;
+    out.push(...(data as T[]));
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
 export async function GET() {
   const sb = createServerClient();
 
-  const { data: proj } = await sb.from("tps_product_projection").select("category, has_comparison, store_count");
+  const proj = await selectAll<{ category: string; has_comparison: boolean; store_count: number }>(sb, "tps_product_projection", "category, has_comparison, store_count");
   const { data: ledger } = await sb.from("tps_coverage_ledger").select("snapshot_at, category, raw, resolved, corroborated, single_store").eq("category", "_total_").order("snapshot_at", { ascending: false }).limit(14);
 
   const byCat: Record<string, { corroborated: number; single_store: number }> = {};
-  for (const p of proj ?? []) { const c = (byCat[p.category as string] ??= { corroborated: 0, single_store: 0 }); if (p.has_comparison) c.corroborated++; else c.single_store++; }
-  const totalCorroborated = (proj ?? []).filter((p) => p.has_comparison).length;
-  const totalIndexed = (proj ?? []).length;
+  for (const p of proj) { const c = (byCat[p.category as string] ??= { corroborated: 0, single_store: 0 }); if (p.has_comparison) c.corroborated++; else c.single_store++; }
+  const totalCorroborated = proj.filter((p) => p.has_comparison).length;
+  const totalIndexed = proj.length;
 
   // per-store coverage (distinct products observed) from staging
-  const { data: stg } = await sb.from("tps_identity_staging").select("store_id, identity_key").not("identity_key", "is", null);
+  const stg = await selectAll<{ store_id: number; identity_key: string }>(sb, "tps_identity_staging", "store_id, identity_key", "identity_key");
   const storeProducts: Record<number, Set<string>> = {};
-  for (const r of stg ?? []) { const s = (r.store_id as number); if (s == null) continue; (storeProducts[s] ??= new Set()).add(r.identity_key as string); }
+  for (const r of stg) { const s = (r.store_id as number); if (s == null) continue; (storeProducts[s] ??= new Set()).add(r.identity_key as string); }
 
   const trend = (ledger ?? []).map((l) => ({ at: l.snapshot_at, raw: l.raw, resolved: l.resolved, corroborated: l.corroborated, single_store: l.single_store })).reverse();
   const latest = trend[trend.length - 1] ?? null;
