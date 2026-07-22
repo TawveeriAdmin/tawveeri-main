@@ -27,6 +27,7 @@ export interface PlatformProduct {
   price_spread_pct: number | null;
   store_count: number | null;
   has_comparison: boolean;
+  comparison_available?: boolean;
   confidence: number | null;
   canonical_url: string | null;
   cheapest_store: string | null;
@@ -35,7 +36,35 @@ export interface PlatformProduct {
   offers: PlatformOffer[];
 }
 
-export interface PlatformSearchResponse { version: string; query: string; count: number; results: PlatformProduct[]; }
+// E14 hybrid: Layer 2 resolved-single items (known identity, one offer, no
+// comparison). Same core shape as PlatformProduct with comparison_available:false.
+export interface PlatformDiscoveryItem {
+  canonical_id: string;
+  tps_identity_key: string;
+  title_ar: string | null;
+  title_en: string | null;
+  brand: string | null;
+  category: string | null;
+  image_url: string | null;
+  lowest_price: number | null;
+  store_count: number | null;
+  comparison_available: false;
+  confidence: number | null;
+  canonical_url: string | null;
+  cheapest_store: string | null;
+  decision: { is_smart_pick: false; reason_ar: string | null };
+  kind: 'resolved_single';
+  offers: PlatformOffer[];
+}
+
+export interface PlatformSearchResponse {
+  version: string;
+  query: string;
+  count: number;
+  results: PlatformProduct[];               // Layer 1 — comparison
+  discovery?: PlatformDiscoveryItem[];       // Layer 2 — resolved-single (labelled)
+  meta?: { authority: string; canonical_count: number; discovery_count: number };
+}
 
 export interface PlatformRecommendation {
   canonical_id: string;
@@ -55,9 +84,11 @@ export interface PlatformRecommendation {
 export interface PlatformRecommendationsResponse { version: string; category: string; count: number; recommendations: PlatformRecommendation[]; }
 
 export const platformApi = {
-  /** Canonical TPS search — items carry offers[].go_url (measured exits). */
-  searchTps(q: string, limit = 20): Promise<PlatformSearchResponse> {
-    return apiClient.get<PlatformSearchResponse>(`/api/v1/tps/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+  /** Hybrid TPS search (E14) — results[] = comparison (Layer 1), discovery[] =
+   *  resolved-single (Layer 2, labelled). Every item carries offers[].offer_id
+   *  for measured exits via openMeasuredExit. */
+  searchTps(q: string, limit = 20, discoveryLimit = 12): Promise<PlatformSearchResponse> {
+    return apiClient.get<PlatformSearchResponse>(`/api/v1/tps/search?q=${encodeURIComponent(q)}&limit=${limit}&discovery_limit=${discoveryLimit}`);
   },
   /** Deterministic, explainable canonical recommendations (no embeddings). */
   recommendations(opts: { canonicalId?: string; category?: string; limit?: number }): Promise<PlatformRecommendationsResponse> {
@@ -67,8 +98,9 @@ export const platformApi = {
     p.set('limit', String(opts.limit ?? 8));
     return apiClient.get<PlatformRecommendationsResponse>(`/api/v1/tps/recommendations?${p.toString()}`);
   },
-  /** Convenience: the best measured-exit URL for a platform product (cheapest offer). */
-  bestExit(product: PlatformProduct): { offerId?: string; url?: string } {
+  /** Convenience: the best measured-exit target for any platform item (cheapest
+   *  offer's offer_id → openMeasuredExit routes it through /go?source=mobile). */
+  bestExit(product: PlatformProduct | PlatformDiscoveryItem): { offerId?: string } {
     const o = product.offers?.[0];
     return o ? { offerId: o.offer_id } : {};
   },
