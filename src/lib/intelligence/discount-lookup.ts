@@ -1,0 +1,58 @@
+// src/lib/intelligence/discount-lookup.ts
+// Join canonical products → their listing offers → per-listing Discount Integrity
+// (tps_listing_price_facts, keyed by the observed listing URL). Lets canonical-based
+// surfaces (the Advisor, product/compare pages) show the honest "real saving vs what
+// we observed" signal per product. Read-only, deterministic; commission-blind.
+import type { createServerClient } from "@/lib/database";
+
+export interface CanonicalDiscountIntel {
+  verdict: "verified_drop" | "inflated_reference" | "stable";
+  real_saving_pct: number | null;
+  advertised_saving_pct: number | null;
+  text: { ar: string; en: string };
+}
+
+const PRIORITY: Record<string, number> = { verified_drop: 3, inflated_reference: 2, stable: 1, insufficient_history: 0 };
+
+/**
+ * For each canonical id, the most informative Discount Integrity verdict among its
+ * offers. `insufficient_history` is dropped (we stay silent without evidence).
+ */
+export async function getCanonicalDiscountIntegrity(
+  sb: ReturnType<typeof createServerClient>, canonicalIds: string[]
+): Promise<Map<string, CanonicalDiscountIntel>> {
+  const out = new Map<string, CanonicalDiscountIntel>();
+  const ids = [...new Set(canonicalIds.filter(Boolean))];
+  if (!ids.length) return out;
+
+  const { data: nobs } = await sb.from("normalized_product_observations").select("canonical_product_id, normalized_payload").in("canonical_product_id", ids);
+  const urlByCanon = new Map<string, Set<string>>();
+  const allUrls = new Set<string>();
+  for (const n of nobs ?? []) {
+    const u = (n.normalized_payload as { _url?: unknown } | null)?._url;
+    if (typeof u === "string" && u) {
+      (urlByCanon.get(n.canonical_product_id as string) ?? urlByCanon.set(n.canonical_product_id as string, new Set()).get(n.canonical_product_id as string)!).add(u);
+      allUrls.add(u);
+    }
+  }
+  if (!allUrls.size) return out;
+
+  const factByUrl = new Map<string, { verdict: string; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null }>();
+  const urls = [...allUrls];
+  for (let i = 0; i < urls.length; i += 500) {
+    const { data: facts } = await sb.from("tps_listing_price_facts").select("url, verdict, real_saving_pct, advertised_saving_pct, text_ar, text_en").in("url", urls.slice(i, i + 500));
+    for (const f of facts ?? []) factByUrl.set(f.url as string, f as never);
+  }
+
+  for (const [cid, us] of urlByCanon) {
+    let best: { verdict: string; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null } | null = null;
+    for (const u of us) {
+      const f = factByUrl.get(u); if (!f) continue;
+      if (!best || PRIORITY[f.verdict] > PRIORITY[best.verdict] || (PRIORITY[f.verdict] === PRIORITY[best.verdict] && (f.real_saving_pct ?? 0) > (best.real_saving_pct ?? 0))) best = f;
+    }
+    if (best && best.verdict !== "insufficient_history" && PRIORITY[best.verdict] > 0) {
+      out.set(cid, { verdict: best.verdict as CanonicalDiscountIntel["verdict"], real_saving_pct: best.real_saving_pct, advertised_saving_pct: best.advertised_saving_pct, text: { ar: best.text_ar ?? "", en: best.text_en ?? "" } });
+    }
+  }
+  return out;
+}

@@ -137,6 +137,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
   const quickNavLinks: Array<{ href: string; label: string; icon?: typeof Store }> = [
     { href: `/${locale}/advisor`, label: t('agent.title'), icon: Sparkle },
+    { href: `/${locale}/price-truth`, label: isRTL ? 'حقيقة الأسعار' : 'Price Truth', icon: Tag },
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
     { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },

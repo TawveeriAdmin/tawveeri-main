@@ -7,7 +7,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
   askAdvisor, comparisonBadge, costLines, exitHref, hasTotalBeyondUnit,
-  parsedSummary, recTitle, verdictTone, verdictText, choiceReasons,
+  parsedSummary, recTitle, verdictTone, verdictText, choiceReasons, discountLine,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
 
@@ -234,6 +234,17 @@ const VERDICT_TONE_CLASS: Record<string, string> = {
   muted: 'bg-surface-container-high text-on-surface-variant',
 };
 
+function DiscountTruthBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
+  const d = discountLine(rec, loc);
+  if (!d) return null;
+  const Icon = d.tone === 'great' ? TrendingDown : CircleAlert;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${VERDICT_TONE_CLASS[d.tone]}`}>
+      <Icon className="h-3.5 w-3.5" aria-hidden />{d.text}
+    </span>
+  );
+}
+
 function PriceVerdictBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
   const pi = rec.price_intel;
   if (!pi) return null;
@@ -324,6 +335,7 @@ function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; 
           <Sparkles className="h-3.5 w-3.5" aria-hidden />{t('agent.smartPickLabel')}
         </span>
         <PriceVerdictBadge rec={rec} loc={loc} />
+        <DiscountTruthBadge rec={rec} loc={loc} />
         <TrustBadge rec={rec} loc={loc} />
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -347,6 +359,7 @@ function OptionCard({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation;
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-on-surface">{recTitle(rec, loc)}</h3>
             <PriceVerdictBadge rec={rec} loc={loc} />
+            <DiscountTruthBadge rec={rec} loc={loc} />
             <TrustBadge rec={rec} loc={loc} />
           </div>
           <Reasons reasons={rec.reasons_ar} />

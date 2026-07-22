@@ -25,6 +25,23 @@ export interface AdvisorRecommendation {
   go_url: string | null;
   price_intel?: PriceIntel | null;
   chosen_over?: ChoiceExplanation | null;
+  discount_intel?: DiscountIntel | null;
+}
+
+export interface DiscountIntel {
+  verdict: "verified_drop" | "inflated_reference" | "stable";
+  real_saving_pct: number | null;
+  advertised_saving_pct: number | null;
+  text: { ar: string; en: string };
+}
+
+/** Localized honest-discount line + tone; null when nothing worth showing. */
+export function discountLine(rec: AdvisorRecommendation, locale: Locale): { text: string; tone: VerdictTone } | null {
+  const d = rec.discount_intel;
+  if (!d || d.verdict === "stable") return null;
+  const text = (locale === "ar" ? d.text.ar : d.text.en) || d.text.ar || "";
+  if (!text) return null;
+  return { text, tone: d.verdict === "verified_drop" ? "great" : "warn" };
 }
 
 export interface ChoiceExplanation {

@@ -5,7 +5,7 @@
  */
 import {
   categoryLabel, priorityLabel, recTitle, comparisonBadge, costLines,
-  hasTotalBeyondUnit, parsedSummary, exitHref, verdictTone, verdictText, choiceReasons,
+  hasTotalBeyondUnit, parsedSummary, exitHref, verdictTone, verdictText, choiceReasons, discountLine,
   type AdvisorRecommendation, type PriceIntel,
 } from "../../src/lib/agent/advisor-api";
 
@@ -109,6 +109,21 @@ describe("choiceReasons — reasoned comparison presentation (§5.5)", () => {
   it("returns null when there is no comparison (honest — no fabricated superiority)", () => {
     expect(choiceReasons(rec({ chosen_over: null }), "ar")).toBeNull();
     expect(choiceReasons(rec(), "ar")).toBeNull();
+  });
+});
+
+describe("discountLine — honest discount truth on the card", () => {
+  it("shows a green line for a verified real drop", () => {
+    const r = rec({ discount_intel: { verdict: "verified_drop", real_saving_pct: 61, advertised_saving_pct: 61, text: { ar: "انخفاض حقيقي", en: "Genuine drop 61%" } } });
+    expect(discountLine(r, "en")).toEqual({ text: "Genuine drop 61%", tone: "great" });
+  });
+  it("warns on an inflated advertised discount", () => {
+    const r = rec({ discount_intel: { verdict: "inflated_reference", real_saving_pct: 0, advertised_saving_pct: 25, text: { ar: "لم نرصده", en: "never observed" } } });
+    expect(discountLine(r, "ar")?.tone).toBe("warn");
+  });
+  it("is silent on stable/absent (no noise, no accusation)", () => {
+    expect(discountLine(rec({ discount_intel: { verdict: "stable", real_saving_pct: 0, advertised_saving_pct: null, text: { ar: "", en: "" } } }), "ar")).toBeNull();
+    expect(discountLine(rec(), "ar")).toBeNull();
   });
 });
 
