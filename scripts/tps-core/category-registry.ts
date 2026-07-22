@@ -15,6 +15,7 @@ import { acPlugin } from "../tps-plugins/ac";
 import { laptopPlugin, normalize as laptopN } from "../tps-plugins/laptop";
 import { refrigeratorPlugin } from "../tps-plugins/refrigerator";
 import { washingMachinePlugin } from "../tps-plugins/washing_machine";
+import { APPLIANCE_BUNDLES, APPLIANCE_CATEGORIES } from "../tps-plugins/appliance";
 import { buildNames as tvNames } from "../tps-matcher/tv-matcher-v1-dry";
 import { buildNames as tabletNames } from "../tps-matcher/tablet-matcher-v1-dry";
 import { buildNames as audioNames } from "../tps-matcher/audio-matcher-v1-dry";
@@ -107,3 +108,22 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     canonSeed: (k) => `canonical:washing_machine:${k}`, normSeed: (o) => `norm:washing_machine:raw_observations:${o}`, requireValidTier: false, priceBand: null,
   },
 };
+
+// Config-driven appliance categories (dishwasher, microwave, vacuum, air_purifier,
+// coffee_maker, kettle, air_fryer, toaster, blender, oven). One factory implements
+// the plugin + registry helpers; registration is a loop, not per-category code.
+// All are structurally single-store (Layer 2) like the other appliances:
+// requireValidTier:false, priceBand:null.
+for (const cat of APPLIANCE_CATEGORIES) {
+  const b = APPLIANCE_BUNDLES[cat];
+  CATEGORY_DEFS[cat] = {
+    category: cat, detected: cat, plugin: b.plugin,
+    normalize: (a, bb, br) => b.plugin.normalize(a, bb, br),
+    filterKeywords: [b.config.nounEn.split(" ")[0], b.config.nounAr],
+    version: b.config.version,
+    names: (k) => b.names(k),
+    attrs: (k, rep) => b.attrs(k, rep),
+    canonSeed: (k) => `canonical:${cat}:${k}`, normSeed: (o) => `norm:${cat}:raw_observations:${o}`,
+    requireValidTier: false, priceBand: null,
+  };
+}

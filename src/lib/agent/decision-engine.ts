@@ -369,6 +369,67 @@ export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): 
   return assemble(scored);
 }
 
+// ── Generic appliance decider (config-driven, deterministic, ranking-blind). Covers
+//    the config-factory categories (dishwasher, microwave, vacuum, air_purifier,
+//    coffee_maker, kettle, air_fryer, toaster, blender, oven) whose identity is
+//    brand + type + capacity. Suitability = capacity-for-household + efficiency +
+//    requested features + trust + budget. All structurally single-store (Layer 2) —
+//    surfaced honestly with comparison_available:false. Never fabricates comparison.
+interface ApplianceMeta {
+  nounAr: string; metricAr?: string; largeAt?: number;   // capacity ≥ largeAt ⇒ "family size"
+  features: Record<string, string>;                        // attribute flag → Arabic phrase
+  featureWants?: Record<string, string>;                   // priority keyword → attribute flag it satisfies
+}
+export const APPLIANCE_META: Record<string, ApplianceMeta> = {
+  dishwasher: { nounAr: "غسالة صحون", metricAr: "مكان", largeAt: 14, features: { inverter: "محرك إنفرتر — أهدأ وأوفر", third_rack: "رف ثالث", aquastop: "أمان تسرب الماء" }, featureWants: { quiet: "inverter", low_electricity: "inverter" } },
+  microwave: { nounAr: "مايكرويف", metricAr: "لتر", largeAt: 30, features: { convection: "حراري — يشوي ويخبز", grill: "جريل", inverter: "إنفرتر" }, featureWants: { cooking: "convection" } },
+  vacuum: { nounAr: "مكنسة", metricAr: "واط", features: { cordless: "لاسلكية", mop: "تمسح وتشفط", wifi: "تحكم بالتطبيق/المساعد", hepa: "فلتر HEPA", bagless: "بدون كيس" }, featureWants: {} },
+  air_purifier: { nounAr: "منقي هواء", metricAr: "م²", largeAt: 40, features: { hepa: "فلتر HEPA", ionizer: "مؤيّن", uv: "أشعة UV", wifi: "تحكم ذكي" }, featureWants: {} },
+  coffee_maker: { nounAr: "صانعة قهوة", features: { milk_frother: "خافق حليب", grinder: "مطحنة مدمجة", touchscreen: "شاشة لمس" }, featureWants: {} },
+  kettle: { nounAr: "غلاية", metricAr: "لتر", features: { temperature_control: "تحكم بدرجة الحرارة", keep_warm: "حفظ السخونة", glass: "زجاج", digital: "رقمية" }, featureWants: {} },
+  air_fryer: { nounAr: "قلاية هوائية", metricAr: "لتر", largeAt: 6, features: { dual_zone: "منطقتا طهي", digital: "رقمية", window: "نافذة رؤية" }, featureWants: {} },
+  toaster: { nounAr: "محمصة", metricAr: "شريحة", largeAt: 4, features: { digital: "رقمية", defrost: "إذابة الثلج" }, featureWants: {} },
+  blender: { nounAr: "خلاط", metricAr: "واط", features: { cordless: "لاسلكي", ice_crush: "جرش الثلج", digital: "رقمي" }, featureWants: {} },
+  oven: { nounAr: "فرن", metricAr: "سم", features: { steam: "بخار", convection: "مروحة حرارية", self_clean: "تنظيف ذاتي", gas: "غاز", digital: "رقمي" }, featureWants: {} },
+};
+export function decideAppliance(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const meta = APPLIANCE_META[task.category];
+  const pr = task.priorities ?? [];
+  const text = (task as { parsed_from_text?: string }).parsed_from_text ?? "";
+  const wantLarge = pr.includes("large") || /كبير|كبيرة|عائلة|عائلية|family|large/.test(text);
+  const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const reasons: string[] = [];
+    let score = 0.5;
+    const type = (a.appliance_type as string | null) ?? null;
+    const cap = a.capacity != null ? Number(a.capacity) : null;
+    const unit = meta.metricAr ?? "";
+    // headline
+    reasons.unshift(`${meta.nounAr} ${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""}${cap != null ? ` ${cap} ${unit}` : ""}`.replace(/\s+/g, " ").trim());
+    // capacity-for-household
+    if (cap != null && meta.largeAt) {
+      if (wantLarge) { if (cap >= meta.largeAt) { score += 0.1; reasons.push(`سعة ${cap} ${unit} — مناسبة للعائلات`); } else reasons.push(`سعة ${cap} ${unit} — متوسطة`); }
+    }
+    // efficiency (inverter) — matters most where the appliance runs long/often
+    if (a.inverter === true) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; reasons.push((wantLowElec || wantQuiet) ? "إنفرتر — أهدأ وأوفر (أولويتك)" : "إنفرتر — كفاءة أعلى"); }
+    else if (wantLowElec && "inverter" in a && a.inverter === false) { score -= 0.05; reasons.push("عادي (غير إنفرتر)"); }
+    // requested features
+    for (const [flag, want] of Object.entries(meta.featureWants ?? {})) {
+      if (pr.includes(flag) && a[want] === true) { score += 0.06; }
+    }
+    // present features (neutral reasons — no score unless requested above)
+    for (const [flag, phrase] of Object.entries(meta.features)) if (a[flag] === true) reasons.push(phrase);
+    // trust
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); }
+    else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    // budget
+    const total = row.lowest_price;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    return { row, dna: { brand: row.brand, appliance_type: type, capacity: cap, capacity_unit: a.capacity_unit ?? null }, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
+  });
+  return assemble(scored);
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
 export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
@@ -381,6 +442,7 @@ export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: b
     case "refrigerator": return { supported: true, recommendations: decideRefrigerator(task, rows) };
     case "washing_machine": return { supported: true, recommendations: decideWashingMachine(task, rows) };
     default: {
+      if (APPLIANCE_META[task.category]) return { supported: true, recommendations: decideAppliance(task, rows) };
       const scored = rows.map((row) => ({ row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0),
         reasons: [(row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد"],
         total: row.lowest_price ?? null, breakdown: { unit: row.lowest_price ?? null, installation: null, annual_electricity: null } }));

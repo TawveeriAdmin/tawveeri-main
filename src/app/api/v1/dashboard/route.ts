@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
+import { APPLIANCE_META } from "@/lib/agent/decision-engine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const AGENT_SUPPORTED = ["air_conditioner", "tv", "tablet", "mobile", "laptop", "refrigerator", "washing_machine"];
+// Bespoke deciders + generic config-factory appliance deciders (single source: the
+// decision engine). Derived so it can never drift from what decide() actually supports.
+const BESPOKE_SUPPORTED = ["air_conditioner", "tv", "tablet", "mobile", "laptop", "refrigerator", "washing_machine"];
+const AGENT_SUPPORTED = [...BESPOKE_SUPPORTED, ...Object.keys(APPLIANCE_META)];
 const STORE_NAME: Record<number, string> = { 1: "Jarir", 2: "Amazon", 4: "Extra", 5: "Almanea" };
 
 /**

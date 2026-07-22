@@ -59,6 +59,13 @@ const STORE_NAME: Record<number, string> = { 1: "Jarir", 2: "Amazon", 4: "Extra"
   md += `- **Corroboration is store-diversity-bound, not volume-bound:** a category can have many resolved identities but few corroborated (the same product must appear in ≥2 stores). This is precision-over-recall, not a coverage gap.\n`;
   md += `- **Single-store dominance is structural** in the KSA 4-store market (evidence: laptop 0 corroboration despite thousands of units). Layer 2 keeps these discoverable without false comparison.\n`;
   md += `- **Growth path:** \`/api/cron/tps-progressive\` (scheduled) processes newly-ingested observations continuously, so corroboration rises as store overlap appears.\n`;
+  md += `\n## Categories evaluated but NOT built (evidence-based, precision over recall)\n\n`;
+  md += `These were requested/considered but have insufficient clean production evidence to build an honest decider — building one would fabricate capability:\n\n`;
+  md += `| Category | Finding (production \`raw_observations\`) | Decision |\n|---|---|---|\n`;
+  md += `| cooker / gas range (بوتاجاز) | **n=0** with proper signals (gas range/بوتاجاز/burners) — the catalog has rice/pressure cookers only | Not built |\n`;
+  md += `| water heater (سخان مياه) | **n=0** — the سخان keyword matched only cup-warmers/kettles | Not built |\n`;
+  md += `| range hood (شفاط) | n=6, **1 distinct SKU** (Kumtel DT6-61, 5 duplicates), single store | Not built (too thin) |\n`;
+  md += `\nRe-evaluate on new ingestion; each becomes a one-line appliance config the moment ≥1 clean multi-unit signal appears.\n`;
 
   console.log(md);
   await c.end();

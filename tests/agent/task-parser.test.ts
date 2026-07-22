@@ -47,6 +47,25 @@ describe("Task parser — English + other categories", () => {
     expect(parseShoppingTask("ثلاجة كبيرة").category).toBe("refrigerator");
     expect(parseShoppingTask("غسالة أوتوماتيك").category).toBe("washing_machine");
   });
+  it("recognizes all config-factory appliance categories", () => {
+    expect(parseShoppingTask("غسالة صحون 14 مكان").category).toBe("dishwasher");
+    expect(parseShoppingTask("مايكرويف 30 لتر").category).toBe("microwave");
+    expect(parseShoppingTask("مكنسة روبوت").category).toBe("vacuum");
+    expect(parseShoppingTask("منقي هواء للغرفة").category).toBe("air_purifier");
+    expect(parseShoppingTask("ماكينة قهوة اسبريسو").category).toBe("coffee_maker");
+    expect(parseShoppingTask("غلاية كهربائية").category).toBe("kettle");
+    expect(parseShoppingTask("قلاية هوائية 8 لتر").category).toBe("air_fryer");
+    expect(parseShoppingTask("محمصة خبز").category).toBe("toaster");
+    expect(parseShoppingTask("خلاط قوي").category).toBe("blender");
+    expect(parseShoppingTask("فرن كهربائي مدمج").category).toBe("oven");
+  });
+  it("disambiguates dishwasher from washing machine (both contain غسالة)", () => {
+    expect(parseShoppingTask("غسالة صحون").category).toBe("dishwasher");
+    expect(parseShoppingTask("غسالة ملابس").category).toBe("washing_machine");
+  });
+  it("parses a large/family intent", () => {
+    expect(parseShoppingTask("غسالة صحون كبيرة للعائلة").priorities).toEqual(expect.arrayContaining(["large"]));
+  });
   it("tablet with cellular + storage", () => {
     const t = parseShoppingTask("ابغى تابلت للانتاجية يدعم شريحة 256 جيجا");
     expect(t.category).toBe("tablet");

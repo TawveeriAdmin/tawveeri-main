@@ -1,0 +1,120 @@
+// scripts/tps-plugins/appliance/factory.ts
+// Config-driven TPS CategoryPlugin factory for home appliances. One factory
+// implements the full plugin contract (detect / normalize / buildIdentityKey /
+// scoreConfidence) plus the registry helpers (names / attrs) for ANY appliance
+// whose identity is brand + a discriminator (type and/or capacity). This is the
+// DRY reuse of the TPS architecture: adding a category is a config, not 5 files.
+//
+// Identity key format is uniform 3-part: `brand|type|capacity` with "NA" as an
+// explicit placeholder for an absent part (so attrs decoding is positional and
+// deterministic). Precision-first: a brand-only match (no type AND no capacity)
+// is INVALID — we never over-merge a whole brand into one identity.
+import type { CategoryPlugin, NormalizeResult, IdentityResult, ConfidenceResult } from "../../tps-core/types";
+import { canonicalizeBrand } from "../../tps-core/brand-map";
+
+export interface CapacitySpec {
+  regex: string;            // must capture the number in group 1
+  min: number; max: number;
+  round?: number;           // round to nearest N
+  cuftToLiters?: boolean;   // convert cubic feet → liters (÷ appliances quoting cu.ft)
+}
+export interface ApplianceCfg {
+  category: string; version: string;
+  nounAr: string; nounEn: string;
+  metricAr?: string; metricEn?: string;   // unit label for the capacity number
+  signals: string;                          // regex src — at least one must match
+  rejectAccessory?: string;                 // regex src — reject (spare parts/consumables)
+  rejectWrong?: string;                      // regex src — reject (wrong category/collision)
+  brandGuess: string;                        // regex src — fallback brand extraction
+  types?: [string, string][];                // [label, regexSrc] — first match wins
+  capacity?: CapacitySpec;
+  techFlags?: [string, string][];            // [payloadField, regexSrc] — boolean features
+}
+
+const rx = (s?: string) => (s ? new RegExp(s, "i") : null);
+
+export interface AppliancePluginBundle {
+  plugin: CategoryPlugin;
+  names: (key: string, rep?: Record<string, unknown>) => { nameAr: string; nameEn: string };
+  attrs: (key: string, rep?: Record<string, unknown>) => Record<string, unknown>;
+  config: ApplianceCfg;
+}
+
+export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
+  const sig = new RegExp(cfg.signals, "i");
+  const acc = rx(cfg.rejectAccessory), wrong = rx(cfg.rejectWrong);
+  const brandRx = new RegExp(cfg.brandGuess, "i");
+  const types = (cfg.types || []).map(([label, src]) => [label, new RegExp(src, "i")] as const);
+  const techs = (cfg.techFlags || []).map(([f, src]) => [f, new RegExp(src, "i")] as const);
+  const capRx = cfg.capacity ? new RegExp(cfg.capacity.regex, "i") : null;
+
+  function detect(nameAr: string, nameEn: string): boolean {
+    const t = `${nameAr} ${nameEn}`.toLowerCase();
+    if (wrong && wrong.test(t)) return false;
+    if (acc && acc.test(t)) return false;
+    return sig.test(t);
+  }
+  function extractCapacity(full: string): number | null {
+    if (!capRx || !cfg.capacity) return null;
+    const m = full.match(capRx); if (!m || m[1] == null) return null;
+    let n = parseFloat(m[1]); if (!Number.isFinite(n)) return null;
+    if (cfg.capacity.cuftToLiters) n = Math.round((n * 28.3) / 10) * 10;
+    else if (cfg.capacity.round) n = Math.round(n / cfg.capacity.round) * cfg.capacity.round;
+    if (n < cfg.capacity.min || n > cfg.capacity.max) return null;
+    return n;
+  }
+  function normalize(nameAr: string, nameEn: string, rawBrand: string | null): NormalizeResult {
+    const full = `${nameAr} ${nameEn}`; const t = full.toLowerCase();
+    let brand = canonicalizeBrand(rawBrand);
+    if (brand === "unknown" || brand === "other") { const g = t.match(brandRx); if (g) brand = canonicalizeBrand(g[0].trim()); }
+    let type: string | null = null;
+    for (const [label, re] of types) if (re.test(t)) { type = label; break; }
+    const capacity = extractCapacity(full);
+    const payload: Record<string, unknown> = { brand: brand === "unknown" ? null : brand, type, capacity };
+    for (const [f, re] of techs) payload[f] = re.test(t);
+    const flags: string[] = [];
+    if (type == null && capacity == null) flags.push("no_discriminator");
+    return { model_number: null, color: null, payload, ignored_terms: [], ambiguity_flags: flags };
+  }
+  function buildIdentityKey(brand: string | null, p: Record<string, unknown>): IdentityResult {
+    const cb = (typeof p.brand === "string" && p.brand) ? String(p.brand) : canonicalizeBrand(brand);
+    if (!cb || cb === "unknown") return { key: null, status: "invalid", reason: "brand missing" };
+    const type = (p.type as string | null) ?? null;
+    const cap = p.capacity as number | null;
+    if (type == null && cap == null) return { key: null, status: "invalid", reason: "no discriminator (type/capacity)" };
+    return { key: `${cb}|${type ?? "NA"}|${cap == null ? "NA" : cap}`, status: "valid", reason: "brand+discriminator" };
+  }
+  function scoreConfidence(brand: string | null, p: Record<string, unknown>, _m: string | null, flags: string[]): ConfidenceResult {
+    const missing: string[] = [];
+    if (!brand && !p.brand) missing.push("brand");
+    if (p.type == null && p.capacity == null) missing.push("discriminator");
+    let conf = Math.round(((2 - missing.length) / 2) * 100);
+    if (flags.length) conf = Math.max(0, conf - 5);
+    return { confidence: conf, missing_critical: missing, needs_llm: missing.length > 0 };
+  }
+
+  const typeLabel = (label: string) => label.replace(/_/g, " ");
+  function names(key: string): { nameAr: string; nameEn: string } {
+    const [b, ty, cap] = key.split("|");
+    const tyS = ty !== "NA" ? typeLabel(ty) : "";
+    const capAr = cap !== "NA" ? `${cap}${cfg.metricAr ? " " + cfg.metricAr : ""}` : "";
+    const capEn = cap !== "NA" ? `${cap}${cfg.metricEn ? " " + cfg.metricEn : ""}` : "";
+    return {
+      nameAr: `${cfg.nounAr} ${b} ${tyS} ${capAr}`.replace(/\s+/g, " ").trim(),
+      nameEn: `${b} ${tyS ? tyS + " " : ""}${cfg.nounEn}${capEn ? " " + capEn : ""}`.replace(/\s+/g, " ").trim(),
+    };
+  }
+  function attrs(key: string, rep?: Record<string, unknown>): Record<string, unknown> {
+    const [, ty, cap] = key.split("|");
+    const a: Record<string, unknown> = {
+      appliance_type: ty === "NA" ? null : ty,
+      capacity: cap === "NA" ? null : Number(cap),
+      capacity_unit: cfg.metricEn ?? null,
+    };
+    for (const [f] of techs) if (rep && f in rep) a[f] = rep[f];
+    return a;
+  }
+
+  const plugin: CategoryPlugin = { category: cfg.category, version: cfg.version, detect, normalize, buildIdentityKey, scoreConfidence };
+  return { plugin, names, attrs, config: cfg };
+}

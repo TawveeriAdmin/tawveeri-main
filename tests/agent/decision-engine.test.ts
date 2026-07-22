@@ -5,7 +5,15 @@
  * neutrality (ranking not price-alone), and NO FABRICATION (undersize flagged).
  * Every rubric is an assertion — regressions fail loud in CI.
  */
-import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decideLaptop, decideRefrigerator, decideWashingMachine, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decideLaptop, decideRefrigerator, decideWashingMachine, decideAppliance, APPLIANCE_META, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+
+// generic appliance canonical-row builder
+const appl = (o: { cat: string; brand: string; type?: string | null; cap?: number | null; price: number; stores: number; id?: string; flags?: Record<string, boolean> }): CanonicalRow => ({
+  canonical_id: o.id ?? `${o.cat}-${o.brand}-${o.cap ?? o.type}`, tps_identity_key: "k",
+  display_name_ar: `${o.cat} ${o.brand}`, display_name_en: o.cat, brand: o.brand, category: o.cat, image_url: null,
+  lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 75,
+  attributes: { appliance_type: o.type ?? null, capacity: o.cap ?? null, capacity_unit: "u", ...(o.flags ?? {}) },
+});
 
 const fridge = (o: { type: string; liters: number; inverter: boolean; price: number; stores: number; id?: string }): CanonicalRow => ({
   canonical_id: o.id ?? `f-${o.type}-${o.liters}`, tps_identity_key: "k", display_name_ar: `ثلاجة ${o.type}`, display_name_en: "fridge",
@@ -180,7 +188,7 @@ describe("Laptop decision — use-fit (deterministic, single-store honest)", () 
 describe("Category dispatcher", () => {
   it("dispatches ac/tv/tablet/mobile/laptop as supported; unknown is neutral fallback", () => {
     for (const c of ["air_conditioner", "tv", "tablet", "mobile", "laptop"]) expect(decide({ category: c }, []).supported).toBe(true);
-    expect(decide({ category: "microwave" }, []).supported).toBe(false);
+    expect(decide({ category: "furniture" }, []).supported).toBe(false);
   });
 });
 
@@ -234,6 +242,49 @@ describe("Dispatcher supports appliance categories", () => {
   it("refrigerator + washing_machine are supported", () => {
     expect(decide({ category: "refrigerator" }, []).supported).toBe(true);
     expect(decide({ category: "washing_machine" }, []).supported).toBe(true);
+  });
+  it("all config-factory appliance categories are supported via the generic decider", () => {
+    for (const cat of Object.keys(APPLIANCE_META)) {
+      expect(decide({ category: cat }, []).supported).toBe(true);
+    }
+  });
+  it("an unknown category stays unsupported (neutral fallback, no fabrication)", () => {
+    expect(decide({ category: "spaceship" }, []).supported).toBe(false);
+  });
+});
+
+describe("Generic appliance decider (deterministic, ranking-blind, single-store honest)", () => {
+  it("prefers family-size capacity when large intent is present (dishwasher)", () => {
+    const task = { category: "dishwasher", parsed_from_text: "غسالة صحون كبيرة للعائلة" } as ShoppingTask & { parsed_from_text: string };
+    const recs = decideAppliance(task, [
+      appl({ cat: "dishwasher", brand: "midea", type: "built_in", cap: 8, price: 1200, stores: 1, id: "small" }),
+      appl({ cat: "dishwasher", brand: "haier", type: "built_in", cap: 16, price: 1500, stores: 1, id: "large" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("large");
+    expect(recs[0].reasons_ar.join(" ")).toMatch(/للعائلات/);
+  });
+  it("prefers inverter under low_electricity (dishwasher runs long cycles)", () => {
+    const task = { category: "dishwasher", priorities: ["low_electricity"] } as ShoppingTask;
+    const recs = decideAppliance(task, [
+      appl({ cat: "dishwasher", brand: "beko", type: "freestanding", cap: 12, price: 1300, stores: 1, id: "std", flags: { inverter: false } }),
+      appl({ cat: "dishwasher", brand: "bosch", type: "freestanding", cap: 12, price: 1400, stores: 1, id: "inv", flags: { inverter: true } }),
+    ]);
+    expect(recs[0].canonical_id).toBe("inv");
+  });
+  it("surfaces single-store appliances honestly (comparison unavailable)", () => {
+    const recs = decideAppliance({ category: "kettle" } as ShoppingTask, [
+      appl({ cat: "kettle", brand: "philips", type: null, cap: 1.7, price: 120, stores: 1 }),
+    ]);
+    expect(recs[0].comparison_available).toBe(false);
+    expect(recs[0].reasons_ar.join(" ")).toMatch(/متجر واحد/);
+  });
+  it("respects budget as suitability, not commission (over-budget penalized)", () => {
+    const task = { category: "microwave", budget_total: 500 } as ShoppingTask;
+    const recs = decideAppliance(task, [
+      appl({ cat: "microwave", brand: "lg", type: "convection", cap: 39, price: 1200, stores: 1, id: "over" }),
+      appl({ cat: "microwave", brand: "nikai", type: "solo", cap: 20, price: 300, stores: 1, id: "within" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("within");
   });
 });
 

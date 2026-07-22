@@ -16,6 +16,18 @@ function parseCategory(x: string): string | null {
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
   if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
   if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s/.test(x)) return "mobile";
+  // Appliances — ORDER MATTERS: dishwasher (غسالة صحون) before washing_machine (غسالة);
+  // air_fryer (قلاية) and coffee_maker (specific) before generic checks.
+  if (/غسالة صحون|غسالة أطباق|غساله صحون|dishwasher|dish washer/.test(x)) return "dishwasher";
+  if (/مايكرويف|ميكروويف|ميكرويف|microwave/.test(x)) return "microwave";
+  if (/قلاية هوائية|قلايه هوائية|air ?fryer|قلاية بدون زيت/.test(x)) return "air_fryer";
+  if (/منقي هواء|منقّي هواء|air purifier|air cleaner/.test(x)) return "air_purifier";
+  if (/مكنسة|مكنسه|vacuum|hoover/.test(x)) return "vacuum";
+  if (/ماكينة قهوة|صانعة قهوة|coffee maker|coffee machine|espresso|اسبريسو|إسبريسو|nespresso/.test(x)) return "coffee_maker";
+  if (/غلاية|غلايه|electric kettle|\bkettle\b/.test(x)) return "kettle";
+  if (/محمصة|محمصه|toaster/.test(x)) return "toaster";
+  if (/خلاط|blender/.test(x)) return "blender";
+  if (/فرن كهربائي|فرن غاز|فرن مدمج|built-?in oven|electric oven|gas oven/.test(x)) return "oven";
   if (/ثلاجة|refrigerator|fridge|freezer/.test(x)) return "refrigerator";
   if (/غسالة|washing machine|washer|نشافة|dryer/.test(x)) return "washing_machine";
   return null;
@@ -51,6 +63,7 @@ function parsePriorities(x: string): string[] {
   if (/بطارية|battery/.test(x)) p.add("battery");
   if (/أحدث|احدث|جديد|latest|newest/.test(x)) p.add("latest");
   if (/خفيف|محمول|portable|lightweight|light ?weight|للسفر|travel/.test(x)) p.add("portability");
+  if (/كبير|كبيرة|عائلة|عائلية|large|family|big/.test(x)) p.add("large");
   return [...p];
 }
 
