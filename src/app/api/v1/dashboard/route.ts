@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/database";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const AGENT_SUPPORTED = ["air_conditioner", "tv", "tablet", "mobile"];
+const AGENT_SUPPORTED = ["air_conditioner", "tv", "tablet", "mobile", "laptop", "refrigerator", "washing_machine"];
 const STORE_NAME: Record<number, string> = { 1: "Jarir", 2: "Amazon", 4: "Extra", 5: "Almanea" };
 
 /**

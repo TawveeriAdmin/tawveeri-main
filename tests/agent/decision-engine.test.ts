@@ -5,7 +5,18 @@
  * neutrality (ranking not price-alone), and NO FABRICATION (undersize flagged).
  * Every rubric is an assertion — regressions fail loud in CI.
  */
-import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decideLaptop, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decideLaptop, decideRefrigerator, decideWashingMachine, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+
+const fridge = (o: { type: string; liters: number; inverter: boolean; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `f-${o.type}-${o.liters}`, tps_identity_key: "k", display_name_ar: `ثلاجة ${o.type}`, display_name_en: "fridge",
+  brand: "samsung", category: "refrigerator", image_url: null, lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 75,
+  attributes: { fridge_type: o.type, capacity_liters: o.liters, inverter: o.inverter },
+});
+const washer = (o: { type: string; kg: number; inverter: boolean; dryer: boolean; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `w-${o.type}-${o.kg}`, tps_identity_key: "k", display_name_ar: `غسالة ${o.type}`, display_name_en: "washer",
+  brand: "lg", category: "washing_machine", image_url: null, lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 75,
+  attributes: { washer_type: o.type, capacity_kg: o.kg, inverter: o.inverter, has_dryer: o.dryer },
+});
 
 const lap = (o: { family: string; cpu: string; ram: number; storage: number; screen: number; gpu: string; price: number; stores: number; id?: string }): CanonicalRow => ({
   canonical_id: o.id ?? `l-${o.family}-${o.gpu}`, tps_identity_key: "k", display_name_ar: `لابتوب ${o.family}`, display_name_en: "laptop",
@@ -170,6 +181,59 @@ describe("Category dispatcher", () => {
   it("dispatches ac/tv/tablet/mobile/laptop as supported; unknown is neutral fallback", () => {
     for (const c of ["air_conditioner", "tv", "tablet", "mobile", "laptop"]) expect(decide({ category: c }, []).supported).toBe(true);
     expect(decide({ category: "microwave" }, []).supported).toBe(false);
+  });
+});
+
+describe("Refrigerator decision — efficiency + capacity (deterministic, single-store honest)", () => {
+  it("inverter is preferred when low_electricity is a priority (runs 24/7)", () => {
+    const task = { category: "refrigerator", priorities: ["low_electricity"] } as ShoppingTask;
+    const recs = decideRefrigerator(task, [
+      fridge({ type: "single_door", liters: 200, inverter: false, price: 1200, stores: 1, id: "std" }),
+      fridge({ type: "single_door", liters: 200, inverter: true, price: 1300, stores: 1, id: "inv" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("inv");
+    expect(recs[0].reasons_ar.join(" ")).toMatch(/إنفرتر/);
+  });
+  it("total cost includes estimated annual electricity (fridge runs 24/7)", () => {
+    const recs = decideRefrigerator({ category: "refrigerator" } as ShoppingTask, [
+      fridge({ type: "side_by_side", liters: 500, inverter: true, price: 3000, stores: 1 }),
+    ]);
+    expect(recs[0].cost_breakdown.annual_electricity).toBeGreaterThan(0);
+    expect(recs[0].total_cost_estimate).toBeGreaterThan(recs[0].unit_price!);
+  });
+  it("single-store fridge is surfaced honestly (comparison unavailable)", () => {
+    const recs = decideRefrigerator({ category: "refrigerator" } as ShoppingTask, [
+      fridge({ type: "top_mount", liters: 350, inverter: false, price: 1800, stores: 1 }),
+    ]);
+    expect(recs[0].comparison_available).toBe(false);
+    expect(recs[0].reasons_ar.join(" ")).toMatch(/متجر واحد/);
+  });
+});
+
+describe("Washing machine decision — efficiency + dryer combo (deterministic)", () => {
+  it("front-load + inverter is preferred for low_electricity/quiet", () => {
+    const task = { category: "washing_machine", priorities: ["low_electricity", "quiet"] } as ShoppingTask;
+    const recs = decideWashingMachine(task, [
+      washer({ type: "top_load", kg: 10, inverter: false, dryer: false, price: 1400, stores: 1, id: "top" }),
+      washer({ type: "front_load", kg: 10, inverter: true, dryer: false, price: 1600, stores: 1, id: "front" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("front");
+  });
+  it("washer/dryer combo wins when the task text asks for drying", () => {
+    const task = { category: "washing_machine", parsed_from_text: "غسالة مع نشافة" } as ShoppingTask & { parsed_from_text: string };
+    const recs = decideWashingMachine(task, [
+      washer({ type: "front_load", kg: 8, inverter: true, dryer: false, price: 1600, stores: 1, id: "wash" }),
+      washer({ type: "front_load", kg: 8, inverter: true, dryer: true, price: 1900, stores: 1, id: "combo" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("combo");
+    expect(recs[0].reasons_ar.join(" ")).toMatch(/نشافة/);
+  });
+});
+
+describe("Dispatcher supports appliance categories", () => {
+  it("refrigerator + washing_machine are supported", () => {
+    expect(decide({ category: "refrigerator" }, []).supported).toBe(true);
+    expect(decide({ category: "washing_machine" }, []).supported).toBe(true);
   });
 });
 

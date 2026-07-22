@@ -299,6 +299,76 @@ export function decideLaptop(task: ShoppingTask, rows: CanonicalRow[]): Recommen
   return assemble(scored);
 }
 
+// ── Refrigerator: derive DNA + decide. Runs 24/7 → electricity is a real TCO signal
+//    (inverter matters). Suitability = capacity-for-household + efficiency + type +
+//    trust + total cost (unit + est. annual electricity). Ranking-blind. Appliances
+//    are structurally single-store in KSA (Extra-dominant) — surfaced honestly. ──
+export function deriveRefrigeratorDna(row: CanonicalRow): Record<string, unknown> {
+  const a = row.attributes ?? {};
+  const liters = a.capacity_liters != null ? Number(a.capacity_liters) : null;
+  return { brand: row.brand, fridge_type: a.fridge_type ?? null, capacity_liters: liters,
+    inverter: a.inverter === true ? true : a.inverter === false ? false : null,
+    energy_efficiency: a.inverter == null ? null : a.inverter ? "high" : "standard" };
+}
+// Fridge annual electricity (rough, KSA tariff): base + capacity term, inverter ~30% less.
+function fridgeAnnualElectricity(liters: number | null, inverter: boolean | null): number {
+  const kwh = 200 + (liters ?? 350) * 0.4; // heuristic kWh/yr
+  return Math.round(kwh * 0.18 * (inverter ? 0.7 : 1)); // 0.18 SAR/kWh
+}
+export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const pr = task.priorities ?? [];
+  const wantLowElec = pr.includes("low_electricity"), wantLarge = pr.includes("large") || /كبير|عائلة|large|family/.test((task as { parsed_from_text?: string }).parsed_from_text ?? "");
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const dna = deriveRefrigeratorDna(row); const reasons: string[] = [];
+    let score = 0.5;
+    const liters = a.capacity_liters != null ? Number(a.capacity_liters) : null;
+    const inverter = a.inverter === true; const type = (a.fridge_type as string) ?? null;
+    if (liters != null) { reasons.unshift(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${liters} لتر`.replace(/\s+/g, " ").trim()); if (wantLarge) { if (liters >= 500) { score += 0.12; reasons.push(`سعة ${liters} لتر — واسعة للعائلات`); } else reasons.push(`سعة ${liters} لتر — متوسطة`); } }
+    if (inverter) { score += wantLowElec ? 0.15 : 0.05; reasons.push(wantLowElec ? "إنفرتر — أوفر في الكهرباء (يعمل ٢٤ ساعة)" : "إنفرتر — كفاءة أعلى"); }
+    else if (wantLowElec) { score -= 0.08; reasons.push("عادي (غير إنفرتر) — استهلاك أعلى على مدار الساعة"); }
+    if (type === "french_door" || type === "side_by_side") reasons.push(`${type.replace(/_/g, " ")} — تصميم واسع`);
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    const unit = row.lowest_price; const annual = fridgeAnnualElectricity(liters, inverter);
+    const total = unit != null ? Math.round(unit + annual) : null;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك — التكلفة ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك — التكلفة ~${total} ريال`); } }
+    else if (total) reasons.push(`التكلفة التقديرية ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`);
+    return { row, dna, score, reasons, total, breakdown: { unit: unit ?? null, installation: null, annual_electricity: annual } };
+  });
+  return assemble(scored);
+}
+
+// ── Washing machine: derive DNA + decide. Suitability = capacity-for-household +
+//    efficiency (front-load + inverter) + dryer combo + trust + budget. Ranking-blind.
+export function deriveWashingMachineDna(row: CanonicalRow): Record<string, unknown> {
+  const a = row.attributes ?? {};
+  return { brand: row.brand, washer_type: a.washer_type ?? null,
+    capacity_kg: a.capacity_kg != null ? Number(a.capacity_kg) : null,
+    has_dryer: a.has_dryer === true, inverter: a.inverter === true ? true : a.inverter === false ? false : null };
+}
+export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const pr = task.priorities ?? []; const text = (task as { parsed_from_text?: string }).parsed_from_text ?? "";
+  const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
+  const wantLarge = /كبير|عائلة|large|family/.test(text), wantDryer = /نشاف|نشافة|dryer|تجفيف/.test(text);
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const dna = deriveWashingMachineDna(row); const reasons: string[] = [];
+    let score = 0.5;
+    const kg = a.capacity_kg != null ? Number(a.capacity_kg) : null; const type = (a.washer_type as string) ?? null;
+    const inverter = a.inverter === true; const combo = a.has_dryer === true;
+    reasons.unshift(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${kg != null ? kg + " كجم" : ""}`.replace(/\s+/g, " ").trim());
+    if (kg != null && wantLarge) { if (kg >= 10) { score += 0.1; reasons.push(`سعة ${kg} كجم — مناسبة للعائلات`); } else reasons.push(`سعة ${kg} كجم — متوسطة`); }
+    if (type === "front_load") { score += 0.06; reasons.push("تحميل أمامي — غسيل أعمق وأوفر ماءً"); }
+    if (inverter) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; reasons.push((wantLowElec || wantQuiet) ? "محرك إنفرتر — أهدأ وأوفر (أولويتك)" : "محرك إنفرتر — كفاءة أعلى"); }
+    else if (wantLowElec) { score -= 0.06; reasons.push("عادي (غير إنفرتر) — استهلاك أعلى"); }
+    if (combo) { score += wantDryer ? 0.1 : 0.03; reasons.push(wantDryer ? "غسالة ونشافة — تغسل وتجفف (أولويتك)" : "غسالة ونشافة مدمجة"); }
+    else if (wantDryer) { score -= 0.08; reasons.push("غسالة فقط — بدون نشافة"); }
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    const total = row.lowest_price;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
+  });
+  return assemble(scored);
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
 export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
@@ -308,6 +378,8 @@ export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: b
     case "tablet": return { supported: true, recommendations: decideTablet(task, rows) };
     case "mobile": return { supported: true, recommendations: decideMobile(task, rows) };
     case "laptop": return { supported: true, recommendations: decideLaptop(task, rows) };
+    case "refrigerator": return { supported: true, recommendations: decideRefrigerator(task, rows) };
+    case "washing_machine": return { supported: true, recommendations: decideWashingMachine(task, rows) };
     default: {
       const scored = rows.map((row) => ({ row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0),
         reasons: [(row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد"],

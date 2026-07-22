@@ -13,6 +13,8 @@ import { audioPlugin, normalize as audioN } from "../tps-plugins/audio";
 import { cameraPlugin, normalize as cameraN } from "../tps-plugins/camera";
 import { acPlugin } from "../tps-plugins/ac";
 import { laptopPlugin, normalize as laptopN } from "../tps-plugins/laptop";
+import { refrigeratorPlugin } from "../tps-plugins/refrigerator";
+import { washingMachinePlugin } from "../tps-plugins/washing_machine";
 import { buildNames as tvNames } from "../tps-matcher/tv-matcher-v1-dry";
 import { buildNames as tabletNames } from "../tps-matcher/tablet-matcher-v1-dry";
 import { buildNames as audioNames } from "../tps-matcher/audio-matcher-v1-dry";
@@ -85,5 +87,23 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     names: (k) => laptopNames(k),
     attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { family: p[1] === "NO_FAMILY" ? null : p[1], cpu: p[2], ram: Number(p[3]), storage: Number(p[4]), screen: p[5] === "NO_SCREEN" ? null : Number(p[5]), gpu: p[6] }; },
     canonSeed: (k) => `canonical:laptop:${k}`, normSeed: (o) => `norm:laptop:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  refrigerator: {
+    category: "refrigerator", detected: "refrigerator", plugin: refrigeratorPlugin,
+    normalize: (a, b, br) => refrigeratorPlugin.normalize(a, b, br), version: "refrigerator-v1",
+    filterKeywords: ["ثلاجة", "refrigerator", "fridge"],
+    // key = brand|type|capacity_liters|tech(inverter|standard)
+    names: (k) => { const p = k.split("|"); const b = p[0], ty = p[1].replace(/_/g, " "), L = p[2], tech = p[3] === "inverter" ? " انفرتر" : ""; return { nameAr: `ثلاجة ${b} ${ty} ${L} لتر${tech}`.trim(), nameEn: `${b} ${ty} refrigerator ${L}L${p[3] === "inverter" ? " inverter" : ""}`.trim() }; },
+    attrs: (k) => { const p = k.split("|"); return { fridge_type: p[1], capacity_liters: Number(p[2]), inverter: p[3] === "inverter" }; },
+    canonSeed: (k) => `canonical:refrigerator:${k}`, normSeed: (o) => `norm:refrigerator:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  washing_machine: {
+    category: "washing_machine", detected: "washing_machine", plugin: washingMachinePlugin,
+    normalize: (a, b, br) => washingMachinePlugin.normalize(a, b, br), version: "washing_machine-v1",
+    filterKeywords: ["غسالة", "washing machine", "washer"],
+    // key = brand|type|capacity_kg|dryer(combo|washer)
+    names: (k) => { const p = k.split("|"); const b = p[0], ty = p[1].replace(/_/g, " "), kg = p[2], combo = p[3] === "combo"; return { nameAr: `غسالة ${b} ${ty} ${kg} كجم${combo ? " ونشافة" : ""}`.trim(), nameEn: `${b} ${ty} ${combo ? "washer/dryer" : "washer"} ${kg}kg`.trim() }; },
+    attrs: (k) => { const p = k.split("|"); return { washer_type: p[1], capacity_kg: Number(p[2]), has_dryer: p[3] === "combo" }; },
+    canonSeed: (k) => `canonical:washing_machine:${k}`, normSeed: (o) => `norm:washing_machine:raw_observations:${o}`, requireValidTier: false, priceBand: null,
   },
 };
