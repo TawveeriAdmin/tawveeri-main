@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
+import { parseShoppingTask } from "@/lib/agent/task-parser";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,8 +17,19 @@ export const dynamic = "force-dynamic";
  * Deterministic engine decides; no LLM in the ranking path (ADR-002).
  */
 export async function POST(req: NextRequest) {
-  const task = (await req.json().catch(() => ({}))) as ShoppingTask;
-  if (!task.category) return NextResponse.json({ error: "category required" }, { status: 400 });
+  const body = (await req.json().catch(() => ({}))) as ShoppingTask & { text?: string };
+  // Accept either a structured task OR free text ("مكيف لغرفة 30 متر ... تحت 4000").
+  // Free text is parsed deterministically (no LLM); explicit fields override.
+  let task: ShoppingTask & { text?: string } = body;
+  let parsed: ReturnType<typeof parseShoppingTask> | null = null;
+  if (typeof body.text === "string" && body.text.trim()) {
+    parsed = parseShoppingTask(body.text);
+    task = { ...parsed, ...body }; // explicit body fields win over parsed
+    if (!task.category && parsed.category) task.category = parsed.category;
+  }
+  if (!task.category) {
+    return NextResponse.json({ error: "category required (or provide `text` the parser can classify)", parsed }, { status: 400 });
+  }
   const supabase = createServerClient();
 
   // Canonical rows for the category: attributes (for DNA) from canonical_products,
@@ -64,7 +76,7 @@ export async function POST(req: NextRequest) {
 
   const out = recs.map((r) => ({ ...r, go_url: goByCanon.get(r.canonical_id) ?? null }));
   return NextResponse.json({
-    version: "v1", task, supported,
+    version: "v1", task, parsed: parsed ?? undefined, supported,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
     count: out.length, smart_pick: out.find((r) => r.is_smart_pick) ?? null, recommendations: out,
   });

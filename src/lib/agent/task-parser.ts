@@ -1,0 +1,106 @@
+// src/lib/agent/task-parser.ts
+// E15.5 — deterministic natural-language → ShoppingTask parser (Arabic + English).
+// A real shopping task ("مكيف لغرفة 30 متر في الرياض، هادئ وموفر للكهرباء، تحت 4000")
+// is turned into a structured task the deterministic Decision Agent consumes. NO
+// LLM — pure keyword/number extraction, so it is reproducible and testable. Unknown
+// beats incorrect: fields it cannot extract stay undefined (never guessed).
+import type { ShoppingTask } from "./decision-engine";
+
+const norm = (t: string) => (t || "").toLowerCase();
+
+function parseCategory(x: string): string | null {
+  if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
+  if (/تلفزيون|تليفزيون|شاشة|television|\btv\b|smart tv/.test(x)) return "tv";
+  if (/تابلت|ايباد|آيباد|ipad|tablet|جالكسي تاب|galaxy tab|matepad/.test(x)) return "tablet";
+  if (/لابتوب|لاب توب|laptop|notebook|macbook/.test(x)) return "laptop";
+  if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
+  if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
+  if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s/.test(x)) return "mobile";
+  return null;
+}
+
+function parseRoomSize(x: string): number | undefined {
+  // "30 متر", "30م²", "30 m2", "30 sqm", "30 square"
+  const m = x.match(/(\d{1,3})\s*(?:م(?:²|2|تر)?|متر مربع|m2|m²|sqm|sq ?m|square ?met)/);
+  if (m) { const n = Number(m[1]); if (n >= 5 && n <= 200) return n; }
+  return undefined;
+}
+
+function parseBudget(x: string): number | null | undefined {
+  // "تحت 4000", "ميزانية 4000", "under 4000", "budget 4000", "4000 ريال"
+  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|في حدود|under|below|budget|max)\s*([\d,]{3,7})/) ||
+            x.match(/([\d,]{3,7})\s*(?:ريال|sar|sr)\b/);
+  if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
+  return undefined;
+}
+
+function parsePriorities(x: string): string[] {
+  const p = new Set<string>();
+  if (/هادئ|هدوء|صامت|quiet|silent|low ?noise/.test(x)) p.add("quiet");
+  if (/موفر|توفير|كهرباء|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/.test(x)) p.add("low_electricity");
+  if (/تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/.test(x)) p.add("heating");
+  if (/ألعاب|العاب|قيمنق|gaming|games/.test(x)) p.add("gaming");
+  if (/أفلام|افلام|سينما|movies|cinema|netflix/.test(x)) p.add("movies");
+  if (/رياضة|كرة|مباريات|sports|football/.test(x)) p.add("sports");
+  if (/غرفة مضيئة|إضاءة|bright ?room|sunny/.test(x)) p.add("bright_room");
+  if (/إنتاجية|انتاجية|عمل|productivity|work|office/.test(x)) p.add("productivity");
+  if (/قراءة|reading|كتب|books/.test(x)) p.add("reading");
+  return [...p];
+}
+
+function parseConnectivity(x: string): string | undefined {
+  if (/شريحة|خلوي|بيانات|5g|4g|lte|cellular|sim/.test(x)) return "cellular";
+  if (/واي ?فاي|wifi|wi-?fi/.test(x)) return "wifi";
+  return undefined;
+}
+
+function parseCity(x: string): string | undefined {
+  const map: [RegExp, string][] = [[/الرياض|riyadh/, "Riyadh"], [/جدة|jeddah/, "Jeddah"], [/الدمام|dammam/, "Dammam"], [/مكة|makkah|mecca/, "Makkah"], [/المدينة|madinah/, "Madinah"], [/الخبر|khobar/, "Khobar"]];
+  for (const [re, v] of map) if (re.test(x)) return v;
+  return undefined;
+}
+
+function parseStorageMin(x: string): number | undefined {
+  const m = x.match(/(\d{2,4})\s*(?:جيجا|gb)\s*(?:على الأقل|أو أكثر|فأكثر|min|or more)?/);
+  if (m) { const n = Number(m[1]); if ([32, 64, 128, 256, 512, 1024].includes(n)) return n; }
+  return undefined;
+}
+
+export interface ParsedTask extends ShoppingTask {
+  use?: string[];
+  connectivity_needed?: string;
+  storage_min?: number;
+  parsed_from_text: string;
+  unresolved?: string[]; // fields the parser could not extract (fail-loud transparency)
+}
+
+/** Parse free-text into a ShoppingTask. Returns null category if undetectable. */
+export function parseShoppingTask(text: string): ParsedTask {
+  const x = norm(text);
+  const category = parseCategory(x);
+  const room_size_m2 = parseRoomSize(x);
+  const budget_total = parseBudget(x);
+  const priorities = parsePriorities(x);
+  const connectivity = parseConnectivity(x);
+  const city = parseCity(x);
+  const storage_min = parseStorageMin(x);
+
+  const unresolved: string[] = [];
+  if (!category) unresolved.push("category");
+  if (category === "air_conditioner" && !room_size_m2) unresolved.push("room_size_m2");
+
+  const task: ParsedTask = {
+    category: category ?? "",
+    room_size_m2, city, priorities: priorities.length ? priorities : undefined,
+    budget_total: budget_total ?? undefined,
+    parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,
+  };
+  // Tablet-specific structured fields.
+  if (category === "tablet") {
+    if (connectivity === "cellular") task.connectivity_needed = "cellular";
+    if (storage_min) task.storage_min = storage_min;
+    if (priorities.length) task.use = priorities;
+  }
+  if (category === "tv" && priorities.length) task.priorities = priorities;
+  return task;
+}
