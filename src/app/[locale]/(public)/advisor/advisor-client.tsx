@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, ShieldCheck, Zap, Check, Store, ArrowLeft, ArrowRight, Loader2, CircleAlert } from 'lucide-react';
+import { Sparkles, ShieldCheck, Zap, Check, Store, ArrowLeft, ArrowRight, Loader2, CircleAlert, TrendingDown, Clock } from 'lucide-react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
   askAdvisor, comparisonBadge, costLines, exitHref, hasTotalBeyondUnit,
-  parsedSummary, recTitle, type AdvisorRecommendation, type AdvisorResponse, type Locale,
+  parsedSummary, recTitle, verdictTone, verdictText,
+  type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
 
 const EXAMPLES: Record<Locale, string[]> = {
@@ -225,6 +226,28 @@ function Reasons({ reasons }: { reasons: string[] }) {
   );
 }
 
+const VERDICT_TONE_CLASS: Record<string, string> = {
+  great: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300',
+  good: 'bg-success-50 text-success-700 dark:bg-success-950/40 dark:text-success-300',
+  neutral: 'bg-surface-container-high text-on-surface-variant',
+  warn: 'bg-warning-50 text-warning-700 dark:bg-warning-950/40 dark:text-warning-400',
+  muted: 'bg-surface-container-high text-on-surface-variant',
+};
+
+function PriceVerdictBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
+  const pi = rec.price_intel;
+  if (!pi) return null;
+  const text = verdictText(pi, loc);
+  if (!text) return null;
+  const tone = verdictTone(pi.verdict);
+  const Icon = pi.verdict === 'building_history' ? Clock : pi.verdict === 'great_price' || pi.verdict === 'good_price' ? TrendingDown : Clock;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${VERDICT_TONE_CLASS[tone]}`}>
+      <Icon className="h-3.5 w-3.5" aria-hidden />{text}
+    </span>
+  );
+}
+
 function TrustBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
   const b = comparisonBadge(rec, loc);
   return (
@@ -287,6 +310,7 @@ function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; 
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-2.5 py-1 text-xs font-semibold text-on-primary">
           <Sparkles className="h-3.5 w-3.5" aria-hidden />{t('agent.smartPickLabel')}
         </span>
+        <PriceVerdictBadge rec={rec} loc={loc} />
         <TrustBadge rec={rec} loc={loc} />
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -308,6 +332,7 @@ function OptionCard({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation;
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-on-surface">{recTitle(rec, loc)}</h3>
+            <PriceVerdictBadge rec={rec} loc={loc} />
             <TrustBadge rec={rec} loc={loc} />
           </div>
           <Reasons reasons={rec.reasons_ar} />

@@ -23,6 +23,39 @@ export interface AdvisorRecommendation {
   dna: Record<string, unknown>;
   go_offer_hint: string;
   go_url: string | null;
+  price_intel?: PriceIntel | null;
+}
+
+export interface PriceIntel {
+  verdict: "great_price" | "good_price" | "typical" | "elevated" | "building_history";
+  confident: boolean;
+  is_observed_low: boolean;
+  days_tracked: number;
+  distinct_days: number;
+  current_best: number | null;
+  typical: number | null;
+  pct_vs_typical: number | null;
+  trend: "rising" | "falling" | "stable";
+  text: { ar: string; en: string };
+}
+
+export type VerdictTone = "great" | "good" | "neutral" | "warn" | "muted";
+
+/** Deterministic tone for a price verdict (drives the badge colour). */
+export function verdictTone(verdict: PriceIntel["verdict"]): VerdictTone {
+  switch (verdict) {
+    case "great_price": return "great";
+    case "good_price": return "good";
+    case "elevated": return "warn";
+    case "building_history": return "muted";
+    default: return "neutral"; // typical
+  }
+}
+
+/** Localized verdict text (falls back to Arabic if an English string is absent). */
+export function verdictText(pi: PriceIntel | null | undefined, locale: Locale): string {
+  if (!pi) return "";
+  return (locale === "ar" ? pi.text.ar : pi.text.en) || pi.text.ar || "";
 }
 
 export interface AdvisorParsed {

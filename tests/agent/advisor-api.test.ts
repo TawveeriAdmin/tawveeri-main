@@ -5,7 +5,8 @@
  */
 import {
   categoryLabel, priorityLabel, recTitle, comparisonBadge, costLines,
-  hasTotalBeyondUnit, parsedSummary, exitHref, type AdvisorRecommendation,
+  hasTotalBeyondUnit, parsedSummary, exitHref, verdictTone, verdictText,
+  type AdvisorRecommendation, type PriceIntel,
 } from "../../src/lib/agent/advisor-api";
 
 const rec = (over: Partial<AdvisorRecommendation> = {}): AdvisorRecommendation => ({
@@ -75,6 +76,27 @@ describe("parsedSummary — how the free text was understood", () => {
   });
   it("returns empty for no parse", () => {
     expect(parsedSummary(undefined, "ar")).toEqual([]);
+  });
+});
+
+describe("price verdict presentation (buy-timing intelligence)", () => {
+  const pi = (over: Partial<PriceIntel> = {}): PriceIntel => ({
+    verdict: "great_price", confident: true, is_observed_low: true, days_tracked: 27, distinct_days: 20,
+    current_best: 990, typical: 1100, pct_vs_typical: -10, trend: "falling",
+    text: { ar: "أفضل سعر منذ بدء التتبع", en: "Best price since tracking began" }, ...over,
+  });
+  it("maps each verdict to a deterministic tone", () => {
+    expect(verdictTone("great_price")).toBe("great");
+    expect(verdictTone("good_price")).toBe("good");
+    expect(verdictTone("typical")).toBe("neutral");
+    expect(verdictTone("elevated")).toBe("warn");
+    expect(verdictTone("building_history")).toBe("muted");
+  });
+  it("returns localized verdict text with fallback", () => {
+    expect(verdictText(pi(), "en")).toMatch(/Best price/);
+    expect(verdictText(pi(), "ar")).toMatch(/أفضل سعر/);
+    expect(verdictText(pi({ text: { ar: "نبني سجل السعر", en: "" } }), "en")).toBe("نبني سجل السعر");
+    expect(verdictText(null, "ar")).toBe("");
   });
 });
 

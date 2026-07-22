@@ -30,10 +30,16 @@ Takes a **shopping task** (structured or free text) and returns a neutral, expla
   "recommendations":[ { "canonical_id","title_ar","brand","unit_price",
     "total_cost_estimate","cost_breakdown":{"unit","installation","annual_electricity"},
     "store_count","comparison_available","suitability_score","confidence",
-    "is_smart_pick","reasons_ar":["…"],"dna":{…},"go_url":"/go/{offer}" } ] }
+    "is_smart_pick","reasons_ar":["…"],"dna":{…},"go_url":"/go/{offer}",
+    "price_intel":{ "verdict":"great_price|good_price|typical|elevated|building_history",
+      "confident":true,"is_observed_low":true,"days_tracked":27,"distinct_days":20,
+      "current_best":990,"typical":1100,"pct_vs_typical":-10,"trend":"falling",
+      "text":{"ar":"…","en":"…"} } } ] }
 ```
 
 **Guarantees:** no fabrication (e.g. an undersized AC is *flagged*, not hidden); `confidence` reflects corroboration, never fabricated; `reasons_ar` explain each score; single-store items labelled honestly. Free-text `parsed.unresolved[]` reports fields it could not extract (fail-loud).
+
+**Buy-timing intelligence (`price_intel`):** each recommendation carries a deterministic price-history verdict (fuses "which to buy" with "when to buy"). Computed by `computePriceVerdict` over the **daily-cheapest** series (de-biased from store/scrape frequency). Precision-first: needs ≥3 distinct days for any verdict and ≥5 for the boldest `great_price` — thin history returns `building_history` (honest, never a fabricated record-low). Also standalone at `GET /api/v1/tps/price-intelligence?canonical_id=…` (or `?ids=a,b,c`).
 
 ---
 

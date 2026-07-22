@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
+import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,7 +75,19 @@ export async function POST(req: NextRequest) {
     for (const o of obs ?? []) if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
   }
 
-  const out = recs.map((r) => ({ ...r, go_url: goByCanon.get(r.canonical_id) ?? null }));
+  // Fuse "which to buy" with "when to buy": attach a deterministic price-history
+  // verdict per recommendation (buy-timing intelligence). Additive + fail-soft —
+  // if history reads fail, recommendations still return (never blocks the answer).
+  const verdicts = await getPriceVerdicts(ids).catch(() => new Map());
+  const out = recs.map((r) => {
+    const v = verdicts.get(r.canonical_id);
+    const price_intel = v
+      ? { verdict: v.verdict, confident: v.confident, is_observed_low: v.isObservedLow, days_tracked: v.daysTracked,
+          distinct_days: v.distinctDays, current_best: v.currentBest, typical: v.typical, pct_vs_typical: v.pctVsTypical,
+          trend: v.trend, text: v.text }
+      : null;
+    return { ...r, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel };
+  });
   return NextResponse.json({
     version: "v1", task, parsed: parsed ?? undefined, supported,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
