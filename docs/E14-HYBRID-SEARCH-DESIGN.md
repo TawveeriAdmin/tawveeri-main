@@ -1,6 +1,6 @@
 # E14 — Hybrid Search Authority (design)
 
-**Status:** design (implementation follows progressive-batching coverage measurement). **Authorized by:** founder completion directive (E14 "design the objectively best architecture supported by production evidence"). **Governed by:** Constitution (Canonical / Commercial Variant / Offer separation; precision over recall; no false comparison), ADR-001/002.
+**Status:** CORE IMPLEMENTED & PRODUCTION-VERIFIED (ADR-040, build 0d001ac) — Layers 1+2 live; Layer 3 (raw long-tail) + shadow/canary remain for sole-authority cutover. **Authorized by:** founder completion directive (E14 "design the objectively best architecture supported by production evidence"). **Governed by:** Constitution (Canonical / Commercial Variant / Offer separation; precision over recall; no false comparison), ADR-001/002.
 
 ## 1. Problem & evidence
 
