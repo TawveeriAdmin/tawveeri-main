@@ -6,6 +6,16 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-042 — E15 OPERATIONALLY COMPLETE — no production dependency on the legacy system (live evidence) · Accepted (2026-07-22)
+**Context:** founder clarified the ownership/operational reality (which corrects ADR-041's framing): Railway is entirely founder-owned with every env var founder-configured; the founder's Supabase account contains ONLY `vyceqrzttspyycdpojtn` (Tawveeri-Core) — `ffpsjjazsluolysgithg` is **not in the founder's account** (third-party/Etlaq-owned); production is served from `tawveeri.com`, and `tawveeri.etlaq.sa` is no longer the production entry point. E15's completion criterion is therefore **"no remaining operational dependency on the legacy system,"** NOT physical teardown of third-party infrastructure.
+**Three live investigations (fresh production evidence, 2026-07-22):**
+1. **Legacy Supabase `ffpsjjazsluolysgithg` — VERIFIED EXISTS** (DNS→172.64.149.246; REST→401; auth health responds; recovered anon key→HTTP 200). But third-party-owned, **not** referenced by production.
+2. **`tawveeri.etlaq.sa` — reachable but NOT the production entry point** (DNS→149.104.71.82; `/`→307→/ar; health `db:connected`). A live legacy deployment (third-party), not Tawveeri production.
+3. **Railway effective dependency — NONE.** tawveeri.com served bundle across ALL chunks: `ffps=0`, `vyceqrz=1`. Runtime code consumes a single Supabase project (`NEXT_PUBLIC_SUPABASE_URL` = System A) and **no legacy variable** (grep of `src/`). Founder owns Railway + configured every var; account = only System A. Any legacy value, if it existed, would be **inactive/unconsumed** — and the bundle shows zero.
+**Production regression (all on System A, live):** web `tawveeri.com/en`=200 (bundle ffps=0); TPS search `authority=hybrid` L1+L2; recommendations v1 count=2; measured exit `/go`→302→jarir.com; ingestion `raw_observations`=135,072 latest-scrape today 09:07 (active); identity 642 canonicals; projection 394; outbound_clicks=57; mobile `eas.json`=System A; cron verified.
+**Correction to ADR-041:** the "sole remaining blocker = owner decommission access" was framed against physical deletion of `ffps`/`etlaq.sa`. Per the founder's ownership facts, those are **third-party, non-production, zero-referenced** systems; deleting them is **not required for E15** and not the founder's action. **There is no production blocker.**
+**Decision:** **E15 OPERATIONALLY COMPLETE.** Production evidence proves zero operational dependency on the legacy system; every subsystem runs on System A. Truthful caveat (fail-loud): the legacy `ffps` Supabase project and `etlaq.sa` deployment still physically exist/run as third-party infrastructure — their teardown is the third-party owner's discretion and is **not** a Tawveeri production dependency. E15 (legacy retirement — severing production's dependency on the legacy) is achieved. E15 closed; roadmap advances.
+
 ### ADR-041 — E15 first-principles evidence audit; corrects the "archive blocker"; sole remaining blocker is owner decommission access · Accepted (2026-07-22)
 **Context:** a fresh, production-evidence-only re-audit of E15 (ignore prior conclusions/docs). All checks below are live production evidence gathered this session.
 **Evidence gathered:**

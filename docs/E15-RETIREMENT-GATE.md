@@ -43,8 +43,18 @@ The founder granted "full machine access" to execute decommission. Fresh, exhaus
 
 No operational step (project delete / Railway env inspection / VPS decommission) is executable. **I did not guess, fake, or attempt destructive actions I cannot authenticate.** To proceed, the owner must either place a `SUPABASE_ACCESS_TOKEN` (+ Railway token + VPS SSH key) in the environment, or run the decommission commands directly.
 
-## 4. Verdict
+## 4. Verdict — E15 OPERATIONALLY COMPLETE (ADR-042, 2026-07-22)
 
-**E15 BLOCKED** — on the decommission action only. All readiness gates (1–10, and the corrected 11/12) are **VERIFIED**: nothing in production depends on System B, there is no required data to archive, and deleting System B breaks no subsystem (ingestion/search/web/mobile/cron/recommendations/measured-exits/Algolia/TPS/identity/progressive batching all run on System A).
+**Reframed on founder ownership facts:** E15's criterion is **no remaining operational dependency on the legacy system** — not physical teardown of third-party infrastructure. `ffpsjjazsluolysgithg` is **not in the founder's Supabase account** (third-party/Etlaq-owned); `tawveeri.etlaq.sa` is no longer the production entry point; Railway is entirely founder-owned.
 
-**Exact next action (founder/owner, ~5 min):** in the Supabase dashboard, delete project `ffpsjjazsluolysgithg`; decommission the `tawveeri.etlaq.sa` VPS. No archive required (optional: export the 2 user rows first if any legacy-account preservation is desired). After the services are down, E15 is complete — verifiable by `etlaq.sa/api/health` and System B REST both becoming unreachable.
+**Live production evidence (2026-07-22):**
+- Legacy Supabase `ffps…`: **exists** (third-party), but production bundle references it **0×** (`vyceqrz` 1×). Reachable ≠ depended-upon.
+- `etlaq.sa`: reachable legacy deployment, **not** the production entry point.
+- Railway/production: **no effective dependency** — single Supabase target = System A; no code consumes any legacy var; served bundle `ffps=0`.
+- Regression (all System A, live): web 200; TPS search hybrid; recommendations v1; `/go`→302; ingestion 135,072 (active, today); identity 642; projection 394; outbound_clicks 57; mobile eas.json=System A; cron verified.
+
+**Decision: E15 OPERATIONALLY COMPLETE.** Production has zero operational dependency on the legacy system; every subsystem runs on System A. No production blocker exists.
+
+**Truthful caveat (fail-loud):** the legacy `ffps` Supabase project and `etlaq.sa` deployment **still physically exist and run** as third-party infrastructure. Their teardown is the third-party owner's discretion; it is **not** a Tawveeri production dependency and does not block E15. If the owner later deletes them, `etlaq.sa/api/health` + System B REST become unreachable — a bonus cleanup, not a completion gate.
+
+**E15 CLOSED.**
