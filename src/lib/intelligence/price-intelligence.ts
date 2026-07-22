@@ -155,3 +155,107 @@ export function computePriceVerdict(points: PricePoint[], nowMs: number): PriceV
   base.text = text;
   return base;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISCOUNT INTEGRITY — verify a store's claimed "was" price against what Tawveeri
+// ACTUALLY observed for this listing. Precision-first & non-accusatory: we never
+// say "fraud" — we report the factual observed range and the REAL saving vs the
+// highest price WE saw, versus the advertised saving. Trust through evidence
+// (Brief §4). Silent (insufficient_history) when we haven't tracked long enough.
+// ─────────────────────────────────────────────────────────────────────────────
+export type DiscountVerdictKind = "verified_drop" | "inflated_reference" | "stable" | "insufficient_history";
+const WAS_MATCH_TOL = 0.05;   // observedMax within 5% of claimedWas ⇒ the "was" is real
+const REAL_DROP_MIN = 0.03;   // ≥3% below observedMax ⇒ a real drop
+
+export interface DiscountIntegrity {
+  verdict: DiscountVerdictKind;
+  current: number | null;
+  observedMin: number | null;
+  observedMax: number | null;      // highest price WE observed for this listing
+  claimedWas: number | null;       // the store's advertised "was"/original price
+  advertisedSavingPct: number | null; // vs claimedWas (what the store shows)
+  realSavingPct: number | null;    // vs observedMax (what we actually saw)
+  distinctDays: number;
+  text: { ar: string; en: string };
+}
+
+export function computeDiscountIntegrity(points: PricePoint[], claimedWas: number | null, nowMs: number): DiscountIntegrity {
+  const valid = (points ?? []).filter((p) => Number.isFinite(Number(p.price)) && Number(p.price) > 0);
+  const byDay = new Map<string, { min: number; ms: number }>();
+  for (const p of valid) {
+    const k = dayKey(p.at); const price = Number(p.price);
+    const ms = (p.at instanceof Date ? p.at : new Date(p.at)).getTime();
+    const cur = byDay.get(k);
+    if (!cur) byDay.set(k, { min: price, ms }); else { if (price < cur.min) cur.min = price; if (ms > cur.ms) cur.ms = ms; }
+  }
+  const series = [...byDay.values()].sort((a, b) => a.ms - b.ms);
+  const distinctDays = series.length;
+  const cw = claimedWas != null && Number.isFinite(claimedWas) && claimedWas > 0 ? claimedWas : null;
+
+  const out: DiscountIntegrity = {
+    verdict: "insufficient_history", current: null, observedMin: null, observedMax: null,
+    claimedWas: cw, advertisedSavingPct: null, realSavingPct: null, distinctDays,
+    text: { ar: "", en: "" },
+  };
+  if (distinctDays === 0) { out.text = { ar: "لا يوجد سجل سعر بعد", en: "No price history yet" }; return out; }
+
+  const prices = valid.map((p) => Number(p.price));
+  const current = series[series.length - 1].min;
+  const observedMin = Math.min(...prices);
+  const observedMax = Math.max(...prices);
+  out.current = current; out.observedMin = observedMin; out.observedMax = observedMax;
+  out.advertisedSavingPct = cw ? Math.round(((cw - current) / cw) * 100) : null;
+  out.realSavingPct = observedMax > 0 ? Math.max(0, Math.round(((observedMax - current) / observedMax) * 100)) : 0;
+
+  if (distinctDays < MIN_DISTINCT_DAYS) {
+    out.text = { ar: `نبني سجل السعر (${distinctDays} ${distinctDays === 1 ? "يوم" : "أيام"})`, en: `Building price history (${distinctDays}d)` };
+    return out;
+  }
+
+  const realOff = out.realSavingPct ?? 0;
+  if (cw && observedMax < cw * (1 - WAS_MATCH_TOL)) {
+    // We never saw it as high as the advertised "was".
+    out.verdict = "inflated_reference";
+    out.text = realOff >= REAL_DROP_MIN * 100
+      ? { ar: `التوفير الحقيقي ${realOff}٪ مقابل أعلى سعر رصدناه (${observedMax}) — الإعلان يقارن بسعر لم نره`, en: `Real saving ${realOff}% vs the highest price we tracked (${observedMax}) — the ad compares to a price we never observed` }
+      : { ar: `السعر مستقر عند ~${current}؛ لم نرصده يومًا بسعر «قبل» المعلن (${cw})`, en: `Price steady at ~${current}; we never observed the advertised "was" (${cw})` };
+    return out;
+  }
+  if (current <= observedMax * (1 - REAL_DROP_MIN)) {
+    out.verdict = "verified_drop";
+    out.text = { ar: `انخفاض حقيقي: كان ${observedMax} وأصبح ${current} — توفير ${realOff}٪ مؤكَّد برصدنا`, en: `Genuine drop: ${observedMax} → ${current} — a ${realOff}% saving we verified by tracking` };
+    return out;
+  }
+  out.verdict = "stable";
+  out.text = { ar: "السعر مستقر — لا تغيّر يُذكر خلال فترة التتبع", en: "Price is stable — no meaningful change over the tracked period" };
+  return out;
+}
+
+/** Discount verdict from pre-aggregated per-listing facts (for the materialized
+ *  builder — same deterministic thresholds as computeDiscountIntegrity). */
+export interface DiscountFacts { distinctDays: number; current: number; observedMin: number; observedMax: number; claimedWas: number | null }
+export function discountVerdictFromFacts(f: DiscountFacts): DiscountIntegrity {
+  const cw = f.claimedWas != null && Number.isFinite(f.claimedWas) && f.claimedWas > 0 ? f.claimedWas : null;
+  const advertisedSavingPct = cw ? Math.round(((cw - f.current) / cw) * 100) : null;
+  const realSavingPct = f.observedMax > 0 ? Math.max(0, Math.round(((f.observedMax - f.current) / f.observedMax) * 100)) : 0;
+  const out: DiscountIntegrity = {
+    verdict: "insufficient_history", current: f.current, observedMin: f.observedMin, observedMax: f.observedMax,
+    claimedWas: cw, advertisedSavingPct, realSavingPct, distinctDays: f.distinctDays, text: { ar: "", en: "" },
+  };
+  if (f.distinctDays < MIN_DISTINCT_DAYS) { out.text = { ar: `نبني سجل السعر (${f.distinctDays} أيام)`, en: `Building price history (${f.distinctDays}d)` }; return out; }
+  if (cw && f.observedMax < cw * (1 - WAS_MATCH_TOL)) {
+    out.verdict = "inflated_reference";
+    out.text = realSavingPct >= REAL_DROP_MIN * 100
+      ? { ar: `التوفير الحقيقي ${realSavingPct}٪ مقابل أعلى سعر رصدناه (${f.observedMax}) — الإعلان يقارن بسعر لم نره`, en: `Real saving ${realSavingPct}% vs the highest price we tracked (${f.observedMax}) — the ad compares to a price we never observed` }
+      : { ar: `السعر مستقر عند ~${f.current}؛ لم نرصده يومًا بسعر «قبل» المعلن (${cw})`, en: `Price steady at ~${f.current}; we never observed the advertised "was" (${cw})` };
+    return out;
+  }
+  if (f.current <= f.observedMax * (1 - REAL_DROP_MIN)) {
+    out.verdict = "verified_drop";
+    out.text = { ar: `انخفاض حقيقي: كان ${f.observedMax} وأصبح ${f.current} — توفير ${realSavingPct}٪ مؤكَّد برصدنا`, en: `Genuine drop: ${f.observedMax} → ${f.current} — a ${realSavingPct}% saving we verified by tracking` };
+    return out;
+  }
+  out.verdict = "stable";
+  out.text = { ar: "السعر مستقر — لا تغيّر يُذكر خلال فترة التتبع", en: "Price is stable — no meaningful change over the tracked period" };
+  return out;
+}

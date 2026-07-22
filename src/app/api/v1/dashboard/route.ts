@@ -50,6 +50,16 @@ export async function GET() {
   const storeProducts: Record<number, Set<string>> = {};
   for (const r of stg) { const s = (r.store_id as number); if (s == null) continue; (storeProducts[s] ??= new Set()).add(r.identity_key as string); }
 
+  // Discount Integrity headline — how honest are advertised discounts? (trust moat)
+  let discount_integrity: { checkable: number; inflated_reference: number; verified_drop: number; inflated_share_pct: number | null } | null = null;
+  try {
+    const vs = ["verified_drop", "inflated_reference", "stable"] as const;
+    const c: Record<string, number> = {};
+    for (const v of vs) { const { count } = await sb.from("tps_listing_price_facts").select("*", { count: "exact", head: true }).eq("verdict", v); c[v] = count ?? 0; }
+    const checkable = c.verified_drop + c.inflated_reference + c.stable;
+    discount_integrity = { checkable, inflated_reference: c.inflated_reference, verified_drop: c.verified_drop, inflated_share_pct: checkable ? Math.round((c.inflated_reference / checkable) * 100) : null };
+  } catch { discount_integrity = null; }
+
   const trend = (ledger ?? []).map((l) => ({ at: l.snapshot_at, raw: l.raw, resolved: l.resolved, corroborated: l.corroborated, single_store: l.single_store })).reverse();
   const latest = trend[trend.length - 1] ?? null;
   const prev = trend.length > 1 ? trend[trend.length - 2] : null;
@@ -64,6 +74,7 @@ export async function GET() {
     protocols: { exposed: ["ucp", "acp"], feed: "/api/v1/protocol/ucp/feed", note: "UCP-compatible, not UCP-dependent; no checkout (Stage-2 SAMA-gated)" },
     stores: Object.entries(storeProducts).map(([id, set]) => ({ store_id: Number(id), store: STORE_NAME[Number(id)] ?? id, distinct_products: set.size, twin: `/api/v1/intelligence/merchant/${id}` })).sort((a, b) => b.distinct_products - a.distinct_products),
     coverage_trend: trend,
+    discount_integrity,
     neutrality: "ranking-blind (commercial interest never enters ranking)",
   });
 }

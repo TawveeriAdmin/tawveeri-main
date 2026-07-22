@@ -3,7 +3,7 @@
  * trust guarantees: no fabricated "record low" on thin data, de-biased daily-
  * cheapest signal, and the boldest claim requiring the most evidence.
  */
-import { computePriceVerdict, type PricePoint } from "../../src/lib/intelligence/price-intelligence";
+import { computePriceVerdict, computeDiscountIntegrity, type PricePoint } from "../../src/lib/intelligence/price-intelligence";
 
 const BASE = Date.UTC(2026, 6, 22, 0, 0, 0); // Wed Jul 22 2026, midnight UTC
 const NOW = BASE + 12 * 3600_000;
@@ -74,6 +74,34 @@ describe("De-biased signal — daily-cheapest, not raw rows", () => {
     expect(v.typical).toBe(1000);
     expect(v.currentBest).toBe(1000);
     expect(v.verdict).toBe("typical"); // steady, not a fabricated "great deal"
+  });
+});
+
+describe("Discount Integrity — verify claimed 'was' vs observed reality (trust, precision-first)", () => {
+  const steady = (price: number) => [pt(price, 6), pt(price, 5), pt(price, 4), pt(price, 3), pt(price, 2), pt(price, 0)];
+  it("flags an INFLATED reference: store claims 'was 2000' but we never saw it above 1550", () => {
+    const d = computeDiscountIntegrity(steady(1500), 2000, NOW);
+    expect(d.verdict).toBe("inflated_reference");
+    expect(d.observedMax).toBe(1500);
+    expect(d.advertisedSavingPct).toBe(25);   // (2000-1500)/2000
+    expect(d.realSavingPct).toBe(0);           // never above 1500
+    expect(d.text.en).toMatch(/never observed|steady/);
+  });
+  it("confirms a VERIFIED drop: observed high ≈ claimed was, price actually fell", () => {
+    const d = computeDiscountIntegrity([pt(2000, 6), pt(2000, 5), pt(2000, 4), pt(1600, 1), pt(1600, 0)], 2050, NOW);
+    expect(d.verdict).toBe("verified_drop");
+    expect(d.observedMax).toBe(2000);
+    expect(d.realSavingPct).toBe(20);          // (2000-1600)/2000
+    expect(d.text.ar).toMatch(/انخفاض حقيقي/);
+  });
+  it("reports STABLE when the price hasn't really moved", () => {
+    const d = computeDiscountIntegrity(steady(1500), null, NOW);
+    expect(d.verdict).toBe("stable");
+  });
+  it("is SILENT (insufficient_history) on thin data — no accusation without evidence", () => {
+    const d = computeDiscountIntegrity([pt(1500, 0), pt(1500, 1)], 2000, NOW);
+    expect(d.verdict).toBe("insufficient_history");
+    expect(d.text.en).toMatch(/Building price history/);
   });
 });
 
