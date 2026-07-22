@@ -21,6 +21,12 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
     '<rootDir>/mobile/',
+    // Integration suites excluded from the deterministic gate (ADR-054): they hit
+    // the live DB and require seeded user/notification/audit rows, so they are not
+    // reproducible in a fast gate. Run explicitly with `npm run test:integration`.
+    '<rootDir>/tests/auth/audit.test.ts',
+    '<rootDir>/tests/auth/notifications.test.ts',
+    '<rootDir>/tests/auth/profile.test.ts',
   ],
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',

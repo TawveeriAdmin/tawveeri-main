@@ -24,7 +24,8 @@
     "flask:install": "./scripts/scraping/install-flask.sh",
     "flask:start": "./scripts/scraping/run-flask.sh",
     "flask:dev": "FLASK_DEBUG=true ./scripts/scraping/run-flask.sh",
-    "flask:check": "./scripts/scraping/check-flask.sh"
+    "flask:check": "./scripts/scraping/check-flask.sh",
+    "test:integration": "jest tests/auth/audit.test.ts tests/auth/notifications.test.ts tests/auth/profile.test.ts --testPathIgnorePatterns /node_modules/ /.next/ /mobile/"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

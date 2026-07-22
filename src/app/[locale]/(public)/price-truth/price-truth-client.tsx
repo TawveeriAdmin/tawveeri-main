@@ -6,7 +6,7 @@ import { Price } from '@/components/ui/price';
 
 interface RealDeal { store_name: string; name: string; brand: string | null; url: string; current_price: number; observed_max: number; real_saving_pct: number; distinct_days: number; }
 interface DiscountData { summary?: { checkable_listings: number; by_verdict: Record<string, number>; inflated_reference_share_pct: number | null }; real_deals?: RealDeal[]; }
-interface StoreTrust { store_id: number; store_name: string; discount_behavior: string; discount_inflation_pct: number | null; price_competitiveness_pct: number | null; distinct_products: number; headline: { ar: string; en: string }; }
+interface StoreTrust { store_id: number; store_name: string; discount_behavior: string; unobserved_reference_pct: number | null; price_competitiveness_pct: number | null; distinct_products: number; evidence: { sample_size: number; observation_window_days: number | null; confidence: string }; headline: { ar: string; en: string }; }
 
 const T = (ar: string, en: string, loc: string) => (loc === 'ar' ? ar : en);
 
@@ -116,13 +116,16 @@ export function PriceTruthClient({ locale }: { locale: string }) {
                       {s.price_competitiveness_pct != null && (
                         <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">{T(`الأرخص ${s.price_competitiveness_pct}٪`, `cheapest ${s.price_competitiveness_pct}%`, loc)}</span>
                       )}
-                      {s.discount_inflation_pct != null && (
-                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${s.discount_inflation_pct >= 70 ? 'bg-warning-50 text-warning-700 dark:bg-warning-950/40 dark:text-warning-400' : 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'}`}>
-                          {s.discount_inflation_pct === 0 ? T('خصومات حقيقية', 'honest discounts', loc) : T(`${s.discount_inflation_pct}٪ خصوم مبالغ فيها`, `${s.discount_inflation_pct}% inflated discounts`, loc)}
+                      {s.unobserved_reference_pct != null && (
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${s.unobserved_reference_pct >= 70 ? 'bg-warning-50 text-warning-700 dark:bg-warning-950/40 dark:text-warning-400' : 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'}`}>
+                          {s.unobserved_reference_pct === 0 ? T('«قبل» طابق ما رصدناه', '"was" matched what we saw', loc) : T(`${s.unobserved_reference_pct}٪ «قبل» لم نرصده`, `${s.unobserved_reference_pct}% "was" not observed`, loc)}
                         </span>
                       )}
                     </div>
                     <p className="mt-1.5 text-xs text-on-surface-variant">{loc === 'ar' ? s.headline.ar : s.headline.en}</p>
+                    {s.evidence?.sample_size != null && (
+                      <p className="mt-1 text-[10px] text-on-surface-variant/70">{T(`عيّنة ${s.evidence.sample_size}${s.evidence.observation_window_days ? ` · ${s.evidence.observation_window_days} يوم` : ''} · ثقة ${s.evidence.confidence === 'high' ? 'عالية' : s.evidence.confidence === 'medium' ? 'متوسطة' : 'منخفضة'}`, `sample ${s.evidence.sample_size}${s.evidence.observation_window_days ? ` · ${s.evidence.observation_window_days}d` : ''} · ${s.evidence.confidence} confidence`, loc)}</p>
+                    )}
                   </div>
                 ))}
               </div>
