@@ -85,12 +85,17 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
 
 export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; }
 
+export interface CorroborateOpts { singleStore?: boolean; } // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
+
 // ── Corroboration pass: for the touched keys, group ALL accumulated staging by
-//    identity_key; ≥2-store (+ optional price-band) → upsert canonical via
+//    identity_key. Default writes ≥2-store comparable canonicals (Layer 1). With
+//    {singleStore:true} it writes EXACTLY-1-store resolved canonicals (Layer 2:
+//    known identity, one offer, comparison_available=false). Both via
 //    write_ac_batch. Idempotent; only touched keys are (re)written per run. ──
-export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touchedKeys: string[]): Promise<CorroborateMetrics> {
+export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touchedKeys: string[], opts: CorroborateOpts = {}): Promise<CorroborateMetrics> {
   const R: CorroborateMetrics = { keysConsidered: touchedKeys.length, corroborated: 0, singleStore: 0, canonicalsWritten: 0, normalized: 0, matches: 0, prices: 0 };
   if (!touchedKeys.length) return R;
+  const single = !!opts.singleStore;
 
   // Load all staging rows for the touched keys (across all slices ever normalized).
   type Stg = { raw_obs_id: number; store_id: number | null; identity_key: string; status: string; price: number | null; url: string | null; name: string; confidence: number; payload: Record<string, unknown> };
@@ -116,21 +121,25 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       if (minP != null) offers = offers.filter((o) => o.price == null || (o.price as number) <= minP * def.priceBand!);
     }
     const storeIds = new Set<number>(); for (const o of offers) if (o.store_id != null) storeIds.add(o.store_id);
-    if (storeIds.size < 2) { R.singleStore++; continue; }
-    R.corroborated++;
+    // Layer split: default path writes only ≥2-store (Layer 1 comparable);
+    // singleStore path writes only exactly-1-store (Layer 2 resolved-single).
+    if (single) { if (storeIds.size !== 1) continue; R.singleStore++; }
+    else { if (storeIds.size < 2) { R.singleStore++; continue; } R.corroborated++; }
 
     const canonicalId = stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
     const rep = offers[0].payload || {};
     const { nameAr, nameEn } = def.names(key, rep);
     const parts = key.split("|");
     const isPrimary = parts[1]?.startsWith("MODEL:");
-    const groupConf = Math.min(95, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length) + 5);
+    const groupConf = single
+      ? Math.min(75, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length))
+      : Math.min(95, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length) + 5);
     canonicalRows.push({
       id: canonicalId, name_ar: nameAr, name_en: nameEn, brand: parts[0],
       model_number: isPrimary ? parts[1].slice(6) : null, category: def.category, image_url: null,
-      attributes: { ...def.attrs(key, rep), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive" },
+      attributes: { ...def.attrs(key, rep), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single },
       is_active: true, tps_identity_key: key, tps_version: def.version, variant_key: key,
-      identity_confidence: groupConf, data_quality_score: Math.max(60, groupConf - 10), created_at: now, data_updated_at: now,
+      identity_confidence: groupConf, data_quality_score: Math.max(50, groupConf - 10), created_at: now, data_updated_at: now,
     });
     const normById = new Map<number, string>();
     for (const o of offers) {

@@ -32,27 +32,40 @@ interface Canon {
   compare_url: string | null; identity_confidence: number | null; updated_at: string | null;
 }
 
+function mapHits(res: { hits: unknown[] }): Canon[] {
+  return (res.hits as (Record<string, unknown> & { objectID: string })[]).map((h) => ({
+    canonical_id: h.objectID, tps_identity_key: (h.tps_identity_key as string) ?? '',
+    display_name_ar: (h.display_name_ar as string) ?? null, display_name_en: (h.display_name_en as string) ?? null,
+    brand: (h.brand as string) ?? null, category: (h.category as string) ?? null, image_url: (h.image_url as string) ?? null,
+    lowest_price: (h.lowest_price as number) ?? null, highest_price: (h.highest_price as number) ?? null, saving: (h.saving as number) ?? null,
+    price_spread_pct: (h.price_spread_pct as number) ?? null, cheapest_store: (h.cheapest_store as string) ?? null,
+    store_count: (h.store_count as number) ?? null, has_comparison: (h.has_comparison as boolean) ?? null,
+    compare_url: (h.compare_url as string) ?? null, identity_confidence: (h.identity_confidence as number) ?? null, updated_at: null,
+  }));
+}
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') || '').trim();
   const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 20));
+  const discoveryLimit = Math.min(30, Math.max(0, Number(req.nextUrl.searchParams.get('discovery_limit')) || 12));
   const supabase = createServerClient();
 
-  // Canonical search over the OWNED TPS index (Algolia handles Arabic/typo
-  // normalization). Falls back to the projection if Algolia isn't configured.
+  // E14 HYBRID authority. Layer 1 = corroborated canonicals (comparison). Layer 2
+  // = resolved-single canonicals (known identity, one offer, comparison
+  // unavailable). Both from the OWNED TPS index; Layer 3 (raw discovery) is served
+  // by the existing catalog search. Never a false comparison; catalog never
+  // disappears. See docs/E14-HYBRID-SEARCH-DESIGN.md.
   let canon: Canon[] = [];
+  let discovery: Canon[] = [];
   if (ALGOLIA_APP && ALGOLIA_SEARCH_KEY) {
     try {
       const client = algoliasearch(ALGOLIA_APP, ALGOLIA_SEARCH_KEY);
-      const res = await client.searchSingleIndex({ indexName: TPS_INDEX, searchParams: { query: q, hitsPerPage: limit, filters: 'has_comparison:true' } });
-      canon = (res.hits as unknown as (Record<string, unknown> & { objectID: string })[]).map((h) => ({
-        canonical_id: h.objectID, tps_identity_key: (h.tps_identity_key as string) ?? '',
-        display_name_ar: (h.display_name_ar as string) ?? null, display_name_en: (h.display_name_en as string) ?? null,
-        brand: (h.brand as string) ?? null, category: (h.category as string) ?? null, image_url: (h.image_url as string) ?? null,
-        lowest_price: (h.lowest_price as number) ?? null, highest_price: (h.highest_price as number) ?? null, saving: (h.saving as number) ?? null,
-        price_spread_pct: (h.price_spread_pct as number) ?? null, cheapest_store: (h.cheapest_store as string) ?? null,
-        store_count: (h.store_count as number) ?? null, has_comparison: (h.has_comparison as boolean) ?? null,
-        compare_url: (h.compare_url as string) ?? null, identity_confidence: (h.identity_confidence as number) ?? null, updated_at: null,
-      }));
+      const [l1, l2] = await Promise.all([
+        client.searchSingleIndex({ indexName: TPS_INDEX, searchParams: { query: q, hitsPerPage: limit, filters: 'has_comparison:true' } }),
+        discoveryLimit > 0 ? client.searchSingleIndex({ indexName: TPS_INDEX, searchParams: { query: q, hitsPerPage: discoveryLimit, filters: 'has_comparison:false' } }) : Promise.resolve({ hits: [] }),
+      ]);
+      canon = mapHits(l1);
+      discovery = mapHits(l2 as { hits: unknown[] });
     } catch (e) { console.error('[v1/tps/search] algolia:', e instanceof Error ? e.message : e); }
   }
   if (!canon.length) {
@@ -63,7 +76,7 @@ export async function GET(req: NextRequest) {
     canon = (data ?? []) as Canon[];
   }
 
-  const ids = canon.map((c) => c.canonical_id);
+  const ids = [...canon.map((c) => c.canonical_id), ...discovery.map((c) => c.canonical_id)];
   // Offers = normalized observations (offer_id) + latest price per store.
   const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; price: number | null; go_url: string; availability: string }[]>();
   if (ids.length) {
@@ -100,12 +113,33 @@ export async function GET(req: NextRequest) {
     brand: c.brand, category: c.category, image_url: c.image_url,
     lowest_price: c.lowest_price, highest_price: c.highest_price, saving: c.saving,
     price_spread_pct: c.price_spread_pct, store_count: c.store_count,
-    has_comparison: c.has_comparison, confidence: c.identity_confidence,
+    has_comparison: c.has_comparison, comparison_available: true, confidence: c.identity_confidence,
     canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
     decision: { is_smart_pick: i === 0 && !!c.has_comparison, reason_ar: c.has_comparison ? `متوفر في ${c.store_count} متاجر` : null },
-    tps_version: 'tps-v1', updated_at: c.updated_at,
+    tps_version: 'tps-v1', kind: 'canonical', updated_at: c.updated_at,
     offers: (offersByCanon.get(c.canonical_id) ?? []).sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9)),
   }));
 
-  return NextResponse.json({ version: 'v1', query: q, count: results.length, results });
+  // Layer 2 — resolved-single: known identity, one offer, NO comparison claim.
+  const canonIds = new Set(canon.map((c) => c.canonical_id));
+  const discoveryOut = discovery
+    .filter((c) => !canonIds.has(c.canonical_id))
+    .map((c) => ({
+      canonical_id: c.canonical_id, tps_identity_key: c.tps_identity_key,
+      title_ar: c.display_name_ar, title_en: c.display_name_en,
+      brand: c.brand, category: c.category, image_url: c.image_url,
+      lowest_price: c.lowest_price, store_count: c.store_count,
+      has_comparison: false, comparison_available: false, confidence: c.identity_confidence,
+      canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
+      decision: { is_smart_pick: false, reason_ar: 'متوفر في متجر واحد · المقارنة غير متاحة' },
+      tps_version: 'tps-v1', kind: 'resolved_single',
+      offers: (offersByCanon.get(c.canonical_id) ?? []).slice(0, 1),
+    }));
+
+  return NextResponse.json({
+    version: 'v1', query: q, count: results.length,
+    results,
+    discovery: discoveryOut,
+    meta: { authority: 'hybrid', canonical_count: results.length, discovery_count: discoveryOut.length },
+  });
 }
