@@ -3,7 +3,7 @@
  * product. Verifies Merchant Independence (merchant_of_record = retailer), measured
  * exits, comparison flag, DNA passthrough, and that no ranking/revenue leaks in.
  */
-import { ucpAdapter, ADAPTERS, type TawveeriProduct } from "../../src/lib/protocol/adapter";
+import { ucpAdapter, acpAdapter, ADAPTERS, type TawveeriProduct } from "../../src/lib/protocol/adapter";
 
 const tp: TawveeriProduct = {
   canonical_id: "c1", identity_key: "gree|split|NO_SERIES|24000|Inverter|cool_only",
@@ -40,5 +40,22 @@ describe("UCP adapter", () => {
   it("ranking-blind: emits no affiliate/commission/revenue fields", () => {
     const s = JSON.stringify(u).toLowerCase();
     expect(s).not.toMatch(/affiliate|commission|revenue|tawveeri-21/);
+  });
+});
+
+describe("Protocol-neutral: ACP adapter from the SAME canonical shape", () => {
+  const a = acpAdapter.toProduct(tp);
+  it("registers both UCP and ACP under one boundary", () => {
+    expect(Object.keys(ADAPTERS).sort()).toEqual(["acp", "ucp"]);
+    expect(acpAdapter.protocol).toBe("acp");
+  });
+  it("ACP feed item: cheapest offer, retailer as seller, measured link", () => {
+    expect(a.item_id).toBe("c1");
+    expect(a.price.value).toBe(2500);      // cheapest of 2600/2500
+    expect(a.seller).toBe("almanea");       // merchant-of-record of the cheapest
+    expect(a.link).toBe("/go/o2");
+  });
+  it("ranking-blind: no affiliate/commission fields", () => {
+    expect(JSON.stringify(a).toLowerCase()).not.toMatch(/affiliate|commission|revenue|tawveeri-21/);
   });
 });

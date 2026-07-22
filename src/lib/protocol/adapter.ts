@@ -85,4 +85,35 @@ export const ucpAdapter: ProtocolAdapter<UcpProduct> = {
   },
 };
 
-export const ADAPTERS: Record<string, ProtocolAdapter<unknown>> = { ucp: ucpAdapter };
+// ── ACP adapter (v0 shape). ACP (OpenAI/Stripe/Meta) is checkout-oriented: a
+//    product-feed item for agentic carts. We expose the feed item only; delegated
+//    payment/checkout are NOT implemented (Stage-2, SAMA-gated). Proves the adapter
+//    boundary is genuinely protocol-neutral (UCP + ACP from ONE canonical shape). ──
+export interface AcpFeedItem {
+  item_id: string;
+  title: string | null;
+  brand: string | null;
+  category: string | null;
+  price: { value: number | null; currency: "SAR" };
+  availability: "in_stock" | "out_of_stock" | "unknown";
+  seller: string;             // merchant-of-record (retailer)
+  link: string;               // measured exit (/go)
+  image_url: string | null;
+  source: "tawveeri";
+}
+
+export const acpAdapter: ProtocolAdapter<AcpFeedItem> = {
+  protocol: "acp",
+  version: "v0-shape",
+  toProduct(p: TawveeriProduct): AcpFeedItem {
+    const cheapest = [...p.offers].sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9))[0];
+    return {
+      item_id: p.canonical_id, title: p.title_en ?? p.title_ar, brand: p.brand, category: p.category,
+      price: { value: cheapest?.price ?? null, currency: "SAR" },
+      availability: (cheapest?.availability as AcpFeedItem["availability"]) ?? "unknown",
+      seller: cheapest?.store ?? "unknown", link: cheapest?.measured_exit ?? "", image_url: p.image_url, source: "tawveeri",
+    };
+  },
+};
+
+export const ADAPTERS: Record<string, ProtocolAdapter<unknown>> = { ucp: ucpAdapter, acp: acpAdapter };
