@@ -5,7 +5,7 @@
  * neutrality (ranking not price-alone), and NO FABRICATION (undersize flagged).
  * Every rubric is an assertion — regressions fail loud in CI.
  */
-import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
 
 const tv = (o: { size: number; res: string; panel: string; hz: number; price: number; stores: number; id?: string }): CanonicalRow => ({
   canonical_id: o.id ?? `tv-${o.panel}-${o.hz}-${o.price}`, tps_identity_key: "k", display_name_ar: `تلفزيون ${o.panel}`, display_name_en: "TV",
@@ -113,11 +113,38 @@ describe("Tablet decision — connectivity/storage fit (deterministic)", () => {
   });
 });
 
+const mob = (o: { family: string; gen: string; variant: string; storage: string; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `m-${o.gen}-${o.variant}`, tps_identity_key: "k", display_name_ar: `${o.family} ${o.gen} ${o.variant}`, display_name_en: "phone",
+  brand: "apple", category: "mobile", image_url: null, lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 90,
+  attributes: { family: o.family, generation: o.gen, variant: o.variant, storage: o.storage, ram_values: [] },
+});
+
+describe("Mobile decision — variant/generation/storage fit (deterministic)", () => {
+  it("camera priority: Pro Max outranks Standard (variant tier)", () => {
+    const recs = decideMobile({ category: "mobile", priorities: ["camera"] }, [
+      mob({ family: "iPhone", gen: "16", variant: "Standard", storage: "128", price: 3200, stores: 2, id: "std" }),
+      mob({ family: "iPhone", gen: "16", variant: "Pro Max", storage: "256", price: 5000, stores: 2, id: "promax" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("promax");
+  });
+  it("latest priority: newer generation outranks older", () => {
+    const recs = decideMobile({ category: "mobile", priorities: ["latest"] }, [
+      mob({ family: "iPhone", gen: "15", variant: "Standard", storage: "128", price: 2800, stores: 2, id: "g15" }),
+      mob({ family: "iPhone", gen: "17", variant: "Standard", storage: "128", price: 3000, stores: 2, id: "g17" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("g17");
+  });
+  it("storage_min: below minimum is flagged", () => {
+    const recs = decideMobile({ category: "mobile", storage_min: 256 } as never, [
+      mob({ family: "iPhone", gen: "16", variant: "Standard", storage: "128", price: 3200, stores: 2 }),
+    ]);
+    expect(recs[0].reasons_ar.some((r) => r.includes("أقل من المطلوب"))).toBe(true);
+  });
+});
+
 describe("Category dispatcher", () => {
-  it("dispatches ac/tv/tablet as supported; unknown category is neutral fallback (not supported)", () => {
-    expect(decide({ category: "air_conditioner" }, []).supported).toBe(true);
-    expect(decide({ category: "tv" }, []).supported).toBe(true);
-    expect(decide({ category: "tablet" }, []).supported).toBe(true);
+  it("dispatches ac/tv/tablet/mobile as supported; unknown is neutral fallback (not supported)", () => {
+    for (const c of ["air_conditioner", "tv", "tablet", "mobile"]) expect(decide({ category: c }, []).supported).toBe(true);
     expect(decide({ category: "microwave" }, []).supported).toBe(false);
   });
 });

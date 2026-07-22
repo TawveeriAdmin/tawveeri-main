@@ -228,6 +228,41 @@ export function decideTablet(task: ShoppingTask, rows: CanonicalRow[]): Recommen
   return assemble(scored);
 }
 
+// ── Mobile: derive DNA + decide. Suitability = variant tier (camera/battery),
+//    generation recency, storage fit, trust, budget. Ranking-blind. ──
+const VARIANT_TIER: Record<string, number> = { "ultra": 1.0, "pro max": 1.0, "pro": 0.85, "plus": 0.7, "fe": 0.6, "standard": 0.5 };
+function variantTier(v: unknown): number { const s = String(v ?? "standard").toLowerCase(); return VARIANT_TIER[s] ?? 0.5; }
+function genNumber(g: unknown): number | null { const m = String(g ?? "").match(/(\d{1,3})/); return m ? Number(m[1]) : null; }
+export function deriveMobileDna(row: CanonicalRow): Record<string, unknown> {
+  const a = row.attributes ?? {};
+  return { brand: row.brand, family: a.family ?? null, generation: a.generation ?? null,
+    variant: a.variant ?? null, storage: a.storage != null ? Number(a.storage) : null,
+    ram: Array.isArray(a.ram_values) && a.ram_values.length ? a.ram_values[0] : null };
+}
+export function decideMobile(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const t = task as ShoppingTask & { storage_min?: number };
+  const pr = task.priorities ?? [];
+  const wantCamera = pr.includes("camera"), wantGaming = pr.includes("gaming"), wantBattery = pr.includes("battery"), wantLatest = pr.includes("latest");
+  const maxGen = Math.max(0, ...rows.map((r) => genNumber((r.attributes ?? {}).generation) ?? 0));
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const dna = deriveMobileDna(row); const reasons: string[] = [];
+    let score = 0.5;
+    const tier = variantTier(a.variant); const storage = a.storage != null ? Number(a.storage) : null; const gen = genNumber(a.generation);
+    if (wantCamera) { score += (tier - 0.5) * 0.3; if (tier >= 0.85) reasons.push(`إصدار ${a.variant} — كاميرا أفضل`); }
+    if (wantGaming) { score += (tier - 0.5) * 0.2; if (storage && storage >= 256) { score += 0.05; reasons.push(`تخزين ${storage}GB — مناسب للألعاب`); } }
+    if (wantBattery && /ultra|pro max|plus/i.test(String(a.variant))) { score += 0.08; reasons.push(`إصدار ${a.variant} — بطارية أكبر`); }
+    if (wantLatest && gen != null && maxGen > 0) { const rec = gen / maxGen; score += (rec - 0.5) * 0.3; if (gen === maxGen) reasons.push(`الجيل ${gen} — الأحدث`); }
+    if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.08; reasons.push(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
+    else if (storage != null) reasons.push(`تخزين ${storage}GB`);
+    reasons.unshift(`${a.family ?? row.brand} ${a.generation ?? ""} ${a.variant && a.variant !== "Standard" ? a.variant : ""}`.replace(/\s+/g, " ").trim());
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
+    const total = row.lowest_price;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
+  });
+  return assemble(scored);
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
 export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
@@ -235,6 +270,7 @@ export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: b
     case "air_conditioner": return { supported: true, recommendations: decideAc(task, rows) };
     case "tv": return { supported: true, recommendations: decideTv(task, rows) };
     case "tablet": return { supported: true, recommendations: decideTablet(task, rows) };
+    case "mobile": return { supported: true, recommendations: decideMobile(task, rows) };
     default: {
       const scored = rows.map((row) => ({ row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0),
         reasons: [(row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد"],

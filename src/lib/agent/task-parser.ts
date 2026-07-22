@@ -45,6 +45,9 @@ function parsePriorities(x: string): string[] {
   if (/غرفة مضيئة|إضاءة|bright ?room|sunny/.test(x)) p.add("bright_room");
   if (/إنتاجية|انتاجية|عمل|productivity|work|office/.test(x)) p.add("productivity");
   if (/قراءة|reading|كتب|books/.test(x)) p.add("reading");
+  if (/كاميرا|تصوير|صور|camera|photo/.test(x)) p.add("camera");
+  if (/بطارية|battery/.test(x)) p.add("battery");
+  if (/أحدث|احدث|جديد|latest|newest/.test(x)) p.add("latest");
   return [...p];
 }
 
@@ -102,5 +105,6 @@ export function parseShoppingTask(text: string): ParsedTask {
     if (priorities.length) task.use = priorities;
   }
   if (category === "tv" && priorities.length) task.priorities = priorities;
+  if (category === "mobile" && storage_min) task.storage_min = storage_min;
   return task;
 }
