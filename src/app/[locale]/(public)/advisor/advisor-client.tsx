@@ -7,7 +7,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
   askAdvisor, comparisonBadge, costLines, exitHref, hasTotalBeyondUnit,
-  parsedSummary, recTitle, verdictTone, verdictText,
+  parsedSummary, recTitle, verdictTone, verdictText, choiceReasons,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
 
@@ -248,6 +248,19 @@ function PriceVerdictBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Loca
   );
 }
 
+function ChoiceComparison({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
+  const c = choiceReasons(rec, loc);
+  if (!c) return null;
+  return (
+    <div className="mt-3 rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2 dark:border-primary-900/50 dark:bg-primary-950/20">
+      <p className="text-xs font-semibold text-primary-700 dark:text-primary-300">
+        {t('agent.vsAlternative')}{c.alt ? ` «${c.alt}»` : ''}:
+      </p>
+      <p className="mt-0.5 text-xs text-on-surface-variant">{c.reasons.join(' · ')}</p>
+    </div>
+  );
+}
+
 function TrustBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
   const b = comparisonBadge(rec, loc);
   return (
@@ -317,6 +330,7 @@ function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; 
         <div className="min-w-0">
           <h3 className="text-lg font-bold text-on-surface">{recTitle(rec, loc)}</h3>
           <Reasons reasons={rec.reasons_ar} />
+          <ChoiceComparison rec={rec} loc={loc} t={t} />
         </div>
         <div className="shrink-0"><CostBlock rec={rec} loc={loc} t={t} /></div>
       </div>

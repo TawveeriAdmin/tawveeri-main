@@ -5,7 +5,7 @@
  */
 import {
   categoryLabel, priorityLabel, recTitle, comparisonBadge, costLines,
-  hasTotalBeyondUnit, parsedSummary, exitHref, verdictTone, verdictText,
+  hasTotalBeyondUnit, parsedSummary, exitHref, verdictTone, verdictText, choiceReasons,
   type AdvisorRecommendation, type PriceIntel,
 } from "../../src/lib/agent/advisor-api";
 
@@ -97,6 +97,18 @@ describe("price verdict presentation (buy-timing intelligence)", () => {
     expect(verdictText(pi(), "ar")).toMatch(/أفضل سعر/);
     expect(verdictText(pi({ text: { ar: "نبني سجل السعر", en: "" } }), "en")).toBe("نبني سجل السعر");
     expect(verdictText(null, "ar")).toBe("");
+  });
+});
+
+describe("choiceReasons — reasoned comparison presentation (§5.5)", () => {
+  it("returns localized comparison when present", () => {
+    const r = rec({ chosen_over: { alternative_title_ar: "الخيار الثاني", alternative_title_en: "Runner-up", reasons_ar: ["أوفر بـ300 ريال"], reasons_en: ["300 SAR cheaper"] } });
+    expect(choiceReasons(r, "ar")).toEqual({ alt: "الخيار الثاني", reasons: ["أوفر بـ300 ريال"] });
+    expect(choiceReasons(r, "en")).toEqual({ alt: "Runner-up", reasons: ["300 SAR cheaper"] });
+  });
+  it("returns null when there is no comparison (honest — no fabricated superiority)", () => {
+    expect(choiceReasons(rec({ chosen_over: null }), "ar")).toBeNull();
+    expect(choiceReasons(rec(), "ar")).toBeNull();
   });
 });
 

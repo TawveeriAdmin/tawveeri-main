@@ -24,6 +24,24 @@ export interface AdvisorRecommendation {
   go_offer_hint: string;
   go_url: string | null;
   price_intel?: PriceIntel | null;
+  chosen_over?: ChoiceExplanation | null;
+}
+
+export interface ChoiceExplanation {
+  alternative_title_ar: string | null;
+  alternative_title_en: string | null;
+  reasons_ar: string[];
+  reasons_en: string[];
+}
+
+/** Localized comparison ("chosen over X because …"); null when not clearly better. */
+export function choiceReasons(rec: AdvisorRecommendation, locale: Locale): { alt: string; reasons: string[] } | null {
+  const c = rec.chosen_over;
+  if (!c) return null;
+  const reasons = locale === "ar" ? c.reasons_ar : (c.reasons_en?.length ? c.reasons_en : c.reasons_ar);
+  if (!reasons?.length) return null;
+  const alt = (locale === "ar" ? c.alternative_title_ar : c.alternative_title_en) || c.alternative_title_ar || c.alternative_title_en || "";
+  return { alt, reasons };
 }
 
 export interface PriceIntel {

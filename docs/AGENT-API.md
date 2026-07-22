@@ -34,7 +34,9 @@ Takes a **shopping task** (structured or free text) and returns a neutral, expla
     "price_intel":{ "verdict":"great_price|good_price|typical|elevated|building_history",
       "confident":true,"is_observed_low":true,"days_tracked":27,"distinct_days":20,
       "current_best":990,"typical":1100,"pct_vs_typical":-10,"trend":"falling",
-      "text":{"ar":"…","en":"…"} } } ] }
+      "text":{"ar":"…","en":"…"} } } ],
+  "smart_pick":{ …, "chosen_over":{ "alternative_title_ar":"…","reasons_ar":["أوفر بـ200 ريال …"],
+    "reasons_en":["…"] } | null } }   // §5.5 reasoned comparison; null when not clearly better
 ```
 
 **Guarantees:** no fabrication (e.g. an undersized AC is *flagged*, not hidden); `confidence` reflects corroboration, never fabricated; `reasons_ar` explain each score; single-store items labelled honestly. Free-text `parsed.unresolved[]` reports fields it could not extract (fail-loud).

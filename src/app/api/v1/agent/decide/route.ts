@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
-import { decide, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
+import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 
@@ -88,9 +88,14 @@ export async function POST(req: NextRequest) {
       : null;
     return { ...r, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel };
   });
+  // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
+  const smartIdx = out.findIndex((r) => r.is_smart_pick);
+  const smart = smartIdx >= 0 ? out[smartIdx] : null;
+  const runnerUp = out.find((r, i) => i !== smartIdx);
+  const smartWithChoice = smart ? { ...smart, chosen_over: explainChoice(smart, runnerUp) } : null;
   return NextResponse.json({
     version: "v1", task, parsed: parsed ?? undefined, supported,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
-    count: out.length, smart_pick: out.find((r) => r.is_smart_pick) ?? null, recommendations: out,
+    count: out.length, smart_pick: smartWithChoice, recommendations: out,
   });
 }

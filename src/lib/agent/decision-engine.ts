@@ -430,6 +430,39 @@ export function decideAppliance(task: ShoppingTask, rows: CanonicalRow[]): Recom
   return assemble(scored);
 }
 
+// ── Reasoned comparison (Brief §5.5): explain WHY the smart pick beats the runner-up,
+//    deterministically, from the SAME signals that produced the ranking (never
+//    commission). Generic across categories: total cost, corroboration/trust,
+//    suitability, and the pick's distinguishing merits. Returns null when the pick
+//    is not clearly better on any axis (honest — no fabricated superiority). ──
+export interface ChoiceExplanation {
+  alternative_title_ar: string | null;
+  alternative_title_en: string | null;
+  reasons_ar: string[];
+  reasons_en: string[];
+}
+export function explainChoice(pick: Recommendation, runnerUp: Recommendation | undefined): ChoiceExplanation | null {
+  if (!runnerUp || runnerUp.canonical_id === pick.canonical_id) return null;
+  const ar: string[] = []; const en: string[] = [];
+  // 1) total cost (or unit price when no total-cost components)
+  const pc = pick.total_cost_estimate ?? pick.unit_price;
+  const rc = runnerUp.total_cost_estimate ?? runnerUp.unit_price;
+  if (pc != null && rc != null && pc < rc) {
+    const diff = Math.round(rc - pc);
+    if (diff > 0) { ar.push(`أوفر بـ${diff} ريال في التكلفة الإجمالية`); en.push(`${diff} SAR lower total cost`); }
+  }
+  // 2) trust: more cross-store corroboration
+  const ps = pick.store_count ?? 0, rs = runnerUp.store_count ?? 0;
+  if (pick.comparison_available && ps > rs) { ar.push(`سعر مؤكَّد في متاجر أكثر (${ps} مقابل ${rs})`); en.push(`corroborated across more stores (${ps} vs ${rs})`); }
+  // 3) suitability: better fit to the task
+  if (pick.suitability_score > runnerUp.suitability_score + 0.02) { ar.push("ملاءمة أعلى لطلبك"); en.push("higher suitability for your task"); }
+  // 4) a distinguishing merit the pick states and the runner-up does not (e.g. inverter, quiet)
+  const merit = (pick.reasons_ar ?? []).find((r) => /إنفرتر|هادئ|أوفر|تدفئة|كرت شاشة منفصل|تحميل أمامي|HEPA|حراري|أفضل سعر/.test(r) && !(runnerUp.reasons_ar ?? []).some((x) => x === r));
+  if (merit && ar.length < 3) { ar.push(merit.replace(/^[^—]*—\s*/, "").trim()); }
+  if (ar.length === 0) return null; // not clearly better — say nothing rather than fabricate
+  return { alternative_title_ar: runnerUp.title_ar, alternative_title_en: runnerUp.title_en, reasons_ar: ar.slice(0, 3), reasons_en: en.slice(0, 3) };
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
 export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
