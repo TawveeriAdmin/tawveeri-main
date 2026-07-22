@@ -13,7 +13,7 @@ import { Client } from "pg";
 import { assertFingerprint } from "./tps-batch";
 import { discountVerdictFromFacts } from "../../src/lib/intelligence/price-intelligence";
 
-const STORES = [1, 2, 4, 5];
+const STORES = [1, 2, 3, 4, 5];
 
 (async () => {
   assertFingerprint(process.env.NEXT_PUBLIC_SUPABASE_URL || "", "vyceqrzttspyycdpojtn");
@@ -29,13 +29,13 @@ const STORES = [1, 2, 4, 5];
   for (const store of STORES) {
     const { rows } = await pg.query(
       `with obs as (
-         select coalesce(payload->>'productUrl', payload->>'url') listing, store_id, raw_name name,
+         select coalesce(payload->>'productUrl', payload->>'url', payload->>'product_url') listing, store_id, raw_name name,
                 nullif(regexp_replace(coalesce(payload->>'sellingPrice', payload->>'price', payload->>'current_price'),'[^0-9.]','','g'),'')::numeric price,
                 nullif(regexp_replace(coalesce(payload->>'wasPrice', payload->>'original_price'),'[^0-9.]','','g'),'')::numeric was,
                 coalesce(payload->>'brandEn', payload->>'brand') brand, coalesce(payload->>'category', payload->>'categoryEn') category,
                 scraped_at
          from raw_observations
-         where store_id = $1 and coalesce(payload->>'productUrl', payload->>'url') is not null),
+         where store_id = $1 and coalesce(payload->>'productUrl', payload->>'url', payload->>'product_url') is not null),
        agg as (
          select listing, store_id, count(distinct date_trunc('day', scraped_at)) days,
                 min(price) obs_min, max(price) obs_max, max(was) claimed_was,

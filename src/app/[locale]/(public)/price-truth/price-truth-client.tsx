@@ -6,6 +6,7 @@ import { Price } from '@/components/ui/price';
 
 interface RealDeal { store_name: string; name: string; brand: string | null; url: string; current_price: number; observed_max: number; real_saving_pct: number; distinct_days: number; }
 interface DiscountData { summary?: { checkable_listings: number; by_verdict: Record<string, number>; inflated_reference_share_pct: number | null }; real_deals?: RealDeal[]; }
+interface StoreTrust { store_id: number; store_name: string; discount_behavior: string; discount_inflation_pct: number | null; price_competitiveness_pct: number | null; distinct_products: number; headline: { ar: string; en: string }; }
 
 const T = (ar: string, en: string, loc: string) => (loc === 'ar' ? ar : en);
 
@@ -14,18 +15,21 @@ export function PriceTruthClient({ locale }: { locale: string }) {
   const isRTL = loc === 'ar';
   const [d, setD] = useState<DiscountData | null>(null);
   const [modelCount, setModelCount] = useState<number | null>(null);
+  const [stores, setStores] = useState<StoreTrust[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const [di, mc] = await Promise.all([
+        const [di, mc, mt] = await Promise.all([
           fetch('/api/v1/tps/discount-integrity').then((r) => r.json()).catch(() => ({})),
           fetch('/api/v1/tps/model-corroboration').then((r) => r.json()).catch(() => ({})),
+          fetch('/api/v1/intelligence/merchant-trust').then((r) => r.json()).catch(() => ({})),
         ]);
         if (!alive) return;
         setD(di); setModelCount(typeof mc?.total === 'number' ? mc.total : null);
+        setStores(Array.isArray(mt?.stores) ? mt.stores : []);
       } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -96,6 +100,33 @@ export function PriceTruthClient({ locale }: { locale: string }) {
                 </a>
               ))}
             </div>
+          )}
+
+          {/* Store trust — discount honesty + real price value */}
+          {stores.filter((s) => s.discount_behavior !== 'insufficient_data' || s.price_competitiveness_pct != null).length > 0 && (
+            <>
+              <h2 className="mb-1 mt-8 text-lg font-bold text-on-surface">{T('ثقة المتاجر', 'Store trust', loc)}</h2>
+              <p className="mb-3 text-xs text-on-surface-variant">{T('نميّز بين «مسرح الخصومات» والقيمة السعرية الحقيقية — من واقع ما رصدناه.', 'We separate discount theatre from real price value — from what we actually observed.', loc)}</p>
+              <div className="space-y-2">
+                {stores.filter((s) => s.discount_behavior !== 'insufficient_data' || s.price_competitiveness_pct != null).map((s) => (
+                  <div key={s.store_id} className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-surface-container-lowest p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Store className="h-4 w-4 text-on-surface-variant" aria-hidden />
+                      <span className="font-semibold text-on-surface">{s.store_name}</span>
+                      {s.price_competitiveness_pct != null && (
+                        <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">{T(`الأرخص ${s.price_competitiveness_pct}٪`, `cheapest ${s.price_competitiveness_pct}%`, loc)}</span>
+                      )}
+                      {s.discount_inflation_pct != null && (
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${s.discount_inflation_pct >= 70 ? 'bg-warning-50 text-warning-700 dark:bg-warning-950/40 dark:text-warning-400' : 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'}`}>
+                          {s.discount_inflation_pct === 0 ? T('خصومات حقيقية', 'honest discounts', loc) : T(`${s.discount_inflation_pct}٪ خصوم مبالغ فيها`, `${s.discount_inflation_pct}% inflated discounts`, loc)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-xs text-on-surface-variant">{loc === 'ar' ? s.headline.ar : s.headline.en}</p>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Methodology — honest & non-accusatory */}
