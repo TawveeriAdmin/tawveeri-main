@@ -4,6 +4,7 @@ import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/l
 import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
+import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +83,8 @@ export async function POST(req: NextRequest) {
   const verdicts = await getPriceVerdicts(ids).catch(() => new Map());
   // Honest discount integrity per product ("real saving vs what we observed").
   const discounts = await getCanonicalDiscountIntegrity(supabase, ids).catch(() => new Map());
+  // Knowledge-graph alternatives (storage variants + newer/older generations).
+  const alternatives = await getProductAlternatives(supabase, ids).catch(() => new Map());
   const out = recs.map((r) => {
     const v = verdicts.get(r.canonical_id);
     const price_intel = v
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
           distinct_days: v.distinctDays, current_best: v.currentBest, typical: v.typical, pct_vs_typical: v.pctVsTypical,
           trend: v.trend, text: v.text }
       : null;
-    return { ...r, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null };
+    return { ...r, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
   const smartIdx = out.findIndex((r) => r.is_smart_pick);

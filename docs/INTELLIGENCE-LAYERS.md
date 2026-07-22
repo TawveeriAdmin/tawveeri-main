@@ -25,6 +25,10 @@ Governed by `TAWVEERI_CONSTITUTION.md`; decisions in `docs/DECISIONS.md`; strate
 - **Model-Number Corroboration** (`src/lib/intelligence/model-corroboration.ts`, ADR-049/050): same manufacturer model in ≥2 independent stores ⇒ definitively one product — higher recall than title heuristics. Gates: ≥6-char alphanumeric model, exactly one known brand, price spread ≤3×. Folded into canonicals **clean-create only** (zero duplicates). API `/api/v1/tps/model-corroboration`.
 - **ER roadmap** (ADR-052): deterministic-first; `pg_trgm` blocking + multi-signal verify is the next autonomous step; embedding-ER is credential-gated (escalated).
 
+## Layer 1b — Knowledge-Graph Relationship Edges
+
+- `src/lib/intelligence/product-edges.ts` (ADR-053): deterministic typed edges over corroborated DNA — `storage_variant` (same model, different storage) + `successor` (same config, consecutive generation), with price deltas. Migration 024 `tps_product_edges` · `build-product-edges`. Turns the flat catalog into a product graph; `getProductAlternatives` feeds **budget-aware** agent guidance ("256GB is −800", "last year's model is −700"). Precision-first: exact agreement on every identity field except the relationship-defining one.
+
 ## Layer 2 — Product DNA
 
 - Per-category deterministic attribute genome (specs + derived suitability: AC BTU-for-room, inverter-for-KSA-climate). `src/lib/intelligence/dna-enrich.ts` enriches identity-only canonicals from titles (precision-first: only confident fields; unknown stays absent).

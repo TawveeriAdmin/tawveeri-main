@@ -26,6 +26,29 @@ export interface AdvisorRecommendation {
   price_intel?: PriceIntel | null;
   chosen_over?: ChoiceExplanation | null;
   discount_intel?: DiscountIntel | null;
+  alternatives?: ProductAlternative[] | null;
+}
+
+export interface ProductAlternative {
+  id: string;
+  relation: "larger_storage" | "smaller_storage" | "newer" | "older";
+  title_ar: string | null;
+  title_en: string | null;
+  price: number | null;
+  price_delta: number | null;
+  detail: string;
+}
+
+/** Localized one-liner for a knowledge-graph alternative (variant / generation). */
+export function alternativeLabel(a: ProductAlternative, locale: Locale): string {
+  const rel = locale === "ar"
+    ? { larger_storage: "سعة أكبر", smaller_storage: "سعة أقل", newer: "الأحدث", older: "الجيل السابق" }
+    : { larger_storage: "more storage", smaller_storage: "less storage", newer: "newer model", older: "previous model" };
+  const d = a.price_delta;
+  const money = d == null ? "" : d === 0 ? "" : d > 0
+    ? (locale === "ar" ? ` (+${d} ريال)` : ` (+${d} SAR)`)
+    : (locale === "ar" ? ` (−${Math.abs(d)} ريال)` : ` (−${Math.abs(d)} SAR)`);
+  return `${rel[a.relation]}${money}`;
 }
 
 export interface DiscountIntel {

@@ -7,7 +7,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
   askAdvisor, comparisonBadge, costLines, exitHref, hasTotalBeyondUnit,
-  parsedSummary, recTitle, verdictTone, verdictText, choiceReasons, discountLine,
+  parsedSummary, recTitle, verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
 
@@ -259,6 +259,23 @@ function PriceVerdictBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Loca
   );
 }
 
+function Alternatives({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
+  const alts = rec.alternatives;
+  if (!alts || alts.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-[11px] font-semibold text-on-surface-variant">{loc === 'ar' ? 'خيارات ذات صلة' : 'Related options'}</p>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {alts.map((a) => (
+          <span key={a.id} className="rounded-full border border-[color:var(--color-outline-variant)] bg-surface-container-low px-2.5 py-1 text-[11px] text-on-surface-variant">
+            {alternativeLabel(a, loc)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ChoiceComparison({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
   const c = choiceReasons(rec, loc);
   if (!c) return null;
@@ -343,6 +360,7 @@ function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; 
           <h3 className="text-lg font-bold text-on-surface">{recTitle(rec, loc)}</h3>
           <Reasons reasons={rec.reasons_ar} />
           <ChoiceComparison rec={rec} loc={loc} t={t} />
+          <Alternatives rec={rec} loc={loc} />
         </div>
         <div className="shrink-0"><CostBlock rec={rec} loc={loc} t={t} /></div>
       </div>
