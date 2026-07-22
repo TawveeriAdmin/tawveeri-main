@@ -136,6 +136,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   }, [user, pathname]);
 
   const quickNavLinks: Array<{ href: string; label: string; icon?: typeof Store }> = [
+    { href: `/${locale}/advisor`, label: t('agent.title'), icon: Sparkle },
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
     { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
