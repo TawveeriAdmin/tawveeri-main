@@ -55,7 +55,10 @@ The path from the current two-system reality to the unified platform. Full detai
 
 ---
 
-## 4. Long-horizon capabilities (emerge from the foundation, not built ad hoc)
+## 4. Long-horizon capabilities
+
+> **Post-E15 (2026–2040):** the strategic evolution to Saudi Commerce Intelligence OS — Knowledge Graph + Product DNA, Two-Stage Agent (Stage-1 early), UCP-first-protocol-neutral, Merchant Independence, ranking-blind Revenue Graph — is specified in  (+ , ADR-043). Awaiting founder approval before broad implementation.
+ (emerge from the foundation, not built ad hoc)
 
 Price prediction · deal & offer-quality scoring · merchant intelligence & reputation · alerts engine · personalization (privacy-preserving) · knowledge graph expansion · consumer/merchant/enterprise APIs · AI-agent access. Each must arrive as a **reusable platform capability** unlocking multiple products, per Constitution Article II.11 and Article VIII.
 
