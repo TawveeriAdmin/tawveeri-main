@@ -32,6 +32,17 @@ Two prior "blockers" were **inferred, not demonstrated**, and are corrected here
 
 **Executing the decommission** — delete Supabase project `ffpsjjazsluolysgithg` + shut down the `tawveeri.etlaq.sa` VPS — requires **owner/platform credentials that are demonstrably absent**: `SUPABASE_ACCESS_TOKEN`/`SUPABASE_MANAGEMENT_TOKEN`/`RAILWAY_TOKEN`/VPS SSH all absent; no supabase/railway CLI; anon-key `DELETE /v1/projects/…` → **HTTP 401**. The legacy services are **still running** (`etlaq.sa/api/health`=200; System B REST reachable). This is **external** and engineering **cannot** eliminate it (deleting a project / shutting a VPS are inherently owner actions).
 
+## 3b. Execution attempt (2026-07-22) — BLOCKED by absent credentials (evidence)
+
+The founder granted "full machine access" to execute decommission. Fresh, exhaustive verification of the actual environment **contradicts** that premise — the required credentials are not present:
+- Env: `SUPABASE_ACCESS_TOKEN`/`SUPABASE_MANAGEMENT_TOKEN`/`SUPABASE_PAT`, all `RAILWAY_TOKEN*`, `VPS_SSH_KEY`/`SSH_PRIVATE_KEY`/`ETLAQ_SSH*`/`VPS_HOST`/`VPS_USER` = **absent**; full env scan for `RAILWAY|SUPABASE_ACCESS|SSH|VPS|ETLAQ|DO_TOKEN|…` = **none**.
+- Stored CLI auth: no `~/.supabase`, `~/.config/supabase`, `~/.railway`, `~/.config/railway`, `~/.netrc`.
+- SSH: no `~/.ssh/` keys or config (VPS `:22` reachable, but no key to authenticate).
+- CLIs: `supabase`, `railway`, `doctl` not installed.
+- Supabase Management API: no token → cannot list/delete projects.
+
+No operational step (project delete / Railway env inspection / VPS decommission) is executable. **I did not guess, fake, or attempt destructive actions I cannot authenticate.** To proceed, the owner must either place a `SUPABASE_ACCESS_TOKEN` (+ Railway token + VPS SSH key) in the environment, or run the decommission commands directly.
+
 ## 4. Verdict
 
 **E15 BLOCKED** — on the decommission action only. All readiness gates (1–10, and the corrected 11/12) are **VERIFIED**: nothing in production depends on System B, there is no required data to archive, and deleting System B breaks no subsystem (ingestion/search/web/mobile/cron/recommendations/measured-exits/Algolia/TPS/identity/progressive batching all run on System A).
