@@ -3,6 +3,21 @@ import { dispatchDueSchedules } from '@/lib/scraping/services/schedule-dispatche
 import { createServerClient } from '@/lib/database';
 import { runSweepUnit } from '../../../../../scripts/tps-core/progressive-engine';
 import { CATEGORY_DEFS } from '../../../../../scripts/tps-core/category-registry';
+import { writeCoverageSnapshot } from '@/lib/intelligence/coverage-ledger';
+
+// E15.5 — daily Coverage Ledger snapshot (throttled marker '_ledger_tick'/store 0).
+const LEDGER_INTERVAL_S = 86400; // 24h
+async function maybeCoverageSnapshot(): Promise<{ wrote: boolean }> {
+  try {
+    const sb = createServerClient();
+    const nowS = Math.floor(Date.now() / 1000);
+    const { data: mark } = await sb.from('tps_progress_cursors').select('last_raw_id').eq('category', '_ledger_tick').eq('store_id', 0).maybeSingle();
+    if (nowS - Number(mark?.last_raw_id ?? 0) < LEDGER_INTERVAL_S) return { wrote: false };
+    await sb.from('tps_progress_cursors').upsert({ category: '_ledger_tick', store_id: 0, last_raw_id: nowS, updated_at: new Date().toISOString() }, { onConflict: 'category,store_id' });
+    await writeCoverageSnapshot(sb as never, new Date().toISOString());
+    return { wrote: true };
+  } catch (e) { console.error('[dispatch] coverage snapshot skipped:', e instanceof Error ? e.message : e); return { wrote: false }; }
+}
 
 export const maxDuration = 60;
 
@@ -49,7 +64,8 @@ export async function POST(request: NextRequest) {
   try {
     const result = await dispatchDueSchedules();
     const sweep = await maybeProgressiveSweep(); // E7 continuous linkage (throttled, best-effort)
-    return NextResponse.json({ success: true, ...result, progressive_sweep: sweep });
+    const ledger = await maybeCoverageSnapshot(); // daily coverage snapshot (throttled)
+    return NextResponse.json({ success: true, ...result, progressive_sweep: sweep, coverage_snapshot: ledger });
   } catch (error) {
     console.error('[dispatch] failed:', error);
     return NextResponse.json(
