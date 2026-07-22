@@ -40,6 +40,12 @@ This handoff lets any session resume without state loss (founder continuity dire
 
 ---
 
+## 2b. Progress update (2026-07-22, later)
+
+- **Progressive batching SHIPPED + saturated** (ADR-039): all 133,447 obs processed; 812 products resolved; **94 corroborated** (TV/tablet doubled 8→16, AC 10→14); 0 duplicates. Engine: `progressive-engine.ts` (sweep) + `bulk-backfill.ts` (initial saturation) + durable cursor.
+- **E14 hybrid SHIPPED + production-verified** (ADR-040, build 0d001ac): `/api/v1/tps/search` = Layer 1 comparison + Layer 2 resolved-single discovery (labelled, measured exits, 0 false-comparison). Owned index **394** (94 comparison + 300 resolved-single). Layer 2 written by `write-resolved-single.ts`.
+- **E15 gate ASSESSED** (`docs/E15-RETIREMENT-GATE.md`): gates 1–10 met; System B has no runtime dependency / required data. **Blockers:** E11 mobile (credential-free), E14 full cutover (credential-free), **System B archive needs System B's DB/service-role credential — ABSENT (external blocker)**, ownership decision (founder).
+
 ## 3. Next executable actions (priority order)
 
 ### A. Progressive batching (top coverage enabler) — `CATALOG-COMPLETENESS-GATE.md` §4
