@@ -23,7 +23,7 @@ Governed by `TAWVEERI_CONSTITUTION.md`; decisions in `docs/DECISIONS.md`; strate
 
 - **Category-plugin matchers** (`scripts/tps-plugins/*`, `tps-matcher/*`): deterministic `brand|type|capacity|…` identity keys per category; corroborate only ≥2 distinct stores (precision over recall).
 - **Model-Number Corroboration** (`src/lib/intelligence/model-corroboration.ts`, ADR-049/050): same manufacturer model in ≥2 independent stores ⇒ definitively one product — higher recall than title heuristics. Gates: ≥6-char alphanumeric model, exactly one known brand, price spread ≤3×. Folded into canonicals **clean-create only** (zero duplicates). API `/api/v1/tps/model-corroboration`.
-- **ER roadmap** (ADR-052): deterministic-first; `pg_trgm` blocking + multi-signal verify is the next autonomous step; embedding-ER is credential-gated (escalated).
+- **Entity Resolution** (`src/lib/entity-resolution/*`, ADR-056): validated **hybrid** — multilingual-embedding candidate generation (recall; local `multilingual-e5-small`, no credential/cost; 93% cross-lingual recall) + deterministic `verifySameProduct` (precision: brand + spec + variant + model-designation). Leakage-protected benchmark harness in `scripts/tps-er/*` (masked identifiers, store-disjoint, category-stratified). Production step: embed → pgvector blocking → verify → clean-create corroborations.
 
 ## Layer 1b — Knowledge-Graph Relationship Edges
 

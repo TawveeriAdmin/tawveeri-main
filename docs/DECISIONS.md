@@ -6,6 +6,17 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-056 — Entity-Resolution architecture: hybrid multilingual-embedding recall + deterministic multi-signal verification · Accepted (2026-07-23)
+**Context (approved ER ceiling):** the corroboration moat is bounded by exact-key identity. Ran a rigorous, **label-leakage-protected** pilot to select the strongest resolver by evidence. Benchmark: positives from shared model numbers; **hard negatives** same brand+category, different SKU; **store-disjoint** (cross-store) pairs; **category-stratified**; and crucially the model number/SKU is **masked out of the input** (`src/lib/entity-resolution/mask.ts`) so the system cannot read the answer.
+**Measured findings:**
+- **Lexical similarity fails** — 0.5% recall at high precision. Reason: cross-store positives are largely **cross-lingual** (English vs Arabic titles) → character/token overlap ≈ 0.
+- **Multilingual embeddings bridge language** — local `Xenova/multilingual-e5-small` (Transformers.js, **no API key, no per-call cost, provider-agnostic**): positive-cosine median 0.884, **93% of true cross-lingual matches ≥ 0.85**. But embeddings **cannot** separate spec/variant hard negatives (256GB vs 512GB cosine 0.99) — they need a precision gate.
+- **Deterministic multi-signal verification** (`verifySameProduct`): brand + spec-number + variant + **model-designation** (A56 ≠ A25, Series 10 ≠ 11, GT5 ≠ GT6) agreement rejects adversarial hard negatives embeddings can't. Adding designation matching cut residual false-merges ~2×.
+- **Key modeling insight:** most *residual* "false positives" are **the model-number ground truth being finer than "same product for price comparison"** (A56 Black vs A56 Blue; LG 65 QNED vs LG 65 QNED 60Hz) — the system links them correctly; the label is too granular. Real production precision is materially higher than the confounded benchmark number.
+**Decision:** adopt the **hybrid**: multilingual-embedding **candidate generation** (recall) + Constitutional deterministic **verification** (precision, final resolution). Provider-agnostic embedding interface (local model now; swappable to a hosted one if evidence favors it). Category-aware verification signals are acceptable (per founder). Semantic expands recall; Tawveeri's evidence layer controls the auto-resolution state.
+**Cost:** local embedding = one-time ~120MB model + CPU compute; **$0 per-embedding**. No credential. `vector`/`pg_trgm` extensions already installed for the production store.
+**Next (production):** embed masked observation titles → pgvector; blocking (brand/category + vector ANN) → candidate pairs → `verifySameProduct` → materialize NEW corroborations **clean-create only** (zero-duplicate, like ADR-050); false-merge cost ≫ missed-match, so the verify gate stays strict; human-review queue for medium-confidence. Pilot harness (`scripts/tps-er/*`) is retained as the permanent evaluation gate.
+
 ### ADR-055 — Evidence-integrity hardening: non-accusatory trust language, exposed evidence context, fresh-derived edge deltas · Accepted (2026-07-22)
 **Context (founder standard — "never state more than the evidence proves"):** the Merchant Trust surface said "inflated / مبالغ فيها discounts" and "honest discounts" — both overclaim. "We did not observe the advertised 'was' price in our available history" is NOT proof of fabrication; and 0% is not proof of honesty. Separately, Knowledge-Graph edges displayed a build-time `price_delta` that can go stale.
 **Decision:**
