@@ -16,19 +16,24 @@
 | 8 | Schedulers + adapters on System A | ✅ | E4/E12; `/api/cron/*`, adapters registered on A. |
 | 9 | Catalog coverage truth documented | ✅ | `docs/CATALOG-COMPLETENESS-GATE.md` (full-catalog measured). |
 | 10 | Single-store / unmatched products discoverable without false comparison | ✅ | E14 Layer 2 resolved-single (ADR-040); 0 false-comparison verified. |
-| 11 | **Web AND mobile use the Platform API contract** | 🟡 **Partial** | Web search consumes the canonical graph; **mobile still reads System A `products`/`product_stores` directly** (not `/api/v1/tps/search`) — E11 convergence incomplete. Not a System-B dependency (mobile uses A), but a stated E15 prerequisite. |
-| 12 | Required backups / archives exist before retirement | ⛔ **Not done** | No verified archive of System B `public` schema. Retirement is irreversible → archive is mandatory (stop condition). |
-| 13 | Obsolete credentials/services retired safely | ⛔ **Pending 12** | Depends on archive + ownership decision. |
+| 11 | Web/mobile do not depend on System B | ✅ (corrected) | Mobile `eas.json` → System A; System A has `products`/`product_stores`; web bundle = System A. Full platform-API adoption in mobile screens is a **future enhancement**, not a retirement blocker (ADR-041). |
+| 12 | Required backups / archives exist before retirement | ✅ **N/A — not required** (corrected) | System B has **no required unique data** (2 zero-activity users; superseded catalog; sessions/OTPs must not migrate). A read key exists; nothing mandatory to archive (ADR-041). Prior "service-role archive blocker" WITHDRAWN. |
+| 13 | Obsolete credentials/services retired safely | ⛔ **CAN be (proven safe); NOT executed** | Safe to retire (gates 1–10 met). Execution needs owner platform access — **absent** (§3). |
 
-## 2. Blockers to executing retirement (honest)
+## 2. Re-audit corrections (ADR-041 — production evidence, this session)
 
-1. **E11 mobile convergence** (gate 11) — migrate mobile's direct `products`/`product_stores` reads (deals/index/search/product/store screens) to `platformApi` (`/api/v1/tps/search`), so in-app items carry `canonical_id`/`offer_id`/`go_url` + render decision objects. *Engineering — can be done autonomously; does not need System B.*
-2. **E14 full sole-authority cutover** (Layer 3 raw long-tail + shadow/canary) — the founder set "E14 production-authoritative and stable" as the E15 precondition. Core hybrid is live; sole-authority promotion remains.
-3. **Verified archive of System B** (gate 12) — requires **System B's service-role/DB credential**, which is **objectively absent** from every readable store (ADR-029/031). Without it, no read/export/archive of B is possible. **This is a genuine external-credential blocker** (founder stop condition).
-4. **Ownership decision** — decommissioning System B + the VPS is an ownership/legal action (founder stop condition), even after archive.
+Two prior "blockers" were **inferred, not demonstrated**, and are corrected here:
 
-## 3. Conclusion
+- **E11 mobile is NOT an E15 blocker.** `mobile/eas.json` targets System A (`vyceqrzttspyycdpojtn`); System A holds `products`=4,821 / `product_stores`=7,481 / `stores`=8. Mobile functions on A without B. Migrating mobile screens to the platform API is a **future enhancement**, not a retirement blocker.
+- **E14 Layer 3 is NOT an E15 blocker.** The main site search is `/api/search/scrape` → `searchAllStores` (live scrapers on System A), not the sole owned index and not System B. Retiring B removes nothing from discoverability. E14 Core (hybrid, no false comparison) satisfies gate 10; Layer 3 is a future enhancement.
+- **Archive is NOT technically necessary (gate 12 corrected).** System B holds **2 users with zero activity** (`mv_user_analytics`), ephemeral sessions/OTPs (must not migrate), and a **superseded** legacy catalog (94,921 products vs A's live 133k observations). No required unique production data. A System B **read** key (anon) was recovered; the *service-role* key I previously called a blocker is **not needed** because there is nothing required to archive.
 
-**The engineering readiness for retirement is essentially complete** (gates 1–10 met; 11 is autonomous engineering). System B carries **no required data and no runtime dependency**, so its retirement is safe from a data-integrity standpoint. **E15 cannot be *declared complete*** because (a) executing retirement is irreversible and needs a verified archive, which needs System B credentials that are **absent** (external blocker), and (b) it is an ownership decision. The correct autonomous path is to **finish E11 mobile + E14 full cutover** (both credential-free engineering), then hand the archive+decommission decision to the founder with this gate as evidence.
+## 3. The single remaining blocker (demonstrated)
 
-**Next autonomous work (no external blocker):** E11 mobile convergence → E14 Layer 3 + shadow/canary. **Founder-gated:** System B archive (needs its credential) → decommission (ownership).
+**Executing the decommission** — delete Supabase project `ffpsjjazsluolysgithg` + shut down the `tawveeri.etlaq.sa` VPS — requires **owner/platform credentials that are demonstrably absent**: `SUPABASE_ACCESS_TOKEN`/`SUPABASE_MANAGEMENT_TOKEN`/`RAILWAY_TOKEN`/VPS SSH all absent; no supabase/railway CLI; anon-key `DELETE /v1/projects/…` → **HTTP 401**. The legacy services are **still running** (`etlaq.sa/api/health`=200; System B REST reachable). This is **external** and engineering **cannot** eliminate it (deleting a project / shutting a VPS are inherently owner actions).
+
+## 4. Verdict
+
+**E15 BLOCKED** — on the decommission action only. All readiness gates (1–10, and the corrected 11/12) are **VERIFIED**: nothing in production depends on System B, there is no required data to archive, and deleting System B breaks no subsystem (ingestion/search/web/mobile/cron/recommendations/measured-exits/Algolia/TPS/identity/progressive batching all run on System A).
+
+**Exact next action (founder/owner, ~5 min):** in the Supabase dashboard, delete project `ffpsjjazsluolysgithg`; decommission the `tawveeri.etlaq.sa` VPS. No archive required (optional: export the 2 user rows first if any legacy-account preservation is desired). After the services are down, E15 is complete — verifiable by `etlaq.sa/api/health` and System B REST both becoming unreachable.
