@@ -17,10 +17,10 @@ Takes a **shopping task** (structured or free text) and returns a neutral, expla
   "priorities":["quiet","low_electricity"], "budget_total":4000 }
 // or free text (deterministically parsed; explicit fields override)
 { "text":"مكيف لغرفة 30 متر في الرياض هادئ وموفر للكهرباء تحت 4000" }
-// tablet/mobile also accept: connectivity_needed, storage_min, use[]
+// tablet/mobile also accept: connectivity_needed, storage_min, use[]; laptop: ram_min, storage_min
 ```
 
-**Supported categories (bespoke deciders):** `air_conditioner` (KSA-hot BTU sizing + total cost incl. installation + est. electricity), `tv` (gaming→refresh, movies→panel quality), `tablet` (connectivity, storage, use-fit), `mobile` (variant tier for camera/battery, generation recency, storage). Other categories → **neutral trust+price fallback** (`supported:false`) — no fabricated suitability.
+**Supported categories (bespoke deciders):** `air_conditioner` (KSA-hot BTU sizing + total cost incl. installation + est. electricity), `tv` (gaming→refresh, movies→panel quality), `tablet` (connectivity, storage, use-fit), `mobile` (variant tier for camera/battery, generation recency, storage), `laptop` (gaming→discrete GPU+RAM, productivity→RAM+CPU, portability→screen), `refrigerator` (24/7 electricity in TCO, inverter efficiency, capacity-for-household), `washing_machine` (front-load + inverter efficiency, washer/dryer combo intent). Appliances and laptops are structurally single-store in KSA (Extra/store-dominant) — surfaced honestly with `comparison_available:false`, never fabricated corroboration. Other categories → **neutral trust+price fallback** (`supported:false`) — no fabricated suitability.
 
 **Response (shape):**
 ```jsonc

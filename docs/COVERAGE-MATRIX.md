@@ -8,11 +8,11 @@ E15.5 · W1. Evidence-based completeness by store and category. Corroborated = �
 
 | Metric | Value |
 |---|---|
-| Raw observations (all stores) | 135689 |
-| Distinct resolved product identities | 812 |
+| Raw observations (all stores) | 135989 |
+| Distinct resolved product identities | 1066 |
 | Corroborated canonicals (Layer 1, comparable) | 94 |
-| Resolved-single (Layer 2) | 300 |
-| Owned index (projection) | 394 |
+| Resolved-single (Layer 2) | 818 |
+| Owned index (projection) | 912 |
 
 ## By store — raw observation volume
 
@@ -21,18 +21,20 @@ E15.5 · W1. Evidence-based completeness by store and category. Corroborated = �
 | Jarir | 56747 |
 | Amazon | 2422 |
 | Extra | 41340 |
-| Almanea | 35180 |
+| Almanea | 35480 |
 
 ## By category × store — resolved product identities (distinct keys)
 
 | Category | Jarir | Extra | Amazon | Almanea | Corroborated | Single-store |
 |---|---|---|---|---|---|---|
-| **air_conditioner** | 0 | 196 | 6 | 59 | 14 | 0 |
-| **audio** | 14 | 0 | 23 | 5 | 7 | 3 |
-| **camera** | 10 | 0 | 14 | 0 | 3 | 7 |
-| **laptop** | 30 | 21 | 23 | 13 | 0 | 27 |
+| **air_conditioner** | 0 | 196 | 6 | 59 | 14 | 215 |
+| **audio** | 14 | 0 | 23 | 5 | 7 | 27 |
+| **camera** | 10 | 0 | 14 | 0 | 3 | 18 |
+| **laptop** | 31 | 21 | 23 | 13 | 0 | 42 |
+| **refrigerator** | 0 | 72 | 10 | 0 | 0 | 82 |
 | **tablet** | 12 | 102 | 32 | 25 | 16 | 125 |
 | **tv** | 50 | 212 | 28 | 1 | 16 | 138 |
+| **washing_machine** | 0 | 171 | 0 | 0 | 0 | 171 |
 
 ## Reading the matrix
 
