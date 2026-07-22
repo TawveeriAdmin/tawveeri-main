@@ -1,7 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dispatchDueSchedules } from '@/lib/scraping/services/schedule-dispatcher';
+import { createServerClient } from '@/lib/database';
+import { runSweepUnit } from '../../../../../scripts/tps-core/progressive-engine';
+import { CATEGORY_DEFS } from '../../../../../scripts/tps-core/category-registry';
 
 export const maxDuration = 60;
+
+// E7 (canonical linkage on ingestion) — closed via a THROTTLED progressive sweep
+// on the every-minute dispatch tick. At most one bounded unit (≤500 obs) every
+// SWEEP_INTERVAL_S, so newly-ingested observations are linked + corroborated
+// continuously without new infra. Throttle marker lives in tps_progress_cursors
+// (category '_sweep_tick', store_id 0, last_raw_id = epoch seconds). Best-effort:
+// failures never block the scraping dispatch.
+const SWEEP_INTERVAL_S = 900; // 15 min
+async function maybeProgressiveSweep(): Promise<{ ran: boolean; scanned?: number }> {
+  try {
+    const sb = createServerClient();
+    const nowS = Math.floor(Date.now() / 1000);
+    const { data: mark } = await sb.from('tps_progress_cursors')
+      .select('last_raw_id').eq('category', '_sweep_tick').eq('store_id', 0).maybeSingle();
+    const last = Number(mark?.last_raw_id ?? 0);
+    if (nowS - last < SWEEP_INTERVAL_S) return { ran: false };
+    // claim the slot first (avoid overlap across cluster instances)
+    await sb.from('tps_progress_cursors').upsert(
+      { category: '_sweep_tick', store_id: 0, last_raw_id: nowS, updated_at: new Date().toISOString() },
+      { onConflict: 'category,store_id' });
+    const r = await runSweepUnit(sb as never, Object.values(CATEGORY_DEFS), 500);
+    return { ran: true, scanned: r.normalize.fetched };
+  } catch (e) {
+    console.error('[dispatch] progressive sweep skipped:', e instanceof Error ? e.message : e);
+    return { ran: false };
+  }
+}
 
 /**
  * POST /api/cron/dispatch
@@ -18,7 +48,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await dispatchDueSchedules();
-    return NextResponse.json({ success: true, ...result });
+    const sweep = await maybeProgressiveSweep(); // E7 continuous linkage (throttled, best-effort)
+    return NextResponse.json({ success: true, ...result, progressive_sweep: sweep });
   } catch (error) {
     console.error('[dispatch] failed:', error);
     return NextResponse.json(
