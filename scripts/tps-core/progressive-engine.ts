@@ -30,19 +30,23 @@ function extractPrice(p: Record<string, unknown>): number | null {
   return null;
 }
 
-export interface NormalizeMetrics { fetched: number; detected: number; valid: number; lowConfidence: number; invalid: number; accessory: number; staged: number; saturated: boolean; touched: string[]; }
+export interface SweepMetrics { fetched: number; staged: number; saturated: boolean; byCategory: Record<string, { detected: number; valid: number; lowConfidence: number; invalid: number; touched: Set<string> }>; }
 
-// ── Normalization pass: advance the cursor, stage valid identities. ≤limit obs. ──
-export async function normalizePass(sb: SupabaseClient, def: CategoryDef, limit: number): Promise<NormalizeMetrics> {
+const GLOBAL = "_all_"; // cursor category for the single-pass scan
+
+// ── Single-pass NORMALIZE across ALL categories. One id-indexed scan per store
+//    (no ILIKE → no slow filter, no per-category re-scan). Each row is classified
+//    by every plugin's detect(); matches are staged into their category. Global
+//    per-store cursor. ≤limit observations/run. ──
+export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], limit: number): Promise<SweepMetrics> {
   const perStore = Math.max(1, Math.floor(limit / TPS_STORES.length));
-  const orFilter = def.filterKeywords.map((k) => `raw_name.ilike.%${k}%`).join(",");
-  const m: NormalizeMetrics = { fetched: 0, detected: 0, valid: 0, lowConfidence: 0, invalid: 0, accessory: 0, staged: 0, saturated: false, touched: [] };
+  const m: SweepMetrics = { fetched: 0, staged: 0, saturated: false, byCategory: {} };
+  for (const d of defs) m.byCategory[d.category] = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, touched: new Set() };
   const stagingRows: Record<string, unknown>[] = [];
-  const touched = new Set<string>();
   for (const s of TPS_STORES) {
-    const { data: cur } = await sb.from("tps_progress_cursors").select("last_raw_id").eq("category", def.category).eq("store_id", s.id).maybeSingle();
+    const { data: cur } = await sb.from("tps_progress_cursors").select("last_raw_id").eq("category", GLOBAL).eq("store_id", s.id).maybeSingle();
     const last = Number(cur?.last_raw_id ?? 0);
-    const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload").eq("store_id", s.id).or(orFilter).gt("id", last).order("id", { ascending: true }).limit(perStore);
+    const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload").eq("store_id", s.id).gt("id", last).order("id", { ascending: true }).limit(perStore);
     if (error) throw new Error(`fetch store ${s.id}: ${error.message}`);
     const rows = (data ?? []) as { id: number; store_id: number | null; raw_name: string | null; payload: Record<string, unknown> | null }[];
     m.fetched += rows.length;
@@ -51,22 +55,23 @@ export async function normalizePass(sb: SupabaseClient, def: CategoryDef, limit:
       if (row.id > maxId) maxId = row.id;
       const p = row.payload ?? {};
       const { nameAr, nameEn, brand, url } = adaptRow(p, row.raw_name);
-      if (!def.plugin.detect(nameAr, nameEn)) continue; // wrong category / accessory
-      m.detected++;
-      const norm = def.normalize(nameAr, nameEn, brand, p);
-      const identity = def.plugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
-      if (identity.status === "invalid" || !identity.key) { m.invalid++; continue; }
-      if (identity.status === "low_confidence_candidate") m.lowConfidence++; else m.valid++;
-      const conf = def.plugin.scoreConfidence(brand, norm.payload, norm.model_number, norm.ambiguity_flags);
-      touched.add(identity.key);
-      stagingRows.push({
-        category: def.category, raw_obs_id: row.id, store_id: row.store_id, identity_key: identity.key,
-        status: identity.status, price: extractPrice(p), url, name: (nameEn || nameAr).slice(0, 300),
-        confidence: conf.confidence, detected: true, payload: norm.payload, observed_at: new Date().toISOString(),
-      });
+      for (const def of defs) {
+        if (!def.plugin.detect(nameAr, nameEn)) continue;
+        const cm = m.byCategory[def.category]; cm.detected++;
+        const norm = def.normalize(nameAr, nameEn, brand, p);
+        const identity = def.plugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
+        if (identity.status === "invalid" || !identity.key) { cm.invalid++; continue; }
+        if (identity.status === "low_confidence_candidate") cm.lowConfidence++; else cm.valid++;
+        const conf = def.plugin.scoreConfidence(brand, norm.payload, norm.model_number, norm.ambiguity_flags);
+        cm.touched.add(identity.key);
+        stagingRows.push({
+          category: def.category, raw_obs_id: row.id, store_id: row.store_id, identity_key: identity.key,
+          status: identity.status, price: extractPrice(p), url, name: (nameEn || nameAr).slice(0, 300),
+          confidence: conf.confidence, detected: true, payload: norm.payload, observed_at: new Date().toISOString(),
+        });
+      }
     }
-    // Advance cursor even if this store returned nothing new (maxId stays = last).
-    const { error: ce } = await sb.from("tps_progress_cursors").upsert({ category: def.category, store_id: s.id, last_raw_id: maxId, updated_at: new Date().toISOString() }, { onConflict: "category,store_id" });
+    const { error: ce } = await sb.from("tps_progress_cursors").upsert({ category: GLOBAL, store_id: s.id, last_raw_id: maxId, updated_at: new Date().toISOString() }, { onConflict: "category,store_id" });
     if (ce) throw new Error(`cursor upsert store ${s.id}: ${ce.message}`);
   }
   for (let i = 0; i < stagingRows.length; i += 500) {
@@ -75,7 +80,6 @@ export async function normalizePass(sb: SupabaseClient, def: CategoryDef, limit:
   }
   m.staged = stagingRows.length;
   m.saturated = m.fetched === 0;
-  m.touched = [...touched];
   return m;
 }
 
@@ -165,12 +169,16 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   return R;
 }
 
-// One bounded progressive unit: normalize (≤limit) then corroborate the touched keys.
-export async function runProgressiveUnit(sb: SupabaseClient, category: string, limit = TPS_MAX_OBSERVATIONS) {
-  const def = CATEGORY_DEFS[category];
-  if (!def) throw new Error(`unknown category: ${category}`);
+// One bounded progressive SWEEP unit: single-pass normalize across all categories
+// (≤limit obs), then corroborate each category's touched keys. Category isolation
+// holds — corroboration is per-category; only the read scan is shared.
+export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limit = TPS_MAX_OBSERVATIONS) {
   if (limit > TPS_MAX_OBSERVATIONS) throw new Error(`limit ${limit} exceeds ${TPS_MAX_OBSERVATIONS}`);
-  const n = await normalizePass(sb, def, limit);
-  const c = await corroboratePass(sb, def, n.touched);
-  return { category, normalize: n, corroborate: c };
+  const n = await normalizeSweep(sb, defs, limit);
+  const corr: Record<string, CorroborateMetrics> = {};
+  for (const def of defs) {
+    const touched = [...n.byCategory[def.category].touched];
+    if (touched.length) corr[def.category] = await corroboratePass(sb, def, touched);
+  }
+  return { normalize: n, corroborate: corr };
 }
