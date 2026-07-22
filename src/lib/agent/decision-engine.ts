@@ -46,7 +46,7 @@ export interface Recommendation {
   confidence: number;                 // 0..100, never fabricated
   is_smart_pick: boolean;
   reasons_ar: string[];
-  dna: ProductDNA;
+  dna: Record<string, unknown>;       // category-specific Product DNA (AC/TV/tablet/…)
   go_offer_hint: string;              // canonical_id; the route attaches the measured-exit go_url
 }
 
@@ -144,7 +144,102 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
     suitability_score: Math.round(s.score * 100) / 100, confidence: s.confidence,
     is_smart_pick: i === 0,
     reasons_ar: s.reasons,
-    dna: s.dna,
+    dna: s.dna as unknown as Record<string, unknown>,
     go_offer_hint: s.row.canonical_id,
   }));
+}
+
+// ── Shared assembly: turn scored rows into ranked Recommendations. ──
+function assemble(scored: { row: CanonicalRow; dna: Record<string, unknown>; score: number; reasons: string[]; total: number | null; breakdown: Recommendation["cost_breakdown"] }[]): Recommendation[] {
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((s, i): Recommendation => ({
+    canonical_id: s.row.canonical_id, tps_identity_key: s.row.tps_identity_key,
+    title_ar: s.row.display_name_ar, title_en: s.row.display_name_en, brand: s.row.brand,
+    unit_price: s.row.lowest_price, total_cost_estimate: s.total, cost_breakdown: s.breakdown,
+    store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
+    suitability_score: Math.round(Math.max(0, Math.min(1, s.score)) * 100) / 100,
+    confidence: Math.min(95, Math.round(((s.row.identity_confidence ?? 70) + (s.row.store_count ?? 0) * 8) / 1.2)),
+    is_smart_pick: i === 0, reasons_ar: s.reasons, dna: s.dna, go_offer_hint: s.row.canonical_id,
+  }));
+}
+
+// ── TV: derive DNA + decide. Suitability = use-fit (gaming→refresh, movies→panel,
+//    sports→refresh+size) + size + trust + budget. Ranking-blind. ──
+const PANEL_QUALITY: Record<string, number> = { oled: 1.0, neo_qled: 0.9, qled: 0.8, qned: 0.75, nanocell: 0.7, mini_led: 0.85, crystal: 0.6, led: 0.5 };
+export function deriveTvDna(row: CanonicalRow): Record<string, unknown> {
+  const a = row.attributes ?? {};
+  return { brand: row.brand, screen_size: a.screen_size ?? null, resolution: a.resolution ?? null,
+    panel: a.panel ?? null, refresh_rate: a.refresh_rate ?? null,
+    gaming_ready: typeof a.refresh_rate === "number" ? a.refresh_rate >= 120 : null,
+    movie_quality: a.panel ? (PANEL_QUALITY[String(a.panel)] ?? 0.5) >= 0.8 : null };
+}
+export function decideTv(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const pr = task.priorities ?? [];
+  const wantGaming = pr.includes("gaming"), wantMovies = pr.includes("movies"), wantSports = pr.includes("sports"), wantBright = pr.includes("bright_room");
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const dna = deriveTvDna(row); const reasons: string[] = [];
+    let score = 0.5;
+    const rr = typeof a.refresh_rate === "number" ? a.refresh_rate : null;
+    const pq = a.panel ? (PANEL_QUALITY[String(a.panel)] ?? 0.5) : null;
+    if ((wantGaming || wantSports) && rr != null) { if (rr >= 120) { score += 0.18; reasons.push(`معدل تحديث ${rr}Hz — ممتاز للألعاب/الرياضة`); } else { score -= 0.05; reasons.push(`معدل تحديث ${rr}Hz — منخفض للألعاب`); } }
+    if (wantMovies && pq != null) { score += (pq - 0.5) * 0.4; reasons.push(pq >= 0.8 ? `شاشة ${a.panel} — جودة عالية للأفلام` : `شاشة ${a.panel} — جودة متوسطة`); }
+    if (wantBright && pq != null && pq >= 0.8) { score += 0.06; reasons.push(`لوحة ${a.panel} — سطوع جيد للغرف المضيئة`); }
+    if (a.resolution === "4k" || a.resolution === "8k") { score += 0.04; reasons.push(`دقة ${String(a.resolution).toUpperCase()}`); }
+    if (typeof a.screen_size === "number") reasons.push(`${a.screen_size} بوصة`);
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
+    const total = row.lowest_price;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
+  });
+  return assemble(scored);
+}
+
+// ── Tablet: derive DNA + decide. Suitability = use-fit + connectivity + storage +
+//    size + trust + budget. Ranking-blind. ──
+export function deriveTabletDna(row: CanonicalRow): Record<string, unknown> {
+  const a = row.attributes ?? {};
+  return { brand: row.brand, line: a.line ?? null, storage: a.storage ?? null,
+    connectivity: a.connectivity ?? null, screen_size: a.screen_size ?? null,
+    cellular: a.connectivity ? a.connectivity !== "wifi" : null };
+}
+export function decideTablet(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const t = task as ShoppingTask & { use?: string[]; connectivity_needed?: string; storage_min?: number };
+  const use = t.use ?? task.priorities ?? [];
+  const wantProductivity = use.includes("productivity"), wantReading = use.includes("reading"), wantGaming = use.includes("gaming");
+  const needCell = t.connectivity_needed && t.connectivity_needed !== "wifi";
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const dna = deriveTabletDna(row); const reasons: string[] = [];
+    let score = 0.5;
+    const storage = typeof a.storage === "number" ? a.storage : null;
+    const size = typeof a.screen_size === "number" ? a.screen_size : null;
+    const conn = a.connectivity as string | null;
+    if (needCell) { if (conn && conn !== "wifi") { score += 0.15; reasons.push(`اتصال ${conn.toUpperCase()} — يدعم الشريحة`); } else { score -= 0.15; reasons.push("واي فاي فقط — لا يدعم الشريحة (تحتاج خلوي)"); } }
+    else if (conn) reasons.push(conn === "wifi" ? "واي فاي" : `${conn.toUpperCase()}`);
+    if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.1; reasons.push(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
+    else if (storage != null) reasons.push(`تخزين ${storage}GB`);
+    if (wantProductivity && size != null) { if (size >= 11) { score += 0.1; reasons.push(`شاشة ${size}" — مناسبة للإنتاجية`); } else reasons.push(`شاشة ${size}" — صغيرة للإنتاجية`); }
+    if (wantReading && size != null && size <= 11) { score += 0.05; reasons.push(`شاشة ${size}" — خفيفة للقراءة`); }
+    if (wantGaming && storage != null && storage >= 128) { score += 0.06; reasons.push(`تخزين ${storage}GB — مناسب للألعاب`); }
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
+    const total = row.lowest_price;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
+  });
+  return assemble(scored);
+}
+
+// ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
+//    fallback for categories without a bespoke decider yet (no fabrication). ──
+export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
+  switch (task.category) {
+    case "air_conditioner": return { supported: true, recommendations: decideAc(task, rows) };
+    case "tv": return { supported: true, recommendations: decideTv(task, rows) };
+    case "tablet": return { supported: true, recommendations: decideTablet(task, rows) };
+    default: {
+      const scored = rows.map((row) => ({ row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0),
+        reasons: [(row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد"],
+        total: row.lowest_price ?? null, breakdown: { unit: row.lowest_price ?? null, installation: null, annual_electricity: null } }));
+      return { supported: false, recommendations: assemble(scored) };
+    }
+  }
 }

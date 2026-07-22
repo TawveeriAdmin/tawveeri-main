@@ -5,7 +5,18 @@
  * neutrality (ranking not price-alone), and NO FABRICATION (undersize flagged).
  * Every rubric is an assertion — regressions fail loud in CI.
  */
-import { requiredBtuForRoom, deriveAcDna, decideAc, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+
+const tv = (o: { size: number; res: string; panel: string; hz: number; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `tv-${o.panel}-${o.hz}-${o.price}`, tps_identity_key: "k", display_name_ar: `تلفزيون ${o.panel}`, display_name_en: "TV",
+  brand: "samsung", category: "tv", image_url: null, lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 80,
+  attributes: { screen_size: o.size, resolution: o.res, panel: o.panel, refresh_rate: o.hz },
+});
+const tab = (o: { line: string; storage: number; conn: string; size: number; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `tab-${o.line}-${o.storage}-${o.conn}`, tps_identity_key: "k", display_name_ar: `تابلت ${o.line}`, display_name_en: "Tablet",
+  brand: "samsung", category: "tablet", image_url: null, lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 80,
+  attributes: { line: o.line, storage: o.storage, connectivity: o.conn, screen_size: o.size },
+});
 
 const ac = (over: Partial<CanonicalRow> & { btu: number; tech: string; cool?: string; price: number; stores: number }): CanonicalRow => ({
   canonical_id: over.canonical_id ?? `c-${over.btu}-${over.tech}-${over.price}`,
@@ -65,6 +76,49 @@ describe("Flagship task: AC, 30m² Riyadh, low_electricity", () => {
     const recs = decideAc(task, rows);
     expect(recs[0].is_smart_pick).toBe(true);
     expect(recs.filter((r) => r.is_smart_pick).length).toBe(1);
+  });
+});
+
+describe("TV decision — use-fit (deterministic, ranking-blind)", () => {
+  it("gaming: high refresh (144Hz) outranks 60Hz at similar price", () => {
+    const recs = decideTv({ category: "tv", priorities: ["gaming"] }, [
+      tv({ size: 55, res: "4k", panel: "qled", hz: 60, price: 2000, stores: 2, id: "hz60" }),
+      tv({ size: 55, res: "4k", panel: "qled", hz: 144, price: 2100, stores: 2, id: "hz144" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("hz144");
+    expect(recs[0].reasons_ar.some((r) => r.includes("144"))).toBe(true);
+  });
+  it("movies: OLED outranks LED (panel quality)", () => {
+    const recs = decideTv({ category: "tv", priorities: ["movies"] }, [
+      tv({ size: 55, res: "4k", panel: "led", hz: 60, price: 2000, stores: 2, id: "led" }),
+      tv({ size: 55, res: "4k", panel: "oled", hz: 120, price: 2500, stores: 2, id: "oled" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("oled");
+  });
+});
+
+describe("Tablet decision — connectivity/storage fit (deterministic)", () => {
+  it("cellular need: a 5G/LTE tablet outranks a Wi-Fi-only one", () => {
+    const recs = decideTablet({ category: "tablet", connectivity_needed: "cellular" } as never, [
+      tab({ line: "galaxy tab a11", storage: 128, conn: "wifi", size: 11, price: 900, stores: 2, id: "wifi" }),
+      tab({ line: "galaxy tab a11", storage: 128, conn: "5g", size: 11, price: 1100, stores: 2, id: "cell" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("cell");
+  });
+  it("storage_min: below-minimum is flagged, not silently chosen", () => {
+    const recs = decideTablet({ category: "tablet", storage_min: 256 } as never, [
+      tab({ line: "ipad air", storage: 128, conn: "wifi", size: 11, price: 2500, stores: 2, id: "s128" }),
+    ]);
+    expect(recs[0].reasons_ar.some((r) => r.includes("أقل من المطلوب"))).toBe(true);
+  });
+});
+
+describe("Category dispatcher", () => {
+  it("dispatches ac/tv/tablet as supported; unknown category is neutral fallback (not supported)", () => {
+    expect(decide({ category: "air_conditioner" }, []).supported).toBe(true);
+    expect(decide({ category: "tv" }, []).supported).toBe(true);
+    expect(decide({ category: "tablet" }, []).supported).toBe(true);
+    expect(decide({ category: "microwave" }, []).supported).toBe(false);
   });
 });
 
