@@ -263,6 +263,42 @@ export function decideMobile(task: ShoppingTask, rows: CanonicalRow[]): Recommen
   return assemble(scored);
 }
 
+// ── Laptop: derive DNA + decide. Suitability = use-fit (gaming→discrete GPU+RAM,
+//    productivity→RAM+CPU, portability→screen), storage, trust, budget. Ranking-blind.
+//    Note: laptops are structurally single-store in KSA (ADR-032) — most results are
+//    resolved-single (comparison_available:false), surfaced honestly. ──
+export function deriveLaptopDna(row: CanonicalRow): Record<string, unknown> {
+  const a = row.attributes ?? {};
+  const gpu = (a.gpu as string) ?? null;
+  return { brand: row.brand, family: a.family ?? null, cpu: a.cpu ?? null,
+    ram: a.ram != null ? Number(a.ram) : null, storage: a.storage != null ? Number(a.storage) : null,
+    screen: a.screen != null ? Number(a.screen) : null, gpu,
+    discrete_gpu: gpu ? gpu !== "igpu" : null };
+}
+export function decideLaptop(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  const t = task as ShoppingTask & { storage_min?: number; ram_min?: number };
+  const pr = task.priorities ?? [];
+  const wantGaming = pr.includes("gaming"), wantProductivity = pr.includes("productivity"), wantPortability = pr.includes("portability");
+  const scored = rows.map((row) => {
+    const a = row.attributes ?? {}; const dna = deriveLaptopDna(row); const reasons: string[] = [];
+    let score = 0.5;
+    const ram = a.ram != null ? Number(a.ram) : null; const storage = a.storage != null ? Number(a.storage) : null;
+    const screen = a.screen != null ? Number(a.screen) : null; const gpu = (a.gpu as string) ?? null; const discrete = gpu ? gpu !== "igpu" : false;
+    if (wantGaming) { if (discrete) { score += 0.15; reasons.push(`كرت شاشة منفصل (${gpu?.toUpperCase()}) — مناسب للألعاب`); } else { score -= 0.08; reasons.push("كرت مدمج — ضعيف للألعاب"); } if (ram && ram >= 16) { score += 0.06; reasons.push(`رام ${ram}GB`); } }
+    if (wantProductivity) { if (ram && ram >= 16) { score += 0.1; reasons.push(`رام ${ram}GB — مناسب للإنتاجية`); } else if (ram) reasons.push(`رام ${ram}GB — متوسط للإنتاجية`); if (a.cpu) reasons.push(`معالج ${String(a.cpu).toUpperCase()}`); }
+    if (wantPortability && screen != null) { if (screen <= 14) { score += 0.08; reasons.push(`شاشة ${screen}" — خفيف ومحمول`); } else reasons.push(`شاشة ${screen}" — أكبر (أثقل)`); }
+    if (t.ram_min && ram != null) { if (ram >= t.ram_min) score += 0.06; else { score -= 0.1; reasons.push(`⚠️ رام ${ram}GB أقل من المطلوب (${t.ram_min}GB)`); } }
+    if (t.storage_min && storage != null && storage < t.storage_min) { score -= 0.08; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب`); }
+    else if (storage != null) reasons.push(`تخزين ${storage}GB`);
+    reasons.unshift(`${row.brand ?? ""} ${a.family ?? ""} ${a.cpu ? String(a.cpu).toUpperCase() : ""}`.replace(/\s+/g, " ").trim());
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    const total = row.lowest_price;
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
+  });
+  return assemble(scored);
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
 export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
@@ -271,6 +307,7 @@ export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: b
     case "tv": return { supported: true, recommendations: decideTv(task, rows) };
     case "tablet": return { supported: true, recommendations: decideTablet(task, rows) };
     case "mobile": return { supported: true, recommendations: decideMobile(task, rows) };
+    case "laptop": return { supported: true, recommendations: decideLaptop(task, rows) };
     default: {
       const scored = rows.map((row) => ({ row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0),
         reasons: [(row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد"],

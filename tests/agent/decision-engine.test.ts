@@ -5,7 +5,13 @@
  * neutrality (ranking not price-alone), and NO FABRICATION (undersize flagged).
  * Every rubric is an assertion — regressions fail loud in CI.
  */
-import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+import { requiredBtuForRoom, deriveAcDna, decideAc, decideTv, decideTablet, decideMobile, decideLaptop, decide, type CanonicalRow, type ShoppingTask } from "../../src/lib/agent/decision-engine";
+
+const lap = (o: { family: string; cpu: string; ram: number; storage: number; screen: number; gpu: string; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `l-${o.family}-${o.gpu}`, tps_identity_key: "k", display_name_ar: `لابتوب ${o.family}`, display_name_en: "laptop",
+  brand: "hp", category: "laptop", image_url: null, lowest_price: o.price, store_count: o.stores, has_comparison: o.stores >= 2, identity_confidence: 75,
+  attributes: { family: o.family, cpu: o.cpu, ram: o.ram, storage: o.storage, screen: o.screen, gpu: o.gpu },
+});
 
 const tv = (o: { size: number; res: string; panel: string; hz: number; price: number; stores: number; id?: string }): CanonicalRow => ({
   canonical_id: o.id ?? `tv-${o.panel}-${o.hz}-${o.price}`, tps_identity_key: "k", display_name_ar: `تلفزيون ${o.panel}`, display_name_en: "TV",
@@ -142,9 +148,27 @@ describe("Mobile decision — variant/generation/storage fit (deterministic)", (
   });
 });
 
+describe("Laptop decision — use-fit (deterministic, single-store honest)", () => {
+  it("gaming: discrete GPU outranks integrated", () => {
+    const recs = decideLaptop({ category: "laptop", priorities: ["gaming"] }, [
+      lap({ family: "pavilion", cpu: "i5-13", ram: 16, storage: 512, screen: 15.6, gpu: "igpu", price: 2800, stores: 1, id: "igpu" }),
+      lap({ family: "victus", cpu: "i7-13", ram: 16, storage: 512, screen: 15.6, gpu: "rtx4060", price: 4500, stores: 1, id: "discrete" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("discrete");
+    expect(recs[0].comparison_available).toBe(false); // laptops are single-store — labelled honestly
+  });
+  it("portability: a 13\" laptop outranks a 17\" for portability", () => {
+    const recs = decideLaptop({ category: "laptop", priorities: ["portability"] }, [
+      lap({ family: "spectre", cpu: "ultra7", ram: 16, storage: 512, screen: 13.5, gpu: "igpu", price: 5000, stores: 1, id: "small" }),
+      lap({ family: "omen", cpu: "i9", ram: 32, storage: 1024, screen: 17, gpu: "rtx4080", price: 8000, stores: 1, id: "big" }),
+    ]);
+    expect(recs[0].canonical_id).toBe("small");
+  });
+});
+
 describe("Category dispatcher", () => {
-  it("dispatches ac/tv/tablet/mobile as supported; unknown is neutral fallback (not supported)", () => {
-    for (const c of ["air_conditioner", "tv", "tablet", "mobile"]) expect(decide({ category: c }, []).supported).toBe(true);
+  it("dispatches ac/tv/tablet/mobile/laptop as supported; unknown is neutral fallback", () => {
+    for (const c of ["air_conditioner", "tv", "tablet", "mobile", "laptop"]) expect(decide({ category: c }, []).supported).toBe(true);
     expect(decide({ category: "microwave" }, []).supported).toBe(false);
   });
 });

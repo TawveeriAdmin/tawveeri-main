@@ -36,6 +36,17 @@ describe("Task parser — English + other categories", () => {
     expect(t.priorities).toEqual(expect.arrayContaining(["gaming", "movies"]));
     expect(t.budget_total).toBe(3000);
   });
+  it("laptop gaming + portability + ram", () => {
+    const t = parseShoppingTask("لابتوب للألعاب خفيف 16 جيجا رام تحت 5000");
+    expect(t.category).toBe("laptop");
+    expect(t.priorities).toEqual(expect.arrayContaining(["gaming", "portability"]));
+    expect((t as { ram_min?: number }).ram_min).toBe(16);
+    expect(t.budget_total).toBe(5000);
+  });
+  it("recognizes refrigerator and washing machine categories", () => {
+    expect(parseShoppingTask("ثلاجة كبيرة").category).toBe("refrigerator");
+    expect(parseShoppingTask("غسالة أوتوماتيك").category).toBe("washing_machine");
+  });
   it("tablet with cellular + storage", () => {
     const t = parseShoppingTask("ابغى تابلت للانتاجية يدعم شريحة 256 جيجا");
     expect(t.category).toBe("tablet");

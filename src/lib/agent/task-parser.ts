@@ -16,6 +16,8 @@ function parseCategory(x: string): string | null {
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
   if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
   if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s/.test(x)) return "mobile";
+  if (/ثلاجة|refrigerator|fridge|freezer/.test(x)) return "refrigerator";
+  if (/غسالة|washing machine|washer|نشافة|dryer/.test(x)) return "washing_machine";
   return null;
 }
 
@@ -48,6 +50,7 @@ function parsePriorities(x: string): string[] {
   if (/كاميرا|تصوير|صور|camera|photo/.test(x)) p.add("camera");
   if (/بطارية|battery/.test(x)) p.add("battery");
   if (/أحدث|احدث|جديد|latest|newest/.test(x)) p.add("latest");
+  if (/خفيف|محمول|portable|lightweight|light ?weight|للسفر|travel/.test(x)) p.add("portability");
   return [...p];
 }
 
@@ -73,6 +76,7 @@ export interface ParsedTask extends ShoppingTask {
   use?: string[];
   connectivity_needed?: string;
   storage_min?: number;
+  ram_min?: number;
   parsed_from_text: string;
   unresolved?: string[]; // fields the parser could not extract (fail-loud transparency)
 }
@@ -106,5 +110,6 @@ export function parseShoppingTask(text: string): ParsedTask {
   }
   if (category === "tv" && priorities.length) task.priorities = priorities;
   if (category === "mobile" && storage_min) task.storage_min = storage_min;
+  if (category === "laptop") { if (storage_min) task.storage_min = storage_min; const rm = x.match(/(\d{1,2})\s*(?:جيجا|gb)\s*رام|رام\s*(\d{1,2})/); const r = rm ? Number(rm[1] || rm[2]) : null; if (r && [4, 8, 16, 32, 64].includes(r)) (task as ParsedTask & { ram_min?: number }).ram_min = r; }
   return task;
 }
