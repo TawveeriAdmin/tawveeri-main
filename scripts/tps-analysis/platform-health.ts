@@ -112,16 +112,21 @@ const hours = (a: Date | null, b: Date | null): number | null =>
     "no scheduled job rebuilds projection → search index → facts → trust → edges",
     "each link is a manual script; the SEARCH and PRICE checks below detect the drift it causes");
 
-  // ── 4. IDENTITY — observations that never reached staging ─────────────────
-  const stg = await one<{ obs: number; staged: number; newest_obs: string | null; newest_staged: string | null }>(`
+  // ── 4. IDENTITY — observations that have never been considered ────────────
+  // This check previously compared max(scraped_at) to max(staging.observed_at).
+  // That was WRONG: `observed_at` is the time staging was WRITTEN, so it reset to
+  // "now" after any run and reported ~0h lag even with a real backlog. The
+  // unambiguous measure is the id backlog — observations newer than anything the
+  // normalizer has ever looked at.
+  const stg = await one<{ obs: number; staged: number; backlog: number }>(`
     select (select count(*) from raw_observations)::int obs,
            (select count(distinct raw_obs_id) from tps_identity_staging)::int staged,
-           (select max(scraped_at)::text from raw_observations) newest_obs,
-           (select max(observed_at)::text from tps_identity_staging) newest_staged`);
-  const lagH = hours(stg.newest_obs ? new Date(stg.newest_obs) : null, stg.newest_staged ? new Date(stg.newest_staged) : null);
-  add("identity", "staging lag", lagH !== null && lagH > 48 ? "WARN" : "OK",
-    lagH === null ? "unknown" : `newest observation is ${Math.max(0, lagH).toFixed(1)}h ahead of newest staged row`,
-    `${stg.staged} of ${stg.obs} observations staged`);
+           (select count(*) from raw_observations
+             where id > (select coalesce(max(raw_obs_id), 0) from tps_identity_staging))::int backlog`);
+  add("identity", "unprocessed observations",
+    stg.backlog > 20000 ? "FAIL" : stg.backlog > 2000 ? "WARN" : "OK",
+    stg.backlog === 0 ? "none — normalizer is current" : `${stg.backlog} observations never considered for identity`,
+    `${stg.staged} of ${stg.obs} observations have been staged; the chain's 'normalize' step clears this hourly`);
 
   // ── 5. PROJECTION — canonicals written after the projection was built ─────
   const proj = await one<{ behind: number; total: number; built: string | null }>(`

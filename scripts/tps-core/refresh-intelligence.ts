@@ -48,7 +48,24 @@ function runScript(path: string, args: string[] = []): { ok: boolean; detail: st
 
 const STEPS: Step[] = [
   {
-    key: "projection", label: "serving projection (canonicals → comparison rows)", needs: [], slow: true,
+    // ADR-069 — the chain used to START at projection, so it only ever refreshed
+    // products that ALREADY had an identity. Ingestion runs continuously but
+    // nothing converted new observations into identities, so newly-ingested
+    // products stayed invisible until a human ran bulk-backfill. Incremental and
+    // cursor-based, so this processes only what arrived since the last run.
+    key: "normalize", label: "new observations → identities (incremental)", needs: [],
+    run: () => runScript("scripts/tps-core/normalize-incremental.ts", ["--batches", "6"]),
+  },
+  {
+    // ADR-065 found 770 identities with no canonical; the leak RECURS every time
+    // staging grows, which is now every hour. `corroboratePass` in the step above
+    // writes only >=2-store canonicals, so single-store products need this pass or
+    // they never reach a customer. Honest by construction: comparison_eligible=false.
+    key: "resolved-single", label: "single-store identities → canonicals", needs: ["normalize"],
+    run: () => runScript("scripts/tps-matcher/write-resolved-single.ts"),
+  },
+  {
+    key: "projection", label: "serving projection (canonicals → comparison rows)", needs: ["resolved-single"], slow: true,
     run: () => runScript("scripts/build-tps-projection.ts"),
   },
   {
