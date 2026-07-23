@@ -32,10 +32,20 @@ async function main() {
         "category",
         "cheapest_store",
       ],
-      // Ranking: الأرخص + الأكثر توفيراً يظهر أولاً
+      // ADR-064 — RANKING ORDER MATTERS. `asc(lowest_price)` was FIRST, so the
+      // absolute cheapest item won every relevance tie: "غسالة اتوماتيك" (washing
+      // machine) returned a DISHWASHER at rank 1, and "ثلاجة" returned a 50-litre
+      // mini fridge. Cheapness alone is not the product.
+      //
+      // Tawveeri's differentiated value is a CORROBORATED comparison backed by
+      // evidence, so verified breadth and identity confidence rank first, and
+      // price decides among equally-trustworthy answers. All three signals are
+      // neutral quality measures — no commercial input ever enters ranking
+      // (Constitution Art. VII).
       customRanking: [
-        "asc(lowest_price)",
         "desc(store_count)",
+        "desc(identity_confidence)",
+        "asc(lowest_price)",
         "desc(price_spread_pct)",
       ],
       // Filters

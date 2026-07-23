@@ -29,7 +29,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Result:** **60% → 97%**, misses **6 → 0**, and **15/15 top results carry an image** (ADR-063 compounding). `شاشة 65 بوصة` now returns a television at rank 1; `جوال سامسونج` returns phones; `samsung galaxy s25 ultra` returns a Galaxy S25 at rank 1.
 
-**Honest remainder:** one WEAK — `ايفون رخيص` surfaces AirPods at rank 4 because the intent-word synonym group broadens the match; and `غسالة اتوماتيك` returns a *dishwasher* at rank 1, which is a genuine relevance error rather than a retrieval one. Retrieval is now solved; **ranking quality is the next search problem**, and the benchmark will measure it.
+**Ranking fixed in the same pass.** The benchmark gained a separate RANKING grade (is the top result in the right category?) which scored **86%**: `غسالة اتوماتيك` returned a *dishwasher* and `ثلاجة` a 50-litre mini fridge. Cause: `asc(lowest_price)` was the FIRST custom-ranking criterion, so the absolute cheapest item won every relevance tie. Reordered to **store_count → identity_confidence → price**: Tawveeri's differentiated value is a corroborated comparison backed by evidence, and price decides only among equally trustworthy answers. All three are neutral quality signals — no commercial input enters ranking (Art. VII).
+
+**Final measured result: retrieval 60% → 100% (misses 6 → 0), ranking 86% → 100% (7/7).** `غسالة اتوماتيك` now returns a Toshiba 7kg washer, `ثلاجة` a 510L side-by-side, `ايفون رخيص` an iPhone 17 at rank 1.
+
+**Honest remainder:** the benchmark is 15 queries chosen by me, not sampled from real demand — once search analytics exist it should be rebuilt from actual Saudi query logs. One top result still lacks an image (14/15).
 
 **Consequences:** `npm run tps:search-quality` is a permanent, deterministic gate on the front door — a regression in Saudi search now fails loudly instead of silently costing every shopper.
 
