@@ -33,7 +33,8 @@
     "tps:identity-impact": "tsx scripts/tps-analysis/identity-impact.ts",
     "tps:normalization-gap": "tsx scripts/tps-analysis/normalization-gap.ts",
     "tps:alias-foldin": "tsx scripts/tps-core/write-alias-canonicals.ts",
-    "tps:onboard-store": "tsx scripts/tps-core/onboard-store-corroborate.ts"
+    "tps:onboard-store": "tsx scripts/tps-core/onboard-store-corroborate.ts",
+    "tps:plugin-yield": "tsx scripts/tps-analysis/plugin-yield.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",
