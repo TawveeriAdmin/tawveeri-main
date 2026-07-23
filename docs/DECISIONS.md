@@ -6,6 +6,38 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-066 — The registration standard holds: smartwatch measured, built, and NOT registered · Accepted (2026-07-23)
+**Context:** wearables are the largest uncovered category in the funnel (~973 Saudi listings with no identity). A plugin was built to the same standard as mobile: precision-first detector with accessory hard-rejects (a watch *strap* listing contains the full product name), and an identity contract where **case size and connectivity are IDENTITY, not commercial** — a 42mm GPS and a 49mm Cellular of the same series are different products at materially different prices, so merging them would misprice the comparison. Colour and strap material stay Commercial Variants (Art. III).
+
+**Measured:** 689 listings claimed, **267 identified (38.8%)**, 21 cross-store corroborations, **0 colliding with existing canonicals**. Adding 10 wearable brand aliases (Mibro, Kieslect, Amazfit, Fitbit, Garmin… — the Saudi long tail no other category needed) plus long-tail family rules moved it to **41.5%**.
+
+**Decision: NOT registered.** Mobile earned registration at **64.8%**; 41.5% does not clear that bar. The plugin ships as a measured candidate with an honest number, not as production identity. The remaining 403 rejections are 294 `family missing` and ~109 unresolvable brands — a bounded, well-understood next step.
+
+**Why this matters more than the 21 comparisons it would have added:** a registration standard that bends the first time it is inconvenient is not a standard. Coverage grows only when precision holds.
+
+### ADR-065 — Automate the chain; the catalogue funnel; +600 products from identities we already had · Accepted (2026-07-23)
+**Context:** delivered the previous window's own stated #1 recommendation before starting anything new, then re-derived priorities from evidence.
+
+**1. The chain now runs itself.** `scheduler.js` gained an intelligence-refresh loop — hourly fast chain, 12-hourly full chain including the ~22-minute projection rebuild. It runs as a **child process, not an HTTP route**, because the chain takes minutes and exceeds any sane request timeout; PM2 supervises it and the environment is inherited. Overlapping runs are **refused, not queued** — every step is idempotent so a skipped tick is harmless, whereas two concurrent rebuilds would fight over the same derived tables. `presentation` was inserted **before** `search` so a newly-projected product can never reach search without a picture or a way to buy.
+
+**2. The CEO question, answered with evidence.** New `npm run tps:funnel`:
+
+| stage | count | share of product-grade | owner |
+|---|---|---|---|
+| Saudi listings ingested | 11,242 | — | merchant coverage |
+| of which product-grade | 9,707 | 100% | (1,535 accessories excluded) |
+| given an identity | 3,062 | 31.5% | detectors + parsers |
+| reach the projection | 1,215 | 12.5% | corroboration + canonical write |
+| **comparable (≥2 stores)** | **183** | **1.9%** | the core promise |
+
+**3. It exposed a leak nobody had quantified:** **770 distinct identity keys had a valid, already-computed identity and no canonical.** Products already paid for — scraped, normalized, identified — and invisible to customers. Running the Layer 2 resolved-single write converted them: **canonicals 1,215 → 1,815 (+49%)**, propagated end-to-end through projection → presentation → search → facts → trust → edges (6/6 steps, 25 min). **Zero duplicate cards, zero duplicate identity keys.** These are honest single-store products (`comparison_eligible=false`) — a known identity and one offer, never a false comparison claim.
+
+**Result:** consumer-visible products **1,215 → 1,815**; corroborated 183 → **196**; graph edges 57 → **80**; images 98.1%, measured exits 99.5%; search retrieval and ranking hold at 100%.
+
+**Honest counter-metric:** the comparison *share* fell from 15.1% to **10.8%** — the denominator grew faster than the numerator. Absolute comparisons rose; the ratio dilutes because most newly-surfaced products are single-store. Reporting the ratio without the absolute would be misleading in either direction.
+
+**Discovered risks:** (a) **no real users yet** — outbound_clicks 61, users 0, saved_searches 0, so every optimisation including the search benchmark is my judgement rather than measured demand; (b) the projection builder issues **one round-trip per canonical** and took **21.6 minutes for 1,815** — at 10,000 canonicals that is ~2 hours, a scalability wall directly across the growth path.
+
 ### ADR-064 — Search is the front door: Saudi query quality 60% → 97% · Accepted (2026-07-23)
 **Context:** with the product card fixed (ADR-063), the next customer question is whether a shopper can *find* anything. Coverage of the catalogue is not coverage of demand. I built a permanent benchmark — 15 representative Saudi queries, Arabic and English, colloquial and formal, with and without diacritics and Arabic-Indic digits — and ran it against the live serving index.
 
