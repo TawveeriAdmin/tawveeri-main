@@ -7,6 +7,7 @@
 // "لا نخمّن — نقرأ": every attribute read from text, never inferred.
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
+import { extractManufacturerModel } from "../../../src/lib/identity/store-identifiers";
 
 // ── Line + variant (canonical token). Order: most specific first. ──
 function extractLine(text: string): string | null {
@@ -86,20 +87,8 @@ function extractColor(text: string): string | null {
   for (const [re, v] of map) if (re.test(x)) return v;
   return null;
 }
-function isRetailerSku(s: string): boolean {
-  if (/^B0[A-Z0-9]{8}$/i.test(s)) return true;      // Amazon ASIN
-  if (/^\d{5,8}$/.test(s)) return true;              // numeric retailer SKU
-  if (/\s/.test(s)) return true;                     // Jarir "model" = title string
-  if (!/[A-Za-z]/.test(s) || !/\d/.test(s)) return true;
-  return false;
-}
-function extractModelNumber(payload: Record<string, unknown>): string | null {
-  for (const c of [payload.mpn, payload.model, payload.sku]) {
-    const s = typeof c === "string" ? c.trim() : "";
-    if (s && /^[A-Za-z0-9][A-Za-z0-9\-\/.]{4,18}$/.test(s) && !isRetailerSku(s)) return s.toUpperCase();
-  }
-  return null;
-}
+// Model-number extraction delegated to the single key-integrity authority
+// (ADR-058) — see src/lib/identity/store-identifiers.ts.
 
 export function normalize(nameAr: string, nameEn: string, rawBrand: string | null, rawPayload?: Record<string, unknown>): NormalizeResult {
   const payload = rawPayload ?? {};
@@ -134,7 +123,7 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
   }
   const connectivity = extractConnectivity(fullText);
   const color = extractColor(fullText);
-  const model_number = extractModelNumber(payload);
+  const model_number = extractManufacturerModel(payload);
   const bundle = /with\s+(folio|case|cover|pen|pencil|keyboard|stylus)|مع\s+(قلم|كفر|غطاء|لوحة)/i.test(fullText);
 
   const ambiguity_flags: string[] = [];

@@ -25,6 +25,14 @@ Governed by `TAWVEERI_CONSTITUTION.md`; decisions in `docs/DECISIONS.md`; strate
 - **Model-Number Corroboration** (`src/lib/intelligence/model-corroboration.ts`, ADR-049/050): same manufacturer model in ≥2 independent stores ⇒ definitively one product — higher recall than title heuristics. Gates: ≥6-char alphanumeric model, exactly one known brand, price spread ≤3×. Folded into canonicals **clean-create only** (zero duplicates). API `/api/v1/tps/model-corroboration`.
 - **Entity Resolution** (`src/lib/entity-resolution/*`, ADR-056/057): validated **hybrid** — multilingual-embedding candidate generation (recall; local `multilingual-e5-small`, no credential/cost; 93% cross-lingual recall) + deterministic `verifySameProduct` (precision: brand + spec + variant + model-designation + CPU-tier/RAM). Leakage-protected benchmark harness in `scripts/tps-er/*` (masked identifiers, store-disjoint, category-stratified). Production candidate generator `find-corroborations.ts` runs the full pipeline over real observations and emits a **confidence-tiered review queue** (~130 ≥2-store candidates, ~90 new). **ADR-057: ships review-gated — never auto-merged into `canonical_products`.** Measured on production: the general verifier over-merges the long tail (laptop configs, tablet generations, bilingual variants), so auto-materialization is gated behind **per-category structured resolvers** that earn auto-status by measured precision. Recall is real (e.g. Sony *"Mark 5"* ↔ *WH-1000XM5* linked across disjoint descriptions).
 
+## Layer 0 — Key Integrity (the substrate every other layer rests on)
+
+- **The invariant (ADR-058):** *an identity or continuity key must derive only from evidence that is stable over time and independent of the observing store's internals.* Violating it is silent and catastrophic — a store-internal SKU used as identity guarantees the product can never corroborate.
+- `src/lib/identity/store-identifiers.ts` — the SINGLE authority for manufacturer-model extraction. **`sku` is never a model number** (verified store-internal at every merchant); only `mpn`/`modelNumber`/`model` are candidates, each structurally validated (mixed letters+digits, no whitespace, not a spec fragment like `128GB`). Replaced three divergent `isRetailerSku` copies that let Noon's `N70382194V` become 163/163 of its identity keys.
+- `src/lib/identity/listing-key.ts` — `stableListingKey`: durable product id from the URL (Amazon ASIN, Noon code) else a canonicalised URL with session/campaign params stripped. **Variant-bearing params such as Jarir's `childSku` are preserved** — stripping them merged 89 listings in a dry run. Fixed Amazon's permanently-empty price history (avg distinct_days 1.00 → listings with ≥2 days 0 → 298).
+- `src/lib/identity/alias-graph.ts` — **identity aliasing** bridges the `MODEL:`/spec key-space schism using co-occurrence evidence only: one observation carrying BOTH keys proves they denote the same product. Deterministic, no thresholds. `isBridgeableSpecKey` refuses placeholder-laden hubs (measured: `matepad|NO_GEN|256|wifi|NO_SIZE` fused 8 distinct models). Measured +16 corroborations (35 → 51) on laptop+tablet+tv. **Not yet wired into the matcher** — gated pending the corroboration-path change.
+- **Tooling (read-only, permanent):** `scripts/tps-analysis/state-snapshot.ts` (reconstruct production truth), `q.ts` (SELECT-only runner, refuses non-production), `identity-impact.ts` (**replay any parser/identity change over production and diff the corroboration surface before applying** — it caught a −14 regression that would otherwise have shipped).
+
 ## Layer 1b — Knowledge-Graph Relationship Edges
 
 - `src/lib/intelligence/product-edges.ts` (ADR-053): deterministic typed edges over corroborated DNA — `storage_variant` (same model, different storage) + `successor` (same config, consecutive generation), with price deltas. Migration 024 `tps_product_edges` · `build-product-edges`. Turns the flat catalog into a product graph; `getProductAlternatives` feeds **budget-aware** agent guidance ("256GB is −800", "last year's model is −700"). Precision-first: exact agreement on every identity field except the relationship-defining one.
@@ -51,7 +59,21 @@ Governed by `TAWVEERI_CONSTITUTION.md`; decisions in `docs/DECISIONS.md`; strate
 
 ## Coverage / Merchant onboarding
 
-- `scripts/tps-core/activate-store.ts` — reachability-gated store activation (discover → `ingestBatch`). Noon activated (ADR-…); SWSG reachable next. See the Store Integration Readiness Audit (session report). Amazon scaling needs a proxy budget (escalated).
+- `scripts/tps-core/activate-store.ts` — reachability-gated store activation (discover → `ingestBatch`).
+- **Verified activation status (production, 2026-07-23 — supersedes earlier "activated" claims).** 8 stores configured, **5 ingesting, 4 consumer-visible**. "Ingesting" is not "active": the full chain is discovery → ingestion → normalization → identity → canonical → projection → consumer.
+
+  | store | observations | distinct listings | staged | canonicals | in projection |
+  |---|---|---|---|---|---|
+  | 1 jarir | 58,842 | 2,973 | yes | yes | **yes** |
+  | 2 amazon | 3,022 | ~824 ASINs | yes | yes | **yes** |
+  | 3 noon | 562 | 562 | 207 (163 SKU-poisoned) | 0 | **no** |
+  | 4 extra | 42,240 | 5,108 | yes | yes | **yes** |
+  | 5 almanea | 36,380 | 1,584 | yes | yes | **yes** |
+  | 6 samsung_ksa / 7 shaker | 0 | — | — | — | no |
+  | 8 swsg | 276 | 276 | **0** | 0 | **no** |
+
+- **Noon and SWSG are NOT operational.** Two blocking causes, both structural: (1) `TPS_STORES` in `scripts/tps-core/category-registry.ts` lists only stores 1, 4, 2, 5 — Noon and SWSG are excluded from the normalization sweep entirely; (2) neither has a `STORE_ADAPTERS` entry in `scripts/tps-core/store-adapters.ts`. Additionally **SWSG's `price` is NULL on all 276 observations**, so it cannot produce offers even once normalized — though its titles do carry genuine Apple MPNs (`MG1G4AH/A`), making it valuable once price capture is fixed.
+- Scale reality: ~13,500 distinct listings platform-wide (raw observations are inflated 8–23× by daily re-scrapes); ~2,152 distinct URLs reach staging, so identity covers roughly **20% of the catalog**. Amazon scaling needs a proxy budget (escalated).
 
 ---
 

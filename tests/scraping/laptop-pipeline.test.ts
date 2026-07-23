@@ -59,7 +59,25 @@ describe('Laptop fallback identity (precision guards)', () => {
   it('builds a full fallback key from family+cpu+ram+storage+screen+gpu', () => {
     const r = idOf('', 'HP Victus 15 Gaming Laptop, Intel Core i7-13620H, 16 GB RAM, 512 GB SSD, 15.6", RTX 3050', 'HP');
     expect(r.status).toBe('valid');
-    expect(r.key).toBe('hp|victus 15|i7-13|16|512|15.6|rtx3050');
+    // ADR-058: the size-class digit ("Victus 15") is NOT carried in the family
+    // token, because the screen size is already a separate key field. Victus 15
+    // and Victus 16 stay distinct via 15.6 vs 16.1, so dropping the redundant
+    // digit costs no discrimination — and it buys cross-store stability, since
+    // stores disagree on whether to print it (see the stability test below).
+    expect(r.key).toBe('hp|victus|i7-13|16|512|15.6|rtx3050');
+  });
+  it('ADR-058: family is STABLE when one store prints the size-class digit and another does not', () => {
+    // Real production divergence that produced laptop 0% corroboration:
+    // Jarir printed "Aspire Lite 15", Extra printed "aspire lite" — same product,
+    // previously `aspire 15` vs `aspire`, so they could never match.
+    const jarir = idOf('', 'Acer Aspire Lite 15 Laptop, Intel Core i5-1235U, 16 GB RAM, 512 GB SSD, 15.6"', 'Acer');
+    const extra = idOf('', 'Acer aspire lite laptop with 15.6" fhd display, Intel Core i5-1235U, 16gb ram, 512gb ssd', 'Acer');
+    expect(jarir.key).toBe(extra.key);
+  });
+  it('ADR-058: keeps a genuine series digit that is NOT the screen size', () => {
+    // "Slim 3" is a product tier, not a size class — it must survive.
+    const r = idOf('', 'Lenovo IdeaPad Slim 3 Laptop, Intel Core i5-1335U, 8 GB RAM, 512 GB SSD, 15.6"', 'Lenovo');
+    expect(r.key).toContain('ideapad 3');
   });
   it('invalid when a discriminating spec (cpu/ram/storage) is missing (never guessed)', () => {
     expect(idOf('', 'HP Victus Gaming Laptop 15.6"', 'HP').status).toBe('invalid'); // no cpu/ram/storage

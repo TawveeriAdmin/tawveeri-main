@@ -6,6 +6,7 @@
 // never inferred. Ambiguity is flagged, not resolved by guessing.
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
+import { extractManufacturerModel } from "../../../src/lib/identity/store-identifiers";
 
 // ── Family / series per brand (canonical family token). Order matters: longer /
 //    more specific first. Value is the canonical family string used in identity.
@@ -38,12 +39,27 @@ const FAMILIES: [RegExp, string][] = [
 ];
 
 // Series number that follows a family (e.g., IdeaPad Slim "3", Yoga Pro "7",
-// Aspire Lite "15", Vivobook "16"). Captured to sharpen identity when present.
+// Vivobook "16"). Captured to sharpen identity when present.
+//
+// ADR-058 key-stability rule: a number that merely restates the SCREEN SIZE is
+// not a series and must never enter the family token. Measured defect — Jarir
+// "Acer Aspire Lite 15 Laptop, 15.6\"" yielded family `aspire 15` while Extra's
+// "Acer aspire lite laptop with 15.6\" fhd" yielded `aspire`, so the same
+// product could never match. Screen sizes are dropped unless the text states a
+// DIFFERENT screen size, which proves the digit is a real series number.
+const SCREEN_LIKE = new Set([11, 12, 13, 14, 15, 16, 17]);
 function familyWithSeries(text: string, family: string): string {
-  // grab the family word plus an immediately-following small integer
   const fam = family.split(" ")[0];
   const m = text.match(new RegExp(fam + "\\s*(?:lite|slim|pro|air|book|gaming)?\\s*(\\d{1,2})\\b", "i"));
-  return m ? `${family} ${m[1]}` : family;
+  if (!m) return family;
+  const n = Number(m[1]);
+  if (SCREEN_LIKE.has(n)) {
+    // Accept only if the stated screen size clearly differs from this digit.
+    const screen = text.match(/(\d{2}(?:\.\d)?)\s*(?:"|inch|بوصة)/i);
+    const stated = screen ? Math.floor(Number(screen[1])) : null;
+    if (stated === null || stated === n) return family;
+  }
+  return `${family} ${m[1]}`;
 }
 
 function intelGen(digits: string): string {
@@ -135,27 +151,10 @@ function extractOs(text: string): string | null {
   return null;
 }
 
-// A true MANUFACTURER model number is corroboration-safe; a RETAILER SKU is not.
-// Amazon ASINs (B0XXXXXXXX) and Jarir's pure-numeric SKUs (674123) are
-// store-internal identifiers that poison the primary key — every store gets a
-// unique one, so they never corroborate. Reject them: a real manufacturer model
-// carries BOTH letters and digits (CD7S2EA, 83K100EPAD, MDHH4AB/A) and is never
-// an ASIN. When rejected we fall through to the fallback spec identity.
-function isRetailerSku(s: string): boolean {
-  if (/^B0[A-Z0-9]{8}$/i.test(s)) return true;   // Amazon ASIN
-  if (/^\d{5,8}$/.test(s)) return true;           // Jarir / Extra numeric SKU
-  if (!/[A-Za-z]/.test(s) || !/\d/.test(s)) return true; // must be mixed alnum
-  return false;
-}
-function extractModelNumber(payload: Record<string, unknown>): string | null {
-  for (const c of [payload.mpn, payload.model, payload.sku]) {
-    const s = typeof c === "string" ? c.trim() : "";
-    if (s && /^[A-Za-z0-9][A-Za-z0-9\-\/.]{3,18}$/.test(s) && !/\s/.test(s) && !isRetailerSku(s)) {
-      return s.toUpperCase();
-    }
-  }
-  return null;
-}
+// Model-number extraction is delegated to the single key-integrity authority
+// (ADR-058). It previously lived here as a local `isRetailerSku` copy that did
+// not know Noon's `N70382194V` format and fell back to the `sku` field, which
+// made every Noon laptop a store-unique identity that could never corroborate.
 
 export function normalize(nameAr: string, nameEn: string, rawBrand: string | null, rawPayload?: Record<string, unknown>): NormalizeResult {
   const payload = rawPayload ?? {};
@@ -178,7 +177,7 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
   const storage = extractStorage(fullText, payload.storage);
   const screen = extractScreen(fullText);
   const { gpu, discrete } = extractGpu(fullText);
-  const model_number = extractModelNumber(payload);
+  const model_number = extractManufacturerModel(payload);
   const color = extractColor(fullText);
   const os_edition = extractOs(fullText);
 
