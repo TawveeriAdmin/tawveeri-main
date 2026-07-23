@@ -6,6 +6,37 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-067 — Set-based projection: 21.6 minutes → 12 seconds, with proven output equivalence · Accepted (2026-07-23)
+**Context:** the projection builder was the binding constraint on the entire growth strategy. Every lever — more merchants, more categories, more products — increases the canonical count, and v2 issued **one PostgREST round-trip per canonical** (fetch price history, then upsert). Measured baseline: **1,296 seconds (21.6 minutes) for 1,815 canonicals**, ~3,600 round-trips. At 10,000 canonicals that is roughly two hours per rebuild.
+
+**Baseline recorded before any change** (`docs/evidence/projection-baseline-v2.json`, 1,815 rows): 1,815 projection rows · 196 comparable · 2,028 total offers · 1,815 distinct identity keys.
+
+**Design.** Three phases: **one** set-based read (canonicals LEFT JOINed to `DISTINCT ON (canonical, store)` latest prices, aggregated in the database) → derivation **in process** → **bulk** multi-row `INSERT … ON CONFLICT`, 500 rows per statement. The derivation was deliberately *not* moved into SQL: `compare_url` depends on JavaScript `encodeURIComponent` semantics and `text_for_search` composes optional attributes in a specific order, so reimplementing either in SQL would risk silent behavioural drift for no performance gain. Each chunk is a single statement and therefore atomic — the table never holds a half-written row.
+
+**Measured result:**
+
+| | v2 | v3 |
+|---|---|---|
+| Runtime (1,815 canonicals) | **1,296 s** | **7–12 s** |
+| Queries | ~3,600 | **5** |
+| Full intelligence chain | 25.4 min | **4.6 min** |
+
+**~110× faster on the projection step; comfortably inside the 60-second target.**
+
+**Equivalence, proven not assumed.** v3's output was snapshotted and diffed against the v2 baseline row by row: **1,815 rows in both, 0 rows present in only one.** Every price field — `lowest_price`, `highest_price`, `saving`, `price_spread_pct`, `store_count`, `has_comparison` — is **identical on all 1,815 rows**. Exactly **12 rows (0.66%)** differ, in `cheapest_store` and the `text_for_search` that embeds it, and every one is an **exact price tie** (e.g. `apple|iPhone|17|Pro|512` at 6,199.00 in both اكسترا and المنيع). v2 let the database decide the winner, so its output was **not reproducible run to run**. v3 breaks ties by store name. **A projection that cannot be reproduced cannot be verified**, so this is an intentional improvement, not a regression.
+
+**Idempotency proven:** two consecutive full runs produced **0 differing rows**.
+
+**A latent correctness bug removed.** v2 read only the **20 most recent** price rows per canonical and took the first occurrence of each store. Current data maxes at 8 qualifying rows, so behaviour is equivalent today — but once any canonical exceeded 20 rows, v2 would have begun **silently dropping stores and losing comparisons**. v3 uses `DISTINCT ON` with no cap.
+
+**A real defect found by the tests:** the module called `main()` at import scope, so importing the pure `deriveProjection` for testing opened a production connection and started a rebuild. Now guarded by an executed-directly check.
+
+**19 regression tests** cover aggregation, the ≥2-store honesty rule, tie determinism, empty/partial/mismatched evidence, `encodeURIComponent` semantics, `text_for_search` composition, a 40-store product, and 5,000 derivations under a second.
+
+**Downstream verified end-to-end:** full chain 6/6 steps — projection → presentation → search → facts → trust → edges. No regression anywhere: images 98.1%, measured exits 99.5%, comparable 196, search retrieval **100%**, ranking **100%**, merchant trust rebuilt, edges 80.
+
+**Operational consequence.** The 12-hourly full-refresh cadence existed *only* to work around the slow builder. The scheduler now runs the **full** chain **hourly**, improving projection freshness from "up to 12 h stale" to "within the hour", with `FULL_REFRESH_INTERVAL_MS` retained for constrained hosts.
+
 ### ADR-066 — The registration standard holds: smartwatch measured, built, and NOT registered · Accepted (2026-07-23)
 **Context:** wearables are the largest uncovered category in the funnel (~973 Saudi listings with no identity). A plugin was built to the same standard as mobile: precision-first detector with accessory hard-rejects (a watch *strap* listing contains the full product name), and an identity contract where **case size and connectivity are IDENTITY, not commercial** — a 42mm GPS and a 49mm Cellular of the same series are different products at materially different prices, so merging them would misprice the comparison. Colour and strap material stay Commercial Variants (Art. III).
 

@@ -40,7 +40,8 @@
     "tps:refresh": "tsx scripts/tps-core/refresh-intelligence.ts",
     "tps:presentation": "tsx scripts/tps-core/build-projection-presentation.ts",
     "tps:search-quality": "tsx scripts/tps-analysis/search-quality.ts",
-    "tps:funnel": "tsx scripts/tps-analysis/catalog-funnel.ts"
+    "tps:funnel": "tsx scripts/tps-analysis/catalog-funnel.ts",
+    "tps:projection": "tsx scripts/build-tps-projection.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

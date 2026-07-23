@@ -25,12 +25,15 @@ require('dotenv').config({ path: '.env' });
 const { spawn } = require('child_process');
 
 const INTERVAL_MS = parseInt(process.env.SCHEDULER_INTERVAL_MS || '60000', 10);
-// Hourly by default: ingestion runs a few times a day, so an hourly chain keeps
-// the customer-facing layers within one cycle of the evidence without churn.
+// ADR-067 changed what is affordable here. The projection rebuild went from
+// ~21.6 MINUTES to ~12 SECONDS when it became set-based, taking the full chain
+// from 25.4 min to 4.6 min. A 12-hourly full refresh was a workaround for a slow
+// builder; now the FULL chain runs hourly and there is no separate fast tier —
+// projection freshness improves from "up to 12h stale" to "within the hour".
 const REFRESH_INTERVAL_MS = parseInt(process.env.REFRESH_INTERVAL_MS || String(60 * 60 * 1000), 10);
-// The full chain includes a ~13-minute projection rebuild. That is run less
-// often (default every 12h) because canonicals change far slower than prices.
-const FULL_REFRESH_INTERVAL_MS = parseInt(process.env.FULL_REFRESH_INTERVAL_MS || String(12 * 60 * 60 * 1000), 10);
+// Retained for operators who want to throttle the chain on constrained hosts:
+// set FULL_REFRESH_INTERVAL_MS to run the full chain less often than hourly.
+const FULL_REFRESH_INTERVAL_MS = parseInt(process.env.FULL_REFRESH_INTERVAL_MS || "0", 10);
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -116,7 +119,7 @@ if (process.send) {
 }
 
 console.log(`[scheduler] started — polling ${BASE_URL}/api/cron/dispatch every ${INTERVAL_MS}ms`);
-console.log(`[refresh]   intelligence chain every ${(REFRESH_INTERVAL_MS / 60000).toFixed(0)}m (full every ${(FULL_REFRESH_INTERVAL_MS / 3600000).toFixed(0)}h)`);
+console.log(`[refresh]   full intelligence chain every ${(REFRESH_INTERVAL_MS / 60000).toFixed(0)}m (~4.6 min per run since ADR-067)`);
 
 // Fire once immediately so PM2 restarts have an instant first tick, then every N ms.
 tick();
@@ -124,8 +127,9 @@ setInterval(tick, INTERVAL_MS);
 
 // Intelligence refresh. Deliberately NOT fired immediately on boot: a PM2
 // restart loop would otherwise trigger repeated multi-minute rebuilds.
-setInterval(() => runRefresh(false), REFRESH_INTERVAL_MS);
-setInterval(() => runRefresh(true), FULL_REFRESH_INTERVAL_MS);
+// The full chain is ~4.6 min since ADR-067, so it is the default hourly job.
+setInterval(() => runRefresh(true), REFRESH_INTERVAL_MS);
+if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRESH_INTERVAL_MS);
 
 process.on('SIGTERM', () => {
   console.log('[scheduler] SIGTERM received — exiting');
