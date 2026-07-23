@@ -121,6 +121,21 @@ const BRAND_ALIASES: Record<string, string> = {
   "bose": "bose", "بوز": "bose", "بوس": "bose",
   "beats": "beats", "بيتس": "beats",
   "anker": "anker", "انكر": "anker", "أنكر": "anker", "soundcore": "anker", "ساوند كور": "anker", "ساوندكور": "anker",
+
+  // ── Wearables (ADR-066) ──────────────────────────────────────────────────
+  // Saudi retailers carry a long tail of wearable-only brands that no other
+  // category needed. Without these aliases the same watch keys under its Arabic
+  // brand at one store and its Latin brand at another, so it can never
+  // corroborate — the same language split that cost mobile 11 duplicate cards.
+  "mibro": "mibro", "ميبرو": "mibro",
+  "kieslect": "kieslect", "كيسليكت": "kieslect", "كييسليكت": "kieslect",
+  "amazfit": "amazfit", "أمازفيت": "amazfit", "امازفيت": "amazfit",
+  "zeblaze": "zeblaze", "زيبليز": "zeblaze",
+  "haylou": "haylou", "هايلو": "haylou",
+  "imilab": "imilab", "ايميلاب": "imilab",
+  "fitbit": "fitbit", "فيتبيت": "fitbit", "فيت بيت": "fitbit",
+  "garmin": "garmin", "غارمين": "garmin", "قارمين": "garmin",
+  "huami": "amazfit", "هوامي": "amazfit",
   "sennheiser": "sennheiser", "سنهايزر": "sennheiser",
   "marshall": "marshall", "مارشال": "marshall",
   "jabra": "jabra", "جابرا": "jabra",

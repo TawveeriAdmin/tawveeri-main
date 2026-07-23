@@ -18,9 +18,10 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import type { CategoryPlugin } from "../tps-core/types";
 import { mobilePlugin } from "../tps-plugins/mobile";
+import { smartwatchPlugin } from "../tps-plugins/smartwatch";
 import { resolveListingIdentity, isSaudiMarket } from "../../src/lib/identity/merchant-listing-identity";
 
-const CANDIDATES: Record<string, CategoryPlugin> = { mobile: mobilePlugin };
+const CANDIDATES: Record<string, CategoryPlugin> = { mobile: mobilePlugin, smartwatch: smartwatchPlugin };
 const STORE_SLUG: Record<number, string> = { 1: "jarir", 2: "amazon", 3: "noon", 4: "extra", 5: "almanea", 8: "swsg" };
 const asString = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 

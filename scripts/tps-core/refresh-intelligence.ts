@@ -52,7 +52,13 @@ const STEPS: Step[] = [
     run: () => runScript("scripts/build-tps-projection.ts"),
   },
   {
-    key: "search", label: "search index (projection → Algolia)", needs: ["projection"],
+    // ADR-063/065: must run BEFORE the search sync, otherwise a newly-projected
+    // product reaches search with no picture and no way to buy.
+    key: "presentation", label: "product images + measured exit links", needs: ["projection"],
+    run: () => runScript("scripts/tps-core/build-projection-presentation.ts"),
+  },
+  {
+    key: "search", label: "search index (projection → Algolia)", needs: ["projection", "presentation"],
     // A dedicated script so a missing Algolia credential fails THIS step only.
     run: () => runScript("scripts/tps-core/sync-search-index.ts"),
   },
