@@ -100,7 +100,13 @@ The two levers are **distinct and additive** (~2 identities of overlap): aliasin
 | **no category plugin claims the listing** | 6,913 | **77.4%** |
 | plugin detected, then rejected | 2,024 | 22.6% |
 
-So the dominant lever is **category coverage**, not parser quality. Merchant-published categories show the missing mass: **smartphone/mobile ~1,609 across 4 stores** (a mature mobile matcher exists but is excluded from `CATEGORY_DEFS`), **wearable/smartwatch ~973**, **monitor 535**, personal_care 220, gaming 196, smart_home 169, printer 167, networking 110. Top parser rejections: `audio: model missing` 359, `air_conditioner: null in critical: technology` 212, `refrigerator: type missing` 161.
+So the dominant lever is **category coverage**, not parser quality. Merchant-published categories show the missing mass: ~~smartphone/mobile~~ **(closed — ADR-061)**, **wearable/smartwatch ~973**, **monitor 535**, personal_care 220, gaming 196, smart_home 169, printer 167, networking 110. Top parser rejections: `audio: model missing` 359, `air_conditioner: null in critical: technology` 212, `refrigerator: type missing` 161.
+
+**Registration standard (ADR-061).** A category earns `CATEGORY_DEFS` registration by *measured* quality, never by existing. `npm run tps:plugin-yield <name>` reports, read-only, what a plugin would claim, identify, corroborate and — critically — how many identities would COLLIDE with existing canonicals. `npm run tps:plugin-failures <name> --brand` samples the real titles it fails on, grouped by cause, so parser work is driven by production evidence.
+
+Mobile (the first category held to this standard): claimed 2,070 → identified 281 (13.6%) → after rebuild **763 (64.8%)**; corroborated **11 → 71**. It is now the **most-corroborated category on the platform** and produces the first 4-store comparisons. `canonSeed` was derived empirically against a known canonical id so the 38 pre-existing rows upsert rather than duplicate (verified: 0 duplicate cards).
+
+**Bilingual matching invariant.** JavaScript's `\b` is defined on `[A-Za-z0-9_]` and **never matches beside an Arabic letter** — every pattern written `/\b(?:ultra|الترا)\b/` works in English and silently fails in Arabic. Use the script-aware boundaries in `scripts/tps-plugins/mobile/text.ts` (`LB`, `RB`, `bounded`) for any bilingual pattern, plus `normalizeArabic` to fold hamza forms, ta-marbuta, diacritics, Arabic-Indic digits and Arabic punctuation before matching.
 
 ---
 

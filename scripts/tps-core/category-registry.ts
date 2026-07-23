@@ -3,9 +3,8 @@
 // category to its plugin, store set, raw_observations filter, canonical display
 // names (reused from the verified matchers so the progressive engine produces
 // IDENTICAL canonical rows — no regression), and a key→attributes decoder that
-// matches each matcher's `attributes` shape. Mobile is intentionally excluded:
-// it has a mature v2 matcher with RAM/condition logic; its progressive batching
-// is a separate follow-up on that matcher.
+// matches each matcher's `attributes` shape. Mobile joined in ADR-061 once its
+// parser earned registration by measured quality (see the entry below).
 import type { CategoryPlugin, NormalizeResult } from "./types";
 import { tvPlugin, normalize as tvN } from "../tps-plugins/tv";
 import { tabletPlugin, normalize as tabletN } from "../tps-plugins/tablet";
@@ -13,6 +12,7 @@ import { audioPlugin, normalize as audioN } from "../tps-plugins/audio";
 import { cameraPlugin, normalize as cameraN } from "../tps-plugins/camera";
 import { acPlugin } from "../tps-plugins/ac";
 import { laptopPlugin, normalize as laptopN } from "../tps-plugins/laptop";
+import { mobilePlugin, normalize as mobileN } from "../tps-plugins/mobile";
 import { refrigeratorPlugin } from "../tps-plugins/refrigerator";
 import { washingMachinePlugin } from "../tps-plugins/washing_machine";
 import { APPLIANCE_BUNDLES, APPLIANCE_CATEGORIES } from "../tps-plugins/appliance";
@@ -89,6 +89,30 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     names: (k) => acNames(k),
     attrs: (k) => { const p = k.split("|"); return { ac_type: p[1], series_or_platform: p[2] === "NO_SERIES" ? null : p[2], capacity_btu: Number(p[3]), technology: p[4], cooling_mode: p[5] }; },
     canonSeed: (k) => `canonical:${k}`, normSeed: (o) => `norm:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  // ADR-061 — mobile registered. It was deliberately excluded while its plugin
+  // was Apple/Samsung-only with no accessory rejection and no storage validation.
+  // After the parser rebuild it identifies 64.8% of the listings it claims (was
+  // 13.6%) and yields 71 cross-store corroborations (was 11), including 4-store
+  // comparisons. `canonSeed` is `canonical:${k}` — verified empirically against
+  // the 38 canonicals mobile-v1 already wrote, so registration UPSERTS them
+  // rather than creating duplicate cards.
+  mobile: {
+    category: "mobile", detected: "mobile", plugin: mobilePlugin,
+    normalize: (a, b, br, pl) => mobileN(a, b, br, pl), version: "mobile-v1",
+    filterKeywords: ["iphone", "ايفون", "galaxy", "جالاكسي", "جوال", "هاتف", "smartphone", "redmi", "ريدمي"],
+    names: (k) => {
+      const [brand, family, gen, variant, storage] = k.split("|");
+      const v = variant && variant !== "Standard" ? ` ${variant}` : "";
+      const en = `${family} ${gen}${v} ${storage}GB`.replace(/\s+/g, " ").trim();
+      return { nameAr: `${brand} ${en}`, nameEn: `${brand.charAt(0).toUpperCase()}${brand.slice(1)} ${en}` };
+    },
+    attrs: (k) => {
+      const p = k.split("|");
+      return { family: p[1], generation: p[2], variant: p[3], storage_gb: Number(p[4]) };
+    },
+    canonSeed: (k) => `canonical:${k}`, normSeed: (o) => `norm:raw_observations:${o}`,
+    requireValidTier: true, priceBand: 1.5,
   },
   laptop: {
     category: "laptop", detected: "laptop", plugin: laptopPlugin, normalize: laptopN, version: "laptop-v1",

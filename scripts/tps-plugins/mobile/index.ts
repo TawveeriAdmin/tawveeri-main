@@ -13,3 +13,5 @@ export const mobilePlugin: CategoryPlugin = {
   buildIdentityKey,
   scoreConfidence,
 };
+
+export { detect, normalize, buildIdentityKey, scoreConfidence };

@@ -6,6 +6,32 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-061 — Mobile earns registration: a rebuilt bilingual parser makes phones Tawveeri's most-compared category · Accepted (2026-07-23)
+**Context:** ADR-060 measured the normalization gap as **77% "no category plugin claims the listing"** — category coverage, not parser quality. Mobile was the largest missing category (~2,070 Saudi listings across 6 stores) and a plugin already existed, deliberately excluded from `CATEGORY_DEFS`. **Parser quality had to come before registration**, so the plugin was measured first with a new read-only `tps:plugin-yield`.
+
+**What the measurement found (production, before any change):** the plugin claimed 2,070 listings and identified only **281 (13.6%)**. Four independent defects, each verified against real Saudi titles:
+1. **No accessory or foreign-category rejection.** ~1,027 of the claimed listings were not phones: car mounts matched on `جوال` inside *حامل جوال*; silicone cases matched on `ايفون` inside *غطاء ماج سيف ايفون 16*; a Galaxy Watch Fit 3, AirPods, a Galaxy Tab and **TV wall brackets** were all claimed as mobiles.
+2. **Brand was not canonicalized** — unlike every other plugin. `ابل` / `Apple` / `apple` were three identities, so Arabic-titled stores could corroborate only with each other and English-titled stores only with each other. Registering in that state would have created **11 duplicate product cards**.
+3. **Arabic orthography and word order were unhandled.** `أيفون` (hamza form) was absent from the patterns, failing an entire store; an Arabic comma `،` defeated a `\s+`; the transliterations `اس` (S), `ايه` (A), `الترا` (Ultra) were unknown; `1 تيرابايت` / `2 تيرا` were unparsed; `iPhone Air` has a NAMED generation, not a number.
+4. **No storage validation** — `8 جيجابايت رام` became a storage identity, producing `samsung|Galaxy A|A07|Standard|4`.
+
+**A root cause worth recording separately:** JavaScript's `\b` is defined on `[A-Za-z0-9_]`, so it **never matches beside an Arabic letter**. Every bilingual pattern written as `/\b(?:ultra|الترا)\b/` silently worked in English and failed in Arabic. `src`-side code that matches Arabic must use the script-aware boundaries in `mobile/text.ts` (`LB`/`RB`/`bounded`), never `\b`.
+
+**Decision:** rebuild the plugin — `text.ts` (Arabic folding: hamza/alef-maqsura/ta-marbuta, diacritics, Arabic-Indic digits, punctuation-as-separator, plus storage/RAM tier tables and script-aware boundaries), a precision-first `detector.ts` with accessory and foreign-category **hard rejects**, and a `parser.ts` whose brands are **configuration, not code** (Apple, Samsung, Xiaomi, Honor, Huawei, OPPO, realme, vivo, OnePlus, Google, Tecno, Infinix). 29 regression tests, every fixture a real production title.
+
+**Measured result:**
+
+| stage | claimed | valid identity | corroborated |
+|---|---|---|---|
+| before | 2,070 | 281 (13.6%) | 11 |
+| + brand canonicalization | 2,070 | 281 | 21 |
+| + parser rebuild | 1,177 | 577 (49.0%) | 36 |
+| + script-aware boundaries & Arabic word order | 1,177 | **763 (64.8%)** | **71** |
+
+**Mobile is now Tawveeri's most-corroborated category — 71 multi-store identities, more than TV (18), washing machine (15) and tablet (10) combined**, and it produces the platform's first **4-store** comparisons (`samsung|Galaxy S|S25|Ultra|256` across Jarir, Extra, Almanea, SWSG). Registration was made duplicate-safe by deriving `canonSeed` **empirically**: hashing candidate formulas against a known existing canonical id proved the seed is `canonical:${key}`, so the 38 canonicals `mobile-v1` had already written are UPSERTED, not duplicated. Verified after the write: **0 duplicate brand+model cards, 0 duplicate mobile identity keys.**
+
+**Consequences:** phones — the largest category in Saudi consumer electronics — are inside the identity pipeline for the first time. The brand-config table makes a new phone brand a data change. **Still open:** 414 claimed listings remain unidentified (185 `family, generation, variant`; 88 `storage_gb`), and mobile's `priceBand: 1.5` may be too aggressive for phones; both are follow-ups measurable with `tps:plugin-yield`.
+
 ### ADR-060 — Alias fold-in, Noon/SWSG onboarding, and the normalization gap re-diagnosed · Accepted (2026-07-23)
 **Context:** execute the two measured levers (alias reconciliation, new-merchant onboarding) under a hard no-duplicate-card, no-precision-loss constraint. Before-state preserved at `docs/evidence/before-ADR-060.json`.
 
