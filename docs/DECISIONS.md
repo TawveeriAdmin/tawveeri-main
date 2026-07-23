@@ -6,6 +6,25 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-072 — Laptop parser repair: identification 64.7% → 88.8% where comparison is possible, with zero canonical churn · Accepted (2026-07-23)
+**Context:** with mobile repaired (ADR-071), `tps:comparison-value laptop` ranked laptop the largest remaining deficit — **117 lost comparisons, only 64.7% identified where a comparison is possible** (the lowest of any registered plugin). A read-only attribution dump of all 117 showed the cause was defect #1 from the repair backlog: the laptop parser was **Latin-only and adjacency-strict** — it never called `normalizeArabic` — so Arabic listings and the 2024 "Core 7/5/3" naming silently produced a null in one of the three identity-critical fields. Measured null-frequencies among the 117: **ram 74, cpu 60**, storage 34.
+
+**A zero-churn-by-construction design.** The identity key requires `cpu`, `ram` and `storage` all non-null, so any listing missing one was *already* `invalid` (unidentified). The fix therefore runs the new bilingual extractors **only as a fallback for a field the v1 pass left null** — it can never re-key an already-identified laptop. This was proven, not assumed: a before/after key snapshot over all 495 laptop observations showed **0 changed keys among the 273 baseline-identified, 0 corroborated keys invalidated**.
+
+**Defects fixed (each on `normalizeArabic`-folded text, so one pattern matches every spelling and Arabic-Indic digits ٥١٢ are read):**
+- **RAM** — `الرامات 8 جيجا`, `ذاكرة وصول عشوائي 8 جيجا` (label-before), `16GB Unified Memory` (a word between GB and Memory), `16 GB LPDDR5`, bare `16 ram`. Every candidate is tier-validated so a storage figure is never mistaken for RAM.
+- **CPU** — English `Core 7-150U` (Intel's 2024 Series-1 naming, no "intel"/"i" prefix); Arabic `كور 7`, `كور اي 7-1355u`, `كور ألترا 9`, `رايزن`; Apple `A18 Pro` (A-series) and `شيب ام 2` (Arabic M-series). The Core-i pattern is anchored to a core/intel word so `WiFi 6` can never read as `i5`.
+
+**A latent bug the new IDs exposed, and fixed:** an ASUS ROG Strix G16 was labelled family `dell g-series`, because Dell's generic `\bg1[567]\b` sat *before* Asus's `rog`/`tuf` in the family table and only now became reachable. Demoted to a last-resort match. This corrected 2 single-store observation keys (`asus|dell g-series|…` → `asus|rog|…`) — a data-quality fix, not churn: neither was ever a corroborated canonical.
+
+**Discipline — what was deliberately NOT done.** Unlabelled bare specs (`16GB 512GB`, no RAM/storage word) were left unread rather than guessed which is RAM. Chromebooks (small-eMMC storage, mostly single-merchant → catalogue, not comparison) were left out to protect the storage tier-whitelist. Unknown beats incorrect.
+
+**Result: identification where comparison is possible 64.7% → 88.8%** (214/331 → 294/331, +80 listings); headline 55.2% → 73.7%. The single largest identification jump of any category to date.
+
+**Honest outcome.** Products 1,946 → **2,023**; platform **corroborated products 205 → 208** this cycle. As in ADR-071, a large *identification* jump does not convert one-for-one to *realized* comparisons in the same cycle — a newly-identified laptop becomes a comparison only when a counterpart store's listing for the same model also resolves. The certain gains are (1) precision (an Asus is no longer named a Dell), (2) catalogue (Arabic listings, Core-N chips and Apple Unified-Memory configs now read), (3) latent comparisons that realize as counterpart listings resolve. Verified end-to-end through the full chain: 0 FAIL, 0 duplicate cards, every product searchable.
+
+**`normalizeArabic` was promoted to `tps-core/text.ts`** — the laptop plugin is its second consumer, so a shared module replaces a duplicated copy (the type-debt ratchet). `mobile/text.ts` re-exports it; 47 mobile + 158 identity tests stayed green. 16 new laptop regression tests, every fixture a real production listing. Reinforces the ADR-070 retroactivity note: realizing the gain required a full `bulk-backfill --normalize-only` re-stage.
+
 ### ADR-071 — Mobile parser repair: identification 80.1% → 86.0% in the largest category, with zero identity churn · Accepted (2026-07-23)
 **Context:** ADR-070 ranked mobile's 177 lost comparisons the largest remaining parser deficit. `tps:comparison-value mobile` located them precisely, and — importantly — showed that a large share were **false claims, not missed identifications**: the detector was pulling in non-phones and then failing to identify them.
 

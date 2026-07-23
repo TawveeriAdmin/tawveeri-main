@@ -7,6 +7,7 @@
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
 import { extractManufacturerModel } from "../../../src/lib/identity/store-identifiers";
+import { normalizeArabic } from "../../tps-core/text";
 
 // ── Family / series per brand (canonical family token). Order matters: longer /
 //    more specific first. Value is the canonical family string used in identity.
@@ -23,7 +24,7 @@ const FAMILIES: [RegExp, string][] = [
   [/elitebook/i, "elitebook"], [/probook/i, "probook"], [/spectre/i, "spectre"], [/zbook/i, "zbook"],
   // Dell
   [/inspiron/i, "inspiron"], [/\bxps\b/i, "xps"], [/latitude/i, "latitude"], [/vostro/i, "vostro"],
-  [/alienware/i, "alienware"], [/precision/i, "precision"], [/\bg1[567]\b/i, "dell g-series"],
+  [/alienware/i, "alienware"], [/precision/i, "precision"],
   // Asus
   [/zenbook/i, "zenbook"], [/vivobook/i, "vivobook"], [/\brog\b/i, "rog"], [/\btuf\b/i, "tuf"],
   [/proart/i, "proart"], [/expertbook/i, "expertbook"],
@@ -36,6 +37,10 @@ const FAMILIES: [RegExp, string][] = [
   [/\bthin\b/i, "thin"], [/\bbravo\b/i, "bravo"], [/\btitan\b/i, "titan"], [/crosshair/i, "crosshair"],
   // Microsoft
   [/surface\s*laptop/i, "surface laptop"], [/surface\s*pro/i, "surface pro"], [/surface\s*book/i, "surface book"],
+  // Last-resort: a bare "G15/G16/G17" is Dell's gaming line ONLY when no branded
+  // line matched above. Kept last so an Asus ROG Strix G16 / other brand's "G16"
+  // is not mislabelled "dell g-series" (ADR-072 exposed this via new Arabic IDs).
+  [/\bg1[567]\b/i, "dell g-series"],
 ];
 
 // Series number that follows a family (e.g., IdeaPad Slim "3", Yoga Pro "7",
@@ -129,6 +134,67 @@ function extractGpu(text: string): { gpu: string; discrete: boolean } {
   return { gpu: "igpu", discrete: false };
 }
 
+// ── Bilingual FILL extractors (ADR-072) ──────────────────────────────────────
+// The v1 extractors above are Latin-only and adjacency-strict, so Arabic
+// listings and the 2024 "Core 7/5/3" naming silently produced null cpu/ram/
+// storage — the three identity-critical fields. A null in any of them makes the
+// identity INVALID (see identity.ts), so these functions run ONLY as a fallback
+// for a field the v1 pass left null. They can therefore never change the key of
+// an already-identified laptop (its trio was non-null): strictly additive, zero
+// churn. All operate on `normalizeArabic`-folded text so one pattern matches
+// every spelling and Arabic-Indic digits (٥١٢) are read.
+const RAM_TIERS_LAPTOP = new Set([2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128]);
+const STORAGE_TIERS_LAPTOP = [128, 256, 320, 500, 512, 1000, 1024, 2000, 2048];
+
+function enhCpu(nt: string): string | null {
+  if (/macbook|ماك بوك|apple|ابل/.test(nt)) {
+    // Apple silicon: Latin "m5" or Arabic "ام 5" ("شيب ام 2 -8 كور").
+    const m = nt.match(/(?:^|[^a-z])(?:m|ام)\s*([1-5])\s*(pro|max|ultra|برو|ماكس)?/);
+    if (m) { const s = m[2] ? (/برو/.test(m[2]) ? "pro" : /ماكس/.test(m[2]) ? "max" : m[2]) : ""; return `m${m[1]}${s}`; }
+    // Apple A-series (A18 Pro) — the 2026 MacBook Neo carries an A-series chip.
+    const a = nt.match(/\ba(1[0-9]|[2-9])\s*(pro|max)?/);
+    if (a) return `a${a[1]}${a[2] ? a[2] : ""}`;
+  }
+  // Intel Core Ultra (Latin/Arabic): "core ultra 7", "كور الترا 9".
+  const ultra = nt.match(/(?:core|كور)\s*(?:ultra|الترا)\s*([3579])/);
+  if (ultra) return `ultra${ultra[1]}`;
+  // Intel Core iX — MUST be anchored to a core/intel word so "wifi 5" can never
+  // read as "i5". Handles Arabic "كور اي 7-1355u" and Latin "core i5-13420h".
+  const core = nt.match(/(?:core|كور|intel|انتل)\s+(?:i|اي)\s*([3579])[\s-]*(\d{3,5})?[a-z]{0,2}(?![0-9])/);
+  if (core) return core[2] ? `i${core[1]}-${intelGen(core[2])}` : `i${core[1]}`;
+  // Intel Core N (2024 Series-1, no "i"): "core 7-150u", "كور 7", "core 5 120u".
+  const coreN = nt.match(/(?:core|كور)\s*([3579])(?![a-z0-9])/);
+  if (coreN) return `core${coreN[1]}`;
+  // AMD Ryzen (Latin/Arabic), tolerant of an "AI" tier word.
+  const ryzen = nt.match(/(?:ryzen|رايزن)\s*(?:ai\s*)?([3579])\s*(\d{4})?/);
+  if (ryzen) return ryzen[2] ? `ryzen${ryzen[1]}-${ryzen[2][0]}` : `ryzen${ryzen[1]}`;
+  return null;
+}
+
+// RAM figure adjacent (within two filler tokens) to a RAM keyword, in either
+// word order. Every candidate is tier-validated, so a storage figure caught by a
+// loose pattern is discarded rather than mistaken for RAM.
+const RAM_PATTERNS = [
+  /(\d{1,3})\s*(?:gb|جيجا\S*)(?:\s+\S+){0,2}?\s*(?:ram|memory|ddr|lpddr|رام)/g,
+  /(?:الرامات|رام|ram|memory|ذاكره وصول عشوايي)(?:\s+\S+){0,2}?\s*(\d{1,3})\s*(?:gb|جيجا)/g,
+  /(\d{1,3})\s*ram(?![a-z])/g,
+];
+function enhRam(nt: string): number | null {
+  for (const re of RAM_PATTERNS) for (const m of nt.matchAll(re)) { const n = Number(m[1]); if (RAM_TIERS_LAPTOP.has(n)) return n; }
+  return null;
+}
+
+function enhStorage(nt: string): number | null {
+  const tb = nt.match(/(\d(?:\.\d)?)\s*(?:tb|تيرا\S*)/);
+  if (tb) { const gb = Math.round(parseFloat(tb[1]) * 1024); if (gb >= 128) return gb; }
+  let best: number | null = null;
+  const consider = (raw: string) => { const n = Number(raw); if (STORAGE_TIERS_LAPTOP.includes(n) && (best === null || n > best)) best = n; };
+  for (const m of nt.matchAll(/(\d{3,4})\s*(?:gb|جيجا\S*)/g)) consider(m[1]);
+  for (const m of nt.matchAll(/(?:جيجا\S*|gb)\s*(\d{3,4})/g)) consider(m[1]);
+  for (const m of nt.matchAll(/(?:تخزين|سعه|ssd|hdd|nvme|emmc|storage)\s*(\d{3,4})/g)) consider(m[1]);
+  return best;
+}
+
 function extractColor(text: string): string | null {
   const t = text.toLowerCase();
   const map: [RegExp, string][] = [
@@ -172,9 +238,19 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
   let family: string | null = null;
   for (const [re, canon] of FAMILIES) { if (re.test(fullText)) { family = familyWithSeries(fullText, canon); break; } }
 
-  const cpu = extractCpu(fullText);
-  const ram = extractRam(fullText, payload.ram);
-  const storage = extractStorage(fullText, payload.storage);
+  // v1 pass (unchanged) decides identity for everything it already handled.
+  let cpu = extractCpu(fullText);
+  let ram = extractRam(fullText, payload.ram);
+  let storage = extractStorage(fullText, payload.storage);
+  // Fill-only bilingual fallback (ADR-072): runs solely for a null identity-
+  // critical field, so it can only rescue a listing v1 left unidentified — the
+  // key of an already-identified laptop is never touched.
+  if (cpu === null || ram === null || storage === null) {
+    const nt = normalizeArabic(fullText);
+    if (cpu === null) cpu = enhCpu(nt);
+    if (ram === null) ram = enhRam(nt);
+    if (storage === null) storage = enhStorage(nt);
+  }
   const screen = extractScreen(fullText);
   const { gpu, discrete } = extractGpu(fullText);
   const model_number = extractManufacturerModel(payload);
