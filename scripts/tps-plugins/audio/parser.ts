@@ -10,9 +10,10 @@ import { extractManufacturerModel } from '../../../src/lib/identity/store-identi
 
 function extractType(text: string): string | null {
   const x = normalizeArabic(text);
-  if (/speaker|مكبر صوت|soundbar|partybox|boombox|flip|charge\s*\d|xtreme|clip\s*\d|\bgo\s*\d/.test(x)) return "speaker";
+  // `\bclip` (not bare "clip") so Huawei "FreeClip" is not read as a JBL Clip speaker.
+  if (/speaker|مكبر صوت|soundbar|partybox|boombox|flip|charge\s*\d|xtreme|\bclip\s*\d|\bgo\s*\d/.test(x)) return "speaker";
   if (/over-ear|over ear|headphone|سماعة رأس|airpods max|wh-?\d{4}|quietcomfort|studio/.test(x)) return "over_ear";
-  if (/earbuds|earbud|in-ear|buds|airpods|ايربودز|wf-?\d{4}|freebuds/.test(x)) return "earbuds";
+  if (/earbuds|earbud|in-ear|buds|airpods|ايربودز|wf-?\d{4}|freebuds|freeclip|freearc|earpods|فري\s*كليب|فري\s*ارك/.test(x)) return "earbuds";
   if (/headset|سماعة/.test(x)) return "over_ear";
   return null;
 }
@@ -29,20 +30,41 @@ function extractModel(text: string): string | null {
     const anc = /\banc\b|active\s*noise|إلغاء\s*الضوضاء|الغاء\s*الضوضاء/.test(x) ? " anc" : "";
     return "airpods" + (g ? " " + g[1] : "") + anc;
   }
+  // Apple EarPods (wired) — the connector is identity-relevant (USB-C ≠ Lightning SKU).
+  if (/\bearpods\b/.test(x)) { const c = /usb[-\s]?c/.test(x) ? " usb-c" : /lightning|lightening/.test(x) ? " lightning" : ""; return "earpods" + c; }
   const beats = x.match(/beats\s*(studio\s*pro|studio\s*buds\+?|studio|solo\s*\d?|fit\s*pro|flex)/); if (beats) return "beats " + beats[1].replace(/\s+/g, " ").trim();
   // ── Sony WH/WF ── (WH-1000XM5 / WF-1000XM5)
   const sony = x.match(/\b(w[hf])[-\s]?(\d{3,4})(xm\d)?\b/); if (sony) return `${sony[1]}-${sony[2]}${sony[3] ?? ""}`;
-  // ── JBL portable speakers ──
-  const jbl = x.match(/\b(flip|charge|clip|go|tune|boombox|xtreme|wave|live|partybox|quantum|vibe)\s*(\d{1,3})\b/); if (jbl) return `${jbl[1]} ${jbl[2]}`;
+  // Letter-prefixed Sony models the digit-only pattern above misses: WH-CH520,
+  // WF-C510, WI-XB400 (the CH/C/XB series). Checked after, so XM models are unaffected.
+  const sony2 = x.match(/\b(w[hfi])[-\s]?([a-z]{1,3}\d{3,4}[a-z]{0,2})\b/); if (sony2) return `${sony2[1]}-${sony2[2]}`;
+  const inzone = x.match(/inzone\s*([hm]\d)/); if (inzone) return "inzone " + inzone[1];
+  // ── JBL portable speakers / headphones ──
+  // `(?!\d)` instead of a trailing `\b` so a feature suffix (Tune 730BT, 770NC)
+  // no longer defeats the match — the `\b` required a boundary the letter broke.
+  const jbl = x.match(/\b(flip|charge|clip|go|tune|boombox|xtreme|wave|live|partybox|quantum|vibe)\s*(\d{1,3})(?!\d)/); if (jbl) return `${jbl[1]} ${jbl[2]}`;
   // ── Bose ──
   if (/quietcomfort\s*ultra|qc\s*ultra/.test(x)) return "qc ultra";
   const bose = x.match(/quietcomfort\s*(\d{1,2})|qc\s*(\d{1,2})|soundlink\s*(flex|mini|revolve|max)/); if (bose) return bose[1] || bose[2] ? "qc" + (bose[1] || bose[2]) : "soundlink " + bose[3];
+  // (Deliberately NOT matching a bare "QuietComfort": it would collapse the
+  //  numberless 2024 headphone and "QuietComfort Earbuds II" into one key. A
+  //  single-store listing is not worth a false merge — unknown beats incorrect.)
   // ── Samsung Galaxy Buds ──
   const gb = x.match(/galaxy\s*buds\s*(\d|fe|live|plus|pro)?\s*(pro|fe)?/); if (gb) { const parts = [gb[1], gb[2]].filter(Boolean); return "galaxy buds" + (parts.length ? " " + parts.join(" ") : ""); }
   // ── Anker Soundcore ──
   const sc = x.match(/soundcore\s*([a-z]+\s*\d{0,3}|liberty\s*\d?|space\s*\w+|motion\s*\w+)/); if (sc) return "soundcore " + sc[1].replace(/\s+/g, " ").trim();
-  // ── Huawei FreeBuds ── (SE 2 ≠ SE 3 ≠ SE 4: capture the generation after SE)
-  const fb = x.match(/freebuds\s*(pro\s*\d?|se\s*\d?|lipstick|\d+i?)/); if (fb) return "freebuds " + fb[1].replace(/\s+/g, " ").trim();
+  // Bare-number Soundcore speakers ("Soundcore 2/3") — the pattern above needs a
+  // leading letter, so it missed these. Checked after, so named lines are unaffected.
+  const sc2 = x.match(/soundcore\s*(\d{1,3})(?!\d)/); if (sc2) return "soundcore " + sc2[1];
+  // ── Huawei ── FreeClip (ear-cuff), FreeArc (open-ear), FreeBuds (incl. SE).
+  // Written in both scripts; Almanea transliterates SE as "اس ايه" and FreeBuds
+  // as "فري بودز/بادز". Fold those to the Latin line words, then read as usual.
+  if (/freeclip|فري\s*كليب/.test(x)) { const g = x.match(/(?:freeclip|فري\s*كليب)\s*(\d)/); return "freeclip" + (g ? " " + g[1] : ""); }
+  if (/freearc|فري\s*ارك/.test(x)) return "freearc";
+  const hw = x.replace(/فري\s*ب[او]دز/g, "freebuds").replace(/اس\s*ايه/g, "se");
+  const fb = hw.match(/freebuds\s*(pro\s*\d?|se\s*\d?|lipstick|\d+i?)/); if (fb) return "freebuds " + fb[1].replace(/\s+/g, " ").trim();
+  // Huawei's SE line is FreeBuds SE even when the title omits "FreeBuds" (e.g. "هواوي TWS SE 2").
+  if (/huawei|هواوي/.test(x)) { const se = hw.match(/\bse\s*(\d)\b/); if (se) return "freebuds se " + se[1]; }
   // ── Jabra Elite ──
   const je = x.match(/elite\s*(\d{1,2}\s*(?:active|pro)?)/); if (je) return "elite " + je[1].replace(/\s+/g, " ").trim();
   // ── Xiaomi / Redmi Buds ── high Almanea volume, written in both scripts.
@@ -50,7 +72,7 @@ function extractModel(text: string): string | null {
   if (rb) return "redmi buds " + rb[1] + (rb[2] ? " " + rb[2] : "");
   // ── Gaming headsets ── Jarir publishes brand "Unknown" for HyperX and Astro,
   // so these lines are recognised from the title alone.
-  const hx = x.match(/cloud\s*(iii|ii|\d|stinger\s*\d?(?:\s*core)?|alpha|flight)/);
+  const hx = x.match(/cloud\s*(iii|ii|mini|\d|stinger\s*\d?(?:\s*core)?|alpha|flight)/);
   if (hx) return "cloud " + hx[1].replace(/\s+/g, " ").trim();
   if (/astro/.test(x)) { const a = x.match(/\ba(\d{2})\b/); if (a) return "a" + a[1]; }
   return null;

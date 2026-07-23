@@ -6,6 +6,23 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-073 — Audio parser repair: identification 69.2% → 83.0% where comparison is possible, and weak SKU-identities upgraded to real product lines · Accepted (2026-07-24)
+**Context:** with mobile and laptop repaired, `tps:comparison-value audio` ranked audio the last large deficit — 69 lost comparisons at 69.2% identified (ADR-070 had already lifted it from 24.8%). Unlike laptop, the audio parser already folds Arabic; the remaining losses were **unrecognised product lines**, located precisely by a read-only attribution dump. The concentration was clear: **huawei 21, sony 15, jbl ~8**, then small tails.
+
+**Fixes, each an ordered-after-existing branch so it only rescues a line the parser returned null for (churn-safe):**
+- **Huawei (biggest):** FreeClip / FreeClip 2 (ear-cuff) and FreeArc (open-ear) were entirely unknown lines; FreeBuds **SE** was Latin-only while Almanea writes `فري بودز اس ايه 3` (SE transliterated). A targeted transliteration (`فري بادز→freebuds`, `اس ايه→se`) lets the existing SE logic read the Arabic.
+- **Sony:** the digit-only `WH-1000XM5` pattern could not read the **letter-prefixed** CH/C/XB series (`WH-CH520`, `WF-C510`, `WI-XB400`) or `INZONE H3`. Added after the XM pattern, so XM models are untouched.
+- **JBL:** a trailing `\b` after the model number silently defeated every feature-suffixed model — `Tune 730BT`, `Live 770NC` never matched (the letter after the digit is not a word boundary). Replaced with `(?!\d)`.
+- **Anker** bare-number `Soundcore 2`; **HyperX** `Cloud Mini`; **Apple EarPods** (connector kept in the key, USB-C ≠ Lightning).
+
+**A precision decision, stated plainly:** a bare `QuietComfort` (the numberless 2024 Bose) was deliberately **left unidentified** — matching it would collapse the headphone and "QuietComfort Earbuds II" into one key. A single-store listing is not worth a false merge. Single-store soundbar model-codes (LG, Samsung) were likewise skipped as catalogue, not comparison.
+
+**Result: identification where comparison is possible 69.2% → 83.0%** (155/224 → 186/224, +31 listings); headline 52.2% → 59.3%.
+
+**A better-than-zero-churn outcome.** A before/after key snapshot over all 487 audio observations showed **0 corroborated keys invalidated, 0 duplicate cards**, and **5 corrective re-keys**: listings the old parser had fingerprinted by an opaque store part number (`huawei|ACHUA55038459`, `jbl|JBLT520WHT`, `jbl|JBLLIVE770NCBLK`) now carry their real line (`huawei|freebuds 7i`, `jbl|tune 520`, `jbl|live 770`). Because an MPN is store-specific it can never corroborate; reading the line **created** comparisons the SKU-identity had been hiding — three of the five became new corroborated keys. This is the parser replacing weak identities with strong ones, the opposite of drift.
+
+**Honest outcome.** Corroborated audio keys 9 → 15 (+6: FreeBuds SE 2/3/4, FreeClip, FreeClip 2, FreeBuds 7i). Platform products 2,023 → 2,029; corroborated products 208 → 210. Audio benefits more than laptop did in-cycle because its new lines (Huawei earbuds) are genuinely multi-merchant (Jarir + Almanea + Amazon). Verified through the full chain: 0 FAIL, 0 duplicate cards, every product searchable. 20 new regression tests, every fixture a real production listing.
+
 ### ADR-072 — Laptop parser repair: identification 64.7% → 88.8% where comparison is possible, with zero canonical churn · Accepted (2026-07-23)
 **Context:** with mobile repaired (ADR-071), `tps:comparison-value laptop` ranked laptop the largest remaining deficit — **117 lost comparisons, only 64.7% identified where a comparison is possible** (the lowest of any registered plugin). A read-only attribution dump of all 117 showed the cause was defect #1 from the repair backlog: the laptop parser was **Latin-only and adjacency-strict** — it never called `normalizeArabic` — so Arabic listings and the 2024 "Core 7/5/3" naming silently produced a null in one of the three identity-critical fields. Measured null-frequencies among the 117: **ram 74, cpu 60**, storage 34.
 
