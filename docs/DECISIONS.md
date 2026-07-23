@@ -6,6 +6,33 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-064 — Search is the front door: Saudi query quality 60% → 97% · Accepted (2026-07-23)
+**Context:** with the product card fixed (ADR-063), the next customer question is whether a shopper can *find* anything. Coverage of the catalogue is not coverage of demand. I built a permanent benchmark — 15 representative Saudi queries, Arabic and English, colloquial and formal, with and without diacritics and Arabic-Indic digits — and ran it against the live serving index.
+
+**Measured failure: 6 of 15 queries returned ZERO results.**
+
+| query | result | why |
+|---|---|---|
+| `آيفون ١٧ برو ماكس` | 0 hits | Arabic-Indic digits — yet `ايفون 17` worked |
+| `جوال سامسونج` | 0 hits | "jawwal" is the everyday Saudi word for phone; the catalogue never contains it |
+| `شاشة 65 بوصة` | 0 hits | "shasha" (screen) is how Saudis ask for a TV |
+| `samsung galaxy s25 ultra` | 0 hits | four terms, **all required** |
+| `ايفون رخيص` | 0 hits | one intent word killed the entire query |
+| `غسالة اتوماتيك` | 0 hits | same |
+
+**Three independent root causes, each fixed at the right layer:**
+1. **The query reached the engine untouched.** `src/lib/search/query-normalize.ts` — a shared, tested normalizer folding Arabic-Indic digits, hamza forms, diacritics and tatweel, wired into `/api/v1/tps/search`. Deliberately **folding only**: it never adds or drops a word, because silently rewriting what a shopper asked for is how a search engine starts lying about what it found. The response now returns both `query` (as typed) and `normalized_query`.
+2. **`removeWordsIfNoResults` was unset**, so it defaulted to `'none'` — every term had to match, and one extra word produced an empty page. Now `'allOptional'`: adding a word yields fewer or less-exact results, never nothing.
+3. **A vocabulary gap.** Saudi shoppers use words the catalogue does not contain. Published as **14 Algolia synonym groups** (`SAUDI_SEARCH_SYNONYMS`) rather than stuffed into product text — stuffing would corrupt both relevance ranking and the displayed product name.
+
+**Also found and fixed:** `configure-tps-algolia-index.ts` never loaded `dotenv`, so it crashed on an undefined app id — **the index settings had never actually been applied.**
+
+**Result:** **60% → 97%**, misses **6 → 0**, and **15/15 top results carry an image** (ADR-063 compounding). `شاشة 65 بوصة` now returns a television at rank 1; `جوال سامسونج` returns phones; `samsung galaxy s25 ultra` returns a Galaxy S25 at rank 1.
+
+**Honest remainder:** one WEAK — `ايفون رخيص` surfaces AirPods at rank 4 because the intent-word synonym group broadens the match; and `غسالة اتوماتيك` returns a *dishwasher* at rank 1, which is a genuine relevance error rather than a retrieval one. Retrieval is now solved; **ranking quality is the next search problem**, and the benchmark will measure it.
+
+**Consequences:** `npm run tps:search-quality` is a permanent, deterministic gate on the front door — a regression in Saudi search now fails loudly instead of silently costing every shopper.
+
 ### ADR-063 — The product card: images and measured exit links reach the customer · Accepted (2026-07-23)
 **Context (founder question applied literally):** *if Tawveeri had one engineering week before launch, what would create the greatest increase in customer value?* Rather than start the next category plugin, I measured what a shopper actually receives.
 

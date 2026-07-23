@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { algoliasearch } from 'algoliasearch';
+import { normalizeSearchQuery } from '@/lib/search/query-normalize';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,12 @@ function mapHits(res: { hits: unknown[] }): Canon[] {
 }
 
 export async function GET(req: NextRequest) {
-  const q = (req.nextUrl.searchParams.get('q') || '').trim();
+  // ADR-064: fold the shopper's query before searching. The raw string used to
+  // reach the engine untouched, so Arabic-Indic digits never matched the ASCII
+  // digits in the catalogue — "آيفون ١٧ برو ماكس" returned ZERO results while
+  // "ايفون 17" worked. Folding only; no word is ever added or dropped.
+  const rawQ = (req.nextUrl.searchParams.get('q') || '').trim();
+  const q = normalizeSearchQuery(rawQ);
   const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 20));
   const discoveryLimit = Math.min(30, Math.max(0, Number(req.nextUrl.searchParams.get('discovery_limit')) || 12));
   const supabase = createServerClient();
@@ -137,7 +143,7 @@ export async function GET(req: NextRequest) {
     }));
 
   return NextResponse.json({
-    version: 'v1', query: q, count: results.length,
+    version: 'v1', query: rawQ, normalized_query: q, count: results.length,
     results,
     discovery: discoveryOut,
     meta: { authority: 'hybrid', canonical_count: results.length, discovery_count: discoveryOut.length },

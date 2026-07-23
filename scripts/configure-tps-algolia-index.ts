@@ -3,12 +3,18 @@
 // يُشغَّل مرة واحدة بعد أول sync
 // algoliasearch v5
 
+// Credentials come from the environment only (docs/ENVIRONMENT-AUTHORITY.md).
+// This was missing, so the script crashed on an undefined app id and the index
+// settings below had never actually been applied.
+import { config } from "dotenv";
+import { resolve } from "path";
+config({ path: resolve(process.cwd(), ".env.local") });
 import { algoliasearch } from "algoliasearch";
 
-const algolia = algoliasearch(
-  process.env.ALGOLIA_APP_ID!,
-  process.env.ALGOLIA_ADMIN_KEY!
-);
+const APP_ID = process.env.ALGOLIA_APP_ID || process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || "";
+const ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY || "";
+if (!APP_ID || !ADMIN_KEY) throw new Error("ALGOLIA_APP_ID / ALGOLIA_ADMIN_KEY missing");
+const algolia = algoliasearch(APP_ID, ADMIN_KEY);
 const INDEX = "tawveeri_tps_products";
 
 async function main() {
@@ -44,8 +50,38 @@ async function main() {
       removeStopWords: true,
       queryLanguages:  ["ar", "en"],
       indexLanguages:  ["ar", "en"],
+
+      // ADR-064 — GRACEFUL DEGRADATION. This defaults to 'none', meaning EVERY
+      // term had to match. Measured consequence on the live index: four-word
+      // queries returned zero results — "samsung galaxy s25 ultra" → 0 hits,
+      // "ايفون رخيص" → 0 hits, because one unmatched word killed the whole
+      // query. A shopper who adds a word must get fewer/less-exact results,
+      // never an empty page.
+      removeWordsIfNoResults: "allOptional",
+      // Saudi shoppers routinely misspell Latin brand names ("ipone").
+      typoTolerance: true,
+      advancedSyntax: true,
     },
   });
+
+  // ── Saudi shopping vocabulary ─────────────────────────────────────────────
+  // Shoppers ask with words the catalogue never contains — "جوال" (phone),
+  // "شاشة" (TV) — which returned zero results. Published as SYNONYMS rather
+  // than stuffed into product text: stuffing corrupts both relevance ranking
+  // and the displayed product name.
+  const { SAUDI_SEARCH_SYNONYMS } = await import("../src/lib/search/query-normalize");
+  const synonyms = SAUDI_SEARCH_SYNONYMS.map((group, i) => ({
+    objectID: `saudi-vocab-${i}`,
+    type: "synonym" as const,
+    synonyms: group,
+  }));
+  const synRes = await algolia.saveSynonyms({
+    indexName: INDEX,
+    synonymHit: synonyms,
+    replaceExistingSynonyms: true,
+  });
+  if ("taskID" in synRes) await algolia.waitForTask({ indexName: INDEX, taskID: synRes.taskID });
+  console.log(`  ✓ ${synonyms.length} Saudi vocabulary synonym groups published`);
 
   // انتظر حتى تُطبَّق الإعدادات فعلياً
   if ("taskID" in res) {
