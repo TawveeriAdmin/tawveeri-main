@@ -7,7 +7,6 @@ import {
   hasModelNumberShape,
   extractManufacturerModel,
 } from "@/lib/identity/store-identifiers";
-import { canonicalListingUrl, stableListingKey } from "@/lib/identity/listing-key";
 
 describe("store-internal identifier rejection", () => {
   it.each([
@@ -91,65 +90,5 @@ describe("extractManufacturerModel — sku is never trusted", () => {
 
   it("uppercases for stable comparison", () => {
     expect(extractManufacturerModel({ model: "qa65qn70fauxsa" })).toBe("QA65QN70FAUXSA");
-  });
-});
-
-describe("listing continuity keys", () => {
-  // The exact URL family that gave Amazon avg_days = 1.00 and zero price history.
-  const amazonScrapeA =
-    "https://www.amazon.sa/-/en/Super-General-Conditioner-KSGA18NE1/dp/B0CVMTTDMM/ref=sr_1_1?dib=eyJ2IjoiMSJ9.AAA&dib_tag=se&keywords=%D9%85%D9%83%D9%8A%D9%81&qid=1784765305&sr=8-1";
-  const amazonScrapeB =
-    "https://www.amazon.sa/-/en/Super-General-Conditioner-KSGA18NE1/dp/B0CVMTTDMM/ref=sr_1_4?dib=eyJ2IjoiMSJ9.ZZZ&dib_tag=se&keywords=%D9%85%D9%83%D9%8A%D9%81&qid=1784999999&sr=8-4";
-
-  it("gives the same Amazon listing one key across scrapes (the defect fix)", () => {
-    const a = stableListingKey(2, amazonScrapeA, "amazon");
-    const b = stableListingKey(2, amazonScrapeB, "amazon");
-    expect(a).toBe(b);
-    expect(a).toBe("2::amazon:B0CVMTTDMM");
-  });
-
-  it("still separates genuinely different Amazon products", () => {
-    const other =
-      "https://www.amazon.sa/-/en/Oscar-Conditioner-OWC18KC/dp/B0H5D5CYBF/ref=sr_1_2?qid=1784765305";
-    expect(stableListingKey(2, other, "amazon")).not.toBe(stableListingKey(2, amazonScrapeA, "amazon"));
-  });
-
-  it("strips volatile query params and ref path segments", () => {
-    expect(canonicalListingUrl("https://Example.com/p/x/ref=sr_1_1?qid=1&utm_source=g&color=red"))
-      .toBe("https://example.com/p/x?color=red");
-  });
-
-  it("preserves parameters that identify the product itself", () => {
-    expect(canonicalListingUrl("https://store.sa/p?sku=ABC&variant=256gb"))
-      .toContain("variant=256gb");
-  });
-
-  it("NEVER strips Jarir's childSku — it selects a variant, not a campaign", () => {
-    // Regression guard: treating childSku as tracking merged 89 Jarir listings
-    // in a dry run, blending the prices of different SKUs on one parent page.
-    const a = "https://www.jarir.com/sa-en/apple-ipad-a16-tablet-pc-jpm1424.html?childSku=654165";
-    const b = "https://www.jarir.com/sa-en/apple-ipad-a16-tablet-pc-jpm1424.html?childSku=999999";
-    expect(canonicalListingUrl(a)).toContain("childSku=654165");
-    expect(stableListingKey(1, a, "jarir")).not.toBe(stableListingKey(1, b, "jarir"));
-  });
-
-  it("treats trailing-slash and param-order variants as one listing", () => {
-    expect(canonicalListingUrl("https://s.sa/p/x/?b=2&a=1"))
-      .toBe(canonicalListingUrl("https://s.sa/p/x?a=1&b=2"));
-  });
-
-  it("falls back to the canonical URL for stores without an id extractor", () => {
-    expect(stableListingKey(4, "https://extra.com/p/item-1?utm_source=x", "extra"))
-      .toBe("4::https://extra.com/p/item-1");
-  });
-
-  it("returns null instead of inventing a key when there is no URL", () => {
-    expect(stableListingKey(2, null, "amazon")).toBeNull();
-    expect(stableListingKey(2, "   ", "amazon")).toBeNull();
-  });
-
-  it("never throws on a malformed URL", () => {
-    expect(() => canonicalListingUrl("not a url")).not.toThrow();
-    expect(canonicalListingUrl("not a url")).toBe("not a url");
   });
 });

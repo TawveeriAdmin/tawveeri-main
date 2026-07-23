@@ -6,6 +6,38 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-059 — Merchant-specific listing identity, market scoping, and honest catalog truth · Accepted (2026-07-23)
+**Context:** ADR-058 shipped a *universal* URL-canonicalisation rule. Measuring it per merchant proved that abstraction wrong: the same query parameter means different things at different merchants, each publishes its durable product id in its own shape, and a global rule either destroys identity (merging variants) or fragments it (host/path churn).
+
+**Evidence (production URL analysis, 2026-07-23):**
+- **jarir** — `childSku` is the *only* query param (20,573 rows, 293 values) and selects a **variant**; the path also encodes the market (`/sa-en/`, `/ae-en/`, `/qa-ar/`).
+- **amazon** — every param is search-session state (`dib`, `qid`, `keywords`, `sr`, `s`, `sbo`, `aref`…); identity is the ASIN alone.
+- **extra** — **5,040 product codes vs 5,108 URL paths**: the category path drifts, so path-keying double-counted 68 listings.
+- **almanea** — **100% of 36,380 rows are served from `m.dev-almanea.com`**, a development host. Host-keying would orphan every listing's price history the moment that host changes. Also publishes one product code under several slugs (`17-256-p-…` and `iphone-17-256gb-white-p-…`), so 1,584 URLs are really **1,338 products**.
+- **swsg** — no numeric id; the terminal slug encodes capacity and colour, so it *is* the identity and must not be truncated.
+
+**Decision:** `src/lib/identity/merchant-listing-identity.ts` — each merchant declares an explicit contract: how to read its durable product id, which params carry identity (variant/seller/offer) and must survive, and how to read the market. Unknown merchants fall back to a conservative canonical URL that **keeps every param not on the global volatile list**, because we cannot know which ones carry identity. `src/lib/identity/listing-key.ts` (the universal rule) is superseded and removed — one authority.
+
+**MARKET SCOPING — a truth defect found and fixed.** Tawveeri is a Saudi platform, but **5,480 Jarir observations (1,532 distinct URLs — over half of Jarir's apparent catalog) are Qatar, Kuwait, UAE and Bahrain listings** with foreign prices (avg 2,057–2,261 vs Saudi 1,634). They never reached canonicals, but they **did** enter `tps_listing_price_facts` and were therefore informing Jarir's **Discount Integrity and Merchant Trust verdicts**. Non-Saudi rows remain immutable evidence in `raw_observations`; they are now excluded from Saudi facts. `isSaudiMarket(null) === true` so a merchant without a contract is never silently deleted.
+
+**CATALOG TRUTH — the anti-inflation invariant.** Raw observation counts are not catalog size. Re-scrapes inflate them 8–41×, merchants publish one product under several URLs, and some listings are foreign. `state-snapshot.ts` now computes catalog size **only** as distinct Saudi listings under merchant contracts, and reports the inflation factor so the gap is always visible:
+
+| store | observations | raw URLs | **Saudi catalog** | foreign excluded | URL inflation |
+|---|---|---|---|---|---|
+| jarir | 58,842 | 2,973 | **1,441** | 5,480 | 2.06× |
+| amazon | 3,022 | 3,022 | **2,710** | 0 | 1.12× |
+| noon | 562 | 562 | **562** | 0 | 1.00× |
+| extra | 42,240 | 5,108 | **5,040** | 0 | 1.01× |
+| almanea | 36,380 | 1,584 | **1,350** | 0 | 1.17× |
+| swsg | 276 | 276 | **134** | 0 | 2.06× |
+| **TOTAL** | **141,322** | 13,525 | **11,237** | 5,480 | — |
+
+**Measured result (rebuild executed and verified):** listing facts 12,937 → **11,103** (Saudi-scoped, merchant-deduplicated). Crucially, consolidating fragmented listings **deepened** the evidence per listing rather than losing it — Jarir `avg distinct_days` **6.12 → 9.86**, Almanea **6.24 → 7.04**. Repeat scrapes remain fully valuable as price/availability evidence; they simply never inflate catalog claims. Merchant Trust rebuilt on Saudi-only data (Jarir sample 146 → 127).
+
+**Type-debt ratchet.** `scripts/quality/typecheck-baseline.ts` + a committed baseline enforce a one-way ratchet: errors above baseline fail loud and name the culprit file; errors below baseline also fail, demanding the improvement be locked in so it cannot be re-spent. **Correction to the record: the true count is 435 errors across 77 files** — the "825" cited in ADR-058's commit was a raw output *line* count, not an error count. `npm run typecheck:baseline`.
+
+**Consequences:** listing identity is now merchant-aware, host-independent, path-independent and variant-preserving; every future merchant declares an explicit contract rather than inheriting a guess. Catalog and coverage claims are reproducible and cannot silently inflate. Type debt cannot silently grow.
+
 ### ADR-058 — Key integrity: store-internal identifiers must never enter identity or continuity keys; identity aliasing bridges the key-space schism · Accepted (2026-07-23)
 **Context:** before extending ER (ADR-057), I re-derived production truth from the database rather than the docs. The measurement contradicted the record in three ways, and exposed one violated invariant beneath all of them:
 > **An identity or continuity key must derive only from evidence that is stable over time and independent of the observing store's internals.**

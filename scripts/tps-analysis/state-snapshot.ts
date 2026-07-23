@@ -14,8 +14,14 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import pg from "pg";
+import { resolveListingIdentity, isSaudiMarket } from "../../src/lib/identity/merchant-listing-identity";
 
 const JSON_MODE = process.argv.includes("--json");
+
+/** Slugs for the merchant listing-identity contracts (ADR-059). */
+const STORE_SLUG: Record<number, string> = {
+  1: "jarir", 2: "amazon", 3: "noon", 4: "extra", 5: "almanea", 6: "samsung_ksa", 7: "shaker", 8: "swsg",
+};
 
 interface Section { title: string; rows: Record<string, unknown>[]; error?: string }
 
@@ -95,6 +101,52 @@ async function main() {
   await q("ER candidate tables present", `
     select table_name from information_schema.tables
     where table_schema='public' and table_name like 'tps_er%' order by 1`);
+
+  // ── CATALOG TRUTH (ADR-059) ────────────────────────────────────────────────
+  // Raw observation counts are NOT catalog size: daily re-scrapes inflate them
+  // 8–23x, merchants publish one product under several URLs, and some listings
+  // are foreign-market. Catalog size is measured ONLY as distinct Saudi listings
+  // under each merchant's identity contract. Re-scrapes stay valuable as price
+  // and availability evidence — they just never count as catalog.
+  {
+    const catalog = new Map<number, { obs: number; urls: Set<string>; saudi: Set<string>; foreign: number; noUrl: number }>();
+    let cursor = 0;
+    for (;;) {
+      const { rows } = await client.query(
+        `select id, store_id,
+                coalesce(payload->>'productUrl', payload->>'url', payload->>'product_url', raw_url) u
+         from raw_observations where id > $1 order by id asc limit 20000`,
+        [cursor]
+      );
+      if (!rows.length) break;
+      for (const r of rows) {
+        cursor = Number(r.id);
+        const s = Number(r.store_id);
+        let e = catalog.get(s);
+        if (!e) { e = { obs: 0, urls: new Set(), saudi: new Set(), foreign: 0, noUrl: 0 }; catalog.set(s, e); }
+        e.obs++;
+        if (!r.u) { e.noUrl++; continue; }
+        e.urls.add(String(r.u));
+        const ident = resolveListingIdentity(s, r.u as string, STORE_SLUG[s]);
+        if (!ident.key) { e.noUrl++; continue; }
+        if (!isSaudiMarket(ident.market)) { e.foreign++; continue; }
+        e.saudi.add(ident.key);
+      }
+    }
+    const rows = [...catalog.entries()].sort((a, b) => a[0] - b[0]).map(([store, e]) => ({
+      store_id: store,
+      slug: STORE_SLUG[store] ?? "?",
+      observations: e.obs,
+      raw_distinct_urls: e.urls.size,
+      SAUDI_CATALOG: e.saudi.size,
+      foreign_obs_excluded: e.foreign,
+      url_inflation: e.saudi.size ? `${(e.urls.size / e.saudi.size).toFixed(2)}x` : "-",
+      obs_per_listing: e.saudi.size ? (e.obs / e.saudi.size).toFixed(1) : "-",
+    }));
+    const total = rows.reduce((a, r) => a + r.SAUDI_CATALOG, 0);
+    rows.push({ store_id: 0, slug: "TOTAL", observations: rows.reduce((a, r) => a + r.observations, 0), raw_distinct_urls: rows.reduce((a, r) => a + r.raw_distinct_urls, 0), SAUDI_CATALOG: total, foreign_obs_excluded: rows.reduce((a, r) => a + r.foreign_obs_excluded, 0), url_inflation: "-", obs_per_listing: "-" });
+    sections.push({ title: "CATALOG TRUTH — distinct Saudi listings under merchant identity contracts", rows });
+  }
 
   await client.end();
 

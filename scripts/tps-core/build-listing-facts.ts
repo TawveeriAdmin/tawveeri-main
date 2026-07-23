@@ -20,7 +20,7 @@ import { readFileSync } from "fs";
 import { Client } from "pg";
 import { assertFingerprint } from "./tps-batch";
 import { discountVerdictFromFacts } from "../../src/lib/intelligence/price-intelligence";
-import { stableListingKey } from "../../src/lib/identity/listing-key";
+import { resolveListingIdentity, isSaudiMarket } from "../../src/lib/identity/merchant-listing-identity";
 
 const STORES = [1, 2, 3, 4, 5];
 /** `--dry` previews the rebuild (aggregation + stale-key count) without writing. */
@@ -51,7 +51,7 @@ interface ListingAgg {
     // Stream observations and aggregate by STABLE listing key in TypeScript, so
     // src/lib/identity/listing-key.ts stays the single authority for the rule.
     const agg = new Map<string, ListingAgg>();
-    let cursor = 0;
+    let cursor = 0, skippedForeign = 0;
     for (;;) {
       const page = await pg.query(
         `select id, store_id, raw_name name, scraped_at,
@@ -68,8 +68,15 @@ interface ListingAgg {
       if (!page.rows.length) break;
       for (const r of page.rows) {
         cursor = Number(r.id);
-        const key = stableListingKey(store, r.listing as string | null, STORE_SLUG[store]);
+        const ident = resolveListingIdentity(store, r.listing as string | null, STORE_SLUG[store]);
+        const key = ident.key;
         if (!key) continue;
+        // MARKET SCOPING (ADR-059): Tawveeri's price verdicts are Saudi verdicts.
+        // 5,480 Jarir observations are Qatar/Kuwait/UAE/Bahrain listings with
+        // foreign prices; they were silently informing Jarir's Discount Integrity
+        // and Merchant Trust. They remain immutable evidence in raw_observations,
+        // but they are not Saudi offers and must not produce Saudi facts.
+        if (!isSaudiMarket(ident.market)) { skippedForeign++; continue; }
         const price = r.price != null ? Number(r.price) : null;
         const was = r.was != null ? Number(r.was) : null;
         const at = new Date(r.scraped_at);
@@ -159,7 +166,8 @@ interface ListingAgg {
     if (stale > 0 && !DRY) {
       await pg.query(`delete from tps_listing_price_facts where store_id = $1 and not (listing_key = any($2))`, [store, keys]);
     }
-    console.log(`  store ${store}: ${rows.length} listings materialized, ${stale} stale keys ${DRY ? "(dry — kept)" : "removed"}`);
+    const foreignNote = skippedForeign ? `, ${skippedForeign} non-Saudi obs excluded` : "";
+    console.log(`  store ${store}: ${rows.length} listings materialized, ${stale} stale keys ${DRY ? "(dry — kept)" : "removed"}${foreignNote}`);
   }
   console.log(`\nTOTAL listings: ${total}`);
   console.table(tally);
