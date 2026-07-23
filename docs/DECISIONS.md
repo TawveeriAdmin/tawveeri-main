@@ -6,6 +6,33 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-070 — Fixing registered plugins beats adding categories: audio 24.8% → 69.2%, and a guard bug that was silently costing comparisons · Accepted (2026-07-23)
+**Context:** the previous window hypothesised that repairing ALREADY-REGISTERED plugins would out-return a new category. Running `tps:comparison-value` across every registered plugin settled it:
+
+| plugin | comparison-possible | **lost comparisons** |
+|---|---|---|
+| tv | 95.4% | 16 |
+| tablet | 93.8% | 17 |
+| mobile | 80.1% | **177** |
+| laptop | 64.7% | **117** |
+| **audio** | **24.8%** | **182** |
+
+**509 comparisons are lost to parser quality inside categories we already ship** — against 203 we actually have. No new category (monitor, ~535 listings) could approach that. Hypothesis confirmed; priority changed accordingly.
+
+**Audio's four defects, all previously seen elsewhere:**
+1. **The same bilingual bug as ADR-061** — every pattern ran on raw lowercased text, so `سماعات أبل إيربودز برو 3` never matched `/airpods\s*pro/`. Arabic listings failed wholesale. Fixed by folding through `normalizeArabic` and adding transliterations (`ايربودز`, `بادز`, `فري بادز`).
+2. **Detector claimed monitors.** BenQ and Asus displays advertise *"Built-in Dual Speaker"*, which matched the bare `speaker` signal.
+3. **No brand inference** — Jarir publishes `brand: "Unknown"` for HyperX and Astro; 143 rejections, every one on a multi-merchant brand.
+4. **Model-only identity with no fallback.** Almanea puts real Apple part numbers in the title (`… - MMTN2ZE/A`) for wired earphones that have no marketing line. Now falls back to the **ADR-058 manufacturer-model authority**, which guarantees a retailer SKU can never be mistaken for one.
+
+**Result: 24.8% → 69.2%** where comparison is possible, recovering ~99 lost comparisons. Verified **zero identity churn** first: all 84 existing audio listings kept their exact key, 0 invalidated — the gain is purely additive, with no risk to the moat.
+
+**A bug of my own, found by shipping:** `isBridgeableSpecKey` (ADR-058) required **≥4 concrete segments**. Audio's identity is legitimately `brand|model` with the generation inside the model (`apple|airpods pro 3`) — two concrete segments and zero ambiguity. The guard was silently classifying real audio identities as "weak placeholder keys" and skipping them. **Weakness comes from unknowns, not from brevity.** Corrected: reject on ≥2 unknowns, or 1 unknown in a short key. Effect was immediate — corroboratable keys **138 → 154**, spanning **12 categories instead of 8**, skipped weak keys 15 → 1.
+
+**Live result:** products 1,869 → **1,946**; comparable 203 → **205**; **3-store comparisons 16 → 19**; audio now contributes **8** corroborated products where it previously contributed almost none. **0 duplicate cards, 0 duplicate identity keys**; search retrieval and ranking hold at 100%.
+
+**Operational gap discovered (documented, not yet fixed):** the chain's `normalize` step is cursor-based and incremental, so **a parser improvement does not apply retroactively** — old observations are never re-examined. Recovering the gain required a full `bulk-backfill --normalize-only` re-stage. Any future parser change needs the same, and a cursor-reset ("reprocess") mode would make that safe and routine.
+
 ### ADR-068 — Return on Engineering: measure comparison value, not headline coverage; smartwatch registered on that basis · Accepted (2026-07-23)
 **Context:** ADR-066 refused to register smartwatch at 41.5% "identified" against the 64.8% mobile had cleared. Before spending further effort on the remaining 300 rejections, I asked whether that metric measures *value*. It does not.
 

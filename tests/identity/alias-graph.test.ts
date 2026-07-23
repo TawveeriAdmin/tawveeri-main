@@ -95,6 +95,19 @@ describe("identity alias reconciliation", () => {
     expect(isBridgeableSpecKey("apple|ipad air|m3|128|wifi|11")).toBe(true);
   });
 
+  it("bridges SHORT but fully-specified contracts — weakness is unknowns, not brevity", () => {
+    // ADR-070: audio's identity is legitimately `brand|model` with the generation
+    // inside the model. An earlier >=4-segment rule silently skipped these,
+    // costing real audio corroborations.
+    expect(isBridgeableSpecKey("apple|airpods pro 3")).toBe(true);
+    expect(isBridgeableSpecKey("jbl|clip 5")).toBe(true);
+    expect(isBridgeableSpecKey("hyperx|cloud iii")).toBe(true);
+  });
+
+  it("still refuses a short key whose few segments include an unknown", () => {
+    expect(isBridgeableSpecKey("apple|NO_MODEL")).toBe(false);
+  });
+
   it("ignores observations with no usable key at all", () => {
     expect(reconcileIdentities([obs(1, 1, null, null)])).toHaveLength(0);
   });

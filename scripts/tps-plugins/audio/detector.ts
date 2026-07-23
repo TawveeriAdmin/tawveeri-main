@@ -17,7 +17,11 @@ const ACCESSORY_SIGNALS = [
   "بديل", "mount", "holder", "strap", "حزام", "sticker", "ملصق", "skin",
   "protector", "واقي", "belt clip", "clip holder", "carrying case", "hard case",
 ];
-const WRONG_DEVICE = ["smartphone", "laptop", "لابتوب", "tablet", "تابلت", "smartwatch", "ساعة"];
+// ADR-070: monitors and TVs advertise "Built-in Dual Speaker", which matched the
+// bare "speaker" signal — BenQ and Asus MONITORS were being claimed as audio.
+const WRONG_DEVICE = ['smartphone', 'laptop', 'لابتوب', 'tablet', 'تابلت', 'smartwatch', 'ساعة',
+  'monitor', 'شاشة', 'تلفزيون', 'television', 'built-in speaker', 'built-in dual speaker',
+  'مكبر صوت مدمج', 'projector', 'بروجكتر'];
 
 export function detect(nameAr: string, nameEn: string): boolean {
   const text = (nameAr + " " + nameEn).toLowerCase();

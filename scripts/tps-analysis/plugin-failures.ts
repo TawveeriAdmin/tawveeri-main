@@ -10,9 +10,11 @@ import { Client } from "pg";
 import type { CategoryPlugin } from "../tps-core/types";
 import { mobilePlugin } from "../tps-plugins/mobile";
 import { smartwatchPlugin } from "../tps-plugins/smartwatch";
+import { audioPlugin } from "../tps-plugins/audio";
+import { laptopPlugin } from "../tps-plugins/laptop";
 import { resolveListingIdentity, isSaudiMarket } from "../../src/lib/identity/merchant-listing-identity";
 
-const CANDIDATES: Record<string, CategoryPlugin> = { mobile: mobilePlugin, smartwatch: smartwatchPlugin };
+const CANDIDATES: Record<string, CategoryPlugin> = { mobile: mobilePlugin, smartwatch: smartwatchPlugin, audio: audioPlugin, laptop: laptopPlugin };
 const STORE_SLUG: Record<number, string> = { 1: "jarir", 2: "amazon", 3: "noon", 4: "extra", 5: "almanea", 8: "swsg" };
 const asString = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const ACCESSORY = /\b(case|cover|كفر|غطاء|حماية|جراب|screen protector|واقي|شاشة حماية|cable|كابل|كيبل|charger|شاحن|adapter|محول|power ?bank|بور بانك|باور بانك|stand|حامل|mount|bag|حقيبة|sleeve|strap|سوار|حزام|holder|tripod|lens|عدسة|memory card|بطاقة ذاكرة|airtag|popsocket|ring|خاتم|طقم|accessor|ملحق|سماعة|earbud|headphone|buds)\b/i;

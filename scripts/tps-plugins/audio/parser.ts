@@ -4,10 +4,12 @@
 // (AirPods Pro 2 ≠ Pro 3; JBL Flip 6 ≠ Flip 7; WH-1000XM4 ≠ XM5). COMMERCIAL
 // (never in identity): colour, bundle, warranty, region. "لا نخمّن — نقرأ".
 import type { NormalizeResult } from "../../tps-core/types";
-import { canonicalizeBrand } from "../../tps-core/brand-map";
+import { canonicalizeBrand } from '../../tps-core/brand-map';
+import { normalizeArabic } from '../mobile/text';
+import { extractManufacturerModel } from '../../../src/lib/identity/store-identifiers';
 
 function extractType(text: string): string | null {
-  const x = text.toLowerCase();
+  const x = normalizeArabic(text);
   if (/speaker|مكبر صوت|soundbar|partybox|boombox|flip|charge\s*\d|xtreme|clip\s*\d|\bgo\s*\d/.test(x)) return "speaker";
   if (/over-ear|over ear|headphone|سماعة رأس|airpods max|wh-?\d{4}|quietcomfort|studio/.test(x)) return "over_ear";
   if (/earbuds|earbud|in-ear|buds|airpods|ايربودز|wf-?\d{4}|freebuds/.test(x)) return "earbuds";
@@ -17,11 +19,11 @@ function extractType(text: string): string | null {
 
 // Model line + generation. Returns a normalized token or null.
 function extractModel(text: string): string | null {
-  const x = text.toLowerCase();
+  const x = normalizeArabic(text);
   // ── Apple ──
   if (/airpods\s*max/.test(x)) return "airpods max";
   if (/airpods\s*pro/.test(x)) { const g = x.match(/airpods\s*pro\s*(\d)/) || (/(2nd|gen\s*2|الجيل\s*الثاني)/.test(x) ? [null, "2"] as any : (/(3rd|gen\s*3|الجيل\s*الثالث)/.test(x) ? [null, "3"] as any : null)); return "airpods pro" + (g ? " " + g[1] : ""); }
-  if (/airpods/.test(x)) {
+  if (/airpods|ايربودز/.test(x)) {
     const g = x.match(/airpods\s*(\d)/) || (/(4th|gen\s*4)/.test(x) ? [null, "4"] as any : (/(3rd|gen\s*3)/.test(x) ? [null, "3"] as any : null));
     // ANC is identity-relevant for AirPods 4 (a distinct base vs ANC SKU).
     const anc = /\banc\b|active\s*noise|إلغاء\s*الضوضاء|الغاء\s*الضوضاء/.test(x) ? " anc" : "";
@@ -43,7 +45,47 @@ function extractModel(text: string): string | null {
   const fb = x.match(/freebuds\s*(pro\s*\d?|se\s*\d?|lipstick|\d+i?)/); if (fb) return "freebuds " + fb[1].replace(/\s+/g, " ").trim();
   // ── Jabra Elite ──
   const je = x.match(/elite\s*(\d{1,2}\s*(?:active|pro)?)/); if (je) return "elite " + je[1].replace(/\s+/g, " ").trim();
+  // ── Xiaomi / Redmi Buds ── high Almanea volume, written in both scripts.
+  const rb = x.match(/(?:redmi|ريدمي)\s*(?:tws\s*)?(?:buds|بادز)\s*(\d{1,2})\s*(pro|lite|play|active)?/);
+  if (rb) return "redmi buds " + rb[1] + (rb[2] ? " " + rb[2] : "");
+  // ── Gaming headsets ── Jarir publishes brand "Unknown" for HyperX and Astro,
+  // so these lines are recognised from the title alone.
+  const hx = x.match(/cloud\s*(iii|ii|\d|stinger\s*\d?(?:\s*core)?|alpha|flight)/);
+  if (hx) return "cloud " + hx[1].replace(/\s+/g, " ").trim();
+  if (/astro/.test(x)) { const a = x.match(/\ba(\d{2})\b/); if (a) return "a" + a[1]; }
   return null;
+}
+
+/**
+ * Brand read from the TITLE when the store publishes none.
+ *
+ * Measured: Jarir sends `brand: "Unknown"` for HyperX, Astro and JBL, which cost
+ * 143 rejections — every one on a multi-merchant brand, i.e. a lost comparison.
+ */
+const BRAND_FROM_TITLE: [RegExp, string][] = [
+  [/\bhyperx\b/, "hyperx"], [/\bastro\b/, "astro"], [/\bjbl\b|جي بي ال/, "jbl"],
+  [/\bbose\b|بوز/, "bose"], [/\bsony\b|سوني/, "sony"], [/\bbeats\b|بيتس/, "beats"],
+  [/airpods|ايربودز|\bapple\b|ابل|آبل/, "apple"], [/galaxy buds|سامسونج|samsung/, "samsung"],
+  [/freebuds|هواوي|huawei/, "huawei"], [/soundcore|anker|انكر|أنكر/, "anker"],
+  [/redmi|ريدمي|xiaomi|شاومي/, "xiaomi"], [/jabra|جابرا/, "jabra"],
+  [/sennheiser|سنهايزر/, "sennheiser"], [/marshall|مارشال/, "marshall"],
+];
+
+export function brandFromTitle(text: string): string | null {
+  const x = normalizeArabic(text);
+  for (const [re, b] of BRAND_FROM_TITLE) if (re.test(x)) return b;
+  return null;
+}
+
+/**
+ * A manufacturer part number written into the title, e.g.
+ * "سماعات أبل إيربودز … - MMTN2ZE/A". Only the trailing token is considered, so a
+ * random alphanumeric elsewhere in the description cannot become an identity.
+ * The value is still validated by `extractManufacturerModel`.
+ */
+function mpnFromTitle(text: string): string | null {
+  const m = /[-–—]\s*([A-Z0-9][A-Z0-9/]{4,23})\s*$/.exec(text.trim());
+  return m ? m[1] : null;
 }
 
 function extractColor(text: string): string | null {
@@ -60,15 +102,23 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
 
   let brand = canonicalizeBrand(rawBrand);
   if (brand === "unknown" || brand === "other") {
-    const guess = combined.match(/apple|ابل|airpods|beats|sony|سوني|bose|بوز|\bjbl\b|جي بي|samsung|سامسون|galaxy buds|anker|soundcore|انكر|huawei|هواوي|freebuds|sennheiser|marshall|jabra/);
-    if (guess) brand = canonicalizeBrand(guess[0]);
+    // ADR-070: the old inline guess ran on RAW text and knew none of the gaming
+    // brands, so Jarir's `brand: "Unknown"` listings (HyperX, Astro) were all
+    // rejected. `brandFromTitle` folds Arabic first and covers them.
+    brand = brandFromTitle(fullText) ?? brand;
   }
   if (!["apple", "sony", "bose", "jbl", "samsung", "anker", "huawei", "sennheiser", "marshall", "jabra", "beats"].includes(brand)) {
     if (/airpods|beats/.test(combined)) brand = "apple";
   }
 
   const type = extractType(fullText);
-  const model = extractModel(fullText);
+  // A recognised product line is the best identity. When there is none, fall back
+  // to a MANUFACTURER model number via the shared key-integrity authority
+  // (ADR-058) — Almanea publishes real Apple part numbers such as MMTN2ZE/A in
+  // the title, which identify a wired earphone that has no marketing line at all.
+  // The authority guarantees a retailer SKU can never be mistaken for one.
+  const model = extractModel(fullText)
+    ?? extractManufacturerModel({ ...payload, model: mpnFromTitle(fullText) ?? payload.model });
   const color = extractColor(fullText);
 
   const ambiguity_flags: string[] = [];
