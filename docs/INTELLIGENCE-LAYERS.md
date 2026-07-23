@@ -75,7 +75,19 @@ Governed by `TAWVEERI_CONSTITUTION.md`; decisions in `docs/DECISIONS.md`; strate
   | 8 swsg | 276 | 276 | **0** | 0 | **no** |
 
 - **Noon and SWSG are NOT operational.** Two blocking causes, both structural: (1) `TPS_STORES` in `scripts/tps-core/category-registry.ts` lists only stores 1, 4, 2, 5 — Noon and SWSG are excluded from the normalization sweep entirely; (2) neither has a `STORE_ADAPTERS` entry in `scripts/tps-core/store-adapters.ts`. Additionally **SWSG's `price` is NULL on all 276 observations**, so it cannot produce offers even once normalized — though its titles do carry genuine Apple MPNs (`MG1G4AH/A`), making it valuable once price capture is fixed.
-- Scale reality: ~13,500 distinct listings platform-wide (raw observations are inflated 8–23× by daily re-scrapes); ~2,152 distinct URLs reach staging, so identity covers roughly **20% of the catalog**. Amazon scaling needs a proxy budget (escalated).
+
+### The operational standard, and what onboarding is measurably worth
+
+A merchant is **ingesting** when raw observations arrive. It is **operational** only when the whole chain is evidenced: discovery → stable listing identity → idempotent ingestion → normalization → matching/corroboration → canonical/variant/offer separation → Product DNA → price & offer intelligence → Knowledge Graph → consumer projection → recurring execution → freshness/failure/recovery observability. One-time ingestion is never onboarding.
+
+`npm run tps:identity-impact -- --simulate --stores <ids>` proves the chain **read-only, before any write** — it normalizes raw observations from scratch, deduplicates by merchant listing identity, applies alias reconciliation, and reports which stores actually participate in a corroborated identity. Measured 2026-07-23:
+
+| store set | Saudi listings | identity coverage | corroborated |
+|---|---|---|---|
+| 1,2,4,5 (current pipeline) | 10,541 | 19.9% | **95** |
+| + noon, swsg | 11,237 | 20.5% | **125** |
+
+Onboarding Noon and SWSG is therefore worth **+30 corroborated identities (+32%)**, with Noon participating in **37** corroborations (zero today) and SWSG in 2 — a prize that only exists because ADR-058 stopped Noon's retailer SKUs from becoming its identity (Noon now yields 177 identities instead of 88 store-unique `MODEL:` keys). For comparison, alias reconciliation alone is worth +16. **Identity coverage is ~20% of the Saudi catalog — the dominant remaining gap is normalization coverage, not entity resolution.**
 
 ---
 
