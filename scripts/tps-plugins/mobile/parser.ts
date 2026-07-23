@@ -77,6 +77,9 @@ const BRAND_FAMILIES: Record<string, FamilyRule[]> = {
     { family: "Redmi Note", gen: /(?:redmi|ريدمي)\s*(?:note|نوت)\s*(\d{1,2})/ },
     { family: "Redmi", gen: /(?:redmi|ريدمي)\s*(\d{1,2})/ },
     { family: "POCO", gen: /(?:poco|بوكو)\s*([a-z]?\d{1,2})/ },
+    // Xiaomi's budget A-series, written "شاومي ايه 5" in Arabic. 31 measured
+    // misses on a three-merchant brand — every one a lost comparison.
+    { family: "Xiaomi A", gen: /(?:xiaomi|شاومي)\s*(?:\ba\b|ايه)\s*(\d{1,2})/ },
     { family: "Xiaomi", gen: /(?:xiaomi|شاومي)\s*(\d{1,2})/ },
   ],
   honor: [
@@ -110,6 +113,10 @@ const BRAND_FAMILIES: Record<string, FamilyRule[]> = {
   tecno: [
     { family: "Tecno Spark", gen: /(?:spark|سبارك)\s*(\d{1,2})/ },
     { family: "Tecno Camon", gen: /(?:camon|كامون)\s*(\d{1,2})/ },
+    // Pova is Tecno's largest Saudi line and was missing entirely — 36 measured
+    // misses. "Curve" is a named model with no generation number.
+    { family: "Tecno Pova", gen: /(?:pova|بوفا)\s*(\d{1,2})/, named: [{ re: /(?:pova|بوفا)\s*(?:curve|كيرف)/, generation: "Curve" }] },
+    { family: "Tecno Spark", gen: /(?:go|جو)\s*(\d{1,2})/ },
   ],
   infinix: [
     { family: "Infinix Hot", gen: /(?:hot|هوت)\s*(\d{1,2})/ },

@@ -6,6 +6,27 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-071 — Mobile parser repair: identification 80.1% → 86.0% in the largest category, with zero identity churn · Accepted (2026-07-23)
+**Context:** ADR-070 ranked mobile's 177 lost comparisons the largest remaining parser deficit. `tps:comparison-value mobile` located them precisely, and — importantly — showed that a large share were **false claims, not missed identifications**: the detector was pulling in non-phones and then failing to identify them.
+
+**Six defects, each measured:**
+- **`فيفو` (vivo) matched "أسوس فيفو بوك"** — Asus VivoBook laptops claimed as phones (27 listings).
+- **Bare `magic` matched "Magic Remote"** — LG televisions claimed as Honor phones. Narrowed to `honor magic`.
+- **`جالكسي` matched "سمارت تاج 2 سامسونج جالكسي"** — Samsung SmartTag trackers; now hard-rejected.
+- **`حافظه` never matched `حافظ`** — `normalizeArabic` folds ة→ه, but the accessory list only had the ta-marbuta form, so Samsung cases leaked through.
+- **Xiaomi was not a phone signal at all** — `شاومي ايه 5` (Xiaomi A-series) was never even detected; and once the brand token was added it pulled in Xiaomi's power banks, TV sticks, vacuum mops and Pads (Xiaomi sells across nearly every category), each now category-rejected.
+- **Tecno Pova and Xiaomi A-series lines were missing** from the parser entirely — Tecno's largest Saudi line (36 misses) and a three-merchant Xiaomi line (31).
+
+**A self-caught over-reach:** to reject TVs I briefly added `بوصة` (inch) to the foreign-category list — but phones state their screen size in inches too (`أيفون 15، 6.1 بوصة`), so it discarded real phones. The test suite caught it immediately; removed, and TVs are covered by the specific signals instead.
+
+**Result: identification where comparison is possible 80.1% → 86.0%**, verified with **zero identity churn** first — all 849 existing mobile keys unchanged, 0 invalidated.
+
+**Honest outcome — precision and catalogue, not yet realized comparisons.** Products 1,946 → **1,964**; **realized comparable held at 205** this cycle. The gain is real but of a different kind: (1) **precision/trust** — laptops, TVs, trackers and cases no longer masquerade as phones in the mobile category; (2) **catalogue** — Xiaomi A-series and Tecno Pova phones now identified; (3) **latent comparisons** — each newly-identified phone becomes a comparison as soon as another store's listing for the same model also resolves. A jump in *identification rate* does not convert to *realized comparisons* in the same cycle unless both stores' listings for a model were fixed together. Reporting the identification gain as a comparison gain would overclaim.
+
+**0 duplicate cards, 0 duplicate identity keys**; search retrieval and ranking hold at 100%. 12 new regression tests, every fixture a real production false-claim or missed line.
+
+**Reinforces the ADR-070 retroactivity note:** realizing even the identification gain required a full `bulk-backfill --normalize-only` re-stage, because the incremental normalizer never revisits old observations. A cursor-reset reprocess mode remains the right fix.
+
 ### ADR-070 — Fixing registered plugins beats adding categories: audio 24.8% → 69.2%, and a guard bug that was silently costing comparisons · Accepted (2026-07-23)
 **Context:** the previous window hypothesised that repairing ALREADY-REGISTERED plugins would out-return a new category. Running `tps:comparison-value` across every registered plugin settled it:
 

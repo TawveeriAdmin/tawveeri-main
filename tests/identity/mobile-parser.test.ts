@@ -32,6 +32,21 @@ describe("detector — accessories and other categories are hard-rejected", () =
     expect(detect(title, "")).toBe(false);
   });
 
+  // ADR-071: each of these was a MEASURED false claim costing a comparison slot
+  // in the largest Saudi category.
+  it.each([
+    ["أسوس فيفو بوك S14 فليب، بمعالج i5-13420H، ذاكرة 16 جيجابايت", "Asus VivoBook matched the 'فيفو' (vivo) signal"],
+    ["OLED55B56LA 55 inch LG OLED B5 4K 120Hz Smart TV Magic Remote webOS", "LG TV matched bare 'magic' (Magic Remote)"],
+    ["سمارت تاج 2 سامسونج جالكسي، اسود - EI-T5600BBEGWW", "SmartTag tracker matched 'جالكسي'"],
+    ["سامسونج , حافظ جهاز Z flip 5 , شفاف", "a case — 'حافظ' lacks the ta-marbuta of 'حافظه'"],
+    ["بنك الطاقة شاومي 10 كيلو 33 واط - أزرق", "Xiaomi power bank"],
+    ["شاومي ستيك تي في 4k الجيل الثاني بث ذكي", "Xiaomi TV stick"],
+    ["ممسحة مكنسة شاومي متوافق مع مكانس e10/e12", "Xiaomi vacuum mop"],
+    ["شاومي باد 8، واي فاي، 256 جيجا، أزرق", "Xiaomi Pad is a tablet"],
+  ])("rejects non-phone: %s (%s)", (title) => {
+    expect(detect(title, "")).toBe(false);
+  });
+
   it("still detects real phones in both languages", () => {
     expect(detect("أبل أيفون 15، 5جي، 6.1 بوصة، 128 جيجا، أسود", "")).toBe(true);
     expect(detect("سامسونج جالاكسي، اس 25 الترا، 256 جيجا", "")).toBe(true);
@@ -117,6 +132,28 @@ describe("long-tail brands (previously unsupported entirely)", () => {
     ["", "Google Pixel 9 Pro 256GB", "Google", "google|Pixel|9|Pro|256"],
   ])("parses %s%s", (ar, en, brand, expected) => {
     expect(idOf(ar, en, brand).key).toBe(expected);
+  });
+});
+
+describe("ADR-071 — product lines that were missing entirely", () => {
+  it("parses Tecno Pova, Tecno's largest Saudi line (36 measured misses)", () => {
+    expect(idOf("تكنو بوفا 7 ، 5 جي 256 جيجا 8 جيجا، اسود", "", "تكنو").key)
+      .toBe("tecno|Tecno Pova|7|Standard|256");
+  });
+
+  it("parses Pova Curve, a NAMED model with no generation number", () => {
+    expect(idOf("تكنو بوفا كيرف، 5 جي، 256 جيجا، أسود", "", "تكنو").key)
+      .toBe("tecno|Tecno Pova|Curve|Standard|256");
+  });
+
+  it("parses Xiaomi's A-series, which the detector never even claimed", () => {
+    expect(idOf("شاومي ايه 5، 4 جي، 128 جيجا، 4 جيجا رام، أسود", "", "شاومي").key)
+      .toBe("xiaomi|Xiaomi A|5|Standard|128");
+  });
+
+  it("keeps Redmi and Xiaomi A-series apart", () => {
+    expect(idOf("شاومي ايه 5، 128 جيجا", "", "شاومي").key)
+      .not.toBe(idOf("ريدمي 5، 128 جيجا", "", "شاومي").key);
   });
 });
 

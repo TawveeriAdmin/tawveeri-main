@@ -18,12 +18,16 @@ import { normalizeArabic } from "./text";
 
 /** Any of these ⇒ an accessory FOR a phone, never a phone. */
 const ACCESSORY_SIGNALS = [
-  // protection
-  "case", "cover", "كفر", "غطاء", "غطا", "جراب", "حافظه", "حمايه", "واقي", "واقيه",
+  // protection — "حافظ" without the ta-marbuta is how Almanea writes it, and
+  // `normalizeArabic` folds ة→ه, so "حافظه" alone never matched "حافظ جهاز".
+  "case", "cover", "كفر", "غطاء", "غطا", "جراب", "حافظ", "حافظه", "حمايه", "واقي", "واقيه",
+  // trackers — "سمارت تاج 2 سامسونج جالكسي" matched on "جالكسي"
+  "سمارت تاج", "smarttag", "smart tag", "airtag",
   "screen protector", "tempered glass", "لاصقه", "ملصق", "film", "protector",
   // power & cabling
   "cable", "كابل", "كيبل", "سلك", "charger", "شاحن", "شاحنه", "adapter", "محول",
   "power bank", "powerbank", "بور بانك", "باور بانك", "battery pack",
+  "بنك الطاقه", "بنك طاقه", "مللي امبير",
   // mounting / holding
   "holder", "حامل", "قاعده", "mount", "stand", "ستاند", "tripod",
   "grip", "قبضه", "popsocket", "selfie stick", "عصا سيلفي",
@@ -43,9 +47,23 @@ const FOREIGN_CATEGORY_SIGNALS = [
   "airpods", "buds", "سماعه", "سماعات", "headphone", "headset", "earbud", "earphone", "speaker", "مكبر صوت",
   // tablets
   "tablet", "تابلت", "ipad", "ايباد", "galaxy tab", "جالاكسي تاب", "matepad",
-  // computing & display
+  // Xiaomi and Redmi tablets are named "…Pad", written "باد" in Arabic, and were
+  // being claimed as phones off the brand token alone.
+  "شاومي باد", "ريدمي باد", "redmi pad", "xiaomi pad", "mi pad", "لوحه مفاتيح عربيه",
+  // computing & display — "أسوس فيفو بوك" (Asus VivoBook) matched the "فيفو"
+  // (vivo) phone signal, and LG televisions matched on "Magic Remote".
   "laptop", "لابتوب", "لاب توب", "notebook", "macbook", "ماك بوك",
+  "فيفو بوك", "vivobook", "zenbook", "زين بوك", "thinkpad", "ideapad", "chromebook",
   "monitor", "تلفزيون", "television", "شاشه تلفزيون",
+  // NOTE: "بوصه" (inch) is deliberately NOT here — phones state their screen size
+  // in inches too ("أيفون 15، 6.1 بوصة"), so rejecting on it discarded real
+  // phones. Televisions are already caught by the specific signals below.
+  "smart tv", "oled", "qled", "webos", "magic remote", "uhd",
+  // Xiaomi sells across nearly every category, so admitting the bare brand as a
+  // phone signal pulled in its TV sticks, vacuum parts and scooters. These are
+  // correct rejections for any brand.
+  "ستيك", "tv stick", "streaming stick", "مكنسه", "ممسحه", "مكانس",
+  "سكوتر", "scooter", "دراجه", "مصباح", "lamp", "منقي هواء", "air purifier",
   // imaging & other
   "camera", "كاميرا", "printer", "طابعه", "router", "راوتر", "playstation", "xbox",
   // large appliances (kept from the original detector's refrigerator guard)
@@ -60,10 +78,11 @@ const PHONE_SIGNALS = [
   "iphone", "ايفون",
   // Samsung
   "galaxy", "جالاكسي", "جالكسي", "جلاكسي", "z flip", "زد فليب", "z fold", "زد فولد",
-  // Xiaomi family
-  "redmi", "ريدمي", "poco", "بوكو",
-  // Huawei / Honor
-  "nova", "نوفا", "magic", "ماجيك",
+  // Xiaomi family — the parent brand was missing entirely, so "شاومي ايه 5"
+  // (Xiaomi A5) was never even detected.
+  "redmi", "ريدمي", "poco", "بوكو", "xiaomi", "شاومي",
+  // Huawei / Honor — bare "magic" is gone: it matched LG's "Magic Remote".
+  "nova", "نوفا", "honor magic", "هونر ماجيك",
   // Oppo / realme / vivo / OnePlus
   "reno", "رينو", "oppo", "اوبو", "realme", "ريلمي", "vivo", "فيفو",
   "oneplus", "ون بلس", "nord", "نورد",
