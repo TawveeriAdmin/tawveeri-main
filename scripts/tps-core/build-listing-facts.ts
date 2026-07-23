@@ -22,7 +22,7 @@ import { assertFingerprint } from "./tps-batch";
 import { discountVerdictFromFacts } from "../../src/lib/intelligence/price-intelligence";
 import { resolveListingIdentity, isSaudiMarket } from "../../src/lib/identity/merchant-listing-identity";
 
-const STORES = [1, 2, 3, 4, 5];
+const STORES = [1, 2, 3, 4, 5, 8]; // ADR-060: SWSG (8) added — it was ingesting but had no price facts.
 /** `--dry` previews the rebuild (aggregation + stale-key count) without writing. */
 const DRY = process.argv.includes("--dry");
 /** Slugs drive the per-store durable-id extractors in `stableListingKey`. */

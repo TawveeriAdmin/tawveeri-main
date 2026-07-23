@@ -111,10 +111,18 @@ async function simulate(pg: Client, defs: CategoryDef[], stores: number[]) {
   console.log(`  distinct Saudi listings   : ${seen.size}`);
   console.log(`  listings with an identity : ${rows.length}  (${((100 * rows.length) / Math.max(1, seen.size)).toFixed(1)}% identity coverage)`);
 
+  // 2x2 DECOMPOSITION. The store-addition gain and the aliasing gain must be
+  // reported as SEPARATE, non-overlapping effects — two measurements of the same
+  // identities would double-count the prize. `noAlias` reproduces exact-key
+  // corroboration by giving each observation a single key and no bridges.
+  const noAlias = rows.map((r) => ({ ...r, modelKey: r.modelKey ?? r.specKey, specKey: null }));
+  const exactClasses = reconcileIdentities(noAlias);
+  const exactCorrob = corroboratedClasses(exactClasses);
   const classes = reconcileIdentities(rows);
   const corrob = corroboratedClasses(classes);
   console.log(`  identity classes          : ${classes.length}`);
-  console.log(`  CORROBORATED (>=2 stores) : ${corrob.length}`);
+  console.log(`  corroborated EXACT-KEY    : ${exactCorrob.length}   (no aliasing)`);
+  console.log(`  CORROBORATED (>=2 stores) : ${corrob.length}   (with aliasing, +${corrob.length - exactCorrob.length})`);
 
   const perStore = new Map<number, number>();
   for (const r of rows) perStore.set(r.storeId, (perStore.get(r.storeId) ?? 0) + 1);

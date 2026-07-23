@@ -23,7 +23,15 @@ import { buildNames as cameraNames } from "../tps-matcher/camera-matcher-v1-dry"
 import { buildNames as acNames } from "../tps-matcher/ac-matcher-v1-dry";
 import { buildNames as laptopNames } from "../tps-matcher/laptop-matcher-v1-dry";
 
-export const TPS_STORES = [{ id: 1, name: "جرير" }, { id: 4, name: "اكسترا" }, { id: 2, name: "أمازون" }, { id: 5, name: "المنيع" }];
+// Stores in the recurring normalization sweep. ADR-060 adds Noon (3) and SWSG (8):
+// both were ingesting but excluded here, so neither could ever produce a canonical.
+// `name` is also the `price_history.store_name` label — a store missing from this
+// list previously fell back to `String(id)`, which is why Noon's price-history rows
+// carried the literal store_name "3".
+export const TPS_STORES = [
+  { id: 1, name: "جرير" }, { id: 4, name: "اكسترا" }, { id: 2, name: "أمازون" },
+  { id: 5, name: "المنيع" }, { id: 3, name: "نون" }, { id: 8, name: "الشتاء والصيف" },
+];
 
 export interface CategoryDef {
   category: string;                 // canonical_products.category

@@ -1,0 +1,437 @@
+[
+  {
+    "title": "substrate volumes",
+    "rows": [
+      {
+        "t": "canonical_products",
+        "rows": 3465
+      },
+      {
+        "t": "price_history",
+        "rows": 66214
+      },
+      {
+        "t": "raw_observations",
+        "rows": 141418
+      },
+      {
+        "t": "tps_identity_staging",
+        "rows": 28794
+      },
+      {
+        "t": "tps_listing_price_facts",
+        "rows": 11238
+      },
+      {
+        "t": "tps_merchant_trust",
+        "rows": 8
+      },
+      {
+        "t": "tps_model_corroboration",
+        "rows": 166
+      },
+      {
+        "t": "tps_product_edges",
+        "rows": 57
+      },
+      {
+        "t": "tps_product_projection",
+        "rows": 1212
+      }
+    ]
+  },
+  {
+    "title": "ingestion health by store",
+    "rows": [
+      {
+        "store_id": 1,
+        "slug": "jarir",
+        "observations": 58938,
+        "last_scrape": "2026-07-23 08:16:06.401+00",
+        "days_stale": 0,
+        "distinct_days": 22
+      },
+      {
+        "store_id": 2,
+        "slug": "amazon",
+        "observations": 3022,
+        "last_scrape": "2026-07-23 06:07:57.257695+00",
+        "days_stale": 0,
+        "distinct_days": 3
+      },
+      {
+        "store_id": 3,
+        "slug": "noon",
+        "observations": 562,
+        "last_scrape": "2026-07-22 19:01:03.062+00",
+        "days_stale": 1,
+        "distinct_days": 1
+      },
+      {
+        "store_id": 4,
+        "slug": "extra",
+        "observations": 42240,
+        "last_scrape": "2026-07-23 06:04:03.849014+00",
+        "days_stale": 0,
+        "distinct_days": 28
+      },
+      {
+        "store_id": 5,
+        "slug": "almanea",
+        "observations": 36380,
+        "last_scrape": "2026-07-23 06:00:09.432742+00",
+        "days_stale": 0,
+        "distinct_days": 29
+      },
+      {
+        "store_id": 6,
+        "slug": "samsung_ksa",
+        "observations": 0,
+        "last_scrape": null,
+        "days_stale": null,
+        "distinct_days": 0
+      },
+      {
+        "store_id": 7,
+        "slug": "shaker",
+        "observations": 0,
+        "last_scrape": null,
+        "days_stale": null,
+        "distinct_days": 0
+      },
+      {
+        "store_id": 8,
+        "slug": "swsg",
+        "observations": 276,
+        "last_scrape": "2026-07-22 21:19:00.009+00",
+        "days_stale": 1,
+        "distinct_days": 1
+      }
+    ]
+  },
+  {
+    "title": "identity: canonical by tier",
+    "rows": [],
+    "error": "column \"identity_tier\" does not exist"
+  },
+  {
+    "title": "identity: canonical by tps_version",
+    "rows": [
+      {
+        "version": "1.0",
+        "n": 2256
+      },
+      {
+        "version": "ac-v1",
+        "n": 226
+      },
+      {
+        "version": "washing_machine-v1",
+        "n": 171
+      },
+      {
+        "version": "tv-v1",
+        "n": 154
+      },
+      {
+        "version": "tablet-v1",
+        "n": 144
+      },
+      {
+        "version": "vacuum-v1",
+        "n": 136
+      },
+      {
+        "version": "laptop-v1",
+        "n": 82
+      },
+      {
+        "version": "refrigerator-v1",
+        "n": 82
+      },
+      {
+        "version": "model-corroboration-v1",
+        "n": 40
+      },
+      {
+        "version": "mobile-v1",
+        "n": 38
+      },
+      {
+        "version": "dishwasher-v1",
+        "n": 37
+      },
+      {
+        "version": "audio-v1",
+        "n": 34
+      },
+      {
+        "version": "camera-v1",
+        "n": 21
+      },
+      {
+        "version": "coffee_maker-v1",
+        "n": 15
+      },
+      {
+        "version": "kettle-v1",
+        "n": 11
+      },
+      {
+        "version": "air_fryer-v1",
+        "n": 5
+      },
+      {
+        "version": "toaster-v1",
+        "n": 4
+      },
+      {
+        "version": "blender-v1",
+        "n": 3
+      },
+      {
+        "version": "oven-v1",
+        "n": 3
+      },
+      {
+        "version": "microwave-v1",
+        "n": 2
+      },
+      {
+        "version": "alias-reconciliation-v1",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "title": "projection: corroboration by category",
+    "rows": [
+      {
+        "category": "air_conditioner",
+        "canonicals": 232,
+        "corroborated": 23,
+        "pct_corroborated": "9.9"
+      },
+      {
+        "category": "washing_machine",
+        "canonicals": 171,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "tv",
+        "canonicals": 154,
+        "corroborated": 16,
+        "pct_corroborated": "10.4"
+      },
+      {
+        "category": "tablet",
+        "canonicals": 145,
+        "corroborated": 18,
+        "pct_corroborated": "12.4"
+      },
+      {
+        "category": "vacuum",
+        "canonicals": 136,
+        "corroborated": 2,
+        "pct_corroborated": "1.5"
+      },
+      {
+        "category": "laptop",
+        "canonicals": 83,
+        "corroborated": 7,
+        "pct_corroborated": "8.4"
+      },
+      {
+        "category": "refrigerator",
+        "canonicals": 82,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "mobile",
+        "canonicals": 55,
+        "corroborated": 55,
+        "pct_corroborated": "100.0"
+      },
+      {
+        "category": "dishwasher",
+        "canonicals": 37,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "audio",
+        "canonicals": 34,
+        "corroborated": 7,
+        "pct_corroborated": "20.6"
+      },
+      {
+        "category": "camera",
+        "canonicals": 21,
+        "corroborated": 3,
+        "pct_corroborated": "14.3"
+      },
+      {
+        "category": "smartwatch",
+        "canonicals": 15,
+        "corroborated": 15,
+        "pct_corroborated": "100.0"
+      },
+      {
+        "category": "coffee_maker",
+        "canonicals": 15,
+        "corroborated": 1,
+        "pct_corroborated": "6.7"
+      },
+      {
+        "category": "kettle",
+        "canonicals": 11,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "air_fryer",
+        "canonicals": 5,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "toaster",
+        "canonicals": 4,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "monitor",
+        "canonicals": 4,
+        "corroborated": 4,
+        "pct_corroborated": "100.0"
+      },
+      {
+        "category": "blender",
+        "canonicals": 3,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "oven",
+        "canonicals": 3,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      },
+      {
+        "category": "microwave",
+        "canonicals": 2,
+        "corroborated": 0,
+        "pct_corroborated": "0.0"
+      }
+    ]
+  },
+  {
+    "title": "staging: resolution state",
+    "rows": [
+      {
+        "status": "valid",
+        "n": 19003
+      },
+      {
+        "status": "low_confidence_candidate",
+        "n": 9791
+      }
+    ]
+  },
+  {
+    "title": "unresolved long tail",
+    "rows": [
+      {
+        "total_obs": 141418,
+        "staged_obs": 28791
+      }
+    ]
+  },
+  {
+    "title": "price history depth",
+    "rows": [],
+    "error": "column \"canonical_id\" does not exist"
+  },
+  {
+    "title": "ER candidate tables present",
+    "rows": []
+  },
+  {
+    "title": "CATALOG TRUTH — distinct Saudi listings under merchant identity contracts",
+    "rows": [
+      {
+        "store_id": 1,
+        "slug": "jarir",
+        "observations": 58938,
+        "raw_distinct_urls": 2974,
+        "SAUDI_CATALOG": 1442,
+        "foreign_obs_excluded": 5498,
+        "url_inflation": "2.06x",
+        "obs_per_listing": "40.9"
+      },
+      {
+        "store_id": 2,
+        "slug": "amazon",
+        "observations": 3022,
+        "raw_distinct_urls": 3022,
+        "SAUDI_CATALOG": 2710,
+        "foreign_obs_excluded": 0,
+        "url_inflation": "1.12x",
+        "obs_per_listing": "1.1"
+      },
+      {
+        "store_id": 3,
+        "slug": "noon",
+        "observations": 562,
+        "raw_distinct_urls": 562,
+        "SAUDI_CATALOG": 562,
+        "foreign_obs_excluded": 0,
+        "url_inflation": "1.00x",
+        "obs_per_listing": "1.0"
+      },
+      {
+        "store_id": 4,
+        "slug": "extra",
+        "observations": 42240,
+        "raw_distinct_urls": 5108,
+        "SAUDI_CATALOG": 5040,
+        "foreign_obs_excluded": 0,
+        "url_inflation": "1.01x",
+        "obs_per_listing": "8.4"
+      },
+      {
+        "store_id": 5,
+        "slug": "almanea",
+        "observations": 36380,
+        "raw_distinct_urls": 1584,
+        "SAUDI_CATALOG": 1350,
+        "foreign_obs_excluded": 0,
+        "url_inflation": "1.17x",
+        "obs_per_listing": "26.9"
+      },
+      {
+        "store_id": 8,
+        "slug": "swsg",
+        "observations": 276,
+        "raw_distinct_urls": 276,
+        "SAUDI_CATALOG": 134,
+        "foreign_obs_excluded": 0,
+        "url_inflation": "2.06x",
+        "obs_per_listing": "2.1"
+      },
+      {
+        "store_id": 0,
+        "slug": "TOTAL",
+        "observations": 141418,
+        "raw_distinct_urls": 13526,
+        "SAUDI_CATALOG": 11238,
+        "foreign_obs_excluded": 5498,
+        "url_inflation": "-",
+        "obs_per_listing": "-"
+      }
+    ]
+  }
+]

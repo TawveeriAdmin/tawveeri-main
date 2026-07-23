@@ -6,6 +6,41 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-060 — Alias fold-in, Noon/SWSG onboarding, and the normalization gap re-diagnosed · Accepted (2026-07-23)
+**Context:** execute the two measured levers (alias reconciliation, new-merchant onboarding) under a hard no-duplicate-card, no-precision-loss constraint. Before-state preserved at `docs/evidence/before-ADR-060.json`.
+
+**Verification 1 — the two gains are DISTINCT, not the same identities counted twice.** Added a `--no-alias` arm to the simulator for a clean 2×2:
+
+| store set | exact-key | with aliasing | aliasing gain |
+|---|---|---|---|
+| 1,2,4,5 | 54 | 95 | **+41** |
+| + noon, swsg | 86 | 125 | **+39** |
+| **store gain** | **+32** | **+30** | |
+
+Combined 54 → 125 (**+131%**) with only ~2 identities of overlap, so the effects are additive. **Correction: the aliasing prize is +41, not the +16 previously reported** — that figure was measured on the small already-staged subset rather than the full catalog.
+
+**Precision failures caught in dry-run, before any write** (each now a regression test):
+- `MODEL:HDR10` was accepted as a model number and bridged a **mini-LED TV to a QLED TV**. Fix: a standards/format-token denylist (HDR10, QLED, WIFI6…).
+- `MODEL:QA65Q` — a truncated Samsung code — bridged **Q6/Q7/Q8/QN70** into one product. Fix: a **6-character identity floor** matching ADR-049. Genuine short models (TCL `50P7K`) are lost; correct under precision-over-recall.
+- The database's `canonical_products_brand_model_number_idx` rejected a batch: an observation-level clean-create check is **not sufficient**, because a canonical for the same brand+model can already exist from another source while holding different observations. Added a **second clean-create gate** on brand+model and identity-key collision. 4 classes correctly deferred.
+- A class with several MODEL keys is a **variant group** (colour/region), not one SKU; assigning it a single `model_number` asserts a false identity. Now left null.
+
+**Category-earned auto-status (ADR-057 doctrine, now enforced in code).** `write-alias-canonicals.ts` writes nothing unless a category is passed via `--categories`, granted only after reviewing its classes in `--dry`. **tablet — granted.** **tv — REFUSED**: even after the fixes, `samsung|75|4k|qled|NO_HZ` still fuses Q6/Q7/Q8/QN70 because the TV spec key omits the series designation. TV needs a series-aware identity contract before it may auto-fold. The same bridge-quality guard was applied to onboarding, skipping `huawei|matepad|NO_GEN|256|wifi|NO_SIZE`.
+
+**Noon and SWSG onboarded through the chain, not by configuration.** `TPS_STORES` gained both (which also fixes `price_history.store_name` falling back to the literal `"3"` for Noon). Staging was refreshed via a new `bulk-backfill --normalize-only` — staging is a rebuildable working set, canonicals are the moat, so identity churn is measured before it can reach them. Corroboration was then run **only over keys in which the new store participates** (`onboard-store-corroborate.ts`) — purely additive, never a blanket re-corroboration.
+
+**Measured result (before → after):** canonical_products 3,462 → 3,465 · projection 1,209 → **1,212**, corroborated **144 → 151** (15 at ≥3 stores, 1 at ≥4) · staging 27,534 → 28,794 · listing facts 11,103 → **11,238** · price_history +15 · raw_observations **unchanged at 141,418** (evidence never mutated). **Duplicate brand+model cards: 0.** Idempotency verified by re-running the fold-in: it found the members already attached and wrote nothing. **Laptop reached its first cross-store corroborations (6 keys).**
+
+**Consumer-visible proof of onboarding:** Noon moved from `cheapest=—%` (absent from every comparison) to **`cheapest=22%`**; SWSG from `insufficient_data`/sample 0 to **134 listings, confidence high** after adding store 8 to the listing-facts builder. Listing facts now equal the Saudi catalog exactly (11,238).
+
+**Why listing facts went 12,937 → 11,103 → 11,238.** Not evidence loss — `raw_observations` is untouched and every re-scrape is retained. The 12,937 figure double-counted: (a) 5,480 non-Saudi Jarir observations, and (b) one product published under several URLs (Extra 68, Almanea 234). Removing both left 11,103; adding SWSG's 134 gave 11,238. Consolidation **deepened** evidence per listing — Jarir `avg distinct_days` **6.12 → 9.86**, Almanea **6.24 → 7.04**.
+
+**THE NEXT LEVER, RE-DIAGNOSED.** `normalization-gap.ts` attributes every unidentified listing to a cause. Of 11,238 Saudi listings, 2,301 (20.5%) have an identity and **8,937 (79.5%) do not** — but 1,771 of those are accessories, so the **product-grade gap is 7,166**. Decomposition:
+- **6,913 (77.4%) — no category plugin claims the listing.** This is **category coverage**, not parser quality.
+- 2,024 (22.6%) — a plugin detected the listing and rejected it (top reasons: `audio: model missing` 359, `air_conditioner: null in critical: technology` 212, `refrigerator: type missing` 161).
+
+Merchant-published categories show where the coverage is missing: **smartphone/mobile ~1,609 listings across 4 stores** (the mobile plugin exists but is deliberately excluded from `CATEGORY_DEFS`), **wearable/smartwatch ~973**, **monitor 535**, personal_care 220, gaming 196, smart_home 169, printer 167, networking 110. **Registering the existing mobile matcher is the single highest-yield next action** — the largest category in Saudi electronics is currently outside the identity pipeline.
+
 ### ADR-059 — Merchant-specific listing identity, market scoping, and honest catalog truth · Accepted (2026-07-23)
 **Context:** ADR-058 shipped a *universal* URL-canonicalisation rule. Measuring it per merchant proved that abstraction wrong: the same query parameter means different things at different merchants, each publishes its durable product id in its own shape, and a global rule either destroys identity (merging variants) or fragments it (host/path churn).
 

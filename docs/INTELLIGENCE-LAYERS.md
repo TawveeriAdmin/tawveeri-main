@@ -82,12 +82,25 @@ A merchant is **ingesting** when raw observations arrive. It is **operational** 
 
 `npm run tps:identity-impact -- --simulate --stores <ids>` proves the chain **read-only, before any write** — it normalizes raw observations from scratch, deduplicates by merchant listing identity, applies alias reconciliation, and reports which stores actually participate in a corroborated identity. Measured 2026-07-23:
 
-| store set | Saudi listings | identity coverage | corroborated |
-|---|---|---|---|
-| 1,2,4,5 (current pipeline) | 10,541 | 19.9% | **95** |
-| + noon, swsg | 11,237 | 20.5% | **125** |
+| store set | exact-key | with aliasing | Saudi listings | identity coverage |
+|---|---|---|---|---|
+| 1,2,4,5 | 54 | **95** | 10,541 | 19.9% |
+| + noon, swsg | 86 | **125** | 11,237 | 20.5% |
 
-Onboarding Noon and SWSG is therefore worth **+30 corroborated identities (+32%)**, with Noon participating in **37** corroborations (zero today) and SWSG in 2 — a prize that only exists because ADR-058 stopped Noon's retailer SKUs from becoming its identity (Noon now yields 177 identities instead of 88 store-unique `MODEL:` keys). For comparison, alias reconciliation alone is worth +16. **Identity coverage is ~20% of the Saudi catalog — the dominant remaining gap is normalization coverage, not entity resolution.**
+The two levers are **distinct and additive** (~2 identities of overlap): aliasing **+41**, new merchants **+30**; combined 54 → 125, **+131%**.
+
+**Noon and SWSG were onboarded through the chain (ADR-060), not by configuration.** Consumer-visible proof: Noon moved from `cheapest=—%` (in no comparison at all) to **`cheapest=22%`**; SWSG from `insufficient_data` to **134 listings at high confidence**. Projection corroboration **144 → 151**; laptop earned its first cross-store corroborations. Zero duplicate cards.
+
+### Layer 0b — The normalization gap (the largest remaining lever)
+
+`npm run tps:normalization-gap` attributes every unidentified listing to a cause — it is **not one generic parser problem**. Of 11,238 Saudi listings: 2,301 (20.5%) identified, **8,937 (79.5%) not**, of which 1,771 are accessories ⇒ **product-grade gap 7,166**.
+
+| cause | listings | share of gap |
+|---|---|---|
+| **no category plugin claims the listing** | 6,913 | **77.4%** |
+| plugin detected, then rejected | 2,024 | 22.6% |
+
+So the dominant lever is **category coverage**, not parser quality. Merchant-published categories show the missing mass: **smartphone/mobile ~1,609 across 4 stores** (a mature mobile matcher exists but is excluded from `CATEGORY_DEFS`), **wearable/smartwatch ~973**, **monitor 535**, personal_care 220, gaming 196, smart_home 169, printer 167, networking 110. Top parser rejections: `audio: model missing` 359, `air_conditioner: null in critical: technology` 212, `refrigerator: type missing` 161.
 
 ---
 

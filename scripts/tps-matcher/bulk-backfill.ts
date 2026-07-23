@@ -86,6 +86,16 @@ function extractPrice(p: Record<string, unknown>): number | null {
   for (const d of defs) console.log(`  ${d.category}: ${perCatKeys[d.category].size} distinct keys`);
   await pg.end();
 
+  // ADR-060: `--normalize-only` refreshes STAGING without touching canonicals.
+  // Staging is a rebuildable working set; canonical_products is the moat. When a
+  // parser changes, staging must be re-derived first and MEASURED before any
+  // canonical write, so identity churn can never silently reach the moat.
+  if (process.argv.includes("--normalize-only")) {
+    console.log("\n--normalize-only: staging refreshed; canonicals untouched.");
+    console.log("Next: measure with `npm run tps:identity-impact`, then fold in via a clean-create writer.");
+    return;
+  }
+
   // Corroborate each category over ALL accumulated staging (verified write path).
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   console.log("\n=== CORROBORATE ===");

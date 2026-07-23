@@ -56,6 +56,30 @@ const SPEC_ONLY_PATTERNS: RegExp[] = [
 ];
 
 /**
+ * Technology/standard tokens that stores put in a `model` field. They are
+ * capabilities shared by thousands of products, never identities.
+ *
+ * Measured harm: `MODEL:HDR10` was accepted as a Hisense and a Skyworth model
+ * number and then acted as an alias bridge, fusing a mini-LED TV with a QLED TV.
+ */
+const STANDARD_TOKENS = new Set([
+  "HDR10", "HDR10+", "HDR", "HLG", "DOLBYVISION", "DOLBYATMOS", "DTSX",
+  "4K", "8K", "UHD", "FHD", "QHD", "WIFI6", "WIFI7", "BT5", "USB3", "USBC",
+  "HDMI2", "TYPEC", "LED", "OLED", "QLED", "IPS", "VA", "TN", "NFC", "GPS",
+]);
+
+/**
+ * Minimum length for a model number used as an IDENTITY key.
+ *
+ * Matches the ADR-049 model-corroboration gate. Short codes are the dangerous
+ * ones: they are often truncations or spec fragments. Measured harm at 5 chars —
+ * `QA65Q` (a truncated Samsung code) bridged Q6, Q7, Q8 and QN70 series TVs into
+ * one product. Genuine short models (TCL `50P7K`) are lost; that is the correct
+ * trade under precision-over-recall — a missed match merely defers.
+ */
+const MIN_MODEL_LENGTH = 6;
+
+/**
  * True when `value` is (or looks like) an identifier minted by the observing
  * retailer rather than the manufacturer — i.e. unusable for cross-store identity.
  */
@@ -77,11 +101,12 @@ export function isStoreInternalIdentifier(value: string): boolean {
  */
 export function hasModelNumberShape(value: string): boolean {
   const v = value.trim();
-  if (v.length < 4 || v.length > 24) return false;
+  if (v.length < MIN_MODEL_LENGTH || v.length > 24) return false;
   if (/\s/.test(v)) return false;                      // marketing name / title fragment
   if (!/^[A-Za-z0-9][A-Za-z0-9\-/._]*$/.test(v)) return false;
   if (!/[A-Za-z]/.test(v) || !/\d/.test(v)) return false;
   if (SPEC_ONLY_PATTERNS.some((re) => re.test(v))) return false;
+  if (STANDARD_TOKENS.has(v.toUpperCase().replace(/[-._/]/g, ""))) return false;
   return true;
 }
 

@@ -56,6 +56,31 @@ describe("model-number shape validation", () => {
   ])("rejects spec-only value %s — %s", (value) => {
     expect(hasModelNumberShape(value)).toBe(false);
   });
+
+  // ADR-060 hazards, each caught in a production dry-run before any write.
+  it.each([
+    ["HDR10", "a video format bridged a mini-LED TV to a QLED TV"],
+    ["HDR10+", "format token"],
+    ["DOLBYVISION", "format token"],
+    ["QLED", "panel technology, shared by thousands of products"],
+    ["WIFI6", "connectivity standard"],
+  ])("rejects technology/standard token %s — %s", (value) => {
+    expect(hasModelNumberShape(value)).toBe(false);
+  });
+
+  it.each([
+    ["QA65Q", "truncated Samsung code — bridged Q6/Q7/Q8/QN70 into one product"],
+    ["116UX", "5-char code"],
+    ["QA75Q", "truncated"],
+  ])("rejects model shorter than the 6-char identity floor: %s — %s", (value) => {
+    expect(hasModelNumberShape(value)).toBe(false);
+  });
+
+  it("keeps the full-length siblings that the truncation was fusing", () => {
+    for (const m of ["QA65Q6FAAU", "QA65Q8FAAUXSA", "QA75QN70FAUXZN"]) {
+      expect(hasModelNumberShape(m)).toBe(true);
+    }
+  });
 });
 
 describe("extractManufacturerModel — sku is never trusted", () => {
