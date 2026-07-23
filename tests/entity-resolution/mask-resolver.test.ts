@@ -61,4 +61,12 @@ describe("verifySameProduct — the deterministic precision gate (candidates →
     expect(verifySameProduct(r("iPhone 16 Pro Max 256GB", "apple"), r("iPhone 16 Pro Max 512GB", "apple"))).toBe(false); // 256 ≠ 512
     expect(verifySameProduct(r("iPhone 16 Pro Max 256GB", "apple"), r("iPhone 16 Pro 256GB", "apple"))).toBe(false);     // Pro Max ≠ Pro
   });
+  it("REJECTS laptop config hard negatives (CPU tier / RAM) embeddings can't separate", () => {
+    // Lenovo IPS3 15IRH10, same chassis, different CPU tier → different product for comparison
+    expect(verifySameProduct(r("Lenovo laptop Intel Core i7 16GB RAM 512GB", "lenovo"), r("Lenovo laptop Intel Core i5 8GB RAM 512GB", "lenovo"))).toBe(false);
+    // Same CPU tier, different RAM
+    expect(verifySameProduct(r("Asus Vivobook Core i5 8GB RAM 512GB", "asus"), r("Asus Vivobook Core i5 16GB RAM 512GB", "asus"))).toBe(false);
+    // Genuinely same config across languages still ACCEPTS
+    expect(verifySameProduct(r("HP 250 G10 Core i5 8GB RAM 512GB", "hp"), r("لابتوب HP 250 G10 كور i5 رام 8 جيجا 512", "hp"))).toBe(true);
+  });
 });

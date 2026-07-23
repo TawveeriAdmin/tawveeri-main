@@ -86,7 +86,7 @@ function variantConflict(a: string, b: string): boolean {
 // Model DESIGNATION tokens — the family/generation identity embeddings can't separate
 // (Galaxy A56 ≠ A25, Watch Series 10 ≠ 11, Huawei GT5 ≠ GT6). Two forms: alphanumeric
 // family codes (A56, S25, GT5, X8b) and a generation number right after a family word.
-const GEN_KEYWORD = /\b(?:series|gen|generation|gt|note|band|pad|tab|reno|find|mate|nord|edge|neo)\s*(\d{1,3})\b/gi;
+const GEN_KEYWORD = /\b(?:series|gen|generation|gt|note|band|pad|tab|reno|find|mate|nord|edge|neo|watch|fit|legion|victus|loq|vivobook|zenbook|omen|pavilion|nitro|tuf|rog)\s*(\d{1,3})\b/gi;
 export function designationSet(s: string): Set<string> {
   const t = s.toLowerCase(); const out = new Set<string>();
   for (const m of t.matchAll(/\b([a-z]{1,4}\d{1,4}[a-z]?)\b/g)) {
@@ -104,6 +104,23 @@ function designationConflict(a: string, b: string): boolean {
   return true;                                    // both have designations, none shared ⇒ different model
 }
 
+// CPU tier & RAM — strong discriminators for laptops that spec-numbers miss
+// (i5/8GB ≠ i7/16GB). Category-aware precision signals (founder-authorized).
+function cpuTier(s: string): string | null {
+  const t = s.toLowerCase();
+  let m = t.match(/\b(?:core\s*|intel\s*)?i([3579])\b/); if (m) return "i" + m[1];
+  m = t.match(/\bcore\s*([3579])\b/); if (m) return "i" + m[1];
+  m = t.match(/\bryzen\s*([3579])\b/); if (m) return "ryzen" + m[1];
+  m = t.match(/\b(m[1234])\s*(?:pro|max|ultra)?\b/); if (m) return m[1];
+  return null;
+}
+function ramGb(s: string): number | null {
+  const m = s.toLowerCase().match(/(\d{1,3})\s*(?:gb|جيجا|چیجا)?\s*(?:ram|رام)/) || s.toLowerCase().match(/(?:ram|رام)\s*[:\-]?\s*(\d{1,3})/);
+  if (m) { const n = Number(m[1]); if ([2, 3, 4, 6, 8, 12, 16, 24, 32, 36, 48, 64, 128].includes(n)) return n; }
+  return null;
+}
+function pairConflict<T>(a: T | null, b: T | null): boolean { return a != null && b != null && a !== b; }
+
 /**
  * DETERMINISTIC VERIFICATION GATE (Constitutional precision layer). Given a candidate
  * pair (surfaced by semantic recall), auto-resolve to SAME only when independent
@@ -118,5 +135,7 @@ export function verifySameProduct(a: ERRecord, b: ERRecord): boolean {
   if (numbersConflict(a.title, b.title)) return false;
   if (variantConflict(a.title, b.title)) return false;
   if (designationConflict(a.title, b.title)) return false;
+  if (pairConflict(cpuTier(a.title), cpuTier(b.title))) return false; // i5 ≠ i7 (laptops)
+  if (pairConflict(ramGb(a.title), ramGb(b.title))) return false;     // 8GB ≠ 16GB
   return true;
 }
