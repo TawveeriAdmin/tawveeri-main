@@ -147,6 +147,30 @@ const hours = (a: Date | null, b: Date | null): number | null =>
       : `${invisible} of ${idx.total} products (${pct.toFixed(1)}%) are missing or stale in search`,
     `${idx.unsynced} never synced, ${idx.stale} changed since sync; last sync ${idx.last}`);
 
+  // ── 6b. CUSTOMER-FACING COMPLETENESS ─────────────────────────────────────
+  // Freshness is not enough. This monitor's first version reported everything
+  // green while EVERY product had no image and no way to buy — the projection
+  // was current, it was just incomplete. A shopper cannot use a price table
+  // with no picture and no exit link, so those are health, not cosmetics.
+  const card = await one<{ total: number; img: number; exit: number; comparable: number }>(`
+    select count(*)::int total,
+           count(image_url)::int img,
+           count(affiliate_best_url)::int exit,
+           count(*) filter (where store_count >= 2)::int comparable
+    from tps_product_projection`);
+  const imgPct = card.total ? (100 * card.img) / card.total : 0;
+  const exitPct = card.total ? (100 * card.exit) / card.total : 0;
+  add("customer", "product images", imgPct < 50 ? "FAIL" : imgPct < 90 ? "WARN" : "OK",
+    `${card.img} of ${card.total} products have an image (${imgPct.toFixed(1)}%)`,
+    "a card with no picture is close to unusable for a shopper");
+  add("customer", "measured exit links", exitPct < 50 ? "FAIL" : exitPct < 90 ? "WARN" : "OK",
+    `${card.exit} of ${card.total} products have a /go exit (${exitPct.toFixed(1)}%)`,
+    "without an exit the customer cannot buy and no commission is attributable");
+  const cmpPct = card.total ? (100 * card.comparable) / card.total : 0;
+  add("customer", "multi-store comparison", cmpPct < 10 ? "WARN" : "OK",
+    `${card.comparable} of ${card.total} products compare across >=2 stores (${cmpPct.toFixed(1)}%)`,
+    "the core promise of the platform; grows with merchant and identity coverage");
+
   // ── 7. PRICE FACTS — the substrate for trust and discount integrity ───────
   const facts = await one<{ n: number; updated: string | null; newest_obs: string | null }>(`
     select (select count(*) from tps_listing_price_facts)::int n,

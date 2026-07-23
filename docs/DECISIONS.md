@@ -6,6 +6,26 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-063 — The product card: images and measured exit links reach the customer · Accepted (2026-07-23)
+**Context (founder question applied literally):** *if Tawveeri had one engineering week before launch, what would create the greatest increase in customer value?* Rather than start the next category plugin, I measured what a shopper actually receives.
+
+**Measured failure — the platform was not usable as a shopping product:**
+- **0 of 1,215 products had an image**, while **100% of raw observations carry image evidence** (every store, in three different payload fields).
+- **0 of 1,215 had an exit link** (`affiliate_best_url`). `build-tps-projection.ts` never touched `image_url`, and its header deferred `affiliate_best_url` to "an independent script later" — that script was never written.
+
+A price table with no picture and no way to buy is a database, not a product. This was a pure propagation gap: the evidence existed the whole time.
+
+**Two things this exposed about the previous milestone.** ADR-062's health monitor reported everything green throughout, because it checked **freshness but not completeness** — the projection was perfectly current and perfectly unusable. And the earlier ADR-059 finding that Almanea runs on a dev host recurred here: its images are served from `imgs.dev-almanea.com`. **Verified before acting** — that host returns HTTP 200 while the plausible production host `imgs.almanea.sa` does not resolve at all, so rewriting it would have broken every Almanea image. Used as published, recorded as supplier risk.
+
+**Decision:**
+- `src/lib/catalog/product-image.ts` — pure, tested selection. Parses the three payload shapes stores actually publish (JSON-array string, real array, bare string); **rejects placeholders** (SWSG serves a base64 1×1 lazy-load pixel as `https://swsg.co/data:image/png;base64,…` — rendering it shows an empty box that looks like a broken product); accepts only hosts verified to serve, which **must remain a subset of `next.config.ts` `remotePatterns`** because Next refuses unlisted hosts and would render a broken image. Prefers the **cheapest offer's** image so picture and headline price agree. 15 tests, every fixture a real payload.
+- `scripts/tps-core/build-projection-presentation.ts` — the missing script. Bulk, idempotent, read-only on evidence. Also fills `affiliate_best_url` as **`/go/<offer_id>` — a MEASURED exit, never a raw store URL**, so every click stays attributable and the commission layer observable; publishing a raw URL here would have created an unmeasured leak around that guarantee. Reports *why* any product lacks an image, so store-side defects stay visible.
+- ADR-062's monitor gains a **customer** section: product images, measured exit links, multi-store comparison share. Completeness is health, not cosmetics.
+
+**Result (live, verified):** images **0 → 1,206 of 1,215 (99.3%)**, measured exits **0 → 1,206 (99.3%)**, search index re-synced so all of it is live. Every one of the five image hosts in use was already permitted by `remotePatterns`, so they render. The 9 remaining products are canonicals with no linked observation.
+
+**Consequences:** the customer-facing surface went from unusable to complete in one pass, using evidence already held. Health now reads **0 FAIL · 5 WARN · 16 OK**, and the honest headline number is now visible in the monitor: **only 15.1% of products compare across ≥2 stores** — that, not images, is the next customer-value ceiling.
+
 ### ADR-062 — Propagation is a first-class concern: platform health monitor + intelligence refresh orchestrator · Accepted (2026-07-23)
 **Context (a deliberate step back from the identity subsystem):** after registering mobile I asked the platform-level question instead of starting the next plugin — *did the value actually reach a user?* It had not.
 
