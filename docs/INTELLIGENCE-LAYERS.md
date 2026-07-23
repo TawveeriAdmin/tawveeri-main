@@ -110,6 +110,15 @@ Mobile (the first category held to this standard): claimed 2,070 → identified 
 
 ---
 
+## Layer 0c — Propagation & health (ADR-062)
+
+Value that never reaches a user is not value (Constitution Art. IX). Intelligence is DERIVED through a chain of independent scripts, and nothing used to enforce that they ran — measured consequence: the search index held **394 of 1,215** products, unrebuilt for ~34 hours, so **68% of the catalog was unsearchable** while every dashboard looked healthy.
+
+- **`npm run tps:health`** — read-only, non-zero exit on FAIL. Sixteen checks: ingestion freshness per store · stuck jobs · ingestion driver · intelligence-refresh automation · staging lag · projection freshness · **search-index propagation** · price-fact freshness · merchant-trust freshness · graph edges · duplicate-card invariant. Each verdict carries its evidence and states no more than the evidence proves.
+- **`npm run tps:refresh`** — runs the chain in dependency order, idempotently, with **failure isolation** (a step whose dependency failed is SKIPped, never silently stale). `--fast` skips the ~13-min projection rebuild; `--only <steps>` targets a subset.
+
+Known operational truth: `scraping_schedules` is empty and every recent run has `schedule_id = null`, so **ingestion is driven by an external trigger and the in-DB dispatcher is unused**. `tps:refresh` still has to be invoked — wiring it to that same trigger is the open automation step; until then `tps:health` is what makes drift visible.
+
 ## Refresh order (operational)
 
 1. ingest (cron / `activate-store`) → `raw_observations`

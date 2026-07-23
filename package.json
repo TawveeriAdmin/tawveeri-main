@@ -35,7 +35,9 @@
     "tps:alias-foldin": "tsx scripts/tps-core/write-alias-canonicals.ts",
     "tps:onboard-store": "tsx scripts/tps-core/onboard-store-corroborate.ts",
     "tps:plugin-yield": "tsx scripts/tps-analysis/plugin-yield.ts",
-    "tps:plugin-failures": "tsx scripts/tps-analysis/plugin-failures.ts"
+    "tps:plugin-failures": "tsx scripts/tps-analysis/plugin-failures.ts",
+    "tps:health": "tsx scripts/tps-analysis/platform-health.ts",
+    "tps:refresh": "tsx scripts/tps-core/refresh-intelligence.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

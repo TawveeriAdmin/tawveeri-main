@@ -6,6 +6,23 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-062 — Propagation is a first-class concern: platform health monitor + intelligence refresh orchestrator · Accepted (2026-07-23)
+**Context (a deliberate step back from the identity subsystem):** after registering mobile I asked the platform-level question instead of starting the next plugin — *did the value actually reach a user?* It had not.
+
+**Measured failure:** `tps_product_projection` held 1,215 rows; the Algolia index held **394**, last rebuilt **~34 hours earlier**. **68% of the catalog was unsearchable**, including an entire day of identity work (corroboration 144 → 183). Every dashboard looked healthy. Constitution Art. IX is explicit — documentation and a green deploy are never success; **value that never propagates is not value**.
+
+**Root cause:** Tawveeri ingests continuously, but intelligence is DERIVED through a chain of five independent scripts — projection → search index, listing facts → merchant trust, canonicals → edges — and **nothing scheduled, ordered, or audited any of them**. The per-minute scheduler only pokes `/api/cron/dispatch`, which reads `scraping_schedules`; that table is **empty**, and every recent `scraping_runs` row carries `schedule_id = null`, so ingestion is driven entirely by an external trigger and the in-DB dispatcher is unused.
+
+**Decision — two permanent capabilities:**
+- **`npm run tps:health`** (`platform-health.ts`, read-only, non-zero exit on FAIL) — one command answering "is every derived layer current with respect to its evidence, and is anything stuck?" Sixteen checks across ingestion freshness per store, stuck jobs, ingestion driver, intelligence-refresh automation, staging lag, projection freshness, **search-index propagation**, price-fact freshness, merchant-trust freshness, graph edges, and the duplicate-card invariant.
+- **`npm run tps:refresh`** (`refresh-intelligence.ts`) — runs the whole chain in dependency order, idempotently, with per-step timing and **failure isolation**: a step whose dependency failed is reported as SKIP rather than silently producing stale output, so one broken link never masquerades as success. `--fast` skips the ~13-minute projection rebuild; `--only <steps>` targets a subset.
+
+**A correction made to this ADR's own monitor before shipping it.** The first version reported stuck scraping runs as FAIL, claiming they "block dispatch". The evidence disagreed: all three stuck runs have `schedule_id = null`, and the partial unique index permits one running row **per schedule** — so they block nothing. The check now grades by whether the run belongs to a schedule, and the empty-schedule check reports "dispatcher idle; ingestion is externally driven" rather than a false alarm. A monitor that overclaims gets ignored; this one states exactly what the evidence proves (ADR-055 standard).
+
+**Result (live):** search index **394 → 1,215 products**; 821 products, including all of this session's identity work, became searchable. Health now reads **0 FAIL · 5 WARN · 13 OK**, every warning truthful: samsung_ksa and shaker never ingested, 3 ad-hoc runs died without finishing, the dispatcher is idle, and intelligence refresh is unscheduled.
+
+**Consequences:** this class of silent failure — improvements that never reach users — is now detectable by one command and fixable by another. Both are schedulable. **Remaining gap (stated, not hidden):** `tps:refresh` still has to be *invoked*; wiring it to the external trigger that already drives ingestion is the next automation step, and until then the health monitor is what makes the drift visible.
+
 ### ADR-061 — Mobile earns registration: a rebuilt bilingual parser makes phones Tawveeri's most-compared category · Accepted (2026-07-23)
 **Context:** ADR-060 measured the normalization gap as **77% "no category plugin claims the listing"** — category coverage, not parser quality. Mobile was the largest missing category (~2,070 Saudi listings across 6 stores) and a plugin already existed, deliberately excluded from `CATEGORY_DEFS`. **Parser quality had to come before registration**, so the plugin was measured first with a new read-only `tps:plugin-yield`.
 
