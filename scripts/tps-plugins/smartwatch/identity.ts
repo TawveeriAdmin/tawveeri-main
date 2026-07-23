@@ -17,7 +17,9 @@ export function buildIdentityKey(
   p: Record<string, unknown>,
   _meta?: Record<string, unknown>
 ): IdentityResult {
-  const cb = canonicalizeBrand(brand);
+  // Prefer the brand the parser resolved (it may have been inferred from the
+  // title when the store published "Unknown"); fall back to the raw value.
+  const cb = (typeof p.brand === "string" && p.brand) ? p.brand : canonicalizeBrand(brand);
   if (!cb || cb === "unknown") return { key: null, status: "invalid", reason: "brand not canonicalizable" };
 
   const family = p.family as string | null;

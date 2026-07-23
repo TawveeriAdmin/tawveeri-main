@@ -19,18 +19,43 @@ const ACCESSORY_SIGNALS = [
   "حامل", "stand", "علبه", "box", "طقم", "accessory", "accessories", "ملحق",
 ];
 
-/** Any of these ⇒ a different device category. */
+/**
+ * Any of these ⇒ a different device category.
+ *
+ * The networking and power-bank entries are not defensive guesses — they are
+ * measured. A bare "band" signal matched **"Dual Band (2.4 GHz/5 GHz)"** in every
+ * router listing, and the Arabic word for hour, "ساعة", is a substring of
+ * **"مللي أمبير/ساعة"** (milliamp-hour), so power banks were being claimed as
+ * watches. Together they accounted for 128 of 403 rejections.
+ */
 const FOREIGN_CATEGORY_SIGNALS = [
+  // other personal devices
   "جوال", "هاتف", "smartphone", "iphone", "ايفون", "galaxy s", "تابلت", "tablet",
   "ipad", "ايباد", "laptop", "لابتوب", "تلفزيون", "سماعه", "سماعات", "buds",
   "airpods", "headphone", "earbud", "ساعه حائط", "wall clock", "منبه", "alarm clock",
+  // networking — "Dual Band" is the reason bare "band" is not a wearable signal
+  "router", "راوتر", "access point", "range extender", "repeater", "مقوي",
+  "modem", "مودم", "wi-fi 6", "wifi 6", "wi-fi 7", "cpe", "mesh", "adapter", "محول",
+  // power — "مللي أمبير/ساعة" (mAh) contains the Arabic word for hour
+  "مللي امبير", "مللي أمبير", "بور بانك", "باور بانك", "power bank", "powerbank", "بطاريه متنقله",
+  // misc electronics that carried a stray signal
+  "projector", "بروجكتر", "vr ", "headset", "game console", "لعبه", "smart ring", "خاتم ذكي",
 ];
 
-/** Positive wearable evidence, bilingual. */
+/**
+ * Positive wearable evidence, bilingual.
+ *
+ * Bare "band" is deliberately absent (see above); only qualified band phrases and
+ * brand-specific product lines are trusted.
+ */
 const WEARABLE_SIGNALS = [
-  "ساعه ذكيه", "ساعه", "smartwatch", "smart watch", "watch",
-  "سوار ذكي", "fitness band", "سواره رياضيه", "تراكر", "tracker",
-  "apple watch", "galaxy watch", "watch fit", "watch gt", "amazfit", "band",
+  "ساعه ذكيه", "smartwatch", "smart watch", "watch",
+  "سوار ذكي", "fitness band", "سواره رياضيه", "تراكر لياقه",
+  "apple watch", "galaxy watch", "galaxy fit", "watch fit", "watch gt",
+  "amazfit", "mi band", "smart band", "honor band", "huawei band", "فور رانر", "forerunner",
+  // Generic "ساعة" is last: it only reaches here once every rejection above has
+  // been applied, so power banks and wall clocks can no longer arrive with it.
+  "ساعه",
 ];
 
 const hit = (text: string, list: string[]) => list.some((s) => text.includes(normalizeArabic(s)));

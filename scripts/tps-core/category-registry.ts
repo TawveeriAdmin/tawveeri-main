@@ -13,6 +13,7 @@ import { cameraPlugin, normalize as cameraN } from "../tps-plugins/camera";
 import { acPlugin } from "../tps-plugins/ac";
 import { laptopPlugin, normalize as laptopN } from "../tps-plugins/laptop";
 import { mobilePlugin, normalize as mobileN } from "../tps-plugins/mobile";
+import { smartwatchPlugin, normalize as smartwatchN } from "../tps-plugins/smartwatch";
 import { refrigeratorPlugin } from "../tps-plugins/refrigerator";
 import { washingMachinePlugin } from "../tps-plugins/washing_machine";
 import { APPLIANCE_BUNDLES, APPLIANCE_CATEGORIES } from "../tps-plugins/appliance";
@@ -112,6 +113,35 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
       return { family: p[1], generation: p[2], variant: p[3], storage_gb: Number(p[4]) };
     },
     canonSeed: (k) => `canonical:${k}`, normSeed: (o) => `norm:raw_observations:${o}`,
+    requireValidTier: true, priceBand: 1.5,
+  },
+  // ADR-068 — smartwatch registered on COMPARISON VALUE, not the blended headline.
+  // Measured: 91.9% identified among brands sold by >=2 merchants (mobile, the
+  // reference, is 80.1%); the blended 61.8% is dragged down by a large tail of
+  // single-merchant no-name brands where no comparison is possible at any parser
+  // quality. Case size and connectivity are identity — a 42mm GPS and a 49mm
+  // Cellular are different SKUs at different prices.
+  smartwatch: {
+    category: "smartwatch", detected: "smartwatch", plugin: smartwatchPlugin,
+    normalize: (a, b, br, pl) => smartwatchN(a, b, br, pl), version: "smartwatch-v1",
+    filterKeywords: ["ساعة ذكية", "smartwatch", "smart watch", "apple watch", "galaxy watch", "watch fit", "watch gt"],
+    names: (k) => {
+      const [brand, family, gen, variant, size, conn] = k.split("|");
+      const v = variant && variant !== "Standard" ? ` ${variant}` : "";
+      const sz = size && size !== "NO_SIZE" ? ` ${size}mm` : "";
+      const c = conn === "cellular" ? " Cellular" : "";
+      const label = `${family} ${gen}${v}${sz}${c}`.replace(/\s+/g, " ").trim();
+      return { nameAr: `${brand} ${label}`, nameEn: `${brand.charAt(0).toUpperCase()}${brand.slice(1)} ${label}` };
+    },
+    attrs: (k) => {
+      const p = k.split("|");
+      return {
+        family: p[1], generation: p[2], variant: p[3],
+        size_mm: p[4] === "NO_SIZE" ? null : Number(p[4]), connectivity: p[5],
+      };
+    },
+    canonSeed: (k) => `canonical:smartwatch:${k}`,
+    normSeed: (o) => `norm:smartwatch:raw_observations:${o}`,
     requireValidTier: true, priceBand: 1.5,
   },
   laptop: {

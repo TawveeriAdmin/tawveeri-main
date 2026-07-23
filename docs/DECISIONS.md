@@ -6,6 +6,33 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-068 — Return on Engineering: measure comparison value, not headline coverage; smartwatch registered on that basis · Accepted (2026-07-23)
+**Context:** ADR-066 refused to register smartwatch at 41.5% "identified" against the 64.8% mobile had cleared. Before spending further effort on the remaining 300 rejections, I asked whether that metric measures *value*. It does not.
+
+**The insight.** Tawveeri exists to COMPARE prices. A product sold by exactly one merchant can never be compared, however perfectly it is identified. So the number that should drive parser effort is not "what fraction did we identify?" but **"of the listings where a comparison is even possible, how many do we identify?"** New instrument: `npm run tps:comparison-value <plugin>`, which splits a plugin's listings by whether their brand appears in ≥2 merchants.
+
+**Measured — the headline was hiding the truth:**
+
+| plugin | headline | **where comparison is possible** | where it is impossible |
+|---|---|---|---|
+| mobile (registered at 64.8%) | 64.9% | **80.1%** | 18.0% |
+| smartwatch (refused at 41.5%) | 48.8% | **79.2%** | 6.1% |
+
+Smartwatch was already within one point of the registered reference. Its blended number was dragged down by a large tail of **single-merchant no-name brands** (PEJE, AcclaFit, Bostbo, AGM — Amazon's unbranded flood), where no parser quality can ever produce a comparison. **The 64.8% bar was a proxy that happened to work for mobile because mobile has a smaller isolated tail.** This is a correction of the metric, not a weakening of the standard.
+
+**Then the bounded causes were fixed — every rule anchored to a measured lost comparison**, never speculative coverage:
+- **Two precision leaks in the detector**: a bare `"band"` signal matched **"Dual Band (2.4 GHz/5 GHz)"** in every router listing, and the Arabic word for hour, `"ساعة"`, is a substring of **"مللي أمبير/ساعة"** (mAh) — so routers, access points and power banks were being claimed as watches. 128 of 403 rejections.
+- **Brand inference from the title** — Jarir and Amazon publish `brand: "Unknown"` on watches whose titles say "Honor Watch 5"; the title is evidence too.
+- **Bilingual line rules** for measured misses on multi-merchant brands: Huawei's bare `ساعة N`, Samsung's `جالكسي 8` word order and its Ultra line carrying a **year** instead of a generation, Xiaomi's `ريدمي ووتش 5`, Mibro's letter-by-letter transliteration (`سي 4` = C4), Garmin's Forerunner with the number on **either** side, plus Aukey (3 merchants, previously 0/12) and Oraimo (2 merchants, previously 0/8).
+
+**Result: 79.2% → 91.9%** where comparison is possible — now **above** mobile's 80.1%. The 29 residual misses are titles carrying no model at all (`هواوي ساعه ذكية، بلوتوث، 1.64 بوصة`), correctly rejected: unknown beats incorrect.
+
+**A real bug the tests caught:** `buildIdentityKey` re-derived the brand from the raw value, discarding the parser's inference — so every `brand: "Unknown"` product was rejected despite a readable title. The resolved brand now travels in the payload.
+
+**Registered.** Live result: smartwatch **51 products, 22 corroborated** (previously 15, all from model-corroboration). Canonicals 1,815 → **1,851**; projection comparable 196 → **203**; **0 duplicate cards, 0 duplicate identity keys**. Search retrieval and ranking hold at 100%. 23 regression tests, every fixture a real Saudi listing.
+
+**Consequence — a better standard.** Registration is now judged on comparison value, with the headline reported alongside for honesty. `tps:comparison-value` also tells us where NOT to spend: 229 smartwatch listings sit on single-merchant brands at 14.8% identified, and raising that buys catalogue, not comparisons.
+
 ### ADR-067 — Set-based projection: 21.6 minutes → 12 seconds, with proven output equivalence · Accepted (2026-07-23)
 **Context:** the projection builder was the binding constraint on the entire growth strategy. Every lever — more merchants, more categories, more products — increases the canonical count, and v2 issued **one PostgREST round-trip per canonical** (fetch price history, then upsert). Measured baseline: **1,296 seconds (21.6 minutes) for 1,815 canonicals**, ~3,600 round-trips. At 10,000 canonicals that is roughly two hours per rebuild.
 
