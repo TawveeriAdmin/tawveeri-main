@@ -1,20 +1,21 @@
+// PM2 config. NOTE (ADR-078): the intelligence scheduler is now started from
+// within the web server via src/instrumentation.ts (so it works on Railway, whose
+// start command runs only the web process). It is therefore NOT a separate PM2 app
+// here anymore — that would double it. A PM2 CLUSTER (instances > 1) would spawn
+// one scheduler per web instance; if you deploy under PM2 cluster, either set
+// instances: 1 or add a DB advisory lock. Railway runs a single standalone
+// instance, so exactly one scheduler runs there.
 module.exports = {
   apps: [
     {
       name: 'nextjs',
-      // Run the standalone server DIRECTLY (not `npm start`). `npm start` is now the
-      // production launcher (scripts/start-production.js) which itself starts the
-      // scheduler — under PM2 that would double the scheduler, since PM2 also runs
-      // the `scheduler` app below. This keeps exactly one scheduler on either path
-      // (PM2: web app + scheduler app; Railway `npm start`: launcher runs both). ADR-078.
-      script: 'node',
-      args: '.next/standalone/server.js',
+      script: 'npm',
+      args: 'start',
       cwd: './',
-      instances: 2,
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        HOSTNAME: '0.0.0.0',
       },
       error_file: './logs/nextjs-error.log',
       out_file: './logs/nextjs-out.log',
@@ -23,25 +24,6 @@ module.exports = {
       autorestart: true,
       max_memory_restart: '1G',
       exp_backoff_restart_delay: 100,
-      wait_ready: true,
-      listen_timeout: 10000,
-    },
-    {
-      name: 'scheduler',
-      script: './scripts/scheduler.js',
-      cwd: './',
-      instances: 1,
-      exec_mode: 'fork',
-      env: {
-        NODE_ENV: 'production',
-      },
-      error_file: './logs/scheduler-error.log',
-      out_file: './logs/scheduler-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
-      autorestart: true,
-      max_memory_restart: '256M',
-      exp_backoff_restart_delay: 500,
       wait_ready: true,
       listen_timeout: 10000,
     },
