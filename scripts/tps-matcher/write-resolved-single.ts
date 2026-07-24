@@ -19,12 +19,23 @@ import { assertFingerprint } from "../tps-core/tps-batch";
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const KEY_CHUNK = 150;
   const summary: Record<string, unknown> = {};
+  // A single-store key can already exist as a canonical (a prior run, or detector
+  // overlap producing the SAME tps_identity_key under another category — the unique
+  // index `canonical_products_tps_identity_key_uidx` is GLOBAL). write_ac_batch's
+  // canonical insert is not idempotent on that index, so re-writing such a key
+  // FATALs and aborts the entire refresh chain (measured: shaker ingestion surfaced
+  // a `tablet` collision that broke projection). Skip keys that already exist, and
+  // track keys written THIS run so a later category can't re-emit the same global
+  // key. Mirrors onboard-store-corroborate's fresh-filter.
+  const { rows: existRows } = await pg.query(`select tps_identity_key from canonical_products where tps_identity_key is not null`);
+  const seen = new Set<string>(existRows.map((r) => r.tps_identity_key as string));
   for (const def of Object.values(CATEGORY_DEFS)) {
     // distinct single-store keys for this category (exactly 1 store)
     const { rows } = await pg.query(
       `select identity_key from tps_identity_staging where category=$1 and identity_key is not null
        group by identity_key having count(distinct store_id)=1`, [def.category]);
-    const keys = rows.map((r) => r.identity_key as string);
+    const keys = rows.map((r) => r.identity_key as string).filter((k) => !seen.has(k));
+    for (const k of keys) seen.add(k);
     let written = 0;
     for (let i = 0; i < keys.length; i += KEY_CHUNK) {
       const r = await corroboratePass(sb, def, keys.slice(i, i + KEY_CHUNK), { singleStore: true });

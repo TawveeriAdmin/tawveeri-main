@@ -34,6 +34,10 @@ import { buildNames as laptopNames } from "../tps-matcher/laptop-matcher-v1-dry"
 export const TPS_STORES = [
   { id: 1, name: "جرير" }, { id: 4, name: "اكسترا" }, { id: 2, name: "أمازون" },
   { id: 5, name: "المنيع" }, { id: 3, name: "نون" }, { id: 8, name: "الشتاء والصيف" },
+  // ADR-082: merchant coverage. These two have working scrapers but were never
+  // ingested; adding them here gives their offers a proper display name (instead
+  // of the numeric store_id fallback) AND includes them in the progressive sweep.
+  { id: 6, name: "سامسونج السعودية" }, { id: 7, name: "شاكر" },
 ];
 
 export interface CategoryDef {

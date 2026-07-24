@@ -62,10 +62,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // The dispatch itself fires per-store cron routes fire-and-forget and returns
+    // fast — it is the tick's only critical path. The progressive sweep and daily
+    // coverage snapshot are heavy, throttled, best-effort jobs; awaiting them here
+    // intermittently exceeded Railway's edge timeout and returned 502 to the
+    // scheduler. Run them DETACHED so the tick always responds promptly. Safe on
+    // the long-running standalone server (the event loop keeps the promise alive
+    // after the response), and each job has its own throttle + slot-claim so a
+    // detached run cannot overlap the next tick's.
     const result = await dispatchDueSchedules();
-    const sweep = await maybeProgressiveSweep(); // E7 continuous linkage (throttled, best-effort)
-    const ledger = await maybeCoverageSnapshot(); // daily coverage snapshot (throttled)
-    return NextResponse.json({ success: true, ...result, progressive_sweep: sweep, coverage_snapshot: ledger });
+    void maybeProgressiveSweep().catch((e) => console.error('[dispatch] sweep bg error:', e instanceof Error ? e.message : e));
+    void maybeCoverageSnapshot().catch((e) => console.error('[dispatch] ledger bg error:', e instanceof Error ? e.message : e));
+    return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error('[dispatch] failed:', error);
     return NextResponse.json(

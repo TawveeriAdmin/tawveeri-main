@@ -39,6 +39,15 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
+import { TPS_STORES } from "./tps-core/category-registry";
+
+// ADR-082: some price_history rows carry the numeric store_id as store_name (a
+// fallback from before a store was added to TPS_STORES). price_history is
+// append-only, so we cannot rewrite them — instead collapse numeric store_names to
+// their canonical display name at READ time, so a store never counts twice (e.g. a
+// legacy '7' and a new 'شاكر' must be the ONE store shaker, not two → no false
+// comparison). Names are Arabic literals with no embedded quotes (SQL-safe).
+const STORE_NAME_CASE = `case ph.store_name ${TPS_STORES.map((s) => `when '${s.id}' then '${s.name}'`).join(" ")} else ph.store_name end`;
 
 const DRY = process.argv.includes("--dry");
 const QUIET = process.argv.includes("--quiet") || DRY;
@@ -142,11 +151,11 @@ async function main() {
   const t1 = Date.now();
   const { rows } = await pg.query<Row>(`
     with latest as (
-      select distinct on (ph.canonical_product_id, ph.store_name)
-             ph.canonical_product_id, ph.store_name, ph.price
+      select distinct on (ph.canonical_product_id, ${STORE_NAME_CASE})
+             ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price
       from price_history ph
       where ph.tps_observation_id is not null
-      order by ph.canonical_product_id, ph.store_name, ph.observed_at desc
+      order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),
     agg as (
       select canonical_product_id,

@@ -196,6 +196,63 @@ setTimeout(() => runRefresh(true), FIRST_REFRESH_DELAY_MS);
 setInterval(() => runRefresh(true), REFRESH_INTERVAL_MS);
 if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRESH_INTERVAL_MS);
 
+// ── Merchant ingestion loop (ADR-082) ────────────────────────────────────────
+// The ADR-069 scraping_schedules dispatcher never ran in production: the knowledge
+// DB's scraping_schedules is a minimal stub (integer store_id, is_active) while the
+// dispatcher's fetchDueSchedules SELECTs legacy columns (cron_expression/is_enabled/
+// max_pages…) that only ever existed on the legacy DB — a two-database convergence
+// artifact. Rather than migrate a fragile mid-convergence schema for a never-run
+// subsystem, this drives the PROVEN per-store cron routes directly (verified live:
+// shaker discovery created 80 TVs + 96 appliances). It onboards merchants whose
+// scrapers work but were never ingested (shaker, samsung_ksa) → merchant overlap →
+// the only lever that grows realized comparisons (89.6% of products are single-store).
+// Fully reversible: INGEST_STORES='' disables it. Gated on CRON_SECRET.
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'shaker,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean);
+const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
+const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
+const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(5 * 60 * 1000), 10);    // 5m after boot
+// Broad category buckets each store's cron scraper knows how to crawl.
+const INGEST_CATEGORIES = { shaker: ['tv', 'appliance', 'kitchen'], samsung_ksa: ['tv', 'mobile'] };
+
+async function cronPost(path, body) {
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CRON_SECRET}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { console.error(`[ingest] ${path} HTTP ${res.status}`); return null; }
+    return await res.json().catch(() => ({}));
+  } catch (e) { console.error(`[ingest] ${path} failed:`, e?.message || e); return null; }
+}
+
+let ingestRunning = false;
+async function runDiscovery() {
+  if (ingestRunning) { console.log('[ingest] discovery still running — skipping'); return; }
+  ingestRunning = true;
+  try {
+    for (const slug of INGEST_STORES) {
+      for (const cat of (INGEST_CATEGORIES[slug] || ['tv'])) {
+        const r = await cronPost('/api/cron/discover-products', { store_slug: slug, category: cat, max_pages: 3 });
+        if (r) console.log(`[ingest] discovery ${slug}/${cat}: discovered=${r.products_discovered} created=${r.products_created} linked=${r.products_linked}`);
+      }
+    }
+  } finally { ingestRunning = false; }
+}
+async function runPriceUpdate() {
+  for (const slug of INGEST_STORES) {
+    const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: 400, older_than_hours: 12 });
+    if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
+  }
+}
+
+if (DISPATCH_ENABLED && INGEST_STORES.length) {
+  console.log(`[ingest] merchant ingestion enabled for [${INGEST_STORES.join(', ')}] — discovery every ${(INGEST_DISCOVERY_MS / 3600000).toFixed(0)}h, prices every ${(INGEST_PRICE_MS / 3600000).toFixed(0)}h`);
+  setTimeout(runDiscovery, INGEST_FIRST_DELAY_MS);
+  setInterval(runDiscovery, INGEST_DISCOVERY_MS);
+  setInterval(runPriceUpdate, INGEST_PRICE_MS);
+}
+
 process.on('SIGTERM', () => {
   console.log('[scheduler] SIGTERM received — exiting');
   process.exit(0);
