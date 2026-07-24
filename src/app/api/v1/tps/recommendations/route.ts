@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
+import { productTrust } from '@/lib/intelligence/evidence-engine';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,9 +66,9 @@ export async function GET(req: NextRequest) {
     if (cheaper && diff > 0) { score += Math.min(40, Math.round(diff / 50)); reason_ar = `أوفر بـ ${Math.round(diff)} ريال`; kind = 'best_value'; }
     if (!target && (c.store_count ?? 0) >= 2) { score += 10; reason_ar = `أفضل قيمة · متوفر في ${c.store_count} متاجر`; kind = 'best_value'; }
 
-    // Confidence from corroboration + identity confidence (deterministic, no fabricated certainty).
-    const confidence = Math.min(95, Math.round(((c.identity_confidence ?? 70) + (c.store_count ?? 0) * 8) / 1.2));
-    return { c, score, reason_ar, kind, confidence };
+    // Trust from the shared evidence engine (ADR-087) — one trust definition everywhere.
+    const trust = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: (c.store_count ?? 0) >= 2, tps_identity_key: c.tps_identity_key });
+    return { c, score, reason_ar, kind, confidence: trust.score, trust };
   }).sort((a, b) => b.score - a.score).slice(0, limit);
 
   const recommendations = scored.map((s) => ({
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
     lowest_price: s.c.lowest_price, store_count: s.c.store_count,
     canonical_url: s.c.compare_url,
     reason: { kind: s.kind, reason_ar: s.reason_ar }, confidence: s.confidence,
+    trust: { score: s.trust.score, tier: s.trust.tier, caveats_ar: s.trust.caveats_ar },
   }));
 
   return NextResponse.json({

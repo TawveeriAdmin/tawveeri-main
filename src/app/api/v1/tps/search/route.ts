@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
+import { productTrust } from '@/lib/intelligence/evidence-engine';
 import { algoliasearch } from 'algoliasearch';
 import { normalizeSearchQuery } from '@/lib/search/query-normalize';
 
@@ -112,35 +113,44 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const results = canon.map((c, i) => ({
-    canonical_id: c.canonical_id,
-    tps_identity_key: c.tps_identity_key,
-    title_ar: c.display_name_ar, title_en: c.display_name_en,
-    brand: c.brand, category: c.category, image_url: c.image_url,
-    lowest_price: c.lowest_price, highest_price: c.highest_price, saving: c.saving,
-    price_spread_pct: c.price_spread_pct, store_count: c.store_count,
-    has_comparison: c.has_comparison, comparison_available: true, confidence: c.identity_confidence,
-    canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
-    decision: { is_smart_pick: i === 0 && !!c.has_comparison, reason_ar: c.has_comparison ? `متوفر في ${c.store_count} متاجر` : null },
-    tps_version: 'tps-v1', kind: 'canonical', updated_at: c.updated_at,
-    offers: (offersByCanon.get(c.canonical_id) ?? []).sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9)),
-  }));
+  const results = canon.map((c, i) => {
+    // Evidence-grounded trust (ADR-087) — comparison rows carry cross-store spread too.
+    const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, price_spread_pct: c.price_spread_pct, tps_identity_key: c.tps_identity_key });
+    return {
+      canonical_id: c.canonical_id,
+      tps_identity_key: c.tps_identity_key,
+      title_ar: c.display_name_ar, title_en: c.display_name_en,
+      brand: c.brand, category: c.category, image_url: c.image_url,
+      lowest_price: c.lowest_price, highest_price: c.highest_price, saving: c.saving,
+      price_spread_pct: c.price_spread_pct, store_count: c.store_count,
+      has_comparison: c.has_comparison, comparison_available: true, confidence: t.score,
+      trust: { score: t.score, tier: t.tier, caveats_ar: t.caveats_ar },
+      canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
+      decision: { is_smart_pick: i === 0 && !!c.has_comparison, reason_ar: c.has_comparison ? `متوفر في ${c.store_count} متاجر` : null },
+      tps_version: 'tps-v1', kind: 'canonical', updated_at: c.updated_at,
+      offers: (offersByCanon.get(c.canonical_id) ?? []).sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9)),
+    };
+  });
 
   // Layer 2 — resolved-single: known identity, one offer, NO comparison claim.
   const canonIds = new Set(canon.map((c) => c.canonical_id));
   const discoveryOut = discovery
     .filter((c) => !canonIds.has(c.canonical_id))
-    .map((c) => ({
-      canonical_id: c.canonical_id, tps_identity_key: c.tps_identity_key,
-      title_ar: c.display_name_ar, title_en: c.display_name_en,
-      brand: c.brand, category: c.category, image_url: c.image_url,
-      lowest_price: c.lowest_price, store_count: c.store_count,
-      has_comparison: false, comparison_available: false, confidence: c.identity_confidence,
-      canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
-      decision: { is_smart_pick: false, reason_ar: 'متوفر في متجر واحد · المقارنة غير متاحة' },
-      tps_version: 'tps-v1', kind: 'resolved_single',
-      offers: (offersByCanon.get(c.canonical_id) ?? []).slice(0, 1),
-    }));
+    .map((c) => {
+      const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: false, tps_identity_key: c.tps_identity_key });
+      return {
+        canonical_id: c.canonical_id, tps_identity_key: c.tps_identity_key,
+        title_ar: c.display_name_ar, title_en: c.display_name_en,
+        brand: c.brand, category: c.category, image_url: c.image_url,
+        lowest_price: c.lowest_price, store_count: c.store_count,
+        has_comparison: false, comparison_available: false, confidence: t.score,
+        trust: { score: t.score, tier: t.tier, caveats_ar: t.caveats_ar },
+        canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
+        decision: { is_smart_pick: false, reason_ar: 'متوفر في متجر واحد · المقارنة غير متاحة' },
+        tps_version: 'tps-v1', kind: 'resolved_single',
+        offers: (offersByCanon.get(c.canonical_id) ?? []).slice(0, 1),
+      };
+    });
 
   return NextResponse.json({
     version: 'v1', query: rawQ, normalized_query: q, count: results.length,

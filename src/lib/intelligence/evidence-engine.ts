@@ -172,3 +172,27 @@ export function assessTrust(e: EvidenceInput): TrustAssessment {
   const tier: TrustTier = score >= 72 ? "high" : score >= 50 ? "medium" : "low";
   return { score, tier, factors, caveats_ar, caveats_en, version: EVIDENCE_ENGINE_VERSION };
 }
+
+/** Detects an unstated price-determining spec (NO_STORAGE/NO_TECH/…) from the key. */
+export const specsIncompleteFromKey = (key: string | null | undefined): boolean =>
+  /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(key || "");
+
+/**
+ * Convenience wrapper: assess trust from a standard TPS projection row, so every
+ * customer surface (decide / search / recommendations / feed) computes trust ONE way
+ * instead of copies of the old ad-hoc heuristic. `extra` layers price/freshness
+ * evidence when a caller has it.
+ */
+export function productTrust(
+  row: { store_count?: number | null; identity_confidence?: number | null; has_comparison?: boolean | null; price_spread_pct?: number | null; tps_identity_key?: string | null },
+  extra?: Partial<EvidenceInput>,
+): TrustAssessment {
+  return assessTrust({
+    store_count: row.store_count,
+    identity_confidence: row.identity_confidence,
+    has_comparison: row.has_comparison ?? ((row.store_count ?? 0) >= 2),
+    price_spread_pct: row.price_spread_pct,
+    specs_incomplete: specsIncompleteFromKey(row.tps_identity_key),
+    ...extra,
+  });
+}

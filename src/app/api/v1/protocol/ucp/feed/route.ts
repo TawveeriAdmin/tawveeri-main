@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
+import { productTrust } from '@/lib/intelligence/evidence-engine';
 import { ucpAdapter, type TawveeriProduct } from "@/lib/protocol/adapter";
 
 export const runtime = "nodejs";
@@ -54,10 +55,11 @@ export async function GET(req: NextRequest) {
   }
 
   const products = canon.map((c) => {
+    const trust = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, tps_identity_key: c.tps_identity_key });
     const tp: TawveeriProduct = {
       canonical_id: c.canonical_id, identity_key: c.tps_identity_key,
       title_ar: c.display_name_ar, title_en: c.display_name_en, brand: c.brand, category: c.category, image_url: c.image_url,
-      attributes: attrById.get(c.canonical_id) ?? {}, comparison_available: !!c.has_comparison, confidence: c.identity_confidence,
+      attributes: attrById.get(c.canonical_id) ?? {}, comparison_available: !!c.has_comparison, confidence: trust.score,
       offers: (offersByCanon.get(c.canonical_id) ?? []).sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9)),
     };
     return ucpAdapter.toProduct(tp);

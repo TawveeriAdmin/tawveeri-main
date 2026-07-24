@@ -7,7 +7,7 @@
 // Saudi Context First: KSA-hot BTU sizing, total cost incl. installation + est.
 // electricity. v1 category: air_conditioner (the flagship journey); the shape is
 // category-generic so tv/tablet/etc. plug in later.
-import { assessTrust, type TrustAssessment } from "@/lib/intelligence/evidence-engine";
+import { productTrust, type TrustAssessment } from "@/lib/intelligence/evidence-engine";
 
 export interface ShoppingTask {
   category: string;
@@ -162,11 +162,11 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
  * sentinel check flags a price-determining spec left unstated (mobile NO_STORAGE etc.).
  */
 export function baseTrust(row: CanonicalRow): TrustAssessment {
-  return assessTrust({
+  return productTrust({
     store_count: row.store_count,
     identity_confidence: row.identity_confidence,
     has_comparison: row.has_comparison,
-    specs_incomplete: /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(row.tps_identity_key || ""),
+    tps_identity_key: row.tps_identity_key,
   });
 }
 
