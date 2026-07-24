@@ -34,3 +34,30 @@ describe("AC identity — LG design series distinguish products", () => {
     expect(build("LG Split AC 18000 BTU Dual Inverter Cool Only").p.series_or_platform).toBeNull();
   });
 });
+
+describe("ADR-079 — technology is optional (NO_TECH), so budget/window ACs identify", () => {
+  const buildB = (en: string, brand: string) => {
+    const n = acN("", en, brand);
+    return { ...acPlugin.buildIdentityKey(brand, n.payload, { model_number: n.model_number }), p: n.payload as Record<string, unknown> };
+  };
+  it("a Gree split AC with no inverter/standard word is identified as NO_TECH", () => {
+    const r = buildB("Gree Split AC 18500 BTU Cool Only WiFi", "Gree");
+    expect(r.p.technology).toBeNull();
+    expect(r.key).toBe("gree|split|NO_SERIES|18500|NO_TECH|cool_only");
+    expect(r.status).toBe("low_confidence_candidate");
+  });
+  it("two stores' same budget AC corroborate on the NO_TECH key", () => {
+    const a = buildB("Midea Mission Extreme Split AC 18800 BTU Cool Only WiFi", "Midea");
+    const b = buildB("Midea Split AC 18800 Cool Only White", "Midea");
+    expect(a.key).toBe(b.key);
+    expect(a.key).toContain("|NO_TECH|");
+  });
+  it("a stated-inverter AC keeps tech=Inverter and never merges with NO_TECH", () => {
+    const inv = buildB("Samsung Split AC Inverter 17000 BTU Cool Only", "Samsung");
+    expect(inv.key).toContain("|Inverter|");
+    expect(inv.key).not.toContain("|NO_TECH|");
+  });
+  it("still invalid without capacity or cooling_mode (those stay required)", () => {
+    expect(acPlugin.buildIdentityKey("Gree", acN("", "Gree Split AC WiFi White", "Gree").payload, {}).status).toBe("invalid");
+  });
+});

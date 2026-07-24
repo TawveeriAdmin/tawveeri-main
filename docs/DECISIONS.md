@@ -6,6 +6,15 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-079 — AC identification 58.9% → 83.1%: technology is an optional discriminator, not a gate · Accepted (2026-07-24)
+**Context:** `tps:funnel` showed the platform's biggest leak is identity coverage (only 43% of product-grade listings get an identity). Bucketing the unidentified by category surfaced **air-conditioner as the largest recoverable multi-merchant cluster (175 comparison-possible listings)** — a surprise, because AC is a *registered* plugin. It had simply never been measured by `tps:comparison-value` (it wasn't in the CANDIDATES). Adding it revealed **58.9% (292/496) — the worst of any registered category, 204 lost comparisons.** A defect dump found the cause: the identity **required** `technology` (inverter/standard), but budget/window ACs (midea, gree, hisense, haier, TCL) routinely omit it — **120 listings failed on that single field alone**.
+
+**Decision:** `technology` becomes an OPTIONAL discriminator (`NO_TECH`), exactly like `series_or_platform` (`NO_SERIES`) and monitor's `NO_PANEL`. Precision is preserved because a listing that DOES state "inverter" keeps `technology=Inverter` and can never merge with a `NO_TECH` one — and "inverter" is a selling point stores state when it applies, so an omitted value overwhelmingly means a basic unit, which groups correctly. `capacity_btu` and `cooling_mode` stay required.
+
+**Churn-safe by construction:** a tech-stated AC keeps its exact key; a tech-less AC goes invalid → identified (purely additive). Verified through the full chain: **identification 58.9% → 83.1% (+120)**; the merge-quality audit shows **the same 4 pre-existing flags and NO new false merge from NO_TECH** (precision held); products 2,248 → 2,346; 0 FAIL, 0 duplicate cards. 4 new regression tests.
+
+**Lesson (recorded):** measure comparison-value for EVERY registered plugin, not only new ones — tv/tablet/smartwatch were assumed fine, but AC hid a 24-point gap because no one had run the number.
+
 ### ADR-078 — Automate the intelligence chain in production (the scheduler never started on Railway) · Accepted (2026-07-24)
 **Context:** the derived-intelligence chain (normalize → projection → search → facts → trust → edges) has had an hourly scheduler since ADR-065/067 — `scripts/scheduler.js`, wired into `ecosystem.config.js` as a PM2 app. But **production runs on Railway, whose start command is `npm run start` — only the Next.js standalone server.** PM2/`ecosystem.config.js` is never invoked there, so the scheduler never ran in production: the chain executed only when a human ran it, and the customer-facing projection/search drifted between runs (the ADR-062 failure). Two further blockers made it unrunnable even if started: `tsx` was not installed at all (`npx tsx` would fetch it at runtime), and `pg`/`dotenv` were devDependencies a production prune would remove.
 
