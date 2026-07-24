@@ -24,6 +24,35 @@ require('dotenv').config({ path: '.env' });
 
 const { spawn } = require('child_process');
 
+// ── Heartbeat (ADR-078) ──────────────────────────────────────────────────────
+// The scheduler runs in production but leaves no DB trace until its first hourly
+// refresh, so there is no way to confirm it actually STARTED (the cwd-path bug
+// meant it silently never did). This writes a single-row heartbeat on boot and
+// every tick, so `tps:health` / a query can confirm liveness within a minute —
+// independent of Railway logs. Best-effort: any failure here never affects scheduling.
+let hbClient = null;
+async function heartbeat(field) {
+  try {
+    if (!process.env.SUPABASE_DB_URL) return;
+    if (!hbClient) {
+      const { Client } = require('pg');
+      hbClient = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+      await hbClient.connect();
+      await hbClient.query(`create table if not exists tps_scheduler_heartbeat (
+        id int primary key default 1, pid int, booted_at timestamptz, last_tick timestamptz,
+        last_refresh_at timestamptz, last_refresh_status text)`);
+    }
+    if (field === 'boot') {
+      await hbClient.query(`insert into tps_scheduler_heartbeat (id,pid,booted_at,last_tick) values (1,$1,now(),now())
+        on conflict (id) do update set pid=$1, booted_at=now(), last_tick=now()`, [process.pid]);
+    } else if (field === 'tick') {
+      await hbClient.query(`update tps_scheduler_heartbeat set last_tick=now() where id=1`);
+    } else if (typeof field === 'object') {
+      await hbClient.query(`update tps_scheduler_heartbeat set last_refresh_at=now(), last_refresh_status=$1 where id=1`, [field.status]);
+    }
+  } catch (e) { /* never let heartbeat failure affect the scheduler */ }
+}
+
 const INTERVAL_MS = parseInt(process.env.SCHEDULER_INTERVAL_MS || '60000', 10);
 // ADR-067 changed what is affordable here. The projection rebuild went from
 // ~21.6 MINUTES to ~12 SECONDS when it became set-based, taking the full chain
@@ -72,6 +101,7 @@ function runRefresh(full) {
   child.on('close', (code) => {
     refreshRunning = false;
     const mins = ((Date.now() - started) / 60000).toFixed(1);
+    heartbeat({ status: code === 0 ? 'ok' : `fail(${code})` });
     if (code === 0) {
       console.log(`[refresh] ${full ? 'full' : 'fast'} chain OK in ${mins}m`);
     } else {
@@ -87,6 +117,7 @@ function runRefresh(full) {
 
 async function tick() {
   const started = Date.now();
+  heartbeat('tick');
   try {
     const res = await fetch(`${BASE_URL}/api/cron/dispatch`, {
       method: 'POST',
@@ -121,6 +152,8 @@ if (process.send) {
 console.log(`[scheduler] started — polling ${BASE_URL}/api/cron/dispatch every ${INTERVAL_MS}ms`);
 console.log(`[refresh]   full intelligence chain every ${(REFRESH_INTERVAL_MS / 60000).toFixed(0)}m (~4.6 min per run since ADR-067)`);
 
+// Write a boot heartbeat immediately so liveness is confirmable within a minute.
+heartbeat('boot');
 // Fire once immediately so PM2 restarts have an instant first tick, then every N ms.
 tick();
 setInterval(tick, INTERVAL_MS);

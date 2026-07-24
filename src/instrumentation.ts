@@ -33,14 +33,35 @@ function startIntelligenceScheduler() {
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { spawn } = require('child_process') as typeof import('child_process');
-    const child = spawn(process.execPath, ['scripts/scheduler.js'], {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require('path') as typeof import('path');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs') as typeof import('fs');
+
+    // The Next.js standalone server does `process.chdir(__dirname)` → cwd is
+    // `.next/standalone`, NOT the repo root, so a relative 'scripts/scheduler.js'
+    // resolves to a path that does not exist and the spawn silently fails (the
+    // first live symptom of ADR-078: no refresh ran). Resolve it against both the
+    // cwd and two levels up (.next/standalone → repo root) and pick what exists.
+    const candidates = [
+      path.join(process.cwd(), 'scripts', 'scheduler.js'),
+      path.resolve(process.cwd(), '..', '..', 'scripts', 'scheduler.js'),
+    ];
+    const schedulerPath = candidates.find((p) => { try { return fs.existsSync(p); } catch { return false; } });
+    if (!schedulerPath) {
+      console.error('[instrumentation] scheduler.js not found (looked in:', candidates.join(', '), ') — skipping');
+      return;
+    }
+    const repoRoot = path.dirname(path.dirname(schedulerPath)); // .../scripts/scheduler.js → repo root
+    const child = spawn(process.execPath, [schedulerPath], {
+      cwd: repoRoot,                 // so the scheduler's own `npx tsx scripts/...` resolves
       detached: true,
       stdio: 'ignore',
       env: process.env,
     });
     child.on('error', () => { /* best-effort: never propagate to the web server */ });
     child.unref();
-    console.log(`[instrumentation] intelligence scheduler spawned (pid ${child.pid})`);
+    console.log(`[instrumentation] intelligence scheduler spawned (pid ${child.pid}) from ${schedulerPath}`);
   } catch (err) {
     console.error('[instrumentation] scheduler not started (web server unaffected):',
       err instanceof Error ? err.message : err);
