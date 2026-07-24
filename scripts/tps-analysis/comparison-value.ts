@@ -27,10 +27,11 @@ import { tvPlugin } from "../tps-plugins/tv";
 import { tabletPlugin } from "../tps-plugins/tablet";
 import { laptopPlugin } from "../tps-plugins/laptop";
 import { audioPlugin } from "../tps-plugins/audio";
+import { monitorPlugin } from "../tps-plugins/monitor";
 import { canonicalizeBrand } from "../tps-core/brand-map";
 import { resolveListingIdentity, isSaudiMarket } from "../../src/lib/identity/merchant-listing-identity";
 
-const CANDIDATES: Record<string, CategoryPlugin> = { mobile: mobilePlugin, smartwatch: smartwatchPlugin, tv: tvPlugin, tablet: tabletPlugin, laptop: laptopPlugin, audio: audioPlugin };
+const CANDIDATES: Record<string, CategoryPlugin> = { mobile: mobilePlugin, smartwatch: smartwatchPlugin, tv: tvPlugin, tablet: tabletPlugin, laptop: laptopPlugin, audio: audioPlugin, monitor: monitorPlugin };
 const SLUG: Record<number, string> = { 1: "jarir", 2: "amazon", 3: "noon", 4: "extra", 5: "almanea", 8: "swsg" };
 const s = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 

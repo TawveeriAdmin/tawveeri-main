@@ -7,6 +7,7 @@
 // parser earned registration by measured quality (see the entry below).
 import type { CategoryPlugin, NormalizeResult } from "./types";
 import { tvPlugin, normalize as tvN } from "../tps-plugins/tv";
+import { monitorPlugin, normalize as monitorN } from "../tps-plugins/monitor";
 import { tabletPlugin, normalize as tabletN } from "../tps-plugins/tablet";
 import { audioPlugin, normalize as audioN } from "../tps-plugins/audio";
 import { cameraPlugin, normalize as cameraN } from "../tps-plugins/camera";
@@ -61,6 +62,27 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     names: (k) => tvNames(k),
     attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { screen_size: Number(p[1]), resolution: p[2] === "NO_RES" ? null : p[2], panel: p[3] === "NO_PANEL" ? null : p[3], refresh_rate: p[4] && p[4] !== "NO_HZ" ? Number(p[4]) : null }; },
     canonSeed: (k) => `canonical:tv:${k}`, normSeed: (o) => `norm:tv:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
+  },
+  // ADR-074 — monitor registered as a NEW category. It was unregistered (no
+  // plugin), so ~500 listings and 271 comparison-possible ones produced zero
+  // canonicals. Identity mirrors TV (brand|size|resolution|refresh|panel) but
+  // refresh is central (gaming) and text is Arabic-folded. requireValidTier:true
+  // — corroborate only the full-spec `valid` tier (precision over recall).
+  monitor: {
+    category: "monitor", detected: "monitor", plugin: monitorPlugin, normalize: monitorN, version: "monitor-v1",
+    filterKeywords: ["monitor", "مونيتور", "شاشة كمبيوتر", "شاشة العاب", "gaming monitor", "شاشة قيمنج"],
+    names: (k) => {
+      const p = k.split("|");
+      const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+      if (p[1]?.startsWith("MODEL:")) { const m = p[1].slice(6); return { nameAr: `شاشة ${p[0]} ${m}`.trim(), nameEn: `${cap(p[0])} ${m} Monitor`.trim() }; }
+      const [b, size, res, hz, panel] = p;
+      const r = res && res !== "NO_RES" ? ` ${res.toUpperCase()}` : "";
+      const h = hz && hz !== "NO_HZ" ? ` ${hz}Hz` : "";
+      const pa = panel && panel !== "NO_PANEL" ? ` ${panel.toUpperCase()}` : "";
+      return { nameAr: `شاشة ${b} ${size} بوصة${r}${h}${pa}`.replace(/\s+/g, " ").trim(), nameEn: `${cap(b)} ${size}"${r}${h}${pa} Monitor`.replace(/\s+/g, " ").trim() };
+    },
+    attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { screen_size: Number(p[1]), resolution: p[2] === "NO_RES" ? null : p[2], refresh_rate: p[3] && p[3] !== "NO_HZ" ? Number(p[3]) : null, panel: p[4] === "NO_PANEL" ? null : p[4] }; },
+    canonSeed: (k) => `canonical:monitor:${k}`, normSeed: (o) => `norm:monitor:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
   },
   tablet: {
     category: "tablet", detected: "tablet", plugin: tabletPlugin, normalize: tabletN, version: "tablet-v1",

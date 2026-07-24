@@ -11,7 +11,11 @@ const ACCESSORY_SIGNALS = [
   "receiver", "رسيفر", "ريسيفر", "antenna", "هوائي", "soundbar", "مكبر",
   "سماعة", "box tv", "tv box", "media player", "chromecast", "شاحن", "adapter",
 ];
-const MONITOR_SIGNALS = ["monitor", "مونيتور", "gaming monitor", "curved monitor", "portable monitor"];
+// ADR-074: also the Arabic computer-screen phrases, so a monitor written only in
+// Arabic (e.g. "شاشة كمبيوتر ... 4K") is claimed by the monitor plugin alone and
+// never double-detected as a TV. No real television carries these phrases.
+const MONITOR_SIGNALS = ["monitor", "مونيتور", "gaming monitor", "curved monitor", "portable monitor",
+  "شاشة كمبيوتر", "شاشة حاسوب", "شاشة قيمنج", "شاشة العاب", "شاشة ألعاب", "شاشة الألعاب", "شاشة مكتب"];
 
 export function detect(nameAr: string, nameEn: string): boolean {
   const text = (nameAr + " " + nameEn).toLowerCase();
