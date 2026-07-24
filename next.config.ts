@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
  },
  experimental: {
    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
+   // Required on Next.js 14 for instrumentation.ts `register()` to run (it became
+   // the default in Next 15). Without it the hook silently never fires — which is
+   // why the ADR-078 in-process scheduler never started in production. ADR-078.
+   instrumentationHook: true,
  },
  images: {
    remotePatterns: [
