@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const supabase = createServerClient();
 
   let proj = supabase.from("tps_product_projection")
-    .select("canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, store_count, has_comparison, identity_confidence")
+    .select("canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, store_count, has_comparison, identity_confidence, last_observed_at")
     .order("store_count", { ascending: false }).range(offset, offset + limit - 1);
   if (category) proj = proj.eq("category", category);
   const { data: rows } = await proj;
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   }
 
   const products = canon.map((c) => {
-    const trust = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, tps_identity_key: c.tps_identity_key });
+    const trust = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
     const tp: TawveeriProduct = {
       canonical_id: c.canonical_id, identity_key: c.tps_identity_key,
       title_ar: c.display_name_ar, title_en: c.display_name_en, brand: c.brand, category: c.category, image_url: c.image_url,

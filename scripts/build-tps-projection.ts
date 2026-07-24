@@ -64,6 +64,8 @@ interface Row {
   /** Latest price per store, ascending. Parallel arrays from the aggregate. */
   stores: string[] | null;
   prices: string[] | null;
+  /** Most recent priced observation across stores — per-product freshness (ADR-088). */
+  last_observed_at: string | null;
 }
 
 /** Exactly the v2 composition, order preserved. */
@@ -126,6 +128,7 @@ export function deriveProjection(r: Row) {
     compare_url: r.tps_identity_key ? `/ar/compare/${encodeURIComponent(r.tps_identity_key)}` : null,
     identity_confidence: r.identity_confidence,
     text_for_search: textForSearch,
+    last_observed_at: r.last_observed_at,
   };
 }
 
@@ -152,7 +155,7 @@ async function main() {
   const { rows } = await pg.query<Row>(`
     with latest as (
       select distinct on (ph.canonical_product_id, ${STORE_NAME_CASE})
-             ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price
+             ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at
       from price_history ph
       where ph.tps_observation_id is not null
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
@@ -160,13 +163,17 @@ async function main() {
     agg as (
       select canonical_product_id,
              array_agg(store_name order by price asc, store_name asc) as stores,
-             array_agg(price::text order by price asc, store_name asc) as prices
+             array_agg(price::text order by price asc, store_name asc) as prices,
+             -- last_observed_at = the most recent priced observation across stores; a
+             -- real per-product freshness signal for the Trust Engine (ADR-088), unlike
+             -- updated_at which is just the projection build time.
+             max(observed_at) as last_observed_at
       from latest where price > 0
       group by canonical_product_id
     )
     select c.id::text as canonical_id, c.tps_identity_key, c.name_ar, c.name_en,
            c.brand, c.category, c.identity_confidence, c.attributes,
-           a.stores, a.prices
+           a.stores, a.prices, a.last_observed_at
     from canonical_products c
     left join agg a on a.canonical_product_id = c.id
     where c.tps_identity_key is not null
@@ -196,7 +203,7 @@ async function main() {
   const COLS = [
     "canonical_id", "tps_identity_key", "display_name_ar", "display_name_en", "brand", "category",
     "lowest_price", "highest_price", "saving", "price_spread_pct", "cheapest_store", "store_count",
-    "has_comparison", "compare_url", "identity_confidence", "text_for_search",
+    "has_comparison", "compare_url", "identity_confidence", "text_for_search", "last_observed_at",
   ] as const;
   const CHUNK = 500;
   let written = 0;
@@ -229,6 +236,7 @@ async function main() {
          compare_url = excluded.compare_url,
          identity_confidence = excluded.identity_confidence,
          text_for_search = excluded.text_for_search,
+         last_observed_at = excluded.last_observed_at,
          updated_at = now()`,
       params
     );

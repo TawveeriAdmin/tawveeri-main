@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-088 — Real per-product freshness for the Trust Engine (`last_observed_at`) · Accepted (2026-07-25)
+**Context:** ADR-087's Trust Engine has a freshness factor (0.14 weight), but no surface fed it real data — the projection's `updated_at` is the BUILD time (all rows equal on each refresh), not observation recency, so freshness defaulted to the conservative "unknown" everywhere.
+
+**Decision:** `build-tps-projection.ts` now computes **`last_observed_at = max(observed_at)`** per canonical (the most recent priced observation across stores) and writes it to the projection (migration 20, additive/idempotent). `productTrust` auto-derives `data_age_hours` via `hoursSince(last_observed_at)`, and every surface (decide / tps-search / tps-recommendations / ucp-feed) now selects the column — so the freshness factor is evidence-based ("last observed 3h ago") instead of a default, and a customer signal ("last checked …") is available. Algolia-sourced search hits (which lack the column) degrade gracefully to unknown/conservative.
+
+**Evidence:** projection rebuilt, **2927/2927 rows carry `last_observed_at`** (newest 0.2h, ingestion live); full suite **628 green**; projection DRY validated the SQL (comparable 266). Deterministic; no new dependency.
+
 ### ADR-087 — Trust & Evidence Engine: evidence-grounded, transparent, cited trust scoring (Phase 2, Decision Intelligence) · Accepted (2026-07-25)
 **Context (Phase 2 vision):** Tawveeri's differentiator is "evidence, not opinions." The intelligence layer already had strong primitives (deterministic price verdicts, store trust, merchant-twin corroboration, discount integrity, product edges) but SCATTERED, and the Decision Agent's confidence was an ad-hoc heuristic — `min(95, ((identity_confidence ?? 70) + store_count*8)/1.2)` — not explainable and not evidence-cited.
 

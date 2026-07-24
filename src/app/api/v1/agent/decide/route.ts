@@ -5,7 +5,7 @@ import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
-import { assessTrust } from "@/lib/intelligence/evidence-engine";
+import { assessTrust, hoursSince } from "@/lib/intelligence/evidence-engine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     .eq("category", task.category).not("tps_identity_key", "is", null).limit(500);
   const { data: proj } = await supabase
     .from("tps_product_projection")
-    .select("canonical_id, lowest_price, store_count, has_comparison, identity_confidence, image_url")
+    .select("canonical_id, lowest_price, store_count, has_comparison, identity_confidence, image_url, last_observed_at")
     .eq("category", task.category).limit(500);
   const projById = new Map((proj ?? []).map((p) => [p.canonical_id, p]));
 
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
       specs_incomplete: /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(r.tps_identity_key || ""),
       price_confident: v?.confident ?? null,
       price_distinct_days: v?.distinctDays ?? null,
+      data_age_hours: hoursSince((proj as { last_observed_at?: string | null } | undefined)?.last_observed_at),
     });
     return { ...r, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });

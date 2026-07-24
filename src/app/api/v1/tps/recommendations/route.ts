@@ -18,7 +18,7 @@ interface Proj {
   display_name_ar: string | null; display_name_en: string | null;
   brand: string | null; category: string | null; image_url: string | null;
   lowest_price: number | null; store_count: number | null; has_comparison: boolean | null;
-  compare_url: string | null; identity_confidence: number | null;
+  compare_url: string | null; identity_confidence: number | null; last_observed_at: string | null;
 }
 // identity_key = brand|family|gen|variant|storage (mobile) or brand|type|series|btu|tech|cool (ac)
 function keyParts(k: string | null | undefined): string[] { return (k || '').split('|'); }
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(24, Math.max(1, Number(req.nextUrl.searchParams.get('limit')) || 8));
   const supabase = createServerClient();
 
-  const SEL = 'canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, lowest_price, store_count, has_comparison, compare_url, identity_confidence';
+  const SEL = 'canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, lowest_price, store_count, has_comparison, compare_url, identity_confidence, last_observed_at';
 
   let target: Proj | null = null;
   if (canonicalId) {
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
     if (!target && (c.store_count ?? 0) >= 2) { score += 10; reason_ar = `أفضل قيمة · متوفر في ${c.store_count} متاجر`; kind = 'best_value'; }
 
     // Trust from the shared evidence engine (ADR-087) — one trust definition everywhere.
-    const trust = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: (c.store_count ?? 0) >= 2, tps_identity_key: c.tps_identity_key });
+    const trust = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: (c.store_count ?? 0) >= 2, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
     return { c, score, reason_ar, kind, confidence: trust.score, trust };
   }).sort((a, b) => b.score - a.score).slice(0, limit);
 

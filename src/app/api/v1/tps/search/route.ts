@@ -32,6 +32,7 @@ interface Canon {
   price_spread_pct: number | null; cheapest_store: string | null;
   store_count: number | null; has_comparison: boolean | null;
   compare_url: string | null; identity_confidence: number | null; updated_at: string | null;
+  last_observed_at?: string | null;
 }
 
 function mapHits(res: { hits: unknown[] }): Canon[] {
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
   if (!canon.length) {
     const { data } = await supabase
       .from('tps_product_projection')
-      .select('canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, lowest_price, highest_price, saving, price_spread_pct, cheapest_store, store_count, has_comparison, compare_url, identity_confidence, updated_at')
+      .select('canonical_id, tps_identity_key, display_name_ar, display_name_en, brand, category, image_url, lowest_price, highest_price, saving, price_spread_pct, cheapest_store, store_count, has_comparison, compare_url, identity_confidence, updated_at, last_observed_at')
       .eq('has_comparison', true).order('store_count', { ascending: false }).limit(limit);
     canon = (data ?? []) as Canon[];
   }
@@ -115,7 +116,7 @@ export async function GET(req: NextRequest) {
 
   const results = canon.map((c, i) => {
     // Evidence-grounded trust (ADR-087) — comparison rows carry cross-store spread too.
-    const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, price_spread_pct: c.price_spread_pct, tps_identity_key: c.tps_identity_key });
+    const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, price_spread_pct: c.price_spread_pct, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
     return {
       canonical_id: c.canonical_id,
       tps_identity_key: c.tps_identity_key,
@@ -137,7 +138,7 @@ export async function GET(req: NextRequest) {
   const discoveryOut = discovery
     .filter((c) => !canonIds.has(c.canonical_id))
     .map((c) => {
-      const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: false, tps_identity_key: c.tps_identity_key });
+      const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: false, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
       return {
         canonical_id: c.canonical_id, tps_identity_key: c.tps_identity_key,
         title_ar: c.display_name_ar, title_en: c.display_name_en,

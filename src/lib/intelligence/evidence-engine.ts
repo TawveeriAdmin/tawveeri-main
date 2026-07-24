@@ -177,6 +177,13 @@ export function assessTrust(e: EvidenceInput): TrustAssessment {
 export const specsIncompleteFromKey = (key: string | null | undefined): boolean =>
   /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(key || "");
 
+/** Hours since an ISO timestamp (for the freshness factor); null if unparseable. */
+export function hoursSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? Math.max(0, (Date.now() - t) / 3_600_000) : null;
+}
+
 /**
  * Convenience wrapper: assess trust from a standard TPS projection row, so every
  * customer surface (decide / search / recommendations / feed) computes trust ONE way
@@ -184,7 +191,7 @@ export const specsIncompleteFromKey = (key: string | null | undefined): boolean 
  * evidence when a caller has it.
  */
 export function productTrust(
-  row: { store_count?: number | null; identity_confidence?: number | null; has_comparison?: boolean | null; price_spread_pct?: number | null; tps_identity_key?: string | null },
+  row: { store_count?: number | null; identity_confidence?: number | null; has_comparison?: boolean | null; price_spread_pct?: number | null; tps_identity_key?: string | null; last_observed_at?: string | null },
   extra?: Partial<EvidenceInput>,
 ): TrustAssessment {
   return assessTrust({
@@ -193,6 +200,7 @@ export function productTrust(
     has_comparison: row.has_comparison ?? ((row.store_count ?? 0) >= 2),
     price_spread_pct: row.price_spread_pct,
     specs_incomplete: specsIncompleteFromKey(row.tps_identity_key),
+    data_age_hours: hoursSince(row.last_observed_at),
     ...extra,
   });
 }
