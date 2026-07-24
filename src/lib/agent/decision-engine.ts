@@ -7,6 +7,7 @@
 // Saudi Context First: KSA-hot BTU sizing, total cost incl. installation + est.
 // electricity. v1 category: air_conditioner (the flagship journey); the shape is
 // category-generic so tv/tablet/etc. plug in later.
+import { assessTrust, type TrustAssessment } from "@/lib/intelligence/evidence-engine";
 
 export interface ShoppingTask {
   category: string;
@@ -43,7 +44,8 @@ export interface Recommendation {
   cost_breakdown: { unit: number | null; installation: number | null; annual_electricity: number | null };
   store_count: number | null; comparison_available: boolean;
   suitability_score: number;          // 0..1 deterministic
-  confidence: number;                 // 0..100, never fabricated
+  confidence: number;                 // 0..100 — now the evidence-grounded Trust score
+  trust: TrustAssessment;             // transparent, cited trust breakdown (ADR-087)
   is_smart_pick: boolean;
   reasons_ar: string[];
   dna: Record<string, unknown>;       // category-specific Product DNA (AC/TV/tablet/…)
@@ -134,33 +136,54 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.map((s, i): Recommendation => ({
-    canonical_id: s.row.canonical_id, tps_identity_key: s.row.tps_identity_key,
-    title_ar: s.row.display_name_ar, title_en: s.row.display_name_en, brand: s.row.brand,
-    unit_price: s.row.lowest_price,
-    total_cost_estimate: s.cost.total,
-    cost_breakdown: { unit: s.cost.unit, installation: s.cost.installation, annual_electricity: s.cost.annual_electricity },
-    store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
-    suitability_score: Math.round(s.score * 100) / 100, confidence: s.confidence,
-    is_smart_pick: i === 0,
-    reasons_ar: s.reasons,
-    dna: s.dna as unknown as Record<string, unknown>,
-    go_offer_hint: s.row.canonical_id,
-  }));
+  return scored.map((s, i): Recommendation => {
+    const trust = baseTrust(s.row);
+    return {
+      canonical_id: s.row.canonical_id, tps_identity_key: s.row.tps_identity_key,
+      title_ar: s.row.display_name_ar, title_en: s.row.display_name_en, brand: s.row.brand,
+      unit_price: s.row.lowest_price,
+      total_cost_estimate: s.cost.total,
+      cost_breakdown: { unit: s.cost.unit, installation: s.cost.installation, annual_electricity: s.cost.annual_electricity },
+      store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
+      suitability_score: Math.round(s.score * 100) / 100, confidence: trust.score, trust,
+      is_smart_pick: i === 0,
+      reasons_ar: s.reasons,
+      dna: s.dna as unknown as Record<string, unknown>,
+      go_offer_hint: s.row.canonical_id,
+    };
+  });
 }
 
 // ── Shared assembly: turn scored rows into ranked Recommendations. ──
+/**
+ * Base trust from the projection signals available at ranking time (corroboration,
+ * identity precision, unspecified-spec detection). The decide route ENRICHES this with
+ * price-history/freshness/discount evidence when it attaches price intelligence. The
+ * sentinel check flags a price-determining spec left unstated (mobile NO_STORAGE etc.).
+ */
+export function baseTrust(row: CanonicalRow): TrustAssessment {
+  return assessTrust({
+    store_count: row.store_count,
+    identity_confidence: row.identity_confidence,
+    has_comparison: row.has_comparison,
+    specs_incomplete: /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(row.tps_identity_key || ""),
+  });
+}
+
 function assemble(scored: { row: CanonicalRow; dna: Record<string, unknown>; score: number; reasons: string[]; total: number | null; breakdown: Recommendation["cost_breakdown"] }[]): Recommendation[] {
   scored.sort((a, b) => b.score - a.score);
-  return scored.map((s, i): Recommendation => ({
-    canonical_id: s.row.canonical_id, tps_identity_key: s.row.tps_identity_key,
-    title_ar: s.row.display_name_ar, title_en: s.row.display_name_en, brand: s.row.brand,
-    unit_price: s.row.lowest_price, total_cost_estimate: s.total, cost_breakdown: s.breakdown,
-    store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
-    suitability_score: Math.round(Math.max(0, Math.min(1, s.score)) * 100) / 100,
-    confidence: Math.min(95, Math.round(((s.row.identity_confidence ?? 70) + (s.row.store_count ?? 0) * 8) / 1.2)),
-    is_smart_pick: i === 0, reasons_ar: s.reasons, dna: s.dna, go_offer_hint: s.row.canonical_id,
-  }));
+  return scored.map((s, i): Recommendation => {
+    const trust = baseTrust(s.row);
+    return {
+      canonical_id: s.row.canonical_id, tps_identity_key: s.row.tps_identity_key,
+      title_ar: s.row.display_name_ar, title_en: s.row.display_name_en, brand: s.row.brand,
+      unit_price: s.row.lowest_price, total_cost_estimate: s.total, cost_breakdown: s.breakdown,
+      store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
+      suitability_score: Math.round(Math.max(0, Math.min(1, s.score)) * 100) / 100,
+      confidence: trust.score, trust,
+      is_smart_pick: i === 0, reasons_ar: s.reasons, dna: s.dna, go_offer_hint: s.row.canonical_id,
+    };
+  });
 }
 
 // ── TV: derive DNA + decide. Suitability = use-fit (gaming→refresh, movies→panel,

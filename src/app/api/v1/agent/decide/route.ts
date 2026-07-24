@@ -5,6 +5,7 @@ import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
+import { assessTrust } from "@/lib/intelligence/evidence-engine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,7 +93,19 @@ export async function POST(req: NextRequest) {
           distinct_days: v.distinctDays, current_best: v.currentBest, typical: v.typical, pct_vs_typical: v.pctVsTypical,
           trend: v.trend, text: v.text }
       : null;
-    return { ...r, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
+    // ADR-087: enrich the base trust with the price-history evidence now available, so
+    // the price-history factor reflects real observations instead of a conservative
+    // default. Deterministic; the score stays evidence-grounded and cited.
+    const proj = projById.get(r.canonical_id);
+    const trust = assessTrust({
+      store_count: r.store_count,
+      identity_confidence: proj?.identity_confidence ?? null,
+      has_comparison: r.comparison_available,
+      specs_incomplete: /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(r.tps_identity_key || ""),
+      price_confident: v?.confident ?? null,
+      price_distinct_days: v?.distinctDays ?? null,
+    });
+    return { ...r, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
   const smartIdx = out.findIndex((r) => r.is_smart_pick);

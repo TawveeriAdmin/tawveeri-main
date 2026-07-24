@@ -6,6 +6,17 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-087 — Trust & Evidence Engine: evidence-grounded, transparent, cited trust scoring (Phase 2, Decision Intelligence) · Accepted (2026-07-25)
+**Context (Phase 2 vision):** Tawveeri's differentiator is "evidence, not opinions." The intelligence layer already had strong primitives (deterministic price verdicts, store trust, merchant-twin corroboration, discount integrity, product edges) but SCATTERED, and the Decision Agent's confidence was an ad-hoc heuristic — `min(95, ((identity_confidence ?? 70) + store_count*8)/1.2)` — not explainable and not evidence-cited.
+
+**Decision — `src/lib/intelligence/evidence-engine.ts` (`assessTrust`), a Trust & Evidence Engine.** A pure, deterministic function that composes the existing signals into ONE transparent Trust Assessment per product: a 0–100 score, a tier (high/medium/low), and a **factor-by-factor breakdown where each factor CITES its evidence and every weakness is surfaced as an honest caveat**. Six weighted factors (sum 1.0): **corroboration 0.32** (the TPS core — a single store is deliberately weak because it can't be price-compared), **identity precision 0.22** (capped when a price-determining spec is unstated, e.g. NO_STORAGE), **price-history depth 0.20** (from the deterministic price verdict), **freshness 0.14**, **price consistency 0.08** (low cross-store spread = verification, ADR-077), **discount integrity 0.04**. The score is exactly the sum of factor contributions — no hidden terms.
+
+**TPS invariants enforced:** corroboration dominates; **a missing signal never inflates the score** (unknown factors are conservative and flagged — "unknown beats incorrect"); precision over recall (single-store is honestly low-trust for price regardless of identity); deterministic, no LLM in the score path (ADR-002); full provenance on every factor.
+
+**Wired into the Decision Agent (`decision-engine.ts` + `decide` route):** `confidence` is now the Trust score, and each recommendation carries the full `trust` breakdown (factors + caveats). The route ENRICHES the base assessment with the price-history evidence it fetches, so the price factor reflects real observations. This replaces opinion-shaped confidence with cited, explainable trust the customer/agent can inspect.
+
+**Evidence:** 8 engine tests (high/low/unknown-conservative/spec-cap/spread/discount/determinism) + full suite **628 green**; decision-engine's 30 tests still pass. Reusable foundation for ranking, the customer surface, and future agent reasoning.
+
 ### ADR-086 — First WORKING feed: WooCommerce Store API adapter (credential-free) + secure the operator debug endpoint · Accepted (2026-07-24)
 **Context:** ADR-085 shipped the provider framework with a feed-adapter *scaffold* awaiting a commercial agreement. But research found a credential-free feed hiding in plain sight: standard WooCommerce shops expose a PUBLIC Store API (`/wp-json/wc/store/v1/products`). Verified live on `shakersa.com`: **1,081 products, clean paginated JSON** (`X-WP-TotalPages`), no auth, no anti-bot, no HTML parsing.
 
