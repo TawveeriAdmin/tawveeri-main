@@ -6,6 +6,20 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-083 — E15.5 close: appliance identity normalization does NOT increase comparisons (measure-first, no change shipped) · FAIL on the hypothesis, Accepted (2026-07-24)
+**Scope (founder-bounded):** E15.5 only, current production categories, goal = increase realized multi-store comparisons via appliance model-identity normalization. Close with PASS/PARTIAL/FAIL evidence. No broader architecture, no E16.
+
+**Hypothesis (from ADR-082):** appliances overlap on BRAND across stores but their identity keys don't match, so normalizing them (unit-aware capacity, optional boolean features, type taxonomy) would convert overlap into comparisons.
+
+**Measurement (read-only, full raw_observations scan; refrigerator + washing_machine):**
+- **Optional boolean feature** (refrigerator `tech` = inverter/standard; washing_machine `dryer` = combo/washer): dropping it from the key recovers **0** comparisons in BOTH categories. The `inverter?"inverter":"standard"` / `has_dryer?"combo":"washer"` defect is real but not the bottleneck.
+- **Ceiling analysis** — refrigerator: full-key comparisons **1**, brand|type **4**, brand-only **4**. washing_machine: full-key **18**, brand|type **11**, brand|cap **17** (relaxing capacity *reduces* distinct comparisons — it MERGES genuinely different products).
+- **Cross-store examples prove the cause is real model divergence, not an identity bug:** the same brand at two stores carries different (type, capacity) SKUs — samsung fridges at extra are side_by_side/390, french_door/390, top_mount/420…; at amazon top_mount/550, 470. The would-be "recovered" merges (e.g. a 390 L with a 470 L fridge) are **false merges**.
+
+**Verdict: FAIL on the identity-normalization lever — and no code was shipped, which is the correct outcome.** The appliance identity is already correct: it corroborates precisely when models genuinely match (ADR-082's shaker ingestion added refrigerator 1→3, washing_machine 18→19 via REAL matches). The binding constraint is **model-level merchant overlap** — the same specific appliance SKU is rarely sold by ≥2 of the current stores. Every identity relaxation tested trades precision for false merges at **zero legitimate comparison gain**, violating precision-over-recall. Measure-first prevented a precision-damaging change.
+
+**Recorded for the future:** growing appliance comparisons requires more merchants that carry OVERLAPPING SKUs (not more identity work, not looser keys). The recurring shaker/samsung_ksa ingestion (ADR-082) already grows this automatically as catalogs overlap. E15.5 is closed; do not reopen appliance identity without evidence of same-SKU cross-store splits.
+
 ### ADR-082 — Merchant coverage: activate shaker + samsung_ksa ingestion (the only lever that grows comparisons) · Accepted (2026-07-24)
 **Context (evidence, ADR-081 close-out):** the comparison ceiling is **merchant-overlap-bound, not identity-bound** — 89.6% of all 2,387 canonical products existed at a single store across only 7 live merchants; mobile hit 98.3% identification yet comparisons didn't move. Two supported stores — **shaker (id 7), samsung_ksa (id 6)** — had working scrapers but **zero observations ever**. Founder approved activating both ("path 1, cost is fine, both").
 
