@@ -2,13 +2,19 @@ module.exports = {
   apps: [
     {
       name: 'nextjs',
-      script: 'npm',
-      args: 'start',
+      // Run the standalone server DIRECTLY (not `npm start`). `npm start` is now the
+      // production launcher (scripts/start-production.js) which itself starts the
+      // scheduler — under PM2 that would double the scheduler, since PM2 also runs
+      // the `scheduler` app below. This keeps exactly one scheduler on either path
+      // (PM2: web app + scheduler app; Railway `npm start`: launcher runs both). ADR-078.
+      script: 'node',
+      args: '.next/standalone/server.js',
       cwd: './',
       instances: 2,
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
+        HOSTNAME: '0.0.0.0',
       },
       error_file: './logs/nextjs-error.log',
       out_file: './logs/nextjs-out.log',

@@ -6,6 +6,17 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-078 — Automate the intelligence chain in production (the scheduler never started on Railway) · Accepted (2026-07-24)
+**Context:** the derived-intelligence chain (normalize → projection → search → facts → trust → edges) has had an hourly scheduler since ADR-065/067 — `scripts/scheduler.js`, wired into `ecosystem.config.js` as a PM2 app. But **production runs on Railway, whose start command is `npm run start` — only the Next.js standalone server.** PM2/`ecosystem.config.js` is never invoked there, so the scheduler never ran in production: the chain executed only when a human ran it, and the customer-facing projection/search drifted between runs (the ADR-062 failure). Two further blockers made it unrunnable even if started: `tsx` was not installed at all (`npx tsx` would fetch it at runtime), and `pg`/`dotenv` were devDependencies a production prune would remove.
+
+**Decision — reuse the tested code, fix the process model:**
+- **`scripts/start-production.js`** — a launcher that runs both the web server and the scheduler in one container, and is **failure-isolated**: the web server is primary (invoked byte-identically to the old `npm start`; if it exits, the container exits for Railway to restart), and the scheduler is best-effort (spawn failures, crashes, and chain errors are caught and logged, and it self-heals after 60s — it can never take the site down). `npm start` now runs this launcher. The worst case is "no automatic refresh" — today's behaviour — never a downed site.
+- **`tsx`, `pg`, `dotenv` → `dependencies`**, so the chain's runtime is guaranteed present after a production install.
+- **`ecosystem.config.js`** now runs the web app directly (`node .next/standalone/server.js`) instead of `npm start`, so a PM2 deploy doesn't start the scheduler twice (launcher + PM2 scheduler app).
+- **Health check made truthful:** "intelligence refresh" no longer infers from the (unrelated) ingestion dispatcher — it reads the projection's `built_at` as the chain's heartbeat. OK if rebuilt within 3h, WARN if stale. Post-deploy this is how the automation is verified: it now reads **"chain last rebuilt the projection 0.4h ago"** and the WARN count dropped 7→6.
+
+**Cadence:** hourly (scheduler default; the full chain is ~4.6 min since ADR-067). `REFRESH_INTERVAL_MS` tightens it if desired. **Honest limit:** Railway deployment cannot be verified from the dev environment — but the launcher's failure-isolation bounds the risk to "scheduler doesn't run", and the new health heartbeat makes success/failure observable immediately after deploy. Unchanged: the in-DB ingestion dispatcher is still unused (ingestion runs from an external trigger — a separate, still-open item, accurately reported by its own WARN).
+
 ### ADR-077 — AC LG design-series extraction: a partial precision fix, honestly scoped · Accepted (2026-07-24)
 **Context:** ADR-076 left 4 residual merge-audit flags, all air-conditioner. Inspecting the listings behind them showed a **mix**, not a single defect: `lg|split|NO_SERIES|18000` merged genuinely different LG design lines — *Art Cool* (premium), *Fresh DV*, *AirFit* — at the same BTU (1650→5280 SAR), a real false merge; but `samsung|WindFree|20500` (3.19x) is the **same model** (AR24CSFCBWK) across two stores — a *legitimate* comparison the audit's price-spread heuristic flags as a false positive.
 

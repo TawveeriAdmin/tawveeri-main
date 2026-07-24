@@ -104,13 +104,19 @@ const hours = (a: Date | null, b: Date | null): number | null =>
       : undefined);
 
   // ── 3b. INTELLIGENCE REFRESH — the chain that turns evidence into value ───
-  // Nothing schedules projection / search / facts / trust / edges. This is the
-  // gap that left 68% of the catalog unsearchable for ~34 hours. The propagation
-  // checks below measure the symptom precisely; this states the cause.
+  // ADR-078 made the scheduler run this chain hourly in production. This now
+  // MEASURES it directly: the projection's build time is the chain's heartbeat —
+  // if it was rebuilt recently, the scheduler is alive; if it is hours stale, the
+  // automation has stopped (the gap that left 68% of the catalog unsearchable ~34h).
+  const refreshBeat = await one<{ hours: string | null }>(
+    `select extract(epoch from (now() - max(built_at))) / 3600 hours from tps_product_projection`);
+  const beatH = refreshBeat.hours == null ? null : Number(refreshBeat.hours);
   add("automation", "intelligence refresh",
-    sched.active === 0 && viaSchedule.n === 0 ? "WARN" : "OK",
-    "no scheduled job rebuilds projection → search index → facts → trust → edges",
-    "each link is a manual script; the SEARCH and PRICE checks below detect the drift it causes");
+    beatH == null || beatH > 3 ? "WARN" : "OK",
+    beatH == null
+      ? "projection never built — the refresh chain has not run"
+      : `chain last rebuilt the projection ${beatH.toFixed(1)}h ago`,
+    "the scheduler (ADR-078) runs projection → search → facts → trust → edges hourly; a stale beat means it has stopped");
 
   // ── 4. IDENTITY — observations that have never been considered ────────────
   // This check previously compared max(scraped_at) to max(staging.observed_at).
