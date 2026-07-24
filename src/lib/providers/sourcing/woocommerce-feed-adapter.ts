@@ -26,6 +26,49 @@ interface WooProduct {
   is_in_stock?: boolean; type?: string;
 }
 
+/** Arabic script present? Used to pick the AR vs EN member of a translation pair. */
+const hasArabic = (s: string): boolean => /[؀-ۿ]/.test(s || "");
+
+/**
+ * Multilingual WooCommerce (WPML/Polylang) serves each product ONCE PER LANGUAGE,
+ * sharing one SKU across the translations — verified live on shakersa.com: the English
+ * `/en/product/…` row and the Arabic `/product/…` row carry the IDENTICAL SKU
+ * (e.g. SSBX525-B5, AO458H1X). Left un-merged the feed would DOUBLE-count every product
+ * in raw_observations (1081 feed rows ⇒ ~540 real products) and emit mono-lingual names.
+ *
+ * Merge each SKU group into one bilingual offer: the Arabic name + Arabic permalink
+ * (the default locale — where the customer exit should land) with the English name
+ * carried into name_en. Rows with no SKU cannot be paired and pass through unchanged
+ * (unknown beats incorrect — never merge on a guess). This generalizes to the whole
+ * class of multilingual Saudi Woo/Salla shops, so it lives in the adapter, not as a
+ * shaker special-case.
+ */
+export function mergeMultilingualBySku(products: ScrapedProduct[]): ScrapedProduct[] {
+  const bySku = new Map<string, ScrapedProduct[]>();
+  const passthrough: ScrapedProduct[] = [];
+  for (const p of products) {
+    const sku = (p.sku || "").trim();
+    if (!sku) { passthrough.push(p); continue; }
+    const g = bySku.get(sku);
+    if (g) g.push(p); else bySku.set(sku, [p]);
+  }
+  const nameOf = (p: ScrapedProduct) => (p.name_ar || p.name_en || "");
+  const merged: ScrapedProduct[] = [];
+  for (const group of bySku.values()) {
+    if (group.length === 1) { merged.push(group[0]); continue; }
+    const arMember = group.find((p) => hasArabic(nameOf(p)));
+    const enMember = group.find((p) => !hasArabic(nameOf(p)));
+    const primary = arMember ?? group[0]; // Arabic-first: its permalink/base wins
+    merged.push({
+      ...primary,
+      name_ar: arMember ? nameOf(arMember) : nameOf(primary),
+      name_en: enMember ? nameOf(enMember) : (primary.name_en || nameOf(primary)),
+      product_url: primary.product_url,
+    } as ScrapedProduct);
+  }
+  return [...merged, ...passthrough];
+}
+
 /** Decode the numeric/basic HTML entities WooCommerce names carry (&#8211;, &amp; …). */
 export function decodeEntities(s: string): string {
   return (s || "")
@@ -102,6 +145,9 @@ export const wooCommerceFeedAdapter: SourcingAdapter = {
         break;
       }
     }
-    return { provider: provider.slug, mode: "api", products, count: products.length, errors: errors.length ? errors : undefined };
+    // Collapse EN/AR translation pairs (same SKU) into one bilingual offer so a
+    // multilingual shop is not double-counted in raw_observations.
+    const deduped = mergeMultilingualBySku(products);
+    return { provider: provider.slug, mode: "api", products: deduped, count: deduped.length, errors: errors.length ? errors : undefined };
   },
 };

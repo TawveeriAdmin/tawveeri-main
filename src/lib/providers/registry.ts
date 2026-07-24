@@ -20,10 +20,13 @@ const BASE: Record<string, RetailerProvider> = {
   extra:       { slug: "extra",       storeId: 4, displayName: "eXtra",             displayNameAr: "اكسترا",           enabled: true, sourcing: "scraper", affiliate: null },
   almanea:     { slug: "almanea",     storeId: 5, displayName: "Almanea",           displayNameAr: "المنيع",           enabled: true, sourcing: "scraper", affiliate: null },
   samsung_ksa: { slug: "samsung_ksa", storeId: 6, displayName: "Samsung Saudi",     displayNameAr: "سامسونج السعودية", enabled: true, sourcing: "scraper", affiliate: null },
-  // shaker exposes a public WooCommerce Store API (1,081 products) — cleaner than the
-  // HTML scraper. feedUrl is set so the WooCommerce feed adapter is one flag flip away
-  // (PROVIDER_SHAKER_SOURCING=api); default stays `scraper` until verified equivalent.
-  shaker:      { slug: "shaker",      storeId: 7, displayName: "Shaker",            displayNameAr: "شاكر",             enabled: true, sourcing: "scraper", affiliate: null, feedUrl: "https://shakersa.com" },
+  // shaker is sourced from its public WooCommerce Store API (ADR-089) — verified cleaner
+  // AND more complete than the HTML scraper (585 unique bilingual products via feed vs
+  // 442 distinct scraped URLs), with no anti-bot fragility. The adapter collapses the
+  // WPML EN/AR translation pairs (shared SKU) into one Arabic-first bilingual offer, so
+  // the feed never double-counts — the same Arabic `/product/` listing basis the existing
+  // data already uses. Override with PROVIDER_SHAKER_SOURCING=scraper to fall back.
+  shaker:      { slug: "shaker",      storeId: 7, displayName: "Shaker",            displayNameAr: "شاكر",             enabled: true, sourcing: "api", affiliate: null, feedUrl: "https://shakersa.com" },
   swsg:        { slug: "swsg",        storeId: 8, displayName: "SWSG",              displayNameAr: "الشتاء والصيف",    enabled: true, sourcing: "scraper", affiliate: null },
 };
 

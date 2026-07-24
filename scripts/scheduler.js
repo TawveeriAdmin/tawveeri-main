@@ -207,7 +207,15 @@ if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRE
 // scrapers work but were never ingested (shaker, samsung_ksa) → merchant overlap →
 // the only lever that grows realized comparisons (89.6% of products are single-store).
 // Fully reversible: INGEST_STORES='' disables it. Gated on CRON_SECRET.
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'shaker,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean);
+//
+// ADR-089: stores sourced from a structured provider feed (INGEST_FEED_STORES, below)
+// are ingested via the feed loop, not scraped here — so they are EXCLUDED from the
+// scraper set even if still listed in INGEST_STORES. This guarantees no store is ever
+// ingested by both paths (which would double-count observations), regardless of how the
+// production env is configured. Setting INGEST_FEED_STORES='' returns shaker to scraping.
+const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'shaker').split(',').map((s) => s.trim()).filter(Boolean);
+const _feedSet = new Set(INGEST_FEED_STORES);
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'shaker,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(5 * 60 * 1000), 10);    // 5m after boot
@@ -251,6 +259,46 @@ if (DISPATCH_ENABLED && INGEST_STORES.length) {
   setTimeout(runDiscovery, INGEST_FIRST_DELAY_MS);
   setInterval(runDiscovery, INGEST_DISCOVERY_MS);
   setInterval(runPriceUpdate, INGEST_PRICE_MS);
+}
+
+// ── Feed ingestion loop (ADR-089) ─────────────────────────────────────────────
+// Providers whose sourcing is a structured feed (WooCommerce Store API) ingest
+// through the provider framework instead of the HTML-scraper cron routes — cleaner,
+// more complete, no anti-bot. This spawns the SAME ingest-via-provider script the
+// manual path uses (which writes to raw_observations via the unified IngestionService,
+// so the hourly refresh normalizes it like any other observation). No CRON_SECRET
+// needed (it writes the DB directly, no HTTP hop) — it runs like the refresh child.
+// Reversible: INGEST_FEED_STORES='' disables it (and returns those stores to scraping).
+const INGEST_FEED_MS = parseInt(process.env.INGEST_FEED_MS || String(6 * 60 * 60 * 1000), 10); // 6h
+let feedIngestRunning = false;
+function runFeedIngest() {
+  if (feedIngestRunning) { console.log('[feed-ingest] previous run still in progress — skipping'); return; }
+  if (!INGEST_FEED_STORES.length) return;
+  feedIngestRunning = true;
+  const slugs = [...INGEST_FEED_STORES];
+  // One store at a time in a single child chain — bounds resource use on the host.
+  const runOne = (i) => {
+    if (i >= slugs.length) { feedIngestRunning = false; return; }
+    const slug = slugs[i];
+    const child = spawn('npx', ['tsx', 'scripts/tps-core/ingest-via-provider.ts', slug], { cwd: process.cwd(), shell: true, env: process.env });
+    let tail = '';
+    const cap = (b) => { tail = (tail + b.toString()).slice(-800); };
+    child.stdout.on('data', cap);
+    child.stderr.on('data', cap);
+    child.on('close', (code) => {
+      const last = tail.split('\n').map((l) => l.trim()).filter((l) => l && !l.includes('injected env')).slice(-1)[0] || '';
+      console.log(`[feed-ingest] ${slug} exit ${code}: ${last}`);
+      runOne(i + 1);
+    });
+    child.on('error', (err) => { console.error(`[feed-ingest] ${slug} could not start:`, err?.message || err); runOne(i + 1); });
+  };
+  runOne(0);
+}
+if (INGEST_FEED_STORES.length) {
+  console.log(`[feed-ingest] feed ingestion enabled for [${INGEST_FEED_STORES.join(', ')}] — every ${(INGEST_FEED_MS / 3600000).toFixed(0)}h`);
+  // Stagger after the scraper discovery kick so the two ingestion paths don't spike together.
+  setTimeout(runFeedIngest, INGEST_FIRST_DELAY_MS + 90 * 1000);
+  setInterval(runFeedIngest, INGEST_FEED_MS);
 }
 
 process.on('SIGTERM', () => {
