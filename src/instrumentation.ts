@@ -55,18 +55,32 @@ function startIntelligenceScheduler() {
       return;
     }
     const repoRoot = path.dirname(path.dirname(schedulerPath)); // .../scripts/scheduler.js → repo root
+    // Capture the child's stdout/stderr (last ~2KB each) and exit code into globals
+    // so the debug endpoint can report WHY the scheduler died — previously stdio was
+    // 'ignore', which made an early child crash (e.g. a missing env var → exit(1))
+    // completely invisible in production. The child stays a normal child of the
+    // long-lived web server (no detach): if the web process is replaced on deploy,
+    // the next process respawns it — exactly the behaviour we want.
     const child = spawn(process.execPath, [schedulerPath], {
       cwd: repoRoot,                 // so the scheduler's own `npx tsx scripts/...` resolves
-      detached: true,
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
       env: process.env,
     });
+    const gg = globalThis as Record<string, unknown>;
+    const capture = (key: string) => (buf: Buffer) => {
+      const prev = (gg[key] as string) || '';
+      gg[key] = (prev + buf.toString()).slice(-2000);
+    };
+    child.stdout?.on('data', capture('__tawveeriSchedulerStdout'));
+    child.stderr?.on('data', capture('__tawveeriSchedulerStderr'));
+    child.on('exit', (code, signal) => {
+      gg.__tawveeriSchedulerExit = { code, signal, at: new Date().toISOString() };
+    });
     child.on('error', (e) => {
-      (globalThis as Record<string, unknown>).__tawveeriSchedulerError = `spawn error: ${e && e.message}`;
+      gg.__tawveeriSchedulerError = `spawn error: ${e && e.message}`;
       /* best-effort: never propagate to the web server */
     });
-    child.unref();
-    (globalThis as Record<string, unknown>).__tawveeriSchedulerSpawned = { pid: child.pid, path: schedulerPath, at: new Date().toISOString() };
+    gg.__tawveeriSchedulerSpawned = { pid: child.pid, path: schedulerPath, at: new Date().toISOString() };
     console.log(`[instrumentation] intelligence scheduler spawned (pid ${child.pid}) from ${schedulerPath}`);
   } catch (err) {
     (globalThis as Record<string, unknown>).__tawveeriSchedulerError = err instanceof Error ? err.message : String(err);

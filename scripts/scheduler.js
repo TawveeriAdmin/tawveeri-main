@@ -73,10 +73,29 @@ const FULL_REFRESH_INTERVAL_MS = parseInt(process.env.FULL_REFRESH_INTERVAL_MS |
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
 const CRON_SECRET = process.env.CRON_SECRET;
 
-if (!CRON_SECRET) {
-  console.error('[scheduler] CRON_SECRET missing — refusing to start');
-  process.exit(1);
+// CRON_SECRET gates only the DISPATCH loop (it authenticates the /api/cron/dispatch
+// call). The INTELLIGENCE REFRESH runs a child script directly (no HTTP, no secret),
+// so a missing CRON_SECRET must NOT kill the process — that would silently take down
+// the very automation the founder asked to run ("make it fresh, automate the chain").
+// Degrade instead: disable dispatch, keep refresh + heartbeat alive.
+const DISPATCH_ENABLED = !!CRON_SECRET;
+if (!DISPATCH_ENABLED) {
+  console.error('[scheduler] CRON_SECRET missing — dispatch loop DISABLED; intelligence refresh + heartbeat still run');
 }
+
+// Crash breadcrumbs: if the scheduler dies unexpectedly, leave a trace in the
+// heartbeat row (last_refresh_status) so it is diagnosable without Railway logs.
+process.on('uncaughtException', (e) => {
+  console.error('[scheduler] uncaughtException', e);
+  try { heartbeat({ status: `crash:${(e && e.message) || e}` }); } catch (_) { /* ignore */ }
+});
+process.on('unhandledRejection', (e) => {
+  console.error('[scheduler] unhandledRejection', e);
+});
+
+// Prove the child actually STARTED as early as possible (before any loop), so
+// liveness is confirmable even if a later step fails.
+heartbeat('boot');
 
 // ── Intelligence refresh loop ───────────────────────────────────────────────
 let refreshRunning = false;
@@ -125,6 +144,7 @@ function runRefresh(full) {
 async function tick() {
   const started = Date.now();
   heartbeat('tick');
+  if (!DISPATCH_ENABLED) return; // no secret → nothing to authenticate the dispatch call
   try {
     const res = await fetch(`${BASE_URL}/api/cron/dispatch`, {
       method: 'POST',
