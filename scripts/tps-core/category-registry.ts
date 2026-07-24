@@ -224,6 +224,9 @@ for (const cat of APPLIANCE_CATEGORIES) {
     names: (k) => b.names(k),
     attrs: (k, rep) => b.attrs(k, rep),
     canonSeed: (k) => `canonical:${cat}:${k}`, normSeed: (o) => `norm:${cat}:raw_observations:${o}`,
-    requireValidTier: false, priceBand: null,
+    // ADR-076: corroborate only the `valid` tier. The factory now marks a
+    // capacity-less `brand|type|NA` key as low_confidence, so this stops it from
+    // merging distinct models into one false comparison (single-store catalogue is unaffected).
+    requireValidTier: true, priceBand: null,
   };
 }

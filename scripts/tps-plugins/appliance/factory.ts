@@ -82,7 +82,16 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
     const type = (p.type as string | null) ?? null;
     const cap = p.capacity as number | null;
     if (type == null && cap == null) return { key: null, status: "invalid", reason: "no discriminator (type/capacity)" };
-    return { key: `${cb}|${type ?? "NA"}|${cap == null ? "NA" : cap}`, status: "valid", reason: "brand+discriminator" };
+    // Capacity is the discriminating spec. Without it, `brand|type|NA` collapses
+    // every model of that type into one identity — a false merge (measured: all
+    // Xiaomi robot vacuums merged, 165→849 SAR). So a capacity-less key is
+    // catalogue-only (low_confidence), never corroboration-eligible. Precision over recall.
+    const full = cap != null;
+    return {
+      key: `${cb}|${type ?? "NA"}|${cap == null ? "NA" : cap}`,
+      status: full ? "valid" : "low_confidence_candidate",
+      reason: full ? "brand+type+capacity" : "capacity missing — brand+type too coarse to corroborate",
+    };
   }
   function scoreConfidence(brand: string | null, p: Record<string, unknown>, _m: string | null, flags: string[]): ConfidenceResult {
     const missing: string[] = [];

@@ -6,6 +6,15 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-076 — Appliance false-merge fix: a capacity-less `brand|type|NA` key no longer corroborates · Accepted (2026-07-24)
+**Context:** with the category vein exhausted, a read-only merge-quality audit (intra-product price spread as the signature of a false merge) over all 239 corroborated products found the platform mostly clean — **every category repaired this session had 0 false merges** — but flagged 6, all in appliance plugins. The worst were vacuums: `xiaomi|robot|NA` spanned **165 → 849 SAR (5.15x)** and `eufy|robot|NA` **150 → 699 (4.66x)**. Root cause: the appliance factory's `buildIdentityKey` returned status `valid` **unconditionally**, so when capacity (the discriminating spec) was unread it emitted `brand|type|NA` — collapsing every model of that type into one identity. A cheap handheld and a premium robot were shown as the same product.
+
+**Decision:** capacity is required to corroborate. A capacity-less key is now `low_confidence_candidate` (catalogue-only, never corroboration-eligible), and the appliance categories set `requireValidTier: true`. Single-store catalogue coverage is unaffected; only the false *comparison* is removed. The four existing corroborated `…|NA` canonicals (2 robot vacuums, an eufy/ezviz robot, a delonghi espresso) were deactivated and the projection rebuilt.
+
+**Result:** the audit's egregious merges are gone (vacuum 5.15x/4.66x eliminated); **0 FAIL, 0 duplicate cards**. This is a *trust* fix — a false comparison misleads more than a missing one helps — and it scales: it prevents the same class of merge across all ~800 appliance listings as they grow. 4 regression tests.
+
+**Noted, not fixed (separate issue):** the 4 residual flags are all air-conditioner (`lg|split|NO_SERIES|18000|…`, 2.6–3.2x). AC uses its own plugin, and same-BTU spread is partly legitimate (basic vs premium/ducted) and partly a `NO_SERIES` merge — it needs its own analysis to separate the two, deferred.
+
 ### ADR-075 — Register PRINTER as a new category: 0 → 86.5% identification where comparison is possible · Accepted (2026-07-24)
 **Context:** with monitor registered, a category-pool feasibility scan of the remaining unregistered categories ranked the next comparison pools: **printer 29, power_bank 22, console 10 (mostly controllers), router 10, projector 0**. Printer was the largest with a clean, store-stable identity. Power bank was deliberately **rejected**: its identity (brand + capacity + wattage) over-merges many distinct Anker/Xiaomi models at the same mAh, while its line names are too store-inconsistent to key on — it fails the precision bar. Console/projector/router were too small or single-brand.
 
