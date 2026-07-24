@@ -89,6 +89,10 @@ const BRAND_FAMILIES: Record<string, FamilyRule[]> = {
   ],
   huawei: [
     { family: "Huawei Mate", gen: /(?:mate|ميت)\s*(\d{1,2})/ },
+    // nova Y is a distinct budget line ("nova Y73" / "نوفا واي 73"). The bare nova
+    // rule below needs a digit DIRECTLY after "nova", so every Y-token model was a
+    // lost comparison. Ordered before the bare rule so "واي 73" is read as the line.
+    { family: "Huawei nova Y", gen: /(?:nova|نوفا)\s*(?:y|واي)\s*(\d{1,2})/ },
     { family: "Huawei nova", gen: /(?:nova|نوفا)\s*(\d{1,2})/ },
     { family: "Huawei P", gen: /(?:huawei|هواوي)\s*p\s*(\d{1,2})/ },
   ],
@@ -115,7 +119,7 @@ const BRAND_FAMILIES: Record<string, FamilyRule[]> = {
     { family: "Tecno Camon", gen: /(?:camon|كامون)\s*(\d{1,2})/ },
     // Pova is Tecno's largest Saudi line and was missing entirely — 36 measured
     // misses. "Curve" is a named model with no generation number.
-    { family: "Tecno Pova", gen: /(?:pova|بوفا)\s*(\d{1,2})/, named: [{ re: /(?:pova|بوفا)\s*(?:curve|كيرف)/, generation: "Curve" }] },
+    { family: "Tecno Pova", gen: /(?:pova|بوفا)\s*(\d{1,2})/, named: [{ re: /(?:pova|بوفا)\s*(?:curve|كيرف)/, generation: "Curve" }, { re: /(?:pova|بوفا)\s*(?:slim|سليم)/, generation: "Slim" }] },
     { family: "Tecno Spark", gen: /(?:go|جو)\s*(\d{1,2})/ },
   ],
   infinix: [
@@ -149,6 +153,17 @@ function readStorageAndRam(text: string): { storage_gb: number | null; ram_gb: n
   // An explicitly-labelled storage figure wins over a bare one.
   const labelled = text.match(/(?:سعه\s*تخزين|تخزين|storage)\s*(\d{2,4})\s*(?:جيجابايت|جيجا|gb)?/);
   if (labelled) { const n = Number(labelled[1]); if (STORAGE_TIERS.has(n)) return { storage_gb: n, ram_gb: ram }; }
+
+  // Combined "storage + RAM" written as one figure — "256 + 8 جيجا", "8+256 جيجا"
+  // (common on Tecno / Xiaomi Arabic listings). Storage is unambiguously stated
+  // here; the LARGER tier-valid number is storage, the smaller is RAM — order-safe.
+  const combo = text.match(/(\d{2,4})\s*\+\s*(\d{1,2})\s*(?:جيجابايت|جيجا|gb)/) ||
+                text.match(/(\d{1,2})\s*\+\s*(\d{2,4})\s*(?:جيجابايت|جيجا|gb)/);
+  if (combo) {
+    const stor = Math.max(Number(combo[1]), Number(combo[2]));
+    const rm = Math.min(Number(combo[1]), Number(combo[2]));
+    if (STORAGE_TIERS.has(stor)) return { storage_gb: stor, ram_gb: RAM_TIERS.has(rm) ? rm : ram };
+  }
 
   // Otherwise take the largest tier-valid figure that is not the RAM value.
   // Arabic listings use BOTH word orders — "128 جيجابايت" and "جيجابايت 128"

@@ -43,6 +43,8 @@ describe("detector — accessories and other categories are hard-rejected", () =
     ["شاومي ستيك تي في 4k الجيل الثاني بث ذكي", "Xiaomi TV stick"],
     ["ممسحة مكنسة شاومي متوافق مع مكانس e10/e12", "Xiaomi vacuum mop"],
     ["شاومي باد 8، واي فاي، 256 جيجا، أزرق", "Xiaomi Pad is a tablet"],
+    ["شاشة ألعاب منحنية شاومي WQHD، مقاس 34 بوصة، 180 هرتز - G34W", "34-inch gaming monitor matched the Xiaomi token"],
+    ["تكنو ميجا باد 11، 4 جي، 256 جيجا، أخضر", "Tecno Megapad is a tablet, not a phone"],
   ])("rejects non-phone: %s (%s)", (title) => {
     expect(detect(title, "")).toBe(false);
   });
@@ -52,6 +54,13 @@ describe("detector — accessories and other categories are hard-rejected", () =
     expect(detect("سامسونج جالاكسي، اس 25 الترا، 256 جيجا", "")).toBe(true);
     expect(detect("", "Apple iPhone 16 Pro Max 256GB Black")).toBe(true);
     expect(detect("", "Xiaomi Redmi Note 14 128GB")).toBe(true);
+  });
+
+  it("the 20\"+ monitor guard must NOT reject a fractional phone size like 6.67 بوصة", () => {
+    // Regression: an early guard read the "67" of "6.67 بوصة" as a 67-inch display
+    // and rejected real 6.6x-inch phones. A phone screen size is never whole-≥20.
+    expect(detect("شاومي 14T برو، 5 جي، 6.67 بوصة، 512 جيجا، رمادي", "")).toBe(true);
+    expect(detect("شاومي ريدمي نوت 14 برو بلس، 6.67 بوصة، 256 جيجا", "")).toBe(true);
   });
 });
 
@@ -101,6 +110,35 @@ describe("storage — RAM must never become a storage identity", () => {
 
   it("prefers a structured payload storage field when the store supplies one", () => {
     expect(idOf("سامسونج جالاكسي اس 25", "", "سامسونج", { storage: 512 }).p.storage_gb).toBe(512);
+  });
+});
+
+describe("additional product lines and storage formats", () => {
+  it("reads the Huawei nova Y line (bare-nova rule needs a digit right after 'nova')", () => {
+    expect(idOf("هواوي نوفا واي 73، 4 جي، 256 جيجا، أزرق", "", "هواوي").key)
+      .toBe("huawei|Huawei nova Y|73|Standard|256");
+    expect(idOf("", "Huawei nova Y73 256GB", "Huawei").key)
+      .toBe("huawei|Huawei nova Y|73|Standard|256");
+  });
+
+  it("does not confuse a bare nova model with the nova Y line", () => {
+    expect(idOf("", "Huawei nova 14 Pro 256GB", "Huawei").key)
+      .toBe("huawei|Huawei nova|14|Pro|256");
+  });
+
+  it("reads Tecno Pova Slim — a named model with no generation number", () => {
+    expect(idOf("تكنو بوفا سليم، 5 جي، 256 جيجا، أسود", "", "تكنو").key)
+      .toBe("tecno|Tecno Pova|Slim|Standard|256");
+    // a numbered Pova must not be captured as Slim
+    expect(idOf("تكنو بوفا 6 برو 256 جيجا", "", "تكنو").key)
+      .toBe("tecno|Tecno Pova|6|Pro|256");
+  });
+
+  it("reads a combined 'storage + RAM' figure — '256 + 8 جيجا' → storage 256, RAM 8", () => {
+    const r = idOf("تكنو KL8 سبارك 30 5G 256 + 8 جيجا DS ميدنايت شادو", "", "تكنو");
+    expect(r.p.storage_gb).toBe(256);
+    expect(r.p.ram_gb).toBe(8);
+    expect(r.key).toBe("tecno|Tecno Spark|30|Standard|256");
   });
 });
 

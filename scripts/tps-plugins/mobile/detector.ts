@@ -50,6 +50,10 @@ const FOREIGN_CATEGORY_SIGNALS = [
   // Xiaomi and Redmi tablets are named "…Pad", written "باد" in Arabic, and were
   // being claimed as phones off the brand token alone.
   "شاومي باد", "ريدمي باد", "redmi pad", "xiaomi pad", "mi pad", "لوحه مفاتيح عربيه",
+  // Tecno Megapad is a tablet; it was claimed as a phone off the "tecno" token.
+  "ميجا باد", "megapad", "mega pad",
+  // Monitor-only resolution tokens — a phone is never described as WQHD.
+  "wqhd",
   // computing & display — "أسوس فيفو بوك" (Asus VivoBook) matched the "فيفو"
   // (vivo) phone signal, and LG televisions matched on "Magic Remote".
   "laptop", "لابتوب", "لاب توب", "notebook", "macbook", "ماك بوك",
@@ -96,5 +100,11 @@ export function detect(nameAr: string, nameEn: string): boolean {
   const text = normalizeArabic(`${nameAr} ${nameEn}`);
   if (hit(text, ACCESSORY_SIGNALS)) return false;
   if (hit(text, FOREIGN_CATEGORY_SIGNALS)) return false;
+  // A WHOLE-inch screen size of 20"+ is a monitor/TV/large display, never a phone.
+  // Catches "34 بوصة" curved gaming monitors that slip in on a shared brand token.
+  // The lookbehind excludes a preceding digit OR dot so a fractional phone size like
+  // "6.67 بوصة" is NOT read as "67 بوصة" (that false-rejected real phones).
+  const inch = text.match(/(?<![\d.])(\d{2})\s*(?:بوصه|inch|")/);
+  if (inch && Number(inch[1]) >= 20) return false;
   return hit(text, PHONE_SIGNALS);
 }
