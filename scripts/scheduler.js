@@ -158,9 +158,14 @@ heartbeat('boot');
 tick();
 setInterval(tick, INTERVAL_MS);
 
-// Intelligence refresh. Deliberately NOT fired immediately on boot: a PM2
-// restart loop would otherwise trigger repeated multi-minute rebuilds.
-// The full chain is ~4.6 min since ADR-067, so it is the default hourly job.
+// Intelligence refresh. A FIRST run fires shortly after boot (not instantly — a
+// short delay lets the server warm up and avoids a tight restart-loop storm),
+// then hourly. Firing soon after boot means data is fresh within minutes of a
+// deploy instead of up to an hour later, and lets the automation be verified
+// end-to-end right after release. Idempotent + the refreshRunning guard means a
+// restart can never stack overlapping rebuilds.
+const FIRST_REFRESH_DELAY_MS = parseInt(process.env.FIRST_REFRESH_DELAY_MS || '120000', 10);
+setTimeout(() => runRefresh(true), FIRST_REFRESH_DELAY_MS);
 setInterval(() => runRefresh(true), REFRESH_INTERVAL_MS);
 if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRESH_INTERVAL_MS);
 
