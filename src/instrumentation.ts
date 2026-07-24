@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    (globalThis as Record<string, unknown>).__tawveeriInstrumentationRan = new Date().toISOString();
     await import('../sentry.server.config');
     startIntelligenceScheduler();
   }
@@ -49,6 +50,7 @@ function startIntelligenceScheduler() {
     ];
     const schedulerPath = candidates.find((p) => { try { return fs.existsSync(p); } catch { return false; } });
     if (!schedulerPath) {
+      (globalThis as Record<string, unknown>).__tawveeriSchedulerError = `scheduler.js not found in: ${candidates.join(', ')}`;
       console.error('[instrumentation] scheduler.js not found (looked in:', candidates.join(', '), ') — skipping');
       return;
     }
@@ -59,10 +61,15 @@ function startIntelligenceScheduler() {
       stdio: 'ignore',
       env: process.env,
     });
-    child.on('error', () => { /* best-effort: never propagate to the web server */ });
+    child.on('error', (e) => {
+      (globalThis as Record<string, unknown>).__tawveeriSchedulerError = `spawn error: ${e && e.message}`;
+      /* best-effort: never propagate to the web server */
+    });
     child.unref();
+    (globalThis as Record<string, unknown>).__tawveeriSchedulerSpawned = { pid: child.pid, path: schedulerPath, at: new Date().toISOString() };
     console.log(`[instrumentation] intelligence scheduler spawned (pid ${child.pid}) from ${schedulerPath}`);
   } catch (err) {
+    (globalThis as Record<string, unknown>).__tawveeriSchedulerError = err instanceof Error ? err.message : String(err);
     console.error('[instrumentation] scheduler not started (web server unaffected):',
       err instanceof Error ? err.message : err);
   }
