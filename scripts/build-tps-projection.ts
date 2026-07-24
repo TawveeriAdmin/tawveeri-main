@@ -123,7 +123,12 @@ export function deriveProjection(r: Row) {
 async function main() {
   const url = process.env.SUPABASE_DB_URL;
   if (!url) throw new Error("SUPABASE_DB_URL missing");
-  if (!/db\.vyceqrzttspyycdpojtn\.supabase\.co/.test(url)) throw new Error("refusing: not production");
+  // Production guard: accept BOTH the direct host (db.<ref>.supabase.co) AND the
+  // IPv4 pooler form (user `postgres.<ref>@...pooler.supabase.com`) — both carry the
+  // production ref; reject legacy. The old host-only regex threw "refusing: not
+  // production" on Railway once ADR-078 rewrote the URL to the pooler (ref moves
+  // from the host into the username), which was the projection step's 0.4s failure.
+  if (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg")) throw new Error("refusing: not production");
 
   const t0 = Date.now();
   const pg = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });

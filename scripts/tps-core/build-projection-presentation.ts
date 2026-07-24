@@ -37,7 +37,8 @@ interface OfferRow {
 
 (async () => {
   const url = process.env.SUPABASE_DB_URL!;
-  if (!/db\.vyceqrzttspyycdpojtn\.supabase\.co/.test(url)) throw new Error("refusing: not production");
+  // See build-tps-projection.ts: accept direct host AND pooler form (ADR-078).
+  if (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg")) throw new Error("refusing: not production");
   const pg = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await pg.connect();
   await pg.query("set statement_timeout = 0");
