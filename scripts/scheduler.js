@@ -22,6 +22,13 @@
 require('dotenv').config({ path: '.env.local' });
 require('dotenv').config({ path: '.env' });
 
+// ADR-078: Supabase's direct connection is IPv6-only; Railway is IPv4-only, so
+// direct pg connections fail with ENETUNREACH. Rewrite to the IPv4 pooler and put
+// it back on process.env so every spawned chain script (which inherits this env)
+// connects the same way. No-op if already a pooler URL or not a Supabase direct URL.
+const { toPoolerDbUrl } = require('./pooler-url');
+if (process.env.SUPABASE_DB_URL) process.env.SUPABASE_DB_URL = toPoolerDbUrl(process.env.SUPABASE_DB_URL);
+
 const { spawn } = require('child_process');
 
 // ── Heartbeat (ADR-078) ──────────────────────────────────────────────────────

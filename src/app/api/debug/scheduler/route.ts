@@ -18,7 +18,9 @@ export async function GET() {
   // the scheduler spawns but writes no heartbeat, which points at a connection the
   // web app never exercises (it uses the Supabase JS client, not direct pg).
   let dbTest: { ok: boolean; ms?: number; error?: string; host?: string } = { ok: false, error: 'not attempted' };
-  const url = process.env.SUPABASE_DB_URL;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { toPoolerDbUrl } = require('../../../../../scripts/tps-core/pooler-url') as { toPoolerDbUrl: (u?: string) => string };
+  const url = process.env.SUPABASE_DB_URL ? toPoolerDbUrl(process.env.SUPABASE_DB_URL) : undefined;
   if (url) {
     let host: string | undefined;
     try { host = new URL(url).host; } catch { /* ignore */ }
