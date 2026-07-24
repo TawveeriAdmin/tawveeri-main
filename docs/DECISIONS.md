@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-084 — Fix the ADR-081 NO_STORAGE sentinel leaking into customer-facing titles ("NO_STORAGEGB") · Accepted (2026-07-24)
+**Context:** `tps:search-quality` (a routine post-ingestion check, now 15/15 HIT · ranking 7/7 · 100%, up from a historical 6/15) surfaced a real customer-facing defect: searching "samsung galaxy s25 ultra" returned a card titled **"samsung Galaxy S S25 Ultra NO_STORAGEGB"**. The ADR-081 `NO_STORAGE` sentinel — an INTERNAL identity token for a storage-unspecified canonical — was being rendered into the display name because the mobile name builder appended `${storage}GB` unconditionally, and `attrs` did `Number("NO_STORAGE")` = NaN (a latent "NaNGB" in the Decision Engine).
+
+**Fix (`category-registry.ts` mobile `names`/`attrs`):** omit the storage segment when it is the sentinel (title shows the model; the Decision Engine already flags storage as unspecified in its reasons), and return `storage_gb: null` instead of NaN. **Remediation:** 47 existing canonicals carried `NO_STORAGEGB`; a targeted, idempotent name UPDATE stripped it (`canonical_products` is derived/regenerable — not an append-only invariant), then projection + presentation + search index were rebuilt. Verified: 0 `NO_STORAGE`/NaN remaining in names; comparable held at 254; 3 new regression tests + full suite 603 green.
+
+**Lesson:** any internal sentinel (NO_STORAGE, NO_TECH, NO_SERIES, NA) must be stripped at every customer-facing rendering path, not only in identity. Search-quality is a cheap, high-signal post-ingestion check — keep running it.
+
 ### ADR-083 — E15.5 close: appliance identity normalization does NOT increase comparisons (measure-first, no change shipped) · FAIL on the hypothesis, Accepted (2026-07-24)
 **Scope (founder-bounded):** E15.5 only, current production categories, goal = increase realized multi-store comparisons via appliance model-identity normalization. Close with PASS/PARTIAL/FAIL evidence. No broader architecture, no E16.
 

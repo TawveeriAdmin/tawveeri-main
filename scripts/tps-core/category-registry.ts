@@ -152,12 +152,19 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     names: (k) => {
       const [brand, family, gen, variant, storage] = k.split("|");
       const v = variant && variant !== "Standard" ? ` ${variant}` : "";
-      const en = `${family} ${gen}${v} ${storage}GB`.replace(/\s+/g, " ").trim();
+      // ADR-081/084: NO_STORAGE is an internal sentinel for a storage-unspecified
+      // canonical — it must NEVER reach the customer as "NO_STORAGEGB". Omit the
+      // storage segment entirely (the Decision Engine already flags storage as
+      // unspecified in its reasons; the title just shows the model).
+      const storagePart = storage && storage !== "NO_STORAGE" ? ` ${storage}GB` : "";
+      const en = `${family} ${gen}${v}${storagePart}`.replace(/\s+/g, " ").trim();
       return { nameAr: `${brand} ${en}`, nameEn: `${brand.charAt(0).toUpperCase()}${brand.slice(1)} ${en}` };
     },
     attrs: (k) => {
       const p = k.split("|");
-      return { family: p[1], generation: p[2], variant: p[3], storage_gb: Number(p[4]) };
+      // storage_gb must be null (not NaN) for a NO_STORAGE canonical, or downstream
+      // (Decision Engine, filters) renders "NaNGB" / mis-compares.
+      return { family: p[1], generation: p[2], variant: p[3], storage_gb: p[4] === "NO_STORAGE" ? null : Number(p[4]) };
     },
     canonSeed: (k) => `canonical:${k}`, normSeed: (o) => `norm:raw_observations:${o}`,
     requireValidTier: true, priceBand: 1.5,
