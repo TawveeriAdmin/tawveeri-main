@@ -6,6 +6,19 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-085 — Affiliate & Official Feed Framework: a generic, pluggable provider architecture (Amazon = reference) · Accepted (2026-07-24)
+**Context:** ADR-082's close proved the comparison ceiling is merchant-overlap-bound and that the high-overlap Saudi retailers BLOCK scraping (Noon/Lulu/Carrefour/HNAK/Axiom all 403/SPA/Cloudflare-hang). Founder direction: make official/affiliate feeds the long-term production direction, but don't wait on business agreements — build the framework now. Also, affiliate handling was **fragmented and inconsistent** across three places (the `/go` route's hardcoded `AFFILIATE_RULES`, `transactions/affiliate-config.ts`, and a tag injection buried in `normalizeStoreUrl`) — Noon alone had three different param conventions.
+
+**Decision — a provider framework in `src/lib/providers/` (see `docs/AFFILIATE-FRAMEWORK.md`).** A `RetailerProvider` binds a retailer to two ORTHOGONAL, pluggable adapters:
+- **Sourcing** (how offers enter): `scraper` today; `official_feed`/`affiliate_feed`/`api`/`csv_xml` future — all yield the same `ScrapedProduct[]`, so `raw_observations` and all of TPS below are untouched. `sourcing/router.ts` prefers a configured feed and falls back to the clean scraper (one-way, never duplicated evidence). `feed-adapter.ts` is a testable scaffold (column-map → offer) awaiting a live feed URL + credentials (a commercial boundary).
+- **Monetization/exit** (how `/go` is turned into an affiliate link): a pluggable `AffiliateNetwork` — `amazon` (reference: canonical `/dp/ASIN` deep link + `tag=tawveeri-21` + `ascsubtag=<clickId>`), `param` (Noon-style query params + sub-id), `direct` (no program). `buildOfferExitLink()` is now the SINGLE affiliate path; the `/go` route calls it and records program/tag/**sub_id**/source in `outbound_clicks` (migration 19 added `sub_id`) so a future conversion webhook can match a network-reported sub-id back to the click — full-funnel attribution.
+
+**Feature flags** (`registry.ts`): `PROVIDER_<SLUG>_{ENABLED,SOURCING,AFFILIATE}` switch a provider's sourcing/network without code changes — e.g. flip Amazon from `scraper` to an official PA-API feed later by env alone.
+
+**TPS preserved:** providers emit OFFERS only (never identities/verdicts); no program ⇒ a plain `direct` link (unknown beats incorrect, never a fabricated tag); `Canonical → Variant → Offer` unchanged; every exit stays a measured `/go` click; commercial interest never enters ranking (Art. VII). **Future approval-gated AI shopping actions** route through the same provider adapters (the human approves, the provider executes) — this is the seam where that lands without re-architecture.
+
+**Evidence:** 12 framework tests (Amazon canonical/tag/subid, param no-clobber, direct, host-fallback, never-throws, registry flags, feed evidence-first mapping) + full suite 615 green. Host-based fallback keeps legacy/provider-less offers monetized correctly. `normalizeStoreUrl`'s tag injection is now redundant (the framework owns tagging, re-canonicalizing cleanly) — a harmless future cleanup; the legacy `product_stores` transaction path still uses `affiliate-config.ts` and should migrate to the framework later.
+
 ### ADR-084 — Fix the ADR-081 NO_STORAGE sentinel leaking into customer-facing titles ("NO_STORAGEGB") · Accepted (2026-07-24)
 **Context:** `tps:search-quality` (a routine post-ingestion check, now 15/15 HIT · ranking 7/7 · 100%, up from a historical 6/15) surfaced a real customer-facing defect: searching "samsung galaxy s25 ultra" returned a card titled **"samsung Galaxy S S25 Ultra NO_STORAGEGB"**. The ADR-081 `NO_STORAGE` sentinel — an INTERNAL identity token for a storage-unspecified canonical — was being rendered into the display name because the mobile name builder appended `${storage}GB` unconditionally, and `attrs` did `Number("NO_STORAGE")` = NaN (a latent "NaNGB" in the Decision Engine).
 
