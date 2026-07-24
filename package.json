@@ -7,7 +7,7 @@
     "tps:algolia-sync": "npx tsx scripts/tps-algolia-sync.ts",
     "dev": "next dev",
     "build": "next build && cp -R .next/static .next/standalone/.next/static && cp -R public .next/standalone/public",
-    "start": "node scripts/start-production.js",
+    "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
