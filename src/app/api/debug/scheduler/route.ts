@@ -9,9 +9,19 @@ export const dynamic = 'force-dynamic';
  * Reports, directly over HTTP (no DB dependency), whether the Next.js
  * instrumentation hook ran in THIS deploy and whether it spawned the scheduler,
  * plus the live commit SHA — so the automation can be diagnosed without Railway
- * logs. Read-only booleans/strings; nothing sensitive.
+ * logs.
+ *
+ * SECURITY: this discloses infra details (commit SHA, scheduler pid, DB pooler host,
+ * env-flag presence). It is an OPERATOR diagnostic, not a public endpoint — gated on
+ * the same CRON_SECRET as the cron routes. Unauthorized requests get a 404 so the
+ * endpoint's existence is not confirmed (ADR-086).
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  const auth = req.headers.get('authorization');
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   const g = globalThis as Record<string, unknown>;
 
   // Actively TEST whether this container can reach the DB via SUPABASE_DB_URL —

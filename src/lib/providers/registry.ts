@@ -20,7 +20,10 @@ const BASE: Record<string, RetailerProvider> = {
   extra:       { slug: "extra",       storeId: 4, displayName: "eXtra",             displayNameAr: "اكسترا",           enabled: true, sourcing: "scraper", affiliate: null },
   almanea:     { slug: "almanea",     storeId: 5, displayName: "Almanea",           displayNameAr: "المنيع",           enabled: true, sourcing: "scraper", affiliate: null },
   samsung_ksa: { slug: "samsung_ksa", storeId: 6, displayName: "Samsung Saudi",     displayNameAr: "سامسونج السعودية", enabled: true, sourcing: "scraper", affiliate: null },
-  shaker:      { slug: "shaker",      storeId: 7, displayName: "Shaker",            displayNameAr: "شاكر",             enabled: true, sourcing: "scraper", affiliate: null },
+  // shaker exposes a public WooCommerce Store API (1,081 products) — cleaner than the
+  // HTML scraper. feedUrl is set so the WooCommerce feed adapter is one flag flip away
+  // (PROVIDER_SHAKER_SOURCING=api); default stays `scraper` until verified equivalent.
+  shaker:      { slug: "shaker",      storeId: 7, displayName: "Shaker",            displayNameAr: "شاكر",             enabled: true, sourcing: "scraper", affiliate: null, feedUrl: "https://shakersa.com" },
   swsg:        { slug: "swsg",        storeId: 8, displayName: "SWSG",              displayNameAr: "الشتاء والصيف",    enabled: true, sourcing: "scraper", affiliate: null },
 };
 

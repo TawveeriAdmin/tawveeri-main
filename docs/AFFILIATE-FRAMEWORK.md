@@ -47,8 +47,10 @@ network (Amazon today), or sourced by an official feed and monetized by the same
 | `link.ts` | `buildOfferExitLink(provider, rawUrl, ctx)` — normalize → dispatch to network → attribution |
 | `registry.ts` | `PROVIDERS` registry + **feature flags** (`getProvider`, env overrides) |
 | `sourcing/types.ts` | `SourcingAdapter` interface |
+| `sourcing/woocommerce-feed-adapter.ts` | **Working** feed (ADR-086): public WooCommerce Store API → clean JSON offers (no credentials). Reusable for any Woo/Salla shop. |
 | `sourcing/scraper-adapter.ts` | Wraps the existing per-store scrapers (today's default) |
-| `sourcing/feed-adapter.ts` | Official/CSV/XML feed adapter (interface + parser scaffold) |
+| `sourcing/feed-adapter.ts` | Generic official/CSV/XML feed adapter (column-map scaffold for feeds that need credentials) |
+| `sourcing/router.ts` | Picks the adapter: structured feed (WooCommerce → generic) preferred, scraper fallback |
 
 ## Feature flags
 

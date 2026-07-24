@@ -6,6 +6,17 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-086 — First WORKING feed: WooCommerce Store API adapter (credential-free) + secure the operator debug endpoint · Accepted (2026-07-24)
+**Context:** ADR-085 shipped the provider framework with a feed-adapter *scaffold* awaiting a commercial agreement. But research found a credential-free feed hiding in plain sight: standard WooCommerce shops expose a PUBLIC Store API (`/wp-json/wc/store/v1/products`). Verified live on `shakersa.com`: **1,081 products, clean paginated JSON** (`X-WP-TotalPages`), no auth, no anti-bot, no HTML parsing.
+
+**Decision — `sourcing/woocommerce-feed-adapter.ts`, the framework's first REAL feed** (mode `api`). Maps the Store-API JSON → `ScrapedProduct[]`: decodes HTML entities in names, converts **minor-unit prices** (`"22885"` @ `currency_minor_unit:2` ⇒ 228.85 SAR), prefers `sale_price` and records `regular_price` as original, carries brand/sku/image/stock, and is evidence-first (drops a row lacking name/price/url). The sourcing router now prefers a structured feed (WooCommerce → generic feed → scraper fallback). A provider opts in with `sourcing:"api"` + `feedUrl`; shaker carries `feedUrl:"https://shakersa.com"` so activation is one flag (`PROVIDER_SHAKER_SOURCING=api`) — default stays `scraper` until the feed is wired into the live ingestion path.
+
+**Live evidence:** the adapter fetched **198/198 clean products in 6 s (100% named/priced/urled)** — categorically better than the HTML scraper (which threw 51 errors on shaker/appliance). **This proves the framework's official-feed path end-to-end without any credentials, and generalizes to the entire class of WooCommerce/Salla Saudi shops** — the clean, maintainable, production-safe integration path the Founder asked for. 5 new adapter tests (entity decode, minor→major, sale/original, evidence-first drops, router preference); full suite 620 green.
+
+**Also (security hardening):** the `/api/debug/scheduler` operator diagnostic (created in ADR-078) was PUBLIC and disclosed infra (commit SHA, scheduler pid, DB pooler host, env-flag presence). It is now gated on `CRON_SECRET` and returns **404** to unauthorized callers (existence not confirmed). It was the only debug/test route in `src/app/api`.
+
+**Next (production-safe, not blocking):** wire `sourceOffers()` into the ingestion path so a provider set to `sourcing:"api"` actually feeds `raw_observations` from the Store API instead of the scraper — a strictly-cleaner data upgrade for shaker (and any Woo retailer) once verified equivalent-or-better end-to-end.
+
 ### ADR-085 — Affiliate & Official Feed Framework: a generic, pluggable provider architecture (Amazon = reference) · Accepted (2026-07-24)
 **Context:** ADR-082's close proved the comparison ceiling is merchant-overlap-bound and that the high-overlap Saudi retailers BLOCK scraping (Noon/Lulu/Carrefour/HNAK/Axiom all 403/SPA/Cloudflare-hang). Founder direction: make official/affiliate feeds the long-term production direction, but don't wait on business agreements — build the framework now. Also, affiliate handling was **fragmented and inconsistent** across three places (the `/go` route's hardcoded `AFFILIATE_RULES`, `transactions/affiliate-config.ts`, and a tag injection buried in `normalizeStoreUrl`) — Noon alone had three different param conventions.
 
