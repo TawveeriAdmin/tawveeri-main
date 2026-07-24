@@ -44,7 +44,8 @@
     "tps:projection": "tsx scripts/build-tps-projection.ts",
     "tps:comparison-value": "tsx scripts/tps-analysis/comparison-value.ts",
     "tps:normalize": "tsx scripts/tps-core/normalize-incremental.ts",
-    "tps:ingest-provider": "tsx scripts/tps-core/ingest-via-provider.ts"
+    "tps:ingest-provider": "tsx scripts/tps-core/ingest-via-provider.ts",
+    "tps:feed-probe": "tsx scripts/tps-analysis/feed-overlap-probe.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",
