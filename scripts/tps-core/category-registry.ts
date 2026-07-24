@@ -127,6 +127,11 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     filterKeywords: ["مكيف جداري", "مكيف سبليت", "Split Air Conditioner", "Split AC"],
     names: (k) => acNames(k),
     attrs: (k) => { const p = k.split("|"); return { ac_type: p[1], series_or_platform: p[2] === "NO_SERIES" ? null : p[2], capacity_btu: Number(p[3]), technology: p[4], cooling_mode: p[5] }; },
+    // ADR-077: keep requireValidTier FALSE. The audit showed most NO_SERIES AC
+    // corroborations are LEGITIMATE (low price spread = the same simple/budget
+    // unit across stores). The false merges came specifically from LG design lines
+    // (Art Cool vs Fresh DV) at the same BTU — fixed by extracting those series in
+    // the parser, not by dropping every series-less comparison.
     canonSeed: (k) => `canonical:${k}`, normSeed: (o) => `norm:raw_observations:${o}`, requireValidTier: false, priceBand: null,
   },
   // ADR-061 — mobile registered. It was deliberately excluded while its plugin

@@ -43,6 +43,15 @@ export function normalize(nameAr: string, nameEn: string, _rawBrand: string | nu
     { series_or_platform = "WindFree"; technology = "Inverter"; }
   if (combined.includes("bespoke") && !series_or_platform)
     series_or_platform = "Bespoke";
+  // LG design lines are distinct products at distinct prices (ADR-077). Without
+  // them, an Art Cool (premium) and a Fresh DV (basic) at the same BTU merged into
+  // one false comparison (measured 1650→5280 SAR). "Dual Inverter" is a compressor
+  // tech, not a design line, so it is deliberately NOT treated as a series.
+  if (!series_or_platform) {
+    if (combined.includes("artcool")||combined.includes("art cool")||combined.includes("ارت كول")) series_or_platform = "ArtCool";
+    else if (combined.includes("fresh dv")||combined.includes("fresh dry")||combined.includes("فريش")) series_or_platform = "FreshDV";
+    else if (combined.includes("airfit")||combined.includes("air fit")||combined.includes("اير فيت")) series_or_platform = "AirFit";
+  }
   if (!technology) {
     if (combined.includes("triple inverter")) technology = "Triple Inverter";
     else if (

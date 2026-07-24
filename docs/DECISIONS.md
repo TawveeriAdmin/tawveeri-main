@@ -6,6 +6,15 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-077 — AC LG design-series extraction: a partial precision fix, honestly scoped · Accepted (2026-07-24)
+**Context:** ADR-076 left 4 residual merge-audit flags, all air-conditioner. Inspecting the listings behind them showed a **mix**, not a single defect: `lg|split|NO_SERIES|18000` merged genuinely different LG design lines — *Art Cool* (premium), *Fresh DV*, *AirFit* — at the same BTU (1650→5280 SAR), a real false merge; but `samsung|WindFree|20500` (3.19x) is the **same model** (AR24CSFCBWK) across two stores — a *legitimate* comparison the audit's price-spread heuristic flags as a false positive.
+
+**Decision:** extract the LG design lines (Art Cool / Fresh DV / AirFit) in the AC parser so they become distinct identities. "Dual Inverter" is compressor tech, not a design line, and is deliberately excluded. This created 8 correct new LG-series canonicals (`lg|split|ArtCool|18000|…`, `…|FreshDV|…`, `…|AirFit|…`).
+
+**A blunt alternative, rejected:** flipping AC to `requireValidTier: true` (drop every `NO_SERIES` corroboration) was tried and reverted — the audit evidence showed most `NO_SERIES` AC merges are **legitimate** (budget/window units with low price spread = the same simple product across stores). Dropping them would trade a real recall loss for no precision gain on those. Precision-over-recall applies to the *unverifiable*, and low spread is verification.
+
+**Honest outcome — partial.** The Art Cool ≠ Fresh DV class of merge is fixed. But the audit still flags 4, because the **residual** `lg|split|NO_SERIES|18000` holds model-code-only LG variants (NS182xx, "Smart") that share brand+type+BTU+tech+mode and are separable only by *model number* — which is store-inconsistent and so conflicts with cross-store corroboration. That, plus the Gree case, is a deeper AC-identity limitation deferred to a future model-level pass; the Samsung flag is legitimate variance, not a merge. Health clean throughout: 0 FAIL, 0 duplicate cards, comparable 241. 4 regression tests. Reported partial because it is partial — the design-line split is a genuine correctness gain even though the price-spread metric, which also catches legitimate variance, does not move.
+
 ### ADR-076 — Appliance false-merge fix: a capacity-less `brand|type|NA` key no longer corroborates · Accepted (2026-07-24)
 **Context:** with the category vein exhausted, a read-only merge-quality audit (intra-product price spread as the signature of a false merge) over all 239 corroborated products found the platform mostly clean — **every category repaired this session had 0 false merges** — but flagged 6, all in appliance plugins. The worst were vacuums: `xiaomi|robot|NA` spanned **165 → 849 SAR (5.15x)** and `eufy|robot|NA` **150 → 699 (4.66x)**. Root cause: the appliance factory's `buildIdentityKey` returned status `valid` **unconditionally**, so when capacity (the discriminating spec) was unread it emitted `brand|type|NA` — collapsing every model of that type into one identity. A cheap handheld and a premium robot were shown as the same product.
 
