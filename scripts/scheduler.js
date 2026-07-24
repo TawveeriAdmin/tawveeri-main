@@ -26,7 +26,7 @@ require('dotenv').config({ path: '.env' });
 // direct pg connections fail with ENETUNREACH. Rewrite to the IPv4 pooler and put
 // it back on process.env so every spawned chain script (which inherits this env)
 // connects the same way. No-op if already a pooler URL or not a Supabase direct URL.
-const { toPoolerDbUrl } = require('./pooler-url');
+const { toPoolerDbUrl } = require('./tps-core/pooler-url');
 if (process.env.SUPABASE_DB_URL) process.env.SUPABASE_DB_URL = toPoolerDbUrl(process.env.SUPABASE_DB_URL);
 
 const { spawn } = require('child_process');
