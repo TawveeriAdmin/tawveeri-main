@@ -8,6 +8,7 @@
 import type { CategoryPlugin, NormalizeResult } from "./types";
 import { tvPlugin, normalize as tvN } from "../tps-plugins/tv";
 import { monitorPlugin, normalize as monitorN } from "../tps-plugins/monitor";
+import { printerPlugin, normalize as printerN } from "../tps-plugins/printer";
 import { tabletPlugin, normalize as tabletN } from "../tps-plugins/tablet";
 import { audioPlugin, normalize as audioN } from "../tps-plugins/audio";
 import { cameraPlugin, normalize as cameraN } from "../tps-plugins/camera";
@@ -83,6 +84,21 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     },
     attrs: (k) => { const p = k.split("|"); const isP = p[1]?.startsWith("MODEL:"); return isP ? {} : { screen_size: Number(p[1]), resolution: p[2] === "NO_RES" ? null : p[2], refresh_rate: p[3] && p[3] !== "NO_HZ" ? Number(p[3]) : null, panel: p[4] === "NO_PANEL" ? null : p[4] }; },
     canonSeed: (k) => `canonical:monitor:${k}`, normSeed: (o) => `norm:monitor:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
+  },
+  // ADR-075 — printer registered as a new category. Line + model number is the
+  // stable cross-store identity (hp|laserjet 1602w); model_number stays null (the
+  // line lives in the key, off the (brand, model_number) unique index). Precision:
+  // requireValidTier true — corroborate only rows with a recognised line+model.
+  printer: {
+    category: "printer", detected: "printer", plugin: printerPlugin, normalize: printerN, version: "printer-v1",
+    filterKeywords: ["printer", "طابعة", "laserjet", "deskjet", "pixma", "ecotank", "طابعه"],
+    names: (k) => {
+      const [b, model] = k.split("|");
+      const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+      return { nameAr: `طابعة ${b} ${model}`.replace(/\s+/g, " ").trim(), nameEn: `${cap(b)} ${model} Printer`.replace(/\s+/g, " ").trim() };
+    },
+    attrs: (k) => ({ model: k.split("|")[1] }),
+    canonSeed: (k) => `canonical:printer:${k}`, normSeed: (o) => `norm:printer:raw_observations:${o}`, requireValidTier: true, priceBand: 1.5,
   },
   tablet: {
     category: "tablet", detected: "tablet", plugin: tabletPlugin, normalize: tabletN, version: "tablet-v1",

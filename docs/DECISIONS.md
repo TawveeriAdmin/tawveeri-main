@@ -6,6 +6,15 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-075 — Register PRINTER as a new category: 0 → 86.5% identification where comparison is possible · Accepted (2026-07-24)
+**Context:** with monitor registered, a category-pool feasibility scan of the remaining unregistered categories ranked the next comparison pools: **printer 29, power_bank 22, console 10 (mostly controllers), router 10, projector 0**. Printer was the largest with a clean, store-stable identity. Power bank was deliberately **rejected**: its identity (brand + capacity + wattage) over-merges many distinct Anker/Xiaomi models at the same mAh, while its line names are too store-inconsistent to key on — it fails the precision bar. Console/projector/router were too small or single-brand.
+
+**A new plugin, keyed on `brand | line + model number`** (`hp|laserjet 1602w`, `canon|pixma g3410`) — the printer's stable cross-store identity. Like audio, the line token lives in the key and `model_number` stays null, so it never touches the `(brand, model_number)` unique index (the trap ADR-074 hit). Bilingual: Almanea writes the line in Arabic (`ليزرجت`, `بيكسما`) with a Latin model number. The detector hard-rejects the dominant noise — ink/toner/cartridges, drums, paper, USB-to-printer cables — and specialty printers (3D, label, barcode, thermal POS).
+
+**A measured fix before registration:** the first pass identified 78.4%; the misses were HP's **Ink Advantage** line (the dominant consumer DeskJet sub-line) — absent from the parser and, worse, breaking DeskJet model extraction. Mapping `ink advantage → deskjet` (so a store that drops "DeskJet" still corroborates) lifted it to **86.5% (32/37)** — on par with mobile (86.0%). The 5 remaining misses are Canon models written in Arabic transliteration (`تي اس 3640` = TS3640); left unidentified rather than guessed.
+
+**Result: 86.5% identified where comparison is possible.** Printer contributes **44 products, 7 corroborated comparisons**, from zero. Platform products 2,193 → 2,237; corroborated 232 → 239. Verified end-to-end: 0 FAIL, 0 duplicate cards, every product searchable. 15 regression tests. A smaller milestone than monitor by design — the category tail has reached diminishing returns (largest remaining pool was 29), so this harvests the last clean pool before ROE points elsewhere.
+
 ### ADR-074 — Register MONITOR as a new category: 0 → 93.6% identification where comparison is possible · Accepted (2026-07-24)
 **Context:** with the three top parser deficits repaired, a re-measure of every plugin showed the highest remaining return was no longer a *repair* but a *gap*: **monitor was unregistered** (no TPS plugin), so a read-only feasibility scan found **507 monitor listings, 271 comparison-possible across LG/Samsung/Acer/HP/Asus/Dell/AOC/Dahua, and 0 identified**. The alternative — mobile's 125-lost tail — was measured to be a structural floor (105 of 125 lack storage in the title; guessing it would break precision). Registering monitor was the evidence-backed choice.
 
