@@ -20,13 +20,30 @@ export function buildIdentityKey(
   p: Record<string, unknown>,
   _normalizeMeta?: Record<string, unknown>
 ): IdentityResult {
-  const nulls = ["brand", "family", "generation", "variant", "storage_gb"]
+  // The MODEL fields (brand + family + generation + variant) are ALWAYS required:
+  // an unidentified model can never be a canonical product. Storage, however, is a
+  // COMMERCIAL VARIANT of that canonical product — and a large class of real Saudi
+  // listings state the model but omit storage ("Samsung Galaxy S25 Ultra", "Apple
+  // iPhone 17 Pro Max"; the payload `specifications` is empty). Requiring storage
+  // discarded ~100 comparison-possible listings on the flagship category (ADR-080).
+  //
+  // ADR-081: when storage is absent we still assert the canonical product at MODEL
+  // level with a `NO_STORAGE` sentinel, so two merchants selling the same model
+  // corroborate at the correct hierarchy level (Canonical Product → Commercial
+  // Variant → Offers). Precision is preserved by construction: `NO_STORAGE` is a
+  // distinct token that can NEVER merge with a storage-specific key (`…|256`), so
+  // we never claim a 256 GB unit equals a 512 GB one. The residual uncertainty —
+  // that two bare listings could be different storages — is carried transparently
+  // as REDUCED identity_confidence (validator) and an explicit caution in the
+  // Decision Engine, never as a silent equivalence.
+  const modelNulls = ["brand", "family", "generation", "variant"]
     .filter(f => (f === "brand" ? brand : p[f]) === null || (f === "brand" ? brand : p[f]) === undefined);
 
-  if (nulls.length > 0) return { key: null, status: "invalid", reason: `null in critical: ${nulls.join(", ")}` };
+  if (modelNulls.length > 0) return { key: null, status: "invalid", reason: `null in critical: ${modelNulls.join(", ")}` };
 
   const cb = canonicalizeBrand(brand);
   if (!cb || cb === "unknown") return { key: null, status: "invalid", reason: "brand not canonicalizable" };
 
-  return { key: `${cb}|${p.family}|${p.generation}|${p.variant}|${p.storage_gb}`, status: "valid" };
+  const storage = (p.storage_gb === null || p.storage_gb === undefined) ? "NO_STORAGE" : String(p.storage_gb);
+  return { key: `${cb}|${p.family}|${p.generation}|${p.variant}|${storage}`, status: "valid" };
 }

@@ -21,5 +21,12 @@ export function scoreConfidence(
   if (model_number) conf = Math.min(100, conf + 5);
   if (flags.length) conf = Math.max(0, conf - 5);
 
+  // ADR-081: a model identified WITHOUT storage (NO_STORAGE canonical) is a
+  // deliberately weaker assertion — storage is a price-determining commercial
+  // variant, so two bare listings could be different configs. Cap the confidence
+  // low so the reduced value propagates to the projection and every customer
+  // surface (compare / decide / search), and the Decision Engine can flag it.
+  if (!payload.storage_gb && payload.family && payload.generation) conf = Math.min(conf, 60);
+
   return { confidence: conf, missing_critical: missing, needs_llm: missing.length > 0 || conf < 85 };
 }

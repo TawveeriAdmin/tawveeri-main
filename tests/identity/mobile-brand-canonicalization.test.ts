@@ -36,9 +36,21 @@ describe("mobile identity — brand is canonicalized", () => {
       .not.toBe(buildIdentityKey("Samsung", specs).key);
   });
 
-  it("rejects rather than guessing when a critical field is missing", () => {
-    expect(buildIdentityKey("Apple", { ...specs, storage_gb: null }).status).toBe("invalid");
+  it("rejects rather than guessing when a MODEL field is missing", () => {
+    // Model fields (brand/family/generation/variant) are always required.
     expect(buildIdentityKey(null, specs).status).toBe("invalid");
+    expect(buildIdentityKey("Apple", { ...specs, family: null }).status).toBe("invalid");
+    expect(buildIdentityKey("Apple", { ...specs, generation: null }).status).toBe("invalid");
+    expect(buildIdentityKey("Apple", { ...specs, variant: null }).status).toBe("invalid");
+  });
+
+  it("ADR-081: a fully-identified model WITHOUT storage is a valid NO_STORAGE canonical, never merged with a storage-specific key", () => {
+    const bare = buildIdentityKey("Apple", { ...specs, storage_gb: null });
+    expect(bare.status).toBe("valid");
+    expect(bare.key).toContain("|NO_STORAGE");
+    // must NOT collide with any storage-specific variant of the same model
+    expect(bare.key).not.toBe(buildIdentityKey("Apple", { ...specs, storage_gb: 256 }).key);
+    expect(bare.key).not.toBe(buildIdentityKey("Apple", { ...specs, storage_gb: 512 }).key);
   });
 
   it("rejects an unrecognisable brand instead of keying on noise", () => {

@@ -5,6 +5,7 @@
 import { detect } from "../../scripts/tps-plugins/mobile/detector";
 import { normalize } from "../../scripts/tps-plugins/mobile/parser";
 import { buildIdentityKey } from "../../scripts/tps-plugins/mobile/identity";
+import { scoreConfidence } from "../../scripts/tps-plugins/mobile/validator";
 import { normalizeArabic } from "../../scripts/tps-plugins/mobile/text";
 
 const idOf = (ar: string, en: string, brand: string | null, payload: Record<string, unknown> = {}) => {
@@ -110,6 +111,34 @@ describe("storage — RAM must never become a storage identity", () => {
 
   it("prefers a structured payload storage field when the store supplies one", () => {
     expect(idOf("سامسونج جالاكسي اس 25", "", "سامسونج", { storage: 512 }).p.storage_gb).toBe(512);
+  });
+});
+
+describe("ADR-081 — storage-optional NO_STORAGE canonical (flagship base-model listings)", () => {
+  const conf = (ar: string, brand: string) => {
+    const n = normalize(ar, "", brand, {});
+    return scoreConfidence(brand, n.payload, n.model_number, n.ambiguity_flags);
+  };
+  it("a storage-less base model is a valid NO_STORAGE canonical", () => {
+    expect(idOf("", "Samsung Galaxy S25 Ultra", "Samsung").key).toBe("samsung|Galaxy S|S25|Ultra|NO_STORAGE");
+    expect(idOf("", "Apple iPhone 17 Pro Max", "Apple").key).toBe("apple|iPhone|17|Pro Max|NO_STORAGE");
+  });
+  it("bilingual bare listings of the same model corroborate (one NO_STORAGE key)", () => {
+    expect(idOf("سامسونج جالكسي اس 25 الترا", "", "سامسونج").key)
+      .toBe(idOf("", "Samsung Galaxy S25 Ultra", "Samsung").key);
+  });
+  it("NO_STORAGE never merges with a storage-specific variant (precision preserved)", () => {
+    expect(idOf("", "Apple iPhone 17 Pro Max", "Apple").key)
+      .not.toBe(idOf("", "Apple iPhone 17 Pro Max 256GB", "Apple").key);
+  });
+  it("carries the uncertainty as reduced confidence (<=60 vs 100 fully-specified)", () => {
+    expect(conf("Samsung Galaxy S25 Ultra", "Samsung").confidence).toBeLessThanOrEqual(60);
+    expect(conf("Samsung Galaxy S25 Ultra 256GB", "Samsung").confidence).toBe(100);
+  });
+  it("does NOT rescue a partially-parsed model — the model must be fully identified", () => {
+    // no generation → still invalid, never a bare NO_STORAGE guess
+    const r = idOf("", "Samsung Galaxy phone", "Samsung");
+    expect(r.status).toBe("invalid");
   });
 });
 

@@ -254,6 +254,15 @@ export function decideMobile(task: ShoppingTask, rows: CanonicalRow[]): Recommen
     if (wantLatest && gen != null && maxGen > 0) { const rec = gen / maxGen; score += (rec - 0.5) * 0.3; if (gen === maxGen) reasons.push(`الجيل ${gen} — الأحدث`); }
     if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.08; reasons.push(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
     else if (storage != null) reasons.push(`تخزين ${storage}GB`);
+    // ADR-081: storage-unspecified (NO_STORAGE canonical) — be explicit and cautious.
+    // The price may reflect different storage configurations across merchants, so
+    // this card must never win purely on a lower price, and if the shopper asked
+    // for a minimum storage we cannot confirm it. Neutrality + explainability.
+    else {
+      score -= 0.04;
+      reasons.push("⚠️ السعة التخزينية غير محددة في هذه العروض — قد تختلف بين المتاجر");
+      if (t.storage_min) { score -= 0.06; reasons.push(`⚠️ لا يمكن تأكيد ${t.storage_min}GB المطلوبة`); }
+    }
     reasons.unshift(`${a.family ?? row.brand} ${a.generation ?? ""} ${a.variant && a.variant !== "Standard" ? a.variant : ""}`.replace(/\s+/g, " ").trim());
     if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
     const total = row.lowest_price;
