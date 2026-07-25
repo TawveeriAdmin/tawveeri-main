@@ -27,5 +27,21 @@
   "unresolvedHint": "To improve the recommendation, add:",
   "deterministicBadge": "Deterministic engine",
   "measuredExitNote": "Prices are updated from stores; tapping takes you straight to the store.",
-  "vsAlternative": "Chosen over"
+  "vsAlternative": "Chosen over",
+  "evidenceTitle": "Evidence & trust",
+  "evidenceIntro": "We show what this recommendation is built on — clearly separating what is verified, what is inferred, and what is unknown.",
+  "evidenceFacts": "Verified facts",
+  "evidenceInferences": "Inferred",
+  "evidenceRecommendation": "Why we recommend it",
+  "evidenceUnknown": "Unknown",
+  "evidenceInsufficient": "Insufficient evidence / caveats",
+  "evidenceFactsHint": "Information we actually observed from stores.",
+  "evidenceInferencesHint": "Conclusions computed from facts, not directly observed numbers.",
+  "evidenceUnknownHint": "Data we don't have — we say so rather than fabricate it.",
+  "evidenceInsufficientHint": "Things to weigh before buying.",
+  "cheaperNotBetter": "Cheaper isn't always better: we rank by suitability, total cost and trust — not price alone.",
+  "freshnessLabel": "Data freshness",
+  "trustScoreLabel": "Overall trust score",
+  "showEvidence": "Show evidence",
+  "hideEvidence": "Hide evidence"
 }

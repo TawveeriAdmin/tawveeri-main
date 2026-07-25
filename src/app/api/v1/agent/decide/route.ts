@@ -6,6 +6,7 @@ import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
 import { assessTrust, hoursSince } from "@/lib/intelligence/evidence-engine";
+import { getProviderByStoreId } from "@/lib/providers/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,16 +68,29 @@ export async function POST(req: NextRequest) {
   }
   const recs = recommendations.slice(0, Math.min(10, Number(new URL(req.url).searchParams.get("limit")) || 6));
 
-  // Attach a measured-exit go_url per recommendation (cheapest offer of that canonical).
+  // Attach a measured-exit go_url per recommendation (cheapest offer of that canonical),
+  // and collect WHICH stores corroborate it (the named evidence behind "N stores").
   const ids = recs.map((r) => r.canonical_id);
   const goByCanon = new Map<string, string>();
+  const storesByCanon = new Map<string, Set<number>>();
   if (ids.length) {
     const { data: obs } = await supabase
       .from("normalized_product_observations")
-      .select("id, canonical_product_id, observed_at")
+      .select("id, canonical_product_id, observed_at, store_id")
       .in("canonical_product_id", ids).order("observed_at", { ascending: false });
-    for (const o of obs ?? []) if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
+    for (const o of obs ?? []) {
+      if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
+      const sid = Number(o.store_id);
+      if (Number.isFinite(sid)) {
+        const set = storesByCanon.get(o.canonical_product_id) ?? new Set<number>();
+        set.add(sid); storesByCanon.set(o.canonical_product_id, set);
+      }
+    }
   }
+  // Store id → Arabic display name (from the provider registry — the one source of truth
+  // for store identity). Named stores make the corroboration a VERIFIED FACT, not a count.
+  const storeNames = (cid: string): string[] =>
+    [...(storesByCanon.get(cid) ?? [])].map((sid) => getProviderByStoreId(sid)?.displayNameAr || getProviderByStoreId(sid)?.displayName || `#${sid}`);
 
   // Fuse "which to buy" with "when to buy": attach a deterministic price-history
   // verdict per recommendation (buy-timing intelligence). Additive + fail-soft —
@@ -115,7 +129,8 @@ export async function POST(req: NextRequest) {
       discount_claimed: discountClaimed,
       discount_honest: discountClaimed ? d!.verdict === "verified_drop" : null,
     });
-    return { ...r, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
+    const data_age_hours = hoursSince((proj as { last_observed_at?: string | null } | undefined)?.last_observed_at);
+    return { ...r, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, stores: storeNames(r.canonical_id), data_age_hours, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
   const smartIdx = out.findIndex((r) => r.is_smart_pick);

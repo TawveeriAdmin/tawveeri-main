@@ -23,10 +23,69 @@ export interface AdvisorRecommendation {
   dna: Record<string, unknown>;
   go_offer_hint: string;
   go_url: string | null;
+  /** Named stores that corroborate this product (Arabic display names). */
+  stores?: string[] | null;
+  /** Hours since the freshest observation, when known. */
+  data_age_hours?: number | null;
+  /** The deterministic Trust Engine breakdown (factors + caveats), when present. */
+  trust?: TrustSummary | null;
   price_intel?: PriceIntel | null;
   chosen_over?: ChoiceExplanation | null;
   discount_intel?: DiscountIntel | null;
   alternatives?: ProductAlternative[] | null;
+}
+
+// ── Trust Engine breakdown (ADR-087) surfaced to the customer ────────────────
+export type FactorStatus = "strong" | "ok" | "weak" | "unknown";
+export interface TrustFactorSummary {
+  key: string;
+  label_ar: string; label_en: string;
+  status: FactorStatus;
+  evidence_ar: string; evidence_en: string;
+}
+export interface TrustSummary {
+  score: number;
+  tier: "high" | "medium" | "low";
+  factors: TrustFactorSummary[];
+  caveats_ar: string[]; caveats_en?: string[];
+}
+
+/**
+ * Organize the Trust Engine's evidence into the epistemic categories a customer must be
+ * able to DISTINGUISH (Founder Directive Part 2): what is a VERIFIED FACT, what is an
+ * INFERRED conclusion, what is UNKNOWN, and what is INSUFFICIENT EVIDENCE. Pure — it only
+ * reclassifies what the deterministic engine already produced; it never invents evidence.
+ * The "recommendation" itself (reasons_ar / chosen_over) is rendered separately so the
+ * customer never confuses "why we suggest it" with "what we verified."
+ */
+export interface EvidenceGroups { facts: string[]; inferences: string[]; insufficient: string[]; unknown: string[]; }
+export function evidenceGroups(rec: AdvisorRecommendation, locale: Locale): EvidenceGroups {
+  const g: EvidenceGroups = { facts: [], inferences: [], insufficient: [], unknown: [] };
+  const ar = locale === "ar";
+  const stores = rec.stores ?? [];
+  // Headline verified fact: NAMED corroboration (not just a count).
+  if (rec.comparison_available && stores.length >= 2) {
+    g.facts.push(ar ? `مؤكَّد ومُقارَن في ${stores.length} متاجر: ${stores.join("، ")}` : `Corroborated across ${stores.length} stores: ${stores.join(", ")}`);
+  }
+  for (const f of rec.trust?.factors ?? []) {
+    if (f.key === "corroboration" && rec.comparison_available && stores.length >= 2) continue; // already shown, named
+    const ev = (ar ? f.evidence_ar : f.evidence_en) || f.evidence_ar;
+    if (!ev) continue;
+    if (f.status === "strong" || f.status === "ok") g.facts.push(ev);
+    else if (f.status === "weak") g.insufficient.push(ev);
+    else g.unknown.push(ev);
+  }
+  // Inferences — conclusions DERIVED from facts, not observed directly.
+  if (hasTotalBeyondUnit(rec)) g.inferences.push(ar ? "التكلفة الكلية تقديرية (تشمل التركيب و/أو الكهرباء المقدّرة)" : "Total cost is an estimate (includes installation and/or est. electricity)");
+  if (typeof rec.suitability_score === "number" && rec.suitability_score > 0) g.inferences.push(ar ? `مدى ملاءمته لطلبك: ${rec.suitability_score}%` : `Fit for your request: ${rec.suitability_score}%`);
+  // Honest caveats join "insufficient evidence".
+  for (const c of (ar ? rec.trust?.caveats_ar : (rec.trust?.caveats_en ?? rec.trust?.caveats_ar)) ?? []) g.insufficient.push(c);
+  // Dedupe each group (stable order).
+  g.facts = [...new Set(g.facts)];
+  g.inferences = [...new Set(g.inferences)];
+  g.insufficient = [...new Set(g.insufficient)];
+  g.unknown = [...new Set(g.unknown)];
+  return g;
 }
 
 export interface ProductAlternative {

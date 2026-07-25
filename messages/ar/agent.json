@@ -27,5 +27,21 @@
   "unresolvedHint": "لتحسين الترشيح، أضف:",
   "deterministicBadge": "محرك حتمي",
   "measuredExitNote": "الأسعار تُحدّث من المتاجر؛ الضغط ينقلك مباشرة للمتجر.",
-  "vsAlternative": "الأنسب مقابل"
+  "vsAlternative": "الأنسب مقابل",
+  "evidenceTitle": "الأدلة والثقة",
+  "evidenceIntro": "نُظهر لك على ماذا بُني هذا الترشيح — ونميّز بوضوح بين ما هو مؤكَّد وما هو مُستنتَج وما هو غير معروف.",
+  "evidenceFacts": "حقائق موثّقة",
+  "evidenceInferences": "استنتاجات",
+  "evidenceRecommendation": "لماذا رشّحناه (توصية)",
+  "evidenceUnknown": "غير معروف",
+  "evidenceInsufficient": "أدلة غير كافية أو تحفّظات",
+  "evidenceFactsHint": "معلومات رصدناها فعليًا من المتاجر.",
+  "evidenceInferencesHint": "خلاصات محسوبة من الحقائق، وليست أرقامًا مرصودة مباشرة.",
+  "evidenceUnknownHint": "بيانات لا نملكها — ونصرّح بذلك بدل تلفيقها.",
+  "evidenceInsufficientHint": "أمور يجب أخذها بالحسبان قبل الشراء.",
+  "cheaperNotBetter": "الأرخص ليس دائمًا الأفضل: نرتّب حسب الملاءمة والتكلفة الإجمالية والثقة — لا السعر وحده.",
+  "freshnessLabel": "حداثة البيانات",
+  "trustScoreLabel": "درجة الثقة الإجمالية",
+  "showEvidence": "اعرض الأدلة",
+  "hideEvidence": "أخفِ الأدلة"
 }

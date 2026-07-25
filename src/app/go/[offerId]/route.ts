@@ -59,6 +59,12 @@ export async function GET(
   // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
   if (!/^https?:\/\//i.test(link.url)) return home();
 
+  // Real vs test exit (Part 6): a tester carries the `tw_test` cookie (?test=1); bots by UA.
+  const ua = req.headers.get("user-agent") ?? "";
+  const isTest = req.cookies.get("tw_test")?.value === "1" ||
+    req.nextUrl.searchParams.get("tw_test") === "1" ||
+    /bot|crawl|spider|slurp|headless|puppeteer|playwright|lighthouse|python-requests|curl|wget/i.test(ua);
+
   // Fire-and-forget click record — never block or fail the exit on the write.
   supabase
     .from("outbound_clicks")
@@ -71,7 +77,8 @@ export async function GET(
       affiliate_tag: link.tag ?? null,
       sub_id: subId,
       source,
-      user_agent: req.headers.get("user-agent") ?? null,
+      is_test: isTest,
+      user_agent: ua || null,
       referrer: req.headers.get("referer") ?? null,
     })
     .then(({ error: e }) => { if (e) console.error("outbound_clicks insert failed:", e.message); });
