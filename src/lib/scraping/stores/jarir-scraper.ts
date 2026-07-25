@@ -4,7 +4,30 @@ import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
+import { isValidGtin } from '@/lib/enrichment/icecat';
 import type * as cheerio from 'cheerio';
+
+/**
+ * Jarir exposes a GTIN (EAN) on every product page's structured data (verified: 5/5
+ * sampled pages). It is the one rich GTIN source among the Saudi majors, so we capture it
+ * as a store-independent identity anchor (ADR-100): resolvable via Icecat to authoritative
+ * brand/MPN/model/image, which strengthens model corroboration and fills the image gap.
+ * Extract the first checksum-valid GTIN from JSON-LD (gtin13/gtin) or a labelled field,
+ * else null (never fabricated).
+ */
+export function extractGtinFromHtml(html: string): string | null {
+  const patterns = [
+    /"gtin(?:13|14|12|8)?"\s*:\s*"?(\d{8,14})"?/i,
+    /"ean"\s*:\s*"?(\d{8,14})"?/i,
+    /"barcode"\s*:\s*"?(\d{8,14})"?/i,
+    /\b(?:EAN|GTIN|UPC|Barcode|باركود)\b[^0-9]{0,20}(\d{12,14})/i,
+  ];
+  for (const re of patterns) {
+    const m = html.match(re);
+    if (m && isValidGtin(m[1])) return m[1].replace(/\D+/g, '');
+  }
+  return null;
+}
 
 /**
  * Non-electronics block-list for Jarir titles.
@@ -477,6 +500,7 @@ export class JarirScraper extends BaseScraper {
       brand,
       model,
       sku,
+      gtin: extractGtinFromHtml(html),
       current_price: currentPrice,
       original_price: originalPrice,
       availability,
