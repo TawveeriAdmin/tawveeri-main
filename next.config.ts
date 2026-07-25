@@ -41,6 +41,17 @@ const nextConfig: NextConfig = {
      { protocol: 'https', hostname: '**.salla.sa' },
      { protocol: 'https', hostname: 'cdn.assets.salla.network' },
      { protocol: 'https', hostname: 'najm.store' },
+     // Feed-store image CDNs surfaced by the canonical image backfill (ADR-101).
+     { protocol: 'https', hostname: 'shakersa.com' },
+     { protocol: 'https', hostname: '**.shakersa.com' },
+     { protocol: 'https', hostname: 'swsg.co' },
+     { protocol: 'https', hostname: '**.swsg.co' },
+     { protocol: 'https', hostname: 'shop.mhzm.sa' },
+     { protocol: 'https', hostname: '**.mhzm.sa' },
+     { protocol: 'https', hostname: 'media.zid.store' },
+     { protocol: 'https', hostname: '**.zid.store' },
+     { protocol: 'https', hostname: 'images.samsung.com' },
+     { protocol: 'https', hostname: '**.samsung.com' },
    ],
  },
  async headers() {

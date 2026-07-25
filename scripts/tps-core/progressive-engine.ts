@@ -10,6 +10,7 @@ import { createHash } from "crypto";
 import { pickBestUrl } from "./url-util";
 import { CATEGORY_DEFS, TPS_STORES, type CategoryDef } from "./category-registry";
 import { TPS_MAX_OBSERVATIONS } from "./tps-batch";
+import { isValidGtin } from "../../src/lib/enrichment/icecat";
 
 function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
@@ -28,6 +29,15 @@ function extractPrice(p: Record<string, unknown>): number | null {
     if (Number.isFinite(n) && n > 0) return Math.round(n);
   }
   return null;
+}
+/** First usable http(s) product image the observation carries (never fabricated). 59% of
+ *  observations have one; the canonical previously dropped them (image_url:null), so every
+ *  comparison card rendered imageless. Thread it through staging so corroboration can set it. */
+function extractImage(p: Record<string, unknown>): string | null {
+  const arr = p.image_urls ?? p.images ?? p.image;
+  const cand = Array.isArray(arr) ? arr[0] : arr;
+  const s = asString(cand);
+  return s && /^https?:\/\//i.test(s) ? s : null;
 }
 
 export interface SweepMetrics { fetched: number; staged: number; saturated: boolean; byCategory: Record<string, { detected: number; valid: number; lowConfidence: number; invalid: number; touched: Set<string> }>; }
@@ -64,10 +74,15 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
         if (identity.status === "low_confidence_candidate") cm.lowConfidence++; else cm.valid++;
         const conf = def.plugin.scoreConfidence(brand, norm.payload, norm.model_number, norm.ambiguity_flags);
         cm.touched.add(identity.key);
+        const rawImg = extractImage(p);
         stagingRows.push({
           category: def.category, raw_obs_id: row.id, store_id: row.store_id, identity_key: identity.key,
           status: identity.status, price: extractPrice(p), url, name: (nameEn || nameAr).slice(0, 300),
-          confidence: conf.confidence, detected: true, payload: norm.payload, observed_at: new Date().toISOString(),
+          confidence: conf.confidence, detected: true,
+          // Carry the observed image (and GTIN when present) alongside the normalized attrs so
+          // corroboration can set canonical.image_url / attributes.gtin without re-reading raw.
+          payload: { ...norm.payload, ...(rawImg ? { _image: rawImg } : {}), ...(isValidGtin(p.gtin as string) ? { _gtin: String(p.gtin).replace(/\D+/g, "") } : {}) },
+          observed_at: new Date().toISOString(),
         });
       }
     }
@@ -117,12 +132,12 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // fresh id then violates the `canonical_products_tps_identity_key_uidx` unique index and
   // aborts the whole normalize chain (surfaced by new Almanea/Najm microwave data). By
   // targeting the existing row's id, the upsert updates it in place instead of colliding.
-  const existingByKey = new Map<string, string>();
+  const existingByKey = new Map<string, { id: string; image_url: string | null }>();
   {
     const keys = [...byKey.keys()];
     for (let i = 0; i < keys.length; i += 200) {
-      const { data } = await sb.from("canonical_products").select("id, tps_identity_key").in("tps_identity_key", keys.slice(i, i + 200));
-      for (const r of (data ?? []) as { id: string; tps_identity_key: string }[]) existingByKey.set(r.tps_identity_key, r.id);
+      const { data } = await sb.from("canonical_products").select("id, tps_identity_key, image_url").in("tps_identity_key", keys.slice(i, i + 200));
+      for (const r of (data ?? []) as { id: string; tps_identity_key: string; image_url: string | null }[]) existingByKey.set(r.tps_identity_key, { id: r.id, image_url: r.image_url });
     }
   }
 
@@ -141,7 +156,8 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     if (single) { if (storeIds.size !== 1) continue; R.singleStore++; }
     else { if (storeIds.size < 2) { R.singleStore++; continue; } R.corroborated++; }
 
-    const canonicalId = existingByKey.get(key) ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
+    const existing = existingByKey.get(key);
+    const canonicalId = existing?.id ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
     const rep = offers[0].payload || {};
     const { nameAr, nameEn } = def.names(key, rep);
     const parts = key.split("|");
@@ -149,10 +165,15 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     const groupConf = single
       ? Math.min(75, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length))
       : Math.min(95, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length) + 5);
+    // Fill-only image: prefer a freshly-observed image, else keep whatever the canonical
+    // already had (never overwrite a real image with null on a run where an offer lost it).
+    const observedImage = (offers.find((o) => typeof o.payload?._image === "string" && /^https?:\/\//i.test(o.payload._image as string))?.payload?._image as string | undefined) ?? null;
+    const image_url = observedImage ?? existing?.image_url ?? null;
+    const observedGtin = offers.find((o) => typeof o.payload?._gtin === "string")?.payload?._gtin as string | undefined;
     canonicalRows.push({
       id: canonicalId, name_ar: nameAr, name_en: nameEn, brand: parts[0],
-      model_number: isPrimary ? parts[1].slice(6) : null, category: def.category, image_url: null,
-      attributes: { ...def.attrs(key, rep), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single },
+      model_number: isPrimary ? parts[1].slice(6) : null, category: def.category, image_url,
+      attributes: { ...def.attrs(key, rep), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single, ...(observedGtin ? { gtin: observedGtin } : {}) },
       is_active: true, tps_identity_key: key, tps_version: def.version, variant_key: key,
       identity_confidence: groupConf, data_quality_score: Math.max(50, groupConf - 10), created_at: now, data_updated_at: now,
     });
