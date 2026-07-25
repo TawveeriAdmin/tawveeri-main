@@ -9,6 +9,7 @@ import { feedAdapter } from "./feed-adapter";
 import { wooCommerceFeedAdapter } from "./woocommerce-feed-adapter";
 import { algoliaFeedAdapter } from "./algolia-feed-adapter";
 import { sallaFeedAdapter } from "./salla-feed-adapter";
+import { shopifyFeedAdapter } from "./shopify-feed-adapter";
 import { scraperAdapter } from "./scraper-adapter";
 
 // Order = preference. A structured feed (Algolia index, Salla sitemap+JSON-LD, WooCommerce
@@ -16,7 +17,7 @@ import { scraperAdapter } from "./scraper-adapter";
 // is the universal fallback. First adapter whose supports() matches wins. Algolia/Salla/
 // WooCommerce all use sourcing 'api' but disambiguate on their config (algolia{} / salla{}
 // / feedUrl).
-const ADAPTERS: SourcingAdapter[] = [algoliaFeedAdapter, sallaFeedAdapter, wooCommerceFeedAdapter, feedAdapter, scraperAdapter];
+const ADAPTERS: SourcingAdapter[] = [algoliaFeedAdapter, sallaFeedAdapter, shopifyFeedAdapter, wooCommerceFeedAdapter, feedAdapter, scraperAdapter];
 
 /** The adapter that will actually serve this provider (feed if configured, else scraper). */
 export function resolveSourcingAdapter(provider: RetailerProvider): SourcingAdapter {

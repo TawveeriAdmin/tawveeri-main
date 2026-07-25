@@ -6,6 +6,9 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-104 — Shopify `products.json` sourcing adapter: a 4th config-only platform class · Accepted (2026-07-25)
+Founder onboarding via StoreLeads Premium selected WooCommerce + **Shopify** technologies. We had no Shopify ingestion connector, so built `shopify-feed-adapter.ts`: every Shopify store exposes its full catalogue credential-free at `/products.json` (paginated ≤250; title/vendor/product_type/variants[].price·sku·**barcode**/images). One adapter → the whole Shopify class, config-only (`provider.shopify.origin`), registered in the sourcing router. **Market scoping:** products.json omits a currency code, so the adapter resolves the shop currency out-of-band (meta.json, else homepage `Shopify.currency.active`) and REJECTS the store unless SAR — and refuses to ingest if currency is unverifiable (never fabricates a Saudi price). Bonus: variant `barcode` → GTIN capture (feeds ADR-100). Validated: parser matches a live `/products.json`; 6 fixture unit tests green; typecheck clean. Now Woo + Shopify + Salla/Zid + Algolia are all config-only onboarding paths for the acquisition engine (ADR-102).
+
 ### ADR-103 — Free store-discovery is exhausted; custom-domain enumeration is the one thing our engine genuinely can't do free · Accepted (2026-07-25)
 **Mandate.** Founder authorized fully-autonomous FREE discovery — build the acquisition engine as a permanent capability, onboard Saudi stores using every legitimate free source, return only on measurable results or evidence a paid tool beats the free engine.
 

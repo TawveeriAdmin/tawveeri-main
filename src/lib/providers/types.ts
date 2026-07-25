@@ -59,6 +59,17 @@ export interface SallaConfig {
   sitemapUrl?: string;
 }
 
+/**
+ * Shopify storefront config (ADR-104). Every Shopify store exposes its full catalogue with
+ * ZERO credentials at `/products.json` (paginated, clean JSON: title, vendor, product_type,
+ * variants[].price/sku/barcode, images). One adapter covers the whole Shopify platform class.
+ * products.json omits a currency code, so the adapter resolves the shop currency out-of-band
+ * (meta.json / Shopify.currency) and SAR-gates — never ingesting a foreign-currency price.
+ */
+export interface ShopifyConfig {
+  origin: string;
+}
+
 /** A retailer bound to its sourcing + monetization adapters. */
 export interface RetailerProvider {
   slug: string;
@@ -77,6 +88,8 @@ export interface RetailerProvider {
   algolia?: AlgoliaConfig;
   /** Optional Salla storefront (sourcing 'api' via the Salla sitemap+JSON-LD adapter). */
   salla?: SallaConfig;
+  /** Optional Shopify storefront (sourcing 'api' via the Shopify products.json adapter). */
+  shopify?: ShopifyConfig;
 }
 
 /** Per-exit context used for attribution when building an affiliate link. */
