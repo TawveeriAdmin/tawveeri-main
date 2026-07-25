@@ -6,6 +6,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-098 — Composite `(store_id, id)` index on raw_observations — fix normalize timeout at scale · Accepted (2026-07-25)
+**Context:** After ingesting ~6k new observations across 7 new/upgraded stores, the progressive normalizer's per-store cursor query (`WHERE store_id=$1 AND id>$cursor ORDER BY id LIMIT n`) began FATAL-ing with `canceling statement due to statement timeout` under concurrent load (ingest + scheduler + normalize) — there was no `(store_id, id)` index, so it degraded to a scan over 165k+ rows. This aborted the whole normalize chain and blocked comparison realization.
+
+**Decision:** add `raw_observations_store_id_id_idx (store_id, id)` (migration 23; created `CONCURRENTLY` in production). The cursor query is now a fast index range scan. Additive, idempotent, no behavior change. Unblocks normalization at the new catalogue scale.
+
 ### ADR-097 — Onboard 5 high-overlap mainstream stores (Salla+Zid); generalize the JSON-LD adapter to Zid · Accepted (2026-07-25)
 **Context:** Founder addendum — optimize for cross-store comparison DEPTH by onboarding overlapping mainstream stores via the existing adapters. Research + probing surfaced high-overlap Saudi phone/laptop stores on Salla, WooCommerce, and **Zid** (a 4th platform that exposes the SAME `application/ld+json @type:Product` mechanism as Salla, just `/products/{slug}` URLs + `/sitemap_products.xml`).
 

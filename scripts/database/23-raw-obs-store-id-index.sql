@@ -1,0 +1,11 @@
+-- 23-raw-obs-store-id-index.sql — composite index for the normalize per-store cursor.
+-- Additive, idempotent. The progressive normalizer scans raw_observations with
+--   WHERE store_id = $1 AND id > $cursor ORDER BY id LIMIT n
+-- per store. Without a (store_id, id) index this degrades to a scan and, as the catalogue
+-- grew (Almanea/Najm/HDF/Golden/Mhzm/Aletawik/PcPalace ingestion), started hitting the
+-- statement timeout under concurrent load ("fetch store N: canceling statement due to
+-- statement timeout"), aborting the whole normalize chain. This makes it a fast index
+-- range scan. Create CONCURRENTLY in production (cannot run inside a txn):
+--   CREATE INDEX CONCURRENTLY IF NOT EXISTS raw_observations_store_id_id_idx
+--     ON raw_observations (store_id, id);
+CREATE INDEX IF NOT EXISTS raw_observations_store_id_id_idx ON raw_observations (store_id, id);
