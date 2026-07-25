@@ -97,6 +97,13 @@ export async function POST(req: NextRequest) {
     // the price-history factor reflects real observations instead of a conservative
     // default. Deterministic; the score stays evidence-grounded and cited.
     const proj = projById.get(r.canonical_id);
+    // ADR-091: feed the Discount Integrity verdict (already fetched below) into the
+    // deal-integrity factor so it stops defaulting. verified_drop = an honest, history-
+    // backed discount; inflated_reference = a CLAIMED saving the price history does NOT
+    // support → the factor drops and surfaces the "discount not supported" caveat (a
+    // core Tawveeri honesty signal). stable / no data = no claim, nothing to distrust.
+    const d = discounts.get(r.canonical_id);
+    const discountClaimed = d ? (d.verdict === "verified_drop" || d.verdict === "inflated_reference") : false;
     const trust = assessTrust({
       store_count: r.store_count,
       identity_confidence: proj?.identity_confidence ?? null,
@@ -105,6 +112,8 @@ export async function POST(req: NextRequest) {
       price_confident: v?.confident ?? null,
       price_distinct_days: v?.distinctDays ?? null,
       data_age_hours: hoursSince((proj as { last_observed_at?: string | null } | undefined)?.last_observed_at),
+      discount_claimed: discountClaimed,
+      discount_honest: discountClaimed ? d!.verdict === "verified_drop" : null,
     });
     return { ...r, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });

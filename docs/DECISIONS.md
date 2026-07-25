@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-091 — Wire Discount Integrity into the Trust Engine's deal-integrity factor (decide route) · Accepted (2026-07-25)
+**Context:** ADR-087's Trust Engine has a `deal_integrity` factor, but nothing fed it — every surface left it at its default ("no discount claimed"), so the honest "this advertised saving isn't supported by price history" signal (a core Tawveeri differentiator; 4,531 `inflated_reference` facts exist in production) never reached the trust score or caveats. The decide route already FETCHED per-canonical Discount Integrity (`getCanonicalDiscountIntegrity`) to attach as `discount_intel`, but never passed it into `assessTrust`.
+
+**Decision:** the decide route now maps the Discount Integrity verdict into the trust inputs — `verified_drop` ⇒ claimed+honest (no penalty), `inflated_reference` ⇒ claimed+dishonest (factor drops, surfaces the "claimed discount not supported by price history" caveat), `stable`/none ⇒ no claim (neutral). The `assessTrust` logic + its dishonest-discount test already existed (ADR-087); this is the WIRING that makes the factor evidence-real, completing the "no factor defaults when evidence exists" property for the flagship advisor endpoint. Scoped to `/api/v1/agent/decide` (where the discount data is already loaded); hot search/feed paths are unchanged to avoid an extra per-request query.
+
+**Evidence:** intelligence + agent suites green (164); deterministic; commission-blind; no new query (reuses the already-fetched `discounts` map). No LLM in the path (ADR-002).
+
 ### ADR-090 — Feed-overlap probe: make merchant onboarding an EVIDENCE + safety decision, not a guess · Accepted (2026-07-25)
 **Context:** With the feed path hardened (ADR-089), the open question is WHICH new merchants to onboard. The strategic truth (ADR-082/083, memory) is that comparison growth is merchant-DATA-ACCESS-bound: a merchant only creates comparisons where its catalogue OVERLAPS ours by brand+model. Onboarding by vibes wastes effort (shaker: a whole clean merchant, ~0 realized comparisons) and risks worse — ingesting a foreign-currency feed would fabricate a wrong price and break Saudi market scoping.
 
