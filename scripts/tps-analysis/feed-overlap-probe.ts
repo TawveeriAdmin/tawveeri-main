@@ -26,7 +26,7 @@ import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
-import { wooCommerceFeedAdapter } from "../../src/lib/providers/sourcing/woocommerce-feed-adapter";
+import { resolveSourcingAdapter } from "../../src/lib/providers/sourcing/router";
 import type { RetailerProvider } from "../../src/lib/providers/types";
 
 const normBrand = (b: string) => (b || "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -100,18 +100,24 @@ async function detectCurrency(origin: string): Promise<string | null> {
   } catch { return null; }
 }
 
-async function probe(origin: string, pages: number, cat: Cat) {
-  const provider = { slug: "probe", storeId: -1, displayName: "probe", enabled: true, sourcing: "api", affiliate: null, feedUrl: origin } as unknown as RetailerProvider;
+type ProbeMode = "woo" | "salla";
+async function probe(origin: string, pages: number, cat: Cat, mode: ProbeMode) {
+  // Reuse the production sourcing adapters (WooCommerce or Salla) so a probe measures
+  // exactly what onboarding would ingest. Salla SAR-gates inside the adapter.
+  const provider = (mode === "salla"
+    ? { slug: "probe", storeId: -1, displayName: "probe", enabled: true, sourcing: "api", affiliate: null, salla: { origin } }
+    : { slug: "probe", storeId: -1, displayName: "probe", enabled: true, sourcing: "api", affiliate: null, feedUrl: origin }) as unknown as RetailerProvider;
   const t0 = Date.now();
-  const currency = await detectCurrency(origin);
+  const currency = mode === "salla" ? "SAR" : await detectCurrency(origin);
+  const adapter = resolveSourcingAdapter(provider);
   let res;
   try {
-    res = await wooCommerceFeedAdapter.fetchOffers(provider, { maxPages: pages });
+    res = await adapter.fetchOffers(provider, { maxPages: pages });
   } catch (e) {
     return { origin, ok: false as const, reason: e instanceof Error ? e.message : String(e) };
   }
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
-  if (!res.count) return { origin, ok: false as const, reason: `no public WooCommerce Store API / empty (${res.errors?.join("; ") ?? "no rows"})`, secs };
+  if (!res.count) return { origin, ok: false as const, reason: `${mode === "salla" ? "no Salla sitemap/JSON-LD products" : "no public WooCommerce Store API"} / empty (${res.errors?.join("; ") ?? "no rows"})`, secs };
   const currencyOk = currency == null || currency === "SAR";
 
   const brandCount = new Map<string, number>();
@@ -142,8 +148,9 @@ async function probe(origin: string, pages: number, cat: Cat) {
   const args = process.argv.slice(2);
   const pIdx = args.indexOf("--pages");
   const pages = pIdx > -1 ? Number(args[pIdx + 1]) || 6 : 6;
+  const mode: ProbeMode = args.includes("--salla") ? "salla" : "woo";
   const origins = args.filter((a, i) => !a.startsWith("--") && !(pIdx > -1 && i === pIdx + 1));
-  if (!origins.length) { console.error("usage: feed-overlap-probe <origin> [origin2 …] [--pages N]"); process.exit(1); }
+  if (!origins.length) { console.error("usage: feed-overlap-probe <origin> [origin2 …] [--pages N] [--salla]"); process.exit(1); }
 
   const c = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL!), ssl: { rejectUnauthorized: false } });
   await c.connect();
@@ -151,7 +158,7 @@ async function probe(origin: string, pages: number, cat: Cat) {
   console.log(`\n◆ comparison opportunity: ${cat.singleStoreCount} single-store canonicals across ${cat.brandSet.size} brands\n`);
 
   for (const origin of origins) {
-    const r = await probe(origin, pages, cat);
+    const r = await probe(origin, pages, cat, mode);
     if (!r.ok) { console.log(`✗ ${origin} — ${r.reason}`); continue; }
     console.log(`✓ ${origin}  (${r.secs}s) catalogue=${r.catalog}  currency=${r.currency ?? "?"}${r.currencyOk ? "" : "  ⚠ NON-SAR"}`);
     console.log(`   BRAND overlap (candidate carries a brand we hold single-store): ${r.brandOverlap} (${r.brandOverlapPct}%)`);
