@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-092 — Fix swsg customer-search pollution: it runs Magento, not WordPress (wrong search URL) · Accepted (2026-07-25)
+**Context:** Investigating swsg's ingestion staleness surfaced a worse, customer-facing bug. `SwsgSearchScraper` built **WordPress** search URLs (`swsg.co/?s=<q>`), but swsg.co runs **Magento** (`.html` catalog paths, PHPSESSID). Magento ignores `?s=`, so EVERY query returned the homepage — the same 68 featured appliances for "iphone", "samsung", and "لابتوب" alike. swsg is in `DEFAULT_SEARCH_STORES`, so this polluted every customer search with irrelevant results and wasted a fetch per query. (Diagnosis: `?s=iphone` → 6 "iphone" mentions/homepage; `catalogsearch/result/?q=iphone` → 1353 mentions/real results.)
+
+**Decision:** point the builders at Magento search — `https://swsg.co/catalogsearch/result/?q=<q>` with `&p=` pagination (+ the `/ar/` variant). The existing product-item parser already matched swsg's markup (it extracted the homepage items), so only the URL was wrong. Verified live: "iphone" → iPhone 16 products, "samsung" → Samsung Neo QLED TVs, "لابتوب" → Dell Vostro / Asus TUF laptops — the exact overlap categories (phones/TVs/laptops) that can corroborate with jarir/amazon/extra. shaker (the only other `BaseWooCommerceSearchScraper` user) genuinely IS WooCommerce, so its `?s=` is correct — the mismatch was swsg-only.
+
+**Evidence:** full suite 630 green; build clean; scraper returns query-relevant products for iphone/samsung/laptop (was: identical 68 appliances). Fixes a relevance bug on the core search experience + removes wasted per-search work.
+
 ### ADR-091 — Wire Discount Integrity into the Trust Engine's deal-integrity factor (decide route) · Accepted (2026-07-25)
 **Context:** ADR-087's Trust Engine has a `deal_integrity` factor, but nothing fed it — every surface left it at its default ("no discount claimed"), so the honest "this advertised saving isn't supported by price history" signal (a core Tawveeri differentiator; 4,531 `inflated_reference` facts exist in production) never reached the trust score or caveats. The decide route already FETCHED per-canonical Discount Integrity (`getCanonicalDiscountIntegrity`) to attach as `discount_intel`, but never passed it into `assessTrust`.
 
