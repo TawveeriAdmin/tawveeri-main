@@ -51,7 +51,7 @@ curl -s -X POST https://tawveeri.com/api/v1/agent/decide -H 'content-type: appli
 
 ## Addendum push — comparison growth via credential-free structured sources (2026-07-25, later)
 Exhausting every engineering data-access path (addendum mandate) produced a **measurable jump in the core metric**:
-- **Comparable products 295 → 433 (+138, +47%)** — verified by rebuilding the projection after ingesting clean structured data. Mechanism: richer attributes → better identity → more ≥2-store corroboration.
+- **Comparable products 295 → 481 (+186, +63%)** and **published products 3,027 → 3,769 (+742)** — verified via `tps:gate-audit` after ingesting clean structured data and running the full realization chain (8/8 green). Depth improved too (now includes a 5-store comparison). Mechanism: richer attributes → better identity → more ≥2-store corroboration. (Still more backlog to process — the scheduler continues hourly.)
 - **Almanea (store #1) upgraded to its public Algolia index** (ADR-094): 3,627 clean structured products (brand/model/sku/storage), authoritative + honest prices/discounts, replacing lossy HTML scraping.
 - **Najm Alajhiza onboarded as store 9** (ADR-095) via a new **Salla sitemap+JSON-LD adapter** — 412 appliance observations; the adapter covers 4,400+ Saudi Salla stores config-only. BlackBox found + adapter-ready (its sitemap is UA-gated → category-crawl fallback is a bounded follow-up).
 - **Fixed a latent pipeline bug** (ADR-096) the new data surfaced: normalize chain-abort on a `tps_identity_key` collision (reuse existing canonical id).
