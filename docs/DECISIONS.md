@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-097 — Onboard 5 high-overlap mainstream stores (Salla+Zid); generalize the JSON-LD adapter to Zid · Accepted (2026-07-25)
+**Context:** Founder addendum — optimize for cross-store comparison DEPTH by onboarding overlapping mainstream stores via the existing adapters. Research + probing surfaced high-overlap Saudi phone/laptop stores on Salla, WooCommerce, and **Zid** (a 4th platform that exposes the SAME `application/ld+json @type:Product` mechanism as Salla, just `/products/{slug}` URLs + `/sitemap_products.xml`).
+
+**Decision:** generalized the Salla adapter's product-URL matcher to also accept Zid `/products/{slug}` (one JSON-LD storefront adapter now covers Salla **and** Zid — config-only). Onboarded 5 stores (registry + rows + `TPS_STORES`): **hdf** (Salla, ~5,108 phones), **goldenstore99** (Salla, phones), **mhzm** (WooCommerce Store API, phones — Apple/Samsung/Xiaomi/Oppo), **aletawik** (Zid, phones), **pcpalace** (Zid, ~7,569 Dell/Lenovo/Asus/HP laptops). Phones chosen for highest corroboration certainty (standard models); the overlap probe was extended with `--salla` but its model-token metric under-reads Arabic phone/laptop names (no alphanumeric codes) — brand overlap + the identity plugins are the true signal, so onboarding is validated by MEASURED comparison lift, not the probe verdict. BlackBox remains disabled (UA-gated sitemap).
+
+**Consequence:** the framework now onboards WooCommerce/Algolia/Salla/Zid store classes config-only; comparison lift measured post-normalization (see the final gate audit).
+
 ### ADR-096 — Fix normalize chain-abort on `tps_identity_key` collision (reuse existing canonical id) · Accepted (2026-07-25)
 **Context:** New Almanea/Najm data surfaced a latent bug: `progressive-engine.corroboratePass` mints each canonical `id` as `stableUuid(canonSeed(key))`, but the same `tps_identity_key` can already live under a DIFFERENT id (older `canonSeed`, or a cross-category writer). `write_ac_batch` upserts by `id`, so a fresh id then violates the separate `canonical_products_tps_identity_key_uidx` unique index and **FATALs the whole normalize chain** (`write_ac_batch(microwave): duplicate key…`) — blocking realization of all newly-ingested data.
 

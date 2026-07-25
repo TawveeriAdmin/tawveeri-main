@@ -39,8 +39,15 @@ function sitemapLocs(xml: string): string[] {
   return out;
 }
 
-/** A Salla product URL: canonical `/{slug}/p{digits}` or short `/-/p{digits}`. */
-const isProductUrl = (u: string) => /\/(?:-\/)?p\d{4,}(?:$|[/?#])/i.test(u) || /\/p\d{4,}$/i.test(u);
+/**
+ * A product URL for a JSON-LD storefront. Covers Salla (`/{slug}/p{digits}` or `/-/p{digits}`)
+ * AND Zid (`/products/{slug}`) — both expose the same `application/ld+json @type:Product`
+ * per page, so one adapter serves both platform classes (config-only onboarding).
+ */
+const isProductUrl = (u: string) =>
+  /\/(?:-\/)?p\d{4,}(?:$|[/?#])/i.test(u) ||
+  /\/p\d{4,}$/i.test(u) ||
+  /\/products\/[^/?#]{2,}(?:$|[/?#])/i.test(u); // Zid
 
 interface LdOffer { price?: string | number; priceCurrency?: string; availability?: string; }
 interface LdProduct { "@type"?: string | string[]; name?: string; sku?: string; mpn?: string; image?: string | string[]; brand?: string | { name?: string }; offers?: LdOffer | LdOffer[]; }

@@ -39,6 +39,15 @@ const BASE: Record<string, RetailerProvider> = {
   // UA-gated, so it is registered config-ready but disabled pending a category-crawl fallback.
   najm:        { slug: "najm",        storeId: 9,  displayName: "Najm Alajhiza",     displayNameAr: "نجم الأجهزة",      enabled: true,  sourcing: "api", affiliate: null, salla: { origin: "https://najm.store" } },
   blackbox:    { slug: "blackbox",    storeId: 10, displayName: "BlackBox",          displayNameAr: "الصندوق الأسود",   enabled: false, sourcing: "api", affiliate: null, salla: { origin: "https://blackboxksa.com" } },
+  // ADR-097 — high-overlap mainstream electronics stores onboarded via the JSON-LD
+  // storefront adapter (Salla + Zid; the adapter parses /p{id} and /products/{slug}).
+  // Phones (hdf/goldenstore99/mhzm/aletawik) carry standard iPhone/Samsung/Xiaomi models
+  // that corroborate across stores; pcpalace is a large Dell/Lenovo/Asus/HP laptop catalog.
+  hdf:          { slug: "hdf",           storeId: 11, displayName: "HDF",            displayNameAr: "اتش دي اف",        enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://hdf.com.sa" } },
+  goldenstore99:{ slug: "goldenstore99", storeId: 12, displayName: "Golden Store",   displayNameAr: "جولدن ستور",      enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://goldenstore99.com" } },
+  mhzm:         { slug: "mhzm",          storeId: 13, displayName: "Mhzm",           displayNameAr: "محزم",            enabled: true, sourcing: "api", affiliate: null, feedUrl: "https://shop.mhzm.sa" },
+  aletawik:     { slug: "aletawik",      storeId: 14, displayName: "Aletawik",       displayNameAr: "التاوية",         enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://aletawiksa.com" } },
+  pcpalace:     { slug: "pcpalace",      storeId: 15, displayName: "PC Palace",      displayNameAr: "بي سي بالاس",     enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://pcpalace.com.sa" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));

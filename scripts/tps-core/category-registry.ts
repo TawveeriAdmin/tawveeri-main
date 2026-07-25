@@ -38,8 +38,10 @@ export const TPS_STORES = [
   // ingested; adding them here gives their offers a proper display name (instead
   // of the numeric store_id fallback) AND includes them in the progressive sweep.
   { id: 6, name: "سامسونج السعودية" }, { id: 7, name: "شاكر" },
-  // ADR-095: Salla merchants onboarded via sitemap + JSON-LD (credential-free).
+  // ADR-095/097: Salla + Zid merchants onboarded via sitemap + JSON-LD (credential-free).
   { id: 9, name: "نجم الأجهزة" },
+  { id: 11, name: "اتش دي اف" }, { id: 12, name: "جولدن ستور" }, { id: 13, name: "محزم" },
+  { id: 14, name: "التاوية" }, { id: 15, name: "بي سي بالاس" },
 ];
 
 export interface CategoryDef {
