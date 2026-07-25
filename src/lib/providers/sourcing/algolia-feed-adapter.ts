@@ -18,6 +18,7 @@ import type { ScrapedProduct } from "@/lib/scraping/base/types";
 import type { RetailerProvider } from "../types";
 import type { SourcingAdapter, SourcingOptions, SourcingResult } from "./types";
 import { decodeEntities } from "./woocommerce-feed-adapter";
+import { isValidGtin } from "@/lib/enrichment/icecat";
 
 interface PricesWithTax { price?: number; original_price?: number; discounted_price?: number; discounted_percentage?: number }
 interface AlgoliaHit {
@@ -25,6 +26,7 @@ interface AlgoliaHit {
   name?: string;
   url?: string; rewrite_url?: string;
   sku?: string; brand?: string; model?: string;
+  ean?: string | number; gtin?: string | number; barcode?: string | number; upc?: string | number;
   price?: number; price_incl_tax?: number;
   prices_with_tax?: PricesWithTax;
   stock_region_ids?: Record<string, number> | number[];
@@ -79,6 +81,7 @@ export function mapAlgoliaHit(h: AlgoliaHit, storeSlug: string, nameEn?: string)
     brand: decodeEntities(h.brand || "") || "",
     model: String(h.model || "").trim(),
     sku: (h.sku || "").trim() || null,
+    gtin: [h.ean, h.gtin, h.barcode, h.upc].map((c) => (c != null && isValidGtin(c) ? String(c).replace(/\D+/g, "") : null)).find(Boolean) ?? null,
     current_price: current,
     original_price: original,
     availability: h.is_pre_order ? "pre_order" : inStock ? "in_stock" : "out_of_stock",

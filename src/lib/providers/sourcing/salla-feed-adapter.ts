@@ -16,6 +16,7 @@ import type { ScrapedProduct } from "@/lib/scraping/base/types";
 import type { RetailerProvider } from "../types";
 import type { SourcingAdapter, SourcingOptions, SourcingResult } from "./types";
 import { decodeEntities } from "./woocommerce-feed-adapter";
+import { isValidGtin } from "@/lib/enrichment/icecat";
 
 const UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) TawveeriBot/1.0";
 
@@ -50,7 +51,15 @@ const isProductUrl = (u: string) =>
   /\/products\/[^/?#]{2,}(?:$|[/?#])/i.test(u); // Zid
 
 interface LdOffer { price?: string | number; priceCurrency?: string; availability?: string; }
-interface LdProduct { "@type"?: string | string[]; name?: string; sku?: string; mpn?: string; image?: string | string[]; brand?: string | { name?: string }; offers?: LdOffer | LdOffer[]; }
+interface LdProduct { "@type"?: string | string[]; name?: string; sku?: string; mpn?: string; gtin13?: string | number; gtin?: string | number; gtin14?: string | number; gtin12?: string | number; gtin8?: string | number; image?: string | string[]; brand?: string | { name?: string }; offers?: LdOffer | LdOffer[]; }
+
+/** First checksum-valid GTIN a schema.org Product declares (gtin13/gtin/…), else null. */
+function pickGtin(p: LdProduct): string | null {
+  for (const cand of [p.gtin13, p.gtin, p.gtin14, p.gtin12, p.gtin8]) {
+    if (cand != null && isValidGtin(cand)) return String(cand).replace(/\D+/g, "");
+  }
+  return null;
+}
 
 /** Extract the first schema.org Product from a page's JSON-LD blocks. */
 export function extractSallaProduct(html: string): LdProduct | null {
@@ -86,6 +95,7 @@ export function mapSallaProduct(p: LdProduct, url: string, storeSlug: string): S
     brand: decodeEntities(String(brand || "")) || "",
     model: "",
     sku: String(p.sku || p.mpn || "").trim() || null,
+    gtin: pickGtin(p),
     current_price: price,
     original_price: null, // JSON-LD Offer carries one price; no reliable original — never fabricate
     availability: avail.includes("outofstock") || avail.includes("soldout") ? "out_of_stock" : "in_stock",

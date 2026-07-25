@@ -16,12 +16,14 @@
 import type { ScrapedProduct } from "@/lib/scraping/base/types";
 import type { RetailerProvider } from "../types";
 import type { SourcingAdapter, SourcingOptions, SourcingResult } from "./types";
+import { isValidGtin } from "@/lib/enrichment/icecat";
 
 interface WooImage { src?: string }
 interface WooBrand { name?: string }
 interface WooPrices { price?: string; regular_price?: string; sale_price?: string; currency_minor_unit?: number }
 interface WooProduct {
   id?: number; name?: string; permalink?: string; sku?: string;
+  global_unique_id?: string | number; // WooCommerce 9.2+ GTIN/UPC/EAN/ISBN field
   prices?: WooPrices; images?: WooImage[]; brands?: WooBrand[];
   is_in_stock?: boolean; type?: string;
 }
@@ -104,6 +106,7 @@ export function mapWooProduct(p: WooProduct, storeSlug: string): ScrapedProduct 
     brand: decodeEntities(p.brands?.[0]?.name || "") || "",
     model: "",
     sku: (p.sku || "").trim() || null,
+    gtin: isValidGtin(p.global_unique_id) ? String(p.global_unique_id).replace(/\D+/g, "") : null,
     current_price: current,
     original_price: original,
     availability: p.is_in_stock === false ? "out_of_stock" : "in_stock",

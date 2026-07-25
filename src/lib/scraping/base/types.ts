@@ -9,6 +9,15 @@ export interface ScrapedProduct {
   brand: string;
   model: string;
   sku: string | null;
+  /**
+   * Global trade item number (EAN/UPC/GTIN-8/12/13/14) when the source declares one
+   * (JSON-LD `gtin13`, feed `barcode`, Algolia `ean`…). A store-INDEPENDENT identity
+   * anchor: two stores sharing a valid GTIN are the same product with certainty, which
+   * the GTIN-corroboration path (src/lib/enrichment/gtin-identity.ts) uses to recover
+   * cross-store comparisons the name parser missed. Null when the source declares none —
+   * never fabricated. Flows into raw_observations.payload.gtin via IngestionService.
+   */
+  gtin?: string | null;
   current_price: number;
   original_price: number | null;
   availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
