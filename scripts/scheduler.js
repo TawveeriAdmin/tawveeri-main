@@ -213,7 +213,11 @@ if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRE
 // scraper set even if still listed in INGEST_STORES. This guarantees no store is ever
 // ingested by both paths (which would double-count observations), regardless of how the
 // production env is configured. Setting INGEST_FEED_STORES='' returns shaker to scraping.
-const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'shaker').split(',').map((s) => s.trim()).filter(Boolean);
+// shaker (WooCommerce), almanea (Algolia), najm (Salla) are sourced via credential-free
+// structured adapters — cleaner + richer than scraping. They auto-refresh through the feed
+// loop. Dedup is by listing identity (almanea keys on the `-p-<id>` productId regardless of
+// host), so the feed never double-counts against any legacy scraper. ADR-089/094/095.
+const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'shaker,almanea,najm').split(',').map((s) => s.trim()).filter(Boolean);
 const _feedSet = new Set(INGEST_FEED_STORES);
 const INGEST_STORES = (process.env.INGEST_STORES ?? 'shaker,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
