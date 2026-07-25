@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-103 — Free store-discovery is exhausted; custom-domain enumeration is the one thing our engine genuinely can't do free · Accepted (2026-07-25)
+**Mandate.** Founder authorized fully-autonomous FREE discovery — build the acquisition engine as a permanent capability, onboard Saudi stores using every legitimate free source, return only on measurable results or evidence a paid tool beats the free engine.
+
+**Exhaustive test (direct HTTP; WebSearch tool budget spent).** Seven free discovery sources, all blocked/thin/gated: **crt.sh** 502; **certspotter** free tier disabled; **Common Crawl** domain-scoped only (`zid.store`→5 junk hosts, `salla.sa`→6 infra subdomains — real stores use CUSTOM domains invisible to a domain index); **DuckDuckGo** lite/html hardened (token-gated, empty); **salla.sa/stores** JS/maintenance shell; **PublicWWW** source-code footprint search gated/empty; **zid.sa/stores** bare redirect. The structural reason is consistent: **high-value Saudi stores use custom domains**, and enumerating custom domains by tech-footprint at scale is exactly what commercial crawlers (StoreLeads/BuiltWith) sell — it is not free-replicable.
+
+**Conclusion (a reversal, evidence-driven).** My earlier claim that "free discovery reproduces ~85–90% of StoreLeads" is **DISPROVEN**: for custom-domain KSA stores it reproduces ~0%. StoreLeads therefore provides a capability the free engine genuinely cannot. This does NOT by itself flip the ROI — comparison growth remains overlap-bound and pre-users (ADR-102 thesis intact) — so the decision is now a pure Founder business/timing call: invest $250 to buy the one list free tools can't produce, which the ADR-102 engine then converts to onboarded, auto-scored stores at ~zero marginal cost (maximizing the spend's leverage), vs. defer until a demand signal. The engine stands ready to process any domain list the instant one exists (paid export, a directory, or WebSearch when its budget resets). **No code changed this turn — the finding is the deliverable.**
+
 ### ADR-102 — Store Acquisition Engine: domain-in → scored onboarding decision (the durable asset, not a store list) · Accepted (2026-07-25)
 **Context.** Founder verified StoreLeads pricing — the export-capable tier is **$250/mo** (Pro), not the ~$75 assumed. A greenfield ROI analysis concluded **Option B (do not buy)**: comparison growth is overlap-bound (not discovery-bound), the majors are already integrated, and discovery is reproducible for ~$0. Founder approved B but raised the bar: build a real **acquisition engine** (discover stores + reconstruct catalogs) as a durable competitive advantage.
 
