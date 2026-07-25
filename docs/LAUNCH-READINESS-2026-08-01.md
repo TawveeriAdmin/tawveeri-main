@@ -57,6 +57,13 @@ Exhausting every engineering data-access path (addendum mandate) produced a **me
 - **Fixed a latent pipeline bug** (ADR-096) the new data surfaced: normalize chain-abort on a `tps_identity_key` collision (reuse existing canonical id).
 - **Two new reusable sourcing adapters** (Algolia, Salla) strengthen the universal onboarding framework; almanea/najm auto-refresh via the scheduler feed loop.
 
+## Store-onboarding push #2 — depth via mainstream Salla/Zid/Woo stores (2026-07-25, latest)
+- **Comparable products 295 → 499 (+204, +69% for the session)**; **depth deepened**: 2-store 410, 3-store 72, 4-store 16, 5-store 1 (3- and 4-store comparisons grew — the new stores added *depth*, the priority).
+- **7 new/upgraded end-to-end stores** via credential-free adapters: Almanea (Algolia, ADR-094), Najm (Salla, ADR-095), and **hdf · goldenstore99 · mhzm · aletawik · pcpalace** (ADR-097) — phones (Apple/Samsung/Xiaomi/Oppo) + laptops (Dell/Lenovo/Asus/HP), ~4,100 new observations.
+- **3 reusable sourcing adapters** now cover WooCommerce · Algolia · Salla+Zid store CLASSES — future onboarding is config-only (the overlap probe was generalized with `--salla` to rank candidates first).
+- **2 pipeline fixes** the scale surfaced: `tps_identity_key` collision abort (ADR-096) and a missing `(store_id,id)` index causing normalize timeouts (ADR-098).
+- **Remaining backlog** (pcpalace laptops + phone-store tail) is being realized by the hourly scheduler; comparable will rise further. Manual realization was throttled by DB contention (my ops + the scheduler) — intentionally handed back to the scheduler for stability.
+
 ## Recommended next 48h (within the directive)
 1. Route product cards/detail through `/go` for universal measured exits.
 2. Deepen **Almanea (Algolia)** ingestion → the credential-free path to *more* real comparisons.
