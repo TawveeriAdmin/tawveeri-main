@@ -49,6 +49,14 @@ curl -s https://tawveeri.com/api/stats                          # honest live co
 curl -s -X POST https://tawveeri.com/api/v1/agent/decide -H 'content-type: application/json' -d '{"category":"mobile","budget_total":6000}'
 ```
 
+## Addendum push — comparison growth via credential-free structured sources (2026-07-25, later)
+Exhausting every engineering data-access path (addendum mandate) produced a **measurable jump in the core metric**:
+- **Comparable products 295 → 433 (+138, +47%)** — verified by rebuilding the projection after ingesting clean structured data. Mechanism: richer attributes → better identity → more ≥2-store corroboration.
+- **Almanea (store #1) upgraded to its public Algolia index** (ADR-094): 3,627 clean structured products (brand/model/sku/storage), authoritative + honest prices/discounts, replacing lossy HTML scraping.
+- **Najm Alajhiza onboarded as store 9** (ADR-095) via a new **Salla sitemap+JSON-LD adapter** — 412 appliance observations; the adapter covers 4,400+ Saudi Salla stores config-only. BlackBox found + adapter-ready (its sitemap is UA-gated → category-crawl fallback is a bounded follow-up).
+- **Fixed a latent pipeline bug** (ADR-096) the new data surfaced: normalize chain-abort on a `tps_identity_key` collision (reuse existing canonical id).
+- **Two new reusable sourcing adapters** (Algolia, Salla) strengthen the universal onboarding framework; almanea/najm auto-refresh via the scheduler feed loop.
+
 ## Recommended next 48h (within the directive)
 1. Route product cards/detail through `/go` for universal measured exits.
 2. Deepen **Almanea (Algolia)** ingestion → the credential-free path to *more* real comparisons.
