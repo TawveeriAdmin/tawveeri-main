@@ -3,11 +3,20 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-const STATS = [
-  { n: '+٨٥,٠٠٠', l: 'منتج مقارن' },
-  { n: '٨',        l: 'متجر موثوق' },
-  { n: '+٦٢,٠٠٠', l: 'فرصة توفير' },
-];
+// Honest headline counters — fed live from /api/stats (the production database is the
+// source of truth). We NEVER fabricate: the numbers below are conservative fallbacks
+// (close to the audited values on 2026-07-25) shown only until the live fetch returns.
+// The previous hardcoded "+85,000 compared products / +62,000 savings" were fabricated
+// (real verified cross-store comparisons = 295) and were removed.
+const arNum = (n: number) => n.toLocaleString('ar-SA');
+const DEFAULT_STAT_NUMBERS = { observations: 164000, published: 3027, comparable: 295 };
+function statsView(s: { observations: number; published: number; comparable: number }) {
+  return [
+    { n: '+' + arNum(Math.round(s.observations / 1000)) + ' ألف', l: 'رصدة سعر موثّقة' },
+    { n: arNum(s.published), l: 'منتج منشور' },
+    { n: arNum(s.comparable), l: 'مقارنة عبر متاجر' },
+  ];
+}
 
 const CHIPS = [
   'ابي آيفون ١٦',
@@ -60,11 +69,21 @@ export function HomePageContent({ locale }: HomePageContentProps) {
   const [loading,  setLoading]  = useState(false);
   const [history,  setHistory]  = useState<Message[]>([]);
   const [open,     setOpen]     = useState(false);
+  const [statNums, setStatNums] = useState(DEFAULT_STAT_NUMBERS);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Honest live counters from the production DB (never fabricated).
+  useEffect(() => {
+    fetch('/api/stats').then(r => r.ok ? r.json() : null).then(d => {
+      if (d && typeof d.comparable_products === 'number') {
+        setStatNums({ observations: d.observations ?? DEFAULT_STAT_NUMBERS.observations, published: d.published_products ?? DEFAULT_STAT_NUMBERS.published, comparable: d.comparable_products ?? DEFAULT_STAT_NUMBERS.comparable });
+      }
+    }).catch(() => {});
+  }, []);
 
   const sendMessage = async (text?: string) => {
     const msg = (text || input).trim();
@@ -116,9 +135,9 @@ export function HomePageContent({ locale }: HomePageContentProps) {
       <style>{CSS}</style>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
 
-        {/* ① STATS */}
+        {/* ① STATS — honest, live from /api/stats (no fabricated marketing numbers) */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          {STATS.map(s => (
+          {statsView(statNums).map(s => (
             <div key={s.l} style={{
               flex: 1, background: 'var(--color-surface)',
               borderRadius: 14, padding: '14px 10px', textAlign: 'center',
@@ -130,6 +149,20 @@ export function HomePageContent({ locale }: HomePageContentProps) {
             </div>
           ))}
         </div>
+
+        {/* ①·b — المستشار المحايد الحتمي (Part 5 discoverability + Part 7 deterministic path) */}
+        <Link href={`/${locale}/advisor`} style={{
+          display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none',
+          background: 'linear-gradient(135deg, rgba(85,178,149,.10), var(--color-surface))',
+          border: '1.5px solid var(--brand-green)', borderRadius: 16, padding: '14px 16px', marginBottom: 14,
+        }}>
+          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg,var(--brand-green),#3a7a66)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🧭</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--color-on-surface)' }}>المستشار المحايد — يرشّح لك الأنسب بالأدلة</div>
+            <div style={{ fontSize: 11, color: 'var(--color-on-surface-variant)', marginTop: 2 }}>محرك حتمي يرتّب حسب الملاءمة والتكلفة الإجمالية — لا العمولة. كل ترشيح مع أدلته الموثّقة.</div>
+          </div>
+          <span style={{ fontSize: 18, color: 'var(--brand-green)' }}>←</span>
+        </Link>
 
         {/* ② وفّر AI — شات حقيقي */}
         <section style={{
