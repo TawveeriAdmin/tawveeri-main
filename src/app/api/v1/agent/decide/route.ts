@@ -6,7 +6,7 @@ import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
 import { assessTrust, hoursSince } from "@/lib/intelligence/evidence-engine";
-import { getProviderByStoreId } from "@/lib/providers/registry";
+import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   // and collect WHICH stores corroborate it (the named evidence behind "N stores").
   const ids = recs.map((r) => r.canonical_id);
   const goByCanon = new Map<string, string>();
-  const storesByCanon = new Map<string, Set<number>>();
+  const storesByCanon = new Map<string, Set<string>>();
   if (ids.length) {
     const { data: obs } = await supabase
       .from("normalized_product_observations")
@@ -80,17 +80,26 @@ export async function POST(req: NextRequest) {
       .in("canonical_product_id", ids).order("observed_at", { ascending: false });
     for (const o of obs ?? []) {
       if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
-      const sid = Number(o.store_id);
-      if (Number.isFinite(sid)) {
-        const set = storesByCanon.get(o.canonical_product_id) ?? new Set<number>();
-        set.add(sid); storesByCanon.set(o.canonical_product_id, set);
+      // store_id here is a STRING identity (Arabic name / slug / numeric id), not always numeric.
+      const raw = o.store_id == null ? "" : String(o.store_id).trim();
+      if (raw) {
+        const set = storesByCanon.get(o.canonical_product_id) ?? new Set<string>();
+        set.add(raw); storesByCanon.set(o.canonical_product_id, set);
       }
     }
   }
-  // Store id → Arabic display name (from the provider registry — the one source of truth
-  // for store identity). Named stores make the corroboration a VERIFIED FACT, not a count.
-  const storeNames = (cid: string): string[] =>
-    [...(storesByCanon.get(cid) ?? [])].map((sid) => getProviderByStoreId(sid)?.displayNameAr || getProviderByStoreId(sid)?.displayName || `#${sid}`);
+  // Resolve each store identity to an Arabic display name. Named stores make the
+  // corroboration a VERIFIED FACT, not a count. Handles numeric id, slug, or an
+  // already-Arabic name (pass-through — never fabricate a different label).
+  const storeDisplay = (raw: string): string => {
+    const asNum = Number(raw);
+    if (Number.isFinite(asNum) && /^\d+$/.test(raw)) return getProviderByStoreId(asNum)?.displayNameAr || getProviderByStoreId(asNum)?.displayName || raw;
+    const bySlug = getProvider(raw.toLowerCase());
+    return bySlug?.displayNameAr || raw;
+  };
+  // Dedupe AFTER mapping — the same store can appear as both a numeric id ("4") and its
+  // Arabic name ("اكسترا") in the raw store_id; both resolve to one display name.
+  const storeNames = (cid: string): string[] => [...new Set([...(storesByCanon.get(cid) ?? [])].map(storeDisplay))];
 
   // Fuse "which to buy" with "when to buy": attach a deterministic price-history
   // verdict per recommendation (buy-timing intelligence). Additive + fail-soft —
