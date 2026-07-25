@@ -25,8 +25,22 @@ import { Client } from "pg";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
 import { listProviders, getProvider } from "../../src/lib/providers/registry";
 import { sourceOffers } from "../../src/lib/providers/sourcing/router";
-import { isValidGtin, gtinKey } from "../../src/lib/enrichment/icecat";
+import { isValidGtin, gtinKey, resolveGtin } from "../../src/lib/enrichment/icecat";
 import { groupByGtin } from "../../src/lib/enrichment/gtin-identity";
+
+/** --resolve <gtin…>: live Icecat lookups to gauge Open Icecat coverage. No DB. */
+async function runResolve(gtins: string[]) {
+  if (!process.env.ICECAT_USERNAME) { console.error("ICECAT_USERNAME not set — cannot resolve."); process.exit(1); }
+  console.log(`\n◆ Icecat resolve (user=${process.env.ICECAT_USERNAME}) — ${gtins.length} GTIN(s)\n`);
+  let hits = 0;
+  for (const g of gtins) {
+    if (!isValidGtin(g)) { console.log(`· ${g}  — invalid checksum, skipped`); continue; }
+    const r = await resolveGtin(g);
+    if (r) { hits++; console.log(`✓ ${g}  ${r.brand ?? "?"} | ${(r.title ?? "").slice(0, 46)} | MPN=${r.mpn ?? "-"} | cat=${r.category ?? "-"} | img=${r.imageUrl ? "yes" : "no"}`); }
+    else console.log(`· ${g}  — not in Open Icecat`);
+  }
+  console.log(`\n→ ${hits}/${gtins.length} resolved via Open Icecat.\n`);
+}
 
 /** Feed providers whose adapters capture GTINs (Salla/Zid, Algolia, WooCommerce). */
 function gtinFeedProviders() {
@@ -123,7 +137,9 @@ async function runDbCoverage() {
   const args = process.argv.slice(2);
   const pIdx = args.indexOf("--pages");
   const pages = pIdx > -1 ? Number(args[pIdx + 1]) || 3 : 3;
-  if (args.includes("--probe")) {
+  if (args.includes("--resolve")) {
+    await runResolve(args.filter((a) => /^\d{8,14}$/.test(a)));
+  } else if (args.includes("--probe")) {
     const slugs = args.filter((a, i) => !a.startsWith("--") && !(pIdx > -1 && i === pIdx + 1));
     await runProbe(slugs, pages);
   } else {
