@@ -48,7 +48,9 @@
     "tps:feed-probe": "tsx scripts/tps-analysis/feed-overlap-probe.ts",
     "tps:gate-audit": "tsx scripts/tps-analysis/e15-5-gate-audit.ts",
     "tps:usage": "tsx scripts/tps-analysis/usage-report.ts",
-    "tps:gtin-coverage": "tsx scripts/tps-analysis/gtin-coverage.ts"
+    "tps:gtin-coverage": "tsx scripts/tps-analysis/gtin-coverage.ts",
+    "tps:discover": "tsx scripts/tps-acquisition/discover.ts",
+    "tps:acquire": "tsx scripts/tps-acquisition/evaluate-stores.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

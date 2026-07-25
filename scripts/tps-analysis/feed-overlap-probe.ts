@@ -29,7 +29,7 @@ import { toPoolerDbUrl } from "../tps-core/pooler-url";
 import { resolveSourcingAdapter } from "../../src/lib/providers/sourcing/router";
 import type { RetailerProvider } from "../../src/lib/providers/types";
 
-const normBrand = (b: string) => (b || "").toLowerCase().replace(/\s+/g, " ").trim();
+export const normBrand = (b: string) => (b || "").toLowerCase().replace(/\s+/g, " ").trim();
 
 /** STRONG model tokens: genuine alphanumeric model codes (letter+digit adjacency),
  * e.g. "s24", "a16", "55nano796", "60uq7900", "sm-x200". A bare spec number ("55",
@@ -37,7 +37,7 @@ const normBrand = (b: string) => (b || "").toLowerCase().replace(/\s+/g, " ").tr
  * 55" vs a washer's capacity) and produced a false 68% on shaker. Sharing a strong
  * token WITHIN THE SAME BRAND is a real "same model" signal. */
 const SPEC_TOKEN = /^\d+(kg|g|gb|tb|mb|w|kw|ml|l|hz|khz|mah|cm|mm|m|inch|in|k|v|a|p|nit|nits|wh|rpm|bar)$/;
-function strongTokens(name: string): Set<string> {
+export function strongTokens(name: string): Set<string> {
   const out = new Set<string>();
   for (const t of (name || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").split(/\s+/)) {
     if (t.length < 3) continue;
@@ -48,7 +48,7 @@ function strongTokens(name: string): Set<string> {
   return out;
 }
 
-async function loadCatalog(c: Client) {
+export async function loadCatalog(c: Client) {
   // Our brands + per-brand strong-token index, restricted to SINGLE-STORE canonicals
   // (has_comparison=false) — those are the ones a new merchant could turn comparable.
   const rows = (await c.query(
@@ -75,7 +75,7 @@ type Cat = Awaited<ReturnType<typeof loadCatalog>>;
 
 /** Detect which of OUR brands a candidate product belongs to: prefer its feed brand
  * field, else scan the name for a known brand token (word-bounded). Null if none. */
-function detectBrand(feedBrand: string, name: string, cat: Cat): string | null {
+export function detectBrand(feedBrand: string, name: string, cat: Cat): string | null {
   const fb = normBrand(feedBrand);
   if (fb && cat.brandSet.has(fb)) return fb;
   const hay = ` ${name.toLowerCase()} `;
@@ -144,7 +144,7 @@ async function probe(origin: string, pages: number, cat: Cat, mode: ProbeMode) {
   };
 }
 
-(async () => {
+async function main() {
   const args = process.argv.slice(2);
   const pIdx = args.indexOf("--pages");
   const pages = pIdx > -1 ? Number(args[pIdx + 1]) || 6 : 6;
@@ -174,4 +174,8 @@ async function probe(origin: string, pages: number, cat: Cat, mode: ProbeMode) {
     console.log(`   → verdict: ${v}\n`);
   }
   await c.end();
-})().catch((e) => { console.error("FATAL", e instanceof Error ? e.message : e); process.exit(1); });
+}
+
+if (require.main === module) {
+  main().catch((e) => { console.error("FATAL", e instanceof Error ? e.message : e); process.exit(1); });
+}
