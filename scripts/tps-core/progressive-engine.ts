@@ -111,6 +111,21 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     }
   }
 
+  // ADR-096: reuse the EXISTING canonical id for any tps_identity_key already in the
+  // graph. The canonical id is a hash of canonSeed(key), but the same key can already
+  // live under a DIFFERENT id (older canonSeed, or a cross-category writer) — minting a
+  // fresh id then violates the `canonical_products_tps_identity_key_uidx` unique index and
+  // aborts the whole normalize chain (surfaced by new Almanea/Najm microwave data). By
+  // targeting the existing row's id, the upsert updates it in place instead of colliding.
+  const existingByKey = new Map<string, string>();
+  {
+    const keys = [...byKey.keys()];
+    for (let i = 0; i < keys.length; i += 200) {
+      const { data } = await sb.from("canonical_products").select("id, tps_identity_key").in("tps_identity_key", keys.slice(i, i + 200));
+      for (const r of (data ?? []) as { id: string; tps_identity_key: string }[]) existingByKey.set(r.tps_identity_key, r.id);
+    }
+  }
+
   const now = new Date().toISOString();
   const canonicalRows: Record<string, unknown>[] = [], normalizedRows: Record<string, unknown>[] = [], matchRows: Record<string, unknown>[] = [], priceRows: Record<string, unknown>[] = [], canonicalIds: string[] = [];
   for (const [key, all] of byKey) {
@@ -126,7 +141,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     if (single) { if (storeIds.size !== 1) continue; R.singleStore++; }
     else { if (storeIds.size < 2) { R.singleStore++; continue; } R.corroborated++; }
 
-    const canonicalId = stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
+    const canonicalId = existingByKey.get(key) ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
     const rep = offers[0].payload || {};
     const { nameAr, nameEn } = def.names(key, rep);
     const parts = key.split("|");

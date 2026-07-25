@@ -6,6 +6,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-096 — Fix normalize chain-abort on `tps_identity_key` collision (reuse existing canonical id) · Accepted (2026-07-25)
+**Context:** New Almanea/Najm data surfaced a latent bug: `progressive-engine.corroboratePass` mints each canonical `id` as `stableUuid(canonSeed(key))`, but the same `tps_identity_key` can already live under a DIFFERENT id (older `canonSeed`, or a cross-category writer). `write_ac_batch` upserts by `id`, so a fresh id then violates the separate `canonical_products_tps_identity_key_uidx` unique index and **FATALs the whole normalize chain** (`write_ac_batch(microwave): duplicate key…`) — blocking realization of all newly-ingested data.
+
+**Decision:** before writing, look up existing canonicals by `tps_identity_key` for the batch and **reuse the existing id** (`existingByKey.get(key) ?? stableUuid(canonSeed(key))`) so the upsert updates the existing row in place instead of colliding. Same defect class + fix pattern as ADR-082's `write-resolved-single` skip-existing. Idempotent, deterministic; no schema change. Unblocks the normalize→corroborate→projection chain for the Algolia/Salla-sourced data.
+
 ### ADR-095 — Salla sitemap+JSON-LD sourcing adapter; onboard Najm Alajhiza (store 9) · Accepted (2026-07-25)
 **Context:** Founder addendum — exhaust every engineering path before calling a store a founder boundary. The two "not started" priority stores (BlackBox, Najm Alajhiza) were both found to run **Salla**, which exposes the whole catalogue credential-free: an XML sitemap enumerates product URLs and every product page carries `application/ld+json` `@type: Product` (name/price/priceCurrency/sku/brand/availability). This covers **4,400+ live Saudi Salla stores** with one adapter.
 
