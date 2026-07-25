@@ -6,6 +6,16 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-095 — Salla sitemap+JSON-LD sourcing adapter; onboard Najm Alajhiza (store 9) · Accepted (2026-07-25)
+**Context:** Founder addendum — exhaust every engineering path before calling a store a founder boundary. The two "not started" priority stores (BlackBox, Najm Alajhiza) were both found to run **Salla**, which exposes the whole catalogue credential-free: an XML sitemap enumerates product URLs and every product page carries `application/ld+json` `@type: Product` (name/price/priceCurrency/sku/brand/availability). This covers **4,400+ live Saudi Salla stores** with one adapter.
+
+**Decision:** `src/lib/providers/sourcing/salla-feed-adapter.ts` — sitemap-index → child sitemaps → product URLs → per-page JSON-LD extraction (bounded concurrency 8, market-scoped: **non-SAR offers rejected**, never a fabricated original price). Provider opts in with `sourcing: "api"` + `salla: { origin }`. **Najm Alajhiza onboarded as store 9** (stores row + registry + `TPS_STORES`): 412 real observations (Fisher/Fresh/Basic/Samsung/Toshiba appliances). **BlackBox registered config-ready but DISABLED** — its Salla sitemap is user-agent-gated (404 even to Googlebot), so it needs a category-crawl enumeration fallback (documented, not a boundary). Verified: adapter parses 349–412 SAR products from najm.store with brand + availability.
+
+### ADR-094 — Algolia storefront-index sourcing adapter; Almanea (store 5) sourced from clean structured JSON · Accepted (2026-07-25)
+**Context:** Almanea (priority store #1) powers its headless storefront with a **public Algolia index** (search-only keys shipped in the browser bundle — public data access, not a secret). The index is the whole catalogue as structured JSON (3,627 products) with brand/model/sku/storage/screen_size — far richer than HTML scraping, which directly improves identity resolution → comparisons.
+
+**Decision:** `src/lib/providers/sourcing/algolia-feed-adapter.ts` — fetches the full index despite Algolia's `paginationLimitedTo=1000` cap via **recursive price-band slicing** (each numeric-filtered slice ≤1000, union by objectID; bisect on overflow), merges EN names by objectID for bilingual output, and passes structured attributes through to the identity plugins. **Price accuracy is authoritative + honest:** the customer price comes from `prices_with_tax.price` (the already-discounted selling price) with `original_price` only when a REAL discount exists; availability from per-region `stock_region_ids` (all-zero ⇒ out_of_stock). (Corrected a first-cut bug that read `price_incl_tax`, which is NOT the shelf price.) Almanea flipped to `sourcing: "api"` + `algolia{}`; ingested **3,627 clean structured observations** (2,989 with real discounts, 21 out-of-stock). Reusable for any Algolia-backed KSA storefront.
+
 ### ADR-093 — Launch proof: E15.5 gate evidence, visible Trust experience, real-vs-test instrumentation, homepage honesty · Accepted (2026-07-25)
 **Context:** Founder Execution Directive — convert the foundation into a real, public, evidence-backed purchasing experience for the 1-Aug-2026 launch, close E15.5 honestly, and instrument reality from the first user. Ship the thinnest complete honest experience, not a perfect architecture.
 

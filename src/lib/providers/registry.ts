@@ -18,7 +18,12 @@ const BASE: Record<string, RetailerProvider> = {
   amazon:      { slug: "amazon",      storeId: 2, displayName: "Amazon SA",         displayNameAr: "أمازون",           enabled: true, sourcing: "scraper", affiliate: { network: "amazon", trackingId: "tawveeri-21", supportsSubId: true, subIdParam: "ascsubtag" } },
   noon:        { slug: "noon",        storeId: 3, displayName: "Noon",              displayNameAr: "نون",              enabled: true, sourcing: "scraper", affiliate: { network: "param", trackingId: "noon", params: [{ name: "utm_source", value: "tawveeri" }, { name: "utm_medium", value: "affiliate" }, { name: "utm_campaign", value: "DNC160" }], supportsSubId: true, subIdParam: "utm_content" } },
   extra:       { slug: "extra",       storeId: 4, displayName: "eXtra",             displayNameAr: "اكسترا",           enabled: true, sourcing: "scraper", affiliate: null },
-  almanea:     { slug: "almanea",     storeId: 5, displayName: "Almanea",           displayNameAr: "المنيع",           enabled: true, sourcing: "scraper", affiliate: null },
+  // Almanea powers its headless storefront with a PUBLIC Algolia index (search-only keys
+  // shipped in the browser bundle — public data access, not a secret). It is the cleanest,
+  // richest structured source in the KSA majors (3,600+ products with brand/model/sku/
+  // storage/screen_size), which improves identity resolution → more comparisons (ADR-094).
+  // Sourced via the Algolia adapter; override with PROVIDER_ALMANEA_SOURCING=scraper.
+  almanea:     { slug: "almanea",     storeId: 5, displayName: "Almanea",           displayNameAr: "المنيع",           enabled: true, sourcing: "api", affiliate: null, algolia: { appId: "WCK19QC65I", apiKey: "be7745237f5f94f715b088f48b1708b8", index: "prod_headless_ar_products", indexEn: "prod_headless_en_products" } },
   samsung_ksa: { slug: "samsung_ksa", storeId: 6, displayName: "Samsung Saudi",     displayNameAr: "سامسونج السعودية", enabled: true, sourcing: "scraper", affiliate: null },
   // shaker is sourced from its public WooCommerce Store API (ADR-089) — verified cleaner
   // AND more complete than the HTML scraper (585 unique bilingual products via feed vs
@@ -28,6 +33,12 @@ const BASE: Record<string, RetailerProvider> = {
   // data already uses. Override with PROVIDER_SHAKER_SOURCING=scraper to fall back.
   shaker:      { slug: "shaker",      storeId: 7, displayName: "Shaker",            displayNameAr: "شاكر",             enabled: true, sourcing: "api", affiliate: null, feedUrl: "https://shakersa.com" },
   swsg:        { slug: "swsg",        storeId: 8, displayName: "SWSG",              displayNameAr: "الشتاء والصيف",    enabled: true, sourcing: "scraper", affiliate: null },
+  // Salla storefronts (ADR-095) — sourced credential-free via sitemap + product JSON-LD.
+  // najm.store carries mainstream appliances (Samsung/Toshiba/Fisher/Fresh) with real
+  // overlap potential; blackboxksa.com is niche (camping/appliances) + its sitemap is
+  // UA-gated, so it is registered config-ready but disabled pending a category-crawl fallback.
+  najm:        { slug: "najm",        storeId: 9,  displayName: "Najm Alajhiza",     displayNameAr: "نجم الأجهزة",      enabled: true,  sourcing: "api", affiliate: null, salla: { origin: "https://najm.store" } },
+  blackbox:    { slug: "blackbox",    storeId: 10, displayName: "BlackBox",          displayNameAr: "الصندوق الأسود",   enabled: false, sourcing: "api", affiliate: null, salla: { origin: "https://blackboxksa.com" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));

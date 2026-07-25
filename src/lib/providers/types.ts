@@ -35,6 +35,30 @@ export interface AffiliateConfig {
   subIdParam?: string;
 }
 
+/**
+ * Public Algolia storefront index config (ADR-094). appId + apiKey are the SEARCH-ONLY
+ * keys a storefront ships in its browser bundle (public data access — same class as a
+ * WooCommerce Store API, never a secret). `index` is the primary (Arabic) index; `indexEn`
+ * optionally supplies English names merged by objectID.
+ */
+export interface AlgoliaConfig {
+  appId: string;
+  apiKey: string;
+  index: string;
+  indexEn?: string;
+}
+
+/**
+ * Salla storefront config (ADR-095). Salla shops expose the whole catalogue with ZERO
+ * credentials: an XML sitemap enumerates product URLs and every product page carries
+ * `application/ld+json` `@type: Product` (name, price, priceCurrency, sku, brand,
+ * availability). One adapter covers Najm/BlackBox and the 4,400+ live Saudi Salla stores.
+ */
+export interface SallaConfig {
+  origin: string;
+  sitemapUrl?: string;
+}
+
 /** A retailer bound to its sourcing + monetization adapters. */
 export interface RetailerProvider {
   slug: string;
@@ -49,6 +73,10 @@ export interface RetailerProvider {
   affiliate: AffiliateConfig | null;
   /** Optional feed endpoint for official_feed/csv_xml/affiliate_feed sourcing. */
   feedUrl?: string;
+  /** Optional public Algolia storefront index (sourcing 'api' via the Algolia adapter). */
+  algolia?: AlgoliaConfig;
+  /** Optional Salla storefront (sourcing 'api' via the Salla sitemap+JSON-LD adapter). */
+  salla?: SallaConfig;
 }
 
 /** Per-exit context used for attribution when building an affiliate link. */
