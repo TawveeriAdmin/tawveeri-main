@@ -20,7 +20,7 @@
 import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
-import { writeFileSync } from "fs";
+import { writeFileSync, readFileSync } from "fs";
 import { Client } from "pg";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
 import { resolveSourcingAdapter } from "../../src/lib/providers/sourcing/router";
@@ -36,6 +36,28 @@ const origin = (d: string) => {
   if (!/^https?:\/\//i.test(s)) s = "https://" + s;
   return s.replace(/\/+$/, "");
 };
+
+// Non-store hosts to drop when harvesting domains from arbitrary text (a StoreLeads UI
+// copy, a saved results page, a pasted list). Platforms, CDNs, socials, analytics, the
+// tool itself — never the merchant.
+const NOT_A_STORE = /(analytics|googletag|gtag|doubleclick|cloudflare|cloudfront|jsdelivr|unpkg|fbcdn|fbsbx|gstatic|ytimg|sentry|hotjar|clarity|segment|mixpanel|recaptcha)|(^|\.)(storeleads|google|facebook|instagram|twitter|x\.com|youtube|tiktok|whatsapp|wa\.me|snapchat|linkedin|pinterest|w3\.org|schema\.org|gravatar|salla\.sa|zid\.sa|salla\.network|myshopify\.com|shopify\.com|wordpress\.org|gmpg\.org|bing|yandex)($|\.)/i;
+
+/** Extract candidate STORE domains from arbitrary text or HTML — so the workflow needs
+ *  no CSV export: paste what the Premium UI shows, or save its results page (Ctrl+S), and
+ *  the engine harvests the merchant hostnames itself. Dedupes; drops platforms/CDNs/socials. */
+export function extractDomains(text: string): string[] {
+  const out = new Set<string>();
+  const re = /(?:https?:\/\/)?((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})/gi;
+  for (const m of text.matchAll(re)) {
+    const host = m[1].toLowerCase().replace(/^www\./, "");
+    if (host.length < 4 || !host.includes(".")) continue;
+    if (NOT_A_STORE.test(host)) continue;
+    // Drop bare TLD/registry noise and obvious asset hosts.
+    if (/\.(png|jpg|jpeg|gif|svg|webp|css|js|woff2?|ico)$/i.test(host)) continue;
+    out.add(host);
+  }
+  return [...out];
+}
 
 async function getJson(url: string, ms = 12000): Promise<unknown | null> {
   try {
@@ -174,11 +196,17 @@ async function evaluate(domain: string, cat: Cat, pages: number, discoveryMethod
   const pi = args.indexOf("--pages"); const pages = pi > -1 ? Number(args[pi + 1]) || 2 : 2;
   const oi = args.indexOf("--out"); const outFile = oi > -1 ? args[oi + 1] : null;
   let domains = args.filter((a, i) => !a.startsWith("--") && !(pi > -1 && i === pi + 1) && !(oi > -1 && i === oi + 1));
+  // --stdin / --from <file>: harvest domains from ARBITRARY text or HTML (Premium UI copy,
+  // saved results page, messy paste) — no CSV export required. --extract-only just prints them.
   if (args.includes("--stdin")) {
     const stdin = await new Promise<string>((r) => { let d = ""; process.stdin.on("data", (c) => d += c); process.stdin.on("end", () => r(d)); });
-    domains = domains.concat(stdin.split(/\r?\n/).map((s) => s.trim()).filter(Boolean));
+    domains = domains.concat(extractDomains(stdin));
   }
-  if (!domains.length) { console.error("usage: evaluate-stores <domain…> [--pages N] [--out f.csv] | --stdin"); process.exit(1); }
+  const fi = args.indexOf("--from");
+  if (fi > -1 && args[fi + 1]) domains = domains.concat(extractDomains(readFileSync(args[fi + 1], "utf8")));
+  domains = [...new Set(domains.map((d) => d.replace(/^https?:\/\//, "").replace(/\/.*$/, "").toLowerCase()))];
+  if (!domains.length) { console.error("usage: evaluate-stores <domain…> [--pages N] [--out f.csv] | --stdin | --from file.(txt|html)"); process.exit(1); }
+  if (args.includes("--extract-only")) { for (const d of domains) console.log(d); console.error(`\n${domains.length} candidate domains extracted (no evaluation).`); return; }
 
   const c = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL!), ssl: { rejectUnauthorized: false } });
   await c.connect();
