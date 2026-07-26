@@ -268,7 +268,7 @@ export default function SearchClient() {
         product_stores(id, current_price, original_price, availability, product_url,
           stores(id, name_ar, name_en, logo_url, average_rating, total_reviews))`)
       .eq('is_active', true)
-      .order('view_count', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(8)
       .then(({ data }) => {
         if (cancelled || !data) return;

@@ -11,7 +11,9 @@ import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { SARSymbol } from '@/components/ui/price';
 
 interface PriceHistoryChartProps {
-  productStoreId: string;
+  productStoreId?: string;
+  canonicalProductId?: string | null;
+  storeSlug?: string | null;
   productName: string;
   storeName: string;
   locale?: string;
@@ -20,13 +22,14 @@ interface PriceHistoryChartProps {
 
 interface PricePoint {
   price: number;
-  recorded_at: string;
+  observed_at: string;
 }
 
 type TimeRange = '30' | '90' | '365';
 
 export function PriceHistoryChart({
-  productStoreId,
+  canonicalProductId,
+  storeSlug,
   productName,
   storeName,
   locale: propLocale,
@@ -48,6 +51,11 @@ export function PriceHistoryChart({
       setLoading(true);
       setError(null);
 
+      // Production System A keys price_history by canonical_product_id + store_name (a slug) +
+      // observed_at — there is no product_store_id. Without both keys there's nothing to query, so
+      // render nothing (the chart hides on empty) rather than firing a failing request.
+      if (!canonicalProductId || !storeSlug) { setPriceHistory([]); setLoading(false); return; }
+
       try {
         const days = parseInt(timeRange);
         const startDate = new Date();
@@ -55,24 +63,26 @@ export function PriceHistoryChart({
 
         const { data, error: queryError } = await supabase
           .from('price_history')
-          .select('price, recorded_at')
-          .eq('product_store_id', productStoreId)
-          .gte('recorded_at', startDate.toISOString())
-          .order('recorded_at', { ascending: true });
+          .select('price, observed_at')
+          .eq('canonical_product_id', canonicalProductId)
+          .eq('store_name', storeSlug)
+          .gte('observed_at', startDate.toISOString())
+          .order('observed_at', { ascending: true });
 
         if (queryError) throw queryError;
 
         setPriceHistory((data || []) as PricePoint[]);
       } catch (err) {
-        console.error('Error fetching price history:', err);
-        setError(err instanceof Error ? err.message : t('products.priceHistory.errorLoading'));
+        // Non-fatal: hide the chart rather than surfacing an error to shoppers.
+        console.warn('price history unavailable:', err instanceof Error ? err.message : err);
+        setPriceHistory([]);
       } finally {
         setLoading(false);
       }
     }
 
     fetchPriceHistory();
-  }, [productStoreId, timeRange, locale]);
+  }, [canonicalProductId, storeSlug, timeRange, locale]);
 
   // Calculate price trend
   const priceTrend = (() => {
@@ -186,7 +196,7 @@ export function PriceHistoryChart({
               {priceHistory.slice(-5).reverse().map((point, index) => (
                 <div key={index} className="flex justify-between text-sm">
                   <span className="text-on-surface-variant">
-                    {new Date(point.recorded_at).toLocaleDateString(locale, {
+                    {new Date(point.observed_at).toLocaleDateString(locale, {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',

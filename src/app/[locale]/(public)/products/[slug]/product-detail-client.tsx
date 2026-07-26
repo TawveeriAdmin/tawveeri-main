@@ -242,15 +242,18 @@ export default function ProductDetailClient() {
  setViewCount(mappedProduct.view_count);
  // View count is now tracked via API route (see useEffect above)
 
- // Fetch AI-powered similar products via .rpc()
+ // Similar products — same-category, most-recent. (The pgvector get_recommendations RPC is not
+ // provisioned in production System A; a direct category query is the resilient equivalent and
+ // avoids a 404 on every product view.)
  let relatedData: ProductQueryResult[] | null = null;
  try {
- const { data: recData } = await supabase.rpc('get_recommendations', {
- p_user_id: undefined,
- p_product_id: productData.id,
- p_type: 'auto',
- p_limit: 4,
- });
+ const { data: recData } = await supabase
+ .from('products')
+ .select('id')
+ .eq('category', productData.category)
+ .eq('is_active', true)
+ .neq('id', productData.id)
+ .limit(4);
 
  const recIds = (recData ?? []).map((r: { id: string }) => r.id);
  if (recIds.length > 0) {
@@ -432,7 +435,7 @@ export default function ProductDetailClient() {
  .eq('category', productData.category)
  .neq('id', productData.id)
  .eq('is_active', true)
- .order('view_count', { ascending: false, nullsFirst: false })
+ .order('created_at', { ascending: false, nullsFirst: false })
  .limit(8)
  .returns<ProductQueryResult[]>();
 
@@ -1016,7 +1019,8 @@ export default function ProductDetailClient() {
  </p>
  </div>
  <PriceHistoryChart
- productStoreId={bestPriceStore.id}
+ canonicalProductId={(product as { canonical_product_id?: string | null }).canonical_product_id ?? null}
+ storeSlug={bestPriceStore.stores.slug}
  productName={productName}
  storeName={locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}
  locale={locale}
