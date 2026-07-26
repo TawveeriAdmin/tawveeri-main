@@ -82,15 +82,37 @@ export default async function TpsComparePage({
   params: Promise<{ locale: string; key: string }>;
 }) {
   const { locale, key } = await params;
+  const isAr = locale === 'ar';
   const decodedKey = decodeURIComponent(key);
   const data = await fetchCompare(decodedKey);
 
+  // No multi-store comparison for this product yet → a helpful state with a search fallback,
+  // NEVER a 404/error (the compare button used to dead-end here). This is honest empty-state
+  // handling, not a cosmetic mask: many products are single-store while coverage grows.
   if (!data || data.offers.length === 0) {
-    notFound();
+    const nm = data?.canonical ? (isAr ? (data.canonical.name_ar || data.canonical.name_en) : (data.canonical.name_en || data.canonical.name_ar)) : null;
+    return (
+      <PublicPageShell locale={locale}>
+        <div className="mx-auto max-w-xl px-4 py-16 text-center">
+          <div className="mb-4 text-5xl">🔍</div>
+          <h1 className="text-xl font-bold text-on-surface">{nm ?? (isAr ? 'مقارنة الأسعار' : 'Price comparison')}</h1>
+          <p className="mx-auto mt-2 max-w-sm text-on-surface-variant">
+            {isAr
+              ? 'لا تتوفر مقارنة أسعار متعددة المتاجر لهذا المنتج حالياً — نضيف المتاجر والمقارنات باستمرار.'
+              : "A multi-store comparison isn't available for this product yet — we keep adding stores and comparisons."}
+          </p>
+          <a
+            href={`/${locale}/search${nm ? `?q=${encodeURIComponent(nm)}` : ''}`}
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[var(--brand-green)] px-6 text-sm font-semibold text-white transition-colors hover:bg-[var(--brand-green-dark)]"
+          >
+            {isAr ? 'ابحث عن هذا المنتج' : 'Search for this product'}
+          </a>
+        </div>
+      </PublicPageShell>
+    );
   }
 
   const { canonical, summary, offers } = data;
-  const isAr = locale === 'ar';
   const name = isAr ? (canonical.name_ar || canonical.name_en) : (canonical.name_en || canonical.name_ar);
 
   const cheapestOffer = offers.find(o => o.store_name === summary.cheapest_store) ?? offers[0];
