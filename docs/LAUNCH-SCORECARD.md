@@ -1,6 +1,6 @@
 # Tawveeri — Launch-Readiness Dashboard
 
-**Overall: 71/100** · updated 2026-07-26 10:59 UTC · ▲ 2 vs last run · run `npm run tps:launch-audit`
+**Overall: 71/100** · updated 2026-07-26 11:04 UTC · ▲ 0 vs last run · run `npm run tps:launch-audit`
 
 | Area | Cur | Tgt | Gap | Trend | Prio | Cust | Biz | Evidence |
 |---|---|---|---|---|---|---|---|---|
@@ -12,9 +12,9 @@
 | Image Coverage | 94 | 95 | +1 | → | P1 | H | M | 94% published products imaged (ADR-113) |
 | Search Quality | 96 | 98 | +2 | → | P1 | H | H | tps:search-quality retrieval 93→~100% (ADR-112), ranking 100% |
 | Comparison Quality | 90 | 95 | +5 | → | P0 | H | H | corroboration-first ranking; 488 cards surface real savings (Σ≈248,489 SAR) |
-| Canonical Accuracy | 79 | 90 | +11 | ↑30 | P1 | H | M | 1 duplicate cards; comparable-product avg confidence 93; 0 sentinel leaks (gate) |
+| Canonical Accuracy | 79 | 90 | +11 | → | P1 | H | M | 1 duplicate cards; comparable-product avg confidence 93; 0 sentinel leaks (gate) |
 | Customer Trust | 85 | 90 | +5 | → | P1 | H | H | deterministic evidence-cited trust engine live; named corroboration + data age |
-| Performance | 20 | 90 | +70 | → | P1 | H | M | decide 3021ms · search 1005ms |
+| Performance | 20 | 90 | +70 | → | P1 | H | M | decide 2425ms · search 1830ms |
 | Data Freshness | 90 | 95 | +5 | → | P1 | M | M | 18/20 stores fresh (<48h) |
 | Crawler Stability | 90 | 95 | +5 | → | P1 | M | M | 2 known-broken scrapers (noon/swsg); feed adapters stable |
 | Affiliate Readiness | 55 | 80 | +25 | → | P2 | L | H | framework config-only ready; /go measured; 0 ACTIVE programs (needs Founder enrollment) |
@@ -31,4 +31,4 @@
 
 **P1 gaps:** Category Coverage, Canonical Accuracy, Performance, Security
 
-_Overall trend: 69 → 71_
+_Overall trend: 69 → 71 → 71_
