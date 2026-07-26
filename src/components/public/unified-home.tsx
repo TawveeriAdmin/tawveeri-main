@@ -16,6 +16,7 @@ type Deal = { slug: string; name: string; image: string | null; price: number; w
 
 const T = {
   ar: {
+    beta: 'نسخة تجريبية عامة · نضيف متاجر ومقارنات باستمرار',
     tagline: 'قارن أسعار الإلكترونيات عبر متاجر السعودية — بالأدلة، لا أرقام مسوّقة.',
     searchPh: 'ابحث عن منتج… مثلاً آيفون ١٦',
     searchCta: 'بحث',
@@ -36,6 +37,7 @@ const T = {
     ],
   },
   en: {
+    beta: 'Public Beta · we keep adding stores and comparisons',
     tagline: 'Compare electronics prices across Saudi stores — with evidence, not marketing numbers.',
     searchPh: 'Search a product… e.g. iPhone 16',
     searchCta: 'Search',
@@ -104,6 +106,13 @@ export function UnifiedHome({ locale }: { locale: string }) {
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '6px 0 44px', textAlign: isAr ? 'right' : 'left' }}>
       {/* 1 — SEARCH (first screen: says what Tawveeri does + the primary action) */}
       <section style={{ marginTop: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700,
+            color: 'var(--brand-green-dark, #3a7a66)', background: 'rgba(85,178,149,.10)',
+            border: '1px solid rgba(85,178,149,.25)', borderRadius: 999, padding: '5px 12px',
+          }}>🌱 {t.beta}</span>
+        </div>
         <h1 style={{ fontSize: 'clamp(20px, 4.5vw, 26px)', fontWeight: 900, lineHeight: 1.3, color: 'var(--color-on-surface)', margin: '0 0 14px', textAlign: 'center' }}>
           {t.tagline}
         </h1>

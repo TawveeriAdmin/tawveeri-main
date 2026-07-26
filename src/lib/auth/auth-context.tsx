@@ -297,11 +297,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, AUTH_LOADING_TIMEOUT_MS);
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
+      // getSession resolved — cancel the safety timeout so it doesn't fire a spurious
+      // "timed out" warning ~5s later (it was only ever a fallback for a genuine hang).
+      window.clearTimeout(loadingTimeout);
       const requestId = applySession(session);
       if (requestId && session?.user) {
         void hydrateUserState(session.user, requestId);
       }
     }).catch((err) => {
+      window.clearTimeout(loadingTimeout);
       console.error('Error getting session:', err);
       if (isMounted) setLoading(false);
     });
