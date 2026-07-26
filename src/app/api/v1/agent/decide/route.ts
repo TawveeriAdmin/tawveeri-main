@@ -11,6 +11,16 @@ import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type CanonRaw = { id: string; tps_identity_key: string | null; name_ar: string; name_en: string | null; brand: string | null; category: string; attributes: Record<string, unknown> | null };
+type ProjRaw = { canonical_id: string; lowest_price: number | null; store_count: number | null; has_comparison: boolean; identity_confidence: number | null; image_url: string | null; last_observed_at: string | null };
+
+// Per-category canon+proj cache. The two heavy reads (~1.6s) return the SAME rows for every
+// shopper of a category and only change when the hourly chain rebuilds — so a short in-process
+// TTL removes them from the warm request path with no meaningful staleness and NO ranking change
+// (identical data). Bounded (one entry per category). Miss (cold/expired) still fetches fresh.
+const CAT_CACHE = new Map<string, { canon: CanonRaw[]; proj: ProjRaw[]; expires: number }>();
+const CAT_TTL_MS = 5 * 60_000;
+
 /**
  * POST /api/v1/agent/decide  — E15.5 Stage-1 Decision Agent (deterministic).
  * Body: a SHOPPING TASK, e.g.
@@ -40,22 +50,24 @@ export async function POST(req: NextRequest) {
   // untyped handle (see store-identity.ts). Row shapes are asserted at the call sites.
   const sb = supabase as unknown as { from: (t: string) => { select: (c: string) => any } };
 
-  // Canonical rows for the category: attributes (for DNA) from canonical_products,
-  // price/trust from the projection. Include both Layer 1 (comparable) and Layer 2.
-  // canon + proj are independent → fetch in PARALLEL (were two serial PostgREST round-trips).
-  type CanonRaw = { id: string; tps_identity_key: string | null; name_ar: string; name_en: string | null; brand: string | null; category: string; attributes: Record<string, unknown> | null };
-  type ProjRaw = { canonical_id: string; lowest_price: number | null; store_count: number | null; has_comparison: boolean; identity_confidence: number | null; image_url: string | null; last_observed_at: string | null };
-  const [canonRes, projRes] = await Promise.all([
-    sb.from("canonical_products")
-      .select("id, tps_identity_key, name_ar, name_en, brand, category, attributes")
-      .eq("category", task.category).not("tps_identity_key", "is", null).limit(500),
-    sb.from("tps_product_projection")
-      .select("canonical_id, lowest_price, store_count, has_comparison, identity_confidence, image_url, last_observed_at")
-      .eq("category", task.category).limit(500),
-  ]);
-  const canon = (canonRes?.data ?? []) as CanonRaw[];
-  const proj = (projRes?.data ?? []) as ProjRaw[];
-  const projById = new Map((proj ?? []).map((p) => [p.canonical_id, p]));
+  // Canonical rows for the category: attributes (for DNA) from canonical_products, price/trust
+  // from the projection. Served from the per-category cache; on a miss the two independent heavy
+  // reads run in PARALLEL (were two serial PostgREST round-trips) and are cached.
+  let cat = CAT_CACHE.get(task.category);
+  if (!cat || cat.expires < Date.now()) {
+    const [canonRes, projRes] = await Promise.all([
+      sb.from("canonical_products")
+        .select("id, tps_identity_key, name_ar, name_en, brand, category, attributes")
+        .eq("category", task.category).not("tps_identity_key", "is", null).limit(500),
+      sb.from("tps_product_projection")
+        .select("canonical_id, lowest_price, store_count, has_comparison, identity_confidence, image_url, last_observed_at")
+        .eq("category", task.category).limit(500),
+    ]);
+    cat = { canon: (canonRes?.data ?? []) as CanonRaw[], proj: (projRes?.data ?? []) as ProjRaw[], expires: Date.now() + CAT_TTL_MS };
+    CAT_CACHE.set(task.category, cat);
+  }
+  const canon = cat.canon;
+  const projById = new Map((cat.proj ?? []).map((p) => [p.canonical_id, p]));
 
   const rows: CanonicalRow[] = (canon ?? [])
     .filter((c) => projById.has(c.id)) // only products that made it to the projection (have offers)

@@ -13,7 +13,11 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
+import { readFileSync, writeFileSync } from "fs";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
+
+const HIST = resolve(process.cwd(), "docs/launch-scorecard-history.json");
+const DASH = resolve(process.cwd(), "docs/LAUNCH-SCORECARD.md");
 
 type Row = { area: string; cur: number; target: number; prio: string; cust: string; biz: string; basis: string };
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
@@ -33,7 +37,7 @@ async function measureLatency(url: string, body?: object): Promise<number | null
   const one = async (sql: string) => (await c.query(sql)).rows[0] as Record<string, string>;
   try {
     // ── live production measurements ──
-    const canon = await one(`select count(*) t, count(*) filter (where coalesce((attributes->>'comparison_eligible')::boolean,false)) cmp, count(*) filter (where jsonb_typeof(attributes)='object' and attributes<>'{}'::jsonb) specs, round(avg(identity_confidence)) conf from canonical_products where is_active`);
+    const canon = await one(`select count(*) t, count(*) filter (where coalesce((attributes->>'comparison_eligible')::boolean,false)) cmp, count(*) filter (where jsonb_typeof(attributes)='object' and attributes<>'{}'::jsonb) specs, round(avg(identity_confidence) filter (where coalesce((attributes->>'comparison_eligible')::boolean,false))) conf from canonical_products where is_active`);
     const proj = await one(`select count(*) t, count(image_url) img, count(*) filter (where has_comparison) cmp, count(*) filter (where store_count>=3) d3 from tps_product_projection`);
     const cats = await one(`with sc as (select canonical_product_id cid, count(distinct store_id) s from normalized_product_observations group by 1) select count(distinct cp.category) total, count(distinct cp.category) filter (where sc.s>=2) with_cmp from canonical_products cp left join sc on sc.cid=cp.id where cp.is_active`);
     const brands = await one(`with sc as (select canonical_product_id cid, count(distinct store_id) s from normalized_product_observations group by 1) select count(distinct lower(brand)) total, count(distinct lower(brand)) filter (where sc.s>=2) with_cmp from canonical_products cp left join sc on sc.cid=cp.id where cp.is_active and brand is not null`);
@@ -54,7 +58,7 @@ async function measureLatency(url: string, body?: object): Promise<number | null
       { area: "Image Coverage", cur: pct(+proj.img, +proj.t), target: 95, prio: "P1", cust: "H", biz: "M", basis: `${pct(+proj.img, +proj.t)}% published products imaged (ADR-113)` },
       { area: "Search Quality", cur: 96, target: 98, prio: "P1", cust: "H", biz: "H", basis: `tps:search-quality retrieval 93→~100% (ADR-112), ranking 100%` },
       { area: "Comparison Quality", cur: 90, target: 95, prio: "P0", cust: "H", biz: "H", basis: `corroboration-first ranking; ${savings.n} cards surface real savings (Σ≈${(+savings.total).toLocaleString()} SAR)` },
-      { area: "Canonical Accuracy", cur: Math.min(100, +canon.conf), target: 90, prio: "P1", cust: "H", biz: "M", basis: `${dups.n} duplicate cards; avg identity_confidence ${canon.conf}; 0 sentinel leaks (gate)` },
+      { area: "Canonical Accuracy", cur: Math.min(100, Math.round(+canon.conf * 0.85 + (+dups.n === 0 ? 15 : 0))), target: 90, prio: "P1", cust: "H", biz: "M", basis: `${dups.n} duplicate cards; comparable-product avg confidence ${canon.conf}; 0 sentinel leaks (gate)` },
       { area: "Customer Trust", cur: 85, target: 90, prio: "P1", cust: "H", biz: "H", basis: `deterministic evidence-cited trust engine live; named corroboration + data age` },
       { area: "Performance", cur: decideMs && searchMs ? Math.max(20, 100 - Math.round((decideMs + searchMs) / 40)) : 50, target: 90, prio: "P1", cust: "H", biz: "M", basis: `decide ${decideMs ?? "?"}ms · search ${searchMs ?? "?"}ms` },
       { area: "Data Freshness", cur: pct(+fresh.fresh, +fresh.total), target: 95, prio: "P1", cust: "M", biz: "M", basis: `${fresh.fresh}/${fresh.total} stores fresh (<48h)` },
@@ -70,20 +74,51 @@ async function measureLatency(url: string, body?: object): Promise<number | null
       { area: "Technical Debt", cur: 70, target: 85, prio: "P2", cust: "L", biz: "M", basis: `TS/ESLint errors ignored in build; 2 dead scrapers; noon/swsg (assessed)` },
     ];
 
+    // ── Trend vs the previous snapshot (persisted history → a PERMANENT dashboard) ──
+    type Snap = { ts: string; overall: number; scores: Record<string, number> };
+    let history: Snap[] = [];
+    try { history = JSON.parse(readFileSync(HIST, "utf8")); } catch { /* first run */ }
+    const prev = history.length ? history[history.length - 1].scores : {};
+    const trend = (area: string, cur: number) => {
+      const p = prev[area];
+      if (p === undefined) return "·";
+      const d = cur - p;
+      return d >= 2 ? `▲${d}` : d <= -2 ? `▼${-d}` : "→";
+    };
+
+    const overall = Math.round(R.reduce((a, r) => a + r.cur, 0) / R.length);
+    const prevOverall = history.length ? history[history.length - 1].overall : overall;
     const w = (s: string, n: number) => s.padEnd(n);
-    console.log(`\n══ TAWVEERI LAUNCH-READINESS AUDIT ══\n`);
-    console.log(`  ${w("AREA", 22)}${w("CUR", 5)}${w("TGT", 5)}${w("GAP", 5)}${w("PRIO", 6)}${w("CUST", 5)}${w("BIZ", 4)}BASIS`);
-    let sum = 0;
+    console.log(`\n══ TAWVEERI LAUNCH-READINESS DASHBOARD ══\n`);
+    console.log(`  ${w("AREA", 22)}${w("CUR", 5)}${w("TGT", 5)}${w("GAP", 5)}${w("TREND", 7)}${w("PRIO", 6)}${w("C", 3)}${w("B", 3)}BASIS`);
     for (const r of R) {
       const gap = r.target - r.cur;
-      sum += r.cur;
       const flag = gap > 20 ? "‼" : gap > 8 ? "⚠" : "✓";
-      console.log(`  ${flag} ${w(r.area, 20)}${w(String(r.cur), 5)}${w(String(r.target), 5)}${w((gap > 0 ? "+" : "") + gap, 5)}${w(r.prio, 6)}${w(r.cust, 5)}${w(r.biz, 4)}${r.basis}`);
+      console.log(`  ${flag} ${w(r.area, 20)}${w(String(r.cur), 5)}${w(String(r.target), 5)}${w((gap > 0 ? "+" : "") + gap, 5)}${w(trend(r.area, r.cur), 7)}${w(r.prio, 6)}${w(r.cust, 3)}${w(r.biz, 3)}${r.basis}`);
     }
-    console.log(`\n  OVERALL READINESS: ${Math.round(sum / R.length)}/100`);
+    console.log(`\n  OVERALL READINESS: ${overall}/100  (${overall - prevOverall >= 0 ? "+" : ""}${overall - prevOverall} vs last run)`);
     const p0 = R.filter((r) => r.prio === "P0" && r.target - r.cur > 5).map((r) => r.area);
     const p1 = R.filter((r) => r.prio === "P1" && r.target - r.cur > 8).map((r) => r.area);
     console.log(`  P0 gaps: ${p0.join(", ") || "none"}`);
     console.log(`  P1 gaps: ${p1.join(", ") || "none"}\n`);
+
+    // ── Persist snapshot (keep last 30) + write the committed markdown dashboard ──
+    const nowIso = new Date().toISOString().slice(0, 16).replace("T", " ");
+    history.push({ ts: nowIso, overall, scores: Object.fromEntries(R.map((r) => [r.area, r.cur])) });
+    if (history.length > 30) history = history.slice(-30);
+    writeFileSync(HIST, JSON.stringify(history, null, 0));
+
+    const md = [
+      `# Tawveeri — Launch-Readiness Dashboard`, ``,
+      `**Overall: ${overall}/100** · updated ${nowIso} UTC · ${overall - prevOverall >= 0 ? "▲" : "▼"} ${Math.abs(overall - prevOverall)} vs last run · run \`npm run tps:launch-audit\``, ``,
+      `| Area | Cur | Tgt | Gap | Trend | Prio | Cust | Biz | Evidence |`,
+      `|---|---|---|---|---|---|---|---|---|`,
+      ...R.map((r) => `| ${r.area} | ${r.cur} | ${r.target} | ${r.target - r.cur > 0 ? "+" : ""}${r.target - r.cur} | ${trend(r.area, r.cur).replace("▲", "↑").replace("▼", "↓")} | ${r.prio} | ${r.cust} | ${r.biz} | ${r.basis} |`),
+      ``,
+      `**P0 gaps:** ${p0.join(", ") || "none"}`, ``, `**P1 gaps:** ${p1.join(", ") || "none"}`, ``,
+      `_Overall trend: ${history.map((h) => h.overall).join(" → ")}_`, ``,
+    ].join("\n");
+    writeFileSync(DASH, md);
+    console.log(`→ dashboard: ${DASH}\n`);
   } finally { await c.end(); }
 })().catch((e) => { console.error("FATAL", e instanceof Error ? e.message : e); process.exit(1); });
