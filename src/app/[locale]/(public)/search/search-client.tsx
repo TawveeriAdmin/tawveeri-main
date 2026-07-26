@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useAuth } from '@/lib/auth/auth-context';
+import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { ProductCard } from '@/components/products/product-card';
 import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-card';
 import type { ProductCardProduct } from '@/components/products/product-card';
@@ -221,6 +222,9 @@ export default function SearchClient() {
   });
 
   // Keep the in-compare badge in sync with the floating bar / other tabs
+  // Persist test/real opt-in (?test=1) so storefront funnel events separate testers from real users.
+  useEffect(() => { initTestModeFromUrl(); }, []);
+
   useEffect(() => {
     const sync = () => {
       try {
@@ -636,6 +640,16 @@ export default function SearchClient() {
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
 
+    // Funnel step 1 — Search (storefront surface). Only on page 1 (a real new query),
+    // not on pagination/filter re-fetches which reuse the same query.
+    if (currentPage === 1) {
+      track('search', {
+        query_text: query.trim(),
+        category: selectedCategory !== 'all' ? selectedCategory : null,
+        source: 'web',
+      });
+    }
+
     // Map the UI's sort values to the API's vocabulary. The API accepts
     // both naming styles (`price_asc`/`price_low` etc.) so either works.
     const sortForApi = sortBy === 'popularity' ? 'relevance' : sortBy;
@@ -692,6 +706,18 @@ export default function SearchClient() {
       const total = typeof data.total === 'number' ? data.total : mappedProducts.length;
       setRawProducts(mappedProducts);
       setServerTotal(total);
+      // Funnel step 2 — Results (or off-funnel no_answer when the storefront returns nothing).
+      if (currentPage === 1) {
+        const cat = selectedCategory !== 'all' ? selectedCategory : null;
+        if (total > 0) {
+          track('results', {
+            query_text: query.trim(), category: cat, source: 'web',
+            meta: { count: total, has_smart_pick: !!(((data as unknown) as { decisionCard?: unknown }).decisionCard), stores: data.successfulStores ?? null },
+          });
+        } else {
+          track('no_answer', { query_text: query.trim(), category: cat, source: 'web', meta: { stores: data.successfulStores ?? null } });
+        }
+      }
       // Smart Pick — the decision layer's trustworthy pick. The API gates this
       // server-side (null when the best match is an accessory for a product
       // query), so we render it verbatim without re-judging.
@@ -716,6 +742,7 @@ export default function SearchClient() {
         return;
       }
       console.error('Error scraping products:', err);
+      track('error', { query_text: query.trim(), source: 'web', meta: { message: err instanceof Error ? err.message : 'search_error' } });
       const rawMessage = err instanceof Error ? err.message : 'Failed to scrape products';
       // Show user-friendly error messages instead of raw HTTP errors
       let userMessage: string;

@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  *     or when the user-agent is a known bot/crawler.
  * No auth, no PII: session_id is an anonymous client uuid, query_text is truncated.
  */
-const ALLOWED = new Set(["advisor_query", "advisor_result", "evidence_view", "go_click", "no_answer", "error", "product_view"]);
+const ALLOWED = new Set(["advisor_query", "advisor_result", "search", "results", "product_view", "comparison_view", "evidence_view", "go_click", "no_answer", "error"]);
 const BOT_UA = /bot|crawl|spider|slurp|bingpreview|headless|puppeteer|playwright|lighthouse|python-requests|curl|wget|axios|node-fetch/i;
 
 export async function POST(req: NextRequest) {

@@ -46,7 +46,18 @@ export function isTestMode(): boolean {
   try { return localStorage.getItem(TEST_KEY) === "1"; } catch { return false; }
 }
 
-export type EventType = "advisor_query" | "advisor_result" | "evidence_view" | "go_click" | "no_answer" | "error" | "product_view";
+// Canonical funnel steps span BOTH customer surfaces (storefront + AI advisor), unified by
+// step in the funnel report: Search (search|advisor_query) → Results (results|advisor_result)
+// → Product View (product_view) → Comparison (comparison_view) → Evidence (evidence_view)
+// → Outbound Click (go_click). `no_answer`/`error` are off-funnel signals.
+export type EventType =
+  | "advisor_query" | "advisor_result"   // advisor surface: Search / Results
+  | "search" | "results"                 // storefront surface: Search / Results
+  | "product_view"                       // Product View (both surfaces)
+  | "comparison_view"                    // Comparison seen (≥2 stores)
+  | "evidence_view"                      // Evidence / trust engaged
+  | "go_click"                           // Outbound Click (measured exit)
+  | "no_answer" | "error";               // off-funnel signals
 
 /** Fire-and-forget an event. Safe to call anywhere on the client. */
 export function track(event_type: EventType, props?: Record<string, unknown>): void {

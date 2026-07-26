@@ -22,6 +22,7 @@ import { ProductReviews } from '@/components/products/product-reviews';
 import { ProductRatingDisplay } from '@/components/products/product-rating-display';
 import { ProductSpecifications } from '@/components/products/product-specifications';
 import { ComparisonTable } from '@/components/products/comparison-table';
+import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { BestPriceCard } from '@/components/products/best-price-card';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import {
@@ -477,6 +478,25 @@ export default function ProductDetailClient() {
  fetchProduct();
  }, [slug, t]);
 
+ // Persist test/real opt-in (?test=1) so storefront funnel events separate testers from real users.
+ useEffect(() => { initTestModeFromUrl(); }, []);
+
+ // Funnel steps 3-5 on the storefront (render-based, standard for page-level steps):
+ //  • product_view — the detail page loaded.
+ //  • comparison_view — a multi-store (>=2) comparison is present (single-store products don't fire it,
+ //    so this step honestly narrows the funnel to products that CAN be compared).
+ //  • evidence_view — a multi-store comparison ALSO carries price evidence (history + best-price verdict).
+ // Fires once per loaded product (keyed on product id), never for a null/errored load.
+ useEffect(() => {
+ if (!product?.id) return;
+ const stores = product.product_stores?.length ?? 0;
+ track('product_view', { canonical_id: product.id, category: product.category ?? null, source: 'product_page', meta: { stores } });
+ if (stores >= 2) {
+ track('comparison_view', { canonical_id: product.id, category: product.category ?? null, source: 'product_page', meta: { stores, auto: true } });
+ track('evidence_view', { canonical_id: product.id, source: 'product_page', meta: { stores, surface: 'comparison+price_history', auto: true } });
+ }
+ }, [product?.id, product?.product_stores?.length, product?.category]);
+
  const handleAddToCompare = (productId: string) => {
  if (typeof window === 'undefined') return;
  try {
@@ -608,6 +628,16 @@ export default function ProductDetailClient() {
  };
 
  const handleViewAtStore = async (productStore: ProductStore) => {
+ // Funnel step 6 — Outbound Click. The storefront exits via generateAffiliateUrl+window.open (NOT /go),
+ // so this event is the ONLY measurement of storefront exits. Fired first (keepalive) so a slow/failed
+ // affiliate-URL call never loses the exit signal.
+ track('go_click', {
+ canonical_id: product?.id ?? null,
+ store: productStore.stores?.slug ?? productStore.stores?.name_en ?? null,
+ category: product?.category ?? null,
+ source: 'product_page',
+ meta: { price: productStore.current_price ?? null, availability: productStore.availability ?? null, measured: false },
+ });
  try {
  // Track click and generate affiliate URL
  const { data: trackingUrl, error: trackingError } = await generateAffiliateUrl(

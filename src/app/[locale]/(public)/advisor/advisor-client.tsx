@@ -51,14 +51,19 @@ export function AdvisorClient({ locale, initialQuery }: { locale: string; initia
     abortRef.current = ctrl;
     setLoading(true);
     setResult(null);
-    track('advisor_query', { query_text: q });
+    track('advisor_query', { query_text: q, source: 'agent' });
     try {
       const res = await askAdvisor({ text: q }, { signal: ctrl.signal, limit: 6 });
       if (!ctrl.signal.aborted) {
         setResult(res);
         const category = res.parsed?.category ?? (res.task?.category as string | undefined) ?? null;
         if (res.error || res.count === 0) track('no_answer', { query_text: q, category, meta: { error: res.error ?? null, supported: res.supported } });
-        else track('advisor_result', { category, query_text: q, meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick } });
+        else {
+          track('advisor_result', { category, query_text: q, source: 'agent', meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick } });
+          // Comparison funnel step (advisor surface): the result set surfaced a real multi-store comparison.
+          const comparableRecs = (res.recommendations ?? []).filter((r) => (r?.stores?.length ?? 0) >= 2).length;
+          if (comparableRecs > 0) track('comparison_view', { category, query_text: q, source: 'agent', meta: { comparable_recs: comparableRecs } });
+        }
       }
     } catch (e) {
       if (!ctrl.signal.aborted) { setResult({ version: 'v1', task: {}, supported: false, count: 0, recommendations: [], error: (e as Error)?.message ?? 'error' }); track('error', { query_text: q, meta: { message: (e as Error)?.message } }); }
