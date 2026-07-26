@@ -53,7 +53,8 @@
     "tps:acquire": "tsx scripts/tps-acquisition/evaluate-stores.ts",
     "tps:category-coverage": "tsx scripts/tps-analysis/category-coverage.ts",
     "tps:store-impact": "tsx scripts/tps-analysis/store-impact.ts",
-    "tps:sentinel-check": "tsx scripts/tps-analysis/sentinel-check.ts"
+    "tps:sentinel-check": "tsx scripts/tps-analysis/sentinel-check.ts",
+    "tps:launch-audit": "tsx scripts/tps-analysis/launch-audit.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",
