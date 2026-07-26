@@ -221,7 +221,7 @@ export async function generateAffiliateUrl(
     // injected before click_id.
     const { data: productStore, error: psError } = await supabase
       .from('product_stores')
-      .select('affiliate_url, product_url, stores(slug, affiliate_config)')
+      .select('product_url, stores(slug)')
       .eq('id', productStoreId)
       .single();
 
@@ -271,7 +271,7 @@ export async function generateAffiliateUrl(
     const supabase = getSupabase();
     const { data: productStore } = await supabase
       .from('product_stores')
-      .select('affiliate_url, product_url, stores(slug, affiliate_config)')
+      .select('product_url, stores(slug)')
       .eq('id', productStoreId)
       .single();
 

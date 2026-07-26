@@ -267,7 +267,6 @@ export default function DealsClient() {
               deal_expires_at,
               coupon_code,
               product_url,
-              affiliate_url,
               stores(
                 id,
                 slug,

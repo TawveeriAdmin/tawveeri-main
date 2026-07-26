@@ -135,7 +135,6 @@ const EXTENDED_COMPARE_SELECT = `
     delivery_cost,
     is_free_delivery,
     product_url,
-    affiliate_url,
     stores(
       id,
       name_ar,

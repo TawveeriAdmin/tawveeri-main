@@ -75,7 +75,7 @@ export default function CheckoutPage() {
  const productIds = store.items.map((item) => item.productId);
  const { data: productStores } = await supabase
  .from('product_stores')
- .select('id, product_id, affiliate_url, product_url')
+ .select('id, product_id, product_url')
  .eq('store_id', storeId)
  .in('product_id', productIds);
 

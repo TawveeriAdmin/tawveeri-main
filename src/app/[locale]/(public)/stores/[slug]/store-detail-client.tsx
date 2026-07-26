@@ -393,7 +393,6 @@ export default function StoreDetailClient() {
  original_price,
  availability,
  product_url,
- affiliate_url,
  products!inner(
  id,
  name_ar,
