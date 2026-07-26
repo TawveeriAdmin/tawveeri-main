@@ -77,7 +77,7 @@ async function measureLatency(url: string, body?: object): Promise<number | null
       { area: "Observability", cur: 70, target: 85, prio: "P2", cust: "L", biz: "M", basis: `scraping_runs, usage_events, scheduler stdout capture; no central dashboard yet` },
       { area: "Recovery", cur: 80, target: 90, prio: "P2", cust: "L", biz: "M", basis: `ADR-099 incident playbook; immutable raw_observations; append-only price_history` },
       { area: "Scalability", cur: 80, target: 90, prio: "P2", cust: "L", biz: "H", basis: `set-based projection (~12s); pooler; config-only onboarding; hourly chain` },
-      { area: "Security", cur: 85, target: 95, prio: "P1", cust: "L", biz: "H", basis: `RLS on every table; credentials env-only; no anon on session tables (assessed)` },
+      { area: "Security", cur: 92, target: 95, prio: "P1", cust: "L", biz: "H", basis: `tps:security-audit 100/100 (RLS on all 48 tables, 0 anon-reachable; ADR-117); credentials env-only, no hardcoded keys; pen-test not yet run` },
       { area: "Maintainability", cur: 85, target: 90, prio: "P2", cust: "L", biz: "M", basis: `689 tests; 114 ADRs; reusable adapters/analyzers (assessed)` },
       { area: "Technical Debt", cur: 70, target: 85, prio: "P2", cust: "L", biz: "M", basis: `TS/ESLint errors ignored in build; 2 dead scrapers; noon/swsg (assessed)` },
     ];
