@@ -239,7 +239,10 @@ export default function DealsClient() {
   }, [user, supabase]);
 
   useEffect(() => {
-    if (!supabase) {
+    // Get the browser client inside the effect — the SSR-time useState initializer computes null
+    // (window undefined) and that null can survive hydration, silently blocking the fetch.
+    const client = getSupabaseBrowserClient();
+    if (!client) {
       queueMicrotask(() => {
         setLoading(false);
         setError(fetchErrorFallback);
@@ -247,7 +250,6 @@ export default function DealsClient() {
       return;
     }
 
-    const client = supabase;
     let cancelled = false;
 
     async function fetchDeals() {
