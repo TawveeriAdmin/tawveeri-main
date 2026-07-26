@@ -287,7 +287,7 @@ export default function DealsClient() {
             `
           )
           .eq('is_deal', true)
-          .order('created_at', { ascending: false });
+          .order('updated_at', { ascending: false });
 
         if (queryError) throw queryError;
 

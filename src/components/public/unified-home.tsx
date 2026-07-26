@@ -140,7 +140,10 @@ export function UnifiedHome({ locale }: { locale: string }) {
 
       {/* 4 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing) */}
       <section style={S.section}>
-        <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: '0 0 14px' }}>{t.catsTitle}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.catsTitle}</h2>
+          <Link href={`/${locale}/categories`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {t.cats.map((c) => (
             <button key={c.l} onClick={() => search(c.q)}
