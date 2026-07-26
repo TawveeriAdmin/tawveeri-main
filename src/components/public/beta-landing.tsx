@@ -6,26 +6,21 @@
 // no hydration mismatch. Switching the champion — or ending the experiment — is a config
 // change to NEXT_PUBLIC_BETA_ADVISOR_SPLIT (see variant.ts); this component never changes.
 
-import { useEffect, useState } from 'react';
-import { AdvisorHome } from './advisor-home';
-import { SearchHome } from './search-home';
+import { useEffect } from 'react';
+import { UnifiedHome } from './unified-home';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
-import { getEntryVariant, applyVariantOverrideFromUrl, type EntryVariant } from '@/lib/analytics/variant';
+import { getEntryVariant, applyVariantOverrideFromUrl } from '@/lib/analytics/variant';
 
+// The advisor-first vs search-first entry A/B (ADR-121) is superseded by the Founder's explicit
+// unified-home design (Search → وفّر → Hero → Categories → Deals), which combines both in one
+// natural order. We keep landing_view + the variant tag firing for funnel continuity; everyone now
+// sees the single UnifiedHome. The variant infra remains available for future experiments.
 export function BetaLanding({ locale }: { locale: string }) {
-  const [variant, setVariant] = useState<EntryVariant | null>(null);
-
   useEffect(() => {
-    initTestModeFromUrl();          // ?test=1 opt-in (QA/founder), keeps test traffic out of validation
-    applyVariantOverrideFromUrl();  // ?variant=advisor|search preview override
-    const v = getEntryVariant();
-    setVariant(v);
-    track('landing_view', { source: 'landing', category: null, meta: { variant: v } });
+    initTestModeFromUrl();
+    applyVariantOverrideFromUrl();
+    track('landing_view', { source: 'landing', category: null, meta: { variant: getEntryVariant() } });
   }, []);
 
-  if (variant === null) {
-    // Minimal, theme-aware placeholder for the first paint (arm resolves on mount).
-    return <div style={{ minHeight: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-on-surface-variant)' }} aria-busy="true" />;
-  }
-  return variant === 'advisor' ? <AdvisorHome locale={locale} /> : <SearchHome locale={locale} />;
+  return <UnifiedHome locale={locale} />;
 }

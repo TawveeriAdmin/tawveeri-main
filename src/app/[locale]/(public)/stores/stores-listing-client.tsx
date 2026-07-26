@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreLogo } from '@/components/ui/store-logo';
+import { getStoreDisplayName } from '@/lib/logos';
 import {
   Select,
   SelectContent,
@@ -93,20 +94,33 @@ export default function StoresListingClient() {
 
         if (queryError) throw queryError;
 
-        const mapped: StoreSummary[] = (rawStores || []).map((s: any) => ({
-          id: s.id,
-          name_ar: s.name || '',
-          name_en: s.name || '',
-          slug: s.slug || String(s.id),
-          logo_url: null,
-          website_url: s.link || null,
-          average_rating: null,
-          total_reviews: null,
-          total_products: 0,
-          is_featured: false,
-          is_premium: false,
-          status: 'active',
-        }));
+        // Real per-store product counts (one lightweight fetch of store_id, counted client-side) —
+        // without these the directory rendered "0 products" for every store and felt empty.
+        const counts = new Map<number, number>();
+        try {
+          const { data: psRows } = await sb.from('product_stores').select('store_id');
+          (psRows || []).forEach((r: { store_id: number }) => counts.set(r.store_id, (counts.get(r.store_id) || 0) + 1));
+        } catch { /* counts are best-effort */ }
+
+        const mapped: StoreSummary[] = (rawStores || []).map((s: any) => {
+          const slug = s.slug || String(s.id);
+          return {
+            id: s.id,
+            name_ar: getStoreDisplayName(slug, 'ar') || s.name || slug,
+            name_en: getStoreDisplayName(slug, 'en') || s.name || slug,
+            slug,
+            logo_url: null,
+            website_url: s.link || null,
+            average_rating: null,
+            total_reviews: null,
+            total_products: counts.get(s.id) || 0,
+            is_featured: false,
+            is_premium: false,
+            status: 'active',
+          };
+        });
+        // Organized feel: richest catalogs first (Rakhs principle — scannable, not an arbitrary list).
+        mapped.sort((a, b) => (b.total_products ?? 0) - (a.total_products ?? 0));
 
         if (cancelled) return;
         setStores(mapped);
