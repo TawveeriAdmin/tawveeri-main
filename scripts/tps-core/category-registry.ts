@@ -50,6 +50,8 @@ export const TPS_STORES = [
   { id: 18, name: "متجر النخيل" }, { id: 19, name: "السفير زون" },
   // ADR-110: vacuum + appliance gap-fill specialists.
   { id: 20, name: "الهويش للأجهزة" }, { id: 21, name: "الضوء البارق" },
+  // ADR-118: kitchen-appliance gap fill.
+  { id: 22, name: "إيزي وورلد" },
 ];
 
 export interface CategoryDef {

@@ -66,6 +66,9 @@ const BASE: Record<string, RetailerProvider> = {
   // alduaalbarq (Zid) adds vacuums/fridges/appliances. Salla-API / Zid-JSON-LD sourced.
   alhowaish:    { slug: "alhowaish",     storeId: 20, displayName: "Al Howaish",      displayNameAr: "الهويش للأجهزة",   enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://salla.sa/alhowaish" } },
   alduaalbarq:  { slug: "alduaalbarq",   storeId: 21, displayName: "Al Daw Al Bariq", displayNameAr: "الضوء البارق",     enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://shrkhaldwaalbarqlltjarh.zid.store" } },
+  // ADR-118 — kitchen-appliance gap fill (air_fryer/oven/blender ≈ 0 comparisons). eazyworld7
+  // (Salla) carries Koolen kitchen line (ovens/grills/heaters) that corroborate on standard models.
+  eazyworld:    { slug: "eazyworld",     storeId: 22, displayName: "Eazy World",     displayNameAr: "إيزي وورلد",       enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://eazyworld7.com" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));
