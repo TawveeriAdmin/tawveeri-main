@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   const ar = locale === 'ar';
   return {
-    title: ar ? 'المستشار المحايد' : 'Neutral Advisor',
+    title: ar ? 'وفّر — مساعد التسوّق الذكي' : 'Waffar — smart shopping assistant',
     description: ar
       ? 'قل ما تحتاجه بكلماتك واحصل على ترشيح محايد بمحرك حتمي — يرتّب حسب الملاءمة والتكلفة الإجمالية لا العمولة.'
       : 'Describe what you need and get a neutral recommendation from a deterministic engine — ranked by suitability and total cost, never commission.',
