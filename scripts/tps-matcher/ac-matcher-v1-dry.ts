@@ -48,10 +48,17 @@ function stableUuid(seed: string): string {
 const BRAND_AR: Record<string, string> = { lg: "إل جي", gree: "جري", samsung: "سامسونج", tcl: "تي سي إل", westinghouse: "وايت وستنجهاوس", midea: "ميديا", haier: "هاير", hisense: "هايسنس", aux: "أوكس", general: "جنرال", zamil: "زامل", kelvinator: "كلفينيتور", mtc: "إم تي سي", classpro: "كلاس برو", crafft: "كرافت", haam: "هام" };
 const COOL_AR: Record<string, string> = { cool_only: "بارد فقط", hot_cold: "حار وبارد" };
 const TECH_AR: Record<string, string> = { Inverter: "انفرتر", Standard: "عادي" };
+// All ac_type values the parser produces (ac/parser.ts). Localized for the customer name;
+// an unmapped type falls through to itself (never crashes) rather than showing raw English.
+const ACTYPE_AR: Record<string, string> = { split: "سبليت", window: "شباك", portable: "متنقل", evaporative: "صحراوي", cabinet: "دولابي", cassette: "كاسيت", ducted: "مخفي" };
+const ACTYPE_EN: Record<string, string> = { split: "Split AC", window: "Window AC", portable: "Portable AC", evaporative: "Evaporative Cooler", cabinet: "Cabinet AC", cassette: "Cassette AC", ducted: "Ducted AC" };
 export function buildNames(key: string) {
   const [brand, acType, series, cap, tech, cool] = key.split("|");
-  const bAr = BRAND_AR[brand] ?? brand;
-  const bEn = brand.charAt(0).toUpperCase() + brand.slice(1);
+  // A literal "unknown" brand (parser could not identify one) must not reach the customer —
+  // omit it; the type + capacity + cooling still describe the unit honestly.
+  const brandKnown = !!brand && brand !== "unknown";
+  const bAr = brandKnown ? (BRAND_AR[brand] ?? brand) : "";
+  const bEn = brandKnown ? brand.charAt(0).toUpperCase() + brand.slice(1) : "";
   const seriesAr = series === "NO_SERIES" ? "" : ` ${series}`;
   const seriesEn = series === "NO_SERIES" ? "" : ` ${series}`;
   // Technology is a COMMERCIAL VARIANT that is often unspecified; the identity carries a
@@ -59,9 +66,9 @@ export function buildNames(key: string) {
   // omit the segment entirely rather than render "NO_TECH". (NA guarded defensively.)
   const techKnown = !!tech && tech !== "NO_TECH" && tech !== "NA";
   const coolSafe = cool ?? "";
-  const acTypeAr = acType === "split" ? "سبليت" : (acType ?? "");
-  const acTypeEn = acType === "split" ? "Split AC" : (acType ?? "");
-  // Build from non-empty segments so dropping tech never leaves a dangling "، ،" / double space.
+  const acTypeAr = acType ? (ACTYPE_AR[acType] ?? acType) : "";
+  const acTypeEn = acType ? (ACTYPE_EN[acType] ?? acType) : "";
+  // Build from non-empty segments so dropping tech/brand never leaves a dangling "، ،" / double space.
   const nameAr = [`مكيف ${acTypeAr}${seriesAr} ${bAr}`.trim(), cap ? `${cap} وحدة` : "", techKnown ? (TECH_AR[tech] ?? tech) : "", COOL_AR[coolSafe] ?? coolSafe]
     .filter((s) => s && s.trim()).join("، ").replace(/\s+/g, " ").trim();
   const nameEn = [`${bEn}${seriesEn} ${acTypeEn} ${cap ? cap + " BTU" : ""}`.trim(), techKnown ? tech : "", coolSafe.replace("_", " ")]
