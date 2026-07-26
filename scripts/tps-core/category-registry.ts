@@ -46,6 +46,8 @@ export const TPS_STORES = [
   { id: 16, name: "سوني وورلد" },
   // ADR-107: Amn Kum (Zid) — window-AC/kitchen-appliance overlap with our AC category.
   { id: 17, name: "امن كوم" },
+  // ADR-108: AC/appliance specialist cluster (Salla API) — corroborate each other on AC models.
+  { id: 18, name: "متجر النخيل" }, { id: 19, name: "السفير زون" },
 ];
 
 export interface CategoryDef {

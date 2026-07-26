@@ -57,6 +57,10 @@ const BASE: Record<string, RetailerProvider> = {
   // category (MEDIUM: 75% brand, 6% model). Sourced via the Salla/Zid JSON-LD adapter (whose
   // @type match is now case-insensitive — Zid emits lowercase "product"). affiliate: null → direct exit.
   amnkwm:       { slug: "amnkwm",        storeId: 17, displayName: "Amn Kum",         displayNameAr: "امن كوم",          enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://amnkwm.zid.store" } },
+  // ADR-108 — AC/home-appliance specialist cluster (Salla, storefront-API-sourced). They
+  // corroborate each other on standard AC models (brand+BTU+type) → real AC comparisons.
+  alnakheelk:   { slug: "alnakheelk",    storeId: 18, displayName: "Al Nakheel",      displayNameAr: "متجر النخيل",      enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://alnakheelk.com" } },
+  alsfeerzone:  { slug: "alsfeerzone",   storeId: 19, displayName: "Al Safeer Zone",  displayNameAr: "السفير زون",       enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://alsfeerzone.com" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));
