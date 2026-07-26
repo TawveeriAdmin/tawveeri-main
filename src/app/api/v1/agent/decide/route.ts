@@ -36,17 +36,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "category required (or provide `text` the parser can classify)", parsed }, { status: 400 });
   }
   const supabase = createServerClient();
+  // TPS tables aren't in the generated typed schema; the codebase accesses them via an
+  // untyped handle (see store-identity.ts). Row shapes are asserted at the call sites.
+  const sb = supabase as unknown as { from: (t: string) => { select: (c: string) => any } };
 
   // Canonical rows for the category: attributes (for DNA) from canonical_products,
   // price/trust from the projection. Include both Layer 1 (comparable) and Layer 2.
-  const { data: canon } = await supabase
-    .from("canonical_products")
-    .select("id, tps_identity_key, name_ar, name_en, brand, category, attributes")
-    .eq("category", task.category).not("tps_identity_key", "is", null).limit(500);
-  const { data: proj } = await supabase
-    .from("tps_product_projection")
-    .select("canonical_id, lowest_price, store_count, has_comparison, identity_confidence, image_url, last_observed_at")
-    .eq("category", task.category).limit(500);
+  // canon + proj are independent → fetch in PARALLEL (were two serial PostgREST round-trips).
+  type CanonRaw = { id: string; tps_identity_key: string | null; name_ar: string; name_en: string | null; brand: string | null; category: string; attributes: Record<string, unknown> | null };
+  type ProjRaw = { canonical_id: string; lowest_price: number | null; store_count: number | null; has_comparison: boolean; identity_confidence: number | null; image_url: string | null; last_observed_at: string | null };
+  const [canonRes, projRes] = await Promise.all([
+    sb.from("canonical_products")
+      .select("id, tps_identity_key, name_ar, name_en, brand, category, attributes")
+      .eq("category", task.category).not("tps_identity_key", "is", null).limit(500),
+    sb.from("tps_product_projection")
+      .select("canonical_id, lowest_price, store_count, has_comparison, identity_confidence, image_url, last_observed_at")
+      .eq("category", task.category).limit(500),
+  ]);
+  const canon = (canonRes?.data ?? []) as CanonRaw[];
+  const proj = (projRes?.data ?? []) as ProjRaw[];
   const projById = new Map((proj ?? []).map((p) => [p.canonical_id, p]));
 
   const rows: CanonicalRow[] = (canon ?? [])
@@ -58,7 +66,7 @@ export async function POST(req: NextRequest) {
         display_name_ar: c.name_ar, display_name_en: c.name_en, brand: c.brand, category: c.category,
         image_url: p.image_url ?? null, lowest_price: p.lowest_price, store_count: p.store_count,
         has_comparison: p.has_comparison, identity_confidence: p.identity_confidence, attributes: c.attributes ?? {},
-      };
+      } as CanonicalRow;
     });
 
   const { supported, recommendations } = decide(task, rows);
@@ -71,21 +79,30 @@ export async function POST(req: NextRequest) {
   // Attach a measured-exit go_url per recommendation (cheapest offer of that canonical),
   // and collect WHICH stores corroborate it (the named evidence behind "N stores").
   const ids = recs.map((r) => r.canonical_id);
+  // The four top-N-keyed reads were SERIAL (~4 PostgREST round-trips). They are independent,
+  // so run them in PARALLEL: observations (go-links + named corroboration), price verdicts,
+  // discount integrity, and knowledge-graph alternatives. All fail-soft.
   const goByCanon = new Map<string, string>();
   const storesByCanon = new Map<string, Set<string>>();
-  if (ids.length) {
-    const { data: obs } = await supabase
-      .from("normalized_product_observations")
-      .select("id, canonical_product_id, observed_at, store_id")
-      .in("canonical_product_id", ids).order("observed_at", { ascending: false });
-    for (const o of obs ?? []) {
-      if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
-      // store_id here is a STRING identity (Arabic name / slug / numeric id), not always numeric.
-      const raw = o.store_id == null ? "" : String(o.store_id).trim();
-      if (raw) {
-        const set = storesByCanon.get(o.canonical_product_id) ?? new Set<string>();
-        set.add(raw); storesByCanon.set(o.canonical_product_id, set);
-      }
+  type ObsRaw = { id: string; canonical_product_id: string; observed_at: string; store_id: unknown };
+  const [obsRes, verdicts, discounts, alternatives] = await Promise.all([
+    ids.length
+      ? sb.from("normalized_product_observations")
+          .select("id, canonical_product_id, observed_at, store_id")
+          .in("canonical_product_id", ids).order("observed_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    getPriceVerdicts(ids).catch(() => new Map()),
+    getCanonicalDiscountIntegrity(supabase, ids).catch(() => new Map()),
+    getProductAlternatives(supabase, ids).catch(() => new Map()),
+  ]);
+  const obs = ((obsRes as { data?: unknown })?.data ?? []) as ObsRaw[];
+  for (const o of obs) {
+    if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
+    // store_id here is a STRING identity (Arabic name / slug / numeric id), not always numeric.
+    const raw = o.store_id == null ? "" : String(o.store_id).trim();
+    if (raw) {
+      const set = storesByCanon.get(o.canonical_product_id) ?? new Set<string>();
+      set.add(raw); storesByCanon.set(o.canonical_product_id, set);
     }
   }
   // Resolve each store identity to an Arabic display name. Named stores make the
@@ -101,14 +118,8 @@ export async function POST(req: NextRequest) {
   // Arabic name ("اكسترا") in the raw store_id; both resolve to one display name.
   const storeNames = (cid: string): string[] => [...new Set([...(storesByCanon.get(cid) ?? [])].map(storeDisplay))];
 
-  // Fuse "which to buy" with "when to buy": attach a deterministic price-history
-  // verdict per recommendation (buy-timing intelligence). Additive + fail-soft —
-  // if history reads fail, recommendations still return (never blocks the answer).
-  const verdicts = await getPriceVerdicts(ids).catch(() => new Map());
-  // Honest discount integrity per product ("real saving vs what we observed").
-  const discounts = await getCanonicalDiscountIntegrity(supabase, ids).catch(() => new Map());
-  // Knowledge-graph alternatives (storage variants + newer/older generations).
-  const alternatives = await getProductAlternatives(supabase, ids).catch(() => new Map());
+  // verdicts / discounts / alternatives were fetched in parallel above (buy-timing intelligence,
+  // honest discount integrity, and knowledge-graph alternatives — all fail-soft).
   const out = recs.map((r) => {
     const v = verdicts.get(r.canonical_id);
     const price_intel = v
