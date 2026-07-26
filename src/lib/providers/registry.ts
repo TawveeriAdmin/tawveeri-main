@@ -48,6 +48,11 @@ const BASE: Record<string, RetailerProvider> = {
   mhzm:         { slug: "mhzm",          storeId: 13, displayName: "Mhzm",           displayNameAr: "محزم",            enabled: true, sourcing: "api", affiliate: null, feedUrl: "https://shop.mhzm.sa" },
   aletawik:     { slug: "aletawik",      storeId: 14, displayName: "Aletawik",       displayNameAr: "التاوية",         enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://aletawiksa.com" } },
   pcpalace:     { slug: "pcpalace",      storeId: 15, displayName: "PC Palace",      displayNameAr: "بي سي بالاس",     enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://pcpalace.com.sa" } },
+  // ADR-104/106 — Sony World KSA: Saudi Sony specialist on Shopify (SAR-verified via
+  // meta.json, Riyadh). Sourced credential-free via the Shopify products.json adapter.
+  // No affiliate program known → `direct` exit (correct non-affiliate state, no attribution
+  // contamination). Onboarded to validate the Shopify path end-to-end + add Sony category depth.
+  sonyworld:    { slug: "sonyworld",     storeId: 16, displayName: "Sony World",      displayNameAr: "سوني وورلد",       enabled: true, sourcing: "api", affiliate: null, shopify: { origin: "https://sonyworld.sa" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));
