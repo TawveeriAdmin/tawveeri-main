@@ -47,6 +47,11 @@ export function normalizeSearchQuery(input: string): string {
     .replace(/[ً-ٰٟ]/g, "")
     .replace(/[أإآٱ]/g, "ا")
     .replace(/ى/g, "ي")
+    // Split an Arabic word glued to a number: "ايفون17" -> "ايفون 17", "شاشة65" -> "شاشة 65".
+    // Saudi shoppers routinely omit the space; measured as a zero-result MISS in tps:search-quality.
+    // ARABIC-ONLY on purpose: splitting Latin letter/digit would shatter model codes (S25, A17, SM-X200).
+    .replace(/([؀-ۿ])(\d)/g, "$1 $2")
+    .replace(/(\d)([؀-ۿ])/g, "$1 $2")
     .replace(/\s+/g, " ")
     .trim();
 }

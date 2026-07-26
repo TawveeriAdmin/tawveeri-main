@@ -6,6 +6,9 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-112 — Search: split Arabic word+number no-space queries (launch-readiness) · Accepted (2026-07-26)
+Shifting toward launch-readiness (acquisition is realization-bound + core categories covered). `tps:search-quality` scored retrieval 93% / ranking 100%, with one MISS: **`ايفون17`** (Arabic word glued to a number, no space) returned 1 hit — Saudi shoppers routinely omit the space (`جوال15`, `شاشة65بوصة`). Fixed in `normalizeSearchQuery` (query-time, no reindex): insert a space at an Arabic-letter↔digit boundary → `ايفون17`→`ايفون 17` (then the existing synonyms fire). **ARABIC-ONLY on purpose** — splitting Latin letter↔digit would shatter model codes (S25/A17/SM-X200), verified preserved. +2 tests (13 in the ADR-064 gate). Also this session: `tps:sentinel-check` gate (0 leaks), `tps:store-impact` + `tps:category-coverage` measurement layer (ADR-111). Health baseline: 26 OK / 6 WARN (self-clearing realization) / 2 FAIL (noon+swsg — known-deferred broken scrapers); customer surface verified clean (AC decide = 3-store, no sentinel).
+
 ### ADR-110 — Category-coverage analyzer + gap-fill onboarding (vacuum/appliance) · Accepted (2026-07-26)
 Built `tps:category-coverage` (`scripts/tps-analysis/category-coverage.ts`, read-only) — the acquisition compass: per-category canonicals, COMPARABLE count (≥2 distinct stores, measured from `normalized_product_observations` — the reliable link), comparison rate, depth, and a WEAK/❌/✓ signal. First run (506 comparable / 6,269 canonicals = 8%): saturated = mobile/washing_machine/smartwatch (deprioritize); shallow = audio(551/28), laptop(459/25), AC(1050/75); **gaps = vacuum (202 canonicals, 6 comparable, 3%), appliance (439/0), and the kitchen set (air_fryer/blender/coffee_maker/oven/kettle/microwave ≈ 0).**
 

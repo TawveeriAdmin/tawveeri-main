@@ -10,6 +10,19 @@ describe("query normalization", () => {
     expect(normalizeSearchQuery("٢٥٦ جيجا")).toBe("256 جيجا");
   });
 
+  it("splits an Arabic word glued to a number (no-space queries) — ADR-112", () => {
+    // "ايفون17" returned 1 hit; Saudi shoppers routinely omit the space.
+    expect(normalizeSearchQuery("ايفون17")).toBe("ايفون 17");
+    expect(normalizeSearchQuery("شاشة65بوصة")).toBe("شاشة 65 بوصة");
+    expect(normalizeSearchQuery("جوال15برو")).toBe("جوال 15 برو");
+  });
+
+  it("NEVER splits a Latin model code (would shatter S25 / A17 / SM-X200)", () => {
+    expect(normalizeSearchQuery("s25 ultra")).toBe("s25 ultra");
+    expect(normalizeSearchQuery("SM-X200")).toBe("SM-X200");
+    expect(normalizeSearchQuery("iphone17")).toBe("iphone17");
+  });
+
   it("folds hamza forms so every spelling reaches the same catalogue text", () => {
     const target = normalizeSearchQuery("ايفون");
     for (const v of ["أيفون", "آيفون", "ٱيفون"]) expect(normalizeSearchQuery(v)).toBe(target);
