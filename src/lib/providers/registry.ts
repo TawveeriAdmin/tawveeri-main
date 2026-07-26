@@ -53,6 +53,10 @@ const BASE: Record<string, RetailerProvider> = {
   // No affiliate program known → `direct` exit (correct non-affiliate state, no attribution
   // contamination). Onboarded to validate the Shopify path end-to-end + add Sony category depth.
   sonyworld:    { slug: "sonyworld",     storeId: 16, displayName: "Sony World",      displayNameAr: "سوني وورلد",       enabled: true, sourcing: "api", affiliate: null, shopify: { origin: "https://sonyworld.sa" } },
+  // ADR-107 — Amn Kum (امن كوم): Zid store, window-AC/kitchen-appliance overlap with our AC
+  // category (MEDIUM: 75% brand, 6% model). Sourced via the Salla/Zid JSON-LD adapter (whose
+  // @type match is now case-insensitive — Zid emits lowercase "product"). affiliate: null → direct exit.
+  amnkwm:       { slug: "amnkwm",        storeId: 17, displayName: "Amn Kum",         displayNameAr: "امن كوم",          enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://amnkwm.zid.store" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));

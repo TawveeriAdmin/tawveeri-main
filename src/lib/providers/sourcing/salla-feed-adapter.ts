@@ -72,7 +72,9 @@ export function extractSallaProduct(html: string): LdProduct | null {
     for (const n of nodes) {
       const t = (n as LdProduct)?.["@type"];
       const types = Array.isArray(t) ? t : [t];
-      if (types.includes("Product")) return n as LdProduct;
+      // Case-insensitive: Zid emits `"@type":"product"` (lowercase), Salla `"Product"`.
+      // Matching only the capitalized form silently parsed 0 products from every Zid store.
+      if (types.some((x) => String(x).toLowerCase() === "product")) return n as LdProduct;
     }
   }
   return null;

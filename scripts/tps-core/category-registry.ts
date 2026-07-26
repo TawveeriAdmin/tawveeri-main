@@ -44,6 +44,8 @@ export const TPS_STORES = [
   { id: 14, name: "التاوية" }, { id: 15, name: "بي سي بالاس" },
   // ADR-106: Sony World KSA (Shopify, SAR) — Sony specialist for TV/audio/camera depth.
   { id: 16, name: "سوني وورلد" },
+  // ADR-107: Amn Kum (Zid) — window-AC/kitchen-appliance overlap with our AC category.
+  { id: 17, name: "امن كوم" },
 ];
 
 export interface CategoryDef {

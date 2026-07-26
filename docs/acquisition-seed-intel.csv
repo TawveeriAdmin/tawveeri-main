@@ -1,0 +1,8 @@
+domain,platform,catalog_size_sampled,currency,sar_ok,brand_overlap_pct,model_overlap_pct,discoverable,discovery_method,integration_difficulty,connector,priority,confidence,note,sample_hits
+"nasmatsahra.com","woocommerce","195","SAR","true","85","2","true","manual/seed","low","woocommerce-store-api (adapter EXISTS)","LOW_WATCH","0.6950000000000001","woocommerce store-api","اكسبير:🔥 دفاية اكسبير كهربائية 4 شمعات 2 | اكسبير:🔥 دفاية اكسبير كهربائية 2000 وات  | بيسك:مكيف بيسك انفرتر 1طن 12000 btu بار"
+"eazy.world","unknown","0","null","false","0","0","false","manual/seed","high","none (scraper fallback / skip)","SKIP","0.3","no known platform signal",""
+"shrkhaldwaalbarqlltjarh.zid.store","salla_or_zid","0","null","true","0","0","true","manual/seed","low","salla-json-ld (adapter EXISTS, covers Salla+Zid)","SKIP","0.4","salla/zid sitemap+json-ld · no catalogue sampled",""
+"1opiel.zid.store","salla_or_zid","0","null","true","0","0","true","manual/seed","low","salla-json-ld (adapter EXISTS, covers Salla+Zid)","SKIP","0.4","salla/zid sitemap+json-ld · no catalogue sampled",""
+"dara1.zid.store","salla_or_zid","0","null","true","0","0","true","manual/seed","low","salla-json-ld (adapter EXISTS, covers Salla+Zid)","SKIP","0.4","salla/zid sitemap+json-ld · no catalogue sampled",""
+"origin.sa","unknown","0","null","false","0","0","false","manual/seed","high","none (scraper fallback / skip)","SKIP","0.3","no known platform signal",""
+"amnkwm.zid.store","salla_or_zid","0","null","true","0","0","true","manual/seed","low","salla-json-ld (adapter EXISTS, covers Salla+Zid)","SKIP","0.4","salla/zid sitemap+json-ld · no catalogue sampled",""
