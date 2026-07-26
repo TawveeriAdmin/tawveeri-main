@@ -215,9 +215,13 @@ export default async function TpsComparePage({
                 <ExternalLink className="h-4 w-4" />
               </a>
             ) : (
-              <div className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[color:var(--color-surface-container-high)] px-5 text-sm font-semibold text-on-surface-variant">
-                {isAr ? 'الرابط غير متاح' : 'Link unavailable'}
-              </div>
+              <a
+                href={`/${locale}/search?q=${encodeURIComponent(name)}`}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
+              >
+                <span>{isAr ? 'شوف في المتاجر' : 'Find in stores'}</span>
+                <ArrowRight className="h-4 w-4" />
+              </a>
             )}
           </div>
         )}
@@ -266,9 +270,12 @@ export default async function TpsComparePage({
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : (
-                      <span className="text-xs text-on-surface-variant">
-                        {isAr ? 'لا رابط' : 'No link'}
-                      </span>
+                      <a
+                        href={`/${locale}/search?q=${encodeURIComponent(name)}`}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
+                      >
+                        {isAr ? 'في المتاجر' : 'In stores'}
+                      </a>
                     )}
                   </div>
                 </div>

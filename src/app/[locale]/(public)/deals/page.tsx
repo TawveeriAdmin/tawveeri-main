@@ -43,7 +43,7 @@ export default async function DealsPage({ params }: { params: { locale: string }
           priceCurrency: "SAR",
           offerCount: d.storesCount,
         },
-        url: `${SITE_URL}/${params.locale}/product/${d.slug}`,
+        url: `${SITE_URL}/${params.locale}/products/${d.slug}`,
       },
     })),
   };
@@ -55,18 +55,18 @@ export default async function DealsPage({ params }: { params: { locale: string }
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <h1 className="text-2xl font-bold text-gray-900">🔥 عروض اليوم الحقيقية</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        مكتشفة تلقائياً من تاريخ الأسعار الفعلي — لا خصومات مزعومة، فقط أسعار أقل من متوسطها المسجّل
+      <h1 className="text-2xl font-bold text-on-surface">🔥 عروض اليوم الحقيقية</h1>
+      <p className="mt-1 text-sm text-on-surface-variant">
+        عروض حقيقية — لا خصومات مزعومة، فقط أسعار أقل من سعرها الأصلي المسجّل في المتجر
       </p>
 
       {deals.length === 0 ? (
-        <div className="mt-12 rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
-          <p className="text-gray-600 font-medium">لا توجد عروض قوية مكتشفة حالياً</p>
-          <p className="mt-1 text-sm text-gray-400">
-            محرك العروض يراقب الأسعار على مدار اليوم — عُد قريباً، أو تصفح{" "}
-            <a href={`/${params.locale}/mobiles`} className="text-green-700 underline">
-              كتالوج الجوالات
+        <div className="mt-12 rounded-xl border border-outline-variant bg-surface-container-low p-8 text-center">
+          <p className="text-on-surface font-medium">لا توجد عروض قوية مكتشفة حالياً</p>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            محرك العروض يراقب الأسعار على مدار اليوم — عُد قريباً، أو{" "}
+            <a href={`/${params.locale}/categories`} className="text-[var(--brand-green-dark)] underline">
+              تصفّح الفئات
             </a>
           </p>
         </div>
@@ -75,8 +75,8 @@ export default async function DealsPage({ params }: { params: { locale: string }
           {deals.map((d) => (
             <a
               key={d.productId}
-              href={`/${params.locale}/product/${d.slug}`}
-              className="group relative rounded-xl border border-gray-200 bg-white p-4 hover:border-green-400 hover:shadow-md transition"
+              href={`/${params.locale}/products/${d.slug}`}
+              className="group relative rounded-2xl border border-outline-variant bg-surface p-4 hover:border-[var(--brand-green)] hover:shadow-md transition"
             >
               {/* شارة قوة العرض — من الطبقة المعرفية */}
               <div
@@ -100,35 +100,35 @@ export default async function DealsPage({ params }: { params: { locale: string }
               </div>
 
               {/* الاسم */}
-              <h2 className="mt-3 text-sm font-semibold text-gray-900 leading-snug group-hover:text-green-700 transition">
+              <h2 className="mt-3 text-sm font-semibold text-on-surface leading-snug group-hover:text-[var(--brand-green-dark)] transition line-clamp-2">
                 {d.nameAr}
               </h2>
 
               {/* السعر والخصم الحقيقي */}
               <div className="mt-2 flex items-end justify-between">
                 <div>
-                  <div className="text-lg font-bold text-gray-900">
+                  <div className="text-lg font-bold text-on-surface">
                     {d.bestPrice.toLocaleString("ar-SA")}{" "}
                     <span className="text-xs font-normal">ريال</span>
                   </div>
-                  <div className="text-xs text-gray-400 line-through">
-                    متوسطه {d.averagePrice.toLocaleString("ar-SA")} ريال
+                  <div className="text-xs text-on-surface-variant line-through">
+                    بدلاً من {d.averagePrice.toLocaleString("ar-SA")} ريال
                   </div>
                 </div>
                 {d.discountPct > 0 && (
-                  <div className="text-sm font-bold text-orange-600">-{d.discountPct}٪</div>
+                  <div className="text-sm font-bold text-[var(--brand-green-dark)]">-{d.discountPct}٪</div>
                 )}
               </div>
 
               {/* السبب — نص الطبقة المعرفية كما هو */}
-              <p className="mt-2 text-xs text-gray-500 leading-relaxed">{d.reason}</p>
+              <p className="mt-2 text-xs text-on-surface-variant leading-relaxed">{d.reason}</p>
             </a>
           ))}
         </div>
       )}
 
-      <p className="mt-8 text-xs text-gray-400 text-center">
-        الخصومات محسوبة مقابل متوسط السعر المسجّل خلال آخر 30 يوماً. الأسعار تتغير — توفيري قد يحصل
+      <p className="mt-8 text-xs text-on-surface-variant text-center">
+        الخصومات محسوبة مقابل السعر الأصلي المسجّل في المتجر. الأسعار تتغير — توفيري قد يحصل
         على عمولة عند الشراء عبر الروابط.
       </p>
     </main>

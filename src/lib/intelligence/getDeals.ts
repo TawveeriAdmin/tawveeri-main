@@ -1,22 +1,22 @@
 // src/lib/intelligence/getDeals.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// Tawveeri Deal Engine — Knowledge Layer (AI-Native)
-// دالة معرفية نقية: تقرأ canonical_products + price_history فقط، صفر كتابة.
-// عرض حقيقي = أفضل سعر فعلي حالي أقل من متوسط الفترة بعتبة، أو أقل سعر مسجّل.
-// السعر المعتمد: effective_price إن كان رقماً موجباً — وإلا price (الصفر لا يُعتمد).
-// المستهلكون المتساوون: /deals، البحث، صفحة المنتج، وفّر، API، أي AI Agent.
+// Tawveeri Deal Engine — Knowledge Layer.
+// A real deal = a store-flagged deal (is_deal) whose current price is genuinely below its own
+// recorded original price. original_price is a REAL prior price, never fabricated — so the discount
+// is honest. Sources from product_stores/products (the populated storefront tables) across ALL
+// categories. Read-only. Equal consumers: /deals, search, product page, وفّر, API.
+//
+// (Superseded the earlier canonical_products + 30-day-price_history method, which returned nothing
+//  in production because System A price_history is sparse and often lacks canonical_product_id.)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { identityKeyToSlug } from "@/lib/catalog/getProductComparison";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-const WINDOW_DAYS = 30;
-const DEAL_THRESHOLD_PCT = 4;
-const MIN_PRICE_POINTS = 2; // منصة فتية — تاريخنا يتعمق تلقائياً وسنرفعها لاحقاً
+const HOT_DISCOUNT_PCT = 15; // a "hot" deal cutoff
 
 export type DealStrength = "hot" | "good";
 
@@ -30,7 +30,7 @@ export interface Deal {
   imageUrl: string | null;
   bestPrice: number;
   bestStore: string;
-  averagePrice: number;
+  averagePrice: number; // the recorded original ("was") price
   discountPct: number;
   isLowestEver: boolean;
   trackingDays: number;
@@ -39,107 +39,67 @@ export interface Deal {
   reason: string;
 }
 
-export async function getDeals(limit = 20, minDiscountPct = DEAL_THRESHOLD_PCT): Promise<Deal[]> {
+type Row = {
+  current_price: number | null;
+  original_price: number | null;
+  store_id: number | null;
+  products: { id: string; name_ar: string; name_en: string | null; brand: string | null; slug: string | null; image_url: string | null } | null;
+  stores: { name_ar: string | null; name_en: string | null; slug: string | null } | null;
+};
+
+export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-  // 1) الكتالوج النشط
-  const { data: products, error: pErr } = await supabase
-    .from("canonical_products")
-    .select("id, name_ar, name_en, brand, image_url, tps_identity_key")
-    .eq("category", "mobile")
-    .eq("is_active", true);
-  if (pErr || !products?.length) return [];
+  const { data, error } = await supabase
+    .from("product_stores")
+    .select(`current_price, original_price, store_id,
+      products!inner(id, name_ar, name_en, brand, slug, image_url),
+      stores(name_ar, name_en, slug)`)
+    .eq("is_deal", true)
+    .not("original_price", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1200);
+  if (error || !data?.length) return [];
 
-  // 2) التاريخ السعري للنافذة
-  const since = new Date();
-  since.setDate(since.getDate() - WINDOW_DAYS);
-  const ids = products.map((p) => p.id);
-
-  const { data: history, error: hErr } = await supabase
-    .from("price_history")
-    .select("canonical_product_id, store_name, price, effective_price, observed_at")
-    .in("canonical_product_id", ids)
-    .gte("observed_at", since.toISOString())
-    .order("observed_at", { ascending: true });
-  if (hErr || !history?.length) return [];
-
-  // 3) تجميع في الذاكرة
-  interface Agg { prices: number[]; latestByStore: Map<string, number>; oldest: number; }
+  // Group offers by product; keep the cheapest offer whose recorded original price beats it.
+  interface Agg { product: NonNullable<Row["products"]>; best: number; was: number; store: string; stores: Set<number>; }
   const byProduct = new Map<string, Agg>();
-  for (const r of history) {
-    const raw = (r as { effective_price?: number | null; price?: number | null });
-    const eff = Number(raw.effective_price);
-    const base = Number(raw.price);
-    // effective_price يُعتمد فقط إن كان رقماً موجباً — الصفر وnull يسقطان لـ price
-    const price = Number.isFinite(eff) && eff > 0 ? eff : base;
-    if (!Number.isFinite(price) || price <= 0) continue;
-    let agg = byProduct.get(r.canonical_product_id);
-    if (!agg) {
-      agg = { prices: [], latestByStore: new Map(), oldest: new Date(r.observed_at).getTime() };
-      byProduct.set(r.canonical_product_id, agg);
-    }
-    agg.prices.push(price);
-    agg.latestByStore.set(r.store_name, price);
+  for (const r of data as unknown as Row[]) {
+    const p = r.products;
+    const cur = Number(r.current_price), was = Number(r.original_price);
+    if (!p || !p.slug || !Number.isFinite(cur) || cur <= 0 || !Number.isFinite(was) || was <= cur) continue;
+    const store = r.stores?.name_ar || r.stores?.slug || "";
+    let agg = byProduct.get(p.id);
+    if (!agg) { agg = { product: p, best: cur, was, store, stores: new Set() }; byProduct.set(p.id, agg); }
+    if (cur < agg.best) { agg.best = cur; agg.was = was; agg.store = store; }
+    if (r.store_id != null) agg.stores.add(r.store_id);
   }
 
-  // 4) حساب العروض
   const deals: Deal[] = [];
-  for (const p of products) {
-    const slug = identityKeyToSlug(p.tps_identity_key ?? "");
-    if (!p.tps_identity_key || !slug) continue;
-
-    const agg = byProduct.get(p.id);
-    if (!agg || agg.latestByStore.size === 0) continue;
-    if (agg.prices.length < MIN_PRICE_POINTS) continue;
-
-    let bestPrice = Infinity;
-    let bestStore = "";
-    for (const [store, price] of agg.latestByStore) {
-      if (price < bestPrice) { bestPrice = price; bestStore = store; }
-    }
-    if (!Number.isFinite(bestPrice)) continue;
-
-    const average = agg.prices.reduce((a, b) => a + b, 0) / agg.prices.length;
-    const lowestEver = Math.min(...agg.prices);
-    const discountPct = average > 0 ? ((average - bestPrice) / average) * 100 : 0;
-    const isLowestEver = bestPrice <= lowestEver;
-
-    if (!isLowestEver && discountPct < minDiscountPct) continue;
-
-    const trackingDays = Math.max(1, Math.round((Date.now() - agg.oldest) / 86_400_000));
-    const roundedPct = Math.round(discountPct);
-    const strength: DealStrength = isLowestEver || roundedPct >= 10 ? "hot" : "good";
-
-    const reasonParts: string[] = [];
-    if (isLowestEver) reasonParts.push(`أقل سعر مسجّل خلال ${trackingDays} يوماً من التتبع`);
-    if (roundedPct >= DEAL_THRESHOLD_PCT) reasonParts.push(`أرخص من متوسط السعر بنسبة ${roundedPct}٪`);
-    reasonParts.push(`أفضل سعر لدى ${bestStore}`);
-
+  for (const agg of byProduct.values()) {
+    const discountPct = Math.round(((agg.was - agg.best) / agg.was) * 100);
+    if (discountPct < minDiscountPct) continue;
+    const strength: DealStrength = discountPct >= HOT_DISCOUNT_PCT ? "hot" : "good";
     deals.push({
-      productId: p.id,
-      slug,
-      compareUrl: `/ar/product/${slug}`,
-      nameAr: p.name_ar,
-      nameEn: p.name_en,
-      brand: p.brand,
-      imageUrl: p.image_url,
-      bestPrice: Math.round(bestPrice),
-      bestStore,
-      averagePrice: Math.round(average),
-      discountPct: roundedPct,
-      isLowestEver,
-      trackingDays,
-      storesCount: agg.latestByStore.size,
+      productId: agg.product.id,
+      slug: agg.product.slug!,
+      compareUrl: `/products/${agg.product.slug}`,
+      nameAr: agg.product.name_ar,
+      nameEn: agg.product.name_en,
+      brand: agg.product.brand,
+      imageUrl: agg.product.image_url,
+      bestPrice: Math.round(agg.best),
+      bestStore: agg.store,
+      averagePrice: Math.round(agg.was),
+      discountPct,
+      isLowestEver: false,
+      trackingDays: 0,
+      storesCount: Math.max(1, agg.stores.size),
       strength,
-      reason: reasonParts.join(" · "),
+      reason: `أرخص من سعره المعتاد (${Math.round(agg.was).toLocaleString("ar-SA")} ريال) بنسبة ${discountPct}٪${agg.store ? ` · أفضل سعر لدى ${agg.store}` : ""}`,
     });
   }
 
-  // 5) الترتيب: hot أولاً، ثم الأعمق خصماً
-  deals.sort((a, b) => {
-    if (a.strength !== b.strength) return a.strength === "hot" ? -1 : 1;
-    return b.discountPct - a.discountPct;
-  });
-
+  deals.sort((a, b) => (a.strength !== b.strength ? (a.strength === "hot" ? -1 : 1) : b.discountPct - a.discountPct));
   return deals.slice(0, limit);
 }
