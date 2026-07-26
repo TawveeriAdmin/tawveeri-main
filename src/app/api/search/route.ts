@@ -455,7 +455,7 @@ async function enrichWithTPS(
           const slug = identityKeyToSlug(canonical.tps_identity_key || '');
           enriched = {
             ...enriched,
-            tps_compare_url: `/ar/product/${slug}`,
+            tps_compare_url: `/ar/compare/${encodeURIComponent(canonical.tps_identity_key || '')}`,
             tps_identity_key: canonical.tps_identity_key,
             has_tps_comparison: true,
             product_id: enriched.product_id || canonical.id,
@@ -552,7 +552,7 @@ async function searchTPSCanonical(
         store_count: byStore.size,
         product_id: p.id,
         product_slug: slug,
-        tps_compare_url: `/ar/product/${slug}`,
+        tps_compare_url: `/ar/compare/${encodeURIComponent(p.tps_identity_key || '')}`,
         tps_identity_key: p.tps_identity_key,
         has_tps_comparison: true,
       } as GroupedSearchProduct);

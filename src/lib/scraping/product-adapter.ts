@@ -25,7 +25,8 @@ export const SEARCH_STORE_LOGO_BASENAME: Partial<Record<string, string>> = {
 };
 
 export function getSearchStoreLogoPath(slug: string): string {
-  const base = SEARCH_STORE_LOGO_BASENAME[slug] ?? slug;
+  const s = String(slug ?? '');
+  const base = SEARCH_STORE_LOGO_BASENAME[s] ?? s;
   return `/logos/${base}.png`;
 }
 
@@ -33,7 +34,8 @@ export function getSearchStoreLogoPath(slug: string): string {
 // so the UI must render initials directly instead of firing a 404 request for a missing logo.
 const KNOWN_LOGO_FILES = new Set(['amazon', 'noon', 'jarir', 'extra', 'almanea', 'samsung_ksa', 'shaker', 'swsg']);
 export function hasStoreLogo(slug: string): boolean {
-  return KNOWN_LOGO_FILES.has(SEARCH_STORE_LOGO_BASENAME[slug] ?? slug);
+  const s = String(slug ?? '');
+  return KNOWN_LOGO_FILES.has(SEARCH_STORE_LOGO_BASENAME[s] ?? s);
 }
 
 const STORE_NAMES_BILINGUAL = SEARCH_STORE_DISPLAY_NAMES;

@@ -44,6 +44,7 @@ import { Ticket } from 'lucide-react';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import { generateAffiliateUrl } from '@/lib/transactions/tracking';
+import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 import { incrementSaveCount } from '@/lib/wishlist/utils';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
@@ -626,7 +627,7 @@ export default function ProductDetailClient() {
  }
  };
 
- const handleViewAtStore = async (productStore: ProductStore) => {
+ const handleViewAtStore = (productStore: ProductStore) => {
  // Funnel step 6 — Outbound Click. The storefront exits via generateAffiliateUrl+window.open (NOT /go),
  // so this event is the ONLY measurement of storefront exits. Fired first (keepalive) so a slow/failed
  // affiliate-URL call never loses the exit signal.
@@ -637,39 +638,23 @@ export default function ProductDetailClient() {
  source: 'product_page',
  meta: { price: productStore.current_price ?? null, availability: productStore.availability ?? null, measured: false },
  });
- try {
- // Track click and generate affiliate URL
- const { data: trackingUrl, error: trackingError } = await generateAffiliateUrl(
- productStore.id,
- user?.id
- );
-
- if (trackingError) {
- console.error('Error generating tracking URL:', trackingError);
- // Fallback to regular URL
- const url = productStore.affiliate_url || productStore.product_url;
+ // Mobile Safari blocks window.open() called AFTER an await (the user-gesture is lost), which made
+ // the buy button "do nothing" on iPhone. Open SYNCHRONOUSLY within the click: affiliate tagging is a
+ // pure sync string op; the DB click record is written in the background and never gates the open.
+ const rawUrl = productStore.affiliate_url || productStore.product_url;
+ if (!rawUrl) return;
+ const url = applyAffiliateTag(rawUrl, productStore.stores?.slug ?? null) ?? rawUrl;
  window.open(url, '_blank', 'noopener,noreferrer');
- return;
- }
-
- // Store click_id in sessionStorage for potential conversion tracking
+ void generateAffiliateUrl(productStore.id, user?.id)
+ .then(({ data: trackingUrl }) => {
  if (trackingUrl) {
- const urlObj = new URL(trackingUrl);
- const clickId = urlObj.searchParams.get('click_id');
- if (clickId) {
- sessionStorage.setItem(`click_${productStore.id}`, clickId);
+ try {
+ const clickId = new URL(trackingUrl).searchParams.get('click_id');
+ if (clickId) sessionStorage.setItem(`click_${productStore.id}`, clickId);
+ } catch { /* noop */ }
  }
- }
-
- // Open URL with tracking
- const url = trackingUrl || productStore.affiliate_url || productStore.product_url;
- window.open(url, '_blank', 'noopener,noreferrer');
- } catch (err) {
- console.error('Error tracking store click:', err);
- // Still open the URL even if tracking fails
- const url = productStore.affiliate_url || productStore.product_url;
- window.open(url, '_blank', 'noopener,noreferrer');
- }
+ })
+ .catch(() => { /* tracking is best-effort; the tab already opened */ });
  };
 
  const handleAddRelatedToCart = (relatedProduct: ProductCardProduct) => {

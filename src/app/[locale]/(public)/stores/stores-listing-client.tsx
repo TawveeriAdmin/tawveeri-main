@@ -438,28 +438,19 @@ function StoreTile({ store, locale }: { store: StoreSummary; locale: string }) {
         </p>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-[color:var(--color-surface-container-lowest)] p-3 dark:bg-[color:var(--color-surface-container)]">
-          <div className="flex items-center gap-1 text-[18px] font-black text-[color:var(--color-on-surface)]">
-            <Star className="h-4 w-4 fill-[color:var(--color-tertiary)] text-[color:var(--color-tertiary)]" />
-            <span>{rating > 0 ? rating.toFixed(1) : '-'}</span>
-          </div>
-
-          <p className="mt-1 text-[11px] font-bold text-[color:var(--color-on-surface-variant)]">
-            {isRTL ? 'التقييم' : 'Rating'}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-[color:var(--color-surface-container-lowest)] p-3 dark:bg-[color:var(--color-surface-container)]">
-          <div className="flex items-center gap-1 text-[18px] font-black text-[color:var(--color-on-surface)]">
-            <Package className="h-4 w-4 text-[color:var(--color-primary)]" />
-            <span>{products.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}</span>
-          </div>
-
-          <p className="mt-1 text-[11px] font-bold text-[color:var(--color-on-surface-variant)]">
-            {isRTL ? 'منتج' : 'Products'}
-          </p>
-        </div>
+      {/* Honest state — a real count for stocked stores; a clear "coming soon" for not-yet-integrated
+          ones (never a misleading "0"). Also makes the card compact + easy to scan on mobile. */}
+      <div className="mt-3 px-1 pb-1">
+        {products > 0 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-bg-green)] px-3 py-1.5 text-[12px] font-bold text-[var(--brand-green-dark)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-green)]" />
+            {isRTL ? `${products.toLocaleString('ar-SA')} منتج للمقارنة` : `${products.toLocaleString('en-US')} products to compare`}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-surface-container-high)] px-3 py-1.5 text-[12px] font-bold text-[color:var(--color-on-surface-variant)]">
+            {isRTL ? 'قريباً' : 'Coming soon'}
+          </span>
+        )}
       </div>
     </article>
   );

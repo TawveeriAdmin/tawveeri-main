@@ -104,6 +104,13 @@ export default async function DealsPage({ params }: { params: { locale: string }
                 {d.nameAr}
               </h2>
 
+              {/* المتجر — صريح على كل بطاقة (لا نوحي بتغطية متعددة المتاجر) */}
+              {d.bestStore && (
+                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[color:var(--color-surface-container-high)] px-2 py-0.5 text-[10px] font-bold text-on-surface-variant">
+                  🏪 {d.bestStore}
+                </span>
+              )}
+
               {/* السعر والخصم الحقيقي */}
               <div className="mt-2 flex items-end justify-between">
                 <div>
