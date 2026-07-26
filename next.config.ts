@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
      { protocol: 'https', hostname: '**.zid.store' },
      { protocol: 'https', hostname: 'images.samsung.com' },
      { protocol: 'https', hostname: '**.samsung.com' },
+     { protocol: 'https', hostname: 'cdn.shopify.com' },
+     { protocol: 'https', hostname: '**.shopify.com' },
    ],
  },
  async headers() {

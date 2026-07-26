@@ -33,6 +33,7 @@ interface OfferRow {
   price: number | null;
   image_raw: string | null;
   url: string | null;
+  canon_image: string | null;
 }
 
 (async () => {
@@ -50,8 +51,10 @@ interface OfferRow {
            n.id as offer_id,
            ph.price::float8 as price,
            coalesce(o.payload->>'image_urls', o.payload->>'imageUrl', o.payload->>'image_url') as image_raw,
-           n.normalized_payload->>'_url' as url
+           n.normalized_payload->>'_url' as url,
+           c.image_url as canon_image
     from tps_product_projection p
+    join canonical_products c on c.id = p.canonical_id
     join normalized_product_observations n on n.canonical_product_id = p.canonical_id
     left join raw_observations o
       on (n.normalized_payload->>'_raw_id') ~ '^[0-9]+$'
@@ -72,7 +75,12 @@ interface OfferRow {
   const rejectedHosts = new Map<string, number>();
 
   for (const [canonicalId, offers] of byProduct) {
-    const image = pickProductImage(offers.map((o) => ({ raw: o.image_raw, price: o.price })));
+    // Prefer an image derived from THIS build's offers; else fall back to the canonical's
+    // stored image_url (set by the progressive engine / ADR-101 backfill) — validated through
+    // the same host allowlist. Closes the propagation gap where the canonical has a valid image
+    // but this build's offer payloads did not surface one (host-rejected / base64 / missing).
+    const canonImg = offers.find((o) => o.canon_image && isUsableImageUrl(o.canon_image))?.canon_image ?? null;
+    const image = pickProductImage(offers.map((o) => ({ raw: o.image_raw, price: o.price }))) ?? canonImg;
     if (image) withImage++; else imagelessProducts++;
 
     // Diagnose WHY a product has no image, so store-side defects stay visible

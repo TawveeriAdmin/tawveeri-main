@@ -56,6 +56,15 @@ const KNOWN_IMAGE_HOSTS = [
   "media.extra.com", "extra.com",
   "imgs.dev-almanea.com", "almanea.com",
   "f.nooncdn.com", "nooncdn.com", "noon.com",
+  // Feed-store CDNs (ADR-113) — all present in next.config remotePatterns. Without these,
+  // every Salla/Zid/Woo/Shopify product rendered imageless despite carrying a valid image
+  // (the presentation build host-rejected them). Base domains → subdomains match via endsWith.
+  "salla.sa",         // cdn.salla.sa — Salla stores (najm/hdf/alnakheelk/alsfeerzone/alhowaish/…)
+  "zid.store",        // media.zid.store — Zid stores (aletawik/pcpalace/amnkwm/alduaalbarq)
+  "shakersa.com",     // shaker (WooCommerce)
+  "mhzm.sa",          // shop.mhzm.sa — mhzm (WooCommerce)
+  "shopify.com",      // cdn.shopify.com — Shopify stores (Sony World)
+  "samsung.com",      // images.samsung.com — Samsung KSA
 ];
 
 /** Extract every candidate URL string from a payload value of any shape. */
