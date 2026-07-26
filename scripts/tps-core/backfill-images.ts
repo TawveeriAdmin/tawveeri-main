@@ -31,6 +31,7 @@ const IMG_CTE = `
        and jsonb_typeof(r.payload->'image_urls') = 'array'
        and jsonb_array_length(r.payload->'image_urls') > 0
        and (r.payload->'image_urls'->>0) ~ '^https?://'
+       and (r.payload->'image_urls'->>0) !~ 'data:image|;base64,'  -- reject lazy-load placeholders
      order by n.canonical_product_id, n.observed_at desc nulls last
   )`;
 

@@ -35,9 +35,14 @@ function extractPrice(p: Record<string, unknown>): number | null {
  *  comparison card rendered imageless. Thread it through staging so corroboration can set it. */
 function extractImage(p: Record<string, unknown>): string | null {
   const arr = p.image_urls ?? p.images ?? p.image;
-  const cand = Array.isArray(arr) ? arr[0] : arr;
-  const s = asString(cand);
-  return s && /^https?:\/\//i.test(s) ? s : null;
+  const list = Array.isArray(arr) ? arr : [arr];
+  for (const cand of list) {
+    const s = asString(cand);
+    // Reject lazy-load placeholders smuggled into an https path (e.g. shakersa/swsg serve
+    // `https://host/data:image/svg…` / `;base64,` 1×1 blanks) — a fake image is worse than none.
+    if (s && /^https?:\/\//i.test(s) && !/data:image|;base64,/i.test(s)) return s;
+  }
+  return null;
 }
 
 export interface SweepMetrics { fetched: number; staged: number; saturated: boolean; byCategory: Record<string, { detected: number; valid: number; lowConfidence: number; invalid: number; touched: Set<string> }>; }
