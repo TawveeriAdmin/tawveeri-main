@@ -54,8 +54,18 @@ export function buildNames(key: string) {
   const bEn = brand.charAt(0).toUpperCase() + brand.slice(1);
   const seriesAr = series === "NO_SERIES" ? "" : ` ${series}`;
   const seriesEn = series === "NO_SERIES" ? "" : ` ${series}`;
-  const nameAr = `مكيف ${acType === "split" ? "سبليت" : acType}${seriesAr} ${bAr}، ${cap} وحدة، ${TECH_AR[tech] ?? tech}، ${COOL_AR[cool] ?? cool}`.replace(/\s+/g, " ").trim();
-  const nameEn = `${bEn}${seriesEn} ${acType === "split" ? "Split AC" : acType} ${cap} BTU ${tech} ${cool.replace("_", " ")}`.replace(/\s+/g, " ").trim();
+  // Technology is a COMMERCIAL VARIANT that is often unspecified; the identity carries a
+  // NO_TECH sentinel then. Like NO_SERIES/NO_STORAGE, it must NEVER reach the customer —
+  // omit the segment entirely rather than render "NO_TECH". (NA guarded defensively.)
+  const techKnown = !!tech && tech !== "NO_TECH" && tech !== "NA";
+  const coolSafe = cool ?? "";
+  const acTypeAr = acType === "split" ? "سبليت" : (acType ?? "");
+  const acTypeEn = acType === "split" ? "Split AC" : (acType ?? "");
+  // Build from non-empty segments so dropping tech never leaves a dangling "، ،" / double space.
+  const nameAr = [`مكيف ${acTypeAr}${seriesAr} ${bAr}`.trim(), cap ? `${cap} وحدة` : "", techKnown ? (TECH_AR[tech] ?? tech) : "", COOL_AR[coolSafe] ?? coolSafe]
+    .filter((s) => s && s.trim()).join("، ").replace(/\s+/g, " ").trim();
+  const nameEn = [`${bEn}${seriesEn} ${acTypeEn} ${cap ? cap + " BTU" : ""}`.trim(), techKnown ? tech : "", coolSafe.replace("_", " ")]
+    .filter((s) => s && s.trim()).join(" ").replace(/\s+/g, " ").trim();
   return { nameAr, nameEn };
 }
 
