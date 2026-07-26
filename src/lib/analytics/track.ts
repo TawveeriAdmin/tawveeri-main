@@ -7,6 +7,8 @@
 // makes every event from that browser `is_test=true`. Everyone else is real. This is how
 // the founder/QA can exercise the loop without polluting real-user validation metrics.
 
+import { getEntryVariant } from "./variant";
+
 const SID_KEY = "tw_sid";
 const TEST_KEY = "tw_test";
 
@@ -51,6 +53,7 @@ export function isTestMode(): boolean {
 // → Product View (product_view) → Comparison (comparison_view) → Evidence (evidence_view)
 // → Outbound Click (go_click). `no_answer`/`error` are off-funnel signals.
 export type EventType =
+  | "landing_view"                       // Landing engagement: which entry arm was shown
   | "advisor_query" | "advisor_result"   // advisor surface: Search / Results
   | "search" | "results"                 // storefront surface: Search / Results
   | "product_view"                       // Product View (both surfaces)
@@ -59,11 +62,16 @@ export type EventType =
   | "go_click"                           // Outbound Click (measured exit)
   | "no_answer" | "error";               // off-funnel signals
 
-/** Fire-and-forget an event. Safe to call anywhere on the client. */
+/** Fire-and-forget an event. Safe to call anywhere on the client. Every event carries the
+ *  visitor's entry-experiment arm (in meta.variant) so the whole funnel can be compared
+ *  advisor-first vs search-first without any per-call plumbing. */
 export function track(event_type: EventType, props?: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
   try {
-    const payload = JSON.stringify({ event_type, session_id: sessionId(), source: "web", ...props });
+    let variant: string | undefined;
+    try { variant = getEntryVariant(); } catch { /* noop */ }
+    const meta = { ...(props?.meta && typeof props.meta === "object" ? (props.meta as Record<string, unknown>) : {}), ...(variant ? { variant } : {}) };
+    const payload = JSON.stringify({ event_type, session_id: sessionId(), source: "web", ...props, meta });
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (isTestMode()) headers["x-tw-test"] = "1";
     // keepalive lets a go_click event survive the immediate navigation away.

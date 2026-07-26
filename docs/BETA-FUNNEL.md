@@ -1,6 +1,6 @@
 # Tawveeri — Private Beta Funnel Dashboard
 
-_Generated 2026-07-26T13:39:07.000Z from production (`vyceqrzttspyycdpojtn`). Re-run: `npm run tps:usage`._
+_Generated 2026-07-26T14:15:24.000Z from production (`vyceqrzttspyycdpojtn`). Re-run: `npm run tps:usage`._
 REAL = live customers · TEST (`?test=1`/bots) excluded from every metric.
 
 ## Verdict
@@ -36,6 +36,22 @@ Off-funnel: no_answer=0, errors=0. Overall **Search→Outbound = 133.3%**.
 | agent | 1 | 0 | 0 | 4 |
 | web | 1 | 3 | 3 | 0 |
 
+## Entry experiment — advisor-first vs search-first (REAL, session-level)
+**INSUFFICIENT SAMPLE — need ≥50 sessions per arm to call a winner (min arm = 0).**
+
+| Dimension | Advisor-first | Search-first |
+|---|--:|--:|
+| Sessions (n) | 0 | 0 |
+| Search usage | 0.0% | 0.0% |
+| Product views | 0.0% | 0.0% |
+| Comparison usage | 0.0% | 0.0% |
+| Evidence interaction | 0.0% | 0.0% |
+| Outbound clicks | 0.0% | 0.0% |
+| Session completion | 0.0% | 0.0% |
+| Retention (≥2 days) | 0.0% | 0.0% |
+
+_Champion is config-reversible via `NEXT_PUBLIC_BETA_ADVISOR_SPLIT` — flipping it needs no redesign._
+
 ## Top demand (REAL)
 - (unparsed): 3
 - air_conditioner: 2
@@ -45,5 +61,5 @@ Off-funnel: no_answer=0, errors=0. Overall **Search→Outbound = 133.3%**.
 - (none yet)
 
 ## Measured exits (outbound_clicks)
-REAL: clicks=15, distinct_products=5, monetized=2.
+REAL: clicks=16, distinct_products=6, monetized=2.
 (Storefront exits bypass /go and are counted via the `go_click` event in the funnel above, not here.)

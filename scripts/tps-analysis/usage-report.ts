@@ -86,6 +86,29 @@ type Funnel = {
       count(distinct session_id)                                         sessions
     from usage_events where is_test=false group by 1 order by sessions desc`);
 
+  // ── ENTRY EXPERIMENT: advisor-first (champion) vs search-first (control) ──────
+  // Session-level conversion is the right unit for an A/B: what fraction of VISITORS on
+  // each arm reached each journey stage. Arm lives in meta->>'variant'.
+  const variantRows = await rows(`
+    select coalesce(meta->>'variant','(unassigned)') variant,
+      count(distinct session_id)                                                    sessions,
+      count(distinct session_id) filter (where event_type='landing_view')           landed,
+      count(distinct session_id) filter (where event_type in ('search','advisor_query')) searched,
+      count(distinct session_id) filter (where event_type='product_view')           viewed,
+      count(distinct session_id) filter (where event_type='comparison_view')         compared,
+      count(distinct session_id) filter (where event_type='evidence_view')           evidenced,
+      count(distinct session_id) filter (where event_type='go_click')                exited
+    from usage_events where is_test=false group by 1`);
+  // Retention: a returning visitor is a session_id active on ≥2 distinct calendar days.
+  const retentionRows = await rows(`
+    select variant, count(*) total, count(*) filter (where days >= 2) ret from (
+      select session_id, min(meta->>'variant') variant, count(distinct created_at::date) days
+      from usage_events where is_test=false group by session_id
+    ) q group by variant`);
+  const armMetric = (v: string, k: string) => Number(variantRows.find((r) => r.variant === v)?.[k] ?? 0);
+  const retMetric = (v: string) => { const r = retentionRows.find((x) => x.variant === v); return { total: Number(r?.total ?? 0), returning: Number(r?.ret ?? 0) }; };
+  const ARMS = ["advisor", "search"] as const;
+
   // Demand + unmet demand + measured economics.
   const cats = await rows(`select coalesce(category,'(unparsed)') category, count(*) n from usage_events where is_test=false and event_type in ('search','advisor_query','results','advisor_result') group by 1 order by 2 desc limit 12`);
   const na = await rows(`select query_text, count(*) n from usage_events where is_test=false and event_type='no_answer' and query_text is not null group by 1 order by 2 desc limit 10`);
@@ -162,6 +185,37 @@ type Funnel = {
   for (const s of surfaces) w(`  ${String(s.source).padEnd(14)} sessions=${s.sessions} search=${s.search} results=${s.results} outbound=${s.outbound}`);
   w("");
 
+  // Entry experiment comparison (the founder's 8 dimensions, per arm, session-level).
+  w(`ENTRY EXPERIMENT — advisor-first (champion) vs search-first (control), REAL, session-level:`);
+  const arm = (v: string) => {
+    const sess = armMetric(v, "sessions");
+    const rate = (k: string) => fpct(pct(armMetric(v, k), sess));
+    const ret = retMetric(v);
+    return { sess, landed: armMetric(v, "landed"), searched: rate("searched"), viewed: rate("viewed"),
+      compared: rate("compared"), evidenced: rate("evidenced"), exited: rate("exited"),
+      completion: fpct(pct(armMetric(v, "exited"), sess)), retention: fpct(pct(ret.returning, ret.total)) };
+  };
+  const A = arm("advisor"), S = arm("search");
+  const row2 = (label: string, a: string | number, s: string | number) =>
+    w(`  ${label.padEnd(22)} advisor=${String(a).padStart(8)}   search=${String(s).padStart(8)}`);
+  row2("Sessions (n)", A.sess, S.sess);
+  row2("Search usage", A.searched, S.searched);
+  row2("Product views", A.viewed, S.viewed);
+  row2("Comparison usage", A.compared, S.compared);
+  row2("Evidence interaction", A.evidenced, S.evidenced);
+  row2("Outbound clicks", A.exited, S.exited);
+  row2("Session completion", A.completion, S.completion);
+  row2("Retention (≥2 days)", A.retention, S.retention);
+  // Winner call — only when BOTH arms have a defensible sample.
+  const minArm = Math.min(A.sess, S.sess);
+  const advExit = pct(armMetric("advisor", "exited"), armMetric("advisor", "sessions"));
+  const srchExit = pct(armMetric("search", "exited"), armMetric("search", "sessions"));
+  let armVerdict: string;
+  if (minArm < 50) armVerdict = `INSUFFICIENT SAMPLE — need ≥50 sessions per arm to call a winner (min arm = ${minArm}).`;
+  else if (Math.abs(advExit - srchExit) < 0.02) armVerdict = "NO CLEAR WINNER YET — arms within 2pts on Search→Exit; keep gathering.";
+  else armVerdict = advExit > srchExit ? "ADVISOR-FIRST LEADS on Search→Exit." : "SEARCH-FIRST LEADS on Search→Exit — consider flipping the champion (config only).";
+  w(`  → ${armVerdict}\n`);
+
   w(`TOP DEMAND — categories asked (REAL):`);
   if (!cats.length) w(`  (none yet)`);
   cats.forEach((r) => w(`  ${String(r.category).padEnd(18)} ${r.n}`));
@@ -220,6 +274,22 @@ type Funnel = {
     `| Surface | Sessions | Search | Results | Outbound |`,
     `|---|--:|--:|--:|--:|`,
     ...(surfaces.length ? surfaces.map((s) => `| ${s.source} | ${s.sessions} | ${s.search} | ${s.results} | ${s.outbound} |`) : [`| (none yet) | | | | |`]),
+    ``,
+    `## Entry experiment — advisor-first vs search-first (REAL, session-level)`,
+    `**${armVerdict}**`,
+    ``,
+    `| Dimension | Advisor-first | Search-first |`,
+    `|---|--:|--:|`,
+    `| Sessions (n) | ${A.sess} | ${S.sess} |`,
+    `| Search usage | ${A.searched} | ${S.searched} |`,
+    `| Product views | ${A.viewed} | ${S.viewed} |`,
+    `| Comparison usage | ${A.compared} | ${S.compared} |`,
+    `| Evidence interaction | ${A.evidenced} | ${S.evidenced} |`,
+    `| Outbound clicks | ${A.exited} | ${S.exited} |`,
+    `| Session completion | ${A.completion} | ${S.completion} |`,
+    `| Retention (≥2 days) | ${A.retention} | ${S.retention} |`,
+    ``,
+    `_Champion is config-reversible via \`NEXT_PUBLIC_BETA_ADVISOR_SPLIT\` — flipping it needs no redesign._`,
     ``,
     `## Top demand (REAL)`,
     ...(cats.length ? cats.map((r) => `- ${r.category}: ${r.n}`) : [`- (none yet)`]),
