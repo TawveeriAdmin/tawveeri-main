@@ -6,6 +6,9 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-106 — Sony World onboarded (store 16) — first production onboarding via the Shopify connector · Accepted (2026-07-26)
+The one config-only-accessible candidate from the 35-retailer batch (ADR-105). sonyworld.sa: Shopify, SAR-verified (meta.json → Riyadh/SAR). Registered: provider (`shopify.origin`, `affiliate: null` → correct `direct` non-affiliate exit — no attribution contamination), `TPS_STORES` id 16, `stores` row (FK `raw_observations.store_id → stores.id` requires it). Ingested 236 offers via the Shopify products.json adapter (ADR-104). **QA-passed:** 236/236 priced (63–33,499 SAR), 236/236 valid `sonyworld.sa/products/` URLs, 236/236 images, honest availability. Realization (normalize→corroborate→projection) is scheduler-owned (hourly `refresh-intelligence` reads `TPS_STORES`) — ADR-099-safe, no manual heavy write. **This validates the Shopify config-only onboarding path end-to-end in production.** Expected gain is honestly Low–Med (few Sony audio/camera comparisons vs our 10 Sony canonicals + Sony-TV category depth that is single-store until a 2nd Sony source exists — measure after the next scheduler cycle). Ongoing catalog refresh: add `sonyworld` to the `INGEST_FEED_STORES` env (Railway). Full 35-candidate classification + long-tail dataset spec: `docs/acquisition-classification.md`.
+
 ### ADR-105 — 35-retailer candidate batch: evidence-based verdict — defer all; the majors are enterprise-platform-bound · Accepted (2026-07-26)
 **Method.** Founder supplied 35 major Saudi retailers with full authority to verify/reclassify/defer. Ran the acquisition engine (`tps:acquire`, ADR-102) live on the 28 non-already-integrated domains + direct HTTP verification of ambiguous cases. Evidence, not the submitted labels.
 
