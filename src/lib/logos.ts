@@ -9,6 +9,7 @@ export {
   SEARCH_STORE_DISPLAY_NAMES,
   SEARCH_STORE_LOGO_BASENAME,
   getSearchStoreLogoPath,
+  hasStoreLogo,
 } from '@/lib/scraping/product-adapter';
 
 import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';

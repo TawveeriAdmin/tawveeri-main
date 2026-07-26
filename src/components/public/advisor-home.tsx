@@ -28,6 +28,15 @@ const T = {
     chips: ['مكيف لغرفة ٢٠م', 'آيفون ١٦ بأفضل سعر', 'لابتوب للدراسة ٢٥٠٠', 'غسالة موفّرة للكهرباء'],
     or: 'أو تصفّح بالبحث التقليدي',
     stat: ['رصدة سعر موثّقة', 'منتج منشور', 'مقارنة عبر متاجر'],
+    browse: 'أو تصفّح حسب الفئة',
+    cats: [
+      { e: '📱', l: 'جوالات', q: 'جوال' }, { e: '💻', l: 'لابتوب', q: 'لابتوب' },
+      { e: '❄️', l: 'مكيفات', q: 'مكيف' }, { e: '🎧', l: 'سماعات', q: 'سماعات' },
+      { e: '📺', l: 'شاشات', q: 'شاشة' }, { e: '🧺', l: 'غسالات', q: 'غسالة' },
+    ],
+    trustTitle: 'ليش تثق بتوفيري؟',
+    trustBody: 'كل سعر موثّق بالأدلة، والترتيب حسب الأنسب لك — لا العمولة.',
+    trustCta: 'اعرف كيف نتحقّق',
   },
   en: {
     eyebrow: 'Neutral · evidence-backed · total cost, not commission',
@@ -38,6 +47,15 @@ const T = {
     chips: ['AC for a 20m² room', 'iPhone 16 best price', 'Laptop for study 2500', 'Energy-saving washer'],
     or: 'or browse with traditional search',
     stat: ['verified price observations', 'published products', 'cross-store comparisons'],
+    browse: 'or browse by category',
+    cats: [
+      { e: '📱', l: 'Phones', q: 'phone' }, { e: '💻', l: 'Laptops', q: 'laptop' },
+      { e: '❄️', l: 'ACs', q: 'air conditioner' }, { e: '🎧', l: 'Audio', q: 'headphones' },
+      { e: '📺', l: 'TVs', q: 'tv' }, { e: '🧺', l: 'Washers', q: 'washing machine' },
+    ],
+    trustTitle: 'Why trust Tawveeri?',
+    trustBody: 'Every price is backed by evidence, and ranking follows what fits you — never commission.',
+    trustCta: 'See how we verify',
   },
 };
 
@@ -136,6 +154,39 @@ export function AdvisorHome({ locale }: { locale: string }) {
           >{chip}</button>
         ))}
       </div>
+
+      {/* Browse by category — scannable discovery, progressive disclosure below the primary action */}
+      <div style={{ marginTop: 30, textAlign: isAr ? 'right' : 'left' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-on-surface-variant)', marginBottom: 12 }}>{t.browse}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {t.cats.map(c => (
+            <button
+              key={c.l}
+              onClick={() => router.push(`/${locale}/search?q=${encodeURIComponent(c.q)}`)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)',
+                borderRadius: 16, padding: '18px 8px', cursor: 'pointer', minHeight: 90,
+              }}
+            >
+              <span style={{ fontSize: 26 }}>{c.e}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-on-surface)' }}>{c.l}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Price-Truth trust cue — surfaced on home as one calm row (obs 3) */}
+      <Link href={`/${locale}/price-truth`} style={{ display: 'block', marginTop: 22, textDecoration: 'none', textAlign: isAr ? 'right' : 'left' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(85,178,149,.06)', border: '1px solid rgba(85,178,149,.20)', borderRadius: 16, padding: '14px 16px' }}>
+          <span style={{ fontSize: 22, flexShrink: 0 }}>🛡️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)' }}>{t.trustTitle}</div>
+            <div style={{ fontSize: 11, color: 'var(--color-on-surface-variant)', marginTop: 2, lineHeight: 1.5 }}>{t.trustBody}</div>
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', flexShrink: 0 }}>{t.trustCta} {isAr ? '←' : '→'}</span>
+        </div>
+      </Link>
 
       {/* Honest credibility, secondary */}
       <div style={{ display: 'flex', gap: 10, maxWidth: 460, margin: '26px auto 0' }}>

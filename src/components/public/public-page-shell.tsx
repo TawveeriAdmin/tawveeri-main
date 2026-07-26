@@ -135,16 +135,14 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
     return () => window.removeEventListener('notifications-updated', handleUpdate);
   }, [user, pathname]);
 
+  // Calm nav (Rakhs IA principle: one purpose per screen, few competing options). Trimmed from 11
+  // items to 4 core destinations. Categories moved to the homepage as scannable cards; Price-Truth
+  // surfaced as a homepage trust strip — each is reachable where it belongs, not stacked in the nav.
   const quickNavLinks: Array<{ href: string; label: string; icon?: typeof Store }> = [
     { href: `/${locale}/advisor`, label: t('agent.title'), icon: Sparkle },
-    { href: `/${locale}/price-truth`, label: isRTL ? 'حقيقة الأسعار' : 'Price Truth', icon: Tag },
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
     { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
-    ...HEADER_QUICK_CATEGORIES.map((slug) => {
-      const meta = HEADER_CATEGORIES.find((c) => c.slug === slug);
-      return meta ? { href: `/${locale}/search?category=${slug}`, label: isRTL ? meta.labelAr : meta.labelEn, icon: meta.icon } : null;
-    }).filter((x): x is { href: string; label: string; icon: typeof Store } => x !== null),
   ];
 
   const isFakeEmail = user?.email?.startsWith('phone_') ?? false;

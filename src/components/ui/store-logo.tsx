@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { getSearchStoreLogoPath, getStoreDisplayName, getStoreInitials } from '@/lib/logos';
+import { getSearchStoreLogoPath, getStoreDisplayName, getStoreInitials, hasStoreLogo } from '@/lib/logos';
 
 export type StoreLogoSize = 'xs' | 'sm' | 'md' | 'lg';
 
@@ -34,7 +34,7 @@ export function StoreLogo({ slug, size = 'md', alt, className, locale = 'ar' }: 
   const px = SIZE_PX[size];
   const name = alt ?? getStoreDisplayName(slug, locale);
 
-  if (failed) {
+  if (failed || !hasStoreLogo(slug)) {
     return (
       <span
         aria-label={name}

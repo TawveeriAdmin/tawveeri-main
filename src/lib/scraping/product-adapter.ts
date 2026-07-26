@@ -29,6 +29,13 @@ export function getSearchStoreLogoPath(slug: string): string {
   return `/logos/${base}.png`;
 }
 
+// The store logo PNGs that actually ship in /public/logos. Stores outside this set have no file,
+// so the UI must render initials directly instead of firing a 404 request for a missing logo.
+const KNOWN_LOGO_FILES = new Set(['amazon', 'noon', 'jarir', 'extra', 'almanea', 'samsung_ksa', 'shaker', 'swsg']);
+export function hasStoreLogo(slug: string): boolean {
+  return KNOWN_LOGO_FILES.has(SEARCH_STORE_LOGO_BASENAME[slug] ?? slug);
+}
+
 const STORE_NAMES_BILINGUAL = SEARCH_STORE_DISPLAY_NAMES;
 
 export function mapScrapedToProductCard(
