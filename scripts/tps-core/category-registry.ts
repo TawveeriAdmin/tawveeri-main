@@ -48,6 +48,8 @@ export const TPS_STORES = [
   { id: 17, name: "امن كوم" },
   // ADR-108: AC/appliance specialist cluster (Salla API) — corroborate each other on AC models.
   { id: 18, name: "متجر النخيل" }, { id: 19, name: "السفير زون" },
+  // ADR-110: vacuum + appliance gap-fill specialists.
+  { id: 20, name: "الهويش للأجهزة" }, { id: 21, name: "الضوء البارق" },
 ];
 
 export interface CategoryDef {

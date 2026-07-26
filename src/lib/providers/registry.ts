@@ -61,6 +61,11 @@ const BASE: Record<string, RetailerProvider> = {
   // corroborate each other on standard AC models (brand+BTU+type) → real AC comparisons.
   alnakheelk:   { slug: "alnakheelk",    storeId: 18, displayName: "Al Nakheel",      displayNameAr: "متجر النخيل",      enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://alnakheelk.com" } },
   alsfeerzone:  { slug: "alsfeerzone",   storeId: 19, displayName: "Al Safeer Zone",  displayNameAr: "السفير زون",       enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://alsfeerzone.com" } },
+  // ADR-110 — category-gap fill: VACUUM (202 single-store canonicals, 3% comparable) + home
+  // appliances. alhowaish carries Hitachi vacuums that corroborate our single-store units;
+  // alduaalbarq (Zid) adds vacuums/fridges/appliances. Salla-API / Zid-JSON-LD sourced.
+  alhowaish:    { slug: "alhowaish",     storeId: 20, displayName: "Al Howaish",      displayNameAr: "الهويش للأجهزة",   enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://salla.sa/alhowaish" } },
+  alduaalbarq:  { slug: "alduaalbarq",   storeId: 21, displayName: "Al Daw Al Bariq", displayNameAr: "الضوء البارق",     enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://shrkhaldwaalbarqlltjarh.zid.store" } },
 };
 
 const BY_ID: Record<number, string> = Object.fromEntries(Object.values(BASE).map((p) => [p.storeId, p.slug]));

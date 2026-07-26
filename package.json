@@ -50,7 +50,8 @@
     "tps:usage": "tsx scripts/tps-analysis/usage-report.ts",
     "tps:gtin-coverage": "tsx scripts/tps-analysis/gtin-coverage.ts",
     "tps:discover": "tsx scripts/tps-acquisition/discover.ts",
-    "tps:acquire": "tsx scripts/tps-acquisition/evaluate-stores.ts"
+    "tps:acquire": "tsx scripts/tps-acquisition/evaluate-stores.ts",
+    "tps:category-coverage": "tsx scripts/tps-analysis/category-coverage.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",
