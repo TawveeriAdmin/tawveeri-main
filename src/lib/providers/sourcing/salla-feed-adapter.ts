@@ -121,6 +121,88 @@ async function pool<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): 
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SALLA STOREFRONT API (ADR-108) — the PRIMARY, lightest path for any Salla store.
+// Every Salla storefront (custom-domain OR platform-hosted salla.sa/{slug}) embeds its
+// numeric store id in the SSR homepage, and Salla exposes a public, credential-free
+// storefront products API keyed by that id. This is cleaner + faster than crawling
+// sitemap+per-page JSON-LD, works for the salla.sa/{slug} SPA stores the sitemap path
+// CANNOT reach, and carries structured price/regular_price/currency/sku/gtin/availability.
+// Zid stores (no Salla id) fall through to the sitemap+JSON-LD path below — one adapter,
+// both platform classes, API-first with a stable fallback.
+// ─────────────────────────────────────────────────────────────────────────────
+const SALLA_API = "https://api.salla.dev/store/v1/products";
+
+/** The numeric Salla store id embedded in a storefront's SSR homepage, or null. */
+export async function resolveSallaStoreId(origin: string): Promise<string | null> {
+  const html = await fetchText(origin, 15000);
+  if (!html) return null;
+  const m = html.match(/"store"\s*:\s*\{\s*"id"\s*:\s*(\d{6,})/) || html.match(/store[_-]?id["'\s:=]+(\d{6,})/i);
+  return m ? m[1] : null;
+}
+
+interface SallaApiProduct {
+  name?: string; url?: string; price?: number; regular_price?: number; currency?: string;
+  sku?: string; gtin?: string | number; mpn?: string; image?: string; original_image?: string;
+  is_out_of_stock?: boolean; is_available?: boolean; status?: string; brand?: { name?: string | null };
+}
+
+/** Map one Salla API product → ScrapedProduct, or null (SAR-gated, never fabricated). */
+export function mapSallaApiProduct(p: SallaApiProduct): ScrapedProduct | null {
+  const name = decodeEntities(String(p.name || "")).trim();
+  const price = Math.round(Number(p.price ?? 0) * 100) / 100;
+  const currency = String(p.currency || "").toUpperCase();
+  const url = String(p.url || "").trim();
+  // Market scoping: reject a non-SAR price outright (never ingest a foreign-currency price).
+  if (!name || !(price > 0) || (currency && currency !== "SAR") || !/^https?:\/\//i.test(url)) return null;
+  const regular = Math.round(Number(p.regular_price ?? 0) * 100) / 100;
+  const img = p.image || p.original_image;
+  return {
+    name_ar: name,
+    name_en: name,
+    brand: (p.brand?.name || "") as string,
+    model: "",
+    sku: String(p.sku || p.mpn || "").trim() || null,
+    gtin: isValidGtin(p.gtin) ? String(p.gtin).replace(/\D+/g, "") : null,
+    current_price: price,
+    original_price: regular > price ? regular : null, // real discount only
+    availability: p.is_out_of_stock || p.is_available === false || p.status === "out" ? "out_of_stock" : "in_stock",
+    product_url: url.split("#")[0],
+    image_urls: img ? [String(img)] : [],
+    specifications: {},
+    description_ar: null,
+    description_en: null,
+  } as unknown as ScrapedProduct;
+}
+
+/** Pull a Salla store's FULL catalogue via the storefront API using CURSOR pagination
+ *  (the `page` param is ignored by this endpoint; only `cursor.next` advances). Returns
+ *  null on first-page failure (→ caller falls back to sitemap); a partial list otherwise. */
+async function fetchSallaApi(storeId: string, maxProducts: number): Promise<ScrapedProduct[] | null> {
+  const out: ScrapedProduct[] = [];
+  let url: string | null = `${SALLA_API}?per_page=50`;
+  const seen = new Set<string>(); // cursor-loop guard
+  for (let i = 0; i < 120 && url && out.length < maxProducts; i++) {
+    let json: { success?: boolean; data?: SallaApiProduct[]; cursor?: { next?: string | null } } | null = null;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 20000);
+      const res = await fetch(url, { headers: { "Store-Identifier": storeId, accept: "application/json", "user-agent": UA }, signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) return i === 0 ? null : out;
+      json = await res.json();
+    } catch { return i === 0 ? null : out; }
+    if (!json?.success || !Array.isArray(json.data)) return i === 0 ? null : out;
+    if (!json.data.length) break;
+    for (const p of json.data) { const m = mapSallaApiProduct(p); if (m) out.push(m); }
+    const next: string | null = json.cursor?.next ?? null;
+    if (!next || seen.has(next)) break; // no more pages, or a repeating cursor
+    seen.add(next);
+    url = next;
+  }
+  return out;
+}
+
 export const sallaFeedAdapter: SourcingAdapter = {
   mode: "api",
   supports(provider: RetailerProvider): boolean {
@@ -131,7 +213,18 @@ export const sallaFeedAdapter: SourcingAdapter = {
     const errors: string[] = [];
     const maxProducts = Math.max(50, (opts?.maxPages ?? 0) * 100 || 600);
 
-    // 1) Sitemap → product URLs (follow one level of sitemap-index nesting).
+    // 0) PRIMARY: Salla storefront API (works for every Salla store incl. salla.sa/{slug} SPAs).
+    const storeId = await resolveSallaStoreId(origin);
+    if (storeId) {
+      const apiProducts = await fetchSallaApi(storeId, maxProducts);
+      if (apiProducts && apiProducts.length) {
+        return { provider: provider.slug, mode: "api", products: apiProducts.slice(0, maxProducts), count: Math.min(apiProducts.length, maxProducts) };
+      }
+      errors.push(`salla api (store ${storeId}) returned no products; trying sitemap`);
+    }
+
+    // 1) FALLBACK: Sitemap → product URLs (follow one level of sitemap-index nesting). Zid stores
+    //    (no Salla store id) and any Salla store where the API is unavailable land here.
     const rootUrl = provider.salla!.sitemapUrl || `${origin}/sitemap.xml`;
     const rootXml = await fetchText(rootUrl);
     if (!rootXml) return { provider: provider.slug, mode: "api", products: [], count: 0, errors: [`sitemap unreachable: ${rootUrl}`] };

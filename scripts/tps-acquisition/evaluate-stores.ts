@@ -204,7 +204,9 @@ async function evaluate(domain: string, cat: Cat, pages: number, discoveryMethod
   }
   const fi = args.indexOf("--from");
   if (fi > -1 && args[fi + 1]) domains = domains.concat(extractDomains(readFileSync(args[fi + 1], "utf8")));
-  domains = [...new Set(domains.map((d) => d.replace(/^https?:\/\//, "").replace(/\/.*$/, "").toLowerCase()))];
+  // Normalize: strip scheme + trailing slash but PRESERVE the path (salla.sa/{slug} stores
+  // are path-scoped — stripping the path would collapse every Salla-hosted store into "salla.sa").
+  domains = [...new Set(domains.map((d) => d.replace(/^https?:\/\//, "").replace(/\/+$/, "").toLowerCase()))];
   if (!domains.length) { console.error("usage: evaluate-stores <domain…> [--pages N] [--out f.csv] | --stdin | --from file.(txt|html)"); process.exit(1); }
   if (args.includes("--extract-only")) { for (const d of domains) console.log(d); console.error(`\n${domains.length} candidate domains extracted (no evaluation).`); return; }
 
