@@ -6,6 +6,21 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-105 — 35-retailer candidate batch: evidence-based verdict — defer all; the majors are enterprise-platform-bound · Accepted (2026-07-26)
+**Method.** Founder supplied 35 major Saudi retailers with full authority to verify/reclassify/defer. Ran the acquisition engine (`tps:acquire`, ADR-102) live on the 28 non-already-integrated domains + direct HTTP verification of ambiguous cases. Evidence, not the submitted labels.
+
+**Verdict: 0 of 35 yield an immediate high-value config-only onboarding.** Breakdown:
+- **8 already integrated** (Noon, Amazon, Jarir, eXtra, Almanea, Shaker=shakersa.com, SWSG, Samsung).
+- **~20 on enterprise/custom platforms** (`unknown`: SACO, Xcite, Panda, Lulu, Carrefour, BinDawood-grocery, Danube, Othaim, Farm, Al-Sadhan, stc, Mobily, Zain, Zamil, AlKhunaizan, AlBassam, Eddy, Abdulwahed, Alessa, AssrAlJawal, Axiom, AlHaddad) — no `products.json`/Store-API/JSON-LD storefront → would each need a CUSTOM scraper (high effort + anti-bot risk + per-store maintenance). Deferred per architecture-first.
+- **3 WooCommerce with the Store API DISABLED** (zagzoog, bindawood, shaker.com.sa) → `rest_no_route`/404, not ingestible.
+- **redsea.com** = custom Next.js (products.json 404; engine homepage-fingerprint over-matched "shopify") → defer.
+- **sonyworld.sa** = clean Shopify, SAR-confirmed (Riyadh), 236 real Sony products — BUT we hold **0 Sony TVs** elsewhere (only Amazon has 3 BRAVIAs, on non-matching sizes) and just 10 Sony canonicals total. Onboarding alone → ~236 SINGLE-STORE products for ~0–3 comparisons = the "large volume of unmatched observations" the directive forbids. **Deferred pending a 2nd matching Sony source** (then it becomes valuable, Shopify connector is ready).
+- **m2telecom** (tiny Salla, 16 products, telecom), **blackbox.com.sa** (unknown platform), **Funtech** (unverified identity) → defer/exclude.
+
+**Domain corrections:** shaker.com.sa = Shaker GROUP corporate site (WooCommerce, English "HVAC leader"), a DUPLICATE of the integrated retail store shakersa.com — onboarding both would fabricate false 2-store comparisons on identical stock (rejected). redsea.com is Next.js, not Shopify.
+
+**Meta-finding (the durable lesson).** Comparison growth is gated by a structural fact this batch makes undeniable: **the high-value Saudi electronics retailers run enterprise platforms with closed public catalogs.** Config-only adapters (our low-cost path) reach the Salla/Zid/Woo/Shopify long-tail, NOT these majors. So the two real levers are both Founder decisions: (a) invest in **custom scrapers** for 2–3 top enterprise retailers (SACO/Xcite) — real engineering + maintenance cost; or (b) feed the **config-only Salla/Zid long-tail** (discovery is not free-replicable, ADR-103). No low-value onboarding was forced to show motion (quality over quantity, per the directive).
+
 ### ADR-104 — Shopify `products.json` sourcing adapter: a 4th config-only platform class · Accepted (2026-07-25)
 Founder onboarding via StoreLeads Premium selected WooCommerce + **Shopify** technologies. We had no Shopify ingestion connector, so built `shopify-feed-adapter.ts`: every Shopify store exposes its full catalogue credential-free at `/products.json` (paginated ≤250; title/vendor/product_type/variants[].price·sku·**barcode**/images). One adapter → the whole Shopify class, config-only (`provider.shopify.origin`), registered in the sourcing router. **Market scoping:** products.json omits a currency code, so the adapter resolves the shop currency out-of-band (meta.json, else homepage `Shopify.currency.active`) and REJECTS the store unless SAR — and refuses to ingest if currency is unverifiable (never fabricates a Saudi price). Bonus: variant `barcode` → GTIN capture (feeds ADR-100). Validated: parser matches a live `/products.json`; 6 fixture unit tests green; typecheck clean. Now Woo + Shopify + Salla/Zid + Algolia are all config-only onboarding paths for the acquisition engine (ADR-102).
 
