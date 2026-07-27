@@ -19,6 +19,7 @@ import type { RetailerProvider } from "../types";
 import type { SourcingAdapter, SourcingOptions, SourcingResult } from "./types";
 import { decodeEntities } from "./woocommerce-feed-adapter";
 import { isValidGtin } from "@/lib/enrichment/icecat";
+import { normalizeStoreUrl } from "@/lib/catalog/normalizeStoreUrl";
 
 interface PricesWithTax { price?: number; original_price?: number; discounted_price?: number; discounted_percentage?: number }
 interface AlgoliaHit {
@@ -54,7 +55,11 @@ async function algoliaQuery(cfg: { appId: string; apiKey: string; index: string 
 /** Map one Algolia hit to a ScrapedProduct, or null if it isn't a usable offer. */
 export function mapAlgoliaHit(h: AlgoliaHit, storeSlug: string, nameEn?: string): ScrapedProduct | null {
   const name = decodeEntities(h.name || "");
-  const url = (h.url || h.rewrite_url || "").trim();
+  // Algolia ships DEV/staging URLs (e.g. Almanea's m.dev-almanea.com/{rewrite}-p-{sku}). normalizeStoreUrl
+  // maps those to the LIVE production product page (www.almanea.sa/en/product/p-{sku}); without this the
+  // stored outbound link 404s. Idempotent for already-production URLs.
+  const rawUrl = (h.url || h.rewrite_url || "").trim();
+  const url = (normalizeStoreUrl(storeSlug, rawUrl) ?? rawUrl).trim();
   // AUTHORITATIVE price: `prices_with_tax` carries the customer-facing selling price
   // (already-discounted when a promo is active) + the original price. `price` at the top
   // level is the pre-tax/base value and `price_incl_tax` is NOT the shelf price — using
