@@ -749,6 +749,22 @@ export async function POST(request: NextRequest) {
   // Deduplication after TPS merge
   products = deduplicateProducts(products);
 
+  // Relevance gate (2026-07-27): for a clear product-TYPE query (ثلاجة, غسالة, تلفزيون…), drop results
+  // whose title matches NONE of the query's expansion terms. Kills substitutions where the lenient
+  // Algolia path surfaced a popular unrelated item (e.g. "ثلاجة" → earbuds). Only applies when it
+  // leaves results (never wipes the page) and never to non-product-type/model queries.
+  if (rawQuery && queryIsMainProduct) {
+    const gw = normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w));
+    const terms = [...new Set(gw.flatMap(expandWordTerms))].filter((t) => t.length >= 2);
+    if (terms.length) {
+      const gated = products.filter((p) => {
+        const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+        return terms.some((t) => hay.includes(t));
+      });
+      if (gated.length > 0) products = gated;
+    }
+  }
+
   products = applyPostFilters(products, body);
 
   if (rawQuery) {
