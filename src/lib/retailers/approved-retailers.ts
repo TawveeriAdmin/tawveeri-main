@@ -75,6 +75,7 @@ export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   8, // swsg (Sheta & Saif)
   10, // blackbox
   23, // lulu (LuLu Hypermarket) — added 2026-07-27
+  24, // sharafdg (Sharaf DG) — added 2026-07-27
 ]);
 
 /**
@@ -93,6 +94,7 @@ const NAME_TO_SLUG: Record<string, string> = {
   'swsg': 'swsg', 'الشتاء والصيف': 'swsg', 'شيتا وسيف': 'swsg',
   'blackbox': 'blackbox', 'الصندوق الأسود': 'blackbox', 'بلاك بوكس': 'blackbox',
   'lulu': 'lulu', 'لولو هايبر ماركت': 'lulu', 'لولو': 'lulu', 'lulu hypermarket': 'lulu',
+  'sharafdg': 'sharafdg', 'شرف دي جي': 'sharafdg', 'sharaf dg': 'sharafdg',
 };
 
 function normalizeName(s: string): string {

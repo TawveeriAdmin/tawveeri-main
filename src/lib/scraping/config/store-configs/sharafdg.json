@@ -1,0 +1,28 @@
+{
+  "store_slug": "sharafdg",
+  "store_name_ar": "شرف دي جي",
+  "store_name_en": "Sharaf DG",
+  "base_url": "https://saudi.sharafdg.com/en",
+  "requires_js": false,
+  "rate_limit": {
+    "min_delay_ms": 500,
+    "max_delay_ms": 1100,
+    "requests_per_minute": 60
+  },
+  "user_agents": [
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+  ],
+  "timeout_ms": 30000,
+  "category_urls": {},
+  "selectors": {
+    "product_list": "",
+    "product_link": "",
+    "product_name": "",
+    "product_price": "",
+    "product_original_price": null,
+    "product_image": "",
+    "product_sku": null,
+    "product_specs": null,
+    "product_availability": ""
+  }
+}
