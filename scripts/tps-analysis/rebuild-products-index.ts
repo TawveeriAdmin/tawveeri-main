@@ -91,7 +91,11 @@ const INDEX = process.env.ALGOLIA_INDEX_NAME || 'products';
       queryLanguages: ['ar', 'en'],
       indexLanguages: ['ar', 'en'],
       ignorePlurals: true,
-      removeWordsIfNoResults: 'allOptional',
+      // 'none' (not 'allOptional'): optionalWords still give recall (a record matching any expansion
+      // term returns), but Algolia no longer falls back to "return everything ranked by popularity"
+      // when the query matches poorly — which was surfacing earbuds for ثلاجة/غسالة. Non-matching junk
+      // is now excluded; a truly empty result then correctly falls through to the DB path.
+      removeWordsIfNoResults: 'none',
       typoTolerance: 'min',
     },
   });

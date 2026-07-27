@@ -652,7 +652,10 @@ export async function POST(request: NextRequest) {
       // The expansion tokens are OPTIONAL words: a record matching any one (e.g. "refrigerator") returns.
       const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !STOPWORDS.has(w));
       const englishExp = [...new Set(aqWords.flatMap((w) => lookupArToEn(w) || []).flatMap((m) => m.split(/\s+/)).filter((t) => t.length >= 2))];
-      const algoliaQuery = englishExp.length ? `${rawQuery} ${englishExp.join(' ')}` : rawQuery;
+      // Use the NORMALIZED (ة→ه folded) query so every query token matches an optionalWords entry —
+      // otherwise the unfolded "ثلاجة" is treated as REQUIRED, matches nothing, and returns 0/junk
+      // even though the index holds 260 refrigerators. (Verified against the live index.)
+      const algoliaQuery = englishExp.length ? `${normalizeArabic(rawQuery)} ${englishExp.join(' ')}` : rawQuery;
       const algoliaRes = await searchAlgolia({
         query: algoliaQuery,
         optionalWords: englishExp.length ? [...aqWords, ...englishExp] : undefined,
