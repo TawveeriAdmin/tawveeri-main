@@ -363,11 +363,14 @@ export class ExtraScraper extends BaseScraper {
   }
 
   private async scrapeProductPage(productUrl: string): Promise<ScrapedProduct | null> {
-    // Plain HTTP fetch — Extra is SAP Hybris (not Next.js) and ships a
-    // schema.org Product JSON-LD block in the initial HTML, so Puppeteer is
-    // unnecessary. Using fetchPage also inherits the base-scraper 429/503
-    // cooldown, UA rotation, and shared rate limiter (same pattern as Amazon).
-    const html = await this.fetchPage(productUrl);
+    // Extra ships a schema.org Product JSON-LD block, but it now BLOCKS plain HTTP fetches
+    // (anti-bot) — a bare request returns an empty body, so the JSON-LD parser found nothing and
+    // ~97% of per-product updates failed, freezing the catalogue. Render with a headless browser
+    // (JSON-LD is present in the rendered DOM); fall back to a plain fetch only if JS render yields
+    // nothing (keeps the base-scraper cooldown/UA/rate-limit behavior on the fallback path).
+    let html = '';
+    try { html = await this.fetchPageWithJS(productUrl); } catch { /* fall through to plain fetch */ }
+    if (!html || html.length < 500) html = await this.fetchPage(productUrl);
     const $ = this.getCheerio(html);
 
     // Hybris ships two JSON-LD blocks on a PDP: a BreadcrumbList and a

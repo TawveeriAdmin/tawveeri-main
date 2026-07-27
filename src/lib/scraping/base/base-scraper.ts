@@ -42,6 +42,8 @@ export abstract class BaseScraper {
     this.browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      // Respect an explicit Chrome path when set (prod pinning / envs without the bundled download).
+      ...(process.env.PUPPETEER_EXECUTABLE_PATH ? { executablePath: process.env.PUPPETEER_EXECUTABLE_PATH } : {}),
     });
 
     this.page = await this.browser.newPage();
