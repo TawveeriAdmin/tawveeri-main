@@ -302,9 +302,19 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number, queryIsMainProduct: boolean): number {
+function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number, queryIsMainProduct: boolean, relevanceGroups: string[][] = [], isAcQuery = false): number {
   const isAccessory = hasAccessoryHint(p.name_ar || '', p.name_en || '');
   const acSignal = hasACSignal(p.name_ar || '', p.name_en || '');
+  // Relevance DOMINATES: a product must match the query's product noun (every word-group), not just a
+  // stray number. Matching all groups is a huge boost; missing any is a huge penalty for a product-type
+  // query — so a 4-store iPhone beats a cheap 1-store AC that only shared the "16" in "16000 BTU".
+  let relevanceScore = 0;
+  if (relevanceGroups.length) {
+    const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+    const matched = relevanceGroups.filter((g) => g.some((t) => hay.includes(t))).length;
+    if (matched === relevanceGroups.length) relevanceScore = 300;
+    else relevanceScore = -400 * (relevanceGroups.length - matched);
+  }
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 25 : 0;
   const storeBoost = Math.min(p.store_count * 6, 18);
   const dealBoost = p.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price) ? 8 : 0;
@@ -317,9 +327,10 @@ function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: numbe
     pricePenalty = 0;
   }
   const accessoryPenalty = isAccessory ? (queryIsMainProduct ? 1000 : 60) : 0;
-  const acBoost = acSignal ? 10 : 0;
-  const tpsBonus = (p.has_tps_comparison || !!p.tps_compare_url) ? 5 : 0;
-  return inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost + tpsBonus - pricePenalty - accessoryPenalty;
+  // acBoost only when the QUERY is about ACs — otherwise an AC unfairly outranks the searched product.
+  const acBoost = (isAcQuery && acSignal) ? 10 : 0;
+  const tpsBonus = (p.has_tps_comparison || !!p.tps_compare_url) ? 15 : 0;
+  return relevanceScore + inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost + tpsBonus - pricePenalty - accessoryPenalty;
 }
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
@@ -752,24 +763,22 @@ export async function POST(request: NextRequest) {
   // Deduplication after TPS merge
   products = deduplicateProducts(products);
 
-  // Relevance gate (2026-07-27): for a clear product-TYPE query (ثلاجة, غسالة, تلفزيون…), drop results
-  // whose title matches NONE of the query's expansion terms. Kills substitutions where the lenient
-  // Algolia path surfaced a popular unrelated item (e.g. "ثلاجة" → earbuds). Only applies when it
-  // leaves results (never wipes the page) and never to non-product-type/model queries.
+  // Relevance groups (hoisted): used by BOTH the gate (filter) and scoreProduct (rank) so the query's
+  // product noun must be present. Generic tokens can't satisfy relevance on their own.
+  const GENERIC = new Set(['machine', 'electric', 'apple', 'samsung', 'smart', 'digital', 'pro', 'max',
+    'plus', 'mini', 'air', 'ultra', 'كهربائيه', 'كهربائي', 'ذكي', 'ذكيه', 'رقمي', 'هوائيه', 'hd', '4k']);
+  const relevanceGroups: string[][] = queryIsMainProduct
+    ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w))
+        .map((w) => expandWordTerms(w).filter((t) => t.length >= 2 && !GENERIC.has(t)))
+        .filter((g) => g.length > 0)
+    : [];
+  const isAcQuery = !!rawQuery && detectCanonicalCategory(rawQuery) === 'air_conditioner';
+
+  // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
+  // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
+  // 16000 BTU". Only applies when it leaves results (never wipes the page).
   if (rawQuery && queryIsMainProduct) {
-    // Generic tokens must NOT satisfy the gate on their own — otherwise "Coffee Machine" passes a
-    // dishwasher query (via "machine"), an iPhone passes an iPad query (via "apple"), and an electric
-    // screwdriver passes a vacuum query (via "electric"/كهربائيه). The specific product noun must match.
-    const GENERIC = new Set(['machine', 'electric', 'apple', 'samsung', 'smart', 'digital', 'pro', 'max',
-      'plus', 'mini', 'air', 'ultra', 'كهربائيه', 'كهربائي', 'ذكي', 'ذكيه', 'رقمي', 'هوائيه', 'hd', '4k']);
-    const gw = normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w));
-    // AND across word-groups: a result must match a term from EVERY meaningful query word — not just
-    // any one. This is what makes "ايفون 16" require the iPhone noun and reject "Gree AC 16000 BTU"
-    // (which only matched the bare "16"). A word with only generic expansions is skipped as a
-    // requirement (it can't disqualify), but numbers/product-nouns must all be present.
-    const wordGroups = gw
-      .map((w) => expandWordTerms(w).filter((t) => t.length >= 2 && !GENERIC.has(t)))
-      .filter((g) => g.length > 0);
+    const wordGroups = relevanceGroups;
     if (wordGroups.length) {
       const gated = products.filter((p) => {
         const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
@@ -796,7 +805,7 @@ export async function POST(request: NextRequest) {
     const pMax = prices.length ? Math.max(...prices) : 0;
     const requestedSort = body.sort && body.sort !== 'relevance';
     if (requestedSort) products.sort(compareBySort(body.sort!));
-    else products.sort((a, b) => scoreProduct(b, pMin, pMax, queryIsMainProduct) - scoreProduct(a, pMin, pMax, queryIsMainProduct));
+    else products.sort((a, b) => scoreProduct(b, pMin, pMax, queryIsMainProduct, relevanceGroups, isAcQuery) - scoreProduct(a, pMin, pMax, queryIsMainProduct, relevanceGroups, isAcQuery));
   } else {
     products.sort(compareBySort(body.sort || 'relevance'));
   }
