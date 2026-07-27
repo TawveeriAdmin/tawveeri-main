@@ -763,13 +763,28 @@ export async function POST(request: NextRequest) {
     const GENERIC = new Set(['machine', 'electric', 'apple', 'samsung', 'smart', 'digital', 'pro', 'max',
       'plus', 'mini', 'air', 'ultra', 'كهربائيه', 'كهربائي', 'ذكي', 'ذكيه', 'رقمي', 'هوائيه', 'hd', '4k']);
     const gw = normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w));
-    const terms = [...new Set(gw.flatMap(expandWordTerms))].filter((t) => t.length >= 2 && !GENERIC.has(t));
-    if (terms.length) {
+    // AND across word-groups: a result must match a term from EVERY meaningful query word — not just
+    // any one. This is what makes "ايفون 16" require the iPhone noun and reject "Gree AC 16000 BTU"
+    // (which only matched the bare "16"). A word with only generic expansions is skipped as a
+    // requirement (it can't disqualify), but numbers/product-nouns must all be present.
+    const wordGroups = gw
+      .map((w) => expandWordTerms(w).filter((t) => t.length >= 2 && !GENERIC.has(t)))
+      .filter((g) => g.length > 0);
+    if (wordGroups.length) {
       const gated = products.filter((p) => {
         const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
-        return terms.some((t) => hay.includes(t));
+        return wordGroups.every((group) => group.some((t) => hay.includes(t)));
       });
       if (gated.length > 0) products = gated;
+    }
+  }
+
+  // Product principle (official 2026-07-27): every comparable card shows its stores auto-sorted from
+  // cheapest to most expensive, so the customer never compares manually. Enforce it for every product.
+  for (const p of products) {
+    if (Array.isArray(p.stores) && p.stores.length > 1) {
+      p.stores.sort((a, b) => (Number(a.current_price) || Infinity) - (Number(b.current_price) || Infinity));
+      p.best_price = Number(p.stores[0]?.current_price) || p.best_price;
     }
   }
 
