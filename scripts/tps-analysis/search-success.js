@@ -6,6 +6,11 @@ const BASE = process.argv[2] || 'https://tawveeri.com';
 // Normalize Arabic (ة→ه, ى/ي, أإآ→ا) + lowercase so token matching isn't fooled by spelling variants.
 const norm = (s) => (s || '').toLowerCase().replace(/ة/g, 'ه').replace(/[ىي]/g, 'ي').replace(/[أإآ]/g, 'ا').replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const hit = (name, toks) => toks.some((t) => norm(name).includes(norm(t)));
+// A top result that is a COMPATIBLE accessory / consumable is NOT a successful answer to a device/
+// appliance query (Constitution: a cable is not an answer to "apple watch"). Reject these unless the
+// query itself is asking for an accessory (charger/case).
+const ACC = /\b(cable|charger|mouse|keyboard|stylus|pencil|case|screen protector|tempered|magsafe|wrist strap|dishwasher tablets|dishwashing tablets|detergent|rinse aid|anti-limescale|cup heater|cup warmer|mug warmer|coffee server|carafe|water filter)\b|\bcoffee (mug|cup)\b|كابل|شاحن|ماوس|كفر|جراب|واقي شاشه|لاصقة حماية|قلم ابل/i;
+const wantsAccessory = (toks) => toks.some((t) => ACC.test(t));
 
 // Realistic popular Saudi consumer searches across the approved categories. `any` = tokens a correct
 // top result should contain.
@@ -70,9 +75,11 @@ const CASES = [
       else {
         const name = `${p.name_en || ''} ${p.name_ar || ''}`;
         const relevant = hit(name, any);
+        const isAccessorySub = !wantsAccessory(any) && ACC.test(name);
         const price = (p.stores || []).some((s) => Number(s.current_price) > 0) || Number(p.best_price) > 0;
         const link = (p.stores || []).some((s) => s.product_url);
-        if (!relevant) cause = 'relevance/matching(wrong-product)';
+        if (isAccessorySub) cause = 'relevance/matching(accessory-substitution)';
+        else if (!relevant) cause = 'relevance/matching(wrong-product)';
         else if (!price) cause = 'pricing(no-live-price)';
         else if (!link) cause = 'retailer-integration(no-link)';
         else {
