@@ -645,8 +645,15 @@ export async function POST(request: NextRequest) {
   if (rawQuery && isAlgoliaConfigured()) {
     console.log('[Algolia] search started:', rawQuery);
     try {
+      // Inject the Arabic→English expansion so Algolia (primary path) surfaces the many
+      // English-named appliances (292 refrigerators, 246 washers…) for Arabic queries like ثلاجة/غسالة.
+      // The expansion tokens are OPTIONAL words: a record matching any one (e.g. "refrigerator") returns.
+      const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !STOPWORDS.has(w));
+      const englishExp = [...new Set(aqWords.flatMap((w) => lookupArToEn(w) || []).flatMap((m) => m.split(/\s+/)).filter((t) => t.length >= 2))];
+      const algoliaQuery = englishExp.length ? `${rawQuery} ${englishExp.join(' ')}` : rawQuery;
       const algoliaRes = await searchAlgolia({
-        query: rawQuery,
+        query: algoliaQuery,
+        optionalWords: englishExp.length ? [...aqWords, ...englishExp] : undefined,
         brands: body.brands,
         stores: body.stores,
         minPrice: body.min_price,

@@ -36,6 +36,9 @@ export interface AlgoliaSearchParams {
   dealsOnly?: boolean;
   hitsPerPage?: number;
   page?: number;
+  /** Words that are OPTIONAL — a record matching any of them can rank/return (used to inject the
+   *  Arabic→English expansion so "ثلاجة" surfaces the English-named "Refrigerator" records). */
+  optionalWords?: string[];
 }
 
 export interface AlgoliaSearchResult {
@@ -84,6 +87,9 @@ export async function searchAlgolia(p: AlgoliaSearchParams): Promise<AlgoliaSear
         query: p.query,
         hitsPerPage: p.hitsPerPage ?? 48,
         page: p.page ?? 0,
+        // Treat the expansion terms as optional so an English-named record matching any one of them
+        // (e.g. "refrigerator") returns for an Arabic query ("ثلاجة") without requiring ALL words.
+        ...(p.optionalWords && p.optionalWords.length ? { optionalWords: p.optionalWords } : {}),
         ...(filters ? { filters } : {}),
       },
     });
