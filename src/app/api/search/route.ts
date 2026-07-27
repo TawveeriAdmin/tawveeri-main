@@ -160,7 +160,9 @@ function lookupArToEn(word: string): string[] | undefined {
 }
 
 const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة', 'ماجسيف', 'جراب', 'سماعه اذن'];
-const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered'];
+const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered',
+  // consumables/parts/organizers that keyword-match an appliance but are NOT the appliance itself
+  'organizer', 'liner', 'disposable', 'replacement', 'refill', 'spare part', 'storage bag', 'storage box', 'paper liner', 'cleaning brush', 'descaler', 'filter cartridge', 'water filter', 'ice tray', 'ice mold', 'shelf', 'drip tray'];
 
 // Compatibility phrasing is a strong accessory signal: an item described as
 // "compatible with" or "for" a phone IS an accessory for that phone, not the
