@@ -55,7 +55,12 @@ function compose(cat, name, brand, spec) {
   if (s.cooling && COOL_AR[s.cooling]) parts.push(COOL_AR[s.cooling]);
   if (s.inverter) parts.push('إنفرتر');
   if (parts.length < 3) return null; // too thin to be a useful title
-  return parts.join(' ');
+  let title = parts.join(' ');
+  // Append the retailer's model code (kept Latin — never translated) so near-identical variants stay
+  // distinct (avoids the name_ar unique collision and gives the shopper the exact model).
+  const model = (name || '').match(/\b([A-Z][A-Z0-9]{4,}(?:-[A-Z0-9]+)?)\b/);
+  if (model && !title.includes(model[1])) title += ` ${model[1]}`;
+  return title;
 }
 
 (async () => {
