@@ -73,6 +73,27 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'مكيف', 'مكيفات', 'مكيف سبليت', 'مكيف هواء',
     'مكيف شباك', 'مكيف متنقل',
   ],
+  // Large home appliances (refrigeration, laundry, cleaning). Added 2026-07-27 — these were all
+  // falling through to `accessories` (292 refrigerators + 246 washers were miscategorised).
+  appliance: [
+    'refrigerator', 'fridge', 'freezer', 'chest freezer', 'mini fridge',
+    'washing machine', 'washer', 'washer/dryer', 'front load', 'top load', 'tumble dryer', 'clothes dryer',
+    'dishwasher', 'vacuum cleaner', 'robot vacuum', 'steam cleaner',
+    'water heater', 'water dispenser', 'chest fridge',
+    'ثلاجة', 'ثلاجه', 'براد', 'فريزر', 'غسالة', 'غساله', 'غسالة ملابس', 'نشافة', 'نشافه', 'مجفف',
+    'غسالة صحون', 'جلاية', 'مكنسة', 'مكنسه', 'مكنسة كهربائية', 'سخان',
+  ],
+  // Kitchen electrical appliances (countertop). Kept separate from large appliances.
+  kitchen: [
+    'microwave', 'oven', 'air fryer', 'deep fryer', 'blender', 'hand blender', 'food processor',
+    'mixer', 'stand mixer', 'juicer', 'toaster', 'sandwich maker', 'coffee maker', 'coffee machine',
+    'espresso machine', 'electric kettle', 'kettle', 'rice cooker', 'pressure cooker', 'slow cooker',
+    'grinder', 'gas cooker', 'electric cooker', 'cooktop', 'induction hob', 'grill',
+    'ميكروويف', 'مايكروويف', 'فرن', 'قلاية', 'قلاية هوائية', 'خلاط', 'عجان', 'عصارة', 'محمصة',
+    'صانعة قهوة', 'ماكينة قهوة', 'غلاية', 'غلاية كهربائية', 'طباخ', 'قدر ضغط', 'كبة',
+  ],
+  printer: ['printer', 'scanner', 'all-in-one printer', 'laser printer', 'inkjet', 'طابعة', 'ماسح ضوئي'],
+  networking: ['router', 'wifi router', 'modem', 'access point', 'wifi extender', 'mesh wifi', 'راوتر', 'موزع', 'مقوي واي فاي'],
 };
 
 // الترتيب: الأكثر تحديداً أولاً
@@ -86,6 +107,10 @@ const CATEGORY_DETECTION_ORDER: string[] = [
   'gaming',
   'smartwatch',      // قبل smartphone لأن galaxy watch يحتوي galaxy
   'air_conditioner',
+  'kitchen',         // kitchen countertop appliances before large appliances (microwave→kitchen)
+  'appliance',       // large home appliances (fridge/washer/…) before the accessories default
+  'printer',
+  'networking',
   'smartphone',
   'accessories',
 ];
