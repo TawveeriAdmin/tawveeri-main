@@ -369,7 +369,13 @@ export class ExtraScraper extends BaseScraper {
     // (JSON-LD is present in the rendered DOM); fall back to a plain fetch only if JS render yields
     // nothing (keeps the base-scraper cooldown/UA/rate-limit behavior on the fallback path).
     let html = '';
-    try { html = await this.fetchPageWithJS(productUrl); } catch { /* fall through to plain fetch */ }
+    // fetchPageWithJS returns the Puppeteer Page (not HTML) — read its rendered content. (The unit
+    // test mocks this method to return a string, which is why this bug hid there but broke in prod:
+    // treating the Page as HTML made getCheerio see nothing → every Extra price update returned null.)
+    try {
+      const rendered = (await this.fetchPageWithJS(productUrl)) as unknown;
+      html = typeof rendered === 'string' ? rendered : await (rendered as { content: () => Promise<string> }).content();
+    } catch { /* fall through to plain fetch */ }
     if (!html || html.length < 500) html = await this.fetchPage(productUrl);
     const $ = this.getCheerio(html);
 

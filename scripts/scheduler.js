@@ -228,7 +228,10 @@ const _feedSet = new Set(INGEST_FEED_STORES);
 // noon (Rakhys's #1, internal-catalog API) + lulu (Akinon/Cloudflare via Puppeteer) were recovered
 // 2026-07-27 as the 5th & 6th active retailers. Kept here so the scheduler auto-refreshes + grows
 // their catalogues. Both scrapers are concurrency-safe.
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'noon,lulu,sharafdg').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
+// extra added 2026-07-27: its own (broken) schedule only runs discovery and never refreshed prices,
+// so Extra went stale. The INGEST loop's price-update path (now unblocked — see runPriceUpdateJob
+// schema-drift fix) keeps Extra's 838 prices fresh via the repaired Puppeteer JSON-LD scraper.
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'noon,lulu,sharafdg,extra').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(5 * 60 * 1000), 10);    // 5m after boot

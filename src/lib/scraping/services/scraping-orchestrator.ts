@@ -363,13 +363,16 @@ export class ScrapingOrchestrator {
       const cutoffTime = new Date();
       cutoffTime.setHours(cutoffTime.getHours() - olderThanHours);
 
+      // NOTE (2026-07-27 schema-drift fix): production product_stores has NO `consecutive_failures`
+      // or `last_checked_at` columns (migration 17 never landed), which made this whole price-refresh
+      // path throw "column does not exist" for EVERY store — the real reason Extra went stale. Use the
+      // columns that actually exist (`updated_at` as the freshness cursor); the per-product failure
+      // backoff is dropped until the columns exist.
       let query = supabase
         .from('product_stores')
-        .select('id, product_id, store_id, product_url, current_price, availability, consecutive_failures, stores!inner(slug, name_ar, name_en)')
-        .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
-        .lt('consecutive_failures', 5)
-        .order('consecutive_failures', { ascending: true })
-        .order('last_checked_at', { ascending: true, nullsFirst: true })
+        .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
+        .or(`updated_at.is.null,updated_at.lt.${cutoffTime.toISOString()}`)
+        .order('updated_at', { ascending: true, nullsFirst: true })
         .limit(options.max_products || 500);
 
       if (options.store_slug) {
@@ -428,13 +431,7 @@ export class ScrapingOrchestrator {
                 scrapedProduct.availability
               );
 
-              if ((productStore.consecutive_failures ?? 0) > 0) {
-                await supabase
-                  .from('product_stores')
-                  .update({ consecutive_failures: 0, last_error: null } as never)
-                  .eq('id', productStoreId);
-              }
-
+              // (failure-counter reset skipped — consecutive_failures column does not exist in prod)
               productsUpdated++;
               if (oldPrice !== newPrice) priceChanges++;
 
@@ -491,6 +488,12 @@ export class ScrapingOrchestrator {
   }
 
   private async recordFailure(productStoreId: string, errorMsg: string): Promise<void> {
+    // Schema-drift guard (2026-07-27): product_stores has no consecutive_failures/last_error/
+    // last_failed_at columns in production, so persisting a failure counter would throw. No-op until
+    // those columns exist — a scrape failure simply leaves the row's price/updated_at unchanged.
+    void productStoreId; void errorMsg;
+    return;
+    // eslint-disable-next-line no-unreachable
     try {
       const supabase = createServerClient();
       const { data } = await supabase
