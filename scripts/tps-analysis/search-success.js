@@ -19,8 +19,8 @@ const CASES = [
   ['ايباد', ['ipad', 'ايباد']], ['ايباد برو', ['ipad pro', 'ايباد برو']], ['سامسونج تاب', ['galaxy tab', 'تاب']],
   ['تابلت', ['tablet', 'tab', 'ايباد', 'ipad']],
   // laptops
-  ['لابتوب', ['laptop', 'لابتوب', 'notebook', 'macbook']], ['لابتوب لينوفو', ['lenovo']],
-  ['ماك بوك', ['macbook', 'ماك بوك']], ['لابتوب ديل', ['dell']], ['لابتوب قيمنق', ['gaming', 'قيمنق', 'قيمنج']],
+  ['لابتوب', ['laptop', 'لابتوب', 'notebook', 'macbook']], ['لابتوب لينوفو', ['lenovo', 'لينوفو']],
+  ['ماك بوك', ['macbook', 'ماك بوك']], ['لابتوب ديل', ['dell', 'ديل']], ['لابتوب قيمنق', ['gaming', 'قيمنق', 'قيمنج']],
   ['لابتوب اتش بي', ['hp', 'اتش بي']],
   // TVs
   ['تلفزيون', ['tv', 'television', 'تلفزيون', 'شاشة']], ['شاشة سامسونج', ['samsung', 'سامسونج']],
@@ -56,7 +56,11 @@ const CASES = [
   for (const [q, any] of CASES) {
     try {
       await new Promise((r) => setTimeout(r, 4500)); // stay under the 15 req/min API rate limit
-      const res = await fetch(`${BASE}/api/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, pageSize: 6 }) });
+      let res;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try { res = await fetch(`${BASE}/api/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, pageSize: 6 }) }); break; }
+        catch (e) { if (attempt === 1) throw e; await new Promise((r) => setTimeout(r, 5000)); } // one retry on transient network error
+      }
       if (res.status === 429) { debt['rate-limited'] = (debt['rate-limited'] || 0) + 1; rows.push({ q, top: '429', stores: 0, ok: '✗ rate-limited(retry)' }); continue; }
       const d = await res.json();
       const items = d.products || [];
