@@ -364,15 +364,15 @@ export class ScrapingOrchestrator {
       cutoffTime.setHours(cutoffTime.getHours() - olderThanHours);
 
       // NOTE (2026-07-27 schema-drift fix): production product_stores has NO `consecutive_failures`
-      // or `last_checked_at` columns (migration 17 never landed), which made this whole price-refresh
-      // path throw "column does not exist" for EVERY store — the real reason Extra went stale. Use the
-      // columns that actually exist (`updated_at` as the freshness cursor); the per-product failure
-      // backoff is dropped until the columns exist.
+      // column (migration 17 never landed), which made this whole price-refresh path throw
+      // "column does not exist" for EVERY store — the real reason Extra went stale. `last_checked_at`
+      // DOES exist and is the correct rotation cursor (updateProductPrice stamps it); only the
+      // per-product failure backoff (consecutive_failures) is dropped until that column exists.
       let query = supabase
         .from('product_stores')
         .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
-        .or(`updated_at.is.null,updated_at.lt.${cutoffTime.toISOString()}`)
-        .order('updated_at', { ascending: true, nullsFirst: true })
+        .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
+        .order('last_checked_at', { ascending: true, nullsFirst: true })
         .limit(options.max_products || 500);
 
       if (options.store_slug) {
