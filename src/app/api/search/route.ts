@@ -122,6 +122,18 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'كاميرا': ['camera'],
   'ساعة': ['smartwatch', 'watch'],
   'تابلت': ['tablet'],
+  'غسالة صحون': ['dishwasher'],
+  'جلاية': ['dishwasher'],
+  'قلاية': ['air fryer', 'fryer'],
+  'قلايه هوائية': ['air fryer', 'fryer'],
+  'صانعة قهوة': ['coffee maker', 'coffee machine', 'espresso'],
+  'ماكينة قهوة': ['coffee maker', 'coffee machine', 'espresso'],
+  'مجفف': ['dryer'],
+  'خلاط': ['blender'],
+  'عصارة': ['juicer'],
+  'محمصة': ['toaster'],
+  'مكواة': ['iron', 'steamer'],
+  'ايباد': ['ipad', 'apple'],
   'برو': ['pro'],
   'ماكس': ['max'],
   'بلس': ['plus'],
@@ -129,6 +141,23 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'ميني': ['mini'],
   'اير': ['air'],
 };
+
+// BUG FIX (Founder product-first audit 2026-07-27): the map keys keep ة/ى (ثلاجة, غسالة, نشافة, مكنسة,
+// سماعة, قلاية …) but query words are normalizeArabic-folded (ة→ه, ى→ي) BEFORE lookup — so every
+// appliance term ending in ة silently missed its English expansion, and "ثلاجة" returned 0 while 292
+// refrigerators sat in the catalogue under English names. This normalized index makes the folded query
+// word hit its expansion. (Terms without ة/ى — مكيف, لابتوب, تلفزيون — worked already; that's why the
+// bug hid.)
+const ARABIC_TO_ENGLISH_NORM: Record<string, string[]> = Object.fromEntries(
+  Object.entries(ARABIC_TO_ENGLISH).map(([k, v]) => [normalizeArabic(k), v]),
+);
+function lookupArToEn(word: string): string[] | undefined {
+  return (
+    ARABIC_TO_ENGLISH[word] ||
+    ARABIC_TO_ENGLISH[normalizeArabic(word)] ||
+    ARABIC_TO_ENGLISH_NORM[normalizeArabic(word)]
+  );
+}
 
 const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة', 'ماجسيف', 'جراب', 'سماعه اذن'];
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered'];
@@ -207,7 +236,7 @@ function expandWordTerms(word: string): string[] {
   const norm = normalizeArabic(word).toLowerCase();
   const terms = new Set<string>();
   if (norm) terms.add(norm);
-  const mapped = ARABIC_TO_ENGLISH[word] || ARABIC_TO_ENGLISH[normalizeArabic(word)];
+  const mapped = lookupArToEn(word);
   if (mapped) {
     for (const m of mapped) {
       for (const tok of m.split(/\s+/)) {
@@ -231,8 +260,7 @@ function buildOrPool(words: string[]): string {
       if (v) parts.push(`name_ar.ilike.%${v}%`);
     }
     parts.push(`name_en.ilike.%${clean}%`, `brand.ilike.%${clean}%`);
-    const norm = normalizeArabic(clean);
-    const mapped = ARABIC_TO_ENGLISH[clean] || ARABIC_TO_ENGLISH[norm];
+    const mapped = lookupArToEn(clean);
     if (mapped) {
       for (const m of mapped) {
         for (const tok of m.split(/\s+/)) {
