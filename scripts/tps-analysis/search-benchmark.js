@@ -37,7 +37,7 @@ const norm = (s) => (s || '').toLowerCase();
 const hit = (name, tokens) => tokens.some((t) => norm(name).includes(norm(t)));
 
 (async () => {
-  let pass = 0, fail = 0, empty = 0;
+  let pass = 0, fail = 0, empty = 0, unifiedTop = 0, unifiedSorted = 0;
   const rows = [];
   for (const cse of CASES) {
     try {
@@ -47,6 +47,12 @@ const hit = (name, tokens) => tokens.some((t) => norm(name).includes(norm(t)));
       });
       const d = await res.json();
       const items = d.products || [];
+      const topP = items[0];
+      if (topP && Array.isArray(topP.stores) && topP.stores.length >= 2) {
+        unifiedTop++;
+        const pr = topP.stores.map((s) => Number(s.current_price));
+        if (JSON.stringify(pr) === JSON.stringify([...pr].sort((a, b) => a - b))) unifiedSorted++;
+      }
       const top3 = items.slice(0, 3).map((p) => `${p.name_en || ''} ${p.name_ar || ''}`);
       const relevantTop = items.length > 0 && hit(top3[0], cse.any.concat(cse.softAny || []));
       const relevantAny3 = top3.some((n) => hit(n, cse.any.concat(cse.softAny || [])));
@@ -63,5 +69,6 @@ const hit = (name, tokens) => tokens.some((t) => norm(name).includes(norm(t)));
   console.table(rows);
   const total = CASES.length;
   console.log(`\nRELEVANCE: ${pass}/${total} pass · ${fail} substitution-fail · ${empty} empty  →  ${Math.round((pass / total) * 100)}%`);
+  console.log(`UNIFIED-CARD PRINCIPLE: ${unifiedTop}/${total} queries top a multi-store card · ${unifiedSorted}/${unifiedTop} correctly sorted cheapest→highest`);
   process.exitCode = fail > 0 ? 1 : 0;
 })();
