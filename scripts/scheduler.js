@@ -234,7 +234,7 @@ const _feedSet = new Set(INGEST_FEED_STORES);
 const INGEST_STORES = (process.env.INGEST_STORES ?? 'noon,lulu,sharafdg,extra').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
-const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(5 * 60 * 1000), 10);    // 5m after boot
+const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(20 * 60 * 1000), 10);   // 20m after boot (let the app + PostgREST settle before adding scraper load — 2026-07-27 incident)
 // Broad category buckets each store's cron scraper knows how to crawl.
 const INGEST_CATEGORIES = {
   shaker: ['tv', 'appliance', 'kitchen'],
@@ -257,23 +257,32 @@ async function cronPost(path, body) {
   } catch (e) { console.error(`[ingest] ${path} failed:`, e?.message || e); return null; }
 }
 
+// THROTTLE (2026-07-27 incident): running discovery for all INGEST_STORES back-to-back, on top of
+// the intelligence-refresh chain, overloaded the DB and wedged PostgREST (ADR-099). Space every
+// scraper call out (staggerMs) and keep batches small so sustained write pressure stays low.
+const STAGGER_MS = parseInt(process.env.INGEST_STAGGER_MS || '20000', 10); // 20s between scraper calls
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let ingestRunning = false;
 async function runDiscovery() {
   if (ingestRunning) { console.log('[ingest] discovery still running — skipping'); return; }
+  if (feedIngestRunning || refreshRunning) { console.log('[ingest] refresh/feed active — deferring discovery'); return; }
   ingestRunning = true;
   try {
     for (const slug of INGEST_STORES) {
       for (const cat of (INGEST_CATEGORIES[slug] || ['tv'])) {
-        const r = await cronPost('/api/cron/discover-products', { store_slug: slug, category: cat, max_pages: 3 });
+        const r = await cronPost('/api/cron/discover-products', { store_slug: slug, category: cat, max_pages: 2 });
         if (r) console.log(`[ingest] discovery ${slug}/${cat}: discovered=${r.products_discovered} created=${r.products_created} linked=${r.products_linked}`);
+        await sleep(STAGGER_MS);
       }
     }
   } finally { ingestRunning = false; }
 }
 async function runPriceUpdate() {
+  if (ingestRunning || feedIngestRunning || refreshRunning) { console.log('[ingest] busy — deferring price-update'); return; }
   for (const slug of INGEST_STORES) {
-    const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: 400, older_than_hours: 12 });
+    const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: 120, older_than_hours: 12 });
     if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
+    await sleep(STAGGER_MS);
   }
 }
 
