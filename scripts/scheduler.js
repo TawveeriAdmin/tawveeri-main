@@ -225,9 +225,10 @@ if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRE
 // effect on the running scheduler (see docs/RETAILER-MATRIX.md → "Founder actions required").
 const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'almanea').split(',').map((s) => s.trim()).filter(Boolean);
 const _feedSet = new Set(INGEST_FEED_STORES);
-// noon (approved) is now ingested via its internal-catalog-API scraper — recovered 2026-07-27 as the
-// 5th active retailer (Rakhys's #1). Kept here so the scheduler auto-refreshes + grows its catalogue.
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'noon').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
+// noon (Rakhys's #1, internal-catalog API) + lulu (Akinon/Cloudflare via Puppeteer) were recovered
+// 2026-07-27 as the 5th & 6th active retailers. Kept here so the scheduler auto-refreshes + grows
+// their catalogues. Both scrapers are concurrency-safe.
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'noon,lulu').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(5 * 60 * 1000), 10);    // 5m after boot
@@ -237,6 +238,7 @@ const INGEST_CATEGORIES = {
   samsung_ksa: ['tv', 'mobile'],
   // valid ProductCategory enums only (NOT 'smartwatch'/'headphones' — use 'wearable'/'audio').
   noon: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'monitor', 'gaming', 'appliance', 'camera'],
+  lulu: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'kitchen', 'appliance', 'monitor'],
 };
 
 async function cronPost(path, body) {

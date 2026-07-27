@@ -33,13 +33,22 @@ export class LuluScraper extends BaseScraper {
   // We wait for `domcontentloaded` (NOT networkidle2 — LuLu's ads/tracking never let the network
   // go idle) because the product data is server-rendered inline in the initial HTML (`__next_f`).
   private async fetchRendered(url: string): Promise<string> {
-    if (!this.page) {
+    if (!this.browser) {
       await this.initialize();
     }
-    if (!this.page) throw new Error('LuLu: failed to initialize browser page');
-    await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: this.config.timeout_ms || 45000 });
-    await this.delay(500, 900); // let the SSR payload settle in the DOM
-    return this.page.content();
+    if (!this.browser) throw new Error('LuLu: failed to launch browser');
+    // A FRESH page per fetch → concurrency-safe (the scheduler runs categories in parallel; a single
+    // shared page would detach the frame on concurrent goto). Closed in finally to avoid leaks.
+    const page = await this.browser.newPage();
+    try {
+      const ua = this.config.user_agents?.[0];
+      if (ua) await page.setUserAgent(ua);
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: this.config.timeout_ms || 45000 });
+      await this.delay(500, 900); // let the SSR payload settle in the DOM
+      return await page.content();
+    } finally {
+      await page.close().catch(() => {});
+    }
   }
 
   private categoryQuery(category: ProductCategory): string {
