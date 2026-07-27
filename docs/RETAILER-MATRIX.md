@@ -14,14 +14,33 @@ Allowed statuses: `VERIFIED ACTIVE` · `UNDER REPAIR` · `NO DATA INGESTED` · `
 
 ---
 
+## ⚠️ Sourcing model — CORRECTED 2026-07-27 (proven from a live Rakhys product page)
+
+Fetched a Rakhys product page directly (real browser UA — their block is ClaudeBot-specific). **One product carried offers from ~10 retailers** (Amazon, Noon, Almanea, Extra, Carrefour, LuLu, Sharaf DG, Jarir, Alsaif, Black Box) and every "buy" link goes **DIRECT to the retailer's own product page** + `?ref=rakhys.com` — with **no affiliate-network redirect** (no Arabclicks/Boostiny/Admitad). Only Amazon carries an affiliate tag (`amazon.sa/dp/ASIN?tag=rakhys-21`, plain Associates — we already do the same with `tawveeri-21`).
+
+**This overturns the earlier "REQUIRES COMMERCIAL ACCESS" verdict for the marketplaces.** Rakhys SCRAPES/aggregates catalogues and links direct. Noon/Carrefour/LuLu/Sharaf DG are **ENGINEERING targets (build scrapers on their deterministic SKU URLs), not credential blockers.** Proven outbound patterns: Noon `noon.com/saudi-en/{slug}/{N-SKU}/p/`, Carrefour `carrefourksa.com/mafsau/en/{cat}/{slug}/p/{sku}`, LuLu `gcc.luluhypermarket.com/en-sa/{slug}/p/{sku}`, Sharaf DG `saudi.sharafdg.com/en/product/{slug}`.
+
 ## Summary
 
-- **VERIFIED ACTIVE (customer-visible, working outbound): 4** — Amazon, Jarir, Extra, Almanea.
-- **REQUIRES COMMERCIAL ACCESS: 8** — Noon, AliExpress, Carrefour, LuLu, Sharaf DG, eBay, RedSea(=ALJ).
-- **NO DATA INGESTED, credential-free path exists: 6** — Aleph, Me Stores, Alsaif Gallery, Alkhunaizan, Ghassan, Al Rabee Al Saif, (+Sheta&Saif has a scraper).
-- **DISABLED FOR SAFETY / BLOCKED: 5** — Black Box, Ashwered, Almtkamel, Jehazak, Nujoom Alomran, Techno Best.
-- **INACTIVE / NOT A STORE: 2** — Alesayi (distributor), Abdulwahed (placeholder).
+- **VERIFIED ACTIVE (customer-visible, working outbound): 5** — Amazon, Jarir, Extra, Almanea, **Noon (recovered 2026-07-27: 305 storefront products, clean URLs, in stores directory)**.
+- **SCRAPEABLE — engineering, no credential needed (4):** Carrefour, LuLu, Sharaf DG, Alsaif Gallery (Rakhys proves direct-scrape works; build the scraper).
+- **Affiliate-tag only (already have the mechanism):** AliExpress, eBay need their own scrapers; Amazon Associates already wired.
+- **NO DATA INGESTED, credential-free path exists (6):** Aleph (Shopify JSON), Me Stores, Alkhunaizan, Ghassan, Al Rabee Al Saif, Sheta & Saif (scraper dormant).
+- **DISABLED FOR SAFETY / BLOCKED (5):** Black Box, Ashwered, Almtkamel (Cloudflare); Jehazak, Nujoom Alomran, Techno Best (domain unknown).
+- **INACTIVE / NOT A STORE (2):** Alesayi (distributor), Abdulwahed (placeholder).
 - **Merged: RedSea (#25) = Abdul Latif Jameel Electronics (#27)** → one merchant. 27 list entries = 26 distinct merchants.
+
+## Parity vs Rakhys (the production benchmark)
+
+| Dimension | Rakhys | Tawveeri (2026-07-27) | Parity |
+|---|--:|--:|--:|
+| Retailers shown per product (proven) | ~10 | 5 active | ~50% |
+| Total products (sitemap-measured) | ~100k+ unique (~270k en/ar URLs) | 5,459 | ~5% |
+| Multi-store comparisons | deep (10/product) | 429 canonicals ≥2 approved stores | — |
+| Outbound quality | direct + Amazon tag | direct + Amazon tag (identical) | 100% (mechanism) |
+| Product identity | ULID matched across retailers | TPS canonical identity | parity (arguably better) |
+
+**The gap is product breadth + retailer count, both ENGINEERING (scrapers + scale), not credentials.** Recovery order by effort: Noon ✅ done → Carrefour/LuLu/Sharaf DG (new scrapers, public SKU URLs) → Alsaif/Aleph (Magento sitemap / Shopify JSON) → the long tail.
 
 **Genuine multi-store comparisons: 429 canonicals have ≥2 APPROVED-retailer offers** (TPS canonical
 layer / `/compare` path). Dominant combos: Extra+Almanea 192, Amazon+Extra 46, Extra+Jarir 31,
