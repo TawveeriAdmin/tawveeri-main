@@ -3,7 +3,8 @@
 // link. It is "unified" when that top result has >=2 stores sorted cheapest→highest. Failures are
 // root-caused into debt categories. Uses node fetch (proper UTF-8 — never curl for Arabic). READ-ONLY.
 const BASE = process.argv[2] || 'https://tawveeri.com';
-const norm = (s) => (s || '').toLowerCase();
+// Normalize Arabic (ة→ه, ى/ي, أإآ→ا) + lowercase so token matching isn't fooled by spelling variants.
+const norm = (s) => (s || '').toLowerCase().replace(/ة/g, 'ه').replace(/[ىي]/g, 'ي').replace(/[أإآ]/g, 'ا').replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const hit = (name, toks) => toks.some((t) => norm(name).includes(norm(t)));
 
 // Realistic popular Saudi consumer searches across the approved categories. `any` = tokens a correct
@@ -81,6 +82,7 @@ const CASES = [
     } catch (e) { rows.push({ q, top: 'ERR', stores: 0, ok: e.message.slice(0, 20) }); debt['error'] = (debt['error'] || 0) + 1; }
   }
   console.table(rows);
+  console.log('\nFAILURES:'); rows.filter((r) => r.ok.startsWith('✗')).forEach((r) => console.log(`  ${r.q}  →  "${r.top}"  [${r.ok.slice(2)}]`));
   const T = CASES.length;
   console.log(`\nSEARCH SUCCESS RATE: ${answered}/${T} = ${Math.round(100 * answered / T)}%  (answered = correct product + live price + active link)`);
   console.log(`  of answered, multi-store unified: ${unified}/${answered}  |  correctly cheapest-first: ${sorted}/${unified}`);

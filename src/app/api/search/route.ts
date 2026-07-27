@@ -133,7 +133,18 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'عصارة': ['juicer'],
   'محمصة': ['toaster'],
   'مكواة': ['iron', 'steamer'],
-  'ايباد': ['ipad', 'apple'],
+  'ايباد': ['ipad'],
+  'تاب': ['tab', 'tablet'],
+  'واتش': ['watch', 'smartwatch'],
+  'ابل': ['apple'],
+  'جالكسي': ['galaxy'],
+  'صحون': ['dishwasher'],
+  'اطباق': ['dishwasher'],
+  'قهوة': ['coffee', 'espresso'],
+  'قيمنق': ['gaming'],
+  'قيمنج': ['gaming'],
+  'جيمنج': ['gaming'],
+  'جيمينج': ['gaming'],
   'برو': ['pro'],
   'ماكس': ['max'],
   'بلس': ['plus'],
@@ -178,6 +189,7 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   'تلفزيون', 'شاشه', 'شاشات',
   'ثلاجه', 'فريزر', 'غساله', 'نشافه', 'مكنسه',
   'مايكروويف', 'ميكروويف', 'فرن', 'طابعه', 'راوتر', 'كاميرا', 'ساعه', 'تابلت',
+  'ايباد', 'واتش', 'تاب', 'جالكسي',
   'سماعه', 'سماعات',
   'phone', 'iphone', 'smartphone', 'mobile', 'laptop', 'tv', 'television',
   'refrigerator', 'fridge', 'freezer', 'washer', 'dryer', 'vacuum',
@@ -765,7 +777,10 @@ export async function POST(request: NextRequest) {
 
   // Relevance groups (hoisted): used by BOTH the gate (filter) and scoreProduct (rank) so the query's
   // product noun must be present. Generic tokens can't satisfy relevance on their own.
-  const GENERIC = new Set(['machine', 'electric', 'apple', 'samsung', 'smart', 'digital', 'pro', 'max',
+  // NOTE: 'apple'/'samsung' are deliberately NOT generic — a brand-only word (ابل, سامسونج) needs its
+  // English brand token to match English-named products (Apple Watch, Samsung Galaxy). Substitution is
+  // prevented by (a) the multi-group AND gate and (b) the accessory penalty, not by stripping the brand.
+  const GENERIC = new Set(['machine', 'electric', 'smart', 'digital', 'pro', 'max',
     'plus', 'mini', 'air', 'ultra', 'كهربائيه', 'كهربائي', 'ذكي', 'ذكيه', 'رقمي', 'هوائيه', 'hd', '4k']);
   const relevanceGroups: string[][] = queryIsMainProduct
     ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w))
