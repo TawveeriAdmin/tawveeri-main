@@ -61,7 +61,7 @@ mobile + air-conditioner categories only. Growing comparison breadth beyond this
 | 4 | **Jarir** | jarir.com | HTML scraper (jpm SKU) | ✅ | 55,476 | **920** (3,959 rows, deduped in UI) | 920 | 326 | — | partial | <24h | in-stock | **100% sa-en after repair; verified live** | **VERIFIED ACTIVE** |
 | 5 | **Extra** | extra.com | JSON-LD (Puppeteer) | ✅ | 46,686 | **838** | 838 | 2,639 | — | partial | refreshing¹ | in-stock | **/p/<id> 838/838 clean; 3/3 live** | **VERIFIED ACTIVE** |
 | 7 | **Almanea** | almanea.sa | Algolia feed | ✅ | 180,975 | **1,298** | 1,298 | 2,423 | — | good | <24h (feed) | 1,240 in-stock | **/en/product/p-<sku> 1296/1298; 15/15 live** | **VERIFIED ACTIVE** |
-| 6 | **Carrefour KSA** | carrefourksa.com | Internal API (MAF) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **REQUIRES COMMERCIAL ACCESS** |
+| 6 | **Carrefour KSA** | carrefourksa.com | Akamai + area-session | ❌ blocked | 0 | 0 | 0 | 0 | — | — | — | — | headless yields WRONG price/product | **INACTIVE OR UNAVAILABLE** (documented technical blocker) |
 | 8 | **Sheta & Saif** | swsg.co | Cron scraper (dormant) | ⚠️ | 276 | 0 | 0 | 57 | — | — | 24 Jul | — | not customer-visible | **NO DATA INGESTED** |
 | 9 | **LuLu** | luluhypermarket.com | SAP Hybris internal API | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **REQUIRES COMMERCIAL ACCESS** |
 | 10 | **Black Box** | blackboxksa.com | — (Cloudflare 403) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **DISABLED FOR CUSTOMER SAFETY** |
