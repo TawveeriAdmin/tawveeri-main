@@ -7,6 +7,7 @@ import almaneaConfig from './store-configs/almanea.json';
 import samsungKsaConfig from './store-configs/samsung_ksa.json';
 import shakerConfig from './store-configs/shaker.json';
 import swsgConfig from './store-configs/swsg.json';
+import luluConfig from './store-configs/lulu.json';
 
 /**
  * Active store scrapers (8 stores prioritized for MVP).
@@ -21,6 +22,7 @@ const STORE_CONFIGS: Record<string, unknown> = {
   samsung_ksa: samsungKsaConfig,
   shaker: shakerConfig,
   swsg: swsgConfig,
+  lulu: luluConfig,
 };
 
 export const ACTIVE_STORE_SLUGS = Object.keys(STORE_CONFIGS);

@@ -15,6 +15,7 @@ import { AlmaneaScraper } from '../stores/almanea-scraper';
 import { SamsungKsaScraper } from '../stores/samsung-ksa-scraper';
 import { ShakerScraper } from '../stores/shaker-scraper';
 import { SwsgScraper } from '../stores/swsg-scraper';
+import { LuluScraper } from '../stores/lulu-scraper';
 import { ProductService } from './product-service';
 import { IngestionService } from './ingestion-service';
 import { DataValidator } from '../validation/data-validator';
@@ -528,6 +529,8 @@ export class ScrapingOrchestrator {
         return new ShakerScraper();
       case 'swsg':
         return new SwsgScraper();
+      case 'lulu':
+        return new LuluScraper();
       default:
         return null;
     }

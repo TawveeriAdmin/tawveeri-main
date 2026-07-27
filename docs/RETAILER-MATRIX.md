@@ -22,8 +22,8 @@ Fetched a Rakhys product page directly (real browser UA — their block is Claud
 
 ## Summary
 
-- **VERIFIED ACTIVE (customer-visible, working outbound): 5** — Amazon, Jarir, Extra, Almanea, **Noon (recovered 2026-07-27: 305 storefront products, clean URLs, in stores directory)**.
-- **SCRAPEABLE — engineering, no credential needed (4):** Carrefour, LuLu, Sharaf DG, Alsaif Gallery (Rakhys proves direct-scrape works; build the scraper).
+- **VERIFIED ACTIVE (customer-visible, working outbound): 6** — Amazon, Jarir, Extra, Almanea, **Noon** (305), **LuLu** (185, recovered 2026-07-27: Akinon/Cloudflare via Puppeteer, JSON-LD prices, 3/3 exact-product+exact-price outbound verified).
+- **SCRAPEABLE — engineering, no credential needed:** Sharaf DG, Alsaif Gallery (Rakhys proves direct-scrape works). **Carrefour = documented technical blocker** (Akamai + delivery-area session → headless yields wrong product/price; will NOT fabricate).
 - **Affiliate-tag only (already have the mechanism):** AliExpress, eBay need their own scrapers; Amazon Associates already wired.
 - **NO DATA INGESTED, credential-free path exists (6):** Aleph (Shopify JSON), Me Stores, Alkhunaizan, Ghassan, Al Rabee Al Saif, Sheta & Saif (scraper dormant).
 - **DISABLED FOR SAFETY / BLOCKED (5):** Black Box, Ashwered, Almtkamel (Cloudflare); Jehazak, Nujoom Alomran, Techno Best (domain unknown).
@@ -63,7 +63,7 @@ mobile + air-conditioner categories only. Growing comparison breadth beyond this
 | 7 | **Almanea** | almanea.sa | Algolia feed | ✅ | 180,975 | **1,298** | 1,298 | 2,423 | — | good | <24h (feed) | 1,240 in-stock | **/en/product/p-<sku> 1296/1298; 15/15 live** | **VERIFIED ACTIVE** |
 | 6 | **Carrefour KSA** | carrefourksa.com | Akamai + area-session | ❌ blocked | 0 | 0 | 0 | 0 | — | — | — | — | headless yields WRONG price/product | **INACTIVE OR UNAVAILABLE** (documented technical blocker) |
 | 8 | **Sheta & Saif** | swsg.co | Cron scraper (dormant) | ⚠️ | 276 | 0 | 0 | 57 | — | — | 24 Jul | — | not customer-visible | **NO DATA INGESTED** |
-| 9 | **LuLu** | luluhypermarket.com | SAP Hybris internal API | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **REQUIRES COMMERCIAL ACCESS** |
+| 9 | **LuLu** | luluhypermarket.com | Akinon RSC + JSON-LD (Puppeteer) | ✅ | 205 | **185** | 185 | — | — | good | <24h | in-stock | **3/3 exact-product + exact-price verified** | **VERIFIED ACTIVE** |
 | 10 | **Black Box** | blackboxksa.com | — (Cloudflare 403) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **DISABLED FOR CUSTOMER SAFETY** |
 | 11 | **Alsaif Gallery** | alsaifgallery.com | Magento sitemap (URLs) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **NO DATA INGESTED** (credential-free discovery) |
 | 13 | **Sharaf DG** | sharafdg.com | Custom PHP | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **REQUIRES COMMERCIAL ACCESS** |
