@@ -1,4 +1,5 @@
 import type { ScrapedProduct, ValidationResult } from '../base/types';
+import { isInScope } from '../utils/category-scope';
 import {
   validatePriceRule,
   validateNameRule,
@@ -61,6 +62,14 @@ export class DataValidator {
     allWarnings.push(...modelResult.warnings);
     totalScore += modelResult.score;
     ruleCount++;
+
+    // Approved-category scope gate (Founder product-first directive 2026-07-27): reject supermarket /
+    // grocery / fashion / consumable / out-of-scope products at ACQUISITION — every store is gated here,
+    // so mixed-category hypermarkets (LuLu, Carrefour) and marketplaces (Noon, Amazon) can only ever
+    // contribute electronics + home-appliance products.
+    if (!isInScope(product.name_en || product.name_ar, product.category)) {
+      allErrors.push('Product is outside Tawveeri approved category scope');
+    }
 
     // Validate URL
     const urlResult = validateUrlRule(product.product_url, expectedDomain);
