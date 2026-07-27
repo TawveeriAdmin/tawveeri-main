@@ -22,8 +22,8 @@ Fetched a Rakhys product page directly (real browser UA — their block is Claud
 
 ## Summary
 
-- **VERIFIED ACTIVE (customer-visible, working outbound): 6** — Amazon, Jarir, Extra, Almanea, **Noon** (305), **LuLu** (185, recovered 2026-07-27: Akinon/Cloudflare via Puppeteer, JSON-LD prices, 3/3 exact-product+exact-price outbound verified).
-- **SCRAPEABLE — engineering, no credential needed:** Sharaf DG, Alsaif Gallery (Rakhys proves direct-scrape works). **Carrefour = documented technical blocker** (Akamai + delivery-area session → headless yields wrong product/price; will NOT fabricate).
+- **VERIFIED ACTIVE (customer-visible, working outbound): 7** — Amazon, Jarir, Extra, Almanea, **Noon** (305), **LuLu** (185), **Sharaf DG** (139, recovered 2026-07-27: WooCommerce microdata via plain HTTP, 3/3 exact-product+exact-price outbound verified).
+- **SCRAPEABLE — engineering, no credential needed:** Alsaif Gallery (Magento sitemap). **Carrefour = documented technical blocker** (Akamai + delivery-area session → headless yields wrong product/price; will NOT fabricate).
 - **Affiliate-tag only (already have the mechanism):** AliExpress, eBay need their own scrapers; Amazon Associates already wired.
 - **NO DATA INGESTED, credential-free path exists (6):** Aleph (Shopify JSON), Me Stores, Alkhunaizan, Ghassan, Al Rabee Al Saif, Sheta & Saif (scraper dormant).
 - **DISABLED FOR SAFETY / BLOCKED (5):** Black Box, Ashwered, Almtkamel (Cloudflare); Jehazak, Nujoom Alomran, Techno Best (domain unknown).
@@ -34,7 +34,7 @@ Fetched a Rakhys product page directly (real browser UA — their block is Claud
 
 | Dimension | Rakhys | Tawveeri (2026-07-27) | Parity |
 |---|--:|--:|--:|
-| Retailers shown per product (proven) | ~10 | 5 active | ~50% |
+| Retailers shown per product (proven) | ~10 | 7 active | ~70% |
 | Total products (sitemap-measured) | ~100k+ unique (~270k en/ar URLs) | 5,459 | ~5% |
 | Multi-store comparisons | deep (10/product) | 429 canonicals ≥2 approved stores | — |
 | Outbound quality | direct + Amazon tag | direct + Amazon tag (identical) | 100% (mechanism) |
@@ -66,7 +66,7 @@ mobile + air-conditioner categories only. Growing comparison breadth beyond this
 | 9 | **LuLu** | luluhypermarket.com | Akinon RSC + JSON-LD (Puppeteer) | ✅ | 205 | **185** | 185 | — | — | good | <24h | in-stock | **3/3 exact-product + exact-price verified** | **VERIFIED ACTIVE** |
 | 10 | **Black Box** | blackboxksa.com | — (Cloudflare 403) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **DISABLED FOR CUSTOMER SAFETY** |
 | 11 | **Alsaif Gallery** | alsaifgallery.com | Magento sitemap (URLs) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **NO DATA INGESTED** (credential-free discovery) |
-| 13 | **Sharaf DG** | sharafdg.com | Custom PHP | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **REQUIRES COMMERCIAL ACCESS** |
+| 13 | **Sharaf DG** | saudi.sharafdg.com | WooCommerce microdata (plain HTTP) | ✅ | 152 | **139** | 139 | — | — | good | <24h | 75 in-stock | **3/3 exact-product + exact-price verified** | **VERIFIED ACTIVE** |
 | 15 | **Alkhunaizan** | alkhunaizan.sa | Magento sitemap (URLs) | ❌ | 0 | 0 | 0 | 0 | — | — | — | — | — | **NO DATA INGESTED** (credential-free discovery) |
 
 ¹ Extra data refreshes over the next hourly scheduler cycles now that the JSON-LD scraper is repaired (ADR: last session). Delisted items age out via consecutive_misses.
