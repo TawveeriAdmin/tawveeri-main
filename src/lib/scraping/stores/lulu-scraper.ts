@@ -156,6 +156,13 @@ export class LuluScraper extends BaseScraper {
       const name = this.slugToName(slug);
       const productUrl = `${ORIGIN}/en-sa${rel}`;
       const hasDiscount = retail > price;
+      // The product's main image sits in productimage_set just before the price cluster; grab the
+      // last Akinon CDN image URL in the window preceding this match.
+      const before = u.slice(Math.max(0, (m.index ?? 0) - 600), m.index);
+      const imgMatches = before.match(/"image":"(https:\/\/[^"]*akinoncloudcdn[^"]+)"/g);
+      const image = imgMatches && imgMatches.length
+        ? (imgMatches[imgMatches.length - 1].match(/"image":"([^"]+)"/) || [])[1]
+        : null;
 
       products.push({
         name_ar: name,
@@ -167,7 +174,7 @@ export class LuluScraper extends BaseScraper {
         original_price: hasDiscount ? retail : null,
         availability: inStock ? 'in_stock' : 'out_of_stock',
         product_url: productUrl,
-        image_urls: [],
+        image_urls: image ? [image] : [],
         specifications: {},
         category: determineCategory(name) || fallbackCategory,
         description_ar: null,
