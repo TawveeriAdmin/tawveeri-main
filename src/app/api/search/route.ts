@@ -222,7 +222,14 @@ function buildOrPool(words: string[]): string {
   for (const word of words) {
     const clean = word.replace(/[(),]/g, ' ').trim();
     if (!clean) continue;
-    parts.push(`name_ar.ilike.%${clean}%`, `name_en.ilike.%${clean}%`, `brand.ilike.%${clean}%`);
+    // The query words are fully normalized (ة→ه, ى→ي), but the catalogue usually keeps ة/ى, so an
+    // ilike on the folded form misses them (e.g. query "ثلاجه" vs catalogue "ثلاجة"). Also match the
+    // un-folded trailing variants so real products are actually fetched as candidates.
+    const variants = new Set([clean, clean.replace(/ه$/, 'ة'), clean.replace(/ي$/, 'ى')]);
+    for (const v of variants) {
+      if (v) parts.push(`name_ar.ilike.%${v}%`);
+    }
+    parts.push(`name_en.ilike.%${clean}%`, `brand.ilike.%${clean}%`);
     const norm = normalizeArabic(clean);
     const mapped = ARABIC_TO_ENGLISH[clean] || ARABIC_TO_ENGLISH[norm];
     if (mapped) {
