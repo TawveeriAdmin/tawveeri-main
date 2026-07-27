@@ -7,6 +7,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
+import { isApprovedStore } from '@/lib/retailers/approved-retailers';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -347,7 +348,8 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
 }
 
 function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
-  const validStores = (hit.stores || []).filter((s) => s.current_price != null);
+  // Approved-27 scope gate: only surface offers from approved retailers (Founder Directive 2026-07-27).
+  const validStores = (hit.stores || []).filter((s) => s.current_price != null && isApprovedStore(s.store_name));
   if (validStores.length === 0) return null;
   const storeEntries: SearchProduct[] = validStores.map((s) => ({
     name_ar: hit.name_ar,
@@ -506,6 +508,8 @@ async function searchTPSCanonical(
 
     const latest = new Map<string, Map<string, { price: number; obsId: string }>>();
     for (const r of prices ?? []) {
+      // Approved-27 scope gate: skip observations from non-approved retailers (e.g. najm, alnakheel).
+      if (!isApprovedStore(r.store_name)) continue;
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
       if (!m.has(r.store_name)) m.set(r.store_name, { price: Number(r.price), obsId: r.tps_observation_id });
@@ -800,7 +804,10 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
 }
 
 function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
-  const productStores = (row.product_stores || []).filter((ps) => ps && ps.current_price != null);
+  // Approved-27 scope gate: drop offers from non-approved retailers (e.g. shaker, samsung_ksa).
+  const productStores = (row.product_stores || []).filter(
+    (ps) => ps && ps.current_price != null && isApprovedStore(ps.store_name || ps.stores?.name),
+  );
   if (productStores.length === 0) return null;
   const storeEntries: SearchProduct[] = productStores.map((ps) => ({
     name_ar: row.name_ar,

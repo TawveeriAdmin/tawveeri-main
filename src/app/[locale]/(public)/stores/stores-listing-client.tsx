@@ -6,6 +6,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { getStoreDisplayName } from '@/lib/logos';
+import { isApprovedStore } from '@/lib/retailers/approved-retailers';
 import {
   Select,
   SelectContent,
@@ -94,15 +95,29 @@ export default function StoresListingClient() {
 
         if (queryError) throw queryError;
 
-        // Real per-store product counts (one lightweight fetch of store_id, counted client-side) —
-        // without these the directory rendered "0 products" for every store and felt empty.
+        // Real per-store product counts = DISTINCT products per store (not raw offer rows). Some
+        // stores carry duplicate product_stores rows (e.g. Jarir's collapsed GCC-market variants),
+        // so a raw row count overstated the catalogue; count distinct product_id for an honest number.
         const counts = new Map<number, number>();
         try {
-          const { data: psRows } = await sb.from('product_stores').select('store_id');
-          (psRows || []).forEach((r: { store_id: number }) => counts.set(r.store_id, (counts.get(r.store_id) || 0) + 1));
+          const seen = new Map<number, Set<string>>();
+          const { data: psRows } = await sb.from('product_stores').select('store_id, product_id');
+          (psRows || []).forEach((r: { store_id: number; product_id: string }) => {
+            if (!seen.has(r.store_id)) seen.set(r.store_id, new Set());
+            seen.get(r.store_id)!.add(r.product_id);
+          });
+          seen.forEach((set, storeId) => counts.set(storeId, set.size));
         } catch { /* counts are best-effort */ }
 
-        const mapped: StoreSummary[] = (rawStores || []).map((s: any) => {
+        const mapped: StoreSummary[] = (rawStores || [])
+          // Approved-27 scope gate (Founder Directive 2026-07-27): show ONLY approved retailers
+          // that have real customer-visible offers. No non-approved store, no zero-product /
+          // "coming soon" card ever appears in the active directory.
+          .filter((s: any) => {
+            const slug = s.slug || String(s.id);
+            return isApprovedStore(slug) && (counts.get(s.id) || 0) > 0;
+          })
+          .map((s: any) => {
           const slug = s.slug || String(s.id);
           return {
             id: s.id,

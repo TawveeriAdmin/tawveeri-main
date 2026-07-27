@@ -41,6 +41,26 @@ export function normalizeStoreUrl(
       return url.toString();
     }
 
+    // Jarir: normalize any non-Saudi GCC market (qa/ae/bh/kw) to the Saudi storefront (sa-en).
+    // Jarir shares the product slug + SKU (jpm####) across all GCC markets; only the market
+    // prefix and the price differ. Verified live: the sa-en page resolves to the exact same
+    // product at the KSA price (e.g. qa-ar/vivo-y04-...jpm1588 → sa-en/... = "vivo Y04 128GB
+    // Gold — Jarir Bookstore KSA", 439 SAR). Preserves childSku so the exact variant is kept.
+    if (
+      storeName === "جرير" ||
+      storeName === "مكتبة جرير" ||
+      storeName.toLowerCase() === "jarir" ||
+      host.includes("jarir.com")
+    ) {
+      const m = url.pathname.match(/^\/([a-z]{2})-([a-z]{2})\/(.+)$/i);
+      if (m && m[1].toLowerCase() !== "sa") {
+        const childSku = url.searchParams.get("childSku");
+        const q = childSku ? `?childSku=${encodeURIComponent(childSku)}` : "";
+        return `https://www.jarir.com/sa-en/${m[3]}${q}`;
+      }
+      return url.toString();
+    }
+
     return url.toString();
   } catch {
     return rawUrl;

@@ -217,9 +217,15 @@ if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRE
 // structured adapters — cleaner + richer than scraping. They auto-refresh through the feed
 // loop. Dedup is by listing identity (almanea keys on the `-p-<id>` productId regardless of
 // host), so the feed never double-counts against any legacy scraper. ADR-089/094/095.
-const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'shaker,almanea,najm').split(',').map((s) => s.trim()).filter(Boolean);
+// SCOPE (Founder Directive 2026-07-27): ingest ONLY approved-27 retailers. shaker, najm and
+// samsung_ksa are NOT in the approved portfolio → dropped from the ingestion defaults. almanea
+// is the only approved credential-free feed-sourced store currently wired here.
+// NOTE: production Railway env vars (INGEST_FEED_STORES / INGEST_STORES) OVERRIDE these defaults —
+// they MUST be updated to drop shaker/najm/samsung_ksa for the scope reduction to fully take
+// effect on the running scheduler (see docs/RETAILER-MATRIX.md → "Founder actions required").
+const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'almanea').split(',').map((s) => s.trim()).filter(Boolean);
 const _feedSet = new Set(INGEST_FEED_STORES);
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'shaker,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
+const INGEST_STORES = (process.env.INGEST_STORES ?? '').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(5 * 60 * 1000), 10);    // 5m after boot

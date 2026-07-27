@@ -1,6 +1,9 @@
 /**
- * 8 prioritized stores for MVP launch. Add a new store here + its scraper
- * in `./<slug>-search-scraper.ts` + the mapping in `search-orchestrator.ts`.
+ * Approved-27 scope (Founder Directive 2026-07-27): only retailers in the approved portfolio may
+ * appear in search. samsung_ksa and shaker are NOT approved → removed from the active registry
+ * (their scraper classes + config JSON are retained-but-dormant / archived in place). swsg is
+ * approved (= Sheta & Saif). Add a new store here + its scraper in `./<slug>-search-scraper.ts`
+ * + the mapping in `search-orchestrator.ts`, and register it in `approved-retailers.ts`.
  */
 export const SUPPORTED_SEARCH_STORES = [
   'amazon',
@@ -8,8 +11,6 @@ export const SUPPORTED_SEARCH_STORES = [
   'jarir',
   'extra',
   'almanea',
-  'samsung_ksa',
-  'shaker',
   'swsg',
 ] as const;
 

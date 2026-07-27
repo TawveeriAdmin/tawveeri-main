@@ -12,6 +12,7 @@
 
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import { isApprovedStoreId } from "@/lib/retailers/approved-retailers";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -66,6 +67,8 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
   const byProduct = new Map<string, Agg>();
   for (const r of data as unknown as Row[]) {
     const p = r.products;
+    // Approved-27 scope gate: deals only from approved retailers (Founder Directive 2026-07-27).
+    if (!isApprovedStoreId(r.store_id)) continue;
     const cur = Number(r.current_price), was = Number(r.original_price);
     if (!p || !p.slug || !Number.isFinite(cur) || cur <= 0 || !Number.isFinite(was) || was <= cur) continue;
     const store = r.stores?.name_ar || r.stores?.slug || "";
