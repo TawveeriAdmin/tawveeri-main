@@ -91,11 +91,11 @@ const INDEX = process.env.ALGOLIA_INDEX_NAME || 'products';
       queryLanguages: ['ar', 'en'],
       indexLanguages: ['ar', 'en'],
       ignorePlurals: true,
-      // 'none' (not 'allOptional'): optionalWords still give recall (a record matching any expansion
-      // term returns), but Algolia no longer falls back to "return everything ranked by popularity"
-      // when the query matches poorly — which was surfacing earbuds for ثلاجة/غسالة. Non-matching junk
-      // is now excluded; a truly empty result then correctly falls through to the DB path.
-      removeWordsIfNoResults: 'none',
+      // 'allOptional' gives the best recall for multi-word queries; the previous "junk" behaviour
+      // (earbuds for ثلاجة) was actually caused by the route sending an UNFOLDED required word — fixed
+      // there. With the folded query + the route's relevance gate, non-matching junk is filtered out
+      // downstream, so we keep the high-recall setting.
+      removeWordsIfNoResults: 'allOptional',
       typoTolerance: 'min',
     },
   });

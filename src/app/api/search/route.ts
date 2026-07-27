@@ -757,8 +757,13 @@ export async function POST(request: NextRequest) {
   // Algolia path surfaced a popular unrelated item (e.g. "ثلاجة" → earbuds). Only applies when it
   // leaves results (never wipes the page) and never to non-product-type/model queries.
   if (rawQuery && queryIsMainProduct) {
+    // Generic tokens must NOT satisfy the gate on their own — otherwise "Coffee Machine" passes a
+    // dishwasher query (via "machine"), an iPhone passes an iPad query (via "apple"), and an electric
+    // screwdriver passes a vacuum query (via "electric"/كهربائيه). The specific product noun must match.
+    const GENERIC = new Set(['machine', 'electric', 'apple', 'samsung', 'smart', 'digital', 'pro', 'max',
+      'plus', 'mini', 'air', 'ultra', 'كهربائيه', 'كهربائي', 'ذكي', 'ذكيه', 'رقمي', 'هوائيه', 'hd', '4k']);
     const gw = normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w));
-    const terms = [...new Set(gw.flatMap(expandWordTerms))].filter((t) => t.length >= 2);
+    const terms = [...new Set(gw.flatMap(expandWordTerms))].filter((t) => t.length >= 2 && !GENERIC.has(t));
     if (terms.length) {
       const gated = products.filter((p) => {
         const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
