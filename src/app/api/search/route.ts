@@ -227,13 +227,24 @@ function detectCanonicalCategory(raw: string): 'mobile' | 'air_conditioner' | nu
   return 'mobile';
 }
 
+// A full-device connectivity spec that ONLY a watch/phone BODY carries ("GPS + Cellular", "(GPS",
+// "Wi-Fi + Cellular"). A protective case/band never lists it. Used to override a false accessory hit
+// when the DEVICE's own wording ("Titanium Case", "with … Band") would otherwise misclassify it.
+const DEVICE_SIGNAL_EN = /\bgps\s*\+\s*cellular\b|\(gps\b|\bwi-?fi\s*\+\s*cellular\b/;
+
 function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
-  return ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
+  const isCompat = ACCESSORY_COMPAT_AR.test(ar) || ACCESSORY_COMPAT_EN.test(en);
+  const hasHint = ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
     ACCESSORY_HINTS_EN.some((h) => en.includes(h)) ||
-    ACCESSORY_COMPAT_AR.test(ar) ||
-    ACCESSORY_COMPAT_EN.test(en);
+    isCompat;
+  if (!hasHint) return false;
+  // Device override: a title with a full-device connectivity signal that is NOT a "for/compatible"
+  // accessory IS the device itself (e.g. "Apple Watch Ultra (GPS + Cellular) - Titanium Case …").
+  // Its own "Case"/"Band" wording must not sink it below the cheap protective cases.
+  if (DEVICE_SIGNAL_EN.test(en) && !isCompat) return false;
+  return true;
 }
 
 function hasACSignal(nameAr: string, nameEn: string): boolean {

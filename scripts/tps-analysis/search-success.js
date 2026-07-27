@@ -75,7 +75,10 @@ const CASES = [
       else {
         const name = `${p.name_en || ''} ${p.name_ar || ''}`;
         const relevant = hit(name, any);
-        const isAccessorySub = !wantsAccessory(any) && ACC.test(name);
+        // A full-device connectivity signal (GPS + Cellular / (GPS) means the title's "Case"/"Band" is
+        // the DEVICE's own part, not a protective accessory — mirror the app's device override.
+        const deviceSignal = /gps\s*\+\s*cellular|\(gps|wi-?fi\s*\+\s*cellular/i.test(name);
+        const isAccessorySub = !wantsAccessory(any) && ACC.test(name) && !deviceSignal;
         const price = (p.stores || []).some((s) => Number(s.current_price) > 0) || Number(p.best_price) > 0;
         const link = (p.stores || []).some((s) => s.product_url);
         if (isAccessorySub) cause = 'relevance/matching(accessory-substitution)';
