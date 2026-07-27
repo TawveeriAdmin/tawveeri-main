@@ -207,6 +207,7 @@ export default function SearchClient() {
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
   const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
   const [smartPick, setSmartPick] = useState<SmartPick | null>(null);
+  const [relaxed, setRelaxed] = useState(false); // true when results are "nearby/related", not an exact match
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [saveSearchName, setSaveSearchName] = useState('');
@@ -706,6 +707,7 @@ export default function SearchClient() {
       const total = typeof data.total === 'number' ? data.total : mappedProducts.length;
       setRawProducts(mappedProducts);
       setServerTotal(total);
+      setRelaxed(!!((data as unknown) as { relaxed?: boolean }).relaxed);
       // Funnel step 2 — Results (or off-funnel no_answer when the storefront returns nothing).
       if (currentPage === 1) {
         const cat = selectedCategory !== 'all' ? selectedCategory : null;
@@ -1331,6 +1333,14 @@ export default function SearchClient() {
 
               {/* Results Area */}
               <div className="min-w-0 flex-1">
+                {/* Related-results notice — honest empty-state: no exact match, showing nearby products */}
+                {relaxed && !loading && totalCount > 0 && (
+                  <div className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[var(--brand-bg-green)] px-4 py-3 text-sm font-medium text-[var(--brand-green-dark)]">
+                    {locale === 'ar'
+                      ? 'لا توجد نتيجة مطابقة تماماً لبحثك — نعرض لك منتجات قريبة قد تناسبك.'
+                      : 'No exact match — showing related products that may fit.'}
+                  </div>
+                )}
                 {/* Mobile toolbar + filter chips */}
                 <div className="mb-4 rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/82 p-3 shadow-[0_18px_44px_-40px_rgba(26,26,26,0.5)] backdrop-blur dark:bg-[color:var(--color-card)]/68">
                   {/* Mobile: results count, sort, filters button */}

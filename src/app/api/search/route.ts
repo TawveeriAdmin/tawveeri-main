@@ -90,15 +90,7 @@ type DecisionLayer = {
   topMatches: DecisionTopMatch[];
 };
 
-function normalizeArabic(text: string): string {
-  return text
-    .replace(/[\u064B-\u065F\u0670]/g, '')
-    .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
-    .replace(/\u0629/g, '\u0647')
-    .replace(/\u0649/g, '\u064A')
-    .replace(/\u0640/g, '')
-    .trim();
-}
+import { normalizeArabic } from '@/lib/search/arabic-normalize';
 
 const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'جوال': ['phone', 'smartphone', 'mobile'],
@@ -453,11 +445,12 @@ async function enrichWithTPS(
         const canonical = canonicalMap.get(code);
         if (canonical) {
           const slug = identityKeyToSlug(canonical.tps_identity_key || '');
+          // Link the identity for dedup, but DON'T claim a comparison here — a model-code match
+          // doesn't prove >=2 live store offers. Verified compare CTAs come only from
+          // searchTPSCanonical (gated on >=2 distinct stores). Prevents false "قارن الأسعار" CTAs.
           enriched = {
             ...enriched,
-            tps_compare_url: `/ar/compare/${encodeURIComponent(canonical.tps_identity_key || '')}`,
             tps_identity_key: canonical.tps_identity_key,
-            has_tps_comparison: true,
             product_id: enriched.product_id || canonical.id,
           } as GroupedSearchProduct;
           break;
@@ -552,9 +545,11 @@ async function searchTPSCanonical(
         store_count: byStore.size,
         product_id: p.id,
         product_slug: slug,
-        tps_compare_url: `/ar/compare/${encodeURIComponent(p.tps_identity_key || '')}`,
+        // Only claim a price COMPARISON when the product genuinely has >=2 distinct store offers.
+        // Single-store products get no compare CTA (the UI shows an honest single-store action instead).
+        tps_compare_url: byStore.size >= 2 ? `/ar/compare/${encodeURIComponent(p.tps_identity_key || '')}` : null,
         tps_identity_key: p.tps_identity_key,
-        has_tps_comparison: true,
+        has_tps_comparison: byStore.size >= 2,
       } as GroupedSearchProduct);
     }
     return out;
@@ -605,6 +600,7 @@ export async function POST(request: NextRequest) {
   let rows: ProductRow[] = [];
   let totalCount = 0;
   let dbError: string | null = null;
+  let relaxedResults = false; // true when we fell back to nearby/related products (no exact all-words match)
 
   let algoliaProducts: GroupedSearchProduct[] | null = null;
   if (rawQuery && isAlgoliaConfigured()) {
@@ -648,10 +644,25 @@ export async function POST(request: NextRequest) {
     q = q.range(0, 1500);
     const { data, error } = await q;
     if (error) { console.error('[search:pool]', error.message); dbError = error.message; }
-    let candidateRows = (data ?? []) as ProductRow[];
+    const orCandidates = (data ?? []) as ProductRow[];
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
+    let candidateRows = orCandidates;
     if (wordTermsList.length > 0) {
-      candidateRows = candidateRows.filter((row) => productMatchesAllWords(row, wordTermsList));
+      const strict = orCandidates.filter((row) => productMatchesAllWords(row, wordTermsList));
+      if (strict.length > 0) {
+        candidateRows = strict;
+      } else if (wordTermsList.length > 1) {
+        // No product matches ALL words (e.g. "ثلاجة صغيرة", "مكيف لغرفة 30 متر"). Rather than a silent
+        // zero, surface the closest products — those matching the MOST query words — flagged as related.
+        const scored = orCandidates
+          .map((row) => ({ row, hits: wordTermsList.filter((terms) => productMatchesAllWords(row, [terms])).length }))
+          .filter((x) => x.hits > 0);
+        const maxHits = scored.reduce((m, x) => Math.max(m, x.hits), 0);
+        candidateRows = scored.filter((x) => x.hits === maxHits).map((x) => x.row);
+        relaxedResults = candidateRows.length > 0;
+      } else {
+        candidateRows = [];
+      }
     }
     rows = candidateRows;
     totalCount = candidateRows.length;
@@ -726,10 +737,12 @@ export async function POST(request: NextRequest) {
     pageSize: number;
     decisionCard: DecisionLayer['decisionCard'];
     topMatches: DecisionTopMatch[];
+    relaxed: boolean;
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
     total,
+    relaxed:           relaxedResults,
     page:              currentPage,
     pageSize:          currentPageSize,
     query:             rawQuery,

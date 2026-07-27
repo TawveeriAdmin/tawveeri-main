@@ -47,7 +47,10 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
         </span>
         {pick.is_tps && (
           <span className="rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-medium text-success-700 dark:bg-success-900/40 dark:text-success-300">
-            {isRTL ? 'مقارنة موثقة' : 'Verified comparison'}
+            {/* "Comparison" only when >=2 real stores; otherwise it's an honest single-store verified price. */}
+            {pick.store_count >= 2
+              ? (isRTL ? 'مقارنة موثقة' : 'Verified comparison')
+              : (isRTL ? 'سعر موثّق' : 'Verified price')}
           </span>
         )}
       </div>
