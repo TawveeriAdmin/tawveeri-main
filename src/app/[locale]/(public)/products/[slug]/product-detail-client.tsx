@@ -894,7 +894,7 @@ export default function ProductDetailClient() {
  <BestPriceCard
  store={bestPriceStore.stores}
  currentPrice={bestPriceStore.current_price}
- originalPrice={bestPriceStore.original_price}
+ originalPrice={process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off' ? bestPriceStore.original_price : null}
  availability={bestPriceStore.availability}
  url={bestPriceStore.affiliate_url || bestPriceStore.product_url}
  onClick={() => handleViewAtStore(bestPriceStore)}

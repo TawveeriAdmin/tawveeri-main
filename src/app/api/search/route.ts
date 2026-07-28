@@ -366,10 +366,14 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
   if (isCheapest) parts.push('أرخص سعر');
   if (p.store_count >= 2) parts.push(`متوفر في ${p.store_count} متاجر`);
-  const dealStore = p.stores.find((s) => s.original_price && s.current_price && s.original_price > s.current_price);
-  if (dealStore && dealStore.original_price) {
-    const pct = Math.round(((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100);
-    if (pct > 0) parts.push(`خصم ${pct}%`);
+  // ADR-129 SAVINGS_GATE (default on): the merchant "was" (original_price) is not a drop we verified —
+  // suppress the "خصم %" claim unless the gate is explicitly off.
+  if (process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off') {
+    const dealStore = p.stores.find((s) => s.original_price && s.current_price && s.original_price > s.current_price);
+    if (dealStore && dealStore.original_price) {
+      const pct = Math.round(((dealStore.original_price - dealStore.current_price) / dealStore.original_price) * 100);
+      if (pct > 0) parts.push(`خصم ${pct}%`);
+    }
   }
   const inStock = p.stores.some((s) => s.availability === 'in_stock');
   if (inStock && parts.length === 0) parts.push('متوفر الآن');

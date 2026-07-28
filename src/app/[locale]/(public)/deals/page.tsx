@@ -118,12 +118,17 @@ export default async function DealsPage({ params }: { params: { locale: string }
                     {d.bestPrice.toLocaleString("ar-SA")}{" "}
                     <span className="text-xs font-normal">ريال</span>
                   </div>
-                  <div className="text-xs text-on-surface-variant line-through">
-                    بدلاً من {d.averagePrice.toLocaleString("ar-SA")} ريال
-                  </div>
+                  {/* ADR-129 (P0-2): averagePrice is OUR cross-store measurement, not a merchant "was" —
+                      so it is NOT gated. Relabelled to state exactly what it is (below the market AVERAGE),
+                      never "بدلاً من" which implies a former price. A claim no competitor can make. */}
+                  {d.averagePrice > d.bestPrice && (
+                    <div className="text-xs text-on-surface-variant">
+                      أقل من متوسط السوق بـ {Math.round(d.averagePrice - d.bestPrice).toLocaleString("ar-SA")} ريال
+                    </div>
+                  )}
                 </div>
                 {d.discountPct > 0 && (
-                  <div className="text-sm font-bold text-[var(--brand-green-dark)]">-{d.discountPct}٪</div>
+                  <div className="text-sm font-bold text-[var(--brand-green-dark)]" title="مقارنةً بمتوسط سعر السوق الذي رصدناه">-{d.discountPct}٪ عن المتوسط</div>
                 )}
               </div>
 

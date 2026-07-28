@@ -39,7 +39,10 @@ export function ComparisonCard({
   const t = useTranslations();
   const params = useParams();
   const locale = propLocale || (params?.locale as string) || 'ar';
-  const savings = originalPrice ? calculateSavings(originalPrice, currentPrice) : 0;
+  // ADR-129 SAVINGS_GATE (default on): show a savings figure ONLY where we observed the drop.
+  // The merchant "was" (originalPrice) is not a drop we verified → suppress unless gate is off.
+  const savingsGateOn = process.env.NEXT_PUBLIC_SAVINGS_GATE !== 'off';
+  const savings = (!savingsGateOn && originalPrice) ? calculateSavings(originalPrice, currentPrice) : 0;
 
   return (
     <Card

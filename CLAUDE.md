@@ -23,6 +23,9 @@ Tawveeri is governed by a constitutional document set. Precedence, highest first
 - Commercial interest never enters ranking. Every merchant exit is measured via `/go`.
 - Every table enables RLS in its schema definition; credential/session tables are never granted to `anon`.
 - Precision over recall: corroborate (≥2 stores) before asserting identity.
+- **Search the Decision Register before analysing anything.** Before starting any investigation, grep `docs/DECISIONS.md` for the topic. With 125+ ADRs, the probability that a question has already been researched and answered is high. Re-deriving a documented finding is waste; contradicting one without citing it is a governance failure. State in your output which ADRs you checked.
+- **Naming discipline for "System A"/"System B":** these names refer ONLY to the two DATABASES — System A = production (`vyceqrzttspyycdpojtn`), System B = legacy (`ffpsjjazsluolysgithg`, do not use). NEVER reuse "System A/B" for layers/tables inside the production DB. For layers, say "storefront layer" (`products`/`product_stores`/`stores`) and "TPS knowledge layer" (`canonical_products`/`tps_product_projection`/…). (ADR-125 originally misused these names; see its correction note.)
+- **Report the full task ledger, not just completed work.** When closing any task, list every numbered item you were given, with its status: DONE / NOT DONE / NOT POSSIBLE + reason. Never summarise only what was accomplished. An omitted item must be visible as an omission.
 
 **Verification methodology** (governs all milestones): all production/legacy verification is **read-only** unless the founder approves a write; the **production database is the only source of truth** for any verdict; prove project identity before acting (`vyceqrzttspyycdpojtn` = production, `ffpsjjazsluolysgithg` = legacy); background watchers are optional instrumentation, never evidence. Full detail in `docs/ENGINEERING-TRANSITION-PLAN.md`.
 
@@ -86,7 +89,7 @@ Only these user commands change mode:
 
 ## Project Overview
 
-**Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. Users compare prices across 8 Saudi retailers (Amazon SA, Noon, Jarir, Extra, Almanea, Samsung KSA, Shaker, SWSG), set price alerts, and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
+**Tawveeri** (توفيري) is a bilingual (Arabic/English) price comparison platform for electronics in Saudi Arabia. **Retailer reality (corrected 2026-07-28):** the `stores` table holds **22 rows**, but per ADR-124 **16 of 22 have zero products** (~6 have ingested data). The founder-approved *active* set is **7** — Amazon, Jarir, Extra, Almanea, Noon, LuLu, Sharaf DG (ADR-125 scope); ADR-106 added Sony World (store 16). The historical "8 retailers (Amazon SA, Noon, Jarir, Extra, Almanea, Samsung KSA, Shaker, SWSG)" list is outdated (Samsung KSA/Shaker/SWSG are not in the active set). Users set price alerts and track deals. Includes admin dashboard, store owner portal, and affiliate transaction tracking.
 
 **Note:** The root `README.md` is outdated and describes a legacy Flask/Python architecture. This CLAUDE.md is the authoritative reference.
 

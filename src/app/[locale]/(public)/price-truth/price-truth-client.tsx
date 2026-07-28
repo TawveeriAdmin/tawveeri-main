@@ -91,7 +91,7 @@ export function PriceTruthClient({ locale }: { locale: string }) {
                       <p className="mt-1 inline-flex items-center gap-1 text-xs text-on-surface-variant"><Store className="h-3.5 w-3.5" aria-hidden />{dl.store_name}
                         <span className="opacity-70">· {T(`تتبّعنا ${dl.distinct_days} يوم`, `tracked ${dl.distinct_days}d`, loc)}</span></p>
                       <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-medium text-success-700 dark:bg-success-900/40 dark:text-success-300">
-                        <TrendingDown className="h-3 w-3" aria-hidden />{T(`توفير حقيقي ${dl.real_saving_pct}٪ — كان ${dl.observed_max}`, `real saving ${dl.real_saving_pct}% — was ${dl.observed_max}`, loc)}</p>
+                        <TrendingDown className="h-3 w-3" aria-hidden />{T(`توفير حقيقي ${dl.real_saving_pct}٪ — كان ${Number(dl.observed_max.toFixed(2))}`, `real saving ${dl.real_saving_pct}% — was ${Number(dl.observed_max.toFixed(2))}`, loc)}</p>
                     </div>
                     <div className="shrink-0 text-end">
                       <Price amount={dl.current_price} className="text-lg font-bold text-primary-700 dark:text-primary-300" />

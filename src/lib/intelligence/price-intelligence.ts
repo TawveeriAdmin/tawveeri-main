@@ -223,7 +223,7 @@ export function computeDiscountIntegrity(points: PricePoint[], claimedWas: numbe
   }
   if (current <= observedMax * (1 - REAL_DROP_MIN)) {
     out.verdict = "verified_drop";
-    out.text = { ar: `انخفاض حقيقي: كان ${observedMax} وأصبح ${current} — توفير ${realOff}٪ مؤكَّد برصدنا`, en: `Genuine drop: ${observedMax} → ${current} — a ${realOff}% saving we verified by tracking` };
+    out.text = { ar: `انخفاض حقيقي: كان ${Math.round(observedMax * 100) / 100} وأصبح ${Math.round(current * 100) / 100} — توفير ${realOff}٪ مؤكَّد برصدنا`, en: `Genuine drop: ${Math.round(observedMax * 100) / 100} → ${Math.round(current * 100) / 100} — a ${realOff}% saving we verified by tracking` };
     return out;
   }
   out.verdict = "stable";
@@ -252,7 +252,7 @@ export function discountVerdictFromFacts(f: DiscountFacts): DiscountIntegrity {
   }
   if (f.current <= f.observedMax * (1 - REAL_DROP_MIN)) {
     out.verdict = "verified_drop";
-    out.text = { ar: `انخفاض حقيقي: كان ${f.observedMax} وأصبح ${f.current} — توفير ${realSavingPct}٪ مؤكَّد برصدنا`, en: `Genuine drop: ${f.observedMax} → ${f.current} — a ${realSavingPct}% saving we verified by tracking` };
+    out.text = { ar: `انخفاض حقيقي: كان ${Math.round(f.observedMax * 100) / 100} وأصبح ${Math.round(f.current * 100) / 100} — توفير ${realSavingPct}٪ مؤكَّد برصدنا`, en: `Genuine drop: ${Math.round(f.observedMax * 100) / 100} → ${Math.round(f.current * 100) / 100} — a ${realSavingPct}% saving we verified by tracking` };
     return out;
   }
   out.verdict = "stable";
