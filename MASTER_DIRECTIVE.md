@@ -193,8 +193,52 @@ human-labelled sample.
 
 ---
 
+## PHASE 2.5 — CONNECT SYSTEM A
+*Gate to enter: Phase 1 complete (identity defects cleared). · The single largest
+North Star mover available — larger than Tier 2, larger than further acquisition.*
+
+**Why this phase exists (measured 2026-07-28):** the 88 net-new comparable families
+that mid-market stores create — and the 428 comparable families the TPS knowledge
+layer already holds — live in **System A**, which is **isolated from customer search
+(ADR-125)**. `/api/search` reads the storefront Algolia `products` index; System A's
+`tawveeri_tps_products` is never read. Customers cannot see any of it, and cannot see
+it no matter how many more stores we onboard. **Onboarding into an isolated layer is
+filling a locked warehouse.** Connecting System A is the only lever that converts
+already-held comparable families into customer-visible ones at zero acquisition cost.
+
+**What was frozen and why:** connecting System A is drafted as **ADR-126** and was
+**frozen because of the identity-quality defects** (transliteration duplicates,
+model-vs-colour merges, cooling_mode merges). Serving those defects to customers is
+worse than not serving. **Phases 1.2 and 1.3 exist precisely to clear this freeze** —
+this phase cannot start until they are done and the true duplicate count and both
+merge-defect classes are quantified and fixed (GATE 1).
+
+**2.5.1 Un-freeze ADR-126 on evidence.** Restate the identity-defect blockers that
+froze it; show, with measurement, that each is cleared (or bounded to an acceptable,
+disclosed residual). No connection until this evidence is on the record.
+
+**2.5.2 Choose the connection mechanism.** Two options (ADR-125): (a) point
+`/api/search` at `tawveeri_tps_products`; (b) merge canonical/comparable data into the
+storefront `products` index. Assess correctness, latency, and rollback for each; pick
+one with evidence. Requires an ADR and approval before any cutover.
+
+**2.5.3 Measure the North Star delta.** Before/after: how many customer-visible
+verified multi-store products does connection add to the **166**? This is the number
+that justifies the whole phase.
+
+**GATE 2.5:** System A connected to search behind a reversible switch · the North Star
+number re-measured on the served surface and materially higher · zero known identity
+defect served (or residual explicitly disclosed and founder-accepted).
+
+---
+
 ## PHASE 3 — MID-MARKET ACQUISITION
 *Replaces the earlier "protocol position" phase. UCP is measured; act on it.*
+
+> **HARD PRECONDITION (2026-07-28):** Phase 3 must NOT begin before System A is
+> connected (Phase 2.5 complete). Acquiring more stores into an isolated layer adds
+> zero customer-visible comparisons — it fills the locked warehouse. Overlap without
+> visibility is not growth.
 
 ### 3.1 The rule — validate it, then apply it
 Measured concentration: alnakheelk (68) and najm (48) produce 91% of the 127

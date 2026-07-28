@@ -6,6 +6,41 @@
 
 ---
 
+## ★★★ CHECKPOINT — 2026-07-28 (UCP measurement → phase-order correction). Read first.
+
+Two findings from the UCP/mid-market measurement (ADR-130, and the canonical-layer
+new-vs-recount split) that **change the plan of record** — recorded here per founder:
+
+**Finding 1 — the mid-market growth is real but currently INVISIBLE.**
+Of the 127 UCP-store × major shared canonical families, **88 (69%) are NEW** comparisons
+that exist only because of the mid-market store (measured on `normalized_product_observations`;
+39 are re-count of an existing major↔major comparison). **But all of these live in System A
+(the TPS knowledge layer), which is ISOLATED from customer search (ADR-125):** `/api/search`
+reads the storefront Algolia `products` index; System A's `tawveeri_tps_products` is never read.
+So the customer cannot see the 88 new families **today, and cannot see them no matter how many
+more stores we onboard.** *Onboarding into an isolated layer is filling a locked warehouse.*
+(Honesty caveat still standing: the 88/39 split is canonical-layer; it was NOT equated to the
+"166 served comparisons", which is a storefront-layer figure with no stored comparison set to
+intersect — ADR-125. §3.2 of MASTER_DIRECTIVE remains to resolve that overlap exactly.)
+
+**Finding 2 — phase order changes.** Connecting System A to the search surface — frozen as
+**ADR-126** (connect-plan draft, held BECAUSE of the identity-quality defects) — is now the
+**single largest North Star mover available, larger than Tier 2 and larger than further
+acquisition.** Reason: it is the only lever that converts already-held comparable families into
+customer-visible ones at zero acquisition cost. Phases 1.2 (Arabic transliteration normalisation)
+and 1.3 (model-vs-colour + cooling_mode merge defects) exist precisely to clear the ADR-126 freeze.
+**Revised order of record:** Phase 1 (fix identity) → **un-freeze ADR-126 & connect System A
+(new Phase 2.5)** → Phase 3 (acquire more stores). Phase 3 must NOT begin before System A is
+connected. Codified in `MASTER_DIRECTIVE.md` (Phase 2.5 added; Phase 3 gated).
+
+**Tier 2 (Phase 1.1) status:** HIGHEST-priority item, but it is a `product_stores` schema
+migration + heavy write (ADR-099 risk) → **gets its own ADR + explicit founder approval before
+any execution** (founder-confirmed). Measured yield if built: **926 verified-drop facts → 225
+matched `product_stores` offers across 161 products** would render a verified saving on the
+served surfaces. RESEARCH PLAN produced 2026-07-28; NO schema change made.
+
+---
+
 ## ★ تحديث 2026-07-28 (بعد مسبار الطبقة + TARGET_LIST) — يُبطل غموض §6/§7 أدناه
 
 **غموض الطبقة (كان أكبر مخاطرة) → محسوم بـ[ADR-125] بمسبار قراءة-فقط واحد:**
