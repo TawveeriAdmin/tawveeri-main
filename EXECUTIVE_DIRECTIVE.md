@@ -60,8 +60,12 @@ exactly the comparison we should refuse.
 > **⚠ FACTUAL CORRECTION (measured 2026-07-28) — governs every "166" in this document:**
 > the served **"166 comparable products" was measured to be Amazon counted twice** — one
 > retailer under two store-name spellings (ADR-132; now deduped in search). Genuine
-> **cross-retailer** comparable families ≈ **109** (knowledge layer, model-anchored); what a
-> customer sees on the storefront today is a **handful**. **Do NOT cite "166 comparable
+> **cross-retailer** comparable families ≈ **564** (canonical products with offers from ≥2
+> genuinely-distinct retailers, retailer-normalized; the projection's own `has_comparison`
+> flag = 598) — but these live in the **isolated knowledge layer (System A)**, so what a
+> customer sees on the storefront **today is only a handful** until System A is connected to
+> search. (A "~109" figure cited earlier was a narrower exact-model-string subset — superseded
+> by the canonical-level 564.) **Do NOT cite "166 comparable
 > products" externally** — a judge clicking a "2-store" card would see Amazon twice. Lead
 > with the 925 verified drops in the table below, which are solid and survive scrutiny.
 
@@ -255,7 +259,7 @@ support. Verify current cohort details and deadlines before relying on any of th
 
 ### 6.3 The honest risk to name before they find it
 Our comparable coverage is 166 [**see the §2.1 correction — the real cross-retailer figure
-is ~109; do not present "166" to judges**] and our matching recall is now in measurement (the
+is ~564 in the knowledge layer (not yet consumer-visible); do not present "166" to judges**] and our matching recall is now in measurement (the
 independent blocker surfaced ~32–50 recoverable cross-retailer matches — §5 / recall work). **Name it, and
 name the plan.** A founder who names their weakest number and shows the measurement plan
 is more credible than one who avoids it. This is also true of investors, and of Misk.
