@@ -1,4 +1,8 @@
-> **📌 PRECEDENCE — Authority 3 of the operational chain.** Matching architecture and research. Outranked by **EXECUTIVE_DIRECTIVE.md** and **MASTER_DIRECTIVE.md**. Its **§0 freeze is superseded** by EXECUTIVE_DIRECTIVE §0/§4: read-only measurement, recall/gold-standard, research, and low-risk read-side rendering are **UNFROZEN**; only schema migrations, heavy `product_stores` writes, System A connection, Tier 2, and parser rewrites stay frozen until 2 Aug.
+> **🗄️ ARCHIVED 2026-07-28 — REFERENCE ONLY, DO NOT EXECUTE.**
+> **What it claimed:** matching (blocking) is the core bottleneck of the business (§2.1); the recall gap could be in the thousands (§2.3.3).
+> **What disproved it:** the independent trigram measurement (**ADR-133**, 2026-07-28) — matching adds only **~10–50** comparable families to the current catalog (marginal); **~564** genuine comparisons already exist, locked in System A. Connection + acquisition, not matching, are the levers.
+> **What replaced it:** `EXECUTIVE_DIRECTIVE.md` (positioning/strategy) + `MASTER_DIRECTIVE.md` (phase order) + `docs/DECISIONS.md` ADR-133.
+> **Still valid as reference:** the entity-resolution research, the corner-case taxonomy, and the blocker+matcher architecture (§2.2–§3) remain correct and reusable.
 
 # TAWVEERI — PHASE 2 DIRECTIVE (REVISED)
 ## Stores · Products · AI · Becoming the Reference

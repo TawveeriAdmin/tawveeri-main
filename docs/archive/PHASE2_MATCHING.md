@@ -1,4 +1,7 @@
-> **📌 SUPERSEDED by [PHASE2_REVISED.md](PHASE2_REVISED.md)** (2026-07-28). Retained for history only — **do not execute from this file.** The revised version incorporates the GTIN=0 measurement that post-dates this draft. Precedence: EXECUTIVE_DIRECTIVE › MASTER_DIRECTIVE › PHASE2_REVISED › this (superseded).
+> **🗄️ ARCHIVED 2026-07-28 — REFERENCE ONLY, DO NOT EXECUTE.**
+> **What it claimed:** the initial matching diagnosis (pre-GTIN-measurement).
+> **What superseded it:** `PHASE2_REVISED.md` (added the GTIN=0 finding) — and both are now archived, because the matching-is-the-bottleneck thesis was **disproven by ADR-133** (2026-07-28): matching is marginal (~10–50).
+> **What replaced them:** `EXECUTIVE_DIRECTIVE.md` + `MASTER_DIRECTIVE.md` + ADR-133.
 
 # PHASE 2 — THE MATCHING PROBLEM
 **Research-grounded directive · 2026-07-28 · Execution begins 2 August (post-launch)**

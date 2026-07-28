@@ -90,12 +90,29 @@ Label every material statement: **[MEASURED today]** / **[INFERRED]** / **[ASSUM
 **Primary metric:** the number of products a Saudi consumer can see, from two or more
 stores, with a price we verified ourselves, on a public surface, with a working link.
 
-Today that number is **166**. Everything below is judged by whether it moves it.
+Today that number is **~a handful** consumer-visible. **The "166" is retracted** — it was
+Amazon counted twice (ADR-132). The genuine cross-retailer comparable set is **~564**, but
+it is **locked in the disconnected System A** (ADR-125/133) — so the *visible* North Star is
+near zero, and **connection (Phase 2.5) is what converts ~564 into visible.**
 
 **Not** catalog size. **Not** scraper count. **Not** store count.
 
 **Secondary (commercial):** qualified affiliate clicks per 1,000 high-intent sessions,
 until confirmed sales data exists.
+
+---
+
+## ★ REVISED PHASE ORDER (2026-07-28 — measurement reversed the earlier order)
+
+The earlier order put acquisition/matching ahead of connection. **Measurement reversed it
+(ADR-133):** matching adds only ~10–50 (marginal); ~564 genuine comparisons already exist,
+locked. So the order of value is now fixed:
+
+1. **CONNECT System A** (Phase 2.5) — releases ~564 comparable products to customers. Highest-value action by a wide margin (~10–20× the matching upside). Gated on the Phase 1.3 identity merge defects, which are therefore **on the main path, not a side quest.**
+2. **ACQUIRE** (Phase 3 / `ACQUISITION_TARGETS.md`) — multi-brand appliance/AC Salla/Zid stores via UCP/feed, credential-free. Raises the overlap ceiling beyond ~564. The measured rule governs (alnakheelk 68, najm 48, sonyworld 0).
+3. **MATCHING** (Phase 2 / recall) — **marginal.** Finish the recall measurement for the record, then STOP. **Do NOT build the LLM matcher or image embeddings on a ~10–50 upside.**
+
+Phase 1 (trust layer / identity-defect fixes) still comes first because it *gates* connection.
 
 ---
 
@@ -199,14 +216,17 @@ human-labelled sample.
 *Gate to enter: Phase 1 complete (identity defects cleared). · The single largest
 North Star mover available — larger than Tier 2, larger than further acquisition.*
 
-**Why this phase exists (measured 2026-07-28):** the 88 net-new comparable families
-that mid-market stores create — and the 428 comparable families the TPS knowledge
-layer already holds — live in **System A**, which is **isolated from customer search
-(ADR-125)**. `/api/search` reads the storefront Algolia `products` index; System A's
-`tawveeri_tps_products` is never read. Customers cannot see any of it, and cannot see
-it no matter how many more stores we onboard. **Onboarding into an isolated layer is
-filling a locked warehouse.** Connecting System A is the only lever that converts
-already-held comparable families into customer-visible ones at zero acquisition cost.
+**Why this phase exists (measured 2026-07-28, corrected):** connection releases **~564
+genuine cross-retailer comparable products** — canonicals with offers from ≥2
+retailer-normalized stores (projection `has_comparison` = 598) — that live in **System A**,
+**isolated from customer search (ADR-125)**. `/api/search` reads the storefront Algolia
+`products` index; System A's `tawveeri_tps_products` is never read. **~0 of the 564 are
+consumer-visible today.** (The earlier "88 net-new / 428" figures were partial cuts; the
+full locked set is ~564 — see ADR-133.) Customers cannot see any of it, and cannot see it
+no matter how many more stores we onboard. **Onboarding into an isolated layer is filling a
+locked warehouse.** Connection converts ~564 already-held comparable families into
+customer-visible ones **at zero acquisition cost — by a wide margin the highest-value action
+available**, ~10–20× the entire matching upside (~10–50, ADR-133).
 
 **What was frozen and why:** connecting System A is drafted as **ADR-126** and was
 **frozen because of the identity-quality defects** (transliteration duplicates,

@@ -6,6 +6,54 @@
 
 ---
 
+# ═══ END-OF-DAY CHECKPOINT — 2026-07-28 ═══ (resume here; zero-memory safe)
+
+**Read order for a fresh session:** `CLAUDE.md` → `EXECUTIVE_DIRECTIVE.md` (authority 1) → `MASTER_DIRECTIVE.md` (authority 2) → this checkpoint. `docs/archive/` is reference only, never execute.
+
+## a) Deployed today & live status (+ rollback)
+| Change | Commit | Live? | Rollback |
+|---|---|---|---|
+| **Amazon store-identity dedup in search** (a retailer under two name spellings = one store; kills the false "2-store" Amazon cards) — ADR-132 | `a4d5162` | ✅ live | `git revert a4d5162` |
+| **Evidence line on `/price-truth`** (basic: `تتبّعنا … {distinct_days} يومًا · أعلى سعر رصدناه {observed_max}`) — Task 3 | `a4d5162` | ✅ live | revert a4d5162; **refined copy (+`ريال`, correct plural) is PROPOSED, awaiting founder approval** |
+| **Registry integrity**: alsfeerzone disabled (dead DNS/410), pcpalace label→Zid — ADR-130 | `34daa08` | ✅ live | `git revert 34daa08` |
+| SAVINGS_GATE (suppress merchant-`was` savings) — prior session | `caba8de` | ✅ live, default on | `NEXT_PUBLIC_SAVINGS_GATE=off` in Railway + redeploy |
+| /price-truth ranking (non-accessory→SAR saving) + float fix — prior session | `caba8de` | ✅ live | `git revert caba8de` |
+
+## b) Findings, each with its measurement
+- **GTIN = 0** — 0 non-null GTIN values across 522,853 raw_observations (304,496 have an empty `gtin` key); 0 of 5,543 offers, 0 of 428 families, 0 of 9 UCP profiles. Icecat configured but unusable (nothing to resolve).
+- **Icecat MPN bootstrap = 12% hit / 8% GTIN** (6/50; brand-restricted — Samsung/Apple/HP/Lenovo/Asus all 0; only TV/monitor brands LG/Hisense/TCL/Acer resolve). Credential confirmed working (first real Icecat success).
+- **UCP = 9 of 22 stores publish `/.well-known/ucp`**, all mid-market Salla/Shopify/Zid; **0 of the majors** (Amazon/Noon/Jarir/Extra/Almanea/Samsung). 127 UCP×major shared families, **88 new**; concentration alnakheelk 68 / najm 48 / sonyworld 0.
+- **North Star reconciled: "166" retracted** (Amazon double-count, ADR-132). Genuine cross-retailer comparable = **~564** canonicals (≥2 retailer-normalized stores; projection `has_comparison`=598) — but **locked in disconnected System A (ADR-125); ~0 consumer-visible today.** SQL def: `count(canonical_product_id) HAVING count(distinct retailer_normalized(store_id)) >= 2` over `normalized_product_observations`.
+- **Trigram blocker: 836 candidate pairs the key never proposed** (50 at sim>0.75, 32 distinct products); ~half of high-sim are legit variants; **~10–50 genuinely recoverable** (ADR-133). → matching is marginal.
+- **Recall/precision (v1, agent-adjudicated):** key **recall ≈ 92–98%** (catches ~564 of the ~574–614 genuine matches; misses ~10–50). **Precision ≈ 94–99%** on the model-verifiable subset (7 detectable false-merges / 122 clean-model canonicals — e.g. an LG-dishwasher canonical mixing DFC513FM+DFC335HD); **442/564 (78%) rest on unaudited name-based matching** — precision there is a blind spot. The "97%+" claim is not fully verified.
+- **model_number pollution: 3.2% of observations / 10.8% of distinct values** malformed (floor) — full titles in the model field (Amazon path: `IPHONE 17 PRO MAX 256 GB: 6.9-INCH…`), `N…V` store-SKU leaks. **~0% of the 564 corroborations rest on a polluted model** (pollution suppresses matches, doesn't underpin them).
+- **`store_id` pollution in System A**: same retailer under numeric + Arabic-name IDs (extra `4`/`اكسترا` 1,080; almanea `5`/`المنيع` 1,681). Inflates the ≥2-store count by only 1 (565→564) but **fragments canonicals**.
+- **Hisense 85" U7Q proof — re-verified live, HOLDS:** Extra live 5,599 / was 14,999 / claims **9,400**; ours **8,800** (observed_max 14,399 over 14 days, verdict verified_drop); model `85U7Q`. Ours is lower and evidence-based. Only Hisense 85" with a verified_drop (others are inflated_reference).
+- **Verified-drop economics:** 926 verified_drop of 10,303 examinable (65% = 6,747 inflated_reference — **corrects the stale "4,531"**).
+
+## c) Theses that died today (measurement killed each)
+1. **GTIN is our identity authority** → killed by GTIN=0 measurement.
+2. **Icecat MPN bootstrap rescues GTIN** → killed by the 12%/8% brand-restricted probe.
+3. **Matching is the bottleneck (PHASE2_REVISED)** → killed by the trigram measurement (~10–50 recoverable); acquisition/connection are the levers (ADR-133).
+4. **The over-broad launch freeze** → corrected; measurement/recall/research/read-side rendering unfrozen.
+5. **My own "~109 comparable"** → corrected to ~564 before it reached the investor doc.
+
+## d) Open items (owner · next action)
+- **Evidence-line refined copy** (me · execute once founder approves the `ريال`+plural wording; read-side, `/price-truth`).
+- **19-section vision doc supersession banner** (founder · not a repo file — add banner wherever it lives).
+- **StoreLeads Salla/Zid check** (founder · one action, unblocks acquisition — see `ACQUISITION_TARGETS.md §5`).
+- **Recall gold standard v2** (me · ~300 stratified pairs, human spot-check — matching is marginal, so this is "finish for the record then stop").
+- **Post-2 Aug order:** Phase 1.3 identity-defect fixes → **Connect System A (releases ~564)** → Acquire → (matching stop).
+- **Frozen until 2 Aug:** schema migrations, heavy `product_stores` writes, System A connection, Tier 2, parser rewrites. **Unfrozen:** measurement, recall/gold-standard, research, low-risk read-side rendering.
+
+## e) Standing rules (full)
+1. **"We did not observe it" is never "it is not true."** Permanent. 2. Never name a retailer negatively in public. 3. Ranking is never influenced by commission. 4. Unknown beats incorrect. 5. No automated merge without a measured precision floor (≥98% proposed). 6. No parser/classification change or deploy without an ADR + approval. 7. Label everything measured/inferred/assumption; cite ADRs + external sources. 8. Full task ledger, including omissions. 9. Checkpoint to HANDOVER before context grows large; commit + push. 10. A store is onboarded only when predicted to create comparisons (sonyworld's zero is the reference). 11. Search the Decision Register before analysing; state which ADRs you checked.
+
+## f) Phase order (revised 2026-07-28, ADR-133)
+**Phase 1** (trust layer + identity-defect fixes, gates connection) → **Phase 2.5 CONNECT System A** (releases ~564, highest-value action) → **Phase 3 ACQUIRE** (`ACQUISITION_TARGETS.md`, raises overlap ceiling) → **Matching** (marginal — finish recall, then stop; do NOT build LLM matcher / image embeddings).
+
+---
+
 ## ★★★★ POSITIONING (2026-07-28, founder-set — EXECUTIVE_DIRECTIVE §2). Read first.
 
 **Tawveeri is the PRICE-TRUTH LAYER for Saudi retail, not a price-comparison platform.** As comparison we are weak (the "166 comparable" figure is Amazon-double-counted per ADR-132; genuine cross-retailer ≈ **564** canonicals with ≥2 retailer-normalized stores — but locked in the disconnected System A, so ~a handful are consumer-visible today). As price truth we are unique and provable: **925 verified drops**; **65% of advertised discounts reference a price we never observed** (6,747 of 10,303 examinable — corrects the stale "4,531"); and the flagship proof — Hisense 85" **U7Q**: Extra's live page claims a **9,400** SAR saving (was 14,999 → 5,599); **we publish 8,800** (from our observed_max 14,399 over 14 tracked days) — a *smaller, evidence-based* number. **Verified live 2026-07-28.** All public copy, the Misk submission, and investor material follow from this frame: lead with verified price truth, never with comparison breadth.
