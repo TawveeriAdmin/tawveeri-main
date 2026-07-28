@@ -92,6 +92,11 @@ export function PriceTruthClient({ locale }: { locale: string }) {
                         <span className="opacity-70">· {T(`تتبّعنا ${dl.distinct_days} يوم`, `tracked ${dl.distinct_days}d`, loc)}</span></p>
                       <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-medium text-success-700 dark:bg-success-900/40 dark:text-success-300">
                         <TrendingDown className="h-3 w-3" aria-hidden />{T(`توفير حقيقي ${dl.real_saving_pct}٪ — كان ${Number(dl.observed_max.toFixed(2))}`, `real saving ${dl.real_saving_pct}% — was ${Number(dl.observed_max.toFixed(2))}`, loc)}</p>
+                      {/* Evidence line — the product thesis made visible (data already fetched; text render only). */}
+                      <p className="mt-1 text-[11px] leading-snug text-on-surface-variant">
+                        {T(`تتبّعنا هذا المنتج ${dl.distinct_days} يومًا · أعلى سعر رصدناه ${Number(dl.observed_max.toFixed(2))}`,
+                           `We tracked this product for ${dl.distinct_days} days · highest price we observed ${Number(dl.observed_max.toFixed(2))}`, loc)}
+                      </p>
                     </div>
                     <div className="shrink-0 text-end">
                       <Price amount={dl.current_price} className="text-lg font-bold text-primary-700 dark:text-primary-300" />

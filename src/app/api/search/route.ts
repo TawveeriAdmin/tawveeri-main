@@ -7,7 +7,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
-import { isApprovedStore } from '@/lib/retailers/approved-retailers';
+import { isApprovedStore, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -450,16 +450,28 @@ function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
     rating: null,
     review_count: null,
   }));
-  const prices = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
+  // Collapse offers to ONE per CANONICAL retailer identity (ADR-132). A store ingested under two
+  // name spellings — e.g. "أمازون" + "أمازون السعودية", both store_id=2 → resolveApprovedSlug='amazon'
+  // — must NOT be counted as two stores or shown as a false multi-store comparison. Keep the cheapest
+  // offer per canonical retailer. Fixes the measured launch defect where 100% of "2-store" cards were
+  // Amazon double-counted. Read-side only; no index rebuild, no schema change.
+  const byRetailer = new Map<string, SearchProduct>();
+  for (const e of storeEntries) {
+    const key = resolveApprovedSlug(e.store_name) || (e.store_name || 'unknown').trim().toLowerCase();
+    const existing = byRetailer.get(key);
+    if (!existing || e.current_price < existing.current_price) byRetailer.set(key, e);
+  }
+  const dedupStores = [...byRetailer.values()];
+  const prices = dedupStores.map((e) => e.current_price).filter((n) => n > 0);
   const bestPrice = prices.length ? Math.min(...prices) : 0;
-  const anyInStock = storeEntries.some((e) => e.availability === 'in_stock');
-  const uniqueStores = new Set(storeEntries.map((e) => e.store)).size;
-  const rep = storeEntries[0];
+  const anyInStock = dedupStores.some((e) => e.availability === 'in_stock');
+  const uniqueStores = byRetailer.size;
+  const rep = dedupStores[0];
   return {
     ...rep,
     current_price: bestPrice,
     availability: anyInStock ? 'in_stock' : rep.availability,
-    stores: storeEntries,
+    stores: dedupStores,
     best_price: bestPrice,
     store_count: uniqueStores,
     product_id: hit.objectID,
