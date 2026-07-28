@@ -90,10 +90,13 @@ Label every material statement: **[MEASURED today]** / **[INFERRED]** / **[ASSUM
 **Primary metric:** the number of products a Saudi consumer can see, from two or more
 stores, with a price we verified ourselves, on a public surface, with a working link.
 
-Today that number is **~a handful** consumer-visible. **The "166" is retracted** — it was
-Amazon counted twice (ADR-132). The genuine cross-retailer comparable set is **~564**, but
-it is **locked in the disconnected System A** (ADR-125/133) — so the *visible* North Star is
-near zero, and **connection (Phase 2.5) is what converts ~564 into visible.**
+The storefront SEARCH serves **genuine live cross-retailer comparisons** via runtime fingerprint
+grouping — measured **52/52 accurate (0 false, post-ADR-132)** in a 2026-07-28 sample (e.g. iPhone
+16 across Jarir/Extra/Amazon/Almanea). **The "166" is retracted** (Amazon-double-count, ADR-132),
+and the earlier "~0 visible" was WRONG. The System-A knowledge layer additionally holds **~564**
+richer verified comparisons (with price history + corroboration), currently **locked** (ADR-125/133);
+connecting it (Phase 2.5) **upgrades and extends** the already-live comparisons, it does not create
+them from zero. Breadth is still the weakness — most products are single-store.
 
 **Not** catalog size. **Not** scraper count. **Not** store count.
 
@@ -220,9 +223,11 @@ North Star mover available — larger than Tier 2, larger than further acquisiti
 genuine cross-retailer comparable products** — canonicals with offers from ≥2
 retailer-normalized stores (projection `has_comparison` = 598) — that live in **System A**,
 **isolated from customer search (ADR-125)**. `/api/search` reads the storefront Algolia
-`products` index; System A's `tawveeri_tps_products` is never read. **~0 of the 564 are
-consumer-visible today.** (The earlier "88 net-new / 428" figures were partial cuts; the
-full locked set is ~564 — see ADR-133.) Customers cannot see any of it, and cannot see it
+`products` index; System A's `tawveeri_tps_products` is never read. (Note: the storefront search
+ALREADY serves genuine live comparisons via runtime grouping, 52/52 accurate — so this phase
+UPGRADES comparison quality with verified history + corroboration and EXTENDS coverage, rather
+than turning comparison on from zero.) (The earlier "88 net-new / 428" figures were partial cuts;
+the full System-A comparable set is ~564 — see ADR-133.) Customers cannot see any of it, and cannot see it
 no matter how many more stores we onboard. **Onboarding into an isolated layer is filling a
 locked warehouse.** Connection converts ~564 already-held comparable families into
 customer-visible ones **at zero acquisition cost — by a wide margin the highest-value action

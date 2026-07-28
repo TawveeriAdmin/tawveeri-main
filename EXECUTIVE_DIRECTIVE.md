@@ -63,9 +63,11 @@ exactly the comparison we should refuse.
 > **cross-retailer** comparable families ≈ **564** (canonical products with offers from ≥2
 > genuinely-distinct retailers, retailer-normalized; the projection's own `has_comparison`
 > flag = 598) — but these live in the **isolated knowledge layer (System A)**, so what a
-> customer sees on the storefront **today is only a handful** until System A is connected to
-> search. (A "~109" figure cited earlier was a narrower exact-model-string subset — superseded
-> by the canonical-level 564.) **Do NOT cite "166 comparable
+> customer sees on the storefront **today is a genuine live comparison via search grouping**
+> (measured **52/52 accurate, 0 false, post-ADR-132** — e.g. iPhone 16 across Jarir/Extra/Amazon/
+> Almanea); the ~564 is a separate, richer System-A layer (verified history + corroboration) that
+> connection would upgrade and extend. (A "~109" figure cited earlier was a narrower
+> exact-model-string subset — superseded by the canonical-level 564.) **Do NOT cite "166 comparable
 > products" externally** — a judge clicking a "2-store" card would see Amazon twice. Lead
 > with the 925 verified drops in the table below, which are solid and survive scrutiny.
 
