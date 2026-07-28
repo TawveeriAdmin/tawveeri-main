@@ -24,6 +24,32 @@
 
 ---
 
+## ★★ CHECKPOINT — 2026-07-28 (evening). Read this first; below is older.
+
+**DEPLOYED TODAY & LIVE (commit `caba8de`, verified on production):**
+- **SAVINGS_GATE** (`NEXT_PUBLIC_SAVINGS_GATE`, default **on**) — suppresses merchant-`original_price`-derived savings on **search (`خصم%`), comparison card, product page**. Shows a saving ONLY where we observed the drop. `/price-truth` (verified observed-drop pipeline) unaffected. **Rollback:** set `NEXT_PUBLIC_SAVINGS_GATE=off` in Railway + redeploy (NEXT_PUBLIC = build-time inlined).
+- **Float fix** — `69.000001 → 69` at render + discount-integrity API + stored `verified_drop` text.
+- **Deals page (P0-2)** — un-gated `averagePrice` (our cross-store measurement), relabelled "أقل من متوسط السوق بـ {delta}" / "-{pct}٪ عن المتوسط" (never "بدلاً من").
+- **/price-truth ranking (P0-4)** — non-accessory → absolute SAR saving → real%. **Verified live:** top deal = Hisense 85" TV, **8,800 SAR saving**, `verified_deals=20` (was accessory %-theatre).
+- ADRs live: **ADR-125** (naming correction), **ADR-128** (register-first + task-ledger rules), **ADR-129** (SAVINGS_GATE + Tier-2 design). CLAUDE.md carries both new non-negotiable rules.
+
+**EARLIER TODAY (committed/pushed):** search-relevance accessory-substitution + device-signal fixes (`ef61ae5`,`a88bd54`); TPS analysis + identity validation + connect plan (`4de625b`).
+
+**KEY VERIFIED FINDINGS (do not re-derive — see the named files):**
+- **Extra "parser fault" was NOT a parser fault** → it is **IDENTITY MERGING** (`ANSWERS.md`). PDP JSON-LD = our scraped 1290/1170 exactly (founder-confirmed live). We merged a white/out-of-stock or first-party listing vs a different black/marketplace listing.
+- **Almanea is trustworthy** — 5/5 live cash prices exact (`ALMANEA_VERIFY.md`). Anchor (P0-5): 1 verified_drop / 2 inflated_reference / 2 insufficient_history = a **coverage** result (young 2–4d window), NOT fraud. «unobserved ≠ false» is a permanent rule (founder C4).
+- **"توفير حقيقي" badge is correct** — uses `observed_max` from our own `price_history`, gated on `verified_drop`. 925 verified / 10,296 = precision working, our single most defensible asset.
+- **AGENTIC COMMERCE (`AGENTIC_COMMERCE.md`):** UCP is live/decentralised/MCP-based. **7/22 of our stores publish `/.well-known/ucp`** (all mid-market Salla/Shopify/Zid, auto-published); **0 of the blocked majors** (Amazon/Noon/Jarir/Extra/Almanea) → UCP does NOT solve the credential deadlock. UCP is per-merchant/current-state/transactional — contains none of our moat (Saudi identity, price history, discount integrity). Strategic move = an **MCP truth-server**, but GATED on fixing identity quality + GTIN first.
+
+**STILL OPEN (next sessions):**
+- **P0-1 Tier 2** — DESIGNED in ADR-129, **NOT built**. = add `verified_saving_pct`+`observed_max` to `product_stores` via a build job → index + 4 surfaces read it (shows verified savings on the gated surfaces). Needs a migration + heavy write (ADR-099) + verification. The real prize.
+- **P0-3 duplicates** — MEASURED (32 transliteration-tolerant groups, a floor; بيسوس/باسوس uncaught). Fix = normalise Arabic brand transliteration in the identity key (extend `BRAND_AR`), then `merge-canonicals.js`. Plan only — **no merges executed**.
+- **P2 REVENUE_THESIS.md (11A–11I)** — **NOT started**. Decision memo: affiliate model, B2B thesis, credential deadlock vs UCP (11H), GTIN unblocked via Icecat (11I), 90-day plan. Needs its own turn(s).
+- Identity fixes queued (all need ADR + approval): AC cooling-mode parser (`AC_IDENTITY_ADR_DRAFT.md` / ADR-127 draft), jarir "Renewed" separation, colour-dup merges, marketplace-seller capture.
+- Standing constraints: never verify a source with itself; never use our parser to establish what a customer sees; label measured/inferred/assumption; deep Saudi discounts are frequently real.
+
+---
+
 ## 1. خريطة المجلد `scripts/tps-analysis/` (الأحدث أولًا)
 
 | # | الملف | آخر تعديل | الحجم | سطر واحد عن المحتوى |

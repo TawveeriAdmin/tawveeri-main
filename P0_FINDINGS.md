@@ -37,6 +37,8 @@
 ---
 ## Update — evening 2026-07-28 (this directive)
 
+**★ DEPLOYED & VERIFIED LIVE (commit `caba8de`, pushed to `main` → Railway).** Items **2 (SAVINGS_GATE)** and **4 (float)** — plus P0-2 relabel and P0-4 ranking — executed and deployed today. Production verification via `/api/v1/tps/discount-integrity`: `category` field now present + `observed_max` rounded (no float noise) + **top deal = Hisense 85" Mini-LED TV, 8,800 SAR real saving (61%)** instead of a 19 SAR accessory; **`verified_deals=20`**. **SAVINGS_GATE default-on** (`NEXT_PUBLIC_SAVINGS_GATE` unset in Railway → gate on → merchant-"was" savings suppressed on search/comparison/product; `/price-truth` verified-drop savings unaffected). **Rollback:** `NEXT_PUBLIC_SAVINGS_GATE=off` in Railway env + redeploy (NEXT_PUBLIC is build-time inlined, so a rebuild is required to toggle). Build green (exit 0) before push.
+
 **P0-2 averagePrice — EXECUTED.** Deals page: un-gated `averagePrice` (our cross-store measurement, not a merchant "was"), relabelled to *"أقل من متوسط السوق بـ {delta} ريال"* + *"-{pct}٪ عن المتوسط"*; gate narrowed to merchant `original_price` only. Build green.
 
 **P0-4 trust-page ranking — EXECUTED.** `/price-truth` real-deals now sort **non-accessory first → absolute SAR saving → real%** (verdict-gated). The "model-confirmed multi-store first" tier needs a canonical/store-count join not on the facts row (follow-up). Build green.
