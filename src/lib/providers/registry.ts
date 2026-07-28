@@ -47,6 +47,11 @@ const BASE: Record<string, RetailerProvider> = {
   goldenstore99:{ slug: "goldenstore99", storeId: 12, displayName: "Golden Store",   displayNameAr: "جولدن ستور",      enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://goldenstore99.com" } },
   mhzm:         { slug: "mhzm",          storeId: 13, displayName: "Mhzm",           displayNameAr: "محزم",            enabled: true, sourcing: "api", affiliate: null, feedUrl: "https://shop.mhzm.sa" },
   aletawik:     { slug: "aletawik",      storeId: 14, displayName: "Aletawik",       displayNameAr: "التاوية",         enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://aletawiksa.com" } },
+  // pcpalace is a ZID custom-domain store (verified 2026-07-28 via its live UCP: media.zid.store
+  // logo + /api/v1/ucp binding), NOT Salla. The `salla:` field is the GENERIC Salla-OR-Zid JSON-LD
+  // sourcing config (the salla-zid adapter maps both platforms — see salla-zid-adapter.test.ts,
+  // which maps amnkwm.zid.store through the same field), so the field is correct; only the platform
+  // name is clarified here. ADR-130.
   pcpalace:     { slug: "pcpalace",      storeId: 15, displayName: "PC Palace",      displayNameAr: "بي سي بالاس",     enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://pcpalace.com.sa" } },
   // ADR-104/106 — Sony World KSA: Saudi Sony specialist on Shopify (SAR-verified via
   // meta.json, Riyadh). Sourced credential-free via the Shopify products.json adapter.
@@ -60,7 +65,12 @@ const BASE: Record<string, RetailerProvider> = {
   // ADR-108 — AC/home-appliance specialist cluster (Salla, storefront-API-sourced). They
   // corroborate each other on standard AC models (brand+BTU+type) → real AC comparisons.
   alnakheelk:   { slug: "alnakheelk",    storeId: 18, displayName: "Al Nakheel",      displayNameAr: "متجر النخيل",      enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://alnakheelk.com" } },
-  alsfeerzone:  { slug: "alsfeerzone",   storeId: 19, displayName: "Al Safeer Zone",  displayNameAr: "السفير زون",       enabled: true, sourcing: "api", affiliate: null, salla: { origin: "https://alsfeerzone.com" } },
+  // DISABLED 2026-07-28 (ADR-130): alsfeerzone has SHUT DOWN. Its Salla listing salla.sa/alsfeerzone
+  // returns HTTP 410 Gone and its custom domain alsfeerzone.com no longer resolves (DNS fail) — so
+  // every scheduled ingest silently failed against a dead origin. Production footprint = 0 offers, so
+  // disabling loses nothing. Left registered (not deleted) with the dead origin preserved for history;
+  // unknown-beats-incorrect → we do NOT guess a replacement domain. Re-enable only if the store returns.
+  alsfeerzone:  { slug: "alsfeerzone",   storeId: 19, displayName: "Al Safeer Zone",  displayNameAr: "السفير زون",       enabled: false, sourcing: "api", affiliate: null, salla: { origin: "https://alsfeerzone.com" } },
   // ADR-110 — category-gap fill: VACUUM (202 single-store canonicals, 3% comparable) + home
   // appliances. alhowaish carries Hitachi vacuums that corroborate our single-store units;
   // alduaalbarq (Zid) adds vacuums/fridges/appliances. Salla-API / Zid-JSON-LD sourced.

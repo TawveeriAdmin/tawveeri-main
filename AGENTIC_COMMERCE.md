@@ -17,9 +17,11 @@
 
 I probed `https://{domain}/.well-known/ucp` for all registered stores.
 
-| Publishes UCP (200 + JSON) | Does NOT (404 / non-JSON) |
+> **Re-measured live 2026-07-28 (raw HTTP, all 22 provider-registry stores, storeIds 1–22):** publishers rose **7 → 9** — two Salla stores added since the first probe (`alnakheelk.com`, `eazyworld7.com`, storeIds 18 & 22) now publish. Result: **9/22 publish, 13/22 do not. The decisive facts below are unchanged: still 0 of the blocked majors.** New platform detail: Zid publishes UCP **only on custom domains** (`pcpalace.com.sa` ✓, format has a `merchant{}` block + `legal_links`) — the bare `*.zid.store` subdomain stores return `{"message":"Not Found!"}` (`amnkwm`, `alduaalbarq`). Two incidental defects surfaced: `alsfeerzone.com` (store 19) **fails DNS resolution** — its registered provider origin is dead; and `pcpalace` is registered as `salla` in `registry.ts` but its live UCP is **Zid** (`media.zid.store`, `/api/v1/ucp`).
+
+| Publishes UCP (200 + JSON, `ucp` key) — 9 | Does NOT — 13 |
 |---|---|
-| **najm.store**, **blackboxksa.com**, **hdf.com.sa**, **goldenstore99.com**, **aletawiksa.com**, **pcpalace.com.sa**, **sonyworld.sa** (7) | jarir.com (404), **amazon.sa (404)**, **noon.com (200 html)**, **extra.com (404)**, **almanea.com/.sa (404)**, samsung.com (404), shakersa.com (200 html), mhzm.sa (200 html), luluhypermarket.com (406), sharafdg.com (200 html) |
+| **najm.store** (Salla), **blackboxksa.com** (Salla), **hdf.com.sa** (Salla), **goldenstore99.com** (Salla), **aletawiksa.com** (Salla), **alnakheelk.com** (Salla, new), **eazyworld7.com** (Salla, new), **pcpalace.com.sa** (Zid custom-domain), **sonyworld.sa** (Shopify) | jarir.com (bot-walled: 302→timeout), **amazon.sa (404)**, **noon.com (302)**, **extra.com (404)**, **almanea.sa (404)**, samsung.com (404), shakersa.com (200 html), swsg.co (200 html), shop.mhzm.sa (200 html), amnkwm.zid.store (404 Zid), shrkhaldwaalbarqlltjarh.zid.store (404 Zid), salla.sa/alhowaish (404 — path store, no per-store .well-known), alsfeerzone.com (DNS fail) |
 
 **Two decisive facts:**
 1. **All 7 UCP publishers are our mid-market Salla/Shopify/Zid stores** (the ones we onboarded credential-free via ADR-095/104/106/107/108). Their **platforms auto-publish UCP** — we get it for free.
