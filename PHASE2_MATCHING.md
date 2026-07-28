@@ -1,3 +1,5 @@
+> **📌 SUPERSEDED by [PHASE2_REVISED.md](PHASE2_REVISED.md)** (2026-07-28). Retained for history only — **do not execute from this file.** The revised version incorporates the GTIN=0 measurement that post-dates this draft. Precedence: EXECUTIVE_DIRECTIVE › MASTER_DIRECTIVE › PHASE2_REVISED › this (superseded).
+
 # PHASE 2 — THE MATCHING PROBLEM
 **Research-grounded directive · 2026-07-28 · Execution begins 2 August (post-launch)**
 

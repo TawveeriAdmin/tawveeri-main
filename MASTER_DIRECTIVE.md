@@ -1,3 +1,5 @@
+> **📌 PRECEDENCE — Authority 2 of the operational chain.** Governs phases, gates, and standing rules. On conflict it is outranked by **EXECUTIVE_DIRECTIVE.md** (positioning / launch / revenue / marketing / Misk). Chain, highest first: EXECUTIVE_DIRECTIVE › **MASTER_DIRECTIVE** › PHASE2_REVISED › ~~PHASE2_MATCHING~~ (superseded).
+
 # TAWVEERI — MASTER DIRECTIVE v2
 **2026-07-28 · Supersedes all prior directives · Read fully before acting**
 

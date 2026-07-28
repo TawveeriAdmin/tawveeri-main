@@ -6,6 +6,12 @@
 
 ---
 
+## ★★★★ POSITIONING (2026-07-28, founder-set — EXECUTIVE_DIRECTIVE §2). Read first.
+
+**Tawveeri is the PRICE-TRUTH LAYER for Saudi retail, not a price-comparison platform.** As comparison we are weak (the "166 comparable" figure is Amazon-double-counted per ADR-132; genuine cross-retailer ≈ **109**). As price truth we are unique and provable: **925 verified drops**; **65% of advertised discounts reference a price we never observed** (6,747 of 10,303 examinable — corrects the stale "4,531"); and the flagship proof — Hisense 85" **U7Q**: Extra's live page claims a **9,400** SAR saving (was 14,999 → 5,599); **we publish 8,800** (from our observed_max 14,399 over 14 tracked days) — a *smaller, evidence-based* number. **Verified live 2026-07-28.** All public copy, the Misk submission, and investor material follow from this frame: lead with verified price truth, never with comparison breadth.
+
+---
+
 ## ★★★ CHECKPOINT — 2026-07-28 (UCP measurement → phase-order correction). Read first.
 
 Two findings from the UCP/mid-market measurement (ADR-130, and the canonical-layer

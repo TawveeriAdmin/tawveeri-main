@@ -1,3 +1,5 @@
+> **📌 PRECEDENCE — Authority 3 of the operational chain.** Matching architecture and research. Outranked by **EXECUTIVE_DIRECTIVE.md** and **MASTER_DIRECTIVE.md**. Its **§0 freeze is superseded** by EXECUTIVE_DIRECTIVE §0/§4: read-only measurement, recall/gold-standard, research, and low-risk read-side rendering are **UNFROZEN**; only schema migrations, heavy `product_stores` writes, System A connection, Tier 2, and parser rewrites stay frozen until 2 Aug.
+
 # TAWVEERI — PHASE 2 DIRECTIVE (REVISED)
 ## Stores · Products · AI · Becoming the Reference
 **2026-07-28 · Execution begins 2 August · Launch freeze holds until then**

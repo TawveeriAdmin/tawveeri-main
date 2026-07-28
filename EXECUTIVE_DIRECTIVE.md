@@ -1,3 +1,5 @@
+> **📌 PRECEDENCE — Authority 1 (highest) of the operational chain.** Governs positioning, launch, revenue, marketing, and Misk. **Read this first each session; it outranks MASTER_DIRECTIVE.md and all older operational docs on conflict** (it sits below the Constitution, not above it). Chain: **EXECUTIVE_DIRECTIVE** › MASTER_DIRECTIVE › PHASE2_REVISED › ~~PHASE2_MATCHING~~ (superseded). The 19-section "Affiliate Revenue & AI Shopping Agent" directive (§7) is VISION ONLY and is **not a file in this repo** — its supersession banner must be added wherever the founder keeps it.
+
 # TAWVEERI — EXECUTIVE DIRECTIVE
 ## Launch · Positioning · Revenue · Investors · Retailer Leverage
 **2026-07-28 · Supersedes the freeze in PHASE2_REVISED §0**
@@ -54,6 +56,14 @@ of this business and there is no path around it.
 As a comparison platform we are weak: 166 comparable products against Rakhys's 70,600
 listings. That framing loses on a metric we cannot win in the near term, and it invites
 exactly the comparison we should refuse.
+
+> **⚠ FACTUAL CORRECTION (measured 2026-07-28) — governs every "166" in this document:**
+> the served **"166 comparable products" was measured to be Amazon counted twice** — one
+> retailer under two store-name spellings (ADR-132; now deduped in search). Genuine
+> **cross-retailer** comparable families ≈ **109** (knowledge layer, model-anchored); what a
+> customer sees on the storefront today is a **handful**. **Do NOT cite "166 comparable
+> products" externally** — a judge clicking a "2-store" card would see Amazon twice. Lead
+> with the 925 verified drops in the table below, which are solid and survive scrutiny.
 
 **As a price truth layer we are unique, and provably so:**
 
@@ -127,7 +137,9 @@ basket → roughly 300 SAR at 2%.
 State the real gap. Do not build the business on this alone.
 
 ### 4.2 The B2B thesis is the stronger investor story — and it needs no consumer traffic
-We hold 4,531 `inflated_reference` facts, per-retailer trust scores, and months of
+We hold **6,747** `inflated_reference` facts [**corrected 2026-07-28 from "4,531"** —
+measured `verdict='inflated_reference'` = 6,747, which is the figure that produces the 65%
+cited in §2.1: 6,747 of 10,303 examinable offers], per-retailer trust scores, and months of
 Saudi price history. ADR-051 described this as unique: no comparison platform scores
 merchants on observed discount honesty.
 
@@ -242,7 +254,9 @@ support. Verify current cohort details and deadlines before relying on any of th
    discount integrity in production. Do not overstate. Judges verify.
 
 ### 6.3 The honest risk to name before they find it
-Our comparable coverage is 166 and our matching recall is unmeasured. **Name it, and
+Our comparable coverage is 166 [**see the §2.1 correction — the real cross-retailer figure
+is ~109; do not present "166" to judges**] and our matching recall is now in measurement (the
+independent blocker surfaced ~32–50 recoverable cross-retailer matches — §5 / recall work). **Name it, and
 name the plan.** A founder who names their weakest number and shows the measurement plan
 is more credible than one who avoids it. This is also true of investors, and of Misk.
 
