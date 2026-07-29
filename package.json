@@ -56,7 +56,8 @@
     "tps:sentinel-check": "tsx scripts/tps-analysis/sentinel-check.ts",
     "tps:launch-audit": "tsx scripts/tps-analysis/launch-audit.ts",
     "tps:security-audit": "tsx scripts/tps-analysis/security-audit.ts",
-    "tps:ui-journey": "node scripts/tps-analysis/ui-journey.js"
+    "tps:ui-journey": "node scripts/tps-analysis/ui-journey.js",
+    "tps:dead-links": "node scripts/tps-analysis/dead-links.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

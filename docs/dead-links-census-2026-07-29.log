@@ -1,0 +1,60 @@
+◇ injected env (11) from .env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+  checked 25/400
+  checked 50/400
+  checked 75/400
+  checked 100/400
+  checked 125/400
+  checked 150/400
+  checked 175/400
+  checked 200/400
+  checked 225/400
+  checked 250/400
+  checked 275/400
+  checked 300/400
+  checked 325/400
+  checked 350/400
+  checked 375/400
+  checked 400/400
+
+── DEAD OUTBOUND LINK CENSUS ──────────────
+served listings with a URL: 77785 of 77785
+sampled 400  ->  OK 386 · DEAD 1 · BLOCKED(excluded) 13
+DEAD RATE (of resolvable): 0.3%  ->  est. 233 dead listings live
+median age: dead 0d vs ok 5d
+
+By store:
+┌─────────┬─────┬──────┬─────────┬───────────────────┐
+│ (index) │ OK  │ DEAD │ BLOCKED │ dead_pct_of_known │
+├─────────┼─────┼──────┼─────────┼───────────────────┤
+│ 1       │ 105 │ 0    │ 12      │ 0                 │
+│ 2       │ 3   │ 0    │ 1       │ 0                 │
+│ 3       │ 4   │ 0    │ 0       │ 0                 │
+│ 4       │ 133 │ 0    │ 0       │ 0                 │
+│ 5       │ 99  │ 1    │ 0       │ 1                 │
+│ 7       │ 23  │ 0    │ 0       │ 0                 │
+│ 8       │ 1   │ 0    │ 0       │ 0                 │
+│ 9       │ 12  │ 0    │ 0       │ 0                 │
+│ 17      │ 1   │ 0    │ 0       │ 0                 │
+│ اكسترا  │ 1   │ 0    │ 0       │ 0                 │
+│ المنيع  │ 4   │ 0    │ 0       │ 0                 │
+└─────────┴─────┴──────┴─────────┴───────────────────┘
+By category:
+┌─────────────────┬─────┬──────┬─────────┬───────────────────┐
+│ (index)         │ OK  │ DEAD │ BLOCKED │ dead_pct_of_known │
+├─────────────────┼─────┼──────┼─────────┼───────────────────┤
+│ tv              │ 30  │ 0    │ 2       │ 0                 │
+│ air_conditioner │ 70  │ 0    │ 0       │ 0                 │
+│ laptop          │ 22  │ 0    │ 1       │ 0                 │
+│ audio           │ 46  │ 0    │ 0       │ 0                 │
+│ mobile          │ 113 │ 1    │ 6       │ 0.9               │
+│ tablet          │ 14  │ 0    │ 2       │ 0                 │
+│ dishwasher      │ 14  │ 0    │ 0       │ 0                 │
+│ washing_machine │ 22  │ 0    │ 0       │ 0                 │
+│ vacuum          │ 15  │ 0    │ 0       │ 0                 │
+│ camera          │ 3   │ 0    │ 0       │ 0                 │
+│ printer         │ 8   │ 0    │ 0       │ 0                 │
+│ refrigerator    │ 10  │ 0    │ 0       │ 0                 │
+│ smartwatch      │ 9   │ 0    │ 1       │ 0                 │
+│ monitor         │ 8   │ 0    │ 1       │ 0                 │
+│ oven            │ 2   │ 0    │ 0       │ 0                 │
+└─────────────────┴─────┴──────┴─────────┴───────────────────┘
