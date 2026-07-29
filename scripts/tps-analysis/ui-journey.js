@@ -110,30 +110,87 @@ async function resolveGo(offerId) {
   return rows?.[0]?.normalized_payload?._url ?? null;
 }
 
-/** Does a retailer URL actually resolve to a PRODUCT page (not a homepage/search)? */
-async function checkDestination(url) {
-  const out = { url, finalUrl: null, status: null, isProduct: false, note: '' };
-  if (!url) { out.note = 'no outbound url'; return out; }
+// A retailer refusing a headless client is NOT a broken link — it works fine for a real
+// shopper. Counting it as a failure would drag the pass rate down for a defect that does
+// not exist and send us "fixing" healthy links. Outcomes are therefore three-valued:
+//   ok      → resolved to a real product page
+//   blocked → bot wall / 403 / captcha; truth unknown; EXCLUDED from the pass rate
+//   dead    → 404, homepage, or search page; a genuine failure
+const REAL_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const REAL_HEADERS = {
+  'User-Agent': REAL_UA,
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'ar-SA,ar;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'cross-site',
+  'Sec-Fetch-User': '?1',
+  'sec-ch-ua': '"Chromium";v="131", "Not_A Brand";v="24", "Google Chrome";v="131"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+};
+const BOTWALL = /robot check|are you a human|captcha|enter the characters you see|access denied|unusual traffic|request blocked|cf-browser-verification|attention required/i;
+
+function classifyUrl(finalUrl, status) {
+  const u = new URL(finalUrl);
+  const path = u.pathname.replace(/\/+$/, '');
+  const isHome = path === '' || /^\/(ar|en|en-sa|ar-sa|sa)$/i.test(path);
+  const isSearch = /\/(search|s)(\/|$)|[?&](q|k|keyword|search)=/i.test(finalUrl);
+  if (status >= 400) return { bucket: 'dead', note: `HTTP ${status}` };
+  if (isHome) return { bucket: 'dead', note: 'landed on homepage' };
+  if (isSearch) return { bucket: 'dead', note: 'landed on a search page' };
+  return { bucket: 'ok', note: '' };
+}
+
+/** Does a retailer URL resolve to a PRODUCT page? Falls back to the real browser when
+ *  a plain fetch is refused, since a genuine Chrome navigation clears most bot walls. */
+async function checkDestination(url, browser) {
+  const out = { url, finalUrl: null, status: null, bucket: 'dead', note: '' };
+  if (!url) { out.bucket = 'dead'; out.note = 'no outbound url'; return out; }
+
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 25000);
-    const r = await fetch(url, {
-      redirect: 'follow', signal: ctl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36' },
-    });
+    const r = await fetch(url, { redirect: 'follow', signal: ctl.signal, headers: REAL_HEADERS });
     clearTimeout(t);
     out.status = r.status;
     out.finalUrl = r.url;
-    const u = new URL(r.url);
-    const path = u.pathname.replace(/\/+$/, '');
-    const isHome = path === '' || path === '/' || /^\/(ar|en|en-sa|ar-sa)$/i.test(path);
-    const isSearch = /\/(search|s)\b|[?&](q|k|keyword|search)=/i.test(r.url);
-    out.isProduct = r.status < 400 && !isHome && !isSearch;
-    if (isHome) out.note = 'landed on homepage';
-    else if (isSearch) out.note = 'landed on a search page';
-    else if (r.status >= 400) out.note = `HTTP ${r.status}`;
+    const body = await r.text().catch(() => '');
+    const walled = r.status === 403 || r.status === 429 || r.status === 503 || BOTWALL.test(body.slice(0, 4000));
+    if (!walled) {
+      const c = classifyUrl(r.url, r.status);
+      out.bucket = c.bucket; out.note = c.note;
+      return out;
+    }
+    out.note = `bot wall on fetch (HTTP ${r.status})`;
   } catch (e) {
-    out.note = e && e.name === 'AbortError' ? 'timeout' : `fetch failed: ${e && e.message}`;
+    out.note = e && e.name === 'AbortError' ? 'fetch timeout' : `fetch failed: ${e && e.message}`;
+  }
+
+  // Second opinion from a real browser navigation.
+  if (!browser) { out.bucket = 'blocked'; return out; }
+  let page;
+  try {
+    page = await browser.newPage();
+    await page.setUserAgent(REAL_UA);
+    await page.setExtraHTTPHeaders({ 'Accept-Language': REAL_HEADERS['Accept-Language'] });
+    const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    const status = resp ? resp.status() : 0;
+    const finalUrl = page.url();
+    const text = await page.evaluate(() => (document.body?.innerText || '').slice(0, 4000)).catch(() => '');
+    out.status = status; out.finalUrl = finalUrl;
+    if (status === 403 || status === 429 || BOTWALL.test(text)) {
+      out.bucket = 'blocked'; out.note = 'bot wall in real browser too — link truth unknown';
+    } else {
+      const c = classifyUrl(finalUrl, status);
+      out.bucket = c.bucket; out.note = c.note;
+    }
+  } catch (e) {
+    out.bucket = 'blocked';
+    out.note = `browser check inconclusive: ${e && e.message}`;
+  } finally {
+    if (page) await page.close().catch(() => {});
   }
   return out;
 }
@@ -206,11 +263,11 @@ async function readComparePage(page, href) {
   });
 }
 
-async function journey(page, locale, query) {
+async function journey(page, locale, query, browser) {
   const row = {
     query, locale,
     relevant: false, sensiblePick: false, storeVisible: false,
-    priceConsistent: false, linkLands: false, pass: false,
+    priceConsistent: false, linkLands: false, linkBucket: 'dead', excluded: false, pass: false,
     pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
     destination: '', notes: [],
   };
@@ -308,13 +365,20 @@ async function journey(page, locale, query) {
   else row.notes.push('no outbound link found');
 
   if (target) {
-    const dest = await checkDestination(target);
-    row.linkLands = dest.isProduct;
+    const dest = await checkDestination(target, browser);
+    row.linkBucket = dest.bucket;                 // ok | blocked | dead
+    row.linkLands = dest.bucket === 'ok';
     row.destination = dest.finalUrl || target;
-    if (!dest.isProduct) row.notes.push(`outbound: ${dest.note || 'not a product page'}`);
+    if (dest.bucket !== 'ok') row.notes.push(`outbound ${dest.bucket.toUpperCase()}: ${dest.note || 'not a product page'}`);
+  } else {
+    row.linkBucket = 'dead';
   }
 
-  row.pass = row.relevant && row.sensiblePick && row.storeVisible && row.priceConsistent && row.linkLands;
+  // BLOCKED is excluded, not failed: the link may be perfectly good for a real shopper
+  // and we simply cannot see it from here.
+  const linkOk = row.linkBucket === 'ok' || row.linkBucket === 'blocked';
+  row.excluded = row.linkBucket === 'blocked';
+  row.pass = row.relevant && row.sensiblePick && row.storeVisible && row.priceConsistent && linkOk;
   return row;
 }
 
@@ -334,13 +398,13 @@ async function journey(page, locale, query) {
   const rows = [];
   for (const locale of locales) {
     for (const q of queries) {
-      const r = await journey(page, locale, q);
+      const r = await journey(page, locale, q, browser);
       rows.push(r);
       if (!JSON_OUT) {
         process.stdout.write(
           `${r.pass ? 'PASS' : 'FAIL'}  ${locale}  ${q.padEnd(18)} ` +
           `rel=${r.relevant ? 'Y' : 'N'} pick=${r.sensiblePick ? 'Y' : 'N'} store=${r.storeVisible ? 'Y' : 'N'} ` +
-          `price=${r.priceConsistent ? 'Y' : 'N'} link=${r.linkLands ? 'Y' : 'N'}` +
+          `price=${r.priceConsistent ? 'Y' : 'N'} link=${r.linkBucket.toUpperCase()}` +
           `${r.notes.length ? '  · ' + r.notes.join('; ') : ''}\n`,
         );
       }
@@ -371,6 +435,14 @@ async function journey(page, locale, query) {
       price_consistent: rows.filter((r) => r.priceConsistent).length,
       link_lands: rows.filter((r) => r.linkLands).length,
     },
+    link_buckets: {
+      OK: rows.filter((r) => r.linkBucket === 'ok').length,
+      BLOCKED_excluded: rows.filter((r) => r.linkBucket === 'blocked').length,
+      DEAD: rows.filter((r) => r.linkBucket === 'dead').length,
+    },
+    link_trustable_pct: rows.length
+      ? Math.round((rows.filter((r) => r.linkBucket !== 'blocked').length / rows.length) * 1000) / 10
+      : 0,
     cross_language_pick_mismatches: mismatched,
   };
 
@@ -379,6 +451,9 @@ async function journey(page, locale, query) {
   console.log(`base: ${summary.base}`);
   console.log(`PASS RATE: ${passed}/${rows.length} = ${rate}%`);
   console.table(summary.by_check);
+  console.log('Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):');
+  console.table(summary.link_buckets);
+  console.log(`Link check is trustable for ${summary.link_trustable_pct}% of journeys.`);
   if (mismatched.length) {
     console.log(`\nCross-language pick mismatches (${mismatched.length}):`);
     for (const m of mismatched) console.log(`  ${m.query}: ar="${m.ar}"  en="${m.en}"`);

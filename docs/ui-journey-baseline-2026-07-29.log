@@ -1,54 +1,63 @@
-◇ injected env (11) from .env.local // tip: ⌘ override existing { override: true }
-FAIL  ar  iphone             rel=Y pick=Y store=Y price=N link=Y  · PRICE MISMATCH card=840 compare=1099
-FAIL  ar  ايفون              rel=Y pick=Y store=Y price=N link=Y  · card claims 3 stores, compare page says none
-PASS  ar  لابتوب اتش بي      rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  ar  macbook            rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  ar  مكيف سبليت         rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  ar  lg tv              rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 404
-PASS  ar  غسالة سامسونج      rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  ar  ايباد              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  ar  شاشة               rel=Y pick=Y store=Y price=N link=N  · card claims 2 stores, compare page says none; outbound: timeout
-PASS  ar  ثلاجة              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  ar  سماعات             rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 404
-PASS  ar  طابعة              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  ar  ps5                rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  ar  شاحن               rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 404
-FAIL  ar  مكيف 18000         rel=Y pick=Y store=Y price=N link=Y  · card claims 3 stores, compare page says none
-FAIL  ar  تلفزيون 65 بوصة    rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 403
-FAIL  ar  laptop             rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 403
-PASS  ar  washing machine    rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  ar  مروحة              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  ar  ميكروويف           rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  en  iphone             rel=Y pick=Y store=Y price=N link=Y  · PRICE MISMATCH card=840 compare=1099
-FAIL  en  ايفون              rel=Y pick=Y store=Y price=N link=Y  · card claims 3 stores, compare page says none
-PASS  en  لابتوب اتش بي      rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  en  macbook            rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  en  مكيف سبليت         rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  en  lg tv              rel=N pick=N store=N price=N link=N  · no product card found
-FAIL  en  غسالة سامسونج      rel=N pick=N store=N price=N link=N  · no product card found
-PASS  en  ايباد              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  en  شاشة               rel=Y pick=Y store=Y price=N link=Y  · card claims 2 stores, compare page says none
-PASS  en  ثلاجة              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  en  سماعات             rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 404
-PASS  en  طابعة              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  en  ps5                rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-FAIL  en  شاحن               rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 404
-FAIL  en  مكيف 18000         rel=Y pick=Y store=Y price=N link=Y  · card claims 3 stores, compare page says none
-FAIL  en  تلفزيون 65 بوصة    rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 403
-FAIL  en  laptop             rel=Y pick=Y store=Y price=Y link=N  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound: HTTP 403
-PASS  en  washing machine    rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  en  مروحة              rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
-PASS  en  ميكروويف           rel=Y pick=Y store=Y price=Y link=Y  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+◇ injected env (11) from .env.local // tip: ⌘ enable debugging { debug: true }
+FAIL  ar  iphone             rel=Y pick=Y store=Y price=N link=OK  · PRICE MISMATCH card=840 compare=1099
+FAIL  ar  ايفون              rel=Y pick=Y store=Y price=N link=OK  · card claims 3 stores, compare page says none
+PASS  ar  لابتوب اتش بي      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  macbook            rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مكيف سبليت         rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  lg tv              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  غسالة سامسونج      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ايباد              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  شاشة               rel=Y pick=Y store=Y price=N link=OK  · card claims 2 stores, compare page says none
+PASS  ar  ثلاجة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  سماعات             rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  ar  طابعة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ps5                rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  شاحن               rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+FAIL  ar  مكيف 18000         rel=Y pick=Y store=Y price=N link=OK  · card claims 3 stores, compare page says none
+PASS  ar  تلفزيون 65 بوصة    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  laptop             rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  washing machine    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ميكروويف           rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  iphone             rel=Y pick=Y store=Y price=N link=OK  · PRICE MISMATCH card=840 compare=1099
+FAIL  en  ايفون              rel=Y pick=Y store=Y price=N link=OK  · card claims 3 stores, compare page says none
+PASS  en  لابتوب اتش بي      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  macbook            rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مكيف سبليت         rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  lg tv              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  غسالة سامسونج      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ايباد              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  شاشة               rel=Y pick=Y store=Y price=N link=OK  · card claims 2 stores, compare page says none
+PASS  en  ثلاجة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  سماعات             rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  en  طابعة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  ps5                rel=N pick=N store=N price=N link=DEAD  · no product card found
+FAIL  en  شاحن               rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+FAIL  en  مكيف 18000         rel=Y pick=Y store=Y price=N link=OK  · card claims 3 stores, compare page says none
+PASS  en  تلفزيون 65 بوصة    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  laptop             rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  washing machine    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ميكروويف           rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
 
 ── SUMMARY ────────────────────────────────
 base: https://tawveeri.com
-PASS RATE: 21/40 = 52.5%
+PASS RATE: 27/40 = 67.5%
 ┌──────────────────┬────────┐
 │ (index)          │ Values │
 ├──────────────────┼────────┤
-│ relevant         │ 38     │
-│ sensible_pick    │ 38     │
-│ store_visible    │ 38     │
-│ price_consistent │ 30     │
-│ link_lands       │ 28     │
+│ relevant         │ 39     │
+│ sensible_pick    │ 39     │
+│ store_visible    │ 39     │
+│ price_consistent │ 31     │
+│ link_lands       │ 35     │
 └──────────────────┴────────┘
+Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ OK               │ 35     │
+│ BLOCKED_excluded │ 0      │
+│ DEAD             │ 5      │
+└──────────────────┴────────┘
+Link check is trustable for 100% of journeys.
