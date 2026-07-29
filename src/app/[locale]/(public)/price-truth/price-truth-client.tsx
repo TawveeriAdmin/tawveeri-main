@@ -28,7 +28,10 @@ export function PriceTruthClient({ locale }: { locale: string }) {
           fetch('/api/v1/intelligence/merchant-trust').then((r) => r.json()).catch(() => ({})),
         ]);
         if (!alive) return;
-        setD(di); setModelCount(typeof mc?.total === 'number' ? mc.total : null);
+        // Devices only. `total` includes accessories, and 88 of 166 corroborations were
+        // accessories — a majority-accessory number under a label that says "products"
+        // does not belong on the trust surface (§11).
+        setD(di); setModelCount(typeof mc?.products_total === 'number' ? mc.products_total : null);
         setStores(Array.isArray(mt?.stores) ? mt.stores : []);
       } finally { if (alive) setLoading(false); }
     })();
@@ -38,7 +41,15 @@ export function PriceTruthClient({ locale }: { locale: string }) {
   const inflated = d?.summary?.inflated_reference_share_pct ?? null;
   const checkable = d?.summary?.checkable_listings ?? null;
   const verified = d?.summary?.by_verdict?.verified_drop ?? null;
-  const deals = d?.real_deals ?? [];
+  // §11 — accessories are excluded from trust surfaces ENTIRELY, not merely ranked last.
+  // Percentage ranking is what put a 19 SAR phone case above an 8,800 SAR television on
+  // this very page. A saving under 50 SAR is float noise, not a decision.
+  const deals = ((d?.real_deals ?? []) as Array<Record<string, unknown>>).filter((dl) => {
+    const cat = String(dl?.category ?? '').toLowerCase();
+    if (cat.includes('accessor')) return false;
+    const saving = (Number(dl?.observed_max) || 0) - (Number(dl?.current_price) || 0);
+    return saving >= 50;
+  });
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-12">
