@@ -10,6 +10,7 @@ import { ExternalLink, ShieldCheck, Trophy, ArrowRight } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
+import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
 
 interface CompareOffer {
   store_name:   string;
@@ -42,15 +43,18 @@ interface CompareResult {
   offers: CompareOffer[];
 }
 
+// Reads the database directly. This used to fetch `${SITE_URL}/api/compare` — a
+// server-to-server round trip out of Railway and back in through our own edge, which
+// passes the rate limiter like any other request. Every server render shares one egress
+// identity, so under load the page's own fetch returned HTTP 429, this function returned
+// null, and the page rendered "لا تتوفر مقارنة" for a product with two live offers.
+// Measured 2026-07-29: 34 rapid calls to /api/compare → 429, data present throughout.
+// A page that reads its own database cannot fail that way.
 async function fetchCompare(key: string): Promise<CompareResult | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tawveeri.com';
-    const res = await fetch(
-      `${baseUrl}/api/compare?key=${encodeURIComponent(key)}`,
-      { next: { revalidate: 300 } } // cache 5 دقائق
-    );
-    if (!res.ok) return null;
-    return res.json();
+    const result = await getComparison({ identityKey: key });
+    if (isComparisonError(result)) return null;
+    return result as unknown as CompareResult;
   } catch {
     return null;
   }
