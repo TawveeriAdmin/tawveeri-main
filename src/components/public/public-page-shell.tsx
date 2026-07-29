@@ -217,8 +217,11 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               </span>
             </Link>
 
-            {/* Smart Search — Desktop */}
-            <div className="hidden flex-1 justify-center md:flex">
+            {/* Smart Search — Desktop. Hidden on the homepage for the same reason as the
+                mobile bar below: the hero IS the search there. Hiding only the mobile one
+                fixed nothing at desktop width, which is where the harness measures — the
+                homepage still reported 2 search fields after the first attempt. */}
+            <div className={cn('hidden flex-1 justify-center md:flex', isHomePage && 'md:hidden')}>
               <SearchAutocomplete
                 locale={locale}
                 compact
