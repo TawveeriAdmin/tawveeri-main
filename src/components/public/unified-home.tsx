@@ -164,7 +164,16 @@ export function UnifiedHome({ locale }: { locale: string }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
             {deals.map((d) => {
-              const save = d.was ? Math.round(((d.was - d.price) / d.was) * 100) : 0;
+              // ADR-129 SAVINGS_GATE — this surface was built after the gate (ADR-123) and never
+              // got it, so the FIRST SCREEN was publishing a percentage derived from the merchant's
+              // own `original_price`: a saving we never observed. Measured live 2026-07-29:
+              // "وفّر 62%" on a Philips LAN cable, "وفّر 34%" on a keyboard set. We publish that
+              // 71% of advertised discounts reference a price we never observed — and then showed
+              // one of those discounts as our own headline. Suppressed by default; the verified
+              // replacement (observed_max + tracked days) is ADR-138's follow-up.
+              const save = process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off' && d.was
+                ? Math.round(((d.was - d.price) / d.was) * 100)
+                : 0;
               return (
                 <Link key={d.slug} href={`/${locale}/products/${d.slug}`} style={{ textDecoration: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ position: 'relative', height: 120, background: 'var(--color-surface-container-low, #f5f7f8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -175,7 +184,12 @@ export function UnifiedHome({ locale }: { locale: string }) {
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-on-surface)', lineHeight: 1.4, height: 34, overflow: 'hidden' }}>{d.name}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
                       <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--brand-green-dark, #3a7a66)' }}>{num(d.price)}</span>
-                      {d.was && <span style={{ fontSize: 11, color: 'var(--color-on-surface-variant)', textDecoration: 'line-through' }}>{num(d.was)}</span>}
+                      {/* The struck-through "was" is the merchant's reference price, not one we
+                          observed — same ADR-129 gate as the percentage above it. Showing a price
+                          crossed out IS a savings claim, whether or not a % appears beside it. */}
+                      {process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off' && d.was && (
+                        <span style={{ fontSize: 11, color: 'var(--color-on-surface-variant)', textDecoration: 'line-through' }}>{num(d.was)}</span>
+                      )}
                     </div>
                   </div>
                 </Link>

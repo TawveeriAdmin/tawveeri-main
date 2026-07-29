@@ -225,17 +225,63 @@ function isMainProductTypeQuery(raw: string): boolean {
 // Clearly-AC queries → air_conditioner. Everything else → mobile (preserves all
 // existing mobile behavior; non-matching queries simply return []).
 const AC_QUERY_WORDS = new Set(['مكيف', 'مكيفات', 'سبليت', 'شباك', 'كاسيت', 'دولابي', 'ac']);
-function detectCanonicalCategory(raw: string): 'mobile' | 'air_conditioner' | null {
+
+/**
+ * Query → canonical categories to search for a verified comparison.
+ *
+ * MEASURED DEFECT (2026-07-29): this returned ONLY 'mobile' or 'air_conditioner', so
+ * `searchTPSCanonical` — the sole source of multi-store comparison cards — could never
+ * look at any other category. Of the 459 canonicals carrying live offers from ≥2 approved
+ * retailers, only 132 (mobile 81 + AC 51) were reachable. The other 323 were comparable,
+ * present, corroborated, and impossible for a customer to find:
+ *   tv 65 · tablet 55 · washing_machine 48 · monitor 34 · audio 30 · laptop 28 ·
+ *   smartwatch 27 · printer 12 · refrigerator 11 · dishwasher 5 · vacuum 3 · camera 3 ·
+ *   microwave 1 · kettle 1
+ * That is 3.4x the reachable comparison inventory, already paid for — no acquisition, no
+ * credentials, no merchant negotiation. Cheaper than onboarding a store, and it lands first.
+ *
+ * Terms are matched on the NORMALIZED query (ة→ه, ى→ي), so keys are written folded.
+ * Order matters: the most specific phrase wins (غساله صحون → dishwasher, not washing_machine).
+ */
+const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
+  // Specific multi-word phrases first — they would otherwise be caught by a broader term.
+  { cats: ['dishwasher'], terms: ['غساله صحون', 'جلايه', 'dishwasher', 'صحون', 'اطباق'] },
+  { cats: ['air_conditioner'], terms: ['مكيف', 'مكيفات', 'سبليت', 'شباك', 'كاسيت', 'دولابي', 'split ac', 'air condition'] },
+  { cats: ['washing_machine'], terms: ['غساله', 'غسالات', 'washer', 'washing machine', 'نشافه', 'dryer'] },
+  { cats: ['refrigerator'], terms: ['ثلاجه', 'ثلاجات', 'refrigerator', 'fridge', 'فريزر', 'freezer'] },
+  { cats: ['tv', 'monitor'], terms: ['تلفزيون', 'تلفاز', 'شاشه', 'شاشات', 'tv', 'television', 'monitor', 'display'] },
+  { cats: ['laptop'], terms: ['لابتوب', 'laptop', 'notebook', 'macbook', 'ماك بوك', 'حاسوب', 'كمبيوتر', 'chromebook'] },
+  { cats: ['tablet'], terms: ['ايباد', 'ipad', 'تابلت', 'tablet', 'تاب'] },
+  { cats: ['smartwatch'], terms: ['ساعه', 'ساعات', 'smartwatch', 'واتش', 'apple watch', 'جالكسي واتش'] },
+  { cats: ['audio'], terms: ['سماعه', 'سماعات', 'headphone', 'headphones', 'earbud', 'earbuds', 'مكبر صوت', 'speaker', 'soundbar', 'ايربودز', 'airpods'] },
+  { cats: ['printer'], terms: ['طابعه', 'طابعات', 'printer'] },
+  { cats: ['vacuum'], terms: ['مكنسه', 'vacuum'] },
+  { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'microwave'] },
+  { cats: ['camera'], terms: ['كاميرا', 'camera'] },
+  { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
+];
+
+function detectCanonicalCategories(raw: string): string[] | null {
   const norm = normalizeArabic(raw).toLowerCase();
-  const words = norm.split(/\s+/).filter(Boolean);
   if (
     ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
     ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
   ) return null;
-  const isAC = words.some((w) => AC_QUERY_WORDS.has(w)) || /split\s*ac|air\s*condition/.test(norm);
-  if (isAC) return 'air_conditioner';
-  return 'mobile';
+
+  // Short tokens must match as WHOLE WORDS. "ac" is a substring of black, macbook, jacket —
+  // substring-matching it would route half the catalogue to air conditioners. (Caught by
+  // `gree ac` regressing to mobile when this was first written as a substring match.)
+  const words = norm.split(/\s+/).filter(Boolean);
+  if (words.some((w) => AC_QUERY_WORDS.has(w))) return ['air_conditioner'];
+
+  for (const entry of CATEGORY_QUERY_TERMS) {
+    if (entry.terms.some((t) => norm.includes(normalizeArabic(t)))) return entry.cats;
+  }
+  // Unrecognised (e.g. a bare brand like "سامسونج"): keep the previous behaviour and look
+  // in mobile rather than widening to every category, which would cost latency for no
+  // measured gain. Widen only when a measurement says it pays.
+  return ['mobile'];
 }
 
 // A full-device connectivity spec that ONLY a watch/phone BODY carries ("GPS + Cellular", "(GPS",
@@ -606,16 +652,14 @@ async function enrichWithTPS(
 async function searchTPSCanonical(
   words: string[],
   supabase: ReturnType<typeof createServerClient>,
-  category: 'mobile' | 'air_conditioner',
+  categories: string[],
 ): Promise<GroupedSearchProduct[]> {
   try {
-    if (!words.length) return [];
-    // canonical plane is 'mobile'/'air_conditioner'; UI plane maps mobile→smartphone.
-    const uiCategory: ProductCategory = category === 'mobile' ? 'smartphone' : (category as ProductCategory);
+    if (!words.length || !categories.length) return [];
     const { data: prods } = await supabase
       .from('canonical_products')
-      .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number')
-      .eq('category', category)
+      .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category')
+      .in('category', categories)
       .eq('is_active', true);
 
     if (!prods?.length) return [];
@@ -660,8 +704,12 @@ async function searchTPSCanonical(
         product_url: `/go/${v.obsId}`,
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
-        category: uiCategory,
-        description_ar: null, 
+        // Per-canonical now that more than one category can be searched at once. The UI
+        // plane calls a mobile a "smartphone"; everything else passes through unchanged.
+        category: ((p as { category?: string }).category === 'mobile'
+          ? 'smartphone'
+          : (p as { category?: string }).category ?? '') as ProductCategory,
+        description_ar: null,
         description_en: null,
         is_free_delivery: false, 
         delivery_time_days: null, 
@@ -834,16 +882,17 @@ export async function POST(request: NextRequest) {
         .map(toGroupedSearchProduct)
         .filter((p): p is GroupedSearchProduct => p !== null);
 
-  // TPS Canonical Search — one category per query, derived from the query.
-  const tpsCategory = rawQuery ? detectCanonicalCategory(rawQuery) : null;
-  if (rawQuery && tpsCategory) {
+  // TPS Canonical Search — the categories the query is actually about (ADR-138). This was
+  // hard-limited to mobile + air_conditioner, which hid 323 of our 459 comparable products.
+  const tpsCategories = rawQuery ? detectCanonicalCategories(rawQuery) : null;
+  if (rawQuery && tpsCategories) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
     const mw = aw.filter((w) => !STOPWORDS.has(w));
-    const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategory);
+    const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategories);
     if (tpsProducts.length) {
       products = [...tpsProducts, ...products];
-      console.log('[TPS Search] injected:', tpsProducts.length, '(', tpsCategory, ')');
+      console.log('[TPS Search] injected:', tpsProducts.length, '(', tpsCategories.join('+'), ')');
     }
   }
 
@@ -862,7 +911,7 @@ export async function POST(request: NextRequest) {
         .map((w) => expandWordTerms(w).filter((t) => t.length >= 2 && !GENERIC.has(t)))
         .filter((g) => g.length > 0)
     : [];
-  const isAcQuery = !!rawQuery && detectCanonicalCategory(rawQuery) === 'air_conditioner';
+  const isAcQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('air_conditioner');
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC

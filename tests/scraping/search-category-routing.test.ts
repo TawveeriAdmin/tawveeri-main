@@ -36,56 +36,113 @@ function detectCanonicalCategory(raw: string): 'mobile' | 'air_conditioner' | nu
   if (isAC) return 'air_conditioner';
   return 'mobile';
 }
-const uiCategory = (c: 'mobile' | 'air_conditioner') => (c === 'mobile' ? 'smartphone' : c);
+void detectCanonicalCategory; // superseded by the multi-category mirror below (ADR-138)
+
+// Mirror of the CURRENT route function. Kept faithful on purpose: a stale mirror that
+// passes while production diverges is worse than no test at all.
+const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
+  { cats: ['dishwasher'], terms: ['غساله صحون', 'جلايه', 'dishwasher', 'صحون', 'اطباق'] },
+  { cats: ['air_conditioner'], terms: ['مكيف', 'مكيفات', 'سبليت', 'شباك', 'كاسيت', 'دولابي', 'split ac', 'air condition'] },
+  { cats: ['washing_machine'], terms: ['غساله', 'غسالات', 'washer', 'washing machine', 'نشافه', 'dryer'] },
+  { cats: ['refrigerator'], terms: ['ثلاجه', 'ثلاجات', 'refrigerator', 'fridge', 'فريزر', 'freezer'] },
+  { cats: ['tv', 'monitor'], terms: ['تلفزيون', 'تلفاز', 'شاشه', 'شاشات', 'tv', 'television', 'monitor', 'display'] },
+  { cats: ['laptop'], terms: ['لابتوب', 'laptop', 'notebook', 'macbook', 'ماك بوك', 'حاسوب', 'كمبيوتر', 'chromebook'] },
+  { cats: ['tablet'], terms: ['ايباد', 'ipad', 'تابلت', 'tablet', 'تاب'] },
+  { cats: ['smartwatch'], terms: ['ساعه', 'ساعات', 'smartwatch', 'واتش', 'apple watch', 'جالكسي واتش'] },
+  { cats: ['audio'], terms: ['سماعه', 'سماعات', 'headphone', 'headphones', 'earbud', 'earbuds', 'مكبر صوت', 'speaker', 'soundbar', 'ايربودز', 'airpods'] },
+  { cats: ['printer'], terms: ['طابعه', 'طابعات', 'printer'] },
+  { cats: ['vacuum'], terms: ['مكنسه', 'vacuum'] },
+  { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'microwave'] },
+  { cats: ['camera'], terms: ['كاميرا', 'camera'] },
+  { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
+];
+function detectCanonicalCategories(raw: string): string[] | null {
+  const norm = normalizeArabic(raw).toLowerCase();
+  if (
+    ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
+    ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
+    ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
+  ) return null;
+  const words = norm.split(/\s+/).filter(Boolean);
+  if (words.some((w) => AC_QUERY_WORDS.has(w))) return ['air_conditioner'];
+  for (const entry of CATEGORY_QUERY_TERMS) {
+    if (entry.terms.some((t) => norm.includes(normalizeArabic(t)))) return entry.cats;
+  }
+  return ['mobile'];
+}
+const uiCategory = (c: string) => (c === 'mobile' ? 'smartphone' : c);
 
 describe('category-aware canonical routing', () => {
   it('mobile queries → mobile canonical path (iPhone stays visible)', () => {
-    expect(detectCanonicalCategory('ايفون 15')).toBe('mobile');
-    expect(detectCanonicalCategory('iphone 16')).toBe('mobile');
-    expect(detectCanonicalCategory('جالكسي s25')).toBe('mobile');
+    expect(detectCanonicalCategories('ايفون 15')).toEqual(['mobile']);
+    expect(detectCanonicalCategories('iphone 16')).toEqual(['mobile']);
+    expect(detectCanonicalCategories('جالكسي s25')).toEqual(['mobile']);
   });
   it('AC queries → air_conditioner canonical path (GREE/LG AC visible)', () => {
-    expect(detectCanonicalCategory('مكيف جري')).toBe('air_conditioner');
-    expect(detectCanonicalCategory('مكيف سبليت')).toBe('air_conditioner');
-    expect(detectCanonicalCategory('gree ac')).toBe('air_conditioner');
-    expect(detectCanonicalCategory('lg split ac')).toBe('air_conditioner');
-    expect(detectCanonicalCategory('split air conditioner')).toBe('air_conditioner');
+    expect(detectCanonicalCategories('مكيف جري')).toEqual(['air_conditioner']);
+    expect(detectCanonicalCategories('مكيف سبليت')).toEqual(['air_conditioner']);
+    expect(detectCanonicalCategories('gree ac')).toEqual(['air_conditioner']);
+    expect(detectCanonicalCategories('lg split ac')).toEqual(['air_conditioner']);
+    expect(detectCanonicalCategories('split air conditioner')).toEqual(['air_conditioner']);
+  });
+  // ADR-138 — these all resolved to ['mobile'] before, so their comparable inventory
+  // (65 TVs, 55 tablets, 48 washers, 28 laptops …) was unreachable from search.
+  it('reaches the categories that were previously hidden', () => {
+    expect(detectCanonicalCategories('تلفزيون 65 بوصة')).toEqual(['tv', 'monitor']);
+    expect(detectCanonicalCategories('lg tv')).toEqual(['tv', 'monitor']);
+    expect(detectCanonicalCategories('لابتوب')).toEqual(['laptop']);
+    expect(detectCanonicalCategories('macbook')).toEqual(['laptop']);
+    expect(detectCanonicalCategories('ايباد')).toEqual(['tablet']);
+    expect(detectCanonicalCategories('غسالة سامسونج')).toEqual(['washing_machine']);
+    expect(detectCanonicalCategories('ثلاجة')).toEqual(['refrigerator']);
+    expect(detectCanonicalCategories('طابعة')).toEqual(['printer']);
+    expect(detectCanonicalCategories('ميكروويف')).toEqual(['microwave']);
+  });
+  it('prefers the more specific phrase (dishwasher is not a washing machine)', () => {
+    expect(detectCanonicalCategories('غسالة صحون')).toEqual(['dishwasher']);
+    expect(detectCanonicalCategories('غسالة')).toEqual(['washing_machine']);
   });
   it('accessory queries → NO canonical Smart Pick (no AC/mobile contamination)', () => {
-    expect(detectCanonicalCategory('كفر ايفون')).toBeNull();
-    expect(detectCanonicalCategory('iphone case')).toBeNull();
-    expect(detectCanonicalCategory('شاحن')).toBeNull();
-    expect(detectCanonicalCategory('holder for iphone')).toBeNull();
+    expect(detectCanonicalCategories('كفر ايفون')).toBeNull();
+    expect(detectCanonicalCategories('iphone case')).toBeNull();
+    expect(detectCanonicalCategories('شاحن')).toBeNull();
+    expect(detectCanonicalCategories('holder for iphone')).toBeNull();
   });
   it('unknown query uses safe fallback (mobile; returns [] when no canonical matches)', () => {
-    expect(detectCanonicalCategory('لابتوب')).toBe('mobile');
-    expect(detectCanonicalCategory('random xyz')).toBe('mobile');
+    expect(detectCanonicalCategories('random xyz')).toEqual(['mobile']);
   });
-  it('never returns both categories — one category per query', () => {
-    for (const q of ['ايفون 15', 'مكيف جري', 'كفر', 'samsung', 'lg ac']) {
-      const c = detectCanonicalCategory(q);
-      expect([null, 'mobile', 'air_conditioner']).toContain(c);
-    }
-  });
-  it('UI category bridge maps mobile→smartphone, air_conditioner→air_conditioner', () => {
+  it('UI category bridge maps mobile→smartphone, everything else passes through', () => {
     expect(uiCategory('mobile')).toBe('smartphone');
     expect(uiCategory('air_conditioner')).toBe('air_conditioner');
+    expect(uiCategory('tv')).toBe('tv');
   });
 });
 
 describe('the search route wires category-aware routing (drift guard)', () => {
-  it('defines detectCanonicalCategory and no longer hardcodes only mobile', () => {
-    expect(routeSrc).toMatch(/function detectCanonicalCategory/);
-    expect(routeSrc).toMatch(/\.eq\('category', category\)/);
+  // ADR-138: routing was hard-limited to mobile + air_conditioner, which made 323 of our
+  // 459 comparable products unreachable from search. These guards now protect the WIDER
+  // routing — narrowing it again is the regression to catch.
+  it('routes by a set of categories, not a single hardcoded one', () => {
+    expect(routeSrc).toMatch(/function detectCanonicalCategories/);
+    expect(routeSrc).toMatch(/\.in\('category', categories\)/);
     expect(routeSrc).not.toMatch(/\.eq\('category', 'mobile'\)/);
   });
-  it('passes the derived category and gates on it (skips when null)', () => {
-    expect(routeSrc).toMatch(/const tpsCategory = rawQuery \? detectCanonicalCategory\(rawQuery\) : null/);
-    expect(routeSrc).toMatch(/if \(rawQuery && tpsCategory\)/);
-    expect(routeSrc).toMatch(/searchTPSCanonical\([^)]*tpsCategory\)/);
+  it('reaches the categories that actually hold comparable inventory', () => {
+    // Measured 2026-07-29 — every category below carries >=1 canonical with offers from
+    // >=2 approved retailers. Dropping one silently re-hides that inventory.
+    for (const cat of ['tv', 'tablet', 'washing_machine', 'monitor', 'audio', 'laptop',
+      'smartwatch', 'printer', 'refrigerator', 'dishwasher', 'vacuum', 'microwave',
+      'camera', 'mobile', 'air_conditioner']) {
+      expect(routeSrc).toContain(`'${cat}'`);
+    }
   });
-  it('uses the category-aware UI bridge (not a hardcoded smartphone)', () => {
-    expect(routeSrc).toMatch(/const uiCategory: ProductCategory = category === 'mobile'/);
-    expect(routeSrc).toMatch(/category: uiCategory,/);
+  it('passes the derived categories and gates on them (skips when null)', () => {
+    expect(routeSrc).toMatch(/const tpsCategories = rawQuery \? detectCanonicalCategories\(rawQuery\) : null/);
+    expect(routeSrc).toMatch(/if \(rawQuery && tpsCategories\)/);
+    expect(routeSrc).toMatch(/searchTPSCanonical\([^)]*tpsCategories\)/);
+  });
+  it('derives the UI category per canonical, since several may be searched at once', () => {
+    expect(routeSrc).toMatch(/category\?: string \}\)\.category === 'mobile'/);
+    expect(routeSrc).not.toMatch(/const uiCategory: ProductCategory/);
   });
 });

@@ -55,11 +55,28 @@ a reason, or NOT REACHED with the capacity limit stated. Never "waiting on you."
 **Catalog:**
 - 22 stores registered · ~6 with products · **4.5 actually working** — Amazon, Jarir,
   Extra, Almanea, and Noon (thin, 809 URLs)
-- 5,543 served products · **166 comparable to a customer (3%)**
-- ~564 genuine comparable families exist in the knowledge layer
-- 342 verified price drops (corrected from 925) out of 10,302 examinable offers
-- 72% of advertised discounts reference a price we never observed (corrected from 65%)
+- 5,543 served products
 - Model-number pollution 3.2–10.8%, but ~0% of corroborations. Dead links 0.3%
+
+**⟶ CORRECTED 2026-07-29 (re-measured on production; these supersede the three figures
+that stood here). Every number below is live, not a snapshot — the pipeline keeps
+observing, so re-measure before publishing rather than quoting this line.**
+
+- **Comparable products: 459** canonicals carry live offers from ≥2 distinct approved
+  retailers (**88** from ≥3), out of 5,648 canonicals with any offer = **8.1%**.
+  This replaces **166**, which ADR-132 retracted as an Amazon double-count, and it is a
+  different thing from ADR-133's "~564 families in the knowledge layer" (that figure
+  counted retailer-normalized store rows, not approved-retailer offers).
+  **Of the 459, only 132 (mobile 81 + AC 51) are reachable from search today** — the
+  canonical injection is hard-limited to those two categories. The other **323** exist,
+  are comparable, and cannot be found. See ADR-138.
+- **Verified price drops: 351** (live `/api/v1/tps/discount-integrity`). Neither 342 nor
+  340 — 340 was ADR-134's figure on the day it landed; the count moves as we observe.
+- **Unobserved-price share: 71%** — 9,644 `inflated_reference` of 13,599 checkable
+  listings (verified 351 + inflated 9,644 + stable 3,604; `insufficient_history` 4,616
+  abstains per ADR-134, and 636 superseded duplicates are suppressed).
+  **Not 87.7%.** That figure used a narrower denominator on a smaller population and no
+  longer reproduces. 71% is what the product publishes and what an auditor would recompute.
 
 **Identity — three dead ends, do not revisit:**
 - GTIN coverage across all offers and families: **zero**
@@ -166,9 +183,11 @@ one line** — we publish a *smaller* saving than the merchant because ours is e
 Ship it.
 
 **3.9 Positioning.** Tawveeri is **the price truth layer for Saudi retail**, not a price
-comparison platform. 166 comparable is a weak number; 342 verified drops and "72% of
-advertised discounts reference a price we never observed" is a strong one. Same
+comparison platform. 459 comparable is a weak number; **351 verified drops** and **"71%
+of advertised discounts reference a price we never observed"** is a strong one. Same
 platform, different frame. All public copy follows from this.
+*(Figures corrected 2026-07-29 — the 166 / 342 / 72% that stood here were retracted or
+stale. Re-measure before publishing: these move as the pipeline observes.)*
 
 The proof card, re-verified and holding: Extra claims a 9,400 SAR saving on the Hisense
 85" U7Q; **we publish 8,800, because 14,399 is the highest price we actually observed.**

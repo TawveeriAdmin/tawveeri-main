@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { isMoreAuthoritative, productListingKey } from "@/lib/intelligence/listing-currency";
+import { resolveApprovedSlug, retailerDisplayName } from "@/lib/retailers/approved-retailers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -118,6 +119,13 @@ export async function GET(req: NextRequest) {
     // Round away float-noise (e.g. 69.000001, 369.000501) before it reaches any customer surface (ADR item-4).
     real_deals: (realDeals ?? []).map((d) => ({
       ...d,
+      // `store_name` on a listing-facts row is whatever namespace the ingest wrote — in
+      // production it is frequently a NUMERIC stores.id ("4", "5", "1"), and this is a
+      // PUBLIC v1 feed. Rendering a raw internal id to a customer or an integrator is the
+      // defect ADR-135 added `retailerDisplayName()` to end. Resolve it; if it does not
+      // resolve to an approved retailer, say nothing rather than echo an id.
+      store_name: retailerDisplayName(resolveApprovedSlug(d.store_name) ?? '', 'ar')
+        ?? (resolveApprovedSlug(d.store_name) ? d.store_name : null),
       observed_max: d.observed_max != null ? Math.round(Number(d.observed_max) * 100) / 100 : d.observed_max,
       current_price: d.current_price != null ? Math.round(Number(d.current_price) * 100) / 100 : d.current_price,
     })),
