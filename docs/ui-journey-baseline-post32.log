@@ -1,0 +1,126 @@
+◇ injected env (11) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+PASS  ar  iphone             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  iphone             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  ar  ايفون              PICK rel=Y pick=Y store=Y price=N link=OK 3st  · card claims 3 stores, compare page says none
+PASS  ar  ايفون              CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  ar  لابتوب اتش بي      PICK rel=Y pick=N store=Y price=Y link=OK 1st  · top pick is an accessory; no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  لابتوب اتش بي      CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  macbook            PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  macbook            CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  مكيف سبليت         PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مكيف سبليت         CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  lg tv              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  lg tv              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  ar  غسالة سامسونج      CARD rel=N pick=N store=N price=N link=DEAD ?st  · no product card found
+PASS  ar  ايباد              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ايباد              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  شاشة               PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  شاشة               CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  ثلاجة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ثلاجة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  سماعات             PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  سماعات             CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  طابعة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  طابعة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  ar  ps5                CARD rel=N pick=N store=N price=N link=DEAD ?st  · no product card found
+FAIL  ar  شاحن               PICK rel=Y pick=Y store=Y price=Y link=DEAD 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+FAIL  ar  شاحن               CARD rel=Y pick=Y store=Y price=Y link=DEAD 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  ar  مكيف 18000         PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  مكيف 18000         CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  تلفزيون 65 بوصة    PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  تلفزيون 65 بوصة    CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  ar  laptop             PICK rel=Y pick=N store=Y price=Y link=OK 1st  · top pick is an accessory; no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  laptop             CARD rel=Y pick=N store=Y price=Y link=OK 1st  · top pick is an accessory; no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  washing machine    PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  washing machine    CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  ميكروويف           PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ميكروويف           CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  iphone             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  iphone             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  ايفون              PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  ايفون              CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  en  لابتوب اتش بي      PICK rel=Y pick=N store=Y price=Y link=OK 1st  · top pick is an accessory; no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  لابتوب اتش بي      CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  macbook            PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  macbook            CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  مكيف سبليت         PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مكيف سبليت         CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  lg tv              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  lg tv              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  غسالة سامسونج      PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  غسالة سامسونج      CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  ايباد              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ايباد              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  شاشة               PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  شاشة               CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  ثلاجة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ثلاجة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  سماعات             PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  سماعات             CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  طابعة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  طابعة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  ps5                PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ps5                CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  en  شاحن               PICK rel=Y pick=Y store=Y price=Y link=DEAD 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+FAIL  en  شاحن               CARD rel=Y pick=Y store=Y price=Y link=DEAD 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  en  مكيف 18000         PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  مكيف 18000         CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  تلفزيون 65 بوصة    PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  تلفزيون 65 بوصة    CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  en  laptop             PICK rel=Y pick=N store=Y price=Y link=OK 1st  · top pick is an accessory; no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  laptop             CARD rel=Y pick=N store=Y price=Y link=OK 1st  · top pick is an accessory; no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  washing machine    PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  washing machine    CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  ميكروويف           PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ميكروويف           CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+
+── SUMMARY ────────────────────────────────
+base: https://tawveeri.com
+PASS RATE (overall): 65/78 = 83.3%
+COMPARISON JOURNEY:  15/16 = 93.8%   <-- LAUNCH GATE
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ relevant         │ 76     │
+│ sensible_pick    │ 70     │
+│ store_visible    │ 76     │
+│ price_consistent │ 75     │
+│ link_lands       │ 72     │
+└──────────────────┴────────┘
+By surface (each judged in its own right — a gate carried by one surface is not a working product):
+┌─────────────┬──────────┬────────┬─────────────────────┬───────────────────┐
+│ (index)     │ journeys │ passed │ comparison_journeys │ comparison_passed │
+├─────────────┼──────────┼────────┼─────────────────────┼───────────────────┤
+│ smart_pick  │ 38       │ 31     │ 8                   │ 7                 │
+│ result_card │ 40       │ 34     │ 8                   │ 8                 │
+└─────────────┴──────────┴────────┴─────────────────────┴───────────────────┘
+Instrument (what the numbers were read from):
+┌───────────────────────────┬────────┐
+│ (index)                   │ Values │
+├───────────────────────────┼────────┤
+│ journeys_with_a_card      │ 76     │
+│ read_from_card_attributes │ 76     │
+│ subject_smart_pick        │ 38     │
+│ subject_result_card       │ 38     │
+└───────────────────────────┴────────┘
+Unhonoured store claims (cards claiming N stores with no compare link):
+┌────────────────────────┬────────┐
+│ (index)                │ Values │
+├────────────────────────┼────────┤
+│ pages_with_a_violation │ 0      │
+│ pages_checked          │ 40     │
+│ cards_violating        │ 0      │
+└────────────────────────┴────────┘
+Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ OK               │ 72     │
+│ BLOCKED_excluded │ 0      │
+│ DEAD             │ 6      │
+└──────────────────┴────────┘
+Link check is trustable for 100% of journeys.

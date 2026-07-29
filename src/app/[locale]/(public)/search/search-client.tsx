@@ -655,12 +655,28 @@ export default function SearchClient() {
     // both naming styles (`price_asc`/`price_low` etc.) so either works.
     const sortForApi = sortBy === 'popularity' ? 'relevance' : sortBy;
 
-    try {
-      const response = await fetch('/api/search', {
+    // A 429 from our own rate limiter used to surface as an empty results page — the
+    // customer was told "nothing found" when the truth was "ask again in a moment".
+    // Retry once, honouring Retry-After but capped so the UI never hangs, then fail
+    // with an honest message rather than a false emptiness.
+    const postSearch = async (body: string, attempt = 0): Promise<Response> => {
+      const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal,
-        body: JSON.stringify({
+        body,
+      });
+      if (res.status !== 429 || attempt >= 1) return res;
+      const headerWait = Number(res.headers.get('Retry-After'));
+      const waitMs = Math.min(Math.max(Number.isFinite(headerWait) ? headerWait * 1000 : 1200, 600), 3000);
+      await new Promise((r) => setTimeout(r, waitMs));
+      if (signal?.aborted) return res;
+      return postSearch(body, attempt + 1);
+    };
+
+    try {
+      const response = await postSearch(
+        JSON.stringify({
           query: query.trim(),
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
           brands: filters.brands.length > 0 ? filters.brands : undefined,
@@ -676,7 +692,7 @@ export default function SearchClient() {
           page: currentPage,
           pageSize: ITEMS_PER_PAGE,
         }),
-      });
+      );
 
       if (!response.ok) {
         let errorData: Record<string, string> = {};
@@ -688,7 +704,13 @@ export default function SearchClient() {
 
         let errorMessage = errorData.error || errorData.message || `Failed to scrape products (${response.status})`;
 
-        if (response.status === 403) {
+        if (response.status === 429) {
+          // Say what actually happened. "No results" for a rate limit is a false statement
+          // about our catalogue.
+          errorMessage = locale === 'ar'
+            ? 'الطلبات كثيرة الآن. أعد المحاولة بعد لحظات — النتائج موجودة، الخدمة مشغولة فقط.'
+            : 'Too many requests right now. Try again in a moment — the results exist, the service is just busy.';
+        } else if (response.status === 403) {
           errorMessage = 'Scraping service is not accessible. Please ensure Flask is running (npm run flask:start)';
         } else if (response.status === 503) {
           errorMessage = errorData.error || 'Scraping service is not available. Please start Flask.';

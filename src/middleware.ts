@@ -23,18 +23,49 @@ setInterval(() => {
   }
 }, 60_000);
 
+/**
+ * Rate-limit buckets.
+ *
+ * MEASURED DEFECT (2026-07-29): every API route except `/api/search/scrape` shared ONE
+ * 30-req/min bucket per IP. `/api/events` — fire-and-forget funnel telemetry — fires
+ * twice per page view, so it spent the same budget the customer's search needed. When
+ * the bucket emptied, `POST /api/search` returned 429 and the results page rendered
+ * ZERO cards with no explanation: it looked like "we have nothing for you", not "try
+ * again". Reproduced live: an identical `ps5` request returned 25 products on two runs
+ * and 0 on the third, the only difference being `429 /api/search`. This is the root
+ * cause of the "intermittent search" the harness kept catching as "no product card
+ * found" on a different query each run.
+ *
+ * It is worse than it looks in Saudi Arabia specifically: mobile carriers NAT large
+ * numbers of subscribers behind few egress IPs, so strangers consume each other's
+ * budget. Telemetry must never be able to break search, so it gets its own bucket,
+ * and search gets a budget sized for a real shopper refining a query.
+ */
+function bucketOf(pathname: string): 'telemetry' | 'scrape' | 'search' | 'api' {
+  if (pathname.startsWith('/api/events') || pathname.startsWith('/api/audit')) return 'telemetry';
+  if (pathname.startsWith('/api/search/scrape')) return 'scrape';
+  if (pathname.startsWith('/api/search')) return 'search';
+  return 'api';
+}
+
 function getRateLimit(pathname: string): number | null {
   if (pathname.startsWith('/api/cron/')) return null; // authenticated by CRON_SECRET
   if (pathname === '/api/health') return null;
-  if (pathname.startsWith('/api/search/scrape')) return 30; // half of 60 (2 PM2 instances)
-  return 30; // half of 60 (2 PM2 instances)
+  // Per-instance limits; PM2 runs 2 cluster instances with independent in-process
+  // counters, so an IP's effective ceiling is up to 2x these numbers.
+  switch (bucketOf(pathname)) {
+    case 'telemetry': return 240; // never allowed to starve search; dropping one is harmless
+    case 'search':    return 60;  // a shopper refining a query, on a shared carrier IP
+    case 'scrape':    return 30;  // heavy live-scrape path, unchanged
+    default:          return 30;
+  }
 }
 
 function checkRateLimit(ip: string, pathname: string): { allowed: boolean; remaining: number; retryAfter?: number } {
   const limit = getRateLimit(pathname);
   if (limit === null) return { allowed: true, remaining: -1 };
 
-  const key = `${ip}:${pathname.startsWith('/api/search/scrape') ? 'scrape' : 'api'}`;
+  const key = `${ip}:${bucketOf(pathname)}`;
   const now = Date.now();
   const entry = rateLimitMap.get(key);
 
