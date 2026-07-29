@@ -1,0 +1,64 @@
+◇ injected env (11) from .env.local // tip: ⌘ enable debugging { debug: true }
+PASS  ar  iphone             rel=Y pick=Y store=Y price=Y link=OK
+PASS  ar  ايفون              rel=Y pick=Y store=Y price=Y link=OK
+PASS  ar  لابتوب اتش بي      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  macbook            rel=N pick=N store=N price=N link=DEAD  · no product card found
+PASS  ar  مكيف سبليت         rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  lg tv              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  غسالة سامسونج      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ايباد              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  شاشة               rel=Y pick=Y store=Y price=Y link=OK
+PASS  ar  ثلاجة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  سماعات             rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  ar  طابعة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ps5                rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  شاحن               rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+FAIL  ar  مكيف 18000         rel=N pick=N store=N price=N link=DEAD  · no product card found
+PASS  ar  تلفزيون 65 بوصة    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  laptop             rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  washing machine    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ميكروويف           rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  iphone             rel=Y pick=Y store=Y price=Y link=OK
+PASS  en  ايفون              rel=Y pick=Y store=Y price=Y link=OK
+PASS  en  لابتوب اتش بي      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  macbook            rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مكيف سبليت         rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  lg tv              rel=N pick=N store=N price=N link=DEAD  · no product card found
+PASS  en  غسالة سامسونج      rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ايباد              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  شاشة               rel=Y pick=Y store=Y price=Y link=OK
+PASS  en  ثلاجة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  سماعات             rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  en  طابعة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ps5                rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  شاحن               rel=Y pick=Y store=Y price=Y link=DEAD  · no compare link on the top pick; single-store (no compare page) — price check vacuous; outbound DEAD: HTTP 404
+PASS  en  مكيف 18000         rel=Y pick=Y store=Y price=Y link=OK
+PASS  en  تلفزيون 65 بوصة    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  laptop             rel=N pick=N store=N price=N link=DEAD  · no product card found
+PASS  en  washing machine    rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ميكروويف           rel=Y pick=Y store=Y price=Y link=OK  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+
+── SUMMARY ────────────────────────────────
+base: https://tawveeri.com
+PASS RATE (overall): 32/40 = 80%
+COMPARISON JOURNEY:  28/32 = 87.5%   <-- LAUNCH GATE
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ relevant         │ 36     │
+│ sensible_pick    │ 36     │
+│ store_visible    │ 36     │
+│ price_consistent │ 36     │
+│ link_lands       │ 32     │
+└──────────────────┴────────┘
+Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ OK               │ 32     │
+│ BLOCKED_excluded │ 0      │
+│ DEAD             │ 8      │
+└──────────────────┴────────┘
+Link check is trustable for 100% of journeys.
