@@ -3,21 +3,7 @@
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import Link from 'next/link';
 
-type Cat = { e: string; ar: string; en: string; q: string };
-const CATS: Cat[] = [
-  { e: '📱', ar: 'جوالات', en: 'Phones', q: 'جوال' },
-  { e: '💻', ar: 'لابتوب', en: 'Laptops', q: 'لابتوب' },
-  { e: '🖥️', ar: 'شاشات', en: 'Monitors', q: 'شاشة' },
-  { e: '📺', ar: 'تلفزيونات', en: 'TVs', q: 'تلفزيون' },
-  { e: '🎧', ar: 'سماعات', en: 'Audio', q: 'سماعات' },
-  { e: '❄️', ar: 'مكيفات', en: 'Air conditioners', q: 'مكيف' },
-  { e: '🧺', ar: 'غسالات', en: 'Washers', q: 'غسالة' },
-  { e: '🧊', ar: 'ثلاجات', en: 'Refrigerators', q: 'ثلاجة' },
-  { e: '🍳', ar: 'أجهزة مطبخ', en: 'Kitchen', q: 'قلاية هوائية' },
-  { e: '📷', ar: 'كاميرات', en: 'Cameras', q: 'كاميرا' },
-  { e: '🎮', ar: 'ألعاب', en: 'Gaming', q: 'بلايستيشن' },
-  { e: '⌚', ar: 'ساعات ذكية', en: 'Smartwatches', q: 'ساعة ذكية' },
-];
+import { CATS } from './categories';
 
 export default async function CategoriesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
