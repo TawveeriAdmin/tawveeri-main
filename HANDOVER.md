@@ -6,7 +6,89 @@
 
 ---
 
-# ═══ RESUME HERE — 2026-07-29 CHECKPOINT #2 (supersedes the block below) ═══
+# ═══ RESUME HERE — 2026-07-29 CHECKPOINT #3 (supersedes everything below) ═══
+
+**Read order:** `CLAUDE.md` → `STANDING_DIRECTIVE.md` → `EXECUTIVE_DIRECTIVE.md` →
+`MASTER_DIRECTIVE.md` → this block.
+
+## The gate
+
+**Comparison journey 16/16 = 100%. Overall 76/76 = 100%.** Production, after ADR-137.
+Logs: `docs/ui-journey-final2-2026-07-29.log` (+ `-run2`).
+
+**Read the limits before quoting it.** 20 queries × 2 locales × 2 surfaces is a *curated*
+set, not all queries. Only **16 of 76** journeys are comparison journeys at all — the
+other 60 are single-store, which is the acquisition constraint (§3.6), untouched by any
+of this. 100% means *the journeys we test all work end to end*; it does not mean the
+catalogue is broad. Breadth is still the weak number.
+
+## Four defects, one symptom — all deployed (ADR-137)
+
+Done in the founder's order: instrument first, then the fix, then the honest delta.
+
+| # | Defect | Root cause |
+|---|---|---|
+| 3.2 | `subject_result_card = 0` | the pick was the sole subject; result cards never price-checked |
+| 3.1 | "intermittent search" | **our own rate limiter** — `/api/events` shared search's 30/min bucket |
+| 3.3 | accessory / wrong Smart Pick | `buildDecisionLayer` never got `relevanceGroups` → relevance term was **zero** |
+| — | "compare page says none" | the page **fetched itself over HTTP** and got 429'd |
+| 3.4 | outbound 404 | Almanea URL **shape**, not link rot — 280 of 1,298 offers |
+
+**Search never failed.** `POST /api/search` returned 25 products in under 2s on 100% of
+four passes. The page was blank because our own limiter 429'd it, and a 429 rendered as
+"no results" — indistinguishable from an empty catalogue. In Saudi Arabia carriers NAT
+many subscribers behind few IPs, so strangers consumed each other's search budget.
+
+## Delta, decomposed (rule 2 — do not blend these)
+
+| after | overall | gate | note |
+|---|---|---|---|
+| 3.2 instrument (baseline) | 65/78 = 83.3% | 15/16 = 93.8% | denominator ~doubles: two surfaces per page |
+| 3.1 rate limit | 69/80 = 86.3% | 15/16 | 78→80: two pages that produced no card now do |
+| 3.3 relevance | 70/76 = 92.1% | 14/16 = 87.5% | 80→76: a **withheld** pick correctly emits no row |
+| compare self-fetch | 72/76 = 94.7% | 16/16 = 100% | |
+| 3.4 URL shape | **76/76 = 100%** | **16/16 = 100%** | |
+
+The row count moves for reasons that are **not quality**. Never quote the endpoints
+without the middle.
+
+## Two near-misses worth keeping
+
+1. **I nearly fixed the wrong URLs.** The first measurement said 22,004 Almanea rows were
+   in the "legacy shape". Sampling them showed the dev host returns **200** — the real
+   class was 280 storefront rows, and the `/go` path had **zero**. Sample before repairing.
+2. **The accessory fix moved the symptom rather than removing it.** `laptop` stopped
+   returning a bag and `لابتوب اتش بي` started returning a JBL speaker. That second
+   symptom is what exposed the actual root cause (relevance never reaching the pick).
+
+## What "اختيار توفيري" optimises for (§3.3 asked; answered from the code)
+
+Relevance dominates (+300 all word-groups matched / −400 each missing), then in-stock +25,
+**corroboration +14/store capped 56**, deal +8, rating ×3, verified comparison +15, minus a
+price penalty up to 22 and an accessory penalty of 1000 on main-product queries. It is
+**not** lowest-price. Corroboration was capped at 18 against a 22-point price term — the
+cheapest single-store listing could outrank a product three retailers agree on, inverting
+CLAUDE.md's non-negotiable rule. Fixed. Consequence: `iphone` and `ايفون` returned
+different winners and now **agree**.
+
+## Open, in leverage order
+
+1. **§3.6 acquisition — now the binding constraint.** The gate is healthy; 60 of 76
+   journeys are single-store. No amount of journey work makes the catalogue bigger.
+   `ACQUISITION_TARGETS.md` + `feed-overlap-probe.ts`; predicted overlap is the criterion.
+2. **§3.5 IA / homepage harness** — not started. The harness still starts at `/search?q=`.
+3. **§3.7 Noon, §3.8 evidence line, §3.9 positioning copy, §3.10 moat, §4 strategy** — not
+   started (capacity).
+4. **§1 figures in `STANDING_DIRECTIVE.md` conflict with their own ADRs** — `342` vs
+   ADR-134's **340**; `72%` vs ADR-134's **87.7%** (or 74.3% widest); `166 comparable` was
+   retracted by ADR-132 as an Amazon double-count. §3.9 puts 72% and 166 in *public copy* —
+   restate before any external or Misk use.
+5. **`شاشة` returns a Samsung Galaxy phone** (a phone has a screen, so it matches). Not a
+   failure by the harness's intent list, but not a good answer either.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-29 CHECKPOINT #2 ═══
 
 **Read order:** `CLAUDE.md` → `EXECUTIVE_DIRECTIVE.md` → `MASTER_DIRECTIVE.md` → this block.
 
