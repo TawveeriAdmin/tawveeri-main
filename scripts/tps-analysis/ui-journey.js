@@ -365,9 +365,14 @@ async function journey(page, locale, query, browser) {
   } else if (row.compareStores === 0) {
     // Card promised a comparison and the compare page delivered none — already noted.
     row.priceConsistent = false;
+  } else if (!pick.href && (row.cardStores ?? 0) >= 2) {
+    // The card PROMISED a comparison and rendered no way to see it. That is the founder's
+    // standing rule — never show a store count the compare page can honour — so it is a
+    // failure, not a vacuous pass. Counting these as passes inflated the gate by ~23 points.
+    row.priceConsistent = false;
+    row.notes.push(`card claims ${row.cardStores} stores but renders NO compare link`);
   } else if (!pick.href) {
-    // Single-store product: there is no second surface, so no price can contradict.
-    // Recorded explicitly so a vacuous pass is never mistaken for a verified comparison.
+    // Genuinely single-store: no second surface exists, so no price can contradict.
     row.priceConsistent = true;
     row.notes.push('single-store (no compare page) — price check vacuous');
   } else {
