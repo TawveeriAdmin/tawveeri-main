@@ -8,6 +8,7 @@ import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
 import { isApprovedStore, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
+import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -474,7 +475,8 @@ function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
     current_price: Number(s.current_price),
     original_price: s.original_price != null ? Number(s.original_price) : null,
     availability: (s.availability || 'in_stock') as SearchProduct['availability'],
-    product_url: s.product_url || '',
+    // Repair known-dead URL shapes on the way out (see lib/retailers/exit-url).
+    product_url: normalizeExitUrl(s.product_url) || '',
     image_urls: hit.image_url ? [hit.image_url] : [],
     specifications: {} as Record<string, unknown>,
     category: '' as ProductCategory,
@@ -991,7 +993,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     current_price: Number(ps.current_price),
     original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
     availability: ps.availability || 'in_stock',
-    product_url: ps.product_url,
+    product_url: normalizeExitUrl(ps.product_url) || '',
     image_urls: row.image_url ? [row.image_url] : [],
     specifications: {} as Record<string, unknown>,
     category: (row.category || '') as ProductCategory,
