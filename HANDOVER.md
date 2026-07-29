@@ -6,7 +6,71 @@
 
 ---
 
-# ═══ RESUME HERE — 2026-07-29 CHECKPOINT #4 (supersedes everything below) ═══
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #5 (supersedes everything below) ═══
+
+**Working state. Read this, not the whole directive.**
+
+## Gate
+
+**Overall 80/80 = 100% · Comparison 58/58 = 100%** — `docs/ui-journey-2026-07-29-close.log`.
+Zero failures, homepage inside the denominator.
+
+**What a PASS means** (read before quoting it): relevant product for the query · not an
+accessory · a full store name visible on the card · the compare page's lowest price agrees
+with the card's price to within 1 SAR · ONE outbound link resolves to a real product page ·
+no card on the page claims a store count with no compare link. It does **not** verify that
+every retailer's link works, and the query set contains **no model-specific query** — which
+is exactly how the Arabic Pro/Max defect below survived a 100% score.
+
+**The 22 are not failures.** 80/80 passed. 22 = 20 single-store journeys (5 queries ×2
+locales ×2 surfaces: macbook · ps5 · washing machine · شاحن · مروحة) + 2 homepage rows that
+have no store count. Those 5 queries are the real backlog: we have no comparison for them.
+
+## THE RULE I GOT WRONG — corrected by measurement 2026-07-30
+
+I said single-brand retailers produce no overlap, citing sonyworld = 0. **Wrong
+generalisation.** The variable is not single-brand vs multi-brand, it is **how many of that
+brand's products OTHER retailers already carry**:
+
+| brand | canonicals | single-store (the opportunity) | already comparable |
+|---|---|---|---|
+| **samsung** | 432 | **281** | 151 |
+| apple | 298 | 230 | 68 |
+| lg | 299 | 212 | 87 |
+| **sony** | **11** | 10 | 1 |
+
+Sonyworld produced zero because **Sony has 11 canonicals in the whole catalogue** — nobody
+else carries them. Samsung KSA is the opposite case and is the single largest measured
+opportunity in this project: **ceiling +281 comparisons.**
+
+## Predicted overlap for the three named retailers (measured, pre-investment)
+
+- **Samsung KSA — ceiling +281.** 281 single-store Samsung canonicals that Jarir/Extra/
+  Amazon/Almanea/Noon already carry. Highest-value onboarding available.
+- **SWSG (الشتاء والصيف)** — already approved, thin. Its categories hold the largest pool
+  in the catalogue: air_conditioner **1,006** single-store, refrigerator 238, washing_machine
+  236. AC alone is bigger than every unlock so far combined.
+- **Noon** — already approved, 809 URLs. Broad-catalogue retailer against mobile 481 /
+  audio 529 / laptop 423 single-store pools.
+
+**None of the three needs discovery. All three are depth, not breadth.**
+
+## Next, in order
+
+1. **Ingest Samsung KSA** (+281 ceiling), then SWSG depth (AC 1,006 pool), then Noon depth.
+2. **Parsers for multi-retailer brands** — jbl(6 stores, 45 missing) · xiaomi(9, 22) ·
+   promate(3, 16) · garmin(2, 15) · hp(6, 14).
+3. **Add model-specific queries to the harness** — `iPhone 16 Pro Max 256` and Arabic
+   equivalents. A 100% gate that never tests a model query is not measuring the promise.
+
+## Capacity rule
+
+One full harness run per session; a second only if announced and deliberate. Probes:
+`--query x`, direct SQL, `scratchpad/pick.js`.
+
+---
+
+# ═══ SUPERSEDED — CHECKPOINT #4 ═══
 
 **Working state. Read this, not the whole directive.**
 
