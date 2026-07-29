@@ -212,6 +212,13 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   'مايكروويف', 'ميكروويف', 'فرن', 'طابعه', 'راوتر', 'كاميرا', 'ساعه', 'تابلت',
   'ايباد', 'واتش', 'تاب', 'جالكسي',
   'سماعه', 'سماعات',
+  // BILINGUAL ASYMMETRY (measured 2026-07-31): 'جالكسي' was here but 'galaxy' was not, so
+  // `Galaxy S24 Ultra 512` was not treated as a product-type query — which switches OFF
+  // both the relevance gate and the accessory penalty. Result: we returned a Samsung
+  // Galaxy A07 64GB while "Samsung Galaxy S S24 Ultra 512GB" sat in the catalogue. The
+  // right product existed and we showed the wrong one. Third bug of this exact class,
+  // after the ة/ى folding and the برو/pro generic-stripping ones.
+  'galaxy', 'macbook', 'ipad', 'airpods', 'pixel',
   'phone', 'iphone', 'smartphone', 'mobile', 'laptop', 'tv', 'television',
   'refrigerator', 'fridge', 'freezer', 'washer', 'dryer', 'vacuum',
   'microwave', 'oven', 'printer', 'router', 'camera', 'tablet', 'headphones',
