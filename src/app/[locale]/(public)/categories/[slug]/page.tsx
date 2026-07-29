@@ -4,11 +4,12 @@
 // than dumping the shopper on an unrelated page.
 import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { CATS, findCategory } from '../categories';
+import { findCategory } from '../categories';
 
-export function generateStaticParams() {
-  return CATS.flatMap((c) => [{ slug: c.slug }, ...c.aliases.map((a) => ({ slug: a }))]);
-}
+// Rendered on demand, NOT prerendered: `redirect()` throws its control-flow signal at
+// render time, which fails during static generation (that shipped a live 500). A
+// redirect route has nothing to prerender anyway.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
