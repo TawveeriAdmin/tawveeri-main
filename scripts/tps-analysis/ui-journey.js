@@ -148,26 +148,31 @@ async function readSearchPage(page, locale, query) {
   await new Promise((r) => setTimeout(r, 3500));
 
   return page.evaluate(() => {
-    function cardOf(anchor) {
-      let box = anchor;
+    // Cards are anchored on their product IMAGE, not on a link: a card with no compare
+    // URL renders its wrapper as a <button>, so an anchor-only selector silently misses
+    // every single-store product and reports "no results" where results exist.
+    const MARKER = /قارن الأسعار|Compare Prices|عرض في المتجر|View in store|أفضل سعر|Best Price|اختيار توفيري/i;
+    const cards = [];
+    const seen = new Set();
+    for (const img of document.querySelectorAll('img[alt]')) {
+      const alt = (img.getAttribute('alt') || '').trim();
+      if (alt.length < 4 || seen.has(alt)) continue;
+      let box = img;
       for (let i = 0; i < 12 && box; i++) {
-        if (box.querySelector('img') && (box.innerText || '').length > 20) return box;
+        if (MARKER.test(box.innerText || '')) break;
         box = box.parentElement;
       }
-      return anchor.parentElement;
-    }
-    const anchors = [...document.querySelectorAll('a[href*="/compare/"], a[href*="/products/"]')];
-    const cards = anchors.map((a) => {
-      const box = cardOf(a);
-      return {
-        href: a.getAttribute('href'),
-        name: box?.querySelector('img')?.getAttribute('alt') || '',
-        text: (box?.innerText || '').replace(/\s+/g, ' ').trim(),
-        outbound: [...(box?.querySelectorAll('a[href]') || [])]
+      if (!box || !MARKER.test(box.innerText || '')) continue;
+      seen.add(alt);
+      cards.push({
+        href: box.querySelector('a[href*="/compare/"]')?.getAttribute('href') || null,
+        name: alt,
+        text: (box.innerText || '').replace(/\s+/g, ' ').trim(),
+        outbound: [...box.querySelectorAll('a[href]')]
           .map((x) => x.getAttribute('href'))
-          .find((h) => h && (h.includes('/go/') || /^https?:\/\//.test(h))) || null,
-      };
-    });
+          .find((h) => h && (h.includes('/go/') || (/^https?:\/\//.test(h) && !h.includes('tawveeri')))) || null,
+      });
+    }
     const pickIdx = cards.findIndex((c) => /اختيار توفيري|Tawveeri pick|Smart Pick/i.test(c.text));
     return {
       total: (document.body.innerText.match(/([\d٠-٩,٬]+)\s*(نتيجة|results?)/) || [])[1] || null,
@@ -217,7 +222,9 @@ async function journey(page, locale, query) {
     return row;
   }
   const pick = search.pick;
-  if (!pick || !pick.href) { row.notes.push(search.empty ? 'no results' : 'no product card found'); return row; }
+  // A single-store product legitimately has no compare link — that is a finding to
+  // record, not a reason to abandon the journey.
+  if (!pick) { row.notes.push(search.empty ? 'no results' : 'no product card found'); return row; }
 
   row.pickName = pick.name || '(no alt text)';
   const hay = norm(`${pick.name} ${pick.text}`);
@@ -230,13 +237,16 @@ async function journey(page, locale, query) {
   // Store count + price. The product NAME contains digits ("iPhone 12 128GB"), so it must
   // be removed before parsing a price or the name's own numbers win.
   const cardText = deArabic(pick.text);
-  const nameFree = cardText.split('\n').join(' ').replace(deArabic(pick.name || ''), ' ');
+  // split/join, NOT replace(): a string replace strips only the FIRST occurrence, and the
+  // name is rendered more than once — leaving "…128GB" to be parsed as a 128 SAR price.
+  const nm = deArabic(pick.name || '');
+  const nameFree = nm ? cardText.split(nm).join(' ') : cardText;
   const scMatch = cardText.match(/(?:متوفر في|available in)\s*(\d+)\s*(?:متاجر|متجر|stores?)/i)
     || cardText.match(/(?:أفضل سعر|Best Price)\s*\n?\s*(\d+)\b/i);
   row.cardStores = scMatch ? Number(scMatch[1]) : null;
 
   // Price: the figure after "من"/"from", else the largest plausible number once the name is out.
-  const fromMatch = nameFree.match(/(?:\bمن\b|\bfrom\b)\s*([\d.,٬]+)/i);
+  const fromMatch = nameFree.match(/(?:أفضل سعر|Best Price|\bمن\b|\bfrom\b)\s*[:·|]?\s*([\d][\d.,٬]*)/i);
   row.cardPrice = fromMatch ? parsePrice(fromMatch[1]) : (() => {
     const nums = [...nameFree.matchAll(/([\d][\d.,٬]*)/g)]
       .map((m) => Number(String(m[1]).replace(/[,٬]/g, ''))).filter((n) => n >= 20 && n <= 200000);
@@ -253,7 +263,7 @@ async function journey(page, locale, query) {
   }
 
   // Compare page — the surface that must agree with the card.
-  if (pick.href.includes('/compare/')) {
+  if (pick.href && pick.href.includes('/compare/')) {
     let cmp;
     try { cmp = await readComparePage(page, pick.href); } catch (e) { row.notes.push(`compare failed: ${e.message}`); }
     if (cmp) {
@@ -273,8 +283,19 @@ async function journey(page, locale, query) {
   if (row.cardPrice != null && row.comparePrice != null) {
     row.priceConsistent = Math.abs(row.cardPrice - row.comparePrice) < 1;
     if (!row.priceConsistent) row.notes.push(`PRICE MISMATCH card=${row.cardPrice} compare=${row.comparePrice}`);
-  } else if (row.cardPrice == null) row.notes.push('no card price');
-  else row.notes.push('no compare price');
+  } else if (row.cardPrice == null) {
+    row.notes.push('no card price');
+  } else if (row.compareStores === 0) {
+    // Card promised a comparison and the compare page delivered none — already noted.
+    row.priceConsistent = false;
+  } else if (!pick.href) {
+    // Single-store product: there is no second surface, so no price can contradict.
+    // Recorded explicitly so a vacuous pass is never mistaken for a verified comparison.
+    row.priceConsistent = true;
+    row.notes.push('single-store (no compare page) — price check vacuous');
+  } else {
+    row.notes.push('no compare price');
+  }
 
   // Outbound: resolve read-only, never fire the click.
   const outHref = row.destination || pick.outbound;
