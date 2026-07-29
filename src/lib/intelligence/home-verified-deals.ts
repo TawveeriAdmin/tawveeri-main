@@ -64,8 +64,11 @@ export async function getHomeVerifiedDeals(limit = 4): Promise<HomeVerifiedDeal[
           url: r.url ?? '',
           // Never render a raw store id to a customer (ADR-135); unresolved → no name.
           storeName: retailerDisplayName(resolveApprovedSlug(r.store_name) ?? '', 'ar'),
-          price: Math.round(price * 100) / 100,
-          observedMax: Math.round(observedMax * 100) / 100,
+          // Whole riyals. Saudi retail prices are whole; a trailing .01 is a VAT-computed
+          // float artifact, and "12,499.01" on a trust surface reads as noise rather than
+          // evidence. Same convention as the ADR-129 float fix (69.000001 → 69).
+          price: Math.round(price),
+          observedMax: Math.round(observedMax),
           savingPct: Math.round(Number(r.real_saving_pct) || 0),
           trackedDays: Number.isFinite(trackedDays) ? trackedDays : 0,
           _acc: isAccessory(r.category),
@@ -76,7 +79,14 @@ export async function getHomeVerifiedDeals(limit = 4): Promise<HomeVerifiedDeal[
         Number.isFinite(d.price) && d.price > 0 &&
         Number.isFinite(d.observedMax) && d.observedMax > d.price &&
         // A drop we watched for a single day is not evidence of anything.
-        d.trackedDays >= 2)
+        d.trackedDays >= 2 &&
+        // Accessories are excluded from trust surfaces ENTIRELY, not merely ranked last.
+        // Percentage ranking is what put a 19 SAR phone case above an 8,800 SAR saving.
+        !d._acc &&
+        // A saving of a few halalas is float noise, not a deal. Below 50 SAR there is no
+        // customer decision to support, and publishing it cheapens every real number
+        // beside it.
+        (d.observedMax - d.price) >= 50)
       .sort((a, b) =>
         (a._acc ? 1 : 0) - (b._acc ? 1 : 0) ||
         (b.observedMax - b.price) - (a.observedMax - a.price))

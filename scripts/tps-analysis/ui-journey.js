@@ -42,11 +42,38 @@ const JSON_OUT = argv.includes('--json');
 const ONLY_QUERY = flag('query', null);
 const ONLY_LOCALE = flag('locale', null);
 
-const QUERIES = [
+// ── REGRESSION SET (fixed; the 20 queries every run since 2026-07-29 has used) ──
+const REGRESSION_QUERIES = [
   'iphone', 'ايفون', 'لابتوب اتش بي', 'macbook', 'مكيف سبليت', 'lg tv',
   'غسالة سامسونج', 'ايباد', 'شاشة', 'ثلاجة', 'سماعات', 'طابعة', 'ps5', 'شاحن',
   'مكيف 18000', 'تلفزيون 65 بوصة', 'laptop', 'washing machine', 'مروحة', 'ميكروويف',
 ];
+
+// ── EXACT-MODEL / EXACT-VARIANT SET (new, previously unseen) ──
+// The gate read 100% while `ايفون 16 برو ماكس 256` returned ONE retailer, because not a
+// single query in the regression set named a model or a variant. A gate that never asks
+// the question the customer actually asks is not measuring the promise. These carry a
+// `variant` token that MUST survive into the winning card: a 256 query answered with a
+// 128 product is a wrong answer, not a near miss.
+const MODEL_QUERIES = [
+  { q: 'iPhone 16 Pro Max 256', variant: ['256'], must: ['iphone', '16', 'pro', 'max'] },
+  { q: 'iphone 16 pro max 256', variant: ['256'], must: ['iphone', '16', 'pro', 'max'] },
+  { q: 'ايفون 16 برو ماكس 256', variant: ['256'], must: ['iphone', 'ايفون'] },
+  { q: 'ايفون ١٦ برو ماكس ٢٥٦', variant: ['256'], must: ['iphone', 'ايفون'] },
+  { q: 'جوال ايفون 16 برو ماكس 256', variant: ['256'], must: ['iphone', 'ايفون'] },
+  { q: 'Galaxy S24 Ultra 512', variant: ['512'], must: ['galaxy', 's24', 'سامسونج', 'samsung'] },
+  { q: 'ايفون 15 128', variant: ['128'], must: ['iphone', 'ايفون'] },
+  { q: 'MacBook Air M2 256', variant: ['256'], must: ['macbook', 'ماك بوك'] },
+];
+
+const QUERIES = [...REGRESSION_QUERIES, ...MODEL_QUERIES.map((m) => m.q)];
+const MODEL_BY_QUERY = Object.fromEntries(MODEL_QUERIES.map((m) => [m.q, m]));
+
+// Arabic-Indic digits must fold to ASCII before a variant is compared: ٢٥٦ IS 256.
+const foldDigits = (s) => String(s || '').replace(/[٠-٩۰-۹]/g, (d) => {
+  const c = d.charCodeAt(0);
+  return String(c >= 0x06f0 ? c - 0x06f0 : c - 0x0660);
+});
 
 // Query intent → tokens that must appear in a relevant product name (either script).
 const INTENT = {
@@ -332,7 +359,7 @@ async function evaluateSurface(page, browser, { query, locale, subject, surfaceC
     relevant: false, sensiblePick: false, storeVisible: false,
     priceConsistent: false, linkLands: false, linkBucket: 'dead', excluded: false, isComparison: false, pass: false,
     pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
-    surface: null, attrRead: false, unhonouredClaims: [],
+    surface: null, attrRead: false, unhonouredClaims: [], exactModel: null, exactVariant: null, isModelQuery: false,
     destination: '', notes: [],
   };
   // Page-level rule check. Recorded on every surface of the page because the rule is a
@@ -342,6 +369,7 @@ async function evaluateSurface(page, browser, { query, locale, subject, surfaceC
     row.notes.push(`${row.unhonouredClaims.length} card(s) claim a store count with no compare link: ${row.unhonouredClaims.slice(0, 3).join(' | ')}`);
   }
 
+  row.isModelQuery = !!MODEL_BY_QUERY[query];
   const pick = surfaceCard;
   // A single-store product legitimately has no compare link — that is a finding to
   // record, not a reason to abandon the journey.
@@ -349,9 +377,23 @@ async function evaluateSurface(page, browser, { query, locale, subject, surfaceC
 
   row.pickName = pick.name || '(no alt text)';
   const hay = norm(`${pick.name} ${pick.text}`);
-  const tokens = (INTENT[query] || [query]).map(norm);
-  row.relevant = tokens.some((t) => hay.includes(t));
-  row.sensiblePick = row.relevant && !ACCESSORY.test(pick.name || '');
+  const model = MODEL_BY_QUERY[query];
+
+  if (model) {
+    // EXACT-MODEL scoring: the name alone decides, not the surrounding card text, and the
+    // VARIANT must survive. Answering a 256 query with a 128 product is a wrong answer.
+    const nameOnly = foldDigits(norm(pick.name || ''));
+    row.exactModel = model.must.some((t) => nameOnly.includes(norm(t)));
+    row.exactVariant = model.variant.some((v) => nameOnly.includes(foldDigits(v)));
+    row.relevant = row.exactModel;
+    row.sensiblePick = row.exactModel && row.exactVariant && !ACCESSORY.test(pick.name || '');
+    if (!row.exactModel) row.notes.push(`WRONG PRODUCT for an exact-model query: "${row.pickName}"`);
+    else if (!row.exactVariant) row.notes.push(`WRONG VARIANT — asked ${model.variant.join('/')}, got "${row.pickName}"`);
+  } else {
+    const tokens = (INTENT[query] || [query]).map(norm);
+    row.relevant = tokens.some((t) => hay.includes(t));
+    row.sensiblePick = row.relevant && !ACCESSORY.test(pick.name || '');
+  }
   if (!row.relevant) row.notes.push(`top pick unrelated: "${row.pickName}"`);
   else if (!row.sensiblePick) row.notes.push('top pick is an accessory');
 
@@ -695,6 +737,12 @@ async function homepageJourney(page, locale) {
   };
   // One entry per PAGE (query × locale), not per row — both rows of a page carry the
   // same page-level violation list and must not be double-counted.
+  const scriptRate = (pred) => {
+    const sub = rows.filter((r) => r.surface && pred(r.query));
+    const cmp = sub.filter((r) => r.isComparison);
+    return { journeys: sub.length, passed: sub.filter((r) => r.pass).length,
+      comparison_journeys: cmp.length, comparison_passed: cmp.filter((r) => r.pass).length };
+  };
   const pageViolations = [...new Map(
     rows.map((r) => [`${r.locale}|${r.query}`, r.unhonouredClaims || []]),
   ).values()];
@@ -736,6 +784,29 @@ async function homepageJourney(page, locale) {
       homepage: subjectRate('homepage'),
       result_card: subjectRate('result-card'),
     },
+    // §1 of the 2026-07-31 launch review: report each dimension SEPARATELY, so a
+    // headline can never again hide a failing one. Arabic and English are split because a
+    // defect that only affects one script is invisible in a blended rate — which is exactly
+    // how the Pro/Max relevance bug survived a 100%% gate.
+    by_script: {
+      arabic_queries: scriptRate((q) => /[؀-ۿ]/.test(q)),
+      english_queries: scriptRate((q) => !/[؀-ۿ]/.test(q)),
+    },
+    exact_model: {
+      journeys: rows.filter((r) => r.isModelQuery && r.surface).length,
+      correct_product: rows.filter((r) => r.isModelQuery && r.exactModel).length,
+      correct_variant: rows.filter((r) => r.isModelQuery && r.exactVariant).length,
+      full_journey_pass: rows.filter((r) => r.isModelQuery && r.pass).length,
+    },
+    retailer_visibility: {
+      journeys: rows.filter((r) => r.surface).length,
+      store_name_visible: rows.filter((r) => r.storeVisible).length,
+    },
+    outbound: {
+      resolved_to_product_page: rows.filter((r) => r.linkBucket === 'ok').length,
+      blocked_excluded: rows.filter((r) => r.linkBucket === 'blocked').length,
+      dead: rows.filter((r) => r.linkBucket === 'dead').length,
+    },
     // The founder's standing rule, measured directly across every card rendered.
     // Counted ONCE PER PAGE — a page contributes two rows now, and a violation is a
     // property of the page, not of each surface on it.
@@ -756,6 +827,10 @@ async function homepageJourney(page, locale) {
   console.table(summary.by_subject);
   console.log('Instrument (what the numbers were read from):');
   console.table(summary.instrument);
+  console.log('Arabic vs English (a defect in one script is invisible in a blended rate):');
+  console.table(summary.by_script);
+  console.log('Exact-model / exact-variant (new set — the promise the customer actually types):');
+  console.table(summary.exact_model);
   console.log('Unhonoured store claims (cards claiming N stores with no compare link):');
   console.table(summary.unhonoured_store_claims);
   if (summary.instrument.read_from_card_attributes < summary.instrument.journeys_with_a_card) {

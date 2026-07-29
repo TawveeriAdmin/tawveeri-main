@@ -19,6 +19,7 @@ interface CompareOffer {
   availability: string | null;
   product_url:  string | null;
   confidence:   number;
+  observed_at:  string;
   is_verified:  boolean;
 }
 
@@ -279,6 +280,22 @@ export default async function TpsComparePage({
                     {offer.availability === 'in_stock' && (
                       <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
                         {isAr ? '● متوفر' : '● In Stock'}
+                      </span>
+                    )}
+                    {/* WHEN we saw this price. Measured 2026-07-31: 13.6% of served offers
+                        were last observed more than 30 days ago, and the page showed them
+                        as if current — a price presented without its date is a marketing
+                        number, which is the one thing `بالأدلة، لا أرقام مسوّقة` forbids.
+                        Disclosed rather than suppressed: an old price is still evidence,
+                        provided we say how old. */}
+                    {offer.observed_at && (
+                      <span className="text-[11px] text-on-surface-variant mt-0.5">
+                        {(() => {
+                          const days = Math.floor((Date.now() - new Date(offer.observed_at).getTime()) / 86400000);
+                          if (days <= 0) return isAr ? 'رصدناه اليوم' : 'observed today';
+                          if (days === 1) return isAr ? 'رصدناه أمس' : 'observed yesterday';
+                          return isAr ? `رصدناه قبل ${days} يومًا` : `observed ${days} days ago`;
+                        })()}
                       </span>
                     )}
                   </div>
