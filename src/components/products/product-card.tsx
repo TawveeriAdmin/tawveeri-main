@@ -237,8 +237,22 @@ export function ProductCard({
 
   const isWinner = isMultiStore && bestPrice && storesWithPrices.length > 1;
 
+  // The store whose price the card actually shows. A multi-store card used to render only
+  // two-letter avatar stubs ("اك" "أم" "جر"), so "من 840" named no store at all.
+  const bestPriceStore = bestPrice?.stores;
+  const bestPriceStoreName = (currentLocale === 'ar' ? bestPriceStore?.name_ar : bestPriceStore?.name_en)
+    || bestPriceStore?.name_ar || bestPriceStore?.name_en || null;
+
   return (
     <Card
+      // ADR-136 — the card's claim, machine-readable. The UI-journey harness used to infer the
+      // store count with a regex over collapsed page text and read the Smart Pick's PRICE as a
+      // store count ("card claims 900 stores"). A claim that is measured must be published by
+      // the surface that makes it, not guessed by the instrument.
+      data-testid="product-card"
+      data-store-count={storeCount}
+      data-best-price={bestPriceValue}
+      data-compare-url={product.tps_compare_url ?? ''}
       className={cn(
         'group relative transition-all duration-[var(--dur-med)] h-full flex flex-col overflow-hidden hover:border-[var(--brand-green)]/50',
         isInCompare &&
@@ -349,7 +363,11 @@ export function ProductCard({
                   <div className="flex flex-col gap-1">
                     {isMultiStore && (
                       <span className="t-caption text-[var(--brand-green-dark)]">
-                        {t('products.from')}
+                        {/* Name the store the price belongs to. "من 840" alone tells the
+                            customer nothing about WHERE 840 is. */}
+                        {bestPriceStoreName
+                          ? `${t('products.from')} ${bestPriceStoreName}`
+                          : t('products.from')}
                       </span>
                     )}
                     <div className="flex items-baseline gap-2 flex-wrap">

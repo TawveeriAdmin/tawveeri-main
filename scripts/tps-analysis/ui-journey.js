@@ -210,14 +210,10 @@ async function readSearchPage(page, locale, query) {
       const t = document.body?.innerText || '';
       if (/لا توجد نتائج|No results|لم نجد/i.test(t)) return true;         // honest empty state
       if (/جاري البحث|Searching|جارٍ/i.test(t)) return false;               // still loading
-      const marker = /قارن الأسعار|Compare Prices|عرض في المتجر|View in store|أفضل سعر|Best Price/i;
-      // A card is only "ready" once it has both an image and its action text painted.
-      return [...document.querySelectorAll('img[alt]')].some((img) => {
-        if ((img.getAttribute('alt') || '').trim().length < 4) return false;
-        let b = img;
-        for (let i = 0; i < 12 && b; i++) { if (marker.test(b.innerText || '')) return true; b = b.parentElement; }
-        return false;
-      });
+      // A card is ready once it has published its claim (data-best-price) — one terminal
+      // condition on the card itself, no ancestor walking, no fixed sleep.
+      const card = document.querySelector('[data-testid="product-card"][data-best-price]');
+      return !!card && (card.innerText || '').trim().length > 0;
     },
     { timeout: 45000, polling: 400 },
   ).catch(() => null);
@@ -225,37 +221,69 @@ async function readSearchPage(page, locale, query) {
   await new Promise((r) => setTimeout(r, 800));
 
   return page.evaluate(() => {
-    // Cards are anchored on their product IMAGE, not on a link: a card with no compare
-    // URL renders its wrapper as a <button>, so an anchor-only selector silently misses
-    // every single-store product and reports "no results" where results exist.
-    const MARKER = /قارن الأسعار|Compare Prices|عرض في المتجر|View in store|أفضل سعر|Best Price|اختيار توفيري/i;
-    const cards = [];
-    const seen = new Set();
-    for (const img of document.querySelectorAll('img[alt]')) {
-      const alt = (img.getAttribute('alt') || '').trim();
-      if (alt.length < 4 || seen.has(alt)) continue;
-      let box = img;
-      for (let i = 0; i < 12 && box; i++) {
-        if (MARKER.test(box.innerText || '')) break;
-        box = box.parentElement;
-      }
-      if (!box || !MARKER.test(box.innerText || '')) continue;
-      seen.add(alt);
-      cards.push({
-        href: box.querySelector('a[href*="/compare/"]')?.getAttribute('href') || null,
-        name: alt,
-        text: (box.innerText || '').replace(/\s+/g, ' ').trim(),
+    // ─────────────────────────────────────────────────────────────────────────
+    // A CARD IS A CARD. The previous version walked up from every `img[alt]` to the
+    // first ancestor containing a marker phrase. The first image on the page is the
+    // HEADER LOGO (alt="Tawveeri"), whose nearest marker-bearing ancestor is the whole
+    // page — so `pick` was a 4,500-character box holding 33 images, and `pickName` came
+    // back "Tawveeri" on all 40 journeys. The store-count regex then matched the Smart
+    // Pick's "أفضل سعر ٩٠٠" and reported "card claims 900 stores". Every claim in that
+    // run (relevance, store visible, store count, price) was page-level, not card-level.
+    //
+    // Cards now publish their own claim (ADR-136): data-store-count / data-best-price /
+    // data-compare-url are rendered by the same component that renders the visible text,
+    // so the instrument reads what the card says instead of guessing from a text blob.
+    // The text fallback is kept ONLY so a missing attribute is visible as `attr:false`
+    // in the output rather than silently reverting to page-level measurement.
+    // ─────────────────────────────────────────────────────────────────────────
+    const readCard = (box, kind) => {
+      const text = (box.innerText || '').replace(/\s+/g, ' ').trim();
+      const attrCount = box.getAttribute('data-store-count');
+      const attrPrice = box.getAttribute('data-best-price');
+      const attrCompare = box.getAttribute('data-compare-url');
+      const img = box.querySelector('img[alt]');
+      const heading = box.querySelector('h3, h2');
+      return {
+        kind,
+        fromAttributes: attrCount !== null && attrPrice !== null,
+        storeCount: attrCount !== null && attrCount !== '' ? Number(attrCount) : null,
+        price: attrPrice !== null && attrPrice !== '' ? Number(attrPrice) : null,
+        href: (attrCompare || box.querySelector('a[href*="/compare/"]')?.getAttribute('href') || null) || null,
+        name: (heading?.innerText || '').trim() || (img?.getAttribute('alt') || '').trim(),
+        text,
         outbound: [...box.querySelectorAll('a[href]')]
           .map((x) => x.getAttribute('href'))
-          .find((h) => h && (h.includes('/go/') || (/^https?:\/\//.test(h) && !h.includes('tawveeri')))) || null,
-      });
-    }
-    const pickIdx = cards.findIndex((c) => /اختيار توفيري|Tawveeri pick|Smart Pick/i.test(c.text));
+          .find((h) => {
+            if (!h) return false;
+            if (h.includes('/go/')) return true;
+            if (!/^https?:\/\//.test(h)) return false;
+            // Substring-matching "tawveeri" discarded every Amazon exit, because the
+            // affiliate tag IS `tag=tawveeri-21`. Compare the HOST, not the whole URL.
+            try { return !/(^|\.)tawveeri\.com$/i.test(new URL(h).hostname); } catch { return false; }
+          }) || null,
+      };
+    };
+
+    const cards = [...document.querySelectorAll('[data-testid="product-card"]')].map((b) => readCard(b, 'card'));
+    const smartEl = document.querySelector('[data-testid="smart-pick"]');
+    const smart = smartEl ? readCard(smartEl, 'smart-pick') : null;
+
+    // The standing rule — never show a store count no comparison surface can honour —
+    // applies to EVERY card on the page, not only the one the journey follows. Checked
+    // here so a violation two cards down is still visible.
+    const all = smart ? [smart, ...cards] : cards;
+    const violations = all
+      .filter((c) => (c.storeCount ?? 0) >= 2 && !c.href)
+      .map((c) => `${c.kind}:${(c.name || '?').slice(0, 40)} claims ${c.storeCount}`);
+
     return {
       total: (document.body.innerText.match(/([\d٠-٩,٬]+)\s*(نتيجة|results?)/) || [])[1] || null,
       cardCount: cards.length,
-      pick: pickIdx >= 0 ? cards[pickIdx] : (cards[0] || null),
+      // The Smart Pick is the surface the customer is steered to, so it is the journey's
+      // subject when present; otherwise the first result card is.
+      pick: smart || cards[0] || null,
       first: cards[0] || null,
+      unhonouredClaims: violations,
       empty: /لا توجد نتائج|No results/i.test(document.body.innerText),
     };
   });
@@ -289,6 +317,7 @@ async function journey(page, locale, query, browser) {
     relevant: false, sensiblePick: false, storeVisible: false,
     priceConsistent: false, linkLands: false, linkBucket: 'dead', excluded: false, isComparison: false, pass: false,
     pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
+    surface: null, attrRead: false, unhonouredClaims: [],
     destination: '', notes: [],
   };
   let search;
@@ -298,6 +327,12 @@ async function journey(page, locale, query, browser) {
     row.notes.push(`search page failed: ${e.message}`);
     return row;
   }
+  // Rule check across every card on the page, independent of which one the journey follows.
+  row.unhonouredClaims = search.unhonouredClaims || [];
+  if (row.unhonouredClaims.length) {
+    row.notes.push(`${row.unhonouredClaims.length} card(s) claim a store count with no compare link: ${row.unhonouredClaims.slice(0, 3).join(' | ')}`);
+  }
+
   const pick = search.pick;
   // A single-store product legitimately has no compare link — that is a finding to
   // record, not a reason to abandon the journey.
@@ -311,24 +346,31 @@ async function journey(page, locale, query, browser) {
   if (!row.relevant) row.notes.push(`top pick unrelated: "${row.pickName}"`);
   else if (!row.sensiblePick) row.notes.push('top pick is an accessory');
 
-  // Store count + price. The product NAME contains digits ("iPhone 12 128GB"), so it must
-  // be removed before parsing a price or the name's own numbers win.
+  // Store count + price come from the card's OWN published claim (ADR-136), not from a
+  // regex over its text. `attrRead` records which source was used so a future deploy that
+  // drops the attributes shows up as a measurement caveat instead of silently degrading.
   const cardText = deArabic(pick.text);
-  // split/join, NOT replace(): a string replace strips only the FIRST occurrence, and the
-  // name is rendered more than once — leaving "…128GB" to be parsed as a 128 SAR price.
-  const nm = deArabic(pick.name || '');
-  const nameFree = nm ? cardText.split(nm).join(' ') : cardText;
-  const scMatch = cardText.match(/(?:متوفر في|available in)\s*(\d+)\s*(?:متاجر|متجر|stores?)/i)
-    || cardText.match(/(?:أفضل سعر|Best Price)\s*\n?\s*(\d+)\b/i);
-  row.cardStores = scMatch ? Number(scMatch[1]) : null;
-
-  // Price: the figure after "من"/"from", else the largest plausible number once the name is out.
-  const fromMatch = nameFree.match(/(?:أفضل سعر|Best Price|\bمن\b|\bfrom\b)\s*[:·|]?\s*([\d][\d.,٬]*)/i);
-  row.cardPrice = fromMatch ? parsePrice(fromMatch[1]) : (() => {
-    const nums = [...nameFree.matchAll(/([\d][\d.,٬]*)/g)]
-      .map((m) => Number(String(m[1]).replace(/[,٬]/g, ''))).filter((n) => n >= 20 && n <= 200000);
-    return nums.length ? Math.min(...nums) : null;
-  })();
+  row.surface = pick.kind || 'card';
+  row.attrRead = !!pick.fromAttributes;
+  if (pick.fromAttributes) {
+    row.cardStores = Number.isFinite(pick.storeCount) ? pick.storeCount : null;
+    row.cardPrice = Number.isFinite(pick.price) && pick.price > 0 ? pick.price : null;
+  } else {
+    row.notes.push('card published no claim attributes — measured from text (less reliable)');
+    // The product NAME contains digits ("iPhone 12 128GB"), so it must be removed before
+    // parsing a price or the name's own numbers win. split/join, NOT replace(): a string
+    // replace strips only the FIRST occurrence and the name is rendered more than once.
+    const nm = deArabic(pick.name || '');
+    const nameFree = nm ? cardText.split(nm).join(' ') : cardText;
+    const scMatch = cardText.match(/(?:متوفر في|available in)\s*(\d+)\s*(?:متاجر|متجر|stores?)/i);
+    row.cardStores = scMatch ? Number(scMatch[1]) : null;
+    const fromMatch = nameFree.match(/(?:\bمن\b|\bfrom\b)\s*[:·|]?\s*([\d][\d.,٬]*)/i);
+    row.cardPrice = fromMatch ? parsePrice(fromMatch[1]) : (() => {
+      const nums = [...nameFree.matchAll(/([\d][\d.,٬]*)/g)]
+        .map((m) => Number(String(m[1]).replace(/[,٬]/g, ''))).filter((n) => n >= 20 && n <= 200000);
+      return nums.length ? Math.min(...nums) : null;
+    })();
+  }
 
   // A store name must be READABLE. The cards render 2-letter avatar stubs ("اك" "أم" "جر"),
   // which is what the founder read as the garbled "جر اك أم ال" — those must NOT count.
@@ -404,7 +446,10 @@ async function journey(page, locale, query, browser) {
   const linkOk = row.linkBucket === 'ok' || row.linkBucket === 'blocked';
   row.excluded = row.linkBucket === 'blocked';
   row.isComparison = (row.cardStores ?? 0) >= 2;
-  row.pass = row.relevant && row.sensiblePick && row.storeVisible && row.priceConsistent && linkOk;
+  // An unhonoured claim ANYWHERE on the page fails the journey. The rule is absolute:
+  // we never show a store count with no comparison surface behind it.
+  row.pass = row.relevant && row.sensiblePick && row.storeVisible && row.priceConsistent && linkOk
+    && row.unhonouredClaims.length === 0;
   return row;
 }
 
@@ -430,7 +475,8 @@ async function journey(page, locale, query, browser) {
         process.stdout.write(
           `${r.pass ? 'PASS' : 'FAIL'}  ${locale}  ${q.padEnd(18)} ` +
           `rel=${r.relevant ? 'Y' : 'N'} pick=${r.sensiblePick ? 'Y' : 'N'} store=${r.storeVisible ? 'Y' : 'N'} ` +
-          `price=${r.priceConsistent ? 'Y' : 'N'} link=${r.linkBucket.toUpperCase()}` +
+          `price=${r.priceConsistent ? 'Y' : 'N'} link=${r.linkBucket.toUpperCase()} ` +
+          `on=${r.surface || '-'}/${r.cardStores ?? '?'}st` +
           `${r.notes.length ? '  · ' + r.notes.join('; ') : ''}\n`,
         );
       }
@@ -475,6 +521,20 @@ async function journey(page, locale, query, browser) {
     comparison_passed: cmpPassed,
     comparison_pass_rate_pct: cmpRows.length ? Math.round((cmpPassed / cmpRows.length) * 1000) / 10 : null,
     cross_language_pick_mismatches: mismatched,
+    // Instrument integrity: how many journeys read the card's published claim rather than
+    // guessing it from text. Anything below `measured` means the numbers above carry a
+    // wider error bar and must be reported as such.
+    instrument: {
+      journeys_with_a_card: rows.filter((r) => r.surface).length,
+      read_from_card_attributes: rows.filter((r) => r.attrRead).length,
+      subject_smart_pick: rows.filter((r) => r.surface === 'smart-pick').length,
+      subject_result_card: rows.filter((r) => r.surface === 'card').length,
+    },
+    // The founder's standing rule, measured directly across every card rendered.
+    unhonoured_store_claims: {
+      journeys_with_a_violation: rows.filter((r) => (r.unhonouredClaims || []).length > 0).length,
+      cards_violating: rows.reduce((n, r) => n + (r.unhonouredClaims || []).length, 0),
+    },
   };
 
   if (JSON_OUT) { console.log(JSON.stringify({ summary, rows }, null, 2)); return; }
@@ -483,6 +543,16 @@ async function journey(page, locale, query, browser) {
   console.log(`PASS RATE (overall): ${passed}/${rows.length} = ${rate}%`);
   console.log(`COMPARISON JOURNEY:  ${cmpPassed}/${cmpRows.length}${cmpRows.length ? ` = ${summary.comparison_pass_rate_pct}%` : ''}   <-- LAUNCH GATE`);
   console.table(summary.by_check);
+  console.log('Instrument (what the numbers were read from):');
+  console.table(summary.instrument);
+  console.log('Unhonoured store claims (cards claiming N stores with no compare link):');
+  console.table(summary.unhonoured_store_claims);
+  if (summary.instrument.read_from_card_attributes < summary.instrument.journeys_with_a_card) {
+    console.log(
+      `⚠  ${summary.instrument.journeys_with_a_card - summary.instrument.read_from_card_attributes} journey(s) fell back to TEXT parsing — ` +
+      'those store counts/prices are inferred, not published by the card. Treat them as a wider error bar.',
+    );
+  }
   console.log('Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):');
   console.table(summary.link_buckets);
   console.log(`Link check is trustable for ${summary.link_trustable_pct}% of journeys.`);

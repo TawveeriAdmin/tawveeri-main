@@ -87,6 +87,11 @@ type DecisionLayer = {
     store_count: number;
     reason_ar: string;
     is_tps: boolean;
+    // ADR-136 — the surface that HONOURS the store count this card claims. The Smart Pick
+    // used to render "مقارنة موثقة · متوفر في 3 متاجر" whose only link was a single-store
+    // `/go/<id>` exit: a comparison claim with no comparison to go to. When this is null the
+    // card must not claim a store count at all (unknown beats incorrect).
+    compare_url: string | null;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -365,7 +370,9 @@ function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: numbe
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
   if (isCheapest) parts.push('أرخص سعر');
-  if (p.store_count >= 2) parts.push(`متوفر في ${p.store_count} متاجر`);
+  // ADR-136: the store count is only stated where a comparison surface exists to honour it.
+  // A "متوفر في 3 متاجر" line with nowhere to see those 3 stores is a claim we cannot back.
+  if (p.store_count >= 2 && !!p.tps_compare_url) parts.push(`متوفر في ${p.store_count} متاجر`);
   // ADR-129 SAVINGS_GATE (default on): the merchant "was" (original_price) is not a drop we verified —
   // suppress the "خصم %" claim unless the gate is explicitly off.
   if (process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off') {
@@ -405,6 +412,7 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
         store_count: best.store_count,
         reason_ar: buildReasonAr(best, best.best_price === priceMin && priceMin > 0),
         is_tps: !!(best.has_tps_comparison || best.tps_compare_url),
+        compare_url: best.tps_compare_url ?? null,
       }
     : null;
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
