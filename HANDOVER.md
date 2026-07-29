@@ -6,11 +6,107 @@
 
 ---
 
-# ═══ RESUME HERE — 2026-07-29 CHECKPOINT (zero-memory safe) ═══
+# ═══ RESUME HERE — 2026-07-29 CHECKPOINT #2 (supersedes the block below) ═══
+
+**Read order:** `CLAUDE.md` → `EXECUTIVE_DIRECTIVE.md` → `MASTER_DIRECTIVE.md` → this block.
+
+## The gate, and why its old value must be discarded
+
+Two production runs after `af3aca8` (ADR-136), reported with their spread:
+
+| run | comparison gate | overall | unhonoured claims | read from card attrs |
+|---|---|---|---|---|
+| 1 (`docs/ui-journey-after-adr136.log`) | **6/7 = 85.7%** | 30/40 = 75% | 0 | 37/37 |
+| 2 (`docs/ui-journey-after-adr136-run2.log`) | **7/7 = 100%** | 31/40 = 77.5% | 0 | 37/37 |
+
+The single flip is `ar شاشة` in run 1 (`compare page says none`); it did not reproduce
+— the API returns 2 offers and the page renders them — and it coincided with the deploy
+rollover. Named, not smoothed.
+
+**The previous `6/34 = 17.6%` is not a lower baseline — it is a different, invalid
+measurement.** Do not quote the two as a before/after improvement. The denominator fell
+from 34 to 7 because 27 of those "comparison journeys" were single-store cards whose
+PRICE had been read as a store count.
+
+## The instrument was measuring the page, not a card (third instrument error, 2026-07-29)
+
+`readSearchPage` walked up from every `img[alt]` to the first ancestor containing a
+marker phrase. **The first image on any page is the header logo**, whose nearest
+marker-bearing ancestor is the whole page. So the journey's subject was a
+4,484-character box holding 33 images. Proof, from the baseline JSON: `pickName` is
+**`"Tawveeri"` on all 40 rows**.
+
+With the page as the box, the store-count regex matched the Smart Pick's own price
+label: **`cardStores === cardPrice` on every mis-parsed row** — ثلاجة "900 stores"
+= 900 SAR, washing machine "219 stores" = 219 SAR. So the "27 cards claiming a store
+count the compare page cannot honour" were **single-store cards whose PRICE was read
+as a store count**, and the gate denominator (34, then 32 on re-run) was mostly not
+comparison journeys at all. `relevant` / `sensiblePick` / `storeVisible` were equally
+page-level: the query string appears in the page text, so they scored `Y` for free.
+
+**A result card could not have violated the rule anyway:** all **5,844** active
+storefront products have offers from exactly **one** distinct `store_id`, so a
+storefront card cannot claim ≥2 stores; multi-store cards come only from
+`searchTPSCanonical`, which sets `tps_compare_url` on the same `>= 2` condition that
+sets the count.
+
+**Checked at population scale, not only on the 40 sampled journeys.** The one way the
+card could still out-claim the compare page is that `searchTPSCanonical` counts distinct
+`price_history.store_name` while `/api/compare` dedups by resolved retailer slug — the
+ADR-132 double-count, which was fixed on the Algolia path but never on the TPS path. Over
+every canonical with offers: **457 where card and compare agree, `0` where the card would
+claim more.** The class is empty in current data; it is now a *monitored* invariant
+(`unhonoured_store_claims`) rather than an assumption, so if a second name spelling for
+one retailer ever lands, the next run fails instead of shipping a false comparison.
+
+## The real defect, found and fixed (ADR-136)
+
+**The Smart Pick card.** It rendered `مقارنة موثقة · متوفر في 3 متاجر` and its only
+link was `/go/<id>` — one store's exit. Told the customer a 3-store comparison
+existed; gave no way to see it. Now it leads with `قارن الأسعار في N متاجر` → the
+compare page, and makes **no** multi-store claim when no comparison surface exists.
+
+**Cards now publish their claim** (`data-store-count` / `data-best-price` /
+`data-compare-url`), so the harness reads what the card says instead of inferring it.
+The standing rule is checked across **every** card on the page, not just the subject:
+**`cards_violating = 0` across all 40 journeys.**
+
+**Instrument discipline additions:** every run prints `read_from_card_attributes`
+(37/37 — anything lower means a wider error bar) and `unhonoured_store_claims`.
+Outbound links are matched by **host**: `!href.includes('tawveeri')` had been
+discarding every Amazon exit, because the affiliate tag *is* `tag=tawveeri-21`.
+
+## What the honest gate now shows as open
+
+- **`سماعات` AR / `ايفون` EN / `ps5` EN return no product card** — the intermittent
+  search, different queries each run. Unchanged and still the top open item.
+- **`laptop` / `لابتوب اتش بي`: the top pick is an accessory** — the relevance item.
+  Previously scored `rel=Y` by page-level measurement; now visible.
+- **`شاحن`: outbound 404** (one dead Amazon link).
+- One `ar شاشة` failure in run 1 (`compare page says none`) did **not** reproduce —
+  the API returns 2 offers and the page renders them; it coincided with the deploy
+  rollover. Named, not smoothed.
+
+## Known limit of the new instrument (fix before quoting a higher gate)
+
+`subject_result_card = 0` in both runs: whenever a Smart Pick exists it is the journey's
+subject, so the **result cards' own** compare consistency is never price-checked — only
+the page-wide rule check covers them. Next instrument step is to run each journey twice
+(pick and first card) before reading anything into a gate above ~90%.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-29 CHECKPOINT #1 (kept for history) ═══
 
 **Read order:** `CLAUDE.md` → `EXECUTIVE_DIRECTIVE.md` → `MASTER_DIRECTIVE.md` → this block.
 
 ## The one number that matters
+
+> **⚠ SUPERSEDED 2026-07-29 by ADR-136.** The `17.6%` below, the `27 cards`, and
+> resume item 1 are all **invalid** — the harness was measuring the whole page and
+> reading the Smart Pick's PRICE as a store count (`pickName == "Tawveeri"` on all 40
+> rows; `cardStores == cardPrice` on every mis-parsed row). Read checkpoint #2 above.
+> The rest of this block (deployed changes, measured facts, standing authority) stands.
 
 **The launch gate is the COMPARISON-JOURNEY pass rate: `6/34 = 17.6%`.**
 Overall pass rate is 25%, and it is the *lesser* number — it is carried by
