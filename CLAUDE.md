@@ -13,6 +13,8 @@ Tawveeri is governed by a constitutional document set. Precedence, highest first
 5. **This file (`CLAUDE.md`)** — how to work in the repo.
 6. **`docs/DECISIONS.md`** — the Decision Register.
 
+**Read `STANDING_DIRECTIVE.md` at the start of every session; it outranks older instructions on conflict** (it sits *below* the Constitution, alongside the operational directives below).
+
 **Operational directives — read `EXECUTIVE_DIRECTIVE.md` FIRST every session.** It governs positioning, launch, revenue, and marketing, and **outranks all older operational instructions on conflict** (it sits *below* the Constitution, not above it). **Exactly two active directives:** `EXECUTIVE_DIRECTIVE.md` (positioning/launch/revenue/marketing/Misk) › `MASTER_DIRECTIVE.md` (phases/gates/standing rules). Everything in **`docs/archive/`** — including `PHASE2_MATCHING.md` and `PHASE2_REVISED.md` — is **reference only and must NEVER be executed from** (their matching-is-the-bottleneck thesis was disproven by ADR-133).
 
 `docs/README.md` is the full index. **Where code conflicts with a higher authority, the code is debt to fix, not the authority to override.** Every significant decision gets an ADR in `docs/DECISIONS.md`.

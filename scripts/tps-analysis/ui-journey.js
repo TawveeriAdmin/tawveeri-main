@@ -279,9 +279,12 @@ async function readSearchPage(page, locale, query) {
     return {
       total: (document.body.innerText.match(/([\d٠-٩,٬]+)\s*(نتيجة|results?)/) || [])[1] || null,
       cardCount: cards.length,
-      // The Smart Pick is the surface the customer is steered to, so it is the journey's
-      // subject when present; otherwise the first result card is.
-      pick: smart || cards[0] || null,
+      // BOTH surfaces are returned and BOTH are judged. Making the Smart Pick the sole
+      // subject left `subject_result_card = 0` in every run: a result card's own price
+      // agreement with its compare page was never checked, so any high gate was
+      // unreadable. A shopper who ignores the pick and clicks the first result is taking
+      // a real journey and must be measured taking it.
+      smart,
       first: cards[0] || null,
       unhonouredClaims: violations,
       empty: /لا توجد نتائج|No results/i.test(document.body.innerText),
@@ -311,29 +314,32 @@ async function readComparePage(page, href) {
   });
 }
 
-async function journey(page, locale, query, browser) {
+/**
+ * Judge ONE surface end-to-end: its claim → its compare page → its outbound link.
+ *
+ * Split out of `journey()` so the Smart Pick and the first result card are each measured
+ * in their own right. While the pick was the sole subject, every run reported
+ * `subject_result_card = 0`: a result card's price agreement with its own compare page
+ * was never tested, so a high gate could not be read. A shopper who scrolls past the pick
+ * and clicks the first card is taking a real journey.
+ */
+async function evaluateSurface(page, browser, { query, locale, subject, surfaceCard, search }) {
   const row = {
-    query, locale,
+    query, locale, subject,
     relevant: false, sensiblePick: false, storeVisible: false,
     priceConsistent: false, linkLands: false, linkBucket: 'dead', excluded: false, isComparison: false, pass: false,
     pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
     surface: null, attrRead: false, unhonouredClaims: [],
     destination: '', notes: [],
   };
-  let search;
-  try {
-    search = await readSearchPage(page, locale, query);
-  } catch (e) {
-    row.notes.push(`search page failed: ${e.message}`);
-    return row;
-  }
-  // Rule check across every card on the page, independent of which one the journey follows.
+  // Page-level rule check. Recorded on every surface of the page because the rule is a
+  // property of the PAGE, but counted once per page in the summary.
   row.unhonouredClaims = search.unhonouredClaims || [];
   if (row.unhonouredClaims.length) {
     row.notes.push(`${row.unhonouredClaims.length} card(s) claim a store count with no compare link: ${row.unhonouredClaims.slice(0, 3).join(' | ')}`);
   }
 
-  const pick = search.pick;
+  const pick = surfaceCard;
   // A single-store product legitimately has no compare link — that is a finding to
   // record, not a reason to abandon the journey.
   if (!pick) { row.notes.push(search.empty ? 'no results' : 'no product card found'); return row; }
@@ -396,7 +402,7 @@ async function journey(page, locale, query, browser) {
       }
     }
   } else {
-    row.notes.push('no compare link on the top pick');
+    row.notes.push(`no compare link on the ${subject === 'smart-pick' ? 'top pick' : 'first result card'}`);
   }
 
   if (row.cardPrice != null && row.comparePrice != null) {
@@ -453,6 +459,37 @@ async function journey(page, locale, query, browser) {
   return row;
 }
 
+/**
+ * One search page → one row per SURFACE a shopper can act on: the Smart Pick and the
+ * first result card. The page is loaded once and both surfaces are judged from that
+ * single read, so the extra coverage costs compare-page visits, not page loads.
+ */
+async function journey(page, locale, query, browser) {
+  let search;
+  try {
+    search = await readSearchPage(page, locale, query);
+  } catch (e) {
+    return [{
+      query, locale, subject: 'smart-pick',
+      relevant: false, sensiblePick: false, storeVisible: false, priceConsistent: false,
+      linkLands: false, linkBucket: 'dead', excluded: false, isComparison: false, pass: false,
+      pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
+      surface: null, attrRead: false, unhonouredClaims: [],
+      destination: '', notes: [`search page failed: ${e.message}`],
+    }];
+  }
+
+  const rows = [];
+  // The pick is judged first because it is what the customer is steered to. The result
+  // card is judged whether or not a pick exists — a page with no pick still has cards,
+  // and those journeys were entirely unmeasured before.
+  if (search.smart) {
+    rows.push(await evaluateSurface(page, browser, { query, locale, subject: 'smart-pick', surfaceCard: search.smart, search }));
+  }
+  rows.push(await evaluateSurface(page, browser, { query, locale, subject: 'result-card', surfaceCard: search.first, search }));
+  return rows;
+}
+
 (async () => {
   const queries = ONLY_QUERY ? [ONLY_QUERY] : QUERIES;
   const locales = ONLY_LOCALE ? [ONLY_LOCALE] : ['ar', 'en'];
@@ -469,16 +506,19 @@ async function journey(page, locale, query, browser) {
   const rows = [];
   for (const locale of locales) {
     for (const q of queries) {
-      const r = await journey(page, locale, q, browser);
-      rows.push(r);
-      if (!JSON_OUT) {
-        process.stdout.write(
-          `${r.pass ? 'PASS' : 'FAIL'}  ${locale}  ${q.padEnd(18)} ` +
-          `rel=${r.relevant ? 'Y' : 'N'} pick=${r.sensiblePick ? 'Y' : 'N'} store=${r.storeVisible ? 'Y' : 'N'} ` +
-          `price=${r.priceConsistent ? 'Y' : 'N'} link=${r.linkBucket.toUpperCase()} ` +
-          `on=${r.surface || '-'}/${r.cardStores ?? '?'}st` +
-          `${r.notes.length ? '  · ' + r.notes.join('; ') : ''}\n`,
-        );
+      const produced = await journey(page, locale, q, browser);
+      for (const r of produced) {
+        rows.push(r);
+        if (!JSON_OUT) {
+          process.stdout.write(
+            `${r.pass ? 'PASS' : 'FAIL'}  ${locale}  ${q.padEnd(18)} ` +
+            `${(r.subject === 'smart-pick' ? 'PICK' : 'CARD').padEnd(4)} ` +
+            `rel=${r.relevant ? 'Y' : 'N'} pick=${r.sensiblePick ? 'Y' : 'N'} store=${r.storeVisible ? 'Y' : 'N'} ` +
+            `price=${r.priceConsistent ? 'Y' : 'N'} link=${r.linkBucket.toUpperCase()} ` +
+            `${r.cardStores ?? '?'}st` +
+            `${r.notes.length ? '  · ' + r.notes.join('; ') : ''}\n`,
+          );
+        }
       }
     }
   }
@@ -488,8 +528,11 @@ async function journey(page, locale, query, browser) {
   const mismatched = [];
   if (locales.length === 2) {
     for (const q of queries) {
-      const a = rows.find((r) => r.query === q && r.locale === 'ar');
-      const e = rows.find((r) => r.query === q && r.locale === 'en');
+      // Compare like with like: the pick in one language against the pick in the other.
+      const at = (loc) => rows.find((r) => r.query === q && r.locale === loc && r.subject === 'smart-pick')
+        || rows.find((r) => r.query === q && r.locale === loc);
+      const a = at('ar');
+      const e = at('en');
       if (a && e && a.pickName && e.pickName && norm(a.pickName) !== norm(e.pickName)) {
         mismatched.push({ query: q, ar: a.pickName, en: e.pickName });
       }
@@ -499,6 +542,23 @@ async function journey(page, locale, query, browser) {
   const cmpRows = rows.filter((r) => r.isComparison);
   const cmpPassed = cmpRows.filter((r) => r.pass).length;
   const passed = rows.filter((r) => r.pass).length;
+
+  // Per-surface breakdown, so a gate carried by one surface is visible as such.
+  const subjectRate = (s) => {
+    const sub = rows.filter((r) => r.subject === s);
+    const cmp = sub.filter((r) => r.isComparison);
+    return {
+      journeys: sub.length,
+      passed: sub.filter((r) => r.pass).length,
+      comparison_journeys: cmp.length,
+      comparison_passed: cmp.filter((r) => r.pass).length,
+    };
+  };
+  // One entry per PAGE (query × locale), not per row — both rows of a page carry the
+  // same page-level violation list and must not be double-counted.
+  const pageViolations = [...new Map(
+    rows.map((r) => [`${r.locale}|${r.query}`, r.unhonouredClaims || []]),
+  ).values()];
   const rate = rows.length ? Math.round((passed / rows.length) * 1000) / 10 : 0;
   const summary = {
     base: BASE, total: rows.length, passed, pass_rate_pct: rate,
@@ -527,13 +587,22 @@ async function journey(page, locale, query, browser) {
     instrument: {
       journeys_with_a_card: rows.filter((r) => r.surface).length,
       read_from_card_attributes: rows.filter((r) => r.attrRead).length,
-      subject_smart_pick: rows.filter((r) => r.surface === 'smart-pick').length,
-      subject_result_card: rows.filter((r) => r.surface === 'card').length,
+      subject_smart_pick: rows.filter((r) => r.subject === 'smart-pick' && r.surface).length,
+      subject_result_card: rows.filter((r) => r.subject === 'result-card' && r.surface).length,
+    },
+    // Each surface judged on its own. A gate carried entirely by the Smart Pick while
+    // result cards fail is a different product from one where both work.
+    by_subject: {
+      smart_pick: subjectRate('smart-pick'),
+      result_card: subjectRate('result-card'),
     },
     // The founder's standing rule, measured directly across every card rendered.
+    // Counted ONCE PER PAGE — a page contributes two rows now, and a violation is a
+    // property of the page, not of each surface on it.
     unhonoured_store_claims: {
-      journeys_with_a_violation: rows.filter((r) => (r.unhonouredClaims || []).length > 0).length,
-      cards_violating: rows.reduce((n, r) => n + (r.unhonouredClaims || []).length, 0),
+      pages_with_a_violation: pageViolations.filter((v) => v.length > 0).length,
+      pages_checked: pageViolations.length,
+      cards_violating: pageViolations.reduce((n, v) => n + v.length, 0),
     },
   };
 
@@ -543,6 +612,8 @@ async function journey(page, locale, query, browser) {
   console.log(`PASS RATE (overall): ${passed}/${rows.length} = ${rate}%`);
   console.log(`COMPARISON JOURNEY:  ${cmpPassed}/${cmpRows.length}${cmpRows.length ? ` = ${summary.comparison_pass_rate_pct}%` : ''}   <-- LAUNCH GATE`);
   console.table(summary.by_check);
+  console.log('By surface (each judged in its own right — a gate carried by one surface is not a working product):');
+  console.table(summary.by_subject);
   console.log('Instrument (what the numbers were read from):');
   console.table(summary.instrument);
   console.log('Unhonoured store claims (cards claiming N stores with no compare link):');
