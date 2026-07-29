@@ -8,6 +8,7 @@
 
 import { useEffect } from 'react';
 import { UnifiedHome } from './unified-home';
+import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { getEntryVariant, applyVariantOverrideFromUrl } from '@/lib/analytics/variant';
 
@@ -15,12 +16,12 @@ import { getEntryVariant, applyVariantOverrideFromUrl } from '@/lib/analytics/va
 // unified-home design (Search → وفّر → Hero → Categories → Deals), which combines both in one
 // natural order. We keep landing_view + the variant tag firing for funnel continuity; everyone now
 // sees the single UnifiedHome. The variant infra remains available for future experiments.
-export function BetaLanding({ locale }: { locale: string }) {
+export function BetaLanding({ locale, deals = [] }: { locale: string; deals?: HomeVerifiedDeal[] }) {
   useEffect(() => {
     initTestModeFromUrl();
     applyVariantOverrideFromUrl();
     track('landing_view', { source: 'landing', category: null, meta: { variant: getEntryVariant() } });
   }, []);
 
-  return <UnifiedHome locale={locale} />;
+  return <UnifiedHome locale={locale} deals={deals} />;
 }

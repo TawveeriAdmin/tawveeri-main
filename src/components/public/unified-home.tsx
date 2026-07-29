@@ -7,12 +7,11 @@
 // Tawveeri identity kept (brand green, evidence/trust language). Never fabricates an offer — the
 // deals row is real data (best-effort) and hides if empty.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSupabaseBrowserClient } from '@/lib/database';
 
-type Deal = { slug: string; name: string; image: string | null; price: number; was: number | null; store: string };
+import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
 
 const T = {
   ar: {
@@ -59,40 +58,14 @@ const T = {
 
 const S = { section: { marginTop: 34 } as React.CSSProperties };
 
-export function UnifiedHome({ locale }: { locale: string }) {
+export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: HomeVerifiedDeal[] }) {
   const isAr = locale !== 'en';
   const t = T[isAr ? 'ar' : 'en'];
   const router = useRouter();
   const [q, setQ] = useState('');
-  const [deals, setDeals] = useState<Deal[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const sb = getSupabaseBrowserClient();
-        const { data } = await sb
-          .from('product_stores')
-          .select('current_price, original_price, is_deal, products!inner(slug, name_ar, name_en, image_url), stores(slug, name_ar, name_en)')
-          .eq('is_deal', true)
-          .not('original_price', 'is', null)
-          .order('updated_at', { ascending: false })
-          .limit(6);
-        if (cancelled || !data) return;
-        const mapped: Deal[] = (data as any[])
-          .map((r) => ({
-            slug: r.products?.slug, image: r.products?.image_url ?? null,
-            name: isAr ? (r.products?.name_ar || r.products?.name_en) : (r.products?.name_en || r.products?.name_ar),
-            price: Number(r.current_price), was: r.original_price ? Number(r.original_price) : null,
-            store: isAr ? (r.stores?.name_ar || r.stores?.slug) : (r.stores?.name_en || r.stores?.slug),
-          }))
-          .filter((d) => d.slug && d.name && d.was && d.was > d.price)
-          .slice(0, 4);
-        setDeals(mapped);
-      } catch { /* deals are best-effort; the section hides if empty */ }
-    })();
-    return () => { cancelled = true; };
-  }, [isAr]);
+  // Deals arrive from the SERVER as verified drops (observed_max + tracked days). The old
+  // client query read product_stores.original_price — the merchant's own "was" — and
+  // published on the first screen a saving we never observed.
 
   const search = (text?: string) => {
     const query = (text ?? q).trim();
@@ -116,29 +89,11 @@ export function UnifiedHome({ locale }: { locale: string }) {
         </div>
       </section>
 
-      {/* 2 — وفّر (AI assistant, part of the identity, not hidden) */}
-      <section style={S.section}>
-        <Link href={`/${locale}/advisor`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', background: 'linear-gradient(135deg, rgba(85,178,149,.12), var(--color-surface))', border: '1.5px solid var(--brand-green)', borderRadius: 20, padding: '18px 18px' }}>
-          <div style={{ width: 48, height: 48, background: 'linear-gradient(135deg,var(--brand-green),#3a7a66)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, boxShadow: '0 4px 14px rgba(85,178,149,.3)' }}>🧭</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)' }}>{t.aiTitle}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-on-surface-variant)', marginTop: 3, lineHeight: 1.5 }}>{t.aiSub}</div>
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-green-dark, #3a7a66)', flexShrink: 0 }}>{t.aiCta} {isAr ? '←' : '→'}</span>
-        </Link>
-      </section>
+      {/* وفّر has ONE entry point — the persistent nav item. It used to be offered here
+          as well, so the first screen carried two doors to the same assistant. Measured
+          2026-07-29 as a homepage-journey failure in both locales. */}
 
-      {/* 3 — HERO / value (trust, mid-page per the natural order) */}
-      <section style={S.section}>
-        <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, var(--brand-green) 0%, #3a7a66 100%)', borderRadius: 22, padding: '26px 22px', color: '#fff' }}>
-          <div style={{ position: 'absolute', insetInlineEnd: -10, top: '50%', transform: 'translateY(-50%)', fontSize: 96, opacity: .12, pointerEvents: 'none' }}>🛡️</div>
-          <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>{t.heroTitle}</div>
-          <div style={{ fontSize: 13, opacity: .9, lineHeight: 1.6, maxWidth: 440, marginBottom: 14 }}>{t.heroSub}</div>
-          <Link href={`/${locale}/price-truth`} style={{ display: 'inline-block', background: '#fff', color: '#2f6b58', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>{t.heroCta} {isAr ? '←' : '→'}</Link>
-        </div>
-      </section>
-
-      {/* 4 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing) */}
+      {/* 2 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing) */}
       <section style={S.section}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.catsTitle}</h2>
@@ -155,49 +110,51 @@ export function UnifiedHome({ locale }: { locale: string }) {
         </div>
       </section>
 
-      {/* 5 — BEST DEALS (real data; hidden when none) */}
+      {/* 3 — BEST DEALS — VERIFIED drops only. Every card states the evidence: the
+          highest price we ourselves observed, and how many days we watched. This is the
+          product thesis in one line — we publish a SMALLER saving than the merchant,
+          because ours is evidence. Hidden entirely when we have nothing verified. */}
       {deals.length > 0 && (
         <section style={S.section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>🔥 {t.dealsTitle}</h2>
-            <Link href={`/${locale}/deals`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
+            <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.dealsTitle}</h2>
+            <Link href={`/${locale}/price-truth`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-            {deals.map((d) => {
-              // ADR-129 SAVINGS_GATE — this surface was built after the gate (ADR-123) and never
-              // got it, so the FIRST SCREEN was publishing a percentage derived from the merchant's
-              // own `original_price`: a saving we never observed. Measured live 2026-07-29:
-              // "وفّر 62%" on a Philips LAN cable, "وفّر 34%" on a keyboard set. We publish that
-              // 71% of advertised discounts reference a price we never observed — and then showed
-              // one of those discounts as our own headline. Suppressed by default; the verified
-              // replacement (observed_max + tracked days) is ADR-138's follow-up.
-              const save = process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off' && d.was
-                ? Math.round(((d.was - d.price) / d.was) * 100)
-                : 0;
-              return (
-                <Link key={d.slug} href={`/${locale}/products/${d.slug}`} style={{ textDecoration: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ position: 'relative', height: 120, background: 'var(--color-surface-container-low, #f5f7f8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {d.image ? <img src={d.image} alt={d.name} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: 34, opacity: .4 }}>📦</span>}
-                    {save > 0 && <span style={{ position: 'absolute', insetInlineStart: 8, top: 8, background: '#E2BB4E', color: '#0f1923', borderRadius: 8, padding: '2px 8px', fontSize: 11, fontWeight: 900 }}>{t.save} {save}%</span>}
-                  </div>
-                  <div style={{ padding: '10px 12px' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-on-surface)', lineHeight: 1.4, height: 34, overflow: 'hidden' }}>{d.name}</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
-                      <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--brand-green-dark, #3a7a66)' }}>{num(d.price)}</span>
-                      {/* The struck-through "was" is the merchant's reference price, not one we
-                          observed — same ADR-129 gate as the percentage above it. Showing a price
-                          crossed out IS a savings claim, whether or not a % appears beside it. */}
-                      {process.env.NEXT_PUBLIC_SAVINGS_GATE === 'off' && d.was && (
-                        <span style={{ fontSize: 11, color: 'var(--color-on-surface-variant)', textDecoration: 'line-through' }}>{num(d.was)}</span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+            {deals.map((d) => (
+              <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer"
+                style={{ textDecoration: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 16, padding: '14px 16px', display: 'block' }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)', lineHeight: 1.45, marginBottom: 8 }}>{d.name}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--brand-green-dark, #3a7a66)' }}>{num(d.price)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, background: 'var(--brand-bg-green, #eaf6f1)', color: 'var(--brand-green-dark, #3a7a66)', borderRadius: 8, padding: '3px 8px' }}>
+                    {t.save} {num(Math.round(d.observedMax - d.price))} {isAr ? 'ريال' : 'SAR'}
+                  </span>
+                  {d.storeName && <span style={{ fontSize: 11, color: 'var(--color-on-surface-variant)' }}>{d.storeName}</span>}
+                </div>
+                {/* THE EVIDENCE LINE (directive §3.8) — what we observed, and for how long. */}
+                <div style={{ fontSize: 11, color: 'var(--color-on-surface-variant)', marginTop: 8, lineHeight: 1.6 }}>
+                  {isAr
+                    ? `تتبّعنا هذا المنتج ${num(d.trackedDays)} يومًا · أعلى سعر رصدناه ${num(d.observedMax)} ريال`
+                    : `We tracked this product for ${num(d.trackedDays)} days · highest price we observed ${num(d.observedMax)} SAR`}
+                </div>
+              </a>
+            ))}
           </div>
         </section>
       )}
+
+      {/* 4 — TRUST, LAST. It used to sit above the categories, asking the customer to
+          accept the claim before seeing a single product. That is exactly what we say we
+          do not do: the claim should be PROVEN by products, then explained. */}
+      <section style={S.section}>
+        <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, var(--brand-green) 0%, #3a7a66 100%)', borderRadius: 22, padding: '26px 22px', color: '#fff' }}>
+          <div style={{ position: 'absolute', insetInlineEnd: -10, top: '50%', transform: 'translateY(-50%)', fontSize: 96, opacity: .12, pointerEvents: 'none' }}>🛡️</div>
+          <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>{t.heroTitle}</div>
+          <div style={{ fontSize: 13, opacity: .9, lineHeight: 1.6, maxWidth: 440, marginBottom: 14 }}>{t.heroSub}</div>
+          <Link href={`/${locale}/price-truth`} style={{ display: 'inline-block', background: '#fff', color: '#2f6b58', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>{t.heroCta} {isAr ? '←' : '→'}</Link>
+        </div>
+      </section>
     </div>
   );
 }

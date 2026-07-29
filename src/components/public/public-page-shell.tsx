@@ -179,6 +179,8 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   };
 
   const pathWithoutLocale = pathname.startsWith(`/${locale}`) ? pathname.slice(locale.length + 1) || '/' : pathname || '/';
+  // The homepage owns its own hero search; the header must not duplicate it there.
+  const isHomePage = pathWithoutLocale === '/' || pathWithoutLocale === '';
   const encodedRedirect = encodeURIComponent(pathWithoutLocale);
   const loginHref = `/${locale}/auth/login?redirect=${encodedRedirect}`;
   const signupHref = `/${locale}/auth/signup?redirect=${encodedRedirect}`;
@@ -362,9 +364,15 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
             </div>
           </div>
 
-          {/* Search bar — Mobile */}
+          {/* Search bar — Mobile.
+              HIDDEN ON THE HOMEPAGE: the hero IS the search there, and rendering both put
+              TWO search fields on the first screen — two answers to "what do I do here".
+              Measured 2026-07-29 as a homepage-journey failure in both locales. */}
           <form onSubmit={handleSearchSubmit}
-            className="pointer-events-auto relative mt-3 flex h-11 items-stretch overflow-hidden rounded-full border border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 md:hidden">
+            className={cn(
+              'pointer-events-auto relative mt-3 flex h-11 items-stretch overflow-hidden rounded-full border border-outline-variant bg-surface-container-lowest transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 md:hidden',
+              isHomePage && 'hidden',
+            )}>
             <Search aria-hidden className="pointer-events-none absolute start-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-on-surface-variant" />
             <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('search.searchPlaceholder')} aria-label={t('search.searchPlaceholder')}
