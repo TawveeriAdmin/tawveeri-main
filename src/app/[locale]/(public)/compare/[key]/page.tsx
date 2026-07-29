@@ -195,17 +195,23 @@ export default async function TpsComparePage({
         {/* ── Cheapest Offer (featured) ── */}
         {cheapestOffer && (
           <div className="relative overflow-hidden rounded-2xl border-2 border-[var(--brand-green)]/40 bg-[color:var(--color-surface-container-low)] p-5 md:p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
-                <Trophy className="h-3 w-3" />
-                {isAr ? 'أفضل سعر' : 'Best Price'}
-              </span>
-            </div>
+            {/* With a single offer there is no "best" — claiming one would be a false
+                comparison (ADR-135). The badge appears only when something was compared. */}
+            {offers.length > 1 && (
+              <div className="flex items-center gap-2 mb-4">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+                  <Trophy className="h-3 w-3" />
+                  {isAr ? 'أفضل سعر' : 'Best Price'}
+                </span>
+              </div>
+            )}
 
             <div className="flex items-start justify-between gap-4 mb-5">
               <div className="flex flex-col min-w-0">
                 <span className="text-xs text-on-surface-variant mb-1">
-                  {isAr ? 'أفضل سعر الآن عند' : 'Best price at'}
+                  {offers.length > 1
+                    ? (isAr ? 'أفضل سعر الآن عند' : 'Best price at')
+                    : (isAr ? 'متوفر عند' : 'Available at')}
                 </span>
                 <span className="text-base font-bold text-on-surface">
                   {cheapestOffer.store_name}
@@ -233,17 +239,15 @@ export default async function TpsComparePage({
                 rel="noopener noreferrer"
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
               >
-                <span>{isAr ? `اشترِ من ${cheapestOffer.store_name}` : `Buy from ${cheapestOffer.store_name}`}</span>
+                <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
                 <ExternalLink className="h-4 w-4" />
               </a>
             ) : (
-              <a
-                href={`/${locale}/search?q=${encodeURIComponent(name)}`}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
-              >
-                <span>{isAr ? 'شوف في المتاجر' : 'Find in stores'}</span>
-                <ArrowRight className="h-4 w-4" />
-              </a>
+              // No exit URL for this listing. Say exactly that — the old copy read
+              // "شوف في المتاجر" but ran another search, doing the opposite of what it said.
+              <div className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-5 text-sm font-medium text-on-surface-variant">
+                {isAr ? 'رابط المتجر غير متاح لهذا العرض' : 'No store link available for this offer'}
+              </div>
             )}
           </div>
         )}
@@ -288,16 +292,15 @@ export default async function TpsComparePage({
                         rel="noopener noreferrer"
                         className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
                       >
-                        {isAr ? 'زيارة' : 'Visit'}
+                        {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : (
-                      <a
-                        href={`/${locale}/search?q=${encodeURIComponent(name)}`}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
-                      >
-                        {isAr ? 'في المتاجر' : 'In stores'}
-                      </a>
+                      // "في المتاجر" looked like a link and ran a search. If we have no exit
+                      // URL, show plain text — never a control that pretends to reach the store.
+                      <span className="text-xs text-on-surface-variant">
+                        {isAr ? 'لا يوجد رابط' : 'No link'}
+                      </span>
                     )}
                   </div>
                 </div>

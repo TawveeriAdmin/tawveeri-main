@@ -101,15 +101,45 @@ function normalizeName(s: string): string {
   return s.trim().toLowerCase();
 }
 
-/** Resolve any store identifier (slug / Arabic / English name / store_name) to an approved slug, or null. */
-export function resolveApprovedSlug(identifier?: string | null): string | null {
-  if (!identifier) return null;
-  const key = normalizeName(identifier);
-  const mapped = NAME_TO_SLUG[identifier.trim()] ?? NAME_TO_SLUG[key];
+/**
+ * Numeric `stores.id` → slug. REQUIRED, not a convenience: production stores the same
+ * retailer two different ways depending on the table. `price_history.store_name` holds a
+ * DISPLAY NAME ("اكسترا"), while `normalized_product_observations.store_id` is TEXT
+ * holding a NUMERIC id ("4") in 96.3% of rows. Any code that joins those two namespaces
+ * by string equality silently drops the offer — which is exactly how the compare page
+ * lost Extra's 840 SAR offer and showed 1,099 while the card showed 840 (ADR-135).
+ */
+const STORE_ID_TO_SLUG: Record<string, string> = {
+  '1': 'jarir', '2': 'amazon', '3': 'noon', '4': 'extra', '5': 'almanea',
+  '8': 'swsg', '10': 'blackbox', '23': 'lulu', '24': 'sharafdg',
+};
+
+/**
+ * Resolve ANY store identifier — slug, Arabic name, English name, `price_history`
+ * store_name, or a numeric `stores.id` (as number or text) — to an approved slug, or null.
+ */
+export function resolveApprovedSlug(identifier?: string | number | null): string | null {
+  if (identifier === null || identifier === undefined) return null;
+  const raw = String(identifier).trim();
+  if (!raw) return null;
+  // Numeric store id (the `normalized_product_observations.store_id` namespace).
+  if (/^\d+$/.test(raw)) {
+    const bySlug = STORE_ID_TO_SLUG[raw];
+    return bySlug && APPROVED_SLUGS.has(bySlug) ? bySlug : null;
+  }
+  const key = normalizeName(raw);
+  const mapped = NAME_TO_SLUG[raw] ?? NAME_TO_SLUG[key];
   if (mapped && APPROVED_SLUGS.has(mapped)) return mapped;
   // direct slug match (future retailers onboarded with their canonical slug)
   if (APPROVED_SLUGS.has(key)) return key;
   return null;
+}
+
+/** Customer-facing retailer name for an approved slug, in the requested locale. */
+export function retailerDisplayName(slug: string | null, locale: 'ar' | 'en' = 'ar'): string | null {
+  if (!slug) return null;
+  const r = APPROVED_RETAILERS.find((x) => x.slug === slug);
+  return r ? (locale === 'ar' ? r.name_ar : r.name_en) : null;
 }
 
 /** True iff the store identifier belongs to an approved retailer. */
