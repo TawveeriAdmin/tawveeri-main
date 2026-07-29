@@ -6,6 +6,64 @@
 
 ---
 
+# ═══ 2026-07-29 — TWO DEAD THESES, RECORDED ═══
+
+Both of these were stated confidently and both were wrong. They are recorded because
+every dead thesis in this project is recorded, and because each one was disproved by a
+specific, reproducible query that anyone can re-run.
+
+## Dead thesis 1 — founder's: "the compare page reads System B"
+
+**What was claimed** (`LAUNCH_BLOCKERS.md` §0): search and وفّر read System A via
+`searchTPSCanonical` and know about multi-store; the compare page reads the storefront
+(System B) and does not — so the user is told a comparison exists, clicks, and is told
+it does not. The proposed fix was a connection project extending System A to compare.
+
+**What the actual cause is:** the compare page is **already on System A**.
+`compare/[key]/page.tsx:49` calls `/api/compare`, which reads `canonical_products` +
+`product_matches` + `normalized_product_observations` + `price_history` — all System A.
+There is no A/B split in this journey. The defect is a **broken join key inside one
+System A endpoint**: `/api/compare/route.ts:83` builds its price map keyed by
+`price_history.store_name` (a display name — "اكسترا", "المنيع", "jarir") and then looks
+it up at line 98 with `normalized_product_observations.store_id` (a **numeric id as
+text** — "4", "1", "5"). Different namespaces, so the lookup misses, the price falls
+back to `raw_payload.current_price`, and where that is absent the offer is dropped at
+line 120 → `offers: []` → *"لا تتوفر مقارنة"*.
+
+**The evidence that disproved it:**
+- `store_id` is numeric in **76,141 / 79,091** observations (**96.3%**); only 8,649
+  (10.9%) could ever match a `store_name`.
+- Of **431** canonicals where search claims ≥2 stores, **394 (91%)** render zero offers
+  on compare, 22 render one, and only **15 (3.5%)** honour the badge.
+
+**Why it matters:** the fix is one file, not a connection project. Same outcome, far
+cheaper — and it also explains D1 (compare renders the string `"4"` as a store name),
+D4 and D5 (`product_url` null → dead "في المتاجر" text).
+
+## Dead thesis 2 — mine: "66% of verified drops have no backing evidence"
+
+**What I claimed:** 649 of 979 `verified_drop` verdicts sat on a decommissioned dev host
+with zero backing raw observations, so we were publishing savings we could not
+substantiate — including the 4,109 → 2,799 AC claim.
+
+**What the actual cause is:** the claims **are** backed. I had queried
+`raw_observations.raw_url` and `raw_observations.price`, but the facts builder reads the
+listing URL and the price from the **payload** (`build-listing-facts.ts:59-60`). Against
+the correct fields: **216,711** observations carry a `dev-almanea` URL and the
+4,108.996 price **was** genuinely observed (2 rows). Zero verified drops are unbacked.
+The real defect is **duplicate listing identity** — see ADR-134.
+
+**The evidence that disproved it:** the evidence-backing test I wrote to justify the
+gate returned `killed_by_item1 = 0` against my own hypothesis. The correct query is in
+ADR-134; the number 649 survives, but as *superseded duplicates*, not *unbacked rows*.
+
+**Why it matters:** the fix I was about to ship would have gated nothing. And the
+founder's §2 suspicion — that we were echoing Extra's "was" — is **not** what happened:
+Extra's row correctly says `inflated_reference` 0%. The two "identical" numbers were
+two different retailers.
+
+---
+
 # ═══ END-OF-DAY CHECKPOINT — 2026-07-28 ═══ (resume here; zero-memory safe)
 
 **Read order for a fresh session:** `CLAUDE.md` → `EXECUTIVE_DIRECTIVE.md` (authority 1) → `MASTER_DIRECTIVE.md` (authority 2) → this checkpoint. `docs/archive/` is reference only, never execute.

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
+import { isMoreAuthoritative, productListingKey } from "@/lib/intelligence/listing-currency";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,9 +21,26 @@ export async function GET(req: NextRequest) {
 
   if (url) {
     const { data } = await sb.from("tps_listing_price_facts")
-      .select("store_name, name, brand, current_price, observed_min, observed_max, claimed_was, distinct_days, verdict, advertised_saving_pct, real_saving_pct, text_ar, text_en")
+      .select("store_name, name, brand, current_price, observed_min, observed_max, claimed_was, distinct_days, last_seen, verdict, advertised_saving_pct, real_saving_pct, text_ar, text_en")
       .eq("url", url).limit(1).maybeSingle();
     if (!data) return NextResponse.json({ url, integrity: null, note: "listing not tracked yet" });
+
+    // ADR-134: if a fresher listing for the same product in the same store contradicts
+    // this row, this row is superseded and must not publish a drop.
+    const { data: siblings } = await sb.from("tps_listing_price_facts")
+      .select("store_name, name, verdict, last_seen").eq("store_name", data.store_name).eq("name", data.name);
+    let winner: { verdict: string; last_seen: string | null } = { verdict: String(data.verdict), last_seen: (data as { last_seen?: string }).last_seen ?? null };
+    for (const s of siblings ?? []) {
+      const cand = { verdict: String(s.verdict), last_seen: (s.last_seen as string) ?? null };
+      if (isMoreAuthoritative(cand, winner)) winner = cand;
+    }
+    if (winner.verdict !== data.verdict) {
+      return NextResponse.json({
+        url,
+        integrity: { ...data, verdict: winner.verdict, real_saving_pct: null, text_ar: "", text_en: "" },
+        note: "superseded listing — verdict taken from the current listing for this product (ADR-134)",
+      });
+    }
     return NextResponse.json({ url, integrity: data });
   }
 
@@ -33,13 +51,48 @@ export async function GET(req: NextRequest) {
     const { count } = await sb.from("tps_listing_price_facts").select("*", { count: "exact", head: true }).eq("verdict", k);
     counts[k] = count ?? 0;
   }
+
+  // ADR-134 — a product can carry two listing rows in the same store with contradictory
+  // verdicts (Almanea serves one item under two URL shapes). A superseded duplicate may
+  // NOT be counted or published as a verified drop, so the headline figure and the deals
+  // list below are both gated to the listing we observed most recently.
+  const dropRows: Array<Record<string, unknown>> = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await sb.from("tps_listing_price_facts")
+      .select("store_name, name, brand, category, url, current_price, observed_max, real_saving_pct, distinct_days, last_seen, verdict, text_ar, text_en")
+      .eq("verdict", "verified_drop").order("url", { ascending: true }).range(from, from + 999);
+    if (!data?.length) break;
+    dropRows.push(...(data as Array<Record<string, unknown>>));
+    if (data.length < 1000) break;
+  }
+
+  // Siblings: every row sharing a (store, product) with a claimed drop.
+  const names = [...new Set(dropRows.map((d) => String(d.name ?? "")).filter(Boolean))];
+  const authoritative = new Map<string, { verdict: string; last_seen: string | null }>();
+  for (let i = 0; i < names.length; i += 200) {
+    const { data } = await sb.from("tps_listing_price_facts")
+      .select("store_name, name, verdict, last_seen").in("name", names.slice(i, i + 200));
+    for (const row of data ?? []) {
+      const key = productListingKey(row as never);
+      const cur = authoritative.get(key);
+      const cand = { verdict: String(row.verdict), last_seen: (row.last_seen as string) ?? null };
+      if (!cur || isMoreAuthoritative(cand, cur)) authoritative.set(key, cand);
+    }
+  }
+
+  const supersededDrops = dropRows.filter((d) => authoritative.get(productListingKey(d as never))?.verdict !== "verified_drop");
+  const currentDrops = dropRows.filter((d) => authoritative.get(productListingKey(d as never))?.verdict === "verified_drop");
+  counts.verified_drop = currentDrops.length;
+  counts.superseded_duplicate_drops_suppressed = supersededDrops.length;
+
   const checkable = counts.verified_drop + counts.inflated_reference + counts.stable;
   const inflatedShare = checkable ? Math.round((counts.inflated_reference / checkable) * 100) : null;
 
   // Top VERIFIED real deals (genuine drops from a price we actually observed).
-  const { data: realDealsRaw } = await sb.from("tps_listing_price_facts")
-    .select("store_name, name, brand, category, url, current_price, observed_max, real_saving_pct, distinct_days, text_ar, text_en")
-    .eq("verdict", "verified_drop").order("real_saving_pct", { ascending: false }).limit(120);
+  const realDealsRaw = currentDrops
+    .slice()
+    .sort((a, b) => (Number(b.real_saving_pct) || 0) - (Number(a.real_saving_pct) || 0))
+    .slice(0, 120);
   // P0-4 ranking (founder-approved): surface high-VALUE confirmed products first, not accessory %-theatre.
   // (1) non-accessory first, (2) absolute SAR saving desc, (3) real_saving_pct desc. Already verdict-gated to
   // verified_drop. NOTE: the "model-confirmed multi-store first" tier needs a canonical/store-count join not

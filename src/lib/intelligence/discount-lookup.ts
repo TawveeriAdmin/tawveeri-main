@@ -4,6 +4,7 @@
 // surfaces (the Advisor, product/compare pages) show the honest "real saving vs what
 // we observed" signal per product. Read-only, deterministic; commission-blind.
 import type { createServerClient } from "@/lib/database";
+import { isMoreAuthoritative } from "./listing-currency";
 
 export interface CanonicalDiscountIntel {
   verdict: "verified_drop" | "inflated_reference" | "stable";
@@ -15,8 +16,15 @@ export interface CanonicalDiscountIntel {
 const PRIORITY: Record<string, number> = { verified_drop: 3, inflated_reference: 2, stable: 1, insufficient_history: 0 };
 
 /**
- * For each canonical id, the most informative Discount Integrity verdict among its
- * offers. `insufficient_history` is dropped (we stay silent without evidence).
+ * For each canonical id, the Discount Integrity verdict of the listing we observed
+ * MOST RECENTLY among its offers. `insufficient_history` is dropped (we stay silent
+ * without evidence).
+ *
+ * ADR-134: this used to pick the highest-PRIORITY verdict, ties broken by the largest
+ * real_saving_pct — i.e. the most flattering claim. Where one product carries two
+ * listing rows with contradictory verdicts (measured: 650 products), that published a
+ * saving the customer's actual listing does not support. Freshest wins; ties go to the
+ * more conservative verdict. See `listing-currency.ts`.
  */
 export async function getCanonicalDiscountIntegrity(
   sb: ReturnType<typeof createServerClient>, canonicalIds: string[]
@@ -37,18 +45,19 @@ export async function getCanonicalDiscountIntegrity(
   }
   if (!allUrls.size) return out;
 
-  const factByUrl = new Map<string, { verdict: string; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null }>();
+  type Fact = { verdict: string; last_seen: string | null; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null };
+  const factByUrl = new Map<string, Fact>();
   const urls = [...allUrls];
   for (let i = 0; i < urls.length; i += 500) {
-    const { data: facts } = await sb.from("tps_listing_price_facts").select("url, verdict, real_saving_pct, advertised_saving_pct, text_ar, text_en").in("url", urls.slice(i, i + 500));
+    const { data: facts } = await sb.from("tps_listing_price_facts").select("url, verdict, last_seen, real_saving_pct, advertised_saving_pct, text_ar, text_en").in("url", urls.slice(i, i + 500));
     for (const f of facts ?? []) factByUrl.set(f.url as string, f as never);
   }
 
   for (const [cid, us] of urlByCanon) {
-    let best: { verdict: string; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null } | null = null;
+    let best: Fact | null = null;
     for (const u of us) {
       const f = factByUrl.get(u); if (!f) continue;
-      if (!best || PRIORITY[f.verdict] > PRIORITY[best.verdict] || (PRIORITY[f.verdict] === PRIORITY[best.verdict] && (f.real_saving_pct ?? 0) > (best.real_saving_pct ?? 0))) best = f;
+      if (!best || isMoreAuthoritative(f, best)) best = f;
     }
     if (best && best.verdict !== "insufficient_history" && PRIORITY[best.verdict] > 0) {
       out.set(cid, { verdict: best.verdict as CanonicalDiscountIntel["verdict"], real_saving_pct: best.real_saving_pct, advertised_saving_pct: best.advertised_saving_pct, text: { ar: best.text_ar ?? "", en: best.text_en ?? "" } });
