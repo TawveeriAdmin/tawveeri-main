@@ -6,7 +6,45 @@
 
 ---
 
-# ═══ RESUME HERE — 2026-07-29 CHECKPOINT #3 (supersedes everything below) ═══
+# ═══ RESUME HERE — 2026-07-29 CHECKPOINT #4 (supersedes everything below) ═══
+
+**Working state. Read this, not the whole directive.**
+
+## Gate
+
+**Comparison 54/58 = 93.1% · Overall 74/80 = 92.5%** — `docs/ui-journey-after-adr139.log`,
+one full run, homepage leg included for the first time.
+
+Comparison journeys grew **16 → 48 → 58** across two unlocks. The rate is flat; the
+denominator is the story.
+
+## Current item
+
+**Acquisition is now genuinely blocked on DISCOVERY** — see the ledger. Both cheap
+unlocks are spent (ADR-138 released 323 hidden by a category gate; ADR-139 admitted 3
+already-ingested stores for +137). There is no third. New targets need StoreLeads, a
+paid dataset outside standing authority.
+
+## Next, in order
+
+1. **Homepage restructure.** The harness now measures it and it fails 0/2: two search
+   fields, two وفّر entries. Savings claims are clean (gated 2026-07-29). The IA proposal
+   is in the directive §3.5.
+2. **The homepage leg is UNDER-WEIGHTED** — 2 rows of 80, though a shopper hits it 100%
+   of the time. Consider weighting it, or gating every journey behind it.
+3. **`store_visible` instrument fix is committed but unmeasured** — the FULL_STORE regex
+   did not know the newly admitted retailers, so 4 correct `ثلاجة` cards read as broken.
+   Fixed; the corrected figure lands on the next run.
+
+## Capacity rule (enforced from this session)
+
+**One full harness run per session.** Root cause of three sessions of "NOT REACHED" was
+seven full runs in one session ≈ 2.5 hours. Probes for iteration: `--query x`, direct
+SQL, `scratchpad/pick.js`. This session used exactly one, at the end.
+
+---
+
+# ═══ SUPERSEDED — CHECKPOINT #3 ═══
 
 **Read order:** `CLAUDE.md` → `STANDING_DIRECTIVE.md` → `EXECUTIVE_DIRECTIVE.md` →
 `MASTER_DIRECTIVE.md` → this block.

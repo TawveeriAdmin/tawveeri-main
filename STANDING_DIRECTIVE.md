@@ -37,20 +37,31 @@ a reason, or NOT REACHED with the capacity limit stated. Never "waiting on you."
 7. **Never publish a saving we did not verify ourselves.**
 8. **Unknown beats incorrect.**
 9. When context runs low, checkpoint to HANDOVER.md, commit, push, and say so.
+10. **ONE full harness run per session.** Root cause of "NOT REACHED" three sessions
+    running was not context bloat — it was **seven full runs in one session, ~2.5 hours
+    of a finite budget**. Use single-query probes (`--query x`), direct SQL, and
+    `scratchpad/pick.js` for iteration; spend the full run once, deliberately, at the end
+    so it measures everything at once. If a second run is needed to prove a delta, say so
+    and spend it on purpose.
+11. **HANDOVER.md is the working state** each session — current gate, current item, what
+    is next. Read this directive only when you need a section; do not re-read it in full.
 
 ---
 
 ## 1. MEASURED REALITY — do not re-derive any of this
 
-**Journey quality (the gate):**
-- Honest journey pass rate: **17.6%** — not 87.5%. That figure was a 70-point
-  instrument error, caught by decomposition
-- `npm run tps:ui-journey` reports both numbers with the gate labelled;
-  `docs/ui-journey-honest-2026-07-29.log` is the current truth
-- Tests: 738/738 passing
-- **Instrument limit, flagged not hidden:** `subject_result_card = 0` — the Smart Pick
-  is always the subject when present, so result cards' own compare consistency is not
-  yet price-checked. Any gate above ~90% is unreadable until this is fixed
+**Journey quality (the gate) — ⟶ CORRECTED 2026-07-29:**
+- The **17.6%** below was itself an instrument error: the harness measured the whole
+  PAGE, not a card, and read the Smart Pick's PRICE as a store count. Do not quote it.
+- Current: **comparison 45/48 = 93.8%** (95% CI 83.2–97.9), **overall 77/80 = 96.3%**
+  (95% CI 89.5–98.7), from `docs/ui-journey-after-adr138.log`. The denominator matters
+  more than the rate: comparison journeys went **16 → 48** when the category unlock
+  landed. We did not raise the rate; we tripled the product measured at that rate.
+- `docs/ui-journey-honest-2026-07-29.log` is **superseded**.
+- `subject_result_card = 0` is **FIXED** — both the Smart Pick and the first result card
+  are now judged in their own right.
+- **Remaining instrument limit:** the homepage leg was added 2026-07-29 and had never
+  been measured before. Expect the combined gate to FALL when it enters the denominator.
 
 **Catalog:**
 - 22 stores registered · ~6 with products · **4.5 actually working** — Amazon, Jarir,
@@ -62,8 +73,12 @@ a reason, or NOT REACHED with the capacity limit stated. Never "waiting on you."
 that stood here). Every number below is live, not a snapshot — the pipeline keeps
 observing, so re-measure before publishing rather than quoting this line.**
 
-- **Comparable products: 459** canonicals carry live offers from ≥2 distinct approved
-  retailers (**88** from ≥3), out of 5,648 canonicals with any offer = **8.1%**.
+- **Comparable products: 455 ACTIVE canonicals** carry live offers from ≥2 distinct
+  approved retailers (**88** from ≥3), out of 5,648 canonicals with any offer.
+  *(459 counts inactive rows too; 455 is the number a customer can be served.)*
+  **→ 592 after ADR-139** admitted najm/shaker/alnakheelk, whose data was already
+  ingested and blocked only by the approved-retailer gate (+137, measured).
+  The query that produces it is in ADR-138/139; re-measure rather than quote — it moves.
   This replaces **166**, which ADR-132 retracted as an Amazon double-count, and it is a
   different thing from ADR-133's "~564 families in the knowledge layer" (that figure
   counted retailer-normalized store rows, not approved-retailer offers).
@@ -161,9 +176,21 @@ user to accept the claim before seeing any product is exactly what we say we do 
 
 ### P1 — the constraint
 
-**3.6 Acquisition.** Everything above makes the existing catalog usable. **None of it
-makes the catalog bigger.** 4.5 stores and 166 comparable products is the business
-constraint, and the measured route out is already in your own work.
+**3.6 Acquisition.** ⟶ **STATUS 2026-07-29: the pipeline is INPUT-STARVED, and twice now
+the answer was stock we already owned, not stock to buy.**
+- ADR-138 released **323** comparable products hidden by a category gate.
+- ADR-139 admitted **najm / shaker / alnakheelk** — already ingested, blocked only by the
+  approved-retailer list — for **+137** more (455 → 592). Measured before admitting:
+  freshness 3.3–4.7 days, link health 9/9, overlap computed on our own data.
+- **There is no third unlock of this kind.** Every ingested store with measured overlap
+  is now admitted. From here the ceiling is genuinely acquisition.
+- **The blocker is DISCOVERY, not engineering:** the credential-free STRONG-overlap
+  merchants from the 2026-07-25 sweep were already onboarded. New candidates need the
+  StoreLeads dataset — a **paid commitment, outside standing authority**. Until that is
+  resolved, acquisition cannot proceed on measured targets.
+
+Everything above makes the existing catalog usable. **None of it makes the catalog
+bigger.** The business constraint is 4.5 working stores.
 
 Once the journey gate is materially above 17.6%, open `ACQUISITION_TARGETS.md` and
 start. Use `feed-overlap-probe.ts` to **predict** overlap before onboarding — predicted

@@ -383,7 +383,11 @@ async function evaluateSurface(page, browser, { query, locale, subject, surfaceC
 
   // A store name must be READABLE. The cards render 2-letter avatar stubs ("اك" "أم" "جر"),
   // which is what the founder read as the garbled "جر اك أم ال" — those must NOT count.
-  const FULL_STORE = /اكسترا|إكسترا|امازون|أمازون|جرير|نون|المنيع|لولو|شرف|الشتاء|extra|amazon|jarir|noon|almanea|lulu|sharaf/i;
+  // Must list every APPROVED retailer's display name. Admitting najm/shaker/alnakheelk
+  // (ADR-139) without updating this made 4 correct `ثلاجة` cards read as "no store name —
+  // only stubs: شا اك ال", where شا is شاكر itself. An instrument that does not know the
+  // catalogue reports the catalogue as broken.
+  const FULL_STORE = /اكسترا|إكسترا|امازون|أمازون|جرير|نون|المنيع|لولو|شرف|الشتاء|نجم|شاكر|النخيل|extra|amazon|jarir|noon|almanea|lulu|sharaf|najm|shaker|alnakheel/i;
   row.storeVisible = FULL_STORE.test(cardText);
   if (!row.storeVisible) {
     const stubs = (cardText.match(/(?:^|\s)([ء-ي]{2})(?=\s|$)/g) || []).map((s) => s.trim());
@@ -493,6 +497,124 @@ async function journey(page, locale, query, browser) {
   return rows;
 }
 
+/**
+ * THE HOMEPAGE JOURNEY — the screen a real shopper actually starts on.
+ *
+ * Every number this harness produced before today was true only for the path we measured,
+ * and that path began at `/search?q=`. Nobody arrives that way. This leg measures the
+ * first screen as a contract, then walks the primary action through to results:
+ *
+ *   1. ONE primary search field. Two fields is two answers to "what do I do here".
+ *   2. ONE وفّر entry point. The same assistant offered twice reads as two products.
+ *   3. Deals carry evidence or make no savings claim — a struck-through price IS a claim.
+ *      (ADR-129's gate never reached this surface; it published merchant "was" prices
+ *      on the first screen until 2026-07-29.)
+ *   4. The primary action reaches real results for a typed query.
+ *
+ * Scored as its own journey so the search-leg gate cannot carry it, and so a fall when
+ * the homepage enters the denominator is visible as exactly that.
+ */
+async function homepageJourney(page, locale) {
+  const row = {
+    query: '(homepage)', locale, subject: 'homepage',
+    relevant: false, sensiblePick: false, storeVisible: false, priceConsistent: false,
+    linkLands: false, linkBucket: 'ok', excluded: false, isComparison: false, pass: false,
+    pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
+    surface: 'homepage', attrRead: false, unhonouredClaims: [], destination: '', notes: [],
+  };
+  try {
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+    await page.waitForFunction(
+      () => (document.body?.innerText || '').trim().length > 200,
+      { timeout: 30000, polling: 400 },
+    ).catch(() => null);
+    await new Promise((r) => setTimeout(r, 2500));
+
+    const home = await page.evaluate(() => {
+      const vis = (el) => !!(el.offsetParent || el.getClientRects().length);
+      const inputs = [...document.querySelectorAll('input')].filter(
+        (i) => vis(i) && /search|بحث|ابحث/i.test((i.getAttribute('placeholder') || '') + (i.getAttribute('aria-label') || '') + i.type),
+      );
+      const waffar = [...document.querySelectorAll('a[href]')].filter(
+        (a) => /\/(advisor|assistant)(\/|$|\?)/.test(a.getAttribute('href') || ''),
+      );
+      // A savings claim is a percentage OR a struck-through price. Both are claims.
+      const text = document.body.innerText || '';
+      const pctClaims = (text.match(/(?:وفّر|وفر|Save)\s*\d+\s*%/g) || []);
+      const struck = [...document.querySelectorAll('*')].filter(
+        (e) => e.children.length === 0 && getComputedStyle(e).textDecorationLine === 'line-through' && (e.textContent || '').trim(),
+      ).length;
+      // Evidence line = we state what we observed and for how long.
+      const hasEvidence = /رصدنا|تتبّعنا|تتبعنا|we (?:tracked|observed)/i.test(text);
+      return {
+        searchInputs: inputs.length,
+        waffarEntries: new Set(waffar.map((a) => a.getAttribute('href'))).size,
+        waffarLinks: waffar.length,
+        pctClaims: pctClaims.length,
+        struck,
+        hasEvidence,
+        hasDeals: /أفضل العروض|Best deals/i.test(text),
+      };
+    });
+
+    row.pickName = `inputs=${home.searchInputs} waffar=${home.waffarLinks} claims=${home.pctClaims + home.struck}`;
+
+    const oneSearch = home.searchInputs === 1;
+    const oneWaffar = home.waffarLinks <= 1;
+    const claimsClean = (home.pctClaims + home.struck) === 0 || home.hasEvidence;
+    if (!oneSearch) row.notes.push(`${home.searchInputs} search fields on the first screen — one primary action, not two`);
+    if (!oneWaffar) row.notes.push(`وفّر offered ${home.waffarLinks} times — one entry point`);
+    if (!claimsClean) row.notes.push(`${home.pctClaims + home.struck} savings claim(s) with no evidence line`);
+
+    // The primary action must actually reach results.
+    let reachedResults = false;
+    try {
+      const typed = await page.evaluate(() => {
+        const vis = (el) => !!(el.offsetParent || el.getClientRects().length);
+        const i = [...document.querySelectorAll('input')].find(
+          (x) => vis(x) && /search|بحث|ابحث/i.test((x.getAttribute('placeholder') || '') + (x.getAttribute('aria-label') || '') + x.type),
+        );
+        if (!i) return false;
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        setter.call(i, 'iphone');
+        i.dispatchEvent(new Event('input', { bubbles: true }));
+        i.focus();
+        return true;
+      });
+      if (typed) {
+        await page.keyboard.press('Enter');
+        await page.waitForFunction(
+          () => /\/search/.test(location.pathname + location.search)
+            && !!document.querySelector('[data-testid="product-card"][data-best-price]'),
+          { timeout: 45000, polling: 400 },
+        ).catch(() => null);
+        reachedResults = await page.evaluate(
+          () => /\/search/.test(location.pathname + location.search)
+            && document.querySelectorAll('[data-testid="product-card"]').length > 0,
+        );
+      } else {
+        row.notes.push('no usable search field found on the homepage');
+      }
+    } catch (e) {
+      row.notes.push(`primary action failed: ${e.message.slice(0, 60)}`);
+    }
+    if (!reachedResults) row.notes.push('the homepage primary action did not reach product results');
+
+    // Map onto the shared columns so the summary stays one table.
+    row.relevant = reachedResults;      // did the first screen do its job at all
+    row.sensiblePick = oneSearch;       // one primary action
+    row.storeVisible = oneWaffar;       // one assistant entry
+    row.priceConsistent = claimsClean;  // no unevidenced savings claim
+    row.linkLands = reachedResults;
+    row.linkBucket = reachedResults ? 'ok' : 'dead';
+    row.pass = reachedResults && oneSearch && oneWaffar && claimsClean;
+  } catch (e) {
+    row.notes.push(`homepage failed: ${e.message.slice(0, 80)}`);
+    row.linkBucket = 'dead';
+  }
+  return row;
+}
+
 (async () => {
   const queries = ONLY_QUERY ? [ONLY_QUERY] : QUERIES;
   const locales = ONLY_LOCALE ? [ONLY_LOCALE] : ['ar', 'en'];
@@ -508,6 +630,20 @@ async function journey(page, locale, query, browser) {
 
   const rows = [];
   for (const locale of locales) {
+    // The first screen, before any search-leg journey. Skipped when a single query is
+    // being debugged, so `--query x` stays a cheap probe.
+    if (!ONLY_QUERY) {
+      const h = await homepageJourney(page, locale);
+      rows.push(h);
+      if (!JSON_OUT) {
+        process.stdout.write(
+          `${h.pass ? 'PASS' : 'FAIL'}  ${locale}  ${'(homepage)'.padEnd(18)} HOME ` +
+          `reach=${h.relevant ? 'Y' : 'N'} 1search=${h.sensiblePick ? 'Y' : 'N'} 1waffar=${h.storeVisible ? 'Y' : 'N'} ` +
+          `claims=${h.priceConsistent ? 'Y' : 'N'}  · ${h.pickName}` +
+          `${h.notes.length ? '; ' + h.notes.join('; ') : ''}\n`,
+        );
+      }
+    }
     for (const q of queries) {
       const produced = await journey(page, locale, q, browser);
       for (const r of produced) {
@@ -597,6 +733,7 @@ async function journey(page, locale, query, browser) {
     // result cards fail is a different product from one where both work.
     by_subject: {
       smart_pick: subjectRate('smart-pick'),
+      homepage: subjectRate('homepage'),
       result_card: subjectRate('result-card'),
     },
     // The founder's standing rule, measured directly across every card rendered.
