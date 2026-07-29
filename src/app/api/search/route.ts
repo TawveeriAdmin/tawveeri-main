@@ -396,11 +396,26 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
-function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct: boolean): DecisionLayer {
+function buildDecisionLayer(
+  products: GroupedSearchProduct[],
+  queryIsMainProduct: boolean,
+  relevanceGroups: string[][] = [],
+  isAcQuery = false,
+): DecisionLayer {
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
   const priceMin = prices.length ? Math.min(...prices) : 0;
   const priceMax = prices.length ? Math.max(...prices) : 0;
-  const ranked = [...products].sort((a, b) => scoreProduct(b, priceMin, priceMax, queryIsMainProduct) - scoreProduct(a, priceMin, priceMax, queryIsMainProduct));
+  // MEASURED DEFECT (2026-07-29): `relevanceGroups` was never passed here, so it
+  // defaulted to [] and the relevance term of scoreProduct — the term that DOMINATES
+  // every other signal in the results list — was silently zero for the Smart Pick. The
+  // card the customer is steered to was therefore chosen by price and store count over
+  // whatever the page happened to return. That is how the query `لابتوب اتش بي` came to
+  // present a JBL speaker as "اختيار توفيري". The pick now ranks by the same rule the
+  // results below it are ranked by.
+  const ranked = [...products].sort(
+    (a, b) => scoreProduct(b, priceMin, priceMax, queryIsMainProduct, relevanceGroups, isAcQuery)
+            - scoreProduct(a, priceMin, priceMax, queryIsMainProduct, relevanceGroups, isAcQuery),
+  );
   const top3 = ranked.slice(0, 3);
   const best = top3[0] || null;
 
@@ -410,7 +425,15 @@ function buildDecisionLayer(products: GroupedSearchProduct[], queryIsMainProduct
   // is an accessory for a product search, we show no smart-pick card rather
   // than a misleading one — the ranked results still render below it.
   const bestIsAccessory = best ? hasAccessoryHint(best.name_ar || '', best.name_en || '') : false;
-  const trustworthyPick = !!best && best.best_price > 0 && !(queryIsMainProduct && bestIsAccessory);
+  // A pick must also actually ANSWER the query. When nothing matches every word-group,
+  // showing the least-bad item as "اختيار توفيري" asserts an answer we do not have —
+  // unknown beats incorrect. The results list still renders below; only the claim goes.
+  const bestMatchesQuery = !best || relevanceGroups.length === 0 || (() => {
+    const hay = (normalizeArabic(best.name_ar || '') + ' ' + (best.name_en || '') + ' ' + (best.brand || '')).toLowerCase();
+    return relevanceGroups.every((g) => g.some((t) => hay.includes(t)));
+  })();
+  const trustworthyPick = !!best && best.best_price > 0 && bestMatchesQuery
+    && !(queryIsMainProduct && bestIsAccessory);
 
   const decisionCard = trustworthyPick && best
     ? {
@@ -875,7 +898,7 @@ export async function POST(request: NextRequest) {
     products.sort(compareBySort(body.sort || 'relevance'));
   }
 
-  const decision = buildDecisionLayer(products, queryIsMainProduct);
+  const decision = buildDecisionLayer(products, queryIsMainProduct, relevanceGroups, isAcQuery);
 
   // ✅ تم تصحيح حساب total بعد دمج TPS
   const total = rawQuery
