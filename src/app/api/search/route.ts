@@ -175,7 +175,10 @@ function lookupArToEn(word: string): string[] | undefined {
   );
 }
 
-const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة', 'ماجسيف', 'جراب', 'سماعه اذن'];
+const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة', 'ماجسيف', 'جراب', 'سماعه اذن',
+  // A bag for a laptop is not a laptop (measured 2026-07-29: "Lenovo Laptop Bag T210" was
+  // the Smart Pick for the query `laptop`, in both locales).
+  'حقيبة', 'حقائب', 'شنطة'];
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered',
   // compatible peripherals that keyword-match a device but are NOT the device itself
   'mouse', 'keyboard', 'stylus',
@@ -184,7 +187,9 @@ const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holde
   // dishwasher/washer consumables (detergent, not the appliance)
   'tablets', 'detergent', 'rinse aid', 'anti-limescale', 'limescale',
   // coffee servingware / warmers (not a coffee MAKER)
-  'cup heater', 'cup warmer', 'mug warmer', 'coffee server', 'carafe'];
+  'cup heater', 'cup warmer', 'mug warmer', 'coffee server', 'carafe',
+  // carrying goods that keyword-match the device they carry
+  'bag', 'sleeve', 'backpack', 'briefcase', 'messenger', 'pouch'];
 
 // Compatibility phrasing is a strong accessory signal: an item described as
 // "compatible with" or "for" a phone IS an accessory for that phone, not the
@@ -350,7 +355,11 @@ function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: numbe
     else relevanceScore = -400 * (relevanceGroups.length - matched);
   }
   const inStockBoost = p.stores.some((s) => s.availability === 'in_stock') ? 25 : 0;
-  const storeBoost = Math.min(p.store_count * 6, 18);
+  // CORROBORATION BEFORE CHEAPNESS (CLAUDE.md, non-negotiable). This was capped at 18
+  // while the price term is worth up to 22, so the cheapest single-store listing could
+  // outrank a product two or three retailers agree on — the exact inversion the rule
+  // forbids. One corroborating retailer now outweighs the entire price range.
+  const storeBoost = Math.min(p.store_count * 14, 56);
   const dealBoost = p.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price) ? 8 : 0;
   const rating = Math.max(...p.stores.map((s) => s.rating ?? 0));
   const ratingBoost = rating > 0 ? rating * 3 : 0;
