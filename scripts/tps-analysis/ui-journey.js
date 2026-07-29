@@ -200,9 +200,29 @@ async function readSearchPage(page, locale, query) {
   await page.goto(`${BASE}/${locale}/search?q=${encodeURIComponent(query)}`, {
     waitUntil: 'domcontentloaded', timeout: 90000,
   });
-  await page.waitForSelector('a[href*="/compare/"], a[href*="/products/"], main', { timeout: 45000 }).catch(() => null);
-  // Client-rendered results: give the fetch + paint a moment to settle.
-  await new Promise((r) => setTimeout(r, 3500));
+  // Results are client-rendered. The old wait matched `main`, which exists immediately,
+  // then slept a fixed 3.5s — so on a slow render the harness read an empty page and
+  // invented "no product card found". Two runs of identical code scored 87.5% and 80%
+  // purely from this race. Wait for a real terminal state instead: a rendered card, or an
+  // explicit empty state, or a genuine timeout.
+  await page.waitForFunction(
+    () => {
+      const t = document.body?.innerText || '';
+      if (/لا توجد نتائج|No results|لم نجد/i.test(t)) return true;         // honest empty state
+      if (/جاري البحث|Searching|جارٍ/i.test(t)) return false;               // still loading
+      const marker = /قارن الأسعار|Compare Prices|عرض في المتجر|View in store|أفضل سعر|Best Price/i;
+      // A card is only "ready" once it has both an image and its action text painted.
+      return [...document.querySelectorAll('img[alt]')].some((img) => {
+        if ((img.getAttribute('alt') || '').trim().length < 4) return false;
+        let b = img;
+        for (let i = 0; i < 12 && b; i++) { if (marker.test(b.innerText || '')) return true; b = b.parentElement; }
+        return false;
+      });
+    },
+    { timeout: 45000, polling: 400 },
+  ).catch(() => null);
+  // Small settle so prices/store rows finish painting inside an already-present card.
+  await new Promise((r) => setTimeout(r, 800));
 
   return page.evaluate(() => {
     // Cards are anchored on their product IMAGE, not on a link: a card with no compare
@@ -267,7 +287,7 @@ async function journey(page, locale, query, browser) {
   const row = {
     query, locale,
     relevant: false, sensiblePick: false, storeVisible: false,
-    priceConsistent: false, linkLands: false, linkBucket: 'dead', excluded: false, pass: false,
+    priceConsistent: false, linkLands: false, linkBucket: 'dead', excluded: false, isComparison: false, pass: false,
     pickName: '', cardPrice: null, comparePrice: null, cardStores: null, compareStores: null,
     destination: '', notes: [],
   };
@@ -378,6 +398,7 @@ async function journey(page, locale, query, browser) {
   // and we simply cannot see it from here.
   const linkOk = row.linkBucket === 'ok' || row.linkBucket === 'blocked';
   row.excluded = row.linkBucket === 'blocked';
+  row.isComparison = (row.cardStores ?? 0) >= 2;
   row.pass = row.relevant && row.sensiblePick && row.storeVisible && row.priceConsistent && linkOk;
   return row;
 }
@@ -424,6 +445,8 @@ async function journey(page, locale, query, browser) {
     }
   }
 
+  const cmpRows = rows.filter((r) => r.isComparison);
+  const cmpPassed = cmpRows.filter((r) => r.pass).length;
   const passed = rows.filter((r) => r.pass).length;
   const rate = rows.length ? Math.round((passed / rows.length) * 1000) / 10 : 0;
   const summary = {
@@ -443,13 +466,17 @@ async function journey(page, locale, query, browser) {
     link_trustable_pct: rows.length
       ? Math.round((rows.filter((r) => r.linkBucket !== 'blocked').length / rows.length) * 1000) / 10
       : 0,
+    comparison_journeys: cmpRows.length,
+    comparison_passed: cmpPassed,
+    comparison_pass_rate_pct: cmpRows.length ? Math.round((cmpPassed / cmpRows.length) * 1000) / 10 : null,
     cross_language_pick_mismatches: mismatched,
   };
 
   if (JSON_OUT) { console.log(JSON.stringify({ summary, rows }, null, 2)); return; }
   console.log('\n── SUMMARY ────────────────────────────────');
   console.log(`base: ${summary.base}`);
-  console.log(`PASS RATE: ${passed}/${rows.length} = ${rate}%`);
+  console.log(`PASS RATE (overall): ${passed}/${rows.length} = ${rate}%`);
+  console.log(`COMPARISON JOURNEY:  ${cmpPassed}/${cmpRows.length}${cmpRows.length ? ` = ${summary.comparison_pass_rate_pct}%` : ''}   <-- LAUNCH GATE`);
   console.table(summary.by_check);
   console.log('Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):');
   console.table(summary.link_buckets);
