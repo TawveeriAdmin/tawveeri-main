@@ -29,6 +29,19 @@ describe('listing currency (ADR-134)', () => {
     expect(kept[0].verdict).toBe('inflated_reference');
   });
 
+  it('never lets insufficient_history out-vote a listing that carries a verdict', () => {
+    // Abstention is "we have not tracked this long enough", not a contradiction — a thin
+    // duplicate must not silence a well-evidenced drop, even when it is fresher.
+    const thinFresh = { verdict: 'insufficient_history', last_seen: '2026-07-29T00:00:00Z' };
+    expect(isMoreAuthoritative(thinFresh, dropStale)).toBe(false);
+    expect(isMoreAuthoritative(dropStale, thinFresh)).toBe(true);
+    const kept = keepCurrentListings(
+      [{ store_name: '5', name: 'X', ...thinFresh }, { store_name: '5', name: 'X', ...dropStale }],
+      productListingKey,
+    );
+    expect(kept[0].verdict).toBe('verified_drop');
+  });
+
   it('leaves a product with a single listing untouched', () => {
     const rows = [{ store_name: '4', name: 'Sony WH-1000XM5', ...dropStale }];
     expect(keepCurrentListings(rows, productListingKey)).toHaveLength(1);

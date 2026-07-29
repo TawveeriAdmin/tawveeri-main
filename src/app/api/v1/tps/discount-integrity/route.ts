@@ -66,18 +66,23 @@ export async function GET(req: NextRequest) {
     if (data.length < 1000) break;
   }
 
-  // Siblings: every row sharing a (store, product) with a claimed drop.
-  const names = [...new Set(dropRows.map((d) => String(d.name ?? "")).filter(Boolean))];
+  // Which listing speaks for each (store, product). Built by ONE full pass over the
+  // facts table, 4 narrow columns. Deliberately NOT an `.in("name", …)` sibling query:
+  // product names are full of commas and quotes ("مكيف سبليت ال جي، 18,000 وحدة"), which
+  // corrupt a PostgREST `in.(…)` filter — that returned no siblings at all, so every
+  // drop looked superseded and the live count collapsed to 0.
   const authoritative = new Map<string, { verdict: string; last_seen: string | null }>();
-  for (let i = 0; i < names.length; i += 200) {
+  for (let from = 0; ; from += 1000) {
     const { data } = await sb.from("tps_listing_price_facts")
-      .select("store_name, name, verdict, last_seen").in("name", names.slice(i, i + 200));
-    for (const row of data ?? []) {
+      .select("store_name, name, verdict, last_seen").order("url", { ascending: true }).range(from, from + 999);
+    if (!data?.length) break;
+    for (const row of data) {
       const key = productListingKey(row as never);
       const cur = authoritative.get(key);
       const cand = { verdict: String(row.verdict), last_seen: (row.last_seen as string) ?? null };
       if (!cur || isMoreAuthoritative(cand, cur)) authoritative.set(key, cand);
     }
+    if (data.length < 1000) break;
   }
 
   const supersededDrops = dropRows.filter((d) => authoritative.get(productListingKey(d as never))?.verdict !== "verified_drop");
