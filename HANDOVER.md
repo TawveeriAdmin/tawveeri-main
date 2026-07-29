@@ -6,6 +6,115 @@
 
 ---
 
+# ═══ RESUME HERE — 2026-07-29 CHECKPOINT (zero-memory safe) ═══
+
+**Read order:** `CLAUDE.md` → `EXECUTIVE_DIRECTIVE.md` → `MASTER_DIRECTIVE.md` → this block.
+
+## The one number that matters
+
+**The launch gate is the COMPARISON-JOURNEY pass rate: `6/34 = 17.6%`.**
+Overall pass rate is 25%, and it is the *lesser* number — it is carried by
+single-store journeys that need no comparison at all. Always report BOTH, and
+lead with the gate.
+
+**Do not trust any earlier figure.** During 2026-07-29 this gate was reported as
+0/8, then 8/9, then 87.9%. **All were wrong.** Current truth:
+`docs/ui-journey-honest-2026-07-29.log`. Command: `npm run tps:ui-journey`
+(prints both numbers each run, gate labelled `<-- LAUNCH GATE`).
+
+## The 70-point instrument error — read this before quoting any pass rate
+
+The harness reported **87.5%** when the honest figure was **17.6%**. Cause: a
+journey where the card claims ≥2 stores but renders **no compare link at all**
+was scored as a *pass*, because the "vacuous price check" branch fired whenever
+no compare page existed. **27 of 34 journeys are exactly that case** — so the
+harness was scoring a violation of the standing rule (*never show a store count
+the compare page can honour*) as success. Fixed in `ed270ad`: that case is now
+an explicit FAILURE.
+
+Second error, same day: the pre-fix gate was reported as "0/8" when the corrected
+baseline log actually reads **1/10** — a number carried forward from a superseded
+run that still counted false 403s as failures.
+
+**Decomposition (same data, both definitions):** under the OLD definition
+(journeys that reached a compare page) ADR-135 moved the gate **10% → ~65%** —
+that +55 is real. The further jump to 87.9% was **denominator, not progress**.
+
+**Gate definition, current and honest:** a journey is a *comparison journey* iff
+the CARD claimed ≥2 stores. It PASSES only if a compare page rendered and its
+price agreed with the card. A card claiming N stores with no compare link FAILS.
+
+**Instrument discipline (keep it):** BLOCKED outbound links (bot walls) are
+EXCLUDED from the rate, never failed. Every pass rate carries its error bar. Any
+run-to-run flip is named, not smoothed.
+
+## Resume order — highest leverage first
+
+1. **The 27 cards claiming a store count the compare page cannot honour.**
+   This IS the gate. `searchTPSCanonical` sets `tps_compare_url` only when it
+   sees ≥2 stores in `price_history`, but the card's visible store count comes
+   from storefront grouping — **two sources for one claim**, the same disease as
+   the 840/1,099 split that ADR-135 fixed on the compare side.
+2. **Intermittent search.** 2–4 journeys per run return "no product card found",
+   **different queries each run** (run A lost `ايفون` EN / `ps5` EN / `سماعات` AR;
+   run B lost `macbook` AR / `lg tv` EN / `laptop` EN / `مكيف 18000` AR — no
+   overlap). This is the founder's original C1, now reproducible via the harness.
+   It is NOT harness timing — that race was fixed in `0ce9054`.
+3. **Homepage-start harness BEFORE any IA restructure.** The current harness
+   starts at `/search?q=` and never touches the homepage, so every IA change
+   would ship unmeasured. Build landing → primary action → results → correct
+   product at correct store, then restructure, then re-measure.
+
+## Deployed 2026-07-29 (all live on Railway, verified)
+
+| Change | Commit | Rollback |
+|---|---|---|
+| ADR-134 — superseded duplicate listing may not publish a saving (979→340 verified drops) | `8f99f25` + `8666825` | `git revert 8666825 8f99f25` |
+| `/categories/<slug>` resolves instead of 404 (+ fix for the 500 the first cut shipped) | `26e7211` + `fb9f6f4` | `git revert fb9f6f4 26e7211` |
+| UI-journey harness + 403→three-bucket link classification | `4a42620`, `3568783`, `a11ba55` | `git revert a11ba55` |
+| **ADR-135 — one store identity, compare derived from the same source as the card** | `91e3f1a` | `git revert 91e3f1a` |
+| Dead-link census tool (`npm run tps:dead-links`) | `456e127` | `git revert 456e127` |
+| Harness render-race fix + **beta banner removed** | `0ce9054` | `git revert 0ce9054` |
+| Harness vacuous-pass fix (the 70-point correction) | `ed270ad` | `git revert ed270ad` |
+
+## Measured facts established today (do not re-derive)
+
+- **Dead outbound links are NOT a blocker.** 400 sampled: OK 386 · DEAD 1 ·
+  BLOCKED 13 → **0.3% dead**, est. ~233 of 77,744 served. The 5 the harness found
+  were 2 products counted twice across locales.
+- **Verified price drops: 979 → 340** after ADR-134. `EXECUTIVE_DIRECTIVE.md`'s
+  "925" and "65% inflated" are **superseded** and must be restated before any
+  external or Misk use (inflated share now measures 72% of checkable listings).
+  **Not yet edited — positioning is the founder's call.**
+- `normalized_product_observations.store_id` is numeric-as-text in **96.3%** of
+  rows; `price_history.store_name` is a display name. `resolveApprovedSlug()` now
+  resolves both namespaces — use it, never raw string equality.
+
+## Standing authority (granted 2026-07-29)
+
+Full authority to research, decide, implement, deploy and verify **without
+returning to the founder**, except: a paid commitment or legal signature;
+credentials, banking, or company identity; a production risk that cannot be
+safely reversed; or publishing a claim we have not measured. Deploy everything —
+commit, push, verify live on Railway, report the URL. Never report "not started
+because I was waiting"; report DONE or NOT POSSIBLE with a reason.
+
+## Not started, and why
+
+**Item 5 — acquisition targets (`ACQUISITION_TARGETS.md`).** Not started: the
+session reached its context limit after the instrument correction. The founder's
+standing instruction is that once the harness is green, onboarding a store whose
+own overlap probe predicts comparisons needs **no further approval** — predicted
+overlap is the criterion (alnakheelk 68 · najm 48 · multi-brand overlaps;
+sonyworld 0 is the counter-example: brand specialists produce nothing).
+Also not started: intermittent search, homepage harness + IA restructure, item
+3(a) card store-stubs (`اك أم جر` two-letter avatars, no full store name on
+ordinary result cards), and item 2 relevance (`iphone` surfaces a 2020 phone; the
+pick changes between AR and EN — first task there is to state what
+"اختيار توفيري" optimises for; if it is lowest price, that is the bug).
+
+---
+
 # ═══ 2026-07-29 — TWO DEAD THESES, RECORDED ═══
 
 Both of these were stated confidently and both were wrong. They are recorded because
