@@ -61,6 +61,21 @@ export const APPROVED_RETAILERS: ApprovedRetailer[] = [
   // redsea = Rakhys #25 (RedSea) AND #27 (Abdul Latif Jameel Electronics) — one merchant.
   { slug: 'redsea',        name_en: 'RedSea',                      name_ar: 'ردسي',             domain: 'redsea.com',          source: 'commercial' },
   { slug: 'almtkamel',     name_en: 'Almtkamel Store',             name_ar: 'المتكامل',         domain: 'almtkamelstore.sa',   source: 'blocked' },
+
+  // ── Admitted 2026-07-29 (ADR-139) on MEASURED overlap, not on the Rakhys portfolio ──
+  // These three were already ingested and sitting in `price_history`, but were excluded
+  // here — so `searchTPSCanonical` skipped every one of their observations and their
+  // overlap with the majors was unreachable. Measured before admitting:
+  //   • +137 canonicals move from single-store to comparable (455 → 592, +30%)
+  //   • freshness 3.3–4.7 days, in line with the majors
+  //   • link health 9/9 sampled exits return HTTP 200
+  // This is acquisition without acquiring: the stock was already paid for and ingested.
+  // NOTE FOR THE FOUNDER: this widens the PUBLIC merchant set beyond the 26-merchant
+  // Rakhys-benchmark portfolio. If that portfolio framing matters more than the +137
+  // comparisons, revert this block — the rest of the file is untouched.
+  { slug: 'najm',          name_en: 'Najm Appliances',             name_ar: 'نجم الأجهزة',      domain: 'najm.store',          source: 'active' },
+  { slug: 'shaker',        name_en: 'Shaker',                      name_ar: 'شاكر',             domain: 'shakersa.com',        source: 'active' },
+  { slug: 'alnakheelk',    name_en: 'Alnakheel Store',             name_ar: 'متجر النخيل',      domain: null,                  source: 'active' },
 ];
 
 export const APPROVED_SLUGS: ReadonlySet<string> = new Set(APPROVED_RETAILERS.map((r) => r.slug));
@@ -76,6 +91,9 @@ export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   10, // blackbox
   23, // lulu (LuLu Hypermarket) — added 2026-07-27
   24, // sharafdg (Sharaf DG) — added 2026-07-27
+  7,  // shaker      — ADR-139, admitted on measured overlap 2026-07-29
+  9,  // najm        — ADR-139
+  18, // alnakheelk  — ADR-139
 ]);
 
 /**
@@ -95,6 +113,10 @@ const NAME_TO_SLUG: Record<string, string> = {
   'blackbox': 'blackbox', 'الصندوق الأسود': 'blackbox', 'بلاك بوكس': 'blackbox',
   'lulu': 'lulu', 'لولو هايبر ماركت': 'lulu', 'لولو': 'lulu', 'lulu hypermarket': 'lulu',
   'sharafdg': 'sharafdg', 'شرف دي جي': 'sharafdg', 'sharaf dg': 'sharafdg',
+  // ADR-139 — the exact `price_history.store_name` strings these three write.
+  'najm': 'najm', 'نجم الأجهزة': 'najm', 'نجم': 'najm',
+  'shaker': 'shaker', 'شاكر': 'shaker', 'ibrahim-shaker': 'shaker',
+  'alnakheelk': 'alnakheelk', 'متجر النخيل': 'alnakheelk', 'النخيل': 'alnakheelk',
 };
 
 function normalizeName(s: string): string {
@@ -112,6 +134,8 @@ function normalizeName(s: string): string {
 const STORE_ID_TO_SLUG: Record<string, string> = {
   '1': 'jarir', '2': 'amazon', '3': 'noon', '4': 'extra', '5': 'almanea',
   '8': 'swsg', '10': 'blackbox', '23': 'lulu', '24': 'sharafdg',
+  // ADR-139 — verified against `stores` (id, name, slug) before adding.
+  '7': 'shaker', '9': 'najm', '18': 'alnakheelk',
 };
 
 /**

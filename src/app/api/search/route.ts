@@ -120,8 +120,12 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'غسالة': ['washing machine', 'washer'],
   'نشافة': ['dryer'],
   'مكنسة': ['vacuum', 'cleaner'],
-  'مايكروويف': ['microwave'],
-  'ميكروويف': ['microwave'],
+  // The catalogue spells it مايكرويف (no و after ر) on EVERY microwave canonical, so a
+  // shopper typing either of the two common forms must still reach it — expansion carries
+  // the catalogue's spelling as a term, not just the English word.
+  'مايكروويف': ['microwave', 'مايكرويف'],
+  'ميكروويف': ['microwave', 'مايكرويف'],
+  'مايكرويف': ['microwave'],
   'فرن': ['oven'],
   'طابعة': ['printer'],
   'راوتر': ['router', 'wifi', 'network'],
@@ -256,7 +260,7 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   { cats: ['audio'], terms: ['سماعه', 'سماعات', 'headphone', 'headphones', 'earbud', 'earbuds', 'مكبر صوت', 'speaker', 'soundbar', 'ايربودز', 'airpods'] },
   { cats: ['printer'], terms: ['طابعه', 'طابعات', 'printer'] },
   { cats: ['vacuum'], terms: ['مكنسه', 'vacuum'] },
-  { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'microwave'] },
+  { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'مايكرويف', 'microwave'] },
   { cats: ['camera'], terms: ['كاميرا', 'camera'] },
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];
@@ -671,12 +675,29 @@ async function searchTPSCanonical(
     });
     if (!matched.length) return [];
 
-    const ids = matched.map((p) => p.id);
-    const { data: prices } = await supabase
-      .from('price_history')
-      .select('canonical_product_id, store_name, price, observed_at, tps_observation_id')
-      .in('canonical_product_id', ids)
-      .order('observed_at', { ascending: false });
+    // MEASURED DEFECT (2026-07-29): this was ONE query over every matched id, and
+    // PostgREST caps a response at 1000 rows by default. A broad category query — bare
+    // `laptop` matches ~300 canonicals — filled that window with the newest rows of a few
+    // high-churn products, so the comparable ones were never seen and the query returned
+    // ZERO comparisons. Narrow queries hid it completely: `laptop vivobook` returned 4
+    // multi-store cards while `laptop` returned 0, on the same data.
+    //
+    // Chunk the ids so every candidate gets a window of its own. Each chunk is an indexed
+    // lookup, so the extra round trips are cheap and only a broad query pays for them.
+    const ids = matched.slice(0, 400).map((p) => p.id);
+    const CHUNK = 40;
+    type PriceRow = { canonical_product_id: string; store_name: string; price: number | string; observed_at: string; tps_observation_id: string };
+    const priceChunks = await Promise.all(
+      Array.from({ length: Math.ceil(ids.length / CHUNK) }, (_, i) =>
+        supabase
+          .from('price_history')
+          .select('canonical_product_id, store_name, price, observed_at, tps_observation_id')
+          .in('canonical_product_id', ids.slice(i * CHUNK, (i + 1) * CHUNK))
+          .order('observed_at', { ascending: false })
+          .limit(4000),
+      ),
+    );
+    const prices = priceChunks.flatMap((c) => (c.data ?? []) as unknown as PriceRow[]);
 
     const latest = new Map<string, Map<string, { price: number; obsId: string }>>();
     for (const r of prices ?? []) {

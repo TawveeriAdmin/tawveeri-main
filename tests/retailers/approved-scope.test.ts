@@ -20,25 +20,38 @@ describe('approved-retailer scope gate', () => {
     expect(resolveApprovedSlug('جرير')).toBe('jarir');
   });
 
-  it('rejects non-approved stores (shaker, samsung, najm, alnakheel)', () => {
-    for (const id of ['shaker', 'samsung_ksa', 'najm', 'alnakheelk', 'hdf', 'sonyworld']) {
+  // BOUNDARY MOVED 2026-07-29 by founder directive (ADR-139). These three assertions
+  // encoded the 2026-07-27 Rakhys-benchmark portfolio, which deliberately excluded
+  // shaker / najm / alnakheelk. STANDING_DIRECTIVE.md supersedes that and names
+  // alnakheelk and najm as onboarding targets on measured overlap. They were already
+  // ingested; admitting them moves +137 canonicals from single-store to comparable.
+  // sonyworld stays out — it is the reference case for a brand specialist producing 0.
+  it('admits the three ingested multi-brand retailers (ADR-139)', () => {
+    for (const id of ['najm', 'shaker', 'alnakheelk']) {
+      expect(isApprovedStore(id)).toBe(true);
+    }
+    expect(isApprovedStore('شاكر')).toBe(true);
+    expect(isApprovedStore('نجم الأجهزة')).toBe(true);
+    expect(isApprovedStore('متجر النخيل')).toBe(true);
+  });
+
+  it('still rejects everything outside the approved set', () => {
+    for (const id of ['samsung_ksa', 'hdf', 'sonyworld']) {
       expect(isApprovedStore(id)).toBe(false);
     }
-    expect(isApprovedStore('شاكر')).toBe(false);
-    expect(isApprovedStore('نجم الأجهزة')).toBe(false);
     expect(isApprovedStore('سامسونج السعودية')).toBe(false);
     expect(isApprovedStore(null)).toBe(false);
     expect(isApprovedStore('')).toBe(false);
   });
 
-  it('gates by numeric store id (approved 1,2,3,4,5,8,10; rejects 6,7,9)', () => {
-    for (const id of [1, 2, 3, 4, 5, 8, 10]) expect(isApprovedStoreId(id)).toBe(true);
-    for (const id of [6, 7, 9, 11, 22]) expect(isApprovedStoreId(id)).toBe(false);
+  it('gates by numeric store id (approved 1,2,3,4,5,7,8,9,10,18; rejects 6,11,22)', () => {
+    for (const id of [1, 2, 3, 4, 5, 7, 8, 9, 10, 18]) expect(isApprovedStoreId(id)).toBe(true);
+    for (const id of [6, 11, 22]) expect(isApprovedStoreId(id)).toBe(false);
     expect(isApprovedStoreId(null)).toBe(false);
   });
 
-  it('lists the 26 distinct approved merchants (RedSea = ALJ, one entry)', () => {
-    expect(APPROVED_RETAILERS.length).toBe(26);
+  it('lists 29 distinct approved merchants (26 portfolio + 3 admitted on overlap)', () => {
+    expect(APPROVED_RETAILERS.length).toBe(29);
   });
 });
 

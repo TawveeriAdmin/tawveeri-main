@@ -68,7 +68,10 @@ const INTENT = {
   'laptop': ['laptop', 'notebook', 'لابتوب'],
   'washing machine': ['wash', 'غسال'],
   'مروحة': ['fan', 'مروح'],
-  'ميكروويف': ['microwave', 'ميكروويف', 'مايكروويف'],
+  // مايكرويف (no و after ر) is how the CATALOGUE spells it — every microwave canonical
+  // uses that form. Its absence here failed 3 journeys on a correct LG 20L microwave.
+  // Taken from canonical_products, not from transcribed terminal output.
+  'ميكروويف': ['microwave', 'ميكروويف', 'مايكروويف', 'مايكرويف'],
 };
 
 // Items that keyword-match a device but are not the device (top-pick sanity).

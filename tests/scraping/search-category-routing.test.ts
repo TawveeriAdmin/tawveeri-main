@@ -52,7 +52,7 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   { cats: ['audio'], terms: ['سماعه', 'سماعات', 'headphone', 'headphones', 'earbud', 'earbuds', 'مكبر صوت', 'speaker', 'soundbar', 'ايربودز', 'airpods'] },
   { cats: ['printer'], terms: ['طابعه', 'طابعات', 'printer'] },
   { cats: ['vacuum'], terms: ['مكنسه', 'vacuum'] },
-  { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'microwave'] },
+  { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'مايكرويف', 'microwave'] },
   { cats: ['camera'], terms: ['كاميرا', 'camera'] },
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];
