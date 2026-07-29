@@ -927,10 +927,22 @@ export async function POST(request: NextRequest) {
   // prevented by (a) the multi-group AND gate and (b) the accessory penalty, not by stripping the brand.
   const GENERIC = new Set(['machine', 'electric', 'smart', 'digital', 'pro', 'max',
     'plus', 'mini', 'air', 'ultra', 'كهربائيه', 'كهربائي', 'ذكي', 'ذكيه', 'رقمي', 'هوائيه', 'hd', '4k']);
+  // MEASURED DEFECT (2026-07-29): GENERIC was applied to each expansion TERM, so the
+  // Arabic word برو expanded to ['برو','pro'], lost 'pro' as generic, and was left able to
+  // match ONLY the Arabic spelling. Canonical products are named in Latin ("apple iPhone
+  // 16 Pro Max 256GB"), so the relevance gate then DROPPED the very product the customer
+  // asked for. Reproduced on production: `ايفون 16 256` → 3 stores; add `برو` → 1 store.
+  // It hit every Arabic query naming a Pro / Max / Plus / Mini / Air / Ultra model —
+  // iPhone Pro/Max, MacBook Air/Pro, iPad Air/Mini, Galaxy Ultra — i.e. the flagships.
+  //
+  // GENERIC belongs at the WORD level: a word that carries NO relevance signal in any
+  // script contributes no group at all. A word that does carry one keeps every spelling
+  // it can be written in, so Arabic and Latin catalogue names stay reachable from either
+  // language. This is the same class of bug as the ة/ى folding one above.
   const relevanceGroups: string[][] = queryIsMainProduct
     ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w))
-        .map((w) => expandWordTerms(w).filter((t) => t.length >= 2 && !GENERIC.has(t)))
-        .filter((g) => g.length > 0)
+        .map((w) => expandWordTerms(w).filter((t) => t.length >= 2))
+        .filter((g) => g.length > 0 && !g.every((t) => GENERIC.has(t)))
     : [];
   const isAcQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('air_conditioner');
 
