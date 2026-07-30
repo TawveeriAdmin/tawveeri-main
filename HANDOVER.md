@@ -4,6 +4,39 @@
 Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
 Suite **756/756** green.
 
+## 0-CRITICAL. SCHEDULED PRICE REFRESH HAD NEVER RUN — fixed, verification pending
+
+**The worst defect found today, and the most launch-relevant.** `runPriceUpdate` was
+registered with `setInterval` **only**, no startup `setTimeout` — while `runDiscovery` and
+`runFeedIngest` both had one. The 6-hour clock restarted on every process start, so **any
+restart cadence faster than 6h meant scheduled price updates fired NEVER.**
+
+**Evidence:** of **44 `price_update` runs in the prior 7 days, ALL were `triggered_by='manual'`
+and none `'schedule'`** — while scheduler-triggered *discovery* runs in the same table read
+`'schedule'` (ids 1345–1348), so the column does distinguish them. Railway restarted 4+ times
+on 2026-07-30 alone. **Price freshness is this platform's promise and its loop was dead on
+arrival after every deploy.**
+
+**Fixed in `062dd0d`** (one line). **VERIFY FIRST NEXT SESSION** — a watcher wrote
+`scratchpad/price-refresh-verify.log`; if gone, run:
+```
+npx tsx scripts/tps-analysis/q.ts "select id, store_name, job_type, started_at::text, triggered_by from scraping_runs where job_type='price_update' and triggered_by='schedule' order by id desc limit 5"
+```
+**PASS** = at least one row (the first ever). **FAIL** = still zero → the loop is still not
+firing; investigate `INGEST_STORES` on Railway and the `admit`/`ingestRunning` guards.
+
+**NEW VERIFIED RULE:** *a periodic job registered with `setInterval` alone has no guaranteed
+execution on a platform that restarts — its true period is `max(interval, uptime)`, which is
+unbounded. Every recurring job needs an explicit first run, and execution must be observable by
+TRIGGER SOURCE, not by whether the process is alive.* The scheduler looked healthy throughout —
+heartbeat ticking, chain reporting `ok` — while an entire customer-facing loop had never run.
+
+## 0b. BACKPRESSURE — VERIFIED LIVE ✅
+
+Railway booted 12:12:11 on the gate build; first ingest window ~12:27 with `rows_behind`
+**200,929 vs a 50,000 gate**; checked 12:36:35 → **zero `discovery` runs after 12:12**. The
+12:00–12:07 discovery burst came from the 11:45:38 container, which predated the gate.
+
 ## 0a. THE MANUAL DRAIN IS STOPPED — deliberately. Do not restart it without reading this.
 
 **Stopped 2026-07-30 12:32 UTC** after 14 passes. Checkpoint at stop (durable, in the DB —
