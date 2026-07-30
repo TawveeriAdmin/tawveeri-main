@@ -270,8 +270,20 @@ const INGEST_CATEGORIES = {
 // Skipping is safe because every loop is idempotent and the next tick re-evaluates.
 //
 // REVERSIBLE: INGEST_BACKPRESSURE_HIGH=0 disables the gate entirely.
-const BP_HIGH = parseInt(process.env.INGEST_BACKPRESSURE_HIGH || '50000', 10);
-const BP_LOW = parseInt(process.env.INGEST_BACKPRESSURE_LOW || '20000', 10);
+// THRESHOLDS CORRECTED 2026-07-30, hours after they were set, because the first values
+// optimised the wrong thing. 50,000/20,000 was chosen to keep the QUEUE tidy. Two
+// measurements then landed:
+//   1. draining 142,282 observations produced ZERO new customer-visible comparisons, so
+//      backlog size has ~no customer value;
+//   2. DISCOVERY is the de-facto price-observation source — today it wrote almanea 14,057,
+//      noon 737, jarir 588, lulu 534 rows, each carrying a price, while the price_update
+//      loop managed ONE successful product across four stores.
+// So a 50,000 gate traded HIGH customer value (price freshness) for ~NO customer value
+// (a shorter queue), and would have blocked discovery for ~16 hours across launch.
+// No degradation was ever observed at 370,000 rows behind, so that is not the danger line.
+// These values keep a genuine runaway guard while never blocking normal operation.
+const BP_HIGH = parseInt(process.env.INGEST_BACKPRESSURE_HIGH || '500000', 10);
+const BP_LOW = parseInt(process.env.INGEST_BACKPRESSURE_LOW || '400000', 10);
 let bpTripped = false; // hysteresis latch
 
 /** Total rows behind = sum of every store's own cursor lag (the ADR-147 definition). */
