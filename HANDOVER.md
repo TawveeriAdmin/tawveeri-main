@@ -1,3 +1,99 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #13 · DRAIN FIRST (supersedes below) ═══
+
+**Read this, then ADR-147 and ADR-146.** State: commit `6461207` · 752/752 green · tree
+clean · **launch B, gate 112/112, untouched — no customer-facing code changed today.**
+
+---
+
+## 1. NEXT SESSION'S FIRST ACTION — do this before anything else
+
+**Drain almanea (320,386 rows behind), then jarir (49,338).** Measure the
+customer-visible comparable delta after each and report both numbers.
+
+```
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500
+```
+Repeat until `per-store lag` prints `all stores current`. Throughput is now ~3,000
+observations per 6-batch run, so this is cheap. **Do not start new fetching first.**
+
+---
+
+## 2. THE PRIMARY FINDING — bigger than the experiment that uncovered it
+
+**~370,000 observations are already fetched, already paid for, and invisible to
+customers** — almanea 320,386 · jarir 49,338 — hidden for an unknown period behind a
+backlog metric that was wrong by ~34,000× (it reported `0 → 11`).
+
+**Draining them is the highest-value immediate action and it is cheap.** No fetching, no
+credentials, no new retailer. The stock is already in the building.
+
+---
+
+## 3. ADR-146 — **PROVEN**
+
+Overlap-seeded discovery converts fetch into comparisons roughly **15×** more efficiently
+than blind traversal:
+
+| | seeded | blind |
+|---|---|---|
+| fetched products per new comparison | **~7.7** | ~120 |
+| orphan (single-retailer) products created | **1** | 592 of 743 |
+
+Comparable **660 → 717** · 3+ store **152 → 166** · Noon-comparable **181 → 259**.
+
+**Attribution, stated honestly:** the traceable **99** identity keys are the seeded run's
+own share; **+78** is the window's upper bound (it also contains blind-run Noon rows that
+were in the backlog). Both agree within an order of magnitude.
+
+---
+
+## 4. NEW VERIFIED RULES — replacing what ADR-145/146/147 retired
+
+- **Overlap-seeded discovery, never blind traversal.** Blind traversal produced ~80%
+  orphans and inflated the catalogue without creating comparisons.
+- **Delivery, not fetch, was the constraint.** Every deeper fetch this week made the
+  backlog worse rather than better.
+- **A retailer-value figure measured through a pipeline that does not deliver is
+  meaningless.** alnakheelk 68 · najm 48 · sonyworld 0 · Samsung +7 all require
+  re-measuring **after** the drain.
+- **Per-store lag is the health metric.** Aggregate backlog hid a 370k failure.
+
+---
+
+## 5. WHERE MY ANALYSIS WAS WRONG — recorded because it should be
+
+**The founder's instinct was right and mine was not.** Three days ago he said the next
+phase was more products inside the retailers we already had, not more retailers. That was
+correct, and the reason is now measured: ~370,000 observations were already sitting in
+Almanea and Jarir, undelivered.
+
+My error was analytical and I repeated it for three days: **I diagnosed fetch four times
+in a row — reach, then targeting, then Samsung, then Noon — and never measured delivery
+until the experiment could not be read.** Each diagnosis was defensible on the evidence I
+had chosen to gather, and each pointed at the wrong layer. I also published a fetch-reach
+ADR (145) whose Extra row was a measurement artifact, and quoted a backlog metric all week
+without checking what it asked.
+
+**Accuracy note for the record:** the founder *directed* the Samsung/Noon/SWSG work in the
+2026-07-30 directive, so that sequencing was jointly chosen — but he had named depth over
+breadth first, and the correcting question ("may be under-measured rather than
+under-fetched") was also his. The failure to test delivery was mine.
+
+---
+
+## 6. What shipped today (ADR-147)
+
+- **Throughput ~7×** — sweep budget now divides among stores that actually have pending
+  work, not all 18. Was 84% wasted on empty stores.
+- **Delivery guarantee** — per-store lag printed on every run.
+- **Backlog metric corrected** — now the sum of per-store lag, not "newer than the newest
+  row any store staged".
+- **ECONNRESET fixed** — short-lived pg connections.
+- **RETIRED:** every backlog figure from this session and checkpoints #11–#12
+  (7,388 / 11,499 / 11,725). Wrong definition; do not cite.
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #12 · ADR-146 INCONCLUSIVE, REAL CONSTRAINT FOUND ═══
 
 **Read this, then ADR-146 (addendum + final classification).**
