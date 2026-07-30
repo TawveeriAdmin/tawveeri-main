@@ -4,6 +4,36 @@
 Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
 Suite **756/756** green.
 
+## 0a. THE MANUAL DRAIN IS STOPPED — deliberately. Do not restart it without reading this.
+
+**Stopped 2026-07-30 12:32 UTC** after 14 passes. Checkpoint at stop (durable, in the DB —
+nothing lives in scrollback):
+
+| store | `tps_progress_cursors.last_raw_id` | rows behind |
+|---|---|---|
+| **5 almanea** | **461,718** | **166,973** |
+| **1 jarir** | **117,938** | **34,322** |
+
+**Why stopped, on evidence not preference:** it processed **142,282 rows and produced ZERO new
+customer-visible comparisons** (§4b). Its marginal value is directionally ~0, it was never
+proven to survive session termination, and leaving an unattended multi-hour heavy writer
+running into launch removes no risk and adds some. **The automatic queue-aware chain now does
+this work by itself** — adaptive batches, lane-leased, backpressured — so the backlog drains
+without a human. **Price freshness is unaffected: price updates are never gated.**
+
+**Accepted cost, stated plainly:** discovery stays deferred until total rows-behind < 20,000.
+At the automatic chain's rate that is roughly a day. **This is acceptable and arguably
+desirable** — ADR-146 measured blind discovery at ~80% single-retailer rows, so pausing
+catalogue growth costs little and pauses backlog growth too.
+
+**To restart it** (only if a measured reason appears — "the backlog is big" is not one):
+```
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 5
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 1
+```
+It resumes from the cursors above; it never restarts from the beginning. A manual run does
+**not** yield to the lane lease, so it will not silently no-op.
+
 ## 0. WHERE THE DRAIN RESULT LANDS IF IT FINISHES UNWATCHED
 
 The loop writes every pass to
@@ -190,6 +220,30 @@ expected.
 **Do NOT re-run this experiment.** The conversion rate of backlog → comparison is now measured
 twice, two orders of magnitude apart in sample size, and it is ~0.
 
+## 4b-ii. IS THE REMAINING BACKLOG GROWTH OR HYGIENE? → **DIRECTIONAL ONLY**
+
+**Measured half beats estimated whole.** 142,282 rows of almanea's backlog were processed
+today and produced **0 new comparisons** — that half needs no estimate, it has a measurement.
+
+**Classification of the REMAINING 166,973 rows: DIRECTIONAL ONLY.**
+
+**What can be inferred:** the processed cohort is large (46% of the starting backlog), from the
+same store, the same discovery process, and drained in id order today. Its conversion was 0
+comparisons and 315 `price_history` rows (0.26%). The strong directional expectation is that
+the remainder behaves the same — **near-zero new comparisons, some price refresh.**
+
+**What cannot be inferred, and why a count would be false precision:** the cursor advances
+**oldest-first**, so the remaining rows are *newer* observations. The cohorts are not fully
+exchangeable — newer scrapes can contain more recently discovered products, and a small
+non-zero yield cannot be excluded. Producing "expected new 2-store / 3+-store comparisons"
+numbers would dress a directional inference as a forecast, which is the exact error ADR-143
+recorded (a pool ceiling reported as a run forecast).
+
+**Operationally, therefore: the backlog is HYGIENE, not growth** — with the honest caveat that
+the remaining half is inferred, not measured. **Stop calling it "waiting customer value."** The
+correct description is **unprocessed observations whose eventual customer value is unknown and
+measured at ~0 for the half already done.**
+
 ## 4c. CONTENTION — PARTIALLY PROVEN, and mostly rejected as a throughput cause
 
 | | interval A | interval B |
@@ -213,6 +267,41 @@ burst ingestion. **Classification: PARTIALLY PROVEN.**
 window, runs 8–9 (11:26–11:44, 40,006 → 39,756, essentially flat). From ~11:50 Railway's
 adaptive chain resumed normalizing it: 39,756 → 37,756 → 34,506. **Jarir's own drain has
 therefore not been run and its delta is unmeasured.**
+
+## 4c-ii. THE REAL RATE LIMITER — **STRONGEST CURRENT EVIDENCE**, not verified
+
+Contention gave only +8.2%, so it is not dominant. The evidence points instead at
+**per-call network round-trip latency against PostgREST**, with the call COUNT driven by
+per-category corroboration.
+
+**The arithmetic** *(repository + measured timings)*: a pass is 20 batches × 500 rows and takes
+~8.2 min ⇒ **24.6 s per 500-row batch = 49 ms per row**, far too slow for in-process string
+classification. Per batch the code issues ~5 REST calls in `normalizeSweep` (cursor read,
+store probe, row fetch, cursor upsert, staging upsert) **plus `corroboratePass` for each of
+the 22 registered categories at ~4 calls each** ⇒ **≈93+ HTTP round trips per batch**.
+24.6 s ÷ 93 ≈ **265 ms per call** — precisely the latency of a Saudi workstation talking HTTPS
+to Supabase. Everything else agrees: removing four competing writers moved throughput 8.2%
+(so not server-bound), 0 lock waits, 1–2 active connections, 0 timeouts.
+
+**The consequence that matters:** the manual drain ran from a **workstation**; the hourly chain
+runs on **Railway, co-located with the database**. If round-trip latency is the limiter, the
+automatic chain should be **substantially faster per unit time than the manual drain ever was**
+— which would mean the manual drain was never the fast path. *(That is exactly what the
+isolation window in §4f tests.)*
+
+**NOT classified VERIFIED** because per-call latency was not directly instrumented.
+**Next diagnostic, cheapest first:** (1) compare the Railway chain's rows/min against the
+manual 1,220 — free, no code, in §4f; (2) if confirmatory, log elapsed ms around each `await sb`
+in `corroboratePass` behind an env flag and run ONE batch; (3) the structural fix is to cut
+calls, not to parallelise them — corroborate only categories with touched keys (already done)
+and batch the per-category work into fewer round trips. **Entry point:**
+`scripts/tps-core/progressive-engine.ts` `corroboratePass`. **Safest time:** after launch.
+
+**A hypothesis worth holding open:** four explanations have now each failed to be dominant —
+breadth, fetch reach, contention, and delivery. It is entirely possible **there is no single
+dominant constraint** and throughput is a chain of single-digit-percent costs. The round-trip
+finding above is the first candidate with arithmetic behind it, but it must beat that null
+hypothesis before it becomes a rule. **Do not force a dominant constraint to exist.**
 
 ## 4d. COLLISION RISK — MODERATE, occurring, no degradation
 
