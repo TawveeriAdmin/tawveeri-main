@@ -27,31 +27,33 @@ describe('approved-retailer scope gate', () => {
   // ingested; admitting them moves +137 canonicals from single-store to comparable.
   // sonyworld stays out — it is the reference case for a brand specialist producing 0.
   it('admits the three ingested multi-brand retailers (ADR-139)', () => {
-    for (const id of ['najm', 'shaker', 'alnakheelk']) {
+    for (const id of ['najm', 'shaker', 'alnakheelk', 'samsung_ksa']) {
       expect(isApprovedStore(id)).toBe(true);
     }
     expect(isApprovedStore('شاكر')).toBe(true);
     expect(isApprovedStore('نجم الأجهزة')).toBe(true);
     expect(isApprovedStore('متجر النخيل')).toBe(true);
+    // ADR-143 — admitted AFTER ingesting it and measuring the result, not before.
+    expect(isApprovedStore('سامسونج السعودية')).toBe(true);
+    expect(isApprovedStoreId(6)).toBe(true);
   });
 
   it('still rejects everything outside the approved set', () => {
-    for (const id of ['samsung_ksa', 'hdf', 'sonyworld']) {
+    for (const id of ['hdf', 'sonyworld']) {
       expect(isApprovedStore(id)).toBe(false);
     }
-    expect(isApprovedStore('سامسونج السعودية')).toBe(false);
     expect(isApprovedStore(null)).toBe(false);
     expect(isApprovedStore('')).toBe(false);
   });
 
   it('gates by numeric store id (approved 1,2,3,4,5,7,8,9,10,18; rejects 6,11,22)', () => {
-    for (const id of [1, 2, 3, 4, 5, 7, 8, 9, 10, 18]) expect(isApprovedStoreId(id)).toBe(true);
-    for (const id of [6, 11, 22]) expect(isApprovedStoreId(id)).toBe(false);
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 18]) expect(isApprovedStoreId(id)).toBe(true);
+    for (const id of [11, 22]) expect(isApprovedStoreId(id)).toBe(false);
     expect(isApprovedStoreId(null)).toBe(false);
   });
 
-  it('lists 29 distinct approved merchants (26 portfolio + 3 admitted on overlap)', () => {
-    expect(APPROVED_RETAILERS.length).toBe(29);
+  it('lists 30 distinct approved merchants (26 portfolio + 4 admitted on overlap)', () => {
+    expect(APPROVED_RETAILERS.length).toBe(30);
   });
 });
 

@@ -76,6 +76,11 @@ export const APPROVED_RETAILERS: ApprovedRetailer[] = [
   { slug: 'najm',          name_en: 'Najm Appliances',             name_ar: 'نجم الأجهزة',      domain: 'najm.store',          source: 'active' },
   { slug: 'shaker',        name_en: 'Shaker',                      name_ar: 'شاكر',             domain: 'shakersa.com',        source: 'active' },
   { slug: 'alnakheelk',    name_en: 'Alnakheel Store',             name_ar: 'متجر النخيل',      domain: null,                  source: 'active' },
+  // Samsung KSA — admitted 2026-07-30 (ADR-143) after INGESTING it, not before. The old
+  // 'single-brand retailers produce nothing' rule was wrong: sonyworld produced zero
+  // because Sony has 11 canonicals in the whole catalogue, while Samsung has 432 and is
+  // carried by Jarir, Extra, Amazon, Almanea and Noon. Brand ubiquity is the variable.
+  { slug: 'samsung_ksa',   name_en: 'Samsung Saudi Arabia',        name_ar: 'سامسونج السعودية', domain: 'samsung.com',         source: 'active' },
 ];
 
 export const APPROVED_SLUGS: ReadonlySet<string> = new Set(APPROVED_RETAILERS.map((r) => r.slug));
@@ -94,6 +99,7 @@ export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   7,  // shaker      — ADR-139, admitted on measured overlap 2026-07-29
   9,  // najm        — ADR-139
   18, // alnakheelk  — ADR-139
+  6,  // samsung_ksa — ADR-143, admitted 2026-07-30 after ingestion
 ]);
 
 /**
@@ -117,6 +123,7 @@ const NAME_TO_SLUG: Record<string, string> = {
   'najm': 'najm', 'نجم الأجهزة': 'najm', 'نجم': 'najm',
   'shaker': 'shaker', 'شاكر': 'shaker', 'ibrahim-shaker': 'shaker',
   'alnakheelk': 'alnakheelk', 'متجر النخيل': 'alnakheelk', 'النخيل': 'alnakheelk',
+  'samsung_ksa': 'samsung_ksa', 'سامسونج السعودية': 'samsung_ksa', 'سامسونج': 'samsung_ksa', 'samsung saudi': 'samsung_ksa',
 };
 
 function normalizeName(s: string): string {
@@ -135,7 +142,7 @@ const STORE_ID_TO_SLUG: Record<string, string> = {
   '1': 'jarir', '2': 'amazon', '3': 'noon', '4': 'extra', '5': 'almanea',
   '8': 'swsg', '10': 'blackbox', '23': 'lulu', '24': 'sharafdg',
   // ADR-139 — verified against `stores` (id, name, slug) before adding.
-  '7': 'shaker', '9': 'najm', '18': 'alnakheelk',
+  '7': 'shaker', '9': 'najm', '18': 'alnakheelk', '6': 'samsung_ksa',
 };
 
 /**
