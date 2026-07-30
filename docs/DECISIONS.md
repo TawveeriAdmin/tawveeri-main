@@ -93,11 +93,19 @@ initial `setTimeout`**, while `runDiscovery` and `runFeedIngest` each got a star
 6-hour price clock therefore restarted from zero on every process start, so **any restart
 cadence faster than 6 hours meant scheduled price updates fired never.**
 
-**Evidence, and it is not an attribution artifact:** of **44 `price_update` runs in the
-preceding 7 days, every one was `triggered_by='manual'` and not one was `'schedule'`** — while
-scheduler-triggered *discovery* runs in the same table are correctly recorded as `'schedule'`
-(ids 1345–1348), proving the column distinguishes the two. Railway restarted **4+ times on
-2026-07-30 alone** (09:48, 11:45, 11:48, 12:12).
+**CORRECTION, recorded because I published the wrong evidence first.** I initially argued from
+`triggered_by`: "44 `price_update` runs in 7 days, all `'manual'`, none `'schedule'`". **That
+was wrong** — `/api/cron/update-prices` stamps `'manual'` regardless of caller, so the column
+does not distinguish scheduler from human for price updates, even though
+`/api/cron/discover-products` does (which is precisely what misled me). The scheduler's own
+first post-fix price run, id 1349, is likewise labelled `'manual'`.
+
+**The evidence that holds is the GAP.** Price updates are meant to run every 6h. The last before
+the fix was **03:22:30**; the next was **13:06:30** — a **9h 44m gap** where the interval implies
+a run near 09:22. None happened, because Railway restarted at 09:48 / 11:45 / 11:48 / 12:12 and
+each restart reset a clock with no startup timer. The defect is independently verifiable by
+reading the code. **Verified fixed in production:** run 1349 fired at 13:06:30, exactly
+`INGEST_FIRST_DELAY_MS + 2 min` after the post-fix boot.
 
 **Price freshness is the customer-visible promise this platform is built on**, and the loop
 meant to deliver it was dead on arrival after every deploy. **Fix:** one line —
@@ -109,6 +117,35 @@ unbounded. Every recurring job must have an explicit first run, and its executio
 observable by trigger source, not merely by whether the process is alive.* This is the same
 family as ADR-147's lesson: the scheduler *looked* healthy — heartbeat ticking, chain
 reporting `ok` — while a whole customer-facing loop had never executed.
+
+## 4d-ii. REJECTED HYPOTHESIS — mine, refuted within the hour: round-trip latency is NOT the rate limiter
+
+Having found contention worth only +8.2%, I proposed that normalization was bound by **per-call
+network round-trip latency** against PostgREST: 24.6 s per 500-row batch ÷ ~93 REST calls ≈
+265 ms/call, exactly workstation→Supabase HTTPS latency from Saudi Arabia. The arithmetic fit,
+and it made a falsifiable prediction — the Railway chain, co-located with the database, should
+be far faster.
+
+**Measured** *(production)*:
+
+| runner | location | rows | elapsed | rows/min |
+|---|---|---|---|---|
+| manual drain | Saudi workstation (~265 ms RTT) | 10,000 | ~8.2 min | **1,220** |
+| automatic chain | Railway, co-located (~1–5 ms RTT) | 10,000 | 8.38 min | **1,193** |
+
+**A ~50× difference in round-trip time produced no throughput difference.** The hypothesis is
+**REJECTED**. What remains is cost identical in both environments — server-side query/write
+cost or per-row client CPU across the 22 category plugins — and it is not DB contention, since
+removing four competing writers bought only 8.2%.
+
+**NEW SYSTEM CONSTRAINT — and this one is strategic.** Five candidate dominant constraints have
+now each failed to be dominant: retailer breadth, fetch reach, writer contention, delivery, and
+network latency. **Normalization costs ~8.3 minutes per 10,000 observations wherever it runs,
+and nothing tried has materially changed that.** The honest position is that there may be **no
+single dominant constraint** — that throughput is a chain of small costs, each worth
+single-digit percentages. That changes strategy: plan for many small improvements or a
+different architecture, and **stop searching for one unlock.** Do not let the next plausible
+single-cause story survive without a falsifiable prediction of this kind attached to it.
 
 ## 4e. Backpressure verified live
 

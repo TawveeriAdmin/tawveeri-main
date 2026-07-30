@@ -11,11 +11,25 @@ registered with `setInterval` **only**, no startup `setTimeout` — while `runDi
 `runFeedIngest` both had one. The 6-hour clock restarted on every process start, so **any
 restart cadence faster than 6h meant scheduled price updates fired NEVER.**
 
-**Evidence:** of **44 `price_update` runs in the prior 7 days, ALL were `triggered_by='manual'`
-and none `'schedule'`** — while scheduler-triggered *discovery* runs in the same table read
-`'schedule'` (ids 1345–1348), so the column does distinguish them. Railway restarted 4+ times
-on 2026-07-30 alone. **Price freshness is this platform's promise and its loop was dead on
-arrival after every deploy.**
+**⚠️ CORRECTION to my own first evidence.** I initially cited "44 `price_update` runs in 7 days,
+all `triggered_by='manual'`, none `'schedule'`". **That inference was wrong**: the
+`/api/cron/update-prices` route stamps `'manual'` regardless of caller, so the column does
+**not** distinguish scheduler from human for price updates (it does for
+`/api/cron/discover-products`, which is what misled me). Proof: the scheduler's own first
+price run after the fix, id 1349, is also labelled `'manual'`.
+
+**The evidence that actually holds is the GAP, and it is sufficient.** Price updates are meant
+to run every 6h. The last one before today's fix was **03:22:30**; the next scheduler-driven
+one was **13:06:30** — a **9h 44m gap** where the 6h interval implies a run around 09:22. None
+occurred, because Railway restarted at 09:48 / 11:45 / 11:48 / 12:12 and each restart reset a
+clock that had no startup timer. **The code defect is directly verifiable by reading:**
+`runPriceUpdate` had `setInterval` only while `runDiscovery`/`runFeedIngest` each had a
+`setTimeout` kick. Price freshness is this platform's promise, and its loop only ever fired
+when uptime happened to exceed 6 hours.
+
+**✅ FIX VERIFIED IN PRODUCTION:** run **1349** (noon, `price_update`) started **13:06:30**,
+which is `INGEST_FIRST_DELAY_MS + 2 min` after the post-fix boot — the startup timer this fix
+added. The first scheduler price update in at least 9h 44m.
 
 **Fixed in `062dd0d`** (one line). **VERIFY FIRST NEXT SESSION** — a watcher wrote
 `scratchpad/price-refresh-verify.log`; if gone, run:
@@ -301,7 +315,43 @@ window, runs 8–9 (11:26–11:44, 40,006 → 39,756, essentially flat). From ~1
 adaptive chain resumed normalizing it: 39,756 → 37,756 → 34,506. **Jarir's own drain has
 therefore not been run and its delta is unmeasured.**
 
-## 4c-ii. THE REAL RATE LIMITER — **STRONGEST CURRENT EVIDENCE**, not verified
+## 4c-i. ⚠️ MY ROUND-TRIP-LATENCY HYPOTHESIS IS **REFUTED** — read this before §4c-ii
+
+§4c-ii below predicted that the Railway chain, co-located with the database, would be
+**substantially faster** than the workstation drain if per-call latency were the limiter.
+**It was measured. It is not.**
+
+| runner | location | rows | elapsed | rows/min |
+|---|---|---|---|---|
+| manual drain | Saudi **workstation** (~265 ms RTT) | 10,000 | ~8.2 min | **1,220** |
+| automatic chain | **Railway, co-located** (~1–5 ms RTT) | 10,000 | 8.38 min (12:45:51→12:54:14) | **1,193** |
+
+**A ~50× difference in network round-trip time produced no throughput difference at all.**
+Round-trip latency is therefore **excluded** as the dominant limiter, and the arithmetic in
+§4c-ii — however neat — was wrong. Keep §4c-ii only as the record of a refuted hypothesis.
+
+**What survives:** the limiter is something identical in both environments — **server-side
+query/write cost** (staging upserts, canonical upserts, per-category corroboration queries) or
+per-row client CPU across the 22 category plugins. Contention removal gave only +8.2%, so it is
+**not** DB contention either; it is the intrinsic cost of the work.
+
+**This strengthens the null hypothesis in §4c-ii's last paragraph.** Five candidate dominant
+constraints have now failed: breadth, fetch reach, contention, delivery, and round-trip
+latency. **The honest current position is that normalization costs ~8.3 minutes per 10,000
+observations wherever it runs, and no single fix has been shown to change that.** Strategy
+should assume many small costs, not one big unlock, until something beats that.
+
+**Next diagnostic (unchanged entry point, now better targeted):** instrument elapsed ms around
+each `await sb` in `corroboratePass` and around the per-row plugin loop in `normalizeSweep`,
+behind an env flag, and run ONE batch. That separates server-side query cost from client CPU —
+the only two candidates left. **Entry:** `scripts/tps-core/progressive-engine.ts`. **Safest
+time:** after launch.
+
+**Also measured in the same window:** the automatic chain drained **jarir 34,322 → 25,406**
+(8,916 rows) and **almanea 166,473 → 151,057** unattended. It is working; it does not need a
+human, which is why the manual drain was stopped.
+
+## 4c-ii. RATE-LIMITER HYPOTHESIS — **REFUTED, see §4c-i.** Retained as the record.
 
 Contention gave only +8.2%, so it is not dominant. The evidence points instead at
 **per-call network round-trip latency against PostgREST**, with the call COUNT driven by
