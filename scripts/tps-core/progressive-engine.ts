@@ -53,7 +53,7 @@ const GLOBAL = "_all_"; // cursor category for the single-pass scan
 //    (no ILIKE → no slow filter, no per-category re-scan). Each row is classified
 //    by every plugin's detect(); matches are staged into their category. Global
 //    per-store cursor. ≤limit observations/run. ──
-export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], limit: number): Promise<SweepMetrics> {
+export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], limit: number, onlyStores?: number[]): Promise<SweepMetrics> {
   // THROUGHPUT (measured 2026-07-30): the budget used to be split evenly across ALL
   // TPS_STORES — `floor(limit / TPS_STORES.length)` — regardless of whether a store had
   // anything pending. In production only 3 of 18 stores had backlog (almanea 331,823 ·
@@ -74,8 +74,14 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
       .map((r) => [Number(r.store_id), Number(r.last_raw_id ?? 0)]),
   );
 
+  // `onlyStores` narrows the sweep to specific stores. Equal-share division means a
+  // whole-fleet run drains every lagging store at once, which is right for routine
+  // delivery but makes a per-store DELTA unattributable — you cannot say what draining
+  // almanea was worth if jarir drained in the same pass. Absent = every store, i.e.
+  // unchanged behaviour for the scheduler and for a plain `normalize-incremental`.
   const pending: { store: typeof TPS_STORES[number]; last: number }[] = [];
   for (const s of TPS_STORES) {
+    if (onlyStores && !onlyStores.includes(s.id)) continue;
     const last = cursorOf.get(s.id) ?? 0;
     const { data: probe } = await sb
       .from("raw_observations").select("id").eq("store_id", s.id).gt("id", last).limit(1);
@@ -248,9 +254,9 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
 // One bounded progressive SWEEP unit: single-pass normalize across all categories
 // (≤limit obs), then corroborate each category's touched keys. Category isolation
 // holds — corroboration is per-category; only the read scan is shared.
-export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limit = TPS_MAX_OBSERVATIONS) {
+export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limit = TPS_MAX_OBSERVATIONS, onlyStores?: number[]) {
   if (limit > TPS_MAX_OBSERVATIONS) throw new Error(`limit ${limit} exceeds ${TPS_MAX_OBSERVATIONS}`);
-  const n = await normalizeSweep(sb, defs, limit);
+  const n = await normalizeSweep(sb, defs, limit, onlyStores);
   const corr: Record<string, CorroborateMetrics> = {};
   for (const def of defs) {
     const touched = [...n.byCategory[def.category].touched];

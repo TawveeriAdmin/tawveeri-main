@@ -245,6 +245,69 @@ const INGEST_CATEGORIES = {
   sharafdg: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'appliance', 'monitor', 'camera'],
 };
 
+// ── QUEUE-AWARE ADMISSION / BACKPRESSURE (ADR-148) ───────────────────────────
+// Ingestion used to be purely time-driven: fetch every 6h/12h regardless of whether
+// anything downstream could keep up. Normalization is the slower stage, so a fetch
+// schedule that ignores queue depth lets the queue grow without bound — measured
+// 2026-07-30: almanea 320,386 and jarir 49,338 observations fetched, paid for, and
+// invisible to customers, while every hourly run still reported success.
+//
+// This is the standard fetch-vs-process backpressure control: the producer asks the
+// queue how deep it is and yields when the consumer is behind. Hysteresis (HIGH to
+// stop, LOW to resume) prevents flapping at the threshold.
+//
+// FRESHNESS IS PROTECTED, deliberately: this defers DISCOVERY (catalogue growth,
+// which is what creates backlog) but never blocks the intelligence refresh chain, and
+// PRICE UPDATES are exempt below PRICE_HIGH — a stale price is customer-visible harm,
+// whereas a slightly smaller catalogue is not. Skipping is safe because every loop is
+// idempotent and the next tick re-evaluates.
+//
+// REVERSIBLE: INGEST_BACKPRESSURE_HIGH=0 disables the gate entirely.
+const BP_HIGH = parseInt(process.env.INGEST_BACKPRESSURE_HIGH || '50000', 10);
+const BP_LOW = parseInt(process.env.INGEST_BACKPRESSURE_LOW || '20000', 10);
+const BP_PRICE_HIGH = parseInt(process.env.INGEST_BACKPRESSURE_PRICE_HIGH || '250000', 10);
+let bpTripped = false; // hysteresis latch
+
+/** Total rows behind = sum of every store's own cursor lag (the ADR-147 definition). */
+async function rowsBehind() {
+  if (!process.env.SUPABASE_DB_URL) return null;
+  const { Client } = require('pg');
+  const c = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+  try {
+    await c.connect();
+    const { rows } = await c.query(`select coalesce(sum((select count(*) from raw_observations o
+                                     where o.store_id = k.store_id and o.id > k.last_raw_id)), 0)::text n
+                                    from tps_progress_cursors k where k.category = '_all_'`);
+    return Number(rows[0].n);
+  } catch (e) {
+    console.error('[backpressure] probe failed:', e?.message || e);
+    return null;          // fail OPEN — a probe failure must never stop ingestion
+  } finally { try { await c.end(); } catch (_) { /* ignore */ } }
+}
+
+/**
+ * @param {'discovery'|'price'} kind
+ * @returns {Promise<boolean>} true if this ingestion may proceed
+ */
+async function admit(kind) {
+  if (BP_HIGH <= 0) return true;                       // gate disabled
+  const n = await rowsBehind();
+  if (n === null) return true;                         // unknown → fail open
+  const ceiling = kind === 'price' ? BP_PRICE_HIGH : BP_HIGH;
+  if (bpTripped && n <= BP_LOW) {
+    bpTripped = false;
+    console.log(`[backpressure] rows-behind ${n} <= low-water ${BP_LOW} — resuming ingestion`);
+  } else if (!bpTripped && n > BP_HIGH) {
+    bpTripped = true;
+    console.log(`[backpressure] rows-behind ${n} > high-water ${BP_HIGH} — deferring discovery`);
+  }
+  if (n > ceiling) {
+    console.log(`[backpressure] ${kind} deferred — rows-behind ${n} > ${ceiling}`);
+    return false;
+  }
+  return true;
+}
+
 async function cronPost(path, body) {
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
@@ -266,6 +329,7 @@ let ingestRunning = false;
 async function runDiscovery() {
   if (ingestRunning) { console.log('[ingest] discovery still running — skipping'); return; }
   if (feedIngestRunning || refreshRunning) { console.log('[ingest] refresh/feed active — deferring discovery'); return; }
+  if (!(await admit('discovery'))) return;   // ADR-148 backpressure
   ingestRunning = true;
   try {
     for (const slug of INGEST_STORES) {
@@ -279,6 +343,10 @@ async function runDiscovery() {
 }
 async function runPriceUpdate() {
   if (ingestRunning || feedIngestRunning || refreshRunning) { console.log('[ingest] busy — deferring price-update'); return; }
+  // Price updates carry a far higher exemption than discovery: a stale price is the
+  // customer-visible harm this platform exists to prevent, so they yield only when the
+  // queue is catastrophically deep.
+  if (!(await admit('price'))) return;
   for (const slug of INGEST_STORES) {
     const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: 120, older_than_hours: 12 });
     if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
@@ -303,9 +371,12 @@ if (DISPATCH_ENABLED && INGEST_STORES.length) {
 // Reversible: INGEST_FEED_STORES='' disables it (and returns those stores to scraping).
 const INGEST_FEED_MS = parseInt(process.env.INGEST_FEED_MS || String(6 * 60 * 60 * 1000), 10); // 6h
 let feedIngestRunning = false;
-function runFeedIngest() {
+async function runFeedIngest() {
   if (feedIngestRunning) { console.log('[feed-ingest] previous run still in progress — skipping'); return; }
   if (!INGEST_FEED_STORES.length) return;
+  // The feed loop is almanea's ingestion path and the single largest backlog producer
+  // measured (320,386 rows behind). It is gated as discovery, not as price.
+  if (!(await admit('discovery'))) return;
   feedIngestRunning = true;
   const slugs = [...INGEST_FEED_STORES];
   // One store at a time in a single child chain — bounds resource use on the host.

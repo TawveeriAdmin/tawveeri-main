@@ -1,3 +1,96 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #14 · DRAIN IN FLIGHT (supersedes below) ═══
+
+**A drain is RUNNING as this is written.** If the session ended, read §A before anything.
+
+## A. RESUME THE DRAIN — it is cursor-based, so just re-run it
+
+Normalization resumes from `tps_progress_cursors` (per store, `category='_all_'`). It does
+**not** restart from the beginning. Safe resume, idempotent, run one at a time:
+
+```
+# almanea (store 5) — the big one
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 5
+# then jarir (store 1)
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 1
+```
+Repeat until that store's `per-store lag` line disappears. ~10,000 observations per run,
+~9 min per run.
+
+**`--stores` is new this session** (`normalize-incremental.ts` → `runSweepUnit` →
+`normalizeSweep`, optional `onlyStores`). Omitted = every store, so the scheduler chain and
+a plain run are unchanged. It exists because the equal-share budget drains every lagging
+store in one pass, which makes a per-store delta unattributable.
+
+**Checkpoint at time of writing (2026-07-30 ~11:20 UTC):** almanea **252,339** behind
+(from 322,255 at baseline) · jarir **~43,000** behind. Baseline metrics in §B.
+
+**Known crash window (bounded, not yet hit):** `normalizeSweep` upserts the cursor
+(`progressive-engine.ts` ~line 126) *before* the staging rows are upserted (~line 129). A
+crash between the two advances the cursor past up to `limit` observations that were never
+staged — they are skipped silently, not retried. Corroboration runs after that again, so a
+crash there leaves staged keys uncorroborated until something re-touches them. Neither is
+repaired by re-running; both need a deliberate cursor rewind. Worth fixing (write the
+staging rows first, then the cursor) — not done, because it is a write to the engine while a
+drain is in flight.
+
+## B. BASELINE — measure the delta against these (2026-07-30 10:13 UTC, production)
+
+| metric | value |
+|---|---|
+| canonicals with an approved-retailer offer | 6,912 |
+| **comparable (≥2 approved retailers)** | **718** |
+| comparable (≥3) | 166 |
+| almanea in a comparison | 354 |
+| jarir in a comparison | 121 |
+| almanea backlog | 322,255 |
+| jarir backlog | 44,172 |
+
+Query: `scratchpad/comparable.sql` — `price_history` → active `canonical_products`, store
+resolved through a SQL transcription of `resolveApprovedSlug`, `count(distinct slug)`.
+It reproduces ADR-147's 717 (718 with ingestion since), so it is the same instrument.
+
+## C. TWO DEFECTS FOUND WHILE CHECKING CURSORS — both unfixed, both delivery holes
+
+**C1. FOUR scheduler processes are running locally against PRODUCTION.** PIDs 2364, 13224,
+13564, 7940 — `scripts/scheduler.js`, started 2026-07-29 09:57 / 12:02 / 12:08 / 12:15,
+under `next dev` (:3000) and `next start` on :3021, :3022, :3023. Each one independently:
+- runs the **full intelligence chain hourly**, whose FIRST step is
+  `normalize-incremental --batches 6` across **all** stores;
+- feed-ingests **almanea** every 6h (`INGEST_FEED_STORES`);
+- scraper-ingests **noon, lulu, sharafdg, extra** every 12h, price-updates every 6h.
+
+The `refreshRunning` / `ingestRunning` / `feedIngestRunning` guards are **per-process module
+state** — they do not coordinate across four processes. So up to four concurrent refresh
+chains and four concurrent almanea feed ingests are possible. **This is exactly the ADR-099
+condition that wedged PostgREST**, and it is the most plausible reason almanea's backlog
+reached 320k in the first place: it is being ingested ~4× and normalized under contention.
+**Confirmed live in the drain log** — the aggregate backlog fell ~11,250 in a pass where my
+almanea-only run cleared 10,250, so jarir drained ~1,000 concurrently from another writer.
+**Consequence for this measurement:** the per-store attribution is contaminated. The almanea
+delta will contain some jarir progress made by the schedulers. Report it as an upper bound,
+not a clean attribution — the same honesty ADR-147 applied to the +78.
+
+**C2. LuLu (23) and Sharaf DG (24) are outside the normalization queue entirely.** 7,204 raw
+observations, ingesting live (LuLu's newest was 3 minutes before I looked), both in
+`APPROVED_STORE_IDS` so their offers would be customer-visible — but neither is in
+`TPS_STORES` (`category-registry.ts`), so neither has a cursor. They are not *behind*; they
+are *absent*. This is why they never appeared in the per-store lag report ADR-147 added:
+**the lag metric only reports stores it already knows about.** Same class as the 370k
+finding, one layer further out. Fix is two entries in `TPS_STORES`; deliberately deferred so
+it does not confound the almanea/jarir deltas, and it needs its own before/after.
+
+## D. Process facts
+
+Task `buj626g5m` (the drain loop) is **orphaned but alive** — its spawning shell (PID 12468)
+has exited and the loop survived, so it does not depend on any shell. Whether it survives
+`claude.exe` (PID 8668) exiting is **not** established; Claude Code background tasks are
+session-scoped by design. Assume it dies with the session and resume via §A.
+
+**Untouched this session:** launch B, gate 112/112, no customer-facing code. Suite 752/752
+green after the `--stores` change.
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #13 · DRAIN FIRST (supersedes below) ═══
 
 **Read this, then ADR-147 and ADR-146.** State: commit `6461207` · 752/752 green · tree

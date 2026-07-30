@@ -6,6 +6,68 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-148 — Ingestion had no backpressure, and five schedulers were writing to one production database · Accepted (2026-07-30)
+
+**Context:** ADR-147 found ~370,000 observations fetched, paid for and invisible to customers, and fixed the *symptom* (throughput ~7×, per-store lag reporting, a backlog metric that was wrong by ~34,000×). It did not ask **why the queue was allowed to grow in the first place**. Draining it by hand while the producer keeps running is not an architecture. This ADR is the cause and the control.
+
+---
+
+## 1. NEW SYSTEM CONSTRAINT — the producer never asked the consumer anything
+
+*(repository)* Every ingestion loop in `scripts/scheduler.js` was purely **time-driven**: discovery every 12h, price updates every 6h, the almanea feed every 6h — regardless of whether normalization could keep up. Normalization is the slower stage by construction (it classifies every observation against every category plugin). **A fetch schedule that ignores queue depth cannot be stable**: whenever the burst ingestion rate exceeds the drain rate, the queue grows without bound, and nothing in the system objects. Every hourly chain still reported success while almanea sat 320,386 rows behind.
+
+**This is the root cause ADR-147 stopped one layer short of.** ADR-147 made the backlog *visible*; it remained *unbounded*.
+
+## 2. THE MULTIPLIER — four duplicate schedulers, found by reading `ps`, not the code
+
+*(production + host)* The production scheduler runs on Railway as a single instance (`ecosystem.config.js` documents this, and `src/instrumentation.ts` spawns exactly one per web process). Measured on the founder's workstation 2026-07-30: **four additional `scripts/scheduler.js` processes**, PIDs 2364 / 13224 / 13564 / 7940, started 2026-07-29 09:57–12:15, spawned by a local `next dev` (:3000) and three stale `next start` servers (:3021, :3022, :3023). Local `.env.local` points at **production**, so all four were:
+
+- running the **full hourly intelligence chain** — whose first step is `normalize-incremental` across all stores;
+- **feed-ingesting almanea** every 6h;
+- scraper-ingesting **noon, lulu, sharafdg, extra** every 12h, price-updating every 6h.
+
+`tps_scheduler_heartbeat` proved which was authoritative: **pid 37** (a container PID) booted 09:48 UTC and ticking — Railway. The other four were writing into the same tables with no coordination.
+
+**The in-process guards do not help.** `refreshRunning` / `ingestRunning` / `feedIngestRunning` are **module-level booleans**, so they serialize work *within one process* and are blind across five. This is precisely the ADR-099 condition — concurrent heavy pipeline writers — which previously wedged PostgREST into the `PGRST002` loop and took the REST-backed customer endpoints dark for ~1h.
+
+**NEW VERIFIED RULE:** *a mutual-exclusion guard that lives in process memory is not a concurrency control for a multi-process system.* Any real serialization must live where every writer can see it — the database.
+
+## 3. Decision — what was changed
+
+**(a) One scheduler, enforced locally.** `DISABLE_INPROCESS_SCHEDULER=1` added to `.env.local` (already gitignored, so **Railway is unaffected**), and the four local schedulers plus the three stale `next start` servers stopped. The founder's `npm run dev` on :3000 was deliberately preserved. **Rollback:** delete that line and restart the server.
+
+**(b) Queue-aware admission — fetch-versus-process backpressure** (`scheduler.js`). Before any ingestion, the producer asks the queue how deep it is (the ADR-147 sum-of-per-store-lag definition) and yields when the consumer is behind. Hysteresis (`HIGH` to stop, `LOW` to resume) prevents flapping.
+
+**Freshness is protected by asymmetric thresholds, deliberately.** Discovery and the almanea feed — the loops that *create* backlog — are gated at `INGEST_BACKPRESSURE_HIGH` (50,000). **Price updates are exempt up to `INGEST_BACKPRESSURE_PRICE_HIGH` (250,000)**, because a stale price is the customer-visible harm this platform exists to prevent, whereas a marginally smaller catalogue is not. The intelligence refresh chain is **never** gated — it is the consumer. The probe **fails open**: if it cannot reach the database, ingestion proceeds. **Rollback:** `INGEST_BACKPRESSURE_HIGH=0` disables the gate entirely.
+
+**(c) Normalization capacity now tracks the queue** (`normalize-incremental.ts --adaptive`, used by the hourly chain). The chain ran a constant `--batches 6` (~3,000 observations/hour) whatever the backlog was. Ingestion lands in bursts of thousands, so a constant drain rate below the burst rate guarantees unbounded growth. `--adaptive` scales the batch count with the measured backlog (6 → 12 → 20), bounded by the engine's existing 20-batch ceiling, so it can never become an unbounded writer. A quiet system stays exactly as cheap as before.
+
+**(d) `--stores` scoping** (`normalize-incremental` → `runSweepUnit` → `normalizeSweep`). The equal-share budget drains every lagging store in one pass, which is correct for routine delivery but makes a **per-store delta unattributable**. Omitted = every store, so scheduler behaviour is unchanged.
+
+## 4. ARCHITECTURE CHANGE — `TPS_STORES` is not a retailer registry, and it had silently diverged
+
+*(production)* Tawveeri keeps **two independent, hand-maintained retailer lists in different layers**, and nothing enforced agreement:
+
+| | approved for display (`APPROVED_STORE_IDS`) | swept for identity (`TPS_STORES`) |
+|---|---|---|
+| both | 10 stores | — |
+| **approved but NOT swept** | **10 blackbox · 23 lulu · 24 sharafdg** | — |
+| swept but not approved | — | 11 stores (hdf, goldenstore99, mhzm, aletawik, pcpalace, sonyworld, amnkwm, alsfeerzone, alhowaish, alduaalbarq, eazyworld) |
+
+**The two directions are not symmetric.** Sweeping a non-approved store is legitimate and deliberate — its listings corroborate identity without ever being shown. **Approving a store that is not swept is always a defect**: LuLu holds **5,854** observations and Sharaf DG **1,370**, both ingesting live (LuLu's newest write was 11:34 UTC today), and both have **0 normalized observations and no progress cursor**. Their products cannot reach a canonical, so they cannot reach a comparison.
+
+**Why the per-store lag report never showed them:** the metric iterates `tps_progress_cursors`, and a cursor row only exists once a store has been swept. **A store outside `TPS_STORES` is structurally invisible to the very metric ADR-147 added to catch this class of failure.** They were not behind the queue; they were outside it.
+
+**Shipped now (safe, no runtime change):** `tests/pipeline/retailer-registry-coherence.test.ts` fails when a store is approved for display but absent from the sweep, unless it is in an explicit `KNOWN_UNSWEPT` list with a stated reason. The list must shrink, never grow, and a further test fails if an exemption outlives its fix.
+
+**Deferred with acceptance criteria:** adding lulu (23) and sharafdg (24) to `TPS_STORES`. Not done today because the sweep divides its budget among pending stores, so adding two stores would change almanea's drain rate **and** contaminate the very attribution being measured. **Entry point:** `scripts/tps-core/category-registry.ts`, add `{ id: 23, name: 'لولو هايبر ماركت' }` and `{ id: 24, name: 'شرف دي جي' }` (both names already resolve through `NAME_TO_SLUG`), delete the two `KNOWN_UNSWEPT` entries, then run a scoped drain per store and measure the comparable delta. **Acceptance:** both stores report a cursor and non-zero normalized observations, the coherence test passes with a shorter gap list, and the customer-visible comparable count is re-measured before and after.
+
+## 5. Consequences
+
+No customer-facing code changed; launch recommendation **B** and the 112/112 gate are untouched. Ingestion verified still delivering after the change — **LuLu, 2026-07-30 11:34:50 UTC, Railway run_id 1344, 27 new `raw_observations`, 0 errors**. The permanent items not built today — a database-level writer lock replacing the in-process booleans, an explicit terminal state per observation (processed / rejected-with-reason / deferred-with-retry), and backlog alerting before critical levels — are scoped in HANDOVER with entry points. A `tps_scheduler_heartbeat` schema extension to carry rows-behind was **deliberately not done on launch eve**, because ADR-099's outage was triggered by DDL-driven PostgREST schema reloads.
+
+---
+
 ### ADR-146 — The constraint is fetch TARGETING, not fetch volume; and ADR-145's Extra figure was a measurement artifact · Accepted (2026-07-30)
 
 **Context:** ADR-145 (written earlier the same day) concluded that **fetch reach** is the binding constraint, on a table of distinct products fetched per retailer showing a ~200× spread. The founder challenged one sentence of my own — *"extra may be under-measured rather than under-fetched"* — and asked that the measurement layer be verified before any framework work. It was, and the challenge was correct.

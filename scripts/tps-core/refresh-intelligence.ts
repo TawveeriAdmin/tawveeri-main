@@ -54,7 +54,10 @@ const STEPS: Step[] = [
     // products stayed invisible until a human ran bulk-backfill. Incremental and
     // cursor-based, so this processes only what arrived since the last run.
     key: "normalize", label: "new observations → identities (incremental)", needs: [],
-    run: () => runScript("scripts/tps-core/normalize-incremental.ts", ["--batches", "6"]),
+    // ADR-148: `--adaptive` lets the batch count follow the measured backlog (6 when the
+    // queue is short, up to the engine's 20-batch ceiling when it is deep). A constant 6
+    // could not keep up with burst ingestion and let almanea reach 320k rows behind.
+    run: () => runScript("scripts/tps-core/normalize-incremental.ts", ["--batches", "6", "--adaptive"]),
   },
   {
     // ADR-065 found 770 identities with no canonical; the leak RECURS every time

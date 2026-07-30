@@ -39,6 +39,14 @@ const arg = (name: string, dflt: number) => {
   assertFingerprint(process.env.NEXT_PUBLIC_SUPABASE_URL || "", "vyceqrzttspyycdpojtn");
   const batches = Math.min(20, arg("batches", 6));
   const limit = Math.min(500, arg("limit", 500));   // engine hard-bound: <=500/run
+  // `--stores 5,1` narrows the sweep. Omitted = every store, unchanged behaviour.
+  // Needed to attribute a per-store delta: the equal-share budget drains every lagging
+  // store in the same pass, so a whole-fleet drain cannot say what any one store was worth.
+  const si = process.argv.indexOf("--stores");
+  const onlyStores = si >= 0
+    ? String(process.argv[si + 1] ?? "").split(",").map((s) => Number(s.trim())).filter(Number.isFinite)
+    : undefined;
+  if (onlyStores && !onlyStores.length) throw new Error("--stores given but empty");
 
   // Measure the backlog first, so the run reports what it actually cleared
   // rather than just that it ran.
@@ -66,12 +74,25 @@ const arg = (name: string, dflt: number) => {
                          from tps_progress_cursors c where c.category = '_all_'`;
   const backlogBefore = Number((await ask<{ backlog: string }>(BACKLOG_SQL))[0].backlog);
 
+  // ADR-148 — NORMALIZATION CAPACITY MUST TRACK THE QUEUE, not a constant.
+  // The hourly chain ran a fixed `--batches 6` (~3,000 observations) whatever the backlog
+  // was. Ingestion writes in bursts (a feed run lands thousands at once), so a constant
+  // drain rate below the burst rate means the queue grows without bound — which is how
+  // almanea reached 320,386 rows behind while the chain reported success every hour.
+  // With `--adaptive` the batch count scales with the measured backlog, so a quiet system
+  // stays cheap and a backed-up one is allowed to catch up. Bounded by the engine's own
+  // 20-batch ceiling, so this can never become an unbounded writer.
+  const adaptive = process.argv.includes("--adaptive");
+  const effBatches = adaptive
+    ? Math.min(20, backlogBefore > 20_000 ? 20 : backlogBefore > 5_000 ? 12 : batches)
+    : batches;
+
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const defs = Object.values(CATEGORY_DEFS);
 
   let fetched = 0, staged = 0, canonicals = 0, corroborated = 0;
-  for (let i = 0; i < batches; i++) {
-    const r = await runSweepUnit(sb, defs, limit);
+  for (let i = 0; i < effBatches; i++) {
+    const r = await runSweepUnit(sb, defs, limit, onlyStores);
     fetched += r.normalize.fetched;
     staged += r.normalize.staged;
     for (const m of Object.values(r.corroborate)) {
@@ -83,7 +104,7 @@ const arg = (name: string, dflt: number) => {
   }
 
   const backlogAfter = (await ask<{ backlog: string }>(BACKLOG_SQL))[0].backlog;
-  console.log(`normalize-incremental: backlog ${backlogBefore} → ${backlogAfter}`);
+  console.log(`normalize-incremental${onlyStores ? ` [stores ${onlyStores.join(",")}]` : ""}${adaptive ? ` [adaptive batches=${effBatches}]` : ""}: backlog ${backlogBefore} → ${backlogAfter}`);
   console.log(`  observations processed=${fetched} staged=${staged}`);
   console.log(`  corroborated keys=${corroborated} canonicals written=${canonicals}`);
 
