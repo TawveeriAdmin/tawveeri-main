@@ -1,4 +1,114 @@
-# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #16 · LAUNCH CLOSED · ENGINEERING PHASE ENDED ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #17 · REDESIGN STARTED · JOURNEY BASELINE EXISTS ═══
+
+**Head `280b1d9`, tree clean, everything pushed. Nothing is running in the background.**
+Six commits this session, each independently revertible. `REDESIGN_BRIEF.md` now exists at
+the repo root and governs this work; `docs/LAUNCH_VOCABULARY.md` still outranks it on wording.
+
+## THE ONE THING TO DO NEXT
+
+**Identity-key slugs are the largest remaining dead end.** Canonical-injected products emit a
+slug like `apple-iphone-15-standard-128` that has **no row in `products`**, so the card
+resolves to nothing unless it also carries a compare URL. This is most of the remaining 27%.
+
+```bash
+# reproduce the dead end (both return «المنتج غير موجود»)
+curl -s https://tawveeri.com/ar/products/apple-iphone-15-standard-128 | grep -o '<title>[^<]*</title>'
+```
+
+Two candidate fixes, neither started, neither needing approval:
+1. Point canonical cards without a comparison at their **compare page anyway** (it renders a
+   single-offer view), or
+2. Give the product page a **canonical-identity fallback** — resolve an unmatched slug against
+   `canonical_products.tps_identity_key` before declaring absence.
+
+Prefer (2): it fixes every already-published link rather than only newly-rendered ones. That
+was the reasoning that made the UUID fallback the right call in `3dfc18a`.
+
+## THE BASELINE — it is COMPLETE, both runs finished, nothing left mid-flight
+
+```bash
+node scripts/tps-analysis/journey-baseline.js            # ~6 min, read-only, safe to re-run
+node scripts/tps-analysis/journey-baseline.js --locale ar
+node scripts/tps-analysis/journey-baseline.js --json
+```
+
+`docs/journey-baseline-2026-07-30.log` (before) · `docs/journey-baseline-2026-07-31-after-slug-fix.log` (after)
+
+|  | AR | EN |
+|---|---|---|
+| homepage served · search · retailer | 100% · 100% · 100% | 100% · 100% · 100% |
+| exits | 80% | 60% |
+| product served | 100% | 80% |
+| **end-to-end** | **8/10 80%** | **5/10 50%** |
+| **cards → real page** | **62/80 77.5%** | **55/80 68.8%** |
+
+**Do not compare the cards→real-page number to the 44.8%/27.8% in the earlier log without
+reading why:** that was a `has tps_compare_url` proxy, correct before the slug fix and wrong
+after it. The methodology-independent evidence is that of 117 cards now reaching a real page,
+only 63 carry a compare URL — the other **54 resolve through the repaired slug and were dead
+ends before**.
+
+This harness measures the SERVED RESPONSE, not the hydrated DOM, and complements
+`ui-journey.js` rather than replacing it. It is read-only by construction: it NEVER issues
+`GET /go/<id>`, because that route INSERTS into `outbound_clicks`.
+
+## OPEN, MEASURED, NOT STARTED
+
+- **Exits with no valid destination: 21 of 1345 rendered (1.6%).** Root cause: `/api/search`
+  emits `` `/go/${obsId}` `` without a null check. Correct treatment is to render NO exit
+  button, as the compare page already does («رابط المتجر غير متاح لهذا العرض»). Touches the
+  search response shape, so it wants its own verify cycle.
+- **A genuinely missing product still returns HTTP 200.** `notFound()` renders the not-found
+  UI but Next 14 commits the status before the page component throws under streaming; a
+  routing miss (`/ar/no-such-route`) does correctly 404. Verified on a production build, not
+  just dev. **Not claimed as fixed.**
+- **No `og:image` / `twitter:image`** anywhere, despite `twitter:card=summary_large_image` —
+  every social/link preview renders imageless. `og:title` also duplicates the brand.
+- **REDESIGN_BRIEF §2.1 retailer tiers** — inputs measured (24 registered, 6 with listings,
+  per-retailer freshness in CHECKPOINT #15) but the tier definition is not written.
+- **§3 remaining defects** — duplicate sort controls on search, footer `#` social links,
+  brand collision (`tawfeery.com` et al), bounded competitor scan.
+- **§4–§9 product surfaces** — وفّر/agent separation, product page layering, deal score. None
+  started; all gated behind §13's "no undeclared E16".
+
+## WHAT SHIPPED THIS SESSION
+
+| commit | what | rollback |
+|---|---|---|
+| `cc1fe21` | About: founder card → mission card. Found `85K+` / `8 متجر` **still live there** — §1 had only checked the homepage. Also killed a cadence claim, a comprehensive-market claim, and a ranking-policy claim; `/en/about` had been serving Arabic | `git revert cc1fe21` |
+| `68570df` | ADR-150 category rule (≥30 comparable, live-derived) + homepage IA: removed the company-explanation billboard | `git revert 68570df` |
+| `a3a82bc` | `/go` fallback redirected to `https://0.0.0.0:8080/`; now the real homepage | `git revert a3a82bc` |
+| `0ec8439` | journey-baseline harness + before log | `git revert 0ec8439` |
+| `3dfc18a` | product pages: search emitted UUIDs as slugs, AND the SEO query named non-existent columns so every product looked missing | `git revert 3dfc18a` |
+| `280b1d9` | harness measures reachability by fetching, not proxy; after log | `git revert 280b1d9` |
+
+**Full rollback of the session:** `git revert --no-commit 280b1d9..cc1fe21^ && git commit`
+— or revert individual commits above, which is preferred; they are independent.
+
+## THREE INSTRUMENT ERRORS, CAUGHT BEFORE THEY BECAME CLAIMS
+
+Recorded because the pattern matters more than the incidents:
+
+1. **`curl -d` with Arabic** is mangled by Windows argv conversion. Reported "Arabic search
+   returns earbuds for `مكيف`, zero comparisons" — false. Use `--data-binary @file`, or a
+   UTF-8 Buffer in Node. The harness now **aborts** if the server does not echo the query back.
+2. **SQL said 28.4% of exits were broken; fetching the rendered links said 0.14%** — a 200×
+   over-report. The SQL grouped `price_history` by raw `store_name`; the route resolves to an
+   approved retailer slug first, collapsing `أمازون`/`amazon`/numeric-id variants.
+3. **18 "price missing from product page" failures were Arabic-Indic digits** — the page
+   renders «١٬٩٠٠», the card JSON says `1900`. An English-only harness could not have found it.
+
+**The standing rule this produced: measure the rendered artefact, not a model of it, and prove
+the instrument before believing a number that would change a priority.**
+
+## ENVIRONMENT NOTE
+
+Something not mine was already listening on **port 3000** at session start and returned 500
+before any change of mine — left untouched. All servers I started (3001/3005/3006) are stopped.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-30 CHECKPOINT #16 · LAUNCH CLOSED · ENGINEERING PHASE ENDED ═══
 
 **Launch verdict: SAFE WITH EXCLUSIONS.** Engineering investigation is CLOSED. Do not reopen
 it. Head `a37cb67`, tree clean, pushed.
