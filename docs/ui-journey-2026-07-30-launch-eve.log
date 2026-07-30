@@ -1,0 +1,183 @@
+
+> tawveeri@0.2.2 tps:ui-journey
+> node scripts/tps-analysis/ui-journey.js
+
+◇ injected env (12) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
+PASS  ar  (homepage)         HOME reach=Y 1search=Y 1waffar=Y claims=Y  · inputs=1 waffar=1 claims=0
+PASS  ar  iphone             CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  ايفون              PICK rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  ايفون              CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  لابتوب اتش بي      PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  لابتوب اتش بي      CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  macbook            PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  macbook            CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  مكيف سبليت         PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  مكيف سبليت         CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  lg tv              PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  lg tv              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  غسالة سامسونج      PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  غسالة سامسونج      CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايباد              PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  ايباد              CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  شاشة               PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  شاشة               CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ثلاجة              PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ثلاجة              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  سماعات             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  سماعات             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  طابعة              PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  طابعة              CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  ps5                PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  ps5                CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  شاحن               PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  شاحن               CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  مكيف 18000         PICK rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  مكيف 18000         CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  تلفزيون 65 بوصة    PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  تلفزيون 65 بوصة    CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  laptop             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  laptop             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  washing machine    PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  washing machine    CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  ميكروويف           PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  ميكروويف           CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  iPhone 16 Pro Max 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  iPhone 16 Pro Max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  iphone 16 pro max 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  iphone 16 pro max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايفون 16 برو ماكس 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايفون ١٦ برو ماكس ٢٥٦ PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايفون ١٦ برو ماكس ٢٥٦ CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  جوال ايفون 16 برو ماكس 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  جوال ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  Galaxy S24 Ultra 512 PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  Galaxy S24 Ultra 512 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  ايفون 15 128       PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  ايفون 15 128       CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  MacBook Air M2 256 PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  MacBook Air M2 256 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  (homepage)         HOME reach=Y 1search=Y 1waffar=Y claims=Y  · inputs=1 waffar=1 claims=0
+PASS  en  iphone             CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  ايفون              PICK rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  ايفون              CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  لابتوب اتش بي      PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  لابتوب اتش بي      CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  macbook            PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  macbook            CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  مكيف سبليت         PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  مكيف سبليت         CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  lg tv              PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  lg tv              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  غسالة سامسونج      PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  غسالة سامسونج      CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايباد              PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  ايباد              CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  شاشة               PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  شاشة               CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ثلاجة              PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ثلاجة              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  سماعات             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  سماعات             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  طابعة              PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  طابعة              CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  ps5                PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  ps5                CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  شاحن               PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  شاحن               CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  مكيف 18000         PICK rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  مكيف 18000         CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  تلفزيون 65 بوصة    PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  تلفزيون 65 بوصة    CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  laptop             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  laptop             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  washing machine    PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  washing machine    CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  ميكروويف           PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  ميكروويف           CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  iPhone 16 Pro Max 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  iPhone 16 Pro Max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  iphone 16 pro max 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  iphone 16 pro max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايفون 16 برو ماكس 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايفون ١٦ برو ماكس ٢٥٦ PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايفون ١٦ برو ماكس ٢٥٦ CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  جوال ايفون 16 برو ماكس 256 PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  جوال ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  Galaxy S24 Ultra 512 PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  Galaxy S24 Ultra 512 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  ايفون 15 128       PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  ايفون 15 128       CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  MacBook Air M2 256 PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  MacBook Air M2 256 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+
+── SUMMARY ────────────────────────────────
+base: https://tawveeri.com
+PASS RATE (overall): 112/112 = 100%
+COMPARISON JOURNEY:  86/86 = 100%   <-- LAUNCH GATE
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ relevant         │ 112    │
+│ sensible_pick    │ 112    │
+│ store_visible    │ 112    │
+│ price_consistent │ 112    │
+│ link_lands       │ 112    │
+└──────────────────┴────────┘
+By surface (each judged in its own right — a gate carried by one surface is not a working product):
+┌─────────────┬──────────┬────────┬─────────────────────┬───────────────────┐
+│ (index)     │ journeys │ passed │ comparison_journeys │ comparison_passed │
+├─────────────┼──────────┼────────┼─────────────────────┼───────────────────┤
+│ smart_pick  │ 54       │ 54     │ 42                  │ 42                │
+│ homepage    │ 2        │ 2      │ 0                   │ 0                 │
+│ result_card │ 56       │ 56     │ 44                  │ 44                │
+└─────────────┴──────────┴────────┴─────────────────────┴───────────────────┘
+Instrument (what the numbers were read from):
+┌───────────────────────────┬────────┐
+│ (index)                   │ Values │
+├───────────────────────────┼────────┤
+│ journeys_with_a_card      │ 112    │
+│ read_from_card_attributes │ 110    │
+│ subject_smart_pick        │ 54     │
+│ subject_result_card       │ 56     │
+└───────────────────────────┴────────┘
+Arabic vs English (a defect in one script is invisible in a blended rate):
+┌─────────────────┬──────────┬────────┬─────────────────────┬───────────────────┐
+│ (index)         │ journeys │ passed │ comparison_journeys │ comparison_passed │
+├─────────────────┼──────────┼────────┼─────────────────────┼───────────────────┤
+│ arabic_queries  │ 72       │ 72     │ 64                  │ 64                │
+│ english_queries │ 40       │ 40     │ 22                  │ 22                │
+└─────────────────┴──────────┴────────┴─────────────────────┴───────────────────┘
+Exact-model / exact-variant (new set — the promise the customer actually types):
+┌───────────────────┬────────┐
+│ (index)           │ Values │
+├───────────────────┼────────┤
+│ journeys          │ 32     │
+│ correct_product   │ 32     │
+│ correct_variant   │ 32     │
+│ full_journey_pass │ 32     │
+└───────────────────┴────────┘
+Unhonoured store claims (cards claiming N stores with no compare link):
+┌────────────────────────┬────────┐
+│ (index)                │ Values │
+├────────────────────────┼────────┤
+│ pages_with_a_violation │ 0      │
+│ pages_checked          │ 58     │
+│ cards_violating        │ 0      │
+└────────────────────────┴────────┘
+⚠  2 journey(s) fell back to TEXT parsing — those store counts/prices are inferred, not published by the card. Treat them as a wider error bar.
+Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ OK               │ 112    │
+│ BLOCKED_excluded │ 0      │
+│ DEAD             │ 0      │
+└──────────────────┴────────┘
+Link check is trustable for 100% of journeys.
+EXIT=0
