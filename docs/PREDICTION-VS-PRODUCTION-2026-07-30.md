@@ -31,7 +31,6 @@ the probe separately and on its own terms.
 | — of those, no other retailer | **10** | 42% |
 | — **newly comparable** (1 → 2 stores) | **7** | 29% |
 | — deepened (already ≥2, now +1) | **7** | 29% |
-| Raw rows still unprocessed | **473** | `processing_status='pending'`, `raw_url`/`name`/`price` NULL *(production)* |
 
 **The dominant loss is stage 3, not overlap.** We sampled 111 of a 437-canonical Samsung
 universe. The prediction assumed complete coverage of the pool; the run covered a fraction
@@ -117,8 +116,7 @@ than upgrading the probe to variant level and it is calibrated against productio
 Do **not** size them from single-store pools. Size them as:
 `(products we can actually fetch) × (overlap rate) × (share single-store)`.
 
-**Noon's binding question is therefore reach, not overlap** — which is exactly what its
-809 URLs suggest, and what its audit must measure first.
+**Noon's binding question is therefore reach, not overlap** — confirmed by the audit in §10.
 
 ## 9. REJECTED HYPOTHESIS — my own, within this same document
 

@@ -1,3 +1,72 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #8 · PREDICTION METHODOLOGY (supersedes below) ═══
+
+**Read this, then `docs/PREDICTION-VS-PRODUCTION-2026-07-30.md`.**
+
+## Launch: unchanged, **B**. Gate 112/112. Nothing here blocks launch.
+
+## The +281 → 7 miss, resolved
+
+**The probe was never involved.** `feed-overlap-probe.ts` was NOT run for Samsung; the
++281 was my own SQL over single-store Samsung canonicals. The miss is not evidence against
+the probe.
+
+**Trace:** 281 pool ceiling → **111 fetched** (capped at `maxPages × 12` per category) → 96
+written to storefront → 42 offers → **24 TPS canonicals** → 14 overlapping → **7 newly
+comparable** + 7 deepened.
+
+**The dominant loss is FETCH REACH, not overlap.**
+
+## Three hypotheses died, two of them mine
+
+1. *"Samsung KSA has little overlap"* → **58%** of ingested Samsung canonicals (14/24)
+   found another retailer. Overlap was never the failing stage.
+2. *My "~12.6% conversion"* → I divided by products FETCHED (111) instead of canonicals
+   that entered TPS (24). Real rate **58%**. I understated it 4.6× and would have
+   mis-sized Noon and SWSG downward.
+3. *My "473 pending rows are a pipeline leak"* → **614,692 of ~615,000 rows are `pending`
+   and only 277 have ever been `done`.** `normalize-incremental` uses a **watermark on row
+   id**, never `processing_status` or `raw_url`. The column is vestigial. No leak.
+
+**Consequence:** any measurement counting `distinct raw_url` is unsound — `raw_url` is NULL
+on 83% of rows. The earlier "11,259 distinct raw listings / 8,286 unnormalized" figures are
+retired. Do not reuse them.
+
+## THE RULE — use this to size every future retailer
+
+```
+new comparisons ≈ (canonicals we can actually ingest) × (overlap rate) × (share single-store)
+```
+
+Brand ubiquity sets the **ceiling**; ingest reach sets the **result**. Sony 11 canonicals →
+0. Samsung 437 → 7 from a 111-product sample. Measured overlap rate to date: **58%**.
+
+**And: a prediction must name its stage** — pool ceiling · fetchable · ingestible ·
+overlapping · newly comparable. The +281 was a pool ceiling reported as a run forecast.
+
+## Founder's premium-tier hypothesis — rejected as stated, unresolved underneath
+
+The 10 non-overlapping Samsung products are **9 audio devices** (soundbars HW-Q800F/D,
+HW-Q930F, HW-Q990F, HW-S800D, HW-T400, Galaxy Buds) + 1 dishwasher. One CATEGORY, not one
+tier. Zero Samsung `HW-Q*` rows exist for any other retailer, so it is **not** an identity
+failure. Whether Extra/Almanea don't stock them, or our audio ingestion there is too
+shallow, is **UNRESOLVED** — the external check was inconclusive (JS-rendered search).
+
+## Noon audit — DONE. Limiting factor: **discovery depth**
+
+3,182 raw observations · scraped 29 July · 618 storefront offers · 314 TPS canonicals.
+The pipeline works; it is shallow. **Not** parser loss, identity rejection, duplicate
+suppression or blocked endpoints. No parser work increases Noon; only fetching more does.
+
+## Next, in order
+
+1. **Bounded Noon deepening** — measure its overlap rate on a small run before investing.
+   Expecting it to beat 58% is an expectation, not a measurement.
+2. **SWSG** — AC pool 1,006.
+3. **Brand-only query routing** (`سامسونج` / `samsung` reach only mobile today).
+4. **Bilingual token-parity test** — 3 defects of that class in 4 days.
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #7 · SAMSUNG BUILT (supersedes below) ═══
 
 **Read this, then `docs/LAUNCH-CHECKLIST-2026-07-30.md` (rev 2).**
