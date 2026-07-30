@@ -1,3 +1,69 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #11 · SEEDED RUN EXECUTED, NOT YET READABLE ═══
+
+**Read this, then ADR-146.** Launch unchanged: **B**, gate 112/112.
+
+## The ADR-146 experiment was RUN. Its input metrics are strong; its output is unmeasured.
+
+`scripts/tps-analysis/seeded-discovery.ts` — overlap-seeded discovery. Seeds each query
+from a canonical we already hold from exactly ONE retailer, whose brand the target retailer
+stocks, and which that retailer does not already supply. Reuses
+`productService.createOrUpdateProduct`, so identity, validation and dedup are unchanged —
+**only the seed differs from blind traversal.**
+
+**Run: `noon --go --targets=250 --hits=3`**
+
+```
+targets 250 · queried 250 · hit rate 91.2% · 22 targets with no hit
+601 hits fetched · 599 written · 418 LINKED · 181 created · 2 errors
+```
+
+**418 of 599 writes linked to products we already held.** Blind traversal produced the
+opposite profile: 80% Noon-alone rows.
+
+## WHY THE RESULT IS NOT READABLE YET — do not quote +6
+
+| | before run | now |
+|---|---|---|
+| Noon-comparable | 175 | 181 |
+| Noon-alone | 638 | 753 |
+| all comparable | 656 | 660 |
+
+**Two confounds, both mine:**
+
+1. **~7,270 observations unnormalized.** The seeded run's products sit at the BACK of that
+   queue. Comparisons only appear after normalization, so the +6 largely measures the
+   queue *ahead* of them.
+2. **The PM2 scheduler ingested Noon concurrently.** Noon storefront offers rose +3,083
+   while this run could write at most 750 — so most of the +115 Noon-alone is *scheduler
+   blind traversal*, not the seeded run. **I ran a heavy writer alongside the scheduler,
+   which ADR-099 explicitly warns against, and it cost the experiment its attribution.**
+
+Quoting +6 would repeat the exact error this investigation exists to correct.
+
+## TO READ IT — a clean 90-minute experiment
+
+1. **Pause the PM2 scheduler** (this is the step that was missing).
+2. Baseline: Noon-comparable (was **175** at 09:30).
+3. `tsx scripts/tps-analysis/seeded-discovery.ts noon --go --targets=250`
+4. Drain the backlog to <50 (`normalize-incremental`, ~140 rows/pass, ~90s each).
+5. Re-measure Noon-comparable. **Compare cost-per-comparison against the blind baseline of
+   ~120 fetched products per new comparison.**
+
+## What the run already tells us, independent of the confound
+
+*(production)* **91.2% of seeded queries found the product at Noon**, and **70% of writes
+linked to an existing product** rather than creating a new one. Blind traversal on the same
+retailer created 592 Noon-alone canonicals out of 743. The seeds are hitting the right
+products; what is unproven is how many survive normalization into comparisons.
+
+## Standing caution added today
+
+**Never run a heavy ingest or normalize alongside the scheduler** — ADR-099 said so and I
+did it anyway. Any measurement taken during scheduler activity is confounded by
+construction.
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #10 · AIM THE CRAWLER (supersedes below) ═══
 
 **Read this, then ADR-146, ADR-145, and
