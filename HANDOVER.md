@@ -1,3 +1,77 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #9 · FETCH REACH (supersedes below) ═══
+
+**Read this, then `ADR-145` and `docs/PREDICTION-VS-PRODUCTION-2026-07-30.md`.**
+
+## Launch: **B**, unchanged. Gate 112/112. Nothing here blocks 1 August.
+
+The 112 set **does** include the exact-model / exact-variant / Arabic / Arabic-Indic /
+mixed-script queries added after the "100% while `ايفون 16 برو ماكس 256` returned one
+store" correction — 32 of the 112 journeys are that set, and they score 32/32 on both
+product and variant.
+
+## THE FINDING — fetch reach is the binding constraint (ADR-145)
+
+**Distinct products ever fetched, per retailer** *(production; counted on
+`payload->>'product_url'` because `raw_url` and `external_product_id` are NULL almost
+everywhere)*:
+
+almanea 7,736 · amazon 6,693 · jarir 3,266 · **noon 1,092** · shaker 684 · najm 606 ·
+alnakheelk 600 · swsg 276 · **sonyworld 236** · samsung_ksa 60 · **extra 36**
+
+A **~200× spread**, caused by **our own configuration**:
+- `scraping-orchestrator.ts` → `options.max_pages || 10`
+- `noon-scraper` → `maxPages × limit=50` per category query
+- `samsung-ksa-scraper` → `maxPages * 12`
+- `extra-scraper` → `maxPages * EXTRA_SITEMAP_DISCOVERY_LIMIT`
+
+## VALIDATED BY INTERVENTION, not inference
+
+Noon re-ingested at `--pages=30`. No parser change, no identity change, no new retailer.
+
+| | before | after |
+|---|---|---|
+| Noon distinct products | 1,092 | **6,736** (6.2×) |
+| comparable (≥2) | 588 | **635** (+47) |
+| comparable (≥3) | 141 | **146** |
+
+**+47 from ONE retailer at ~10% normalized** vs **+7** from Samsung's complete run.
+9,429 observations still in backlog (~100 min to drain at ~140/run). **Do not extrapolate**
+— direction and order of magnitude only.
+
+## Numbers now SUSPECT — do not reuse without re-measuring at known reach
+
+**sonyworld = 0** (from a 236-product fetch — NOT evidence Sony World lacks overlap) ·
+alnakheelk 68 · najm 48 · the 127 UCP shared families · the 88 "new" ·
+ADR-133's "matching is marginal" (true of our ingested catalogue; **not** a market claim).
+
+## Numbers that SURVIVE — they describe what we hold, not the market
+
+635 comparable · 146 at ≥3 · 363 verified drops · 71% inflated · 78 model-corroborated ·
+112/112 gate.
+
+## THE SIZING RULE (ADR-145)
+
+```
+new comparisons ≈ (canonicals we can ingest) × (overlap rate ≈ 58%) × (share single-store)
+```
+Ubiquity sets the ceiling; **reach sets the result**. A retailer-value number without its
+fetch reach beside it is a crawler measurement.
+
+**RETIRED:** "predicted overlap is the only onboarding criterion."
+**REPLACES IT:** bounded run → measure actual → decide.
+
+## Next, in order — highest leverage first
+
+1. **Drain the 9,429 backlog**, then re-measure Noon's true delta.
+2. **Same intervention on almanea, jarir, extra, amazon** — reach, not parsers.
+3. **Raise the framework defaults** (`max_pages`, the per-scraper multipliers) so reach is
+   not a per-run flag. This is the architectural fix; the runs above are the proof.
+4. `extra` fetches 36 distinct URLs from 50,051 rows — its payload lacks `product_url`.
+   Investigate separately; it may be under-measured rather than under-fetched.
+5. Brand-only query routing (`سامسونج` / `samsung` reach only mobile).
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #8 · PREDICTION METHODOLOGY (supersedes below) ═══
 
 **Read this, then `docs/PREDICTION-VS-PRODUCTION-2026-07-30.md`.**
