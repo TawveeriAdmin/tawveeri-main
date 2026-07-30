@@ -86,6 +86,79 @@ The capability already exists and is unused for discovery. `noon-scraper.ts` has
 
 **Consequences.** The roadmap changes from *"which retailer next"* to *"aim the crawler we already have."* No customer-facing behaviour changes; no code shipped in this ADR. **The 1 August launch is unaffected — recommendation B stands on the measured journey gate, and nothing here is a customer-facing integrity defect.**
 
+
+---
+
+## ADDENDUM 2026-07-30 — the clean experiment, and two corrections to my own reporting
+
+### A. There was no scheduler contamination. I misattributed my own run.
+
+*(production measurement)* Noon `product_stores` write timeline:
+
+| window | offers written | source |
+|---|---|---|
+| 07:54–08:17 | 2,952 | **my own blind `--pages=30` run** |
+| 08:17–09:32 | 0 | — |
+| 09:32–10:10 | 185 | **the seeded run, cleanly isolated** |
+
+Noon's last scheduler run was **09:21:58**, *before* the seeded run began. The "+3,083 while
+my run could write at most 750" that I called scheduler contamination was **my own earlier
+blind run**. The window was clean all along — a better attribution than pausing would have
+produced, which is why no pause was performed.
+
+*(production)* Also: **`scraping_schedules` is EMPTY.** Pausing Noon "via scraping_schedules"
+would have been a no-op. The scheduler is driven elsewhere (`scraping_runs` shows ~70s
+cycles across stores 4, 23, 24). **Nothing was paused; nothing needs restoring.**
+
+### B. The real defect: the experiment could not measure what it was built to measure
+
+*(repository + production)* The first seeded run wrote **185 storefront offers and ZERO
+`raw_observations`**.
+
+`productService.createOrUpdateProduct` writes **only** `products` / `product_stores`.
+Comparisons are computed from `price_history`, which normalization builds from
+`raw_observations` — written by `ingestion.ingestBatch`, which the orchestrator calls
+*before* the storefront write and which my script omitted entirely.
+
+**The experiment was architecturally incapable of producing its own primary metric.** The
+`+6` I saw and declined to quote came from the *blind* run's observations normalizing.
+Declining to quote it was correct, for the wrong reason.
+
+**Fixed** in `seeded-discovery.ts`: `ingestBatch` first, same order as the orchestrator,
+with a `raw_observations_written` counter so this failure mode cannot recur silently.
+
+### C. NEW VERIFIED RULE — writing the storefront layer is not ingestion
+
+*(architecture analysis)* Tawveeri has two write paths and they are not interchangeable:
+
+- `products` / `product_stores` — the **served storefront**
+- `raw_observations` → normalization → `price_history` → canonicals — the **evidence layer
+  that produces comparisons**
+
+Any tool that writes one and not the other produces a surface that looks populated while
+the intelligence layer stays blind. **Every future ingestion tool must call both, in the
+orchestrator's order, or explicitly document which layer it is deliberately not feeding.**
+
+### D. Permanent fix required — run-level ingestion attribution
+
+*(architecture analysis; founder §7)* This session lost hours to attribution ambiguity that
+better plumbing would have made impossible. `raw_observations` already carries
+`scraping_run_id`, and `ingestBatch` already accepts it — **but the experiment passed
+`null`, and so does much of the pipeline.**
+
+**Recommendation:** make `scraping_run_id` mandatory and populated on every write path, and
+stamp `product_stores` with the run that last touched it. Then any experiment is read by
+`where scraping_run_id = X`, with no reliance on timestamps, quiet windows, or scheduler
+pauses. Until that exists, every retailer experiment will repeat this problem.
+
+### E. What the seed-hit rate does and does not prove
+
+**91.2% seed hit and ~70% link rate are DISCOVERY metrics.** They establish that
+overlap-seeded queries reach real Noon product pages for products we already hold. They do
+**not** establish exact commercial-variant equivalence, TPS acceptance, canonical
+resolution, a new comparison, or customer-visible value. Those require the evidence layer,
+which the first run never touched.
+
 ### ADR-145 — Fetch reach is the binding constraint, and every retailer-value number we hold measures our crawler, not the Saudi market · Accepted (2026-07-30)
 
 **Context:** ADRs checked — ADR-133 (matching is marginal; acquisition is the lever), ADR-130 (UCP registry probe), ADR-125 (layer separation), ADR-139/143 (retailers admitted on measured overlap), ADR-068 (return on engineering: judge parser work where comparison is POSSIBLE). Tawveeri's acquisition strategy has rested since 2026-07-25 on **predicted overlap** — alnakheelk 68, najm 48, sonyworld 0, 127 UCP×major shared families of which 88 "new". A prediction-versus-production validation was run for the first time on 2026-07-30 (Samsung KSA, predicted ~281, produced 7) and the decomposition pointed at a cause nobody had measured: how much of each retailer we actually fetch.
