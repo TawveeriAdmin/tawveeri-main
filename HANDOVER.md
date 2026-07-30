@@ -1,3 +1,76 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #12 · ADR-146 INCONCLUSIVE, REAL CONSTRAINT FOUND ═══
+
+**Read this, then ADR-146 (addendum + final classification).**
+Launch: **B**, gate 112/112, untouched.
+
+## SAFETY FIRST — nothing was paused, ingestion is live
+
+`scraping_schedules` is **EMPTY**, so the proposed "pause Noon" would have been a no-op.
+Attribution came from a naturally clean write window instead. **Ingestion verified live
+after all experiment activity:** 113 raw rows in 15 minutes across 2 stores, newest write
+**11:29:20**, successful `scraping_runs` 12–14 min prior. **No restoration was required.**
+
+## ADR-146 = **INCONCLUSIVE** (not rejected, not proven)
+
+| stage | count |
+|---|---|
+| seeds attempted | 250 |
+| seeds hit at Noon | **228 (91.2%)** |
+| hits fetched | 600 |
+| **raw_observations written** | **600** (was **0** in run 1) |
+| storefront writes | 598 |
+| — **linked to a product we already held** | **597** |
+| — created new | **1** |
+| **staged for identity** | **0** |
+| **new comparisons** | **0 measurable** |
+
+**597 linked / 1 orphan.** Blind traversal of the same retailer produced **592 orphans out
+of 743**. That is a **discovery** result and must not be reported as a comparison result.
+
+## THE REAL CONSTRAINT — normalization cannot keep pace with ingestion
+
+*(production)*
+- One `--batches 20 --limit 500` pass processed **1,380 observations** while the backlog
+  went **11,499 → 11,725 in the same pass.**
+- Backlog all session: 7,388 → 7,596 → 7,674 → 7,863 → 11,499 → 11,725, monotonically up.
+- **None of the 600 seeded observations reached staging** (ids 641,161–641,760, staged = 0).
+
+*(repository)* **The queue model is wrong.** `runSweepUnit` sweeps **by category
+definition**, not id order. The "backlog" metric (`id > max(raw_obs_id)`) is a **proxy, not
+a queue position** — an ingested observation has **no bounded time-to-normalization.**
+
+**This outranks both ADR-145 (fetch reach) and ADR-146 (fetch targeting).** Every fetch
+strategy writes into a layer with no delivery guarantee.
+
+## Dead hypotheses from this session
+
+- *"Scheduler contamination ruined run 1"* — **mine, wrong.** The 07:54–08:17 writes were my
+  own blind run; Noon's last scheduler run was 09:21:58, before the seeded run began.
+- *"The seeded run just needs draining to read"* — **wrong.** It wrote **0**
+  `raw_observations`; `createOrUpdateProduct` writes only the storefront layer.
+- *"The backlog drains in id order"* — **wrong.** Category sweep.
+
+## NEXT ENGINEERING HOUR — not what any prior checkpoint said
+
+**Not** more retailers · **not** `max_pages` · **not** seeded-discovery rollout.
+
+**Normalization throughput and delivery guarantee:** why a pass stages only 298 of 1,380
+processed, why sweeps are category-bound rather than backlog-bound, and what guarantees an
+ingested observation reaches identity within a bounded time. Until that exists **no
+ingestion experiment on this platform can be measured end to end** — which is the wall this
+one hit.
+
+Then, and only then, re-read ADR-146 by re-running `seeded-discovery.ts noon --go` (the
+script is correct now) and measuring the same waterfall.
+
+## Standing follow-through
+
+Run-level attribution — `scraping_run_id` mandatory on every write path, `product_stores`
+stamped with it — remains the permanent fix. Two sessions running have spent their time on
+attribution rather than on the result.
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #11 · SEEDED RUN EXECUTED, NOT YET READABLE ═══
 
 **Read this, then ADR-146.** Launch unchanged: **B**, gate 112/112.

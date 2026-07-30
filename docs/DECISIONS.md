@@ -159,6 +159,94 @@ overlap-seeded queries reach real Noon product pages for products we already hol
 resolution, a new comparison, or customer-visible value. Those require the evidence layer,
 which the first run never touched.
 
+
+---
+
+## FINAL CLASSIFICATION 2026-07-30 — **INCONCLUSIVE** on the primary metric, with a larger constraint found underneath
+
+**ADR-146 status: INCONCLUSIVE.** Not rejected, not proven. The primary metric — net new
+customer-visible comparisons — could not be measured, for a reason that is itself the most
+important finding of the session.
+
+### The waterfall, as far as it goes
+
+| stage | count | source |
+|---|---|---|
+| seeds attempted | 250 | manifest |
+| seeds hit at Noon | **228 (91.2%)** | run |
+| targets with no hit | 22 | run |
+| hits fetched | 600 | run |
+| **`raw_observations` written** | **600** | production — *0 in the first run* |
+| storefront writes | 598 | run |
+| — **linked to a product we already held** | **597** | run |
+| — created new | **1** | run |
+| errors | 2 | run |
+| **staged for identity** | **0** | production |
+| **new canonicals** | **0** | production |
+| **new 2-store comparisons** | **0 measurable** | production |
+| **new 3+-store comparisons** | **0 measurable** | production |
+
+**597 linked / 1 created** is the sharpest contrast in this investigation. Blind traversal
+of the same retailer produced **592 Noon-alone canonicals out of 743**. Overlap-seeded
+discovery produced **one** orphan out of 598. *(production)*
+
+**But that is a DISCOVERY result, not a comparison result**, and it must not be reported as
+one. Nothing downstream of ingestion has happened yet.
+
+### NEW SYSTEM CONSTRAINT — normalization cannot keep pace with ingestion
+
+*(production measurement)* This is why the metric is unmeasurable, and it outranks fetch
+targeting.
+
+- One `--batches 20 --limit 500` pass processed **1,380 observations**; the backlog went
+  **11,499 → 11,725 during that same pass.** Ingestion out-runs normalization.
+- Backlog across the session: 7,388 → 7,596 → 7,674 → 7,863 → 11,499 → 11,725, **monotonically
+  rising** while the scheduler ran normally.
+- **None of the 600 seeded observations reached `tps_identity_staging`** (`raw_obs_id`
+  641,161–641,760; `seeded_staged = 0`).
+
+*(repository analysis)* And the queue model everyone has been reasoning with is wrong.
+`runSweepUnit` sweeps **by category definition**, not in id order. The commonly-quoted
+"backlog" (`id > max(raw_obs_id)`) is therefore a **proxy, not a queue position** — a new
+observation has **no bounded time-to-normalization**. It may be picked up in minutes or not
+for days, depending on which categories get swept.
+
+**Consequence:** every fetch strategy — blind, seeded, or any future one — writes into a
+layer with no delivery guarantee. **Improving what we fetch cannot raise the comparison
+count faster than normalization consumes it.** Fetch targeting (ADR-146) and fetch reach
+(ADR-145) are both downstream of this.
+
+### REJECTED HYPOTHESIS — "the backlog is a queue that drains in id order"
+
+*(repository)* It is a category sweep. The metric everyone has been quoting, including me
+all session, does not mean what it appears to mean.
+
+### What this changes about the next engineering hour
+
+**Not** more retailers. **Not** framework `max_pages`. **Not** — for now — seeded discovery
+rollout, however good its input metrics look.
+
+**The next intervention is normalization throughput and delivery guarantee:** why a pass
+stages only 298 of 1,380 processed observations, why sweeps are category-bound rather than
+backlog-bound, and what it would take to guarantee that an ingested observation reaches the
+identity layer within a bounded time.
+
+Until that exists, no ingestion experiment on this platform can be measured end to end,
+which is exactly the wall this one hit.
+
+### Safety — §1 condition satisfied
+
+**Nothing was paused, so nothing required restoration.** `scraping_schedules` is empty, so
+the pause mechanism proposed would have been a no-op; the attribution came from a naturally
+clean write window instead. Ingestion verified live **after** all experiment activity:
+113 raw rows in the preceding 15 minutes across 2 stores, newest write **11:29:20**, with
+successful `scraping_runs` 12–14 minutes prior. *(production)*
+
+### Follow-through, unchanged from the addendum
+
+Run-level attribution (`scraping_run_id` mandatory on every write path) remains the
+permanent fix. This session again spent its time on attribution rather than on the result.
+
 ### ADR-145 — Fetch reach is the binding constraint, and every retailer-value number we hold measures our crawler, not the Saudi market · Accepted (2026-07-30)
 
 **Context:** ADRs checked — ADR-133 (matching is marginal; acquisition is the lever), ADR-130 (UCP registry probe), ADR-125 (layer separation), ADR-139/143 (retailers admitted on measured overlap), ADR-068 (return on engineering: judge parser work where comparison is POSSIBLE). Tawveeri's acquisition strategy has rested since 2026-07-25 on **predicted overlap** — alnakheelk 68, najm 48, sonyworld 0, 127 UCP×major shared families of which 88 "new". A prediction-versus-production validation was run for the first time on 2026-07-30 (Samsung KSA, predicted ~281, produced 7) and the decomposition pointed at a cause nobody had measured: how much of each retailer we actually fetch.
