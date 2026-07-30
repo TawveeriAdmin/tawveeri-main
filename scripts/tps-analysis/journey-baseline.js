@@ -190,14 +190,7 @@ async function legSearch(locale, query) {
   const products = json.products || [];
   out.detail.returned = products.length;
   out.detail.multiStore = products.filter((p) => (p.store_count || 0) > 1).length;
-  // FULL-DEPTH reachability, over every card returned — not the top slice. A card reaches a
-  // real page only via `tps_compare_url`; without it the card falls through to
-  // /products/<slug>, which serves a soft 404. Verified 20/20 by direct fetch. Reported
-  // because leg D samples only the first four cards, and the top of the list is
-  // compare-rich by construction (relevance-scorer adds +15 for a TPS comparison) — a
-  // top-slice number would flatter the journey by ~2x. No silent caps.
   out.detail.cardsFullDepth = products.length;
-  out.detail.cardsReachableFullDepth = products.filter((p) => p.tps_compare_url).length;
   if (products.length === 0) { out.deadEnd = 'DE2_zero_results'; return out; }
   out.pass = true;
   out.products = products;
@@ -246,11 +239,23 @@ async function legExits(locale, query, products) {
  *  them there? A disagreement here is the defect that started this harness's predecessor. */
 async function legProduct(locale, query, products) {
   const out = { leg: 'D_product_served', locale, query, pass: false, deadEnd: null, detail: {} };
-  // Measure the DISTRIBUTION across cards, not one lucky card. Testing only the first card
-  // that happens to carry a compare URL reports the Smart Pick's health and calls it the
-  // journey — which is precisely how the previous gate read 112/112 while ~94% of result
-  // cards led to a soft 404.
-  const sample = products.slice(0, 4);
+  // Measure the DISTRIBUTION across cards by ACTUALLY FETCHING them, not one lucky card and
+  // not a proxy. Testing only the first card that happens to carry a compare URL reports the
+  // Smart Pick's health and calls it the journey — which is how the previous gate read
+  // 112/112 while most result cards led to a soft 404.
+  //
+  // Sampling is EVENLY SPACED across the whole result list, never the top slice: the top is
+  // compare-rich by construction (relevance-scorer adds +15 for a TPS comparison), so a
+  // top-N sample flatters the journey by roughly 2x.
+  //
+  // This replaced a `has tps_compare_url` proxy. That proxy was exactly right until the slug
+  // fix landed, and instantly wrong afterwards — cards now also reach a real page via a
+  // resolvable slug. A real storefront slug and a canonical identity-key slug are
+  // indistinguishable by shape, so only a fetch can tell them apart.
+  const SAMPLE_N = 8;
+  const step = Math.max(1, Math.floor(products.length / SAMPLE_N));
+  const sample = [];
+  for (let i = 0; i < products.length && sample.length < SAMPLE_N; i += step) sample.push(products[i]);
   let reachable = 0;
   const perCard = [];
   for (const c of sample) {
@@ -393,13 +398,14 @@ async function legRetailer(resolved) {
       const pct = ((100 * ok) / set.length).toFixed(1);
       console.log(`  ${leg.padEnd(20)} ${String(ok).padStart(3)}/${String(set.length).padEnd(3)}  ${pct}%`);
     }
-    // The measurement the previous gate could not make: across EVERY card returned, how many
-    // lead to a page that exists?
-    const bRows = rows.filter((r) => r.leg === 'B_search');
-    const cardsAll = bRows.reduce((n, r) => n + (r.detail?.cardsFullDepth || 0), 0);
-    const cardsOk = bRows.reduce((n, r) => n + (r.detail?.cardsReachableFullDepth || 0), 0);
-    if (cardsAll) {
-      console.log(`  ── CARDS→REAL PAGE   ${String(cardsOk).padStart(3)}/${String(cardsAll).padEnd(3)}  ${((100 * cardsOk) / cardsAll).toFixed(1)}%   (soft-404: ${cardsAll - cardsOk})`);
+    // The measurement the previous gate could not make: of the cards a shopper sees, how many
+    // lead to a page that exists? Fetched, evenly spaced across each result list.
+    const dRows = rows.filter((r) => r.leg === 'D_product_served');
+    const sampled = dRows.reduce((n, r) => n + (r.detail?.cardsSampled || 0), 0);
+    const reachable = dRows.reduce((n, r) => n + (r.detail?.cardsReachable || 0), 0);
+    const pool = rows.filter((r) => r.leg === 'B_search').reduce((n, r) => n + (r.detail?.cardsFullDepth || 0), 0);
+    if (sampled) {
+      console.log(`  ── CARDS→REAL PAGE   ${String(reachable).padStart(3)}/${String(sampled).padEnd(3)}  ${((100 * reachable) / sampled).toFixed(1)}%   (fetched, evenly spaced; ${pool} cards returned in total)`);
     }
 
     const full = rows.filter((r) => r.leg === 'B_search').map((r) => r.query)
@@ -424,7 +430,7 @@ async function legRetailer(resolved) {
   const sampled = dRows.reduce((n, r) => n + (r.detail?.cardsSampled || 0), 0);
   const reachable = dRows.reduce((n, r) => n + (r.detail?.cardsReachable || 0), 0);
   const viaCompare = dRows.reduce((n, r) => n + (r.detail?.cardsViaCompareUrl || 0), 0);
-  console.log(`RESULT CARDS REACHING A REAL PAGE: ${reachable} of ${sampled} (${((100 * reachable) / Math.max(sampled, 1)).toFixed(1)}%)`);
+  console.log(`RESULT CARDS REACHING A REAL PAGE: ${reachable} of ${sampled} fetched (${((100 * reachable) / Math.max(sampled, 1)).toFixed(1)}%)`);
   console.log(`  of which carried a compare URL:  ${viaCompare}`);
 
   const malformedTotal = clean.filter((r) => r.leg === 'C_exits').reduce((n, r) => n + (r.detail?.malformed || 0), 0);
