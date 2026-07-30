@@ -445,15 +445,29 @@ export class ScrapingOrchestrator {
                 ).catch((err) => console.error('Back-in-stock notification error:', err));
               }
             } else {
+              // ADR-149: an unexplained null is how Noon's 100% failure stayed invisible for
+              // an unknown period. `recordFailure` is a no-op (the columns do not exist in
+              // production and DDL is not safe before launch), so the reason is emitted as a
+              // single structured line instead — greppable in Railway logs and aggregatable
+              // without a migration. Post-launch this becomes a real column; see HANDOVER.
+              this.logPriceAttempt({
+                retailer: storeSlug, offer_id: productStoreId, url: productUrl,
+                result: 'FAILED', reason: 'scraper returned null (no price parsed)',
+                price_before: productStore.current_price, price_after: null,
+                next_action: 'diagnose parser for this retailer',
+              });
               await this.recordFailure(productStoreId, 'scraper returned null');
               errors++;
             }
           } catch (err) {
-            console.error(`[${storeSlug}] price update failed for ${productUrl}:`, err);
-            await this.recordFailure(
-              productStoreId,
-              err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500)
-            );
+            const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
+            this.logPriceAttempt({
+              retailer: storeSlug, offer_id: productStoreId, url: productUrl,
+              result: 'RETRYABLE', reason: msg,
+              price_before: productStore.current_price, price_after: null,
+              next_action: 'retried 3x and still failed; inspect network/anti-bot',
+            });
+            await this.recordFailure(productStoreId, msg);
             errors++;
           }
 
@@ -485,6 +499,20 @@ export class ScrapingOrchestrator {
         duration_ms: Date.now() - startTime,
       };
     }
+  }
+
+  /**
+   * ADR-149 — every dedicated price-update attempt must end in an EXPLICIT state.
+   * One structured line per attempt, so failure rates are measurable per retailer without a
+   * schema change (no DDL before launch). Emitted only for non-success states to keep log
+   * volume proportionate; a success is already evidenced by the price_history write.
+   */
+  private logPriceAttempt(a: {
+    retailer: string; offer_id: string; url: string | null;
+    result: 'UPDATED' | 'UNCHANGED' | 'UNAVAILABLE' | 'REJECTED' | 'FAILED' | 'RETRYABLE';
+    reason: string; price_before: number | null; price_after: number | null; next_action: string;
+  }): void {
+    console.error(`[price-attempt] ${JSON.stringify({ ...a, at: new Date().toISOString() })}`);
   }
 
   private async recordFailure(productStoreId: string, errorMsg: string): Promise<void> {

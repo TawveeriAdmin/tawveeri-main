@@ -9,6 +9,35 @@ const NOON_CDN = 'https://f.nooncdn.com/p';
 const BASE_URL = 'https://www.noon.com/saudi-en';
 
 /**
+ * Extract Noon's product SKU from a product URL.
+ *
+ * ADR-149 — this existed inline as `productUrl.match(/\/p\/([A-Z0-9]+)/i)`, which assumes
+ * the SKU FOLLOWS the `/p/` marker. Every Noon URL in production has it BEFORE:
+ *   https://www.noon.com/saudi-en/<slug>/N70012924V/p/
+ *   https://www.noon.com/saudi-en/<slug>/Z50D2FD9D5BEC3416FD27Z/p/
+ * `/p/` is terminal, so the old pattern never matched, the keyed API lookup was skipped,
+ * and every price refresh fell through to HTML scraping which returns null on Noon.
+ * Measured: 120 attempts, 120 failures, 0 products updated — 100% silent failure.
+ *
+ * Returns the SKU, or null when the URL genuinely does not carry one (an EXPLICIT reject,
+ * so the caller can record a reason rather than emitting an unexplained null).
+ */
+export function extractNoonSku(productUrl: string): string | null {
+  const path = (productUrl || '').split('?')[0].split('#')[0];
+  const segs = path.split('/').filter(Boolean);
+  const pIdx = segs.lastIndexOf('p');
+  if (pIdx < 0) return null;                       // no /p/ marker at all
+  // A Noon SKU is alphanumeric, at least 6 chars, and contains a digit. The slug segments
+  // around it always contain hyphens, so they can never be mistaken for one.
+  const looksLikeSku = (s?: string) => !!s && /^[A-Za-z0-9]{6,}$/.test(s) && /\d/.test(s);
+  const before = pIdx > 0 ? segs[pIdx - 1] : undefined;   // .../<sku>/p/   ← production form
+  if (looksLikeSku(before)) return before!.toUpperCase();
+  const after = segs[pIdx + 1];                           // .../p/<sku>   ← legacy form
+  if (looksLikeSku(after)) return after!.toUpperCase();
+  return null;
+}
+
+/**
  * Noon store scraper using Noon's internal JSON API.
  * Reuses patterns from NoonSearchScraper.
  */
@@ -53,14 +82,18 @@ export class NoonScraper extends BaseScraper {
 
   async updateProductPrice(productUrl: string): Promise<ScrapedProduct | null> {
     try {
-      // Extract SKU from URL pattern: /p/NXXXXXXX/ or /p/<sku>/
-      const skuMatch = productUrl.match(/\/p\/([A-Z0-9]+)/i);
-      if (!skuMatch) {
-        // Fallback to HTML scraping
+      // ADR-149: the SKU sits BEFORE the terminal `/p/` on Noon. See extractNoonSku.
+      const sku = extractNoonSku(productUrl);
+      if (!sku) {
+        this.logError({
+          type: 'parse',
+          message: `No Noon SKU in URL (explicit reject, not a silent null): ${productUrl}`,
+          url: productUrl,
+          timestamp: new Date().toISOString(),
+        });
         return this.scrapeProductPageHtml(productUrl);
       }
 
-      const sku = skuMatch[1];
       const apiUrl = `${NOON_API_URL}?q=${encodeURIComponent(sku)}&limit=1`;
 
       const data = await this.fetchJson<Record<string, unknown>>(apiUrl, {
