@@ -362,6 +362,17 @@ if (DISPATCH_ENABLED && INGEST_STORES.length) {
   console.log(`[ingest] merchant ingestion enabled for [${INGEST_STORES.join(', ')}] — discovery every ${(INGEST_DISCOVERY_MS / 3600000).toFixed(0)}h, prices every ${(INGEST_PRICE_MS / 3600000).toFixed(0)}h`);
   setTimeout(runDiscovery, INGEST_FIRST_DELAY_MS);
   setInterval(runDiscovery, INGEST_DISCOVERY_MS);
+  // ADR-148 — PRICE REFRESH HAD NEVER RUN ON THE SCHEDULED PATH.
+  // This line used to be `setInterval` ONLY, with no initial timer, while discovery and
+  // the feed loop both got a `setTimeout` kick. So the 6-hour price clock restarted from
+  // zero on every process start, and any restart cadence faster than 6h meant scheduled
+  // price updates fired NEVER. Measured 2026-07-30: of 44 `price_update` runs in the
+  // preceding 7 days, **every single one was `triggered_by='manual'` and not one was
+  // `'schedule'`**, while scheduler-triggered DISCOVERY runs were recorded normally in the
+  // same table — so this was not an attribution artifact. Railway restarted 4+ times that
+  // day alone. Price freshness is the customer-visible promise of this platform, and the
+  // loop meant to deliver it was dead on arrival after every deploy.
+  setTimeout(runPriceUpdate, INGEST_FIRST_DELAY_MS + 2 * 60 * 1000);
   setInterval(runPriceUpdate, INGEST_PRICE_MS);
 }
 

@@ -86,6 +86,37 @@ Removing four of five competing writers improved normalization throughput **+10.
 
 **Collision risk after the adaptive change: MODERATE — occurring, no degradation.** Overlap is real, but 0 lock waits, 0 idle-in-transaction, 11 connections, `/api/stats` 200 in 1,646ms with real data, and 0 errors across the whole drain log. Mitigated by the **normalization lane lease** (a `pg_try_advisory_lock` on a dedicated connection, asymmetric: the hourly chain yields, a manual drain proceeds), not by the full advisory-lock architecture. **NEW VERIFIED RULE:** *a lease a manual operator can be silently denied is worse than no lease — a drain that no-ops looks identical to a drain that finished.*
 
+## 4d. THE WORST DEFECT FOUND ALL DAY — scheduled price refresh had never run
+
+*(production + repository)* `runPriceUpdate` was registered with **`setInterval` only and no
+initial `setTimeout`**, while `runDiscovery` and `runFeedIngest` each got a startup kick. The
+6-hour price clock therefore restarted from zero on every process start, so **any restart
+cadence faster than 6 hours meant scheduled price updates fired never.**
+
+**Evidence, and it is not an attribution artifact:** of **44 `price_update` runs in the
+preceding 7 days, every one was `triggered_by='manual'` and not one was `'schedule'`** — while
+scheduler-triggered *discovery* runs in the same table are correctly recorded as `'schedule'`
+(ids 1345–1348), proving the column distinguishes the two. Railway restarted **4+ times on
+2026-07-30 alone** (09:48, 11:45, 11:48, 12:12).
+
+**Price freshness is the customer-visible promise this platform is built on**, and the loop
+meant to deliver it was dead on arrival after every deploy. **Fix:** one line —
+`setTimeout(runPriceUpdate, INGEST_FIRST_DELAY_MS + 2 * 60 * 1000)`.
+
+**NEW VERIFIED RULE:** *a periodic job registered with `setInterval` alone has no guaranteed
+execution on a platform that restarts — its true period is `max(interval, uptime)`, which is
+unbounded. Every recurring job must have an explicit first run, and its execution must be
+observable by trigger source, not merely by whether the process is alive.* This is the same
+family as ADR-147's lesson: the scheduler *looked* healthy — heartbeat ticking, chain
+reporting `ok` — while a whole customer-facing loop had never executed.
+
+## 4e. Backpressure verified live
+
+*(production)* Railway booted 12:12:11 on the backpressure build; its first ingest window
+passed at ~12:27 with `rows_behind` at **200,929 against a 50,000 gate**. Checked 12:36:35:
+**zero `discovery` runs after 12:12.** The earlier 12:00–12:07 discovery burst came from the
+container booted 11:45:38, which predated the gate. **The control works.**
+
 ## 5. Consequences
 
 No customer-facing code changed; launch recommendation **B** and the 112/112 gate are untouched. Ingestion verified still delivering after the change — **LuLu, 2026-07-30 11:34:50 UTC, Railway run_id 1344, 27 new `raw_observations`, 0 errors**. The permanent items not built today — a database-level writer lock replacing the in-process booleans, an explicit terminal state per observation (processed / rejected-with-reason / deferred-with-retry), and backlog alerting before critical levels — are scoped in HANDOVER with entry points. A `tps_scheduler_heartbeat` schema extension to carry rows-behind was **deliberately not done on launch eve**, because ADR-099's outage was triggered by DDL-driven PostgREST schema reloads.
