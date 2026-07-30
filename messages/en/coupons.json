@@ -1,6 +1,6 @@
 {
   "title": "Coupons",
-  "subtitle": "Save more with exclusive coupon codes",
+  "subtitle": "Save more with coupon codes",
   "code": "Coupon Code",
   "copied": "Coupon code copied!",
   "copy": "Copy Code",
@@ -73,7 +73,7 @@
   "saveError": "Failed to save coupon",
   "totalCoupons": "Total Coupons",
   "searchPlaceholder": "Search by store, code, or description...",
-  "featured": "Exclusive Coupon Codes",
+  "featured": "Coupon Codes",
   "searchHelper": "Find the perfect coupon for your purchase",
   "searchHint": "Type a store name, coupon code, or keyword to find matching coupons",
   "searchAction": "Search",
