@@ -28,9 +28,12 @@ Corrected instrument (exact-model set added, per-script reporting, both surfaces
 
 **The headline fell from 100% to 96.4%, and that was predicted before the run.** The old
 100% was measured by an instrument that contained no model query at all. All 4 failures
-were one query — `Galaxy S24 Ultra 512` returning a Galaxy A07 — fixed in `bbfd34c` and
-verified live. **The post-fix rate is therefore expected to be 112/112 but is NOT MEASURED;
-do not quote it until the next run.**
+were one query — `Galaxy S24 Ultra 512` returning a Galaxy A07 — fixed in `bbfd34c`.
+
+**CLOSED — post-fix rate MEASURED** (`docs/ui-journey-2026-07-30-post-adr142.log`):
+**overall 112/112 = 100% · comparison 82/82 = 100% · Arabic 72/72 · English 40/40 ·
+exact-model correct product 32/32 · correct variant 32/32 · zero failures.**
+No figure in this document is inferred. The pre-announcement condition in §9 is met.
 
 ### Catalogue
 | figure | value | definition |
@@ -92,9 +95,8 @@ covered by the harness's read-only resolution at 112/112.
 
 ## 3. What remains broken or unproven
 
-- **Post-fix journey rate is unmeasured.** `bbfd34c` landed after the baseline run.
-- **English lags Arabic** — 90% vs 100%. Entirely the `Galaxy S24 Ultra 512` failure; needs
-  the next run to confirm it is closed.
+- ~~Post-fix journey rate unmeasured~~ — **CLOSED**, measured 112/112.
+- ~~English lags Arabic~~ — **CLOSED**, English 40/40 = 100% after `bbfd34c`.
 - **Three bilingual-asymmetry defects in three days** (ة/ى folding, برو/pro, جالكسي/galaxy).
   The class is not exhausted; there is no systematic test that every Arabic token has its
   Latin twin and vice versa.
@@ -181,6 +183,12 @@ outbound link landing on a real product. Price truth is genuinely unique and pro
 drops, the 71% statistic, the evidence line and disclosed price age. State comparison
 coverage honestly — 581 products across 2+ retailers — and do not imply breadth we lack.
 
-**One condition before the announcement:** re-run the harness so the post-`bbfd34c` rate is
-measured rather than expected. It is the only number in this document that is currently
-inferred.
+**The pre-announcement condition is MET.** The post-`bbfd34c` harness re-run measured
+112/112 overall and 82/82 comparison, with English rising 90% → 100%. Every figure in this
+document is now reproduced from production.
+
+**A note on that run, kept deliberately:** the first attempt returned `0/58` with
+`ERR_INTERNET_DISCONNECTED` on every request — a local connectivity drop, not an outage
+(production returned 200 throughout). That log was DELETED rather than filed, because a
+dead instrument reading is not a measurement, and a `0%` in the record would be read as
+one later.

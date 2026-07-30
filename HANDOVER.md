@@ -29,10 +29,13 @@ founder-gated.
 | exact-model correct product | 32/32 |
 | exact-model correct variant | 28/32 |
 
-**The headline fell 100% → 96.4%, predicted in advance.** The old 100% came from an
-instrument with no model query in it. All 4 failures were `Galaxy S24 Ultra 512`, fixed in
-`bbfd34c`, verified live. **Post-fix rate is expected 112/112 but UNMEASURED — the one
-inferred number in the checklist. Re-run before the announcement.**
+**The headline fell 100% → 96.4%, predicted in advance**, then returned to 100% once the
+defect it exposed was fixed. All 4 failures were `Galaxy S24 Ultra 512` (ADR-142).
+
+**CONFIRMATION RUN — `docs/ui-journey-2026-07-30-post-adr142.log`:**
+**overall 112/112 = 100% · comparison 82/82 = 100% · Arabic 72/72 · English 40/40 ·
+exact-model 32/32 product AND 32/32 variant · zero failures.**
+Nothing in the launch checklist is inferred any more.
 
 ## Three bilingual-asymmetry defects in three days — the class is not exhausted
 
