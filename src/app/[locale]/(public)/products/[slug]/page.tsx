@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import ProductDetailClient from './product-detail-client';
 import { getProductSeoData } from '@/lib/seo/product-data';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
@@ -69,11 +70,19 @@ export default async function ProductPage({
   const { locale, slug } = await params;
   const product = await getProductSeoData(slug);
 
+  // ONLY a genuine absence (`null`) may 404. `undefined` means the lookup itself failed, and
+  // we fall through to the client rather than telling a shopper that a product which probably
+  // exists does not — asserting absence from a fault is the mistake that created this bug.
+  //
+  // KNOWN LIMIT, measured 2026-07-30 on a production build: notFound() here renders the
+  // not-found UI but the response still carries HTTP 200, because Next commits the status
+  // before this component throws. A routing miss (/ar/no-such-route) does return 404. Not
+  // claimed as fixed; tracked separately.
+  if (product === null) notFound();
+
   return (
     <>
-      {product && (
-        <JsonLd data={buildProductJsonLd(product, locale)} />
-      )}
+      {product && <JsonLd data={buildProductJsonLd(product, locale)} />}
       <ProductDetailClient />
     </>
   );

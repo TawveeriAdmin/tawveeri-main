@@ -794,8 +794,11 @@ export async function POST(request: NextRequest) {
   const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
   const supabase = createServerClient();
 
+  // `slug` is REQUIRED here: the card links to /products/<product_slug>, and the product page
+  // resolves with .eq('slug', …). This clause omitted it, so the route fell back to emitting
+  // the row's UUID as the slug and every one of those links resolved to nothing.
   const selectClause = `
-    id, name_ar, name_en, brand, category, image_url,
+    id, slug, name_ar, name_en, brand, category, image_url,
     product_stores!inner (
       id, store_name, current_price, original_price, availability, product_url, coupon_code,
       stores ( name )
@@ -1123,7 +1126,12 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     best_price: bestPrice,
     store_count: uniqueStores,
     product_id: row.id,
-    product_slug: row.id,
+    // MEASURED 2026-07-30: this was `row.id`. The product page resolves by `products.slug`,
+    // so emitting the UUID produced a link that matched nothing — the page rendered its
+    // "not found" state at HTTP 200 for BOTH the shopper and the crawler. 38 of 48 cards on
+    // `iphone 15` carried a UUID here. Fall back to the id only if a row somehow has no
+    // slug; the page now accepts either.
+    product_slug: (row as { slug?: string | null }).slug || row.id,
   } as GroupedSearchProduct;
 }
 

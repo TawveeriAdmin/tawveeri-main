@@ -226,7 +226,11 @@ export default function ProductDetailClient() {
  )
  `
  )
- .eq('slug', slug)
+ // Resolve by slug, or by id when the route param is a UUID. Search emitted the product's
+ // UUID as its `product_slug`, so a slug-only lookup rendered "not found" for products that
+ // exist — measured 2026-07-30 on 38 of 48 cards for `iphone 15`. The Algolia path still
+ // supplies ids (its index has no slug field), so both forms must resolve.
+ .eq(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug) ? 'id' : 'slug', slug)
  .eq('is_active', true)
  .maybeSingle<ProductQueryResult>();
 
