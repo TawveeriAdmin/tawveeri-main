@@ -7,7 +7,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
-import { isApprovedStore, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
+import { isApprovedStore, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 
 export const maxDuration = 30;
@@ -708,11 +708,18 @@ async function searchTPSCanonical(
 
     const latest = new Map<string, Map<string, { price: number; obsId: string }>>();
     for (const r of prices ?? []) {
-      // Approved-27 scope gate: skip observations from non-approved retailers (e.g. najm, alnakheel).
-      if (!isApprovedStore(r.store_name)) continue;
+      // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
+      // `price_history.store_name`, which is not an identity: the same retailer appears
+      // there under a display name AND a numeric id. Measured live 2026-07-30 on
+      // `غسالة صحون` — the card listed "اكسترا, شاكر, 7, المنيع, سامسونج السعودية", where
+      // 7 IS شاكر. That is a fabricated fifth store and a raw internal id rendered to a
+      // customer, i.e. both halves of what ADR-132 and ADR-135 exist to prevent.
+      // Keyed on the resolved slug, the retailer can only be counted once.
+      const slug = resolveApprovedSlug(r.store_name);
+      if (!slug) continue;
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
-      if (!m.has(r.store_name)) m.set(r.store_name, { price: Number(r.price), obsId: r.tps_observation_id });
+      if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id });
     }
 
     const out: GroupedSearchProduct[] = [];
@@ -720,7 +727,11 @@ async function searchTPSCanonical(
       const byStore = latest.get(p.id);
       if (!byStore || byStore.size === 0) continue;
       const slug = identityKeyToSlug(p.tps_identity_key ?? '');
-      const storeEntries: SearchProduct[] = [...byStore.entries()].map(([storeName, v]) => ({
+      // The map is keyed by SLUG now, so render the retailer's display name — never the key,
+      // and never a raw store id.
+      const storeEntries: SearchProduct[] = [...byStore.entries()].map(([storeSlug, v]) => {
+        const storeName = retailerDisplayName(storeSlug, 'ar') ?? storeSlug;
+        return ({
         name_ar: p.name_ar, 
         name_en: p.name_en || '', 
         brand: p.brand || '', 
@@ -744,11 +755,12 @@ async function searchTPSCanonical(
         delivery_cost: 0,
         is_deal: false, 
         coupon_code: null,
-        store: storeName, 
+        store: storeSlug,
         store_name: storeName,
-        rating: null, 
+        rating: null,
         review_count: null,
-      }));
+      });
+      });
       const ps2 = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
       const bestPrice = ps2.length ? Math.min(...ps2) : 0;
       const rep = storeEntries[0];
