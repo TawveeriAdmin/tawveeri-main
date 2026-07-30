@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { buildOfferExitLink, getProviderByStoreId } from "@/lib/providers";
+import { getBaseUrl } from "@/lib/seo/metadata";
 
 // A measured exit is per-request and must never be cached (each hit records an
 // outbound click and resolves the current offer URL). Force dynamic + Node runtime.
@@ -30,7 +31,20 @@ export async function GET(
   { params }: { params: { offerId: string } }
 ) {
   const { offerId } = params;
-  const home = () => NextResponse.redirect(new URL("/", req.url), 302);
+  // MEASURED DEFECT (2026-07-30): this was `new URL("/", req.url)`. Behind Railway's proxy
+  // `req.url` is the INTERNAL bind address, so an unresolvable exit returned
+  //   302 location: https://0.0.0.0:8080/
+  // — an unreachable host, not our homepage. Verified live before the fix.
+  //
+  // Rate, measured rather than assumed: 1 malformed link in 695 rendered exits (0.14%) across
+  // eight categories. An earlier SQL estimate of 28.4% was the WRONG INSTRUMENT — it grouped
+  // price_history by raw `store_name`, while this route's caller resolves each row to an
+  // approved retailer slug first, collapsing duplicate name variants (أمازون / amazon /
+  // numeric ids); within a collapsed slug the latest row nearly always carries an id.
+  //
+  // The destination is always the real homepage, from the configured public origin — never
+  // req.url, which is only correct when the process is addressed directly.
+  const home = () => NextResponse.redirect(new URL("/", getBaseUrl()), 302);
 
   if (!offerId || !UUID_RE.test(offerId)) return home();
 
