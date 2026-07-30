@@ -1,4 +1,141 @@
-# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #14 · DRAIN IN FLIGHT (supersedes below) ═══
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #15 · ADR-148 BACKPRESSURE SHIPPED ═══
+
+**Read this, then ADR-148.** Commits `1723d14` + `6c1dd02`, pushed to `main`.
+Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
+Suite **756/756** green.
+
+## 1. FIRST INCOMPLETE ITEM — the almanea drain is still running
+
+It is the only unfinished work. Everything else in this session is shipped and verified.
+
+```
+# resume (cursor-based — never restarts from the beginning):
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 5
+# then, only after almanea reports no lag:
+npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 1
+```
+Repeat until that store stops appearing in the `per-store lag` block. ~10,000 rows
+and ~9.3 min per pass. **Then measure with `scratchpad/comparable.sql` (§4) and report
+the delta against the 718 baseline.**
+
+## 2. PROCESSES — what was running, what was changed
+
+| process | PID | role | disposition |
+|---|---|---|---|
+| Railway scheduler | **37** (container) | THE production scheduler — hourly chain, ingestion | **preserved** — heartbeat ticking, verified |
+| local `scheduler.js` ×4 | 2364 · 13224 · 13564 · 7940 | duplicates writing to **production** | **STOPPED** |
+| stale `next start` :3021/:3022/:3023 | 22220 · 20636 · 8736 | spawned those schedulers | **STOPPED** |
+| `npm run dev` :3000 | 20908 → 22624 | founder's dev server | **preserved** (its scheduler child killed) |
+| drain loop `drain.sh 5` | 22628 | the almanea drain | **preserved, untouched** |
+
+**Config change (local only — `.env.local` is gitignored, Railway unaffected):**
+```
+DISABLE_INPROCESS_SCHEDULER=1      # ADD to .env.local  → no local Next server spawns a scheduler
+# RESTORE: delete that line from .env.local, then restart the dev server.
+```
+**Backpressure rollback (production, env var):** `INGEST_BACKPRESSURE_HIGH=0` disables the
+gate entirely. `INGEST_BACKPRESSURE_LOW` (20,000) is the resume threshold.
+
+**Drain job survival:** the loop is **orphaned but alive** — its spawning shell (PID 12468)
+exited and it kept running, so it does not depend on any shell. It is **not** proven to
+survive `claude.exe` (PID 8668) exiting; Claude Code background tasks are session-scoped by
+design. **Assume it dies with the session and resume via §1.**
+
+**Resume safety:** normalization resumes from `tps_progress_cursors` (per store,
+`category='_all_'`). It never restarts from the beginning. **Known bounded crash window:**
+`normalizeSweep` upserts the cursor (`progressive-engine.ts` ~L126) *before* the staging
+rows (~L129), so a crash between them advances the cursor past up to `limit` observations
+that were never staged — skipped silently, not retried. Re-running does not repair it; only
+a deliberate cursor rewind would. **Fix (not done, deliberately — it is a write to the
+engine while a drain is in flight): write staging first, then the cursor.**
+
+## 3. WHY — ADR-148 in three lines
+
+Ingestion was purely time-driven and never asked whether normalization could keep up, so the
+queue could grow without bound. Four duplicate local schedulers multiplied it against
+production. The `refreshRunning`/`ingestRunning` guards are module-level booleans — they
+serialize within one process and are blind across five (the ADR-099 condition).
+
+**Shipped:** queue-aware admission with hysteresis (discovery + feed gated at 50k rows-behind;
+**price updates and the refresh chain never gated**); `normalize-incremental --adaptive` so
+normalization capacity follows the queue instead of a constant 6 batches; `--stores` scoping
+so a per-store delta is attributable; a registry-coherence test.
+
+## 4. BASELINE — measure the delta against these (2026-07-30 10:13 UTC, production)
+
+| metric | value |
+|---|---|
+| canonicals with an approved-retailer offer | 6,912 |
+| **comparable (≥2 approved retailers)** | **718** |
+| comparable (≥3) | 166 |
+| almanea in a comparison | 354 · jarir in a comparison | 121 |
+| almanea backlog | 322,255 · jarir backlog | 44,172 |
+
+Query: `scratchpad/comparable.sql` — `price_history` → active `canonical_products`, store
+resolved through a SQL transcription of `resolveApprovedSlug`, `count(distinct slug)`.
+Reproduces ADR-147's 717 (718 with ingestion since), so it is the same instrument.
+
+**ATTRIBUTION CAVEAT — binding.** The interval before ~11:29 UTC is **contaminated**: four
+foreign writers were normalizing concurrently. Proof, not inference — **jarir's lag fell
+43,756 → 39,756 (4,000 rows) during an interval when my drain was `--stores 5` and never
+touched jarir.** Any delta spanning that window is an **upper bound**, exactly as ADR-147
+had to say of its +78. A clean baseline must be re-taken after the drain completes.
+
+## 5. LULU / SHARAF DG — and the registry defect behind them
+
+`APPROVED_STORE_IDS` (display gate) and `TPS_STORES` (normalization work-list) are two
+hand-maintained lists in different layers with **nothing enforcing agreement**. They disagree
+on 14 of 24 stores.
+
+- **Approved but NOT swept:** **lulu (23) 5,854 obs · sharafdg (24) 1,370 obs** — both
+  ingesting live, both with **no cursor and 0 normalized observations**, so their products
+  can never reach a canonical or a comparison. Plus **blackbox (10)**, approved but with zero
+  observations ever (inactive, nothing to sweep).
+- **Swept but not approved:** 11 stores (hdf, goldenstore99, mhzm, aletawik, pcpalace,
+  sonyworld, amnkwm, alsfeerzone, alhowaish, alduaalbarq, eazyworld). **This direction is
+  legitimate** — their listings corroborate identity without ever being displayed.
+- **Why the ADR-147 lag report never showed them:** it iterates `tps_progress_cursors`, and a
+  cursor only exists once a store has been swept. **A store outside `TPS_STORES` is
+  structurally invisible to the metric built to catch this.** Not behind the queue — outside it.
+
+**Shipped:** `tests/pipeline/retailer-registry-coherence.test.ts` fails on any approved store
+absent from the sweep unless it is an explicit, reasoned `KNOWN_UNSWEPT` entry; a second test
+fails if an exemption outlives its fix.
+
+**DEFERRED — the actual fix, with acceptance criteria.** Add `{ id: 23, name: 'لولو هايبر ماركت' }`
+and `{ id: 24, name: 'شرف دي جي' }` to `TPS_STORES` in `scripts/tps-core/category-registry.ts`
+(both names already resolve through `NAME_TO_SLUG`), delete the two `KNOWN_UNSWEPT` entries,
+run a scoped drain per store, measure. **Not done today** because the sweep divides its budget
+among pending stores, so it would change almanea's drain rate *and* contaminate the attribution
+being measured. **Acceptance:** both stores report a cursor and non-zero normalized
+observations, the coherence test passes with a shorter gap list, comparable re-measured
+before/after.
+
+## 6. PERMANENT ARCHITECTURE — scoped, not built
+
+Built today: backpressure, adaptive capacity, per-store scoping, registry invariant.
+**Not built, with entry points:**
+
+1. **A database-level writer lock** replacing the in-process booleans — a `pg_advisory_lock`
+   around the refresh chain and each ingestion loop. *Acceptance:* two schedulers started
+   simultaneously must produce exactly one running chain. *Entry:* `scheduler.js` `runRefresh`
+   / `runDiscovery` / `runFeedIngest`.
+2. **An explicit terminal state per observation** — today an observation is only ever
+   "before the cursor" or "after it"; there is no *rejected-with-reason* or
+   *deferred-with-retry*, so a row that no plugin detects is indistinguishable from one never
+   reached. *Acceptance:* every `raw_observations` row resolves to processed / rejected(reason)
+   / deferred(attempts), and the counts reconcile to the table total. *Entry:*
+   `progressive-engine.ts` `normalizeSweep`. **This is the real closure of "no observation
+   remains indefinitely invisible" — backpressure bounds the queue but does not classify it.**
+3. **Backlog alerting before critical levels** — deliberately NOT done as a
+   `tps_scheduler_heartbeat` schema change, because ADR-099's outage was triggered by
+   DDL-driven PostgREST schema-cache reloads and launch is tomorrow. *Entry:* extend the
+   heartbeat row with `rows_behind` after launch, or log-only until then.
+4. **Cursor-before-staging ordering** (§2) — small, safe, do it when no drain is in flight.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-30 CHECKPOINT #14 · DRAIN IN FLIGHT ═══
 
 **A drain is RUNNING as this is written.** If the session ended, read §A before anything.
 
