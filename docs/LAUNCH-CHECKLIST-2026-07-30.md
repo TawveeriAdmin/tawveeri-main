@@ -1,4 +1,4 @@
-# LAUNCH CHECKLIST — 2026-07-30
+# LAUNCH CHECKLIST — 2026-07-30 (rev 2, post Samsung KSA)
 
 **Recommendation: B — OFFICIAL LAUNCH WITH A NARROWER PRICE-TRUTH PROMISE.**
 Public launch status unchanged; the announcement remains founder-gated.
@@ -38,17 +38,17 @@ No figure in this document is inferred. The pre-announcement condition in §9 is
 ### Catalogue
 | figure | value | definition |
 |---|---|---|
-| canonicals with any approved-retailer offer | 6,092 | `price_history` joined to active `canonical_products`, store resolved via `resolveApprovedSlug` |
-| **comparable (≥2 distinct approved retailers)** | **581** | same, `having count(distinct slug) >= 2` |
-| comparable (≥3) | 135 | same, `>= 3` |
-| comparable share | 9.5% | 581 / 6,092 |
+| canonicals with any approved-retailer offer | 6,103 | `price_history` joined to active `canonical_products`, store resolved via `resolveApprovedSlug` |
+| **comparable (≥2 distinct approved retailers)** | **588** | same, `having count(distinct slug) >= 2` |
+| comparable (≥3) | 141 | same, `>= 3` |
+| comparable share | 9.6% | 588 / 6,103 |
 
 ### Price truth — `GET /api/v1/tps/discount-integrity`
 | figure | value | definition |
 |---|---|---|
-| verified drops | **358** | `verdict='verified_drop'`, ADR-134 currency gate applied, superseded duplicates suppressed (636) |
-| advertised discounts referencing a price we never observed | **71%** | 9,652 `inflated_reference` ÷ 13,625 checkable (verified + inflated + stable; `insufficient_history` abstains) |
-| checkable listings | 13,625 | as above |
+| verified drops | **363** | `verdict='verified_drop'`, ADR-134 currency gate applied, superseded duplicates suppressed (636) |
+| advertised discounts referencing a price we never observed | **71%** | 9,655 `inflated_reference` ÷ 13,655 checkable (verified + inflated + stable; `insufficient_history` abstains) |
+| checkable listings | 13,655 | as above |
 
 ### Model-number corroboration — `GET /api/v1/tps/model-corroboration`
 | figure | value | definition |
@@ -110,16 +110,16 @@ covered by the harness's read-only resolution at 112/112.
   `apple|iPhone|16|Pro Max|256`: Jarir 3,599 (observed 3 Jul), Extra 3,704 (1 Jul),
   Almanea 4,749 (25 Jul). **Amazon and Noon are NOT INGESTED for this product — zero raw
   listings.** Not a search or join failure; an ingestion gap.
-- Comparable share is **9.5%**. 90.5% of our catalogue is single-retailer.
+- Comparable share is **9.6%**. 90.4% of our catalogue is single-retailer.
 - `MacBook Air M2 256` resolves correctly but to one retailer.
 - Noon holds ~809 URLs against mobile/audio/laptop single-store pools of 481 / 529 / 423.
 
 ## 5. What Tawveeri MAY claim
 
-- "We verified **358** genuine price drops by tracking prices ourselves."
+- "We verified **363** genuine price drops by tracking prices ourselves."
 - "**71%** of advertised discounts we can check reference a price we never observed."
-  (9,652 / 13,625 — state the denominator.)
-- "**581** products comparable across two or more approved retailers; **135** across three
+  (9,655 / 13,655 — state the denominator.)
+- "**588** products comparable across two or more approved retailers; **141** across three
   or more."
 - "**78** products proven identical across stores by manufacturer model number."
 - "We show the highest price we observed and how many days we tracked it."
@@ -134,9 +134,9 @@ covered by the harness's read-only resolution at 112/112.
   i18n bundle with no component rendering them.
 - ❌ **"166 products verified across stores"** — 88 were accessories. The honest figure is 78.
 - ❌ **"Compare prices across all major Saudi retailers."** Amazon and Noon are absent from
-  the flagship phone; comparable share is 9.5%.
+  the flagship phone; comparable share is 9.6%.
 - ❌ **925 verified drops · 65% inflated · 166 comparable · 342 or 340 drops · 87.7%** — all
-  superseded. Current: 358 · 71% · 581 · 78.
+  superseded. Current: 363 · 71% · 588 · 78.
 - ❌ Any claim that prices are live or real-time. 13.6% are over 30 days old.
 - ❌ A comparison count that includes accessories.
 
@@ -168,7 +168,7 @@ Rollback: `git revert bbfd34c` · `git revert bbbe9d8` · `git revert bfaa6ee`
 
 **B — OFFICIAL LAUNCH WITH A NARROWER PRICE-TRUTH PROMISE.**
 
-**Why not A (full launch).** A full comparison promise is not supported: **9.5%** of the
+**Why not A (full launch).** A full comparison promise is not supported: **9.6%** of the
 catalogue is comparable, the flagship query reaches 3 of 5 retailers because two are not
 ingested, and **13.6%** of offers are over 30 days old. Claiming broad live comparison
 would be the exact marketing-number failure `بالأدلة، لا أرقام مسوّقة` exists to prevent.
@@ -177,11 +177,11 @@ would be the exact marketing-number failure `بالأدلة، لا أرقام م
 96.4% overall journeys, 100% of comparison journeys, 100% Arabic, 12/12 on the launch set,
 zero unhonoured store claims, every price agreeing between card and compare page, every
 outbound link landing on a real product. Price truth is genuinely unique and provable —
-358 verified drops and a 71% inflated-reference rate no competitor publishes.
+363 verified drops and a 71% inflated-reference rate no competitor publishes.
 
 **Therefore B:** launch as the **price-truth layer for Saudi retail**. Lead with verified
 drops, the 71% statistic, the evidence line and disclosed price age. State comparison
-coverage honestly — 581 products across 2+ retailers — and do not imply breadth we lack.
+coverage honestly — 588 products across 2+ retailers — and do not imply breadth we lack.
 
 **The pre-announcement condition is MET.** The post-`bbfd34c` harness re-run measured
 112/112 overall and 82/82 comparison, with English rising 90% → 100%. Every figure in this
@@ -192,3 +192,79 @@ document is now reproduced from production.
 (production returned 200 throughout). That log was DELETED rather than filed, because a
 dead instrument reading is not a measurement, and a `0%` in the record would be read as
 one later.
+
+---
+
+# REV 2 — 2026-07-30, after Samsung KSA (ADR-143) and the retailer-keying fix (ADR-144)
+
+## Samsung KSA: predicted +281, **actual +7**
+
+| | before | after |
+|---|---|---|
+| comparable (≥2 approved retailers) | 581 | **588** |
+| comparable (≥3) | 135 | **141** |
+| canonicals involving Samsung KSA | 0 | **14** |
+
+**Ingest:** 111 discovered · 36 created · 60 linked to products another retailer already
+holds · 15 errors. Normalize: backlog 15,250 → 0, 55 canonicals written. Samsung now holds
+26 `price_history` rows over 18 canonicals — landing on dishwasher, TV and audio, not
+phones. Live and verified: `تلفزيون سامسونج` and `سماعات سامسونج` both return Samsung
+alongside Almanea/Extra/Jarir.
+
+**Why the prediction missed by 40×, and it is my error to own.** +281 counted every
+single-store Samsung canonical and assumed Samsung KSA would carry *and* match all of
+them. Its site lists the current lineup while many of our 281 are older or variant models,
+and SKU-suffixed Samsung names do not all resolve onto our canonicals. Measured conversion
+is **~12.6%** of ingested products becoming comparison members. At that rate the full
+Samsung catalogue is worth roughly **+50–60**, not +281. It was a ceiling and I reported
+it as a forecast.
+
+**Consequence for the rule:** onboarding a brand store is worth roughly (products we can
+ingest) × 12.6%, not (that brand's single-store canonicals). Use the measured conversion
+for Noon and SWSG rather than a ceiling.
+
+## A store count corrected downward (ADR-144)
+
+`غسالة صحون` was rendering **"اكسترا, شاكر, 7, المنيع, سامسونج السعودية"** — five stores,
+except **7 IS شاكر**. `searchTPSCanonical` keyed on the raw `price_history.store_name`,
+which production writes as both a display name and a numeric id. Now keyed on the resolved
+retailer slug: **the card honestly shows 4**, and a raw store id can no longer reach a
+customer. Some cards will show fewer stores than yesterday. That is the number becoming
+correct, not worse.
+
+## Final harness — `docs/ui-journey-2026-07-30-final.log`
+
+**overall 112/112 = 100% · comparison 82/82 = 100% · Arabic 72/72 · English 40/40 ·
+exact-model 32/32 product and 32/32 variant · zero failures · zero unhonoured store claims.**
+
+## Public figures, refreshed at rev 2
+
+| figure | value | source |
+|---|---|---|
+| verified drops | **363** | `/api/v1/tps/discount-integrity` |
+| advertised discounts referencing an unobserved price | **71%** | 9,655 ÷ 13,655 |
+| comparable (≥2 approved retailers) | **588** | SQL in §1 |
+| comparable (≥3) | **141** | same |
+| products corroborated by model number (devices only) | **78** | `/api/v1/tps/model-corroboration` |
+
+## Does Samsung move the recommendation to A? **No.**
+
+**The decision stays B**, and the number that decides it is **comparable share: 9.6%**
+(588 of 6,103). Samsung moved it by **+0.1 points**. A full comparison promise needs that
+share to be a large minority of the catalogue, not a rounding error; +7 does not approach
+it, and at the measured 12.6% conversion neither would finishing Samsung's catalogue.
+
+What *would* move it to A is Noon — the only untouched retailer whose breadth spans every
+scope, against single-store pools of mobile 481 / audio 529 / laptop 423. That is the next
+work, and it is not done.
+
+## Deployment — rev 2
+
+| commit | change |
+|---|---|
+| `cdeb83b` | Samsung KSA ingested + admitted (ADR-143) |
+| `bab6518` | one key per retailer; raw store id off the card (ADR-144) |
+
+Rollback: `git revert bab6518` · `git revert cdeb83b` (independent).
+Reverting `cdeb83b` removes Samsung from the approved set; its ingested rows remain in the
+database and simply become invisible again, as they were before today.

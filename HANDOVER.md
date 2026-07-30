@@ -1,3 +1,62 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #7 · SAMSUNG BUILT (supersedes below) ═══
+
+**Read this, then `docs/LAUNCH-CHECKLIST-2026-07-30.md` (rev 2).**
+
+## Decision: still **B** — launch as the price-truth layer
+
+Samsung did NOT move it to A. The deciding number is **comparable share 9.6%** (588 of
+6,103); Samsung moved it +0.1 points.
+
+## Gate — `docs/ui-journey-2026-07-30-final.log`
+
+**overall 112/112 = 100% · comparison 82/82 = 100% · Arabic 72/72 · English 40/40 ·
+exact-model 32/32 product AND variant · zero failures · zero unhonoured store claims.**
+
+## Samsung KSA: predicted +281, ACTUAL +7
+
+581 → 588 comparable (2+), 135 → 141 (3+), 14 canonicals involve Samsung.
+
+**The connector already existed and had never run at scale** — 362 raw rows with
+`raw_url` / `name` / `price` all NULL and status `pending`. This was not a build; it was
+a run. Validate before investing: samsung.com/sa does publish prices in JSON-LD, a dry
+run returned 11 products with 0 errors, and only then did I spend a live run.
+
+**MEASURED CONVERSION: ~12.6%** of ingested products become comparison members. Size Noon
+and SWSG with THAT, not with a single-store-canonical ceiling. Samsung's full catalogue is
+worth roughly +50–60, not +281. My +281 was a ceiling reported as a forecast — that was
+the error, and it is the reusable lesson.
+
+Samsung landed on **dishwasher, TV, audio** — not phones. A bare `سامسونج` query routes
+only to mobile, so it cannot see them; `تلفزيون سامسونج` and `سماعات سامسونج` do.
+**Brand-only query routing is an open gap.**
+
+## ADR-144 — a store count corrected DOWNWARD
+
+`غسالة صحون` rendered "اكسترا, شاكر, 7, المنيع, سامسونج السعودية" — and **7 IS شاكر**.
+`searchTPSCanonical` keyed on the raw `price_history.store_name`, which production writes
+both as a display name and as a numeric id: two keys, one shop. Now keyed on the resolved
+slug — the card honestly shows **4**, and a raw store id can no longer reach a customer.
+Some cards will show fewer stores than before. That is the number becoming correct.
+
+## Next, in order
+
+1. **Noon** — the only untouched retailer spanning every scope; single-store pools
+   mobile 481 / audio 529 / laptop 423. **This is what could move B → A.** Audit the
+   809-URL cause first (shallow discovery / pagination / traversal / blocked endpoints /
+   parser loss / duplicate suppression / identity rejection / stale URLs).
+2. **SWSG** — AC pool 1,006, the largest single-category pool we hold.
+3. **Brand-only query routing** — `سامسونج` / `samsung` should reach every category.
+4. **Bilingual token-parity test** — three defects of that class in four days
+   (ة/ى folding · برو/pro · جالكسي/galaxy). No systematic guard exists.
+
+## Capacity rule
+
+One full harness run per session, at the end. Probes for everything else. This session:
+one run, plus one discarded (`ERR_INTERNET_DISCONNECTED` on every request — a local
+connectivity drop, deleted rather than filed, because a dead reading is not a measurement).
+
+---
+
 # HANDOVER — جرد حالة العمل
 
 > **نطاق هذا الجرد (صراحةً):** قرأتُ فعليًا وبالكامل الملفات الـ45 داخل `scripts/tps-analysis/` — وهي مجلد المخرجات/الأدوات التحليلية التي أنتجتها الجلسات السابقة. **لم أقرأ** بقية المستودع (كود التطبيق `src/`، مجلد `docs/`، `mobile/`، `scripts/tps-core`، `scripts/tps-plugins`، ملفات الإعداد) ملفًا-ملفًا — قراءة آلاف الملفات غير ممكنة في جلسة واحدة، وادّعاء ذلك سيكون غير أمين. حيث أشير إلى ملف خارج `scripts/tps-analysis/` فذلك **استنتاج** من استيرادات الكود أو من الذاكرة، وسأضع عليه علامة "لم أقرأه".
