@@ -4,6 +4,37 @@
 Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
 Suite **756/756** green.
 
+## 0-FIRST-INCOMPLETE-ITEM. PRICE UPDATES RUN NOW, BUT FAIL AT ~99%
+
+**Start here next session.** Fixing the startup-timer bug (§0-CRITICAL) made the price loop
+actually run — and that immediately exposed a deeper defect it had been hiding.
+
+First full sweep after the fix (13:06–13:14, all four `INGEST_STORES`, 20s staggered):
+
+| run | store | status | products_updated | errors |
+|---|---|---|---|---|
+| 1349 | noon | partial | **0** | **120** |
+| 1350 | lulu | partial | **1** | **39** |
+| 1351 | sharafdg | success | 0 | 0 |
+| 1352 | extra | running | — | — |
+
+**One product refreshed across four stores; 159 errors.** Price freshness is the platform's
+promise and its dedicated refresh path is ~99% broken. It was invisible for as long as the loop
+never ran. *(Making a hidden failure visible is progress even when the number is ugly.)*
+
+**Diagnose per store** — noon's failure reproduced on a manual probe too (run 1342, 5/5 errors),
+so it is not a scheduling artifact. Entry: `/api/cron/update-prices` →
+`runPriceUpdateJob` → each store's `updateProductPrice(productUrl)`.
+
+**WHY THIS ALSO FORCED A THRESHOLD CHANGE (`6106fa0`).** DISCOVERY is the de-facto
+price-observation source — today it wrote almanea 14,057 · noon 737 · jarir 588 · lulu 534
+rows, each carrying a price, versus the price loop's **one**. My original 50,000 backpressure
+gate would have deferred discovery **~16 hours across launch**, trading high customer value
+(fresh prices) for ~none (a shorter queue, whose drain was measured at **zero** new
+comparisons). Gate raised to **500,000 / 400,000** — a genuine runaway guard that never blocks
+normal operation, since no degradation was ever observed even at 370,000 rows behind.
+**Mechanism unchanged; still reversible with `INGEST_BACKPRESSURE_HIGH=0`.**
+
 ## 0-CRITICAL. SCHEDULED PRICE REFRESH HAD NEVER RUN — fixed, verification pending
 
 **The worst defect found today, and the most launch-relevant.** `runPriceUpdate` was
