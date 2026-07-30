@@ -185,9 +185,49 @@ export class LuluScraper extends BaseScraper {
     return products;
   }
 
+  /**
+   * ADR-149 — LuLu keeps the rendered path, and the reason is recorded so nobody retries
+   * the shortcut I just tried and reverted.
+   *
+   * LuLu's product page DOES carry a complete JSON-LD `Product` block in static HTML
+   * (`"price":"89.000"`, `"availability":"schema.org/InStock"`) — verified with curl, HTTP
+   * 200. But the same URL fetched from Node returns **HTTP 403** even with a browser
+   * User-Agent: LuLu fingerprints the client (TLS/header ordering), not just the UA. So
+   * "skip Puppeteer, parse the static HTML" looks obviously right and does not work.
+   *
+   * The measured production failure (39 errors, 1 success) is therefore NOT explained yet.
+   * It could not be reproduced locally because Puppeteer has no Chrome on the dev machine,
+   * and Railway's logs were not readable from here. The `[price-attempt]` structured line
+   * added in this same ADR now records an explicit reason per attempt in production — that
+   * is the evidence the next session needs. Until then LuLu's dedicated refresh is UNFIXED
+   * and its freshness depends on discovery.
+   */
   async updateProductPrice(productUrl: string): Promise<ScrapedProduct | null> {
     try {
-      const html = await this.fetchRendered(productUrl);
+      const product = this.parseProductJsonLd(await this.fetchRendered(productUrl), productUrl);
+      if (!product) {
+        this.logError({
+          type: 'parse',
+          message: `No JSON-LD Product price in rendered HTML (explicit reject, not a silent null): ${productUrl}`,
+          url: productUrl,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return product;
+    } catch (error) {
+      this.logError({
+        type: 'network',
+        message: `Failed to update price for ${productUrl}: ${error instanceof Error ? error.message : String(error)}`,
+        url: productUrl,
+        timestamp: new Date().toISOString(),
+      });
+      return null;
+    }
+  }
+
+  /** Parse a LuLu product from a page's JSON-LD. Returns null if no valid price is present. */
+  private parseProductJsonLd(html: string, productUrl: string): ScrapedProduct | null {
+    try {
       const $ = this.getCheerio(html);
       let product: ScrapedProduct | null = null;
 
@@ -243,14 +283,8 @@ export class LuluScraper extends BaseScraper {
       });
 
       return product;
-    } catch (error) {
-      this.logError({
-        type: 'network',
-        message: `Failed to update price for ${productUrl}: ${error instanceof Error ? error.message : String(error)}`,
-        url: productUrl,
-        timestamp: new Date().toISOString(),
-      });
-      return null;
+    } catch {
+      return null;   // malformed HTML — caller decides whether to try the other path
     }
   }
 }
