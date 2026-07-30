@@ -71,3 +71,6 @@ logs/
 
 matcher-old.ts
 scripts/tps-er/er-review-queue.json
+
+# local diagnostic probes
+scratchpad/
