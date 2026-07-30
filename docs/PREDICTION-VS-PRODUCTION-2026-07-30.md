@@ -173,3 +173,57 @@ be measured on a bounded run before any larger investment.
 
 **NOT REACHED:** the deeper Noon ingest itself. The audit it required is done and its
 limiting factor is named.
+
+---
+
+# VALIDATION BY INTERVENTION — the fetch-reach hypothesis, tested
+
+*(production measurement, 2026-07-30)*
+
+The hypothesis was not left as an inference. It was tested by changing the one variable it
+names — reach — on the retailer with the worst reach-to-market ratio, and measuring the
+comparison delta.
+
+**Intervention:** Noon re-ingested at `--pages=30` across the nine scope categories,
+against a default of 10. No parser change, no identity change, no new retailer.
+
+| | before | after |
+|---|---|---|
+| Noon distinct products fetched | 1,092 | **6,736** (6.2×) |
+| comparable canonicals (≥2 approved retailers) | 588 | **635** |
+| comparable at ≥3 | 141 | **146** |
+| canonicals with Noon in a comparison | — | **151** |
+
+**+47 comparable products from ONE retailer, with roughly 10% of the new products
+normalized** — 9,429 observations remain in the backlog at the time of writing. Against
+Samsung KSA's **+7** from a complete, fully-normalized run.
+
+**No extrapolation is offered.** The remaining backlog is not all Noon, and marginal
+returns may fall. What is measured is the direction and the order of magnitude: changing
+reach alone, on one retailer, produced roughly **7× the entire Samsung onboarding**.
+
+**Verified live** — `سماعات` returns المنيع / نون / مكتبة جرير; `تلفزيون 65 بوصة` returns
+إكسترا / مكتبة جرير / نون.
+
+## The architectural cause, located in our own code
+
+*(repository analysis)* Fetch depth is governed by per-scraper caps and an orchestrator
+default, not by the retailers:
+
+- `scraping-orchestrator.ts`: `options.max_pages || 10`
+- `noon-scraper.ts`: paginates `maxPages` × `limit=50` per category query
+- `samsung-ksa-scraper.ts`: `const limit = Math.max(1, maxPages) * 12`
+- `extra-scraper.ts`: `const limit = Math.max(1, maxPages) * EXTRA_SITEMAP_DISCOVERY_LIMIT`
+
+Each connector caps itself, and the shared default is 10 pages. **The 200× spread in fetch
+reach across retailers is a property of our configuration, not of the Saudi market.**
+
+## What this makes the highest-leverage work
+
+Not parsers. Not identity. Not new retailers. **Raising reach at the retailers already
+connected**, because the overlap rate where products do reach TPS is already 58% and the
+reach term is the one spanning two orders of magnitude.
+
+**NOT REACHED:** draining the remaining 9,429-row backlog (~100 minutes at the observed
+~140 rows per normalizer run), and applying the same intervention to almanea, jarir, extra
+and amazon. The intervention is proven; the rollout is not done.
