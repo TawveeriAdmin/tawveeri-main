@@ -4,6 +4,20 @@
 Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
 Suite **756/756** green.
 
+## 0. WHERE THE DRAIN RESULT LANDS IF IT FINISHES UNWATCHED
+
+The loop writes every pass to
+`%TEMP%\claude\C--Users-Hp-Downloads-Tawveeri-Official\5b26c93a-01d0-41cd-833e-a876657d11a3\scratchpad\drain-store-5.log`
+(`DRAINED:` or `MAX RUNS REACHED:` on the last line). **That path is session-scoped and may be
+cleaned up — do not rely on it.** The durable read, true at any time:
+
+```
+npx tsx scripts/tps-analysis/q.ts "select k.store_id, (select count(*) from raw_observations o where o.store_id=k.store_id and o.id>k.last_raw_id) behind from tps_progress_cursors k where k.category='_all_' order by 2 desc"
+npx tsx scripts/tps-analysis/q.ts --file scripts/tps-analysis/comparable-count.sql    # vs the 718 baseline in §4
+```
+**Expected result when it finishes: comparable stays ~718. See §4b — this is measured, not
+predicted.**
+
 ## 1. FIRST INCOMPLETE ITEM — the almanea drain is still running
 
 It is the only unfinished work. Everything else in this session is shipped and verified.
@@ -15,7 +29,7 @@ npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --sto
 npx tsx scripts/tps-core/normalize-incremental.ts --batches 20 --limit 500 --stores 1
 ```
 Repeat until that store stops appearing in the `per-store lag` block. ~10,000 rows
-and ~9.3 min per pass. **Then measure with `scratchpad/comparable.sql` (§4) and report
+and ~9.3 min per pass. **Then measure with `scripts/tps-analysis/comparable-count.sql` (§4) and report
 the delta against the 718 baseline.**
 
 ## 2. PROCESSES — what was running, what was changed
@@ -49,6 +63,65 @@ that were never staged — skipped silently, not retried. Re-running does not re
 a deliberate cursor rewind would. **Fix (not done, deliberately — it is a write to the
 engine while a drain is in flight): write staging first, then the cursor.**
 
+## 2b. ADR-099 DETECTION SIGNAL — verified 2026-07-30 12:03 UTC
+
+**`health 200` is NOT sufficient** — the Next server answers from memory while PostgREST is
+wedged in the `PGRST002` loop and every REST-backed customer endpoint returns empty. Run
+these four, in this order. Whole sequence ≈ 10 seconds.
+
+```bash
+# 1. service up
+curl -s -o /dev/null -w "%{http_code}\n" https://tawveeri.com/api/health
+# 2. REAL PostgREST read — this is the one that catches a wedge
+curl -s -w " [%{time_total}s]\n" https://tawveeri.com/api/stats
+# 3. representative DB query + lock/connection state
+npx tsx scripts/tps-analysis/q.ts "select count(*) conns, count(*) filter (where state='active') active, count(*) filter (where wait_event_type='Lock') lock_waits, count(*) filter (where state='idle in transaction') idle_txn from pg_stat_activity where datname=current_database()"
+# 4. normalization actually progressing + scheduler alive
+npx tsx scripts/tps-analysis/q.ts "select pid, last_tick::text, last_refresh_at::text, last_refresh_status from tps_scheduler_heartbeat"
+```
+
+**HEALTHY looks like this (measured 12:03 UTC):** `200` · `/api/stats` returns real JSON
+(`comparable_products` non-zero) in **1.6s** · `conns=11 active=2 lock_waits=0 idle_txn=0` ·
+`last_tick` within the last 60s.
+
+**WEDGED / DEGRADED looks like:** `/api/stats` returns `{}`/empty or 5xx or takes >10s while
+`/api/health` still says 200 · any `PGRST002` in a response · `lock_waits > 0` sustained ·
+`idle_txn > 0` sustained · `conns` near the pool ceiling · `last_tick` older than ~3 min ·
+`last_refresh_status` starting `fail(` or `crash:` · per-store lag rising while a normalizer
+claims to be running.
+
+## 2c. RECOVERY PROCEDURE — do not execute unless an incident exists
+
+Recovery is **NOT** complete because a process restarted. It requires all three: a real
+PostgREST read returning data, a NEW production write, and downstream processing resuming.
+
+1. **Pause the producers first, never the consumer.** Set `INGEST_BACKPRESSURE_HIGH=1` on
+   Railway (defers all discovery + feed) — or stop the manual drain loop. **Do NOT kill
+   Railway's scheduler**: it is the only thing keeping prices fresh.
+2. **Preserve the drain checkpoint.** Nothing to save — progress lives in
+   `tps_progress_cursors`. Read it with the §2b query 3 variant on `tps_progress_cursors`.
+   Killing the drain loses at most the in-flight pass.
+3. **Avoid duplicate workers on restart.** Confirm zero local schedulers before restarting
+   anything: `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*scheduler.js*' }`
+   must return nothing locally, and `.env.local` must still contain `DISABLE_INPROCESS_SCHEDULER=1`.
+4. **If PostgREST is wedged:** `VACUUM (ANALYZE)` the system catalogs, then a **full Supabase
+   project restart** from the dashboard (founder action). A bare `NOTIFY pgrst 'reload'`
+   re-introspects WITHOUT reconnecting and just re-breaks it — see ADR-099. Role
+   `statement_timeout`s are already relaxed (authenticator 30s, anon/authenticated/service_role 20s).
+5. **Verify recovery, all three:** §2b returns HEALTHY · a real write
+   (`curl -X POST https://tawveeri.com/api/cron/discover-products -H "Authorization: Bearer $CRON_SECRET" -d '{"store_slug":"lulu","category":"smartphone","max_pages":1}'`
+   then confirm `max(id)` on `raw_observations` rose) · per-store lag falling again.
+
+**Rollback commands for everything shipped today:**
+```
+INGEST_BACKPRESSURE_HIGH=0     # Railway env — disables backpressure entirely
+NORMALIZE_LANE_LOCK=0          # Railway env — disables the normalization lane lease
+# revert the adaptive batch count: drop "--adaptive" from the normalize step in
+#   scripts/tps-core/refresh-intelligence.ts  (returns the hourly chain to a constant 6)
+# restore local schedulers: delete DISABLE_INPROCESS_SCHEDULER=1 from .env.local, restart dev
+git revert b503dcd 6c1dd02 1723d14     # full code rollback, newest first
+```
+
 ## 3. WHY — ADR-148 in three lines
 
 Ingestion was purely time-driven and never asked whether normalization could keep up, so the
@@ -71,7 +144,7 @@ so a per-store delta is attributable; a registry-coherence test.
 | almanea in a comparison | 354 · jarir in a comparison | 121 |
 | almanea backlog | 322,255 · jarir backlog | 44,172 |
 
-Query: `scratchpad/comparable.sql` — `price_history` → active `canonical_products`, store
+Query: `scripts/tps-analysis/comparable-count.sql` — `price_history` → active `canonical_products`, store
 resolved through a SQL transcription of `resolveApprovedSlug`, `count(distinct slug)`.
 Reproduces ADR-147's 717 (718 with ingestion since), so it is the same instrument.
 
@@ -80,6 +153,108 @@ foreign writers were normalizing concurrently. Proof, not inference — **jarir'
 43,756 → 39,756 (4,000 rows) during an interval when my drain was `--stores 5` and never
 touched jarir.** Any delta spanning that window is an **upper bound**, exactly as ADR-147
 had to say of its +78. A clean baseline must be re-taken after the drain completes.
+
+## 4b. THE MEASURED RESULT — draining the backlog produced ZERO new comparisons
+
+**121,866 almanea observations normalized (312,005 → 190,139 rows behind). Customer-visible
+comparable: 718 → 718. Zero.** Same instrument, same query, 10:13 → 12:10 UTC.
+
+| metric | 10:13 baseline | 12:10 | delta |
+|---|---|---|---|
+| **comparable (≥2 approved retailers)** | **718** | **718** | **0** |
+| comparable (≥3) | 166 | 166 | 0 |
+| canonicals with any approved offer | 6,912 | 6,916 | +4 |
+| almanea in a comparison | 354 | 354 | 0 |
+| price_history rows written since baseline | — | **315** | 0.26% of rows drained |
+
+**This is a FOURTH outcome, and neither of us named it.** The framing was "comparisons rise
+materially" / "they barely move" / (founder's addition) "they rise but cannot be attributed".
+The actual result is that they did not move **at all**, so attribution never became the
+question. **The ~370,000 observations were not hidden customer value; they were hidden
+REPETITION** — re-observations of products already held, plus long-tail single-retailer
+product. ~567 canonicals were written per pass, but `with_offer` rose by 4, which means they
+were upserts onto existing identity keys, not new products.
+
+**This CONFIRMS ADR-146's rejected hypothesis at 12× the scale.** ADR-146 measured 9,730 rows
+→ +2 comparable (0.02%). This measured **121,866 rows → +0**. The premise that opened this
+session — "370,000 observations already fetched and invisible to customers, the highest-value
+action available" — **is disproven by its own execution.** The stock was in the building; it
+was not stock anyone can sell.
+
+**What the drain DID buy, honestly:** 315 fresh price observations (real, feeds price-truth
+and verified drops) and a queue heading back under the backpressure threshold — which matters
+because **discovery is now gated until total rows-behind < 20,000**, so the drain must finish
+for catalogue growth to resume. That is why it is still running, not because comparisons are
+expected.
+
+**Do NOT re-run this experiment.** The conversion rate of backlog → comparison is now measured
+twice, two orders of magnitude apart in sample size, and it is ~0.
+
+## 4c. CONTENTION — PARTIALLY PROVEN, and mostly rejected as a throughput cause
+
+| | interval A | interval B |
+|---|---|---|
+| window | 10:24:35 → 11:26:40 | 11:36:14 → 12:00:22 |
+| writers | drain + **5** schedulers (4 local + Railway) | drain + Railway only |
+| passes | 7 | 3 |
+| rows processed | 70,000 | 30,000 |
+| **rows/min** | **1,127.5** | **1,243.1** |
+| min/pass | 8.87 | 8.04 |
+| errors · retries · timeouts · lock waits | **0** | **0** |
+
+**Removing four of five competing writers improved normalization throughput by +10.3%.**
+Concurrent writers were unambiguously real — jarir's lag fell 3,750 rows during interval A
+while the drain was `--stores 5` and never touched it — but **contention was NOT the dominant
+constraint on throughput.** The dominant causes of the backlog were architectural: no
+backpressure at all (purely time-driven fetch) and a constant 6-batch drain capacity far below
+burst ingestion. **Classification: PARTIALLY PROVEN.**
+
+**JARIR IS NOT A CLEAN CONTROL — do not treat it as one.** Its lag was clean for exactly one
+window, runs 8–9 (11:26–11:44, 40,006 → 39,756, essentially flat). From ~11:50 Railway's
+adaptive chain resumed normalizing it: 39,756 → 37,756 → 34,506. **Jarir's own drain has
+therefore not been run and its delta is unmeasured.**
+
+## 4d. COLLISION RISK — MODERATE, occurring, no degradation
+
+Overlap between Railway's 20-batch adaptive chain and the manual drain is **ALREADY
+OCCURRING** (proved by jarir's lag falling under a `--stores 5` drain). **No degradation of
+any kind was measured:** 0 lock waits · 0 idle-in-transaction · 11 connections · `/api/stats`
+200 in 1,646ms returning real data · 0 errors/retries/timeouts across the whole drain log ·
+throughput up, not down. Classified **MODERATE** — occurring but benign — because ADR-099's
+precedent is real and the lane had no cross-process guard.
+
+**Mitigation applied (minimum, reversible):** the normalization **lane lease** (§3). Not the
+full advisory-lock architecture — that stays deferred.
+
+**§4.1 — is 20 the right value during AND after the drain?** **Yes to both, but only because
+the lease now exists.** Without it, 20 during a manual drain was the risk worth mitigating;
+with it, two normalizers can no longer overlap, so the steady-state value needs no separate
+answer. **Leaving `--adaptive` at 20 active tonight.** If the lease itself proves troublesome,
+`NORMALIZE_LANE_LOCK=0` restores the previous behaviour without reverting adaptive capacity.
+
+## 4e. OPEN — backpressure is deployed but its live effect is NOT yet proven
+
+Discovery runs fired at **12:00–12:07** (almanea 270 products, extra, jarir, amazon) *after*
+the backpressure deploy, which looks like a gate failure. Best explanation, not certainty:
+those came from **containers booted before the backpressure deploy** — Railway booted at
+11:45:38, 11:48:39 and 12:12:11, and `INGEST_FIRST_DELAY_MS` is 20 min, so a ~11:40 boot fires
+at ~12:00 and the 11:45:38 boot at ~12:05:38 (jarir ran 12:05:58). Deploy churn, not a bypass.
+
+**Ruled out:** `scraping_schedules` is empty (0 rows), so the dispatcher is not a third
+ingestion path; and there are **zero local scheduler processes**, so no duplicate writer was
+recreated.
+
+**VERIFY THIS FIRST NEXT SESSION.** Railway booted 12:12:11 on `b503dcd`, so its first ingest
+window is ~12:32 with `rows_behind = 216,927` against a 50,000 gate. A watcher wrote the result
+to `scratchpad/backpressure-verify.log`; if that file is gone, re-run:
+
+```
+npx tsx scripts/tps-analysis/q.ts "select id, store_name, job_type, status, started_at::text from scraping_runs where started_at > '2026-07-30 12:12' order by id"
+```
+**PASS** = no `discovery` runs while rows-behind > 50,000 (`price_update` runs are expected and
+correct — they are deliberately never gated). **FAIL** = discovery runs present → the gate is
+not wired on the live path; roll back with `INGEST_BACKPRESSURE_HIGH=0` and re-diagnose, since
+a gate believed-on but actually off is worse than no gate.
 
 ## 5. LULU / SHARAF DG — and the registry defect behind them
 
@@ -182,7 +357,7 @@ drain is in flight.
 | almanea backlog | 322,255 |
 | jarir backlog | 44,172 |
 
-Query: `scratchpad/comparable.sql` — `price_history` → active `canonical_products`, store
+Query: `scripts/tps-analysis/comparable-count.sql` — `price_history` → active `canonical_products`, store
 resolved through a SQL transcription of `resolveApprovedSlug`, `count(distinct slug)`.
 It reproduces ADR-147's 717 (718 with ingestion since), so it is the same instrument.
 

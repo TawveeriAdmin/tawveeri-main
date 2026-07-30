@@ -64,6 +64,28 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Deferred with acceptance criteria:** adding lulu (23) and sharafdg (24) to `TPS_STORES`. Not done today because the sweep divides its budget among pending stores, so adding two stores would change almanea's drain rate **and** contaminate the very attribution being measured. **Entry point:** `scripts/tps-core/category-registry.ts`, add `{ id: 23, name: 'لولو هايبر ماركت' }` and `{ id: 24, name: 'شرف دي جي' }` (both names already resolve through `NAME_TO_SLUG`), delete the two `KNOWN_UNSWEPT` entries, then run a scoped drain per store and measure the comparable delta. **Acceptance:** both stores report a cursor and non-zero normalized observations, the coherence test passes with a shorter gap list, and the customer-visible comparable count is re-measured before and after.
 
+## 4b. REJECTED HYPOTHESIS — "the 370,000 undelivered observations are the highest-value action available"
+
+That premise opened the session, and **its own execution disproved it.** *(production, same instrument, 10:13 → 12:10 UTC)* **121,866 almanea observations normalized; customer-visible comparable 718 → 718. Zero.** Canonicals with any approved offer moved 6,912 → 6,916 (+4); 3+ store held at 166; almanea's own participation held at 354. ~567 canonicals were written per pass, but they were **upserts onto existing identity keys**, not new products.
+
+**The backlog was not hidden value; it was hidden repetition** — re-observation of products already held, plus long-tail single-retailer product. This **confirms ADR-146's rejected backlog hypothesis at 12× the sample**: 9,730 rows → +2 there, **121,866 rows → +0** here. The conversion rate of backlog to comparison is now measured twice, two orders of magnitude apart, and it is ~0. **Do not re-run this experiment.**
+
+**What the drain did buy, stated honestly:** 315 fresh `price_history` observations (0.26% of rows drained) which feed price-truth and verified drops, and a queue heading back under the backpressure threshold — necessary because discovery is now gated until rows-behind < 20,000.
+
+**NEW SYSTEM CONSTRAINT:** *observation volume is not a proxy for customer value, and a per-store lag figure is a delivery metric, not an inventory of undelivered comparisons.* A 370,000-row backlog and a 370-row backlog can both be worth zero comparisons. Size the *content* of a backlog before spending an engineering day draining it.
+
+## 4c. Contention measured — PARTIALLY PROVEN
+
+| | interval A (drain + 5 schedulers) | interval B (drain + Railway only) |
+|---|---|---|
+| rows/min | **1,127.5** | **1,243.1** |
+| min/pass | 8.87 | 8.04 |
+| errors · retries · timeouts · lock waits | 0 | 0 |
+
+Removing four of five competing writers improved normalization throughput **+10.3%**. Concurrent writers were unambiguously real — jarir's lag fell 3,750 rows during interval A while the drain was `--stores 5` and never touched it — but **contention was not the dominant throughput constraint**; the architectural causes (no backpressure, constant 6-batch capacity) were. **Jarir is NOT a clean control:** it was isolated only during runs 8–9 (~18 minutes) before Railway's adaptive chain resumed normalizing it.
+
+**Collision risk after the adaptive change: MODERATE — occurring, no degradation.** Overlap is real, but 0 lock waits, 0 idle-in-transaction, 11 connections, `/api/stats` 200 in 1,646ms with real data, and 0 errors across the whole drain log. Mitigated by the **normalization lane lease** (a `pg_try_advisory_lock` on a dedicated connection, asymmetric: the hourly chain yields, a manual drain proceeds), not by the full advisory-lock architecture. **NEW VERIFIED RULE:** *a lease a manual operator can be silently denied is worse than no lease — a drain that no-ops looks identical to a drain that finished.*
+
 ## 5. Consequences
 
 No customer-facing code changed; launch recommendation **B** and the 112/112 gate are untouched. Ingestion verified still delivering after the change — **LuLu, 2026-07-30 11:34:50 UTC, Railway run_id 1344, 27 new `raw_observations`, 0 errors**. The permanent items not built today — a database-level writer lock replacing the in-process booleans, an explicit terminal state per observation (processed / rejected-with-reason / deferred-with-retry), and backlog alerting before critical levels — are scoped in HANDOVER with entry points. A `tps_scheduler_heartbeat` schema extension to carry rows-behind was **deliberately not done on launch eve**, because ADR-099's outage was triggered by DDL-driven PostgREST schema reloads.
