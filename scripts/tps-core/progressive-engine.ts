@@ -54,13 +54,39 @@ const GLOBAL = "_all_"; // cursor category for the single-pass scan
 //    by every plugin's detect(); matches are staged into their category. Global
 //    per-store cursor. ≤limit observations/run. ──
 export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], limit: number): Promise<SweepMetrics> {
-  const perStore = Math.max(1, Math.floor(limit / TPS_STORES.length));
+  // THROUGHPUT (measured 2026-07-30): the budget used to be split evenly across ALL
+  // TPS_STORES — `floor(limit / TPS_STORES.length)` — regardless of whether a store had
+  // anything pending. In production only 3 of 18 stores had backlog (almanea 331,823 ·
+  // jarir 64,717 · noon 563), so 15 stores consumed 15/18ths of the budget on queries
+  // returning nothing: an effective ~81 rows per sweep against a nominal 500, an 84% waste.
+  // That is why ingestion outran normalization and observations had no bounded
+  // time-to-identity.
+  //
+  // Now: one query loads every cursor, a cheap indexed probe finds which stores actually
+  // have work, and the budget is divided among ONLY those. Equal shares among pending
+  // stores — deliberately not proportional to backlog, because proportional would let
+  // almanea's 331k starve noon's 563 indefinitely and delivery guarantee matters more than
+  // raw rows/second. Order, identity logic and cursor semantics are unchanged.
+  const { data: curRows } = await sb
+    .from("tps_progress_cursors").select("store_id, last_raw_id").eq("category", GLOBAL);
+  const cursorOf = new Map<number, number>(
+    ((curRows ?? []) as { store_id: number; last_raw_id: number | string }[])
+      .map((r) => [Number(r.store_id), Number(r.last_raw_id ?? 0)]),
+  );
+
+  const pending: { store: typeof TPS_STORES[number]; last: number }[] = [];
+  for (const s of TPS_STORES) {
+    const last = cursorOf.get(s.id) ?? 0;
+    const { data: probe } = await sb
+      .from("raw_observations").select("id").eq("store_id", s.id).gt("id", last).limit(1);
+    if ((probe ?? []).length) pending.push({ store: s, last });
+  }
+
+  const perStore = Math.max(1, Math.floor(limit / Math.max(1, pending.length)));
   const m: SweepMetrics = { fetched: 0, staged: 0, saturated: false, byCategory: {} };
   for (const d of defs) m.byCategory[d.category] = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, touched: new Set() };
   const stagingRows: Record<string, unknown>[] = [];
-  for (const s of TPS_STORES) {
-    const { data: cur } = await sb.from("tps_progress_cursors").select("last_raw_id").eq("category", GLOBAL).eq("store_id", s.id).maybeSingle();
-    const last = Number(cur?.last_raw_id ?? 0);
+  for (const { store: s, last } of pending) {
     const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload").eq("store_id", s.id).gt("id", last).order("id", { ascending: true }).limit(perStore);
     if (error) throw new Error(`fetch store ${s.id}: ${error.message}`);
     const rows = (data ?? []) as { id: number; store_id: number | null; raw_name: string | null; payload: Record<string, unknown> | null }[];

@@ -42,13 +42,29 @@ const arg = (name: string, dflt: number) => {
 
   // Measure the backlog first, so the run reports what it actually cleared
   // rather than just that it ran.
-  const pg = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
-  await pg.connect();
-  const before = await pg.query<{ backlog: string }>(
-    `select count(*)::text backlog from raw_observations
-     where id > (select coalesce(max(raw_obs_id), 0) from tps_identity_staging)`
-  );
-  const backlogBefore = Number(before.rows[0].backlog);
+  // Short-lived connections. The client used to be opened here and left idle for the whole
+  // sweep, which now takes minutes rather than seconds after the throughput fix — long
+  // enough for the server to drop it, so a successful run ended in ECONNRESET and reported
+  // nothing. Connect, ask, disconnect.
+  const ask = async <T extends Record<string, unknown>>(sql: string): Promise<T[]> => {
+    const c = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+    await c.connect();
+    try { return (await c.query<T>(sql)).rows; } finally { await c.end(); }
+  };
+  // THE BACKLOG METRIC WAS WRONG, and every session that quoted it was misled.
+  // It used to be `id > (select max(raw_obs_id) from tps_identity_staging)` — "rows newer
+  // than the newest row ANY store has staged". Because cursors are per-store, one store
+  // running ahead (extra, id 645,528) pushes that maximum up and makes the number collapse
+  // toward zero while other stores are hundreds of thousands of rows behind. Measured
+  // 2026-07-30: this reported "backlog 0 → 11" in the same run where jarir was 51,088 and
+  // almanea 322,136 rows behind. It is not a conservative estimate; it is the wrong
+  // question.
+  //
+  // True pending = the sum of every store's own cursor lag.
+  const BACKLOG_SQL = `select coalesce(sum((select count(*) from raw_observations o
+                                             where o.store_id = c.store_id and o.id > c.last_raw_id)), 0)::text backlog
+                         from tps_progress_cursors c where c.category = '_all_'`;
+  const backlogBefore = Number((await ask<{ backlog: string }>(BACKLOG_SQL))[0].backlog);
 
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const defs = Object.values(CATEGORY_DEFS);
@@ -66,13 +82,27 @@ const arg = (name: string, dflt: number) => {
     if (r.normalize.fetched === 0) break;
   }
 
-  const after = await pg.query<{ backlog: string }>(
-    `select count(*)::text backlog from raw_observations
-     where id > (select coalesce(max(raw_obs_id), 0) from tps_identity_staging)`
-  );
-  await pg.end();
-
-  console.log(`normalize-incremental: backlog ${backlogBefore} → ${after.rows[0].backlog}`);
+  const backlogAfter = (await ask<{ backlog: string }>(BACKLOG_SQL))[0].backlog;
+  console.log(`normalize-incremental: backlog ${backlogBefore} → ${backlogAfter}`);
   console.log(`  observations processed=${fetched} staged=${staged}`);
   console.log(`  corroborated keys=${corroborated} canonicals written=${canonicals}`);
+
+  // DELIVERY GUARANTEE (2026-07-30): the aggregate "backlog" hides which STORE is behind,
+  // and it is not a queue position — sweeps advance a cursor PER STORE, so a single lagging
+  // store can leave freshly-ingested offers unnormalized for days while the headline number
+  // looks healthy. An overlap-seeded Noon experiment was unmeasurable for exactly this
+  // reason: 600 observations written, 0 staged, because Noon's cursor sat 15,481 rows back.
+  // Per-store lag is now printed on every run, so the condition is visible the moment it
+  // appears rather than discovered by a failed experiment.
+  const lag = (await ask<{ store_id: number; behind: string }>(
+    `select c.store_id, (select count(*) from raw_observations o
+                         where o.store_id = c.store_id and o.id > c.last_raw_id)::text behind
+       from tps_progress_cursors c where c.category = '_all_' order by 2 desc`))
+    .filter((x) => Number(x.behind) > 0).map((x) => ({ store_id: x.store_id, behind: Number(x.behind) }));
+  if (lag.length) {
+    console.log('  per-store lag (rows behind the cursor):');
+    for (const r of lag) console.log(`    store ${String(r.store_id).padStart(3)}  ${String(r.behind).padStart(8)} behind`);
+  } else {
+    console.log('  per-store lag: all stores current');
+  }
 })().catch((e) => { console.error("FATAL", e instanceof Error ? e.message : e); process.exit(1); });

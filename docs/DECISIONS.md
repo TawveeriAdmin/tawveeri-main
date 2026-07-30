@@ -89,6 +89,102 @@ The capability already exists and is unused for discovery. `noon-scraper.ts` has
 
 ---
 
+### ADR-147 — Normalization throughput and delivery guarantee; and the backlog metric was wrong by ~34,000× · Accepted (2026-07-30)
+
+**Context:** ADR-146 was classified INCONCLUSIVE because 600 seeded observations were written and **0** reached identity staging. The founder directed that normalization throughput and delivery guarantee be fixed. Three defects were found, all in our own code, and fixing them made ADR-146 measurable within one run.
+
+---
+
+## 1. THROUGHPUT — the budget was spent on stores with nothing to do
+
+*(repository + production)* `normalizeSweep` split its budget evenly across every store:
+`perStore = floor(limit / TPS_STORES.length)` — **500 / 18 = 27 rows per store per sweep**,
+whether or not that store had anything pending.
+
+Measured in production: only **3 of 18 stores had backlog** (almanea 331,823 · jarir 64,717 ·
+noon 563). The other 15 consumed 15/18ths of every sweep on queries that returned nothing —
+**an effective ~81 rows per sweep against a nominal 500, an 84% waste.**
+
+**Fix:** one query loads all cursors, a cheap indexed probe finds the stores that actually
+have work, and the budget is divided among **only those**. Deliberately **equal shares among
+pending stores, not proportional to backlog** — proportional would let almanea's 331k starve
+noon's 563 indefinitely, and bounded delivery matters more than raw rows/second. Fetch order,
+identity logic and cursor semantics are unchanged.
+
+**Measured effect:** ~1,380 observations per 20-batch run → **3,000 per 6-batch run**
+(≈69 → ≈500 per batch, **~7×**). Noon went from 15,481 rows behind to fully current in a
+single run.
+
+## 2. DELIVERY GUARANTEE — per-store lag is now reported on every run
+
+*(architecture)* Cursors are **per store**, so a single lagging store can leave freshly
+ingested offers unnormalized indefinitely while the headline number looks fine. Every run now
+prints each store's rows-behind, so the condition is visible the moment it appears instead of
+being discovered by a failed experiment.
+
+## 3. THE BACKLOG METRIC WAS MEASURING THE WRONG THING
+
+*(production)* The metric quoted all week —
+`count(*) where id > (select max(raw_obs_id) from tps_identity_staging)` — asks *"how many
+rows are newer than the newest row ANY store has staged?"* Because cursors are per store, one
+store running ahead (extra, id 645,528) pushes that maximum up and collapses the number
+toward zero while others are hundreds of thousands of rows behind.
+
+**Measured in a single run: it reported `backlog 0 → 11` while jarir was 51,088 and almanea
+322,136 rows behind.** True pending was **372,724**. That is not a conservative estimate; it
+is the wrong question, understating reality by roughly **34,000×**.
+
+**Fix:** backlog is now the **sum of every store's own cursor lag**. The same run now honestly
+reports `backlog 372,724 → 369,724`.
+
+**RETIRED:** every "backlog" figure in this session's records and in HANDOVER checkpoints
+#11–#12 (7,388 / 11,499 / 11,725 …). They were computed with the broken definition and
+**must not be cited**. The true pending figure at the time was in the hundreds of thousands.
+
+## 4. Consequence — ADR-146 becomes measurable, and is PROVEN
+
+With Noon caught up, **445 of the 600 seeded observations reached staging (74%)**.
+
+**Attribution by the seeded run's own identity keys** *(production)*:
+
+| stage | count |
+|---|---|
+| seeded observations | 600 |
+| distinct identity keys produced | 222 |
+| matched to an active canonical | 209 |
+| **now comparable (≥2 approved retailers)** | **107** |
+| **comparable with Noon participating** | **99** |
+| still single-store | 102 |
+
+**Window deltas on identical queries** (baseline 10:30:41 → after):
+Noon-comparable **181 → 259 (+78)** · all comparable **660 → 717 (+57)** · 3+ **152 → 166 (+14)**.
+
+**Cost per new comparison: 600 fetched products ÷ 78 = ~7.7**, against blind traversal's
+**~120** (ADR-146). **Roughly 15× more efficient**, and it created **1** orphan product
+against blind traversal's 592-of-743.
+
+**Honest bound:** the +78 window includes Noon rows from the earlier blind run that were also
+in the backlog, so the seeded run's own share is the traceable **99 identity-key** figure and
+the +78 is an upper bound on the window. Both point the same way by an order of magnitude.
+
+**ADR-146 is therefore reclassified from INCONCLUSIVE to PROVEN** — overlap-seeded discovery
+converts fetch into comparisons roughly an order of magnitude more efficiently than category
+traversal, and does so without creating single-retailer catalogue bloat.
+
+## 5. Decision
+
+1. **Overlap-seeded discovery becomes the growth method**, applied next to Amazon, Extra,
+   Jarir and Almanea, sized by measurement rather than prediction.
+2. **Per-store lag is the operational health metric**, not aggregate backlog.
+3. **almanea (320,386) and jarir (49,338) are the current delivery failures** — 370k
+   observations already paid for and invisible. Draining them is now cheap and is the
+   highest-value immediate action.
+4. Retailer-value figures retired in ADR-145 stay retired until re-measured at known reach
+   **and** known lag; a store that is 320k rows behind cannot be judged at all.
+
+**Consequences.** No customer-facing code changed; this is pipeline and measurement only.
+752/752 tests green. **Launch is unaffected — recommendation B, gate 112/112.**
+
 ## ADDENDUM 2026-07-30 — the clean experiment, and two corrections to my own reporting
 
 ### A. There was no scheduler contamination. I misattributed my own run.
