@@ -120,9 +120,58 @@ Do **not** size them from single-store pools. Size them as:
 **Noon's binding question is therefore reach, not overlap** — which is exactly what its
 809 URLs suggest, and what its audit must measure first.
 
-## 9. Immediate actionable defect found during this investigation
+## 9. REJECTED HYPOTHESIS — my own, within this same document
 
-**473 Samsung raw rows sit `pending` with `raw_url`, `name` and `price` all NULL** — a URL
-harvest that never processed. The same pattern predates today's run. Whatever writes
-URL-only rows is filling `raw_observations` with entries the normalizer can never consume.
-Not fixed here; recorded because it is a real, measured pipeline leak.
+I first wrote here that **473 Samsung rows stuck at `processing_status='pending'` with
+NULL `raw_url`** were "a real, measured pipeline leak". I checked it before leaving it in,
+and it is wrong.
+
+*(production)* **614,692 of ~615,000 raw rows are `pending`; only 277 have ever been
+`done`.** A status that is essentially never set is not a queue.
+
+*(repository)* `normalize-incremental.ts` defines its backlog as a **watermark on the row
+id**, not on that column:
+
+```sql
+select count(*) from raw_observations
+where id > (select coalesce(max(raw_obs_id), 0) from tps_identity_staging)
+```
+
+So `processing_status` is **vestigial**, and NULL `raw_url` does not block normalization
+either — the normalizer never reads it. There is no half-million-row leak. **Two hypotheses
+of mine died in this document; this is the second.**
+
+**A consequence worth carrying:** any earlier measurement of mine that counted
+`distinct raw_url` to estimate catalogue size is unsound, because `raw_url` is NULL on 83%
+of rows. That includes the "11,259 distinct raw listings / 8,286 unnormalized" figures from
+an earlier session. **Do not reuse them.**
+
+---
+
+## 10. NOON AUDIT — the limiting factor is DISCOVERY DEPTH
+
+*(production)*
+
+| | Noon |
+|---|---|
+| raw observations | 3,182 |
+| last scrape | 29 July (active) |
+| `product_stores` offers | 618 |
+| TPS canonicals | 314 |
+
+Noon is scraped and flowing — 618 offers and 314 canonicals is a working pipeline, not a
+blocked one. It is simply **shallow**: 3,182 raw observations against one of the largest
+marketplaces in Saudi Arabia.
+
+**Verdict: the limiting factor is discovery depth, not parser loss, identity rejection or
+blocked endpoints.** No parser fix or identity change increases Noon; only fetching more of
+it does.
+
+Sized by the §5 rule rather than a pool ceiling:
+`new comparisons ≈ (additional canonicals we can ingest) × 58% overlap × (share single-store)`.
+Noon is broad-catalogue and overlaps the majors by construction, so its overlap rate should
+meet or beat Samsung's 58% — but **that is an expectation, not a measurement**, and it must
+be measured on a bounded run before any larger investment.
+
+**NOT REACHED:** the deeper Noon ingest itself. The audit it required is done and its
+limiting factor is named.
