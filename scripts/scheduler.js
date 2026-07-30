@@ -256,16 +256,22 @@ const INGEST_CATEGORIES = {
 // queue how deep it is and yields when the consumer is behind. Hysteresis (HIGH to
 // stop, LOW to resume) prevents flapping at the threshold.
 //
-// FRESHNESS IS PROTECTED, deliberately: this defers DISCOVERY (catalogue growth,
-// which is what creates backlog) but never blocks the intelligence refresh chain, and
-// PRICE UPDATES are exempt below PRICE_HIGH — a stale price is customer-visible harm,
-// whereas a slightly smaller catalogue is not. Skipping is safe because every loop is
-// idempotent and the next tick re-evaluates.
+// FRESHNESS IS PROTECTED, deliberately. Only DISCOVERY and the almanea FEED are gated —
+// they are what creates backlog. Two things are NEVER gated:
+//   • the intelligence refresh chain — it is the consumer, gating it would be suicide;
+//   • PRICE UPDATES — a stale price is the customer-visible harm this platform exists to
+//     prevent, while a marginally smaller catalogue is not.
+// Price updates were briefly given a high ceiling (250,000) instead of an exemption. That
+// was wrong and was caught before it ran: measured backlog at the time was 271,845, i.e.
+// ALREADY above the ceiling, so the "safety valve" would have silently stopped price
+// refresh on launch eve — the exact harm the gate exists to avoid. A threshold that trips
+// in the state you are actually in is not a safety valve. Price updates are also bounded
+// by construction (max_products per store per 6h), so they cannot outrun normalization.
+// Skipping is safe because every loop is idempotent and the next tick re-evaluates.
 //
 // REVERSIBLE: INGEST_BACKPRESSURE_HIGH=0 disables the gate entirely.
 const BP_HIGH = parseInt(process.env.INGEST_BACKPRESSURE_HIGH || '50000', 10);
 const BP_LOW = parseInt(process.env.INGEST_BACKPRESSURE_LOW || '20000', 10);
-const BP_PRICE_HIGH = parseInt(process.env.INGEST_BACKPRESSURE_PRICE_HIGH || '250000', 10);
 let bpTripped = false; // hysteresis latch
 
 /** Total rows behind = sum of every store's own cursor lag (the ADR-147 definition). */
@@ -286,23 +292,23 @@ async function rowsBehind() {
 }
 
 /**
- * @param {'discovery'|'price'} kind
+ * Admission control for BACKLOG-CREATING ingestion only (discovery + feed).
+ * Price updates never call this — see the freshness note above.
  * @returns {Promise<boolean>} true if this ingestion may proceed
  */
 async function admit(kind) {
   if (BP_HIGH <= 0) return true;                       // gate disabled
   const n = await rowsBehind();
   if (n === null) return true;                         // unknown → fail open
-  const ceiling = kind === 'price' ? BP_PRICE_HIGH : BP_HIGH;
   if (bpTripped && n <= BP_LOW) {
     bpTripped = false;
     console.log(`[backpressure] rows-behind ${n} <= low-water ${BP_LOW} — resuming ingestion`);
   } else if (!bpTripped && n > BP_HIGH) {
     bpTripped = true;
-    console.log(`[backpressure] rows-behind ${n} > high-water ${BP_HIGH} — deferring discovery`);
+    console.log(`[backpressure] rows-behind ${n} > high-water ${BP_HIGH} — deferring ${kind}`);
   }
-  if (n > ceiling) {
-    console.log(`[backpressure] ${kind} deferred — rows-behind ${n} > ${ceiling}`);
+  if (bpTripped) {
+    console.log(`[backpressure] ${kind} deferred — rows-behind ${n}, resumes at <= ${BP_LOW}`);
     return false;
   }
   return true;
@@ -343,10 +349,8 @@ async function runDiscovery() {
 }
 async function runPriceUpdate() {
   if (ingestRunning || feedIngestRunning || refreshRunning) { console.log('[ingest] busy — deferring price-update'); return; }
-  // Price updates carry a far higher exemption than discovery: a stale price is the
-  // customer-visible harm this platform exists to prevent, so they yield only when the
-  // queue is catastrophically deep.
-  if (!(await admit('price'))) return;
+  // NOT gated by backpressure — price freshness is the customer-visible promise, and this
+  // loop is bounded by max_products per store per cycle, so it cannot outrun normalization.
   for (const slug of INGEST_STORES) {
     const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: 120, older_than_hours: 12 });
     if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
