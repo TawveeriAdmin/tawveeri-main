@@ -1,3 +1,78 @@
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #10 · AIM THE CRAWLER (supersedes below) ═══
+
+**Read this, then ADR-146, ADR-145, and
+`docs/HISTORICAL-MEASUREMENT-REVALIDATION-2026-07-30.md`.**
+
+## Launch: **B**, unchanged. Gate 112/112. No customer-facing integrity defect found.
+
+## THE CONSTRAINT — fetch TARGETING, not fetch volume (ADR-146)
+
+Three interventions measured on the same system, same day:
+
+| intervention | input | new comparable | cost each |
+|---|---|---|---|
+| Noon blind fetch | +5,644 products | **+47** | ~120 products |
+| Backlog drain | 9,730 rows | **+2** | ~4,865 rows |
+| Samsung onboarding | 111 products | +7 | ~16 products |
+
+**Noon's 6,736 products → 743 canonicals, of which 592 are NOON-ALONE.** 80% of a large,
+successful fetch produced single-retailer rows. We discover by **category traversal**,
+which returns whatever a retailer lists; most of it is product nobody else carries.
+
+**The fix: seed discovery from our OWN catalogue.** 2,674 of our 5,854 single-store
+canonicals carry a brand Noon also stocks — each one retailer away from a comparison.
+`noon-scraper` already has a keyed lookup (`?q=sku&limit=1`) used **only** for price
+refresh, while discovery uses blind `scrapeApiPage(categoryQuery, page)`. The capability
+exists and is unused. **Effect not claimed — prove with a bounded run.**
+
+**Framework defaults (`max_pages`) DEFERRED, not rejected** — raising them multiplies blind
+traversal, which multiplies single-store rows. Aim first, then raise.
+
+## MEASUREMENT DEFECT — found inside my own 2-hour-old ADR
+
+`raw_observations.payload` **has a different shape per retailer**. ADR-145 counted with one
+key. Corrected: **extra 36 → 5,248** (one of our deepest, not shallowest); almanea
+7,737 → 8,147. ADR-145's core conclusion survives; that row is withdrawn in place.
+
+**RULE:** any cross-retailer measurement over `payload` must resolve identity **per
+retailer** (`product_url` / `url` / `rewrite_url` / `objectID` / `uniqueId` / `sku` / `id`).
+
+## Rates retired this session — all were small-sample
+
+- **"58% overlap rate"** (mine, n=24 Samsung) → Noon's real rate is **20%**. Not a constant.
+- **"12.6% conversion"** (mine) → wrong denominator.
+- **"sonyworld = 0"** → a 236-product fetch. **RETIRED outright.**
+
+## Historical record — see the revalidation doc
+
+**VERIFIED:** Samsung +7 · Noon +47 · 637 comparable · 146 at ≥3 · 363 drops · 71% · 78
+corroborated · 112/112.
+**UNCERTAIN (quote only with fetch reach attached):** alnakheelk 68 · najm 48 · 127 UCP
+families · 88 new · ADR-133 trigram.
+**RETIRED:** sonyworld 0 · the 58% constant.
+
+## Fetch reach, corrected
+
+almanea 8,147 · noon 6,736 · amazon 6,693 · **extra 5,248** · jarir 3,266 · shaker 684 ·
+najm 606 · alnakheelk 600 · swsg 276 · sonyworld 236 · samsung_ksa 60
+
+## Next, in order
+
+1. **Bounded overlap-seeded discovery run on Noon** against the 2,674 target pool. Measure
+   cost-per-comparison against the ~120 blind baseline. This is the whole thesis of
+   ADR-146 and it is unproven.
+2. If it wins, generalise seeded discovery into the framework, **then** raise `max_pages`.
+3. Fix `swsg` (276 products, never deepened) and `sonyworld` (236) reach before re-judging
+   either.
+4. Brand-only query routing (`سامسونج` / `samsung` reach only mobile).
+
+## Operating rule
+
+**No retailer-value figure may be quoted without the fetch reach it was computed over.**
+That omission is exactly how sonyworld = 0 became a strategic rule.
+
+---
+
 # ═══ RESUME HERE — 2026-07-30 CHECKPOINT #9 · FETCH REACH (supersedes below) ═══
 
 **Read this, then `ADR-145` and `docs/PREDICTION-VS-PRODUCTION-2026-07-30.md`.**
