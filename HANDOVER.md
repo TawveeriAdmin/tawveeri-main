@@ -6,7 +6,70 @@
 
 ---
 
-# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #5 (supersedes everything below) ═══
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #6 · LAUNCH REVIEW (supersedes below) ═══
+
+**Working state. Read this, then `docs/LAUNCH-CHECKLIST-2026-07-30.md`.**
+
+## Launch recommendation: **B — launch as the price-truth layer, narrower promise**
+
+Full reasoning, every figure with its query, and the must-not-claim list are in
+`docs/LAUNCH-CHECKLIST-2026-07-30.md`. Public launch status unchanged; announcement is
+founder-gated.
+
+## Gate — corrected instrument
+
+`docs/ui-journey-2026-07-30-launch-baseline.log`
+
+| dimension | value |
+|---|---|
+| overall | **108/112 = 96.4%** |
+| comparison | **82/82 = 100%** |
+| Arabic | 72/72 = 100% |
+| English | 36/40 = 90% |
+| exact-model correct product | 32/32 |
+| exact-model correct variant | 28/32 |
+
+**The headline fell 100% → 96.4%, predicted in advance.** The old 100% came from an
+instrument with no model query in it. All 4 failures were `Galaxy S24 Ultra 512`, fixed in
+`bbfd34c`, verified live. **Post-fix rate is expected 112/112 but UNMEASURED — the one
+inferred number in the checklist. Re-run before the announcement.**
+
+## Three bilingual-asymmetry defects in three days — the class is not exhausted
+
+1. ة/ى folding → appliance expansions never fired
+2. برو / pro → Arabic flagship queries lost their comparison (ADR-141)
+3. جالكسي / galaxy → relevance never enforced on an English brand query (ADR-142)
+
+Each was one token present in one script and missing in the other. **There is still no
+systematic test that every Arabic token has its Latin twin.** That test is the highest-value
+next instrument item.
+
+## Headline iPhone journey (§2) — diagnosed, root cause is ingestion
+
+`apple|iPhone|16|Pro Max|256`: Jarir 3,599 (observed 3 Jul) · Extra 3,704 (1 Jul) ·
+Almanea 4,749 (25 Jul). **Amazon and Noon: zero raw listings.** Not search, not joining —
+never ingested. Arabic and English now return identical coverage.
+
+## Shipped today
+
+- Exact-model harness set (AR/EN/Arabic-Indic/mixed), per-script reporting, both surfaces
+- **Price age disclosed** on every compare offer — 13.6% of offers are >30 days old and were
+  shown as current
+- Accessories **excluded** from homepage deals and `/price-truth`; savings floor 50 SAR
+- `/price-truth` headline corrected 166 → **78** (88 were accessories; `total` was also a
+  `.limit(300)` page-size artifact, now an exact count)
+- §9 **verified**: the 85,000 / 8 / 62,000 figures are gone from the rendered homepage
+
+## Next, in order
+
+1. **Re-run the harness** — close the one inferred number.
+2. **Samsung KSA ingestion** (+281 ceiling), **Noon depth** (809 URLs), **SWSG** (AC pool
+   1,006). All three NOT STARTED; they are what turns promise B into promise A.
+3. Bilingual token-parity test.
+
+---
+
+# ═══ SUPERSEDED — CHECKPOINT #5 ═══
 
 **Working state. Read this, not the whole directive.**
 
