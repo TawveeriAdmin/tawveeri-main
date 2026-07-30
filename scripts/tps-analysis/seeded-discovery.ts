@@ -70,10 +70,18 @@ const STORE_NAMES: Record<string, string[]> = {
 
   const { ScrapingOrchestrator } = await import('../../src/lib/scraping/services/scraping-orchestrator');
   const { ProductService } = await import('../../src/lib/scraping/services/product-service');
+  const { IngestionService } = await import('../../src/lib/scraping/services/ingestion-service');
   const orch = new ScrapingOrchestrator();
   const scraper = orch.getScraperForStore(slug);
   if (!scraper) throw new Error('no scraper');
   const productService = new ProductService();
+  // CRITICAL (learned by measurement 2026-07-30): `createOrUpdateProduct` writes ONLY the
+  // storefront layer. `price_history` — and therefore every comparison — is produced by
+  // normalization reading `raw_observations`, which is written by ingestBatch. The first
+  // version of this script omitted ingestBatch, so it wrote 185 storefront offers and ZERO
+  // raw observations, and was architecturally incapable of producing the metric it existed
+  // to measure. The orchestrator calls both; so must we.
+  const ingestion = new IngestionService();
 
   // Resolve the store id exactly as the production write path does, rather than assuming
   // the numeric id — this is the same lookup runDiscoveryJob performs.
@@ -81,7 +89,10 @@ const STORE_NAMES: Record<string, string[]> = {
   const svcStoreId: string | null = await (orch as any).getStoreId(slug);
   if (!svcStoreId) throw new Error(`could not resolve store id for ${slug}`);
 
-  let queried = 0, fetched = 0, written = 0, created = 0, linked = 0, errors = 0, noHit = 0;
+  let queried = 0, fetched = 0, written = 0, created = 0, linked = 0, errors = 0, noHit = 0, rawWritten = 0;
+  // A run id makes every row this experiment writes attributable forever — the permanent
+  // fix for the attribution problem that made the first run unreadable.
+  const runId: string | null = null;
 
   for (const t of targets) {
     // Seed = brand + the discriminating part of the name. A model number is the strongest
@@ -95,6 +106,10 @@ const STORE_NAMES: Record<string, string[]> = {
       fetched += top.length;
       if (top.length === 0) { noHit++; continue; }
       if (!GO) continue;
+      // Evidence layer FIRST — same order as the orchestrator. Without this the TPS layer
+      // never sees the offer and no comparison can ever result.
+      try { await ingestion.ingestBatch(slug, top, storeId, runId); rawWritten += top.length; }
+      catch { errors++; }
       for (const p of top) {
         try {
           const r = await productService.createOrUpdateProduct(p, svcStoreId);
@@ -110,7 +125,7 @@ const STORE_NAMES: Record<string, string[]> = {
   console.log(JSON.stringify({
     store: slug, mode: GO ? 'LIVE' : 'DRY',
     targets: targets.length, queried, hits_fetched: fetched, targets_with_no_hit: noHit,
-    written, created, linked, errors,
+    written, created, linked, errors, raw_observations_written: rawWritten,
     hit_rate_pct: queried ? Math.round((queried - noHit) / queried * 1000) / 10 : 0,
   }, null, 2));
   process.exit(0);
