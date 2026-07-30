@@ -57,7 +57,10 @@ const STEPS: Step[] = [
     // ADR-148: `--adaptive` lets the batch count follow the measured backlog (6 when the
     // queue is short, up to the engine's 20-batch ceiling when it is deep). A constant 6
     // could not keep up with burst ingestion and let almanea reach 320k rows behind.
-    run: () => runScript("scripts/tps-core/normalize-incremental.ts", ["--batches", "6", "--adaptive"]),
+    // `--yield-if-locked`: the hourly chain defers to a manual drain that already owns the
+    // normalization lane, rather than running a second heavy writer against it (ADR-099).
+    // A skipped tick costs nothing — the next one recomputes from the same cursors.
+    run: () => runScript("scripts/tps-core/normalize-incremental.ts", ["--batches", "6", "--adaptive", "--yield-if-locked"]),
   },
   {
     // ADR-065 found 770 identities with no canonical; the leak RECURS every time

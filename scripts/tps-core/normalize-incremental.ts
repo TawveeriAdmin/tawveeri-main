@@ -87,6 +87,44 @@ const arg = (name: string, dflt: number) => {
     ? Math.min(20, backlogBefore > 20_000 ? 20 : backlogBefore > 5_000 ? 12 : batches)
     : batches;
 
+  // ── NORMALIZATION LANE LEASE (ADR-148) ────────────────────────────────────────────
+  // ADR-099's outage came from concurrent heavy pipeline writers, and the guards meant to
+  // prevent it (`refreshRunning` et al.) are module-level booleans — blind across
+  // processes. Making normalization adaptive (up to 20 batches) raised the value of the
+  // hourly chain overlapping a manual drain, so the lane now has a real, cross-process
+  // lease: a Postgres SESSION advisory lock held on a dedicated connection for the run.
+  // It releases automatically if the process dies, because the connection dies with it —
+  // no stale lock can wedge the pipeline.
+  //
+  // ASYMMETRIC BY DESIGN, and this matters:
+  //   • `--yield-if-locked` (the hourly chain) SKIPS when the lane is busy. A skipped tick
+  //     is free: the next one recomputes from the same cursors.
+  //   • a manual drain does NOT pass it, so it always proceeds. A drain that silently
+  //     no-oped would look identical to a drain that finished, which is exactly the class
+  //     of invisible failure this whole investigation exists to remove.
+  // Both sides still ACQUIRE the lease when free, so either can be yielded to.
+  // Fails OPEN: any error acquiring the lease lets the run proceed.
+  // REVERSIBLE: NORMALIZE_LANE_LOCK=0 disables the lease entirely.
+  const LANE_KEY = 814_8148;
+  let lockClient: Client | null = null;
+  let haveLane = false;
+  if (process.env.NORMALIZE_LANE_LOCK !== "0") {
+    try {
+      lockClient = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+      await lockClient.connect();
+      haveLane = (await lockClient.query<{ ok: boolean }>(`select pg_try_advisory_lock($1) ok`, [LANE_KEY])).rows[0].ok;
+    } catch (e) {
+      console.warn(`  lane lease unavailable (${e instanceof Error ? e.message : e}) — proceeding`);
+      haveLane = true;                      // fail open
+    }
+    if (!haveLane && process.argv.includes("--yield-if-locked")) {
+      console.log("normalize-incremental: another normalizer holds the lane — skipping this tick");
+      try { await lockClient?.end(); } catch { /* ignore */ }
+      return;
+    }
+    if (!haveLane) console.warn("  WARNING: lane is held by another normalizer — proceeding anyway (manual run)");
+  }
+
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const defs = Object.values(CATEGORY_DEFS);
 
@@ -126,4 +164,7 @@ const arg = (name: string, dflt: number) => {
   } else {
     console.log('  per-store lag: all stores current');
   }
+  // Release the lane. Best-effort: the lock is session-scoped, so closing the connection
+  // (or the process dying) releases it regardless.
+  try { await lockClient?.end(); } catch { /* ignore */ }
 })().catch((e) => { console.error("FATAL", e instanceof Error ? e.message : e); process.exit(1); });
