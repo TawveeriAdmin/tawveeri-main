@@ -4,6 +4,57 @@
 Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
 Suite **756/756** green.
 
+## 0-LAUNCH. PRICE FRESHNESS — TECHNICAL CLASSIFICATION: **SAFE WITH QUALIFICATION**
+
+**The launch condition is a COPY constraint, not a code fix.** Measured 2026-07-30 13:5x UTC.
+
+### Customer-visible offer freshness (`scripts/tps-analysis/offer-freshness.sql`)
+
+| retailer | offers | ≤6h | ≤24h | **stale >7d** | median age |
+|---|---|---|---|---|---|
+| extra | 2,478 | 0.5% | 7.9% | **1,158** | 6.7 d |
+| almanea | 2,436 | 11.5% | 11.9% | **1,114** | 5.8 d |
+| noon | 1,264 | 23.3% | 77.5% | 66 | **0.3 d** |
+| amazon | 640 | 0.9% | 10.0% | **232** | 6.1 d |
+| jarir | 325 | 1.2% | 2.5% | **140** | 6.3 d |
+| najm | 223 | 0% | 0% | 0 | 5.1 d |
+| shaker | 210 | 0.5% | 0.5% | 0 | 5.7 d |
+| alnakheelk | 182 | 0% | 0% | 0 | 4.2 d |
+| swsg | 59 | 0% | 3.4% | 29 | 6.7 d |
+| samsung_ksa | 26 | 0% | 80.8% | 0 | 0.4 d |
+
+**2,673 of 7,843 visible offers (34%) are older than 7 days; the four largest retailers sit at
+a ~6-day median.** This is NOT caused by the price_update bug — it long predates it.
+
+### Why this is still launchable
+
+**The compare page already discloses observation age on EVERY offer** —
+`رصدناه قبل X يومًا` / `observed X days ago`
+(`src/app/[locale]/(public)/compare/[key]/page.tsx:291–300`). Prices are **labelled evidence,
+not claimed as current**. That is the difference between "stale prices shown as live" (not
+launchable) and "old observations honestly dated" (launchable).
+
+### The binding conditions — a launch that breaks these is NOT safe
+
+1. **No "real-time", "live", "current" or "today's prices" claim** in any public copy, store
+   listing, Misk material or announcement. The honest phrasing is *evidence-backed observed
+   prices with the observation date shown*.
+2. The compare-page age disclosure must stay. **Do not remove it to make cards look cleaner.**
+3. **KNOWN GAP — search/result CARDS do NOT show observation age**; only the compare page
+   does. A card can therefore show a 6-day-old price with no date. This is the highest-value
+   remaining freshness fix and it is small: render the same age line on the card.
+   **Deferred, not done** — it is a customer-facing change and it arrived at the very end of
+   this session; shipping UI untested on launch eve is the larger risk.
+
+### Per-retailer disposition
+
+- **LAUNCH-SAFE:** noon (0.3 d median), samsung_ksa (0.4 d).
+- **LAUNCH-SAFE WITH QUALIFICATION** (dated evidence, not current prices): extra, almanea,
+  amazon, jarir, shaker, najm, alnakheelk, swsg.
+- **HIDE UNTIL FIXED:** none. Hiding 34% of offers would gut the catalogue for no integrity
+  gain, because age is disclosed where comparison happens.
+- **INCONCLUSIVE:** lulu, sharafdg — too few TPS-visible offers to appear in the table above.
+
 ## 0-FIRST-INCOMPLETE-ITEM. PRICE UPDATES RUN NOW, BUT FAIL AT ~99%
 
 **Start here next session.** Fixing the startup-timer bug (§0-CRITICAL) made the price loop
@@ -22,9 +73,37 @@ First full sweep after the fix (13:06–13:14, all four `INGEST_STORES`, 20s sta
 promise and its dedicated refresh path is ~99% broken. It was invisible for as long as the loop
 never ran. *(Making a hidden failure visible is progress even when the number is ugly.)*
 
-**Diagnose per store** — noon's failure reproduced on a manual probe too (run 1342, 5/5 errors),
-so it is not a scheduling artifact. Entry: `/api/cron/update-prices` →
-`runPriceUpdateJob` → each store's `updateProductPrice(productUrl)`.
+### NOON — regex bug FIXED, but production is STILL 0%. Two independent faults.
+
+**Fault 1 (FIXED, `08e0a13`).** `updateProductPrice` extracted the SKU with
+`/\/p\/([A-Z0-9]+)/i` — "chars AFTER `/p/`". Every production Noon URL is `.../<SKU>/p/` with
+`/p/` **terminal**, so it never matched and every refresh fell through to HTML scraping, which
+returns null on Noon. `extractNoonSku()` now reads the segment before `/p/`, still supports the
+legacy form, rejects explicitly, and has **14 regression tests** including one asserting the old
+pattern found nothing. **Local: 0/120 → 4/4** with real prices (605 / 571 / 143.78 / 299 SAR).
+
+**Fault 2 (NOT FIXED — found by verifying in production instead of trusting the local pass).**
+With the fix deployed, production run **1358 still returned 12 errors / 0 updated**, and
+`price_history` gained **zero** noon rows. Each product takes **~70 s** (retry × 3 then fail),
+versus **~1 s** locally. **Strongest hypothesis: Noon's internal API is reachable from a Saudi
+residential IP but not from Railway's datacenter IP.** Supporting: my local calls succeeded 4/4
+in ~1 s each; Railway fails 100% with timeout-shaped latency. **Not yet confirmed** — the
+confirming test (a Noon discovery call from Railway, which uses the same API host) was blocked
+by the one-run-per-store guard while slow runs held it.
+
+**NEXT DIAGNOSTIC:** when no noon run is active, `POST /api/cron/discover-products
+{store_slug:noon, max_pages:1}` on production. If it writes zero observations, the API is
+IP-blocked from Railway and the fix must be an egress path (proxy / different host / official
+feed), **not** more parser work. The `[price-attempt]` structured log now records the reason
+per attempt.
+
+**Consequence for the record:** noon's excellent 0.3-day freshness was very likely produced by
+the **four local schedulers running from a Saudi residential IP**, which I stopped at 11:29 for
+sound concurrency reasons. If Fault 2 is confirmed, noon freshness will now decay. That is a
+real, self-inflicted trade-off and it should be watched, not assumed away.
+
+**Diagnose per store** — entry: `/api/cron/update-prices` → `runPriceUpdateJob` → each store's
+`updateProductPrice(productUrl)`.
 
 **WHY THIS ALSO FORCED A THRESHOLD CHANGE (`6106fa0`).** DISCOVERY is the de-facto
 price-observation source — today it wrote almanea 14,057 · noon 737 · jarir 588 · lulu 534
