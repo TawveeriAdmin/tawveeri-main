@@ -6,6 +6,86 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-146 — The constraint is fetch TARGETING, not fetch volume; and ADR-145's Extra figure was a measurement artifact · Accepted (2026-07-30)
+
+**Context:** ADR-145 (written earlier the same day) concluded that **fetch reach** is the binding constraint, on a table of distinct products fetched per retailer showing a ~200× spread. The founder challenged one sentence of my own — *"extra may be under-measured rather than under-fetched"* — and asked that the measurement layer be verified before any framework work. It was, and the challenge was correct.
+
+---
+
+## 1. ARCHITECTURE CHANGE — ADR-145's Extra figure is retired
+
+*(production measurement)* `raw_observations.payload` has a **different shape per retailer**. ADR-145 counted distinct products with a single key, `payload->>'product_url'`. Re-measured with a coalesce across the keys retailers actually use (`product_url`, `url`, `rewrite_url`, `objectID`, `uniqueId`, `sku`, `id`):
+
+| retailer | ADR-145 | corrected |
+|---|---|---|
+| **extra** | **36** | **5,248** |
+| almanea | 7,737 | 8,147 |
+| all others | — | unchanged |
+
+Extra is one of our **deepest** retailers, not our shallowest. Almanea stores identity under `url`/`rewrite_url`/`objectID`; Extra under `uniqueId`. **The 200× spread was partly an artifact of my own query; corrected it is ~136× (8,147 vs samsung_ksa 60).**
+
+**NEW VERIFIED RULE:** *(architecture analysis)* any cross-retailer measurement over `raw_observations.payload` must resolve identity per retailer. A single JSON key across heterogeneous payloads silently under-counts, and it did — inside an ADR, for two hours, before being caught.
+
+**ADR-145's core conclusion survives**: fetch depth still spans two orders of magnitude and is set by our own configuration. Only the Extra datum is withdrawn.
+
+---
+
+## 2. NEW SYSTEM CONSTRAINT — blind fetching, not insufficient fetching
+
+Three interventions were measured on the same production system, same day:
+
+| intervention | input | new comparable | cost per comparison |
+|---|---|---|---|
+| **Noon fetch**, `--pages=30` (blind category traversal) | +5,644 products | **+47** | ~120 products |
+| **Backlog drain**, no new fetching | 9,730 rows → 364 new canonicals | **+2** | ~4,865 rows |
+| Samsung KSA full onboarding | 111 products | +7 | ~16 products |
+
+*(all production measurement)*
+
+**The decisive number:** Noon's 6,736 fetched products produced **743 canonicals, of which 592 are Noon-ALONE** and only **151 participate in a comparison**. **80% of a large, successful fetch produced single-retailer rows** — catalogue volume with no comparison value, which is precisely what the founder's standing rule forbids.
+
+**REJECTED HYPOTHESIS — my own "58% overlap rate" (ADR-143/145).** *(production)* It was measured on **n=24** Samsung canonicals. Noon's overlap rate is **20%** (151 of 743). The rate is not a constant and must not be used to size a retailer. This is the third small-sample rate this investigation has had to retire.
+
+**REJECTED HYPOTHESIS — "draining the backlog is high-leverage."** *(production)* 9,730 rows produced 364 canonicals and **+2** comparable — a 0.02% conversion. The backlog is overwhelmingly repeat observations and long-tail single-retailer product.
+
+**THE CONSTRAINT:** we discover by **category traversal**, which returns whatever a retailer happens to list. Roughly 80% of it is product no other retailer carries. More traversal produces proportionally more single-store rows. **The binding constraint is that discovery is not aimed at overlap.**
+
+---
+
+## 3. The intervention this implies — seed discovery from our own catalogue
+
+*(architecture analysis + repository)* We already hold the target list: **2,674 of our 5,854 single-store canonicals carry a brand Noon also stocks** *(production)*. Each is a product one retailer away from being comparable.
+
+The capability already exists and is unused for discovery. `noon-scraper.ts` has a keyed lookup path — `${NOON_API_URL}?q=${sku}&limit=1` — used only for price refresh, while discovery uses `scrapeApiPage(categoryQuery, page)`. Extra, Almanea and Amazon have equivalent search endpoints.
+
+**The change:** discovery seeded by our own single-store catalogue (brand + model), not by category traversal. Every fetch is then aimed at a product that is already one retailer short of a comparison, instead of at whatever a category page returns.
+
+**Expected effect is NOT claimed.** Blind fetch converts at ~120 products per comparison; targeted fetch should be far better because the target set is pre-filtered for overlap, but that is an expectation and **must be proven by a bounded run** under the rule ADR-145 established: *bounded run → measure actual → decide.*
+
+---
+
+## 4. Market limit vs system limit — stated explicitly, per the founder's §5
+
+*(production)* For every retailer examined, the observed limitation is **ours, not the retailer's**:
+- **Extra** — appeared shallow; was **our measurement**. 5,248 products.
+- **Noon** — appeared shallow at 1,092; reached 6,736 by changing one flag. **Our configuration.**
+- **Samsung KSA** — connector existed and had never run at scale. **Our operation.**
+- **sonyworld = 0** — a 236-product fetch. **Our reach**, not a market fact.
+- **Noon's 80% single-retailer residue** — genuinely a market/assortment property *for the products traversal happened to return*, but the choice of which products to fetch is **ours**.
+
+**No retailer examined has been shown to be the limiting factor.** Every constraint found this session was inside Tawveeri.
+
+---
+
+## 5. Decision
+
+1. **Stop retailer-by-retailer volume work.** Blind traversal at 120 products per comparison, creating 4 single-store rows for every comparable one, is not the best use of the next engineering hour.
+2. **Build overlap-seeded discovery** as the next platform change, proven first by a bounded run on Noon against the 2,674-product target list.
+3. **Fix cross-retailer measurement** — per-retailer identity resolution — before any further coverage claim. Already applied to the reach table above.
+4. **Framework defaults (`max_pages`) are DEFERRED, not rejected.** Raising them multiplies blind traversal, which multiplies single-store rows. Raise them *after* discovery is aimed, so the extra volume lands on overlap.
+
+**Consequences.** The roadmap changes from *"which retailer next"* to *"aim the crawler we already have."* No customer-facing behaviour changes; no code shipped in this ADR. **The 1 August launch is unaffected — recommendation B stands on the measured journey gate, and nothing here is a customer-facing integrity defect.**
+
 ### ADR-145 — Fetch reach is the binding constraint, and every retailer-value number we hold measures our crawler, not the Saudi market · Accepted (2026-07-30)
 
 **Context:** ADRs checked — ADR-133 (matching is marginal; acquisition is the lever), ADR-130 (UCP registry probe), ADR-125 (layer separation), ADR-139/143 (retailers admitted on measured overlap), ADR-068 (return on engineering: judge parser work where comparison is POSSIBLE). Tawveeri's acquisition strategy has rested since 2026-07-25 on **predicted overlap** — alnakheelk 68, najm 48, sonyworld 0, 127 UCP×major shared families of which 88 "new". A prediction-versus-production validation was run for the first time on 2026-07-30 (Samsung KSA, predicted ~281, produced 7) and the decomposition pointed at a cause nobody had measured: how much of each retailer we actually fetch.
@@ -24,7 +104,7 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 | swsg | 276 |
 | sonyworld | **236** |
 | samsung_ksa | 60 |
-| extra | **36** (49,735 of 50,051 rows carry no product_url) |
+| extra | **36** — ⚠ WITHDRAWN by ADR-146: a measurement artifact of using one JSON key. True figure **5,248** |
 
 Fetch depth spans a **~200× range** across connected retailers. Noon — among the largest e-commerce catalogues in Saudi Arabia — is represented by **1,092 products**. Observation-per-product also varies from **1.0 (amazon: fetched once, never re-observed)** to **60.0 (shaker)**, so price *history* coverage is as uneven as product coverage.
 
