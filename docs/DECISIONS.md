@@ -6,6 +6,47 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-145 — Fetch reach is the binding constraint, and every retailer-value number we hold measures our crawler, not the Saudi market · Accepted (2026-07-30)
+
+**Context:** ADRs checked — ADR-133 (matching is marginal; acquisition is the lever), ADR-130 (UCP registry probe), ADR-125 (layer separation), ADR-139/143 (retailers admitted on measured overlap), ADR-068 (return on engineering: judge parser work where comparison is POSSIBLE). Tawveeri's acquisition strategy has rested since 2026-07-25 on **predicted overlap** — alnakheelk 68, najm 48, sonyworld 0, 127 UCP×major shared families of which 88 "new". A prediction-versus-production validation was run for the first time on 2026-07-30 (Samsung KSA, predicted ~281, produced 7) and the decomposition pointed at a cause nobody had measured: how much of each retailer we actually fetch.
+
+**What we believed.** That our retailer-value figures described the Saudi market — that sonyworld genuinely has no overlap with the majors, that alnakheelk genuinely offers 68 shared families, and that "predicted overlap" was therefore a sound onboarding criterion. ADR-133 additionally concluded from a trigram sweep that matching is marginal (836 candidates → 10–50 genuinely recoverable).
+
+**What we measured (production, read-only, 2026-07-30).** Distinct products ever fetched per connected retailer, counted on `payload->>'product_url'` because `raw_url` and `external_product_id` are NULL across essentially the whole table:
+
+| retailer | distinct products fetched |
+|---|---|
+| almanea | 7,736 |
+| amazon | 6,693 |
+| jarir | 3,266 |
+| noon | **1,092** |
+| shaker 684 · najm 606 · alnakheelk 600 | |
+| swsg | 276 |
+| sonyworld | **236** |
+| samsung_ksa | 60 |
+| extra | **36** (49,735 of 50,051 rows carry no product_url) |
+
+Fetch depth spans a **~200× range** across connected retailers. Noon — among the largest e-commerce catalogues in Saudi Arabia — is represented by **1,092 products**. Observation-per-product also varies from **1.0 (amazon: fetched once, never re-observed)** to **60.0 (shaker)**, so price *history* coverage is as uneven as product coverage.
+
+**NEW VERIFIED RULE — a retailer-value number is a crawler measurement unless its fetch reach is stated beside it.** *(production measurement)* Every figure of the form "retailer X yields N comparisons" is bounded above by how much of X we fetched. Quoting such a figure without its denominator describes our pipeline and is mistaken for a description of the market.
+
+**RETIRED — "predicted overlap is the only onboarding criterion."** Replaced by: **bounded run → measure actual → decide whether to continue.** Predictions remain useful as ceilings only.
+
+**Numbers now SUSPECT (do not reuse without re-measuring at known reach):** sonyworld = 0 (drawn from a **236-product** fetch — it is not evidence that Sony World lacks overlap); alnakheelk 68 and najm 48 (600-ish product fetches); the 127 UCP × major shared families and the 88 "new" ones (same shallow fetches). **ADR-133's "matching is marginal"** survives *as a statement about our ingested catalogue* but **must not be read as a market claim** — a trigram sweep can only propose pairs among products we hold, and at 10× the reach the candidate pool is not the same pool.
+
+**Numbers that SURVIVE unchanged** — because they describe what we hold and serve, not the market: 588 comparable canonicals (≥2 approved retailers), 141 at ≥3, 363 verified drops, 71% inflated-reference share, 78 model-corroborated devices, and the 112/112 journey gate.
+
+**Decision.** (1) Fetch reach becomes a first-class, reported metric: no retailer-value figure is published or used for prioritisation without the distinct-product count it was computed over. (2) Acquisition strategy shifts from *choosing retailers by predicted overlap* to *increasing reach at retailers already connected*, because the measured overlap rate where products do reach TPS is **58%** (ADR-143) while reach itself spans 200×. (3) `raw_observations.raw_url` and `.external_product_id` are unpopulated and must not be used for coverage measurement; `payload->>'product_url'` is the working identifier. (4) The three hypotheses below are recorded as rejected.
+
+**REJECTED HYPOTHESES (recorded per founder directive, each with its evidence):**
+- *"Single-brand retailers yield near zero regardless of who carries the brand."* **Rejected** — the sonyworld=0 datum came from a 236-product fetch, and Samsung KSA (a single-brand retailer) reached a **58% overlap rate** on what it did ingest. The observation was about reach, not brand exclusivity. *(production)*
+- *"Brand stores push premium tiers that multi-brand retailers do not stock."* **Rejected as stated** — the 10 non-overlapping Samsung products are 9 **audio** devices plus one dishwasher: one category, not one tier. Whether that category is genuinely absent from Extra/Almanea or merely unreached by us is **unresolved**; an external check was inconclusive. *(production; bounded external research inconclusive)*
+- *"Predicted overlap is a reliable onboarding criterion."* **Rejected** — `feed-overlap-probe.ts` models neither ingest reach nor commercial-variant identity, and was never even run for the Samsung decision. *(repository analysis)*
+
+**Alternatives considered.** Upgrade `feed-overlap-probe` to commercial-variant level (rejected for now — it would still not model our own reach, which is the dominant term; cheaper to multiply its ceiling by measured reach and the 58% overlap rate). Keep prioritising retailer-by-retailer onboarding (rejected — with reach spanning 200×, deepening a connected retailer dominates adding a shallow new one). Delete or re-fetch the shallow retailers (rejected — the ingest/gate architecture means data is permanent and visibility is reversible; nothing needs deleting to re-measure).
+
+**Consequences.** Acquisition planning is rebuilt around reach. Every historical retailer-value figure carries a caveat until re-measured. The discovery framework — pagination, category traversal, seed breadth, per-run caps such as `discoverProducts`' `maxPages × 12` — becomes the highest-leverage engineering surface, ahead of parsers, identity work and new retailers. **No customer-facing behaviour changes and nothing here blocks the 1 August launch**; the launch decision remains B on the measured journey gate.
+
 ### ADR-137 — Four defects behind one symptom: our own rate limiter, a relevance-blind Smart Pick, and a dead URL shape · Accepted (2026-07-29)
 **Context:** ADRs checked — ADR-136 (cards publish their claim; the harness reads cards, not the page), ADR-135 (compare derived from the same source as the card), ADR-134 (Almanea's two URL shapes → two listing identities; the regex fix deferred), ADR-132 (retailer dedup), ADR-129 (never publish an unmeasured claim), ADR-099 (pipeline-concurrency caution). Executed under `STANDING_DIRECTIVE.md` §3.1–3.4, in the founder's ordering: **instrument first, then the fix, then the honest delta.**
 **3.2 — the instrument (done first, deliberately).** Every run reported `subject_result_card = 0`: whenever a Smart Pick existed it was the sole subject, so a result card's own price agreement with its own compare page was never tested. One page load now emits one row per actionable surface (PICK and CARD), each judged end to end, plus a `by_subject` breakdown so a gate carried entirely by one surface is visible as such. Unhonoured-claim violations are counted once per page, not once per row. Baseline re-taken BEFORE any search change: **overall 65/78 = 83.3%, comparison 15/16 = 93.8%.**
