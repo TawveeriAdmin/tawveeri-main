@@ -6,6 +6,54 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-150 — A category is navigable on COMPARABLE count, measured live; and the category-filter path serves the wrong layer · Accepted (2026-07-30)
+
+**Context.** The founder asked whether a category should become navigable on product count,
+comparable count, or another evidence-based threshold, and required that the rule be
+evaluated from a live query — *"the rule is constant, the category list is derived"*.
+
+**Decision.** A category may appear in navigation iff it holds **≥ 30 comparable products**
+(canonicals with live offers from ≥2 distinct approved retailers), measured live from
+`tps_product_projection`. Full reasoning, rejected alternatives and the measured evidence are
+in `docs/CATEGORY-NAVIGATION-POLICY.md`. Implementation:
+`src/lib/intelligence/navigable-categories.ts` + `navigable-categories-context.tsx`, consumed
+by the homepage, the header menu and `/categories`. No category list is hardcoded anywhere.
+
+**Alternatives rejected, each on measurement.**
+- **Product count** — would promote `accessories` (1,838 products, **0** comparable). Breadth
+  without overlap is the failure mode we exist to oppose.
+- **Comparable ratio** — a 10% floor excludes `laptop` (70 comparable, 9.4%) while keeping
+  `smartwatch` (31, 42.5%), though laptop offers a shopper more than twice as much to compare.
+  Ratio measures catalogue composition, not user value.
+- **Freshness in the gate** — already disclosed per offer at the point of comparison; adding
+  it here double-counts a disclosure, against *one authority per question*.
+
+**Why 30.** The production distribution breaks between 31 and 17 — the widest relative gap in
+the tail (~1.8×) — and 30 is about one browse screen of comparable cards. The threshold is a
+judgement; the membership derived from it is not.
+
+**Second finding, and the more serious one.** A gate on comparable count is decorative unless
+the destination can serve comparable products. `?category=<slug>` is an exact-equality filter
+against the **storefront layer**, not the TPS layer: measured, `category=laptop` returns 830
+products with **zero** comparable and a laptop *table* as the top result, while the query path
+(`query:"مكيف"`) returns 9 comparable across 6 retailers. The two layers do not even share a
+vocabulary (`smartphone` vs `mobile`). **All category navigation now links to the query path.**
+
+**Consequences.** The header's hardcoded 17-entry list is deleted: eight entries (`gaming`,
+`wearable`, `networking`, `smart_home`, `appliance`, `kitchen`, `personal_care`,
+`accessories`) matched **no** production category, and `camera` holds 3 comparable — every one
+a promoted dead end. `/categories` now shows the derived set with its live comparable count on
+each tile. The homepage shows the top six, derived from the same source. When the measurement
+fails the list is empty and the menu hides, rather than falling back to a stale list.
+
+**Instrument note.** The first pass at this measurement reported Arabic search as returning
+earbuds for `مكيف` and zero comparisons. That was **instrument error** — `curl -d` with a
+non-ASCII argument is mangled by Windows argv conversion. With `--data-binary` from a
+UTF-8 file the same query returns the correct result. The ASCII category-slug measurements
+above were unaffected and were re-verified with the corrected method before being recorded.
+
+---
+
 ### ADR-148 — Ingestion had no backpressure, and five schedulers were writing to one production database · Accepted (2026-07-30)
 
 **Context:** ADR-147 found ~370,000 observations fetched, paid for and invisible to customers, and fixed the *symptom* (throughput ~7×, per-store lag reporting, a backlog metric that was wrong by ~34,000×). It did not ask **why the queue was allowed to grow in the first place**. Draining it by hand while the producer keeps running is not an architecture. This ADR is the cause and the control.

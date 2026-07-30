@@ -12,47 +12,26 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
+import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 
 const T = {
   ar: {
     tagline: 'قارن أسعار الإلكترونيات عبر متاجر السعودية — بالأدلة، لا أرقام مسوّقة.',
     searchPh: 'ابحث عن منتج… مثلاً آيفون ١٦',
     searchCta: 'بحث',
-    aiTitle: 'اسأل وفّر',
-    aiSub: 'مساعدك الذكي للتوفير — قل وش تبي، وألقى لك الأنسب بأفضل سعر.',
-    aiCta: 'ابدأ المحادثة',
-    heroTitle: 'قارن بذكاء، ووفّر بثقة',
-    heroSub: 'نجمع الأسعار من أكبر متاجر السع. ونرتّبها حسب مصلحتك — لا العمولة.',
-    heroCta: 'كيف نتحقّق من الأسعار',
     catsTitle: 'الفئات الرئيسية',
     dealsTitle: 'أفضل العروض',
     dealsAll: 'شوف الكل',
     save: 'وفّر',
-    cats: [
-      { e: '📱', l: 'جوالات', q: 'جوال' }, { e: '💻', l: 'لابتوب', q: 'لابتوب' },
-      { e: '❄️', l: 'مكيفات', q: 'مكيف' }, { e: '🎧', l: 'سماعات', q: 'سماعات' },
-      { e: '📺', l: 'شاشات', q: 'شاشة' }, { e: '🧺', l: 'غسالات', q: 'غسالة' },
-    ],
   },
   en: {
     tagline: 'Compare electronics prices across Saudi stores — with evidence, not marketing numbers.',
     searchPh: 'Search a product… e.g. iPhone 16',
     searchCta: 'Search',
-    aiTitle: 'Ask Waffar',
-    aiSub: "Your smart saving assistant — say what you need and I'll find the best fit at the best price.",
-    aiCta: 'Start chatting',
-    heroTitle: 'Compare smart, save with confidence',
-    heroSub: 'We gather prices from the biggest Saudi stores and rank them for you — never by commission.',
-    heroCta: 'How we verify prices',
     catsTitle: 'Main categories',
     dealsTitle: 'Best deals',
     dealsAll: 'See all',
     save: 'Save',
-    cats: [
-      { e: '📱', l: 'Phones', q: 'phone' }, { e: '💻', l: 'Laptops', q: 'laptop' },
-      { e: '❄️', l: 'ACs', q: 'air conditioner' }, { e: '🎧', l: 'Audio', q: 'headphones' },
-      { e: '📺', l: 'TVs', q: 'tv' }, { e: '🧺', l: 'Washers', q: 'washing machine' },
-    ],
   },
 };
 
@@ -63,6 +42,10 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
   const t = T[isAr ? 'ar' : 'en'];
   const router = useRouter();
   const [q, setQ] = useState('');
+  // Categories DERIVED LIVE (ADR-150) — the six with the most comparable products. The
+  // hardcoded `T.cats` list this replaces would drift from production exactly the way the
+  // hardcoded homepage figures did. Six keeps the first screen calm; /categories shows all.
+  const homeCats = useNavigableCategories().slice(0, 6);
   // Deals arrive from the SERVER as verified drops (observed_max + tracked days). The old
   // client query read product_stores.original_price — the merchant's own "was" — and
   // published on the first screen a saving we never observed.
@@ -93,22 +76,25 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
           as well, so the first screen carried two doors to the same assistant. Measured
           2026-07-29 as a homepage-journey failure in both locales. */}
 
-      {/* 2 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing) */}
-      <section style={S.section}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.catsTitle}</h2>
-          <Link href={`/${locale}/categories`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          {t.cats.map((c) => (
-            <button key={c.l} onClick={() => search(c.q)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 18, padding: '22px 8px', cursor: 'pointer', minHeight: 104 }}>
-              <span style={{ fontSize: 30 }}>{c.e}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)' }}>{c.l}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* 2 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing).
+          Hidden entirely when nothing clears the rule — never an empty or stale grid. */}
+      {homeCats.length > 0 && (
+        <section style={S.section}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.catsTitle}</h2>
+            <Link href={`/${locale}/categories`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {homeCats.map((c) => (
+              <button key={c.key} onClick={() => search(c.query)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 18, padding: '22px 8px', cursor: 'pointer', minHeight: 104 }}>
+                <span style={{ fontSize: 30 }} aria-hidden="true">{c.emoji}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)' }}>{isAr ? c.labelAr : c.labelEn}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3 — BEST DEALS — VERIFIED drops only. Every card states the evidence: the
           highest price we ourselves observed, and how many days we watched. This is the
@@ -144,17 +130,23 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
         </section>
       )}
 
-      {/* 4 — TRUST, LAST. It used to sit above the categories, asking the customer to
-          accept the claim before seeing a single product. That is exactly what we say we
-          do not do: the claim should be PROVEN by products, then explained. */}
-      <section style={S.section}>
-        <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, var(--brand-green) 0%, #3a7a66 100%)', borderRadius: 22, padding: '26px 22px', color: '#fff' }}>
-          <div style={{ position: 'absolute', insetInlineEnd: -10, top: '50%', transform: 'translateY(-50%)', fontSize: 96, opacity: .12, pointerEvents: 'none' }}>🛡️</div>
-          <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>{t.heroTitle}</div>
-          <div style={{ fontSize: 13, opacity: .9, lineHeight: 1.6, maxWidth: 440, marginBottom: 14 }}>{t.heroSub}</div>
-          <Link href={`/${locale}/price-truth`} style={{ display: 'inline-block', background: '#fff', color: '#2f6b58', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>{t.heroCta} {isAr ? '←' : '→'}</Link>
-        </div>
-      </section>
+      {/* 4 — THE COMPANY-EXPLANATION BILLBOARD WAS REMOVED HERE (Founder directive,
+          2026-07-30). The homepage's job is to get a shopper to search, compare and see
+          evidence; explaining who Tawveeri is and how it verifies belongs on /about, which
+          the footer links in both locales. Task completion before content completeness.
+
+          Trust content that DIRECTLY serves the journey stays: the tagline above the search
+          field, and the per-deal evidence line in §3 — which helps a shopper judge THAT
+          offer, rather than asking them to accept a claim about the company.
+
+          Two further reasons this block could not simply move as-written:
+            • its Arabic subtitle carried a visible truncation — «أكبر متاجر السع.»
+            • it stated ranking and commission policy («نرتّبها حسب مصلحتك — لا العمولة» /
+              "ranked for you — never by commission"), and REDESIGN_BRIEF §14.1 is explicit
+              that this work says nothing publicly about commission or ranking policy.
+          The About page carries the LAUNCH_VOCABULARY-approved wording instead.
+
+          /price-truth remains reachable from the deals heading above. */}
     </div>
   );
 }

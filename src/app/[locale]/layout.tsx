@@ -9,6 +9,8 @@ import { ThemeProvider } from '../providers/theme-provider';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { MultiStoreCartProvider } from '@/lib/cart/cart-context';
+import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
+import { NavigableCategoriesProvider } from '@/lib/intelligence/navigable-categories-context';
 
 export async function generateMetadata({
   params,
@@ -72,6 +74,13 @@ export default async function LocaleLayout({
  if (!locales.includes(locale as (typeof locales)[number])) {
  notFound();
  }
+
+ // Which categories may appear in navigation — measured live, never hardcoded (ADR-150).
+ // Failure returns [] inside the helper, so a bad read hides the menu rather than
+ // rendering a stale one.
+ const navigableCategories = (await getNavigableCategories()).map(
+ ({ key, comparable, labelAr, labelEn, query, emoji, slug }) => ({ key, comparable, labelAr, labelEn, query, emoji, slug }),
+ );
 
  // Load messages directly with error handling
  let messages: Record<string, unknown> = {};
@@ -167,7 +176,12 @@ export default async function LocaleLayout({
  >
  <MultiStoreCartProvider>
  <AuthProvider>
+ {/* Live-derived category navigation (ADR-150). Measured server-side here so every
+ page's header shows only categories that currently clear the rule — never a
+ hardcoded list. Does not reorder any existing provider. */}
+ <NavigableCategoriesProvider categories={navigableCategories}>
  {children}
+ </NavigableCategoriesProvider>
  <Toaster />
  </AuthProvider>
  </MultiStoreCartProvider>

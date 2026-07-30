@@ -29,35 +29,47 @@ import Image from 'next/image';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
 import { SearchAutocomplete } from '@/components/search/search-autocomplete';
 import { Footer } from '@/components/layout/footer';
+import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 import { CompareFloatingBar } from '@/components/compare/compare-floating-bar';
 
 const subscribe = () => () => {};
 
-const HEADER_CATEGORIES: Array<{ slug: string; icon: typeof Smartphone; labelAr: string; labelEn: string }> = [
-  { slug: 'smartphone',    icon: Smartphone,     labelAr: 'الهواتف',              labelEn: 'Phones' },
-  { slug: 'laptop',        icon: Laptop,         labelAr: 'اللابتوبات',           labelEn: 'Laptops' },
-  { slug: 'tablet',        icon: Tablet,         labelAr: 'الأجهزة اللوحية',      labelEn: 'Tablets' },
-  { slug: 'tv',            icon: Tv,             labelAr: 'التلفزيونات',          labelEn: 'TVs' },
-  { slug: 'audio',         icon: Headphones,     labelAr: 'الصوتيات',             labelEn: 'Audio' },
-  { slug: 'gaming',        icon: Gamepad2,       labelAr: 'الألعاب',              labelEn: 'Gaming' },
-  { slug: 'camera',        icon: Camera,         labelAr: 'الكاميرات',            labelEn: 'Cameras' },
-  { slug: 'monitor',       icon: Monitor,        labelAr: 'الشاشات',              labelEn: 'Monitors' },
-  { slug: 'wearable',      icon: Watch,          labelAr: 'الساعات الذكية',       labelEn: 'Wearables' },
-  { slug: 'networking',    icon: Wifi,           labelAr: 'الشبكات',              labelEn: 'Networking' },
-  { slug: 'smart_home',    icon: Home,           labelAr: 'المنزل الذكي',         labelEn: 'Smart Home' },
-  { slug: 'printer',       icon: Printer,        labelAr: 'الطابعات',             labelEn: 'Printers' },
-  { slug: 'appliance',     icon: WashingMachine, labelAr: 'الأجهزة المنزلية',     labelEn: 'Appliances' },
-  { slug: 'refrigerator',  icon: Refrigerator,   labelAr: 'الثلاجات',             labelEn: 'Fridges' },
-  { slug: 'kitchen',       icon: CookingPot,     labelAr: 'المطبخ',               labelEn: 'Kitchen' },
-  { slug: 'personal_care', icon: Sparkle,        labelAr: 'العناية الشخصية',      labelEn: 'Personal Care' },
-  { slug: 'accessories',   icon: Package,        labelAr: 'الإكسسوارات',          labelEn: 'Accessories' },
-];
+// The hardcoded HEADER_CATEGORIES list that stood here was removed under ADR-150. Eight of its
+// seventeen entries (gaming, wearable, networking, smart_home, appliance, kitchen,
+// personal_care, accessories) matched NO category production holds, and `camera` holds 3
+// comparable products. Every one of them was a promoted dead end.
 
-const HEADER_QUICK_CATEGORIES: string[] = ['smartphone', 'laptop', 'tv', 'audio', 'appliance'];
+// Icons only, keyed by the TPS category as stored in production. This map decides NOTHING
+// about which categories are shown — that is derived live (ADR-150). An unmapped category
+// falls back to a generic icon rather than being hidden.
+const HEADER_CATEGORY_ICONS: Record<string, typeof Smartphone> = {
+  air_conditioner: Wifi,
+  mobile: Smartphone,
+  washing_machine: WashingMachine,
+  tv: Tv,
+  laptop: Laptop,
+  tablet: Tablet,
+  monitor: Monitor,
+  refrigerator: Refrigerator,
+  audio: Headphones,
+  smartwatch: Watch,
+  dishwasher: CookingPot,
+  printer: Printer,
+  vacuum: Home,
+  air_fryer: CookingPot,
+  microwave: CookingPot,
+  camera: Camera,
+};
 
-const getHeaderCategoryLabel = (slug: string | null, isRTL: boolean) => {
+// Legacy `?category=<slug>` URLs (external links, bookmarks) still need to fill the search
+// box. Resolved against the live list rather than a parallel hardcoded one.
+const getHeaderCategoryLabel = (
+  slug: string | null,
+  isRTL: boolean,
+  cats: Array<{ key: string; slug: string; labelAr: string; labelEn: string }>,
+) => {
   if (!slug) return '';
-  const category = HEADER_CATEGORIES.find((item) => item.slug === slug);
+  const category = cats.find((item) => item.slug === slug || item.key === slug);
   if (!category) return '';
   return isRTL ? category.labelAr : category.labelEn;
 };
@@ -81,15 +93,18 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   const [wishlistCount, setWishlistCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const isRTL = locale === 'ar';
+  // Live-derived (ADR-150), supplied by the locale layout. Empty when the measurement failed —
+  // the menu then hides rather than showing a stale list.
+  const navigableCategories = useNavigableCategories();
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get('q') || getHeaderCategoryLabel(searchParams.get('category'), isRTL)
+    searchParams.get('q') || getHeaderCategoryLabel(searchParams.get('category'), isRTL, navigableCategories)
   );
 
   useEffect(() => {
     queueMicrotask(() => {
-      setSearchQuery(searchParams.get('q') || getHeaderCategoryLabel(searchParams.get('category'), isRTL));
+      setSearchQuery(searchParams.get('q') || getHeaderCategoryLabel(searchParams.get('category'), isRTL, navigableCategories));
     });
-  }, [searchParams, isRTL]);
+  }, [searchParams, isRTL, navigableCategories]);
 
   const isHydrated = useSyncExternalStore(subscribe, () => true, () => false);
 
@@ -401,11 +416,17 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
               </DropdownMenuTrigger>
               <DropdownMenuContent align={isRTL ? 'end' : 'start'} className="w-[min(620px,90vw)] rounded-2xl border-[color:var(--color-outline-variant)] p-3 shadow-[0_24px_70px_-44px_rgba(26,26,26,0.45)]">
                 <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
-                  {HEADER_CATEGORIES.map((cat) => {
-                    const Icon = cat.icon;
+                  {/* DERIVED LIVE (ADR-150), and linking to the QUERY path. The old list was
+                      hardcoded and sent users to `?category=<slug>`; measured on production,
+                      that filter hits the storefront layer and returned 830 laptops with ZERO
+                      comparable and a laptop TABLE on top, while `gaming`/`networking`/
+                      `accessories` matched no TPS category at all. The query path returns the
+                      comparable products. */}
+                  {navigableCategories.map((cat) => {
+                    const Icon = HEADER_CATEGORY_ICONS[cat.key] ?? Package;
                     return (
-                      <DropdownMenuItem key={cat.slug} asChild className="cursor-pointer">
-                        <Link href={`/${locale}/search?category=${cat.slug}`} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2">
+                      <DropdownMenuItem key={cat.key} asChild className="cursor-pointer">
+                        <Link href={`/${locale}/search?q=${encodeURIComponent(cat.query)}`} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2">
                           <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-700">
                             <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                           </span>
