@@ -1,4 +1,55 @@
-# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #15 · ADR-148 BACKPRESSURE SHIPPED ═══
+# ═══ RESUME HERE — 2026-07-30 CHECKPOINT #16 · LAUNCH CLOSED · ENGINEERING PHASE ENDED ═══
+
+**Launch verdict: SAFE WITH EXCLUSIONS.** Engineering investigation is CLOSED. Do not reopen
+it. Head `a37cb67`, tree clean, pushed.
+
+## READ THIS FIRST IF YOU WRITE ANY CUSTOMER-FACING TEXT
+
+**`docs/LAUNCH_VOCABULARY.md` governs all public language** — the CAN SAY / MUST NOT SAY lists
+in Arabic and English, the replacement vocabulary (past tense, evidence-anchored), the
+discount-integrity methodology, and the latent copy that must never be reactivated without
+rewording. **It outranks any wording you find in the codebase or in older docs.**
+
+## Launch gate — measured against production AFTER the copy deploys
+
+`docs/ui-journey-2026-07-30-launch-eve.log` — **overall 112/112 · comparison 86/86 (denominator
+grew from 82) · Arabic 72/72 · English 40/40 · exact-model 32/32 product AND variant ·
+0 unhonoured store claims across 58 pages · outbound 112 OK / 0 DEAD / 0 BLOCKED.**
+**Never publish these figures** — they are evidence for us, not a customer benefit (§3 of the
+vocabulary file).
+
+## The three exclusions that make it SAFE **WITH EXCLUSIONS**
+
+1. **No cadence or real-time language, anywhere.** Dedicated price refresh is not the freshness
+   mechanism today — discovery is, and that is coverage, not architecture.
+2. **LuLu and Sharaf DG are excluded from every comparison claim** (ingesting, but 0 normalized
+   observations — they reach no comparison).
+3. **The discount-integrity figure is 70%, not 71%**, and only ever with its scoping clause
+   *"among the offers we examined"*. Re-run `curl -s
+   https://tawveeri.com/api/v1/tps/discount-integrity` before quoting; it moves
+   (87.7 → 72 → 71 → 70).
+
+## Known customer-facing gaps, accepted for launch — all in the Week 1 list
+
+- **Search cards do not show observation age**; only the compare page does. 34% of visible
+  offers are >7 days old (~6-day median at the four largest retailers). Mitigated by the
+  compare-page age line and by the wording discipline above.
+- **Noon's dedicated price refresh returns 0 from Railway** even after the ADR-149 regex fix
+  (works 4/4 locally). Unconfirmed cause: API likely unreachable from Railway's egress.
+- **LuLu's dedicated refresh is unfixed**; cause not yet explained.
+- **The `coupons` table is EMPTY** (0 rows) — the coupons page has nothing to show.
+
+## Post-launch roadmap — approved as written, nothing moved into launch scope
+
+Week 1 / Week 2 / Architecture are in CHECKPOINT #15 §6 and the ADR-148/149 entries. The
+governing architectural conclusion, kept verbatim because it is why the roadmap can be trusted:
+
+> **No single dominant constraint survived measurement. Plan many measured improvements, not
+> one mythical unlock.**
+
+---
+
+# ═══ SUPERSEDED — 2026-07-30 CHECKPOINT #15 · ADR-148 BACKPRESSURE SHIPPED ═══
 
 **Read this, then ADR-148.** Commits `1723d14` + `6c1dd02`, pushed to `main`.
 Launch **B**, gate **112/112**, untouched — no customer-facing code changed.
