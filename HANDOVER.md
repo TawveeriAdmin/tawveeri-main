@@ -1,4 +1,105 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #23 · PHASE 2 · P2-7 IS NEXT, NOT STARTED ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #24 · P2-7 COMPLETE AND VERIFIED IN PRODUCTION ═══
+
+**Tree clean, all pushed, deploy landed and re-measured live. Nothing running.**
+Roadmap: `docs/IMPLEMENTATION_ROADMAP.md`. Decision: **ADR-151**. UX record: `docs/UX_DECISION_RECORD.md`.
+
+## THE ONE THING THE FOUNDER SHOULD LOOK AT
+
+**The brand green is darker on the live site, and that was my call.** `#55B295` → `#3B816B`.
+
+It carried white label text at **2.56:1** where AA needs 4.5, on 234 rendered nodes, on every
+route. There is no arrangement in which that colour passes with a white label. I chose the
+minimal darkening — same hue, same saturation, lightness lowered only until it clears — over
+the alternative of fixing 14 call sites, because fixing call sites leaves the trap armed for
+the fifteenth. **The logo is untouched** (it is a PNG and does not read these tokens) and the
+mint survives as backgrounds and borders.
+
+**If the brand judgement outweighs the accessibility one, this is one revert:**
+`git revert 4056572`. That restores the palette exactly and returns the audit to ~800 failing
+contrast nodes. The trade is stated in `docs/UX_DECISION_RECORD.md` § UXD-001.
+
+## WHAT P2-7 ACTUALLY FOUND — three of these were invisible to every existing check
+
+| | |
+|---|---|
+| **The skip link was NEVER visible.** `globals.css` hand-rolled its own `.sr-only`; Tailwind's utilities live in `@layer utilities` and **unlayered CSS outranks every layer**, so it silently beat `focus:not-sr-only` and the first tab stop on every page stayed clipped to **1×1 px while focused**. CHECKPOINT #23 recorded it as "known good, verified in served HTML" — it was present and announced, and never seen. **Do not re-add an unlayered `.sr-only`; it re-breaks this invisibly.** |
+| **`/en` served `<html lang="ar">`** — English announced in an Arabic voice (3.1.1, Level A), on every page, because the root layout sits above `[locale]` and cannot read it. `<html>` also had **no `dir` at all**, which is why Radix portals (mounted on `document.body`, outside the `[locale]` wrapper) need direction set by hand. |
+| **The filter sheet dropped focus to `<body>`** on close. It trapped focus correctly and released on Escape correctly — it had nowhere to give focus back to, because it is opened by state and has no `Dialog.Trigger`. A keyboard user pressing Escape was dumped to the top of a long results page. |
+| **The mobile filter button had no accessible name** below 640px (its label is `hidden sm:inline`). axe CRITICAL. |
+| Footer text at 2.72:1 in **both** themes · "See all" links 19px tall (2.5.8 needs 24) · 20 identically-named "Save to Wishlist" buttons per results page. |
+
+## THE NUMBERS, AND HOW TO REPRODUCE THEM
+
+```bash
+npm run a11y          # localhost:3000 — both harnesses
+npm run a11y:prod     # https://tawveeri.com — this is what verified the deploy
+```
+
+| | axe (36 renders) | keyboard |
+|---|---|---|
+| before | 2 rules · **769 failing nodes** | 30 checks · **12 failing** |
+| after (local) | **0 · 0** | 31 checks · **0 failing** · 1 accepted |
+| **after (production)** | **0 · 0** | **31 checks · 0 failing** · 1 accepted |
+
+Logs: `docs/a11y-2026-07-31-{BEFORE,AFTER,PRODUCTION}.log`. The before/after pair was re-run
+with the FINAL harness so both share a denominator.
+
+**Read the node count with care.** It moves run to run (769–806 measured) because it depends on
+the live results rendered. The **seven colour pairs** behind it do not move, and the fix was
+sized from the pairs, not from the node count.
+
+## WHAT WAS DELIBERATELY NOT DONE
+
+- **Product-card DOM order.** Action buttons precede the card body — the documented
+  click-interception guard. Each control now names its own product instead, which is what 2.4.3
+  asks for (*preserves meaning and operability*). The harness reports the residual order
+  deviation as an **accepted deviation carrying its reason, never as a pass**, and only for
+  pairs it can prove belong to one card. A cross-component inversion still fails the gate.
+- **The 44×44 house rule.** 2.5.8 AA requires **24×24** and that now passes (0 of 38 controls
+  under 24px). **25 of 38 are still under 44px** — that is AAA (2.5.5) plus the mobile app's
+  own constant, and closing it is a header layout change, not an accessibility fix.
+- **Root layout owning the locale.** The served BYTES still say `ar` for `/en`; the correction
+  happens before first paint, so assistive tech is right and a no-JS consumer is not. The
+  complete fix needs the root-shell restructure — **the same prerequisite the 404-body item is
+  already blocked on. One change unblocks both; do them together.**
+
+## NEXT — P2-8, and one cheap thing first
+
+**P2-8 · UNIFIED SEARCH migration** is the next execution unit. It is a migration of shipped
+behaviour across both live entry points, and the AI disclosure must relocate with `/advisor`
+and be verified in production (Constitution → UNIFIED SEARCH hard condition; F5 extended).
+
+**Before it: wire `npm run a11y` into whatever runs on change.** Both harnesses exist and pass;
+nothing runs them automatically. The `.sr-only` defect is the argument — it was invisible to
+the type checker, the linter, the test suite and a served-HTML inspection, because it only
+exists in the rendered artefact.
+
+## ROLLBACK — this session, newest first
+
+```
+d68cf5d  npm run a11y scripts             git revert d68cf5d
+4672ec5  keyboard/focus/lang/target fixes git revert 4672ec5
+4056572  BRAND GREEN token fix            git revert 4056572   ← the one with a visible cost
+2d37f8e  the two harnesses + before log   git revert 2d37f8e
+```
+
+`53e6894` is the pre-session head. **Confirm the range before any range revert** —
+`git log --oneline 53e6894..HEAD` first; an inverted range silently reverts nothing.
+
+## INSTRUMENT NOTE — five false readings caught before they became claims
+
+A light-only baseline hid a defect only dark mode reveals. The first keyboard run produced
+**four false failures**: an Arabic label that does not exist in the app («الفلاتر» vs the
+shipped «المرشحات»), a focus ring drawn on the wrapper rather than the input, a trigger never
+focused before being clicked so nothing could be restored to it, and an sr-only element counted
+as a touch target. A fifth: the use-of-colour check counted every store logo as a colour-only
+swatch because it excluded elements *containing* an image but not images themselves. Each was
+corrected in the harness **before** any code changed. **Measure the rendered artefact, and
+prove the instrument before believing a number that would change a priority.**
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #23 · PHASE 2 · P2-7 IS NEXT, NOT STARTED ═══
 
 **Head `d8df011`, tree clean, all pushed, nothing running.**
 Roadmap and status: `docs/IMPLEMENTATION_ROADMAP.md`. Governing: `CONSUMER_EXPERIENCE_CONSTITUTION.md`.

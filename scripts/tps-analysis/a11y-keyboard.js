@@ -420,7 +420,53 @@ async function run() {
       await page.close();
     }
 
-    // ── 9. Page has a language, and it is the RIGHT one (3.1.1) ─────────────────
+    // ── 9. Meaning carried by colour alone (1.4.1) ──────────────────────────────
+    // No tool can decide this — whether a colour MEANS something is a judgement about the
+    // content. What can be measured is the population that would have to carry meaning
+    // that way: a coloured element with no text, no label, no title and no image. This
+    // check enumerates that population so the judgement is made against a list rather
+    // than an impression. A non-empty list is not automatically a failure; an unexamined
+    // one is.
+    {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 900 });
+      await page.goto(`${BASE}/${locale}/search?q=${encodeURIComponent(locale === 'ar' ? 'لابتوب' : 'laptop')}`, { waitUntil: 'domcontentloaded' });
+      await settle(page);
+      const swatches = await page.evaluate(() => {
+        const found = [];
+        for (const el of document.querySelectorAll('body *')) {
+          if (el.textContent.trim()) continue;                    // carries text → not colour-only
+          const tag = el.tagName.toLowerCase();
+          // A shape conveys the meaning, not the colour — whether the element IS one or
+          // CONTAINS one. Checking only descendants counted every store logo as a
+          // colour-only swatch and reported 51 false candidates.
+          if (tag === 'img' || tag === 'svg' || tag === 'canvas') continue;
+          if (el.querySelector('svg, img, canvas')) continue;
+          if (el.getAttribute('aria-label') || el.getAttribute('title')) continue;
+          if (el.getAttribute('aria-hidden') === 'true') continue; // explicitly decorative
+          const cs = getComputedStyle(el);
+          const bg = cs.backgroundColor;
+          if (!bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') continue;
+          const r = el.getBoundingClientRect();
+          if (!r.width || !r.height || r.width > 64 || r.height > 64) continue; // a panel, not a dot
+          found.push({
+            tag: el.tagName.toLowerCase(),
+            cls: String(el.className).slice(0, 46),
+            size: `${Math.round(r.width)}×${Math.round(r.height)}`,
+            bg,
+          });
+        }
+        return found;
+      });
+      record('no colour-only status indicators', locale, swatches.length === 0,
+        swatches.length === 0
+          ? 'no textless, unlabelled coloured element under 64px on the results page'
+          : `${swatches.length} candidates need a human verdict → ` +
+            swatches.slice(0, 4).map((s) => `${s.tag}.${s.cls} ${s.size} ${s.bg}`).join('; '));
+      await page.close();
+    }
+
+    // ── 10. Page has a language, and it is the RIGHT one (3.1.1) ────────────────
     {
       const page = await browser.newPage();
       await page.goto(`${BASE}/${locale}`, { waitUntil: 'domcontentloaded' });

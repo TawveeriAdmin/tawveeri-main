@@ -12,10 +12,12 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 `scripts/tps-analysis/a11y-audit.js` (axe-core in a real browser, 5 routes × 2 locales ×
 2 viewports × 2 themes = 36 renders) and `scripts/tps-analysis/a11y-keyboard.js` (the
 criteria a static scan cannot see — focus order, focus restoration, reflow, reduced motion,
-target size, page language). Baseline: **1 critical rule, 1 serious rule, 806 failing nodes**,
-and **12 of 28 keyboard checks failing**.
+target size, page language). Baseline: **1 critical rule, 1 serious rule, 769–806 failing nodes** and **12 of 30
+keyboard checks failing**. The node count moves between runs because it depends on the live
+results rendered; the **seven colour pairs behind it do not**, which is why the fix is sized
+from the pairs and not from the node count.
 
-**The finding that decided the shape of the fix.** 806 nodes collapsed to **seven colour
+**The finding that decided the shape of the fix.** Those nodes collapsed to **seven colour
 pairs**, and both greens that carry text failed at every single use:
 
 | pair | measured | needed | nodes |
@@ -81,9 +83,9 @@ accessibility ticket. Instead each control now names its own product
 and operability*. The harness reports it as an **accepted deviation with its reason**, not a
 pass — and any *cross-component* inversion still fails the gate.
 
-**Result.** axe: **0 violations across 36 renders** (was 806 nodes), `target-size` proven to
-have been evaluated rather than skipped. Keyboard: **29 checks, 0 failing, 1 accepted
-deviation** (was 12 failing of 28). axe's 411 "needs review" contrast nodes were resolved by hand —
+**Result, verified against PRODUCTION as well as locally** (`docs/a11y-2026-07-31-PRODUCTION.log`):
+axe **0 violations across 36 renders**, with `target-size` proven to have been evaluated rather
+than skipped; keyboard **31 checks, 0 failing, 1 accepted deviation**. axe's 411 "needs review" contrast nodes were resolved by hand —
 compositing each text node's translucent ancestor chain — rather than left as an unexamined
 gap: 0 below threshold in either theme.
 

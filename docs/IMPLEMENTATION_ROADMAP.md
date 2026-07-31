@@ -118,6 +118,7 @@ governed, measured and honest, rather than migrating unresolved problems into a 
 | **P2-2** EN/AR reachability | Root cause was **retrieval, not exits**: Algolia expanded Arabic→English but nothing expanded English→Arabic, and word-level expansion never consulted the phrase map. **EN cards→real page 90% → 96.3%** | `b02858f` `709d798` `0ce7ef7` |
 | **P2-3** ordering rule stated | The real rule now renders on both breakpoints and changes with the selected sort. **"Rating" sort removed** — it had neither implementation nor data (0 of 48 cards; 0.77% of products) | `bee88b2` |
 | **P2-6** retailer tiers | Definition published with measurements. **7 production-deep.** Found and closed a live vocabulary violation: LuLu named as a comparison source on 3 of 384 cards with zero comparison offers | `5df38a1` `f0b8f64` |
+| **P2-7** WCAG 2.2 AA | Baseline built first (36 axe renders × 2 themes, plus a keyboard/focus/reflow harness). **axe 806 failing nodes → 0**; keyboard **12 of 28 failing → 0 + 1 accepted deviation**. The brand green could not carry its own text (2.56:1) and was corrected at the token; a hand-rolled `.sr-only` had been beating `focus:not-sr-only`, so the skip link was **never visible**; `/en` served `<html lang="ar">`; the filter sheet dropped focus to `<body>` on close. ADR-151, UXD-001…003 | `2d37f8e` `4056572` `4672ec5` `a715177` |
 | *(unplanned)* shipping claim | `/ar/compare` rendered **"0 SAR" shipping** for every retailer — an unknown cost asserted as free | `88cb215` |
 
 ## BLOCKED
@@ -131,8 +132,15 @@ governed, measured and honest, rather than migrating unresolved problems into a 
 
 ## REMAINING
 
-**P2-7 · WCAG 2.2 AA — NEXT EXECUTION UNIT, NOT STARTED.** See the handover entry point below.
-**P2-8 · UNIFIED SEARCH migration** — after P2-7. Migration of shipped behaviour; the AI disclosure must relocate with `/advisor` and be verified in production (Constitution → UNIFIED SEARCH hard condition; F5 extended).
+**P2-8 · UNIFIED SEARCH migration — NEXT EXECUTION UNIT.** Migration of shipped behaviour; the AI disclosure must relocate with `/advisor` and be verified in production (Constitution → UNIFIED SEARCH hard condition; F5 extended).
+
+## OPENED BY P2-7, NOT CLOSED BY IT
+
+| item | why it is not in P2-7 |
+|---|---|
+| **Root layout owns the locale** | `/en` still serves `<html lang="ar">` in its BYTES (corrected before first paint, so assistive tech is right; a no-JS consumer is not). Needs the root-shell restructure — **the same prerequisite the 404-body item is blocked on. One change unblocks both.** |
+| **Product-card DOM order** | Action buttons precede the card body, so focus reaches them first. Each is now self-describing, which satisfies 2.4.3; reordering is a component restructure and would risk the click-interception bug the layout exists to prevent |
+| **A11y is not yet a gate** | Both harnesses exist and pass, but nothing runs them on change. They are one `npm` script away from being a regression gate — and the `.sr-only` defect proves the class of bug that only a rendered-artefact check catches |
 
 ## NOT DONE, DELIBERATELY
 

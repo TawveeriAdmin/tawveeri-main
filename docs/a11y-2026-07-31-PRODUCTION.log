@@ -39,15 +39,15 @@ deals           en  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/
 
 ══ NEEDS REVIEW (axe could not decide) ══
 
-color-contrast — Elements must meet minimum color contrast ratio thresholds · 270 nodes · 11 combos
-   .gap-1\.5.px-3[href$="deals"] > span
-     <span>العروض</span>
-   a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(1)
+color-contrast — Elements must meet minimum color contrast ratio thresholds · 411 nodes · 13 combos
+   a[target="_blank"][rel="noopener noreferrer"]:nth-child(2) > div:nth-child(1)
+     <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
+   a[target="_blank"][rel="noopener noreferrer"]:nth-child(2) > div:nth-child(1)
      <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
    .gap-1\.5.px-3[href$="deals"] > span
      <span>العروض</span>
-   a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(1)
-     <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
+   .gap-1\.5.px-3[href$="deals"] > span
+     <span>العروض</span>
 
 ══ WCAG 2.2 RULE COVERAGE ══
    target-size: evaluated
@@ -59,8 +59,8 @@ color-contrast — Elements must meet minimum color contrast ratio thresholds ·
 GATE: PASS (zero critical/serious)
 PASS  skip-link is first tab stop        ar  a "تخطي إلى المحتوى الرئيسي"
 PASS  skip-link visible when focused     ar  189×36px
-PASS  visible focus ring on every stop   ar  40 stops examined · 0 without outline or shadow
-PASS  focus order matches visual order   ar  16 same-row pairs · 0 cross-component inversions · 0 intra-card (action button before its own card body)
+PASS  visible focus ring on every stop   ar  46 stops examined · 0 without outline or shadow
+PASS  focus order matches visual order   ar  20 same-row pairs · 0 cross-component inversions · 0 intra-card (action button before its own card body)
 PASS  filter sheet opens                 ar  role=dialog present
 PASS  filter sheet traps focus           ar  40 tabs inside the open sheet · 0 escaped to the page behind
 PASS  filter sheet closes on Escape      ar  dismissed

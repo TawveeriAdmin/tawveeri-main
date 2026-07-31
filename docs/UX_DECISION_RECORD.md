@@ -41,16 +41,20 @@ measured 2.35:1. That option fixes the buttons and leaves the text failing.
 
 The product's dominant colour is visibly different. That is a real cost and it is the
 founder's to reverse if the brand judgement outweighs the accessibility one — `git revert`
-on the token commit restores the previous palette exactly, and the audit will return to
-806 failing nodes, which is the trade being made.
+on the token commit restores the previous palette exactly, and the audit returns to ~800
+failing contrast nodes, which is the trade being made.
 
 ### The measurement that justifies it
 
-`docs/a11y-2026-07-31-BEFORE.log` · `docs/a11y-2026-07-31-AFTER.log` (both runs, both harnesses)
+`docs/a11y-2026-07-31-BEFORE.log` · `…-AFTER.log` · `…-PRODUCTION.log` — both harnesses each time.
+The before/after pair was re-run with the FINAL harness so the two share a denominator.
+The failing-node count moves run to run with the live results rendered (769–806 measured);
+the seven colour pairs behind it are stable, and they are what the fix was sized from.
 
 ```
-before   axe: 2 rules · 806 failing nodes across 36 renders   keyboard: 28 checks · 12 failing
-after    axe: 0 rules ·   0 failing nodes across 36 renders   keyboard: 29 checks ·  0 failing · 1 accepted
+before   axe: 2 rules · 769 failing nodes across 36 renders   keyboard: 30 checks · 12 failing
+after    axe: 0 rules ·   0 failing nodes across 36 renders   keyboard: 31 checks ·  0 failing · 1 accepted
+prod     axe: 0 rules ·   0 failing nodes across 36 renders   keyboard: 31 checks ·  0 failing · 1 accepted
 ```
 
 Reproduce (dev server on :3000, or `--base https://tawveeri.com`):
