@@ -108,9 +108,13 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   for (const d of defs) m.byCategory[d.category] = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, touched: new Set() };
   const stagingRows: Record<string, unknown>[] = [];
   for (const { store: s, last } of pending) {
-    const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload").eq("store_id", s.id).gt("id", last).order("id", { ascending: true }).limit(perStore);
+    // `scraped_at` is WHEN WE ACTUALLY SAW THE PRICE. It must travel with the row: the
+    // pipeline previously stamped every downstream timestamp with the processing time, which
+    // is on average 6.4 DAYS later than the observation (measured 2026-07-31 across 296,339
+    // staged rows; 71.9% staged >24h after the scrape, max 43.3 days).
+    const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload, scraped_at").eq("store_id", s.id).gt("id", last).order("id", { ascending: true }).limit(perStore);
     if (error) throw new Error(`fetch store ${s.id}: ${error.message}`);
-    const rows = (data ?? []) as { id: number; store_id: number | null; raw_name: string | null; payload: Record<string, unknown> | null }[];
+    const rows = (data ?? []) as { id: number; store_id: number | null; raw_name: string | null; payload: Record<string, unknown> | null; scraped_at: string | null }[];
     m.fetched += rows.length;
     let maxId = last;
     for (const row of rows) {
@@ -134,7 +138,10 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
           // Carry the observed image (and GTIN when present) alongside the normalized attrs so
           // corroboration can set canonical.image_url / attributes.gtin without re-reading raw.
           payload: { ...norm.payload, ...(rawImg ? { _image: rawImg } : {}), ...(isValidGtin(p.gtin as string) ? { _gtin: String(p.gtin).replace(/\D+/g, "") } : {}) },
-          observed_at: new Date().toISOString(),
+          // The OBSERVATION's time, not the processing time. Falls back to now only when the
+          // source row has no timestamp at all, so a missing value can never silently become
+          // "observed just now" for a row we know is older.
+          observed_at: row.scraped_at ?? new Date().toISOString(),
         });
       }
     }
@@ -180,11 +187,11 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   const single = !!opts.singleStore;
 
   // Load all staging rows for the touched keys (across all slices ever normalized).
-  type Stg = { raw_obs_id: number; store_id: number | null; identity_key: string; status: string; price: number | null; url: string | null; name: string; confidence: number; payload: Record<string, unknown> };
+  type Stg = { raw_obs_id: number; store_id: number | null; identity_key: string; status: string; price: number | null; url: string | null; name: string; confidence: number; payload: Record<string, unknown>; observed_at?: string | null };
   const byKey = new Map<string, Stg[]>();
   for (let i = 0; i < touchedKeys.length; i += 100) {
     const chunk = touchedKeys.slice(i, i + 100);
-    const { data, error } = await sb.from("tps_identity_staging").select("raw_obs_id, store_id, identity_key, status, price, url, name, confidence, payload").eq("category", def.category).in("identity_key", chunk);
+    const { data, error } = await sb.from("tps_identity_staging").select("raw_obs_id, store_id, identity_key, status, price, url, name, confidence, payload, observed_at").eq("category", def.category).in("identity_key", chunk);
     if (error) throw new Error(`staging load: ${error.message}`);
     for (const r of (data ?? []) as Stg[]) {
       if (def.requireValidTier && r.status !== "valid") continue;
@@ -271,7 +278,11 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
         language: "ar", brand: parts[0], model_number: isPrimary ? parts[1].slice(6) : null, color: (o.payload?.color as string) ?? null,
         identity_key: key, identity_key_status: o.status, normalized_payload: { ...(o.payload || {}), _raw_id: o.raw_obs_id, _url: o.url },
         confidence: o.confidence, missing_critical: [], ambiguity_flags: [], needs_llm: false, ignored_terms: [],
-        normalizer_version: def.version, tps_version: def.version, observed_at: now, plugin_version: def.version,
+        // Same correction as the price row: the normalized observation records WHEN THE
+        // OBSERVATION HAPPENED. `normalized_product_observations.observed_at` is read by the
+        // UCP feed and the agent decide route as an offer-freshness signal, so processing time
+        // here was the same falsely-fresh claim one layer up.
+        normalizer_version: def.version, tps_version: def.version, observed_at: o.observed_at ?? now, plugin_version: def.version,
       });
     }
     for (const sid of storeIds) {
@@ -279,7 +290,22 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       const priced = so.filter((o) => o.price !== null);
       const r = (priced.length ? priced.reduce((a, b) => (a.price! <= b.price! ? a : b)) : so[0]);
       matchRows.push({ raw_observation_id: normById.get(r.raw_obs_id), canonical_product_id: canonicalId, match_method: "tps_identity_key", confidence: groupConf, is_verified: false, matched_at: now, identity_resolution_event_id: null });
-      if (priced.length) priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), price: r.price, tps_observation_id: normById.get(r.raw_obs_id), observed_at: now });
+      // THE PRICE EVENT CARRIES WHEN WE OBSERVED IT, not when we processed it.
+      //
+      // This was `observed_at: now`. `price_history.observed_at` is the column the customer
+      // reads — the compare page renders «رصدناه قبل X يومًا» from it
+      // (get-comparison.ts:131,151) and the Trust Engine's freshness signal is its max
+      // (build-tps-projection.ts:167). Stamping processing time made a price we saw days ago
+      // render as "observed today".
+      //
+      // Not hypothetical: measured 2026-07-31, staging runs on average 6.4 DAYS behind the
+      // scrape (296,339 rows; 71.9% >24h; max 43.3 days). Published freshness has therefore
+      // been UNDERSTATING true staleness by about that much — for the healthy scraper path,
+      // not only for the discovery backlog.
+      //
+      // Falls back to `now` only if the staging row predates this change and has no
+      // timestamp; a NULL must never silently become "just now".
+      if (priced.length) priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), price: r.price, tps_observation_id: normById.get(r.raw_obs_id), observed_at: r.observed_at ?? now });
     }
   }
   R.normalized = normalizedRows.length; R.matches = matchRows.length;
