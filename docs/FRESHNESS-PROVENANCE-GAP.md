@@ -160,3 +160,83 @@ the projection.
 The 28.6% will not fall by suppressing lines or by a one-off backfill — it falls when the
 producing path stops emitting unprovenanced rows. Fix the writer and the number decays on its
 own as offers are re-observed. Fix the number and the writer keeps refilling it at 654/day.
+
+---
+
+# §1–§4 EXECUTED — 2026-07-31 · verified on a real production run
+
+## §1 — THE WRITER IS FIXED (`94a3756`)
+
+`writeRawObservations` now returns a `raw_url → id` map; `writePriceSnapshot` sets
+`raw_observation_id`. A row with no URL yields no link — NULL, exactly as before, never a guess.
+Each run also reports `provenanceLinked`, so a future run that stops linking is visible in the
+run record rather than as a NULL count months later.
+
+| measure | before | after |
+|---|---|---|
+| 100-row insert (median, rolled-back tx) | 266.4 ms | 276.8 ms |
+| delta | — | **+10.4 ms (+3.9%)**, ~31 ms on the real 300-row batch |
+| database impact | — | RETURNING on the **same statement**; no extra query, round trip, index or lock |
+| batch throughput | — | unchanged, still one statement per batch |
+| regression | — | none: suite 770/770, build 39/39, no new type errors |
+
+## §4 — PRODUCTION VERIFICATION (real run, Almanea, runId 1558)
+
+Triggered `POST /api/cron/discover-firecrawl` against production on build `94a3756`.
+300 raw observations, 269 price rows written.
+
+| check | result |
+|---|---|
+| `price_history.raw_observation_id` populated, before | **0 of 88,359** |
+| new rows carrying provenance | **269 of 269 (100%)** |
+| linkage — store id matches | 269/269 |
+| linkage — price matches | 269/269 |
+| linkage — `scraping_run_id` matches | 269/269 |
+| linkage — observation within 5 min | 269/269 (max delta **3.5 min**) |
+| customer surface regression | none — compare page ages unchanged (5, 10, 25), prices render, `/ar`, `/ar/categories`, `/ar/about` all 200 |
+
+Linkage is verified **correct**, not merely non-null.
+
+## §2 — DECAY OF THE EXISTING GAP, from real re-observation rates
+
+| retailer | remaining | distinct listings | runs/day | full catalogue cycle | decay |
+|---|---|---|---|---|---|
+| المنيع Almanea | 1,026 (was 1,295) | 1,369 | 4.0 | ~5 pages ≈ **1.2 days** | **~1–2 days** |
+| اكسترا Extra | 839 | 5,374 | 5.0 | ~18 pages ≈ **3.6 days** | **~4 days** |
+| أمازون Amazon | 187 | 5,891 | — | last run fetched 0, `next_page=0`, `completed` | **UNCERTAIN** |
+
+**~91% of the gap (1,865 of 2,052) clears within roughly a week, without any backfill.** One
+Almanea run cleared 269 immediately.
+
+**Amazon is the honest exception.** Its 5,891 listings have been observed exactly once each
+(5,891 observations / 5,891 listings), its last run fetched 0 and reset to page 0. Whether it
+re-cycles depends on adapter behaviour I have **not** verified, so I will not claim its 187
+offers decay. If it does not re-cycle, they persist.
+
+### Is temporary suppression justified? — **NO**
+
+Three independent reasons: the bulk of the gap disappears in days without intervention; the
+values are accurate to **1.90 minutes** (measured, §1 above) so suppression would remove correct
+information; and the fix is already deployed, so the gap is now strictly shrinking rather than
+growing. Suppressing a self-clearing, accurate signal would spend customer trust to buy nothing.
+
+## §3 — THE PATTERN ACROSS THE CODEBASE
+
+Recorded permanently as **`docs/ENGINEERING-RULES.md` Rule 1 — "Evidence generated but not
+propagated"**, with the signature, detection query and review question.
+
+**Two occurrences, both in the price-evidence chain:**
+
+1. `discover-firecrawl` `writeRawObservations` — **FIXED** (`94a3756`).
+2. `write_ac_batch` (`008_write_ac_batch.sql:59`) — writes a **literal `null`** into
+   `price_history.raw_observation_id`, though the caller holds `o.raw_obs_id` and uses it to
+   build the deterministic normalized id. **OPEN, not fixed** — it changes the shared RPC used
+   by the whole normalization chain and belongs in its own unit. One line each side:
+   add `raw_observation_id` to `priceRows` in `progressive-engine.ts`, select it instead of
+   `null` in the RPC.
+
+**Checked and explicitly NOT instances:** `outbound_clicks` (carries `offer_id` +
+`canonical_product_id` + `sub_id`), `usage_events` (terminal telemetry), merchant-portal
+`price_history` in `bulk-update` and `store/sync` (carries `product_store_id`; no raw
+observation exists in that flow), and `notifications` / `admin_logs` / `phone_otps` /
+`login_sessions` (fire-and-forget by design).
