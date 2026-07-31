@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useMemo } from 'react';
-import { Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
+import { Twitter } from 'lucide-react';
 import { useLocale, useTranslations } from '@/lib/simple-intl-provider';
 
 interface FooterLink {
@@ -56,10 +56,12 @@ export function Footer() {
             {
               title: 'تابعنا',
               links: [
-                { href: 'https://x.com/Tawveeri', label: '𝕏 تويتر'    },
-                { href: '#',                       label: 'انستقرام'    },
-                { href: '#',                       label: 'لينكدإن'     },
-                { href: '#',                       label: 'يوتيوب'      },
+                // Only channels that EXIST. Instagram, LinkedIn and YouTube were `href="#"` —
+                // links that look like channels and go nowhere. A dead social link costs more
+                // trust than an absent one: it implies a presence we do not have and wastes a
+                // click. Verified 2026-07-31: x.com/Tawveeri returns 200; the other three had
+                // no destination at all. Add one back only when the account genuinely exists.
+                { href: 'https://x.com/Tawveeri', label: '𝕏 تويتر' },
               ],
             },
           ]
@@ -94,10 +96,8 @@ export function Footer() {
             {
               title: 'Follow us',
               links: [
-                { href: 'https://x.com/Tawveeri', label: '𝕏 Twitter'  },
-                { href: '#',                       label: 'Instagram'   },
-                { href: '#',                       label: 'LinkedIn'    },
-                { href: '#',                       label: 'YouTube'     },
+                // See the Arabic column above — only channels that exist.
+                { href: 'https://x.com/Tawveeri', label: '𝕏 Twitter' },
               ],
             },
           ],
@@ -131,17 +131,10 @@ export function Footer() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* One icon, because one channel exists. The Instagram, LinkedIn and YouTube icons
+                pointed at `#`. */}
             <SocialIcon href="https://x.com/Tawveeri" label="Twitter">
               <Twitter className="h-4 w-4" />
-            </SocialIcon>
-            <SocialIcon href="#" label="Instagram">
-              <Instagram className="h-4 w-4" />
-            </SocialIcon>
-            <SocialIcon href="#" label="LinkedIn">
-              <Linkedin className="h-4 w-4" />
-            </SocialIcon>
-            <SocialIcon href="#" label="YouTube">
-              <Youtube className="h-4 w-4" />
             </SocialIcon>
           </div>
         </div>

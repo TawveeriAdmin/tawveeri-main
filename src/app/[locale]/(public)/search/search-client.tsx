@@ -1345,8 +1345,16 @@ export default function SearchClient() {
                   <FilterSidebar
                     filters={filters}
                     onFilterChange={setFiltersAndResetPage}
-                    sortBy={sortBy}
-                    onSortChange={setSortByAndResetPage}
+                    /* SORT IS DELIBERATELY NOT PASSED HERE — one doorway per function.
+                       The desktop sidebar and the toolbar `SortSelector` both rendered a sort
+                       control, both `lg:`-only, so a desktop visitor saw the SAME control twice
+                       driving the same state. The toolbar keeps it: it sits beside the result
+                       count where sorting is conventionally found, rather than buried in a
+                       filter accordion.
+                       The sidebar's sort section renders only when `onSortChange` is supplied,
+                       so omitting it here removes the duplicate WITHOUT touching the component —
+                       and the mobile bottom sheet, which reuses this same component and DOES
+                       pass the handler, keeps sorting on small screens. */
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
                   />
