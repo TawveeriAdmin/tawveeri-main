@@ -1,7 +1,7 @@
 # ═══ RESUME HERE — 2026-07-31 CHECKPOINT #17 · REDESIGN STARTED · JOURNEY BASELINE EXISTS ═══
 
-**Head `280b1d9`, tree clean, everything pushed. Nothing is running in the background.**
-Six commits this session, each independently revertible. `REDESIGN_BRIEF.md` now exists at
+**Head `346f84d`, tree clean, everything pushed. Nothing is running in the background.**
+Six work commits this session plus this handover, each independently revertible. `REDESIGN_BRIEF.md` now exists at
 the repo root and governs this work; `docs/LAUNCH_VOCABULARY.md` still outranks it on wording.
 
 ## THE ONE THING TO DO NEXT
@@ -82,8 +82,20 @@ This harness measures the SERVED RESPONSE, not the hydrated DOM, and complements
 | `3dfc18a` | product pages: search emitted UUIDs as slugs, AND the SEO query named non-existent columns so every product looked missing | `git revert 3dfc18a` |
 | `280b1d9` | harness measures reachability by fetching, not proxy; after log | `git revert 280b1d9` |
 
-**Full rollback of the session:** `git revert --no-commit 280b1d9..cc1fe21^ && git commit`
-— or revert individual commits above, which is preferred; they are independent.
+**Full rollback of the session:**
+
+```bash
+git log --oneline c1b3486..HEAD        # confirm 7 commits FIRST — never revert a range blind
+git revert --no-commit c1b3486..HEAD && git commit
+```
+
+`c1b3486` is the pre-session head. Reverting individual commits above is preferred; they are
+independent.
+
+> **Corrected 2026-07-31.** This line first read `git revert --no-commit 280b1d9..cc1fe21^`.
+> That range is **backwards** — `A..B` means "reachable from B, not from A" — so it resolves
+> to **zero commits** and would have silently done nothing in an emergency, which is worse
+> than failing loudly. Hence the `git log` check above before any range revert.
 
 ## THREE INSTRUMENT ERRORS, CAUGHT BEFORE THEY BECAME CLAIMS
 
