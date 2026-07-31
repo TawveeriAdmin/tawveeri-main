@@ -173,6 +173,11 @@ that guard, the correct answer stays "defer" regardless of window.
 
 ## DEBT-1 — `write_ac_batch` does not propagate `raw_observation_id`
 **Opened 2026-07-31 · Governed by Rule 1 · Status: DEFERRED BY DECISION, not by oversight**
+**⟶ RECLASSIFIED 2026-07-31 under Appendix F6: DEFERRED CUSTOMER VALUE, not cleanup.**
+Search-card freshness depends on this FK — rendering the stored timestamp instead would
+reintroduce the falsely-fresh claim, and resolving provenance by chain-walk is too expensive at
+list scale. The original no-material-impact assessment was accurate; the dependency changed it.
+Still deferred. No longer filed as tidying.
 
 Deferred on measured customer-visible impact, not on engineering preference: reconstruction is
 87.4% deterministic, and a backfill would change **no** number a customer sees. Full assessment

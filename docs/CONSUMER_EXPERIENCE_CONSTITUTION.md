@@ -172,3 +172,31 @@ A policy belongs in this appendix when **all three** hold:
 
 This appendix should stay short. **A long list of protected policies is a sign that
 opinion is being smuggled in beside evidence.**
+
+---
+
+# RATIFIED DECISIONS AWAITING MERGE INTO THE MAIN BODY
+
+*Recorded here because the main Constitution body has not yet been provided. Each entry names
+its destination section and must be merged there verbatim when the body arrives.*
+
+## → PRINCIPLE 7 — clarifying line, ratified 2026-07-31
+
+> **The layer at which the record lives is an implementation detail; what matters is that the
+> evidence exists and can be produced on request.**
+
+**Founder decision, 2026-07-31.** Principle 7 asks whether we can show a customer where a price
+came from and when. Measured: `raw_url`, `payload`, `parser_version` and a timestamp are present
+on **100% of the 103,106 discovery observations**. We can. The normalized layer is a *processing*
+artefact, not an *evidence* artefact.
+
+**The 2,321 canonicals are NOT a constitutional violation.** The diagnosis in
+`docs/FRESHNESS-PROVENANCE-GAP.md` and HANDOVER #21 stands as complete and is closed.
+
+**F2 continues to bind independently.** Evidence existing somewhere does not license a claim
+here: **if the true observation timestamp cannot be resolved at the point of display, the line
+does not render there.** F2 governs display; Principle 7 governs whether the evidence exists.
+The two are separate tests and both must pass.
+
+**DEBT-1 is reclassified per F6** — *deferred customer value*, not cleanup — because search-card
+freshness depends on it. It remains deferred; it is no longer filed as tidying.
