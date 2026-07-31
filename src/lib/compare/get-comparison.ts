@@ -25,6 +25,7 @@
 
 import { createServerClient } from '@/lib/database';
 import { resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
 
 interface PriceRow {
   store_name: string;
@@ -161,11 +162,37 @@ export async function getComparison(params: {
     .eq('canonical_product_id', canonical.id);
 
   const listingBySlug = new Map<string, { url: string | null; rawName: string | null; confidence: number | null; obsId: string }>();
+  // PROVENANCE INDEX (Principle 7). `normalized_payload._raw_id` points back at the
+  // raw_observation that produced this offer, and that row carries the TRUE observation time.
+  const rawIdByObsId = new Map<string, number>();
   for (const obs of (observations ?? []) as unknown as ObsRow[]) {
+    const rawId = Number((obs.normalized_payload as Record<string, unknown> | null)?._raw_id);
+    if (Number.isFinite(rawId)) rawIdByObsId.set(obs.id, rawId);
     const slug = resolveApprovedSlug(obs.store_id);
     if (!slug || listingBySlug.has(slug)) continue;
     const url = typeof obs.normalized_payload?._url === 'string' ? (obs.normalized_payload._url as string) : null;
     listingBySlug.set(slug, { url, rawName: obs.raw_name, confidence: obs.confidence, obsId: obs.id });
+  }
+
+  // Resolve the true observation time for the offers we are about to render. Read-only, one
+  // indexed lookup, bounded by the number of retailers on this product. If it fails we simply
+  // have no provenance and the stored stamp stands — never an estimate.
+  const scrapedAtByRawId = new Map<number, string>();
+  {
+    const rawIds = [...latestBySlug.values()]
+      .map((p) => (p.obsId ? rawIdByObsId.get(p.obsId) : undefined))
+      .filter((v): v is number => Number.isFinite(v as number));
+    if (rawIds.length) {
+      // `raw_observations.id` is a bigint, which the generated types surface as string, so the
+      // typed builder rejects a number[]. Narrow loose view rather than reaching for `any`.
+      const db = supabase as unknown as {
+        from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } };
+      };
+      const { data: raws } = await db.from('raw_observations').select('id, scraped_at').in('id', rawIds);
+      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null }[]) {
+        if (r.scraped_at) scrapedAtByRawId.set(Number(r.id), r.scraped_at);
+      }
+    }
   }
 
   // ── 4. offers ────────────────────────────────────────────────
@@ -181,7 +208,18 @@ export async function getComparison(params: {
         price: p.price,
         availability: p.availability,
         product_url: exitId ? `/go/${exitId}` : listing?.url ?? null,
-        observed_at: p.observed_at,
+        // FRESHNESS: the oldest verified provenance signal, never the newest. See
+        // src/lib/intelligence/observed-freshness.ts for the rule and the measurement behind
+        // it. Falls back to the stored stamp when provenance does not resolve — the display
+        // can only ever become MORE conservative, never fresher.
+        observed_at:
+          displayedObservedAt({
+            stampedAt: p.observed_at,
+            provenanceAt: (() => {
+              const rawId = p.obsId ? rawIdByObsId.get(p.obsId) : undefined;
+              return rawId != null ? scrapedAtByRawId.get(rawId) ?? null : null;
+            })(),
+          }) ?? p.observed_at,
         confidence: listing?.confidence ?? canonical.identity_confidence ?? 100,
         is_verified: !!listing,
       };
