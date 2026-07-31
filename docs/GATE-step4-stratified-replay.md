@@ -179,3 +179,79 @@ observation, which makes every cohort a query over the plan rather than a new en
 **STEP 4 REMAINS CLOSED.** Prerequisites, in order: (a) `--emit-plan` per-observation output,
 (b) resolve the 35 and fix the `dell g-series` parser defect, (c) replace the index with the
 real invariant plus an audited reassignment path, (d) prove D on a plan, (e) then a canary.
+
+---
+
+# FINAL VERDICT — 2026-07-31 · **STEP 4 IS NOT SAFE. STOPPED.**
+
+`--emit-plan` was **not built**. The production decision was disproved without it, and building
+inspection for a closed decision is the "optimise for future flexibility" this brief rules out.
+
+## THE DISQUALIFYING FINDING — the write path stamps `observed_at = now()`
+
+`progressive-engine.ts:282`:
+
+```js
+priceRows.push({ canonical_product_id: canonicalId, store_name: …, price: r.price,
+                 tps_observation_id: normById.get(r.raw_obs_id), observed_at: now });
+```
+
+`now` (line 229) is **the run time**, not the observation's `scraped_at`. Replaying a historical
+observation therefore does **not** insert an out-of-order row, as §2 of this document assumed.
+It inserts a row claiming we observed that price **at the moment of the backfill**.
+
+**Correcting my own §2:** the "100% out-of-order" cohort finding measured the wrong hazard. The
+observations are old, but the rows written from them would be stamped new. The danger is not
+chronology — it is a **false freshness claim**, which is worse.
+
+## MEASURED BLAST RADIUS
+
+| measure | value |
+|---|---|
+| discovery observations | 103,106 |
+| **average age** | **21.5 days** |
+| maximum age | 49.8 days |
+| **older than 7 days** | **82,007 (79.5%)** |
+| older than 30 days | 25,680 |
+
+## WHY THIS IS A CLAIM-INTEGRITY FAILURE, NOT DATA HYGIENE
+
+The stamped column is the one the customer reads:
+
+| surface | source | effect of the backfill |
+|---|---|---|
+| compare page «رصدناه قبل X يومًا» | `price_history.observed_at` (`get-comparison.ts:131,151`) | a 50-day-old price renders as **«رصدناه اليوم»** |
+| Trust Engine freshness | projection `last_observed_at` = `max(observed_at)` (`build-tps-projection.ts:167`) | stale offers reset to **fresh** |
+| current price per canonical/store | `distinct on … order by observed_at desc` | the replayed row **becomes the current price** |
+
+`docs/LAUNCH_VOCABULARY.md` §2 CAN SAY includes *«نعرض لك… ومتى رصدناه»* — "we show when we
+observed it". A backfill through this path makes that sentence **false for up to 82,007
+offers**. HANDOVER #16's launch condition — no cadence or freshness claim we cannot support —
+would be broken by our own pipeline rather than by copy.
+
+**Every earlier option is void.** A, B, C and D in §3 were all reasoned on the assumption that
+the row would carry the observation's real timestamp. None of them survive `observed_at = now()`.
+
+## ANSWER TO THE SINGLE QUESTION
+
+> **Is Step 4 safe? — NO.**
+
+Not "unproven". **Disproved**, on the write path as it exists today.
+
+## WHAT WOULD HAVE TO CHANGE FIRST (not authorised, not started)
+
+1. **The price write must carry the observation's real `scraped_at`**, not run time. This is a
+   change to a live path shared with the healthy 23-store scraper flow, so it needs its own
+   gate — it alters what every future normalize run records, not just the backfill.
+2. Only once timestamps are truthful do §3's options A–D become answerable again; D
+   (latest-only) remains the most defensible.
+3. The match invariant work from §1 is unchanged and still required: 35 observations hold two
+   canonicals, and `product_matches.raw_observation_id` in fact stores the **normalized**
+   observation id (`progressive-engine.ts:281`) — deterministic from the raw id, so the 1:1
+   invariant still holds, but the column name is misleading and any future index must be
+   written against what it actually contains.
+
+## NOT RUN
+
+No canary. No backfill. No source fix. Nothing was written to production in this step; the only
+production changes remain Step 2's index and function guard from `794d1e8`, both still safe.
