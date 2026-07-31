@@ -82,7 +82,7 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
         <section style={S.section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.catsTitle}</h2>
-            <Link href={`/${locale}/categories`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
+            <Link href={`/${locale}/categories`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 24, padding: '2px 4px' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {homeCats.map((c) => (
@@ -104,7 +104,7 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
         <section style={S.section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.dealsTitle}</h2>
-            <Link href={`/${locale}/price-truth`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
+            <Link href={`/${locale}/price-truth`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-green-dark, #3a7a66)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 24, padding: '2px 4px' }}>{t.dealsAll} {isAr ? '←' : '→'}</Link>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {deals.map((d) => (

@@ -199,6 +199,9 @@ export default function SearchClient() {
   const [scrapingProgress, setScrapingProgress] = useState<string>('');
   const [storeErrors, setStoreErrors] = useState<Record<string, string>>({});
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  // P2-7: the sheet is opened by state, not by a Radix Dialog.Trigger, so Radix has no
+  // element to hand focus back to when it closes. Give it one.
+  const mobileFiltersTriggerRef = useRef<HTMLButtonElement>(null);
   const [externalQueryKey, setExternalQueryKey] = useState(0);
   const [storeErrorsExpanded, setStoreErrorsExpanded] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -1284,7 +1287,10 @@ export default function SearchClient() {
             <div className="pointer-events-none absolute -bottom-24 start-12 h-44 w-44 rounded-full bg-[color:var(--color-secondary)]/16 blur-3xl" />
             <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
               <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--color-primary)]">
+                {/* P2-7 (1.4.3): `--color-primary` is the FILL role. Used as 11px ink on the
+                    tinted primary container it measured 2.35:1. `--color-on-primary-container`
+                    is the role that means "text on this surface" and measures 5.13:1. */}
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--color-on-primary-container)]">
                   {locale === 'ar' ? 'بحث الأسعار' : 'Price search'}
                 </p>
                 <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-[color:var(--color-foreground)] md:text-4xl">
@@ -1413,10 +1419,17 @@ export default function SearchClient() {
                       : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
                     }
                     <div className="flex items-center gap-2">
+                      {/* P2-7 (4.1.2): the label below is `hidden sm:inline`, so below 640px
+                          this button renders as a bare icon with NO accessible name — axe
+                          reported it CRITICAL on search/mobile in both locales. The visible
+                          label is kept as-is; aria-label carries the name at every width. */}
                       <Button
+                        ref={mobileFiltersTriggerRef}
                         variant="outline"
                         size="sm"
                         className="relative"
+                        aria-label={t('search.mobileFilters')}
+                        aria-expanded={mobileFiltersOpen}
                         onClick={() => setMobileFiltersOpen(true)}
                       >
                         <SlidersHorizontal className="w-4 h-4" />
@@ -1440,6 +1453,7 @@ export default function SearchClient() {
                     category={selectedCategory !== 'all' ? selectedCategory : undefined}
                     locale={locale}
                     activeCount={activeFilterCount}
+                    triggerRef={mobileFiltersTriggerRef}
                   />
                   {/* Desktop sort + active chips row */}
                   <div className="hidden items-center justify-between gap-3 lg:flex lg:flex-wrap">

@@ -10,6 +10,14 @@ import type { ProductCategory } from '@/lib/database/types';
 interface MobileFilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * The control that opens this sheet. Radix restores focus on close via its own
+   * `Dialog.Trigger`, and this sheet has none — `open` is driven by the parent's state,
+   * so Radix's trigger ref is null and focus falls to `<body>`. Measured: after Escape,
+   * focus landed on `<body>` in both locales, dumping a keyboard user back to the top of
+   * a long results page. Passing the trigger lets focus return where it came from.
+   */
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
   filters: SearchFilters;
   onFilterChange: (next: SearchFilters) => void;
   onClearAll: () => void;
@@ -32,6 +40,7 @@ export function MobileFilterSheet({
   category,
   locale,
   activeCount,
+  triggerRef,
 }: MobileFilterSheetProps) {
   const { isRTL } = useLocale();
 
@@ -39,6 +48,11 @@ export function MobileFilterSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
+        onCloseAutoFocus={(event) => {
+          if (!triggerRef?.current) return; // let Radix do whatever it can
+          event.preventDefault();
+          triggerRef.current.focus();
+        }}
         className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-[2rem] border-[color:var(--color-border)] bg-[color:var(--color-background)] p-0"
       >
         <SheetHeader className="border-b border-[color:var(--color-border)] bg-[color:var(--color-primary-container)]/70 px-5 py-4 dark:bg-[color:var(--color-card)]">

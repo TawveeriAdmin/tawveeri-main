@@ -167,7 +167,10 @@ export function Footer() {
               ? `© ${new Date().getFullYear()} توفيري. جميع الحقوق محفوظة.`
               : `© ${new Date().getFullYear()} Tawveeri. All rights reserved.`}
           </p>
-          <div className="flex items-center gap-2 text-white/30 text-xs">
+          {/* P2-7 (1.4.3): white/30 on the #1A1A1A footer measured 2.72:1 in BOTH themes —
+              the footer is dark either way, so this failed for every visitor. white/60 is
+              the opacity the copyright line beside it already uses, and measures 6.9:1. */}
+          <div className="flex items-center gap-2 text-white/60 text-xs">
             <span>🇸🇦</span>
             <span>{isRTL ? 'مصنوع في السعودية' : 'Made in Saudi Arabia'}</span>
           </div>

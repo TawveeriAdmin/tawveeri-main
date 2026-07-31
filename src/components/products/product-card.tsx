@@ -277,12 +277,19 @@ export function ProductCard({
           'border-[var(--brand-green)] ring-2 ring-[var(--brand-green)]/30',
       )}
     >
+      {/* P2-7 (2.4.3 / 4.1.2). The card's action buttons are rendered BEFORE its link in
+          the DOM — deliberately, so they do not intercept the card click — so keyboard
+          focus reaches "Save to Wishlist" before the product is ever announced. In a
+          20-card grid that is 20 identically-named buttons with no way to tell them
+          apart. Naming each one with its product removes the ambiguity WITHOUT reordering
+          the DOM and reintroducing the interception bug the layout exists to avoid.
+          The DOM order itself is recorded as deferred, not changed under this ticket. */}
       {showActions && onSave && (
         <div className="absolute end-2 top-2 z-10">
           <IconButton
             variant={isSaved ? 'accent' : 'tonal'}
             size="sm"
-            aria-label={t('product.saveToWishlist')}
+            aria-label={`${t('product.saveToWishlist')}: ${productName}`}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -540,8 +547,8 @@ export function ProductCard({
               onClick={() => onCompare(product.id)}
               aria-label={
                 isInCompare
-                  ? currentLocale === 'ar' ? 'إزالة من المقارنة' : 'Remove from compare'
-                  : t('product.addToCompare')
+                  ? `${currentLocale === 'ar' ? 'إزالة من المقارنة' : 'Remove from compare'}: ${productName}`
+                  : `${t('product.addToCompare')}: ${productName}`
               }
               aria-pressed={isInCompare}
               className={cn(
