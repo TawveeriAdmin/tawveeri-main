@@ -1,0 +1,93 @@
+home            ar  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            ar  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            ar  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            ar  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            en  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            en  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            en  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+home            en  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          ar  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          ar  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          ar  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          ar  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          en  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          en  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          en  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+search          en  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+compare-detail  ar  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+compare-detail  ar  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+compare-detail  ar  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+compare-detail  ar  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         ar  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         ar  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         ar  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         ar  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         en  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         en  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         en  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+advisor         en  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           ar  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           ar  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           ar  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           ar  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           en  desktop light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           en  desktop dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           en  mobile  light HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+deals           en  mobile  dark  HTTP 200  violations  0 (nodes   0)  critical/serious rules 0
+
+══ VIOLATIONS BY RULE ══
+
+══ NEEDS REVIEW (axe could not decide) ══
+
+color-contrast — Elements must meet minimum color contrast ratio thresholds · 411 nodes · 11 combos
+   .gap-1\.5.px-3[href$="deals"] > span
+     <span>العروض</span>
+   a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(1)
+     <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
+   .gap-1\.5.px-3[href$="deals"] > span
+     <span>العروض</span>
+   a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(1)
+     <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
+
+══ WCAG 2.2 RULE COVERAGE ══
+   target-size: evaluated
+   2.4.3 focus order · 2.4.11 focus not obscured · 1.4.10 reflow · 3.1.1 lang:
+     not static properties — measured by scripts/tps-analysis/a11y-keyboard.js
+
+══ SUMMARY ══
+36 page renders · 0 distinct rules failing · 0 critical/serious · 0 total failing nodes
+GATE: PASS (zero critical/serious)
+PASS  skip-link is first tab stop        ar  a "تخطي إلى المحتوى الرئيسي"
+PASS  skip-link visible when focused     ar  189×36px
+PASS  visible focus ring on every stop   ar  40 stops examined · 0 without outline or shadow
+PASS  focus order matches visual order   ar  16 same-row pairs · 0 cross-component inversions · 0 intra-card (action button before its own card body)
+PASS  filter sheet opens                 ar  role=dialog present
+PASS  filter sheet traps focus           ar  40 tabs inside the open sheet · 0 escaped to the page behind
+PASS  filter sheet closes on Escape      ar  dismissed
+PASS  focus returns to trigger on close  ar  restored
+PASS  touch targets ≥24px (2.5.8 AA)     ar  38 controls · 0 under 24px · 25 under the 44px house rule
+PASS  no horizontal scroll at 200% zoom  ar  640px content in 640px viewport
+PASS  reduced-motion honoured            ar  no infinite or >5s animation under reduce
+PASS  composited contrast (light)        ar  55 text nodes composited through their translucent ancestors · 0 below threshold · 0 over a gradient, not decidable from styles
+PASS  composited contrast (dark)         ar  55 text nodes composited through their translucent ancestors · 0 below threshold · 0 over a gradient, not decidable from styles
+PASS  html lang matches locale           ar  <html lang="ar" dir="rtl"> · inner [lang="ar" dir="rtl"]
+PASS  skip-link is first tab stop        en  a "Skip to main content"
+PASS  skip-link visible when focused     en  164×36px
+PASS  visible focus ring on every stop   en  46 stops examined · 0 without outline or shadow
+PASS  focus order matches visual order   en  20 same-row pairs · 0 cross-component inversions · 3 intra-card (action button before its own card body)
+NOTE    ↳ intra-card order accepted      en  3 pairs · each control now names its own product, so 2.4.3's "preserves meaning and operability" holds. The DOM order is the documented click-interception guard; reordering it is a component restructure, deferred out of this ticket.
+PASS  filter sheet opens                 en  role=dialog present
+PASS  filter sheet traps focus           en  40 tabs inside the open sheet · 0 escaped to the page behind
+PASS  filter sheet closes on Escape      en  dismissed
+PASS  focus returns to trigger on close  en  restored
+PASS  touch targets ≥24px (2.5.8 AA)     en  38 controls · 0 under 24px · 25 under the 44px house rule
+PASS  no horizontal scroll at 200% zoom  en  640px content in 640px viewport
+PASS  reduced-motion honoured            en  no infinite or >5s animation under reduce
+PASS  composited contrast (light)        en  55 text nodes composited through their translucent ancestors · 0 below threshold · 0 over a gradient, not decidable from styles
+PASS  composited contrast (dark)         en  55 text nodes composited through their translucent ancestors · 0 below threshold · 0 over a gradient, not decidable from styles
+PASS  html lang matches locale           en  <html lang="en" dir="ltr"> · inner [lang="en" dir="ltr"]
+
+══ SUMMARY ══
+29 checks · 0 failing · 1 accepted deviations
+   NOTE ↳ intra-card order accepted [en] — 3 pairs · each control now names its own product, so 2.4.3's "preserves meaning and operability" holds. The DOM order is the documented click-interception guard; reordering it is a component restructure, deferred out of this ticket.
+GATE: PASS

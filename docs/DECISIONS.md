@@ -6,6 +6,96 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-151 — The brand green is corrected at the TOKEN, not at the call site; and `sr-only` was shadowing the skip link · Accepted (2026-07-31)
+
+**Context.** P2-7 (§11 WCAG 2.2 AA) had no baseline, so one was built before any edit:
+`scripts/tps-analysis/a11y-audit.js` (axe-core in a real browser, 5 routes × 2 locales ×
+2 viewports × 2 themes = 36 renders) and `scripts/tps-analysis/a11y-keyboard.js` (the
+criteria a static scan cannot see — focus order, focus restoration, reflow, reduced motion,
+target size, page language). Baseline: **1 critical rule, 1 serious rule, 806 failing nodes**,
+and **12 of 28 keyboard checks failing**.
+
+**The finding that decided the shape of the fix.** 806 nodes collapsed to **seven colour
+pairs**, and both greens that carry text failed at every single use:
+
+| pair | measured | needed | nodes |
+|---|---|---|---|
+| white on `--brand-green` #55B295 | **2.56:1** | 4.5 | 234 |
+| `--brand-green-dark` #3D8468 on white | **4.46:1** | 4.5 | 246 |
+| #3D8468 on `#111513` (dark theme) | **4.11:1** | 4.5 | 246 |
+
+**Decision.** Correct the **tokens**, not the call sites. `--brand-green` #55B295 → **#3B816B**
+(white-on 4.63:1) and `--brand-green-dark` #3D8468 → **#35735B** (5.59:1 on white, 5.13:1 on
+`--brand-bg-green`), each the *minimal* darkening: same hue, same saturation, lightness lowered
+only until the pair clears 4.5:1 with enough margin that browser rounding cannot flip the gate.
+`.dark` overrides both, because ink on a near-black surface must get **lighter** — the one thing
+a single token cannot do, and the reason the light-theme fix alone would have made dark mode
+worse. Every alias of the same ramp (`primary-500/600`, the `blue-*` legacy alias, `success-*`,
+`green-*`, `amber/featured/accent-700`) moves with it so no utility routes around the fix.
+
+**Alternatives rejected.**
+- **Fix the 14 call sites that hardcode `text-white` on `bg-[var(--brand-green)]`.** Leaves the
+  trap armed: the next `text-white` on brand green reintroduces a 2.56:1 failure, and nothing
+  catches it. Accessibility that depends on every call site remembering is not durable.
+- **Keep #55B295 and switch its label to dark ink** (Spotify's answer to the same problem;
+  #0E281F on #55B295 measures 6.1:1). Preserves the exact brand colour, but `--color-primary`
+  is *also* used as ink on light containers (measured 2.35:1), so it fixes only half the
+  failures while touching ~20 call sites including inline styles.
+- **Darken to `--color-primary-700` #306B54** (6.26:1). Passes with room, but changes the brand
+  further than the evidence requires. Minimal change is the discipline.
+
+**Consequence, stated plainly.** Filled CTAs, price-savings text and success states render a
+deeper green. The brand *mark* is unchanged — the logo is a PNG and does not consume these
+tokens — and the mint survives as `--brand-green-light` / `--brand-bg-green`. This is a visible
+change to the product's dominant colour, made on measurement, and reversible in one commit.
+
+**Second finding, and the one a served-HTML check could never have caught.** `globals.css`
+hand-rolled its own `.sr-only`. Tailwind's utilities live in `@layer utilities`, and
+**unlayered CSS outranks every layer** — so that copy silently beat `focus:not-sr-only`, and
+the skip link stayed clipped to **1×1 px even while focused**, in both locales, on every page.
+CHECKPOINT #23 recorded the skip link as "known good, verified in served HTML"; it was present
+and announced, and never visible. The duplicate is deleted, not patched: Tailwind v4 already
+ships both halves and one definition cannot fight itself. Measured after: **189×36 px** (AR),
+**164×36 px** (EN). *Re-adding an unlayered `.sr-only` re-breaks it invisibly.*
+
+**Third finding.** `src/app/layout.tsx` sits above the `[locale]` segment, so it cannot read
+the locale and shipped a hardcoded `lang="ar"` on **every** page — `/en` served
+`<html lang="ar">`, announcing English copy in an Arabic voice (3.1.1, Level A). `<html>` also
+carried **no `dir` at all**, which matters past accessibility: Radix portals mount into
+`document.body`, *outside* the `[locale]` wrapper that holds `dir`, which is why the header
+menu sets direction by hand. Corrected before first paint from the URL. **The served bytes
+still say `ar` for `/en`** — the complete fix is the root layout owning the locale, which needs
+the root-shell restructure already recorded as the 404-body prerequisite. Recorded, not
+quietly widened into an accessibility ticket.
+
+**Fourth finding.** `MobileFilterSheet` is opened by parent state, not by a `Dialog.Trigger`,
+so Radix's `triggerRef` was null and **focus fell to `<body>` on close** — a keyboard user
+pressing Escape was dumped to the top of a long results page. It trapped focus correctly and
+released it correctly; it simply had nowhere to give it back to. Fixed by passing the trigger.
+
+**Deliberately NOT fixed.** Product-card action buttons precede the card body in the DOM — the
+documented guard against click interception — so focus reaches "Save to Wishlist" before the
+product is announced. Reordering is a component restructure, out of scope under an
+accessibility ticket. Instead each control now names its own product
+(`"Save to Wishlist: <product>"`), which is what 2.4.3 actually asks for: *preserves meaning
+and operability*. The harness reports it as an **accepted deviation with its reason**, not a
+pass — and any *cross-component* inversion still fails the gate.
+
+**Result.** axe: **0 violations across 36 renders** (was 806 nodes), `target-size` proven to
+have been evaluated rather than skipped. Keyboard: **29 checks, 0 failing, 1 accepted
+deviation** (was 12 failing of 28). axe's 411 "needs review" contrast nodes were resolved by hand —
+compositing each text node's translucent ancestor chain — rather than left as an unexamined
+gap: 0 below threshold in either theme.
+
+**Instrument note.** The light-only baseline hid a defect that only dark mode reveals, and the
+first keyboard run produced **four false failures** (a wrong Arabic label, a focus ring drawn
+on the wrapper not the input, a trigger never focused before clicking, and an sr-only element
+counted as a touch target). Each was corrected in the harness before any code changed. The
+standing rule earns its keep again: **measure the rendered artefact, and prove the instrument
+before believing a number that would change a priority.**
+
+---
+
 ### ADR-150 — A category is navigable on COMPARABLE count, measured live; and the category-filter path serves the wrong layer · Accepted (2026-07-30)
 
 **Context.** The founder asked whether a category should become navigable on product count,
