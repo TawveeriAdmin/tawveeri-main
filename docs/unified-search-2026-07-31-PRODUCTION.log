@@ -10,6 +10,10 @@ PASS  named/browse query does NOT reason     ar/named       retrieval only · "�
 PASS  no orphan disclosure                   ar/named       0 disclosure(s) with no answer
 PASS  named/browse query does NOT reason     ar/browse      retrieval only · "لابتوب"
 PASS  no orphan disclosure                   ar/browse      0 disclosure(s) with no answer
+PASS  at most ONE question                   ar/ambiguous   1 prompt(s) rendered
+PASS  the question has a visible skip        ar/ambiguous   تخطَّ — اعرض الترشيح الحالي
+PASS  declining still leaves a result        ar/ambiguous   recommendation rendered alongside the question
+PASS  never asks for what was given          ar/already-given no question — the area was parsed from the query
 PASS  /advisor redirects to search           ar/advisor     landed on /ar/search?q=%D9%85%D9%83%D9%8A%D9%81+%D9%84%D8%BA%D8%B1%D9%81%D8%A9+30+%D9%85%D8%AA%D8%B1+%D9%87%D8%A7%D8%AF%D8%A6+%D8%AA%D8%AD%D8%AA+4000
 PASS  the carried query still answers        ar/advisor     answer rendered after redirect
 PASS  disclosure survives the move           ar/advisor     1 present · exact=true · relation=at-or-before
@@ -27,6 +31,10 @@ PASS  named/browse query does NOT reason     en/named       retrieval only · "i
 PASS  no orphan disclosure                   en/named       0 disclosure(s) with no answer
 PASS  named/browse query does NOT reason     en/browse      retrieval only · "laptop"
 PASS  no orphan disclosure                   en/browse      0 disclosure(s) with no answer
+PASS  at most ONE question                   en/ambiguous   1 prompt(s) rendered
+PASS  the question has a visible skip        en/ambiguous   Skip — show the current recommendation
+PASS  declining still leaves a result        en/ambiguous   recommendation rendered alongside the question
+PASS  never asks for what was given          en/already-given no question — the area was parsed from the query
 PASS  /advisor redirects to search           en/advisor     landed on /en/search?q=a+quiet+AC+for+a+30+m%C2%B2+room+under+4000
 PASS  the carried query still answers        en/advisor     answer rendered after redirect
 PASS  disclosure survives the move           en/advisor     1 present · exact=true · relation=at-or-before
@@ -34,5 +42,5 @@ PASS  no second entry point in header        en             0 header link(s) to 
 PASS  need phrasing is taught on entry       en             the empty state shows how to describe a need
 
 ══ SUMMARY ══
-34 checks · 0 failing
+42 checks · 0 failing
 GATE: PASS
