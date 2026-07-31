@@ -177,7 +177,38 @@ function formatDealsForAI(deals: Awaited<ReturnType<typeof getDeals>>): string {
     .join('\n\n');
 }
 
+/**
+ * DISABLED BY DEFAULT — Phase 2 unit P2-1, Constitution Appendix F7.
+ *
+ * MEASURED 2026-07-31, in production: this endpoint answered an ANONYMOUS POST with 200 and
+ * LLM-generated Arabic, calling Anthropic on our API key. It is referenced by NOTHING —
+ * zero matches across the web app and the mobile app. It served no customer while being able
+ * to make shopping claims at runtime under no verified vocabulary constraint, which is exactly
+ * what F7 exists to govern:
+ *
+ *   "No repository search catches what the assistant says in a live answer."
+ *
+ * It is not a general-purpose proxy — its system prompt correctly refuses off-topic requests
+ * (verified: it declined to write a poem). The problem is narrower and still real: an ungoverned
+ * generative surface, open and billable, with no offsetting customer value.
+ *
+ * The customer-facing advisor is unaffected. `/advisor` is DETERMINISTIC — it calls
+ * `POST /api/v1/agent/decide`, which makes no model call at all.
+ *
+ * NOT DELETED, deliberately. The prompt work here is the starting point for P2-5, when the
+ * assistant becomes generative *after* F7's protections are real. Re-enable with
+ * `AI_ASSISTANT_ENABLED=1`, and only once the F7 checklist is satisfied: no claim outside the
+ * approved vocabulary, no merchant discount presented as ours, absence stated plainly, and an
+ * adversarial test run against a retailer with no provenance and a category we do not cover.
+ *
+ * 404 rather than 403: a disabled surface should not advertise that it exists.
+ */
+const AI_ASSISTANT_ENABLED = process.env.AI_ASSISTANT_ENABLED === '1';
+
 export async function POST(request: NextRequest) {
+  if (!AI_ASSISTANT_ENABLED) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   console.log('[AI] Step 0 — POST reached');
   try {
     const { message, conversationHistory = [] } = await request.json();
