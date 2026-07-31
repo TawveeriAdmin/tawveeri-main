@@ -1,4 +1,90 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #18 · AR/EN GAP CLOSED · EXITS 100% ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #19 · #18's SLUG FIGURE RETRACTED · JOURNEY 100/100 ═══
+
+**Head `14cf8d4`, tree clean, pushed. Nothing running.**
+
+## RETRACTION — read before using any number from #18
+
+**#18 claimed "24.0% AR / 28.0% EN of cards are identity-slug dead ends". That is WRONG by
+~40×. The true fall-through rate is 0.6% AR / 4.0% EN.**
+
+The error: I assumed a card without a compare URL links to `/products/<slug>`. It does not.
+`product-card.tsx:104` takes `product_stores[0].product_url` whenever the card is not
+multi-store — a `/go/<uuid>` exit. **Single-offer cards already link out.**
+
+The field mismatch #18 asked me to confirm **does not exist**:
+`mapGroupedToProductCard` (`src/lib/scraping/product-adapter.ts:94`) correctly maps the API's
+`stores` onto the card's `product_stores`, carrying `product_url` and `affiliate_url`. So the
+requested "fix single-offer cards to link out" was unnecessary — they already do.
+
+Measured, mirroring the card's real logic:
+
+| | viaCompare | viaExit | reachable | falls through |
+|---|---|---|---|---|
+| AR (471 cards) | 210 | 258 | **468 (99.4%)** | 3 (0.6%) |
+| EN (446 cards) | 123 | 305 | **428 (96.0%)** | 18 (4.0%) |
+
+The harness had the same wrong assumption, so its published `cards→real page` understated the
+journey by ~25 points. Fixed in `14cf8d4`.
+
+## CURRENT BASELINE — `docs/journey-baseline-2026-07-31-corrected-legD.log`
+
+| | AR | EN |
+|---|---|---|
+| homepage · search · exits · product · retailer | 100% across all five | 100% across all five |
+| **end-to-end** | **10/10 100%** | **10/10 100%** |
+| cards → real page | **80/80 100%** | **72/80 90%** |
+| malformed exits | **0 of 1323 rendered** | |
+
+**Do not read 100/100 as "the journey is solved."** It means the ten queries per locale in this
+set now complete. The denominator is small and the set is fixed; EN's 90% card reachability is
+the honest residual.
+
+## THE ONE THING TO DO NEXT — the last dead end, now precisely scoped
+
+**3 AR / 18 EN cards have neither a compare URL nor a usable exit**, so they fall through to
+`/products/<identity-slug>`, which does not resolve. These are canonical-injected products
+whose latest price row carries a NULL `tps_observation_id` — the same rows that previously
+rendered `/go/null` before `b39fbc2`. The count did not change; the failure mode moved from
+"broken exit" to "link to a page that does not exist".
+
+**Not fixed deliberately.** It is a UI judgement call — render the card non-navigable, or omit
+it entirely — and it arrived at the end of a long session. A card carrying a real price and
+retailer still informs even when it cannot be clicked, so omitting it is not obviously right.
+**Decide the intent before coding it.**
+
+```bash
+# the 18 EN cards, reproducible
+# they are the cards where stores[0].product_url === '' and tps_compare_url is null
+```
+
+## STILL OPEN, UNCHANGED
+
+- HTTP 200 on a genuinely missing product (Next commits status before the page throws)
+- **Product detail body is client-rendered** — visible served text ~467 chars, shell only.
+  JSON-LD does carry real offers, so search engines are covered; a plain-text fetcher sees
+  nothing. Harness records this as `bodyServerRendered`.
+- `realSlug=0` — no card emits a real storefront slug; Algolia is the primary path and stores
+  only `objectID`, so **the UUID fallback on the product page is what repairs those cards. Do
+  not remove it.**
+- No `og:image` / `twitter:image` · §2.1 retailer tiers · §3 defects · §4–§9 surfaces
+
+## COMMITS THIS SESSION
+
+| commit | what | rollback |
+|---|---|---|
+| `b39fbc2` | never render an exit we cannot honour (`/go/null`) — the real AR/EN gap | `git revert b39fbc2` |
+| `57fd188` | harness accepts JSON-LD price; after-exit-fix baseline | `git revert 57fd188` |
+| `52841dc` | HANDOVER #18 | `git revert 52841dc` |
+| `14cf8d4` | harness leg D mirrors the card's real destination logic | `git revert 14cf8d4` |
+
+**FIVE instrument errors have now been caught in two sessions** — `curl -d` argv mangling, a
+200× SQL over-report, Arabic-Indic digits, a client-rendered body read as a price mismatch, and
+leg D's missing branch. Every one would have changed a priority. The standing rule holds and is
+earning its keep: **measure the rendered artefact, not a model of it.**
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #18 · AR/EN GAP CLOSED · EXITS 100% ═══
 
 **Head `57fd188`, tree clean, pushed. Nothing running.** Two commits: `b39fbc2` (exit fix),
 `57fd188` (harness + baseline).
