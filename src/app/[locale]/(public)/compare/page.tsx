@@ -538,7 +538,22 @@ export default function ComparePage() {
   const getShippingLabel = (store: ProductStore | null): string | React.ReactNode => {
     if (!store) return t('compare.notAvailable');
     if (store.is_free_delivery) return t('compare.freeDelivery');
-    if (typeof store.delivery_cost === 'number' && store.delivery_cost >= 0) {
+    // `> 0`, NOT `>= 0`. A zero here is ABSENCE OF DATA, not free shipping.
+    //
+    // Measured 2026-07-31: `product_stores.delivery_cost` is 0 on ALL 12,980 rows and
+    // `is_free_delivery` is false on all of them — we hold no delivery data whatsoever. With
+    // `>= 0` this rendered «٠ ريال» for every retailer, which asserts free shipping we cannot
+    // support. Principle 1 (no claim without data), Principle 2 (unknown beats incorrect),
+    // Appendix F1 (claim boundaries are evidence) and REDESIGN_BRIEF §7.2 (an unknown cost is
+    // never zero) all forbid it.
+    //
+    // `comparison-table.tsx` already guarded on `> 0`; this page did not. The two surfaces now
+    // agree. Falls through to «غير محدد» / "Not specified", which already exists as approved
+    // copy — no new claim is introduced.
+    //
+    // When real delivery data exists, a genuine 0 must be expressed as `is_free_delivery`,
+    // never inferred from a zero cost.
+    if (typeof store.delivery_cost === 'number' && store.delivery_cost > 0) {
       return <Price amount={store.delivery_cost} className="text-sm font-semibold" symbolClassName="w-3 h-3" />;
     }
     return t('compare.notSpecified');
