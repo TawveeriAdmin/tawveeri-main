@@ -194,8 +194,26 @@ export function ProductCard({
     }
   };
 
+  // A card with NO destination: no TPS comparison, and no retailer exit because the offer's
+  // observation id is missing. Such a card must not look clickable — a result list is a list of
+  // actions, and a card that cannot complete the journey is a dead end disguised as a choice.
+  //
+  // WHY NOT OMIT IT (founder decision 2026-07-31, on the measurement). Omission was approved
+  // only if the rate stayed near the then-known 1.6–4%. It does in aggregate — 17/914 AR
+  // (1.86%), 28/837 EN (3.35%) across 40 queries — but it CONCENTRATES: the English query
+  // "air conditioner" returns 14 cards of which 13 are unroutable, so omitting would render
+  // ONE result where fourteen exist. At catalogue level 2,321 of 7,162 canonicals with prices
+  // (32.4%) are fully unroutable. Silently dropping them shrinks the visible catalogue.
+  //
+  // So: keep the card, remove the navigation, say plainly what we hold. The price and retailer
+  // are real and observed; only the destination is missing. The result count then still matches
+  // what renders, which is the inconsistency that omission would have created.
+  const hasDestination = Boolean(product.tps_compare_url) || Boolean(externalProductUrl);
+
   const LinkWrapper = ({ children }: { children: React.ReactNode }) =>
-    onCardClick ? (
+    !hasDestination && !onCardClick ? (
+      <div className="flex flex-col h-full">{children}</div>
+    ) : onCardClick ? (
       <button
         type="button"
         onClick={() => onCardClick(product)}
@@ -503,10 +521,17 @@ export function ProductCard({
               </a>
             </Button>
           ) : (
-            <Button variant="default" size="sm" className="w-full text-xs" disabled>
-              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{t('products.viewAtStore')}</span>
-            </Button>
+            /* No destination for this offer. A disabled "View at store" button states nothing
+               and is the disabled-control pattern REDESIGN_BRIEF §7.3 rules out; it also reads
+               as a temporary outage rather than what is true. Say what we actually hold: the
+               price and the retailer are observed, the link is not available. Same wording the
+               compare page already ships (compare/[key]/page.tsx:254), so the two surfaces
+               explain the same gap the same way. */
+            <p className="w-full rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-3 py-2 text-center text-[11px] font-medium leading-snug text-on-surface-variant">
+              {currentLocale === 'ar'
+                ? 'رابط المتجر غير متاح لهذا العرض'
+                : 'No store link available for this offer'}
+            </p>
           )}
 
           {onCompare && (
