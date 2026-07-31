@@ -1,4 +1,4 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #24 · P2-7 COMPLETE AND VERIFIED IN PRODUCTION ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #24 · P2-7 COMPLETE IN PRODUCTION · P2-8 STARTED ═══
 
 **Tree clean, all pushed, deploy landed and re-measured live. Nothing running.**
 Roadmap: `docs/IMPLEMENTATION_ROADMAP.md`. Decision: **ADR-151**. UX record: `docs/UX_DECISION_RECORD.md`.
@@ -63,25 +63,87 @@ sized from the pairs, not from the node count.
   complete fix needs the root-shell restructure — **the same prerequisite the 404-body item is
   already blocked on. One change unblocks both; do them together.**
 
-## NEXT — P2-8, and one cheap thing first
+## P2-8 · UNIFIED SEARCH — STARTED, ROUTER LANDED, SURFACE DELIBERATELY NOT MIGRATED
 
-**P2-8 · UNIFIED SEARCH migration** is the next execution unit. It is a migration of shipped
-behaviour across both live entry points, and the AI disclosure must relocate with `/advisor`
-and be verified in production (Constitution → UNIFIED SEARCH hard condition; F5 extended).
+**Done and shipped (`d5e06c0`):** the routing decision, isolated — `src/lib/agent/route-query.ts`
+plus 23 tests, and the required before-measurement.
 
-**Before it: wire `npm run a11y` into whatever runs on change.** Both harnesses exist and pass;
-nothing runs them automatically. The `.sr-only` defect is the argument — it was invisible to
-the type checker, the linter, the test suite and a served-HTML inspection, because it only
-exists in the rendered artefact.
+```
+1. no category classified   → retrieval    4. ≥1 need signal → advisory
+2. category not advisable   → retrieval    5. otherwise      → retrieval (browse)
+3. query names a model      → retrieval
+```
+
+Two findings worth carrying forward, both already encoded and tested:
+
+- **`audio` and `camera` parse as categories but `decide()` returns `supported: false`.** The
+  advisable set is therefore built **from the engine's own dispatch** (`APPLIANCE_META` + the
+  explicit cases), never restated, so the two cannot drift. Routing «سماعات للألعاب تحت 500»
+  to the engine would replace working results with "not supported yet".
+- **Model detection is precise on purpose.** A general `<word> <number>` rule also matches
+  «مكيف 30 متر» and "laptop 5000" — a room size and a budget — which would take the reasoning
+  engine dark for exactly the customers it serves.
+
+**Before-measurement:** `docs/journey-2026-07-31-p2-8-before.log` — AR **10/10** end-to-end,
+cards→real page **80/80**; EN **10/10**, **76/80 (95%)**. It also confirms P2-7 cost the
+journey nothing.
+
+### WHY THE SURFACE WAS NOT MIGRATED — read before doing it
+
+`/search` and `/advisor` are **not the same capability with two doors.** Measured:
+
+| surface | what it actually does |
+|---|---|
+| `/search` → `/api/search` | retrieval, plus a `decisionCard` that is the **best-matching result with a reason** — cheapest/most-relevant, not suitability |
+| `/advisor` → `/api/v1/agent/decide` | the deterministic **decision engine**: room size → capacity, priorities → suitability, total cost, alternatives, evidence groups, confidence |
+
+So absorbing `/advisor` into `/search` **cannot** be done by deleting a nav item and pointing
+the box at the same API. If the nav entry goes before the search surface can render the
+engine's answer, the customer loses the reasoning **and** the AI disclosure goes with it —
+which is precisely the failure the Constitution's HARD CONDITION names: *a trust element
+silently lost in a restructure, where nothing breaks, no test fails, and no error surfaces.*
+Shipping that half-state is worse than not starting.
+
+### THE EXACT NEXT STEP
+
+1. **Extract `advisor-client.tsx`'s result rendering** (it is 498 lines, and the rendering is
+   the bulk) into a shared `<AdvisorAnswer result locale />`. Both `/advisor` and `/search`
+   render the same component — that is what makes the two surfaces one experience rather than
+   two implementations of it. `src/lib/agent/advisor-api.ts` already exports every helper it
+   needs (`recTitle`, `costLines`, `choiceReasons`, `exitHref`, `parsedSummary`,
+   `evidenceGroups`), so nothing is duplicated.
+2. **In `search-client.tsx`, call `routeQuery(q)`.** On `advisory`, fire `askAdvisor()` **in
+   parallel** with `/api/search` and render `<AdvisorAnswer>` above the results. Parallel
+   matters: the results must not wait on the engine. Note the rate-limit buckets —
+   `/api/v1/agent/decide` sits in the generic `api` bucket, `/api/search` in `search`, so an
+   advisory query spends one token from each.
+3. **Carry the AI disclosure onto the unified surface** — the exact approved wording,
+   `docs/LAUNCH_VOCABULARY.md` §8, both clauses; the second one is load-bearing.
+4. **Only then** retire the وفّر nav item and redirect `/advisor` → `/search?q=…`.
+5. **Verify in production**, both the journey harness delta and the disclosure's presence on
+   the unified surface — "exactly as an affiliate tag is verified after an exit-layer change."
+
+### ALSO WORTH DOING, CHEAP
+
+**Wire `npm run a11y` into whatever runs on change.** Both harnesses exist and pass; nothing
+runs them automatically. The `.sr-only` defect is the argument — it was invisible to the type
+checker, the linter, the test suite and a served-HTML inspection, because it exists only in
+the rendered artefact.
 
 ## ROLLBACK — this session, newest first
 
 ```
+d5e06c0  P2-8 router + before-measurement git revert d5e06c0   (inert — nothing calls it yet)
+7f5ca62  HANDOVER #24                     git revert 7f5ca62
+a715177  ADR-151 + UX Decision Record     git revert a715177
 d68cf5d  npm run a11y scripts             git revert d68cf5d
 4672ec5  keyboard/focus/lang/target fixes git revert 4672ec5
 4056572  BRAND GREEN token fix            git revert 4056572   ← the one with a visible cost
 2d37f8e  the two harnesses + before log   git revert 2d37f8e
 ```
+
+`d5e06c0` changes no customer-visible behaviour: `routeQuery` is not called from any surface
+yet. It can stay while the rest of P2-8 waits.
 
 `53e6894` is the pre-session head. **Confirm the range before any range revert** —
 `git log --oneline 53e6894..HEAD` first; an inverted range silently reverts nothing.

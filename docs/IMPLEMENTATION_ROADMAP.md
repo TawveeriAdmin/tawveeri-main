@@ -132,7 +132,7 @@ governed, measured and honest, rather than migrating unresolved problems into a 
 
 ## REMAINING
 
-**P2-8 · UNIFIED SEARCH migration — NEXT EXECUTION UNIT.** Migration of shipped behaviour; the AI disclosure must relocate with `/advisor` and be verified in production (Constitution → UNIFIED SEARCH hard condition; F5 extended).
+**P2-8 · UNIFIED SEARCH migration — IN PROGRESS.** The routing decision is built, tested (23 tests) and shipped inert (`d5e06c0`); the before-measurement is taken. **The surface is deliberately not migrated yet** — `/search` and `/advisor` are two different capabilities, not one behind two doors, and retiring the وفّر entry point before search can render the decision engine's answer would take the reasoning *and the AI disclosure* with it. That is the exact failure the Constitution's hard condition names. Sequenced next step in `HANDOVER.md` § P2-8.
 
 ## OPENED BY P2-7, NOT CLOSED BY IT
 
