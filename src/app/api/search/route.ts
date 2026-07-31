@@ -98,6 +98,7 @@ type DecisionLayer = {
 };
 
 import { normalizeArabic } from '@/lib/search/arabic-normalize';
+import { expandQueriesForRetailSearch } from '@/lib/scraping/search/search-query-bilingual';
 
 const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'جوال': ['phone', 'smartphone', 'mobile'],
@@ -371,13 +372,44 @@ function buildOrPool(words: string[]): string {
   return [...new Set(parts)].join(',');
 }
 
-function productMatchesAllWords(row: ProductRow, wordTermsList: string[][]): boolean {
+/**
+ * MULTI-WORD ENGLISH QUERIES COLLAPSED because the phrase map was never consulted.
+ *
+ * `search-query-bilingual.ts` already holds `['air conditioner', 'مكيف']` and
+ * `['washing machine', 'غسالة']`, but this route split the query into WORDS first and expanded
+ * each word alone — so the phrase was destroyed before any phrase mapping could apply. Matching
+ * then required BOTH "air" AND "conditioner" to appear, which no Arabic-titled product contains.
+ *
+ * Measured 2026-07-31, English total vs its Arabic equivalent:
+ *   air conditioner    14 vs 500  (2.8%)      refrigerator  362 vs 362 (100%)
+ *   washing machine    58 vs 404  (14%)       vacuum        230 vs 233 (99%)
+ * Single-word English was fine; multi-word English collapsed. Same catalogue, same retailers —
+ * the gap was ours.
+ *
+ * The fix is an OR at the TOP level, never a loosening of either side: a row matches if every
+ * query word matches, OR if every word of the Arabic phrase equivalent matches. Both branches
+ * still require ALL their terms, so precision is unchanged and only recall is restored.
+ */
+function arabicVariantTerms(rawQuery: string): string[][] {
+  const variants = expandQueriesForRetailSearch(rawQuery);
+  const ar = variants.find((v) => v !== rawQuery.trim());
+  if (!ar) return [];
+  return normalizeArabic(ar).split(/\s+/).filter(Boolean)
+    .map(expandWordTerms).filter((t) => t.length > 0);
+}
+
+function matchesTermLists(hay: string, primary: string[][], alt: string[][]): boolean {
+  const all = (list: string[][]) => list.length > 0 && list.every((terms) => terms.some((t) => hay.includes(t)));
+  return all(primary) || all(alt);
+}
+
+function productMatchesAllWords(row: ProductRow, wordTermsList: string[][], altTermsList: string[][] = []): boolean {
   const hay = (
     normalizeArabic(row.name_ar || '') + ' ' +
     normalizeArabic(row.name_en || '') + ' ' +
     normalizeArabic(row.brand || '')
   ).toLowerCase();
-  return wordTermsList.every((terms) => terms.some((t) => hay.includes(t)));
+  return matchesTermLists(hay, wordTermsList, altTermsList);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -890,8 +922,13 @@ export async function POST(request: NextRequest) {
     const allWords = normalized.split(/\s+/).filter(Boolean);
     const meaningful = allWords.filter((w) => !STOPWORDS.has(w));
     const words = meaningful.length > 0 ? meaningful : allWords;
+    // The Arabic equivalent must widen the CANDIDATE POOL too, not only the post-filter: if
+    // Arabic-titled products never enter the pool, no amount of matching afterwards can surface
+    // them. This is why the fix touches buildOrPool as well as the predicate.
+    const altTermsList = arabicVariantTerms(rawQuery);
+    const poolWords = [...words, ...altTermsList.flat()];
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
-    const orPool = buildOrPool(words);
+    const orPool = buildOrPool(poolWords);
     if (orPool) q = q.or(orPool);
     q = applyCommonFilters(q, body);
     q = q.range(0, 1500);
@@ -901,7 +938,7 @@ export async function POST(request: NextRequest) {
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
     let candidateRows = orCandidates;
     if (wordTermsList.length > 0) {
-      const strict = orCandidates.filter((row) => productMatchesAllWords(row, wordTermsList));
+      const strict = orCandidates.filter((row) => productMatchesAllWords(row, wordTermsList, altTermsList));
       if (strict.length > 0) {
         candidateRows = strict;
       } else if (wordTermsList.length > 1) {
