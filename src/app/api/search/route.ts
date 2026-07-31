@@ -889,10 +889,28 @@ export async function POST(request: NextRequest) {
       // Use the NORMALIZED (ة→ه folded) query so every query token matches an optionalWords entry —
       // otherwise the unfolded "ثلاجة" is treated as REQUIRED, matches nothing, and returns 0/junk
       // even though the index holds 260 refrigerators. (Verified against the live index.)
-      const algoliaQuery = englishExp.length ? `${normalizeArabic(rawQuery)} ${englishExp.join(' ')}` : rawQuery;
+      // …AND THE MIRROR OF IT, which was missing. The block above expands Arabic → English so an
+      // Arabic query reaches English-titled records. Nothing expanded English → Arabic, so an
+      // English query could never reach Arabic-titled records — and most of the catalogue is
+      // Arabic-titled. That asymmetry, not the exit layer, is what produced the EN/AR gap.
+      //
+      // Measured 2026-07-31 (total results, English vs its Arabic equivalent):
+      //   air conditioner 14 vs 500 · washing machine 58 vs 404 · headphones 166 vs 290
+      //   refrigerator 362 vs 362 · vacuum 230 vs 233
+      // Single-word English was fine because `lookupArToEn` is word-level; multi-word English
+      // collapsed because the PHRASE ("air conditioner" → مكيف) was never consulted.
+      //
+      // Added as OPTIONAL words, exactly like the English expansion: recall widens, nothing is
+      // required, and a record still has to match the query to rank.
+      const arVariant = expandQueriesForRetailSearch(rawQuery).find((v) => v !== rawQuery.trim());
+      const arabicExp = arVariant
+        ? [...new Set(normalizeArabic(arVariant).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !aqWords.includes(w)))]
+        : [];
+      const expansions = [...englishExp, ...arabicExp];
+      const algoliaQuery = expansions.length ? `${normalizeArabic(rawQuery)} ${expansions.join(' ')}` : rawQuery;
       const algoliaRes = await searchAlgolia({
         query: algoliaQuery,
-        optionalWords: englishExp.length ? [...aqWords, ...englishExp] : undefined,
+        optionalWords: expansions.length ? [...aqWords, ...expansions] : undefined,
         brands: body.brands,
         stores: body.stores,
         minPrice: body.min_price,
