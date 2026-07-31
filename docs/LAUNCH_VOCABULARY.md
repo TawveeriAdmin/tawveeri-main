@@ -176,3 +176,41 @@ market-wide claim, which our own MUST NOT list forbids.
 
 > **عربي:** «نُظهر لك السعر، ومن أين جاء، ومتى رصدناه — وحين لا نعرف، نقول ذلك.»
 > **English:** "We show you the price, where it came from, and when we observed it — and when we don't know, we say so."
+
+---
+
+## 8. وفّر — AI DISCLOSURE (added 2026-07-31, approved)
+
+**وفّر must identify itself as an AI shopping assistant at the FIRST MEANINGFUL INTERACTION, in
+plain Arabic and English. The name "وفّر" is not itself the disclosure** — a name tells a
+customer nothing about what they are talking to.
+
+### Approved public wording — use exactly this
+
+> **عربي:** «وفّر مساعد تسوّق ذكي (ذكاء اصطناعي) — يقترح بناءً على أسعار رصدناها.»
+> **English:** "Waffar is an AI shopping assistant — it suggests based on prices we observed."
+
+The second clause is load-bearing and must not be dropped: it says what the assistant's answers
+rest on, which is the whole difference between us and a chatbot with opinions.
+
+### Placement rules
+- **Visible at the interaction point** — beside or within the assistant surface itself.
+- **A footer or terms page is NOT sufficient**, and neither is a one-time onboarding screen the
+  customer has since dismissed.
+- It must appear before or with the first answer, not after it.
+
+### How to frame it — and how NOT to
+This is **a transparency standard, a trust requirement, and forward-looking compliance hygiene.**
+
+**Do NOT claim or imply that EU law governs Tawveeri in Saudi Arabia.** The relevant EU AI Act
+transparency provisions become applicable **2 August 2026** and generally require people to be
+informed when they are interacting directly with an AI system unless that is obvious from the
+circumstances. We adopt the standard because it is right for a product whose entire promise is
+evidence — not because we are asserting jurisdiction. **Never publish a compliance claim.**
+
+### Placement is NOT yet decided
+The permanent home for وفّر — integrated search assistance, a dedicated entry point, contextual
+assistance, or something else — is an open product question to be settled on evidence in the
+real interface. **Avoid a floating chat bubble unless testing justifies it** (REDESIGN_BRIEF §5
+rejects it: a chat wrapper around a finite choice set is worse UX, not better). The disclosure
+requirement above holds regardless of which placement wins.
