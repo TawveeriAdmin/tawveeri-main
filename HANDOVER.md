@@ -1,4 +1,94 @@
-# ═══ EXECUTION CHECKPOINT — 2026-07-31 · §3 COMPLETE · AWAITING REVIEW · DO NOT PROCEED ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #23 · PHASE 2 · P2-7 IS NEXT, NOT STARTED ═══
+
+**Head `d8df011`, tree clean, all pushed, nothing running.**
+Roadmap and status: `docs/IMPLEMENTATION_ROADMAP.md`. Governing: `CONSUMER_EXPERIENCE_CONSTITUTION.md`.
+
+## WHY P2-7 WAS NOT STARTED
+
+WCAG 2.2 AA is a systematic pass over ~10 components — contrast, keyboard order, visible focus,
+dialogs and sheets, focus trapping, RTL focus order, 44×44 targets, 200% zoom — needing tooling
+plus manual keyboard verification. It did not fit cleanly in the remaining context, and **a
+half-finished accessibility pass is worse than none**: a focus trap without an escape actively
+harms the users it is meant to serve. Deliberate stop, not an interruption.
+
+## P2-7 — EXACT ENTRY POINT
+
+**Start by measuring, not editing.** There is no accessibility baseline; create one first.
+
+```bash
+npm run dev            # http://localhost:3000
+npx @axe-core/cli http://localhost:3000/ar http://localhost:3000/ar/search?q=laptop \
+                   http://localhost:3000/ar/compare http://localhost:3000/ar/advisor --exit
+```
+
+**Surfaces, in customer-impact order:** `public-page-shell.tsx` (header/nav, every page) →
+`search-client.tsx` + `filter-sidebar.tsx` + `mobile-filter-sheet.tsx` (the sheet is the highest
+focus-trap risk) → `product-card.tsx` → `compare/[key]/page.tsx` → `advisor-client.tsx` → `footer.tsx`.
+
+**Known good already:** the skip link exists and renders (`تخطي إلى المحتوى الرئيسي`, verified in
+served HTML); `MIN_TOUCH_TARGET = 44` is defined in the mobile theme; the new ordering-rule line
+and AI disclosure are plain text, not colour-coded.
+
+**"Done" means:** axe reports zero critical/serious violations on those five routes in **both**
+locales · every interactive control reachable and operable by keyboard with a visible focus ring ·
+the mobile filter sheet traps focus **and releases it on Escape and on close** · no meaning carried
+by colour alone · 44×44 minimum on touch targets · RTL focus order follows visual order in Arabic ·
+`prefers-reduced-motion` honoured · verified **in production**, not only locally, per Principle 5.
+
+**Stopping condition:** the axe baseline is re-run and the delta reported. If a fix needs a
+component redesign, record it and move on — do not redesign under an accessibility ticket.
+
+## ANSWERS TO THE HANDOVER QUESTIONS
+
+**Reachability after P2-2:** **AR 100% · EN 96.3%** (harness, evenly-spaced fetch: AR 80/80,
+EN 77/80). Full-population probe: AR 468/471 = 99.4%, EN 468/480 = 97.5%. Up from AR 100% /
+EN 90%. Malformed exits **0 of 1,363**. Log: `docs/journey-baseline-2026-07-31-p2-2.log`.
+The residual is **12 Amazon cards** (headphones 9, monitor 2, ipad 1) — the known unroutable
+population with no normalized observation, gated behind normalization.
+
+**Cards with no destination: RENDERED NON-CLICKABLE, not omitted.** Founder decision 2026-07-31,
+on measurement. Omission was approved only if the rate stayed near 1.6–4%; it does in aggregate
+(AR 1.86%, EN 3.35%) **but concentrates** — English `air conditioner` was 13 unroutable of 14
+cards, so omitting would have rendered **one** result where fourteen existed. The card therefore
+keeps its price and retailer, loses its navigation, and states «رابط المتجر غير متاح لهذا العرض» /
+"No store link available for this offer" — the same wording the compare page already ships.
+**Result count still matches rendered cards by construction**, since nothing is removed. Two
+supporting facts: those prices are accurate to **1.90 minutes** (discovery stamps at observation
+time), and a disabled "View at store" button was removed as the pattern §7.3 rules out.
+
+**Retailer-tier decision and reasoning:** tiers are computed, never assigned —
+`production-deep = depth ≥150 · routability ≥60% · median age ≤14d`. The 150 is anchored in the
+distribution's widest tail gap (**182 → 59, 3.1×**), the same method as ADR-150. **7 are
+production-deep**; Almanea is *production-limited on routability* (47.0%) despite being second by
+depth (2,444 offers), which is exactly the distinction the tier exists to make.
+**Open founder decision:** the live claim «8 متاجر سعودية» is assembled from
+`SUPPORTED_SEARCH_STORES`, which **includes two non-deep retailers** (Samsung KSA 26, SWSG 59) and
+**omits two deep ones** (Najm 223, Alnakheelk 182); search actually returns **11** distinct
+retailers once duplicate spellings collapse. I did **not** change the string — it is an approved
+CAN SAY entry and F1 requires the vocabulary be amended first. Evidence and recommendation:
+`docs/RETAILER-TIERS.md`.
+
+## ROLLBACK — today's work, newest first
+
+```
+d8df011  roadmap status                    git revert d8df011
+f0b8f64  P2-6 retailer tiers (docs)        git revert f0b8f64
+5df38a1  P2-6a LuLu display gate           git revert 5df38a1
+bee88b2  P2-3 ordering rule + rating sort  git revert bee88b2
+0ce7ef7  P2-2 verification log             git revert 0ce7ef7
+709d798  P2-2 Algolia path (the live fix)  git revert 709d798
+b02858f  P2-2 Supabase fallback path       git revert b02858f
+88cb215  shipping "0 SAR" claim            git revert 88cb215
+78b0763  P2-1 close generative surface     git revert 78b0763   (or set AI_ASSISTANT_ENABLED=1 — no deploy needed)
+```
+
+Whole Phase 2: `git log --oneline 4e52dab..HEAD` to confirm, then
+`git revert --no-commit 4e52dab..HEAD && git commit`. **Confirm the range before reverting** — an
+inverted range silently reverts nothing (CHECKPOINT #17 shipped that mistake).
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 · §3 COMPLETE · LAUNCH BRIEF CLOSED ═══
 
 **Head `4232924`, tree clean, deployed and verified. STOPPED as instructed.**
 
