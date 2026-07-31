@@ -1,0 +1,58 @@
+PASS  need-based query reasons               ar/need        answer rendered · "مكيف لغرفة 30 متر هادئ تحت 4000"
+PASS  disclosure at or before answer         ar/need        relation=at-or-before · 1 on page
+PASS  disclosure wording is approved         ar/need        exact §8 match
+PASS  one answer, not two                    ar/need        retrieval pick correctly suppressed
+PASS  need-based query reasons               ar/need2       answer rendered · "لابتوب للألعاب تحت 5000"
+PASS  disclosure at or before answer         ar/need2       relation=at-or-before · 1 on page
+PASS  disclosure wording is approved         ar/need2       exact §8 match
+PASS  one answer, not two                    ar/need2       retrieval pick correctly suppressed
+PASS  named/browse query does NOT reason     ar/named       retrieval only · "ايفون 15"
+PASS  no orphan disclosure                   ar/named       0 disclosure(s) with no answer
+PASS  named/browse query does NOT reason     ar/browse      retrieval only · "لابتوب"
+PASS  no orphan disclosure                   ar/browse      0 disclosure(s) with no answer
+PASS  at most ONE question                   ar/ambiguous   1 prompt(s) rendered
+PASS  the question has a visible skip        ar/ambiguous   تخطَّ — اعرض الترشيح الحالي
+PASS  declining still leaves a result        ar/ambiguous   recommendation rendered alongside the question
+PASS  never asks for what was given          ar/already-given no question — the area was parsed from the query
+PASS  comparison intent is answered          ar/cmp-deliverable state=delivered
+PASS  offered comparison names ≥2 retailers  ar/cmp-deliverable 5 retailers claimed
+PASS  every offered comparison link renders ≥2 retailer exits ar/cmp-deliverable /compare/apple%7CiPhone%7C16%7CStandard%7C128 → 5 distinct retailer exits, 1456 chars
+PASS  a two-product request is NOT sent to a comparison ar/cmp-pair    state=not-deliverable
+PASS  and it explains why                    ar/cmp-pair    explanation rendered with the evidence for each
+PASS  an unnameable subject makes no claim   ar/cmp-unknown state=no block (ordinary results)
+PASS  /advisor redirects to search           ar/advisor     landed on /ar/search?q=%D9%85%D9%83%D9%8A%D9%81+%D9%84%D8%BA%D8%B1%D9%81%D8%A9+30+%D9%85%D8%AA%D8%B1+%D9%87%D8%A7%D8%AF%D8%A6+%D8%AA%D8%AD%D8%AA+4000
+PASS  the carried query still answers        ar/advisor     answer rendered after redirect
+PASS  disclosure survives the move           ar/advisor     1 present · exact=true · relation=at-or-before
+PASS  no second entry point in header        ar             0 header link(s) to /advisor
+PASS  need phrasing is taught on entry       ar             the empty state shows how to describe a need
+PASS  need-based query reasons               en/need        answer rendered · "a quiet AC for a 30 m² room under 4000"
+PASS  disclosure at or before answer         en/need        relation=at-or-before · 1 on page
+PASS  disclosure wording is approved         en/need        exact §8 match
+PASS  one answer, not two                    en/need        retrieval pick correctly suppressed
+PASS  need-based query reasons               en/need2       answer rendered · "a gaming laptop under 5000"
+PASS  disclosure at or before answer         en/need2       relation=at-or-before · 1 on page
+PASS  disclosure wording is approved         en/need2       exact §8 match
+PASS  one answer, not two                    en/need2       retrieval pick correctly suppressed
+PASS  named/browse query does NOT reason     en/named       retrieval only · "iphone 15"
+PASS  no orphan disclosure                   en/named       0 disclosure(s) with no answer
+PASS  named/browse query does NOT reason     en/browse      retrieval only · "laptop"
+PASS  no orphan disclosure                   en/browse      0 disclosure(s) with no answer
+PASS  at most ONE question                   en/ambiguous   1 prompt(s) rendered
+PASS  the question has a visible skip        en/ambiguous   Skip — show the current recommendation
+PASS  declining still leaves a result        en/ambiguous   recommendation rendered alongside the question
+PASS  never asks for what was given          en/already-given no question — the area was parsed from the query
+PASS  comparison intent is answered          en/cmp-deliverable state=delivered
+PASS  offered comparison names ≥2 retailers  en/cmp-deliverable 5 retailers claimed
+PASS  every offered comparison link renders ≥2 retailer exits en/cmp-deliverable /compare/apple%7CiPhone%7C16%7CStandard%7C128 → 5 distinct retailer exits, 1438 chars
+PASS  a two-product request is NOT sent to a comparison en/cmp-pair    state=not-deliverable
+PASS  and it explains why                    en/cmp-pair    explanation rendered with the evidence for each
+PASS  an unnameable subject makes no claim   en/cmp-unknown state=no block (ordinary results)
+PASS  /advisor redirects to search           en/advisor     landed on /en/search?q=a+quiet+AC+for+a+30+m%C2%B2+room+under+4000
+PASS  the carried query still answers        en/advisor     answer rendered after redirect
+PASS  disclosure survives the move           en/advisor     1 present · exact=true · relation=at-or-before
+PASS  no second entry point in header        en             0 header link(s) to /advisor
+PASS  need phrasing is taught on entry       en             the empty state shows how to describe a need
+
+══ SUMMARY ══
+54 checks · 0 failing
+GATE: PASS

@@ -6,6 +6,73 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-154 — Comparison intent routes only to a comparison the page can deliver; and the marker words were destroying retrieval · Accepted (2026-08-01)
+
+**Context.** The last unbuilt §UNIFIED SEARCH routing branch — *"comparison requests may
+generate structured comparisons"* — under one governing rule from the founder: **comparison
+intent must never route to a comparison that cannot actually be delivered.** Principle 3 and
+F3 applied to routing: if the data does not exist, the route does not exist.
+
+**Measured first, and it set the shape of the work.**
+
+| measurement | value |
+|---|---|
+| canonicals with offers from ≥2 retailers | **761 of 5,054 — 15.1%** |
+| «قارن أسعار ايفون 16» → results carrying a canonical identity | **0 of 99** |
+| «ايفون 16» → results carrying a canonical identity | **10 of 157** |
+| "compare prices iphone 16" → identity-bearing | **0 of 98** |
+| "iphone 16" → identity-bearing | **12 of 94** |
+
+Two things follow. First, **"cannot deliver" is the common case**, so the honest answer is
+the main path, not a fallback. Second — found while measuring, not looked for — **the marker
+words were destroying retrieval**: the shopper who most wants a comparison was getting the
+results *least* able to support one, because «قارن» and «أسعار» were being matched against
+product text.
+
+**Structural finding that decides pair requests.** The only URL-addressable comparison is
+`/compare/<identity_key>`, which compares **one product across retailers**. The two-product
+view is the localStorage-backed compare LIST and cannot be addressed by a query. So a pair
+request has **no page that can fulfil it** — a fact about the product, not a policy choice.
+
+**Decision.**
+1. **Retrieval runs on the SUBJECT of the request**, not the sentence wrapping it. The typed
+   query is still echoed and displayed. After: «قارن أسعار ايفون 16» → 157 results, 10 with
+   identity — identical to the bare subject.
+2. **Deliverability is asked of `getComparison()`**, the compare page's own loader.
+   `tps_product_projection.store_count` was the obvious proxy and is deliberately not used at
+   route time: it counts what the projection saw, the page counts approved retailers with a
+   live price. They agree on today's samples; only one of them is the page.
+3. **Single + deliverable** → comparison offered with its verified retailer count.
+   **Pair** → never routed; best evidence for each product plus a plain explanation.
+   **Category not comparable / <2 offers / unnameable** → no comparison claim at all.
+4. A compare link is rendered **only where the page honours it** — on the primary CTA *and*
+   on the per-product links inside the evidence answer (the ADR-136 rule).
+
+**Alternatives rejected.**
+- **A private text→canonical resolver.** Written, then withdrawn on measurement: it could not
+  find «ايفون 16» at all, because `canonical_products.name_ar` holds ENGLISH («apple iPhone
+  16 128GB») and the synonym-widened `ilike` had to be truncated. Resolution now reuses the
+  identity keys **search already ranked** — bilingual expansion, Algolia and relevance, all
+  measured under P2-2. The text resolver survives only as the fallback for pair subjects, and
+  is widened by the **existing** `SAUDI_SEARCH_SYNONYMS` rather than a second private map
+  that would drift from search.
+- **Routing a pair to the compare list.** It would land the shopper on whatever they saved
+  earlier, or on nothing. That is the empty page the rule forbids.
+- **Auto-redirecting to the comparison page.** Rejected: it discards the results the shopper
+  can also use, for a claim they have not yet seen evidence for.
+
+**Verification counts what the rule is about.** The harness **follows every offered
+comparison link** and counts **distinct retailer exits** on the destination — 5 for the
+deliverable case. Byte length is not evidence: CHECKPOINT #18 measured an empty compare page
+at ~1059 chars and a real five-retailer one is ~1456. 54/54 in production, both locales.
+
+**Accepted debt.** Pair-subject resolution still uses the weaker text resolver, so a pair
+whose subjects search cannot rank may report one or both as unresolved. It fails *honestly*
+(«لم نتعرّف على…») and never fabricates a product — but it is weaker than the single path and
+should move onto the search pipeline when a per-subject retrieval is cheap.
+
+---
+
 ### ADR-153 — The clarification question asks only when the engine proves it changes the answer; and `\d` never matched Arabic-Indic digits · Accepted (2026-07-31)
 
 **Context.** UNIFIED SEARCH allows *"Ambiguous requests may ask **one** clarification

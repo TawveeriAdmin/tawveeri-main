@@ -1,4 +1,53 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #26 · P2-8 CLOSED · PHASE 2 COMPLETE ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #27 · §UNIFIED SEARCH COMPLETE · PHASE 2 OPEN ═══
+
+**Tree clean, pushed, deployed, verified in production. Nothing running.**
+
+## THE TWO STATUSES, STATED SEPARATELY
+
+### §UNIFIED SEARCH — **COMPLETE.** All four routing branches exist and are verified live.
+
+| branch | commit |
+|---|---|
+| exact product query → comparison | `3071af1` |
+| need-based query → reasoning | `3071af1` |
+| ambiguous → ONE clarification question | `306a8b4` (ADR-153) |
+| **comparison request → structured comparison** | `1b8113b` (ADR-154) |
+
+Plus the section's own conditions: one entry point (`3071af1`), and the AI disclosure
+structurally inside the answer, verified in production by DOM position.
+
+### Phase 2 — **OPEN**, and not because anything failed.
+
+| unit | state | what unblocks it |
+|---|---|---|
+| **P2-4** customer-outcome measurement | **BLOCKED — no traffic.** It measures behaviour; there are no customers yet, so it would ship an instrument with nothing to read | **Launch traffic.** First questions already defined: share of queries carrying a need signal (UXD-004), and asked-vs-answered on the clarification question via `advisor_clarified` (UXD-005) |
+| **P2-5** وفّر advisor build-out | **BLOCKED — F7.** F7's protections must exist before the generative surface does. The advisor is deterministic today, which is why it is safe | **Building F7's runtime vocabulary guard**, which is itself an execution unit and has not been scoped |
+| Retailer-count amendment | **BLOCKED — founder decision** | A decision on `docs/RETAILER-TIERS.md` |
+| Normalization backfill / DEBT-1 | **BLOCKED — data** | The match invariant (35 observations holding two canonicals) and the `asus\|dell g-series` parser defect |
+
+## COMPARISON-INTENT ROUTING — WHAT LANDED
+
+**Governing rule honoured: a comparison is offered only where the comparison page can deliver
+it**, and deliverability is asked of `getComparison()` — the page's own loader — never of a
+proxy. The harness proves it by **following every offered link and counting distinct retailer
+exits** on the destination (5 for the deliverable case). Byte length is not evidence: an empty
+compare page is ~1059 chars, a real five-retailer one ~1456.
+
+**Two measurements worth carrying forward:**
+- **Only 15.1% of canonicals (761/5,054) have ≥2 retailers.** "No comparison available" is
+  the COMMON answer, not the edge case.
+- **A two-product comparison has no page that can fulfil it.** `/compare/<key>` is one product
+  across retailers; the two-product view is the localStorage compare LIST and is not
+  URL-addressable. Pair requests therefore never route — by structure, not by policy.
+
+**A second defect, found while measuring:** «قارن»/«أسعار» were being matched against product
+text, so comparison queries returned **0 identity-bearing results** (99 results, 0 comparable)
+versus 10 of 157 for the bare subject. Retrieval now runs on the subject; the typed query is
+still echoed. Same for English (0 of 98 → 12 of 94).
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #26 · P2-8 CLOSED ═══
 
 ## P2-8 STATUS — EXPLICIT
 

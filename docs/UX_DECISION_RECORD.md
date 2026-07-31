@@ -163,6 +163,53 @@ the answer rate is low, the honest response is fewer questions, not more.
 
 ---
 
+## UXD-006 — Ask to compare, and you are only offered a comparison that exists
+
+**Date:** 2026-08-01 · **Unit:** Comparison-intent routing · **ADR:** ADR-154 · **Commit:** `1b8113b`
+
+### What changed for the customer
+
+Type «قارن أسعار ايفون 16» and you now get, above the results, either:
+
+- **"We can compare this across 5 retailers"** with a button to the comparison — and that
+  number was verified by asking the comparison page itself before the button was drawn; or
+- **a plain statement that no comparison is available**, with the lowest price we actually
+  observed for the product(s) you named.
+
+Ask to compare **two different products** and we say so plainly — *"We do not put two
+different products side by side"* — and show what we observed for each. We never send you to
+a page that would be empty.
+
+### Why the "no" is the common answer
+
+**Only 15.1% of products (761 of 5,054) carry offers from two or more retailers.** So most
+comparison requests cannot be answered with a comparison. That is a catalogue fact, not a
+bug, and the interface says it rather than hiding it behind a thin page.
+
+### The defect this uncovered
+
+Asking to compare used to make the results *worse*. Measured:
+
+| what you typed | results | of which comparable |
+|---|---|---|
+| «قارن أسعار ايفون 16» | 99 | **0** |
+| «ايفون 16» | 157 | **10** |
+| "compare prices iphone 16" | 98 | **0** |
+| "iphone 16" | 94 | **12** |
+
+The words «قارن» and «أسعار» were being matched against product names, so the shopper most
+wanting a comparison got the results least able to support one. Search now runs on what you
+*meant* and still shows you what you *asked*.
+
+### What is weaker, and named as such
+
+Two-product requests resolve each side with a weaker text matcher than the one search uses.
+When it cannot name a product it says so («لم نتعرّف على…») rather than guessing — but it will
+sometimes fail to recognise a product that search would have found. Recorded as debt in
+ADR-154.
+
+---
+
 ## UXD-002 — A card's action buttons now name their product; the DOM order was left alone
 
 **Date:** 2026-07-31 · **Unit:** P2-7 · **ADR:** ADR-151
