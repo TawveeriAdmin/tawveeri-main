@@ -1,4 +1,107 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #21 · NULL obs_id DIAGNOSED · CLAIM INTEGRITY INTACT ═══
+# ═══ EXECUTION CHECKPOINT — 2026-07-31 · §3 COMPLETE · AWAITING REVIEW · DO NOT PROCEED ═══
+
+**Head `4232924`, tree clean, deployed and verified. STOPPED as instructed.**
+
+## 7. RECOMMENDATION — **NO, the brief is NOT complete. Here is exactly why.**
+
+`REDESIGN_BRIEF.md` has sixteen sections. What is finished is the **truth-and-correctness half**.
+The **redesign half has not been started.**
+
+| brief section | status |
+|---|---|
+| §1 truth fixes · §1.1 data audit · §1.2 claims audit | ✅ complete |
+| §2 reproduce figures | ✅ complete · §2.1 retailer tiers ❌ not started |
+| §3 defects | ✅ complete (this checkpoint) |
+| §11 SEO/accessibility | ⚠️ partial — og:image and 404 status fixed; WCAG pass not done |
+| §12 journey harness | ✅ built, baselined, re-measured |
+| §13 Phase A foundation | ⚠️ partial — tokens/shell touched, not a systematic pass |
+| **§4 ADOPT · §5 REJECT · §6 proof module · §7 structure/ranking · §8 وفّر advisor · §9 agent** | ❌ **NOT STARTED** |
+| §13 Phases B–E | ❌ not started |
+
+**The brief cannot be called complete while §4–§9 are untouched** — those are the actual product
+redesign: advisor/agent separation, the dynamic proof module, the explainable deal score, the
+layered product page, the two-stage comparison. Everything delivered so far makes the *existing*
+product honest and measurable. None of it makes it the *redesigned* product.
+
+## 1. COMPLETED
+
+**Truth (§1):** About page founder card → mission card, and `85K+` / `8 متجر` removed — they were
+still live there after §1 recorded them as gone. Cadence, comprehensive-market and ranking-policy
+claims removed. `/en/about` was serving Arabic.
+**Category policy (ADR-150):** navigable = ≥30 comparable products, derived live, never hardcoded.
+Deleted a hardcoded 17-entry header list of which 8 matched no production category.
+**Homepage IA:** company-explanation billboard removed; it also carried a truncation and a
+ranking-policy claim.
+**Journey (§12):** server-response harness built. AR and EN both **10/10 end-to-end**; cards→real
+page AR 100% / EN 90%; malformed exits **0 of 1,323** (was 21).
+**Exit layer:** `/go` fallback no longer sends users to `0.0.0.0:8080`; `/go/null` eliminated.
+**Product pages:** search emitted UUIDs as slugs AND the SEO query named non-existent columns, so
+every product looked missing. Both fixed.
+**Freshness:** the pipeline stamped processing time, not observation time — production had been
+understating staleness by a median of 7.4 days. Fixed at source and corrected at display.
+**Provenance:** discovery discarded observation ids; now 100% linked (269/269 verified live).
+**SEO:** no `og:image` existed anywhere; missing products returned 200.
+**§3:** dead social links removed, duplicate desktop sort control removed.
+
+## 2. DEFERRED — with reasons
+
+- **DEBT-1** `write_ac_batch` provenance — deferred on measured zero customer impact.
+- **Normalization backfill (Step 4)** — gated. Blocked on the match invariant (35 observations
+  hold two canonicals) and a `dell g-series` parser defect.
+- **§2.1 retailer tiers** — inputs measured, definition not written.
+- **Brand collision · competitor scan** — research, not customer-visible defects.
+
+## 3. REMAINING LAUNCH BLOCKERS — **none identified**
+
+No item below prevents launch. The launch-critical class — unevidenced claims, dead exits,
+broken product pages, falsely-fresh timestamps — is closed and verified in production.
+
+## 4. REMAINING CUSTOMER-VISIBLE DEFECTS
+
+| defect | severity | note |
+|---|---|---|
+| **404 page body is empty** (57 bytes) | medium | status correct; see roadmap item below |
+| 1,027 offers with neither exit nor provenance | low | honest non-clickable card; self-clearing |
+| EN cards→real page 90% vs AR 100% | low | residual identity-slug cards |
+| product detail body client-rendered | low | JSON-LD carries offers, so crawlers are covered |
+| coupons page empty (0 rows) | low | nav entry to a guaranteed empty state |
+
+### ROADMAP ITEM — RESTORE THE 404 PAGE BODY
+
+**Acceptance criteria:** `GET /ar/products/<missing>` returns **404** (already true) **and** a
+rendered body >1,500 bytes containing the site header, a 404 heading, and a search CTA; the same
+holds for `/en`; real products and all sibling routes remain 200.
+**Architectural prerequisite:** `src/app/layout.tsx` is a passthrough — the HTML shell, fonts and
+providers live in `[locale]/layout.tsx`, and Next resolves `not-found` above that level where no
+shell exists. **The root layout must own the HTML shell before any not-found boundary can
+render.** Measured identical whether the boundary sits in `(product)`, `[locale]` or the root.
+**Deferred:** restructuring the root layout touches every page in the app. Not in this brief.
+The boundary is already written and annotated at `[locale]/(product)/not-found.tsx`; it activates
+the moment the prerequisite lands.
+
+## 5. TECHNICAL DEBT
+
+**DEBT-1** (`docs/ENGINEERING-RULES.md`) with two binding constraints: the FK guard is a
+correctness invariant, and render-time provenance resolution is an architectural dependency —
+5,827 offers show the correct date only because the render path resolves it; the stored column is
+still wrong. Reference case: `/ar/compare/apple|iPhone|15|Standard|128` must render **5, 10, 25**.
+**If a change makes those numbers smaller, it has reintroduced the falsely-fresh claim.**
+
+Also open: 35 observations holding two canonicals · the `asus|dell g-series` parser defect ·
+`processing_status` is vestigial and must not be used to diagnose backlog.
+
+## 6. RECOMMENDED PHASE 2 — in order
+
+1. **§8 وفّر advisor** — the largest unbuilt customer value in the brief.
+2. **§7.1 explainable deal score** — ranking is currently cheapest-first; the brief calls that a bug.
+3. **§9 agent separation** — contract and component only; ship nothing the backend lacks.
+4. **§6.1 dynamic proof module** — partly present via verified deals; not qualification-gated.
+5. **§2.1 retailer tiers** — cheap, unblocks honest public retailer counts.
+6. **§11 WCAG 2.2 AA pass** — never systematically done.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #21 · NULL obs_id DIAGNOSED · CLAIM INTEGRITY INTACT ═══
 
 **Read-only diagnosis. Nothing repaired.** Head `18afae6`+, tree clean.
 
