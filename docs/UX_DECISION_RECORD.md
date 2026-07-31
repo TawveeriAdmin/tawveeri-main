@@ -66,6 +66,56 @@ node scripts/tps-analysis/a11y-keyboard.js    # focus order, focus return, reflo
 
 ---
 
+## UXD-004 — «وفّر» left the header; the search box learned to answer needs
+
+**Date:** 2026-07-31 · **Unit:** P2-8 (UNIFIED SEARCH) · **ADR:** ADR-152 · **Commit:** `3071af1`
+
+### What changed for the customer
+
+There is one box. Type a product name and you get results; describe a situation — *"a quiet
+AC for a 30 m² room under 4000"* — and the deterministic decision engine answers above them,
+with its evidence, its total-cost estimate and its confidence. **You never choose which one
+you wanted.** The «وفّر» item is gone from the header, `/advisor` redirects into search
+carrying your query, and the entry page now shows three need-phrasings next to the product
+names so the capability is visible.
+
+### The judgement call, and its cost
+
+Retiring a labelled destination is a real loss of *signposting*. A customer who knew «وفّر»
+by name no longer sees it. The Constitution is unambiguous that the signpost is the problem
+— *"Customers never choose between search · AI search · assistant"* — so the alternative was
+to keep a door the governing document forbids.
+
+**The mitigation is the need-phrasing row on the entry page**, and it is the part most likely
+to be wrong. Every "popular search" already there is a product *name*; without something
+teaching the other half, the engine would still run and simply never be invoked, which is
+indistinguishable from having deleted it. Three example phrasings are a first attempt, not a
+measured answer. **When there is traffic (P2-4), the thing to measure is the share of queries
+that carry a need signal.** If it collapses versus the وفّر era, this decision under-served
+customers and the answer is better teaching, not a second door.
+
+### What the customer does NOT see, deliberately
+
+- **Two picks are never shown at once.** The retrieval "smart pick" is suppressed whenever
+  the engine answers. Both are "our pick", chosen on different grounds; showing both makes
+  the customer arbitrate between two answers to one question.
+- **Advisor failures are silent here.** If the engine errors or has nothing, the results
+  stand on their own. An "I could not help" panel above good results invents a failure the
+  customer does not have. `/advisor` used to show those states because there the assistant
+  *was* the page; on the unified surface it is not.
+
+### Verified
+
+`docs/unified-search-2026-07-31-PRODUCTION.log` — 34 checks, routing both ways in both
+locales, the AI disclosure at-or-before the answer in the exact §8 wording, redirect landing,
+header door gone, need phrasing present.
+
+```bash
+node scripts/tps-analysis/unified-search-verify.js --base https://tawveeri.com
+```
+
+---
+
 ## UXD-002 — A card's action buttons now name their product; the DOM order was left alone
 
 **Date:** 2026-07-31 · **Unit:** P2-7 · **ADR:** ADR-151

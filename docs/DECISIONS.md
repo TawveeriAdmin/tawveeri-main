@@ -6,6 +6,93 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-152 — UNIFIED SEARCH: one entry point and one answer; still two engines underneath · Accepted (2026-07-31)
+
+**Context.** The Constitution requires one entry point — *"Customers never choose between
+search · AI search · assistant… Routing is determined by the query, never by the customer"* —
+with a hard condition that the AI disclosure survive the move. Two live entry points existed:
+`/search` and `/advisor`, reachable from a «وفّر» item in the header.
+
+**Measured first, and it changed the shape of the work.** The two are **not one capability
+behind two doors**:
+
+| surface | what it actually computes |
+|---|---|
+| `/api/search` | retrieval, plus a `decisionCard` that is the **best-matching result with a reason** |
+| `/api/v1/agent/decide` | the deterministic **decision engine** — room size → capacity, priorities → suitability, total cost, alternatives, evidence groups, confidence |
+
+So the migration could not be "delete a nav item and point the box at the same API". Doing
+that would have removed the reasoning **and the disclosure attached to it**.
+
+**Classification, made before any wiring (founder condition).** The advisor answer is
+**structured evidence only — no customer-visible generated prose.** Every string is a
+translation key or a template literal in this repository with measured values substituted:
+`reasons_ar` (`decision-engine.ts`), evidence factors (`evidence-engine.ts`), the discount
+line (`discountVerdictFromFacts()`, a pure function whose output is *materialised* into
+`tps_listing_price_facts` rather than authored). There are **zero** Anthropic/OpenAI/Gemini
+references under `src/lib/agent/` or `src/app/api/v1/agent/`. Every sentence a customer reads
+can be found by grep, corrected, and verified — which is F7's own test for what it governs.
+**F7 therefore does not govern this surface today**, and the boundary is recorded in the
+component itself: if any part of the answer ever becomes generated at runtime, it does.
+
+**Decision.**
+1. **`routeQuery()`** (`src/lib/agent/route-query.ts`, 23 tests) decides deterministically:
+   no category → retrieval · category the engine cannot advise on → retrieval · a named model
+   → retrieval · ≥1 need signal → advisory · otherwise browse → retrieval.
+2. **One implementation of the answer.** `/advisor`'s ~320 lines of rendering became
+   `src/components/agent/advisor-answer.tsx`; `/search` renders it. Two surfaces cannot be one
+   experience while each owns a copy — they only look alike until one is edited.
+3. **The disclosure is the answer's first child, with no prop to suppress it.** A
+   `showDisclosure` boolean would be precisely the mechanism by which a trust element is lost
+   in a restructure. Verified by **DOM position**, not by "a disclosure exists on the page".
+4. **The second door is retired.** «وفّر» leaves the header; `/advisor` redirects into
+   `/search` carrying `?q=`; `/assistant` now points straight at `/search` instead of hopping.
+5. **The retrieval smart-pick is suppressed when the engine has answered.** Both are "our
+   pick" on different grounds; showing both puts two answers on one screen and makes the
+   customer arbitrate — the same failure in a different costume.
+6. **The entry page teaches need-phrasing.** Every "popular search" was a product *name*, and
+   every name routes to retrieval. Retiring the وفّر door without this would have left the
+   engine in place and undiscovered, which is indistinguishable from having deleted it.
+
+**Alternatives rejected.**
+- **Call the engine server-side inside `/api/search`.** Cleaner on paper, but the engine's
+  read is the slower of the two; folding it in makes every need-based query slower to show
+  *any* result. Fired in parallel instead, and never awaited.
+- **Keep `/advisor` as a full page.** A dormant second implementation of the same answer is
+  how two surfaces drift apart. Deleted, not disabled.
+- **Show both picks.** Rejected above.
+- **Render the advisor's error/empty states on the unified surface.** They stay silent there:
+  the results below are a perfectly good answer, and an "I could not help" panel above them
+  invents a failure the customer does not have.
+
+**THE HONEST VERDICT — one capability at the surface, two engines underneath.**
+What is genuinely unified: the entry point, the routing, the rendered answer, the disclosure.
+What is not, and is recorded rather than glossed:
+- **Two backends** remain (`/api/search`, `/api/v1/agent/decide`) with different data paths,
+  latencies and notions of "best". The customer sees one thing; the platform runs two.
+- **The engine advises on 17 categories.** For everything else "the system determines
+  internally" resolves to *retrieval*, not because the query lacked a need but because the
+  engine cannot serve it there. «سماعات للألعاب تحت 500» is a described need that gets
+  retrieval — correctly, since the alternative is a "not supported" panel, but the need was
+  recognised and not served.
+- **Two named UNIFIED SEARCH behaviours are unbuilt:** *"Ambiguous requests may ask **one**
+  clarification question"* (the surface hints, it never asks) and *"comparison requests may
+  generate structured comparisons"* (a «قارن بين X و Y» query falls to retrieval).
+
+**No constitutional amendment is proposed.** Nothing measured in production shows the
+principle cannot be achieved — the gaps are unbuilt capability with clear paths (widen the
+engine's categories, implement clarification, add comparison-intent routing), not a
+contradiction between the principle and reality. An amendment now would ratify an
+implementation gap as a design limit.
+
+**Instrument note.** Four false readings were caught before they became findings: a dev
+server on port 3001 while every check hit a stale 3000; a fixed sleep that sampled before the
+parallel advisor read landed; `localhost` resolving to IPv6 while the standalone server bound
+IPv4; and `page.url()` read before an RSC-payload redirect had been applied, which reported a
+working redirect as broken. **Measure the rendered artefact, and prove the instrument.**
+
+---
+
 ### ADR-151 — The brand green is corrected at the TOKEN, not at the call site; and `sr-only` was shadowing the skip link · Accepted (2026-07-31)
 
 **Context.** P2-7 (§11 WCAG 2.2 AA) had no baseline, so one was built before any edit:

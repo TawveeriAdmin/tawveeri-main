@@ -41,10 +41,18 @@ setInterval(() => {
  * budget. Telemetry must never be able to break search, so it gets its own bucket,
  * and search gets a budget sized for a real shopper refining a query.
  */
-function bucketOf(pathname: string): 'telemetry' | 'scrape' | 'search' | 'api' {
+function bucketOf(pathname: string): 'telemetry' | 'scrape' | 'search' | 'agent' | 'api' {
   if (pathname.startsWith('/api/events') || pathname.startsWith('/api/audit')) return 'telemetry';
   if (pathname.startsWith('/api/search/scrape')) return 'scrape';
   if (pathname.startsWith('/api/search')) return 'search';
+  // P2-8: since UNIFIED SEARCH, a need-based query calls the decision engine ALONGSIDE
+  // /api/search — it is on the customer's hot path now, not a page they navigate to. Left
+  // in the generic `api` bucket it would trade budget against coupons, products, auth and
+  // push on a shared carrier IP, which is the identical starvation the telemetry note above
+  // records. Worse, an advisor 429 is deliberately SILENT on the unified surface (the
+  // results still stand), so the failure would present as "the assistant just doesn't
+  // answer for me" — indistinguishable from the capability having been removed.
+  if (pathname.startsWith('/api/v1/agent/')) return 'agent';
   return 'api';
 }
 
@@ -56,6 +64,7 @@ function getRateLimit(pathname: string): number | null {
   switch (bucketOf(pathname)) {
     case 'telemetry': return 240; // never allowed to starve search; dropping one is harmless
     case 'search':    return 60;  // a shopper refining a query, on a shared carrier IP
+    case 'agent':     return 60;  // paired 1:1 with search since P2-8 — same shopper, same budget
     case 'scrape':    return 30;  // heavy live-scrape path, unchanged
     default:          return 30;
   }

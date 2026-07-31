@@ -132,7 +132,9 @@ governed, measured and honest, rather than migrating unresolved problems into a 
 
 ## REMAINING
 
-**P2-8 · UNIFIED SEARCH migration — IN PROGRESS.** The routing decision is built, tested (23 tests) and shipped inert (`d5e06c0`); the before-measurement is taken. **The surface is deliberately not migrated yet** — `/search` and `/advisor` are two different capabilities, not one behind two doors, and retiring the وفّر entry point before search can render the decision engine's answer would take the reasoning *and the AI disclosure* with it. That is the exact failure the Constitution's hard condition names. Sequenced next step in `HANDOVER.md` § P2-8.
+**P2-8 · UNIFIED SEARCH migration — COMPLETE** (`d5e06c0` router · `3071af1` migration). One entry point: the search box routes need-based queries to the deterministic decision engine and renders its answer above the results; «وفّر» left the header; `/advisor` redirects in, carrying `?q=`. The AI disclosure is the answer's first child with **no prop to suppress it**, verified by DOM position in production. ADR-152, UXD-004.
+
+**The honest verdict, recorded in ADR-152 rather than glossed:** one capability at the *surface* — entry point, routing, answer, disclosure — and **two engines underneath**. `/api/search` and `/api/v1/agent/decide` remain separate systems; the engine advises on **17 categories** and everything else falls to retrieval; and two named UNIFIED SEARCH behaviours are **unbuilt** — the *one clarification question* for ambiguous requests, and comparison-intent routing. **No constitutional amendment is proposed:** nothing measured shows the principle cannot be achieved, so those are build items, not contradictions.
 
 ## OPENED BY P2-7, NOT CLOSED BY IT
 
