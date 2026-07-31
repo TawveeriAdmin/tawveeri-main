@@ -132,6 +132,54 @@ async function run() {
       await page.close();
     }
 
+    // ── The ONE clarification question ─────────────────────────────────────────
+    // Three properties, and the second is the one that failed in production before:
+    //   · an ambiguous need may be asked ONE question, with a visible skip
+    //   · a need that ALREADY carries the answer is never asked
+    //   · the recommendation is on screen either way — the question is not a gate
+    {
+      const AMBIGUOUS = { ar: 'ابي مكيف هادئ وموفر كهرباء', en: 'a quiet energy-saving air conditioner' };
+      const ALREADY_GIVEN = { ar: 'ابي مكيف رخيص لغرفه ٤٠ متر', en: 'a cheap AC for a 40 m2 room' };
+
+      for (const [id, q] of [['ambiguous', AMBIGUOUS[locale]], ['already-given', ALREADY_GIVEN[locale]]]) {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 1000 });
+        await page.goto(`${BASE}/${locale}/search?q=${encodeURIComponent(q)}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await settle(page);
+        try { await page.waitForSelector('[data-testid="advisor-answer"]', { timeout: 30000 }); } catch {}
+        await new Promise((r) => setTimeout(r, 1500));
+        const c = await page.evaluate(() => {
+          const prompts = document.querySelectorAll('[data-testid="clarify-prompt"]');
+          const answer = document.querySelector('[data-testid="advisor-answer"]');
+          return {
+            prompts: prompts.length,
+            hasSkip: !!document.querySelector('[data-testid="clarify-skip"]'),
+            skipLabel: (document.querySelector('[data-testid="clarify-skip"]')?.textContent || '').trim(),
+            // A recommendation must be present WITH the question — declining costs nothing.
+            hasRecommendation: !!(answer && answer.querySelector('h3')),
+          };
+        });
+        const ctx = `${locale}/${id}`;
+
+        if (id === 'already-given') {
+          // THE RECORDED FAILURE. «لغرفه ٤٠ متر» supplies the area in the sentence; asking
+          // for it again is the defect this unit exists to prevent.
+          record('never asks for what was given', ctx, c.prompts === 0,
+            c.prompts === 0 ? 'no question — the area was parsed from the query'
+                            : 'ASKED for the room size the shopper already wrote');
+        } else {
+          record('at most ONE question', ctx, c.prompts <= 1, `${c.prompts} prompt(s) rendered`);
+          if (c.prompts === 1) {
+            record('the question has a visible skip', ctx, c.hasSkip, c.skipLabel || 'no skip control');
+            record('declining still leaves a result', ctx, c.hasRecommendation,
+              c.hasRecommendation ? 'recommendation rendered alongside the question'
+                                  : 'the question is gating the answer');
+          }
+        }
+        await page.close();
+      }
+    }
+
     // ── The retired entry point must LAND somewhere useful, not merely 404 ─────
     // A published «وفّر» link that now asks its question of the unified surface is the
     // proof that the entry point was retired without retiring the capability.

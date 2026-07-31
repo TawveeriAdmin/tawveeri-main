@@ -219,6 +219,9 @@ export default function SearchClient() {
   // them — the results must not wait on reasoning.
   const [advisorResult, setAdvisorResult] = useState<AdvisorResponse | null>(null);
   const advisorAbortRef = useRef<AbortController | null>(null);
+  // The query the advisor answer belongs to, so a clarification can re-ask the SAME text
+  // rather than whatever is in the input box by the time the shopper answers.
+  const advisorQueryRef = useRef<string>('');
   const [relaxed, setRelaxed] = useState(false); // true when results are "nearby/related", not an exact match
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
@@ -673,6 +676,7 @@ export default function SearchClient() {
     if (route.mode === 'advisory' && currentPage === 1) {
       const advisorCtrl = new AbortController();
       advisorAbortRef.current = advisorCtrl;
+      advisorQueryRef.current = query.trim();
       track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: route.reason } });
       askAdvisor({ text: query.trim() }, { signal: advisorCtrl.signal, limit: 4 })
         .then((res) => {
@@ -1643,6 +1647,25 @@ export default function SearchClient() {
                     locale={locale}
                     source="search"
                     className="mb-6"
+                    onClarify={(field, value) => {
+                      // Re-ask the SAME text with the answered field filled in, so an
+                      // answered question follows the identical path a shopper who had
+                      // typed it themselves would take — there is no separate "clarified"
+                      // branch to keep in step. The results below are untouched; only the
+                      // reasoning refines.
+                      const text = advisorQueryRef.current;
+                      if (!text) return;
+                      advisorAbortRef.current?.abort();
+                      const ctrl = new AbortController();
+                      advisorAbortRef.current = ctrl;
+                      track('advisor_clarified', { query_text: text, source: 'search', meta: { field, value } });
+                      askAdvisor({ text, [field]: value }, { signal: ctrl.signal, limit: 4 })
+                        .then((res) => {
+                          if (ctrl.signal.aborted || res.error || res.count === 0) return;
+                          setAdvisorResult(res);
+                        })
+                        .catch(() => { /* the answer already on screen stands */ });
+                    }}
                   />
                 )}
 

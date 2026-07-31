@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, ShieldCheck, Check, Store, ArrowLeft, ArrowRight, CircleAlert,
@@ -59,6 +59,65 @@ export function WaffarAiDisclosure({ className = '' }: { className?: string }) {
     <p className={className} data-testid="waffar-ai-disclosure">
       {t('agent.aiDisclosure')}
     </p>
+  );
+}
+
+/**
+ * ONE clarification question, shown ABOVE an answer that is already on screen.
+ *
+ * The Constitution allows one question and only when it changes the outcome — that test ran
+ * server-side in `shouldAsk`, against the same engine and rows that produced the answer, so
+ * by the time this renders the question has already earned its place. This component never
+ * decides whether to ask; it would be the wrong place, because a rule enforced in the view
+ * is a rule that the next surface does not inherit.
+ *
+ * NOT a gate. The recommendation is rendered below regardless, so a shopper who ignores or
+ * dismisses this still gets a result — declining costs them nothing. Skip is a real control
+ * with a visible label, not an X in a corner.
+ */
+function ClarifyPrompt({
+  clarify, loc, onAnswer, onSkip,
+}: {
+  clarify: NonNullable<AdvisorResponse['clarify']>;
+  loc: Locale;
+  onAnswer: (field: string, value: number) => void;
+  onSkip: () => void;
+}) {
+  const ar = loc === 'ar';
+  const q = clarify.question;
+  return (
+    <div
+      data-testid="clarify-prompt"
+      data-clarify-field={q.field}
+      className="mb-4 rounded-2xl border border-primary-200 bg-primary-50/60 p-4 dark:border-primary-800 dark:bg-primary-950/30"
+    >
+      <p className="text-sm font-semibold text-on-surface">{ar ? q.question_ar : q.question_en}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {q.options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onAnswer(q.field, o.value)}
+            className="inline-flex h-9 items-center rounded-full border border-primary-300 bg-[color:var(--color-surface)] px-4 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-700 dark:bg-[color:var(--color-surface-container-low)] dark:text-primary-300 dark:hover:bg-primary-950/60"
+          >
+            {ar ? o.label_ar : o.label_en}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={onSkip}
+          data-testid="clarify-skip"
+          className="inline-flex h-9 items-center rounded-full px-3 text-xs font-medium text-on-surface-variant underline underline-offset-4 transition-colors hover:text-on-surface"
+        >
+          {ar ? 'تخطَّ — اعرض الترشيح الحالي' : 'Skip — show the current recommendation'}
+        </button>
+      </div>
+      <p className="mt-2 text-[11px] text-on-surface-variant">
+        {ar
+          ? 'نسأل فقط حين تُغيّر الإجابة الترشيح فعلًا — والنتيجة أدناه معروضة على أي حال.'
+          : 'We only ask when the answer would actually change the recommendation — the result below is shown either way.'}
+      </p>
+    </div>
   );
 }
 
@@ -326,16 +385,20 @@ export function AdvisorAnswer({
   locale,
   source = 'agent',
   className = 'mt-8',
+  onClarify,
 }: {
   result: AdvisorResponse;
   locale: string;
   source?: string;
   className?: string;
+  /** Re-runs the same query with the answered field filled in. Omit and no question shows. */
+  onClarify?: (field: string, value: number) => void;
 }) {
   const t = useTranslations();
   const loc: Locale = locale === 'ar' ? 'ar' : 'en';
   const isRTL = loc === 'ar';
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const [skippedClarify, setSkippedClarify] = useState(false);
 
   const smart = result?.smart_pick ?? null;
   const rest = (result?.recommendations ?? []).filter((r) => !r.is_smart_pick);
@@ -354,6 +417,18 @@ export function AdvisorAnswer({
           one above the input, which is even earlier. Redundancy of a trust statement is the
           safe direction to fail in. */}
       <WaffarAiDisclosure className="mb-4 text-xs text-on-surface-variant/90" />
+
+      {/* ONE clarification question, and only when the engine proved it changes the answer.
+          `onClarify` is required to show it: a surface that cannot act on the answer must
+          not ask the question. */}
+      {onClarify && result.clarify && !skippedClarify && (
+        <ClarifyPrompt
+          clarify={result.clarify}
+          loc={loc}
+          onAnswer={(field, value) => { setSkippedClarify(true); onClarify(field, value); }}
+          onSkip={() => setSkippedClarify(true)}
+        />
+      )}
 
       {/* Understood-as chips */}
       {chips.length > 0 && (

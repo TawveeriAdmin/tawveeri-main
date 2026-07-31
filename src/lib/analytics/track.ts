@@ -55,6 +55,11 @@ export function isTestMode(): boolean {
 export type EventType =
   | "landing_view"                       // Landing engagement: which entry arm was shown
   | "advisor_query" | "advisor_result"   // advisor surface: Search / Results
+  // P2-8: the shopper answered the ONE clarification question. Off-funnel, but it is the
+  // only way to learn whether a question we proved *could* change the recommendation is one
+  // shoppers actually want to answer — asked-vs-answered is the measure that decides
+  // whether the question set grows or shrinks.
+  | "advisor_clarified"
   | "search" | "results"                 // storefront surface: Search / Results
   | "product_view"                       // Product View (both surfaces)
   | "comparison_view"                    // Comparison seen (≥2 stores)

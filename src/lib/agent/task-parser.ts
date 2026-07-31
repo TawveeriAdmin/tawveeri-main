@@ -6,7 +6,29 @@
 // beats incorrect: fields it cannot extract stay undefined (never guessed).
 import type { ShoppingTask } from "./decision-engine";
 
-const norm = (t: string) => (t || "").toLowerCase();
+/**
+ * Arabic-Indic (٠-٩) and Eastern-Arabic/Persian (۰-۹) digits → ASCII.
+ *
+ * MEASURED FAILURE this fixes: «ابي مكيف رخيص لغرفه ٤٠ متر» asked the shopper for the room
+ * area they had just written in the same sentence. Every numeric regex in this file uses
+ * `\d`, which matches ASCII ONLY — so a shopper typing on an Arabic keyboard had their room
+ * size, their budget and their storage size all silently dropped, and the assistant then
+ * asked for them. Nothing errored; the fields simply came back undefined.
+ *
+ * This is the third time Arabic-Indic digits have produced a false result in this codebase
+ * (CHECKPOINT #17 recorded 18 "price missing" failures with the same cause). Normalising at
+ * the single entry point is why it cannot recur per-regex.
+ */
+const ARABIC_INDIC = /[٠-٩۰-۹]/g;
+const asciiDigits = (t: string) =>
+  t.replace(ARABIC_INDIC, (d) => {
+    const c = d.charCodeAt(0);
+    return String(c >= 0x06f0 ? c - 0x06f0 : c - 0x0660);
+  });
+
+// Arabic-Indic thousands separator (٬) and the Arabic decimal mark (٫) reach us from
+// copy-pasted prices; strip the grouping mark so «٤٬٠٠٠» reads as 4000, not 4.
+const norm = (t: string) => asciiDigits((t || "").toLowerCase()).replace(/٬/g, "");
 
 function parseCategory(x: string): string | null {
   if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
@@ -34,9 +56,16 @@ function parseCategory(x: string): string | null {
 }
 
 function parseRoomSize(x: string): number | undefined {
-  // "30 متر", "30م²", "30 m2", "30 sqm", "30 square"
+  const ok = (n: number) => (n >= 5 && n <= 200 ? n : undefined);
+  // "30 متر", "30م²", "30 m2", "30 sqm", "30 square". Digits are already ASCII by `norm`.
   const m = x.match(/(\d{1,3})\s*(?:م(?:²|2|تر)?|متر مربع|m2|m²|sqm|sq ?m|square ?met)/);
-  if (m) { const n = Number(m[1]); if (n >= 5 && n <= 200) return n; }
+  if (m) { const v = ok(Number(m[1])); if (v) return v; }
+  // Unit-less, but unambiguous from the noun it follows: «غرفة ٤٠», "room 40". A bare
+  // number ANYWHERE is deliberately NOT read as an area — «تحت 4000» is a budget and
+  // «مكيف 24000` is a BTU rating, and guessing either as square metres would be a
+  // fabricated input to a capacity calculation. Only the room noun licenses it.
+  const r = x.match(/(?:غرف[ةه]|غرفتي|صال[ةه]|مجلس|room)\s*(?:بمساحة\s*|مساحتها\s*|of\s*)?(\d{1,3})(?!\s*\d)/);
+  if (r) { const v = ok(Number(r[1])); if (v) return v; }
   return undefined;
 }
 

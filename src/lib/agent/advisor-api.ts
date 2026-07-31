@@ -196,6 +196,22 @@ export interface AdvisorResponse {
   recommendations: AdvisorRecommendation[];
   note?: string;
   error?: string;
+  /**
+   * P2-8. Present ONLY when the engine proved a different answer would change the
+   * recommendation (see `clarify.ts` → `shouldAsk`). Absent means "do not ask" — either the
+   * field was already supplied or the answer could not move anything.
+   */
+  clarify?: {
+    question: {
+      field: string;
+      question_ar: string;
+      question_en: string;
+      options: Array<{ value: number; label_ar: string; label_en: string }>;
+    };
+    reason: string;
+  } | null;
+  /** Why no question was asked. Carried so the choice is auditable, not inferred. */
+  clarify_skipped_reason?: string | null;
 }
 
 export type Locale = "ar" | "en";
@@ -280,6 +296,9 @@ export function exitHref(rec: AdvisorRecommendation, locale: Locale): string {
 
 /** POST the shopping task (free text or structured) to the deterministic agent. */
 export async function askAdvisor(
+  // `room_size_m2` doubles as the clarification answer: the surface re-asks the SAME text
+  // with the field filled in, so an answered question takes the identical path a shopper
+  // who had typed it themselves would have taken. No separate "clarified" code path.
   body: { text?: string } & Partial<{ category: string; room_size_m2: number; city: string; priorities: string[]; budget_total: number }>,
   opts?: { signal?: AbortSignal; limit?: number }
 ): Promise<AdvisorResponse> {

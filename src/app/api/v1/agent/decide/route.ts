@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
+import { shouldAsk } from "@/lib/agent/clarify";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
@@ -82,6 +83,15 @@ export async function POST(req: NextRequest) {
     });
 
   const { supported, recommendations } = decide(task, rows);
+
+  // P2-8 · "Ambiguous requests may ask ONE clarification question" — and the Constitution's
+  // condition on it: *every clarification question must change the recommendation; questions
+  // that do not improve confidence are never asked.* That test is run HERE, against the same
+  // engine and the same candidate rows that produced the answer above, so a question can only
+  // reach a customer when the engine has demonstrated it matters. Enforcing it at review time
+  // is enforcing it nowhere.
+  const clarify = shouldAsk(task, rows);
+
   if (!rows.length) {
     return NextResponse.json({ version: "v1", task, supported, count: 0, recommendations: [],
       note: "no canonical products with offers for this category yet" });
@@ -173,5 +183,9 @@ export async function POST(req: NextRequest) {
     version: "v1", task, parsed: parsed ?? undefined, supported,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
     count: out.length, smart_pick: smartWithChoice, recommendations: out,
+    // Present ONLY when the engine proved the answer would change it.  still
+    // carries its reason so the decision is auditable rather than inferred from silence.
+    clarify: clarify.ask ? { question: clarify.question, reason: clarify.reason } : null,
+    clarify_skipped_reason: clarify.ask ? null : clarify.reason,
   });
 }
