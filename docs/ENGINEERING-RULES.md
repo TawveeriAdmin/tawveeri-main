@@ -86,3 +86,83 @@ Both are this failure.
 
 If the answer is "something does, but it can't", the identifier must be returned. Returning it
 is nearly always a RETURNING clause on a statement already being executed, not a new query.
+
+---
+
+## RULE 1 — OCCURRENCE 2 GATE ASSESSMENT (`write_ac_batch`) · 2026-07-31
+**VERDICT: DEFER. Do not change the RPC now. Zero immediate customer benefit, and it
+introduces a failure mode that does not exist today.**
+
+### §1 — Blast radius: 13 call paths, not one
+
+**Direct RPC callers (5):** `progressive-engine.ts:325` (the main path) ·
+`write-alias-canonicals.ts:251` · `write-model-canonicals.ts:111` ·
+`tps-matcher/ac-matcher-v1-dry.ts:167` · `tps-matcher/audio-matcher-v1-dry.ts:168`
+
+**Indirect via `corroboratePass` / `runSweepUnit` (8):** `/api/cron/dispatch` (the hourly
+scheduler) · `/api/cron/tps-progressive` · `normalize-incremental` ·
+`onboard-store-corroborate` · `bulk-backfill` · `run-progressive` · `write-resolved-single`
+
+**Backward compatibility: SATISFIED.** The change reads `r->>'raw_observation_id'` from the
+`p_prices` payload. Four of the five direct callers never supply that key, so it evaluates to
+NULL — byte-identical to today's literal `null`. **No caller depends on the current behaviour
+in a way that breaks.**
+
+**BUT IT INTRODUCES A NEW FAILURE MODE.** `price_history` carries
+`price_history_raw_observation_id_fkey REFERENCES raw_observations(id)`. Supplying an id that
+no longer exists raises an FK violation, and because `write_ac_batch` is one transaction, **the
+entire batch rolls back** — the normalization chain aborts. Today the RPC writes a literal
+`null` and this is unreachable.
+
+Measured exposure: **0 orphans across 298,075 staging rows.** The risk is real but currently
+unexercised — a raw observation deleted between staging and the batch write would trigger it.
+
+### §2 — DDL operational risk: LOW, measured empirically
+
+`CREATE OR REPLACE FUNCTION` changes the **body only**; the signature is unchanged, so PostgREST
+RPC routing is unaffected and **no schema reload is expected**.
+
+**This is not a prediction — it was measured today.** The same function was replaced earlier
+(Step 2, adding the match conflict clause). Since then: **37 successful runs in 6 hours and
+2,373 normalized observations written through the RPC**, with no PostgREST incident and no
+`PGRST002`.
+
+| | |
+|---|---|
+| **Symptoms of failure** | normalization runs flipping to `partial`/`failed` with FK-violation errors; `normalized_product_observations` flat-lining; `PGRST002` on REST endpoints (schema cache wedged, per ADR-099) |
+| **Rollback** | re-apply the previous `008_write_ac_batch.sql` from git — a single `CREATE OR REPLACE`, no data to undo |
+| **Window** | none required on this evidence, but apply when the normalization lane is free and verify one full cycle immediately after |
+
+### §3 — Can the existing 88,359 rows be reconstructed? **YES — and that is why we should not.**
+
+Reconstruction is deterministic, measured at the customer-visible offer level (8,148 offers):
+
+| population | offers | route | determinism |
+|---|---|---|---|
+| already linked | 269 | new discovery writes | n/a |
+| **via chain** | **5,827** | `tps_observation_id` → `normalized_payload._raw_id` → `raw_observations.id` | **99.91%** (6,650 / 6,656 rows) |
+| **via run match** | **1,025** | `canonical.name_ar = raw.raw_name` + `store_id` + `scraping_run_id` | **99.94%** (4,997 of 5,000 sampled resolve to exactly one; 0 unmatched, 3 ambiguous) |
+| not recoverable | 1,027 | discovery rows with no run id | — |
+
+**87.4% is deterministically recoverable.** And a backfill should still not be run, because
+**it would change no customer-visible number**:
+
+- the 5,827 are **already resolved at render time** by the display rule (`f9d7afe`);
+- the 1,025 already display a value measured accurate to **1.90 minutes**.
+
+The benefit of a backfill is provability, not truth. The customer sees the same number either
+way. Combined with `price_history` being append-only, that is not a trade worth making.
+
+### THE RECOMMENDATION
+
+**Defer.** The immediate customer benefit is **zero** — the display layer already resolves the
+chain, and the unresolved remainder is accurate to two minutes. Against that, the change adds a
+batch-abort failure mode to the hourly chain that does not exist today.
+
+The value of fixing Occurrence 2 is structural: a real foreign key instead of a JSON-embedded
+`_raw_id`, and a display path that reads a column instead of parsing a payload. That is worth
+doing — **when it is the most valuable thing available, which it is not today.**
+
+**If it is implemented later, it must carry an FK guard** (resolve the id against
+`raw_observations` and write NULL when absent) so a stale id can never abort a batch. Without
+that guard, the correct answer stays "defer" regardless of window.
