@@ -12,6 +12,7 @@ import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-ca
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { routeQuery } from '@/lib/agent/route-query';
+import { ComparisonAnswer, type CompareRoute } from '@/components/search/comparison-answer';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
@@ -222,6 +223,9 @@ export default function SearchClient() {
   // The query the advisor answer belongs to, so a clarification can re-ask the SAME text
   // rather than whatever is in the input box by the time the shopper answers.
   const advisorQueryRef = useRef<string>('');
+  // Comparison routing. Computed server-side by /api/search and only when the query carries
+  // comparison intent — the client never decides whether a comparison can be delivered.
+  const [compareRoute, setCompareRoute] = useState<CompareRoute | null>(null);
   const [relaxed, setRelaxed] = useState(false); // true when results are "nearby/related", not an exact match
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
@@ -653,6 +657,7 @@ export default function SearchClient() {
     setLoading(true);
     setError(null);
     setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
+    setCompareRoute(null); // a stale comparison claim must never outlive its query
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
 
@@ -803,6 +808,7 @@ export default function SearchClient() {
       // server-side (null when the best match is an accessory for a product
       // query), so we render it verbatim without re-judging.
       setSmartPick(((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null);
+      setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});
       // searchTime from API is in seconds; convert to ms
@@ -1633,6 +1639,15 @@ export default function SearchClient() {
                       </div>
                     )}
                   </div>
+                )}
+
+                {/* UNIFIED SEARCH — the answer to a COMPARISON request. Rendered above the
+                    reasoning answer because it is the more specific reading of the query:
+                    a shopper who typed «قارن» asked for a comparison, not a recommendation.
+                    Whether a comparison link appears at all was decided server-side against
+                    the comparison page's own loader — this surface only renders the verdict. */}
+                {!loading && !error && compareRoute && compareRoute.route !== 'none' && (
+                  <ComparisonAnswer route={compareRoute} locale={locale} />
                 )}
 
                 {/* P2-8 · UNIFIED SEARCH — the reasoning engine's answer, when this query

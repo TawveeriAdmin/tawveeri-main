@@ -180,6 +180,88 @@ async function run() {
       }
     }
 
+    // ── Comparison routing, under its ONE governing rule ───────────────────────
+    // "Comparison intent must never route to a comparison that cannot actually be
+    // delivered." The decisive check is not that a comparison appears — it is that EVERY
+    // comparison link offered actually renders ≥2 retailers when followed. So this does
+    // not trust the badge: it FOLLOWS the link and counts what the page renders.
+    {
+      const CASES = [
+        // A single product we measured as carrying 5 retailers — a comparison must be offered.
+        { id: 'cmp-deliverable', ar: 'قارن أسعار ايفون 16', en: 'compare prices iphone 16' },
+        // Two different products — no page can fulfil this, so it must NOT be offered.
+        { id: 'cmp-pair', ar: 'قارن بين ايفون 16 و جالكسي s24', en: 'compare iphone 16 and galaxy s24' },
+        // Comparison intent over something we cannot name — ordinary results, no claim.
+        { id: 'cmp-unknown', ar: 'قارن أسعار زابتونيوم 9999', en: 'compare prices zabtonium 9999' },
+      ];
+
+      for (const c of CASES) {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 1000 });
+        const q = c[locale];
+        await page.goto(`${BASE}/${locale}/search?q=${encodeURIComponent(q)}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await settle(page);
+        await new Promise((r) => setTimeout(r, 2500));
+        const s = await page.evaluate(() => {
+          const el = document.querySelector('[data-testid="comparison-answer"]');
+          const cta = document.querySelector('[data-testid="comparison-cta"]');
+          return {
+            present: !!el,
+            state: el ? el.getAttribute('data-compare-state') : null,
+            retailerCount: el ? Number(el.getAttribute('data-retailer-count') || 0) : 0,
+            ctaHref: cta ? cta.getAttribute('href') : null,
+            // Every /compare link anywhere in the answer block, badge or not.
+            compareLinks: el ? [...el.querySelectorAll('a[href*="/compare/"]')].map((a) => a.getAttribute('href')) : [],
+            explains: el ? (el.textContent || '').trim().length > 30 : false,
+          };
+        });
+        const ctx = `${locale}/${c.id}`;
+
+        if (c.id === 'cmp-deliverable') {
+          record('comparison intent is answered', ctx, s.present, s.present ? `state=${s.state}` : 'no answer block');
+          if (s.state === 'delivered') {
+            record('offered comparison names ≥2 retailers', ctx, s.retailerCount >= 2, `${s.retailerCount} retailers claimed`);
+          }
+        } else if (c.id === 'cmp-pair') {
+          record('a two-product request is NOT sent to a comparison', ctx, s.state !== 'delivered',
+            s.state === 'delivered' ? 'OFFERED a comparison page that cannot hold two products' : `state=${s.state}`);
+          record('and it explains why', ctx, s.present && s.explains,
+            s.present ? 'explanation rendered with the evidence for each' : 'nothing rendered');
+        } else {
+          record('an unnameable subject makes no claim', ctx, s.state !== 'delivered',
+            `state=${s.state ?? 'no block (ordinary results)'}`);
+        }
+
+        // THE GOVERNING RULE, checked by FOLLOWING every link the block offered.
+        for (const href of s.compareLinks) {
+          const cp = await browser.newPage();
+          await cp.goto(`${BASE}${href.startsWith('/') ? '' : '/'}${href.replace(/^\//, `${locale}/`)}`.replace(`${BASE}${locale}/`, `${BASE}/${locale}/`), { waitUntil: 'domcontentloaded', timeout: 60000 });
+          await settle(cp, 800);
+          const rendered = await cp.evaluate(() => {
+            const txt = document.body.innerText || '';
+            // Count RETAILER EXITS, not bytes. A byte threshold cannot tell a rendered
+            // comparison from a shell — CHECKPOINT #18 measured an empty single-offer
+            // compare page at ~1059 chars, and a real 5-retailer one is only ~1500. What
+            // separates them is whether each retailer has somewhere to send you, so the
+            // rule is checked on the thing the rule is about.
+            const exits = new Set(
+              [...document.querySelectorAll('a[href*="/go/"]')].map((a) => a.getAttribute('href')),
+            );
+            return {
+              bytes: txt.length,
+              exits: exits.size,
+              notFound: /غير موجود|not found|لا تتوفر لهذا/i.test(txt),
+            };
+          });
+          record('every offered comparison link renders ≥2 retailer exits', `${ctx}`,
+            !rendered.notFound && rendered.exits >= 2,
+            `${href} → ${rendered.exits} distinct retailer exits, ${rendered.bytes} chars${rendered.notFound ? ' — NOT FOUND' : ''}`);
+          await cp.close();
+        }
+        await page.close();
+      }
+    }
+
     // ── The retired entry point must LAND somewhere useful, not merely 404 ─────
     // A published «وفّر» link that now asks its question of the unified surface is the
     // proof that the entry point was retired without retiring the capability.

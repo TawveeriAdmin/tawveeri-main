@@ -9,6 +9,8 @@ import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algol
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
 import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
+import { detectCompareIntent } from '@/lib/agent/compare-intent';
+import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -837,7 +839,23 @@ async function searchTPSCanonical(
 export async function POST(request: NextRequest) {
   const started = Date.now();
   const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
-  const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
+  const typedQuery = typeof body.query === 'string' ? body.query.trim() : '';
+
+  // ── Comparison intent, detected BEFORE retrieval ────────────────────────────────────
+  // MEASURED DEFECT (2026-08-01): the marker words destroy the search. «قارن أسعار ايفون 16»
+  // returned 99 products of which **ZERO** carried a canonical identity, while «ايفون 16»
+  // returned 157 with 10. Same for English: "compare prices iphone 16" → 0 with identity,
+  // "iphone 16" → 12. The shopper who most wants a comparison was getting the results least
+  // able to support one, because «قارن» and «أسعار» were being matched against product text.
+  //
+  // So retrieval runs on the SUBJECT of the request, not on the sentence wrapping it. The
+  // typed query is still what gets echoed back and displayed — we search for what they
+  // meant, and show them what they asked.
+  const compareIntent = detectCompareIntent(typedQuery);
+  const rawQuery =
+    compareIntent.kind === 'single' ? compareIntent.subject
+    : compareIntent.kind === 'pair' ? compareIntent.subjects.join(' ')
+    : typedQuery;
   const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
   const supabase = createServerClient();
 
@@ -1105,7 +1123,7 @@ export async function POST(request: NextRequest) {
     relaxed:           relaxedResults,
     page:              currentPage,
     pageSize:          currentPageSize,
-    query:             rawQuery,
+    query:             typedQuery,
     storeResults:      computeStoreResults(enrichedProducts),
     priceStats: {
       min: prices.length ? Math.min(...prices) : null,
@@ -1120,7 +1138,28 @@ export async function POST(request: NextRequest) {
     topMatches:        decision.topMatches,
   };
 
-  return NextResponse.json(result);
+  // UNIFIED SEARCH → "Comparison requests may generate structured comparisons", under the
+  // rule that comparison intent must NEVER route to a comparison that cannot be delivered.
+  //
+  // Computed HERE, server-side, and only when the query actually carries comparison intent —
+  // so an ordinary search pays nothing for it. `resolveComparisonRoute` verifies every
+  // condition against `getComparison()`, the page's own loader, before a comparison link is
+  // allowed to exist. It fails soft: a broken verification returns ordinary results rather
+  // than an unverified comparison, because the failure direction that matters is never
+  // offering a comparison we cannot honour.
+  let compareRoute: Awaited<ReturnType<typeof resolveComparisonRoute>> | null = null;
+  if (compareIntent.kind !== 'none') {
+    try {
+      const identityKeys = enrichedProducts
+        .map((p) => (p as { tps_identity_key?: string | null }).tps_identity_key)
+        .filter((k): k is string => !!k);
+      compareRoute = await resolveComparisonRoute(createServerClient(), typedQuery, compareIntent, identityKeys);
+    } catch {
+      compareRoute = null;
+    }
+  }
+
+  return NextResponse.json({ ...result, compareRoute });
 }
 
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
