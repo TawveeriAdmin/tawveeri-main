@@ -1,4 +1,89 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #20 · OPEN ROOT CAUSE: 2,321 NULL OBSERVATION IDS ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #21 · NULL obs_id DIAGNOSED · CLAIM INTEGRITY INTACT ═══
+
+**Read-only diagnosis. Nothing repaired.** Head `18afae6`+, tree clean.
+
+## RECONCILIATION FIRST — the two numbers are not the same population
+
+**21 of 1,345 (1.6%)** counted *rendered exits* across 20 harness queries — a card contributes
+several exits. **2,321** counts *canonicals in the whole catalogue*. Different units, different
+denominators, same underlying NULL. Unroutable canonicals are all single-store and none are in
+`tps_product_projection`, so they rank poorly and surface far less often than they exist —
+which is why the rendered rate (1.86% AR / 3.35% EN) sits ~20× below the catalogue rate (32.4%).
+
+## THE ANSWER TO EACH QUESTION
+
+**1. Orphaned, or never linked? → NEVER LINKED.** Nothing was deleted. `raw_observation_id` is
+NULL on **all 61,451** such rows, and **0 of 2,321** unroutable canonicals have *any* row in
+`normalized_product_observations`. There is no observation to point at, because none was created.
+
+**2. Which write path? → THE DISCOVERY CRON.**
+`src/app/api/cron/discover-firecrawl/route.ts:77` (`writePriceSnapshot`) inserts
+`canonical_product_id, store_id, store_name, price, scraping_run_id` and **neither**
+`tps_observation_id` nor `raw_observation_id`. It writes `raw_observations` (line 55) but has
+**zero** references to `normalized_product_observations`.
+
+The two writers are perfectly complementary, which is what identifies them:
+
+| | rows | `store_id` | `tps_observation_id` | stores |
+|---|---|---|---|---|
+| discovery path | 61,451 | **set** | NULL | **3** |
+| TPS pipeline | 6,654 | NULL | **set** | 23 |
+
+Store/date fingerprints match `raw_observations.source_method` exactly:
+Almanea/`algolia` (Jun 11) · Extra/`unbxd_extra` (Jun 12) · Amazon/`amazon-search` (Jul 22).
+
+**3. Still happening? → YES.** 654 NULL rows written **today** vs 28 healthy. Not historical.
+
+**4. Recoverable? → NOT BY RE-LINKING, but the evidence exists.** The normalized observation was
+never written, so there is no FK to restore. However the **raw** observation does exist with
+**100% provenance** — `raw_url`, `payload`, `parser_version` all present on 103,106 discovery
+rows. Recovery means *normalising the existing raw observations*, not repairing a pointer.
+
+## THE QUESTION UNDER THE QUESTION — MEASURED, NOT ASSUMED
+
+**Are these prices customer-visible?** **YES** — they render as search cards (1.86% AR /
+3.35% EN of cards), now non-clickable with an honest note after `d0f2e3e`.
+
+**Are they on a trust surface / feeding verified_drop?** **YES.** Stores 2/4/5 hold 16,379 rows
+in `tps_listing_price_facts` — **809 verified_drops, 9,720 inflated_reference**.
+
+**Is claim integrity affected? → NO.** `tps_listing_price_facts` is built **from
+`raw_observations`** (`scripts/tps-core/build-listing-facts.ts:63`), not from `price_history`.
+Those raw rows carry complete provenance. **"We observed it ourselves" is true and provable for
+these prices.** What is missing is the link to the *normalized* layer, which is what `/go` needs
+to build an exit — not the evidence itself.
+
+**VERDICT: data hygiene and pipeline completeness, not claim integrity. It queues normally.**
+It is nonetheless a *growing functional* defect: it blocks 2,321 canonicals from having exits
+and from entering the projection at all, and it grows daily.
+
+## INSTRUMENT WARNING — do not diagnose with `processing_status`
+
+`raw_observations.processing_status` is **vestigial and misleading**: 99.97% is `pending`
+across *every* method including the healthy `scraper` path (599,288 pending / 121 done), while
+114,920 normalized rows exist. It is not maintained by the normalizer. Reading it as a backlog
+would have produced a sixth false finding.
+
+## REPRODUCE
+
+```bash
+# the writer fingerprint — discovery sets store_id, TPS sets tps_observation_id
+npx tsx scripts/tps-analysis/q.ts "select (tps_observation_id is null) as obs_null, count(*) rows, count(store_id) has_store_id, count(distinct store_name) stores from price_history where canonical_product_id is not null group by 1"
+
+# still happening?
+npx tsx scripts/tps-analysis/q.ts "select observed_at::date d, count(*) filter (where tps_observation_id is null) null_rows, count(*) filter (where tps_observation_id is not null) ok_rows from price_history where canonical_product_id is not null and observed_at > now() - interval '7 days' group by 1 order by 1 desc"
+```
+
+## WHAT A FIX WOULD BE (not started, needs a decision)
+
+Either **(a)** have the discovery path write a normalized observation as the scraper path does —
+correct at the source, stops the growth; or **(b)** run normalization over the 103,106 existing
+raw discovery observations — recovers the backlog. **(a) and (b) are complementary, not
+alternatives**: (a) stops it growing, (b) clears what exists. (a) first.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #20 · OPEN ROOT CAUSE: 2,321 NULL OBSERVATION IDS ═══
 
 **Head `d0f2e3e`+, tree clean, pushed. Nothing running.**
 
