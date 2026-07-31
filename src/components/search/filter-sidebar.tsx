@@ -276,11 +276,10 @@ export function FilterSidebar({
       label: t('search.sortPriceHigh'),
       icon: ArrowUpNarrowWide,
     },
-    {
-      value: 'rating' as SearchSortOption,
-      label: t('search.sortRating'),
-      icon: Star,
-    },
+    // 'rating' REMOVED 2026-07-31 (Principle 3 / F3) — it had no implementation in
+    // `compareBySort` and no data (0 of 48 cards carry a rating; 72 of 9,367 products, 0.77%).
+    // This list feeds the MOBILE filter sheet, so leaving it here would have kept the dead
+    // control alive on phones after removing it from the desktop selector.
   ], [t]);
 
   const pricePresets = useMemo(() => {

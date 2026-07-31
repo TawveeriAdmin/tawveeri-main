@@ -1371,6 +1371,39 @@ export default function SearchClient() {
                       : 'No exact match — showing related products that may fit.'}
                   </div>
                 )}
+                {/* THE ORDERING RULE, STATED — Appendix F4: "with the ordering rule stated in one
+                    readable line on the page."
+                    Placed above the toolbars so it renders on BOTH breakpoints; the toolbars
+                    themselves are `lg:flex` / `lg:hidden` and would each have shown it once only.
+
+                    It describes what `scoreProduct` / `compareBySort` in /api/search ACTUALLY do
+                    today — relevance dominates (+300 when every query word-group matches, −400 per
+                    group missed), accessories are pushed to the tail, more retailers ranks higher
+                    (+14/store, capped +56), and a mild price penalty (≤22) breaks ties downward.
+                    The text changes with the selected sort, because a fixed line would be false the
+                    moment a customer picks one.
+
+                    IT DELIBERATELY DOES NOT CLAIM TOTAL COST. F4's intended "cheapest comparable
+                    total first" stays DEFERRED: delivery is unknown for every offer
+                    (product_stores.delivery_cost = 0 on all 12,980 rows), so a total-cost claim
+                    would be exactly the unsupported claim Principle 1 and F1 forbid. State the real
+                    rule; earn the better one when the data exists. */}
+                {!loading && totalCount > 0 && (
+                  <p className="mb-3 px-1 text-xs leading-relaxed text-on-surface-variant">
+                    {sortBy === 'price_low'
+                      ? (locale === 'ar'
+                          ? 'مرتّبة حسب الأقل سعرًا — والإكسسوارات في الآخر.'
+                          : 'Ordered by lowest price — accessories last.')
+                      : sortBy === 'price_high'
+                        ? (locale === 'ar'
+                            ? 'مرتّبة حسب الأعلى سعرًا — والإكسسوارات في الآخر.'
+                            : 'Ordered by highest price — accessories last.')
+                        : (locale === 'ar'
+                            ? 'مرتّبة حسب مطابقتها لبحثك، ثم عدد المتاجر التي تعرضها، ثم الأقل سعرًا — والإكسسوارات في الآخر.'
+                            : 'Ordered by match to your search, then how many retailers offer it, then lowest price — accessories last.')}
+                  </p>
+                )}
+
                 {/* Mobile toolbar + filter chips */}
                 <div className="mb-4 rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/82 p-3 shadow-[0_18px_44px_-40px_rgba(26,26,26,0.5)] backdrop-blur dark:bg-[color:var(--color-card)]/68">
                   {/* Mobile: results count, sort, filters button */}

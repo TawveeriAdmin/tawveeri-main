@@ -14,7 +14,13 @@ const OPTIONS: { value: SearchSortOption; ar: string; en: string }[] = [
   { value: 'popularity', ar: 'الأكثر صلة', en: 'Relevance' },
   { value: 'price_low', ar: 'الأقل سعرًا', en: 'Price ↑' },
   { value: 'price_high', ar: 'الأعلى سعرًا', en: 'Price ↓' },
-  { value: 'rating', ar: 'الأعلى تقييمًا', en: 'Rating' },
+  // 'rating' REMOVED 2026-07-31 — Principle 3 / Appendix F3: never render an action the system
+  // cannot complete. It had neither implementation nor data:
+  //   • `compareBySort` in /api/search has no `rating` branch — selecting it silently fell
+  //     through to the default order, so the control did nothing it claimed
+  //   • the search response sets `rating: null` unconditionally; measured 0 of 48 cards carried
+  //     one, and only 72 of 9,367 active products (0.77%) hold a merchant_rating at all
+  // Restore it only when ratings exist AND are sorted on — not before.
 ];
 
 /**
