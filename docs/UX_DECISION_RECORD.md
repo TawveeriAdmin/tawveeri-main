@@ -116,6 +116,53 @@ node scripts/tps-analysis/unified-search-verify.js --base https://tawveeri.com
 
 ---
 
+## UXD-005 — The assistant may ask one question, and only when the answer would change its mind
+
+**Date:** 2026-07-31 · **Unit:** P2-8 · **ADR:** ADR-153 · **Commit:** `306a8b4`
+
+### What changed for the customer
+
+Describe a need too vaguely for the engine to size an answer — *"a quiet energy-saving air
+conditioner"* — and **one** question appears above the recommendation: *"Roughly how large is
+the room?"* with three sizes and a labelled **Skip — show the current recommendation**.
+
+**The recommendation is already there.** The question sits above it, not in front of it.
+Declining costs the shopper nothing; answering refines what is already on screen.
+
+### The two rules that decide whether it appears at all
+
+1. **It must change the answer.** Before asking, the engine runs the decision at both ends of
+   the offered range (15 m² and 40 m²) over the same candidates. If the top pick is identical
+   at both ends, no answer in between can move it, and the question is never shown. This runs
+   **in the decision**, not in review — a rule enforced by a reviewer is a rule that
+   eventually is not.
+2. **It must not already have been answered.** «ابي مكيف رخيص لغرفه ٤٠ متر» is never asked for
+   a room size. That is not a new rule; it is a **fixed defect** — see below.
+
+### The defect that made this necessary
+
+The assistant previously asked for a room area supplied in the same sentence. The cause was
+not the question logic: **every numeric pattern in the parser used `\d`, which matches ASCII
+digits only.** A shopper typing ٤٠ on an Arabic keyboard had their room size dropped — along
+with their budget and storage size — and was then asked for it. Nothing errored, so nothing
+surfaced.
+
+This was the **third** time Arabic-Indic digits produced a false result here. It is now
+normalised once, at the parser's entry point, rather than in each pattern.
+
+Tested on the exact failing phrase plus nine real Saudi phrasings — ابي/ابغى/ودي, «غرفه»
+without the taa marbuta, متر / م٢ / م, صالة, مجلس, غرفتي, a bare number after the room noun,
+and an English control.
+
+### What to watch, when there is traffic
+
+`advisor_clarified` fires when a shopper answers. **Asked-vs-answered is the measure that
+should decide whether the question set grows or shrinks.** A question the engine proved
+*could* change the recommendation is not automatically one a shopper *wants* to answer; if
+the answer rate is low, the honest response is fewer questions, not more.
+
+---
+
 ## UXD-002 — A card's action buttons now name their product; the DOM order was left alone
 
 **Date:** 2026-07-31 · **Unit:** P2-7 · **ADR:** ADR-151

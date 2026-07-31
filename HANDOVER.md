@@ -1,4 +1,33 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #25 · PHASE 2 COMPLETE · P2-7 AND P2-8 IN PRODUCTION ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #26 · P2-8 CLOSED · PHASE 2 COMPLETE ═══
+
+## P2-8 STATUS — EXPLICIT
+
+**CLOSED.** Four routing branches named by §UNIFIED SEARCH; all four now exist.
+
+| branch | state |
+|---|---|
+| exact product query → comparison | ✅ `3071af1` |
+| need-based query → reasoning | ✅ `3071af1` |
+| bare category → browse/retrieval | ✅ `3071af1` |
+| **ambiguous → ONE clarification question** | ✅ `306a8b4` (ADR-153) — **scoped INSIDE P2-8** |
+
+**The boundary call, recorded so it is not re-litigated.** Clarification is a *branch of the
+routing decision P2-8 built* — a router that structurally cannot ask is an incomplete router,
+not a deferred feature. **Comparison-intent routing is NOT inside P2-8** and stays open as its
+own unit: «قارن بين X و Y» needs a new destination and a comparison-generation capability that
+does not exist at query time. That is a different kind of thing from a branch of a decision
+that already runs.
+
+**What closing it required, beyond the question itself:** the recorded failure — asking for a
+room area supplied in the same sentence — was **not** a clarification bug. Every numeric regex
+in `task-parser.ts` used `\d`, which matches ASCII only, so «٤٠» was dropped silently and the
+field came back undefined. **Third occurrence of that trap in this codebase.** Now normalised
+once at the parser entry point. Anyone touching Arabic numeric parsing should read ADR-153
+before writing another `\d`.
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #25 · P2-7 AND P2-8 IN PRODUCTION ═══
 
 **Tree clean, pushed, deployed, re-measured live. Nothing running.**
 Decisions: **ADR-151** (accessibility) · **ADR-152** (unified search). UX: `docs/UX_DECISION_RECORD.md`.

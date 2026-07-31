@@ -6,6 +6,65 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-153 — The clarification question asks only when the engine proves it changes the answer; and `\d` never matched Arabic-Indic digits · Accepted (2026-07-31)
+
+**Context.** UNIFIED SEARCH allows *"Ambiguous requests may ask **one** clarification
+question"* and constrains it: *"every clarification question must change the recommendation;
+questions that do not improve confidence are never asked."* It was the last unbuilt branch of
+the routing decision shipped in ADR-152. **Scoped inside P2-8**, on the test that a router
+which structurally cannot ask is an incomplete router rather than a deferred feature.
+
+**Classification, settled before implementation.** **Fixed set, not generated.** Every
+question and option label is a literal in `src/lib/agent/clarify.ts`; nothing is composed at
+runtime from customer input and no model is involved. **F7 does not govern it** — and the
+boundary is written into the file: if a question is ever produced by generation rather than
+selected from that table, it does.
+
+**Decision — the "does it matter" test runs in the DECISION, not in review.**
+`shouldAsk(task, rows)` runs the **same engine over the same candidate rows** at both ends of
+the offered range (15 m² and 40 m²) and compares the **identity of the top pick**. Same pick
+at both ends ⇒ no answer in between can move it ⇒ no question. Measured live: the ambiguous
+case returns `recommendation differs at 15 vs 40` — the engine *demonstrating* the question
+matters, not us assuming it.
+
+Comparing identity rather than score is deliberate: the customer experiences the
+recommendation, not the arithmetic. A question that shifts confidence by a point while
+recommending the same machine has changed nothing they can see.
+
+**The recorded failure, and its actual root cause.** «ابي مكيف رخيص لغرفه ٤٠ متر» was
+answered with a request for the room area **written in the same sentence**. The cause was not
+the clarification logic — it was that **every numeric regex in `task-parser.ts` uses `\d`,
+which matches ASCII only.** ٤٠ was silently dropped, the field came back undefined, and the
+assistant asked for it. A shopper on an Arabic keyboard lost their room size, their budget
+**and** their storage size, and nothing errored.
+
+**This is the third time Arabic-Indic digits have produced a false result in this codebase**
+(CHECKPOINT #17: 18 "price missing from product page" failures, same cause). The fix
+normalises ٠-٩ and ۰-۹ **at the single entry point** rather than per-regex, and strips the
+Arabic thousands mark (٬) so «٤٬٠٠٠» reads as 4000 rather than 4.
+
+**A bare number is an area only when a room noun licenses it.** «لغرفة ٣٥» yes; a bare number
+anywhere, no — «تحت 4000» is money and «مكيف 24000» is a BTU rating, and reading either as
+square metres feeds a **fabricated input into a capacity calculation**, which is worse than
+asking. Asserted in both directions.
+
+**Not a gate.** The question renders *above an answer already on screen*, with a labelled
+skip. A shopper who declines still gets a result; answering re-asks the **same text** with the
+field filled in, so it takes the identical path a shopper who had typed it themselves would
+take — there is no separate "clarified" branch to keep in step. The prompt only renders when
+the surface passes `onClarify`: a surface that cannot act on the answer must not ask.
+
+**Only `air_conditioner` has a question, and that is a measurement.** Room area is the only
+field the parser reports as `unresolved` and the only one the engine converts into a hard
+requirement (BTU). Elsewhere a missing field degrades ranking gracefully, so asking would be
+friction. Adding a category requires proving both again.
+
+**Tested:** the exact production phrase plus **nine real Saudi phrasings** — ابي/ابغى/ودي,
+«غرفه» without the taa marbuta, متر / م٢ / م, صالة, مجلس, غرفتي, a bare number after the room
+noun, and an English control. 24 tests; suite 817/817; 42/42 in `unified-search-verify.js`.
+
+---
+
 ### ADR-152 — UNIFIED SEARCH: one entry point and one answer; still two engines underneath · Accepted (2026-07-31)
 
 **Context.** The Constitution requires one entry point — *"Customers never choose between
@@ -75,9 +134,17 @@ What is not, and is recorded rather than glossed:
   engine cannot serve it there. «سماعات للألعاب تحت 500» is a described need that gets
   retrieval — correctly, since the alternative is a "not supported" panel, but the need was
   recognised and not served.
-- **Two named UNIFIED SEARCH behaviours are unbuilt:** *"Ambiguous requests may ask **one**
-  clarification question"* (the surface hints, it never asks) and *"comparison requests may
-  generate structured comparisons"* (a «قارن بين X و Y» query falls to retrieval).
+- **One named UNIFIED SEARCH behaviour is unbuilt:** *"comparison requests may generate
+  structured comparisons"* — a «قارن بين X و Y» query falls to retrieval.
+
+> **Amended 2026-07-31 (`306a8b4`).** This entry originally listed **two** unbuilt behaviours.
+> The clarification question was the other, and it has since been built and shipped —
+> **inside P2-8, not as a new unit.** The boundary test that settled it: clarification is a
+> *branch of the routing decision this ADR already implements*, so a router that structurally
+> cannot ask is an incomplete router, not a deferred feature. Comparison-intent routing is
+> genuinely different — it needs a new destination and a comparison-generation capability
+> that does not exist at query time — so it remains its own unit. See the ADR-153 entry
+> below for the clarification design and the parser defect it exposed.
 
 **No constitutional amendment is proposed.** Nothing measured in production shows the
 principle cannot be achieved — the gaps are unbuilt capability with clear paths (widen the
