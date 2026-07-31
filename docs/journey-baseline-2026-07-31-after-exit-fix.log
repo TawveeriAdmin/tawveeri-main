@@ -1,0 +1,31 @@
+◇ injected env (12) from .env.local // tip: ⌘ enable debugging { debug: true }
+
+JOURNEY BASELINE — https://tawveeri.com
+started 2026-07-31T06:20:16.477Z
+UTF-8 transport verified: server echoed "مكيف"
+
+═══ AR ═══
+  A_homepage_served      1/1    100.0%
+  B_search              10/10   100.0%
+  C_exits               10/10   100.0%
+  D_product_served      10/10   100.0%
+  E_retailer             9/10   90.0%
+  ── CARDS→REAL PAGE    62/80   77.5%   (fetched, evenly spaced; 471 cards returned in total)
+  ── END-TO-END          9/10   90.0%
+  dead ends:
+      1× DE5_retailer_dead_link
+
+═══ EN ═══
+  A_homepage_served      1/1    100.0%
+  B_search              10/10   100.0%
+  C_exits               10/10   100.0%
+  D_product_served      10/10   100.0%
+  E_retailer            10/10   100.0%
+  ── CARDS→REAL PAGE    55/80   68.8%   (fetched, evenly spaced; 446 cards returned in total)
+  ── END-TO-END         10/10   100.0%
+
+RESULT CARDS REACHING A REAL PAGE: 117 of 160 fetched (73.1%)
+  of which carried a compare URL:  62
+EXITS WITH NO VALID DESTINATION: 0 of 1323 rendered
+(read-only: /go was never called — destinations resolved from the DB)
+

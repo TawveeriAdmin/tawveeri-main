@@ -309,9 +309,24 @@ async function legProduct(locale, query, products) {
 
   // Price agreement: the card's price must be findable in the served page.
   // Compare on DIGIT-NORMALISED text so ١٬٩٠٠ and 1,900 and 1900 are the same number.
+  //
+  // ALSO accept the price from JSON-LD. The /products/<slug> body is CLIENT-rendered — its
+  // visible served text is the shell only (~467 chars) — while its JSON-LD does carry real
+  // offers. Checking visible text alone flagged every product-page journey as a price
+  // disagreement, which it is not: measured 2026-07-31, all 8 EN passes went via the
+  // server-rendered compare page and both "failures" went to a product page. A price
+  // integrity claim must never rest on which renderer a route happens to use.
   const price = Number(card.best_price ?? card.current_price ?? 0);
   const normText = normalizeDigits(text);
-  const priceShown = price ? normText.includes(String(Math.round(price))) : true;
+  let priceShown = price ? normText.includes(String(Math.round(price))) : true;
+  if (!priceShown && price) {
+    const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g) || [];
+    priceShown = ld.some((b) => normalizeDigits(b).includes(String(Math.round(price))));
+    out.detail.priceFromJsonLd = priceShown;
+  }
+  // Recorded separately: a page whose body renders only after hydration is invisible to any
+  // plain-text fetcher, JSON-LD or not.
+  out.detail.bodyServerRendered = text.length > 600;
   out.detail.cardPrice = price || null;
   out.detail.priceShownOnServedPage = priceShown;
 
