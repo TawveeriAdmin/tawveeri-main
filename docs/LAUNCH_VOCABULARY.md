@@ -214,3 +214,39 @@ assistance, or something else — is an open product question to be settled on e
 real interface. **Avoid a floating chat bubble unless testing justifies it** (REDESIGN_BRIEF §5
 rejects it: a chat wrapper around a finite choice set is worse UX, not better). The disclosure
 requirement above holds regardless of which placement wins.
+
+---
+
+## 9. AMENDMENT 2026-07-31 — the retailer count is retired
+
+**Founder decision, under Appendix F1 (propose with evidence, amend the vocabulary first).**
+
+### Retired from CAN SAY
+- ❌ «ابحث في منتجات **8 متاجر سعودية**، وقارن الأسعار المتاحة.»
+- ❌ "Search products from **8 Saudi retailers** and compare available prices."
+
+### Replaces it — use exactly this
+> **عربي:** «قارن الأسعار بين متاجر سعودية»
+> **English:** "Compare prices across Saudi retailers"
+
+### The evidence (`docs/RETAILER-TIERS.md`, measured 2026-07-31)
+The figure was inaccurate **in composition, not only in size**. Its set was
+`SUPPORTED_SEARCH_STORES`, which **included two retailers that are not production-deep**
+(Samsung KSA 26 offers, SWSG 59) and **omitted two that are** (Najm 223, Alnakheelk 182). Search
+actually returns **11** distinct retailers once duplicate name spellings collapse — Amazon alone
+appears as `amazon`, `أمازون` and `أمازون السعودية`.
+
+### Why no replacement number
+Substituting another fixed figure would **recreate the same failure later**, as retailer
+eligibility and production depth change. Principle 1.4 requires every public figure to derive
+from a live query with a stable documented definition, or not appear — and a live count would
+first need a definition of *which* retailers qualify: approved, displayable, production-deep, or
+currently returned by search. That definition will move, while the customer benefit of the number
+is small.
+
+**Tawveeri's promise is comparison quality, not catalogue breadth.** The capability statement is
+true permanently; the count had to be re-earned on every ingestion change.
+
+### MUST NOT SAY — added
+- ❌ Any fixed retailer count in customer-facing copy, in either language, unless it derives from
+  a live query with a documented definition.
