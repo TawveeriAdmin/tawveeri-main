@@ -166,3 +166,82 @@ doing — **when it is the most valuable thing available, which it is not today.
 **If it is implemented later, it must carry an FK guard** (resolve the id against
 `raw_observations` and write NULL when absent) so a stale id can never abort a batch. Without
 that guard, the correct answer stays "defer" regardless of window.
+
+---
+
+# TECHNICAL DEBT REGISTER
+
+## DEBT-1 — `write_ac_batch` does not propagate `raw_observation_id`
+**Opened 2026-07-31 · Governed by Rule 1 · Status: DEFERRED BY DECISION, not by oversight**
+
+Deferred on measured customer-visible impact, not on engineering preference: reconstruction is
+87.4% deterministic, and a backfill would change **no** number a customer sees. Full assessment
+above.
+
+### DO NOT REOPEN unless one of these is true
+
+1. **Customer-visible impact becomes material** — i.e. the render-time resolution stops covering
+   the population, or displayed dates measurably diverge from provenance.
+2. **The normalization pipeline is already being modified** — if `write_ac_batch`,
+   `progressive-engine`'s price path, or `price_history` writes are open for another reason,
+   fold this in rather than paying the risk twice.
+3. **The provenance gap becomes a launch blocker** — a claim, an audit, or a partner requires
+   per-row provenance we cannot demonstrate from a column.
+
+Absent one of these, reopening spends risk on a change no customer can perceive.
+
+---
+
+### CONSTRAINT 1 — THE FK GUARD IS A MANDATORY PRECONDITION
+**This is a correctness invariant, not an implementation preference.**
+
+> Any future implementation MUST resolve the originating raw observation **deterministically**,
+> and MUST write **NULL** whenever it cannot be resolved.
+>
+> **The implementation must NEVER abort a batch because provenance cannot be attached.**
+
+Why this is an invariant and not a nicety: `price_history_raw_observation_id_fkey` references
+`raw_observations(id)`, and `write_ac_batch` is a single transaction. An unresolvable id raises
+an FK violation that rolls back **the entire batch**, stalling the normalization chain for every
+store and category in that run. **Provenance is metadata about evidence; it must never be able
+to destroy the evidence write itself.** A missing link is an acceptable outcome. A stalled
+pipeline is not.
+
+Concretely: resolve against `raw_observations` and coalesce to NULL — never pass an id through
+unvalidated. Measured exposure today is 0 orphans in 298,075 staging rows, which is exactly why
+this would pass review while remaining wrong: the guard protects against the state that has not
+happened yet.
+
+---
+
+### CONSTRAINT 2 — RENDER-TIME PROVENANCE RESOLUTION IS AN ARCHITECTURAL DEPENDENCY
+**Not an optimisation. Load-bearing for customer-visible correctness.**
+
+**5,827 customer-visible offers currently display the correct observation date ONLY because the
+render path resolves provenance dynamically** — `get-comparison.ts` walks
+`tps_observation_id` → `normalized_payload._raw_id` → `raw_observations.scraped_at`, and
+`src/lib/intelligence/observed-freshness.ts` takes the oldest verified signal.
+
+The stored `price_history.observed_at` on those rows is **still wrong** — overstating freshness
+by a median of 7.4 days and up to 48.1 days. Nothing has corrected the data. Only the display
+is correct, and only while that resolution runs.
+
+> **Any redesign, optimisation, caching layer or refactor touching the observation-date display
+> path MUST preserve this resolution, and MUST be verified on real production products before
+> deployment.**
+
+Ways this breaks silently, all of which look like improvements:
+- caching or denormalising `observed_at` into a faster read path
+- dropping the `raw_observations` lookup from `get-comparison` as "an extra query"
+- routing the compare page through the projection's `last_observed_at` (which is **not**
+  corrected and derives from the stored column)
+- porting the freshness line to a new surface without importing `displayedObservedAt`
+
+**Verification is not optional and not unit-testable.** Fetch a real production compare page and
+confirm the ages against the database. The reference case:
+`/ar/compare/apple%7CiPhone%7C15%7CStandard%7C128` must render **5, 10, 25** days — not 5, 3, 7,
+which is what the uncorrected stored column produces. If a change makes those numbers *smaller*,
+it has reintroduced the falsely-fresh claim.
+
+**DEBT-1 does not close this dependency — it removes it.** Populating the column is what would
+eventually make the render-time resolution redundant. Until then, the dependency stands.
