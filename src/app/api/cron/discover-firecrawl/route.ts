@@ -42,7 +42,24 @@ async function updateSyncState(storeName: string, storeId: number | null, update
 }
 
 // ── Memory Layer (معزولة) ───────────────────────────────────
-async function writeRawObservations(offers: NormalizedOffer[], storeName: string, storeId: number | null, runId: number | null): Promise<number> {
+/**
+ * EVIDENCE GENERATED BUT NOT PROPAGATED — see docs/ENGINEERING-RULES.md.
+ *
+ * This function used to `.insert(rows)` and return only a COUNT. The evidence was written
+ * correctly; the identifiers that prove it were thrown away one stack frame below the code
+ * that needed them. `writePriceSnapshot` runs moments later in the same request and had no
+ * way to reference the observation it was recording, so `price_history.raw_observation_id` —
+ * nullable, already in the schema — was NULL on every discovery row ever written.
+ *
+ * Measured consequence: 2,321 customer-visible offers whose displayed freshness could not be
+ * proven, growing by ~654 rows a day.
+ *
+ * Now returns the url → id map so provenance survives the hop. Keyed on `raw_url` because
+ * that is the listing's natural identity within a run; a row with no URL simply yields no
+ * link and behaves exactly as before (NULL), never a guess.
+ */
+async function writeRawObservations(offers: NormalizedOffer[], storeName: string, storeId: number | null, runId: number | null): Promise<{ written: number; idByUrl: Map<string, number> }> {
+  const idByUrl = new Map<string, number>();
   try {
     const sb = createServerClient();
     const rows = offers.map(p => ({
@@ -51,11 +68,16 @@ async function writeRawObservations(offers: NormalizedOffer[], storeName: string
       original_price: p.original_price, availability: p.availability, payload: p._raw ?? null,
       scraping_run_id: runId,
     }));
-    if (!rows.length) return 0;
-    const { error } = await sb.from('raw_observations').insert(rows);
-    if (error) { console.error('[memory:raw]', error.message); return 0; }
-    return rows.length;
-  } catch (e: any) { console.error('[memory:raw:fatal]', String(e?.message || e)); return 0; }
+    if (!rows.length) return { written: 0, idByUrl };
+    // `.select('id, raw_url')` adds a RETURNING clause to the same statement — one round
+    // trip, no extra query. This is the whole fix.
+    const { data, error } = await sb.from('raw_observations').insert(rows).select('id, raw_url');
+    if (error) { console.error('[memory:raw]', error.message); return { written: 0, idByUrl }; }
+    for (const r of (data ?? []) as unknown as { id: number | string; raw_url: string | null }[]) {
+      if (r.raw_url) idByUrl.set(r.raw_url, Number(r.id));
+    }
+    return { written: rows.length, idByUrl };
+  } catch (e: any) { console.error('[memory:raw:fatal]', String(e?.message || e)); return { written: 0, idByUrl }; }
 }
 
 async function ensureCanonicalProduct(nameAr: string, p: NormalizedOffer): Promise<string | null> {
@@ -71,13 +93,16 @@ async function ensureCanonicalProduct(nameAr: string, p: NormalizedOffer): Promi
   } catch (e: any) { console.error('[memory:canonical:fatal]', String(e?.message || e)); return null; }
 }
 
-async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, storeName: string, storeId: number | null, runId: number | null): Promise<boolean> {
+async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, storeName: string, storeId: number | null, runId: number | null, rawObservationId: number | null = null): Promise<boolean> {
   try {
     const sb = createServerClient();
     const { error } = await sb.from('price_history').insert({
       canonical_product_id: canonicalId, store_id: storeId, store_name: storeName, price: p.current_price,
       original_price: p.original_price || null, effective_price: p.current_price,
       availability: p.availability || 'in_stock', scraping_run_id: runId,
+      // The link that proves this price. NULL only when the observation had no URL to key on,
+      // which is the pre-fix behaviour rather than a fabricated reference.
+      raw_observation_id: rawObservationId,
     });
     if (error) { console.error('[memory:price]', error.message); return false; }
     return true;
@@ -99,7 +124,7 @@ async function writePriceSnapshot(canonicalId: string, p: NormalizedOffer, store
  *   failed         offers that errored during persistence
  *   priceRows      price_history rows written
  */
-async function saveProducts(offers: NormalizedOffer[], storeName: string, storeId: number | null, runId: number | null): Promise<any> {
+async function saveProducts(offers: NormalizedOffer[], storeName: string, storeId: number | null, runId: number | null, rawIdByUrl: Map<string, number> = new Map()): Promise<any> {
   const sb = createServerClient();
   const unique = new Map<string, NormalizedOffer>();
   let skippedNoName = 0;
@@ -111,6 +136,9 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
   const rows = Array.from(unique.values());
   const skippedDuplicate = offers.length - skippedNoName - rows.length;
   let savedProducts = 0, savedStores = 0, memorySnapshots = 0, failed = 0;
+  // Reported so a future run that silently stops linking is visible immediately, rather than
+  // discovered months later by counting NULLs.
+  let provenanceLinked = 0;
   const errors: any[] = [];
   for (const p of rows) {
     try {
@@ -133,7 +161,9 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
       savedStores++;
       try {
         const canonicalId = await ensureCanonicalProduct(nameAr, p);
-        if (canonicalId) { const ok = await writePriceSnapshot(canonicalId, p, storeName, storeId, runId); if (ok) memorySnapshots++; }
+        // Carry the observation id from the raw write in this same request.
+        const rawObsId = p.product_url ? rawIdByUrl.get(p.product_url) ?? null : null;
+        if (canonicalId) { const ok = await writePriceSnapshot(canonicalId, p, storeName, storeId, runId, rawObsId); if (ok) { memorySnapshots++; if (rawObsId != null) provenanceLinked++; } }
       } catch (memErr: any) { console.error('[memory:loop]', String(memErr?.message || memErr)); }
     } catch (e: any) { failed++; errors.push({ step: 'fatal', error: String(e?.message || e) }); }
   }
@@ -148,6 +178,9 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
     persisted: savedProducts + savedStores,
     failed,
     priceRows: memorySnapshots,
+    // Provenance health, surfaced per run. If this drifts below priceRows the link is
+    // breaking, and it shows up in the run record instead of as a NULL count months later.
+    provenanceLinked,
     errors: errors.length ? errors.slice(0, 3) : undefined,
     // Legacy aliases — `savedProducts` counts NEW inserts only and must not be
     // read as a success rate. Retained so store_sync_status keeps its meaning.
@@ -187,8 +220,9 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
 
   try {
     const result = await adapter.fetchBatch(start, BATCH_SIZE);
-    const rawWritten = await writeRawObservations(result.offers, storeName, storeId, runId);
-    const saveResult = await saveProducts(result.offers, storeName, storeId, runId);
+    const raw = await writeRawObservations(result.offers, storeName, storeId, runId);
+    const rawWritten = raw.written;
+    const saveResult = await saveProducts(result.offers, storeName, storeId, runId, raw.idByUrl);
     await updateSyncState(storeName, storeId, {
       status: result.done ? 'completed' : 'syncing', next_page: result.done ? 0 : result.nextState,
       last_finished_at: new Date().toISOString(),
