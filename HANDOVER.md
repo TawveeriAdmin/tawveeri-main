@@ -1,4 +1,82 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #24 · P2-7 COMPLETE IN PRODUCTION · P2-8 STARTED ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #25 · PHASE 2 COMPLETE · P2-7 AND P2-8 IN PRODUCTION ═══
+
+**Tree clean, pushed, deployed, re-measured live. Nothing running.**
+Decisions: **ADR-151** (accessibility) · **ADR-152** (unified search). UX: `docs/UX_DECISION_RECORD.md`.
+
+## P2-8 · UNIFIED SEARCH — THE ANSWER TO THE QUESTION YOU ASKED
+
+**One capability at the surface. Two engines underneath. No amendment proposed.**
+
+| | |
+|---|---|
+| **genuinely unified** | the entry point · the routing decision · the rendered answer · the AI disclosure |
+| **still two** | `/api/search` and `/api/v1/agent/decide` are separate systems with different data paths, latencies and notions of "best". The customer sees one thing; the platform runs two |
+| **coverage-bound** | the engine advises on **17 categories**. Everywhere else "the system determines internally" resolves to *retrieval* — not because the query lacked a need, but because the engine cannot serve it there. «سماعات للألعاب تحت 500» is a described need that gets retrieval |
+| **unbuilt, and named in the Constitution** | *"Ambiguous requests may ask **one** clarification question"* — the surface hints (`addRoomSize`), it never asks · *"comparison requests may generate structured comparisons"* — «قارن بين X و Y» falls to retrieval |
+
+**Why no amendment.** Nothing measured in production shows the principle cannot be achieved.
+Each gap has a clear path — widen the engine's categories, implement clarification, add
+comparison-intent routing. Amending now would ratify an implementation gap as a design limit,
+which is the opposite of what an amendment is for.
+
+### What shipped
+
+The search box routes need-based queries to the deterministic decision engine and renders its
+answer above the results. «وفّر» left the header — **that nav item WAS the choice the
+Constitution forbids**. `/advisor` redirects into search carrying `?q=`; `/assistant` now
+points straight at search instead of hopping through it. `advisor-client.tsx`'s ~320 lines of
+rendering became `src/components/agent/advisor-answer.tsx`, which **both** surfaces render:
+two surfaces cannot be one experience while each owns a copy of the answer.
+
+**Classification (asked for before wiring): STRUCTURED EVIDENCE ONLY.** Every customer-visible
+string is a translation key or a repo template literal with measured values substituted;
+zero Anthropic/OpenAI/Gemini references under `src/lib/agent/` or `src/app/api/v1/agent/`.
+`discount_intel.text` looked like an exception — it comes from a DB column — but it is
+composed by `discountVerdictFromFacts()`, a pure function, and *materialised*, not authored.
+So **F7 does not govern this surface today**, and the boundary is written into the component:
+if any part of the answer ever becomes generated at runtime, it does.
+
+**The hard condition is structural, not remembered.** The disclosure is the answer's first
+child and there is **no prop to suppress it** — a `showDisclosure` boolean is exactly the
+mechanism by which a trust element is lost in a restructure. Verified in production by **DOM
+position**, not by "a disclosure exists somewhere on the page".
+
+### Two judgement calls worth your attention
+
+1. **The need-phrasing row on the search entry page.** Every "popular search" there is a
+   product *name*, and every name routes to retrieval. Without something teaching the other
+   half, the engine would run and never be invoked — indistinguishable from deletion. Three
+   example phrasings are a first attempt, **not a measured answer**. When traffic exists
+   (P2-4), measure *the share of queries carrying a need signal*. If it collapses versus the
+   وفّر era, the fix is better teaching, not a second door.
+2. **The retrieval smart-pick is suppressed when the engine answers.** Both are "our pick" on
+   different grounds; showing both makes the customer arbitrate between two answers to one
+   question. Advisor errors and empty results are **silent** on the unified surface — the
+   results stand on their own, and an "I could not help" panel above good results invents a
+   failure the customer does not have.
+
+### Verified in production
+
+```bash
+node scripts/tps-analysis/unified-search-verify.js --base https://tawveeri.com   # 34/34
+```
+
+`docs/unified-search-2026-07-31-PRODUCTION.log` · journey unchanged before→after
+(AR **10/10** end-to-end 80/80 cards; EN **10/10**, 76/80) · a11y unchanged (axe **0** across
+36 renders, keyboard **31 checks 0 failing**).
+
+### One risk this change introduced, and closed
+
+The decision engine is now on the customer's **hot path**, called alongside every need-based
+search — and it was still in the generic `api` bucket with coupons, products, auth and push.
+On a NAT'd carrier IP that is the same starvation the telemetry incident already documents in
+`middleware.ts`. Worse: an advisor 429 is deliberately silent here, so it would present as
+"the assistant never answers for me". It now has its own bucket at 60/min, paired 1:1 with
+search (`eec1eb5`).
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #24 · P2-7 COMPLETE IN PRODUCTION · P2-8 STARTED ═══
 
 **Tree clean, all pushed, deploy landed and re-measured live. Nothing running.**
 Roadmap: `docs/IMPLEMENTATION_ROADMAP.md`. Decision: **ADR-151**. UX record: `docs/UX_DECISION_RECORD.md`.
@@ -62,6 +140,21 @@ sized from the pairs, not from the node count.
   happens before first paint, so assistive tech is right and a no-JS consumer is not. The
   complete fix needs the root-shell restructure — **the same prerequisite the 404-body item is
   already blocked on. One change unblocks both; do them together.**
+
+## NEXT — what Phase 2 leaves open
+
+| item | state |
+|---|---|
+| **P2-4** customer-outcome measurement | Still blocked on **traffic**. It now has a specific first question: *the share of queries carrying a need signal* (see UXD-004) |
+| **Clarification question** | UNIFIED SEARCH names it; not built. `routeQuery` already returns the parsed task with `unresolved`, so the signal exists |
+| **Comparison-intent routing** | «قارن بين X و Y» falls to retrieval |
+| **Engine category coverage** | 17 advisable categories; widening it is what turns "two engines" into fewer gaps |
+| **Root layout owns the locale** | `/en` still serves `lang="ar"` in its BYTES. Same prerequisite as the 404-body item — **one restructure unblocks both** |
+| **a11y is not a gate** | `npm run a11y` exists and passes; nothing runs it on change |
+
+---
+
+# ═══ SUPERSEDED SECTION — P2-8 ENTRY POINT (kept for the reasoning) ═══
 
 ## P2-8 · UNIFIED SEARCH — STARTED, ROUTER LANDED, SURFACE DELIBERATELY NOT MIGRATED
 
