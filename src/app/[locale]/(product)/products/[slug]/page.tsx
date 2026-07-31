@@ -14,6 +14,11 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   const product = await getProductSeoData(slug);
 
+  // The 404 is raised in the PAGE COMPONENT, not here. Raising it from generateMetadata does
+  // set the status, but Next then resolves the not-found boundary outside this layout and the
+  // customer gets a blank page — measured: 404 with 57 bytes of body. Raised from the page, the
+  // boundary renders properly AND the status is correct, now that this route group carries no
+  // `loading.tsx` (see ../layout.tsx for why that file was the whole problem).
   if (!product) {
     return {
       title: locale === 'ar' ? 'المنتج غير موجود' : 'Product Not Found',
