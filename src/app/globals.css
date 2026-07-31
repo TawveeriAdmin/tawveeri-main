@@ -1,7 +1,7 @@
 /* ============================================
    Tawveeri Global Styles — Brand v1.0
    Tailwind CSS v4 + Brand Design Tokens
-   Primary Green #55B295 · Gold Accent #E2BB4E · Cairo
+   Primary Green #3B816B (AA-corrected, P2-7) · Gold Accent #E2BB4E · Cairo
    ============================================ */
 
 @import "tailwindcss";
@@ -47,9 +47,22 @@
    ============================================ */
 
 :root {
-  /* ---- Brand roles ---- */
-  --brand-green: #55B295;
-  --brand-green-dark: #3D8468;
+  /* ---- Brand roles ----
+     P2-7 (WCAG 2.2 AA, 1.4.3). The two greens below CARRY TEXT — `--brand-green` is the
+     filled-CTA background under white labels (21 call sites), `--brand-green-dark` is body
+     ink on white and on `--brand-bg-green`. Measured at the previous values they failed
+     everywhere they were used: white on #55B295 was 2.56:1 (needs 4.5) across 234 nodes,
+     and #3D8468 on white was 4.46:1 across 246 nodes. Both are now the MINIMAL darkening —
+     same hue, same saturation, lightness lowered only until each pair clears 4.5:1 with a
+     small margin so browser rounding cannot flip the gate.
+     Fixed at the TOKEN, not at the 14 call sites that hardcode `text-white`, so a call site
+     written tomorrow is compliant by construction rather than by memory.
+     Decorative mint survives as `--brand-green-light` / `--brand-bg-green`; the logo is a
+     PNG and does not consume these tokens, so the brand mark is unchanged.
+     `.dark` overrides both further down — on a near-black surface these must get LIGHTER,
+     which is the one thing a single token cannot do. */
+  --brand-green: #3B816B;      /* was #55B295 — white-on: 2.56:1 → 4.63:1 */
+  --brand-green-dark: #35735B; /* was #3D8468 — on white: 4.46:1 → 5.59:1, on bg-green 4.10 → 5.13 */
   --brand-green-light: #A1D2C5;
   --brand-bg-green: #EBF8F4;
   --brand-gold: #E2BB4E;
@@ -171,7 +184,12 @@
   --color-primary: #A1D2C5;
   --color-on-primary: #0E281F;
   --color-primary-container: #306B54;
-  --color-on-primary-container: var(--brand-bg-green);
+  /* P2-7 (1.4.3). This was `var(--brand-bg-green)`, which THIS BLOCK redefines below as
+   * rgba(161,210,197,0.12) — so the "ink on a primary container" role resolved to a 12%
+   * tint and composited to #222C28, measured at 1.27:1 against the page surface. An `on-`
+   * role must be legible ink, never a tint. #D6F0E3 is 5.19:1 on the container it names
+   * and 15.28:1 on the surface. */
+  --color-on-primary-container: #D6F0E3;
 
   --color-secondary: #A1D2C5;
   --color-on-secondary: #0E281F;
@@ -191,6 +209,23 @@
   /* Dark mode: override the brand bg-green so any `bg-[var(--brand-bg-green)]`
    * utility renders as a dim green tint instead of the light #EBF8F4. */
   --brand-bg-green: rgba(161, 210, 197, 0.12);
+
+  /* P2-7 (1.4.3). `--brand-green-dark` is INK, and ink on a near-black surface must get
+   * LIGHTER, not darker — the opposite of what the light theme needs from the same token.
+   * Without this override the light-theme fix would have made dark mode worse: measured
+   * #3D8468 on #111513 = 4.11:1 across 246 nodes, and it was never overridden here. This
+   * value is the brand mint one step light, and it clears 4.5:1 on every dark surface the
+   * audit found it on (#111513 8.1 · #222C28 6.4 · #232D28 6.3) as well as carrying the
+   * dark ink `--color-on-primary` at 6.9:1 when used as a fill.
+   * Several homepage components set these as INLINE styles, so they inherit the token and
+   * nothing else — there is no class-based escape hatch for them. */
+  --brand-green-dark: #66BD93;
+
+  /* Same reason, for the raw numeric ramp: `bg-primary-600` pairs with `text-on-primary`,
+   * which in dark mode is the DARK ink #0E281F. The light-theme value #35735B carries that
+   * ink at only 2.79:1 (it was 3.5:1 before P2-7 — failing either way, so this is a
+   * pre-existing dark defect the token fix exposed rather than caused). 6.9:1 here. */
+  --color-primary-600: #66BD93;
 
   --color-surface: #111513;
   --color-on-surface: #F3F4F3;
@@ -356,8 +391,8 @@
   --color-primary-200: #B0E1C7;
   --color-primary-300: #84CEA8;
   --color-primary-400: #66BD93;
-  --color-primary-500: #55B295;
-  --color-primary-600: #3D8468;
+  --color-primary-500: #3B816B; /* P2-7: tracks --brand-green; carries white text */
+  --color-primary-600: #35735B; /* P2-7: `bg-primary-600 text-on-primary` was 4.46:1 */
   --color-primary-700: #306B54;
   --color-primary-800: #265441;
   --color-primary-900: #1E4235;
@@ -369,8 +404,8 @@
   --color-blue-200: #B0E1C7;
   --color-blue-300: #84CEA8;
   --color-blue-400: #66BD93;
-  --color-blue-500: #55B295;
-  --color-blue-600: #3D8468;
+  --color-blue-500: #3B816B; /* P2-7: legacy alias routes to brand, must track it */
+  --color-blue-600: #35735B;
   --color-blue-700: #306B54;
   --color-blue-800: #265441;
   --color-blue-900: #1E4235;
@@ -382,8 +417,8 @@
   --color-success-200: #B0E1C7;
   --color-success-300: #84CEA8;
   --color-success-400: #66BD93;
-  --color-success-500: #55B295;
-  --color-success-600: #3D8468;
+  --color-success-500: #3B816B;
+  --color-success-600: #35735B;
   --color-success-700: #306B54;
   --color-success-800: #265441;
   --color-success-900: #1E4235;
@@ -394,8 +429,8 @@
   --color-green-200: #B0E1C7;
   --color-green-300: #84CEA8;
   --color-green-400: #66BD93;
-  --color-green-500: #55B295;
-  --color-green-600: #3D8468;
+  --color-green-500: #3B816B;
+  --color-green-600: #35735B;
   --color-green-700: #306B54;
   --color-green-800: #265441;
   --color-green-900: #1E4235;
@@ -409,7 +444,7 @@
   --color-featured-400: #E4C05A;
   --color-featured-500: #E2BB4E;
   --color-featured-600: #B8963C;
-  --color-featured-700: #8A7030;
+  --color-featured-700: #876D2F;
   --color-featured-800: #665422;
   --color-featured-900: #443716;
   --color-featured-950: #221B0A;
@@ -421,7 +456,7 @@
   --color-amber-400: #E4C05A;
   --color-amber-500: #E2BB4E;
   --color-amber-600: #B8963C;
-  --color-amber-700: #8A7030;
+  --color-amber-700: #876D2F;
   --color-amber-800: #665422;
   --color-amber-900: #443716;
   --color-amber-950: #221B0A;
@@ -434,7 +469,7 @@
   --color-accent-400: #E4C05A;
   --color-accent-500: #E2BB4E;
   --color-accent-600: #B8963C;
-  --color-accent-700: #8A7030;
+  --color-accent-700: #876D2F;
   --color-accent-800: #665422;
   --color-accent-900: #443716;
   --color-accent-950: #221B0A;
@@ -927,17 +962,13 @@ textarea:focus {
    UTILITY CLASSES
    ============================================ */
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
+/* P2-7 (2.4.7). This file used to hand-roll `.sr-only` here. Tailwind's utilities live in
+ * `@layer utilities`, and UNLAYERED css outranks every layer — so this copy silently beat
+ * `focus:not-sr-only` and the skip link stayed clipped to 1×1 even while focused. Measured:
+ * the first tab stop on every page was announced but never visible, in both locales. The
+ * hand-rolled copy is deleted rather than patched: Tailwind v4 already ships `sr-only` AND
+ * its `not-sr-only` counterpart, and one definition cannot fight itself.
+ * Keep it deleted. Re-adding an unlayered `.sr-only` re-breaks the skip link invisibly. */
 
 /* Container */
 .container {
