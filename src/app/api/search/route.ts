@@ -740,7 +740,20 @@ async function searchTPSCanonical(
         current_price: v.price, 
         original_price: null,
         availability: 'in_stock' as const,
-        product_url: `/go/${v.obsId}`,
+        // An exit is rendered ONLY when we hold the observation id it needs. This emitted
+        // `/go/undefined` / `/go/null` whenever the latest price row for a retailer carried a
+        // NULL `tps_observation_id` — a button that looks healthy and lands nowhere.
+        //
+        // MEASURED 2026-07-31 across the harness query sets: 18 of 590 EN exits (3.05%) and
+        // 3 of 754 AR exits (0.40%). The EN concentration is 13 malformed exits on the single
+        // query "air conditioner", all from Extra — which is most of the reported AR/EN
+        // journey gap, and is a locale-INDEPENDENT defect that the EN query set happens to hit.
+        //
+        // We do NOT substitute an older row that does have an id: that would show a price we
+        // are not currently observing. Keep the true latest price, omit the exit. This mirrors
+        // src/lib/compare/get-comparison.ts:183, which already got this right, and the compare
+        // page's honest «رابط المتجر غير متاح لهذا العرض».
+        product_url: v.obsId ? `/go/${v.obsId}` : '',
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
         // Per-canonical now that more than one category can be searched at once. The UI
