@@ -1,0 +1,183 @@
+home            ar  desktop light HTTP 200  violations  1 (nodes  11)  critical/serious rules 1
+home            ar  desktop dark  HTTP 200  violations  1 (nodes  11)  critical/serious rules 1
+home            ar  mobile  light HTTP 200  violations  1 (nodes  11)  critical/serious rules 1
+home            ar  mobile  dark  HTTP 200  violations  1 (nodes  11)  critical/serious rules 1
+home            en  desktop light HTTP 200  violations  1 (nodes  14)  critical/serious rules 1
+home            en  desktop dark  HTTP 200  violations  1 (nodes  12)  critical/serious rules 1
+home            en  mobile  light HTTP 200  violations  1 (nodes  14)  critical/serious rules 1
+home            en  mobile  dark  HTTP 200  violations  1 (nodes  12)  critical/serious rules 1
+search          ar  desktop light HTTP 200  violations  1 (nodes  37)  critical/serious rules 1
+search          ar  desktop dark  HTTP 200  violations  1 (nodes  37)  critical/serious rules 1
+search          ar  mobile  light HTTP 200  violations  2 (nodes  39)  critical/serious rules 2
+search          ar  mobile  dark  HTTP 200  violations  2 (nodes  39)  critical/serious rules 2
+search          en  desktop light HTTP 200  violations  1 (nodes  82)  critical/serious rules 1
+search          en  desktop dark  HTTP 200  violations  1 (nodes  79)  critical/serious rules 1
+search          en  mobile  light HTTP 200  violations  2 (nodes  83)  critical/serious rules 2
+search          en  mobile  dark  HTTP 200  violations  2 (nodes  80)  critical/serious rules 2
+compare-detail  ar  desktop light HTTP 200  violations  1 (nodes   5)  critical/serious rules 1
+compare-detail  ar  desktop dark  HTTP 200  violations  1 (nodes   4)  critical/serious rules 1
+compare-detail  ar  mobile  light HTTP 200  violations  1 (nodes   5)  critical/serious rules 1
+compare-detail  ar  mobile  dark  HTTP 200  violations  1 (nodes   4)  critical/serious rules 1
+advisor         ar  desktop light HTTP 200  violations  1 (nodes   1)  critical/serious rules 1
+advisor         ar  desktop dark  HTTP 200  violations  1 (nodes   1)  critical/serious rules 1
+advisor         ar  mobile  light HTTP 200  violations  1 (nodes   1)  critical/serious rules 1
+advisor         ar  mobile  dark  HTTP 200  violations  1 (nodes   1)  critical/serious rules 1
+advisor         en  desktop light HTTP 200  violations  1 (nodes   4)  critical/serious rules 1
+advisor         en  desktop dark  HTTP 200  violations  1 (nodes   2)  critical/serious rules 1
+advisor         en  mobile  light HTTP 200  violations  1 (nodes   4)  critical/serious rules 1
+advisor         en  mobile  dark  HTTP 200  violations  1 (nodes   2)  critical/serious rules 1
+deals           ar  desktop light HTTP 200  violations  1 (nodes  24)  critical/serious rules 1
+deals           ar  desktop dark  HTTP 200  violations  1 (nodes  24)  critical/serious rules 1
+deals           ar  mobile  light HTTP 200  violations  1 (nodes  24)  critical/serious rules 1
+deals           ar  mobile  dark  HTTP 200  violations  1 (nodes  24)  critical/serious rules 1
+deals           en  desktop light HTTP 200  violations  1 (nodes  27)  critical/serious rules 1
+deals           en  desktop dark  HTTP 200  violations  1 (nodes  25)  critical/serious rules 1
+deals           en  mobile  light HTTP 200  violations  1 (nodes  27)  critical/serious rules 1
+deals           en  mobile  dark  HTTP 200  violations  1 (nodes  25)  critical/serious rules 1
+
+══ VIOLATIONS BY RULE ══
+
+[CRITICAL] button-name — Buttons must have discernible text
+   wcag2a wcag412 · 4 nodes · 4 page/viewport combos
+   surfaces: search/ar/mobile/light, search/ar/mobile/dark, search/en/mobile/light, search/en/mobile/dark
+   · .jsx-11b649fdd289a3dc.gap-2.items-center > .border-\[var\(--brand-green\)\]\/60.whitespace-nowrap.disabled\:opacity-38
+       Element does not have inner text that is visible to screen readers |   aria-label attribute does not exist or is empty
+     <button class="state-layer inline-f...">
+   · .jsx-11b649fdd289a3dc.gap-2.items-center > .border-\[var\(--brand-green\)\]\/60.whitespace-nowrap.disabled\:opacity-38
+       Element does not have inner text that is visible to screen readers |   aria-label attribute does not exist or is empty
+     <button class="state-layer inline-f...">
+   · .jsx-11b649fdd289a3dc.gap-2.items-center > .border-\[var\(--brand-green\)\]\/60.whitespace-nowrap.disabled\:opacity-38
+       Element does not have inner text that is visible to screen readers |   aria-label attribute does not exist or is empty
+     <button class="state-layer inline-f...">
+   · .jsx-11b649fdd289a3dc.gap-2.items-center > .border-\[var\(--brand-green\)\]\/60.whitespace-nowrap.disabled\:opacity-38
+       Element does not have inner text that is visible to screen readers |   aria-label attribute does not exist or is empty
+     <button class="state-layer inline-f...">
+
+[SERIOUS] color-contrast — Elements must meet minimum color contrast ratio thresholds
+   wcag2aa wcag143 · 802 nodes · 36 page/viewport combos
+   surfaces: home/ar/desktop/light, home/ar/desktop/dark, home/ar/mobile/light, home/ar/mobile/dark, home/en/desktop/light, home/en/desktop/dark, home/en/mobile/light, home/en/mobile/dark, search/ar/desktop/light, search/ar/desktop/dark, search/ar/mobile/light, search/ar/mobile/dark, search/en/desktop/light, search/en/desktop/dark, search/en/mobile/light, search/en/mobile/dark, compare-detail/ar/desktop/light, compare-detail/ar/desktop/dark, compare-detail/ar/mobile/light, compare-detail/ar/mobile/dark, advisor/ar/desktop/light, advisor/ar/desktop/dark, advisor/ar/mobile/light, advisor/ar/mobile/dark, advisor/en/desktop/light, advisor/en/desktop/dark, advisor/en/mobile/light, advisor/en/mobile/dark, deals/ar/desktop/light, deals/ar/desktop/dark, deals/ar/mobile/light, deals/ar/mobile/dark, deals/en/desktop/light, deals/en/desktop/dark, deals/en/mobile/light, deals/en/mobile/dark
+   · section:nth-child(1) > div > button
+       Element has insufficient color contrast of 2.56 (foreground color: #ffffff, background color: #55b295, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1
+     <button style="background:var(--brand-green);color:#fff;border:none;border-radius:12px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;flex-shrink:0;min-height:44px">بحث</button>
+   · div:nth-child(1) > a[href$="categories"]
+       Element has insufficient color contrast of 4.46 (foreground color: #3d8468, background color: #ffffff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1
+     <a style="font-size:12px;font-weight:700;color:var(--brand-green-dark, #3a7a66);text-decoration:none" href="/ar/categories">شوف الكل<!-- --> <!-- -->←</a>
+   · a[href$="price-truth"]
+       Element has insufficient color contrast of 4.46 (foreground color: #3d8468, background color: #ffffff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1
+     <a style="font-size:12px;font-weight:700;color:var(--brand-green-dark, #3a7a66);text-decoration:none" href="/ar/price-truth">شوف الكل<!-- --> <!-- -->←</a>
+   · a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(2) > span:nth-child(1)
+       Element has insufficient color contrast of 4.46 (foreground color: #3d8468, background color: #ffffff, font size: 13.5pt (18px), font weight: bold). Expected contrast ratio of 4.5:1
+     <span style="font-size:18px;font-weight:900;color:var(--brand-green-dark, #3a7a66)">١٢٬٤٩٩</span>
+
+══ CONTRAST FAILURES BY COLOUR PAIR ══
+
+#3d8468 on #ffffff — 4.46:1 (needs 4.5:1:1) · 9.0pt (12px) bold · 246 nodes · routes: home:light, search:light, compare-detail:light, deals:light
+   <a style="font-size:12px;font-weight:700;color:var(--brand-green-dark, #3a7a66);text-decoration:none" href="/ar/categories">شوف الكل<!-- --> <!-- -->←</a>
+   <a style="font-size:12px;font-weight:700;color:var(--brand-green-dark, #3a7a66);text-decoration:none" href="/ar/price-truth">شوف الكل<!-- --> <!-- -->←</a>
+   <span style="font-size:18px;font-weight:900;color:var(--brand-green-dark, #3a7a66)">١٢٬٤٩٩</span>
+
+#3d8468 on #111513 — 4.11:1 (needs 4.5:1:1) · 9.0pt (12px) bold · 246 nodes · routes: home:dark, search:dark, compare-detail:dark, deals:dark
+   <a style="font-size:12px;font-weight:700;color:var(--brand-green-dark, #3a7a66);text-decoration:none" href="/ar/categories">شوف الكل<!-- --> <!-- -->←</a>
+   <a style="font-size:12px;font-weight:700;color:var(--brand-green-dark, #3a7a66);text-decoration:none" href="/ar/price-truth">شوف الكل<!-- --> <!-- -->←</a>
+   <span style="font-size:18px;font-weight:900;color:var(--brand-green-dark, #3a7a66)">١٢٬٤٩٩</span>
+
+#ffffff on #55b295 — 2.56:1 (needs 4.5:1:1) · 10.5pt (14px) bold · 234 nodes · routes: home:light, home:dark, search:light, search:dark, compare-detail:light, compare-detail:dark, advisor:light, deals:light
+   <button style="background:var(--brand-green);color:#fff;border:none;border-radius:12px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;flex-shri
+   <a class="inline-flex h-9 items-center rounded-full bg-[color:var(--color-primary)] px-3.5 text-sm font-semibold text-[color:var(--color-on-primary)] transition
+   <button type="button" class="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-3.5 text-sm font-semibold text-on-primary 
+
+#3d8468 on #ebf8f4 — 4.1:1 (needs 4.5:1:1) · 8.3pt (11px) bold · 20 nodes · routes: home:light, compare-detail:light
+   <span style="font-size:11px;font-weight:800;background:var(--brand-bg-green, #eaf6f1);color:var(--brand-green-dark, #3a7a66);border-radius:8px;padding:3px 8px">
+   <div class="inline-flex items-center gap-1 rounded-full px-3 py-1 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold)] focus:ring-of
+   <span class="tabular-nums">١٬٩٠٠</span>
+
+#3d8468 on #222c28 — 3.22:1 (needs 4.5:1:1) · 8.3pt (11px) bold · 16 nodes · routes: home:dark
+   <span style="font-size:11px;font-weight:800;background:var(--brand-bg-green, #eaf6f1);color:var(--brand-green-dark, #3a7a66);border-radius:8px;padding:3px 8px">
+
+#5f5f5f on #1a1a1a — 2.72:1 (needs 4.5:1:1) · 9.0pt (12px) normal · 16 nodes · routes: home:light, home:dark, search:light, search:dark, advisor:light, advisor:dark, deals:light, deals:dark
+   <span>Made in Saudi Arabia</span>
+
+#ffffff on #3d8468 — 4.46:1 (needs 4.5:1:1) · 9.0pt (12px) normal · 8 nodes · routes: search:light, advisor:light
+   <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-2.5 py-1 text-xs font-semibold text-on-primary">
+   <a class="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-4 text-xs font-bold text-on-primary transition-colors hover:bg-prim
+   <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-on-primary">
+
+#0e281f on #3d8468 — 3.5:1 (needs 4.5:1:1) · 9.0pt (12px) normal · 8 nodes · routes: search:dark, advisor:dark
+   <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-2.5 py-1 text-xs font-semibold text-on-primary">
+   <a class="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-4 text-xs font-bold text-on-primary transition-colors hover:bg-prim
+   <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-on-primary">
+
+#3d8468 on #232d28 — 3.18:1 (needs 4.5:1:1) · 9.0pt (12px) normal · 4 nodes · routes: compare-detail:dark
+   <div class="inline-flex items-center gap-1 rounded-full px-3 py-1 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-gold)] focus:ring-of
+   <span class="tabular-nums">١٬٩٠٠</span>
+
+#55b295 on #ebf8f4 — 2.35:1 (needs 4.5:1:1) · 8.3pt (11px) bold · 2 nodes · routes: search:light
+   <p class="jsx-11b649fdd289a3dc text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--color-primary)]">Price search</p>
+
+#8a7030 on #fcf7eb — 4.42:1 (needs 4.5:1:1) · 13.5pt (18px) bold · 2 nodes · routes: compare-detail:light
+   <span class="tabular-nums">٨٢٩</span>
+
+══ NEEDS REVIEW (axe could not decide) ══
+
+color-contrast — Elements must meet minimum color contrast ratio thresholds · 411 nodes · 11 combos
+   .gap-1\.5.px-3[href$="deals"] > span
+     <span>العروض</span>
+   a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(1)
+     <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
+   .gap-1\.5.px-3[href$="deals"] > span
+     <span>العروض</span>
+   a[target="_blank"][rel="noopener noreferrer"]:nth-child(1) > div:nth-child(1)
+     <div style="font-size:13px;font-weight:800;color:var(--color-on-surface);line-height:1.45;margin-bottom:8px">
+
+══ WCAG 2.2 RULE COVERAGE ══
+   target-size: evaluated
+   2.4.3 focus order · 2.4.11 focus not obscured · 1.4.10 reflow · 3.1.1 lang:
+     not static properties — measured by scripts/tps-analysis/a11y-keyboard.js
+
+══ SUMMARY ══
+36 page renders · 2 distinct rules failing · 2 critical/serious · 806 total failing nodes
+GATE: FAIL
+PASS  skip-link is first tab stop        ar  a "تخطي إلى المحتوى الرئيسي"
+FAIL  skip-link visible when focused     ar  1×1px
+PASS  visible focus ring on every stop   ar  46 stops examined · 0 without outline or shadow
+PASS  focus order matches visual order   ar  20 same-row pairs · 0 cross-component inversions · 0 intra-card (action button before its own card body)
+PASS  filter sheet opens                 ar  role=dialog present
+PASS  filter sheet traps focus           ar  40 tabs inside the open sheet · 0 escaped to the page behind
+PASS  filter sheet closes on Escape      ar  dismissed
+FAIL  focus returns to trigger on close  ar  focus is on <body> · trigger still in DOM
+FAIL  touch targets ≥24px (2.5.8 AA)     ar  38 controls · 2 under 24px · 25 under the 44px house rule → a "شوف الكل ←" 66×19; a "شوف الكل ←" 66×19
+PASS  no horizontal scroll at 200% zoom  ar  640px content in 640px viewport
+PASS  reduced-motion honoured            ar  no infinite or >5s animation under reduce
+FAIL  composited contrast (light)        ar  55 text nodes composited through their translucent ancestors · 14 below threshold · 0 over a gradient, not decidable from styles → "تخطي إلى المحتوى الرئيسي" 2.56<4.5; "ابدأ الآن" 2.56<4.5; "الفئات" 2.56<4.5; "بحث" 2.56<4.5; "شوف الكل ←" 4.47<4.5
+FAIL  composited contrast (dark)         ar  55 text nodes composited through their translucent ancestors · 11 below threshold · 0 over a gradient, not decidable from styles → "بحث" 2.56<4.5; "شوف الكل ←" 4.12<4.5; "شوف الكل ←" 4.12<4.5; "١٢٬٤٩٩" 4.12<4.5; "وفّر ٤٬٥٠٠ ريال" 3.23<4.5
+PASS  html lang matches locale           ar  <html lang="ar" dir="(none)"> · inner [lang="ar" dir="rtl"]
+PASS  skip-link is first tab stop        en  a "Skip to main content"
+FAIL  skip-link visible when focused     en  1×1px
+PASS  visible focus ring on every stop   en  46 stops examined · 0 without outline or shadow
+FAIL  focus order matches visual order   en  20 same-row pairs · 3 cross-component inversions · 0 intra-card (action button before its own card body) → <button>"Save to Wishlist"@750 → <button>"🏆 Best Price2Hp elitebook i5-8 8GB 256G"@573 | <button>"Save to Wishlist"@979 → <button>"🏆 Best Price2Dell ryzen5-7 8GB 512GB 15"@802 | <button>"Save to Wishlist"@1208 → <button>"🏆 Best Price2Acer aspire core3 8GB 256G"@1031
+PASS  filter sheet opens                 en  role=dialog present
+PASS  filter sheet traps focus           en  40 tabs inside the open sheet · 0 escaped to the page behind
+PASS  filter sheet closes on Escape      en  dismissed
+FAIL  focus returns to trigger on close  en  focus is on <body> · trigger still in DOM
+FAIL  touch targets ≥24px (2.5.8 AA)     en  38 controls · 2 under 24px · 25 under the 44px house rule → a "See all →" 50×19; a "See all →" 50×19
+PASS  no horizontal scroll at 200% zoom  en  640px content in 640px viewport
+PASS  reduced-motion honoured            en  no infinite or >5s animation under reduce
+FAIL  composited contrast (light)        en  55 text nodes composited through their translucent ancestors · 14 below threshold · 0 over a gradient, not decidable from styles → "Skip to main content" 2.56<4.5; "Get Started" 2.56<4.5; "Categories" 2.56<4.5; "Search" 2.56<4.5; "See all →" 4.47<4.5
+FAIL  composited contrast (dark)         en  55 text nodes composited through their translucent ancestors · 11 below threshold · 0 over a gradient, not decidable from styles → "Search" 2.56<4.5; "See all →" 4.12<4.5; "See all →" 4.12<4.5; "12,499" 4.12<4.5; "Save 4,500 SAR" 3.23<4.5
+FAIL  html lang matches locale           en  <html lang="ar" dir="(none)"> · inner [lang="en" dir="ltr"]
+
+══ SUMMARY ══
+28 checks · 12 failing · 0 accepted deviations
+   FAIL skip-link visible when focused [ar] — 1×1px
+   FAIL focus returns to trigger on close [ar] — focus is on <body> · trigger still in DOM
+   FAIL touch targets ≥24px (2.5.8 AA) [ar] — 38 controls · 2 under 24px · 25 under the 44px house rule → a "شوف الكل ←" 66×19; a "شوف الكل ←" 66×19
+   FAIL composited contrast (light) [ar] — 55 text nodes composited through their translucent ancestors · 14 below threshold · 0 over a gradient, not decidable from styles → "تخطي إلى المحتوى الرئيسي" 2.56<4.5; "ابدأ الآن" 2.56<4.5; "الفئات" 2.56<4.5; "بحث" 2.56<4.5; "شوف الكل ←" 4.47<4.5
+   FAIL composited contrast (dark) [ar] — 55 text nodes composited through their translucent ancestors · 11 below threshold · 0 over a gradient, not decidable from styles → "بحث" 2.56<4.5; "شوف الكل ←" 4.12<4.5; "شوف الكل ←" 4.12<4.5; "١٢٬٤٩٩" 4.12<4.5; "وفّر ٤٬٥٠٠ ريال" 3.23<4.5
+   FAIL skip-link visible when focused [en] — 1×1px
+   FAIL focus order matches visual order [en] — 20 same-row pairs · 3 cross-component inversions · 0 intra-card (action button before its own card body) → <button>"Save to Wishlist"@750 → <button>"🏆 Best Price2Hp elitebook i5-8 8GB 256G"@573 | <button>"Save to Wishlist"@979 → <button>"🏆 Best Price2Dell ryzen5-7 8GB 512GB 15"@802 | <button>"Save to Wishlist"@1208 → <button>"🏆 Best Price2Acer aspire core3 8GB 256G"@1031
+   FAIL focus returns to trigger on close [en] — focus is on <body> · trigger still in DOM
+   FAIL touch targets ≥24px (2.5.8 AA) [en] — 38 controls · 2 under 24px · 25 under the 44px house rule → a "See all →" 50×19; a "See all →" 50×19
+   FAIL composited contrast (light) [en] — 55 text nodes composited through their translucent ancestors · 14 below threshold · 0 over a gradient, not decidable from styles → "Skip to main content" 2.56<4.5; "Get Started" 2.56<4.5; "Categories" 2.56<4.5; "Search" 2.56<4.5; "See all →" 4.47<4.5
+   FAIL composited contrast (dark) [en] — 55 text nodes composited through their translucent ancestors · 11 below threshold · 0 over a gradient, not decidable from styles → "Search" 2.56<4.5; "See all →" 4.12<4.5; "See all →" 4.12<4.5; "12,499" 4.12<4.5; "Save 4,500 SAR" 3.23<4.5
+   FAIL html lang matches locale [en] — <html lang="ar" dir="(none)"> · inner [lang="en" dir="ltr"]
+GATE: FAIL
