@@ -255,3 +255,66 @@ Not "unproven". **Disproved**, on the write path as it exists today.
 
 No canary. No backfill. No source fix. Nothing was written to production in this step; the only
 production changes remain Step 2's index and function guard from `794d1e8`, both still safe.
+
+---
+
+# FRESHNESS RE-MEASURED WITH HONEST TIMESTAMPS — 2026-07-31
+
+Method: walk the provenance chain `price_history.tps_observation_id` →
+`normalized_product_observations.normalized_payload._raw_id` → `raw_observations.scraped_at`.
+99.9% of rows carrying an observation id resolve (6,649 of 6,655). Query kept as
+`scripts/tps-analysis/offer-freshness-true.sql`.
+
+**Measured overstatement on linkable rows: average 177 hours (7.4 days), max 48.1 days;
+3,179 (47.8%) overstated by >24h, 2,131 (32.0%) by >7 days.**
+
+## Per retailer — median offer age, published vs true
+
+| retailer | offers | median age PUBLISHED | median age **TRUE** | stale >7d published | stale >7d **true** |
+|---|---|---|---|---|---|
+| extra | 2,493 | 7.5 d | **11.1 d** | 1,486 | **1,767** |
+| almanea | 2,444 | 6.6 d | **30.1 d** | 1,198 | **1,330** |
+| noon | 1,264 | 1.1 d | 1.1 d | 118 | 200 |
+| amazon | 663 | 6.8 d | **8.1 d** | 307 | 352 |
+| jarir | 328 | 7.1 d | **24.5 d** | 207 | **312** |
+| najm | 223 | 5.9 d | 5.9 d | 0 | 0 |
+| shaker | 210 | 6.5 d | 6.5 d | 0 | 0 |
+| alnakheelk | 182 | 5.0 d | 5.0 d | 0 | 0 |
+| swsg | 59 | 7.5 d | 8.5 d | 47 | 59 |
+| samsung_ksa | 26 | 1.2 d | 1.2 d | 0 | 0 |
+
+| | published | **true** |
+|---|---|---|
+| offers older than 7 days | 3,363 of 7,892 = **42.6%** | 4,020 of 7,892 = **50.9%** |
+
+**Understated by 8.3 percentage points overall — and far more per retailer:
+Almanea 6.6 → 30.1 days (4.6×), Jarir 7.1 → 24.5 days (3.4×).**
+
+HANDOVER #15/#16 recorded **34%** older than 7 days as a launch-condition input. The honest
+figure is **50.9%**. Noon (1.1 d), Najm, Shaker, Alnakheelk and Samsung KSA are unchanged —
+they were already accurate.
+
+## THIS IS A LOWER BOUND
+
+Rows with no provenance link keep their stamped value in the "true" column, so unlinkable rows
+can only make the real figure worse, never better. **50.9% is a floor, not an estimate.**
+
+## CUSTOMER-FACING CONSEQUENCE — not yet resolved
+
+The compare page renders «رصدناه قبل X يومًا» from `price_history.observed_at`. For existing
+rows that number is **too small** — it has been telling customers offers are fresher than they
+are, by a median of 7.4 days on the affected path, and by ~23 days for Almanea.
+
+`461955a` fixes this for rows written from now on. It does **not** correct existing rows, and
+`price_history` is append-only by constitutional rule.
+
+**Two options, neither taken — this needs a decision:**
+- **Display-time correction:** where a provenance link exists, render the true `scraped_at`
+  instead of the stored `observed_at`. No history rewritten; the customer sees the truth
+  immediately. Touches `get-comparison.ts` and the projection's `last_observed_at`.
+- **Accept and wait:** existing rows age out as offers are re-observed. Simpler, but every
+  affected offer keeps showing a false age until it is re-normalized — and Almanea's median
+  says that can take a month.
+
+The first is honest sooner. Both are founder decisions, because they change a number the
+customer reads.
