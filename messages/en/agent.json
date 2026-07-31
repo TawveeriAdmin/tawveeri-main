@@ -1,6 +1,7 @@
 {
   "title": "Waffar",
   "subtitle": "Your smart saving assistant — tell me what you need, and I'll find the best fit at the best price, with the evidence to back it.",
+  "aiDisclosure": "Waffar is an AI shopping assistant — it suggests based on prices we observed.",
   "neutralityNote": "Ranking is fully neutral — commercial interest never enters the ranking.",
   "placeholder": "e.g. a quiet, energy-saving AC for a 30 m² room under 4000 SAR",
   "submit": "Advise me",

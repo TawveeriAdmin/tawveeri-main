@@ -95,6 +95,24 @@ export function AdvisorClient({ locale, initialQuery }: { locale: string; initia
         </span>
         <h1 className="mt-3 text-2xl font-bold text-on-surface sm:text-3xl">{t('agent.title')}</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm text-on-surface-variant sm:text-base">{t('agent.subtitle')}</p>
+
+        {/* AI DISCLOSURE — LAUNCH_VOCABULARY §8, approved wording, do not paraphrase.
+            Placed at the interaction point, above the input, so it is read BEFORE the first
+            answer rather than after it. A footer or a dismissed onboarding screen does not
+            satisfy this, and neither does the name: "وفّر" and "مساعدك الذكي" tell a customer
+            nothing about what they are talking to.
+            The second clause — «بناءً على أسعار رصدناها» — is load-bearing and must survive any
+            edit: it states what the answers rest on, which is the whole difference between this
+            and a chatbot with opinions.
+            Adopted as a transparency standard and forward-looking compliance hygiene. It is NOT
+            a claim that EU law governs Tawveeri in Saudi Arabia, and no compliance claim may be
+            published anywhere. */}
+        <p
+          className="mx-auto mt-2 max-w-xl text-xs text-on-surface-variant/90 sm:text-sm"
+          data-testid="waffar-ai-disclosure"
+        >
+          {t('agent.aiDisclosure')}
+        </p>
       </header>
 
       {/* Ask form */}
