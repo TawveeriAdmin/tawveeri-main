@@ -1,4 +1,95 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #17 · REDESIGN STARTED · JOURNEY BASELINE EXISTS ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #18 · AR/EN GAP CLOSED · EXITS 100% ═══
+
+**Head `57fd188`, tree clean, pushed. Nothing running.** Two commits: `b39fbc2` (exit fix),
+`57fd188` (harness + baseline).
+
+## THE AR/EN GAP — DIAGNOSED, TREATED, CLOSED
+
+| | before | after |
+|---|---|---|
+| AR end-to-end | 80% | **90%** |
+| EN end-to-end | **50%** | **100%** |
+| exits AR / EN | 80% / 60% | **100% / 100%** |
+| malformed exits | 21 of 1345 | **0 of 1323** |
+
+**The gap was never localisation, and it was not the slug issue.** Measured over the full
+card population before treating anything:
+
+| | AR (471 cards) | EN (446 cards) |
+|---|---|---|
+| identity-slug dead | 113 (24.0%) | 125 (28.0%) ← only 4 pts apart |
+| **malformed exits** | 3/754 (**0.40%**) | 18/590 (**3.05%**) ← 7.6× |
+
+EN's 18 malformed exits were **13 on the single query "air conditioner"**, all from Extra;
+the Arabic equivalent «مكيف سبليت» produced **zero**. So this was a **locale-INDEPENDENT**
+defect that the EN query set happened to hit a bad cluster of. With ten queries per locale one
+unlucky query moves the rate 10 points. The gap was real in the measurement; its cause was not
+English. Keep that in mind before reading any future AR/EN delta as a localisation signal.
+
+**Fix (`b39fbc2`):** `/api/search` emitted `` `/go/${obsId}` `` unconditionally, so a retailer
+whose latest price row had a NULL `tps_observation_id` got a button that looked healthy and
+landed nowhere. It now emits no exit for that offer. We deliberately do NOT substitute an older
+row that has an id — that would display a price we are not currently observing.
+
+**ATTRIBUTION, because two different things moved.** The exit fix is real product work worth
+EN 50→80 and AR 80→90. The final EN 80→100 is a **corrected instrument**, not a shipped change:
+leg D checked only visible text, but `/products/<slug>` renders its body client-side while its
+JSON-LD carries real offers. Reporting 50→100 as product work would be false.
+
+AR's remaining 1 dead end is an **external retailer URL returning ≥400** — outside our code,
+varies run to run.
+
+## THE ONE THING TO DO NEXT — identity slugs, and #17's recommendation DID NOT SURVIVE
+
+**24.0% AR / 28.0% EN of all cards are identity-slug dead ends.** Largest open item.
+
+**#17 recommended a canonical-identity fallback redirecting to the compare page. I validated it
+against production and it does NOT hold up — do not implement it as written.** Evidence:
+
+- The canonical row exists (`apple|iPhone|15|Standard|128`, active) ✓
+- The compare route matches `tps_identity_key` **exactly**, so the dash form fails while the
+  pipe form renders fully (3 stores, ١٬٩٠٠) — a redirect could bridge that ✓
+- **But** identity-slug cards are canonicals *without* a comparison, and for a single-offer
+  canonical the compare page renders an **empty shell** (len 1059, no product content).
+  Redirecting there trades one dead end for another. ✗
+
+```bash
+# reproduce the empty single-offer compare page
+curl -s "https://tawveeri.com/ar/compare/zamil%7Csplit%7CNO_SERIES%7C22000%7CInverter%7Ccool_only" | wc -c
+```
+
+**Better candidate, not started:** make single-offer canonical cards link **out to the
+retailer** instead of to an internal page. They have exactly one offer, so there is nothing to
+compare and the useful action is the exit — which the card already holds. The card's own logic
+(`product-card.tsx:113`) already prefers an external URL, but its `rawExternalUrl` reads
+`product.product_stores[0]`, while `/api/search` returns `stores`. **Confirm that field
+mismatch first** — if that is the whole story, the fix is a mapping, not a new page.
+
+## ALSO MEASURED THIS SESSION, NOT ACTED ON
+
+- **`realSlug=0`.** No card in either locale emits a real storefront slug: all non-compare cards
+  are UUID (145 AR / 180 EN) or identity-dead. The slug fix in `3dfc18a` therefore rarely fires
+  — **the UUID fallback on the product page is what is actually repairing those cards**, because
+  Algolia is the primary path and its index stores only `objectID`. Do not remove that fallback.
+- **Product detail body is client-rendered**: visible served text ~467 chars, shell only.
+  JSON-LD does carry real offers, so search engines are covered; a plain-text fetcher (LLM,
+  link preview) sees nothing. Recorded by the harness as `bodyServerRendered`.
+- Still open from #17: HTTP 200 on a genuinely missing product · no `og:image` · §2.1 retailer
+  tiers · §3 defects · §4–§9 surfaces.
+
+## COMMITS THIS SESSION
+
+| commit | what | rollback |
+|---|---|---|
+| `b39fbc2` | never render an exit we cannot honour (`/go/null`) | `git revert b39fbc2` |
+| `57fd188` | harness accepts JSON-LD price; after-exit-fix baseline | `git revert 57fd188` |
+
+Baseline logs: `docs/journey-baseline-2026-07-31-after-exit-fix.log` (current) ·
+`…after-slug-fix.log` · `…2026-07-30.log` (original).
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #17 · REDESIGN STARTED · JOURNEY BASELINE EXISTS ═══
 
 **Head `346f84d`, tree clean, everything pushed. Nothing is running in the background.**
 Six work commits this session plus this handover, each independently revertible. `REDESIGN_BRIEF.md` now exists at
