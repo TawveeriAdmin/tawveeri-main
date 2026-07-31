@@ -1,248 +1,66 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
-import { Sparkles, ShieldCheck, Zap, Check, Store, ArrowLeft, ArrowRight, Loader2, CircleAlert, TrendingDown, Clock, Info, HelpCircle, AlertTriangle } from 'lucide-react';
+import {
+  Sparkles, ShieldCheck, Check, Store, ArrowLeft, ArrowRight, CircleAlert,
+  TrendingDown, Clock, Info, HelpCircle, AlertTriangle,
+} from 'lucide-react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
-  askAdvisor, comparisonBadge, costLines, exitHref, hasTotalBeyondUnit,
-  parsedSummary, recTitle, verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel,
-  evidenceGroups,
+  comparisonBadge, costLines, exitHref, hasTotalBeyondUnit, parsedSummary, recTitle,
+  verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel, evidenceGroups,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
-import { track, initTestModeFromUrl } from '@/lib/analytics/track';
+import { track } from '@/lib/analytics/track';
 
-const EXAMPLES: Record<Locale, string[]> = {
-  ar: [
-    'مكيف لغرفة 30 متر هادئ وموفر للكهرباء تحت 4000',
-    'لابتوب للألعاب خفيف 16 جيجا رام تحت 5000',
-    'غسالة صحون كبيرة للعائلة',
-    'تلفزيون للألعاب والأفلام تحت 3000',
-    'مكنسة روبوت لاسلكية',
-    'قلاية هوائية 8 لتر',
-  ],
-  en: [
-    'a quiet energy-saving AC for a 30 m² room under 4000',
-    'a lightweight gaming laptop with 16GB RAM under 5000',
-    'a large family dishwasher',
-    'a TV for gaming and movies under 3000',
-    'a cordless robot vacuum',
-    'an 8L air fryer',
-  ],
-};
-
-export function AdvisorClient({ locale, initialQuery }: { locale: string; initialQuery?: string }) {
-  const t = useTranslations();
-  const loc: Locale = locale === 'ar' ? 'ar' : 'en';
-  const isRTL = loc === 'ar';
-  const Arrow = isRTL ? ArrowLeft : ArrowRight;
-
-  const [query, setQuery] = useState(initialQuery ?? '');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<AdvisorResponse | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  const run = useCallback(async (text: string) => {
-    const q = text.trim();
-    if (!q) return;
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setLoading(true);
-    setResult(null);
-    track('advisor_query', { query_text: q, source: 'agent' });
-    try {
-      const res = await askAdvisor({ text: q }, { signal: ctrl.signal, limit: 6 });
-      if (!ctrl.signal.aborted) {
-        setResult(res);
-        const category = res.parsed?.category ?? (res.task?.category as string | undefined) ?? null;
-        if (res.error || res.count === 0) track('no_answer', { query_text: q, category, meta: { error: res.error ?? null, supported: res.supported } });
-        else {
-          track('advisor_result', { category, query_text: q, source: 'agent', meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick } });
-          // Comparison funnel step (advisor surface): the result set surfaced a real multi-store comparison.
-          const comparableRecs = (res.recommendations ?? []).filter((r) => (r?.stores?.length ?? 0) >= 2).length;
-          if (comparableRecs > 0) track('comparison_view', { category, query_text: q, source: 'agent', meta: { comparable_recs: comparableRecs } });
-        }
-      }
-    } catch (e) {
-      if (!ctrl.signal.aborted) { setResult({ version: 'v1', task: {}, supported: false, count: 0, recommendations: [], error: (e as Error)?.message ?? 'error' }); track('error', { query_text: q, meta: { message: (e as Error)?.message } }); }
-    } finally {
-      if (!ctrl.signal.aborted) setLoading(false);
-    }
-  }, []);
-
-  // Persist test-mode opt-in (?test=1) and auto-run a deep-linked query (?q=…) once on mount.
-  useEffect(() => {
-    initTestModeFromUrl();
-    if (initialQuery && initialQuery.trim()) run(initialQuery);
-    return () => abortRef.current?.abort();
-  }, [initialQuery, run]);
-
-  const onSubmit = (e: React.FormEvent) => { e.preventDefault(); run(query); };
-
-  const smart = result?.smart_pick ?? null;
-  const rest = (result?.recommendations ?? []).filter((r) => !r.is_smart_pick);
-  const chips = parsedSummary(result?.parsed, loc);
-
-  return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-12">
-      {/* Hero */}
-      <header className="text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-on-primary">
-          <Zap className="h-3.5 w-3.5" aria-hidden />
-          {t('agent.deterministicBadge')}
-        </span>
-        <h1 className="mt-3 text-2xl font-bold text-on-surface sm:text-3xl">{t('agent.title')}</h1>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-on-surface-variant sm:text-base">{t('agent.subtitle')}</p>
-
-        {/* AI DISCLOSURE — LAUNCH_VOCABULARY §8, approved wording, do not paraphrase.
-            Placed at the interaction point, above the input, so it is read BEFORE the first
-            answer rather than after it. A footer or a dismissed onboarding screen does not
-            satisfy this, and neither does the name: "وفّر" and "مساعدك الذكي" tell a customer
-            nothing about what they are talking to.
-            The second clause — «بناءً على أسعار رصدناها» — is load-bearing and must survive any
-            edit: it states what the answers rest on, which is the whole difference between this
-            and a chatbot with opinions.
-            Adopted as a transparency standard and forward-looking compliance hygiene. It is NOT
-            a claim that EU law governs Tawveeri in Saudi Arabia, and no compliance claim may be
-            published anywhere. */}
-        <p
-          className="mx-auto mt-2 max-w-xl text-xs text-on-surface-variant/90 sm:text-sm"
-          data-testid="waffar-ai-disclosure"
-        >
-          {t('agent.aiDisclosure')}
-        </p>
-      </header>
-
-      {/* Ask form */}
-      <form onSubmit={onSubmit} className="mt-6">
-        <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-surface-container-lowest p-2 shadow-sm focus-within:border-primary-400">
-          <textarea
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(query); } }}
-            placeholder={t('agent.placeholder')}
-            rows={2}
-            aria-label={t('agent.title')}
-            className="w-full resize-none bg-transparent px-3 py-2 text-base text-on-surface outline-none placeholder:text-on-surface-variant/70"
-          />
-          <div className="flex items-center justify-between gap-2 px-1">
-            <span className="inline-flex items-center gap-1 text-[11px] text-on-surface-variant">
-              <ShieldCheck className="h-3.5 w-3.5 text-success-600" aria-hidden />
-              {t('agent.neutralityNote')}
-            </span>
-            <button
-              type="submit"
-              disabled={loading || !query.trim()}
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary-600 px-4 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-700 disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
-              {t('agent.submit')}
-            </button>
-          </div>
-        </div>
-      </form>
-
-      {/* Examples */}
-      {!result && !loading && (
-        <div className="mt-4">
-          <span className="text-xs text-on-surface-variant">{t('agent.examplesLabel')}</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {EXAMPLES[loc].map((ex) => (
-              <button
-                key={ex}
-                type="button"
-                onClick={() => { setQuery(ex); run(ex); }}
-                className="rounded-full border border-[color:var(--color-outline-variant)] bg-surface-container-low px-3 py-1.5 text-xs text-on-surface-variant transition-colors hover:border-primary-300 hover:text-on-surface"
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="mt-8 space-y-3" aria-live="polite">
-          <div className="inline-flex items-center gap-2 text-sm text-on-surface-variant">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />{t('agent.thinking')}
-          </div>
-          <div className="h-40 animate-pulse rounded-2xl bg-surface-container-high" />
-          <div className="h-24 animate-pulse rounded-2xl bg-surface-container-high" />
-        </div>
-      )}
-
-      {/* Results */}
-      {!loading && result && (
-        <section className="mt-8" aria-live="polite">
-          {/* Understood-as chips */}
-          {chips.length > 0 && (
-            <div className="mb-4">
-              <span className="text-xs text-on-surface-variant">{t('agent.understoodAs')}:</span>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {chips.map((c, i) => (
-                  <span key={`${c}-${i}`} className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">{c}</span>
-                ))}
-              </div>
-              {result.parsed?.unresolved?.includes('room_size_m2') && (
-                <p className="mt-2 inline-flex items-center gap-1 text-xs text-warning-700 dark:text-warning-400">
-                  <CircleAlert className="h-3.5 w-3.5" aria-hidden />{t('agent.addRoomSize')}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Error (unparseable) */}
-          {result.error && (
-            <div className="rounded-2xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-900/50 dark:bg-warning-950/30">
-              <h2 className="flex items-center gap-2 text-base font-semibold text-on-surface"><CircleAlert className="h-4 w-4 text-warning-600" aria-hidden />{t('agent.errorTitle')}</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">{t('agent.errorBody')}</p>
-            </div>
-          )}
-
-          {/* count:0 — honest empty state (no fabrication) */}
-          {!result.error && result.count === 0 && (
-            <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-surface-container-low p-5">
-              <h2 className="text-base font-semibold text-on-surface">{t('agent.noResultsTitle')}</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">{t('agent.noResultsBody')}</p>
-            </div>
-          )}
-
-          {/* not-supported note (still shows a neutral price fallback below) */}
-          {!result.error && result.count > 0 && result.supported === false && (
-            <div className="mb-4 rounded-xl border border-[color:var(--color-outline-variant)] bg-surface-container-low p-3 text-xs text-on-surface-variant">
-              {t('agent.notSupportedBody')}
-            </div>
-          )}
-
-          {/* Smart Pick */}
-          {smart && <SmartPick rec={smart} loc={loc} t={t} isRTL={isRTL} Arrow={Arrow} />}
-
-          {/* More options */}
-          {rest.length > 0 && (
-            <>
-              <h2 className="mb-3 mt-6 text-sm font-semibold text-on-surface-variant">{t('agent.moreOptions')}</h2>
-              <div className="space-y-3">
-                {rest.map((r) => <OptionCard key={r.canonical_id} rec={r} loc={loc} t={t} isRTL={isRTL} Arrow={Arrow} />)}
-              </div>
-            </>
-          )}
-
-          {/* Neutrality footer */}
-          {result.count > 0 && (
-            <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-on-surface-variant">
-              <ShieldCheck className="h-3.5 w-3.5 text-success-600" aria-hidden />{t('agent.neutralityNote')}
-            </p>
-          )}
-        </section>
-      )}
-    </div>
-  );
-}
+/**
+ * AdvisorAnswer — the وفّر decision engine's answer, rendered.
+ *
+ * P2-8 (UNIFIED SEARCH). This used to live inside `/advisor`'s page component. It is a
+ * shared component now because the Constitution requires ONE experience, and two surfaces
+ * rendering two implementations of "the advisor's answer" is two experiences that merely
+ * look alike until one of them is edited. `/advisor` and `/search` render THIS.
+ *
+ * WHAT IT RENDERS — classified before wiring, on the founder's condition:
+ * **structured evidence only. No customer-visible generated prose.**
+ * Every string here is either a translation key or a template literal in this repository
+ * with MEASURED values substituted — `reasons_ar` from `decision-engine.ts`, evidence
+ * factors from `evidence-engine.ts`, the discount line from `discountVerdictFromFacts()`
+ * (composed by a pure function, then materialised into `tps_listing_price_facts`). There
+ * is no model call anywhere in this path (verified: zero Anthropic/OpenAI/Gemini
+ * references under `src/lib/agent/` and `src/app/api/v1/agent/`), so every sentence a
+ * customer reads can be found by grep, corrected, and verified — which is exactly the
+ * property F7 exists to protect. Product titles come from `canonical_products`, the same
+ * retailer-supplied data every search result already shows; they are not authored here.
+ *
+ * **If that ever stops being true — if any part of this answer is generated at runtime —
+ * F7 governs this component and the vocabulary constraint must be enforced before it
+ * ships.** That is the line, and it is the reason this note is here rather than in a doc.
+ */
 
 type TFn = ReturnType<typeof useTranslations>;
+
+/**
+ * The AI disclosure — `docs/LAUNCH_VOCABULARY.md` §8, approved wording, do not paraphrase.
+ *
+ * The second clause («بناءً على أسعار رصدناها» / "based on prices we observed") is
+ * load-bearing and must survive any edit: it states what the answers rest on, which is the
+ * whole difference between this and a chatbot with opinions.
+ *
+ * Adopted as a transparency standard and forward-looking compliance hygiene. It is NOT a
+ * claim that EU law governs Tawveeri in Saudi Arabia, and no compliance claim may be
+ * published anywhere.
+ */
+export function WaffarAiDisclosure({ className = '' }: { className?: string }) {
+  const t = useTranslations();
+  return (
+    <p className={className} data-testid="waffar-ai-disclosure">
+      {t('agent.aiDisclosure')}
+    </p>
+  );
+}
 
 function Reasons({ reasons }: { reasons: string[] }) {
   if (!reasons?.length) return null;
@@ -350,7 +168,7 @@ function CostBlock({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t
   );
 }
 
-function ExitButtons({ rec, loc, t, Arrow }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight }) {
+function ExitButtons({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string }) {
   const href = exitHref(rec, loc);
   const external = !!rec.go_url;
   return (
@@ -359,7 +177,7 @@ function ExitButtons({ rec, loc, t, Arrow }: { rec: AdvisorRecommendation; loc: 
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noopener noreferrer' : undefined}
-        onClick={() => track('go_click', { canonical_id: rec.canonical_id, store: rec.stores?.[0] ?? null, category: (rec.dna?.category as string) ?? null, source: 'agent', meta: { measured: external } })}
+        onClick={() => track('go_click', { canonical_id: rec.canonical_id, store: rec.stores?.[0] ?? null, category: (rec.dna?.category as string) ?? null, source, meta: { measured: external } })}
         className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary-600 px-4 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-700"
       >
         {t('agent.viewOffer')}<Arrow className="h-4 w-4" aria-hidden />
@@ -377,7 +195,7 @@ function ExitButtons({ rec, loc, t, Arrow }: { rec: AdvisorRecommendation; loc: 
   );
 }
 
-function TrustScoreChip({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
+function TrustScoreChip({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
   const s = rec.trust?.score;
   if (typeof s !== 'number') return null;
   const tier = rec.trust?.tier ?? (s >= 72 ? 'high' : s >= 50 ? 'medium' : 'low');
@@ -436,7 +254,7 @@ function EvidencePanel({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Local
   );
 }
 
-function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; isRTL: boolean; Arrow: typeof ArrowRight }) {
+function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string }) {
   // The smart pick shows its evidence panel by default → count it as an evidence view.
   useEffect(() => { track('evidence_view', { canonical_id: rec.canonical_id, meta: { trust_score: rec.trust?.score ?? null, smart_pick: true } }); }, [rec.canonical_id, rec.trust?.score]);
   return (
@@ -445,7 +263,7 @@ function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; 
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-2.5 py-1 text-xs font-semibold text-on-primary">
           <Sparkles className="h-3.5 w-3.5" aria-hidden />{t('agent.smartPickLabel')}
         </span>
-        <TrustScoreChip rec={rec} loc={loc} t={t} />
+        <TrustScoreChip rec={rec} t={t} />
         <PriceVerdictBadge rec={rec} loc={loc} />
         <DiscountTruthBadge rec={rec} loc={loc} />
         <TrustBadge rec={rec} loc={loc} />
@@ -463,19 +281,19 @@ function SmartPick({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; 
         <div className="shrink-0"><CostBlock rec={rec} loc={loc} t={t} /></div>
       </div>
       <EvidencePanel rec={rec} loc={loc} t={t} />
-      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} />
+      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} source={source} />
     </div>
   );
 }
 
-function OptionCard({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; isRTL: boolean; Arrow: typeof ArrowRight }) {
+function OptionCard({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string }) {
   return (
     <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-surface-container-lowest p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-on-surface">{recTitle(rec, loc)}</h3>
-            <TrustScoreChip rec={rec} loc={loc} t={t} />
+            <TrustScoreChip rec={rec} t={t} />
             <PriceVerdictBadge rec={rec} loc={loc} />
             <DiscountTruthBadge rec={rec} loc={loc} />
             <TrustBadge rec={rec} loc={loc} />
@@ -492,7 +310,110 @@ function OptionCard({ rec, loc, t, isRTL, Arrow }: { rec: AdvisorRecommendation;
         </summary>
         <EvidencePanel rec={rec} loc={loc} t={t} />
       </details>
-      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} />
+      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} source={source} />
     </div>
+  );
+}
+
+/**
+ * The whole answer. Both entry points render this and nothing else.
+ *
+ * `source` only tags analytics ('agent' on /advisor, 'search' on the unified surface) so
+ * the two can be told apart in the funnel. It changes nothing a customer sees.
+ */
+export function AdvisorAnswer({
+  result,
+  locale,
+  source = 'agent',
+  className = 'mt-8',
+}: {
+  result: AdvisorResponse;
+  locale: string;
+  source?: string;
+  className?: string;
+}) {
+  const t = useTranslations();
+  const loc: Locale = locale === 'ar' ? 'ar' : 'en';
+  const isRTL = loc === 'ar';
+  const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  const smart = result?.smart_pick ?? null;
+  const rest = (result?.recommendations ?? []).filter((r) => !r.is_smart_pick);
+  const chips = parsedSummary(result?.parsed, loc);
+
+  return (
+    <section className={className} aria-live="polite" data-testid="advisor-answer">
+      {/* THE DISCLOSURE IS PART OF THE ANSWER, NOT PART OF THE PAGE.
+          There is deliberately no prop to suppress it. The Constitution's hard condition
+          for this migration is that the disclosure survives the move — "a trust element
+          silently lost in a restructure, where nothing breaks, no test fails, and no error
+          surfaces". A boolean would be exactly the mechanism by which it is lost. Rendering
+          it here means every surface that shows this answer discloses at the same moment,
+          by construction, including any surface added later that nobody remembered to
+          check. On `/advisor` this is the SECOND disclosure on the page — the hero carries
+          one above the input, which is even earlier. Redundancy of a trust statement is the
+          safe direction to fail in. */}
+      <WaffarAiDisclosure className="mb-4 text-xs text-on-surface-variant/90" />
+
+      {/* Understood-as chips */}
+      {chips.length > 0 && (
+        <div className="mb-4">
+          <span className="text-xs text-on-surface-variant">{t('agent.understoodAs')}:</span>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {chips.map((c, i) => (
+              <span key={`${c}-${i}`} className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">{c}</span>
+            ))}
+          </div>
+          {result.parsed?.unresolved?.includes('room_size_m2') && (
+            <p className="mt-2 inline-flex items-center gap-1 text-xs text-warning-700 dark:text-warning-400">
+              <CircleAlert className="h-3.5 w-3.5" aria-hidden />{t('agent.addRoomSize')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Error (unparseable) */}
+      {result.error && (
+        <div className="rounded-2xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-900/50 dark:bg-warning-950/30">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-on-surface"><CircleAlert className="h-4 w-4 text-warning-600" aria-hidden />{t('agent.errorTitle')}</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">{t('agent.errorBody')}</p>
+        </div>
+      )}
+
+      {/* count:0 — honest empty state (no fabrication) */}
+      {!result.error && result.count === 0 && (
+        <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-surface-container-low p-5">
+          <h2 className="text-base font-semibold text-on-surface">{t('agent.noResultsTitle')}</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">{t('agent.noResultsBody')}</p>
+        </div>
+      )}
+
+      {/* not-supported note (still shows a neutral price fallback below) */}
+      {!result.error && result.count > 0 && result.supported === false && (
+        <div className="mb-4 rounded-xl border border-[color:var(--color-outline-variant)] bg-surface-container-low p-3 text-xs text-on-surface-variant">
+          {t('agent.notSupportedBody')}
+        </div>
+      )}
+
+      {/* Smart Pick */}
+      {smart && <SmartPick rec={smart} loc={loc} t={t} Arrow={Arrow} source={source} />}
+
+      {/* More options */}
+      {rest.length > 0 && (
+        <>
+          <h2 className="mb-3 mt-6 text-sm font-semibold text-on-surface-variant">{t('agent.moreOptions')}</h2>
+          <div className="space-y-3">
+            {rest.map((r) => <OptionCard key={r.canonical_id} rec={r} loc={loc} t={t} Arrow={Arrow} source={source} />)}
+          </div>
+        </>
+      )}
+
+      {/* Neutrality footer */}
+      {result.count > 0 && (
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-on-surface-variant">
+          <ShieldCheck className="h-3.5 w-3.5 text-success-600" aria-hidden />{t('agent.neutralityNote')}
+        </p>
+      )}
+    </section>
   );
 }

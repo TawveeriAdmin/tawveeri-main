@@ -153,8 +153,13 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   // Calm nav (Rakhs IA principle: one purpose per screen, few competing options). Trimmed from 11
   // items to 4 core destinations. Categories moved to the homepage as scannable cards; Price-Truth
   // surfaced as a homepage trust strip — each is reachable where it belongs, not stacked in the nav.
+  // P2-8 · UNIFIED SEARCH. «وفّر» used to sit here as its own destination, which meant the
+  // header asked the customer to decide between "search" and "assistant" before they had
+  // described anything — the exact choice the Constitution says they must never be handed
+  // ("Customers never choose between search · AI search · assistant"). The capability did
+  // not go anywhere: the search box now routes need-based queries to the same reasoning
+  // engine and renders the same answer component, and `/advisor` redirects into it.
   const quickNavLinks: Array<{ href: string; label: string; icon?: typeof Store }> = [
-    { href: `/${locale}/advisor`, label: t('agent.title'), icon: Sparkle },
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
     { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },

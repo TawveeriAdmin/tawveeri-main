@@ -17,7 +17,7 @@ describe('routeQuery — need-based queries reach the reasoning engine', () => {
   ];
   it.each(advisory)('%s → advisory (%s)', (query) => {
     const route = routeQuery(query);
-    expect(route.mode).toBe('advisory');
+    if (route.mode !== 'advisory') throw new Error(`expected advisory, got ${route.mode}: ${route.reason}`);
     expect(route.task.category).toBeTruthy();
     expect(route.reason).toMatch(/need signals/);
   });

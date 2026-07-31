@@ -1,17 +1,26 @@
-import type { Metadata } from 'next';
-import { AdvisorClient } from './advisor-client';
+import { redirect, permanentRedirect } from 'next/navigation';
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale } = await params;
-  const ar = locale === 'ar';
-  return {
-    title: ar ? 'وفّر — مساعد التسوّق الذكي' : 'Waffar — smart shopping assistant',
-    description: ar
-      ? 'قل ما تحتاجه بكلماتك واحصل على ترشيح محايد بمحرك حتمي — يرتّب حسب الملاءمة والتكلفة الإجمالية لا العمولة.'
-      : 'Describe what you need and get a neutral recommendation from a deterministic engine — ranked by suitability and total cost, never commission.',
-  };
-}
-
+/**
+ * P2-8 · UNIFIED SEARCH — `/advisor` is no longer an entry point.
+ *
+ * The Constitution allows exactly one: "Customers never choose between search · AI search ·
+ * assistant. There is one search experience. The system determines internally which
+ * capabilities are required." A second labelled destination IS that choice, so this route
+ * stops being a place to arrive and becomes a redirect into the unified surface.
+ *
+ * The CAPABILITY is untouched. `/search` routes need-based queries to the same
+ * deterministic decision engine (`routeQuery` → `/api/v1/agent/decide`) and renders the
+ * same `<AdvisorAnswer>` component this page used to render — with the AI disclosure
+ * inside it, which is the migration's hard condition.
+ *
+ * `?q=` is carried across, so every published or bookmarked وفّر link still answers the
+ * question it was asking rather than landing on an empty box. A 308 is used for the
+ * query-carrying case because the destination is permanent and the meaning is preserved;
+ * the bare case sends the customer to the search entry point.
+ *
+ * The page component that used to live here is deleted, not disabled. A dormant second
+ * implementation of the same answer is how two surfaces drift apart.
+ */
 export default async function AdvisorPage({
   params,
   searchParams,
@@ -22,6 +31,8 @@ export default async function AdvisorPage({
   const { locale } = await params;
   const sp = await searchParams;
   const raw = sp?.q;
-  const initialQuery = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] ?? '' : '';
-  return <AdvisorClient locale={locale} initialQuery={initialQuery} />;
+  const q = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] ?? '' : '';
+
+  if (q.trim()) permanentRedirect(`/${locale}/search?q=${encodeURIComponent(q.trim())}`);
+  redirect(`/${locale}/search`);
 }

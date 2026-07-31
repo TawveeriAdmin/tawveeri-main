@@ -9,6 +9,9 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { ProductCard } from '@/components/products/product-card';
 import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-card';
+import { AdvisorAnswer } from '@/components/agent/advisor-answer';
+import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
+import { routeQuery } from '@/lib/agent/route-query';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
 import { FilterSidebar, type SearchFilters } from '@/components/search/filter-sidebar';
@@ -210,6 +213,12 @@ export default function SearchClient() {
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
   const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
   const [smartPick, setSmartPick] = useState<SmartPick | null>(null);
+  // P2-8 (UNIFIED SEARCH). One entry point; the system decides internally which capability
+  // the query needs. `routeQuery` makes that decision deterministically and this holds the
+  // reasoning engine's answer when it does. Fetched ALONGSIDE the results, never before
+  // them — the results must not wait on reasoning.
+  const [advisorResult, setAdvisorResult] = useState<AdvisorResponse | null>(null);
+  const advisorAbortRef = useRef<AbortController | null>(null);
   const [relaxed, setRelaxed] = useState(false); // true when results are "nearby/related", not an exact match
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
@@ -643,6 +652,47 @@ export default function SearchClient() {
     setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
+
+    // ── P2-8 · UNIFIED SEARCH — the routing decision ────────────────────────────────
+    // "Routing is determined by the query, NEVER by the customer." The customer typed
+    // into one box; `routeQuery` decides whether this query needs retrieval alone or
+    // also needs the reasoning engine, and the answer renders in the same results view.
+    //
+    // Three deliberate constraints:
+    //   1. NOT awaited. The advisor's read is heavier than search's. Awaiting it would
+    //      make every need-based query slower to show ANY result, which trades the
+    //      unified experience against the thing customers actually came for.
+    //   2. Page 1 only. Pagination and filter changes re-enter this function with the
+    //      same query; re-asking would spend a rate-limit token per filter click and
+    //      re-render an answer that has not changed.
+    //   3. Its own AbortController, so a superseded query's answer can never land on a
+    //      newer query's results.
+    advisorAbortRef.current?.abort();
+    setAdvisorResult(null);
+    const route = routeQuery(query.trim());
+    if (route.mode === 'advisory' && currentPage === 1) {
+      const advisorCtrl = new AbortController();
+      advisorAbortRef.current = advisorCtrl;
+      track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: route.reason } });
+      askAdvisor({ text: query.trim() }, { signal: advisorCtrl.signal, limit: 4 })
+        .then((res) => {
+          if (advisorCtrl.signal.aborted) return;
+          // Render only a real answer. An error or an empty set on the UNIFIED surface
+          // must stay silent: the results below are a perfectly good answer, and an
+          // "I could not help" panel above them would invent a failure the customer
+          // does not have. `/advisor` still shows those states — there, the assistant
+          // IS the page and saying nothing would leave a blank screen.
+          if (res.error || res.count === 0) return;
+          setAdvisorResult(res);
+          track('advisor_result', {
+            query_text: query.trim(),
+            category: res.parsed?.category ?? null,
+            source: 'search',
+            meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
+          });
+        })
+        .catch(() => { /* the results page stands on its own; never surface this */ });
+    }
 
     // Funnel step 1 — Search (storefront surface). Only on page 1 (a real new query),
     // not on pagination/filter re-fetches which reuse the same query.
@@ -1198,6 +1248,33 @@ export default function SearchClient() {
               </button>
             </form>
 
+            {/* P2-8 · UNIFIED SEARCH — teach the OTHER half of what this box accepts.
+                Every "popular search" below is a product NAME, and every product name
+                routes to retrieval. With وفّر's nav entry retired, a customer who only
+                ever saw those examples would never discover that describing a need works
+                too — the capability would still be there and would go unused, which looks
+                identical to it having been removed. The Constitution's answer is that the
+                customer should never have to learn how to search; the least we can do is
+                show, in one line, that a sentence is a valid query. These phrasings are
+                the ones /advisor used to teach on its own page. */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs font-medium text-on-surface-variant">
+                {locale === 'ar' ? 'أو صِف ما تحتاجه:' : 'Or describe what you need:'}
+              </span>
+              {(locale === 'ar'
+                ? ['مكيف لغرفة 30 متر هادئ تحت 4000', 'لابتوب للألعاب تحت 5000', 'غسالة صحون كبيرة للعائلة']
+                : ['a quiet AC for a 30 m² room under 4000', 'a gaming laptop under 5000', 'a large family dishwasher']
+              ).map((term) => (
+                <button
+                  key={term}
+                  onClick={() => handleQuickCategory(term)}
+                  className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 transition-colors hover:border-primary-400 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/40 dark:text-primary-300 dark:hover:bg-primary-950/70"
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+
             {/* Popular searches */}
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="text-xs font-medium text-on-surface-variant">{t('search.popularSearches')}:</span>
@@ -1554,8 +1631,29 @@ export default function SearchClient() {
                   </div>
                 )}
 
-                {/* Smart Pick — the decision layer's trustworthy pick, gated server-side */}
-                {!loading && !error && smartPick && products.length > 0 && (
+                {/* P2-8 · UNIFIED SEARCH — the reasoning engine's answer, when this query
+                    needed one. This is now the ONLY surface that renders it: `/advisor`
+                    redirects here, so there is one entry point and one implementation of
+                    the answer rather than two that resemble each other until one is
+                    edited. The AI disclosure lives inside this component and cannot be
+                    switched off, which is the migration's hard condition. */}
+                {!loading && !error && advisorResult && (
+                  <AdvisorAnswer
+                    result={advisorResult}
+                    locale={locale}
+                    source="search"
+                    className="mb-6"
+                  />
+                )}
+
+                {/* Smart Pick — the retrieval layer's trustworthy pick, gated server-side.
+                    SUPPRESSED when the reasoning engine has answered. Both are "our pick",
+                    chosen on different grounds — suitability and total cost versus best
+                    match and price — so showing both puts two answers to one question on
+                    the same screen and makes the customer arbitrate between them. That is
+                    precisely the choice UNIFIED SEARCH says they must never be handed. The
+                    reasoning answer wins because it is the one that read the need. */}
+                {!loading && !error && !advisorResult && smartPick && products.length > 0 && (
                   <SmartPickCard pick={smartPick} locale={locale} />
                 )}
 

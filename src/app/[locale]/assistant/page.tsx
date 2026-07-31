@@ -9,5 +9,7 @@ export default async function LegacyAssistantRedirect({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  redirect(`/${locale}/advisor`);
+  // P2-8: `/advisor` is itself a redirect now, so pointing here would cost every legacy
+  // link two hops. One entry point means one destination — send them straight to it.
+  redirect(`/${locale}/search`);
 }
