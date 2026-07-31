@@ -7,7 +7,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
-import { isApprovedStore, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 
 export const maxDuration = 30;
@@ -553,7 +553,9 @@ function buildDecisionLayer(
 
 function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
   // Approved-27 scope gate: only surface offers from approved retailers (Founder Directive 2026-07-27).
-  const validStores = (hit.stores || []).filter((s) => s.current_price != null && isApprovedStore(s.store_name));
+  // isDisplayableRetailer, not isApprovedStore: LuLu/Sharaf DG are approved to INGEST but must
+  // never be named to a customer as a comparison source (LAUNCH_VOCABULARY §3, F1).
+  const validStores = (hit.stores || []).filter((s) => s.current_price != null && isDisplayableRetailer(s.store_name));
   if (validStores.length === 0) return null;
   const storeEntries: SearchProduct[] = validStores.map((s) => ({
     name_ar: hit.name_ar,
@@ -1153,7 +1155,7 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
 function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
   // Approved-27 scope gate: drop offers from non-approved retailers (e.g. shaker, samsung_ksa).
   const productStores = (row.product_stores || []).filter(
-    (ps) => ps && ps.current_price != null && isApprovedStore(ps.store_name || ps.stores?.name),
+    (ps) => ps && ps.current_price != null && isDisplayableRetailer(ps.store_name || ps.stores?.name),
   );
   if (productStores.length === 0) return null;
   const storeEntries: SearchProduct[] = productStores.map((ps) => ({

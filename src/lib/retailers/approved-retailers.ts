@@ -178,6 +178,31 @@ export function isApprovedStore(identifier?: string | null): boolean {
   return resolveApprovedSlug(identifier) !== null;
 }
 
+/**
+ * Approved for INGESTION, but must never be NAMED to a customer as a comparison source.
+ *
+ * `docs/LAUNCH_VOCABULARY.md` §3 MUST NOT SAY: «ذكر لولو أو شرف دي جي كمصدر مقارنة» /
+ * "LuLu or Sharaf DG named as comparison sources." HANDOVER #16 carried the same exclusion as a
+ * launch condition.
+ *
+ * The two gates were doing different jobs and only one of them knew it: `isApprovedStore`
+ * governs whether we may INGEST a retailer, and LuLu is legitimately approved for that. Nothing
+ * governed whether we may SHOW it. Measured 2026-07-31: LuLu appeared as a store on 3 of 384
+ * customer-facing cards while holding ZERO offers in the comparison layer — surfaced through the
+ * storefront path, which the ingestion gate correctly allowed.
+ *
+ * This is Appendix F1: the claim boundary is evidence, not style, and no amount of ingestion
+ * makes an unsupported comparison claim acceptable. If either retailer later reaches real
+ * comparison depth, amend the vocabulary FIRST with the measurement, then remove it from here.
+ */
+export const COMPARISON_DISPLAY_EXCLUDED: ReadonlySet<string> = new Set(['lulu', 'sharafdg']);
+
+/** True iff this retailer may be shown to a customer as a source of a price/comparison. */
+export function isDisplayableRetailer(identifier?: string | number | null): boolean {
+  const slug = resolveApprovedSlug(identifier);
+  return slug !== null && !COMPARISON_DISPLAY_EXCLUDED.has(slug);
+}
+
 /** True iff the numeric stores.id is approved. */
 export function isApprovedStoreId(id?: number | null): boolean {
   return id != null && APPROVED_STORE_IDS.has(id);
