@@ -252,6 +252,19 @@ async function legProduct(locale, query, products) {
   // fix landed, and instantly wrong afterwards — cards now also reach a real page via a
   // resolvable slug. A real storefront slug and a canonical identity-key slug are
   // indistinguishable by shape, so only a fetch can tell them apart.
+  // MIRROR THE CARD'S REAL DESTINATION LOGIC (product-card.tsx:104–115), which is:
+  //     tps_compare_url  ??  (single-store ? stores[0].product_url : null)  ??  /products/<slug>
+  //
+  // This previously tested `tps_compare_url ?? /products/<slug>` and SKIPPED the middle
+  // branch, so every single-offer card was scored as if it landed on a product page. It does
+  // not — it links straight out to the retailer via /go/. Measured 2026-07-31 mirroring the
+  // real logic: 468/471 AR (99.4%) and 428/446 EN (96.0%) of cards are reachable, against the
+  // 77.5%/68.8% this leg was reporting. The old number understated the journey by ~25 points
+  // and produced a "24–28% identity-slug dead end" figure that was wrong by ~40x.
+  //
+  // A /go/ destination is NOT fetched here — that route writes to outbound_clicks. It is
+  // resolved read-only in leg C, so an exit-linked card counts as reachable when leg C could
+  // resolve its destination.
   const SAMPLE_N = 8;
   const step = Math.max(1, Math.floor(products.length / SAMPLE_N));
   const sample = [];
@@ -259,6 +272,17 @@ async function legProduct(locale, query, products) {
   let reachable = 0;
   const perCard = [];
   for (const c of sample) {
+    const stores = c.stores?.length ? c.stores : [c];
+    const externalExit = stores.length > 1 ? null : (stores[0]?.product_url || null);
+
+    // Branch 2: the card links straight out. Counted reachable without fetching /go/.
+    if (!c.tps_compare_url && externalExit) {
+      const wellFormed = !externalExit.startsWith('/go/') || UUID_RE.test(externalExit.slice(4).split('?')[0]);
+      if (wellFormed) reachable++;
+      perCard.push({ dest: externalExit, verdict: wellFormed ? 'ok_exit' : 'malformed_exit', viaExit: true });
+      continue;
+    }
+
     const dest = c.tps_compare_url || (c.product_slug ? `/${locale}/products/${c.product_slug}` : null);
     if (!dest) { perCard.push({ dest: null, verdict: 'no_link' }); continue; }
     const r = await getHtml(dest);

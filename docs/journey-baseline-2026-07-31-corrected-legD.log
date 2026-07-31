@@ -1,0 +1,29 @@
+◇ injected env (12) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+
+JOURNEY BASELINE — https://tawveeri.com
+started 2026-07-31T06:35:17.171Z
+UTF-8 transport verified: server echoed "مكيف"
+
+═══ AR ═══
+  A_homepage_served      1/1    100.0%
+  B_search              10/10   100.0%
+  C_exits               10/10   100.0%
+  D_product_served      10/10   100.0%
+  E_retailer            10/10   100.0%
+  ── CARDS→REAL PAGE    80/80   100.0%   (fetched, evenly spaced; 471 cards returned in total)
+  ── END-TO-END         10/10   100.0%
+
+═══ EN ═══
+  A_homepage_served      1/1    100.0%
+  B_search              10/10   100.0%
+  C_exits               10/10   100.0%
+  D_product_served      10/10   100.0%
+  E_retailer            10/10   100.0%
+  ── CARDS→REAL PAGE    72/80   90.0%   (fetched, evenly spaced; 446 cards returned in total)
+  ── END-TO-END         10/10   100.0%
+
+RESULT CARDS REACHING A REAL PAGE: 152 of 160 fetched (95.0%)
+  of which carried a compare URL:  62
+EXITS WITH NO VALID DESTINATION: 0 of 1323 rendered
+(read-only: /go was never called — destinations resolved from the DB)
+
