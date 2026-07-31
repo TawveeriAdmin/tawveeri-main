@@ -1,4 +1,84 @@
-# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #19 · #18's SLUG FIGURE RETRACTED · JOURNEY 100/100 ═══
+# ═══ RESUME HERE — 2026-07-31 CHECKPOINT #20 · OPEN ROOT CAUSE: 2,321 NULL OBSERVATION IDS ═══
+
+**Head `d0f2e3e`+, tree clean, pushed. Nothing running.**
+
+## 🔴 OPEN ROOT CAUSE — DO NOT CLOSE UNTIL RESOLVED
+
+**2,321 of 7,162 canonicals with prices (32.41%) carry a real price and a real retailer on a
+row whose `tps_observation_id` is NULL.** Every one is single-store. The consumer symptom is
+treated (the card is honest and non-clickable); **the cause is not explained.**
+
+```bash
+# full count — reproduce before quoting, it moves
+npx tsx scripts/tps-analysis/q.ts "with latest as (select distinct on (canonical_product_id, store_name) canonical_product_id, store_name, tps_observation_id from price_history where canonical_product_id is not null order by canonical_product_id, store_name, observed_at desc), per_canon as (select canonical_product_id, count(distinct store_name) as stores, count(*) filter (where tps_observation_id is not null) as routable_rows from latest group by canonical_product_id) select count(*) as canonicals_with_prices, count(*) filter (where routable_rows = 0) as fully_unroutable, round(100.0*count(*) filter (where routable_rows = 0)/nullif(count(*),0),2) as pct from per_canon"
+
+# rendered impact, per locale (the number that governs UI decisions)
+node scripts/tps-analysis/journey-baseline.js
+```
+
+**Question to answer:** why does `price_history` hold rows with a price, a retailer and a
+canonical, but no link back to the normalized observation that produced them? Until that is
+answered, every fix downstream is symptom management.
+
+## WHAT SHIPPED — option 3, and why omission was NOT shipped
+
+Omission was approved **conditional on the rate staying near 1.6–4%**. Measured properly first:
+
+| | measured |
+|---|---|
+| catalogue: fully unroutable canonicals | **2,321 / 7,162 = 32.41%** |
+| rendered AR (20 q, 914 cards) | 17 = **1.86%** |
+| rendered EN (20 q, 837 cards) | 28 = **3.35%** |
+
+Aggregate is low — but it **concentrates**, and that decided it: English **`air conditioner`
+returns 14 cards of which 13 are unroutable** (stable across two runs). Omitting would have
+rendered **one** result where fourteen exist. So the third option shipped instead:
+
+- card is no longer clickable when it has neither a compare URL nor a retailer exit
+- the disabled "View at store" button is replaced by «رابط المتجر غير متاح لهذا العرض» /
+  "No store link available for this offer" — the wording the compare page already ships, so
+  both surfaces explain the same gap identically
+- **result count still matches rendered cards by construction** — nothing is removed, so the
+  store-count-badge class of inconsistency is not created. Verified: `air conditioner`
+  count=14, total=14, cards=14
+
+## BASELINE — unchanged by the card change, as expected
+
+`docs/journey-baseline-2026-07-31-after-card-honesty.log`
+
+| | AR | EN |
+|---|---|---|
+| all five legs | 100% | 100% |
+| **end-to-end** | **10/10** | **10/10** |
+| cards → real page | 80/80 **100%** | 72/80 **90%** |
+| malformed exits | **0 of 1323** | |
+
+EN's 90% is the honest residual: those cards now *say* they have no destination rather than
+pretending. They are counted as unreachable because they are — the display is honest, the
+journey still ends there. **That is the root cause above, not a UI defect.**
+
+## STILL OPEN
+
+- HTTP 200 on a genuinely missing product (Next commits status before the page throws)
+- Product detail body is client-rendered — served text ~467 chars; JSON-LD does carry offers
+- `realSlug=0` — Algolia is the primary path and stores only `objectID`; **the UUID fallback on
+  the product page is what repairs those cards. Do not remove it.**
+- No `og:image` / `twitter:image` · §2.1 retailer tiers · §3 defects · §4–§9 surfaces
+
+## COMMITS THIS SESSION
+
+| commit | what | rollback |
+|---|---|---|
+| `b39fbc2` | never render an exit we cannot honour (`/go/null`) — the real AR/EN gap | `git revert b39fbc2` |
+| `57fd188` | harness accepts JSON-LD price | `git revert 57fd188` |
+| `52841dc` | HANDOVER #18 | `git revert 52841dc` |
+| `14cf8d4` | harness leg D mirrors the card's real destination logic | `git revert 14cf8d4` |
+| `0c93e4b` | HANDOVER #19 (retracts #18's slug figure) | `git revert 0c93e4b` |
+| `d0f2e3e` | card with no destination: not clickable, states why | `git revert d0f2e3e` |
+
+---
+
+# ═══ SUPERSEDED — 2026-07-31 CHECKPOINT #19 · #18's SLUG FIGURE RETRACTED · JOURNEY 100/100 ═══
 
 **Head `14cf8d4`, tree clean, pushed. Nothing running.**
 
