@@ -82,6 +82,23 @@ const arg = (name: string, dflt: number) => {
   // With `--adaptive` the batch count scales with the measured backlog, so a quiet system
   // stays cheap and a backed-up one is allowed to catch up. Bounded by the engine's own
   // 20-batch ceiling, so this can never become an unbounded writer.
+  // ── --dry-run (2026-07-31) ────────────────────────────────────────────────────────
+  // Performs the FULL read, detect, classify, identity-key and corroboration logic and
+  // writes NOTHING: no cursor advance, no staging, no write_ac_batch. Required by the
+  // production gate before any backfill — CLAUDE.md's "--dry-first" rule had no
+  // implementation, so "dry first" was unenforceable.
+  //
+  // The cursor deliberately does not move: a dry run that advanced it would silently
+  // consume work the real run then never sees.
+  const dryRun = process.argv.includes("--dry-run");
+  // `--replay-from <rawId>` (DRY ONLY) reads from a raw id instead of the store cursor, so a
+  // dry run can measure observations already behind it. Required here: all 103,106 discovery
+  // observations sit behind their cursors, so a cursor-relative dry run reports 0.
+  const rf = process.argv.indexOf("--replay-from");
+  const replayFrom = rf >= 0 ? Number(process.argv[rf + 1]) : undefined;
+  if (replayFrom != null && !Number.isFinite(replayFrom)) throw new Error("--replay-from needs a numeric raw id");
+  if (replayFrom != null && !dryRun) throw new Error("--replay-from requires --dry-run");
+
   const adaptive = process.argv.includes("--adaptive");
   const effBatches = adaptive
     ? Math.min(20, backlogBefore > 20_000 ? 20 : backlogBefore > 5_000 ? 12 : batches)
@@ -108,7 +125,9 @@ const arg = (name: string, dflt: number) => {
   const LANE_KEY = 814_8148;
   let lockClient: Client | null = null;
   let haveLane = false;
-  if (process.env.NORMALIZE_LANE_LOCK !== "0") {
+  // A dry run mutates nothing, so it must NOT take the lane — holding it would block the
+  // hourly chain for the duration of a purely diagnostic run.
+  if (process.env.NORMALIZE_LANE_LOCK !== "0" && !dryRun) {
     try {
       lockClient = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
       await lockClient.connect();
@@ -129,16 +148,48 @@ const arg = (name: string, dflt: number) => {
   const defs = Object.values(CATEGORY_DEFS);
 
   let fetched = 0, staged = 0, canonicals = 0, corroborated = 0;
+  // Dry-run accounting. Skip reasons are the engine's own classification, not an estimate.
+  const dryTotals = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, singleStore: 0, normalized: 0, matches: 0, prices: 0, keys: new Set<string>() };
   for (let i = 0; i < effBatches; i++) {
-    const r = await runSweepUnit(sb, defs, limit, onlyStores);
+    const r = await runSweepUnit(sb, defs, limit, onlyStores, dryRun, replayFrom);
     fetched += r.normalize.fetched;
     staged += r.normalize.staged;
+    for (const [cat, c] of Object.entries(r.normalize.byCategory)) {
+      dryTotals.detected += c.detected; dryTotals.valid += c.valid;
+      dryTotals.lowConfidence += c.lowConfidence; dryTotals.invalid += c.invalid;
+      for (const k of c.touched) dryTotals.keys.add(`${cat}|${k}`);
+    }
     for (const m of Object.values(r.corroborate)) {
       canonicals += m.canonicalsWritten;
       corroborated += m.corroborated;
+      dryTotals.singleStore += m.singleStore; dryTotals.normalized += m.normalized;
+      dryTotals.matches += m.matches; dryTotals.prices += m.prices;
     }
     // Cursors have caught up — stop early rather than burn empty sweeps.
-    if (r.normalize.fetched === 0) break;
+    // In DRY mode the cursor never advances, so every batch would re-read the SAME rows;
+    // one pass is the whole measurable signal and repeating it would inflate every total.
+    if (r.normalize.fetched === 0 || dryRun) break;
+  }
+
+  if (dryRun) {
+    console.log(`\n═══ DRY RUN — NOTHING WAS WRITTEN ═══${onlyStores ? ` [stores ${onlyStores.join(",")}]` : ""}`);
+    console.log(`  eligible observations read (one sweep, limit ${limit})  ${fetched}`);
+    console.log(`  would be STAGED (detected by a category plugin)         ${staged}`);
+    console.log(`  would receive tps_identity_key (valid tier)             ${dryTotals.valid}`);
+    console.log(`  distinct identity keys touched                          ${dryTotals.keys.size}`);
+    console.log(`  would be NORMALIZED (normalized_product_observations)   ${dryTotals.normalized}`);
+    console.log(`  canonicals that WOULD be written                        ${canonicals}`);
+    console.log(`    of which corroborated (>=2 stores, comparable)        ${corroborated}`);
+    console.log(`    of which single-store (Layer 2, resolved-single)      ${dryTotals.singleStore}`);
+    console.log(`  product_matches that WOULD be written                   ${dryTotals.matches}`);
+    console.log(`  price_history rows that WOULD be appended               ${dryTotals.prices}`);
+    console.log(`  SKIPPED, by explicit reason:`);
+    console.log(`    read but not detected by any plugin                   ${Math.max(0, fetched - dryTotals.detected)}`);
+    console.log(`    detected but low confidence                           ${dryTotals.lowConfidence}`);
+    console.log(`    detected but invalid identity tier                    ${dryTotals.invalid}`);
+    console.log(`  cursor NOT advanced · staging NOT written · write_ac_batch NOT called`);
+    try { await lockClient?.end(); } catch { /* ignore */ }
+    return;
   }
 
   const backlogAfter = (await ask<{ backlog: string }>(BACKLOG_SQL))[0].backlog;

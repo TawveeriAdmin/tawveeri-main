@@ -43,7 +43,16 @@ begin
   insert into product_matches (raw_observation_id,canonical_product_id,match_method,confidence,is_verified,matched_at,identity_resolution_event_id)
   select (r->>'raw_observation_id')::uuid, (r->>'canonical_product_id')::uuid, r->>'match_method', (r->>'confidence')::smallint, (r->>'is_verified')::boolean, (r->>'matched_at')::timestamptz,
     case when r->>'identity_resolution_event_id' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then (r->>'identity_resolution_event_id')::uuid else null end
-  from jsonb_array_elements(p_matches) r;
+  from jsonb_array_elements(p_matches) r
+  -- 2026-07-31, production gate Step 2. The DELETE above already makes matches idempotent
+  -- WITHIN a batch (same canonical ids are cleared then rewritten). It does NOT cover the
+  -- cross-batch case: if a raw observation is re-matched to a DIFFERENT canonical, the old
+  -- row survives under its old canonical id and the pair can collide.
+  -- `022_product_matches_idempotency.sql` adds a unique index on
+  -- (raw_observation_id, canonical_product_id). Without this clause that index converts a
+  -- benign duplicate into a hard error that rolls the WHOLE batch back — trading silent
+  -- duplication for loud data loss. DO NOTHING keeps the first match and continues.
+  on conflict (raw_observation_id, canonical_product_id) do nothing;
   get diagnostics v_m=row_count;
 
   insert into price_history (canonical_product_id,store_name,price,tps_observation_id,raw_observation_id,observed_at)

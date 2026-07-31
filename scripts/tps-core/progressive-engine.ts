@@ -45,7 +45,12 @@ function extractImage(p: Record<string, unknown>): string | null {
   return null;
 }
 
-export interface SweepMetrics { fetched: number; staged: number; saturated: boolean; byCategory: Record<string, { detected: number; valid: number; lowConfidence: number; invalid: number; touched: Set<string> }>; }
+export interface SweepMetrics { fetched: number; staged: number; saturated: boolean; byCategory: Record<string, { detected: number; valid: number; lowConfidence: number; invalid: number; touched: Set<string> }>;
+  /** DRY-RUN ONLY. The staging rows this sweep WOULD have written. Empty on a real run —
+   *  they are persisted instead. Threaded to corroboratePass so a dry run can see the work it
+   *  just computed; without this the dry pass reads only previously-persisted staging and
+   *  under-reports its own effect to zero. */
+  pendingStaging?: Record<string, unknown>[]; }
 
 const GLOBAL = "_all_"; // cursor category for the single-pass scan
 
@@ -53,7 +58,17 @@ const GLOBAL = "_all_"; // cursor category for the single-pass scan
 //    (no ILIKE → no slow filter, no per-category re-scan). Each row is classified
 //    by every plugin's detect(); matches are staged into their category. Global
 //    per-store cursor. ≤limit observations/run. ──
-export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], limit: number, onlyStores?: number[]): Promise<SweepMetrics> {
+/** `dry` performs the FULL read, detect, classify and identity-key computation and writes
+ *  NOTHING: no cursor advance, no staging. The cursor in particular must not move, or a dry
+ *  run would silently consume work the real run then never sees. */
+export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], limit: number, onlyStores?: number[], dry = false, replayFrom?: number): Promise<SweepMetrics> {
+  // `replayFrom` reads from a given raw id instead of the store cursor, so a DRY run can
+  // measure observations that already sit BEHIND the cursor. Measured 2026-07-31: all
+  // 103,106 discovery observations are behind their cursors — scanned, undetected, skipped —
+  // so a cursor-relative sweep reports 0 and can say nothing about them. DRY ONLY: replaying
+  // with writes enabled would re-stage history and is exactly the cursor-rewind hazard the
+  // gate flagged.
+  if (replayFrom != null && !dry) throw new Error("replayFrom is dry-run only");
   // THROUGHPUT (measured 2026-07-30): the budget used to be split evenly across ALL
   // TPS_STORES — `floor(limit / TPS_STORES.length)` — regardless of whether a store had
   // anything pending. In production only 3 of 18 stores had backlog (almanea 331,823 ·
@@ -82,7 +97,7 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   const pending: { store: typeof TPS_STORES[number]; last: number }[] = [];
   for (const s of TPS_STORES) {
     if (onlyStores && !onlyStores.includes(s.id)) continue;
-    const last = cursorOf.get(s.id) ?? 0;
+    const last = replayFrom != null ? replayFrom : (cursorOf.get(s.id) ?? 0);
     const { data: probe } = await sb
       .from("raw_observations").select("id").eq("store_id", s.id).gt("id", last).limit(1);
     if ((probe ?? []).length) pending.push({ store: s, last });
@@ -123,12 +138,18 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
         });
       }
     }
-    const { error: ce } = await sb.from("tps_progress_cursors").upsert({ category: GLOBAL, store_id: s.id, last_raw_id: maxId, updated_at: new Date().toISOString() }, { onConflict: "category,store_id" });
-    if (ce) throw new Error(`cursor upsert store ${s.id}: ${ce.message}`);
+    if (!dry) {
+      const { error: ce } = await sb.from("tps_progress_cursors").upsert({ category: GLOBAL, store_id: s.id, last_raw_id: maxId, updated_at: new Date().toISOString() }, { onConflict: "category,store_id" });
+      if (ce) throw new Error(`cursor upsert store ${s.id}: ${ce.message}`);
+    }
   }
-  for (let i = 0; i < stagingRows.length; i += 500) {
-    const { error } = await sb.from("tps_identity_staging").upsert(stagingRows.slice(i, i + 500), { onConflict: "category,raw_obs_id" });
-    if (error) throw new Error(`staging upsert: ${error.message}`);
+  if (dry) {
+    m.pendingStaging = stagingRows;
+  } else {
+    for (let i = 0; i < stagingRows.length; i += 500) {
+      const { error } = await sb.from("tps_identity_staging").upsert(stagingRows.slice(i, i + 500), { onConflict: "category,raw_obs_id" });
+      if (error) throw new Error(`staging upsert: ${error.message}`);
+    }
   }
   m.staged = stagingRows.length;
   m.saturated = m.fetched === 0;
@@ -137,7 +158,16 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
 
 export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; }
 
-export interface CorroborateOpts { singleStore?: boolean; } // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
+export interface CorroborateOpts {
+  singleStore?: boolean; // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
+  /** Compute everything, call write_ac_batch NEVER. Metrics still report what WOULD be written. */
+  dry?: boolean;
+  /** DRY-RUN ONLY. Staging rows computed in-memory by this run's sweep, merged with persisted
+   *  staging so the dry pass sees its own work. Deduped by (category, raw_obs_id) — the same
+   *  key the real staging upsert uses — so an observation already persisted is never counted
+   *  twice. */
+  extraStaging?: Record<string, unknown>[];
+}
 
 // ── Corroboration pass: for the touched keys, group ALL accumulated staging by
 //    identity_key. Default writes ≥2-store comparable canonicals (Layer 1). With
@@ -160,6 +190,24 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       if (def.requireValidTier && r.status !== "valid") continue;
       if (!byKey.has(r.identity_key)) byKey.set(r.identity_key, []);
       byKey.get(r.identity_key)!.push(r);
+    }
+  }
+
+  // DRY-RUN: fold in the staging this run computed but did not persist. Deduped on
+  // (category, raw_obs_id) — the real upsert's conflict target — so a row that is already in
+  // the table is not double-counted, and the dry metrics match what a real run would produce.
+  if (opts.extraStaging?.length) {
+    const seen = new Set<number>();
+    for (const list of byKey.values()) for (const r of list) seen.add(r.raw_obs_id);
+    const touched = new Set(touchedKeys);
+    for (const raw of opts.extraStaging as unknown as (Stg & { category?: string })[]) {
+      if (raw.category && raw.category !== def.category) continue;
+      if (!touched.has(raw.identity_key)) continue;
+      if (seen.has(raw.raw_obs_id)) continue;
+      if (def.requireValidTier && raw.status !== "valid") continue;
+      seen.add(raw.raw_obs_id);
+      if (!byKey.has(raw.identity_key)) byKey.set(raw.identity_key, []);
+      byKey.get(raw.identity_key)!.push(raw);
     }
   }
 
@@ -244,6 +292,10 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   const changedPrices = priceRows.filter((pr) => { const l = lastPrice.get(`${pr.canonical_product_id}|${pr.store_name}`); return l === undefined || l !== Number(pr.price); });
   R.prices = changedPrices.length;
 
+  // DRY: report what WOULD be written, mutate nothing. canonicalsWritten is the intended count
+  // rather than a returned one, and is labelled as such by the caller.
+  if (opts.dry) { R.canonicalsWritten = canonicalRows.length; return R; }
+
   const { data: result, error } = await sb.rpc("write_ac_batch", { p_canonical: canonicalRows, p_normalized: normalizedRows, p_matches: matchRows, p_prices: changedPrices, p_canonical_ids: canonicalIds });
   if (error) throw new Error(`write_ac_batch(${def.category}): ${error.message}`);
   const w = result as { canonical: number };
@@ -254,13 +306,13 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
 // One bounded progressive SWEEP unit: single-pass normalize across all categories
 // (≤limit obs), then corroborate each category's touched keys. Category isolation
 // holds — corroboration is per-category; only the read scan is shared.
-export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limit = TPS_MAX_OBSERVATIONS, onlyStores?: number[]) {
+export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limit = TPS_MAX_OBSERVATIONS, onlyStores?: number[], dry = false, replayFrom?: number) {
   if (limit > TPS_MAX_OBSERVATIONS) throw new Error(`limit ${limit} exceeds ${TPS_MAX_OBSERVATIONS}`);
-  const n = await normalizeSweep(sb, defs, limit, onlyStores);
+  const n = await normalizeSweep(sb, defs, limit, onlyStores, dry, replayFrom);
   const corr: Record<string, CorroborateMetrics> = {};
   for (const def of defs) {
     const touched = [...n.byCategory[def.category].touched];
-    if (touched.length) corr[def.category] = await corroboratePass(sb, def, touched);
+    if (touched.length) corr[def.category] = await corroboratePass(sb, def, touched, { dry, extraStaging: dry ? n.pendingStaging : undefined });
   }
   return { normalize: n, corroborate: corr };
 }
