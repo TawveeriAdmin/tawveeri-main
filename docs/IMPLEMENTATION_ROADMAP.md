@@ -104,3 +104,36 @@ governed, measured and honest, rather than migrating unresolved problems into a 
 `UX_DECISION_RECORD.md` — at the first significant UX decision, not retroactively.
 `EXECUTION_PLAN.md` — when a phase is concrete enough to plan.
 `DATA-AVAILABILITY-AUDIT.md` — widened when a feature depends on that coverage.
+
+---
+
+# PHASE 2 STATUS — 2026-07-31, end of session
+**Head `f0b8f64` · tree clean · all pushed · nothing running.**
+
+## COMPLETED
+
+| unit | outcome | commit |
+|---|---|---|
+| **P2-1** ungoverned generative surface | `/api/ai-assistant` answered anonymous POSTs with LLM text on our API key while referenced by nothing. Disabled behind `AI_ASSISTANT_ENABLED`, 404 not 403. Verified live. The customer advisor is deterministic and untouched | `78b0763` |
+| **P2-2** EN/AR reachability | Root cause was **retrieval, not exits**: Algolia expanded Arabic→English but nothing expanded English→Arabic, and word-level expansion never consulted the phrase map. **EN cards→real page 90% → 96.3%** | `b02858f` `709d798` `0ce7ef7` |
+| **P2-3** ordering rule stated | The real rule now renders on both breakpoints and changes with the selected sort. **"Rating" sort removed** — it had neither implementation nor data (0 of 48 cards; 0.77% of products) | `bee88b2` |
+| **P2-6** retailer tiers | Definition published with measurements. **7 production-deep.** Found and closed a live vocabulary violation: LuLu named as a comparison source on 3 of 384 cards with zero comparison offers | `5df38a1` `f0b8f64` |
+| *(unplanned)* shipping claim | `/ar/compare` rendered **"0 SAR" shipping** for every retailer — an unknown cost asserted as free | `88cb215` |
+
+## BLOCKED
+
+| unit | blocked on |
+|---|---|
+| **P2-4** customer-outcome measurement | **Traffic.** It measures behaviour and there are no customers yet. Building it now yields an instrument with nothing to read |
+| **P2-5** وفّر advisor build-out | **F7 protections must exist before the generative surface does.** The advisor is deterministic today, which is why P2-1 mattered |
+| Retailer-count amendment | **Founder decision.** Recommendation and evidence in `docs/RETAILER-TIERS.md`; F1 requires the vocabulary be amended before the string changes |
+| Normalization backfill / DEBT-1 | Gated. Match invariant (35 observations hold two canonicals) + the `asus\|dell g-series` parser defect |
+
+## REMAINING
+
+**P2-7 · WCAG 2.2 AA — NEXT EXECUTION UNIT, NOT STARTED.** See the handover entry point below.
+**P2-8 · UNIFIED SEARCH migration** — after P2-7. Migration of shipped behaviour; the AI disclosure must relocate with `/advisor` and be verified in production (Constitution → UNIFIED SEARCH hard condition; F5 extended).
+
+## NOT DONE, DELIBERATELY
+
+Variant merging — measured immaterial (3 collapsible cards in 240, 1.25%); merging risks violating the identity rule for a ~1% visual gain. 404 empty body — roadmap unit, prerequisite is the root layout owning the HTML shell.
