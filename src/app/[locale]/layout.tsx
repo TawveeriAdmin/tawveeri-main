@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SimpleIntlProvider } from '@/lib/simple-intl-provider';
-import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
+import { buildAlternates, getBaseUrl, BRAND_OG_IMAGE } from '@/lib/seo/metadata';
 
 const locales = ['ar', 'en'] as const;
 import { Cairo } from 'next/font/google';
@@ -34,6 +34,20 @@ export async function generateMetadata({
     openGraph: {
       locale: locale === 'ar' ? 'ar_SA' : 'en_US',
       url: `${baseUrl}/${locale}`,
+      // Site-wide default. Without this the homepage — the most-shared URL we have — rendered
+      // a blank card everywhere. See BRAND_OG_IMAGE for why the dimensions are stated exactly.
+      images: [{
+        url: `${baseUrl}${BRAND_OG_IMAGE.path}`,
+        width: BRAND_OG_IMAGE.width,
+        height: BRAND_OG_IMAGE.height,
+        alt: 'Tawveeri',
+      }],
+    },
+    twitter: {
+      // `summary`, not `summary_large_image`: the brand mark is square. Declaring the large
+      // card for a square image is the mismatch that produced blank previews.
+      card: 'summary',
+      images: [`${baseUrl}${BRAND_OG_IMAGE.path}`],
     },
   };
 }
