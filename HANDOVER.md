@@ -54,7 +54,7 @@ and two sentences about OUR ACTIVITY/COVERAGE rather than price currency.
 ## ROLLBACK
 
 ```
-dc7928f  ADR-164 dead-code cleanup   git revert dc7928f
+e9cde62  ADR-164 dead-code cleanup   git revert e9cde62
 ```
 
 ---
