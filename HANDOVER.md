@@ -63,7 +63,7 @@ quote is not a UTF-8 transport.**
 
 ```
 3e9f185  ADR-162 engine evidence contract   git revert 3e9f185
-dae188c  docs + harness denominator fix        git revert dae188c
+ae266a9  docs + harness denominator fix        git revert ae266a9
 ```
 
 Additive: one new module, one new field on the decide response, one published field on
