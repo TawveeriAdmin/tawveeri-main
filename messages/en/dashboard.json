@@ -37,7 +37,7 @@
   "noComparisons": "No comparisons yet",
   "noComparisonsDescription": "Add products to the comparison tool and we'll keep them here for quick access.",
   "targetPrice": "Target",
-  "currentPrice": "Current",
+  "currentPrice": "Last observed",
   "alertTriggered": "Alert triggered",
   "priceProgress": "of target",
   "stores": "stores",

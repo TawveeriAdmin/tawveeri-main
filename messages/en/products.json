@@ -21,7 +21,7 @@
     "value": "Value"
   },
   "priceAlert": {
-    "currentPrice": "Current Price",
+    "currentPrice": "Last Observed Price",
     "targetPrice": "Target Price",
     "difference": "Difference",
     "targetReached": "Target Reached!",

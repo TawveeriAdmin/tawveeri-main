@@ -20,7 +20,7 @@ import { INTERNAL_TOKENS, ALL_INTERNAL_TOKENS } from './internal-vocabulary';
  * Format: `<doc-date>+<n>` — the LAUNCH_VOCABULARY revision this was derived from, plus the
  * derivation revision.
  */
-export const VOCABULARY_VERSION = '2026-07-31+2';
+export const VOCABULARY_VERSION = '2026-08-01+1';
 
 /** Governing documents, highest first. The module is derived from these; never the reverse. */
 export const GOVERNING_DOCUMENTS = [

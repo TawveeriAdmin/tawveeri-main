@@ -44,12 +44,22 @@ function collect() {
   const materialized = new Map<string, string>();
   const revoked = new Set<string>();
 
+  // SCHEMA-QUALIFIED NAMES ARE PARSED, not assumed away. The original patterns matched
+  // `(?:public\.)?<name>`, so `create table observability.validation_events` captured
+  // "observability" as the TABLE and the matching `alter table observability.validation_events
+  // enable row level security` matched nothing at all — the table looked RLS-less while its
+  // definition enabled and FORCED RLS two lines below. A guard that cannot read the schema
+  // prefix would either block every non-public table or, worse, mis-report which one is exposed.
+  // `public.` is normalised away so existing bare names keep working.
+  const qualified = (raw: string) => raw.replace(/^public\./i, '').toLowerCase();
+
   for (const { file, sql } of readSchemaSql()) {
-    for (const m of sql.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(?:public\.)?([a-z_]+)/gi)) {
-      if (!created.has(m[1])) created.set(m[1], file);
+    for (const m of sql.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?([a-z_]+(?:\.[a-z_]+)?)/gi)) {
+      const name = qualified(m[1]);
+      if (!created.has(name)) created.set(name, file);
     }
-    for (const m of sql.matchAll(/ALTER TABLE (?:public\.)?([a-z_]+)\s+ENABLE ROW LEVEL SECURITY/gi)) {
-      rlsEnabled.add(m[1]);
+    for (const m of sql.matchAll(/ALTER TABLE ([a-z_]+(?:\.[a-z_]+)?)\s+ENABLE ROW LEVEL SECURITY/gi)) {
+      rlsEnabled.add(qualified(m[1]));
     }
     for (const m of sql.matchAll(/CREATE MATERIALIZED VIEW (?:IF NOT EXISTS )?(?:public\.)?([a-z_]+)/gi)) {
       if (!materialized.has(m[1])) materialized.set(m[1], file);

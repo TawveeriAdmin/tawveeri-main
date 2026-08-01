@@ -404,6 +404,17 @@ export const APPROVED_STATEMENTS: readonly ApprovedStatement[] = [
     source: { section: '§8', quote: 'Approved public wording — use exactly this' },
   },
   {
+    id: 'last-observed-price-label',
+    text: { ar: 'آخر سعر رصدناه', en: 'Last Observed Price' },
+    // §10. Replaces «السعر الحالي» / "Current Price" on every customer surface. A price alert
+    // tracks OBSERVED prices over time; we report observed evidence, not a guaranteed current
+    // market price, and those are different claims. "Best Price We Observed" was considered and
+    // rejected: it asserts a superlative across retailers that a single threshold does not
+    // evidence, and it is longer at exactly the point a shopper is entering a number.
+    verbatim: true,
+    source: { section: '§10', quote: 'Last Observed Price' },
+  },
+  {
     id: 'retailer-capability-statement',
     text: { ar: 'قارن الأسعار بين متاجر سعودية', en: 'Compare prices across Saudi retailers' },
     // Replaces the retired count. True permanently; the count had to be re-earned on every

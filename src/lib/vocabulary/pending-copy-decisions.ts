@@ -34,44 +34,26 @@ export interface PendingCopyDecision {
 }
 
 export const PENDING_COPY_DECISIONS: readonly PendingCopyDecision[] = [
-  {
-    where: 'product.json:priceAlertCurrentPrice',
-    ruleId: 'price-currency-claim',
-    shipped: { ar: 'أفضل سعر حالياً', en: 'Current best price' },
-    reason:
-      'Live in the price-alert dialog. §3 forbids "current" as a price-freshness word, and this ' +
-      'label asserts the price is current when it is OBSERVED, with an age we display elsewhere. ' +
-      'The replacement is not obvious — «أفضل سعر رصدناه» / "Best price we observed" is accurate ' +
-      'but longer and changes a control a customer reads while setting a threshold. A wording ' +
-      'change to live customer copy is an F1 decision, not an engineering one.',
-    owner: 'founder (F1 — amend the vocabulary or the copy, with evidence)',
-    since: '2026-08-01 · surfaced by F7·1',
-  },
-  {
-    where: 'product.json:priceAlertInvalid',
-    ruleId: 'price-currency-claim',
-    shipped: {
-      ar: 'يرجى إدخال سعر مستهدف صحيح أقل من السعر الحالي.',
-      en: 'Please enter a valid target price below the current price.',
-    },
-    reason:
-      'Same class, in a validation message. Arguably weaker — it refers to the number on screen ' +
-      'rather than making a market claim — but the document draws no such line, and inventing ' +
-      'one in code is exactly the drift this artefact exists to prevent.',
-    owner: 'founder (F1)',
-    since: '2026-08-01 · surfaced by F7·1',
-  },
-  {
-    where: 'products.json:priceAlert.currentPrice',
-    ruleId: 'price-currency-claim',
-    shipped: { ar: 'السعر الحالي', en: 'Current Price' },
-    reason:
-      'Live in the price-alert card. A bare field label; the same wording decision as the two ' +
-      'above and should be settled together rather than piecemeal.',
-    owner: 'founder (F1)',
-    since: '2026-08-01 · surfaced by F7·1',
-  },
+  // EMPTY, AND THAT IS THE MECHANISM WORKING — not a register nobody used.
+  //
+  // Three entries stood here on 2026-08-01: «أفضل سعر حالياً» / "Current best price",
+  // «السعر الحالي» / "Current Price", and the validation message beside them. F7·1 surfaced
+  // them, the founder decided the wording under F1 the same day, `LAUNCH_VOCABULARY.md` §10 was
+  // amended FIRST and the copy followed. The approved replacement is «آخر سعر رصدناه» /
+  // "Last Observed Price"; validation messages carry the same framing as a sentence rather than
+  // the label's exact words.
+  //
+  // A FOURTH string was found while applying it — `dashboard.json:currentPrice` = "Current" /
+  // «الحالي», rendered as "Current: <price>" on the dashboard alert card. It had never been
+  // flagged because `price-currency-claim` requires a price word within 40 characters and this
+  // label carries none: the price sits in a sibling component. Found by grepping the bundles for
+  // the CLAIM rather than trusting the scanner to have found every instance of it — the same
+  // lesson every instrument error in this repo has taught.
+  //
+  // The register is empty because the debt was paid, not because it was cleared. The stale-entry
+  // check in `vocabulary-scan` and in `vocabulary.test.ts` keeps any future entry honest.
 ] as const;
+
 
 /** `<file>:<key>` set, for the scanner. */
 export const PENDING_KEYS: ReadonlySet<string> = new Set(PENDING_COPY_DECISIONS.map((p) => p.where));

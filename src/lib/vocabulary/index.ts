@@ -68,6 +68,7 @@ export {
   MAX_LOGGED_CHARS,
 } from './validation-log';
 export type { ValidationEvent, ValidationSink } from './validation-log';
+export { writeDurableValidationEvent, closeDurableSink } from './durable-sink';
 
 // ── F7·3 · the adversarial corpus, as data shared by the gate and the production script ──
 export { ADVERSARIAL_CASES, MUST_PASS_CASES, DECLARED_RESIDUALS } from './adversarial-corpus';

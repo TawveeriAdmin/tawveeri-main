@@ -64,7 +64,8 @@
     "tps:dead-links": "node scripts/tps-analysis/dead-links.js",
     "tps:shell-verify": "node scripts/tps-analysis/shell-verify.js",
     "tps:vocabulary-scan": "tsx scripts/tps-analysis/vocabulary-scan.ts",
-    "tps:validator-verify": "tsx scripts/tps-analysis/validator-verify.ts"
+    "tps:validator-verify": "tsx scripts/tps-analysis/validator-verify.ts",
+    "tps:validation-log-health": "tsx scripts/tps-analysis/validation-log-health.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

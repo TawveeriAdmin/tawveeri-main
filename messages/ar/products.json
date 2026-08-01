@@ -21,7 +21,7 @@
     "value": "القيمة"
   },
   "priceAlert": {
-    "currentPrice": "السعر الحالي",
+    "currentPrice": "آخر سعر رصدناه",
     "targetPrice": "السعر المستهدف",
     "difference": "الفرق",
     "targetReached": "تم الوصول للهدف!",

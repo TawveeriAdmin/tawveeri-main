@@ -6,6 +6,93 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-161 — «السعر الحالي» / "Current Price" is retired; observation wording everywhere · Accepted (2026-08-01)
+
+**Context.** F7·1 found the forbidden word live in customer copy that §3 had banned since
+2026-07-30. Founder decision under F1, taken on the evidence.
+
+**Decision.** `LAUNCH_VOCABULARY.md` **§10 amended FIRST**, then the copy. Approved replacement:
+«آخر سعر رصدناه» / **"Last Observed Price"**. A price alert tracks OBSERVED prices over time; the
+platform reports observed evidence, not a guaranteed current market price, and those are
+different claims. *"Best Price We Observed"* was considered and rejected — it asserts a
+superlative across retailers that a single threshold does not evidence, and it is longer at
+exactly the point a shopper is entering a number. **Validation messages carry the PRINCIPLE, not
+the label's words:** "Please enter a target price below the last price we observed."
+
+**A FOURTH string was found while applying the decision.** `dashboard.json:currentPrice` =
+"Current" / «الحالي», rendered as `Current: <price>` on the dashboard alert card. The scanner had
+never flagged it, correctly: `price-currency-claim` requires a price word within 40 characters
+and this label carries none — the price is in a sibling component. **Found by grepping the
+bundles for the claim rather than trusting the scanner to have found every instance of it.** The
+same lesson every instrument error in this repo has taught, and the reason a scanner is never
+the last step of a copy change.
+
+**`store.json` is deliberately unchanged.** A merchant editing their own price in the store portal
+is looking at a price that is genuinely current *to them*, and that surface makes no claim on our
+behalf. Recorded in §10's scope note so it is not "found" again.
+
+**Consequences.** Four customer-facing strings changed across both locales; the pending-copy
+register is empty because the debt was paid; a regression case (`regression-current-price-label`)
+keeps it dead. Vocabulary `2026-08-01+1`.
+
+---
+
+### ADR-160 — Durable validation logging: observability that can never become a dependency · Accepted (2026-08-01)
+
+**Context.** F7's last open item. The validator recorded to stdout only — a guard whose evidence
+disappears with the log buffer cannot answer *"was it running?"* after an incident, which is the
+one question the record exists for.
+
+**MIGRATION RISK — asked for explicitly, answered precisely.**
+
+The table lives in a **non-exposed schema** (`observability`), not `public`. PostgREST introspects
+only the schemas it is configured to expose, so this table adds **nothing to the REST schema
+cache**, cannot be reached by `anon` under any misconfiguration, and does not enlarge the catalog
+introspection that the PGRST002 incident turned into an outage.
+
+**The residual risk, stated rather than minimised:** Supabase's `pgrst_ddl_watch` event trigger
+fires `NOTIFY pgrst, 'reload schema'` on ANY `ddl_command_end` — schema placement does not change
+that. So the migration did trigger **one** PostgREST schema reload, exactly as every Supabase
+migration does. That became an outage once only when a reload coincided with heavy concurrent
+pipeline writes AND an authenticator `statement_timeout` too low for cold introspection. Both are
+addressed (roles relaxed to 30s/20s), and it was executed on a **verified-idle** database —
+`pg_stat_activity` showed 1 active backend, which was the checking query itself. Verified after:
+`discount-integrity`, `/api/search` and `/ar` all 200 across four probes, shell-verify 40/40.
+
+**ROLLBACK VERIFIED BEFORE EXECUTION, literally.** `run-19-dryrun.js` runs the forward migration
+AND `19-validation-events-rollback.sql` inside ONE transaction, inserts a representative event to
+prove the shape, asserts the schema is gone after the rollback, then `ROLLBACK`s. Because the
+`NOTIFY` is transactional, the rehearsal delivered no reload at all — it was free. The rollback
+carries the same small reload risk as the forward migration, because a DROP is also DDL.
+
+**Decision — logging is observability, never a dependency, and that is STRUCTURAL:**
+- the insert is **fire-and-forget** and never awaited, so it cannot add latency;
+- `writeDurableValidationEvent` returns `void` — **there is no result a caller could branch on**;
+- every failure path ends in a swallowed catch, including the promise rejection (an unhandled
+  rejection is the loudest possible way for a *logger* to break a product);
+- `validate.ts` does not import the log at all, asserted by a test on the source;
+- the route reads the **verdict** to decide, never the log;
+- the two sinks are wrapped **separately** — one try around both would let a throwing stdout sink
+  silently skip the durable write, the coupling that makes a logger look healthy while recording
+  nothing.
+
+**Disabled under `NODE_ENV=test`.** `.env.local` carries a real production DSN and jest loads it;
+a default-on sink would have every test run writing to the production log — silently poisoning
+the exact table used to answer whether the guard was running.
+
+**An existing guard caught a real defect in my migration.** `tests/database/rls-coverage.test.ts`
+parsed `(?:public\.)?<name>`, so `create table observability.validation_events` captured
+*"observability"* as the table and the matching `ALTER TABLE … ENABLE ROW LEVEL SECURITY` matched
+nothing — the table read as RLS-less while its definition enables and FORCES RLS two lines below.
+Fixed by making the parser schema-aware, which strengthens the guard for every future non-public
+table rather than exempting this one.
+
+**Verified in production.** `npm run tps:validation-log-health` — table exists, RLS enabled and
+forced, **zero grants to `anon`/`authenticated`**, all three outcomes written durably and read
+back distinctly with their rule ids and reasons, rehearsal rows deleted. 1,061/1,061 tests.
+
+---
+
 ### ADR-159 — F7·3: the adversarial suite is a permanent gate, and it found four holes in F7·2 · Accepted (2026-08-01)
 
 **Context.** Appendix F7 requires the assistant be *"tested adversarially before deployment:

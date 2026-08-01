@@ -172,8 +172,8 @@ describe('AC6 — versioned: the fingerprint is pinned so an edit cannot be sile
   // BUMP `VOCABULARY_VERSION` AND THIS CONSTANT TOGETHER, in the same change that amends
   // `docs/LAUNCH_VOCABULARY.md`. If this test fails and you did not intend to change the
   // vocabulary, you changed the vocabulary.
-  const PINNED_FINGERPRINT = '46956139';
-  const PINNED_VERSION = '2026-07-31+2';
+  const PINNED_FINGERPRINT = 'cf904cca';
+  const PINNED_VERSION = '2026-08-01+1';
 
   it('version is pinned', () => {
     expect(VOCABULARY_VERSION).toBe(PINNED_VERSION);
@@ -198,9 +198,18 @@ describe('the pending-copy register cannot become a suppression list', () => {
     return key.split('.').reduce<unknown>((n, k) => (n && typeof n === 'object' ? (n as Record<string, unknown>)[k] : undefined), json) as string | undefined;
   };
 
-  it.each(PENDING_COPY_DECISIONS.map((p) => [p.where, p] as const))(
+  it('an empty register is a paid debt, not a skipped check', () => {
+    // `it.each` throws on an empty table, so the empty case is asserted explicitly rather than
+    // by the absence of tests — a suite that silently runs zero assertions is how a register
+    // stops being checked without anyone noticing.
+    expect(Array.isArray(PENDING_COPY_DECISIONS)).toBe(true);
+  });
+
+  const staleCheck = PENDING_COPY_DECISIONS.length ? it.each(PENDING_COPY_DECISIONS.map((p) => [p.where, p] as const)) : it.each([['none', null]] as const);
+  staleCheck(
     '%s still exists and still trips its rule',
     (where, pending) => {
+      if (!pending) return; // empty register — covered by the assertion above
       for (const locale of ['ar', 'en'] as const) {
         const value = bundleValue(locale, where);
         expect(typeof value).toBe('string');

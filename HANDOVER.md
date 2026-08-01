@@ -1,4 +1,120 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #31 · F7·3 COMPLETE · F7 NOT COMPLETE ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #32 · F7 COMPLETE · FLAG STILL OFF BY CHOICE ═══
+
+**Tree clean, pushed, verified in production. Nothing running.** Decisions: **ADR-160** (durable
+logging) · **ADR-161** (wording). **`AI_ASSISTANT_ENABLED` untouched — surface verified 404.**
+
+## THE FOUR ANSWERS
+
+| question | answer |
+|---|---|
+| **Is this boundary complete?** | **YES** |
+| **Is F7 complete?** | **YES** — all five checklist items now hold |
+| **Does anything block `AI_ASSISTANT_ENABLED`?** | **One thing, and it is not F7** — see below |
+| **Does anything block P2-5?** | **The same one thing** |
+
+### The one remaining blocker
+
+**The engine does not publish the figures it renders.** `smart_pick.chosen_over.reasons_*` says
+«أوفر بـ180 ريال في التكلفة الإجمالية» / "180 SAR lower total cost" — and **that 180 is nowhere in
+the payload.** The engine publishes both total costs but not the delta.
+
+Safe today: the engine computes and writes that sentence itself, deterministically. **The moment
+an LLM phrases these facts, the validator will correctly suppress the answer** — a guard doing its
+job, on a true statement, because the evidence contract is incomplete. That is a small, contained
+change to the decide payload, and it is the last prerequisite.
+
+## WORDING DECISION — APPLIED (ADR-161)
+
+`LAUNCH_VOCABULARY.md` **§10 amended first** (F1), then the copy. «آخر سعر رصدناه» /
+**"Last Observed Price"**; validation messages carry the principle rather than the label.
+
+| where | before | after |
+|---|---|---|
+| `product.json:priceAlertCurrentPrice` | «أفضل سعر حالياً» / "Current best price" | «آخر سعر رصدناه» / "Last Observed Price" |
+| `products.json:priceAlert.currentPrice` | «السعر الحالي» / "Current Price" | «آخر سعر رصدناه» / "Last Observed Price" |
+| `product.json:priceAlertInvalid` | «…أقل من السعر الحالي.» | «…أقل من آخر سعر رصدناه.» / "…below the last price we observed." |
+| **`dashboard.json:currentPrice`** | «الحالي» / "Current" | «آخر رصد» / "Last observed" |
+
+**A FOURTH string was found while applying the decision** — the dashboard alert card. The scanner
+had never flagged it, *correctly*: the rule needs a price word within 40 characters and that label
+has none (the price is in a sibling component). Found by **grepping the bundles for the claim**
+rather than trusting the scanner to have found every instance. A scanner is never the last step of
+a copy change.
+
+**`store.json` deliberately unchanged** — a merchant editing their own price sees a price that is
+genuinely current *to them*, and that surface makes no claim on our behalf. Recorded in §10's scope.
+
+**Confirmed:** 0 "Current Price" wording remains in customer-facing messages. Pending register is
+**empty because the debt was paid**; `regression-current-price-label` keeps it dead.
+
+## DURABLE LOGGING — MIGRATION RISK, ANSWERED
+
+**The table is in `observability`, NOT `public`.** PostgREST introspects only exposed schemas, so
+it adds **nothing to the REST schema cache** and is unreachable by `anon` under any
+misconfiguration.
+
+**Residual risk, not minimised:** Supabase's `pgrst_ddl_watch` fires one `NOTIFY pgrst 'reload
+schema'` on *any* DDL — placement does not change that. It became an outage once (PGRST002) only
+when a reload met heavy concurrent pipeline writes and a too-low authenticator timeout. Both are
+addressed, and it ran on a **verified-idle** DB (`pg_stat_activity` = 1 active backend, my own
+query). After: `discount-integrity` / `/api/search` / `/ar` all 200 across four probes,
+shell-verify 40/40.
+
+**Rollback verified BEFORE execution, literally:** `node scripts/database/run-19-dryrun.js` runs
+the migration *and* its rollback in one transaction, inserts a representative event, asserts the
+schema is gone, then `ROLLBACK`s. The `NOTIFY` is transactional, so the rehearsal fired no reload
+— it was free.
+
+**Logging can never become a dependency, structurally:** fire-and-forget · returns `void` so
+there is nothing to branch on · every failure path swallowed including the promise rejection ·
+`validate.ts` does not import the log (asserted on the source) · the route decides from the
+**verdict** · the two sinks are wrapped **separately**, because one try around both would let a
+throwing stdout sink silently skip the durable write.
+
+**Disabled under `NODE_ENV=test`** — `.env.local` holds a real production DSN and jest loads it; a
+default-on sink would have every test run poisoning the table used to answer whether the guard ran.
+
+**An existing guard caught a real defect in my migration.** `rls-coverage.test.ts` parsed
+`(?:public\.)?<name>`, so my schema-qualified table read as RLS-less while its definition enables
+and FORCES RLS. Fixed by making the parser schema-aware — strengthening the guard for every future
+non-public table rather than exempting mine.
+
+## VERIFIED IN PRODUCTION
+
+```bash
+npm run tps:validation-log-health     # table, RLS, grants, all three outcomes round-trip
+npm run tps:validator-verify
+npm run tps:vocabulary-scan
+```
+
+| | result |
+|---|---|
+| durable log health | **7/7 PASS** — RLS forced, **0 grants to anon/authenticated**, 3/3 outcomes stored distinctly |
+| vocabulary scan | **PASS** — 0 live findings, **0 pending** |
+| validator-verify | surface **404** · 22/22 blocked · 4/4 must-pass · 0 false rejections |
+| shell-verify | **40/40** |
+| unit tests | **1,061 / 1,061** |
+
+## ROLLBACK
+
+```
+<H1>  ADR-160/161 durable logging + wording   git revert <H1>
+node scripts/database/run-19-dryrun.js --rollback     # drops the table AND its events
+```
+
+The code revert is safe alone — the sink is env-gated and a missing table only logs a warning.
+Run the SQL rollback only if you also want the schema gone; it is destructive to recorded events
+and carries the same one-reload risk.
+
+## NEXT
+
+1. **Publish the engine's derived figures** (the last blocker above).
+2. Then `AI_ASSISTANT_ENABLED` is a decision, not a hazard — see the recommendation in the report.
+3. P2-5 وفّر advisor build-out.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #31 · F7·3 COMPLETE · F7 NOT COMPLETE ═══
 
 **Tree clean, pushed, verified against production. Nothing running.** Decision: **ADR-159**.
 **`AI_ASSISTANT_ENABLED` untouched — surface verified 404 after deploy.**

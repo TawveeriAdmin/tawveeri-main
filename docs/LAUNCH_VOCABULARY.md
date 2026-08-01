@@ -250,3 +250,42 @@ true permanently; the count had to be re-earned on every ingestion change.
 ### MUST NOT SAY — added
 - ❌ Any fixed retailer count in customer-facing copy, in either language, unless it derives from
   a live query with a documented definition.
+
+---
+
+## 10. AMENDMENT 2026-08-01 — «السعر الحالي» / "Current Price" is retired
+
+**Founder decision, under Appendix F1** (amend the vocabulary first, then the copy). Surfaced by
+the F7·1 vocabulary artefact, which found the claim live in four customer-facing strings while
+§3 had forbidden the word since 2026-07-30.
+
+### Retired from customer-facing copy
+- ❌ «السعر الحالي» · «أفضل سعر حالياً» · «الحالي» beside a price
+- ❌ "Current Price" · "Current best price" · "Current" beside a price
+
+### Replaces it — use exactly this
+> **عربي:** «آخر سعر رصدناه»
+> **English:** "Last Observed Price"
+
+### The reasoning, recorded so it is not re-litigated
+A price alert **tracks observed prices over time**. The platform reports observed evidence, not a
+guaranteed current market price — the two are different claims, and only one of them is ours to
+make. "Last Observed Price" is the most accurate wording available, stays short enough for a
+control read mid-task, and is consistent with Principle 1, Principle 2, F1 and §4's past-tense,
+evidence-anchored replacement table.
+
+**"Best Price We Observed" was considered and rejected.** It is accurate but asserts a superlative
+across retailers that a single alert threshold does not evidence, and it is longer at exactly the
+point where a shopper is entering a number.
+
+### Validation messages adapt the PRINCIPLE, not the string
+A validation message is a sentence, not a label. It carries the same observation-based framing
+rather than the label's exact words:
+
+> **عربي:** «يرجى إدخال سعر مستهدف أقل من آخر سعر رصدناه.»
+> **English:** "Please enter a target price below the last price we observed."
+
+### Scope
+Customer-facing copy. The **store-owner portal** (`store.json`) is out of scope: a merchant
+editing their own price is looking at a price that is genuinely current *to them*, and that
+surface makes no claim on our behalf.

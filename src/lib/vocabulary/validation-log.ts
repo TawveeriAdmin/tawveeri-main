@@ -15,15 +15,22 @@
 // says the guard is broken. Merging them would let a broken guard hide inside a healthy-looking
 // rejection rate.
 //
-// SINK. The default writes one JSON line to stdout, which is captured by the platform's log
-// collector and needs no schema change. Persisting to the database would be a production write
-// and a migration — a founder decision, not an engineering one — so the sink is INJECTABLE and
-// that decision stays open rather than being made silently here.
+// TWO SINKS (ADR-160). stdout — one JSON line, captured by the platform's log collector, no
+// schema needed, injectable for tests. AND a durable write to `observability.validation_events`,
+// because a guard whose evidence disappears with the log buffer cannot answer "was it running?"
+// after an incident, which is the entire question the record exists for.
+//
+// NEITHER IS LOAD-BEARING. Both are best-effort and both are wrapped. If the database is
+// unreachable the validator still suppresses; see `durable-sink.ts` for how that is structural
+// rather than careful.
 //
 // PRIVACY. The customer's query and the generated answer are both recorded, because a rejection
-// that does not say what was rejected cannot be investigated or reproduced. Anything routed to
-// durable storage later must be reviewed for retention on that basis.
+// that does not say what was rejected cannot be investigated or reproduced. They are now DURABLE,
+// so retention is a live question rather than a theoretical one — the table is in a
+// PostgREST-unexposed schema with RLS forced and no grants to `anon`/`authenticated`, so it is
+// reachable only by an operator on a direct connection.
 import type { ValidationVerdict } from './validate';
+import { writeDurableValidationEvent } from './durable-sink';
 
 /** Generated answers can be long; the record stays bounded and SAYS when it truncated. */
 export const MAX_LOGGED_CHARS = 4_000;
@@ -98,10 +105,24 @@ export function recordValidationEvent(input: {
     fingerprint: input.verdict.fingerprint,
     surface: input.surface,
   };
+  // TWO SINKS, BOTH BEST-EFFORT, NEITHER LOAD-BEARING.
+  //
+  // stdout first and always: it is the one that cannot fail for an infrastructure reason, so if
+  // the durable write is lost the event still exists somewhere. Then the durable write, which is
+  // fire-and-forget and returns immediately.
+  //
+  // Each is wrapped separately ON PURPOSE — a single try around both would let a throwing stdout
+  // sink (a test double, say) silently skip the durable write, which is exactly the kind of
+  // coupling that makes a logger look healthy while recording nothing.
   try {
     sink(event);
   } catch {
     /* a broken sink must not break an answer */
+  }
+  try {
+    writeDurableValidationEvent(event);
+  } catch {
+    /* nor may the durable one */
   }
   return event;
 }

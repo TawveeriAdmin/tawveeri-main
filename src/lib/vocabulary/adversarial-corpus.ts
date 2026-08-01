@@ -310,6 +310,19 @@ export const ADVERSARIAL_CASES: readonly AdversarialCase[] = [
     expectRules: ['catalogue-presented-as-comparable'],
   },
   {
+    id: 'regression-current-price-label',
+    family: 'regression',
+    purpose:
+      'LIVE ON PRODUCTION until 2026-08-01 in FOUR customer-facing strings — «السعر الحالي» / ' +
+      '"Current Price" on the price-alert dialog, card and dashboard. §3 had forbidden the word ' +
+      'since 2026-07-30; nothing was checking, which is why F7·1 exists. Retired by §10.',
+    generated: 'السعر الحالي لهذا المنتج 1899 ريال.',
+    evidence: { figures: [{ value: 1899, kind: 'price', derivedFrom: 'live-query' }], retailers: [] },
+    invariant: 'We report an OBSERVED price with its age, never a price asserted to be current.',
+    expect: 'rejected',
+    expectRules: ['price-currency-claim'],
+  },
+  {
     id: 'regression-engineering-figure',
     family: 'regression',
     purpose: 'Publishing a harness result as if it were a customer benefit.',
