@@ -326,8 +326,8 @@ ${isStrictDeals ? 'وأكد أنها عروض محسوبة من تاريخ ال�
 
 ✅ ذكاء سعري حقيقي من توفيري للمنتج "${tpsProduct.name_ar || tpsProduct.name_en}" — استخدمه فقط ولا تخترع أرقاماً:
 
-السعر الحالي الأفضل: ${intel.currentBestPrice} ريال
-أقل سعر مسجّل: ${intel.lowestEver} ريال ${intel.isLowestEver ? '(السعر الحالي هو الأقل! 🔥)' : ''}
+أفضل سعر رصدناه: ${intel.currentBestPrice} ريال
+أقل سعر مسجّل: ${intel.lowestEver} ريال ${intel.isLowestEver ? '(هذا أقل سعر رصدناه! 🔥)' : ''}
 متوسط السعر: ${intel.average} ريال (الفرق عن المتوسط: ${intel.diffFromAverage}٪)
 الاتجاه: ${intel.trend === 'falling' ? 'في انخفاض ↓' : intel.trend === 'rising' ? 'في ارتفاع ↑' : 'مستقر'}
 التقييم: ${intel.dealText}

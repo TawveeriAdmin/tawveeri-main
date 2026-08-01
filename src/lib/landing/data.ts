@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/database';
 
 /**
  * All category enum values (migrations 01 + 18). Kept in sync with
- * the UI's CATEGORY_META in `landing-client.tsx`. Used to issue one
+ * the UI's CATEGORY_META (the V1 landing client, deleted 2026-08-01 as proven-dead code). Used to issue one
  * parallel COUNT query per bucket so we don't hit Supabase's 1,000-row
  * SELECT cap when the catalog is large.
  */

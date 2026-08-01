@@ -1,4 +1,65 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #34 · P2-5 ADVISOR BUILD-OUT ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #35 · DEAD-CODE CLEANUP ═══
+
+**Tree clean, pushed, verified in production. Nothing running.** Decision: **ADR-164**.
+**`AI_ASSISTANT_ENABLED` untouched.**
+
+## PROVEN BEFORE ANYTHING WAS DELETED
+
+**Deleted — ONE module, all six criteria met:** `src/app/[locale]/landing-client.tsx` — zero
+static imports (two COMMENT mentions only), no `LandingClient` symbol referenced anywhere, no
+dynamic or lazy import, not a route file (page/layout/error/not-found), no error-boundary or
+not-found reference, unreachable by locale routing.
+
+**NOT deleted — still reachable:** `src/app/how-it-works/page.tsx` and `src/app/about/page.tsx`
+are **route files**; Next resolves `/how-it-works` and `/about` to them. Production returns
+**307** because middleware redirects to the locale route. **Interception is not deadness**, and
+it is config-dependent — deleting them changes behaviour the moment the matcher changes. Claims
+replaced instead, exactly as instructed.
+
+## THE FIND THAT MATTERED MOST
+
+**`src/app/[locale]/how-it-works/page.tsx` is LIVE (200, both locales) and carried
+«من جميع المتاجر»** — a comprehensive-market claim §3 has forbidden since 2026-07-30.
+
+**§1b missed it.** The scanner reads QUOTED LITERALS; this is JSX **text content**. A third
+blind spot in the same instrument — found by grepping the repo for the CLAIM rather than trusting
+the scanner. Recorded; closing it is its own boundary.
+
+## CLAIMS REPLACED — pre-approved wording only, no new claim invented
+
+| where | was | now |
+|---|---|---|
+| `[locale]/how-it-works` **(LIVE)** | «من جميع المتاجر» | «من متاجر سعودية» |
+| `app/how-it-works` (intercepted) | «من جميع المتاجر» | «من متاجر سعودية» |
+| `landing.json` ×2 keys ×2 locales | "from all stores" / «من كل المتاجر» | §9 capability statement |
+| `agent.json:measuredExitNote` ×2 | «الأسعار تُحدّث» / "Prices are updated" | «الأسعار من رصدنا» |
+| `ai-assistant` prompt context | «السعر الحالي الأفضل» | «أفضل سعر رصدناه» |
+
+The prompt fix matters on its own: a prompt steering the model toward retired wording would have
+produced answers the validator then correctly suppressed. A prompt that fights the guard is a
+defect even while the surface is closed.
+
+## MEASURED
+
+| | before | after |
+|---|---|---|
+| latent bundle findings | 5 | **0** |
+| §1b component findings | 10 | **7** |
+| pending copy decisions | 0 | **0** |
+| unit tests | 1,076 | **1,076** |
+
+**The remaining 7 are not defects:** operator surface ×3 (§10 scope), a `50/50` layout ratio ×2,
+and two sentences about OUR ACTIVITY/COVERAGE rather than price currency.
+
+## ROLLBACK
+
+```
+dc7928f  ADR-164 dead-code cleanup   git revert dc7928f
+```
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #34 · P2-5 ADVISOR BUILD-OUT ═══
 
 **Tree clean, pushed, verified in production. Nothing running.** Decision: **ADR-163**.
 **`AI_ASSISTANT_ENABLED` untouched — enabling it is a separate founder decision.**

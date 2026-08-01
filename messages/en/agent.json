@@ -26,7 +26,7 @@
   "addRoomSize": "Add the room size (in m²) so I can size the capacity precisely.",
   "unresolvedHint": "To improve the recommendation, add:",
   "deterministicBadge": "Deterministic engine",
-  "measuredExitNote": "Prices are updated from stores; tapping takes you straight to the store.",
+  "measuredExitNote": "Prices are from our observations; tapping takes you straight to the store.",
   "vsAlternative": "Chosen over",
   "evidenceTitle": "Evidence & trust",
   "evidenceIntro": "We show what this recommendation is built on — clearly separating what is verified, what is inferred, and what is unknown.",

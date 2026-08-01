@@ -30,7 +30,7 @@
     "subtitle": "We make smart shopping easy and profitable with advanced technology",
     "instant": {
       "title": "Instant Smart Comparison",
-      "description": "Advanced algorithm compares prices from all stores in under a second",
+      "description": "Compare prices across Saudi retailers",
       "stats": "< 1 second"
     },
     "alerts": {
@@ -64,7 +64,7 @@
     },
     "step2": {
       "title": "Compare Prices",
-      "description": "See all prices and offers from every store instantly"
+      "description": "See the prices we observed across Saudi retailers"
     },
     "step3": {
       "title": "Save Money",

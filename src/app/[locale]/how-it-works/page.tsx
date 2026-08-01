@@ -31,7 +31,7 @@ export default function HowItWorksPage() {
             <div style={{fontSize:'26px',marginBottom:'8px'}}>📊</div>
             <div style={{fontWeight:'700',fontSize:'16px',marginBottom:'6px'}}>قارن الأسعار دفعة واحدة</div>
             <div style={{fontSize:'13px',color:'#7A9E92',lineHeight:'1.8'}}>
-              نجمع أسعار نفس المنتج من جميع المتاجر في صفحة واحدة مرتّبة من الأرخص للأغلى مع نسبة الخصم.
+              نجمع أسعار نفس المنتج من متاجر سعودية في صفحة واحدة مرتّبة من الأرخص للأغلى مع نسبة الخصم.
             </div>
           </div>
         </div>
