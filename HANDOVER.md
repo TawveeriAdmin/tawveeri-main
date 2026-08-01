@@ -1,4 +1,114 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #40 · SESSION CLOSED · BASELINE FROZEN ═══
+# ═══ RESUME HERE — 2026-08-02 CHECKPOINT #41 · UNIT A + UNIT B SHIPPED ═══
+
+**Tree clean · pushed · both units verified in production.** ADR-170 (A) · ADR-171 (B).
+**`AI_ASSISTANT_ENABLED` = ON, untouched.**
+
+## ⚠ `docs/TAWVEERI_MASTER_BOOK.md` STILL DOES NOT EXIST
+
+Verified again after `git pull`. I did not read it and did not create it. Unit B was decided on
+the Ch. 5/9/11 constraints the founder transcribed into the brief plus
+`docs/CONSUMER_EXPERIENCE_CONSTITUTION.md` (the consumer-experience authority actually in the
+repo, and the home of Appendix F7). **If the real Master Book contradicts the Unit B decision, it
+wins and the decision should be revised.**
+
+## UNIT A — homepage exits · `ac6a402`
+
+**Defect, measured:** `/ar` and `/en` each rendered **8 bare retailer links, 0 `/go/` exits**,
+while `/ar/deals` on the same data class routed correctly to 26 product pages. Cost: no affiliate
+attribution, no `go_click` (the only storefront exit signal), and a comparison platform sending
+its visitor away on the first screen without a comparison.
+
+**Rendered outcome verified FIRST, in a real browser:** all four live exits returned **200** and
+were real product pages. **There was no dead link** — the defect was attribution and the missing
+comparison, not breakage. Saying that precisely is what separates it from the string-reading
+error that produced the Jarir report.
+
+**Fix:** destination built server-side. `tps_listing_price_facts` has no observation id and no
+canonical (checked against `information_schema`), so the join is on the observation's own raw URL
+— the same field `/go` reads, making a resolved id guaranteed to work. Preference: **compare page
+→ `/go` exit → drop**. 131 of 300 candidates (43.7%) resolve, ample for a 4-card strip. Exits
+carry `source=home_deal`.
+
+**Verified in production, both locales:** `direct=0 · go=3 · compare=1`; each `/go` → **302** to a
+real product page; the compare page renders **2 retailer exits**. Retailer displayability and
+approved affiliate identifiers untouched — `/go` resolves the provider exactly as every other exit.
+
+## UNIT B — وفّر discoverability · `ae23976` (+ fix `e0fd005`)
+
+**Root cause, and neither step was wrong alone:** (1) the homepage offer was removed 2026-07-29
+because the first screen carried **two doors**; (2) the nav item it was removed *in favour of* was
+retired by ADR-152 as the forbidden choose-between-search-and-AI fork. **Two correct removals left
+zero entry points**, and the code comment still pointed at the vanished nav item.
+
+**DECISION: an affordance, not an entry point.** `/search` already routes by intent from the same
+field the homepage posts to — the capability was **reachable and undiscoverable**. Added one line
+under the search input showing that a sentence is a valid query. Novice describes a situation,
+expert types a model, same box.
+
+**Rejected:** a separate «اسأل وفّر» button/card (recreates the two-doors failure and the forbidden
+fork) · restoring the nav item (recreates ADR-152's defect) · floating bubble (excluded; also
+REDESIGN_BRIEF §5) · contextual help after first search (does not solve *first-time* discovery) ·
+onboarding modal (friction before first value; dismissed = buried).
+
+**One source for the teaching:** `src/lib/agent/need-phrasings.ts`; **both** homepage and `/search`
+import it. Two surfaces teaching different sentences is the one-fact-two-representations defect
+this codebase has already paid for twice.
+
+**No disclosure on the homepage, deliberately** — no AI answer appears there. **Correcting my own
+earlier report:** the disclosure renders on **neither** homepage (`data-testid` absent in both
+locales). My "present on `/ar`, absent on `/en`" was a grep artefact matching the message bundle
+in the RSC payload. **There is no locale asymmetry.**
+
+**Verified, mobile 390×844:** affordance in the first viewport (`ar` 384px, `en` 434px), 33–34px
+targets, 0 controls under 32px. Clicking a phrase routes to `/search?q=…` and renders the advisor
+answer with the disclosure, 25 result cards, both locales.
+
+## 🔴 A REGRESSION I SHIPPED AND CAUGHT — read this one
+
+`ae23976` replaced the inline phrasings in `search-client.tsx` **without adding the import**.
+Both identifiers were undefined at runtime; **`/[locale]/search` rendered the error boundary in
+both locales** — the primary customer surface. Fixed in `e0fd005`; search restored and verified.
+
+**Two of my own failures let it through:**
+1. My verification asserted `s.includes('need-phrasings')` *after* writing the file — and the
+   **comment I had just added** contains `need-phrasings.ts`. **The check passed on its own
+   artefact.**
+2. `next.config.ts` sets `typescript.ignoreBuildErrors: true`, so the build was green. **tsc did
+   report it**; I filtered with `head -3` and read only the pre-existing warnings above it.
+
+**Rule earned:** never verify an edit with a substring check against the file you just wrote, and
+never read a filtered typecheck when the filter is your own guess at the error.
+
+## VERIFICATION
+
+unified-search **54/54 GATE: PASS** · shell-verify **40/40** · adversarial **23/23** · must-pass
+**4/4** · 2,023 strings validated, 0 rejected, **0 unavailable** · tests **1,114/1,114**.
+
+**One known-stale gate assertion:** `validator-verify` asserts `POST /api/ai-assistant` → 404. It
+now returns **200 by founder decision**. Not a regression — the check was written when the surface
+was closed. **Left unchanged deliberately**: flipping a safety assertion to match reality deserves
+its own boundary, not a quiet edit inside an unrelated unit.
+
+## UNIT C — NARROWED, NOT CLOSED
+
+Rendered-outcome verified: Jarir `/sa-en/` and Almanea `/en/product/` both return **200 real
+product pages** but **do not locale-redirect** — `lang=en dir=ltr` even with `Accept-Language:
+ar-SA`. So "it resolves normally" and "the Arabic shopper lands on English" are **both true** —
+the pair of facts each of us merged in opposite directions. **It is a locale-UX defect, not a
+broken-exit one, and it affects Almanea too.** Lower severity than assumed; still open.
+
+## ROLLBACK
+
+```
+e0fd005  search import fix        git revert e0fd005   (revert only WITH ae23976)
+ae23976  Unit B affordance        git revert ae23976
+ac6a402  Unit A exits             git revert ac6a402
+```
+A and B are independent. `e0fd005` fixes `ae23976` and must not be reverted alone.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #40 · SESSION CLOSED · BASELINE FROZEN ═══
 
 **Tree clean · everything pushed · nothing running.** This is the canonical engineering state.
 
