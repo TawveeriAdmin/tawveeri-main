@@ -82,6 +82,9 @@ export type FigureKind =
   | 'catalogue-count'
   | 'retailer-count'
   | 'price'
+  // Observed product attributes (capacity, size, class). No rule consumes them yet; the engine
+  // publishes them so its bundle is complete rather than complete-enough (ADR-162).
+  | 'attribute'
   | 'other';
 
 /** One number the generated answer is permitted to state, and where it came from. */

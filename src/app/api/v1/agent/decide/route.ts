@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
+import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { shouldAsk } from "@/lib/agent/clarify";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
@@ -179,10 +180,15 @@ export async function POST(req: NextRequest) {
   const smart = smartIdx >= 0 ? out[smartIdx] : null;
   const runnerUp = out.find((r, i) => i !== smartIdx);
   const smartWithChoice = smart ? { ...smart, chosen_over: explainChoice(smart, runnerUp) } : null;
+  // THE PUBLISHED EVIDENCE CONTRACT (ADR-162). Every customer-visible figure this answer renders,
+  // declared with its provenance, so a consumer can verify any number WITHOUT knowing how the
+  // engine works and without inferring anything from field names. Built from the same objects the
+  // answer is rendered from, so it cannot describe a different answer than the one returned.
+  const evidence = buildPublishedEvidence({ recommendations: out, smart_pick: smartWithChoice });
   return NextResponse.json({
     version: "v1", task, parsed: parsed ?? undefined, supported,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
-    count: out.length, smart_pick: smartWithChoice, recommendations: out,
+    count: out.length, smart_pick: smartWithChoice, recommendations: out, evidence,
     // Present ONLY when the engine proved the answer would change it.  still
     // carries its reason so the decision is auditable rather than inferred from silence.
     clarify: clarify.ask ? { question: clarify.question, reason: clarify.reason } : null,

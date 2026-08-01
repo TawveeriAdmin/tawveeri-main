@@ -472,16 +472,32 @@ export interface ChoiceExplanation {
   alternative_title_en: string | null;
   reasons_ar: string[];
   reasons_en: string[];
+  /**
+   * PUBLISH, NEVER INFER (ADR-162).
+   *
+   * The saving this explanation RENDERS — «أوفر بـ180 ريال في التكلفة الإجمالية» / "180 SAR lower
+   * total cost". It used to exist only inside that sentence: both total costs were published and
+   * the DELTA was not, so nothing downstream could verify the one number a customer actually
+   * reads. Measured on production 2026-08-01, that made four strings per query unverifiable.
+   *
+   * `null` when no saving was rendered. A figure that cannot be declared is not rendered — the
+   * two are set together, a few lines below, so they cannot drift apart.
+   */
+  total_cost_delta: number | null;
 }
 export function explainChoice(pick: Recommendation, runnerUp: Recommendation | undefined): ChoiceExplanation | null {
   if (!runnerUp || runnerUp.canonical_id === pick.canonical_id) return null;
   const ar: string[] = []; const en: string[] = [];
+  let totalCostDelta: number | null = null;
   // 1) total cost (or unit price when no total-cost components)
   const pc = pick.total_cost_estimate ?? pick.unit_price;
   const rc = runnerUp.total_cost_estimate ?? runnerUp.unit_price;
   if (pc != null && rc != null && pc < rc) {
     const diff = Math.round(rc - pc);
-    if (diff > 0) { ar.push(`أوفر بـ${diff} ريال في التكلفة الإجمالية`); en.push(`${diff} SAR lower total cost`); }
+    // The figure is PUBLISHED on the same branch that renders it. Setting `totalCostDelta` here
+    // rather than recomputing it later is what makes "the engine cannot render a figure it does
+    // not declare" true by construction instead of by review.
+    if (diff > 0) { totalCostDelta = diff; ar.push(`أوفر بـ${diff} ريال في التكلفة الإجمالية`); en.push(`${diff} SAR lower total cost`); }
   }
   // 2) trust: more cross-store corroboration
   const ps = pick.store_count ?? 0, rs = runnerUp.store_count ?? 0;
@@ -492,7 +508,13 @@ export function explainChoice(pick: Recommendation, runnerUp: Recommendation | u
   const merit = (pick.reasons_ar ?? []).find((r) => /إنفرتر|هادئ|أوفر|تدفئة|كرت شاشة منفصل|تحميل أمامي|HEPA|حراري|أفضل سعر/.test(r) && !(runnerUp.reasons_ar ?? []).some((x) => x === r));
   if (merit && ar.length < 3) { ar.push(merit.replace(/^[^—]*—\s*/, "").trim()); }
   if (ar.length === 0) return null; // not clearly better — say nothing rather than fabricate
-  return { alternative_title_ar: runnerUp.title_ar, alternative_title_en: runnerUp.title_en, reasons_ar: ar.slice(0, 3), reasons_en: en.slice(0, 3) };
+  return {
+    alternative_title_ar: runnerUp.title_ar, alternative_title_en: runnerUp.title_en,
+    reasons_ar: ar.slice(0, 3), reasons_en: en.slice(0, 3),
+    // `slice(0,3)` can drop the saving sentence; publish the delta only if it SURVIVED into the
+    // rendered list. Publishing a figure we did not render would be the mirror of the defect.
+    total_cost_delta: ar.slice(0, 3).some((r) => r.includes("أوفر بـ")) ? totalCostDelta : null,
+  };
 }
 
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price

@@ -32,9 +32,9 @@ import {
   MUST_PASS_CASES,
   DECLARED_RESIDUALS,
   type AnswerEvidence,
-  type EvidenceFigure,
   type ValidationEvent,
 } from "../../src/lib/vocabulary";
+import { findUnpublishedFigures } from "../../src/lib/agent/published-evidence";
 
 const BASE = (() => {
   const i = process.argv.indexOf("--base");
@@ -72,49 +72,6 @@ function* strings(node: unknown, path = ""): Generator<[string, string]> {
   }
 }
 
-/**
- * Build the evidence bundle from the SAME payload the strings came from — exactly as the route
- * does. Building it from a second lookup would let the harness disagree with the product about
- * which facts were in play, and then the result would measure the harness.
- */
-function evidenceFrom(payload: unknown): AnswerEvidence {
-  const figures: EvidenceFigure[] = [];
-  const retailers = new Set<string>();
-  const walk = (node: unknown) => {
-    if (Array.isArray(node)) { node.forEach(walk); return; }
-    if (!node || typeof node !== "object") return;
-    const o = node as Record<string, unknown>;
-    for (const key of ["store_name", "retailer", "merchant", "store"]) {
-      if (typeof o[key] === "string") retailers.add(o[key] as string);
-    }
-    for (const key of ["store_count", "retailer_count", "stores"]) {
-      const v = o[key];
-      if (typeof v === "number") figures.push({ value: v, kind: "retailer-count", derivedFrom: "live-query" });
-      if (Array.isArray(v)) figures.push({ value: v.length, kind: "retailer-count", derivedFrom: "live-query" });
-    }
-    // PRICES. The first version of this extractor collected retailers and store counts but no
-    // prices at all, so every price the engine states looked unbacked — 41 rejections of correct
-    // production output, reported as "no price evidence supplied at all". The harness was not
-    // supplying what the product was clearly using.
-    //
-    // A field whose name says `estimate` is `computed`: the engine's total-cost line is an
-    // observed unit price plus a disclosed electricity model, and it is labelled «التكلفة
-    // التقديرية». Everything else priced is read live.
-    for (const [key, v] of Object.entries(o)) {
-      if (typeof v !== "number" || v <= 0) continue;
-      if (!/(price|cost|total|saving|amount)/i.test(key)) continue;
-      figures.push({
-        value: v,
-        kind: "price",
-        derivedFrom: /(estimate|estimated|total)/i.test(key) ? "computed" : "live-query",
-      });
-    }
-    Object.values(o).forEach(walk);
-  };
-  walk(payload);
-  return { figures, retailers: [...retailers] };
-}
-
 (async () => {
   console.log(`\nF7·2 VALIDATOR VERIFICATION — ${BASE}`);
   console.log(`vocabulary ${VOCABULARY_VERSION} · fingerprint ${vocabularyFingerprint()}`);
@@ -136,7 +93,6 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
   console.log("\n§2 no false rejection of real production output");
   let stringsChecked = 0;
   const falseRejections: string[] = [];
-  const evidenceIncomplete: string[] = [];
 
   for (const text of QUERIES) {
     const res = await fetch(`${BASE}/api/v1/agent/decide`, {
@@ -146,26 +102,38 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
     });
     if (!res.ok) { console.log(`SKIP  "${text}" — decide returned ${res.status}`); continue; }
     const payload = await res.json();
-    const evidence = evidenceFrom(payload);
+    const evidence = payload.evidence as AnswerEvidence | undefined;
 
-    // ── A MEASURED P2-5 PREREQUISITE, not a false positive and not a product defect ────────
+    // THE PATH EXCLUSION THAT USED TO STAND HERE IS GONE (ADR-162).
     //
-    // `smart_pick.chosen_over.reasons_*` renders «أوفر بـ180 ريال في التكلفة الإجمالية» /
-    // "180 SAR lower total cost". Measured 2026-08-01: that 180 is NOWHERE in the payload — the
-    // engine publishes both total costs but not the DELTA it renders. It computes the number
-    // deterministically and writes the sentence itself, so there is no fabrication risk today.
-    //
-    // The moment an LLM phrases these facts (P2-5), there is: the validator will correctly
-    // suppress the answer, because the figure the answer states is not in the evidence the
-    // engine supplied. THE ENGINE MUST PUBLISH ITS DERIVED FIGURES BEFORE P2-5 CAN SHIP.
-    //
-    // Two wrong ways to make this green, both rejected: teaching the validator to accept any
-    // DIFFERENCE of two supplied figures (with ~22 prices there are hundreds of pairwise
-    // differences, so a fabricated number would often match one by coincidence — that
-    // materially weakens the rule), or having this harness compute the delta itself (the
-    // harness fabricating evidence the product never supplied). Counted and printed instead.
-    const EVIDENCE_INCOMPLETE_PATHS = [/^smart_pick\.chosen_over\.reasons_/, /\.chosen_over\.reasons_/];
+    // It carried `smart_pick.chosen_over.reasons_*`, because the engine rendered a saving —
+    // «أوفر بـ180 ريال» — that appeared nowhere in the payload. That was a real gap, and the
+    // right fix was the CONTRACT, not the exclusion: the engine now publishes
+    // `chosen_over.total_cost_delta` on the same branch that renders the sentence. Nothing is
+    // excluded from this scan any more, and nothing is inferred either — the evidence comes from
+    // `payload.evidence`, declared by the engine, not guessed from field names by this harness.
+    check(
+      Boolean(evidence && Array.isArray(evidence.figures) && Array.isArray(evidence.retailers)),
+      `"${text}" publishes an evidence contract`,
+      evidence ? `${evidence.figures.length} figures · ${evidence.retailers.length} retailers` : 'ABSENT',
+    );
 
+    // COMPLETENESS: every figure the answer RENDERS must be one the engine PUBLISHED. This is
+    // the contract's own gate — a rendered figure with no declared provenance is an engine
+    // defect, and it must never be answered by relaxing a rule.
+    // NOT a vacuous pass when the contract is absent. Reporting "0 unpublished" for a payload
+    // that published nothing would read as compliance, which is the worst possible way to fail.
+    const unpublished = evidence
+      ? findUnpublishedFigures(payload, { figures: [...evidence.figures], retailers: [...evidence.retailers] })
+      : null;
+    check(
+      unpublished !== null && unpublished.length === 0,
+      `"${text}" renders no unpublished figure`,
+      unpublished === null ? 'no contract to check against' : `${unpublished.length} unpublished`,
+    );
+    for (const u of (unpublished ?? []).slice(0, 8)) {
+      console.log(`        UNPUBLISHED  ${u.path} → ${u.kind} ${u.value}  «${u.excerpt}»`);
+    }
     let rejectedHere = 0;
     for (const [path, value] of strings(payload)) {
       // ONLY CUSTOMER-VISIBLE PROSE.
@@ -187,12 +155,10 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
       if (value.length < 12) continue;
       if (/^https?:\/\//.test(value) || /^[a-z0-9_|-]+$/i.test(value)) continue;
       stringsChecked++;
-      const verdict = validateGeneratedAnswer(value, evidence);
+      const verdict = validateGeneratedAnswer(value, evidence ?? { figures: [], retailers: [] });
       recordValidationEvent({ verdict, query: text, generated: value, surface: "decide-payload", timestamp: "1970-01-01T00:00:00.000Z" });
       if (!verdict.publish) {
-        if (EVIDENCE_INCOMPLETE_PATHS.some((re) => re.test(path))) {
-          evidenceIncomplete.push(`${path}: «${value.slice(0, 80)}»`);
-        } else {
+        {
           rejectedHere++;
           falseRejections.push(`"${text}" → ${path}: ${verdict.findings.map((f) => `[${f.ruleId}] ${f.reason}`).join(" | ")}\n            «${value.slice(0, 160)}»`);
         }
@@ -205,16 +171,6 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
     console.log("\n  REJECTED STRINGS — each is either a real vocabulary violation in shipped");
     console.log("  deterministic output, or a validator false positive. Both need a human:");
     for (const f of falseRejections) console.log(`      · ${f}`);
-  }
-
-  if (evidenceIncomplete.length) {
-    const unique = [...new Set(evidenceIncomplete)];
-    console.log(`\n  ⚠ P2-5 PREREQUISITE — ${unique.length} distinct string(s) state a DERIVED figure`);
-    console.log("  the engine does not publish as structured evidence. NOT a defect today (the engine");
-    console.log("  computes and renders them itself, deterministically) and NOT a false positive. The");
-    console.log("  moment an LLM phrases these facts the validator will correctly suppress the answer.");
-    console.log("  THE ENGINE MUST PUBLISH ITS DERIVED FIGURES BEFORE P2-5 CAN SHIP.");
-    for (const e of unique) console.log(`      · ${e}`);
   }
 
   // ── §2b the adversarial corpus, blocked by the DEPLOYED vocabulary ─────────
