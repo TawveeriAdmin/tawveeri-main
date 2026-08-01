@@ -6,6 +6,73 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-155 — The root layout owns the locale and the shell; and the 404-body defect had the wrong cause recorded · Accepted (2026-08-01)
+
+**Context.** Two defects were recorded as sharing one prerequisite — *"the root layout must own
+the HTML shell; one restructure unblocks both"* (CHECKPOINT #24, and the roadmap item under
+§REDESIGN_BRIEF). The first: `src/app/layout.tsx` sits above `[locale]`, could not read the
+route param, and shipped a hardcoded `lang="ar"` with **no `dir` at all** on every page, so
+`/en` served `<html lang="ar">` — English announced in an Arabic voice (WCAG 3.1.1, Level A) —
+and Radix portals, which mount on `document.body` outside the `[locale]` wrapper, had to set
+direction by hand. A client script corrected both after first paint; the **served bytes** stayed
+wrong. The second: a missing product answered HTTP 404 with an **empty body**.
+
+**Decision.**
+1. **The root layout owns the HTML shell, the locale, the fonts and every provider.** The locale
+   comes from the request (`x-locale`, set by middleware; next-intl's `x-next-intl-locale` as a
+   fallback; `defaultLocale` last) via `src/lib/i18n/request-locale.ts`. `[locale]/layout.tsx`
+   keeps only what needs the route param: locale-aware metadata and the unknown-locale guard.
+   Message loading moved verbatim to `src/lib/i18n/load-messages.ts`.
+2. **Locale switching is a document load, not `router.push`** (`src/lib/i18n/switch-locale.ts`).
+   Next does not re-render a layout whose params did not change, and the root layout owns none —
+   so a client-side locale transition would leave the document's language, direction and every
+   message on the previous locale while the URL and content changed, and nothing would throw.
+   There were **five** independent copies of that navigation; all five now call one function.
+3. **`app/not-found.tsx` renders inside the real shell** and reads the locale from the request,
+   so `/en/<missing>` answers in English instead of stacking both languages.
+
+**Alternatives rejected.** Making `app/[locale]/layout.tsx` the root layout (Next supports it)
+would have left `app/not-found.tsx` with no shell at all — it is resolved above `[locale]` — so
+it fixes one defect by deepening the other. Keeping `dir` on both `<html>` and the old wrapper
+`<div>` was rejected: when the two disagree the div wins for CSS while portals follow `<html>`,
+which is a silent split, not a safety net.
+
+**Cost, measured.** Reading a header opts the root layout into dynamic rendering. That costs
+nothing: `[locale]` is a dynamic segment with no `generateStaticParams`, so every page under it
+was already server-rendered on demand. Build output before and after shows the same three static
+entries (`/api/health`, `/robots.txt`, `/sitemap.xml`).
+
+**THE CORRECTION — the 404-body cause on record was wrong, and the restructure does not fix it.**
+The recorded explanation was "Next resolves the not-found above the shell". Measured on this
+build, four placements behave **identically** (404, zero bytes of markup, `<html
+id="__next_error__">`): boundary at `(product)` · boundary deleted so the root one handles it ·
+`notFound()` from the page · `notFound()` from `generateMetadata`. The real cause is that
+`notFound()` raised during render **aborts the whole React Flight stream**, because the throwing
+subtree sits outside any Suspense boundary; Next then serves its bare error document and the
+browser renders the not-found from the flight payload after hydration. Adding a Suspense boundary
+above the page **does** produce a fully server-rendered not-found — and turns the status into
+**200**, because the shell flushes before the error arrives. That is the soft 404 the `(product)`
+route group exists to prevent.
+
+So under Next 14 / React 18 streaming the two properties are mutually exclusive:
+**correct 404 status XOR server-rendered body.** We keep the status. The only way to have both is
+to decide existence *before* the render — a middleware lookup that rewrites a miss onto an
+unmatched path, which is the routing-level 404 path and does serve a full body. That costs a
+network round trip on the hottest customer surface and duplicates the page's own query. Scoped,
+not started.
+
+**Consequences.** `/ar` and `/en` now declare their own language and direction in the served
+bytes on every surface. The site's 404 page (unmatched routes — the one customers and crawlers
+actually reach) is a real page in both locales. The product-detail 404 is unchanged and the
+reason is now recorded correctly, so the next person does not spend the restructure on it again.
+Verified on the rendered artefact: `node scripts/tps-analysis/shell-verify.js --base <base>` —
+production **23/36 before**, **36/36 after**; `unified-search-verify` 54/54 (including
+*disclosure survives the move · relation=at-or-before*); axe 0 across 36 renders; keyboard 31
+checks 0 failing; `ui-journey` byte-identical before/after; `tag=tawveeri-21` confirmed on a real
+Amazon exit; 843/843 unit tests.
+
+---
+
 ### ADR-154 — Comparison intent routes only to a comparison the page can deliver; and the marker words were destroying retrieval · Accepted (2026-08-01)
 
 **Context.** The last unbuilt §UNIFIED SEARCH routing branch — *"comparison requests may

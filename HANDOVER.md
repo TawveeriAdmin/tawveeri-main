@@ -1,4 +1,134 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #27 · §UNIFIED SEARCH COMPLETE · PHASE 2 OPEN ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #28 · ROOT-LAYOUT RESTRUCTURE · ONE DEFECT CLOSED, ONE CORRECTED ═══
+
+**Tree clean, pushed, deployed, verified in production. Nothing running.** Decision: **ADR-155**.
+
+## THE HEADLINE, STATED PLAINLY
+
+The restructure was justified by TWO defects said to share one prerequisite. **One is closed.
+The other's recorded cause was wrong, and the restructure does not fix it** — that is the more
+important half of this checkpoint.
+
+| defect | status |
+|---|---|
+| `/en` served `<html lang="ar">` with no `dir` at all | ✅ **CLOSED** — every surface, both locales, in the served bytes |
+| site 404 page (unmatched routes) had no header, no fonts, no theme | ✅ **CLOSED** — a real page in both locales |
+| `/ar/products/<missing>` answers 404 with an empty body | ❌ **NOT CLOSED, and not closable this way** — see below |
+
+## WHAT THE 404-BODY ITEM ACTUALLY IS — the recorded cause was wrong
+
+On record since CHECKPOINT #24: *"Next resolves the not-found above the shell, so the root
+layout must own the HTML shell before any not-found boundary can render."* **Measured on this
+build, four placements behave identically — 404, `<html id="__next_error__">`, ZERO bytes of
+markup:** boundary at `(product)` · boundary deleted so the root one handles it · `notFound()`
+from the page · `notFound()` from `generateMetadata`. Shell ownership is not the variable.
+
+**The real cause:** `notFound()` raised during render aborts the entire React Flight stream,
+because the throwing subtree is outside any Suspense boundary. Next serves its bare error
+document; the browser renders the not-found from the flight payload after hydration. Put a
+Suspense boundary above the page and the not-found **does** server-render in full — and the
+status becomes **200**, because the shell flushes before the error arrives. That is precisely
+the soft 404 the `(product)` route group was created to eliminate.
+
+> Under Next 14 / React 18 streaming: **correct 404 status XOR server-rendered body.**
+> We keep the status. A real visitor still sees the page; a crawler still gets 404.
+
+**The only fix that yields both** is deciding existence *before* the render: a middleware lookup
+that rewrites a miss onto an unmatched path (the routing-level 404 path, which does serve a full
+body). It costs a network round trip on the hottest customer surface and duplicates the page's
+own query. **Scoped, not started** — and it is not a layout change, so do not attach it to one.
+
+## BEFORE → AFTER, MEASURED ON THE RENDERED ARTEFACT
+
+```bash
+npm run tps:shell-verify                                       # localhost:3000
+node scripts/tps-analysis/shell-verify.js --base https://tawveeri.com
+```
+
+| | production BEFORE | production AFTER |
+|---|---|---|
+| **shell-verify** | **23 / 36** | **36 / 36** |
+| `/en` served `<html>` | `lang="ar" dir="rtl"` on all 7 surfaces | `lang="en" dir="ltr"` on all 7 |
+| 404 body (unmatched route) | 9,207 bytes, no header, no CTA, `lang="ar"` on `/en` | header + heading + search CTA, correct locale, both |
+| unified-search-verify | 54/54 | 54/54 (incl. *disclosure · relation=at-or-before*) |
+| axe (36 renders) · keyboard | 0 · 0 / 31 checks 0 failing | unchanged |
+| ui-journey | 4 failing (`washing machine` relevance) | **byte-identical** — pre-existing, not this change |
+| unit tests | — | 843 / 843 |
+
+**Journey harness — it did NOT move, and that is the honest answer.** AR 10/10 end-to-end,
+cards→real page 80/80; EN 10/10, 79/80 (98.8%). Identical before and after. It measures
+reachability, and nothing about `lang`/`dir` or the 404 shell changes where a card goes.
+(Note EN 79/80 vs the 76/80 recorded in #25 — that metric tracks the live catalogue, not code.)
+
+**Silent trust elements, verified directly rather than by proxy:**
+- AI disclosure at-or-before the advisor answer — `unified-search-verify`, DOM position.
+- `tag=tawveeri-21` on a **real** outbound: `/go/<uuid>` → `https://www.amazon.sa/dp/B0CQ31Z35R?tag=tawveeri-21&ascsubtag=…`. Called with `?tw_test=1`, so the click records `is_test` and never enters the funnel it verifies.
+- Observation lines still resolve from provenance: the DEBT-1 reference case renders ages **11, 26, 6** days — the recorded 10 and 25 plus one day of drift, which is the correct direction. **The retailer count on that case is 3, not the recorded 5** — identical before and after, so it is live-catalogue movement, not this change. The gate in `shell-verify` was written to ≥2 with that reasoning stated inline, deliberately not to a frozen count.
+
+## WHAT CHANGED, AND THE ONE TRAP IT CREATED
+
+`src/app/layout.tsx` now owns the HTML shell, the locale, the fonts and every provider; the
+locale comes from the request (`x-locale`, middleware) because a root layout has no route param.
+`[locale]/layout.tsx` keeps only metadata and the unknown-locale guard.
+
+**THE TRAP, handled: never switch locale with `router.push` again.** Next does not re-render a
+layout whose params did not change, and the root layout owns none — so a client-side locale
+transition swaps the URL and the content while leaving the document's language, its direction
+and every loaded message on the previous locale. Nothing throws. There were **five** independent
+copies of that navigation (public shell, dashboard header, admin header, two in the profile
+page); four would have been missed. All five now call `navigateToLocale()`
+(`src/lib/i18n/switch-locale.ts`), which does a document load. The rule is also in CLAUDE.md.
+
+## ROLLBACK
+
+```
+<HASH>  ADR-155 root-layout restructure    git revert <HASH>
+```
+
+Single commit; `9982a78` is the pre-session head. **Confirm the range before any range revert** —
+`git log --oneline 9982a78..HEAD` first; an inverted range silently reverts nothing.
+
+## F7 — RESEARCHED AND SCOPED. NOT STARTED.
+
+P2-5 (وفّر advisor build-out) is blocked on F7's runtime vocabulary guard, which had never been
+scoped. It is scoped now. **No code was written for it.**
+
+**What F7 requires** (`docs/CONSUMER_EXPERIENCE_CONSTITUTION.md` §F7, line 677): no claim outside
+the approved vocabulary · never a merchant's discount presented as ours · absence stated plainly
+with a handoff to search · adversarially tested before deployment against *a retailer with no
+provenance* and *a category we do not cover* · and — stated by F7 itself — **if enforcing the
+protections requires changing the protected AI control layer, stop and report before proceeding.**
+The governing rule is one sentence: *whenever structured evidence and generated text disagree,
+structured evidence always wins.*
+
+**The finding that sizes the work: the approved vocabulary is not machine-readable.** CAN SAY,
+MUST NOT SAY, the retirement of the retailer count (§9) and the disclosure wording (§8) are all
+PROSE in `docs/LAUNCH_VOCABULARY.md`. A runtime guard cannot read prose. So the first execution
+unit is not the guard — it is **turning the vocabulary into one typed, tested artefact that the
+guard and the documents both read from**, or the two drift and the guard certifies a vocabulary
+nobody approved. That is the whole reason F7 exists.
+
+**The surface it governs is exactly one file today.** `src/app/api/ai-assistant/route.ts` — the
+only runtime-generative endpoint, closed since P2-1 (`AI_ASSISTANT_ENABLED`, 404 when off, kept
+deliberately as P2-5's starting point). `/api/v1/agent/decide` makes no model call, which is why
+the unified search surface is not governed by F7 today (CHECKPOINT #25 established this and it
+still holds after the restructure — no generated string was introduced).
+
+**Shape, in order, when it is authorised:**
+1. `src/lib/vocabulary/` — the approved claim classes and forbidden claim classes as data, plus
+   tests asserting the doc and the module agree. Docs stay authoritative; the module is derived.
+2. A **post-generation validator** (ADR-002: enforcement is post-generation, never prompt
+   instruction) that reads a candidate answer plus the structured evidence that produced it, and
+   rejects any claim the evidence does not carry. Rejection must fall back to the deterministic
+   answer, not to an apology.
+3. The adversarial suite F7 names, as a gate — not a manual pass.
+4. Only then does `AI_ASSISTANT_ENABLED` become a decision rather than a hazard.
+
+**Not begun, and it should not be begun inside another ticket.** Step 1 is a governance artefact,
+and getting it wrong makes every later check confidently wrong.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #27 · §UNIFIED SEARCH COMPLETE · PHASE 2 OPEN ═══
 
 **Tree clean, pushed, deployed, verified in production. Nothing running.**
 

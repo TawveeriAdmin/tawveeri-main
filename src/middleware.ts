@@ -190,6 +190,19 @@ export async function middleware(request: NextRequest) {
   // First, let next-intl handle the routing
   const response = handleI18nRouting(request);
 
+  // THE ROOT LAYOUT READS THIS. `src/app/layout.tsx` sits above the `[locale]` segment and has
+  // no route param, so the locale it puts in `<html lang>`/`<html dir>` — and the messages it
+  // loads — come from here. next-intl also publishes `x-next-intl-locale`, which the root layout
+  // keeps as a fallback; this header exists so the contract is OURS and does not depend on a
+  // library internal surviving an upgrade. Set on EVERY page response, before the early return
+  // for unprotected routes, because the shell is on every page. Same mechanism as `x-pathname`
+  // below (already relied on by the dashboard layout).
+  const requestLocale = pathname.split('/')[1];
+  response.headers.set(
+    'x-locale',
+    locales.includes(requestLocale as (typeof locales)[number]) ? requestLocale : defaultLocale,
+  );
+
   // Get the pathname without locale prefix for route matching
   const pathnameWithoutLocale = pathname.replace(/^\/(ar|en)/, '') || '/';
 

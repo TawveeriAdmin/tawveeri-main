@@ -1,5 +1,42 @@
+// ROOT LAYOUT — owns the HTML shell, the locale, the fonts and every provider.
+//
+// WHY IT OWNS THE LOCALE. This layout sits ABOVE the `[locale]` segment, so it cannot read
+// the route param. It used to ship a hardcoded `lang="ar"` on every page, which meant `/en`
+// served `<html lang="ar">` — English copy announced in an Arabic voice (WCAG 3.1.1, Level A)
+// — and carried no `dir` at all, so Radix portals (mounted on `document.body`, outside the
+// `[locale]` wrapper) had to set direction by hand. A client-side script corrected both after
+// first paint; the SERVED BYTES stayed wrong, which is what a no-JS consumer and any
+// byte-level audit actually see.
+//
+// The locale therefore comes from the REQUEST, not the route tree: `x-locale`, set by our
+// middleware, with next-intl's own `x-next-intl-locale` as the fallback and `defaultLocale`
+// as the last resort. A missing header degrades to exactly the old behaviour (Arabic), never
+// to a crash. Reading a header opts this layout into dynamic rendering — which costs nothing
+// here, because `[locale]` is a dynamic segment with no `generateStaticParams`, so every page
+// under it was already rendered on demand.
+//
+// WHY THE PROVIDERS MOVED UP. `app/not-found.tsx` is resolved at THIS level. While the shell
+// lived in `[locale]/layout.tsx`, the 404 page for any unmatched route rendered with no
+// header, no footer, no fonts and no theme. Providers here are what let that page be a real
+// page.
+//
+// ONE CONSEQUENCE, HANDLED: Next does not re-render this layout on a client-side navigation,
+// because it owns no route param. Switching locale therefore MUST be a hard navigation —
+// see `goToLocale` in `public-page-shell.tsx`, which documents the same constraint from the
+// other side. If you ever make locale switching a `router.push` again, the language, the
+// direction and the messages all go stale together and nothing throws.
 import type { Metadata } from 'next';
+import { Cairo } from 'next/font/google';
 import './globals.css';
+import { getRequestLocale } from '@/lib/i18n/request-locale';
+import { SimpleIntlProvider } from '@/lib/simple-intl-provider';
+import { ThemeProvider } from './providers/theme-provider';
+import { AuthProvider } from '@/lib/auth/auth-context';
+import { Toaster } from '@/components/ui/toaster';
+import { MultiStoreCartProvider } from '@/lib/cart/cart-context';
+import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
+import { NavigableCategoriesProvider } from '@/lib/intelligence/navigable-categories-context';
+import { loadMessages } from '@/lib/i18n/load-messages';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
 
@@ -32,13 +69,37 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+// Brand font — single family for both Arabic & English per brand guidelines
+const cairo = Cairo({
+  weight: ['300', '400', '600', '700', '900'],
+  subsets: ['latin', 'arabic'],
+  variable: '--font-cairo',
+  display: 'swap',
+});
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = getRequestLocale();
+
+  // Which categories may appear in navigation — measured live, never hardcoded (ADR-150).
+  // Failure returns [] inside the helper, so a bad read hides the menu rather than
+  // rendering a stale one.
+  const navigableCategories = (await getNavigableCategories()).map(
+    ({ key, comparable, labelAr, labelEn, query, emoji, slug }) => ({ key, comparable, labelAr, labelEn, query, emoji, slug }),
+  );
+
+  const messages = await loadMessages(locale);
+
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={locale === 'ar' ? 'rtl' : 'ltr'}
+      className={cairo.variable}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -51,30 +112,31 @@ export default function RootLayout({
                   document.documentElement.classList.remove('dark');
                 }
               } catch (e) {}
-              /* P2-7 (3.1.1 + RTL correctness). This layout is above the [locale] segment,
-                 so it cannot read the locale param and shipped a hardcoded lang="ar" on
-                 EVERY page — measured: /en served <html lang="ar">, so a screen reader
-                 announced English copy in an Arabic voice. <html> also carried no dir at
-                 all, which matters beyond a11y: Radix portals mount into document.body,
-                 OUTSIDE the [locale] wrapper that holds dir, which is why the header menu
-                 has to set direction by hand.
-                 Corrected here from the URL before first paint, so the accessibility tree
-                 is built from the right value. The SERVED bytes still say ar for /en — the
-                 real fix is the root layout owning the locale, which needs the root-shell
-                 restructure already recorded as a roadmap prerequisite. Recorded, not
-                 quietly widened into this ticket. */
-              try {
-                var seg = location.pathname.split('/')[1];
-                if (seg === 'en' || seg === 'ar') {
-                  document.documentElement.lang = seg;
-                  document.documentElement.dir = seg === 'ar' ? 'rtl' : 'ltr';
-                }
-              } catch (e) {}
             `,
           }}
         />
       </head>
-      <body>{children}</body>
+      <body className="font-sans antialiased">
+        <SimpleIntlProvider key={locale} messages={messages} locale={locale}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            forcedTheme={undefined}
+            storageKey="tawveeri-theme"
+            disableTransitionOnChange={false}
+          >
+            <MultiStoreCartProvider>
+              <AuthProvider>
+                <NavigableCategoriesProvider categories={navigableCategories}>
+                  {children}
+                </NavigableCategoriesProvider>
+                <Toaster />
+              </AuthProvider>
+            </MultiStoreCartProvider>
+          </ThemeProvider>
+        </SimpleIntlProvider>
+      </body>
     </html>
   );
 }

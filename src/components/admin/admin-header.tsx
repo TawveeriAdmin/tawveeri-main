@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { navigateToLocale } from '@/lib/i18n/switch-locale';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -63,17 +64,8 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
     window.location.href = `/${locale}`;
   };
 
-  const switchLocale = () => {
-    const nextLocale = locale === 'ar' ? 'en' : 'ar';
-    if (!pathname) {
-      router.push(`/${nextLocale}`);
-      return;
-    }
-    const nextPath = pathname.startsWith(`/${locale}`)
-      ? pathname.replace(`/${locale}`, `/${nextLocale}`)
-      : `/${nextLocale}`;
-    router.push(nextPath);
-  };
+  // Document load, not `router.push` — see `navigateToLocale`.
+  const switchLocale = () => navigateToLocale(locale, locale === 'ar' ? 'en' : 'ar', pathname);
 
   // Resolve page title from current pathname
   const pathnameWithoutLocale = pathname?.replace(/^\/(ar|en)/, '') || '/admin/dashboard';

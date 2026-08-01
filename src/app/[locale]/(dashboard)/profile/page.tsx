@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { navigateToLocale } from '@/lib/i18n/switch-locale';
 import { formatDate } from '@/lib/formatting';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useTheme } from 'next-themes';
@@ -293,10 +294,8 @@ export default function ProfilePage() {
  variant: 'default',
  });
 
- if (preferredLanguage !== locale) {
- const newPath = window.location.pathname.replace(`/${locale}`, `/${preferredLanguage}`);
- router.push(newPath);
- }
+ // Document load, not `router.push` — see `navigateToLocale`.
+ navigateToLocale(locale, preferredLanguage, window.location.pathname);
  }
  } catch (error) {
  toast({
@@ -974,10 +973,7 @@ export default function ProfilePage() {
                    type="button"
                    onClick={() => {
                      setPreferredLanguage('ar');
-                     if (locale !== 'ar') {
-                       const newPath = window.location.pathname.replace(`/${locale}`, '/ar');
-                       router.push(newPath);
-                     }
+                     navigateToLocale(locale, 'ar', window.location.pathname);
                    }}
                    className={cn(
                      'rounded-xl px-3 py-2.5 text-sm font-semibold transition',
@@ -992,10 +988,7 @@ export default function ProfilePage() {
                    type="button"
                    onClick={() => {
                      setPreferredLanguage('en');
-                     if (locale !== 'en') {
-                       const newPath = window.location.pathname.replace(`/${locale}`, '/en');
-                       router.push(newPath);
-                     }
+                     navigateToLocale(locale, 'en', window.location.pathname);
                    }}
                    className={cn(
                      'rounded-xl px-3 py-2.5 text-sm font-semibold transition',

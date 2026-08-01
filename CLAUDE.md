@@ -162,7 +162,9 @@ npx expo start --port 8085    # Start Metro bundler on custom port (default 8081
 
 All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `en`. Locale config is in `src/i18n.ts`. The middleware (`src/middleware.ts`) combines next-intl routing with Supabase auth checks (session validation, role-based access).
 
-**Root layout** (`src/app/layout.tsx`) is a passthrough — the real layout is `src/app/[locale]/layout.tsx`.
+**Root layout** (`src/app/layout.tsx`) owns the HTML shell, the locale, the fonts and every provider (ADR-155). It sits above `[locale]` and has no route param, so it reads the locale from the request via `getRequestLocale()` (`src/lib/i18n/request-locale.ts` — `x-locale` from middleware, next-intl's `x-next-intl-locale` as fallback, `defaultLocale` last). `src/app/[locale]/layout.tsx` keeps only what needs the param: locale-aware metadata and the unknown-locale guard.
+
+**Never switch locale with `router.push`.** Next does not re-render a layout whose params did not change, and the root layout owns none — a client-side locale transition would leave `<html lang>`, `<html dir>` and every loaded message on the previous locale while the URL and content changed, and nothing would throw. Use `navigateToLocale()` (`src/lib/i18n/switch-locale.ts`), which does a document load.
 
 **Route groups** under `src/app/[locale]/`:
 - `(public)/` — Public pages (stores, deals, products) wrapped with `PublicPageShell` layout
@@ -173,24 +175,28 @@ All pages live under `src/app/[locale]/` — the `[locale]` segment is `ar` or `
 
 ### Provider Hierarchy
 
-`src/app/[locale]/layout.tsx` nests providers in this order — **do not reorder**:
+`src/app/layout.tsx` nests providers in this order — **do not reorder**:
 
 ```
-<div lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-  <SimpleIntlProvider>    ← translations from messages/{locale}/*.json
-    <ThemeProvider>        ← next-themes, class strategy, storageKey="tawveeri-theme"
-      <MultiStoreCartProvider>
-        <AuthProvider>    ← Supabase auth state, role fetching
-          {children}
-          <Toaster />
-        </AuthProvider>
-      </MultiStoreCartProvider>
-    </ThemeProvider>
-  </SimpleIntlProvider>
-</div>
+<html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} className={cairo.variable}>
+  <body className="font-sans antialiased">
+    <SimpleIntlProvider>      ← translations from messages/{locale}/*.json
+      <ThemeProvider>          ← next-themes, class strategy, storageKey="tawveeri-theme"
+        <MultiStoreCartProvider>
+          <AuthProvider>      ← Supabase auth state, role fetching
+            <NavigableCategoriesProvider>   ← live-derived nav categories (ADR-150)
+              {children}
+            </NavigableCategoriesProvider>
+            <Toaster />
+          </AuthProvider>
+        </MultiStoreCartProvider>
+      </ThemeProvider>
+    </SimpleIntlProvider>
+  </body>
+</html>
 ```
 
-Note: The root `<html>` tag is in `src/app/layout.tsx` (passthrough). The locale layout uses a `<div>` wrapper with lang/dir attributes.
+Note: `lang`/`dir` live on `<html>` — in the served bytes, not patched by a script after first paint. That is what lets Radix portals (mounted on `document.body`) inherit the right direction.
 
 Default: Arabic (RTL), light theme, system detection disabled.
 
@@ -522,7 +528,7 @@ URL scheme: `tawveeri://` (configured in `app.json` under `scheme`). Associated 
 - Always pair light/dark: `bg-white dark:bg-gray-900`
 - Use `tabular-nums` for price/number displays
 - Use `cn()` for all conditional classes
-- **Never** set `dir` attributes on elements — the locale layout wrapper handles `dir` globally
+- **Never** set `dir` attributes on elements — `<html dir>` in the root layout handles it globally (ADR-155)
 - **Never** write separate RTL/LTR CSS — flexbox/grid auto-flip in RTL
 
 ### AI Recommendations System

@@ -30,6 +30,7 @@ import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barc
 import { SearchAutocomplete } from '@/components/search/search-autocomplete';
 import { Footer } from '@/components/layout/footer';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
+import { navigateToLocale } from '@/lib/i18n/switch-locale';
 import { CompareFloatingBar } from '@/components/compare/compare-floating-bar';
 
 const subscribe = () => () => {};
@@ -173,12 +174,9 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   const userSubtitle = realEmail || userPhone;
   const userInitials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
 
-  const goToLocale = (target: string) => {
-    if (target === locale) return;
-    if (!pathname) { router.push(`/${target}`); return; }
-    const nextPath = pathname.startsWith(`/${locale}`) ? pathname.replace(`/${locale}`, `/${target}`) : `/${target}`;
-    router.push(nextPath);
-  };
+  // A DOCUMENT LOAD, deliberately — see `navigateToLocale` for why a `router.push` here leaves
+  // the document's language, direction and messages on the previous locale without failing.
+  const goToLocale = (target: string) => navigateToLocale(locale, target, pathname);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -1,17 +1,30 @@
 // Not-found boundary for the product-detail group.
 //
-// ⚠ KNOWN LIMITATION — THIS DOES NOT CURRENTLY RENDER, and the reason is structural.
-// `src/app/layout.tsx` is a PASSTHROUGH: the real HTML shell, fonts and providers live in
-// `[locale]/layout.tsx`. Next resolves the not-found render above that level, where no shell
-// exists, so the response is a near-empty document — measured: HTTP 404 with 57 bytes of body,
-// unchanged whether the boundary is placed here, at `[locale]`, or at the root.
+// ⚠ IT RENDERS IN THE BROWSER, NOT IN THE SERVED BYTES — and the earlier explanation for that
+// was WRONG. The root-layout restructure (ADR-155) was expected to fix it; it did not, and the
+// real cause was measured while doing the restructure:
 //
-// It is kept because it is the CORRECT location and becomes live the moment the root layout
-// owns the HTML shell. It is documented rather than deleted so the next person does not
-// rediscover the same dead end — and documented loudly so nobody assumes it works.
+//   `notFound()` raised during the render aborts the whole React Flight stream, because the
+//   throwing subtree is not inside a Suspense boundary. Next then serves its bare
+//   `<html id="__next_error__">` fallback — HTTP 404, ZERO bytes of markup — and the browser
+//   renders this component from the flight payload after hydration.
 //
-// The STATUS is correct today (404), which is what stops crawlers indexing missing products as
-// valid pages. The body is the remaining gap.
+// PROVEN, not inferred. Four placements were measured on the same build and all four behave
+// identically (404, empty body): boundary here · boundary deleted so the root one handles it ·
+// `notFound()` raised from the page · `notFound()` raised from `generateMetadata`. Adding a
+// Suspense boundary above the page DOES produce a fully server-rendered not-found — and turns
+// the status into 200, because the shell flushes before the error arrives. That is the soft 404
+// this route group was created to eliminate (see ../layout.tsx), so it was rejected.
+//
+// So the two properties are mutually exclusive under Next 14 / React 18 streaming:
+//   correct 404 status  XOR  server-rendered body.
+// We keep the STATUS, because it is what stops crawlers indexing missing products as valid
+// pages, and a real visitor still sees this component.
+//
+// The only way to have both is to decide the product's existence BEFORE the render — a lookup
+// in middleware that rewrites a miss onto an unmatched path (the routing-level 404 path, which
+// does serve a full body). That costs a network round trip on the hottest customer surface and
+// duplicates the page's own query; it is scoped, not started.
 import Link from 'next/link';
 
 export default function ProductNotFound() {
