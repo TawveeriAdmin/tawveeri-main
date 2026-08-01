@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  validateGeneratedAnswer,
+  recordValidationEvent,
+  type EvidenceFigure,
+} from '@/lib/vocabulary';
 import { getDeals } from '@/lib/intelligence/getDeals';
 import { getPriceIntelligence } from '@/lib/intelligence/getPriceIntelligence';
 
@@ -240,6 +245,21 @@ export async function POST(request: NextRequest) {
 
     let dynamicContext = '';
 
+    // F7·2 — THE EVIDENCE THIS ANSWER IS ALLOWED TO REST ON.
+    //
+    // Accumulated from the SAME facts that build `dynamicContext`, so the validator judges the
+    // answer against what the generator was actually given — not against a second lookup that
+    // could disagree with it. Anything not recorded here is, by construction, something the
+    // answer may not state: the validator treats an unbacked figure or an unsupplied retailer
+    // as a rejection, because unknown beats incorrect.
+    const answerEvidence: { figures: EvidenceFigure[]; retailers: string[] } = {
+      figures: [],
+      retailers: [],
+    };
+    const noteRetailer = (name?: string | null) => {
+      if (name && !answerEvidence.retailers.includes(name)) answerEvidence.retailers.push(name);
+    };
+
     if (intent.type === 'deals') {
       console.log('[AI] Step 2 — calling getDeals');
       let deals = await getDeals(6).catch((e) => { console.error('[AI] getDeals error:', e); return []; });
@@ -250,6 +270,10 @@ export async function POST(request: NextRequest) {
         isStrictDeals = false;
       }
       console.log('[AI] Step 3 — deals:', deals.length, '| strict:', isStrictDeals);
+
+      for (const d of deals as Array<Record<string, unknown>>) {
+        noteRetailer(typeof d.store_name === 'string' ? d.store_name : null);
+      }
 
       dynamicContext = deals.length
         ? `
@@ -282,6 +306,17 @@ ${isStrictDeals ? 'وأكد أنها عروض محسوبة من تاريخ ال�
       );
 
       console.log('[AI] Step 4b — tpsProduct:', tpsProduct ? 'found' : 'none');
+
+      // Every retailer named in the supplied results, and the store count as a LIVE-QUERY
+      // figure — the distinction §9 turns on, and the one no text scan can make.
+      for (const p of (products ?? []) as Array<Record<string, unknown>>) {
+        noteRetailer(typeof p.store_name === 'string' ? p.store_name : null);
+        const stores = Array.isArray(p.stores) ? (p.stores as Array<Record<string, unknown>>) : [];
+        for (const s of stores) noteRetailer(typeof s.store_name === 'string' ? s.store_name : null);
+        if (typeof p.store_count === 'number') {
+          answerEvidence.figures.push({ value: p.store_count, kind: 'retailer-count', derivedFrom: 'live-query' });
+        }
+      }
       const intel = tpsProduct
         ? await getPriceIntelligence(tpsProduct.product_id).catch((e) => { console.error('[AI] getPriceIntelligence error:', e); return null; })
         : null;
@@ -325,6 +360,15 @@ ${formatProductsForAI(products)}${storeHint}`;
         ? await searchProducts(intent.query, intent.maxPrice, intent.minPrice)
         : null;
       console.log('[AI] Step 3s — products:', products?.length ?? 0);
+
+      for (const p of (products ?? []) as Array<Record<string, unknown>>) {
+        noteRetailer(typeof p.store_name === 'string' ? p.store_name : null);
+        const stores = Array.isArray(p.stores) ? (p.stores as Array<Record<string, unknown>>) : [];
+        for (const s of stores) noteRetailer(typeof s.store_name === 'string' ? s.store_name : null);
+        if (typeof p.store_count === 'number') {
+          answerEvidence.figures.push({ value: p.store_count, kind: 'retailer-count', derivedFrom: 'live-query' });
+        }
+      }
 
       const productsContext = products?.length
         ? formatProductsForAI(products)
@@ -416,7 +460,49 @@ ${productsContext}
       );
     }
 
-    console.log('[AI] Step 6 — success, replyLen:', reply.length);
+    console.log('[AI] Step 6 — generated, replyLen:', reply.length);
+
+    // ── F7·2 · THE ENFORCEMENT POINT (ADR-158) ───────────────────────────────────────────
+    //
+    // AFTER generation, before the answer can leave the process. Not a prompt instruction: a
+    // prompt is a request, and F7 exists because requests are not guarantees.
+    //
+    // On any finding — or on the validator being unable to run — the generated text is
+    // SUPPRESSED WHOLE. It is never edited, spliced, or swapped for other approved copy: those
+    // are the routes by which a claim nobody wrote reaches a customer. The response says
+    // explicitly that it was suppressed, so the client falls back to its deterministic answer
+    // rather than rendering silence it cannot explain.
+    const verdict = validateGeneratedAnswer(reply, answerEvidence);
+    recordValidationEvent({
+      verdict,
+      query: String(message),
+      generated: reply,
+      surface: 'api/ai-assistant',
+      timestamp: new Date().toISOString(),
+    });
+
+    if (!verdict.publish) {
+      console.warn(
+        `[AI] F7 SUPPRESSED (${verdict.outcome})`,
+        verdict.unavailableReason ?? verdict.findings.map((f) => f.ruleId).join(','),
+      );
+      // 200, not an error: nothing failed for the customer. The generated phrasing was withheld
+      // and the caller owns the deterministic answer — this endpoint has none to substitute, and
+      // inventing one here is exactly the fabrication the rule forbids.
+      return NextResponse.json({
+        reply: null,
+        suppressed: true,
+        suppressedBy: 'f7-vocabulary-validator',
+        outcome: verdict.outcome,
+        violatedRules: [...new Set(verdict.findings.map((f) => f.ruleId))],
+        ...(verdict.unavailableReason ? { unavailableReason: verdict.unavailableReason } : {}),
+        // History is NOT extended with a suppressed answer: carrying it forward would feed a
+        // rejected claim back into the next turn's context as if we had said it.
+        updatedHistory: conversationHistory,
+      });
+    }
+
+    console.log('[AI] Step 7 — validated, publishing');
 
     return NextResponse.json({
       reply,

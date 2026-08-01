@@ -6,6 +6,85 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-158 — F7·2: the post-generation validator suppresses whole, and fails closed · Accepted (2026-08-01)
+
+**Context.** F7·1 made the vocabulary data and declared three rules no text scan can decide.
+F7·2 is the guard that enforces it on generated text. Two policies had to be chosen deliberately
+rather than emerge as implementation details: what happens on a violation, and what happens when
+the validator itself cannot run.
+
+**Decision 1 — ON A VIOLATION: SUPPRESS THE WHOLE ANSWER; the caller falls back to the
+deterministic answer it already has.** Four alternatives were considered and rejected:
+
+| option | why rejected |
+|---|---|
+| remove only the offending content | the one option that can MANUFACTURE a claim while "fixing" one — deleting a clause can invert a sentence, and the result is text no human wrote and no evidence backs |
+| replace with approved wording | substitutes an answer to a question the customer did not ask; a silent meaning change. (Falling back to the whole deterministic answer is different: that answer was computed for THIS query) |
+| regenerate once | non-deterministic, doubles latency and cost, and a model that produced a forbidden claim has no evidence-backed reason to avoid it on retry — the second failure needs this policy anyway |
+| publish with a warning | a disclosure does not make an unevidenced price claim true |
+
+Suppression is right because ADR-002 already holds: engines decide, LLMs only phrase. There is
+always a true answer underneath, so **suppression costs the phrasing, not the answer.** It also
+matches the established behaviour of this surface — a failed advisory layer is silent and the
+deterministic result stands (CHECKPOINT #25), because an "I could not help" panel above good
+results invents a failure the customer does not have. The response says `suppressed: true`
+explicitly, so the client falls back rather than rendering silence it cannot explain, and the
+suppressed answer is **not** appended to conversation history: carrying it forward would feed a
+rejected claim into the next turn's context as if we had said it.
+
+**Decision 2 — WHEN THE VALIDATOR CANNOT RUN: FAIL CLOSED.** Malformed evidence, a non-string
+answer, an empty rule set, an unhandled evidence rule, an input beyond the cap, or any thrown
+error all produce `unavailable`, which suppresses exactly as a rejection does. An unvalidated
+generated claim is what F7 forbids, and "the guard was down" is not a defence — fail-open means
+the guard stops guarding precisely when the system is under stress. The cost is bounded: we lose
+phrasing, not the answer.
+
+**Determinism is structural, not tested-for.** No wall-clock, no randomness, no I/O in the
+decision path — a pathological input is caught by a deterministic CHARACTER CAP
+(`MAX_INPUT_CHARS`), not by a race that could resolve differently on a slower machine. A test
+greps the source for `Date.now`/`Math.random`/`setTimeout` and 100 identical runs are asserted.
+
+**F7·1 is the single source of truth, and that is enforced rather than intended.** A test asserts
+`EVIDENCE_RULES_HANDLED` equals `EVIDENCE_REQUIRED_RULES` exactly — add a rule in F7·1 and F7·2
+fails until it handles it — and the validator returns `unavailable` at runtime if it ever finds a
+declared rule it does not implement. Without that, F7·1 could grow a rule the validator silently
+never checks, and a clean text scan would still read as "clean".
+
+**Three outcomes, never two.** `passed` · `rejected` · `unavailable` are logged as distinct
+states with the query, the generated output, the timestamp, the violated rules, the measurable
+reason, the decision taken, and the vocabulary version + fingerprint judged under. `unavailable`
+is deliberately not folded into `rejected`: they have the same customer-visible effect and
+opposite meanings, and merging them would let a broken guard hide inside a healthy-looking
+rejection rate. The sink is injectable; the default writes one JSON line to stdout. **Durable
+storage is left open on purpose** — it is a production write and a migration, which is a founder
+decision, not one to make silently inside a validator.
+
+**A module-cycle hazard, removed by structure.** `validate.ts` needs the checkers, which lived in
+the barrel that re-exports `validate.ts`. That cycle would not throw — it would leave
+`FORBIDDEN_CLAIMS` undefined at init, and the validator fails closed on an empty rule set, so the
+symptom would be **every generated answer silently suppressed in production with no error
+anywhere.** The checkers moved to `check.ts`; the barrel is now only a barrel.
+
+**Verified against the live product.** `tps:validator-verify` — the generative surface still
+returns **404** (it was touched; assuming would be negligent), and **2,026 customer-visible
+strings from real deterministic answers across 7 production queries produced 0 false
+rejections**. Unit fixtures cannot find a precision defect, because the same person writes the
+fixtures and the rules; real production language can.
+
+**One harness defect caught, and it is worth recording.** The first run rejected
+`recommendations[].tps_identity_key` = «بيسك\|split\|NO_SERIES\|12000\|Inverter\|hot_cold» for
+leaking a sentinel. That was the HARNESS, not the product: the key is used only inside an `href`
+(`advisor-answer.tsx:246`) and never rendered, so it is a machine field and the sentinel belongs
+in it. Machine fields are now excluded **by name** — the same principled class as urls and slugs,
+not an exception carved out to make a gate green. **Worth keeping in view:** the sentinel is still
+shipped to the browser inside the payload, one careless `.toString()` from a real leak.
+
+**Consequences.** 992/992 tests (32 new), F7·1 scan and shell-verify unchanged.
+`AI_ASSISTANT_ENABLED` is untouched and the surface remains closed. **F7·3 (the adversarial
+suite) is NOT started.**
+
+---
+
 ### ADR-157 — F7·1: the approved vocabulary becomes versioned data, and declares what it cannot decide · Accepted (2026-08-01)
 
 **Context.** Appendix F7 governs the generative surface: *"No repository search catches what the

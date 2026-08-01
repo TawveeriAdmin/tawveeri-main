@@ -1,27 +1,41 @@
-// F7·1 — THE VOCABULARY, VERSIONED, PLUS THE TEXT CHECKERS BUILT ON IT.
+// THE VOCABULARY — one door.
 //
-// This is the single source of truth F7·2's post-generation validator will read. It is
-// deliberately NOT a validator: it decides nothing about generated text against evidence. It
-// answers only two mechanical questions — "does this string contain a forbidden claim class?"
-// and "has an internal token escaped?" — and it reports which rules it CANNOT decide, so the
-// validator inherits the gaps explicitly rather than by omission.
+// A barrel only. Every implementation lives in a sibling module so that `validate.ts` (F7·2) can
+// import the checkers WITHOUT importing the barrel that re-exports it. That cycle would not
+// throw; it would leave `FORBIDDEN_CLAIMS` undefined during module init, and the validator fails
+// CLOSED on an empty rule set — so the symptom would be every generated answer silently
+// suppressed in production, with no error anywhere. Structure, not luck.
 //
-// PURE AND DEPENDENCY-FREE. No I/O, no crypto import, no env. It must be safe to call from a
-// server route, a script, a test, and eventually from inside a generation loop.
-import type {
-  ForbiddenClaim,
-  InternalToken,
-  Violation,
-  VocabLocale,
-} from './types';
-import { FORBIDDEN_CLAIMS, APPROVED_STATEMENTS, REPLACEMENT_PAIRS } from './customer-vocabulary';
-import { INTERNAL_TOKENS, ALL_INTERNAL_TOKENS } from './internal-vocabulary';
+//   types.ts                    the shapes
+//   customer-vocabulary.ts      F7·1 — what a customer may / must never read
+//   internal-vocabulary.ts      F7·1 — tokens that must never escape the system
+//   pending-copy-decisions.ts   F7·1 — live copy awaiting an F1 wording decision
+//   check.ts                    F7·1 — the text checkers
+//   validate.ts                 F7·2 — the post-generation validator
+//   validation-log.ts           F7·2 — the event record
 
 export * from './types';
+
+// ── F7·1 · the vocabulary itself ──────────────────────────────────────────────
 export { FORBIDDEN_CLAIMS, APPROVED_STATEMENTS, REPLACEMENT_PAIRS } from './customer-vocabulary';
 export { INTERNAL_TOKENS, ALL_INTERNAL_TOKENS } from './internal-vocabulary';
 export { PENDING_COPY_DECISIONS, PENDING_KEYS } from './pending-copy-decisions';
 export type { PendingCopyDecision } from './pending-copy-decisions';
+
+// ── F7·1 · the checkers ───────────────────────────────────────────────────────
+export {
+  VOCABULARY_VERSION,
+  GOVERNING_DOCUMENTS,
+  vocabularyFingerprint,
+  PATTERN_RULES,
+  EVIDENCE_REQUIRED_RULES,
+  checkCustomerText,
+  findInternalLeaks,
+  checkCustomerSurface,
+  ALL_CUSTOMER_RULE_IDS,
+  ALL_INTERNAL_RULE_IDS,
+  INTERNAL_TOKEN_LIST,
+} from './check';
 
 /**
  * Bundles that are NOT customer surfaces. The customer vocabulary asks "may a customer read
@@ -31,165 +45,21 @@ export type { PendingCopyDecision } from './pending-copy-decisions';
  */
 export const OPERATOR_BUNDLES: ReadonlySet<string> = new Set(['store.json', 'admin.json']);
 
-/**
- * VERSION. Bumped by hand, in the same change that amends the vocabulary — and the fingerprint
- * below makes that not-optional: a test pins the fingerprint, so any edit to the rule set fails
- * until the version is bumped deliberately. A vocabulary that can change without anyone
- * declaring it changed is the exact failure F7 exists to prevent.
- *
- * Format: `<doc-date>+<n>` — the LAUNCH_VOCABULARY revision this was derived from, plus the
- * derivation revision.
- */
-export const VOCABULARY_VERSION = '2026-07-31+1';
-
-/** Governing documents, highest first. The module is derived from these; never the reverse. */
-export const GOVERNING_DOCUMENTS = [
-  'docs/CONSUMER_EXPERIENCE_CONSTITUTION.md',
-  'docs/LAUNCH_VOCABULARY.md',
-  'CLAUDE.md',
-] as const;
-
-/**
- * Deterministic fingerprint of the whole vocabulary (FNV-1a, 32-bit, hex).
- *
- * Not a security hash — a CHANGE DETECTOR. F7·2 will stamp verdicts with it so that an answer
- * approved under one vocabulary can never be assumed approved under the next.
- */
-export function vocabularyFingerprint(): string {
-  const canonical = JSON.stringify({
-    v: VOCABULARY_VERSION,
-    forbidden: FORBIDDEN_CLAIMS.map((r) => [r.id, r.enforcement, r.patterns.ar, r.patterns.en, r.source.quote]),
-    approved: APPROVED_STATEMENTS.map((s) => [s.id, s.text.ar, s.text.en, s.verbatim]),
-    replacements: REPLACEMENT_PAIRS.map((p) => [p.id, p.use.ar, p.use.en]),
-    internal: INTERNAL_TOKENS.map((t) => [t.id, t.tokens]),
-  });
-  let h = 0x811c9dc5;
-  for (let i = 0; i < canonical.length; i++) {
-    h ^= canonical.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, '0');
-}
-
-/** Rules a text checker can decide. */
-export const PATTERN_RULES: readonly ForbiddenClaim[] =
-  FORBIDDEN_CLAIMS.filter((r) => r.enforcement === 'pattern');
-
-/**
- * Rules NO text checker can decide — exported so F7·2 must handle them against structured
- * evidence. Read this list before assuming `checkCustomerText` returning `[]` means "clean".
- */
-export const EVIDENCE_REQUIRED_RULES: readonly ForbiddenClaim[] =
-  FORBIDDEN_CLAIMS.filter((r) => r.enforcement === 'evidence-required');
-
-function spansOf(text: string, sources: readonly string[]): Array<[number, number]> {
-  const spans: Array<[number, number]> = [];
-  for (const src of sources) {
-    const re = new RegExp(src, 'giu');
-    for (const m of text.matchAll(re)) {
-      if (m.index === undefined) continue;
-      spans.push([m.index, m.index + m[0].length]);
-    }
-  }
-  return spans;
-}
-
-const overlaps = (a: [number, number], spans: Array<[number, number]>) =>
-  spans.some(([s, e]) => a[0] < e && s < a[1]);
-
-/**
- * Find forbidden CUSTOMER claims in a string.
- *
- * Both locales are always checked regardless of the page's language, because a bilingual product
- * mixes them constantly and a one-sided check is how «في الوقت الفعلي» survived an English-only
- * audit (§1, note on parity). Pass `locale` only to narrow deliberately.
- */
-export function checkCustomerText(
-  text: string,
-  opts: { locale?: VocabLocale } = {},
-): Violation[] {
-  if (!text) return [];
-  const locales: VocabLocale[] = opts.locale ? [opts.locale] : ['ar', 'en'];
-  const out: Violation[] = [];
-
-  for (const rule of PATTERN_RULES) {
-    for (const locale of locales) {
-      const allowed = rule.allowedContext ? spansOf(text, rule.allowedContext[locale]) : [];
-      for (const src of rule.patterns[locale]) {
-        const re = new RegExp(src, 'giu');
-        for (const m of text.matchAll(re)) {
-          if (m.index === undefined) continue;
-          const span: [number, number] = [m.index, m.index + m[0].length];
-          if (allowed.length && overlaps(span, allowed)) continue;
-          out.push({
-            ruleId: rule.id,
-            title: rule.title,
-            locale,
-            match: m[0].trim(),
-            index: m.index,
-            source: rule.source,
-          });
-        }
-      }
-    }
-  }
-  return out.sort((a, b) => a.index - b.index);
-}
-
-/**
- * Find escaped INTERNAL tokens in customer-visible text.
- *
- * Give this RENDERED TEXT, never raw HTML: an RSC payload carries internal prop and column names
- * by design, and scanning it would report a leak on every page. What a customer reads is the
- * only thing this question is about.
- */
-export function findInternalLeaks(text: string): Violation[] {
-  if (!text) return [];
-  const out: Violation[] = [];
-  for (const group of INTERNAL_TOKENS as readonly InternalToken[]) {
-    for (const token of group.tokens) {
-      // Sentinels leak CONCATENATED into a display name ("NO_STORAGEGB" — ADR-081), so the match
-      // is deliberately unanchored on the right. Anchoring it would have missed the real defect.
-      const re = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-      for (const m of text.matchAll(re)) {
-        if (m.index === undefined) continue;
-        out.push({
-          ruleId: group.id,
-          title: `${group.title}: ${token}`,
-          locale: 'en',
-          match: text.slice(Math.max(0, m.index - 20), m.index + token.length + 20).trim(),
-          index: m.index,
-          source: group.source,
-        });
-      }
-    }
-  }
-  return out.sort((a, b) => a.index - b.index);
-}
-
-/** Everything a customer surface must satisfy, in one call. */
-export function checkCustomerSurface(text: string, opts: { locale?: VocabLocale } = {}): {
-  violations: Violation[];
-  internalLeaks: Violation[];
-  clean: boolean;
-  /** Rules this check could NOT decide. Never treat `clean: true` as full coverage. */
-  undecided: readonly string[];
-  vocabularyVersion: string;
-  fingerprint: string;
-} {
-  const violations = checkCustomerText(text, opts);
-  const internalLeaks = findInternalLeaks(text);
-  return {
-    violations,
-    internalLeaks,
-    clean: violations.length === 0 && internalLeaks.length === 0,
-    undecided: EVIDENCE_REQUIRED_RULES.map((r) => r.id),
-    vocabularyVersion: VOCABULARY_VERSION,
-    fingerprint: vocabularyFingerprint(),
-  };
-}
-
-/** Every token in the vocabulary, for the separation test and for reporting. */
-export const ALL_CUSTOMER_RULE_IDS: readonly string[] = FORBIDDEN_CLAIMS.map((r) => r.id);
-export const ALL_INTERNAL_RULE_IDS: readonly string[] = INTERNAL_TOKENS.map((t) => t.id);
-export { ALL_INTERNAL_TOKENS as INTERNAL_TOKEN_LIST };
+// ── F7·2 · the post-generation validator and its log ──────────────────────────
+export { validateGeneratedAnswer, EVIDENCE_RULES_HANDLED, MAX_INPUT_CHARS } from './validate';
+export type {
+  AnswerEvidence,
+  EvidenceFigure,
+  FigureKind,
+  FigureProvenance,
+  ValidationFinding,
+  ValidationOutcome,
+  ValidationVerdict,
+} from './validate';
+export {
+  recordValidationEvent,
+  setValidationSink,
+  resetValidationSink,
+  MAX_LOGGED_CHARS,
+} from './validation-log';
+export type { ValidationEvent, ValidationSink } from './validation-log';

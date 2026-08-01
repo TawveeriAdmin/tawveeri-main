@@ -1,4 +1,112 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #29 · F7·1 COMPLETE · F7·2 NOT STARTED ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #30 · F7·2 COMPLETE · F7·3 NOT STARTED ═══
+
+**Tree clean, pushed, verified against production. Nothing running.** Decision: **ADR-158**.
+**`AI_ASSISTANT_ENABLED` untouched — the generative surface is still closed (verified 404).**
+
+## THE TWO POLICIES, DECIDED RATHER THAN DEFAULTED
+
+### 1. On a violation → SUPPRESS THE WHOLE ANSWER, fall back to the deterministic one
+
+| rejected option | why |
+|---|---|
+| remove only the offending content | the one option that can **manufacture** a claim while "fixing" one — deleting a clause can invert a sentence |
+| replace with approved wording | answers a question the customer did not ask; a silent meaning change |
+| regenerate once | non-deterministic, doubles cost, and a model that produced a forbidden claim has no evidence-backed reason to avoid it on retry |
+| publish with a warning | a disclosure does not make an unevidenced price claim true |
+
+**Why suppression is not a loss:** ADR-002 already holds — engines decide, LLMs only *phrase*.
+There is always a true answer underneath, so **suppression costs the phrasing, not the answer.**
+It is also this surface's established behaviour (CHECKPOINT #25): a failed advisory layer is
+silent and the deterministic result stands. The response says `suppressed: true` explicitly, and
+the suppressed answer is **not** appended to history — carrying it forward would feed a rejected
+claim into the next turn as if we had said it.
+
+### 2. When the validator cannot run → FAIL CLOSED
+
+Malformed evidence · non-string answer · empty rule set · an evidence rule F7·1 declares and
+F7·2 does not handle · input over the cap · any thrown error → `unavailable`, which suppresses
+exactly as a rejection does. *"The guard was down"* is not a defence, and fail-open means the
+guard stops guarding precisely when the system is under stress.
+
+**Determinism is structural:** no wall-clock, no randomness, no I/O in the decision path. A
+pathological input is caught by a deterministic **character cap**, not a race that resolves
+differently on a slower machine. A test greps the source for `Date.now`/`Math.random`/`setTimeout`.
+
+## THE LOAD-BEARING TEST
+
+`EVIDENCE_RULES_HANDLED` must equal `EVIDENCE_REQUIRED_RULES` **exactly**. Add a rule in F7·1 and
+F7·2 fails until it handles it; at runtime an unhandled rule returns `unavailable` rather than a
+pass. Without it, F7·1 could grow a rule the validator silently never checks — and a clean text
+scan would still read as "clean".
+
+## THREE OUTCOMES, NEVER TWO
+
+`passed` · `rejected` · `unavailable`, logged with query, generated output, timestamp, violated
+rules, measurable reason, decision taken, and the vocabulary version + fingerprint judged under.
+**`unavailable` is deliberately not folded into `rejected`** — same customer-visible effect,
+opposite meanings; merging them lets a broken guard hide inside a healthy rejection rate.
+Sink is injectable; default is one JSON line to stdout. **Durable storage left open on purpose:**
+that is a production write and a migration — a founder decision, not one to make inside a validator.
+
+## VERIFIED AGAINST THE LIVE PRODUCT
+
+```bash
+npm run tps:validator-verify                                          # localhost
+npx tsx scripts/tps-analysis/validator-verify.ts --base https://tawveeri.com
+```
+
+| check | result |
+|---|---|
+| generative surface still closed | **404** — it was touched, so it is verified, not assumed |
+| false rejections on real deterministic output | **0 of 2,026** customer-visible strings, 7 production queries |
+| every validation produced exactly one log event | 2,026 / 2,026 |
+| unit tests | **992 / 992** (32 new) |
+| F7·1 vocabulary scan · shell-verify | unchanged — PASS · 40/40 |
+
+**Unit fixtures cannot find a precision defect** — the same person writes the fixtures and the
+rules. Real production language can, which is what §2 is for.
+
+## ONE HARNESS DEFECT CAUGHT — and one thing to keep in view
+
+The first run rejected `recommendations[].tps_identity_key` =
+«بيسك\|split\|NO_SERIES\|12000\|Inverter\|hot_cold» for leaking a sentinel. **That was the
+harness, not the product:** the key is used only inside an `href` (`advisor-answer.tsx:246`),
+never rendered, so it is a machine field and the sentinel belongs in it. Machine fields are now
+excluded **by name** — the same principled class as urls and slugs, not an exception carved to
+make a gate green.
+
+**Keep in view anyway:** the sentinel *is* shipped to the browser inside the payload. It is one
+careless `.toString()` from being a real leak.
+
+## A HAZARD REMOVED BY STRUCTURE
+
+`validate.ts` needs the checkers, which lived in the barrel that re-exports `validate.ts`. That
+cycle would not throw — it would leave `FORBIDDEN_CLAIMS` undefined at init, and the validator
+**fails closed on an empty rule set**, so the symptom would have been *every generated answer
+silently suppressed in production, with no error anywhere.* Checkers moved to `check.ts`; the
+barrel is now only a barrel.
+
+## ROLLBACK
+
+```
+<F72HASH>  ADR-158 F7·2 validator   git revert <F72HASH>
+```
+
+Additive apart from the enforcement point in `src/app/api/ai-assistant/route.ts` — a route that
+returns 404 today. Reverting removes the validator and restores the route's previous return.
+
+## NEXT — DO NOT START AUTOMATICALLY
+
+**F7·3** — the adversarial suite F7 names: *a retailer with no provenance* and *a category we do
+not cover*, as a gate rather than a manual pass. Not started. Only after that does
+`AI_ASSISTANT_ENABLED` become a decision rather than a hazard.
+
+**Still open from #29:** three live customer strings await your wording decision (§F1) —
+`priceAlertCurrentPrice`, `priceAlertInvalid`, `priceAlert.currentPrice`.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #29 · F7·1 COMPLETE · F7·2 NOT STARTED ═══
 
 **Tree clean, pushed, verified against production. Nothing running.** Decision: **ADR-157**.
 
