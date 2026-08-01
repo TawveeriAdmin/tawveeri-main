@@ -1,4 +1,96 @@
-# ═══ RESUME HERE — 2026-08-02 CHECKPOINT #41 · UNIT A + UNIT B SHIPPED ═══
+# ═══ RESUME HERE — 2026-08-02 CHECKPOINT #42 · UNIT C REJECTED ON EVIDENCE · SESSION CLOSED ═══
+
+**Tree clean · pushed · NO product change made.** `AI_ASSISTANT_ENABLED` = ON, untouched.
+
+## UNIT C — HYPOTHESIS REJECTED. NO CODE SHIPPED.
+
+### §0 — the instrument was ruled out FIRST, and it was not the cause
+
+The previous check used puppeteer with `setExtraHTTPHeaders({'Accept-Language':'ar-SA'})` — a real
+browser, but **`navigator.language` stayed `en-US`**, and many sites branch on the JS value rather
+than the header. That gap could have produced the entire finding.
+
+Re-verified with the **full** Arabic profile — header **and** `navigator.language` **and**
+`navigator.languages` **and** `--lang=ar-SA`, mobile 390×844, on five live production exits:
+
+| | header-only | full-arabic |
+|---|---|---|
+| Jarir ×3 · Extra · (5 exits) | `lang=en dir=ltr`, 0–1% Arabic | **identical** |
+| redirect occurred | none | **none** |
+
+**The two runs do not differ.** The `DIFFERENT? true` flags were 200-vs-304 cache revalidation and
+a 1%→0% character-ratio wobble, not a locale change. **The instrument was not producing the
+finding — the retailers genuinely serve English.**
+
+### §1 — but the fix is measurably worse than the defect
+
+Tested the obvious transform on the same live exits:
+
+| retailer | swap | result |
+|---|---|---|
+| Jarir ×3 | `/sa-en/` → `/sa-ar/`, same slug | **404** → `/page-not-found` |
+| Extra | `/en-sa/` → `/ar-sa/`, same path | **404** |
+
+**Jarir and Extra use different slugs per locale.** The Arabic page exists at an address the
+transform cannot derive. The obvious fix would have turned a working English exit into a dead end
+on every case tested.
+
+### Classification, per the brief
+
+| category | verdict |
+|---|---|
+| broken link | **No** — 200, real product pages |
+| wrong product | **No** — correct product |
+| **language-mismatched but working** | **YES — this is the whole finding** |
+| acceptable retailer-controlled locale behaviour | **Yes**, given no derivable Arabic equivalent |
+
+**DECISION: reject the hypothesis as a defect worth fixing. No product change.** A working
+product page in English is minor friction; a 404 is a dead end, and P3 rates those very
+differently. Preserving a working link outranks perfecting a language.
+
+**Also not done, deliberately:** an "opens in English" notice. That is new customer copy governed
+by LAUNCH_VOCABULARY, it would assert retailer behaviour measured on only 5 exits, and it adds
+friction to every exit for a minor issue.
+
+### If it is ever revisited — scoped, NOT started
+
+**Unit C′ — Arabic destination resolution.** Not a URL transform; per-product slug resolution
+against each retailer's catalogue, plus threading locale into `/go` (which is locale-independent
+by design today, and skipped by middleware). **Acceptance criteria:** every rewritten URL resolves
+**200** to the **same product** before it is ever rendered · affiliate query params preserved
+verbatim · a retailer with no derivable Arabic equivalent keeps its working English link ·
+verified per retailer, Arabic and English separately, mobile first. **This is a new unit, not a
+small fix** — exactly the §2 boundary.
+
+## NEW VERIFIED RULES — both recorded in `docs/ENGINEERING-RULES.md`
+
+1. **An HTTP header is not a locale.** `Accept-Language` alone does not simulate a shopper;
+   `navigator.language`/`languages` must be overridden too, and the two runs compared separately.
+2. **A working link outranks a perfect language.** Never rewrite a merchant URL without resolving
+   the rewritten URL first.
+
+## PRODUCTION STATE AT CLOSE
+
+Units A and B remain shipped and verified — homepage `direct=0 · go=3 · compare=1 · needChips=1`
+in both locales. unified-search **54/54** · shell-verify **40/40** · adversarial **23/23** ·
+must-pass **4/4** · **0 unavailable** · tests **1,114/1,114**.
+
+**Known-stale gate assertion, unchanged:** `validator-verify` asserts `/api/ai-assistant` → 404;
+it returns **200 by founder decision**. Flipping a safety assertion deserves its own boundary.
+
+## ROLLBACK
+
+```
+cfc657c  Unit C — rules only, no product change   git revert cfc657c
+ba0992e  CHECKPOINT #41 docs                      git revert ba0992e
+e0fd005  search import fix   (only WITH ae23976)  git revert e0fd005
+ae23976  Unit B affordance                        git revert ae23976
+ac6a402  Unit A exits                             git revert ac6a402
+```
+
+---
+
+# ═══ SUPERSEDED — 2026-08-02 CHECKPOINT #41 · UNIT A + UNIT B SHIPPED ═══
 
 **Tree clean · pushed · both units verified in production.** ADR-170 (A) · ADR-171 (B).
 **`AI_ASSISTANT_ENABLED` = ON, untouched.**

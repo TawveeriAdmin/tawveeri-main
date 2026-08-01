@@ -284,3 +284,47 @@ model non-determinism alone. Every one of those "improvements" is smaller than t
 **This is the same failure class as the sampling-bias entries already in this file** —
 top-N sampling over-weighting quality, and the balanced sample over-weighting edge cases. All
 three are one mistake: *reading a number produced by the method as a property of the system.*
+
+---
+
+## MEASUREMENT RULE — an HTTP header is not a locale
+
+**Added 2026-08-02 (Unit C §0).**
+
+> **`Accept-Language` alone does not simulate a shopper's locale.** A browser also exposes
+> `navigator.language` and `navigator.languages`, and many sites branch on the JS value, not the
+> header. A check that sets only the header can produce an English landing page for a site that
+> would have served Arabic — reporting a product defect that does not exist.
+
+To simulate a Saudi Arabic shopper properly, set **all three**:
+
+```js
+await page.setExtraHTTPHeaders({ 'Accept-Language': 'ar-SA,ar;q=0.9' });
+await page.evaluateOnNewDocument(() => {
+  Object.defineProperty(navigator, 'language',  { get: () => 'ar-SA' });
+  Object.defineProperty(navigator, 'languages', { get: () => ['ar-SA', 'ar', 'en'] });
+});
+// plus launch arg --lang=ar-SA
+```
+
+**Then compare the two runs and report them separately.** If they differ, the earlier finding was
+the instrument. In Unit C they did NOT differ — the retailers genuinely serve English — which is
+what allowed the hypothesis to be tested rather than assumed.
+
+Same family as the `curl -d` argv corruption, the stale dev server on the wrong port, and the
+JSX-blind regex scanner: **rule out the instrument before investigating the system.**
+
+---
+
+## PRODUCT RULE — a working link outranks a perfect language
+
+**Added 2026-08-02 (Unit C).**
+
+> **Never rewrite a merchant URL without resolving the rewritten URL first.** A
+> language-mismatched page that works is minor friction. A rewritten URL that 404s is a dead end,
+> and those are not the same severity.
+
+Measured: swapping Jarir `/sa-en/` → `/sa-ar/` and Extra `/en-sa/` → `/ar-sa/` on the same slug
+returned **404 on every case tested** — Jarir redirecting to `/page-not-found`. Those retailers use
+**different slugs per locale**, so the Arabic page exists at an address the transform cannot
+derive. The obvious fix would have converted a working English exit into a dead end.
