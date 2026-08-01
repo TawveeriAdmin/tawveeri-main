@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  validateGeneratedAnswer,
-  recordValidationEvent,
-  type EvidenceFigure,
-} from '@/lib/vocabulary';
+import { validateGeneratedAnswer, recordValidationEvent } from '@/lib/vocabulary';
+import { buildPublishedEvidence } from '@/lib/agent/published-evidence';
 import { getDeals } from '@/lib/intelligence/getDeals';
 import { getPriceIntelligence } from '@/lib/intelligence/getPriceIntelligence';
 
@@ -252,12 +249,37 @@ export async function POST(request: NextRequest) {
     // could disagree with it. Anything not recorded here is, by construction, something the
     // answer may not state: the validator treats an unbacked figure or an unsupplied retailer
     // as a rejection, because unknown beats incorrect.
-    const answerEvidence: { figures: EvidenceFigure[]; retailers: string[] } = {
-      figures: [],
-      retailers: [],
-    };
+    // MEASURED DEFECT, 2026-08-01, first production session: 6 of 7 answers were suppressed,
+    // 5 of them by `saving-or-price-without-provenance`. The cause was HERE — this bundle
+    // carried retailer names and store counts and NOT ONE price, while the prompt below is
+    // built from prices. Every price the model stated was real, supplied, and undeclared, so
+    // the validator correctly refused to certify it.
+    //
+    // THE GUARD WAS RIGHT AND THIS ROUTE'S CONTRACT WAS INCOMPLETE — the same defect ADR-162
+    // fixed for the decision engine, on the one route that never received the fix.
+    //
+    // It now uses THE SAME CONTRACT, not a copy of it: facts are collected in the shape
+    // `buildPublishedEvidence` already understands and handed to it. There is one builder, one
+    // provenance vocabulary, and no route-specific evidence rule — a second bundle format would
+    // be a second policy, which is exactly what F7·1 exists to prevent.
+    const evidenceItems: Array<{
+      unit_price?: number | null;
+      store_count?: number | null;
+      stores?: string[] | null;
+    }> = [];
+    const retailers = new Set<string>();
     const noteRetailer = (name?: string | null) => {
-      if (name && !answerEvidence.retailers.includes(name)) answerEvidence.retailers.push(name);
+      if (name && name.trim()) retailers.add(name.trim());
+    };
+    /** Publish one observed price. A figure with no value is not published — and so must not be rendered. */
+    const notePrice = (value: unknown, storeCount?: unknown, stores?: string[] | null) => {
+      const price = typeof value === 'number' && Number.isFinite(value) ? value : null;
+      if (price === null && storeCount === undefined) return;
+      evidenceItems.push({
+        unit_price: price,
+        store_count: typeof storeCount === 'number' ? storeCount : null,
+        stores: stores ?? null,
+      });
     };
 
     if (intent.type === 'deals') {
@@ -272,7 +294,10 @@ export async function POST(request: NextRequest) {
       console.log('[AI] Step 3 — deals:', deals.length, '| strict:', isStrictDeals);
 
       for (const d of deals as Array<Record<string, unknown>>) {
-        noteRetailer(typeof d.store_name === 'string' ? d.store_name : null);
+        noteRetailer(typeof d.bestStore === 'string' ? d.bestStore : null);
+        // `formatDealsForAI` prints BOTH of these, so both must be declared.
+        notePrice(d.bestPrice);
+        notePrice(d.averagePrice);
       }
 
       dynamicContext = deals.length
@@ -312,16 +337,29 @@ ${isStrictDeals ? 'وأكد أنها عروض محسوبة من تاريخ ال�
       for (const p of (products ?? []) as Array<Record<string, unknown>>) {
         noteRetailer(typeof p.store_name === 'string' ? p.store_name : null);
         const stores = Array.isArray(p.stores) ? (p.stores as Array<Record<string, unknown>>) : [];
-        for (const s of stores) noteRetailer(typeof s.store_name === 'string' ? s.store_name : null);
-        if (typeof p.store_count === 'number') {
-          answerEvidence.figures.push({ value: p.store_count, kind: 'retailer-count', derivedFrom: 'live-query' });
+        const names: string[] = [];
+        for (const s of stores) {
+          const n = typeof s.store_name === 'string' ? s.store_name : (typeof s.store === 'string' ? s.store : null);
+          noteRetailer(n);
+          if (n) names.push(n);
+          // EVERY per-store price `formatProductsForAI` prints into the prompt. A price in the
+          // prompt and not in the evidence is the exact gap that suppressed 5 of 7 answers.
+          notePrice(s.current_price);
+          notePrice(s.original_price);
         }
+        notePrice(p.best_price, p.store_count, names);
       }
       const intel = tpsProduct
         ? await getPriceIntelligence(tpsProduct.product_id).catch((e) => { console.error('[AI] getPriceIntelligence error:', e); return null; })
         : null;
 
       if (tpsProduct && intel) {
+        // Every price-intelligence figure the block below prints. Declared here, beside the
+        // render, so the two cannot drift — the same discipline `explainChoice` uses for its
+        // delta (ADR-162).
+        notePrice((intel as unknown as Record<string, unknown>).currentBestPrice);
+        notePrice((intel as unknown as Record<string, unknown>).lowestEver);
+        notePrice((intel as unknown as Record<string, unknown>).average);
         dynamicContext = `
 
 ✅ ذكاء سعري حقيقي من توفيري للمنتج "${tpsProduct.name_ar || tpsProduct.name_en}" — استخدمه فقط ولا تخترع أرقاماً:
@@ -364,10 +402,17 @@ ${formatProductsForAI(products)}${storeHint}`;
       for (const p of (products ?? []) as Array<Record<string, unknown>>) {
         noteRetailer(typeof p.store_name === 'string' ? p.store_name : null);
         const stores = Array.isArray(p.stores) ? (p.stores as Array<Record<string, unknown>>) : [];
-        for (const s of stores) noteRetailer(typeof s.store_name === 'string' ? s.store_name : null);
-        if (typeof p.store_count === 'number') {
-          answerEvidence.figures.push({ value: p.store_count, kind: 'retailer-count', derivedFrom: 'live-query' });
+        const names: string[] = [];
+        for (const s of stores) {
+          const n = typeof s.store_name === 'string' ? s.store_name : (typeof s.store === 'string' ? s.store : null);
+          noteRetailer(n);
+          if (n) names.push(n);
+          // EVERY per-store price `formatProductsForAI` prints into the prompt. A price in the
+          // prompt and not in the evidence is the exact gap that suppressed 5 of 7 answers.
+          notePrice(s.current_price);
+          notePrice(s.original_price);
         }
+        notePrice(p.best_price, p.store_count, names);
       }
 
       const productsContext = products?.length
@@ -472,6 +517,15 @@ ${productsContext}
     // are the routes by which a claim nobody wrote reaches a customer. The response says
     // explicitly that it was suppressed, so the client falls back to its deterministic answer
     // rather than rendering silence it cannot explain.
+    // ONE CONTRACT, NOT A COPY. The same builder the decision engine uses (ADR-162), fed the
+    // same objects the prompt was built from — so the validator judges the answer against what
+    // the generator was actually given, and there is no route-specific evidence rule anywhere.
+    const answerEvidence = buildPublishedEvidence({
+      recommendations: evidenceItems,
+      smart_pick: null,
+    });
+    answerEvidence.retailers = [...new Set([...answerEvidence.retailers, ...retailers])];
+
     const verdict = validateGeneratedAnswer(reply, answerEvidence);
     recordValidationEvent({
       verdict,

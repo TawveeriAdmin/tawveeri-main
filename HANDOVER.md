@@ -1,4 +1,79 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #36 · §1b EXTENDED TO THE AST ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #37 · ai-assistant EVIDENCE CONTRACT ═══
+
+**Tree clean, pushed. `AI_ASSISTANT_ENABLED` verified OFF (404) throughout.** Decision: **ADR-166**.
+
+## THE FIRST PRODUCTION SESSION, AND WHAT IT PROVED
+
+Enabled ~10 min. **6 of 7 answers suppressed** (86%), against a pre-declared >30% rollback
+threshold. Rules: `saving-or-price-without-provenance` ×5 · `comparison-claimed-without-two-retailers` ×1.
+**`unavailable`: 0.** No unsupported claim reached a customer.
+
+**F7 was right. The route's contract was incomplete.** Every suppressed price was REAL and
+SUPPLIED in the prompt — the route declared retailers and store counts and **not one price**, so
+the validator correctly refused to certify figures nobody had published. The same defect ADR-162
+fixed for the decision engine, on the one route that never received the fix.
+
+## THE DIVERGENCE, PROVEN
+
+| route | evidence |
+|---|---|
+| `/api/v1/agent/decide` | `buildPublishedEvidence(...)` — the shared contract |
+| `/api/ai-assistant` (before) | hand-built: `kind:'retailer-count'` only, **zero `price` figures** |
+
+## THE FIX — one contract, not a copy
+
+The route now maps its facts into the shape `buildPublishedEvidence` already understands and
+calls **the same builder**. Prices are declared where the prompt prints them: every per-store
+price and `best_price` from search, `bestPrice`/`averagePrice` from deals, and
+`currentBestPrice`/`lowestEver`/`average` from price intelligence — each beside its render, so
+the two cannot drift. A test asserts the route contains **no hand-rolled figure literals**: a
+second bundle format would be a second policy.
+
+## MEASURED SEPARATELY, AS REQUIRED
+
+| | before | after |
+|---|---|---|
+| **true supported answers suppressed** | 5 of 7 | **0** (regression test: same answer, old bundle rejects, new bundle publishes) |
+| **genuine violations blocked** | 23/23 adversarial | **23/23 — unchanged** |
+| | | + 7 new genuine-violation cases, all still rejected under the NEW bundle |
+| **unavailable** | 0 | **0** |
+| **false rejections** (production strings) | 0 of 2,023 | **0 of 2,023** |
+
+**Genuine rejections did NOT decrease** — that is the decomposition the founder asked for. Had
+both numbers fallen, the guard would have been weakened; instead suppression of *supported*
+answers went to zero while every violation class stayed blocked, including two the old bundle
+could not even have tested (unsupplied retailer, inflated store count).
+
+**No guard behaviour changed.** No rule edited, no threshold moved, fail-closed intact
+(asserted: malformed evidence still yields `unavailable`), durable logging unchanged, no
+route-specific bypass.
+
+## VERIFICATION (flag OFF throughout)
+
+validator-verify **GATE: PASS** · 23/23 adversarial · 4/4 must-pass · unified-search **54/54,
+0 failing** · **1,110/1,110** tests (12 new) · `/api/ai-assistant` → **404**.
+
+**Not verifiable while off:** the live generative path. The contract is proven by regression
+test and by the shared builder's own tests, not by a live 200.
+
+## ROLLBACK
+
+```
+<AHASH>  ADR-166 ai-assistant evidence contract   git revert <AHASH>
+```
+
+## ACTIVATION DECISION — BACK TO THE FOUNDER
+
+Same runbook, same thresholds (CHECKPOINT #34 §1–3). **Watch the first 10 answers**: expect
+`rejected` to fall from 86% toward <10%. If it stays high, the remaining cause is the prompt, not
+the contract — and the kill switch is one variable.
+
+**Verify the kill switch yourself before and after.** Last time the reported disable had not
+taken effect; the endpoint was live for the whole interval.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #36 · §1b EXTENDED TO THE AST ═══
 
 **Tree clean, pushed. Nothing running.** Decision: **ADR-165**. **`AI_ASSISTANT_ENABLED` untouched.**
 
