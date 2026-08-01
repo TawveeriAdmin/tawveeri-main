@@ -1,4 +1,96 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #39 · MEASUREMENT CHAPTER CLOSED ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #40 · SESSION CLOSED · BASELINE FROZEN ═══
+
+**Tree clean · everything pushed · nothing running.** This is the canonical engineering state.
+
+## PRODUCTION STATE — exact
+
+| | |
+|---|---|
+| **`AI_ASSISTANT_ENABLED`** | **ON** (`=1`). Verified live: `POST /api/ai-assistant` → **200** |
+| assistant health | `unavailable` **0 / 132 journeys** · 0 published violations · 0 F7 bypasses · 0 errors |
+| rejection rate (natural, n=24) | **42%** — see the noise-floor caveat below |
+| deterministic advisor | unaffected; `/api/v1/agent/decide` makes no model call |
+| tests | **1,114 / 1,114** |
+| gates | validator-verify PASS · 23/23 adversarial · unified-search 54/54 · shell-verify 40/40 · vocabulary-scan PASS |
+
+**Kill switch:** Railway → `AI_ASSISTANT_ENABLED=0` → **verify `POST` returns 404**. Verify it;
+twice in this rollout a variable change did not reach the running process.
+
+## ⚠ GOVERNING REFERENCE — `docs/TAWVEERI_MASTER_BOOK.md` IS NOT IN THE REPOSITORY
+
+I was asked to make it the governing product / consumer-experience reference. **The file does not
+exist** — `git ls-files` finds no Master Book under any name. The closest artefacts are
+`MASTER_DIRECTIVE.md` (phases/gates) and `docs/CONSUMER_EXPERIENCE_CONSTITUTION.md` (the
+consumer-experience authority actually in force, and the source of Appendix F7).
+
+**I did not create it.** Inventing a governing document would be the worst thing to fabricate in
+a repository whose entire discipline is that claims trace to evidence. **The founder must add the
+real file**, after which it takes precedence for product/consumer-experience decisions,
+subordinate to `TAWVEERI_CONSTITUTION.md`. Until it exists, `CONSUMER_EXPERIENCE_CONSTITUTION.md`
+governs — the next session should treat Master Book references as pointing there and say so.
+
+## DONE THIS SESSION
+
+F7 complete end-to-end (ADR-157 vocabulary-as-data · 158 validator · 159 adversarial gate ·
+160 durable logging · 161 wording · 162 engine contract · 163 P2-5 advisor · 164 dead code ·
+165 §1b AST · 166 ai-assistant contract · 167 evidence boundary · 168 `customerPrice` ·
+169 measurement rule). Root layout / locale / canonical (155–156). Assistant activated,
+stabilised, and its first two production defects diagnosed and closed.
+
+## OPEN — in agreed order
+
+**UNIT A — homepage exits (FIRST).** `/ar` and `/en` each render **8 direct retailer links,
+0 `/go/` exits, 0 compare, 0 product**, while `/ar/deals` on the same data class routes correctly
+to 26 product pages. Cause: `src/lib/intelligence/home-verified-deals.ts` selects a raw `url` and
+the card renders it; no canonical is resolved. **Bypassing `/go` costs affiliate attribution
+(`tag=tawveeri-21`) and every `go_click` signal P2-4 will need.** Fix: return the observation id +
+canonical; route through `/go/<offerId>` and to compare/product where one exists.
+
+**UNIT B — وفّر placement (SECOND). PLACEMENT IS NO LONGER RESERVED FOR FOUNDER APPROVAL.**
+The next session has **full authority to research, decide and ship** under the Master Book (see
+caveat above) and the Protected Trust Policies. Measured: **zero `href` to `/advisor` on `/ar`** —
+the 13 «وفّر» matches are brand copy, not an entry point.
+**CORRECTION TO THE BRIEF:** the AI disclosure **IS present** on `/ar`, `/ar/deals`,
+`/ar/price-truth`. It is **ABSENT on `/en`**. The gap is **locale, not page** — that changes what
+"fix the disclosure" means. Constraints unchanged: one obvious entry point · no choose-between
+search-and-AI · no floating bubble · disclosure at-or-before any advisor answer, both locales.
+
+**UNIT C — retailer exit locale (THIRD, ONLY IF EVIDENCE SUPPORTS IT).**
+**Do not act on the `/sa-en/` string.** I reported it as a defect from served HTML without opening
+it; the founder opened it and it resolved normally. My re-verification was **inconclusive** —
+Jarir returns `404` to curl while serving `lang="en"` HTML, i.e. bot protection, so every
+conclusion from an HTTP client is about the instrument. **Settle it with puppeteer** (`ui-journey.js`,
+`a11y-audit.js` already use it), per retailer, on the rendered outcome. Unit C may narrow to a
+subset or disappear entirely.
+
+## THE MEASUREMENT CAVEAT THAT GOVERNS ALL OF THE ABOVE
+
+Noise floor **±19 points** (two natural samples, no code change between them: 31% n=16, 50% n=24).
+**ADR-167 and ADR-168 are UNVALIDATED at the rate level** — sound mechanisms, unit-tested, no
+measured harm, but neither may be cited as a proven rate improvement. Rule: `docs/ENGINEERING-RULES.md`
+§ "an effect smaller than the sample variance validates nothing."
+
+## ROLLBACK — latest units, newest first
+
+```
+3fd3f7f  ADR-169 hash correction (docs)     git revert 3fd3f7f
+c4bbd49  ADR-169 measurement rule (docs)    git revert c4bbd49
+e0af3fc  ADR-168 customerPrice              git revert e0af3fc
+98351e9  ADR-167 evidence boundary          git revert 98351e9
+f674162  measurement: rounding cause (docs) git revert f674162
+a60e568  ADR-166 ai-assistant contract      git revert a60e568
+```
+Each is independent. Reverting `e0af3fc`/`98351e9` returns the assistant to the ADR-166 baseline.
+
+## ENTRY POINT FOR THE NEXT SESSION
+
+Read this checkpoint, then **open `src/lib/intelligence/home-verified-deals.ts` and add the
+observation id + canonical to its `select`.** That single change is the head of Unit A and unblocks
+the exit path Units B and C both touch.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #39 · MEASUREMENT CHAPTER CLOSED ═══
 
 **Tree clean, pushed. Assistant enabled, rollout healthy.** Decision: **ADR-169** (measurement rule).
 
