@@ -152,6 +152,11 @@ function* strings(node: unknown, path = ""): Generator<[string, string]> {
       // Machine fields are excluded BY NAME — the same principled class as urls and slugs, not
       // a one-off exception carved out to make a gate green.
       if (/(^|[._])(key|url|href|id|slug|code|sku|gtin)(\[|$|\.)/i.test(path)) continue;
+      // The evidence CONTRACT is machinery, not customer text. Its figure labels
+      // (`cost_breakdown.annual_electricity`) and retailer identifiers are inputs to the check,
+      // and scanning them inflated the denominator by ~227 strings — a number that would then
+      // look like widened coverage rather than the contract describing itself.
+      if (/^evidence(\.|\[|$)/.test(path)) continue;
       if (value.length < 12) continue;
       if (/^https?:\/\//.test(value) || /^[a-z0-9_|-]+$/i.test(value)) continue;
       stringsChecked++;

@@ -6,6 +6,73 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-162 — The engine publishes every figure it renders · Accepted (2026-08-01)
+
+**Context.** F7·3 measured, on production, four strings per query stating a saving —
+«أوفر بـ180 ريال في التكلفة الإجمالية» / "180 SAR lower total cost" — whose **180 appeared nowhere
+in the payload**. The engine published both total costs and not the delta it rendered. Safe while
+the engine writes that sentence itself; the moment an LLM phrases those facts the validator would
+correctly suppress a **true** statement, because the evidence contract was incomplete.
+
+**Decision — PUBLISH, NEVER INFER.** `/api/v1/agent/decide` now returns an `evidence` bundle:
+every customer-visible figure with `value`, `kind`, `derivedFrom` and `label`, so a consumer can
+verify any published number **without knowing how the engine works**.
+
+**THE GUARD WAS CORRECT AND THE CONTRACT WAS INCOMPLETE.** Not one rule changed. The three ways
+this could have been "fixed" by weakening the guard were all available and all rejected: accept
+any *difference* of two supplied figures (with ~22 prices there are hundreds of pairwise
+differences — a fabricated number would often match one by coincidence); let the harness compute
+the delta (the harness fabricating evidence the product never supplied); keep the path exclusion
+(a suppression list wearing a reason).
+
+**"Cannot declare ⇒ must not render" is true by construction.** `explainChoice` sets
+`total_cost_delta` on the **same branch** that pushes the sentence, so the two cannot drift. If
+the three-reason slice drops the saving, the delta publishes as `null` — publishing a figure we
+did not render is the mirror of the defect, not a safe direction.
+
+**TWO PIECES OF INFERENCE DELETED, not relocated.** The verification harness had been
+reconstructing evidence by **guessing from field names** (`/price|cost|total/`) — inference
+dressed as verification, and it still missed the one figure that mattered. It now reads
+`payload.evidence`. And the `chosen_over.reasons_*` path exclusion is gone; nothing is excluded
+from the scan any more.
+
+**Completeness is mechanically enforced.** `findUnpublishedFigures` walks every customer-visible
+string and returns each figure rendered but not published. Zero is the contract holding; anything
+else is an engine defect. Machine fields are skipped by name, and the `evidence` block itself is
+skipped — scanning the contract inflated the denominator by ~227 strings, which would have read
+as widened coverage rather than the contract describing itself.
+
+**Category-independent by construction.** The builder reads only fields every recommendation has
+(`unit_price`, `total_cost_estimate`, `cost_breakdown`, `store_count`, `stores`) plus the
+published delta. It names no category and consults no per-category table; a test asserts the
+source names none. Product DNA values publish as `attribute` figures — no rule consumes them yet,
+so the bundle is complete rather than complete-enough.
+
+**Verified in production, same denominator as before.**
+
+| | before | after |
+|---|---|---|
+| strings validated | 2,026 | **2,026** |
+| passed | 2,020 | **2,026** |
+| rejected | 6 | **0** |
+| unavailable | 0 | **0** |
+| false rejections | 0 | **0** |
+| unpublished figures | 4 distinct, excluded by a path rule | **0, nothing excluded** |
+| adversarial cases blocked | 23/23 | **23/23** |
+| must-pass answers publish | 4/4 | **4/4** |
+
+**Why true rejections fell to zero — stated before accepting the result.** The rule
+`saving-or-price-without-provenance` is byte-identical and still rejects an unbacked price: the
+adversarial suite proves it, with `price-with-no-observation` and `price-contradicts-evidence`
+still blocked. The six rejections disappeared because **the evidence became complete**, which is
+the only legitimate way for a rejection to disappear. A rejection that vanishes because a rule
+softened is a regression; one that vanishes because the fact is now declared is the fix.
+
+**Consequences.** No customer-visible behaviour change — the rendered strings are unchanged and
+the payload gains one field. 1,076/1,076 tests (15 new). `AI_ASSISTANT_ENABLED` untouched.
+
+---
+
 ### ADR-161 — «السعر الحالي» / "Current Price" is retired; observation wording everywhere · Accepted (2026-08-01)
 
 **Context.** F7·1 found the forbidden word live in customer copy that §3 had banned since

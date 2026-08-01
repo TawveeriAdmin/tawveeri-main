@@ -1,4 +1,84 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #32 · F7 COMPLETE · FLAG STILL OFF BY CHOICE ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #33 · ENGINE CONTRACT SHIPPED · NO TECHNICAL BLOCKER LEFT ═══
+
+**Tree clean, pushed, deployed, verified in production. Nothing running.** Decision: **ADR-162**.
+**`AI_ASSISTANT_ENABLED` untouched — surface verified 404.**
+
+## THE FOUR ANSWERS
+
+| question | answer |
+|---|---|
+| **Is this boundary complete?** | **YES** |
+| **Is F7 complete?** | **YES** |
+| **Is `AI_ASSISTANT_ENABLED` technically safe to enable?** | **YES** — no technical blocker remains |
+| **What kind is the remaining blocker?** | **FOUNDER POLICY**, not architectural or product |
+
+## WHAT SHIPPED
+
+`/api/v1/agent/decide` now publishes an `evidence` bundle — every customer-visible figure with
+`value`, `kind`, `derivedFrom`, `label`. **Publish, never infer.** A consumer can verify any
+number without knowing how the engine works.
+
+**The guard was correct; the contract was incomplete.** Not one rule changed. Three ways to
+"fix" this by weakening the guard were available and all rejected: accepting any *difference* of
+two supplied figures (hundreds of pairwise differences — coincidence would often match), letting
+the harness compute the delta (the harness fabricating evidence), or keeping the path exclusion
+(a suppression list wearing a reason).
+
+**"Cannot declare ⇒ must not render" is structural:** `explainChoice` sets `total_cost_delta` on
+the **same branch** that pushes the sentence, so they cannot drift. Dropped sentence ⇒ `null`.
+
+**Two pieces of inference DELETED, not relocated:** the harness had been reconstructing evidence
+by guessing from field names — inference dressed as verification, and it still missed the one
+figure that mattered. And the `chosen_over.reasons_*` exclusion is gone; nothing is excluded now.
+
+## PRODUCTION VERIFICATION — same denominator, so the comparison is exact
+
+| | before | after |
+|---|---|---|
+| strings validated | 2,026 | **2,026** |
+| **passed** | 2,020 | **2,026** |
+| **rejected** | 6 | **0** |
+| **unavailable** | 0 | **0** |
+| **false rejections** | 0 | **0** |
+| unpublished figures | 4 distinct, hidden by a path rule | **0, nothing excluded** |
+| adversarial cases blocked | 23/23 | **23/23** |
+| must-pass answers publish | 4/4 | **4/4** |
+| unit tests | — | **1,076 / 1,076** (15 new) |
+
+**Why true rejections fell to zero — the required explanation.** `saving-or-price-without-
+provenance` is **byte-identical** and still rejects an unbacked price: the adversarial suite
+proves it, with `price-with-no-observation` and `price-contradicts-evidence` still blocked. The
+six disappeared because **the evidence became complete**. A rejection that vanishes because a rule
+softened is a regression; one that vanishes because the fact is now declared is the fix.
+
+## AN INSTRUMENT TRAP, FOR THE FIFTH TIME
+
+Post-deploy checks with `curl -d '{"text":"ثلاجة اقتصادية"}'` returned *"category required"* for
+every ARABIC query while English worked — which reads exactly like a parser regression. It is the
+**`curl -d` argv-mangling** trap CHECKPOINT #19 already recorded. The same queries through
+`fetch` returned 43–63 figures each. **Use node `fetch` for any Arabic-bearing request; a shell
+quote is not a UTF-8 transport.**
+
+## ROLLBACK
+
+```
+3e9f185  ADR-162 engine evidence contract   git revert 3e9f185
+dae188c  docs + harness denominator fix        git revert dae188c
+```
+
+Additive: one new module, one new field on the decide response, one published field on
+`chosen_over`. Reverting restores the previous payload and re-opens the gap — the harness would
+then need its path exclusion back to stay green, which is the tell that the exclusion was never
+the fix.
+
+## NEXT — `AI_ASSISTANT_ENABLED` IS NOW A POLICY DECISION
+
+No technical prerequisite remains. See the recommendation in the closing report before enabling;
+the durable log is what makes the first hours legible.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #32 · F7 COMPLETE · FLAG STILL OFF BY CHOICE ═══
 
 **Tree clean, pushed, verified in production. Nothing running.** Decisions: **ADR-160** (durable
 logging) · **ADR-161** (wording). **`AI_ASSISTANT_ENABLED` untouched — surface verified 404.**
