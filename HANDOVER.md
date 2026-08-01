@@ -1,4 +1,69 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #37 · ai-assistant EVIDENCE CONTRACT ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #38 · MEASUREMENT: THE 7 REJECTIONS EXPLAINED ═══
+
+**Read-only measurement. NO code changed.** `AI_ASSISTANT_ENABLED` remains **ON**; rollout healthy.
+
+## THE ROOT CAUSE — AND MY HYPOTHESIS WAS WRONG
+
+I predicted the 7 `saving-or-price-without-provenance` rejections were queries returning **no
+priced products**. **Measured: all 7 return 4 priced products each.** The evidence bundle has
+prices. The hypothesis is dead.
+
+**The actual cause is a ROUNDING MISMATCH between the prompt and the evidence.**
+
+`formatProductsForAI` rounds every price into the prompt —
+`Math.round(p.best_price)` (line 155) and `Math.round(s.current_price)` (line 144) — while the
+evidence contract publishes the **unrounded** value. Measured prices from the failing queries:
+
+```
+جوال رخيص        10.99, 10.994001      → prompt shows "11"
+تلفزيون سمارت    55.004501, 123, 182   → prompt shows "55"
+لابتوب للالعاب   168.83, 336.25        → prompt shows "169"
+سماعة بلوتوث     24.99, 39.99          → prompt shows "25"
+```
+
+The model faithfully repeats **11**; the evidence declares **10.994001**;
+`saving-or-price-without-provenance` requires an exact value match and correctly refuses to
+certify a figure that is not in the bundle. **The model did nothing wrong, the guard did nothing
+wrong, and the evidence was complete** — the two representations of the same fact simply differ.
+
+**This also explains why the evidence boundary (ADR-167) only half-worked:** it listed *unrounded*
+prices while the context above it showed *rounded* ones — the boundary and the context disagreed
+about the same number.
+
+**The fix is a one-line class of change** (publish the rounded value, or stop rounding in the
+prompt — they must agree). **NOT started; it is its own bounded unit,** and it touches
+prompt assembly, which is out of scope here.
+
+## READ-ONLY AUDIT — identity-sentinel on NON-GENERATIVE surfaces: **NONE**
+
+| surface | result |
+|---|---|
+| `/api/search` — 100 products across 5 queries | **0 sentinel-bearing names** |
+| `/ar/search` rendered · JSON-LD · metadata | **clean** |
+| `/ar/compare/<key>` rendered · JSON-LD · metadata | **clean** |
+| `/ar/deals` · `/ar/products` | **clean** |
+
+**No non-generative customer surface is affected — live or dormant.** The sentinel reaches only
+the generative path, where F7 caught it both times. **`identity-sentinel` remains its own future
+bounded unit**, and is NOT a live customer defect.
+
+This is consistent with `tps:sentinel-check`, the standing DB-layer gate, and with ADR-078's
+requirement that sentinels be stripped at every customer render path — which they are.
+
+## ROLLOUT STATUS
+
+`unavailable` **0 across 108 journeys** · 0 errors · 0 published violations · 0 F7 bypasses.
+No rollback condition met.
+
+## NEXT BOUNDED UNIT (not started)
+
+**Reconcile the rounded/unrounded price representation.** Smallest correct form: publish the same
+rounded value the prompt shows, so prompt, boundary and evidence state one number. Expected to
+clear ~7 of 11 current rejections. Measure with the same 24-query natural sample.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #37 · ai-assistant EVIDENCE CONTRACT ═══
 
 **Tree clean, pushed. `AI_ASSISTANT_ENABLED` verified OFF (404) throughout.** Decision: **ADR-166**.
 
