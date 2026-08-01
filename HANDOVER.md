@@ -81,7 +81,7 @@ page); four would have been missed. All five now call `navigateToLocale()`
 ## ROLLBACK
 
 ```
-<HASH>  ADR-155 root-layout restructure    git revert <HASH>
+2f70a92  ADR-155 root-layout restructure   git revert 2f70a92
 ```
 
 Single commit; `9982a78` is the pre-session head. **Confirm the range before any range revert** —
