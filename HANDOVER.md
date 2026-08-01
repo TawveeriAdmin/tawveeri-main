@@ -120,6 +120,7 @@ page); four would have been missed. All five now call `navigateToLocale()`
 ## ROLLBACK
 
 ```
+c5cef32  ADR-156 canonical per locale     git revert c5cef32
 2f70a92  ADR-155 root-layout restructure   git revert 2f70a92
 ed9492a  rollback hash in this checkpoint  git revert ed9492a   (docs only)
 ```
