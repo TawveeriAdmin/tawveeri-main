@@ -27,13 +27,92 @@ export interface HomeVerifiedDeal {
   observedMax: number;
   savingPct: number;
   trackedDays: number;
+  /**
+   * WHERE THE CARD SENDS THE SHOPPER (ADR-170).
+   *
+   * Never the raw retailer URL. Measured 2026-08-01: the homepage rendered 8 bare retailer
+   * links and ZERO `/go/` exits, so every click left Tawveeri with no affiliate attribution
+   * (`tag=tawveeri-21`) and no `go_click` — the only storefront exit signal we have — while
+   * a comparison platform sent its visitor away on the first screen without a comparison.
+   *
+   * Preference order, decided by what we can actually deliver:
+   *   compare page  → the shopper can compare (this is the product)
+   *   `/go` exit    → attributed and measured, when no comparison exists
+   * A deal that can offer neither is DROPPED, never rendered with a dead or unattributed link.
+   */
+  href: string;
+  /** True when `href` is an internal compare page rather than an outbound exit. */
+  internal: boolean;
 }
 
 /**
  * Top verified drops by ABSOLUTE saving — a real product first, never accessory
  * %-theatre. A 19 SAR case at 60% must not outrank an 8,800 SAR television.
  */
-export async function getHomeVerifiedDeals(limit = 4): Promise<HomeVerifiedDeal[]> {
+/**
+ * Resolve each candidate URL to the offer it came from, and to a comparison when one exists.
+ *
+ * `tps_listing_price_facts` carries `url` and `store_id` but NO observation id and NO canonical —
+ * verified against `information_schema`. The join is therefore on the observation's own raw URL
+ * (`normalized_payload->>'_url'`), which is the same field `/go` reads when it builds an exit, so
+ * a resolved id is guaranteed to produce a working exit rather than merely a plausible one.
+ *
+ * Measured: 131 of 300 candidates (43.7%) resolve. That is ample for a four-card strip, which is
+ * why unresolvable deals are DROPPED rather than rendered unattributed. This is a curated strip
+ * over a 300-row pool, not a result list — nothing claims a count, so filtering distorts nothing.
+ * (Contrast CHECKPOINT #20, where omission was rejected because unroutable cards CONCENTRATED in
+ * one query and would have shown 1 result where 14 existed.)
+ */
+async function resolveDestinations(
+  supabase: ReturnType<typeof createServerClient>,
+  urls: string[],
+  locale: string,
+): Promise<Map<string, { href: string; internal: boolean }>> {
+  const out = new Map<string, { href: string; internal: boolean }>();
+  if (!urls.length) return out;
+  const sb = supabase as unknown as { from: (t: string) => { select: (c: string) => never } };
+
+  const { data: obs } = await (sb.from('normalized_product_observations') as never as {
+    select: (c: string) => { in: (k: string, v: string[]) => Promise<{ data: unknown[] | null }> };
+  }).select('id, canonical_product_id, normalized_payload').in('normalized_payload->>_url', urls);
+
+  type Obs = { id: string; canonical_product_id: string | null; normalized_payload: { _url?: string } | null };
+  const byUrl = new Map<string, Obs>();
+  for (const o of ((obs ?? []) as Obs[])) {
+    const u = o.normalized_payload?._url;
+    if (u && !byUrl.has(u)) byUrl.set(u, o);
+  }
+  if (!byUrl.size) return out;
+
+  // Which canonicals can actually deliver a comparison. Asked of the projection — the same
+  // source the compare page loads from — never inferred from a store count on another table.
+  const canonIds = [...new Set([...byUrl.values()].map((o) => o.canonical_product_id).filter(Boolean))] as string[];
+  const comparable = new Map<string, string>();
+  if (canonIds.length) {
+    const [{ data: proj }, { data: canon }] = await Promise.all([
+      (sb.from('tps_product_projection') as never as { select: (c: string) => { in: (k: string, v: string[]) => Promise<{ data: unknown[] | null }> } })
+        .select('canonical_id, has_comparison').in('canonical_id', canonIds),
+      (sb.from('canonical_products') as never as { select: (c: string) => { in: (k: string, v: string[]) => Promise<{ data: unknown[] | null }> } })
+        .select('id, tps_identity_key').in('id', canonIds),
+    ]);
+    const hasCmp = new Set(((proj ?? []) as { canonical_id: string; has_comparison: boolean }[])
+      .filter((p) => p.has_comparison).map((p) => p.canonical_id));
+    for (const c of ((canon ?? []) as { id: string; tps_identity_key: string | null }[])) {
+      if (c.tps_identity_key && hasCmp.has(c.id)) comparable.set(c.id, c.tps_identity_key);
+    }
+  }
+
+  for (const [url, o] of byUrl) {
+    const key = o.canonical_product_id ? comparable.get(o.canonical_product_id) : undefined;
+    out.set(url, key
+      ? { href: `/${locale}/compare/${encodeURIComponent(key)}`, internal: true }
+      // `source=home_deal` so this surface is separable in `outbound_clicks` from every other exit.
+      : { href: `/go/${o.id}?source=home_deal`, internal: false });
+  }
+  return out;
+}
+
+export async function getHomeVerifiedDeals(limit = 4, locale = 'ar'): Promise<HomeVerifiedDeal[]> {
   try {
     const supabase = createServerClient();
     const { data, error } = await supabase
@@ -54,7 +133,7 @@ export async function getHomeVerifiedDeals(limit = 4): Promise<HomeVerifiedDeal[
 
     const isAccessory = (c: string | null) => String(c ?? '').toLowerCase().includes('accessor');
 
-    return (data as unknown as Row[])
+    const ranked = (data as unknown as Row[])
       .map((r) => {
         const price = Number(r.current_price);
         const observedMax = Number(r.observed_max);
@@ -89,9 +168,23 @@ export async function getHomeVerifiedDeals(limit = 4): Promise<HomeVerifiedDeal[
         (d.observedMax - d.price) >= 50)
       .sort((a, b) =>
         (a._acc ? 1 : 0) - (b._acc ? 1 : 0) ||
-        (b.observedMax - b.price) - (a.observedMax - a.price))
+        (b.observedMax - b.price) - (a.observedMax - a.price));
+
+    // Resolve destinations for a WIDER slice than we render, then take the top `limit` that
+    // actually resolve. Resolving only the top 4 would leave the strip short whenever one of
+    // them happened to be unroutable — the pool is 300 and 44% resolve, so look further.
+    const candidates = ranked.slice(0, Math.max(limit * 8, 40));
+    const dest = await resolveDestinations(supabase, candidates.map((d) => d.url), locale);
+
+    return candidates
+      .filter((d) => dest.has(d.url))
       .slice(0, limit)
-      .map(({ _acc, ...d }) => { void _acc; return d; });
+      .map(({ _acc, url, ...d }) => {
+        void _acc;
+        void url; // the raw retailer URL never reaches the client — the exit is built here
+        const { href, internal } = dest.get(url)!;
+        return { ...d, url, href, internal };
+      });
   } catch {
     // Deals are best-effort; the section hides itself when empty.
     return [];

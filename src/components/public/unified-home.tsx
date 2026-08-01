@@ -108,7 +108,13 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {deals.map((d) => (
-              <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer"
+              // THE DESTINATION IS BUILT SERVER-SIDE (ADR-170). `d.href` is a compare page when
+              // one can be delivered, otherwise a `/go` exit that carries the affiliate tag and
+              // records the click. The raw retailer URL is never linked: doing so cost us the
+              // attribution and the only storefront exit signal we have.
+              // An internal compare link stays in the tab; an outbound exit opens a new one.
+              <a key={d.url} href={d.href}
+                {...(d.internal ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
                 style={{ textDecoration: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 16, padding: '14px 16px', display: 'block' }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)', lineHeight: 1.45, marginBottom: 8 }}>{d.name}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>

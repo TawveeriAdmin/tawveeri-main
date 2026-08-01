@@ -18,7 +18,7 @@ interface PageProps {
 // up rate-limited into "no comparison available").
 export default async function HomePage({ params }: PageProps) {
   const { locale } = await params;
-  const deals = await getHomeVerifiedDeals(4);
+  const deals = await getHomeVerifiedDeals(4, locale);
 
   return (
     <PublicPageShell locale={locale}>
