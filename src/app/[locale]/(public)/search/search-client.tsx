@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigat
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/simple-intl-provider';
+import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useAuth } from '@/lib/auth/auth-context';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { ProductCard } from '@/components/products/product-card';
