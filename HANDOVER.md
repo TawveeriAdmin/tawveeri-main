@@ -1,4 +1,106 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #30 · F7·2 COMPLETE · F7·3 NOT STARTED ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #31 · F7·3 COMPLETE · F7 NOT COMPLETE ═══
+
+**Tree clean, pushed, verified against production. Nothing running.** Decision: **ADR-159**.
+**`AI_ASSISTANT_ENABLED` untouched — surface verified 404 after deploy.**
+
+## THE THREE ANSWERS YOU ASKED FOR
+
+| question | answer |
+|---|---|
+| **Is F7 complete?** | **NO.** F7·1/2/3 are complete. F7's checklist has one item they do not satisfy — see below |
+| **Is `AI_ASSISTANT_ENABLED` safe to enable?** | **NO.** Two blockers, both concrete |
+| **Does a prerequisite still block P2-5?** | **YES — two**, and one was measured today |
+
+### Why F7 is not complete
+
+F7's own checklist ends with *"It is tested adversarially before deployment"* — that is now a
+permanent gate. But the surface it governs would run **with no durable record**: today's sink
+writes a JSON line to stdout. A guard whose evidence disappears with the log buffer cannot answer
+*"was it running?"* after an incident. **You scoped durable validation logging as its own
+boundary before enabling — that is exactly right, and it is the remaining F7 item.**
+
+### Why the flag is not safe to enable yet
+
+1. **No durable validation log** (your named boundary, not started).
+2. **The engine does not publish its derived figures** — measured below. Enabling before that
+   fixes nothing and would suppress correct answers.
+
+### The two P2-5 prerequisites
+
+1. **Durable validation logging.**
+2. **The engine must publish every figure it renders.** Measured on production today:
+   `smart_pick.chosen_over.reasons_*` renders «أوفر بـ180 ريال في التكلفة الإجمالية» / "180 SAR
+   lower total cost" — **that 180 is nowhere in the payload.** The engine publishes both total
+   costs but not the delta. **Safe today** (it computes and writes the sentence itself,
+   deterministically). **The moment an LLM phrases these facts the validator will correctly
+   suppress the answer.**
+
+## WHAT THE SUITE FOUND — the argument for building it, in one table
+
+Before a single case was written down, four adversarial probes passed clean through the validator
+shipped the same morning:
+
+| probe | why it passed |
+|---|---|
+| «أفضل سعر 1899 ريال لدى كارفور» | `isDisplayableRetailer` only knows retailers we DO source |
+| "The best price is 1899 SAR" with no price evidence | no rule tied a price to an observation |
+| "Compare across stores" with one retailer | no rule tied a comparison offer to deliverability |
+| two contradictory comparable-counts | the validator ruled anyway |
+
+Closed by two new evidence-required rules (`saving-or-price-without-provenance` §2,
+`comparison-claimed-without-two-retailers` §1), an unapproved-retailer lexicon, and an
+`evidence_internally_inconsistent` refusal. Vocabulary **2026-07-31+2**, fingerprint re-pinned.
+
+## THE SUITE ASSERTS AT TWO LEVELS — the second is the point
+
+**Detection is not protection.** A validator that flags a claim while the route publishes it
+anyway has failed completely. All 22 cases are asserted twice: the verdict, **and the actual HTTP
+response the customer would have received**, by driving the real route handler with a mocked
+generator. Every case → `reply: null`, `suppressed: true`, history unextended.
+
+**Four must-pass answers are asserted too** — the cheapest way to pass every adversarial case is
+to reject everything, which would suppress the product.
+
+**"Impossible attributes" is solved by provenance, not plausibility.** No physics model, and
+there should not be one: an impossible attribute and an unverified one are the same failure from
+the customer's side. That is what keeps it category-independent. A test swaps the category word
+through five real categories and asserts no verdict changes.
+
+## VERIFIED
+
+```bash
+npm run tps:validator-verify                                             # localhost
+npx tsx scripts/tps-analysis/validator-verify.ts --base https://tawveeri.com
+```
+
+| | result |
+|---|---|
+| generative surface | **404** |
+| adversarial cases blocked | **22 / 22** |
+| must-pass answers still publish | **4 / 4** |
+| false rejections on real production output | **0** of 2,026 strings |
+| unit tests | **1,049 / 1,049** (53 new) |
+
+## TWO OF MY OWN ERRORS, CAUGHT BY THE MECHANISMS BUILT FOR THAT
+
+1. F7·1's anti-drift test rejected a `source.quote` that spanned a **line wrap** in the document.
+2. The first production run rejected **41 correct strings**: the evidence model had no `computed`
+   provenance for the engine's disclosed total-cost estimate, and the harness supplied no price
+   figures at all. A legitimate, honestly-labelled computation has no observed value of its own —
+   treating that as fabrication would have suppressed correct answers on the day the surface opened.
+
+## ROLLBACK
+
+```
+<F73HASH>  ADR-159 F7·3 adversarial gate   git revert <F73HASH>
+```
+
+Additive. Reverting removes the suite, the two new rules and the lexicon, and returns the
+vocabulary to `2026-07-31+1`. No customer-facing behaviour changes either way.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #30 · F7·2 COMPLETE · F7·3 NOT STARTED ═══
 
 **Tree clean, pushed, verified against production. Nothing running.** Decision: **ADR-158**.
 **`AI_ASSISTANT_ENABLED` untouched — the generative surface is still closed (verified 404).**

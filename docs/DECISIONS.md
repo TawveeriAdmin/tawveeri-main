@@ -6,6 +6,75 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-159 — F7·3: the adversarial suite is a permanent gate, and it found four holes in F7·2 · Accepted (2026-08-01)
+
+**Context.** Appendix F7 requires the assistant be *"tested adversarially before deployment:
+asked about a product from a retailer with no provenance, and about a category we do not cover."*
+Built as a **permanent gate**, not a one-time pass: a one-time adversarial check certifies a
+build, and what needs certifying is every build.
+
+**IT IMMEDIATELY FOUND FOUR HOLES IN THE VALIDATOR SHIPPED THE SAME DAY.** Before any case was
+written down, four adversarial probes passed clean through F7·2:
+
+| probe | why it passed |
+|---|---|
+| «أفضل سعر 1899 ريال لدى كارفور» | `isDisplayableRetailer` only knows retailers we DO source; a name it has never seen returns nothing meaningful |
+| "The best price is 1899 SAR" with no price evidence | no rule tied a price to an observation |
+| "Compare across stores" with one retailer | no rule tied a comparison offer to deliverability |
+| two contradictory comparable-counts in one bundle | the validator ruled anyway |
+
+That is the argument for the suite in one table. Closing them added two evidence-required rules
+to F7·1 — `saving-or-price-without-provenance` (§2 *"only when we observed the drop ourselves"*)
+and `comparison-claimed-without-two-retailers` (§1 *coverage ≠ depth*, and ADR-154's governing
+rule applied to language) — plus `UNAPPROVED_RETAILER_LEXICON`, plus an
+`evidence_internally_inconsistent` refusal. Vocabulary `2026-07-31+2`, fingerprint re-pinned.
+
+**Decision — the suite asserts at two levels, and the second is the point.** Detection is not
+protection: a validator that flags a claim while the route publishes it anyway has failed
+completely. So all 22 cases are asserted twice — the verdict, and **the actual HTTP response the
+customer would have received**, by driving the real route handler with a mocked generator. Every
+case yields `reply: null`, `suppressed: true`, and an unextended history. `AI_ASSISTANT_ENABLED`
+is set **inside the test process only**; production is verified 404 separately.
+
+**Four must-pass answers are asserted too.** The cheapest way to pass every adversarial case is
+to reject everything, which would suppress the product. A gate that only proves it blocks things
+is half a gate.
+
+**"Impossible product attributes" is solved by provenance, not plausibility.** There is no physics
+model and there should not be: an impossible attribute and an unverified one are the same failure
+from the customer's side — we did not observe it. That is what keeps the suite
+category-independent, which a per-category plausibility table never could be. A test swaps the
+category word through five real categories and asserts every verdict is unchanged.
+
+**Residuals are declared as data, not omitted.** A wholly invented retailer name outside the
+lexicon is not identifiable by any deterministic text rule — bounded by evidence instead: the
+fabricated NAME can survive, a fabricated CLAIM cannot. Unverifiable prose asserting no fact is
+not decidable — bounded by ADR-002, since prose that asserts nothing changes no decision.
+
+**A P2-5 PREREQUISITE, MEASURED.** Production verification found four strings —
+`smart_pick.chosen_over.reasons_*`, «أوفر بـ180 ريال في التكلفة الإجمالية» / "180 SAR lower total
+cost" — stating a figure that is **nowhere in the payload**. The engine publishes both total
+costs but not the DELTA it renders. **Today that is safe**: the engine computes and writes the
+sentence itself, deterministically. **The moment an LLM phrases these facts, the validator will
+correctly suppress the answer.** The engine must publish its derived figures before P2-5 can
+ship. Two wrong ways to make this green were rejected: accepting any *difference* of two supplied
+figures (with ~22 prices there are hundreds of pairwise differences, so a fabricated number would
+often match one by coincidence), and having the harness compute the delta itself (the harness
+fabricating evidence the product never supplied).
+
+**Two of my own errors caught by the mechanisms built for exactly that.** F7·1's anti-drift test
+rejected a `source.quote` that spanned a line wrap in the document. And the first production run
+rejected 41 correct strings because the evidence model had no `computed` provenance for the
+engine's disclosed total-cost estimate, and the harness supplied no price figures at all — a
+legitimate, honestly-labelled computation has no observed value of its own, and treating that as
+fabrication would have suppressed correct answers on the day the surface opened.
+
+**Consequences.** 1,049/1,049 tests (53 new). Production: surface **404**, **22/22** adversarial
+cases blocked, **4/4** must-pass answers publish, **0 false rejections** in 2,026 real strings.
+`AI_ASSISTANT_ENABLED` untouched.
+
+---
+
 ### ADR-158 — F7·2: the post-generation validator suppresses whole, and fails closed · Accepted (2026-08-01)
 
 **Context.** F7·1 made the vocabulary data and declared three rules no text scan can decide.

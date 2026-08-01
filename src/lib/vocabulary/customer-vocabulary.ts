@@ -265,6 +265,43 @@ export const FORBIDDEN_CLAIMS: readonly ForbiddenClaim[] = [
   },
 
   {
+    id: 'saving-or-price-without-provenance',
+    title: 'A price or saving stated without an observation behind it',
+    why:
+      'Undecidable from text: "1,899 SAR at Jarir" is correct when we observed it and fabricated ' +
+      'when we did not, and the two sentences are identical. This is the claim class the whole ' +
+      'product exists to be trusted on, so it is checked against evidence rather than pattern.',
+    enforcement: 'evidence-required',
+    patterns: { ar: [], en: [] },
+    source: {
+      section: '§2',
+      quote: 'only when we observed the drop ourselves',
+    },
+    since: 'F7·3 adversarial suite 2026-08-01',
+  },
+
+  {
+    id: 'comparison-claimed-without-two-retailers',
+    title: 'A comparison offered where fewer than two retailers exist',
+    why:
+      'Undecidable from text: «قارن الأسعار» is a true capability statement and a false promise ' +
+      'about a specific product, depending only on how many retailers actually carry it. Search ' +
+      'COVERAGE and per-product comparison DEPTH are different things — §1 records that exact ' +
+      'confusion — and 85% of canonicals are single-retailer (ADR-154), so this is the common ' +
+      'case, not the edge case.',
+    enforcement: 'evidence-required',
+    patterns: { ar: [], en: [] },
+    source: {
+      section: '§1',
+      // Deliberately does not begin at "Search" — the document wraps the line between "Search"
+      // and "**coverage**", and a quote that spans the wrap never matches. The AC1 test caught
+      // exactly that, which is what it is for.
+      quote: '**coverage** and per-product comparison **depth** are different things',
+    },
+    since: 'F7·3 adversarial suite 2026-08-01',
+  },
+
+  {
     id: 'excluded-retailer-as-comparison-source',
     title: 'LuLu or Sharaf DG named as a comparison source',
     why:
@@ -278,6 +315,37 @@ export const FORBIDDEN_CLAIMS: readonly ForbiddenClaim[] = [
     source: { section: '§3', quote: '**LuLu** or **Sharaf DG** named as comparison sources' },
     since: 'LAUNCH_VOCABULARY 2026-07-30',
   },
+] as const;
+
+/**
+ * RETAILERS WE DO NOT SOURCE, by the names a generated answer would plausibly use.
+ *
+ * WHAT THIS IS AND IS NOT. It is a LEXICON, not a proof. It catches the realistic fabrication —
+ * an answer confidently attributing a price to a large retailer we have never ingested — which
+ * `isDisplayableRetailer` cannot catch, because that function only knows retailers we DO source
+ * and returns nothing meaningful for a name it has never seen.
+ *
+ * THE RESIDUAL, STATED RATHER THAN HIDDEN: an INVENTED retailer name outside this list
+ * («Zorblex Electronics») is not detectable from text by any deterministic means. What bounds
+ * that case is evidence, not vocabulary — an answer may only attribute a price to a retailer it
+ * was supplied, and that check is enforced separately for every name the system recognises. The
+ * suite asserts this limitation explicitly so nobody later reads a passing gate as proof of
+ * something it never claimed.
+ */
+export const UNAPPROVED_RETAILER_LEXICON: readonly string[] = [
+  // Large GCC/global retailers we have never ingested. Lower-cased for matching.
+  'carrefour', 'كارفور',
+  'panda', 'بنده', 'بندة',
+  'othaim', 'العثيم',
+  'danube', 'الدانوب',
+  'tamimi', 'التميمي',
+  'xcite', 'اكسايت', 'إكسايت',
+  'emax', 'إي ماكس',
+  'saco', 'ساكو',
+  'ikea', 'ايكيا', 'إيكيا',
+  'aliexpress', 'علي اكسبريس',
+  'temu', 'shein', 'شي ان',
+  'bestbuy', 'best buy', 'walmart',
 ] as const;
 
 /** §2 · §6 · §8 · §9 — what we MAY say. Wording is exact where the document says so. */

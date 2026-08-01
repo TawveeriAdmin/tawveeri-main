@@ -17,7 +17,12 @@
 export * from './types';
 
 // ── F7·1 · the vocabulary itself ──────────────────────────────────────────────
-export { FORBIDDEN_CLAIMS, APPROVED_STATEMENTS, REPLACEMENT_PAIRS } from './customer-vocabulary';
+export {
+  FORBIDDEN_CLAIMS,
+  APPROVED_STATEMENTS,
+  REPLACEMENT_PAIRS,
+  UNAPPROVED_RETAILER_LEXICON,
+} from './customer-vocabulary';
 export { INTERNAL_TOKENS, ALL_INTERNAL_TOKENS } from './internal-vocabulary';
 export { PENDING_COPY_DECISIONS, PENDING_KEYS } from './pending-copy-decisions';
 export type { PendingCopyDecision } from './pending-copy-decisions';
@@ -63,3 +68,7 @@ export {
   MAX_LOGGED_CHARS,
 } from './validation-log';
 export type { ValidationEvent, ValidationSink } from './validation-log';
+
+// ── F7·3 · the adversarial corpus, as data shared by the gate and the production script ──
+export { ADVERSARIAL_CASES, MUST_PASS_CASES, DECLARED_RESIDUALS } from './adversarial-corpus';
+export type { AdversarialCase, AdversarialFamily } from './adversarial-corpus';

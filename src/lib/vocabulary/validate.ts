@@ -45,7 +45,7 @@ import {
   VOCABULARY_VERSION,
   vocabularyFingerprint,
 } from './check';
-import { FORBIDDEN_CLAIMS } from './customer-vocabulary';
+import { FORBIDDEN_CLAIMS, UNAPPROVED_RETAILER_LEXICON } from './customer-vocabulary';
 import type { Violation } from './types';
 import {
   isDisplayableRetailer,
@@ -60,8 +60,22 @@ import {
  */
 export const MAX_INPUT_CHARS = 20_000;
 
-/** How a figure in an answer is allowed to have been obtained. */
-export type FigureProvenance = 'live-query' | 'static';
+/**
+ * How a figure in an answer is allowed to have been obtained.
+ *
+ * `live-query` — read from production at answer time.
+ * `computed`   — derived deterministically from observed values, and disclosed as derived. The
+ *                engine's «التكلفة التقديرية» / total-cost estimate is this: observed unit price
+ *                plus a stated electricity model. Measured on production 2026-08-01, 41 such
+ *                strings were rejected before this existed — a legitimate, honestly-labelled
+ *                computation has no observed value of its own, and treating that as fabrication
+ *                would have suppressed correct answers on the day the surface opened.
+ * `static`      — hardcoded. Never acceptable for a price or a retailer count.
+ *
+ * The invariant is unchanged: a figure must be TRACEABLE to evidence the caller supplied.
+ * Fabrication is neither observed nor computed, so it still has nothing to point at.
+ */
+export type FigureProvenance = 'live-query' | 'computed' | 'static';
 
 export type FigureKind =
   | 'comparable-count'
@@ -153,6 +167,15 @@ const RETAILER_SUBJECTS = [
   'متجر', 'متاجر', 'متجرًا', 'متجرا',
 ];
 
+/** Currency terms that mark a number as a PRICE claim. Category-independent by construction. */
+const PRICE_SUBJECTS = ['SAR', 'SR', 'ريال', 'ريالاً', 'ر\\.س'];
+
+/** Phrases that ASSERT a comparison is available for the thing being discussed. */
+const COMPARISON_ASSERTIONS = [
+  'compare (?:the )?prices? (?:across|between|at)', 'compare across', 'price comparison across',
+  'قارن (?:الأسعار|السعر)', 'مقارنة الأسعار', 'قارن بين',
+];
+
 /** Every alias by which an approved retailer might be named in prose. */
 const RETAILER_ALIASES: Array<{ alias: string; slug: string }> = APPROVED_RETAILERS.flatMap((r) => {
   const raw = r as unknown as Record<string, unknown>;
@@ -188,6 +211,18 @@ export function validateGeneratedAnswer(
     // A tree-shaken or mis-bundled rule set would otherwise pass everything, silently.
     if (FORBIDDEN_CLAIMS.length === 0) return unavailable('rule_set_empty');
     if (EVIDENCE_REQUIRED_RULES.length === 0) return unavailable('evidence_rules_unavailable');
+
+    // CONFLICTING EVIDENCE → the guard cannot render a verdict, so it renders none.
+    // Site-wide figures are singletons: two different comparable-counts in one bundle means the
+    // caller does not know its own facts, and certifying an answer against contradictory
+    // evidence would be a verdict dressed as a check. `retailer-count` is deliberately exempt —
+    // it is per-product, so many different values are correct.
+    for (const kind of ['comparable-count', 'catalogue-count'] as const) {
+      const values = new Set(evidence.figures.filter((f) => f.kind === kind).map((f) => f.value));
+      if (values.size > 1) {
+        return unavailable(`evidence_internally_inconsistent:${kind}=${[...values].sort((a, b) => a - b).join('|')}`);
+      }
+    }
 
     const findings: ValidationFinding[] = [];
 
@@ -236,8 +271,60 @@ export function validateGeneratedAnswer(
       });
     }
 
-    // excluded-retailer-as-comparison-source — display authority is the existing code gate.
+    // saving-or-price-without-provenance — a number offered as a price must be one we observed.
+    // This is also what makes "impossible product attributes" a solved case WITHOUT a physics
+    // model or a per-category plausibility table: an attribute or price we did not observe is
+    // not stated, whether it is impossible or merely unverified. Category-independent by
+    // construction, which a plausibility range could never be.
+    handled.add('saving-or-price-without-provenance');
+    for (const f of figuresNear(generated, PRICE_SUBJECTS)) {
+      const supplied = evidence.figures.find((e) => e.kind === 'price' && e.value === f.value);
+      // Observed OR deterministically computed from observations both trace to evidence.
+      // `static` never does: a hardcoded price is the definition of a claim we cannot support.
+      if (supplied && supplied.derivedFrom !== 'static') continue;
+      const known = evidence.figures.filter((e) => e.kind === 'price').map((e) => e.value);
+      findings.push({
+        ruleId: 'saving-or-price-without-provenance',
+        match: f.match,
+        reason: supplied
+          ? `stated a price of ${f.value}, but the evidence marks it derivedFrom="static"; a price must be observed or computed from observations`
+          : `stated a price of ${f.value} with no price of that value in the supplied evidence` +
+            `${known.length ? ` (supplied prices: ${known.join(', ')})` : ' (no price evidence supplied at all)'}`,
+      });
+    }
+
+    // comparison-claimed-without-two-retailers — ADR-154's governing rule, applied to language:
+    // a comparison is offered only where one can actually be delivered. Deliverability is asked
+    // of the EVIDENCE, never of the phrasing.
+    handled.add('comparison-claimed-without-two-retailers');
+    const distinctSupplied = new Set(
+      evidence.retailers.map((r) => resolveApprovedSlug(r) ?? r.toLowerCase().trim()).filter(Boolean),
+    );
+    for (const assertion of COMPARISON_ASSERTIONS) {
+      for (const m of generated.matchAll(new RegExp(assertion, 'giu'))) {
+        if (distinctSupplied.size >= 2) break;
+        findings.push({
+          ruleId: 'comparison-claimed-without-two-retailers',
+          match: m[0].trim(),
+          reason: `offered a comparison, but the evidence supplies ${distinctSupplied.size} distinct retailer(s); a comparison needs at least 2`,
+        });
+      }
+    }
+
+    // excluded-retailer-as-comparison-source — display authority is the existing code gate,
+    // extended with the unapproved-retailer lexicon: `isDisplayableRetailer` only knows
+    // retailers we DO source, so a confident attribution to one we have never ingested would
+    // otherwise pass unexamined.
     handled.add('excluded-retailer-as-comparison-source');
+    const lowered = generated.toLowerCase();
+    for (const name of UNAPPROVED_RETAILER_LEXICON) {
+      if (!lowered.includes(name.toLowerCase())) continue;
+      findings.push({
+        ruleId: 'excluded-retailer-as-comparison-source',
+        match: name,
+        reason: `named "${name}", a retailer we do not source — no observation of ours can support a price attributed to it`,
+      });
+    }
     const suppliedSlugs = new Set(
       evidence.retailers.map((r) => resolveApprovedSlug(r)).filter((s): s is string => !!s),
     );
@@ -282,5 +369,7 @@ export function validateGeneratedAnswer(
 export const EVIDENCE_RULES_HANDLED: readonly string[] = [
   'catalogue-presented-as-comparable',
   'fixed-retailer-count',
+  'saving-or-price-without-provenance',
+  'comparison-claimed-without-two-retailers',
   'excluded-retailer-as-comparison-source',
 ];

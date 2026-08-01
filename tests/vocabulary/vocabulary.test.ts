@@ -172,8 +172,8 @@ describe('AC6 — versioned: the fingerprint is pinned so an edit cannot be sile
   // BUMP `VOCABULARY_VERSION` AND THIS CONSTANT TOGETHER, in the same change that amends
   // `docs/LAUNCH_VOCABULARY.md`. If this test fails and you did not intend to change the
   // vocabulary, you changed the vocabulary.
-  const PINNED_FINGERPRINT = '62260a0c';
-  const PINNED_VERSION = '2026-07-31+1';
+  const PINNED_FINGERPRINT = '46956139';
+  const PINNED_VERSION = '2026-07-31+2';
 
   it('version is pinned', () => {
     expect(VOCABULARY_VERSION).toBe(PINNED_VERSION);

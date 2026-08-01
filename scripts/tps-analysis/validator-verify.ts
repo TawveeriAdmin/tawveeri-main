@@ -28,6 +28,9 @@ import {
   VOCABULARY_VERSION,
   vocabularyFingerprint,
   EVIDENCE_RULES_HANDLED,
+  ADVERSARIAL_CASES,
+  MUST_PASS_CASES,
+  DECLARED_RESIDUALS,
   type AnswerEvidence,
   type EvidenceFigure,
   type ValidationEvent,
@@ -89,6 +92,23 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
       if (typeof v === "number") figures.push({ value: v, kind: "retailer-count", derivedFrom: "live-query" });
       if (Array.isArray(v)) figures.push({ value: v.length, kind: "retailer-count", derivedFrom: "live-query" });
     }
+    // PRICES. The first version of this extractor collected retailers and store counts but no
+    // prices at all, so every price the engine states looked unbacked — 41 rejections of correct
+    // production output, reported as "no price evidence supplied at all". The harness was not
+    // supplying what the product was clearly using.
+    //
+    // A field whose name says `estimate` is `computed`: the engine's total-cost line is an
+    // observed unit price plus a disclosed electricity model, and it is labelled «التكلفة
+    // التقديرية». Everything else priced is read live.
+    for (const [key, v] of Object.entries(o)) {
+      if (typeof v !== "number" || v <= 0) continue;
+      if (!/(price|cost|total|saving|amount)/i.test(key)) continue;
+      figures.push({
+        value: v,
+        kind: "price",
+        derivedFrom: /(estimate|estimated|total)/i.test(key) ? "computed" : "live-query",
+      });
+    }
     Object.values(o).forEach(walk);
   };
   walk(payload);
@@ -116,6 +136,7 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
   console.log("\n§2 no false rejection of real production output");
   let stringsChecked = 0;
   const falseRejections: string[] = [];
+  const evidenceIncomplete: string[] = [];
 
   for (const text of QUERIES) {
     const res = await fetch(`${BASE}/api/v1/agent/decide`, {
@@ -126,6 +147,24 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
     if (!res.ok) { console.log(`SKIP  "${text}" — decide returned ${res.status}`); continue; }
     const payload = await res.json();
     const evidence = evidenceFrom(payload);
+
+    // ── A MEASURED P2-5 PREREQUISITE, not a false positive and not a product defect ────────
+    //
+    // `smart_pick.chosen_over.reasons_*` renders «أوفر بـ180 ريال في التكلفة الإجمالية» /
+    // "180 SAR lower total cost". Measured 2026-08-01: that 180 is NOWHERE in the payload — the
+    // engine publishes both total costs but not the DELTA it renders. It computes the number
+    // deterministically and writes the sentence itself, so there is no fabrication risk today.
+    //
+    // The moment an LLM phrases these facts (P2-5), there is: the validator will correctly
+    // suppress the answer, because the figure the answer states is not in the evidence the
+    // engine supplied. THE ENGINE MUST PUBLISH ITS DERIVED FIGURES BEFORE P2-5 CAN SHIP.
+    //
+    // Two wrong ways to make this green, both rejected: teaching the validator to accept any
+    // DIFFERENCE of two supplied figures (with ~22 prices there are hundreds of pairwise
+    // differences, so a fabricated number would often match one by coincidence — that
+    // materially weakens the rule), or having this harness compute the delta itself (the
+    // harness fabricating evidence the product never supplied). Counted and printed instead.
+    const EVIDENCE_INCOMPLETE_PATHS = [/^smart_pick\.chosen_over\.reasons_/, /\.chosen_over\.reasons_/];
 
     let rejectedHere = 0;
     for (const [path, value] of strings(payload)) {
@@ -151,8 +190,12 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
       const verdict = validateGeneratedAnswer(value, evidence);
       recordValidationEvent({ verdict, query: text, generated: value, surface: "decide-payload", timestamp: "1970-01-01T00:00:00.000Z" });
       if (!verdict.publish) {
-        rejectedHere++;
-        falseRejections.push(`"${text}" → ${path}: ${verdict.findings.map((f) => `[${f.ruleId}] ${f.reason}`).join(" | ")}\n            «${value.slice(0, 160)}»`);
+        if (EVIDENCE_INCOMPLETE_PATHS.some((re) => re.test(path))) {
+          evidenceIncomplete.push(`${path}: «${value.slice(0, 80)}»`);
+        } else {
+          rejectedHere++;
+          falseRejections.push(`"${text}" → ${path}: ${verdict.findings.map((f) => `[${f.ruleId}] ${f.reason}`).join(" | ")}\n            «${value.slice(0, 160)}»`);
+        }
       }
     }
     check(rejectedHere === 0, `"${text}"`, `${rejectedHere} rejection(s)`);
@@ -162,6 +205,50 @@ function evidenceFrom(payload: unknown): AnswerEvidence {
     console.log("\n  REJECTED STRINGS — each is either a real vocabulary violation in shipped");
     console.log("  deterministic output, or a validator false positive. Both need a human:");
     for (const f of falseRejections) console.log(`      · ${f}`);
+  }
+
+  if (evidenceIncomplete.length) {
+    const unique = [...new Set(evidenceIncomplete)];
+    console.log(`\n  ⚠ P2-5 PREREQUISITE — ${unique.length} distinct string(s) state a DERIVED figure`);
+    console.log("  the engine does not publish as structured evidence. NOT a defect today (the engine");
+    console.log("  computes and renders them itself, deterministically) and NOT a false positive. The");
+    console.log("  moment an LLM phrases these facts the validator will correctly suppress the answer.");
+    console.log("  THE ENGINE MUST PUBLISH ITS DERIVED FIGURES BEFORE P2-5 CAN SHIP.");
+    for (const e of unique) console.log(`      · ${e}`);
+  }
+
+  // ── §2b the adversarial corpus, blocked by the DEPLOYED vocabulary ─────────
+  //
+  // The corpus runs against the same commit that is deployed, so this asserts that the
+  // vocabulary version now live blocks every case. What it CANNOT assert from here is the route
+  // path — the surface is 404, so there is no live generated answer to suppress. That half is
+  // proven by `tests/vocabulary/adversarial.test.ts` §3, which drives the real route handler and
+  // asserts the HTTP response carries no generated text. Stated rather than blurred: this check
+  // is about the rules, that one is about the plumbing.
+  console.log("\n§2b adversarial corpus");
+  let blocked = 0;
+  const leaked: string[] = [];
+  for (const c of ADVERSARIAL_CASES) {
+    const verdict = validateGeneratedAnswer(c.generated, c.evidence);
+    if (!verdict.publish && verdict.outcome === c.expect) blocked++;
+    else leaked.push(`${c.id} (${c.family}) → ${verdict.outcome}, publish=${verdict.publish}`);
+  }
+  check(leaked.length === 0, `all ${ADVERSARIAL_CASES.length} adversarial cases blocked`, `${blocked}/${ADVERSARIAL_CASES.length}`);
+  for (const l of leaked) console.log(`        LEAKED  ${l}`);
+
+  const mustPassFailures = MUST_PASS_CASES
+    .map((c) => ({ c, v: validateGeneratedAnswer(c.generated, c.evidence) }))
+    .filter(({ v }) => !v.publish);
+  check(
+    mustPassFailures.length === 0,
+    `all ${MUST_PASS_CASES.length} must-pass answers still publish — the gate is not "reject everything"`,
+    mustPassFailures.map(({ c, v }) => `${c.id}:${v.findings.map((f) => f.ruleId).join(",")}${v.unavailableReason ?? ""}`).join(" · "),
+  );
+
+  console.log("\n      DECLARED RESIDUALS — what this gate does NOT prove:");
+  for (const r of DECLARED_RESIDUALS) {
+    console.log(`        · ${r.id}: ${r.limit}`);
+    console.log(`            bounded by: ${r.bounded_by}`);
   }
 
   // ── §3 the log distinguishes all three outcomes ────────────────────────────
