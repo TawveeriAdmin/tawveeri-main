@@ -59,7 +59,7 @@ test and by the shared builder's own tests, not by a live 200.
 ## ROLLBACK
 
 ```
-<AHASH>  ADR-166 ai-assistant evidence contract   git revert <AHASH>
+a60e568  ADR-166 ai-assistant evidence contract   git revert a60e568
 ```
 
 ## ACTIVATION DECISION — BACK TO THE FOUNDER
