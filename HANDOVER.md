@@ -89,7 +89,7 @@ barrel is now only a barrel.
 ## ROLLBACK
 
 ```
-<F72HASH>  ADR-158 F7·2 validator   git revert <F72HASH>
+ba08076  ADR-158 F7·2 validator   git revert ba08076
 ```
 
 Additive apart from the enforcement point in `src/app/api/ai-assistant/route.ts` — a route that
