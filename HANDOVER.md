@@ -102,7 +102,7 @@ script says so where it prints.
 ## ROLLBACK
 
 ```
-<F7HASH>  ADR-157 F7·1 vocabulary as data   git revert <F7HASH>
+562cd6d  ADR-157 F7·1 vocabulary as data   git revert 562cd6d
 ```
 
 Additive: new `src/lib/vocabulary/`, one new test suite, one new script, one npm script. No
