@@ -435,7 +435,7 @@ export default function PriceAlertsPage() {
  </p>
  <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
  <div>
- <p className="text-gray-500 dark:text-gray-400">{isRTL ? 'السعر الحالي' : 'Current'}</p>
+ <p className="text-gray-500 dark:text-gray-400">{isRTL ? 'آخر سعر رصدناه' : 'Last observed'}</p>
  <p className="mt-1 font-bold text-gray-950 dark:text-white">{lowestGapAlert.currentPrice.toFixed(2)}</p>
  </div>
  <div>
@@ -466,7 +466,7 @@ export default function PriceAlertsPage() {
  {isRTL ? 'حدد السعر المستهدف لكل منتج تريد متابعته.' : 'Set a target price for each product you want to track.'}
  </p>
  <p className="rounded-2xl bg-gray-50 p-3 dark:bg-gray-900/70">
- {isRTL ? 'سنقارن السعر الحالي مع هدفك ونرسل تنبيهاً عند الوصول.' : 'We compare the current price with your target and notify you when it is reached.'}
+ {isRTL ? 'سنقارن آخر سعر رصدناه مع هدفك ونرسل تنبيهاً عند الوصول.' : 'We compare the last price we observed with your target and notify you when it is reached.'}
  </p>
  </div>
  </div>

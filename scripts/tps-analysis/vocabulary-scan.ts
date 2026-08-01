@@ -105,6 +105,24 @@ async function renderedText(path: string): Promise<{ status: number; text: strin
   // "Latent" errs toward LIVE: a key is latent only when its leaf name appears NOWHERE in the
   // source tree. Mislabelling a live string as latent would hide a real violation, so the
   // classification is deliberately biased against itself.
+  // A module nothing imports cannot put a sentence in front of a customer. Derived from the
+  // repository — the same bias as the bundle liveness check: anything ambiguous counts as LIVE.
+  const deadModules = new Set<string>();
+  {
+    const { execFileSync } = await import("child_process");
+    const all = execFileSync("git", ["ls-files", "src/**/*.tsx"], { encoding: "utf8" })
+      .split("\n").map((f) => f.trim()).filter(Boolean);
+    for (const file of all) {
+      const base = file.split("/").pop()!.replace(/\.tsx$/, "");
+      if (base === "page" || base === "layout" || base.startsWith("not-found") || base === "error") continue;
+      try {
+        execFileSync("git", ["grep", "-l", "--fixed-strings", base, "--", "src", ":!" + file], { stdio: "pipe" });
+      } catch {
+        deadModules.add(file); // git grep exits 1 on no match — nothing imports it
+      }
+    }
+  }
+
   console.log("§1 shipped translation bundles (messages/{ar,en}/*.json)");
   // Liveness is decided on the LOOKUP PATH, not the leaf name. The first version of this check
   // searched the leaf, and `landing.json:features.instant.description` searched for
@@ -186,6 +204,70 @@ async function renderedText(path: string): Promise<{ status: number; text: strin
     for (const k of stale) console.log(`        · ${k}`);
   }
   console.log("");
+
+  // ── 1b. HARDCODED STRING LITERALS IN COMPONENTS ────────────────────────────
+  //
+  // A BLIND SPOT, CLOSED. This scan read `messages/` only, so a claim written directly into a
+  // component was invisible to it. Found 2026-08-01 while confirming the §9 retailer-count
+  // amendment: `landing-client.tsx` still carries «8 متاجر سعودية» / "8 Saudi stores" in two
+  // places — the amendment updated the BUNDLES and could not see the literals.
+  //
+  // Not live (that file has no importers; the homepage renders `BetaLanding`), so it is latent
+  // in the §5 sense. But "the scanner did not look there" is not the same fact as "there is
+  // nothing there", and P2-5 requires every customer-visible sentence pass through F7.
+  console.log("\n§1b hardcoded literals in components (src/**/*.tsx)");
+  {
+    const { execFileSync } = await import("child_process");
+    const files = execFileSync("git", ["ls-files", "src/**/*.tsx"], { encoding: "utf8" })
+      .split("\n").map((f) => f.trim()).filter(Boolean);
+    const litViolations: Violation[] = [];
+    const litLatent: Violation[] = [];
+    for (const file of files) {
+      const src = readFileSync(join(process.cwd(), file), "utf8");
+      // Only PROSE literals.
+      //
+      // The first version matched any quoted run of ≥8 characters, and in JSX the quotes
+      // alternate — `{t('dashboard.currentPrice')}: <Price` was captured as a "literal" because
+      // the scan started at the closing quote of one string and ran to the opening quote of the
+      // next. It reported code fragments as customer claims, and "50/50" (a layout ratio) as a
+      // published harness result.
+      //
+      // A sentence a customer reads has a SPACE and letters, and contains no code markers. That
+      // filter is what separates prose from syntax, and it is deliberately conservative in the
+      // direction of missing a literal rather than inventing a violation.
+      // A COMMENT IS NOT COPY. `about/page.tsx` documents the claims it REMOVED, and scanning
+      // that comment reported the removal as the violation — the instrument reading its own
+      // audit trail as a defect.
+      const prose = src.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");
+      for (const m of prose.matchAll(/(['"`])((?:\\.|(?!\1)[^\\]){8,300})\1/g)) {
+        const text = m[2];
+        if (!/\s/.test(text)) continue;                       // no space → not a sentence
+        if (!/[A-Za-z؀-ۿ]/.test(text)) continue;     // no letters → not prose
+        if (/[<>{}]|=>|className|data-testid|https?:\/\//.test(text)) continue; // code, not copy
+        for (const v of checkCustomerText(text)) {
+          const tagged = { ...v, match: `${file} → ${v.match}` };
+          // Dead modules are reported separately, exactly as latent bundle copy is.
+          const dead = deadModules.has(file);
+          (dead ? litLatent : litViolations).push(tagged);
+        }
+      }
+    }
+    // REPORT-ONLY, and the reason is stated rather than assumed. §1b is NEW coverage: it looks
+    // where nothing looked before, so its first run is a backlog, not a regression. Every finding
+    // is printed on every run and triaged in CHECKPOINT #34. Two were live and are fixed; the
+    // rest are dead modules, an unreachable duplicate route, the operator surface (§10 scope), a
+    // layout ratio matching the harness-figure SHAPE, and three sentences about OUR ACTIVITY or
+    // COVERAGE rather than price currency.
+    //
+    // It does not fail the gate because a permanently-red gate trains people to ignore it — and
+    // it is not silenced, because a green gate here would be a lie. When the backlog reaches
+    // zero, promote it to gate-failing.
+    console.log(`REPORT  component literals — ${litViolations.length} finding(s), triaged (see CHECKPOINT #34)`);
+    for (const v of litViolations) console.log(`        claim   [${v.ruleId}] ${v.match}  (${v.source.section})`);
+    console.log(`      latent (module has no importers): ${litLatent.length}`);
+    for (const v of litLatent) console.log(`        · [${v.ruleId}] ${v.match}`);
+    console.log(`      ${files.length} component files scanned`);
+  }
 
   // ── 2. LIVE CUSTOMER SURFACES ──────────────────────────────────────────────
   //

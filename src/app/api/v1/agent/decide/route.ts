@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
+import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { shouldAsk } from "@/lib/agent/clarify";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
@@ -185,10 +186,26 @@ export async function POST(req: NextRequest) {
   // engine works and without inferring anything from field names. Built from the same objects the
   // answer is rendered from, so it cannot describe a different answer than the one returned.
   const evidence = buildPublishedEvidence({ recommendations: out, smart_pick: smartWithChoice });
+
+  // P2-5 · F7 ON EVERY CUSTOMER-VISIBLE SENTENCE (ADR-163). The engine is deterministic, but its
+  // sentences are COMPOSED at runtime from data — and a repository search cannot catch what a
+  // template produces, which is the same property F7 exists to answer for a model. A failing
+  // sentence is WITHHELD, never rewritten. Measured to fire zero times on real production output;
+  // that is the difference between "we checked" and "we believe".
+  const guarded = guardAdvisorPayload(
+    { smart_pick: smartWithChoice, recommendations: out },
+    evidence,
+    { query: typeof task.text === "string" ? task.text : task.category, surface: "agent/decide", timestamp: new Date().toISOString() },
+  );
+  if (guarded.withheld.length) {
+    console.warn(`[f7-advisor] withheld ${guarded.withheld.length} sentence(s):`,
+      guarded.withheld.map((w) => `${w.path} [${w.ruleIds.join(",")}]`).join(" · "));
+  }
+
   return NextResponse.json({
     version: "v1", task, parsed: parsed ?? undefined, supported,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
-    count: out.length, smart_pick: smartWithChoice, recommendations: out, evidence,
+    count: out.length, smart_pick: guarded.payload.smart_pick, recommendations: guarded.payload.recommendations, evidence,
     // Present ONLY when the engine proved the answer would change it.  still
     // carries its reason so the decision is auditable rather than inferred from silence.
     clarify: clarify.ask ? { question: clarify.question, reason: clarify.reason } : null,

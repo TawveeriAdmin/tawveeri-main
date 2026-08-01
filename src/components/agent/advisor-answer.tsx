@@ -249,22 +249,45 @@ function ExitButtons({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendatio
           {t('agent.compareStores')}
         </Link>
       )}
-      <span className="text-[11px] text-on-surface-variant">· {t('agent.confidence')} {rec.confidence}%</span>
+      {/* THE CONFIDENCE PERCENTAGE THAT STOOD HERE IS GONE (ADR-163).
+          «درجة الثقة 75%» is an engine number wearing customer clothes: a shopper cannot act on
+          it, cannot tell 75 from 71, and cannot learn what would make it higher. P2-5's rule is
+          exact — *if confidence cannot be explained in customer language, do not display it.*
+          The evidence BEHIND the number is still shown, in words, by `TrustSummary` below: how
+          many retailers corroborate the price and how recently we observed it. That is the same
+          assessment, said in a form a customer can use. */}
     </div>
   );
 }
 
-function TrustScoreChip({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
-  const s = rec.trust?.score;
-  if (typeof s !== 'number') return null;
-  const tier = rec.trust?.tier ?? (s >= 72 ? 'high' : s >= 50 ? 'medium' : 'low');
+/**
+ * WHAT THE SCORE MEANT, SAID IN CUSTOMER LANGUAGE (ADR-163).
+ *
+ * This was «درجة الثقة الإجمالية: 75/100». A shopper cannot act on 75, cannot tell it from 71,
+ * and cannot learn what would raise it. P2-5: *if confidence cannot be explained in customer
+ * language, do not display it.*
+ *
+ * NOTHING IS HIDDEN AND NOTHING IS INVENTED. The tier is the engine's own
+ * (`assessTrust().tier`), never re-derived here, and the wording states the EVIDENCE that
+ * produced it — corroboration across retailers — which is the one fact a shopper can use and
+ * check. The full cited breakdown remains one tap away in the evidence panel.
+ */
+function TrustSummary({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
+  const tier = rec.trust?.tier;
+  if (!tier) return null;
+  const stores = rec.store_count ?? 0;
   const cls = tier === 'high'
     ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'
     : tier === 'medium' ? 'bg-warning-50 text-warning-700 dark:bg-warning-950/40 dark:text-warning-400'
     : 'bg-surface-container-high text-on-surface-variant';
+  // Corroboration is the claim we can always evidence. With a single retailer we say exactly
+  // that, rather than dressing one observation as confidence.
+  const label = stores >= 2
+    ? t('agent.trustCorroborated').replace('{count}', String(stores))
+    : t('agent.trustSingleSource');
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`} title={t('agent.trustScoreLabel')}>
-      <ShieldCheck className="h-3.5 w-3.5" aria-hidden />{t('agent.trustScoreLabel')}: {s}/100
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`}>
+      <ShieldCheck className="h-3.5 w-3.5" aria-hidden />{label}
     </span>
   );
 }
@@ -322,7 +345,7 @@ function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation;
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-2.5 py-1 text-xs font-semibold text-on-primary">
           <Sparkles className="h-3.5 w-3.5" aria-hidden />{t('agent.smartPickLabel')}
         </span>
-        <TrustScoreChip rec={rec} t={t} />
+        <TrustSummary rec={rec} t={t} />
         <PriceVerdictBadge rec={rec} loc={loc} />
         <DiscountTruthBadge rec={rec} loc={loc} />
         <TrustBadge rec={rec} loc={loc} />
@@ -352,7 +375,7 @@ function OptionCard({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-on-surface">{recTitle(rec, loc)}</h3>
-            <TrustScoreChip rec={rec} t={t} />
+            <TrustSummary rec={rec} t={t} />
             <PriceVerdictBadge rec={rec} loc={loc} />
             <DiscountTruthBadge rec={rec} loc={loc} />
             <TrustBadge rec={rec} loc={loc} />

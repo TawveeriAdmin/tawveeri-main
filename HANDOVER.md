@@ -1,4 +1,92 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #33 · ENGINE CONTRACT SHIPPED · NO TECHNICAL BLOCKER LEFT ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #34 · P2-5 ADVISOR BUILD-OUT ═══
+
+**Tree clean, pushed, verified in production. Nothing running.** Decision: **ADR-163**.
+**`AI_ASSISTANT_ENABLED` untouched — enabling it is a separate founder decision.**
+
+## CORRECTION — the retailer-count amendment is CLOSED
+
+Decided and shipped in **`53e6894`** (2026-07-31): §9 amended, `search.json` updated in both
+locales. Earlier checkpoints listed it as an open founder decision; that was wrong and is
+corrected here and in the superseded table below.
+
+## WHAT SHIPPED
+
+**1 · Raw scores are gone from the advisor.** «درجة الثقة 75%» and «درجة الثقة الإجمالية: 75/100»
+both removed. A shopper cannot act on 75, cannot tell it from 71, and cannot learn what would
+raise it. P2-5's rule is exact — *if confidence cannot be explained in customer language, do not
+display it.* Replaced by `TrustSummary`, which states the EVIDENCE behind the score in words —
+«سعر مؤكَّد في 3 متاجر» / "Price corroborated at 3 retailers", or «رصدناه في متجر واحد» when
+there is one. The tier is the engine's own, never re-derived in the view; the cited breakdown
+stays one tap away.
+
+**2 · F7 now governs the deterministic advisor.** CHECKPOINT #25 recorded, correctly, that F7 does
+not *govern* a surface with no runtime generation — but that was a statement about risk, not
+coverage. The advisor's sentences are **composed at runtime** from data (`أوفر بـ${diff} ريال`),
+and a repository search cannot catch what a template produces. `guardAdvisorPayload` validates
+every prose field before the response leaves the route.
+
+**Failure behaviour differs from F7·2 deliberately: WITHHOLD the sentence, never rewrite, never
+suppress the whole answer.** A generated answer is one artefact, so editing it manufactures a
+claim. A deterministic answer is a LIST of independently-derived statements — dropping one
+withholds a claim without inventing one, and suppressing all of them would delete a correct
+recommendation because an adjacent sentence failed.
+
+**It fires zero times** on real production output (2,026/2,026 strings pass). A guard that never
+fires is the difference between "we checked" and "we believe"; every activation is recorded in the
+same durable log.
+
+**3 · The scanner's blind spot is closed.** `vocabulary-scan` read `messages/` only, so a claim
+hardcoded in a component was invisible. New §1b scans 216 component files.
+
+## WHAT §1b FOUND — 18 → 10, triaged
+
+**Two were LIVE and are fixed:** `price-alerts/page.tsx` carried «السعر الحالي» / "the current
+price" hardcoded — the wording §10 retired. The bundle fix could not reach it.
+
+**Eight of the original findings were my own instrument's fault**, corrected before any conclusion:
+JSX quote-alternation captured code fragments as literals (`{t('…')}: <Price`), and a comment in
+`about/page.tsx` documenting the claims it REMOVED was read as the violation — the instrument
+reading its own audit trail as a defect.
+
+**The remaining 10, each with its reason:**
+
+| finding | why it is not a defect |
+|---|---|
+| `landing-client.tsx` ×2 («من كل المتاجر», «8 متاجر سعودية») | **dead module** — no importers; the homepage renders `BetaLanding` |
+| `src/app/how-it-works/page.tsx` | non-locale duplicate; middleware redirects to `/[locale]/…` |
+| `store/product-form.tsx` ×2 | **operator surface** — §10 scope note |
+| `store-comparison-panel.tsx` ×2 (`50/50`) | a layout ratio matching the harness-figure SHAPE |
+| "currently watching prices" · «…لهذا المنتج حالياً» · «أسعار متاحة حاليً» | statements about OUR ACTIVITY or COVERAGE now, not price currency |
+
+**§1b is REPORT-ONLY, and that is stated in the source.** It is new coverage, so its first run is
+a backlog, not a regression. A permanently-red gate trains people to ignore it; a green one would
+be a lie. Everything prints every run. **Promote it to gate-failing when the backlog reaches zero.**
+
+## VERIFICATION
+
+| | before | after |
+|---|---|---|
+| adversarial cases blocked | 23/23 | **23/23** |
+| must-pass answers publish | 4/4 | **4/4** |
+| advisor guard activations, production | — | **0** |
+| vocabulary scan | PASS | **PASS** |
+| unit tests | 1,076 | **1,076** |
+
+## ROLLBACK
+
+```
+0f4abcb  ADR-163 P2-5 advisor build-out   git revert 0f4abcb
+```
+
+## STILL OPEN
+
+- **`AI_ASSISTANT_ENABLED`** — founder decision, no technical blocker.
+- **P2-4** customer-outcome measurement — needs traffic.
+- **§1b backlog** — 10 triaged findings; promote the sub-gate when cleared.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #33 · ENGINE CONTRACT SHIPPED ═══
 
 **Tree clean, pushed, deployed, verified in production. Nothing running.** Decision: **ADR-162**.
 **`AI_ASSISTANT_ENABLED` untouched — surface verified 404.**
@@ -720,7 +808,7 @@ structurally inside the answer, verified in production by DOM position.
 |---|---|---|
 | **P2-4** customer-outcome measurement | **BLOCKED — no traffic.** It measures behaviour; there are no customers yet, so it would ship an instrument with nothing to read | **Launch traffic.** First questions already defined: share of queries carrying a need signal (UXD-004), and asked-vs-answered on the clarification question via `advisor_clarified` (UXD-005) |
 | **P2-5** وفّر advisor build-out | **BLOCKED — F7.** F7's protections must exist before the generative surface does. The advisor is deterministic today, which is why it is safe | **Building F7's runtime vocabulary guard**, which is itself an execution unit and has not been scoped |
-| Retailer-count amendment | **BLOCKED — founder decision** | A decision on `docs/RETAILER-TIERS.md` |
+| Retailer-count amendment | ✅ **CLOSED** — decided and shipped in `53e6894` (§9 amendment, applied to the bundles) | — |
 | Normalization backfill / DEBT-1 | **BLOCKED — data** | The match invariant (35 observations holding two canonicals) and the `asus\|dell g-series` parser defect |
 
 ## COMPARISON-INTENT ROUTING — WHAT LANDED

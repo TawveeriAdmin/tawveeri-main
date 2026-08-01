@@ -13,7 +13,6 @@
   "moreOptions": "Other good options",
   "totalCost": "Estimated total cost",
   "unitPrice": "Unit price",
-  "confidence": "Confidence",
   "viewOffer": "Go to store",
   "compareStores": "Compare stores",
   "suitability": "Suitability",
@@ -42,7 +41,8 @@
   "evidenceInsufficientHint": "Things to weigh before buying.",
   "cheaperNotBetter": "Cheaper isn't always better: we rank by suitability, total cost and trust — not price alone.",
   "freshnessLabel": "Data freshness",
-  "trustScoreLabel": "Overall trust score",
   "showEvidence": "Show evidence",
-  "hideEvidence": "Hide evidence"
+  "hideEvidence": "Hide evidence",
+  "trustCorroborated": "Price corroborated at {count} retailers",
+  "trustSingleSource": "Observed at one retailer"
 }

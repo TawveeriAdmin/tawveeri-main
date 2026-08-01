@@ -13,7 +13,6 @@
   "moreOptions": "خيارات أخرى مناسبة",
   "totalCost": "التكلفة الإجمالية التقديرية",
   "unitPrice": "سعر الجهاز",
-  "confidence": "درجة الثقة",
   "viewOffer": "اذهب إلى المتجر",
   "compareStores": "قارن المتاجر",
   "suitability": "الملاءمة",
@@ -42,7 +41,8 @@
   "evidenceInsufficientHint": "أمور يجب أخذها بالحسبان قبل الشراء.",
   "cheaperNotBetter": "الأرخص ليس دائمًا الأفضل: نرتّب حسب الملاءمة والتكلفة الإجمالية والثقة — لا السعر وحده.",
   "freshnessLabel": "حداثة البيانات",
-  "trustScoreLabel": "درجة الثقة الإجمالية",
   "showEvidence": "اعرض الأدلة",
-  "hideEvidence": "أخفِ الأدلة"
+  "hideEvidence": "أخفِ الأدلة",
+  "trustCorroborated": "سعر مؤكَّد في {count} متاجر",
+  "trustSingleSource": "رصدناه في متجر واحد"
 }
