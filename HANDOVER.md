@@ -98,7 +98,7 @@ npm run tps:vocabulary-scan
 ## ROLLBACK
 
 ```
-<H1>  ADR-160/161 durable logging + wording   git revert <H1>
+3f6e9a1  ADR-160/161 durable logging + wording   git revert 3f6e9a1
 node scripts/database/run-19-dryrun.js --rollback     # drops the table AND its events
 ```
 
