@@ -447,6 +447,40 @@ ${productsContext}
     ];
 
     // system: البلوك الأساسي (cached) + البلوك الديناميكي فقط إن كان غير فارغ
+    // ── THE EVIDENCE BOUNDARY (ADR-167) ──────────────────────────────────────────────────
+    //
+    // Measured on 24 natural production journeys: 50% rejected, and 11 of 12 rejections were
+    // the model stating a price nobody gave it. The facts were already in hand — the prompt
+    // simply never told the model which figures it was allowed to use, so it filled the
+    // template's `💰 [السعر] ريال` slot from memory and the validator correctly suppressed it.
+    //
+    // THIS STOPS THE MODEL GUESSING. IT DOES NOT MAKE THE VALIDATOR ACCEPT MORE. The guard is
+    // unchanged and remains the final arbiter: if the model ignores this boundary, the answer is
+    // still suppressed. A prompt is a request, which is exactly why F7 exists after generation.
+    //
+    // REORGANISES, NEVER DERIVES. Every number and name below is read verbatim from
+    // `evidenceItems` / `retailers`, which ADR-166 already populated from the same fetch that
+    // built the context above. Nothing is computed, rounded, summed or inferred — a boundary
+    // that invented a fact would be the failure it exists to prevent.
+    //
+    // `WAFFAR_SYSTEM_PROMPT` IS NOT TOUCHED. This is a third system block, assembled per request.
+    const permittedPrices = [...new Set(
+      evidenceItems.map((e) => e.unit_price).filter((p): p is number => typeof p === 'number'),
+    )];
+    const permittedRetailers = [...retailers];
+    const evidenceBoundary = (permittedPrices.length || permittedRetailers.length)
+      ? `
+
+⛔ حدود الأدلة — قاعدة مُلزمة:
+- الأسعار المسموح ذكرها (ولا رقم غيرها): ${permittedPrices.length ? permittedPrices.join(' · ') : 'لا يوجد'}
+- المتاجر المسموح تسميتها (ولا متجر غيره): ${permittedRetailers.length ? permittedRetailers.join(' · ') : 'لا يوجد'}
+- إذا لم يتوفر سعر لمنتج، لا تكتب حقل السعر إطلاقاً — قل إن السعر غير متوفر.
+- لا تذكر متجراً غير مذكور أعلاه، ولو كنت تعرفه.
+- لا تحسب أو تقدّر أو تقرّب أي رقم. اكتب الأرقام كما هي أعلاه فقط.`
+      : `
+
+⛔ حدود الأدلة: لا تتوفر أسعار أو متاجر لهذا الطلب. لا تذكر أي سعر أو متجر إطلاقاً — قل بصدق إن البيانات غير متوفرة.`;
+
     const systemBlocks: Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }> = [
       {
         type: 'text',
@@ -454,9 +488,12 @@ ${productsContext}
         cache_control: { type: 'ephemeral' },
       },
     ];
-    const trimmedContext = dynamicContext.trim();
+    const trimmedContext = (dynamicContext + evidenceBoundary).trim();
     if (trimmedContext.length > 0) {
-      systemBlocks.push({ type: 'text', text: dynamicContext });
+      // `trimmedContext`, not `dynamicContext` — the boundary is part of what the model sees,
+      // and pushing the pre-boundary string would have made the whole unit a no-op that still
+      // measured as a change.
+      systemBlocks.push({ type: 'text', text: trimmedContext });
     }
 
     console.log('[AI] Step 5 — calling Anthropic | contextLen:', trimmedContext.length, '| blocks:', systemBlocks.length);
