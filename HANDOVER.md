@@ -1,6 +1,33 @@
 # ═══ RESUME HERE — 2026-08-01 CHECKPOINT #28 · ROOT-LAYOUT RESTRUCTURE · ONE DEFECT CLOSED, ONE CORRECTED ═══
 
-**Tree clean, pushed, deployed, verified in production. Nothing running.** Decision: **ADR-155**.
+**Tree clean, pushed, deployed, verified in production. Nothing running.**
+Decisions: **ADR-155** (root layout) · **ADR-156** (canonical).
+
+## ADDENDUM — `/en` CANONICAL FIXED (ADR-156)
+
+`buildAlternates()` — the app's only `rel=canonical` emitter — hardcoded `/ar` for **every** page
+in **both** locales. `/en` therefore declared itself a **duplicate of `/ar`**, which removes it
+from the index and folds its signals into the Arabic page — while the site ships a full English
+translation, `og:locale=en_US`, an `hreflang="en"` alternate and (since ADR-155) `<html
+lang="en">`. The `hreflang` pair, which is the correct mechanism for "same content, two
+languages", was already right; the canonical was cancelling it.
+
+Fixed at the source: `buildAlternates(path, locale)`, locale **required** so a new call site
+cannot silently reintroduce it. All three call sites updated. Now gated on **two independent**
+call sites (site layout and product page) plus an hreflang-survival check.
+
+| | production BEFORE | production AFTER |
+|---|---|---|
+| **shell-verify** | **38 / 40** | **40 / 40** |
+| `/en` canonical | `https://tawveeri.com/ar` | `https://tawveeri.com/en` |
+| `/en/products/<slug>` canonical | `…/ar/products/<slug>` | `…/en/products/<slug>` |
+| hreflang pair | intact | intact (unchanged) |
+
+**Second instrument error caught this session.** The first hreflang check matched `hreflang=`
+case-sensitively and reported BOTH locales as having none — a much worse defect than the real
+one. React renders the camelCase property, so the bytes say `hrefLang="ar"`. Corrected before any
+conclusion was drawn. **That is now two false readings in one session; the standing rule keeps
+earning its keep.**
 
 ## THE HEADLINE, STATED PLAINLY
 

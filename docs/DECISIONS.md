@@ -6,6 +6,40 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-156 — Each locale canonicalises to itself · Accepted (2026-08-01)
+
+**Context.** `buildAlternates()` — the only `rel=canonical` emitter in the app — hardcoded
+`canonical: ${baseUrl}/ar${path}` for **every** page in **both** locales. Surfaced by the
+harness built for ADR-155, then measured on production: `/en` and `/en/products/<slug>` both
+declared `https://tawveeri.com/ar…` as their canonical. Pre-existing; confirmed identical before
+the ADR-155 restructure, so not caused by it.
+
+**Why it matters, stated precisely.** A cross-language canonical is not a preference for one
+language. It is a declaration that the English page is a **duplicate** of the Arabic one: search
+engines drop it from the index and fold its signals into `/ar`. The site simultaneously ships a
+complete English translation, `og:locale=en_US`, an `hreflang="en"` alternate and (since ADR-155)
+`<html lang="en">` — and told crawlers not to index any of it. The `hreflang` pair is the correct
+mechanism for "same content, two languages", and it was already correct and intact; the canonical
+was cancelling it.
+
+**Decision.** `buildAlternates(path, locale)` — each locale canonicalises to itself; the
+`hreflang` pair is unchanged. `locale` is **required**, not optional-defaulting-to-`ar`: a
+default would let a new call site silently reintroduce a defect that breaks nothing visible — the
+tag renders, it is well-formed, and only the index knows. Unrecognised values fall back to `ar`
+rather than emitting `/xx/…` as a canonical. All three call sites updated (`[locale]/layout.tsx`,
+`products/[slug]/page.tsx`, `buildPageMetadata`).
+
+**Gated, not just fixed.** `shell-verify` §4 now asserts self-reference per locale on **two
+independent call sites** (site layout and product page — one fixed call site proves nothing about
+the others) and that the `hreflang` pair survives. Production **38/40 before → 40/40 after**.
+
+**Instrument note.** The first version of the hreflang check matched `hreflang=` case-sensitively
+and reported BOTH locales as having no hreflang at all — a far worse defect than the real one.
+React renders the camelCase DOM property, so the served bytes say `hrefLang="ar"`. The instrument
+was corrected before any conclusion was drawn from it.
+
+---
+
 ### ADR-155 — The root layout owns the locale and the shell; and the 404-body defect had the wrong cause recorded · Accepted (2026-08-01)
 
 **Context.** Two defects were recorded as sharing one prerequisite — *"the root layout must own

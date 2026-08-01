@@ -92,14 +92,33 @@ const SURFACES = [
     check(`${locale} search still 200 with a rendered body`, r.status === 200 && r.markupBytes > 5000, `${r.status}, ${r.markupBytes} markup bytes`);
   }
 
-  // ── 4. METADATA — locale-aware title survived the move ────────────────────────
+  // ── 4. METADATA — locale-aware, and each locale canonicalises to ITSELF ───────
+  // The canonical check is not cosmetic: pointing /en at /ar tells search engines the English
+  // page is a duplicate, which drops it from the index and cancels the hreflang pair that
+  // exists to say the opposite. It fails silently — the tag is present and well-formed.
   console.log('\n§4 metadata');
   for (const locale of ['ar', 'en']) {
     const r = await get(`/${locale}`);
     const og = (r.html.match(/property="og:locale"\s+content="([^"]+)"/) || [])[1];
     check(`${locale} og:locale`, og === (locale === 'ar' ? 'ar_SA' : 'en_US'), String(og));
     const canonical = (r.html.match(/rel="canonical"\s+href="([^"]+)"/) || [])[1] || '';
-    check(`${locale} canonical present`, canonical.length > 0, canonical);
+    check(`${locale} canonical self-references /${locale}`, new RegExp(`/${locale}$`).test(canonical), canonical || 'absent');
+    // `hrefLang`, not `hreflang` — React renders the camelCase DOM property name verbatim.
+    // The first version of this check was case-sensitive and reported BOTH locales as having
+    // no hreflang at all, which would have read as a far worse defect than the real one.
+    const hrefAr = (r.html.match(/hrefLang="ar"\s+href="([^"]+)"/i) || [])[1] || '';
+    const hrefEn = (r.html.match(/hrefLang="en"\s+href="([^"]+)"/i) || [])[1] || '';
+    check(`${locale} hreflang pair intact`, /\/ar$/.test(hrefAr) && /\/en$/.test(hrefEn), `ar=${hrefAr} en=${hrefEn}`);
+  }
+  {
+    // The product page builds its own alternates from a different call site — check it too,
+    // because one fixed call site proves nothing about the others.
+    const slug = 'samsung-u8000f-65-inches-4k-smart-led-tv-2025-black-ua65u8000fuxzn';
+    for (const locale of ['ar', 'en']) {
+      const r = await get(`/${locale}/products/${slug}`);
+      const canonical = (r.html.match(/rel="canonical"\s+href="([^"]+)"/) || [])[1] || '';
+      check(`${locale} product canonical self-references /${locale}`, canonical.includes(`/${locale}/products/${slug}`), canonical || `absent (status ${r.status})`);
+    }
   }
 
   // ── 5. THE SILENT TRUST ELEMENTS ─────────────────────────────────────────────

@@ -30,12 +30,31 @@ function ogImageFor(image: string | undefined, baseUrl: string) {
   };
 }
 
-export function buildAlternates(path: string) {
+/**
+ * `rel=canonical` + `hreflang` for a page. THE ONLY canonical emitter in the app.
+ *
+ * EACH LOCALE SELF-CANONICALISES. This previously pointed every page — including every `/en`
+ * page — at the `/ar` URL. A cross-language canonical is not a preference, it is a statement
+ * that the English page is a DUPLICATE of the Arabic one: search engines drop it from the index
+ * and fold its signals into `/ar`. The site then ships a full English translation, an
+ * `og:locale=en_US`, an `hreflang="en"` alternate and an `<html lang="en">` — and simultaneously
+ * tells crawlers not to index any of it. The hreflang pair below is what expresses "these are
+ * the same content in two languages"; canonical is not the tool for that, and using it for that
+ * cancels the hreflang.
+ *
+ * `locale` is REQUIRED on purpose. An optional parameter defaulting to `ar` would let a new call
+ * site silently reintroduce the exact defect, and this is one of those defects that breaks
+ * nothing visible — the page renders, the tag is present and well-formed, and only the index
+ * knows.
+ */
+export function buildAlternates(path: string, locale: string) {
   const baseUrl = getBaseUrl();
   // Remove leading locale segment if present
   const cleanPath = path.replace(/^\/(ar|en)/, '');
+  // Anything unrecognised falls back to the default rather than emitting `/xx/…` as a canonical.
+  const self = locale === 'en' ? 'en' : 'ar';
   return {
-    canonical: `${baseUrl}/ar${cleanPath}`,
+    canonical: `${baseUrl}/${self}${cleanPath}`,
     languages: {
       ar: `${baseUrl}/ar${cleanPath}`,
       en: `${baseUrl}/en${cleanPath}`,
@@ -67,7 +86,7 @@ export function buildPageMetadata({
   return {
     title,
     description,
-    alternates: buildAlternates(path),
+    alternates: buildAlternates(path, locale),
     openGraph: {
       title,
       description,

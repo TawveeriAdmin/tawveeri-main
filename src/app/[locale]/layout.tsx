@@ -31,7 +31,7 @@ export async function generateMetadata({
     description: locale === 'ar'
       ? 'قارن أسعار الإلكترونيات من أمازون ونون وجرير واكسترا والمنيع. أفضل العروض والتخفيضات في السعودية.'
       : 'Compare electronics prices from Amazon, Noon, Jarir, Extra & Almanea. Best deals in Saudi Arabia.',
-    alternates: buildAlternates(''),
+    alternates: buildAlternates('', locale),
     openGraph: {
       locale: locale === 'ar' ? 'ar_SA' : 'en_US',
       url: `${baseUrl}/${locale}`,
