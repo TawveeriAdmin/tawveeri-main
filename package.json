@@ -62,7 +62,8 @@
     "tps:security-audit": "tsx scripts/tps-analysis/security-audit.ts",
     "tps:ui-journey": "node scripts/tps-analysis/ui-journey.js",
     "tps:dead-links": "node scripts/tps-analysis/dead-links.js",
-    "tps:shell-verify": "node scripts/tps-analysis/shell-verify.js"
+    "tps:shell-verify": "node scripts/tps-analysis/shell-verify.js",
+    "tps:vocabulary-scan": "tsx scripts/tps-analysis/vocabulary-scan.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

@@ -1,4 +1,123 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #28 · ROOT-LAYOUT RESTRUCTURE · ONE DEFECT CLOSED, ONE CORRECTED ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #29 · F7·1 COMPLETE · F7·2 NOT STARTED ═══
+
+**Tree clean, pushed, verified against production. Nothing running.** Decision: **ADR-157**.
+
+## WHAT F7·1 IS, IN ONE SENTENCE
+
+The approved vocabulary is now **typed, versioned, tested data** (`src/lib/vocabulary/`) instead
+of prose — because a runtime guard built against prose is not incomplete, it is **confidently
+wrong**: it would certify a vocabulary nobody approved.
+
+**F7·2 (the post-generation validator) IS NOT STARTED.** Nothing in this change looks at
+generated text or compares anything against structured evidence.
+
+## THE FIVE DESIGN DECISIONS THAT MATTER
+
+1. **Governance is one-way and mechanical.** The document is the authority; the module is
+   derived. Every entry carries a verbatim `source.quote` and a test asserts it still exists in
+   `docs/LAUNCH_VOCABULARY.md`. Edit either side alone → test fails. Drift is not left to
+   discipline.
+2. **Versioned.** `VOCABULARY_VERSION` + a pinned `vocabularyFingerprint()`. Any edit fails until
+   the version is bumped deliberately. F7·2 stamps verdicts with it.
+3. **Customer ≠ internal.** Two registries, two questions: *may a customer READ this claim* vs
+   *has an internal token ESCAPED*. Merging them would let a containment failure be argued about
+   as a wording preference.
+4. **Category-agnostic.** No rule names a category — every rule is a claim CLASS, so a category
+   added tomorrow inherits the set. Test-enforced against the app's own category keys.
+5. **What text cannot decide is DECLARED.** Three rules ship with `enforcement:
+   'evidence-required'` and no patterns — «5,023 products compared» (forbidden) and «we compare
+   758 products» (approved) are the same shape; only evidence separates them. Every result
+   reports them under `undecided`. **A clean scan is not full coverage, and it says so.**
+
+## WHAT IT FOUND ON THE SHIPPED PRODUCT
+
+```bash
+npm run tps:vocabulary-scan                                        # localhost
+npx tsx scripts/tps-analysis/vocabulary-scan.ts --base https://tawveeri.com
+```
+
+**GATE: PASS — 0 live customer-copy violations, 0 internal-token leaks** across 3,232 bundle
+strings and 16 live surfaces, both locales. Findings are **classified**, because "9 findings" and
+"3 a customer can read today" are different facts:
+
+| class | n | disposition |
+|---|---|---|
+| latent (zero refs in `src/`) | 5 | §5's own reasoning, **derived from the repo**, not asserted |
+| operator surface (`store.json`) | 2 | a merchant editing their own price legitimately sees "Current Price" |
+| **live customer copy** | **3** | **awaiting an F1 wording decision — see below** |
+
+### ⚠ THREE LIVE STRINGS NEED A FOUNDER WORDING DECISION
+
+Recorded in `src/lib/vocabulary/pending-copy-decisions.ts` with shipped text, reason and owner.
+**I did not change them** — customer copy is an F1 decision, and rewording live controls is
+outside F7·1.
+
+| where | ar | en |
+|---|---|---|
+| `product.json:priceAlertCurrentPrice` | «أفضل سعر حالياً» | "Current best price" |
+| `product.json:priceAlertInvalid` | «…أقل من السعر الحالي.» | "…below the current price." |
+| `products.json:priceAlert.currentPrice` | «السعر الحالي» | "Current Price" |
+
+§3 forbids "current" as a price-freshness word. These assert a price is current when it is
+**observed**. The replacement is not obvious — «أفضل سعر رصدناه» is accurate but longer and
+changes a control read while setting a threshold. **Settle the three together, not piecemeal.**
+
+**The register cannot become a suppression list:** every entry names what is unresolved and who
+decides, all are printed on every run *including a passing one*, and a **stale** entry (copy
+reworded, finding gone) **fails** both the scanner and CI.
+
+## TWO INSTRUMENT DEFECTS CAUGHT WHILE BUILDING IT — both would have been silent
+
+1. The Arabic pattern carried «حالية» but not «الحالي», so it missed «السعر الحالي» while
+   catching the English "current price" **in the same bundle**. That is exactly the one-sided
+   audit §1 records, where «في الوقت الفعلي» survived an English-only pass and stood for the
+   majority of our users. Both forms now covered and pinned as test cases.
+2. The liveness classifier searched the LEAF key, so `features.instant.description` searched for
+   "description" — in hundreds of files — and §5's documented dead copy was classified LIVE. Now
+   resolves the full lookup path; any partial reference marks a key live, because mislabelling
+   live copy as latent hides a real violation.
+
+**That is four instrument errors caught in two sessions.** The standing rule keeps paying.
+
+## ONE DOC CORRECTION FOR THE FOUNDER
+
+`LAUNCH_VOCABULARY.md` §5 lists *"Official partnerships with top stores"* as latent copy in
+`landing.json`. **It is no longer in any message bundle.** Reported, not edited — the document is
+yours to amend.
+
+## VERIFICATION
+
+| | result |
+|---|---|
+| unit tests | **960 / 960** (117 new) |
+| vocabulary scan, production | **GATE: PASS** — 0 live findings |
+| shell-verify, production | **40 / 40** unchanged |
+| typecheck (new files) | clean |
+
+**Honest limit on the production scan:** most surfaces are client-rendered, so §2 sees only the
+served text (`/ar` ≈ 1.4k chars, not the full page). §1 (the bundles) is the stronger population
+— all copy originates there. A clean §2 is not evidence the rendered page is clean, and the
+script says so where it prints.
+
+## ROLLBACK
+
+```
+<F7HASH>  ADR-157 F7·1 vocabulary as data   git revert <F7HASH>
+```
+
+Additive: new `src/lib/vocabulary/`, one new test suite, one new script, one npm script. No
+customer-facing behaviour changed, so a revert removes the artefact and the gate and nothing else.
+
+## NEXT — DO NOT START AUTOMATICALLY
+
+**F7·2** (post-generation validator) is the next step in the chain and is **not started**. It must
+consume `EVIDENCE_REQUIRED_RULES` — those three rules are the part it exists to answer, and a
+validator that treats a clean text scan as a pass would ship the exact false confidence F7·1 was
+built to prevent.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #28 · ROOT-LAYOUT RESTRUCTURE · ONE DEFECT CLOSED, ONE CORRECTED ═══
 
 **Tree clean, pushed, deployed, verified in production. Nothing running.**
 Decisions: **ADR-155** (root layout) · **ADR-156** (canonical).

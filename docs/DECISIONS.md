@@ -6,6 +6,75 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-157 — F7·1: the approved vocabulary becomes versioned data, and declares what it cannot decide · Accepted (2026-08-01)
+
+**Context.** Appendix F7 governs the generative surface: *"No repository search catches what the
+assistant says in a live answer."* P2-5 is blocked on a runtime vocabulary guard. But the
+approved vocabulary is PROSE — `docs/LAUNCH_VOCABULARY.md` §2 CAN SAY, §3 MUST NOT SAY, §4
+replacements, §8 disclosure, §9 amendment. A guard built against prose is not merely incomplete;
+it is **confidently wrong** — it would certify a vocabulary nobody approved. So the vocabulary
+becomes data first (F7·1), and the validator (F7·2) is built against the data.
+
+**Decision.** `src/lib/vocabulary/` — the vocabulary as typed, versioned, tested data.
+
+1. **Governance direction is one-way and mechanically enforced.** The document is the authority
+   (F1: amend it first, with evidence); the module is DERIVED. Every entry carries a verbatim
+   `source.quote`, and a test asserts that quote still exists in the governing document. Edit
+   either side alone and the test fails — drift cannot be a matter of discipline.
+2. **Versioned.** `VOCABULARY_VERSION` plus a deterministic `vocabularyFingerprint()` (FNV-1a
+   over the canonical serialisation), **pinned in a test**. Any edit fails until the version is
+   bumped deliberately. F7·2 will stamp verdicts with the fingerprint, so an answer approved
+   under one vocabulary is never assumed approved under the next.
+3. **Customer and internal vocabularies are separate registries, not one list.** They answer
+   different questions: *may a customer READ this claim* (a truth question) versus *has an
+   internal token ESCAPED* (a containment question). A claim can be forbidden and still be good
+   English; an identity sentinel is not language at all. Merging them would let a containment
+   failure be argued about as a wording preference. Asserted by test in both directions.
+4. **Category-agnostic by construction.** Not one rule names a category — every rule is a CLAIM
+   CLASS (refresh cadence, price-currency, comprehensive-market …), so a category added tomorrow
+   inherits the whole set. A test checks the serialised rule set against the app's own category
+   keys, with a guard against passing vacuously.
+5. **THE RULES THAT CANNOT BE DECIDED FROM TEXT ARE DECLARED, NOT OMITTED.** Three are exported
+   with `enforcement: 'evidence-required'` and no patterns: `catalogue-presented-as-comparable`
+   («5,023 products compared» is forbidden, «we compare 758 products» is approved — same shape,
+   only evidence separates them), `fixed-retailer-count` (a hardcoded count and one substituted
+   from a live query are textually identical; `compareAcross(storeCount)` renders a legitimate
+   derived count on every multi-store card), and `excluded-retailer-as-comparison-source`
+   (enforced in code by `COMPARISON_DISPLAY_EXCLUDED`, where the surface context is known).
+   Every checker result reports them under `undecided`, and the scanner prints them on every run
+   — a clean result must never be readable as full coverage.
+
+**What it found, on the shipped product.** `tps:vocabulary-scan` over 3,232 bundle strings and 16
+live surfaces: **0 live customer-copy violations, 0 internal-token leaks**. Findings are
+CLASSIFIED, because "9 findings" and "3 a customer can read today" are different facts —
+**5 latent** (zero references in `src/`, matching §5's own reasoning, derived from the repository
+rather than asserted), **2 operator-surface** (`store.json` — a merchant editing their own price
+legitimately sees "Current Price"), and **3 live customer strings awaiting an F1 wording
+decision**, recorded in `pending-copy-decisions.ts` with the shipped text, the reason and the
+owner. That register is built so it cannot become a suppression list: every entry names what is
+unresolved and who decides, all are printed on every run including a passing one, and a **stale**
+entry fails both the scanner and CI.
+
+**Two instrument defects caught while building it — both would have been silent.**
+- The Arabic pattern carried «حالية» but not «الحالي», so it missed «السعر الحالي» and «أفضل سعر
+  حالياً» while catching the English "current price" beside them in the same bundle. That is
+  exactly the one-sided audit §1 records, where «في الوقت الفعلي» survived an English-only pass
+  and stood for the majority of our users. Both forms are now covered and pinned as test cases.
+- The liveness classifier searched the LEAF key, so `landing.json:features.instant.description`
+  searched for "description" — present in hundreds of files — and §5's documented dead copy was
+  classified LIVE. It now resolves the full lookup path, and any partial reference marks a key
+  live, because mislabelling live copy as latent hides a real violation.
+
+**Also found: the document is out of date in one place.** §5 lists *"Official partnerships with
+top stores"* as latent copy in `landing.json`. It is no longer in any message bundle. Reported,
+not edited — the document is the founder's to amend.
+
+**Consequences.** F7·2 has a source of truth, an explicit list of what it must resolve against
+evidence, and a fingerprint to stamp verdicts with. **F7·2 is NOT started.** 960/960 tests
+(117 new), shell-verify 40/40 unchanged.
+
+---
+
 ### ADR-156 — Each locale canonicalises to itself · Accepted (2026-08-01)
 
 **Context.** `buildAlternates()` — the only `rel=canonical` emitter in the app — hardcoded
