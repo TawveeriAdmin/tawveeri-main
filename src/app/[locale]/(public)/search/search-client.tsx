@@ -1269,12 +1269,12 @@ export default function SearchClient() {
                 the ones /advisor used to teach on its own page. */}
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="text-xs font-medium text-on-surface-variant">
-                {locale === 'ar' ? 'أو صِف ما تحتاجه:' : 'Or describe what you need:'}
+                {needPrompt(locale)}
               </span>
-              {(locale === 'ar'
-                ? ['مكيف لغرفة 30 متر هادئ تحت 4000', 'لابتوب للألعاب تحت 5000', 'غسالة صحون كبيرة للعائلة']
-                : ['a quiet AC for a 30 m² room under 4000', 'a gaming laptop under 5000', 'a large family dishwasher']
-              ).map((term) => (
+              {/* From `need-phrasings.ts` — the homepage teaches the SAME sentences (ADR-171).
+                  Two surfaces teaching different examples is the one-fact-two-representations
+                  defect this codebase has already paid for twice. */}
+              {needPhrasings(locale).map((term) => (
                 <button
                   key={term}
                   onClick={() => handleQuickCategory(term)}

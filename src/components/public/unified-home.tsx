@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
+import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 
 const T = {
@@ -70,11 +71,33 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
             style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: 15, color: 'var(--color-on-surface)', fontFamily: 'inherit', textAlign: isAr ? 'right' : 'left', minWidth: 0, padding: '10px 0' }} />
           <button onClick={() => search()} style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 22px', fontSize: 14, fontWeight: 800, cursor: 'pointer', flexShrink: 0, minHeight: 44 }}>{t.searchCta}</button>
         </div>
+
+        {/* TEACH THE OTHER HALF OF WHAT THIS BOX ACCEPTS (ADR-171).
+            The note that stood here said وفّر's one entry point was "the persistent nav item".
+            That nav item was retired by ADR-152 — it was the "choose between search and AI"
+            fork the Constitution forbids — and the comment was never updated. Two correct
+            removals left ZERO entry points: measured 2026-08-01, zero href to /advisor on
+            either locale.
+            The answer is NOT a second door. `/search` already routes by intent from this same
+            field. The capability was reachable and undiscoverable, so what is added is an
+            AFFORDANCE, not an entry point: one line showing that a sentence is a valid query.
+            The novice describes a situation, the expert types a model name, both use this box.
+            Same phrasings as `/search`, from one module, so the two surfaces cannot drift. */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-on-surface-variant)' }}>{needPrompt(locale)}</span>
+          {needPhrasings(locale).map((phrase) => (
+            <button key={phrase} type="button" onClick={() => search(phrase)}
+              style={{ borderRadius: 999, border: '1px solid var(--brand-green)', background: 'var(--brand-bg-green, #eaf6f1)', color: 'var(--brand-green-dark, #3a7a66)', padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 32 }}>
+              {phrase}
+            </button>
+          ))}
+        </div>
       </section>
 
-      {/* وفّر has ONE entry point — the persistent nav item. It used to be offered here
-          as well, so the first screen carried two doors to the same assistant. Measured
-          2026-07-29 as a homepage-journey failure in both locales. */}
+      {/* NO DISCLOSURE HERE, DELIBERATELY. No AI answer appears on the homepage — these are
+          example QUERIES, not generated output. The disclosure renders at/before the first
+          advisor answer on /search, as its first child with no prop to suppress it (ADR-152).
+          Forcing it onto a page with nothing to disclose would dilute it where it matters. */}
 
       {/* 2 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing).
           Hidden entirely when nothing clears the rule — never an empty or stale grid. */}
