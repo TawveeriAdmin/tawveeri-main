@@ -56,7 +56,7 @@ the assistant is good*. That now requires shoppers.
 ## ROLLBACK
 
 ```
-4f94f53  ADR-169 measurement rule (docs)   git revert 4f94f53
+c4bbd49  ADR-169 measurement rule (docs)   git revert c4bbd49
 e0af3fc  ADR-168 customerPrice             git revert e0af3fc
 98351e9  ADR-167 evidence boundary         git revert 98351e9
 ```
