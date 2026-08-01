@@ -1,4 +1,69 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #38 · MEASUREMENT: THE 7 REJECTIONS EXPLAINED ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #39 · MEASUREMENT CHAPTER CLOSED ═══
+
+**Tree clean, pushed. Assistant enabled, rollout healthy.** Decision: **ADR-169** (measurement rule).
+
+## THE DOCTRINE, RECORDED GENERALLY
+
+`docs/ENGINEERING-RULES.md` now carries it as a standing rule, not a note on one unit:
+
+> **A measured effect smaller than the sample's own variance cannot validate an engineering
+> change. It cannot refute one either. It is not evidence in either direction.**
+
+Establish the noise floor before claiming a delta · prefer the decomposed signal to the headline ·
+non-deterministic systems need far larger n · "unvalidated" is the honest verdict · **more data
+beats more changes.** Same failure class as the two sampling-bias entries already in that file.
+
+## THE THREE PROMPT CHANGES ARE **UNVALIDATED** — not validated, not failed
+
+| unit | mechanism | status |
+|---|---|---|
+| ADR-166 ai-assistant evidence contract | sound, proven by regression test | **partly validated** — 86% → 31–50% is far outside the noise floor |
+| ADR-167 evidence boundary block | sound | **UNVALIDATED** — 50% → 46% is inside ±19pt variance |
+| ADR-168 `customerPrice()` single representation | sound, proven by regression test | **UNVALIDATED at the rate level**; the rule-level fall (`saving-or-price…` 10 → 3) **does** survive the noise floor |
+
+**They remain in the codebase.** Each has a sound mechanism, a unit test, and no measured harm.
+**None of ADR-167/168 may be cited as a proven rate improvement.** The noise floor is **±19
+points**, measured from two natural samples taken with no code change between them (31% n=16,
+50% n=24).
+
+## THE BOUNDARY — engineering vs. traffic
+
+**Still advanceable by engineering alone:**
+- `identity-sentinel` in generated names — a data/ingestion-path unit; **zero** non-generative
+  customer exposure (audited).
+- Vocabulary constraints in the evidence-boundary block (`price-currency-claim`, 3 of 10) —
+  in scope, but see the falling-return warning below.
+- §1b residual (7 triaged non-violations); promote the sub-gate when it reaches zero.
+- Product-detail 404 body — needs a middleware pre-render existence lookup (ADR-155).
+- Engine category coverage beyond 17 advisable categories.
+- Wiring `npm run a11y` / the F7 gates into whatever runs on change.
+
+**Now genuinely blocked on real customer traffic (P2-4):**
+- **Any further validation of prompt work.** n≥100 is needed to see an 8-point effect. Synthetic
+  samples cannot supply it — they are our guesses about what shoppers type.
+- The true production rejection rate, and whether 42% is even the right number.
+- Share of queries carrying a need signal (UXD-004); asked-vs-answered on clarification (UXD-005).
+- Whether suppression is a customer problem at all — nobody has been suppressed yet except us.
+
+**The line:** engineering can still fix *identified defects*. It can no longer *measure whether
+the assistant is good*. That now requires shoppers.
+
+## ROLLOUT
+
+`unavailable` **0 / 132 journeys** · 0 published violations · 0 F7 bypasses · 0 errors ·
+1,114/1,114 tests.
+
+## ROLLBACK
+
+```
+4f94f53  ADR-169 measurement rule (docs)   git revert 4f94f53
+e0af3fc  ADR-168 customerPrice             git revert e0af3fc
+98351e9  ADR-167 evidence boundary         git revert 98351e9
+```
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #38 · MEASUREMENT: THE 7 REJECTIONS EXPLAINED ═══
 
 **Read-only measurement. NO code changed.** `AI_ASSISTANT_ENABLED` remains **ON**; rollout healthy.
 

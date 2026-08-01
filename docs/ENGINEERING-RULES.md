@@ -250,3 +250,37 @@ it has reintroduced the falsely-fresh claim.
 
 **DEBT-1 does not close this dependency — it removes it.** Populating the column is what would
 eventually make the render-time resolution redundant. Until then, the dependency stands.
+
+---
+
+## MEASUREMENT RULE — an effect smaller than the sample variance validates nothing
+
+**Added 2026-08-01 (ADR-169), from the assistant rollout.**
+
+> **A measured effect smaller than the sample's own variance cannot validate an engineering
+> change. It cannot refute one either. It is not evidence in either direction.**
+
+**How it was learned.** Three prompt-assembly changes moved the natural rejection rate
+50% → 46% → 42%. Each looked like progress. But two natural samples taken **with no code change
+between them** measured **31% (n=16)** and **50% (n=24)** — a 19-point spread from sampling and
+model non-determinism alone. Every one of those "improvements" is smaller than the noise floor.
+
+**The rule in practice:**
+
+1. **Establish the noise floor before claiming a delta.** Run the identical sample twice with no
+   change. The spread between those runs is the minimum effect size you can detect. Anything
+   under it is unmeasurable, however plausible the mechanism.
+2. **Prefer the decomposed signal to the headline.** `saving-or-price-without-provenance`
+   10 → 3 is a 70% fall in a single cause and survives the noise floor; the 8-point headline
+   move does not. **Report the rule, not the rate.**
+3. **Non-deterministic systems need far larger n than deterministic ones.** For a deterministic
+   harness, 20 cases can be conclusive. For anything with a model in the loop, tens of samples
+   distinguish almost nothing.
+4. **"Unvalidated" is the honest verdict, not "validated" or "failed".** A change with a sound
+   mechanism and an unmeasurable effect stays in the codebase and stays unproven. Say so.
+5. **More data beats more changes.** When successive changes each move less than the variance,
+   the next unit is measurement, not another edit.
+
+**This is the same failure class as the sampling-bias entries already in this file** —
+top-N sampling over-weighting quality, and the balanced sample over-weighting edge cases. All
+three are one mistake: *reading a number produced by the method as a property of the system.*
