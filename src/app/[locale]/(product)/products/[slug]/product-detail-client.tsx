@@ -974,8 +974,8 @@ export default function ProductDetailClient() {
  <h2 className="t-h2 text-on-surface">{t('product.availableStores')}</h2>
  <p className="t-small text-on-surface-variant mt-1">
  {locale === 'ar'
- ? 'قارن السعر ووقت التوصيل والضمان بين كل المتاجر'
- : 'Compare price, delivery time and warranty across every store'}
+ ? 'قارن السعر ووقت التوصيل والضمان بين متاجر سعودية'
+ : 'Compare price, delivery time and warranty across Saudi retailers'}
  </p>
  </div>
  <span className="t-small font-semibold text-[var(--brand-green-dark)]">

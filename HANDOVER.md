@@ -1,4 +1,74 @@
-# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #35 · DEAD-CODE CLEANUP ═══
+# ═══ RESUME HERE — 2026-08-01 CHECKPOINT #36 · §1b EXTENDED TO THE AST ═══
+
+**Tree clean, pushed. Nothing running.** Decision: **ADR-165**. **`AI_ASSISTANT_ENABLED` untouched.**
+
+## THE COVERAGE MAP — what §1b inspects, and what it cannot
+
+| surface | covered? |
+|---|---|
+| locale/message JSON | ✅ §1 (3,232 strings) |
+| **JSX / TSX text nodes** | ✅ **NEW — the blind spot that escaped three scans** |
+| string literals in components | ✅ (now AST, was regex) |
+| template literals — **static spans only** | ✅ NEW |
+| shared constants / config | ✅ NEW (`.ts` now scanned, not just `.tsx`) |
+| metadata · title · description | ✅ NEW (string literals in metadata objects) |
+| Open Graph / social fields | ✅ NEW (same mechanism) |
+| JSON-LD builders | ✅ NEW (literals inside the builder) |
+| **alt text · aria-label · placeholder · title** | ✅ **NEW — a claim spoken aloud is still a claim** |
+| button / link labels · validation · error · empty · not-found | ✅ (literals + JSX text) |
+| server-rendered fallback HTML | ✅ §2 (rendered bytes) |
+| client-only fallback text | ✅ via source, ❌ not via §2 (§2 sees server bytes only) |
+
+**Outside §1b BY DESIGN — governed elsewhere, and repository scanning must never be implied to
+cover them:** model-generated runtime text (**F7·2 validator**) · retailer-originated remote
+content (**provider/evidence controls**) · database content (**TPS evidence layer**) · externally
+configured copy (**none today; would need its own control**).
+
+## KNOWN POSITIVES — proven before any zero was believed
+
+`tests/vocabulary/source-scan.test.ts` — **22 fixtures, all caught**, including the exact JSX
+claim that escaped: «نجمع أسعار نفس المنتج من جميع المتاجر». Fixtures live in tests, never in
+production source. **Historical §1b coverage re-verified**: the quoted-literal class the regex
+version found is still detected.
+
+## FINDINGS — 47 → 10, all classified
+
+| class | n | detail |
+|---|---|---|
+| **live violation** | **1 → fixed** | `product-detail-client` "across **every store**" / «بين كل المتاجر» → §9 approved wording |
+| false positive | 6 | sentences about our ACTIVITY or COVERAGE («…حالياً», "currently watching") + a `50/50` layout ratio ×2 |
+| approved wording | 1 | "real-time **alerts**" — §1 records notification speed as TRUE |
+| out of scope | 3 | **prompt text** in the closed generative route — not repository copy a customer reads |
+| operator surface | 2 | `store/product-form.tsx` (§10 scope) |
+| dormant | 0 | — |
+| requires founder decision | **0** | — |
+
+**37 of the original 47 were the instrument scanning ITSELF** — `src/lib/vocabulary/` must contain
+the forbidden strings verbatim, because they are the fixtures proving they are blocked. Excluded
+by path, with the reason stated in source: that is the difference between a claim and a fixture,
+not a scope exemption.
+
+## THE CLEANLINESS CLAIM I CAN HONESTLY MAKE
+
+> **Clean across all static repository surfaces covered by §1b** — 464 source files, 3,468
+> customer-text candidates, plus 3,232 bundle strings. **Remaining blind spots:** client-only
+> fallback text is covered in source but not in the rendered §2 check; prompt text is scanned but
+> classified out of scope. **Runtime-generated language remains outside §1b and under F7.**
+
+**NOT "clean by construction."** §1b covers static repository text; it cannot cover what a model,
+a retailer feed, or the database produces.
+
+## ROLLBACK
+
+```
+<XHASH>  ADR-165 §1b AST extension   git revert <XHASH>
+```
+
+Instrument + fixtures + one copy fix. `source-scan.ts` is imported by the scanner only.
+
+---
+
+# ═══ SUPERSEDED — 2026-08-01 CHECKPOINT #35 · DEAD-CODE CLEANUP ═══
 
 **Tree clean, pushed, verified in production. Nothing running.** Decision: **ADR-164**.
 **`AI_ASSISTANT_ENABLED` untouched.**

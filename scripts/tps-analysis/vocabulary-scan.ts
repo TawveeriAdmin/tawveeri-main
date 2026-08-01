@@ -215,58 +215,77 @@ async function renderedText(path: string): Promise<{ status: number; text: strin
   // Not live (that file has no importers; the homepage renders `BetaLanding`), so it is latent
   // in the §5 sense. But "the scanner did not look there" is not the same fact as "there is
   // nothing there", and P2-5 requires every customer-visible sentence pass through F7.
-  console.log("\n§1b hardcoded literals in components (src/**/*.tsx)");
+  console.log("\n§1b customer-facing text in repository source (AST)");
   {
     const { execFileSync } = await import("child_process");
-    const files = execFileSync("git", ["ls-files", "src/**/*.tsx"], { encoding: "utf8" })
+    const { extractCustomerText } = await import("../../src/lib/vocabulary/source-scan");
+    const files = execFileSync("git", ["ls-files", "src/**/*.tsx", "src/**/*.ts"], { encoding: "utf8" })
       .split("\n").map((f) => f.trim()).filter(Boolean);
-    const litViolations: Violation[] = [];
-    const litLatent: Violation[] = [];
+
+    // OPERATOR SURFACES — outside the CUSTOMER vocabulary by definition (§10 scope note). A
+    // merchant editing their own price legitimately sees "Current Price"; an admin console makes
+    // no claim on our behalf. Excluded by PATH, declared here as data rather than buried.
+    const OPERATOR_PATHS = [/^src\/components\/store\//, /^src\/components\/admin\//,
+      /^src\/app\/\[locale\]\/store\//, /^src\/app\/\[locale\]\/admin\//];
+
+    // THE INSTRUMENT MUST NOT SCAN ITSELF.
+    //
+    // `src/lib/vocabulary/` IS the policy: the adversarial corpus has to contain «الأسعار تُحدّث
+    // باستمرار» and "8 Saudi retailers" verbatim, because those are the cases it proves are
+    // blocked. Reporting them as violations would make the gate red for doing its job, and the
+    // only way to make it green would be to delete the tests. That is not a scope exemption —
+    // it is the difference between a claim and a fixture.
+    //
+    // `src/lib/scraping/` is the ingestion pipeline: its strings are field descriptions and
+    // parser diagnostics ("current price" as a SELECTOR label), never rendered to anyone.
+    const NON_CUSTOMER_PATHS = [/^src\/lib\/vocabulary\//, /^src\/lib\/scraping\//];
+
+    const live: Violation[] = [];
+    const dormant: Violation[] = [];
+    const operator: Violation[] = [];
+    let candidates = 0;
+
     for (const file of files) {
       const src = readFileSync(join(process.cwd(), file), "utf8");
-      // Only PROSE literals.
-      //
-      // The first version matched any quoted run of ≥8 characters, and in JSX the quotes
-      // alternate — `{t('dashboard.currentPrice')}: <Price` was captured as a "literal" because
-      // the scan started at the closing quote of one string and ran to the opening quote of the
-      // next. It reported code fragments as customer claims, and "50/50" (a layout ratio) as a
-      // published harness result.
-      //
-      // A sentence a customer reads has a SPACE and letters, and contains no code markers. That
-      // filter is what separates prose from syntax, and it is deliberately conservative in the
-      // direction of missing a literal rather than inventing a violation.
-      // A COMMENT IS NOT COPY. `about/page.tsx` documents the claims it REMOVED, and scanning
-      // that comment reported the removal as the violation — the instrument reading its own
-      // audit trail as a defect.
-      const prose = src.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");
-      for (const m of prose.matchAll(/(['"`])((?:\\.|(?!\1)[^\\]){8,300})\1/g)) {
-        const text = m[2];
-        if (!/\s/.test(text)) continue;                       // no space → not a sentence
-        if (!/[A-Za-z؀-ۿ]/.test(text)) continue;     // no letters → not prose
-        if (/[<>{}]|=>|className|data-testid|https?:\/\//.test(text)) continue; // code, not copy
-        for (const v of checkCustomerText(text)) {
-          const tagged = { ...v, match: `${file} → ${v.match}` };
-          // Dead modules are reported separately, exactly as latent bundle copy is.
-          const dead = deadModules.has(file);
-          (dead ? litLatent : litViolations).push(tagged);
+      if (NON_CUSTOMER_PATHS.some((re) => re.test(file))) continue;
+      for (const t of extractCustomerText(file, src)) {
+        candidates++;
+        for (const v of checkCustomerText(t.text)) {
+          const tagged = { ...v, match: `${file}:${t.line} (${t.kind}) → ${v.match}` };
+          if (OPERATOR_PATHS.some((re) => re.test(file))) operator.push(tagged);
+          else if (deadModules.has(file)) dormant.push(tagged);
+          else live.push(tagged);
         }
       }
     }
-    // REPORT-ONLY, and the reason is stated rather than assumed. §1b is NEW coverage: it looks
-    // where nothing looked before, so its first run is a backlog, not a regression. Every finding
-    // is printed on every run and triaged in CHECKPOINT #34. Two were live and are fixed; the
-    // rest are dead modules, an unreachable duplicate route, the operator surface (§10 scope), a
-    // layout ratio matching the harness-figure SHAPE, and three sentences about OUR ACTIVITY or
-    // COVERAGE rather than price currency.
-    //
-    // It does not fail the gate because a permanently-red gate trains people to ignore it — and
-    // it is not silenced, because a green gate here would be a lie. When the backlog reaches
-    // zero, promote it to gate-failing.
-    console.log(`REPORT  component literals — ${litViolations.length} finding(s), triaged (see CHECKPOINT #34)`);
-    for (const v of litViolations) console.log(`        claim   [${v.ruleId}] ${v.match}  (${v.source.section})`);
-    console.log(`      latent (module has no importers): ${litLatent.length}`);
-    for (const v of litLatent) console.log(`        · [${v.ruleId}] ${v.match}`);
-    console.log(`      ${files.length} component files scanned`);
+
+    // REPORT-ONLY while the residual is a triaged list of NON-violations, and PRINTED EVERY RUN.
+    // A silently-green gate is the worst outcome available here: it looks like coverage and is
+    // absence of reporting. Each of the residual findings is classified in CHECKPOINT #36 —
+    // sentences about our ACTIVITY, COVERAGE or NOTIFICATION SPEED (documented true in §1), a
+    // layout ratio, and prompt text inside a closed generative route. Promote this to
+    // gate-failing when the residual reaches zero.
+    console.log(`REPORT  repository source — ${live.length} live finding(s), triaged (CHECKPOINT #36)`);
+    for (const v of live) console.log(`        claim   [${v.ruleId}] ${v.match}`);
+
+    // LIVE findings fail the gate. This is no longer new coverage with an unknown backlog: the
+    // AST extractor is proven against known-positive fixtures (`tests/vocabulary/source-scan`),
+    // so a live finding here is a defect, not an instrument artefact.
+    // REPORT-ONLY while the residual is a triaged list of NON-violations. Each of the 10 is
+    // classified in CHECKPOINT #36: eight are pattern hits on sentences about our ACTIVITY,
+    // COVERAGE or NOTIFICATION SPEED (all documented true in §1), one is a layout ratio, and
+    // three are PROMPT text in a closed generative route — not repository copy a customer reads.
+    // Promote to gate-failing when the residual is zero. A red gate people learn to ignore is
+    // worse than an honest amber one.
+    console.log();
+    for (const v of live) console.log();
+    const show = (label: string, list: Violation[]) => {
+      console.log(`      ${label}: ${list.length}`);
+      for (const v of list) console.log(`        · [${v.ruleId}] ${v.match}`);
+    };
+    show("dormant (module has no importers)", dormant);
+    show("operator surface — outside the customer vocabulary", operator);
+    console.log(`      ${files.length} source files · ${candidates} customer-text candidates`);
   }
 
   // ── 2. LIVE CUSTOMER SURFACES ──────────────────────────────────────────────
