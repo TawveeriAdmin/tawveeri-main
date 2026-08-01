@@ -61,7 +61,7 @@ a retailer feed, or the database produces.
 ## ROLLBACK
 
 ```
-<XHASH>  ADR-165 §1b AST extension   git revert <XHASH>
+ef78eae  ADR-165 §1b AST extension   git revert ef78eae
 ```
 
 Instrument + fixtures + one copy fix. `source-scan.ts` is imported by the scanner only.
