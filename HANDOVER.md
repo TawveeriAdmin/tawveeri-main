@@ -92,7 +92,7 @@ npx tsx scripts/tps-analysis/validator-verify.ts --base https://tawveeri.com
 ## ROLLBACK
 
 ```
-<F73HASH>  ADR-159 F7·3 adversarial gate   git revert <F73HASH>
+fd02cb1  ADR-159 F7·3 adversarial gate   git revert fd02cb1
 ```
 
 Additive. Reverting removes the suite, the two new rules and the lexicon, and returns the
