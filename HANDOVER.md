@@ -48,11 +48,23 @@ node scripts/tps-analysis/shell-verify.js --base https://tawveeri.com
 |---|---|---|
 | **shell-verify** | **23 / 36** | **36 / 36** |
 | `/en` served `<html>` | `lang="ar" dir="rtl"` on all 7 surfaces | `lang="en" dir="ltr"` on all 7 |
-| 404 body (unmatched route) | 9,207 bytes, no header, no CTA, `lang="ar"` on `/en` | header + heading + search CTA, correct locale, both |
+| 404 body (unmatched route) | 9,207 bytes, no header, no CTA, `lang="ar"` on `/en` | 119,088 AR / 98,267 EN bytes — header + heading + search CTA, correct locale, both |
 | unified-search-verify | 54/54 | 54/54 (incl. *disclosure · relation=at-or-before*) |
-| axe (36 renders) · keyboard | 0 · 0 / 31 checks 0 failing | unchanged |
-| ui-journey | 4 failing (`washing machine` relevance) | **byte-identical** — pre-existing, not this change |
+| axe (36 renders) · keyboard | 0 rules · 0 nodes / 31 checks 0 failing 1 accepted | **identical** |
+| ui-journey | 4 failing (`washing machine` relevance) | **identical set** — pre-existing, not this change |
 | unit tests | — | 843 / 843 |
+
+All AFTER figures are from **production**, after the deploy landed (`ed9492a`).
+
+**ONE FALSE READING, CAUGHT — recorded because the next person will see it too.** The first
+post-deploy `ui-journey` run reported a fifth failure that was not in the before-run:
+`ar سماعات PICK … link=DEAD · could not resolve outbound offer`. It did **not** reproduce. Two
+independent checks: a second full run returned the *identical* four-failure set, and the actual
+smart-pick exit was followed by hand —
+`/go/e416a719-…` → `302 https://www.amazon.sa/dp/B0CDMB5ZQW?tag=tawveeri-21&ascsubtag=…`.
+`/go` is a route handler; layouts do not apply to it at all, so this change cannot reach that
+path. Transient, not a regression — but it would have been easy to ship as one, in either
+direction.
 
 **Journey harness — it did NOT move, and that is the honest answer.** AR 10/10 end-to-end,
 cards→real page 80/80; EN 10/10, 79/80 (98.8%). Identical before and after. It measures
@@ -82,10 +94,13 @@ page); four would have been missed. All five now call `navigateToLocale()`
 
 ```
 2f70a92  ADR-155 root-layout restructure   git revert 2f70a92
+ed9492a  rollback hash in this checkpoint  git revert ed9492a   (docs only)
 ```
 
-Single commit; `9982a78` is the pre-session head. **Confirm the range before any range revert** —
-`git log --oneline 9982a78..HEAD` first; an inverted range silently reverts nothing.
+`2f70a92` is the whole change; reverting it restores the previous shell, the script-based
+`lang`/`dir` correction and the bare 404 page. `9982a78` is the pre-session head.
+**Confirm the range before any range revert** — `git log --oneline 9982a78..HEAD` first; an
+inverted range silently reverts nothing.
 
 ## F7 — RESEARCHED AND SCOPED. NOT STARTED.
 
