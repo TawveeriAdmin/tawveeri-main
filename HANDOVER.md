@@ -81,7 +81,7 @@ it returns **200 by founder decision**. Flipping a safety assertion deserves its
 ## ROLLBACK
 
 ```
-cfc657c  Unit C — rules only, no product change   git revert cfc657c
+4d9e34f  Unit C — rules only, no product change   git revert 4d9e34f
 ba0992e  CHECKPOINT #41 docs                      git revert ba0992e
 e0fd005  search import fix   (only WITH ae23976)  git revert e0fd005
 ae23976  Unit B affordance                        git revert ae23976
