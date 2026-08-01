@@ -31,6 +31,28 @@ interface DecidePayloadLike {
   smart_pick?: (RecommendationLike & { chosen_over?: { total_cost_delta?: number | null } | null }) | null;
 }
 
+/**
+ * THE CUSTOMER-VISIBLE REPRESENTATION OF A PRICE — one fact, one number (ADR-168).
+ *
+ * MEASURED 2026-08-01: 7 of 11 rejections on the natural sample were a rounding mismatch. The
+ * prompt rounded (`Math.round(best_price)` → «11 ريال») while the evidence published the raw
+ * observation (`10.994001`). The model repeated what it was shown, the validator required an
+ * exact match against what was declared, and both were right — the same fact simply had two
+ * representations and no single source.
+ *
+ * WHY A SHARED FUNCTION RATHER THAN "round in the publisher too". Rounding in two places is the
+ * defect, not the fix: the next surface to render a price would round independently and the two
+ * would drift again. Every consumer that SHOWS a price and every consumer that DECLARES one now
+ * call this, so they cannot disagree by construction.
+ *
+ * PROVENANCE IS UNAFFECTED. The raw observation stays exactly where it was — in
+ * `price_history`, in the offer payload, in the projection. This governs only what may be
+ * STATED to a customer. We round the presentation; we never round the evidence.
+ */
+export function customerPrice(raw: number): number {
+  return Math.round(raw);
+}
+
 export interface PublishedEvidence {
   figures: EvidenceFigure[];
   retailers: string[];

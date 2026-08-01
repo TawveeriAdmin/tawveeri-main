@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateGeneratedAnswer, recordValidationEvent } from '@/lib/vocabulary';
-import { buildPublishedEvidence } from '@/lib/agent/published-evidence';
+import { buildPublishedEvidence, customerPrice } from '@/lib/agent/published-evidence';
 import { getDeals } from '@/lib/intelligence/getDeals';
 import { getPriceIntelligence } from '@/lib/intelligence/getPriceIntelligence';
 
@@ -141,9 +141,7 @@ function formatProductsForAI(products: any[]): string {
         .slice(0, 3)
         .map(
           (s: any) =>
-            `${s.store_name || s.store}: ${Math.round(
-              s.current_price
-            )} ريال — ${s.product_url}`
+            `${s.store_name || s.store}: ${customerPrice(s.current_price)} ريال — ${s.product_url}`
         )
         .join('\n  ');
 
@@ -152,7 +150,7 @@ function formatProductsForAI(products: any[]): string {
         : '';
 
       return `منتج ${i + 1}: ${p.name_ar || p.name_en}
-  أفضل سعر: ${Math.round(p.best_price)} ريال${
+  أفضل سعر: ${customerPrice(p.best_price)} ريال${
         discount > 0 ? ` (خصم ${discount}%)` : ''
       }
   متوفر في ${p.store_count} متجر
@@ -168,9 +166,9 @@ function formatDealsForAI(deals: Awaited<ReturnType<typeof getDeals>>): string {
   return deals
     .map(
       (d, i) => `عرض ${i + 1}: ${d.nameAr}
-  السعر: ${d.bestPrice} ريال
+  السعر: ${customerPrice(d.bestPrice)} ريال
   المتجر: ${d.bestStore}
-  المتوسط: ${d.averagePrice} ريال
+  المتوسط: ${customerPrice(d.averagePrice)} ريال
   أرخص من المتوسط: ${d.discountPct}٪
   القوة: ${d.strength === 'hot' ? 'عرض قوي 🔥' : 'سعر جيد ✅'}
   السبب: ${d.reason}
@@ -273,7 +271,9 @@ export async function POST(request: NextRequest) {
     };
     /** Publish one observed price. A figure with no value is not published — and so must not be rendered. */
     const notePrice = (value: unknown, storeCount?: unknown, stores?: string[] | null) => {
-      const price = typeof value === 'number' && Number.isFinite(value) ? value : null;
+      // Declare the CUSTOMER-VISIBLE value — the same number the prompt shows. Publishing the
+      // raw observation while showing a rounded one is the mismatch that suppressed 7 of 11.
+      const price = typeof value === 'number' && Number.isFinite(value) ? customerPrice(value) : null;
       if (price === null && storeCount === undefined) return;
       evidenceItems.push({
         unit_price: price,

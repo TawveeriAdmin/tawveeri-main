@@ -91,3 +91,31 @@ describe('ONE CONTRACT, NOT A FORK', () => {
     expect(v.publish).toBe(false);
   });
 });
+
+describe('ONE FACT, ONE CUSTOMER-VISIBLE NUMBER (ADR-168)', () => {
+  const { customerPrice, buildPublishedEvidence: build } = require('@/lib/agent/published-evidence');
+
+  it('reproduces the rounding mismatch that suppressed 7 of 11', () => {
+    // Prompt showed Math.round(10.994001) = 11; evidence declared 10.994001.
+    const raw = build({ recommendations: [{ unit_price: 10.994001 }], smart_pick: null });
+    expect(validateGeneratedAnswer('أفضل سعر 11 ريال.', raw).publish).toBe(false);
+  });
+
+  it('one shared helper makes prompt and evidence agree', () => {
+    const fixed = build({ recommendations: [{ unit_price: customerPrice(10.994001) }], smart_pick: null });
+    expect(validateGeneratedAnswer('أفضل سعر 11 ريال.', fixed).publish).toBe(true);
+  });
+
+  it('a price never observed is STILL rejected — rounding did not widen the rule', () => {
+    const fixed = build({ recommendations: [{ unit_price: customerPrice(10.994001) }], smart_pick: null });
+    for (const bogus of ['أفضل سعر 12 ريال.', 'أفضل سعر 999 ريال.', 'أفضل سعر 10 ريال.']) {
+      expect(`${bogus} → ${validateGeneratedAnswer(bogus, fixed).publish}`).toBe(`${bogus} → false`);
+    }
+  });
+
+  it('customerPrice is presentation only — it never mutates the observation', () => {
+    const observed = 10.994001;
+    expect(customerPrice(observed)).toBe(11);
+    expect(observed).toBe(10.994001); // provenance untouched
+  });
+});
