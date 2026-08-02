@@ -5047,3 +5047,53 @@ identity at all** — an order of magnitude larger than the cross-tier set.
 
 **No production write was made by this unit.** Baseline unchanged and still frozen at
 2026-08-02T10:38:00Z: projection 5,193 · comparable 778 · single-store 4,204.
+
+---
+
+## CHECKPOINT #51 — ADR-176 RECORDED; THE 22,835 MEASURED AND AIMED
+
+### ADR-176 is now in the Decision Register (commit ff73a2c)
+Protected Trust Policy: **canonical merges require a LITERAL model-number match in the raw
+name of both sides.** Never inferred, never probabilistic. Founder reasoning: a shopper
+comparing `QN90D-55` against `QN90D-65` buys the wrong size believing they found a better
+price — no comparison delays trust, a wrong one destroys it. If it makes the cross-tier
+gain far smaller, that smaller number is the correct one.
+**Governance debt recorded in the same ADR:** ADRs 163–175 exist only in HANDOVER, never
+in `docs/DECISIONS.md`. Backfill from checkpoints #38–#50.
+
+### The 22,835 — NOT an unparseable mass. Mostly DETECTED, KEYED, and rejected on confidence.
+`tps_identity_staging` holds only two statuses: **valid 282,814** (4,047 keys) and
+**low_confidence_candidate 69,783** (1,604 keys). The unidentified Saudi listings are
+dominated by the second — i.e. the plugins DID detect the category and DID build an
+identity key, and the confidence score then rejected it.
+
+Low-confidence volume by category (observations / distinct keys / stores):
+
+| category | low-conf obs | distinct keys | stores |
+|---|---|---|---|
+| **air_conditioner** | **35,889** | **688** | 10 |
+| smartwatch | 10,885 | 93 | 11 |
+| **tv** | 7,211 | **279** | **18** |
+| oven | 3,519 | 18 | 9 |
+| monitor | 3,066 | 177 | 13 |
+| vacuum | 2,643 | 56 | 12 |
+| coffee_maker | 2,439 | 20 | 7 |
+| air_fryer | 1,722 | 17 | 10 |
+
+**This is additive and carries no merge risk** — every one of these is a NEW identity, not
+a merge of two existing canonicals, so ADR-176 does not gate it.
+
+### Where to aim, and the trap to avoid
+- **air_conditioner** is the largest by volume (688 keys, 10 stores).
+- **tv** has the widest retailer spread (279 keys across **18** stores) and this week's
+  verified rule says spread, not volume, is what converts to comparisons.
+- **The trap:** the fix here is a CONFIDENCE THRESHOLD or scorer change, and lowering a
+  threshold to admit more identities is exactly the "relax a gate as a growth strategy"
+  move the founder prohibited. The unit must first establish WHY these score low —
+  a missing attribute the text actually contains (a fix) versus genuinely absent
+  evidence (correctly rejected). Sample before touching any threshold.
+
+### State
+No production write since the frozen baseline. Baseline still
+**2026-08-02T10:38:00Z: projection 5,193 · comparable 778 · single-store 4,204**.
+Extra continues draining via the scheduler.
