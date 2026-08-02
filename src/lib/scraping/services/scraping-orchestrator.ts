@@ -437,6 +437,22 @@ export class ScrapingOrchestrator {
                 scrapedProduct.availability
               );
 
+              // A REFRESHED PRICE MUST ALSO BECOME AN OBSERVATION.
+              //
+              // `ingestBatch` was called only in the DISCOVERY path, so the price loop
+              // refreshed the storefront `product_stores` row and wrote NOTHING the
+              // knowledge layer could see. Canonicals, the projection, and therefore every
+              // one of the 801 comparisons are fed exclusively by raw_observations — so
+              // the loop whose entire purpose is price freshness was invisible to the
+              // surface that shows prices. Measured 2026-08-02: 6 of 801 comparable
+              // products inside the 26h SLO, median 173.6h, while the storefront rows for
+              // the same retailers were being refreshed.
+              //
+              // Bounded by construction: the price loop is capped at max_products per
+              // store per cycle, so this cannot outrun normalization.
+              await this.ingestion
+                .ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null)
+                .catch((e) => console.error('[price] observation ingest failed:', e instanceof Error ? e.message : e));
               await this.stampChecked(productStoreId, true);
               productsUpdated++;
               if (oldPrice !== newPrice) priceChanges++;
