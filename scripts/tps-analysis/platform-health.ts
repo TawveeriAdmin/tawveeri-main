@@ -25,6 +25,7 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
+import { isDisplayableRetailer, isApprovedStoreId } from "../../src/lib/retailers/approved-retailers";
 
 type Level = "OK" | "WARN" | "FAIL";
 interface Check {
@@ -59,9 +60,23 @@ const hours = (a: Date | null, b: Date | null): number | null =>
            count(o.id)::int n
     from stores s left join raw_observations o on o.store_id = s.id
     group by 1,2 order by 1`);
+  // A RETIRED RETAILER GOING STALE IS THE INTENDED OUTCOME, NOT A FAILURE.
+  //
+  // This loop iterates every row in `stores`, so after the 2026-08-02 retirements it
+  // reported 14 FAILs — noon, swsg, sharafdg and eleven acquisition probes that were never
+  // approved — while every ACTIVE retailer was inside the SLO. Fourteen expected failures
+  // is exactly where a real one hides, which is the same lesson as the 60 stuck runs: a
+  // check that cries wolf is a check nobody reads. Only retailers a customer can actually
+  // be shown are held to the freshness SLO; the rest are reported as OK with their state
+  // named, so they stay visible without being alarms.
   for (const r of ing.rows) {
     const last = r.last_obs ? new Date(r.last_obs) : null;
     const age = hours(new Date(), last);
+    const shown = isDisplayableRetailer(r.slug) && isApprovedStoreId(Number(r.id));
+    if (!shown) {
+      add("ingestion", r.slug, "OK", age === null ? "retired/not shown — never ingested" : `retired/not shown — ${age.toFixed(1)}h`, `${r.n} observations`);
+      continue;
+    }
     if (!r.n) { add("ingestion", r.slug, "WARN", "never ingested", "0 observations"); continue; }
     const level: Level = age === null ? "FAIL" : age > 48 ? "FAIL" : age > 26 ? "WARN" : "OK";
     add("ingestion", r.slug, level, age === null ? "no timestamp" : `${age.toFixed(1)}h since last observation`, `${r.n} observations`);

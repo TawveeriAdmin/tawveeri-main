@@ -5352,3 +5352,52 @@ once put LuLu on 3 customer cards while it held zero comparison offers.
 7648b15  cap + freshness doc           git revert 7648b15
 6c2dc62  price updates → observations  git revert 6c2dc62
 ```
+
+---
+
+## CHECKPOINT #56 — RETAILER DECISIONS CLOSED · HEALTH 0 FAIL
+
+**Pushed. Tests 1,148/1,148. `tps:health` = 0 FAIL · 2 WARN · 35 OK** (was 18 FAIL).
+
+### THE THREE FIGURES — FINAL, WITH DEFINITIONS (never merge these)
+
+| Figure | Value | Definition |
+|---|---:|---|
+| storefront offer rows | **~9,300** | `product_stores` rows — the retailers-page count (ADR-172). NOT products |
+| customer-visible products | **5,139** | `tps_product_projection`, each backed by an ACTIVE canonical |
+| **comparable products** | **807** | projection rows with `store_count >= 2`, counting ALL stores |
+| **comparable AND displayable** | **419** | the same, restricted to the 8 retailers a customer can actually be shown |
+
+> **419 is the number to announce.** 807 counts retired and never-approved stores; a
+> comparison a customer can SEE must be built from retailers we still show.
+
+### ALL 8 ACTIVE RETAILERS ARE INSIDE THE SLO
+shaker 0.2h · alnakheelk 0.2h · najm 0.2h · extra 0.6h · samsung_ksa 0.6h · almanea 0.8h ·
+jarir 3.8h · amazon 4.7h. **Zero active retailers stale.**
+
+### RETIRED — inactive AND hidden (standing rule)
+noon · swsg · sharafdg · lulu · blackbox. All out of `APPROVED_STORE_IDS` and into
+`COMPARISON_DISPLAY_EXCLUDED`. noon/sharafdg/swsg are refused at the retailer from our
+production egress (403 / timeout) and serve a Saudi IP fine; **no proxy or paid egress was
+used.** swsg was activated by decision and retired the same day on evidence, under the
+Founder's own rule — no round trip.
+
+### A FOURTH COPY OF THE SAME SWALLOW
+`sharafdg-scraper`, `noon-scraper`, `generic-html-store-scraper` AND
+`BaseScraper.discoverByListingConfig` all turned a fetch failure into an empty array, so an
+unreachable store was recorded `success` with 0 discovered. That is how swsg looked
+activated while ingesting nothing. All four now fail loudly when they produce nothing.
+
+### THE HEALTH CHECK NO LONGER CRIES WOLF
+It held every row in `stores` to the freshness SLO, so the retirements produced 14 expected
+FAILs — and 14 expected failures is exactly where a real one hides (the 60-stuck-runs
+lesson). Only displayable retailers are now held to the SLO; the rest report OK with their
+state named.
+
+### ROLLBACK
+```
+<this>   health scope + swsg retire   git revert <sha>
+b60f18a  listing-config swallow       git revert b60f18a
+9972cb9  generic-html swallow         git revert 9972cb9
+2d9bfb3  retailer decisions           git revert 2d9bfb3
+```
