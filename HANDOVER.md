@@ -4794,3 +4794,71 @@ normalization and is not advised.
 
 ### Still deferred, unchanged
 1,166 duplicate `source_record_id`s · 2,929 Arabic `store_id` rows. Own boundary each.
+
+---
+
+## CHECKPOINT #48 — THRESHOLD TESTED: CLASSIFICATION RETIRED AS THE CONSTRAINT
+
+**Result: +1 net-new comparable. The pre-set threshold said <=5 retires the lever.
+It is retired.** No softening: this is the smallest result of the four units.
+
+### Measured against the frozen baseline
+
+| Metric | Before | After | Δ |
+|---|---|---|---|
+| active canonicals | 7,310 | 7,311 | **+1** |
+| customer-visible products | 5,189 | 5,190 | **+1** |
+| **price-comparable products** | **776** | **777** | **+1** |
+
+| store_count | before | after |
+|---|---|---|
+| 1 (single-store) | 4,202 | **4,202** |
+| 2 | 591 | **592** |
+| 3 | 136 | 136 |
+| 4 / 5 | 42 / 7 | 42 / 7 |
+
+**`store_count=1` did not move.** Almost nothing gained a second retailer.
+
+### Per store (as required)
+- **Almanea (5): swept to `behind=0` — COMPLETE. Contributed ~0.** This is the store with
+  the richest Arabic laptop titles, i.e. exactly what ADR-175 targets. It is the cleanest
+  possible test of the classification hypothesis and it returned nothing.
+- **Extra (4): ~23,250 of 54,378 replayed (~43%), 31,128 remaining.** Contributed ~+1.
+- canonicals gaining a SECOND displayable retailer: **+1** · a third or later: **0**.
+- Caveat kept honest: Extra is partial. But Almanea was complete, and a lever that
+  produces ~0 on a complete store is not rescued by finishing a partial one.
+
+### §4 — WHAT THE MEASUREMENT POINTS AT INSTEAD
+**It is not classification. It is overlap.**
+4,202 of 5,190 customer-visible products (**81%**) are carried by exactly ONE retailer,
+and that figure was unchanged by this work. Classification is producing canonicals fine —
+what it produces are products only one merchant sells. Detection and identity both work;
+the detected products simply do not co-occur across retailers.
+
+**This is a comparison problem, not a classification problem** — which is ADR-133's
+merchant-data-access ceiling, now reached from a fourth independent direction.
+
+### Four hypotheses retired by measurement, each narrowing the search
+1. **Identity resolution is the largest loss** — no: 98.3% of normalized observations
+   already carry a canonical.
+2. **Carried-but-unobserved storefront products** — no: 8 products, not 4,526 (the figure
+   was a NULL-poisoned anti-join).
+3. **Stores missing from the sweep** — real but small: +70 products, +8 comparables.
+4. **Classification coverage** — no: +1 comparable, single-store count unchanged.
+
+**All four converge on the same constraint: we do not have enough retailers selling the
+SAME products.** More parsing, more stores in the sweep, and more identity work each move
+inventory, not comparison.
+
+### What that implies for the next unit (scoped, NOT started)
+The lever is merchant overlap on products we already carry — i.e. acquiring data access to
+retailers whose catalogues INTERSECT ours, not retailers who add new single-store SKUs.
+`tps:feed-probe` already scores exactly this (SAR-gated overlap). Any candidate merchant
+should be judged on **predicted overlap with our existing 4,202 single-store products**,
+before any engineering.
+
+### State / rollback
+Extra's cursor remains mid-replay; the hourly scheduler drains it automatically now that
+the pooler fix (e380131) has landed. No rollback needed — writes are deterministic upserts
+(0 duplicates proven in #45). Still deferred: 1,166 duplicate `source_record_id`s, 2,929
+Arabic `store_id` rows.
