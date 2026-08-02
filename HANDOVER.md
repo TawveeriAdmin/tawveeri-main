@@ -4962,3 +4962,50 @@ Acceptance criteria for it, set in advance:
 Extra's cursor is draining via the scheduler as intended. 1,166 duplicate
 `source_record_id`s and 2,929 Arabic `store_id` rows remain their own boundaries. No
 schema changes. Nothing became customer-visible, so the displayability gate was not reached.
+
+---
+
+## CHECKPOINT #50 — CROSS-TIER UNIT: THE TOOL ALREADY EXISTED (ADR-060)
+
+**Do not build a cross-tier matcher. One is already written and it is safer than what I
+was about to write.**
+
+`scripts/tps-core/write-alias-canonicals.ts` (`npm run tps:alias-foldin`, ADR-060) exists
+for precisely the defect diagnosed in #49 — its own header states it materializes
+"identity classes that exist only because the MODEL: and spec key spaces were bridged by
+co-occurrence evidence."
+
+Its documented safety properties independently match every acceptance criterion I had set
+in #49 before finding it:
+
+| my criterion (#49) | ADR-060 property |
+|---|---|
+| zero existing comparison broken | **clean-create only** — a class is written only when NO member observation is already attached to another canonical; overlapping classes are DEFERRED, never force-merged |
+| no false merges | needs **>=2 DISTINCT stores** and a bridgeable spec key |
+| bounded / reversible | every row stamped `tps_version='alias-reconciliation-v1'` |
+| safe to re-run | deterministic ids; a re-run finds members attached and defers them |
+| evidence intact | `raw_observations` only ever READ |
+
+Only **1** canonical currently carries that stamp, so this mechanism has essentially never
+been run against the current catalogue — while #49 measured ~536 products waiting for
+exactly it.
+
+**Also note:** this script has ONE raw `process.env.SUPABASE_DB_URL` pg connection and so
+carries the same IPv6 exposure fixed in `e380131` for the normalizer. It has not failed
+yet, but route it through `toPoolerDbUrl` before relying on it in automation.
+
+### State at handoff
+`tps:alias-foldin --dry` was launched and is STILL RUNNING (>10 min, no output yet — it
+builds its classes before printing). **It writes nothing.** Nothing was committed to
+production by this unit. Baseline remains frozen at 2026-08-02T10:38:00Z:
+projection 5,193 · **comparable 778** · single-store 4,204 · canonicals 7,314.
+
+### To complete (no new decisions)
+1. Read the `--dry` output: classes that would be created, and how many are DEFERRED for
+   overlap (deferrals are the safety valve working, not a failure).
+2. Run live, then `npm run tps:refresh` — never concurrently with a sweep (ADR-099).
+3. Re-measure against the frozen baseline above; the number that matters is
+   **comparable 778 → ?**, not canonicals.
+4. If the yield is far below the ~536 estimate, the gap is the clean-create constraint
+   (products whose observations are already attached), and THAT is the careful-merge
+   boundary ADR-060 explicitly defers — a separate unit, not a patch to this one.
