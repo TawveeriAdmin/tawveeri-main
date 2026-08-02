@@ -5529,3 +5529,44 @@ exclusive offer.
 4bf69de  C1000094L attribution     git revert 4bf69de
 ```
 Coupon row: `delete from coupons where code = 'DNC160';`
+
+---
+
+## CHECKPOINT #59 — THE SCORECARD WAS MEASURING THE PRE-FIX WORLD
+
+**Pushed. Tests 1,148/1,148. `tps:health` 0 FAIL. Launch readiness 73 → 79.**
+
+### THREE SCORECARD ROWS WERE LYING, TWO OF THEM HARDCODED
+| Row | Was | Now | Why |
+|---|---|---|---|
+| Data Freshness | 48 (`11/23 stores`) | **100** (`10/10 displayable`) | counted retired retailers and never-approved probes, whose staleness is the INTENDED outcome |
+| Crawler Stability | 48 + `"2 known-broken scrapers (noon/swsg)"` | **96** (`430/446 runs in 48h`) | reused the freshness ratio — not a crawler metric — plus a hardcoded string about two scrapers repaired hours earlier |
+| Affiliate Readiness | 55 + `"0 ACTIVE programs"` | **80** | hardcoded; amazon + noon are both verified against the PROGRAM (ADR-181) |
+| Canonical Accuracy | 79 (`1 duplicate card`) | **94** (`0`) | SQL collapses every NULL into ONE group, so 2,338 canonicals with no TPS identity read as a single "duplicate" — a phantom P1 that `tps:health` correctly reported as none |
+
+**DECOMPOSED, per the standing rule — most of 73 → 79 is INSTRUMENT CORRECTION, not new
+progress.** Data Freshness is a denominator fix (the work happened earlier that day, the
+instrument was hiding it). Crawler Stability is a real measurement replacing a proxy.
+Affiliate Readiness is genuine. **Two instruments disagreeing on an invariant is itself the
+defect** — `tps:health` and `launch-audit` gave opposite duplicate verdicts for weeks.
+
+### IMAGE COVERAGE — the 86% is not what it looks like
+Decomposed: **comparable products are 870/883 imaged = 98.5%.** The gap sits almost entirely
+in single-store products, which are not the comparison surface. And the pipeline is healthy
+for NEW data — canonicals created in the last 12h: **noon 131/131 imaged, swsg 347/377**.
+The remaining gap is historical backlog, not a broken path. Ran the ADR-101 backfill
+(fill-only, idempotent): only **19** canonicals were fillable, because the imageless ones
+have no linked observation carrying an image. Applied.
+
+### STATE
+projection **5,398** products · comparable (all stores) **883** · **comparable AND
+displayable 705** ← the announceable number, defined in LAUNCH_VOCABULARY §10.
+Remaining real gaps: **P0 Comparison Coverage** (883/5,398 multi-store), P1 Category
+Coverage (21/27), P1 Image Coverage (single-store backlog).
+
+### ROLLBACK
+```
+745c7da  phantom duplicate fix     git revert 745c7da
+f4d5210  scorecard scoping         git revert f4d5210
+```
+Image backfill is fill-only and additive; no revert needed (it never overwrote a value).
