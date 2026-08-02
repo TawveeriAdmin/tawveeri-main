@@ -107,6 +107,10 @@ export const APPROVED_SLUGS: ReadonlySet<string> = new Set(APPROVED_RETAILERS.ma
 export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   1, // jarir
   2, // amazon
+  3,  // noon — RECOVERED 2026-08-02 via ADR-180. Its `/_svc/` API is disallowed by
+      // noon.com/robots.txt AND blocked from our egress; its listing + product pages are
+      // permitted, server-rendered and publish JSON-LD. 24 products verified FROM
+      // PRODUCTION. The route was the problem, not the retailer.
   4, // extra
   5, // almanea
   8,  // swsg (الشتاء والصيف) — RECOVERED 2026-08-02 via ADR-179. Its HTML storefront 403s
@@ -218,10 +222,12 @@ export const COMPARISON_DISPLAY_EXCLUDED: ReadonlySet<string> = new Set([
   // AND hidden. Both are also out of APPROVED_STORE_IDS, so this is belt-and-braces: the
   // ingestion gate and the display gate answer different questions and only one of them
   // knowing is how LuLu once reached 3 customer cards while holding zero comparison offers.
-  'noon',      // refused at the retailer from our egress; every price we hold only ages
   'blackbox',  // bot-walled, zero observations ever ingested
-  'swsg',      // HTTP 403 to our egress (serves a Saudi IP fine) — activated then retired
-               // the same day on evidence, under the standing rule rather than by asking
+  // noon and swsg were BOTH here and are both gone (ADR-179/180). Each was retired on a
+  // single sourcing mode and recovered on another: swsg via Magento's public GraphQL,
+  // noon via its robots-PERMITTED listing+JSON-LD pages after we stopped calling the
+  // `/_svc/` endpoint its own robots.txt disallows. "Cannot be ingested" was never true of
+  // either retailer — it was true of the one route each happened to be configured with.
 ]);
 
 /** True iff this retailer may be shown to a customer as a source of a price/comparison. */

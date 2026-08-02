@@ -247,7 +247,7 @@ const _feedSet = new Set(INGEST_FEED_STORES);
 // block. lulu was ingesting fine and was dropped by decision, not by failure.
 // All three are also removed from the DISPLAY gate — a retailer we cannot refresh must not
 // be shown, only get older. See src/lib/retailers/approved-retailers.ts.
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'extra,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'extra,samsung_ksa,noon').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(20 * 60 * 1000), 10);   // 20m after boot (let the app + PostgREST settle before adding scraper load — 2026-07-27 incident)
