@@ -18,6 +18,7 @@
 // this product.
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
+import { normalizeArabic } from "../../tps-core/text";
 import { extractManufacturerModel, extractManufacturerModelFromName, extractSizePrefixedModel } from "../../../src/lib/identity/store-identifiers";
 
 /**
@@ -48,13 +49,19 @@ function extractSize(text: string): number | null {
 }
 function extractResolution(text: string): string | null {
   const x = text.toLowerCase();
-  if (/\b8k\b|8\s*كي/.test(x)) return "8k";
-  // UHD in Arabic ('يو أتش دي', 'فائق الوضوح', 'فائق عالي الوضوح') is 4K. Ordered
-  // before the plain-HD branch so 'يو أتش دي' can never fall through to `hd`.
-  if (/\b4k\b|uhd|ultra\s*hd|4\s*كي|يو\s*أتش\s*دي|فائق(?:ة)?\s*(?:عالي\s*)?الوضوح|فور\s*كي/.test(x)) return "4k";
+  const ar = normalizeArabic(text);   // folded once (ADR-072), so patterns use one spelling
+  if (/\b8k\b/.test(x) || /8\s*كي/.test(ar)) return "8k";
+  // UHD in Arabic ('يو اتش دي', 'فائق الوضوح') is 4K. Ordered before the HD branch so it
+  // can never fall through.
+  if (/\b4k\b|uhd|ultra\s*hd/.test(x) || /4\s*كي|يو\s*اتش\s*دي|فائق(?:ه)?\s*(?:عالي\s*)?الوضوح|فور\s*كي/.test(ar)) return "4k";
   // '2كي' is Extra's label for FHD — its own titles read "43 inch, 2K FHD".
-  if (/full\s*hd|\bfhd\b|1080p?|اف\s*اتش\s*دي|2\s*كي|كامل(?:ة)?\s*الوضوح/.test(x)) return "fhd";
-  if (/\bhd\b|720p?|اتش\s*دي/.test(x)) return "hd";
+  if (/full\s*hd|\bfhd\b|1080p?/.test(x) || /اف\s*اتش\s*دي|2\s*كي|كامل(?:ه)?\s*الوضوح/.test(ar)) return "fhd";
+  // NO Arabic bare-HD rule. `اتش دي` is a PREFIX of the Arabic spellings of HDR
+  // (`اتش دي ار`), UHD (`يو اتش دي`) and FHD (`اف اتش دي`), and it silently turned
+  // Extra's 75" 4K QLED — whose Arabic title says HDR — into `hd`. Caught in the
+  // re-stage dry run before a single row was written. The higher branches already
+  // read every Arabic resolution a merchant actually states.
+  if (/\bhd\b|720p?/.test(x)) return "hd";
   return null;
 }
 // Panel is an identity axis (OLED ≠ QLED ≠ LED). Order: most specific first.
@@ -62,21 +69,22 @@ function extractResolution(text: string): string | null {
 // treating them as three was a silent precision defect.
 function extractPanel(text: string): string | null {
   const x = text.toLowerCase();
-  if (/neo[\s-]*qled|نيو\s*كيو\s*ليد/.test(x)) return "neo_qled";
+  const ar = normalizeArabic(text);
+  if (/neo[\s-]*qled/.test(x) || /نيو\s*كيو\s*ليد/.test(ar)) return "neo_qled";
   if (/qd[\s-]*oled/.test(x)) return "oled";
-  if (/\boled\b|أو\s*أل\s*إي\s*دي|او\s*ليد|أوليد/.test(x)) return "oled";
+  if (/\boled\b/.test(x) || /او\s*ال\s*اي\s*دي|او\s*ليد|اوليد/.test(ar)) return "oled";
   if (/\bqned\b/.test(x)) return "qned";
-  if (/nano[\s-]*cell|nanocell|نانو\s*سيل/.test(x)) return "nanocell";
-  if (/(?:qd[\s-]*)?mini[\s-]*led|ميني\s*ليد/.test(x)) return "mini_led";
+  if (/nano[\s-]*cell|nanocell/.test(x) || /نانو\s*سيل/.test(ar)) return "nanocell";
+  if (/(?:qd[\s-]*)?mini[\s-]*led/.test(x) || /ميني\s*ليد/.test(ar)) return "mini_led";
   if (/\buled\b/.test(x)) return "uled";
-  if (/\bqled\b|كيو\s*أل\s*أي\s*دي|كيو\s*ليد/.test(x)) return "qled";
-  if (/crystal|كريستال/.test(x)) return "crystal";
+  if (/\bqled\b/.test(x) || /كيو\s*ال\s*اي\s*دي|كيو\s*ليد/.test(ar)) return "qled";
+  if (/crystal/.test(x) || /كريستال/.test(ar)) return "crystal";
   // LCD is recorded as itself, never folded into `led`. A retail "LED TV" IS an LCD
   // with an LED backlight, so folding them would be defensible — and it would also
   // merge two listings on a synonym we inferred rather than read. Unknown beats
   // incorrect; a distinct value corroborates LCD with LCD and merges nothing else.
   if (/\blcd\b/.test(x)) return "lcd";
-  if (/\bled\b|ال\s*إي\s*دي|\bليد\b/.test(x)) return "led";
+  if (/\bled\b/.test(x) || /(?:^|\s)ال\s*اي\s*دي|(?:^|\s)ليد(?:\s|$)/.test(ar)) return "led";
   return null;
 }
 /**
@@ -101,7 +109,10 @@ function extractRefresh(text: string): number | null {
   // merchant separates claims with commas, so `60 Hz, game mode 120 Hz` states a
   // 60 Hz panel and a 120 Hz mode, while `60Hz MEMC` qualifies the 60 itself.
   const found = new Set<number>();
-  for (const phrase of text.split(/[,،|()\[\]–—]+/)) {
+  for (const raw of text.split(/[,،|()\[\]–—]+/)) {
+    // Split on the RAW text (normalizeArabic turns separators into spaces, which would
+    // merge every phrase into one), then fold the phrase for the Arabic mode words.
+    const phrase = `${raw} ${normalizeArabic(raw)}`;
     if (REFRESH_MODE_WORDS.test(phrase)) continue;
     // EVERY figure in the phrase, not just the first — `60Hz 144Hz` with no separator
     // is still two claims, and taking the first is the word-order guess being removed.

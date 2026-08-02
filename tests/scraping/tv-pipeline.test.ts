@@ -185,3 +185,26 @@ describe('TV refresh rate when a title states several', () => {
     expect(normalize('', 'Hisense 65" 4K QLED 144 Hz', 'Hisense').payload.refresh_rate).toBe(144);
   });
 });
+
+/**
+ * Arabic HD/HDR/UHD share a prefix. Caught in the re-stage dry run: Extra's 75" 4K
+ * QLED, whose Arabic title says HDR, was being read as `hd`.
+ */
+describe('TV Arabic resolution vocabulary (the HDR prefix trap)', () => {
+  it('does not read Arabic HDR as HD', () => {
+    const n = normalize('تلفزيون تي سي ال 75 بوصة اتش دي ار ذكي', '', 'TCL');
+    expect(n.payload.resolution).toBeNull();
+  });
+  it("reads Extra's declared 4K field through the folded Arabic", () => {
+    const n = normalize('', 'TCL, 75 Inch, QLED, AIPQ Pro, Smart TV', 'TCL', {
+      featureArHdType: '4كي فائق الوضوح', featureArPanelType: 'كيو أل أي دي', featureArMotionFlow: '60هرتز',
+    });
+    expect(n.payload.resolution).toBe('4k');
+    expect(n.payload.panel).toBe('qled');
+    expect(n.payload.refresh_rate).toBe(60);
+  });
+  it('reads Arabic UHD and FHD without falling through to hd', () => {
+    expect(normalize('شاشة 65 بوصة يو أتش دي', '', 'LG').payload.resolution).toBe('4k');
+    expect(normalize('شاشة 43 بوصة اف اتش دي', '', 'LG').payload.resolution).toBe('fhd');
+  });
+});
