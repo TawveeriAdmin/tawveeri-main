@@ -49,6 +49,10 @@ export class GenericHtmlStoreScraper extends BaseScraper {
     if (categoryUrls.length === 0) return products;
 
     const pagination = this.config.discovery_pagination;
+    /** Same defect as sharafdg/noon: a fetch failure was logged and discarded, so a store
+     *  that could not be reached at all returned [] and the run was recorded `success` with
+     *  0 discovered. This base class backs several stores, so the swallow was multiplied. */
+    let lastError: unknown = null;
 
     try {
       for (const baseUrl of categoryUrls) {
@@ -69,6 +73,7 @@ export class GenericHtmlStoreScraper extends BaseScraper {
             );
             await this.delay();
           } catch (error) {
+            lastError = error;
             console.error(
               `[${this.config.store_slug}] Error scraping discovery page ${page} of ${baseUrl}:`,
               error,
@@ -78,6 +83,13 @@ export class GenericHtmlStoreScraper extends BaseScraper {
       }
     } finally {
       await this.cleanup();
+    }
+
+    // Errors that produced NOTHING are a failure; errors after partial collection keep what
+    // was collected. A run must never report success for a store it could not reach.
+    if (!products.length && lastError) {
+      const msg = lastError instanceof Error ? lastError.message : String(lastError);
+      throw new Error(`${this.config.store_slug} discovery produced nothing for ${category}: ${msg}`);
     }
 
     return products;
