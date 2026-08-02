@@ -4449,3 +4449,73 @@ served surfaces. RESEARCH PLAN produced 2026-07-28; NO schema change made.
 **تشغيل `platform-health.ts` (أو `state-snapshot.ts`) قراءةً-فقط على الإنتاج لحسم أي طبقة بيانات حيّة ومدى تزامن الطبقات ونضارة المجدول** — قبل أي عمل جديد على الاتساع (#19).
 
 **لماذا هي التالية:** كل ما يلي (اتساع المقارنة، جاهزية الإطلاق، صحة أرقام الذاكرة) مبنيّ على افتراض غير محقّق حول أي طبقة تخدم العميل وهل السلاسل المشتقّة محدّثة. حسم هذا الغموض بدليل إنتاجي **يقرأ ولا يكتب** هو الأساس الذي بدونه أي رقم لاحق قد يكون وهمًا — وهو منسجم تمامًا مع منهجية "قاعدة الإنتاج مصدر الحقيقة الوحيد".
+
+---
+
+## CHECKPOINT #43 — CATALOGUE TRUTH AUDIT (2026-08-01/02)
+
+**The question as posed was invalid.** "12,000 listings vs 507 products" compared a
+count of store-product RELATIONS against a BROKEN PAGE METRIC. 507 was never a
+population. Denominators, one snapshot, one cohort:
+
+| Figure | Entity | Value |
+|---|---|---|
+| `product_stores` | store×product relations, current | 13,201 |
+| distinct products carried | products, current | 9,378 |
+| `raw_observations` | observation events, cumulative | 831,694 |
+| distinct URLs observed | listings, cumulative | 14,245 |
+| `normalized_product_observations` | normalized events | 127,167 |
+| …carrying a canonical | — | 125,034 (98.3%) |
+| `canonical_products` active | canonicals | 7,191 |
+| `tps_product_projection` | customer-visible canonicals | 5,070 |
+| …with 2+ stores (comparable) | comparable canonicals | 763 |
+
+**Two defects, both root-caused and both fixed as separate reversible units:**
+- ADR-172 (`fd6a663` + `4f68477`) — the retailers page selected `product_stores`
+  with no `.range()` and no `.order()`. PostgREST capped it at `db-max-rows`=1000,
+  so the page saw **7.6%** of the table, understated by ~18x, **non-deterministically**
+  (Extra read 85 then 57 on consecutive loads), and **hid two entire retailers**.
+  Now paginated in parallel: **9 stores / 9,388 products**, 3–5s in both locales.
+- ADR-173 (`13b66ac`) — the «موثوق»/Trusted tile. `is_premium: false` is hardcoded
+  in the store mapper; no measured definition of "trusted" existed. It could only
+  ever render 0. Removed, per the brief's instruction not to invent a replacement.
+
+**Hypotheses REJECTED by measurement** (all four, including two of my own):
+1. "Identity resolution is the largest loss" — **no.** 98.3% of normalized
+   observations already carry a canonical.
+2. "header 507 vs per-store sum 534 is a defect" — **no.** They match exactly
+   (505 == 505, stable across 3 runs). The 534 was read from a truncated page.
+3. "There is hidden comparison depth to release" — **no.** All 730 canonicals with
+   2+ stores are already in the projection; 729 already flagged `has_comparison`.
+4. "The 2,337 active canonicals missing from the projection are recoverable volume"
+   — **no.** They have **zero** normalized observations. Correctly excluded.
+
+**WHERE THE PRODUCTS ACTUALLY ARE — storefront carried vs known to TPS:**
+
+| Store | Storefront | In TPS | Gap | Limiter |
+|---|---|---|---|---|
+| Noon | 3,750 | 1,254 | **2,496** | never observed (2,590 obs < 3,750 products) |
+| Amazon SA | 1,834 | 477 | **1,357** | never observed (1,101 obs) |
+| Jarir | 994 | 321 | **673** | observed but unidentified (23,162 obs, 321 canon) |
+| Almanea | 1,298 | 1,146 | 152 | near-complete |
+| Extra | 871 | 1,652 | −781 | TPS knows more than the storefront carries |
+
+**The two-track architecture is the finding.** The storefront layer carries 9,378
+products the knowledge layer has never seen. This is NOT merchant-data-access-bound
+(ADR-133's ceiling) — the products are **already in our own database**. It is a
+bridge that was never built between two tracks that grew separately.
+
+**`store_id` type defect (small, real):** `normalized_product_observations.store_id`
+holds Arabic store NAMES in 2,929 rows (المنيع 1,681, اكسترا 1,080, جرير 168)
+alongside integer ids. Those rows cannot join to `stores.id`, so they can never
+corroborate. Worth ~69 canonicals — record it, do not prioritise it.
+
+**NOT DONE:** §6 query coverage (real vs diagnostic queries) — context exhausted.
+Stated as an omission, not silently dropped.
+
+**What we may honestly say publicly today:** we compare 9 Saudi retailers; we carry
+9,378 products; we hold 763 products with a genuine multi-store price comparison;
+every price we show is an observation with a timestamp and a source.
+**What we must not say:** that we compare "12,000 products" (that is relations, not
+products), that any retailer is "trusted" (no measured definition exists), or that
+9,378 products are comparable (763 are).
