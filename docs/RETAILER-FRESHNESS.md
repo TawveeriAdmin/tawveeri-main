@@ -29,11 +29,12 @@ trust depends on. Both checks now exist; the second one is the launch metric.
 
 | Retailer | Class | Freshness | Evidence |
 |---|---|---|---|
-| **jarir, amazon, extra, almanea, lulu** | **production-deep** | 0.1–3.3h | schedule-driven; untouched by this work |
-| **noon** | **blocked at the retailer** | 78h | discovery runs **229 s** and returns 0. An independent datacenter IP also times out on noon.com. Not our code — both scrapers work from a Saudi IP (29 products in 2.5s) |
-| **sharafdg** | **blocked at the retailer** | 78h | **HTTP 403 Forbidden** to our production egress, on search *and* product pages (8/8). Same URLs serve fine from a Saudi IP and from a different datacenter, so it is our egress range specifically. No credential-free API: `wp-json/wc/store/*` returns `rest_no_route`, sitemap 404s |
-| **shaker, najm, samsung_ksa** | **intentionally paused** | 84–152h | dropped from the ingestion set by Founder Directive 2026-07-27 (approved-27 scope cut). **Not failures.** They stopped ingesting on exactly that date |
-| **alnakheelk** | **approved, never scheduled** | 175h | in `APPROVED_STORE_IDS` (ADR-139) but never in the ingest set |
+| **jarir, amazon, extra, almanea** | **production-deep** | 0.6–4.7h | schedule-driven; untouched by this work |
+| **shaker, najm, alnakheelk** | **production-deep (re-admitted 2026-08-02)** | 0.2h | Founder decision; all three are `sourcing:"api"` so they ingest through the FEED loop, which reaches production where HTML scrapers on blocked hosts cannot. Verified: shaker 585 · najm 415 · alnakheelk 1,134 observations |
+| **samsung_ksa** | **production-limited (re-admitted 2026-08-02)** | 0.6h | Founder decision; scraper path, ingesting |
+| **lulu** | **retired by decision** | — | Founder decision 2026-08-02: not important. Was ingesting fine — retired, not failed. Inactive AND hidden |
+| **noon** | **retired — blocked at the retailer** | 78h | discovery runs **229 s** and returns 0. An independent datacenter IP also times out on noon.com. Not our code — both scrapers work from a Saudi IP (29 products in 2.5s) |
+| **sharafdg** | **retired — blocked at the retailer** | 78h | **HTTP 403 Forbidden** to our production egress, on search *and* product pages (8/8). Same URLs serve fine from a Saudi IP and from a different datacenter, so it is our egress range specifically. No credential-free API: `wp-json/wc/store/*` returns `rest_no_route`, sitemap 404s |
 | **swsg** (الشتاء والصيف, swsg.co, store 8) | **retired — blocked at the retailer** | 258h | Activated by Founder decision 2026-08-02 and retired the same day on evidence. **Four routes tested, not one:** HTML listing → **HTTP 403** from production while the SAME scraper with the SAME headers returns 40 TVs / 80 appliances / 40 kitchen / 40 phones from a Saudi IP (so the block is on our egress IP, not our request shape) · Magento REST `/rest/V1/*` → **401, needs a merchant-issued integration token** · WooCommerce/Salla API → absent · sitemap.xml → works (8,959 URLs) but product pages carry only `WebSite`+`Organization` JSON-LD, **no `Product`**, so prices still require HTML from the same blocked host. **The only remaining route is a credentials decision** (ask Sheta & Saif for a Magento integration token) |
 | **hdf, goldenstore99, mhzm, aletawik, pcpalace, sonyworld, amnkwm, alsfeerzone, alhowaish, alduaalbarq, eazyworld** | **not approved** | 170–196h | acquisition-engine onboarding probes, never in the ingest set and not customer-visible. **Not failures** |
 | **blackbox** | **blocked, never ingested** | never | bot-walled; documented ADR-148 known gap |
@@ -63,13 +64,21 @@ trust depends on. Both checks now exist; the second one is the launch metric.
    knowledge layer is what serves comparisons. *Proof:* an Extra price run now writes 12 products
    and 12 new `raw_observations`.
 
-## Still open — needs a Founder decision, not more engineering
+## Settled 2026-08-02 (Founder decision, CLOSED — do not reopen)
 
-- **noon** and **sharafdg** are refused at the retailer from our production egress. Every
-  credential-free route was checked and none exists. Restoring them requires egress from a Saudi
-  or residential IP (a paid proxy) — a commercial commitment, deliberately not taken.
-- **shaker / najm / samsung_ksa / alnakheelk** are approved for *display* while excluded from
-  *ingestion*, so they can show prices 4–8 days old. That contradiction is a scope decision.
+**Active and ingesting (8):** jarir · amazon · extra · almanea · shaker · najm · alnakheelk ·
+samsung_ksa. **All inside the freshness SLO.**
+
+**Retired — inactive AND hidden (5):** noon · swsg · sharafdg · lulu · blackbox. Removed from
+`APPROVED_STORE_IDS` and added to `COMPARISON_DISPLAY_EXCLUDED`.
+
+**No proxies and no paid egress, for any retailer** — circumventing a deliberate block is
+fragile and wrong for a platform built on transparency. The only unexplored route for
+noon/sharafdg/swsg is merchant-issued credentials, which is a commercial decision and is
+recorded, not pursued.
+
+**Standing rule:** a retailer that cannot be ingested legitimately is inactive AND hidden.
+This covers every future case without escalation.
 
 ---
 
