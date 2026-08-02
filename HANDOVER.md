@@ -4882,3 +4882,83 @@ amount comparables did.** Every product this work added was carried by one retai
 **Read these as moving numbers, not a frozen ledger:** the hourly scheduler is still
 draining Extra's remaining ~31k observations, so canonicals/projection will keep drifting
 upward. Any future comparison must re-freeze a baseline rather than reuse these.
+
+---
+
+## CHECKPOINT #49 — THE OVERLAP UNIT: THE ANSWER IS IDENTITY-TIER ASYMMETRY
+
+**BASELINE FROZEN 2026-08-02T10:38:00Z** (the scheduler is still draining Extra, so any
+future comparison MUST re-freeze rather than reuse these):
+projection 5,193 · **comparable 778** · single-store 4,204 · active canonicals 7,314
+
+### §1 tested first, as instructed — and it did NOT need a new retailer
+
+Who holds the 4,204 single-retailer products:
+Extra 1,036 · **Noon 1,011** · Almanea 787 · **Amazon 303** · Jarir 189 · Najm 159 ·
+Shaker 154 · Nakheel 99 · Sharaf DG 52 · Amn Kum 38
+
+Bounded sample: 400 single-store products held by Extra/Almanea/Jarir, all with a
+model_number of >=6 chars. Asked whether Amazon or Noon ALREADY hold a raw observation
+whose name contains that model number.
+
+**51 of 400 = 12.75% already had one.** Extrapolated across the 4,204 that is
+**~536 products that could become comparable from evidence ALREADY IN OUR DATABASE** —
+no new retailer, no new parser, no scraping, no maintenance.
+
+### Root cause — NOT discovery, NOT classification, NOT missing data
+Those 51 products have **1,574** matching observations at Amazon/Noon.
+**1,473 of them (93.6%) are already STAGED** — read, detected, classified. Only 101 were
+never staged.
+
+They fail to corroborate because the two stores land on **different identity tiers**:
+one side keys `brand|MODEL:<mpn>`, the other `brand|cpu|ram|storage`. A model-keyed and a
+spec-keyed observation of the SAME product can never merge, because corroboration groups
+on the identity key.
+
+**This is the mechanism behind the collective finding.** The catalogue is not as
+single-store as it looks — a meaningful slice is the same product split across two
+incompatible key spaces.
+
+### §4 — THE RULE IS VERIFIED. Four units, measured:
+
+| Unit | products added | comparables added | single-store added |
+|---|---|---|---|
+| ADR-172/173 retailers page | 0 (display only) | 0 | 0 |
+| ADR-174 LuLu + Sharaf DG sweep | +70 | **+8** | +62 |
+| ADR-175 laptop parser rescue | +41 | **+5** | +36 |
+| Extra/Almanea replay | +4 | **+2** | +2 |
+
+Inventory grew every time; comparison depth barely moved, and single-store grew almost
+exactly in step. **RECORDED AS A VERIFIED RULE:**
+
+> **Catalogue depth and comparison depth are different problems with different fixes.
+> Only overlap on the SAME COMMERCIAL VARIANT increases comparison depth.**
+
+### §3 — `tps:feed-probe` NOT USED, and not rehabilitated
+Verdict B stands: it scores brand-level similarity, and this unit shows brand overlap is
+not the binding constraint at all — **variant KEY COMPATIBILITY is.** Two stores can carry
+the identical variant and still not compare. A probe that cannot see that cannot rank
+retailers for this purpose. Rejected for prioritisation; a bounded measured run replaced it.
+
+### §2 — NO NEW RETAILER WAS ONBOARDED, deliberately
+The §1 test succeeded, so §2's precondition ("only if that yield is poor") was never met.
+Adding a retailer now would add inventory into the same broken key space.
+
+### NOT DONE — the fix itself, and why
+Cross-tier identity matching (letting a `MODEL:` key corroborate with a spec key for the
+same product) is the fix. It was NOT implemented here: it is an identity change, and
+ADR-175 measured that an identity change can REDUCE comparables (23 -> 18) while raising
+identity counts. Shipping it without the same before/after discipline would repeat the
+failure this week retired. **It is the next unit, and it is now precisely specified.**
+
+Acceptance criteria for it, set in advance:
+- net-new comparables measured after `tps:refresh` against a re-frozen baseline
+- ZERO existing comparison broken (store_count must not fall for any canonical)
+- no false merges: a cross-tier link requires the model number to appear in the
+  spec-keyed observation's raw_name, never inferred
+- bounded to one category first (laptop has both key tiers in volume)
+
+### Still deferred / untouched
+Extra's cursor is draining via the scheduler as intended. 1,166 duplicate
+`source_record_id`s and 2,929 Arabic `store_id` rows remain their own boundaries. No
+schema changes. Nothing became customer-visible, so the displayability gate was not reached.
