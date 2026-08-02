@@ -5230,3 +5230,61 @@ invisible — this whole week's work would have measured as zero).
 - 46 non-TV canonicals are comparable with no staging evidence (39 of them
   `model-corroboration-v1`, which builds legitimately outside staging). Measured, not acted
   on: deactivating on that signal alone would destroy real comparisons.
+
+---
+
+## CHECKPOINT #54 — INGESTION FRESHNESS: THE CHAIN WAS BROKEN IN FIVE PLACES
+
+**Pushed. Tests 1,147/1,147. No schema change. The four fresh retailers were never touched.**
+
+### THE RULE THIS BOUNDARY PRODUCED
+> **Freshness of the catalogue is not freshness of the comparison.**
+
+Store-level ingestion freshness was GREEN for five retailers while only **6 of 801**
+comparable products carried a price inside the 26h SLO (median **173.6h**, 7.2 days).
+The health check asks "did this store produce ANY row recently" — discovery keeps that
+green by finding NEW products. It never asked whether the products we SHOW are being
+re-priced. Both checks exist now; `tps:comparison-freshness` is the launch metric.
+
+### DIAGNOSED BEFORE ANYTHING WAS RESTARTED — and they do NOT share a cause
+- **noon** — 229-SECOND runs returning 0. An independent datacenter IP also times out on
+  noon.com; a Saudi IP gets 29 products in 2.5s. **Blocked at the retailer.**
+- **sharafdg** — **HTTP 403** to our egress on search AND product pages (8/8), while the
+  same URLs serve fine from a Saudi IP and from a different datacenter. No credential-free
+  route exists (`wp-json/wc/store/*` → `rest_no_route`, sitemap 404). **Blocked at the retailer.**
+- **shaker/najm/samsung_ksa** — stopped on exactly 2026-07-27, the Founder Directive scope
+  cut. **Intentionally paused, not failures.**
+- **12 small stores** — never in the ingest set, not approved, not customer-visible.
+- **blackbox** — never ingested, bot-walled (ADR-148 known gap).
+
+### FIVE DEFECTS FIXED
+1. **A run that fetched nothing reported `success`** — both scrapers swallowed the fetch
+   error and returned `[]`. Sharaf DG was dark for three days with every signal green.
+2. **Failures were mute** — the reason lived only in container stdout.
+   `error_messages` → `scraping_runs.error_summary` is how the 403 was finally read.
+3. **60 runs stuck in `running`** (oldest 266h) — corpses read as live runs by
+   `hasActiveRun`. `reapStaleRuns` runs BEFORE the overlap check.
+4. **The price-update queue had NEVER advanced** — selection orders by `last_checked_at`
+   and nothing ever wrote it, so the same rows were re-attempted forever, and that head is
+   full of delisted offers (Extra's oldest URLs 404). **Extra went 0/20 → 25/25 with zero
+   errors** once the cursor moved past the dead head. No DDL: an earlier attempt disabled
+   itself looking for `consecutive_failures`; production has `consecutive_misses`.
+5. **A refreshed price was not an observation** — `ingestBatch` ran only in discovery, so
+   the price loop fed the storefront and NOT the knowledge layer that serves comparisons.
+   Proven: 12 products updated → 12 new `raw_observations`.
+
+### STATE AT CLOSE
+**801 comparable of 5,023 products.** Freshness recovery is time-based: the queue now
+rotates, and the cap was raised 120→300/store/6h (`INGEST_PRICE_MAX_PRODUCTS` reverts it),
+putting a full lap at ~1.5 days instead of ~3.8. **As of this checkpoint the freshness
+number is unchanged (6/801 inside 26h) — the mechanism is fixed, the data has not caught
+up yet, and saying otherwise would be the same error this boundary just retired.**
+
+### ROLLBACK
+```
+6c2dc62  price updates write observations   git revert 6c2dc62
+c10f530  price queue rotation               git revert c10f530
+6736101  wire failure reasons               git revert 6736101
+8b777ce  failure reason plumbing            git revert 8b777ce
+aa94213  fetch failure != success + reaper  git revert aa94213
+```

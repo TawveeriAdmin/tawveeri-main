@@ -364,7 +364,13 @@ async function runPriceUpdate() {
   // NOT gated by backpressure — price freshness is the customer-visible promise, and this
   // loop is bounded by max_products per store per cycle, so it cannot outrun normalization.
   for (const slug of INGEST_STORES) {
-    const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: 120, older_than_hours: 12 });
+    // 120 was sized when the queue never advanced, so the number did not matter — the same
+    // 120 rows were re-attempted every cycle forever. Now that `last_checked_at` is stamped
+    // the cap sets the CYCLE TIME: healthy retailers hold ~9,000 offers, so 120/store/6h is a
+    // ~3.8-day lap and a price a customer sees could be that old. 300 makes it ~1.5 days.
+    // Bounded and reversible: INGEST_PRICE_MAX_PRODUCTS=120 restores the old behaviour.
+    const maxProducts = parseInt(process.env.INGEST_PRICE_MAX_PRODUCTS || '300', 10);
+    const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: maxProducts, older_than_hours: 12 });
     if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
     await sleep(STAGGER_MS);
   }
