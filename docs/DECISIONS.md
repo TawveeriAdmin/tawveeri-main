@@ -6,6 +6,68 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-180 — Noon: off the endpoint its own robots.txt disallows, onto the pages it permits · Accepted (2026-08-02)
+
+**Context.** Noon discovery ran **235 seconds** from production and returned 0 products with 0
+errors, for days. It was classified "blocked at the retailer" and retired.
+
+**Two findings, and the second outranks the first.**
+
+**1 — the fifth copy of the fetch-failure swallow.** `scrapeApiPage` returned `[]` on its final
+retry instead of rethrowing, so the caller's "no products AND an error ⇒ throw" guard never
+fired. 235s was three timed-out attempts reported as success.
+
+**2 — WE WERE CALLING AN ENDPOINT THE SITE ASKS CRAWLERS NOT TO CALL.** `noon.com/robots.txt`:
+
+    User-agent: *
+    Disallow: /_svc/
+    Disallow: /_vs/
+    Allow: /
+
+`/_svc/catalog/api/v3/` is exactly what this scraper used, for discovery **and** price updates.
+That is a legitimacy problem, not a technical one, and it does not become acceptable because it
+works. **Removed from both paths.**
+
+**Decision — use what noon publishes for consumption.** Listing/search pages are server-rendered
+and carry ~50 product links each; product pages embed complete `@type: Product` JSON-LD (name,
+sku, brand, offers.price, offers.priceCurrency, offers.availability). The compliant route is also
+the better-engineered one: structured data survives the CSS churn that breaks selector scraping.
+SAR-gated — a non-SAR `priceCurrency` is dropped, never ingested.
+
+**Verified FROM PRODUCTION EGRESS** (the thing that had never worked): 24 products for `tv`, then
+**144 across six categories**, 0 errors. Noon now holds **11,295 observations, 0.2h fresh, and
+appears in 306 comparable products.**
+
+**The lesson is the one this week already produced, applied too narrowly.** "Cannot be ingested"
+was never true of noon. It was true of the one route it happened to be configured with — and that
+route should never have been used at all.
+
+---
+
+### ADR-179 — Magento GraphQL is a public API: swsg recovered by sourcing mode, not by force · Accepted (2026-08-02)
+
+**Context.** swsg (الشتاء والصيف) returns **HTTP 403** to our production egress on its HTML
+storefront while serving a Saudi IP normally. It was activated by Founder decision and retired
+the same day under the standing rule — on the evidence of ONE sourcing mode.
+
+**Decision.** Magento 2 ships a **public, unauthenticated GraphQL endpoint at `/graphql`** — the
+documented storefront API every headless Magento frontend uses. It is the merchant's own
+published surface. Measured: `https://swsg.co/graphql` answers **4,274 products** with sku, name,
+url_key, price and currency, over POST and GET, from two independent networks.
+
+Built as a **platform-class adapter** alongside its siblings (Salla sitemap+JSON-LD, Shopify
+`/products.json`, WooCommerce Store API, Algolia): one adapter onboards every Magento 2 merchant,
+so the next one is configuration, not code. Evidence-first and SAR-gated like the rest.
+
+**Verified: 3,000 offers → 3,000 raw observations, twice.** swsg holds **6,276 observations, 0.3h
+fresh, and appears in 160 comparable products.** Sourcing moved `scraper` → `api`; it ingests
+through the FEED loop, not the scraper loop.
+
+**No proxy, no paid egress, no circumvention.** The 403 was never worked around — a different,
+published door was used.
+
+---
+
 ### ADR-178 — The cross-tier merge under ADR-176: an estimate of 536 became 17 · Accepted (2026-08-02)
 
 **Context.** CHECKPOINT #49 diagnosed identity-tier asymmetry — two stores carrying the identical
