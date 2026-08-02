@@ -5009,3 +5009,41 @@ projection 5,193 · **comparable 778** · single-store 4,204 · canonicals 7,314
 4. If the yield is far below the ~536 estimate, the gap is the clean-create constraint
    (products whose observations are already attached), and THAT is the careful-merge
    boundary ADR-060 explicitly defers — a separate unit, not a patch to this one.
+
+### #50 RESULT — ADR-060 YIELDS ZERO. The whole opportunity is behind the deferred boundary.
+
+`tps:alias-foldin --dry` completed. Measured:
+
+```
+scanned=846,057  saudi listings=33,858  non-saudi excluded=7,947
+with identity=11,023  no identity=22,835
+identity classes=5,233  corroborated(>=2 stores)=903  bridged-only=157
+clean-create eligible=0   deferred: attached=156   card-collision=1
+```
+
+**157 genuine cross-tier bridges exist. ZERO can be safely created.** 156 are deferred
+because their observations are ALREADY ATTACHED to another canonical; 1 is a card
+collision. This is exactly the outcome #50 predicted, and it means the safe tool cannot
+convert a single product.
+
+**TWO CORRECTIONS TO MY OWN #49 FIGURE — both downward:**
+1. Measured bridgeable classes are **157, not ~536**. My ~536 came from extrapolating a
+   400-row sample where a model number merely APPEARED in another store's `raw_name`.
+   That is a looser test than a bridgeable identity class, and it overstated by ~3.4x.
+   **A substring match is not an identity class.** Same error family as the NULL-poisoned
+   anti-join: a cheap proxy read as the real population.
+2. Even those 157 are unreachable by clean-create.
+
+**STRATEGY-LEVEL CONSEQUENCE (not an implementation detail):**
+The cross-tier opportunity cannot be taken by any additive mechanism. Every candidate
+requires MERGING two canonicals that both already own observations — the "careful merge"
+ADR-060 deliberately refuses, because a wrong merge shows a customer two different
+products as one price comparison. **That is a Protected-Trust-shaped risk, not a
+throughput problem**, and it is the first constraint this week that cannot be measured
+away — it needs a merge policy decision.
+
+Also measured and worth its own look: **22,835 of 33,858 Saudi listings (67%) carry NO
+identity at all** — an order of magnitude larger than the cross-tier set.
+
+**No production write was made by this unit.** Baseline unchanged and still frozen at
+2026-08-02T10:38:00Z: projection 5,193 · comparable 778 · single-store 4,204.
