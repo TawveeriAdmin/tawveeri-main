@@ -228,7 +228,7 @@ if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRE
 // feeds), so they belong in the FEED loop — putting them in the scraper set would ingest
 // them by the wrong path, and the _feedSet exclusion below guarantees no store is ever
 // ingested twice.
-const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'almanea,shaker,najm,alnakheelk').split(',').map((s) => s.trim()).filter(Boolean);
+const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'almanea,shaker,najm,alnakheelk,swsg').split(',').map((s) => s.trim()).filter(Boolean);
 const _feedSet = new Set(INGEST_FEED_STORES);
 // noon (Rakhys's #1, internal-catalog API) + lulu (Akinon/Cloudflare via Puppeteer) were recovered
 // 2026-07-27 as the 5th & 6th active retailers. Kept here so the scheduler auto-refreshes + grows
@@ -238,10 +238,9 @@ const _feedSet = new Set(INGEST_FEED_STORES);
 // schema-drift fix) keeps Extra's 838 prices fresh via the repaired Puppeteer JSON-LD scraper.
 // FOUNDER DECISION 2026-08-02 (closed):
 //   ACTIVATE swsg · re-admit samsung_ksa · DROP noon, lulu, sharafdg.
-// swsg was then RETIRED the same day under the Founder's own standing rule, on evidence:
-// it returns HTTP 403 to our production egress (verified in scraping_runs.error_summary)
-// while serving 40 TVs / 80 appliances / 40 kitchen / 40 phones to a Saudi IP. It was
-// activated in good faith believing it could be ingested; it cannot be, legitimately.
+// swsg was retired, then RECOVERED (ADR-179): its HTML storefront 403s our egress, but its
+// Magento GraphQL endpoint is public and answers 4,274 products. It ingests through the FEED
+// loop now, not the scraper loop — the sourcing mode was the difference, not the retailer.
 // noon and sharafdg are refused at the retailer from our production egress (noon: request
 // stalls ~229s; sharafdg: HTTP 403 on search AND product pages, verified in
 // scraping_runs.error_summary). No proxy or paid egress is used to circumvent a deliberate

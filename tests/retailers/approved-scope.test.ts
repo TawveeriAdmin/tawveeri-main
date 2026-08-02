@@ -46,8 +46,8 @@ describe('approved-retailer scope gate', () => {
     expect(isApprovedStore('')).toBe(false);
   });
 
-  it('gates by numeric store id (approved 1,2,4,5,6,7,9,18)', () => {
-    for (const id of [1, 2, 4, 5, 6, 7, 9, 18]) expect(isApprovedStoreId(id)).toBe(true);
+  it('gates by numeric store id (approved 1,2,4,5,6,7,8,9,18)', () => {
+    for (const id of [1, 2, 4, 5, 6, 7, 8, 9, 18]) expect(isApprovedStoreId(id)).toBe(true);
     for (const id of [11, 22]) expect(isApprovedStoreId(id)).toBe(false);
     expect(isApprovedStoreId(null)).toBe(false);
   });
@@ -58,11 +58,11 @@ describe('approved-retailer scope gate', () => {
    * silently is exactly the regression this asserts against, because the harm (a price
    * that only gets older) is invisible on the surface.
    */
-  it('keeps the five retired retailers hidden (noon 3, swsg 8, blackbox 10, lulu 23, sharafdg 24)', () => {
+  it('keeps the four retired retailers hidden (noon 3, blackbox 10, lulu 23, sharafdg 24)', () => {
     // Both gates, because they answer different questions: the id gate is ingestion
     // approval, `isDisplayableRetailer` is whether a customer may be shown the retailer.
-    for (const id of [3, 8, 10, 23, 24]) expect(isApprovedStoreId(id)).toBe(false);
-    for (const slug of ['noon', 'blackbox', 'lulu', 'sharafdg', 'swsg']) {
+    for (const id of [3, 10, 23, 24]) expect(isApprovedStoreId(id)).toBe(false);
+    for (const slug of ['noon', 'blackbox', 'lulu', 'sharafdg']) {
       expect(isDisplayableRetailer(slug)).toBe(false);
     }
   });

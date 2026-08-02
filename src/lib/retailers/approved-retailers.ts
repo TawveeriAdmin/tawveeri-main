@@ -109,11 +109,10 @@ export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   2, // amazon
   4, // extra
   5, // almanea
-  // swsg (8) was activated 2026-08-02 by Founder decision and RETIRED the same day on
-  // evidence: HTTP 403 to our production egress (recorded in scraping_runs.error_summary)
-  // while serving 40 TVs / 80 appliances / 40 kitchen / 40 phones to a Saudi IP. Activated
-  // in good faith believing it could be ingested; it cannot be, legitimately — so the
-  // Founder's own standing rule decides it without another round trip.
+  8,  // swsg (الشتاء والصيف) — RECOVERED 2026-08-02 via ADR-179. Its HTML storefront 403s
+      // our egress; its Magento GraphQL endpoint is public and answers 4,274 products.
+      // Retired on one sourcing mode, recovered on another — the MODE was the difference,
+      // not the retailer. 3,000 observations verified.
   7,  // shaker      — ADR-139, admitted on measured overlap 2026-07-29
   9,  // najm        — ADR-139
   18, // alnakheelk  — ADR-139

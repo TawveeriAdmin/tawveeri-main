@@ -186,10 +186,15 @@ export class NoonScraper extends BaseScraper {
           .filter((p): p is ScrapedProduct => p !== null);
       } catch (err) {
         console.error(`[Noon] API attempt ${attempt + 1}/${maxRetries} failed:`, err instanceof Error ? err.message : err);
-        if (attempt === maxRetries - 1) return [];
+        // THE FIFTH COPY OF THE SAME SWALLOW. This used to `return []` on the last attempt,
+        // so the caller's "no products AND an error ⇒ throw" guard never fired: there was no
+        // error to see. Production spent 235 SECONDS (3 attempts × timeout) and reported
+        // `success, 0 discovered, 0 errors`. Exhausting every retry is a failure and must
+        // be raised, not converted into an empty result.
+        if (attempt === maxRetries - 1) throw err;
       }
     }
-    return [];
+    throw new Error(`noon API exhausted ${maxRetries} attempts for "${query}" page ${page}`);
   }
 
   private extractHits(data: Record<string, unknown>): Record<string, unknown>[] {

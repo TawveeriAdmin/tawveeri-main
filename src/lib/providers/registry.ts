@@ -32,7 +32,9 @@ const BASE: Record<string, RetailerProvider> = {
   // the feed never double-counts — the same Arabic `/product/` listing basis the existing
   // data already uses. Override with PROVIDER_SHAKER_SOURCING=scraper to fall back.
   shaker:      { slug: "shaker",      storeId: 7, displayName: "Shaker",            displayNameAr: "شاكر",             enabled: true, sourcing: "api", affiliate: null, feedUrl: "https://shakersa.com" },
-  swsg:        { slug: "swsg",        storeId: 8, displayName: "SWSG",              displayNameAr: "الشتاء والصيف",    enabled: true, sourcing: "scraper", affiliate: null },
+  // ADR-179: swsg's HTML storefront returns 403 to our production egress, but its Magento
+  // GraphQL endpoint is public and answers 4,274 products. Sourcing moved scraper → api.
+  swsg:        { slug: "swsg",        storeId: 8, displayName: "SWSG",              displayNameAr: "الشتاء والصيف",    enabled: true, sourcing: "api", affiliate: null, magento: { origin: "https://swsg.co" } },
   // Salla storefronts (ADR-095) — sourced credential-free via sitemap + product JSON-LD.
   // najm.store carries mainstream appliances (Samsung/Toshiba/Fisher/Fresh) with real
   // overlap potential; blackboxksa.com is niche (camping/appliances) + its sitemap is

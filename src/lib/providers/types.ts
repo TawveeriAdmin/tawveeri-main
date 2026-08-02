@@ -70,6 +70,16 @@ export interface ShopifyConfig {
   origin: string;
 }
 
+/**
+ * Magento 2 storefront config (ADR-179). Magento ships a PUBLIC, unauthenticated GraphQL
+ * endpoint at `/graphql` — the documented storefront API every headless Magento frontend
+ * uses. One adapter covers the whole Magento class; onboarding a Magento merchant is
+ * configuration, not code.
+ */
+export interface MagentoConfig {
+  origin: string;
+}
+
 /** A retailer bound to its sourcing + monetization adapters. */
 export interface RetailerProvider {
   slug: string;
@@ -90,6 +100,8 @@ export interface RetailerProvider {
   salla?: SallaConfig;
   /** Optional Shopify storefront (sourcing 'api' via the Shopify products.json adapter). */
   shopify?: ShopifyConfig;
+  /** Optional Magento 2 storefront (sourcing 'api' via the public GraphQL adapter). */
+  magento?: MagentoConfig;
 }
 
 /** Per-exit context used for attribution when building an affiliate link. */
