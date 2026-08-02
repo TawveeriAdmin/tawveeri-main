@@ -32,7 +32,18 @@ does the rest; `/go` immediately builds monetized links. No schema change, no ne
 
 ### 2. Noon — second priority
 - Enroll: Noon's affiliate program via **Admitad**, **Boostiny**, or **ArabClicks (ArabyAds)** (whichever accepts you).
-- Hand back: the tracking params they assign (campaign/publisher id). Current config uses placeholder `utm_campaign=DNC160` — replace with your real values.
+- Hand back: the tracking params they assign (campaign/publisher id).
+- **RESOLVED 2026-08-02 from a real dashboard-generated link.** noon attribution is
+  `utm_source=<publisher id>&utm_medium=referral` — ours is **C1000094L**. There is no
+  `aff_code` and no `utm_campaign` in a genuine noon partner link.
+- **DNC160 is NOT a tracking parameter.** It is a customer COUPON code (10% cashback, capped
+  25 SAR) typed at checkout — a separate system in the same dashboard. It belongs on the
+  coupons surface, never on an outbound link. We sent it as `utm_campaign` for weeks and it
+  matched no mechanism, so those clicks earned nothing.
+- **`o=` is not ours and is not required.** Every organic product link on noon's own listing
+  pages carries `?o=` (50/50 measured); it has no effect on product, price or seller (a
+  bogus value renders identically). It is noon's internal link token — preserved when the
+  source URL has one, never synthesized by us.
 
 ### 3. KSA multi-advertiser networks — covers Jarir, eXtra, Almanea, Samsung, etc.
 - Enroll in **one** aggregator that carries these advertisers: **ArabClicks (ArabyAds)**, **Admitad**, or **Boostiny/Ecomz**.

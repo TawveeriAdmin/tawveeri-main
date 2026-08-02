@@ -98,7 +98,7 @@ export const APPROVED_SLUGS: ReadonlySet<string> = new Set(APPROVED_RETAILERS.ma
  *
  * Removed 2026-08-02 under that rule, with the measured cost recorded rather than hidden —
  * comparable products carrying >=2 APPROVED offers fell 628 -> 428:
- *   · noon (3)     — HTTP-timeout blocked from our egress; DNC160 attaches correctly, so
+ *   · noon (3)     — HTTP-timeout blocked from our egress (later RECOVERED, ADR-180), so
  *                    re-admitting is a config change if a legitimate data route ever exists
  *   · lulu (23)    — Founder decision 2026-08-02: not important. Was ingesting fine
  *   · sharafdg (24)— HTTP 403 to our egress; no credential-free route exists

@@ -113,7 +113,7 @@ export function AffiliateSettingsCard({ store, locale }: AffiliateSettingsCardPr
               dir="ltr"
               value={value}
               onChange={(event) => setValue(event.target.value)}
-              placeholder={store.slug === 'amazon' ? 'tawveeri-21' : 'DNC160'}
+              placeholder={store.slug === 'amazon' ? 'tawveeri-21' : 'C1000094L'}
               className="h-11 rounded-2xl border-[#d7ece5] bg-[#f8fcfa] font-mono dark:border-[#263b33] dark:bg-[#101713] dark:text-white"
             />
           </div>

@@ -16,7 +16,7 @@ import type { RetailerProvider, SourcingMode, AffiliateNetworkId } from "./types
 const BASE: Record<string, RetailerProvider> = {
   jarir:       { slug: "jarir",       storeId: 1, displayName: "Jarir",             displayNameAr: "جرير",             enabled: true, sourcing: "scraper", affiliate: null },
   amazon:      { slug: "amazon",      storeId: 2, displayName: "Amazon SA",         displayNameAr: "أمازون",           enabled: true, sourcing: "scraper", affiliate: { network: "amazon", trackingId: "tawveeri-21", supportsSubId: true, subIdParam: "ascsubtag" } },
-  noon:        { slug: "noon",        storeId: 3, displayName: "Noon",              displayNameAr: "نون",              enabled: true, sourcing: "scraper", affiliate: { network: "param", trackingId: "noon", params: [{ name: "utm_source", value: "tawveeri" }, { name: "utm_medium", value: "affiliate" }, { name: "utm_campaign", value: "DNC160" }], supportsSubId: true, subIdParam: "utm_content" } },
+  noon:        { slug: "noon",        storeId: 3, displayName: "Noon",              displayNameAr: "نون",              enabled: true, sourcing: "scraper", affiliate: { network: "param", trackingId: "noon", params: [{ name: "utm_source", value: "C1000094L" }, { name: "utm_medium", value: "referral" }], supportsSubId: true, subIdParam: "utm_content" } },
   extra:       { slug: "extra",       storeId: 4, displayName: "eXtra",             displayNameAr: "اكسترا",           enabled: true, sourcing: "scraper", affiliate: null },
   // Almanea powers its headless storefront with a PUBLIC Algolia index (search-only keys
   // shipped in the browser bundle — public data access, not a secret). It is the cleanest,

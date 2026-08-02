@@ -14,13 +14,19 @@ function sanitizeSubId(clickId: string | number | undefined): string | null {
 /**
  * Which param actually carries the ATTRIBUTION CODE, in priority order.
  *
- * The recorded `tag` used to be "whichever param happened to be listed first", which for
- * Noon meant `utm_source=tawveeri` — so every Noon click in `outbound_clicks.affiliate_tag`
- * read `tawveeri` instead of the partner code `DNC160`. The exit link itself was always
- * correct; the ATTRIBUTION RECORD was not, which is the half nobody checks until a payout
- * is reconciled. Position is not meaning.
+ * The recorded `tag` used to be "whichever param happened to be listed first" — position,
+ * not meaning. `utm_source` leads the list for referral programs because that is where a
+ * publisher ID lives (noon: `utm_source=C1000094L`); `aff_code` stays ahead of it for
+ * programs that use a dedicated code param.
+ *
+ * HISTORY WORTH KEEPING (2026-08-02): this file previously said the exit link "was always
+ * correct" and called DNC160 the partner code. Both were wrong. DNC160 is a customer COUPON
+ * (10% cashback, capped 25 SAR) typed at checkout — a different system in the same
+ * dashboard — and we were sending it as `utm_campaign`, which matched no mechanism at all.
+ * A confident comment is not evidence; the founder generating one real dashboard link
+ * settled in seconds what our config had asserted for weeks.
  */
-const ATTRIBUTION_PARAMS = ["aff_code", "utm_campaign", "tag", "ref", "affiliate", "partner"];
+const ATTRIBUTION_PARAMS = ["aff_code", "utm_source", "utm_campaign", "tag", "ref", "affiliate", "partner"];
 
 function attributionValue(params: { name?: string; value: string }[]): string | null {
   for (const key of ATTRIBUTION_PARAMS) {

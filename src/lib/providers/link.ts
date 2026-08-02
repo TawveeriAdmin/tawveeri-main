@@ -33,7 +33,7 @@ export function hostFallbackConfig(host: string): AffiliateConfig {
     return {
       network: "param",
       trackingId: "noon",
-      params: [{ name: "utm_source", value: "tawveeri" }, { name: "utm_medium", value: "affiliate" }, { name: "utm_campaign", value: "DNC160" }],
+      params: [{ name: "utm_source", value: "C1000094L" }, { name: "utm_medium", value: "referral" }],
       supportsSubId: true,
       subIdParam: "utm_content",
     };

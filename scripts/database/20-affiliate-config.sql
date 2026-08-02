@@ -16,8 +16,8 @@ WHERE slug = 'amazon'
 UPDATE stores
 SET affiliate_config = jsonb_build_object(
   'enabled', true,
-  'param', 'aff_code',
-  'value', 'DNC160'
+  'param', 'utm_source',
+  'value', 'C1000094L'
 )
 WHERE slug = 'noon'
   AND affiliate_config IS NULL;
