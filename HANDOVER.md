@@ -4862,3 +4862,23 @@ Extra's cursor remains mid-replay; the hourly scheduler drains it automatically 
 the pooler fix (e380131) has landed. No rollback needed — writes are deterministic upserts
 (0 duplicates proven in #45). Still deferred: 1,166 duplicate `source_record_id`s, 2,929
 Arabic `store_id` rows.
+
+### #48 CORRECTION — final post-refresh figures (the chain was still running when first read)
+
+The 8-step chain took 1,145s; the figures in #48 above were read while it was still
+executing. Final:
+
+| Metric | Baseline | Final | Δ |
+|---|---|---|---|
+| active canonicals | 7,310 | 7,314 | +4 |
+| customer-visible products | 5,189 | 5,193 | +4 |
+| **price-comparable products** | **776** | **778** | **+2** |
+| single-store products | 4,202 | **4,204** | **+2** |
+
+**Verdict UNCHANGED: +2 is inside the pre-set `<=5` retire band.** And the sharper
+version of the finding survives the correction — **single-store products grew by the same
+amount comparables did.** Every product this work added was carried by one retailer.
+
+**Read these as moving numbers, not a frozen ledger:** the hourly scheduler is still
+draining Extra's remaining ~31k observations, so canonicals/projection will keep drifting
+upward. Any future comparison must re-freeze a baseline rather than reuse these.
