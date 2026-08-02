@@ -35,6 +35,8 @@
     "typecheck:baseline:update": "tsx scripts/quality/typecheck-baseline.ts --update",
     "tps:state": "tsx scripts/tps-analysis/state-snapshot.ts",
     "tps:identity-impact": "tsx scripts/tps-analysis/identity-impact.ts",
+    "tps:tv-lowconf": "tsx scripts/tps-analysis/tv-lowconf-sample.ts",
+    "tps:short-model-audit": "tsx scripts/tps-analysis/short-model-prefix-audit.ts",
     "tps:normalization-gap": "tsx scripts/tps-analysis/normalization-gap.ts",
     "tps:alias-foldin": "tsx scripts/tps-core/write-alias-canonicals.ts",
     "tps:onboard-store": "tsx scripts/tps-core/onboard-store-corroborate.ts",

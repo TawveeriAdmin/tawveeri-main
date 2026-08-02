@@ -1,11 +1,45 @@
 // scripts/tps-plugins/tv/parser.ts
 // Deterministic TV normalization (TV Identity Contract v1). IDENTITY attributes:
-// brand, screen_size, resolution, panel, (manufacturer) model_number. NON-identity
-// attributes carried for display/quality only: refresh_rate, series, color, year.
+// brand, screen_size, resolution, panel, refresh_rate, (manufacturer) model_number.
+// NON-identity attributes carried for display/quality only: series, color.
 // "لا نخمّن — نقرأ": every attribute read from the text, never inferred.
+//
+// TWO SOURCES, ONE VOCABULARY (2026-08-02). The parser used to read the TITLE only.
+// Measured over the full low-confidence TV population (7,219 observations / 577
+// listings), that lost attributes the merchant had already published:
+//   · Extra declares refresh on 587/599 rows (`featureArMotionFlow` = '144 هرتز'),
+//     panel on 521 (`featureArPanelType` = 'ميني ليد'), resolution on 587.
+//   · Jarir states "50 Hz" in the title and the allowlist did not contain 50.
+//   · 'Mini-LED' parsed as `led` (the hyphen defeats /mini\s*led/, then \bled\b
+//     matched) — a WRONG value, not a missing one, and it puts a Mini-LED into the
+//     same key space as a basic LED.
+// So: the same vocabulary now runs over the title AND over DECLARED spec fields —
+// never over description/marketing prose, where a spec word is not a claim about
+// this product.
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
-import { extractManufacturerModel } from "../../../src/lib/identity/store-identifiers";
+import { extractManufacturerModel, extractManufacturerModelFromName, extractSizePrefixedModel } from "../../../src/lib/identity/store-identifiers";
+
+/**
+ * Payload keys that DECLARE a specification. Extra's `featureAr*` fields are its own
+ * structured attributes; `specifications` is the shared adapter shape. Free-text
+ * fields (description, summary, categories) are deliberately absent: "4K" inside a
+ * marketing paragraph may describe upscaling, a bundled item, or nothing at all.
+ */
+const DECLARED_SPEC_FIELDS = [
+  "featureArMotionFlow", "featureArPanelType", "featureArHdType", "featureArScreenSize",
+  "specifications",
+] as const;
+
+function declaredSpecText(p: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const k of DECLARED_SPEC_FIELDS) {
+    const v = p[k];
+    if (typeof v === "string" && v.trim()) parts.push(v);
+    else if (v && typeof v === "object") { try { parts.push(JSON.stringify(v)); } catch { /* ignore */ } }
+  }
+  return parts.join(" | ");
+}
 
 function extractSize(text: string): number | null {
   const m = text.match(/\b(3[2-9]|[4-9][0-9]|1[0-9]{2})\s*(?:inch|"|”|بوصة|انش|إنش)/i);
@@ -14,27 +48,48 @@ function extractSize(text: string): number | null {
 }
 function extractResolution(text: string): string | null {
   const x = text.toLowerCase();
-  if (/\b8k\b/.test(x)) return "8k";
-  if (/\b4k\b|uhd|ultra\s*hd/.test(x)) return "4k";
-  if (/full\s*hd|\bfhd\b|1080p?/.test(x)) return "fhd";
-  if (/\bhd\b|720p?/.test(x)) return "hd";
+  if (/\b8k\b|8\s*كي/.test(x)) return "8k";
+  // UHD in Arabic ('يو أتش دي', 'فائق الوضوح', 'فائق عالي الوضوح') is 4K. Ordered
+  // before the plain-HD branch so 'يو أتش دي' can never fall through to `hd`.
+  if (/\b4k\b|uhd|ultra\s*hd|4\s*كي|يو\s*أتش\s*دي|فائق(?:ة)?\s*(?:عالي\s*)?الوضوح|فور\s*كي/.test(x)) return "4k";
+  // '2كي' is Extra's label for FHD — its own titles read "43 inch, 2K FHD".
+  if (/full\s*hd|\bfhd\b|1080p?|اف\s*اتش\s*دي|2\s*كي|كامل(?:ة)?\s*الوضوح/.test(x)) return "fhd";
+  if (/\bhd\b|720p?|اتش\s*دي/.test(x)) return "hd";
   return null;
 }
 // Panel is an identity axis (OLED ≠ QLED ≠ LED). Order: most specific first.
+// Hyphen/space tolerant — 'Mini-LED', 'Mini LED' and 'MiniLED' are one panel, and
+// treating them as three was a silent precision defect.
 function extractPanel(text: string): string | null {
   const x = text.toLowerCase();
-  if (/neo\s*qled/.test(x)) return "neo_qled";
-  if (/\boled\b/.test(x)) return "oled";
+  if (/neo[\s-]*qled|نيو\s*كيو\s*ليد/.test(x)) return "neo_qled";
+  if (/qd[\s-]*oled/.test(x)) return "oled";
+  if (/\boled\b|أو\s*أل\s*إي\s*دي|او\s*ليد|أوليد/.test(x)) return "oled";
   if (/\bqned\b/.test(x)) return "qned";
-  if (/nano\s*cell|nanocell/.test(x)) return "nanocell";
-  if (/mini\s*led/.test(x)) return "mini_led";
-  if (/\bqled\b/.test(x)) return "qled";
-  if (/crystal/.test(x)) return "crystal";
-  if (/\bled\b/.test(x)) return "led";
+  if (/nano[\s-]*cell|nanocell|نانو\s*سيل/.test(x)) return "nanocell";
+  if (/(?:qd[\s-]*)?mini[\s-]*led|ميني\s*ليد/.test(x)) return "mini_led";
+  if (/\buled\b/.test(x)) return "uled";
+  if (/\bqled\b|كيو\s*أل\s*أي\s*دي|كيو\s*ليد/.test(x)) return "qled";
+  if (/crystal|كريستال/.test(x)) return "crystal";
+  // LCD is recorded as itself, never folded into `led`. A retail "LED TV" IS an LCD
+  // with an LED backlight, so folding them would be defensible — and it would also
+  // merge two listings on a synonym we inferred rather than read. Unknown beats
+  // incorrect; a distinct value corroborates LCD with LCD and merges nothing else.
+  if (/\blcd\b/.test(x)) return "lcd";
+  if (/\bled\b|ال\s*إي\s*دي|\bليد\b/.test(x)) return "led";
   return null;
 }
+/**
+ * Refresh rate. 50 is in the allowlist because Jarir states it literally
+ * ("Samsung 65\" Smart TV, 4K QLED, 50 Hz") on 480 measured observations.
+ *
+ * `DLG`/`دي ال جي` is rejected: Extra publishes '120 هرتز دي ال جي' for Dual-Line-Gate,
+ * a 120 Hz gaming MODE on a 60 Hz panel. Reading it as 120 would merge a DLG set with
+ * a genuine 120 Hz panel — the same class of over-merge refresh rate exists to prevent.
+ */
 function extractRefresh(text: string): number | null {
-  const m = text.match(/\b(60|75|100|120|144|165|240)\s*hz/i);
+  if (/\bdlg\b|دي\s*ال\s*جي/i.test(text)) return null;
+  const m = text.match(/\b(50|60|75|100|120|144|165|240)\s*(?:hz|هرتز|هيرتز)/i);
   return m ? Number(m[1]) : null;
 }
 function extractSeries(text: string): string | null {
@@ -57,6 +112,7 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
   const payload = rawPayload ?? {};
   const fullText = `${nameAr} ${nameEn}`;
   const combined = fullText.toLowerCase();
+  const specText = declaredSpecText(payload);
 
   let brand = canonicalizeBrand(rawBrand);
   if (brand === "unknown" || brand === "other") {
@@ -64,13 +120,22 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
     if (guess) brand = canonicalizeBrand(guess[0].trim());
   }
 
-  const screen_size = extractSize(fullText);
-  const resolution = extractResolution(fullText);
-  const panel = extractPanel(fullText);
-  const refresh_rate = extractRefresh(fullText);
+  // Title first (what the shopper is shown), then the merchant's declared specs.
+  // A declared spec never OVERRIDES a stated title value — it only fills a gap.
+  const screen_size = extractSize(fullText) ?? extractSize(specText);
+  const resolution = extractResolution(fullText) ?? extractResolution(specText);
+  const panel = extractPanel(fullText) ?? extractPanel(specText);
+  const refresh_rate = extractRefresh(fullText) ?? extractRefresh(specText);
   const series = extractSeries(fullText);
   const color = extractColor(fullText);
-  const model_number = extractManufacturerModel(payload);
+
+  // Model number, in precedence order — payload MPN, then the title (ADR-175, already
+  // proven on laptops), then a short size-prefixed code (ADR-177). Each step is a
+  // narrower reader than the one before, and every one of them reads a LITERAL string.
+  const model_number =
+    extractManufacturerModel(payload) ??
+    extractManufacturerModelFromName(fullText) ??
+    extractSizePrefixedModel(payload, fullText, screen_size);
 
   const ambiguity_flags: string[] = [];
   if (!screen_size) ambiguity_flags.push("size_missing");
@@ -82,9 +147,9 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
     color,
     payload: {
       brand: brand === "unknown" ? null : brand,
-      screen_size, resolution, panel,
+      screen_size, resolution, panel, refresh_rate,
       // NON-identity (display/quality only):
-      refresh_rate, series, color, smart: /smart|google tv|android tv|webos|tizen/.test(combined),
+      series, color, smart: /smart|google tv|android tv|webos|tizen/.test(combined),
     },
     ignored_terms: [],
     ambiguity_flags,

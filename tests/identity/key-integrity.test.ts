@@ -6,6 +6,8 @@ import {
   isStoreInternalIdentifier,
   hasModelNumberShape,
   extractManufacturerModel,
+  extractManufacturerModelFromName,
+  extractSizePrefixedModel,
 } from "@/lib/identity/store-identifiers";
 
 describe("store-internal identifier rejection", () => {
@@ -115,5 +117,57 @@ describe("extractManufacturerModel — sku is never trusted", () => {
 
   it("uppercases for stable comparison", () => {
     expect(extractManufacturerModel({ model: "qa65qn70fauxsa" })).toBe("QA65QN70FAUXSA");
+  });
+});
+
+/**
+ * Spec compounds and slash-joined pairs (2026-08-02). Both were measured passing the
+ * density rule on real TV titles and becoming identities.
+ */
+describe("tokens that are not a single model number", () => {
+  it("rejects a refresh-rate compound welded into a token", () => {
+    expect(extractManufacturerModelFromName("Dansat 65 Inch QLED 65LCS120HZ")).toBeNull();
+    expect(extractManufacturerModelFromName("Hisense HSR120HZ Smart TV")).toBeNull();
+    expect(extractManufacturerModel({ model: "DTD55QLED120HZ" })).toBeNull();
+  });
+  it("rejects two models joined by a slash", () => {
+    expect(extractManufacturerModel({ model: "98Q6C/98C6K" })).toBeNull();
+    expect(extractManufacturerModel({ model: "EVOQ75QLC/EVOQ75S4QLC2" })).toBeNull();
+    expect(extractManufacturerModel({ model: "DDR5/512GB" })).toBeNull();
+  });
+  it("leaves Apple's genuine one-character slash form alone", () => {
+    expect(extractManufacturerModel({ model: "MDHH4AB/A" })).toBe("MDHH4AB/A");
+  });
+});
+
+/**
+ * ADR-177 — short models are admitted by naming CONVENTION, never by lowering the
+ * global minimum. Every string here is production data from the prefix audit.
+ */
+describe("size-prefixed short models (ADR-177)", () => {
+  const tcl = "TCL 85 Inch QLED Smart TV Google TV - 85P8L";
+  it("accepts a complete size-prefixed code that the listing states verbatim", () => {
+    expect(extractSizePrefixedModel({ model: "85P8L" }, tcl, 85)).toBe("85P8L");
+    expect(extractSizePrefixedModel({ model: "65C8K" }, "TCL 65-inch QD Mini LED Google TV, 65C8K", 65)).toBe("65C8K");
+  });
+  it("rejects a truncation of a longer model in the same listing", () => {
+    const amazon = "Samsung 65 Inch Crystal UHD TV, U8000F, 4K, UA65U8000FUXZN";
+    expect(extractSizePrefixedModel({ model: "UA65U" }, amazon, 65)).toBeNull();
+  });
+  it("rejects a code whose size disagrees with the listing", () => {
+    expect(extractSizePrefixedModel({ model: "85P8L" }, tcl, 75)).toBeNull();
+  });
+  it("rejects when the next word marks a variant (55C6K PRO is not 55C6K)", () => {
+    expect(extractSizePrefixedModel({ model: "55C6K" }, "TCL 55 Inch 55C6K PRO Mini LED", 55)).toBeNull();
+  });
+  it("rejects a letter-leading Samsung fragment — the shape it was built to exclude", () => {
+    expect(extractSizePrefixedModel({ model: "QA75Q" }, "Samsung 75 Inch QLED QA75Q", 75)).toBeNull();
+    expect(extractSizePrefixedModel({ model: "UA80" }, "Samsung 80 Inch UA80", 80)).toBeNull();
+  });
+  it("never fires without a screen size to corroborate against", () => {
+    expect(extractSizePrefixedModel({ model: "85P8L" }, tcl, null)).toBeNull();
+  });
+  it("leaves the global minimum untouched for the ordinary path", () => {
+    expect(extractManufacturerModel({ model: "85P8L" })).toBeNull();
   });
 });

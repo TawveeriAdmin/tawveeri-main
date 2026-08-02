@@ -5097,3 +5097,58 @@ a merge of two existing canonicals, so ADR-176 does not gate it.
 No production write since the frozen baseline. Baseline still
 **2026-08-02T10:38:00Z: projection 5,193 · comparable 778 · single-store 4,204**.
 Extra continues draining via the scheduler.
+
+---
+
+## CHECKPOINT #52 — ADR-177: THE PARSER WAS THE CONSTRAINT, NOT THE THRESHOLD
+
+**Committed, NOT pushed. No production write. Baseline still frozen 2026-08-02T10:38:00Z:
+projection 5,193 · comparable 778 · single-store 4,204.** Tests **1,137/1,137**.
+
+### The threshold was measured to be right and was not touched
+Of the 50 low-confidence TV keys already spanning ≥2 stores, **37 have >1.5× internal price
+spread**. `samsung|75|4k|qled|NO_HZ` holds QEF1 + Q7F + Q8F + Q60D across 7 stores at
+2,399–5,999 SAR. The gate is doing its job; three parser defects were the constraint.
+
+### Shipped (parser only — takes effect on the next sweep)
+1. **Two sources, one vocabulary.** Extra declares refresh on 587/599 low-conf rows in
+   `featureArMotionFlow`; the parser read titles only. Declared spec fields now FILL gaps
+   (never override a title value); free-text description excluded; Extra's DLG
+   (`120 هرتز دي ال جي`, a 120 Hz mode on a 60 Hz panel) rejected.
+2. **`Mini-LED` was parsing as `led`** — the hyphen defeated `/mini\s*led/` and `\bled\b`
+   caught it. A WRONG value, not a missing one. Also `Nano-Cell`→null, `Neo-QLED`→`qled`,
+   `LCD`→null. Fixed; LCD/ULED recorded as themselves, never folded into `led`.
+3. **50 Hz** added — Jarir prints it literally on 480 observations.
+4. **ADR-175's title-model reader wired into TV** (31.7% of low-conf rows carry a literal
+   MPN in the title), behind two new junk guards: `65LCS120HZ`-style refresh compounds and
+   slash-joined pairs (`98Q6C/98C6K`, and the pre-existing bogus `MODEL:DDR5/512GB`).
+5. **ADR-177 short models by naming CONVENTION**, proven before writing any code
+   (`npm run tps:short-model-audit`): Almanea 13 short models / 0 truncations · Extra 73/4 ·
+   Amazon 21/14. **The audit changed the rule's shape** — the discriminator is not the
+   retailer's name but `<screen-size><series>`; every Amazon truncation is letter-leading.
+   A convention test cannot be widened by a retailer changing its data; an allowlist can.
+
+### Created and destroyed, separately — the number that matters
+**+70 created · −15 destroyed · net +55.** 311 listings promoted, **0 demoted**. The 15 were
+classified, not netted: **6 MOVED** to a tighter still-multi-store key · **5 were FALSE
+comparisons dissolved** (S90 vs S95, OLED65G66LW vs OLED65C56LA, QN1EF vs QN70F, 50G6500G vs
+50G6520G, S85H vs S85F — each proven by their own model numbers) · **4 genuine losses** to
+#49's identity-tier asymmetry. Under ADR-176 that trade is required, not merely acceptable.
+
+### `tps:identity-impact` was counting the wrong population
+It loaded only `status='valid'`, so a tier PROMOTION was invisible and this entire unit would
+have measured as zero. It now loads both tiers, gates contribution by status on each side,
+reports promoted/demoted, and classifies every lost key MOVED vs DIED.
+
+### Instruments kept
+`npm run tps:tv-lowconf` · `npm run tps:short-model-audit` · corrected `tps:identity-impact`.
+
+### Also closed (unrelated, pre-existing)
+`retailer-registry-coherence` was RED before this work: LuLu (23) and Sharaf DG (24) are now in
+`TPS_STORES`, so their ADR-148 known-gap exemptions had outlived the gap. Deleted.
+
+### NOT DONE
+No sweep, no `tps:refresh`, no production write — the +55 is a measured projection of the next
+sweep, not a realised gain. Multi-Hz titles still take the first match. `SMART-UA65U8000HUXSA`
+still will not meet `UA65U8000HUXSA`. Almanea's 2,061-observation block stays low-confidence
+where its titles state no refresh at all. ADRs 163–175 still exist only in HANDOVER.

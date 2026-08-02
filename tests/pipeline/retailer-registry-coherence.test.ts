@@ -30,8 +30,9 @@ import { TPS_STORES } from '../../scripts/tps-core/category-registry';
 /** Approved store ids deliberately not yet in the normalization sweep, with reasons. */
 const KNOWN_UNSWEPT: Record<number, string> = {
   10: 'blackbox — approved but bot-walled; zero observations ever ingested, so nothing to sweep',
-  23: 'lulu — ADR-148: 5,854 observations pending; addition deferred until the almanea/jarir drain attribution is closed',
-  24: 'sharafdg — ADR-148: 1,370 observations pending; addition deferred with lulu',
+  // lulu (23) and sharafdg (24) were removed on 2026-08-02: both are now in TPS_STORES
+  // and sweeping (lulu holds 1,135 normalized TV observations alone), so the exemption
+  // had outlived its gap — which is precisely what the test below is for.
 };
 
 describe('retailer registry coherence (ADR-148)', () => {

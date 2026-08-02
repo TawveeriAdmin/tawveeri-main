@@ -6,6 +6,102 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-177 — Read what the merchant published: two sources one vocabulary, and short models by naming convention · Accepted (2026-08-02)
+
+**Context.** #51 aimed at the 22,835 Saudi listings carrying no identity, and named the trap in
+advance: *"the fix here is a CONFIDENCE THRESHOLD change, and lowering a threshold to admit more
+identities is exactly the 'relax a gate as a growth strategy' move the founder prohibited. Sample
+before touching any threshold."* The full TV low-confidence population was sampled — **7,219
+observations, 279 keys, 577 distinct listings, 16 stores** (`npm run tps:tv-lowconf`).
+
+**The gate was measured to be RIGHT, and was not touched.** Of the 50 low-confidence TV keys that
+already span ≥2 stores, **37 have >1.5× internal price spread** — the ADR-034 price-band guard's own
+threshold for "different products". `samsung|75|4k|qled|NO_HZ` holds QEF1, Q7F, Q8F *and* Q60D
+across 7 stores at 2,399–5,999 SAR. Admitting the tier would have shown a shopper a Q60D price
+under a Q8F listing: the exact harm ADR-176 exists to prevent. **No threshold, tier rule or
+confidence score was changed by this ADR.**
+
+**Decision 1 — TWO SOURCES, ONE VOCABULARY.** The TV parser read the TITLE only, so it discarded
+specs the merchant had already published: Extra declares refresh on **587/599** low-confidence rows
+(`featureArMotionFlow`), panel on 521, resolution on 587 — in Arabic. The same vocabulary now runs
+over the title **and** over a whitelist of DECLARED spec fields; a declared spec only ever FILLS a
+gap, never overrides a stated title value; free-text description/summary fields are excluded, because
+a spec word in marketing prose is not a claim about this product. Rejected with it: `'120 هرتز دي ال
+جي'` (Extra's Dual-Line-Gate — a 120 Hz mode on a 60 Hz panel).
+
+**Decision 2 — THE VOCABULARY ITSELF WAS WRONG, and silently.** `'Mini-LED'` parsed as **`led`** —
+the hyphen defeats `/mini\s*led/` and `\bled\b` then matched — putting a Mini-LED in the same key
+space as a basic LED. `Nano-Cell` and `LCD` parsed as nothing; `Neo-QLED` as `qled`. These were WRONG
+values, not missing ones, and worse than a gap. Panel matching is now hyphen/space tolerant, and LCD
+and ULED are recorded as **themselves** rather than folded into `led`: folding them would merge two
+listings on a synonym we inferred instead of read.
+
+**Decision 3 — 50 Hz is a refresh rate.** Jarir states `"4K QLED, 50 Hz"` literally on 480 measured
+observations and the allowlist did not contain 50. Reading a number the merchant printed is not a
+relaxation.
+
+**Decision 4 — ADR-175's title-model reader is wired into TV.** 31.7% of low-confidence TV
+observations carry a literal MPN in the title. Two junk guards were added to the shared authority
+first, both from measured production strings: a refresh compound welded into a token (`65LCS120HZ`
+×33, `HSR120HZ`, `DTD55QLED120HZ`) and two models joined by a slash (`98Q6C/98C6K`,
+`EVOQ75QLC/EVOQ75S4QLC2`, and the pre-existing bogus identity `MODEL:DDR5/512GB`). Apple's genuine
+one-character slash form (`MDHH4AB/A`) is untouched.
+
+**Decision 5 — SHORT MODELS BY NAMING CONVENTION, not by a lower minimum.** `MIN_MODEL_LENGTH = 6`
+was blocking 1,432 observations whose model (`85P8L`, `65C8K`) is complete, while correctly blocking
+`QA65Q`, a truncation that once bridged Q6/Q7/Q8/QN70. The founder's test — *"a short string that is
+a prefix of a longer model elsewhere in that retailer's catalogue is a truncation"* — was run over
+the full TV catalogue before any code was written (`npm run tps:short-model-audit`, 107 distinct
+store+model pairs): **Almanea 13 short models / 0 truncations · Extra 73 / 4 · Amazon 21 / 14.**
+
+The audit also **changed the rule's shape**: the discriminator is not the retailer's *name* but the
+*shape of its convention*. Every accepted string is `<screen-size><series>`; every Amazon truncation
+begins with letters (`UA43F`, `QA75Q`, `QN95B`, `UA80`) and matches nothing. A convention test admits
+a new retailer using the same convention without a code change and cannot be widened by a retailer
+altering its data — a per-retailer allowlist can be both. `extractSizePrefixedModel` is therefore
+separate from `extractManufacturerModel` (the global minimum keeps its meaning) and requires all of:
+shape · the leading digits equal the listing's parsed screen size · the listing states the token
+verbatim · no longer model-shaped token in the listing starts with it · the next word is not a
+variant word (`55C6K` ≠ `55C6K PRO`). The audit's four Extra disagreements are all `X ⊂ X+PRO`, where
+the catalogue scope is the conservative one and the variant-word guard covers the dangerous half.
+
+**Measured, created and destroyed SEPARATELY** (`npm run tps:identity-impact tv`, read-only, over
+1,452 deduplicated TV listings): **+70 comparisons created, −15 destroyed, net +55**; 311 listings
+promoted low_confidence → valid; **0 demoted**. The 15 destroyed were each classified rather than
+netted: **6 MOVED** to a tighter key that is still multi-store (`lg|65|4k|qned|144` → `lg|MODEL:
+65QNED86A6A`, stores 2,3); **5 were FALSE comparisons correctly dissolved** — the spec key was
+grouping different models, proven by their own literal model numbers (S90 vs S95; OLED65G66LW vs
+OLED65C56LA; QN1EF vs QN70F; 50G6500G vs 50G6520G; S85H vs S85F); **4 are genuine losses** to
+identity-tier asymmetry (one store resolves a model, the other stays spec-keyed) — the #49 mechanism.
+**Under ADR-176 that trade is required, not merely acceptable:** dissolving 5 wrong comparisons
+outranks preserving 4 uncertain ones, because a wrong comparison destroys trust and a missing one
+delays it.
+
+**Consequences.** Platform-wide the change is TV-confined (431 of 13,816 listings rewrite, 4 of them
+outside TV). 43 listings lose identity entirely, of which **28 already do so under shipped code** —
+stale pre-ADR-058 staging rows (`MODEL:N70112162V`, a Noon SKU) that any re-sweep corrects — all
+5 of TV's are of that kind. The other 15 are the `MODEL:DDR5/512GB` / `MODEL:PROCESSOR/192GB`
+family: a RAM-and-storage pair serving as a laptop's identity, which should never have existed.
+**Nothing was written to production by this ADR** — the parser change takes effect on the next sweep,
+and the frozen baseline (2026-08-02T10:38:00Z · projection 5,193 · comparable 778 · single-store
+4,204) still stands until then.
+
+**Also corrected:** `tps:identity-impact` counted only `valid` rows, so a tier PROMOTION was
+invisible to it — the entire gain of a change like this one read as zero. It now loads both tiers and
+gates contribution by status on each side, reports promoted/demoted counts, and classifies every lost
+key as MOVED or DIED instead of leaving a bare negative number. **A net gain hiding a loss is not a
+gain.**
+
+**Instruments kept:** `npm run tps:tv-lowconf` (why identity fails, full population, per store and
+per cause) and `npm run tps:short-model-audit` (the prefix test, both row and catalogue scope).
+
+**Residual, not fixed:** a title stating several refresh rates (`60Hz MEMC, 120Hz VRR, DLG 120Hz`)
+still resolves to the first match; `SMART-UA65U8000HUXSA` will not meet `UA65U8000HUXSA`; Almanea's
+2,061-observation block stays low-confidence where its titles state no refresh at all. Governance
+debt from ADR-176 stands: ADRs 163–175 still exist only in HANDOVER.
+
+---
+
 ### ADR-162 — The engine publishes every figure it renders · Accepted (2026-08-01)
 
 **Context.** F7·3 measured, on production, four strings per query stating a saving —

@@ -69,6 +69,28 @@ const STANDARD_TOKENS = new Set([
 ]);
 
 /**
+ * A spec figure welded into a token is a SPECIFICATION, never a model number.
+ * Measured over TV titles (2026-08-02, full staging population): `65LCS120HZ` ×33,
+ * `DTD55QLED120HZ`, `DTQ85QLED144.HZ`, `HSR120HZ`, `144/288HZ` all satisfy the density
+ * rule and would each have become an identity.
+ */
+const SPEC_COMPOUND_TOKEN = /\d+\.?\s*HZ$/i;
+
+/**
+ * Two models joined by a slash — a retailer listing a PAIR of products, not one
+ * product's MPN. Measured: `98Q6C/98C6K`, `85C6K/85Q6C`, `EVOQ75QLC/EVOQ75S4QLC2`,
+ * `UHD65SLED/UHD65SLED-FL`, `NTV5000SLED/NTV5000SLED3`. Apple's genuine slash form
+ * (`MDHH4AB/A`, `MG1G4AH/A`) has a ONE-character suffix and is untouched.
+ */
+const DUAL_MODEL_SLASH = /^[A-Za-z0-9._-]{4,}\/[A-Za-z0-9._-]{4,}$/;
+
+/** True when a token is a spec compound or a slash-joined pair rather than one MPN. */
+function isNotASingleModel(value: string): boolean {
+  const v = value.trim();
+  return SPEC_COMPOUND_TOKEN.test(v) || DUAL_MODEL_SLASH.test(v);
+}
+
+/**
  * Minimum length for a model number used as an IDENTITY key.
  *
  * Matches the ADR-049 model-corroboration gate. Short codes are the dangerous
@@ -126,7 +148,88 @@ export function extractManufacturerModel(payload: Record<string, unknown>): stri
     if (!candidate) continue;
     if (!hasModelNumberShape(candidate)) continue;
     if (isStoreInternalIdentifier(candidate)) continue;
+    if (isNotASingleModel(candidate)) continue;
     return candidate.toUpperCase();
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHORT MODELS — a naming CONVENTION test, not a lower threshold (ADR-177)
+//
+// `MIN_MODEL_LENGTH = 6` exists because `QA65Q` — a truncation of QA65Q8FAAUXSA —
+// bridged Q6/Q7/Q8/QN70 into one product. That harm is real and this module keeps
+// rejecting it. But the same rule discards `85P8L` and `65C8K`, which are COMPLETE
+// TCL/Hisense model numbers, and it did so for 1,432 measured observations.
+//
+// MEASURED, before writing this (scripts/tps-analysis/short-model-prefix-audit.ts,
+// 2026-08-02, 107 distinct store+model pairs over the full TV catalogue), applying
+// the founder's test — "a short string that is a PREFIX of a longer model elsewhere
+// in that retailer's catalogue is a truncation":
+//
+//   Almanea   13 short models   0 truncations    85Q6C 98P8L 75U7Q 85C7L …
+//   Extra     73 short models   4 truncations    (all four are `X ⊂ X+PRO`, i.e. a
+//                                                 real model that happens to prefix
+//                                                 a real Pro variant)
+//   Amazon    21 short models  14 truncations    UA43F ⊂ UA43F6000FUXSA, QA75Q ⊂ …
+//
+// THE DISCRIMINATOR IS NOT THE RETAILER'S NAME — IT IS THE SHAPE OF ITS CONVENTION,
+// and that is a stronger rule than a per-retailer allowlist: it admits a new
+// retailer using the same convention without a code change, and it cannot be
+// widened by a retailer changing its data. Every accepted string above is
+// `<screen-size><series>` (85P8L = an 85-inch P8L). Every Amazon truncation begins
+// with letters (UA43F, QA75Q, QN95B, UA80) and matches nothing here.
+//
+// Three conditions, all required:
+//   1. shape      — `<2–3 digits><letter><1–3 alnum>`, total 4–5 chars
+//   2. self-consistency — the leading digits equal the listing's parsed screen size,
+//                    so a fragment cannot masquerade as a complete code
+//   3. not a prefix — no longer model-shaped token in this listing's own text starts
+//                    with it, and the next word is not a variant word (PRO/PLUS/…).
+//                    This is the founder's test applied at ROW scope, which the audit
+//                    showed reproduces the catalogue verdict everywhere except the
+//                    four Extra `+PRO` pairs — where the catalogue scope is the
+//                    CONSERVATIVE one and condition 3's variant-word guard covers the
+//                    dangerous half (a Pro listing written `55C6K PRO`).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SIZE_PREFIXED_MODEL = /^(\d{2,3})([A-Z][A-Z0-9]{1,3})$/;
+const VARIANT_SUFFIX_WORDS = new Set(["PRO", "PLUS", "MAX", "ULTRA", "EVO", "LITE"]);
+
+/**
+ * Extract a COMPLETE but short (4–5 char) manufacturer model number, or null.
+ *
+ * Deliberately separate from `extractManufacturerModel` so the global rule keeps its
+ * meaning: this is not "the minimum is now 4", it is "this specific shape, proven to
+ * stand alone, on a listing that corroborates its own screen size".
+ */
+export function extractSizePrefixedModel(
+  payload: Record<string, unknown>,
+  listingText: string,
+  screenSize: number | null
+): string | null {
+  if (screenSize == null) return null;
+  const text = (listingText || "").toUpperCase();
+  const words = text.split(/[\s،,;:()[\]{}"'؛|–—]+/).map((t) => t.replace(/[.,،؛:]+$/, "")).filter(Boolean);
+
+  for (const field of MODEL_FIELDS) {
+    const raw = payload[field];
+    const candidate = (typeof raw === "string" ? raw.trim() : "").toUpperCase();
+    if (!candidate || candidate.length < 4 || candidate.length >= MIN_MODEL_LENGTH) continue;
+    if (isStoreInternalIdentifier(candidate) || isNotASingleModel(candidate)) continue;
+
+    const shape = SIZE_PREFIXED_MODEL.exec(candidate);
+    if (!shape) continue;                                   // (1) shape
+    if (Number(shape[1]) !== screenSize) continue;           // (2) self-consistency
+
+    // (3) the listing must state it verbatim as its own token — never a fragment of
+    // a longer string we then silently shortened.
+    const at = words.indexOf(candidate);
+    if (at === -1) continue;
+    if (words.some((w) => w.length > candidate.length && w.startsWith(candidate))) continue;
+    if (VARIANT_SUFFIX_WORDS.has(words[at + 1] ?? "")) continue;
+
+    return candidate;
   }
   return null;
 }
@@ -204,6 +307,7 @@ export function extractManufacturerModelFromName(name: string): string | null {
     if (isStoreInternalIdentifier(token)) continue;
     if (NAME_MODEL_CPU_PATTERNS.some((re) => re.test(token))) continue;
     if (SPEC_UNIT_TOKEN.test(token)) continue;
+    if (isNotASingleModel(token)) continue;
 
     // Density. The CPU patterns above do the CPU work, so this only has to exclude
     // short/thin noise: >=8 chars with at least 2 letters and 3 digits. Kept at 2

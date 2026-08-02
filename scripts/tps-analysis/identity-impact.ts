@@ -46,7 +46,7 @@ function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   return { nameAr, nameEn, brand, url: pickBestUrl(p) };
 }
 
-interface Row { raw_obs_id: number; store_id: number; category: string; identity_key: string; payload: Record<string, unknown> | null; raw_name: string | null }
+interface Row { raw_obs_id: number; store_id: number; category: string; identity_key: string; status: string; payload: Record<string, unknown> | null; raw_name: string | null }
 
 /** Distinct (category, key) → set of stores, i.e. the corroboration surface. */
 function corroboration(pairs: { category: string; key: string; store: number }[]) {
@@ -158,12 +158,20 @@ async function simulate(pg: Client, defs: CategoryDef[], stores: number[]) {
 
   // One deduplicated representative per (store, url) — daily re-scrapes inflate
   // raw counts 8–23x and would swamp the diff with duplicates.
+  //
+  // BOTH TIERS are loaded, not just `valid` (corrected 2026-08-02). A parser change
+  // that PROMOTES a low_confidence_candidate to valid was invisible to this tool —
+  // the promoted row was never in the population — so the whole gain of a promotion
+  // change read as zero. Contribution to the corroboration surface is instead gated
+  // by status on each side: a row counts BEFORE only if it is stored `valid`, and
+  // AFTER only if it recomputes to `valid`. That is what production does, and it
+  // keeps the baseline honest (a low-confidence key never corroborates).
   const { rows } = await pg.query<Row>(
     `select distinct on (s.store_id, s.url)
-            s.raw_obs_id, s.store_id, s.category, s.identity_key, o.payload, o.raw_name
+            s.raw_obs_id, s.store_id, s.category, s.identity_key, s.status, o.payload, o.raw_name
      from tps_identity_staging s
      join raw_observations o on o.id = s.raw_obs_id
-     where s.category = any($1) and s.status = 'valid'
+     where s.category = any($1) and s.status in ('valid','low_confidence_candidate')
      order by s.store_id, s.url, s.observed_at desc`,
     [defs.map((d) => d.category)]
   );
@@ -172,14 +180,18 @@ async function simulate(pg: Client, defs: CategoryDef[], stores: number[]) {
   const after: { category: string; key: string; store: number }[] = [];
   const aliasRows: KeyedObservation[] = [];
   const changes = new Map<string, { from: string; to: string; n: number }>();
-  let unchanged = 0, changed = 0, nowInvalid = 0;
+  /** Per stored key: where each of its member listings ended up. Answers the only
+   *  question a negative delta really poses — did the comparison DIE, or MOVE? */
+  const destinations = new Map<string, { store: number; to: string; toStatus: string }[]>();
+  const invalidSamples = new Map<string, number>();
+  let unchanged = 0, changed = 0, nowInvalid = 0, promoted = 0, demoted = 0;
 
   for (const r of rows) {
     const def = defs.find((d) => d.category === r.category);
     if (!def) continue;
     const p = r.payload ?? {};
     const { nameAr, nameEn, brand } = adaptRow(p, r.raw_name);
-    before.push({ category: r.category, key: r.identity_key, store: r.store_id });
+    if (r.status === "valid") before.push({ category: r.category, key: r.identity_key, store: r.store_id });
 
     const norm = def.normalize(nameAr, nameEn, brand, p);
     const id = def.plugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
@@ -193,8 +205,21 @@ async function simulate(pg: Client, defs: CategoryDef[], stores: number[]) {
       specKey: fallback.status !== "invalid" && fallback.key ? fallback.key : null,
     });
 
-    if (id.status === "invalid" || !id.key) { nowInvalid++; continue; }
-    after.push({ category: r.category, key: id.key, store: r.store_id });
+    if (r.status === "valid") {
+      const dk = `${r.category}|${r.identity_key}`;
+      (destinations.get(dk) ?? destinations.set(dk, []).get(dk)!)
+        .push({ store: r.store_id, to: id.key ?? "(invalid)", toStatus: id.status });
+    }
+
+    if (id.status === "invalid" || !id.key) {
+      nowInvalid++;
+      const s = `${r.category} · was ${r.status} · ${r.identity_key} · ${id.reason ?? "?"}`;
+      invalidSamples.set(s, (invalidSamples.get(s) ?? 0) + 1);
+      continue;
+    }
+    if (id.status === "valid") after.push({ category: r.category, key: id.key, store: r.store_id });
+    if (r.status !== "valid" && id.status === "valid") promoted++;
+    if (r.status === "valid" && id.status !== "valid") demoted++;
 
     if (id.key === r.identity_key) { unchanged++; continue; }
     changed++;
@@ -209,6 +234,12 @@ async function simulate(pg: Client, defs: CategoryDef[], stores: number[]) {
   console.log(`  key unchanged : ${unchanged}`);
   console.log(`  key CHANGED   : ${changed}   (${changes.size} distinct rewrites)`);
   console.log(`  now INVALID   : ${nowInvalid}  (would drop out of staging)`);
+  if (invalidSamples.size) {
+    console.log(`  ── listings that lose identity entirely:`);
+    for (const [k, n] of [...invalidSamples].sort((a, b) => b[1] - a[1]).slice(0, 12)) console.log(`     [${n}] ${k}`);
+  }
+  console.log(`  PROMOTED low_confidence → valid : ${promoted}`);
+  console.log(`  DEMOTED  valid → low_confidence : ${demoted}   (a demotion removes a listing from comparison)`);
   console.log(`\ncorroboration surface (distinct keys / keys present in >=2 stores)`);
   console.log(`  before : ${b.keys} keys, ${b.multistore} multi-store`);
   console.log(`  after  : ${a.keys} keys, ${a.multistore} multi-store`);
@@ -237,8 +268,29 @@ async function simulate(pg: Client, defs: CategoryDef[], stores: number[]) {
   const lost = [...b.multistoreKeys].filter((k) => !a.multistoreKeys.has(k));
   const gained = [...a.multistoreKeys].filter((k) => !b.multistoreKeys.has(k));
   if (lost.length) {
+    // A lost key is only a lost COMPARISON if its members no longer meet anywhere.
+    // Netting the two numbers would hide exactly the failure the founder named, so
+    // each loss is classified and the two classes are counted separately.
+    const moved: string[] = [], dead: string[] = [];
     console.log(`\nLOST corroborations (${lost.length}) — these stop being multi-store:`);
-    for (const k of lost.slice(0, 25)) console.log(`  - ${k}`);
+    for (const k of lost) {
+      const dest = destinations.get(k) ?? [];
+      const byNewKey = new Map<string, Set<number>>();
+      for (const d of dest) {
+        if (d.toStatus !== "valid") continue;
+        (byNewKey.get(d.to) ?? byNewKey.set(d.to, new Set()).get(d.to)!).add(d.store);
+      }
+      const reunited = [...byNewKey].filter(([, s]) => s.size >= 2);
+      if (reunited.length) {
+        moved.push(k);
+        console.log(`  ~ ${k}\n      MOVED → ${reunited.map(([nk, s]) => `${nk} (stores ${[...s].join(",")})`).join("  ")}`);
+      } else {
+        dead.push(k);
+        const split = [...byNewKey].map(([nk, s]) => `${nk}@${[...s].join(",")}`).join("  ");
+        console.log(`  - ${k}\n      DIED → ${split || "(no valid destination)"}`);
+      }
+    }
+    console.log(`\n  of ${lost.length} lost keys: ${moved.length} MOVED to a new key that is still multi-store, ${dead.length} genuinely stopped being a comparison.`);
   }
   if (gained.length) {
     console.log(`\nGAINED corroborations (${gained.length}):`);
