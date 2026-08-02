@@ -289,3 +289,43 @@ rather than the label's exact words:
 Customer-facing copy. The **store-owner portal** (`store.json`) is out of scope: a merchant
 editing their own price is looking at a price that is genuinely current *to them*, and that
 surface makes no claim on our behalf.
+
+---
+
+## 10. AMENDMENT 2026-08-02 — THE COMPARABLE-PRODUCTS FIGURE IS DEFINED
+
+**Why this exists.** Three different "comparable" numbers were in circulation in one day —
+**883**, **705** and **419** — all true, all measuring different populations. A figure without
+its denominator attached is how a true number becomes a false claim: the largest one is the
+most flattering and the least honest, and nothing stopped it drifting into customer copy.
+This is exactly the F1 boundary — the claim is the evidence, not the phrasing.
+
+### The ONE figure that may be said publicly
+
+> **705 products can be compared across retailers a customer can actually see.**
+
+**Definition, and it must travel with the number:** a product in `tps_product_projection`
+backed by an **active** canonical, carrying offers from **≥2 retailers that pass the DISPLAY
+gate** (`isDisplayableRetailer` + `APPROVED_STORE_IDS`). Measured 2026-08-02.
+
+**Recompute it with:** `npx tsx scripts/tps-analysis/comparison-freshness.ts` (headline) —
+never by hand, never from a remembered number.
+
+### Internal-only figures — NEVER publish, and never let one substitute for 705
+
+| Figure | What it counts | Why it must not be said |
+|---|---:|---|
+| **883** | comparable counting **every** store | includes retailers a customer cannot be shown (retired, never-approved onboarding probes). Publishing it claims comparisons the customer cannot see |
+| **5,398** | customer-visible products | a catalogue size, not a comparison claim |
+| **~9,300** | `product_stores` offer rows | rows, not products — Jarir alone holds 4,578 rows for 994 products |
+
+**The successor rule.** When 705 changes, the replacement must be recomputed under the SAME
+definition and this section amended in the same commit. **A new number never inherits the old
+number's sentence.** If a future figure counts a different population, it needs its own row in
+this table — it does not get to be "705, updated".
+
+### What may be said around it
+✅ «نقارن أسعار منتجات من متاجر سعودية» — comparison across Saudi retailers, no count implied.
+✅ The count, only with the retailers-a-customer-can-see qualifier attached.
+❌ Any comparable figure quoted bare, without the denominator.
+❌ 883, or any all-stores figure, in customer-facing copy.
