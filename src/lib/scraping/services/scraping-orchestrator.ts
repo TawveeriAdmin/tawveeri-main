@@ -437,7 +437,7 @@ export class ScrapingOrchestrator {
                 scrapedProduct.availability
               );
 
-              // (failure-counter reset skipped — consecutive_failures column does not exist in prod)
+              await this.stampChecked(productStoreId, true);
               productsUpdated++;
               if (oldPrice !== newPrice) priceChanges++;
 
@@ -463,6 +463,7 @@ export class ScrapingOrchestrator {
                 next_action: 'diagnose parser for this retailer',
               });
               await this.recordFailure(productStoreId, 'scraper returned null');
+              await this.stampChecked(productStoreId, false);
               errors++;
             }
           } catch (err) {
@@ -474,6 +475,7 @@ export class ScrapingOrchestrator {
               next_action: 'retried 3x and still failed; inspect network/anti-bot',
             });
             await this.recordFailure(productStoreId, msg);
+            await this.stampChecked(productStoreId, false);
             errors++;
           }
 
@@ -546,6 +548,51 @@ export class ScrapingOrchestrator {
         .eq('id', productStoreId);
     } catch (err) {
       console.error('recordFailure threw:', err);
+    }
+  }
+
+  /**
+   * Stamp that this offer was ATTEMPTED, whatever the outcome.
+   *
+   * THE BUG THIS FIXES, measured 2026-08-02. The price-update selection is
+   *   .or('last_checked_at.is.null,last_checked_at.lt.<cutoff>')
+   *   .order('last_checked_at', ascending, nullsFirst).limit(max_products)
+   * and NOTHING in the codebase ever WROTE `last_checked_at`. So every run selected the
+   * same first N rows, forever — the queue never advanced. Because that head is full of
+   * delisted products (Extra's oldest URLs return HTTP 404), essentially every cycle spent
+   * its whole budget re-attempting the dead and never reached a live product.
+   *
+   * The visible symptom was the opposite of the cause: store-level ingestion freshness was
+   * GREEN (discovery keeps finding products) while the products actually SHOWN carried
+   * prices a week old — only 6 of 801 comparable products were inside the 26h SLO, median
+   * 173.6h. Freshness of the catalogue is not freshness of the comparison.
+   *
+   * NO SCHEMA CHANGE. An earlier attempt at this concluded "the columns do not exist in
+   * production and DDL is not safe before launch" and disabled itself — it was looking for
+   * `consecutive_failures`. Production has `consecutive_misses` and `scrape_status`
+   * (migration 17), which is what this writes.
+   */
+  private async stampChecked(productStoreId: string, ok: boolean): Promise<void> {
+    try {
+      const supabase = createServerClient();
+      const now = new Date().toISOString();
+      if (ok) {
+        await (supabase as any).from('product_stores')
+          .update({ last_checked_at: now, last_scraped_at: now, consecutive_misses: 0, scrape_status: 'ok' })
+          .eq('id', productStoreId);
+        return;
+      }
+      // Failure: advance the cursor AND count the miss, so a chronically dead offer sinks
+      // instead of blocking the head of the queue.
+      const { data } = await (supabase as any).from('product_stores')
+        .select('consecutive_misses').eq('id', productStoreId).maybeSingle();
+      const misses = Number(data?.consecutive_misses ?? 0) + 1;
+      await (supabase as any).from('product_stores')
+        .update({ last_checked_at: now, consecutive_misses: misses, scrape_status: 'failed' })
+        .eq('id', productStoreId);
+    } catch (err) {
+      // Never let bookkeeping break a price run — but do say so.
+      console.error('[price] stampChecked failed:', err instanceof Error ? err.message : err);
     }
   }
 
