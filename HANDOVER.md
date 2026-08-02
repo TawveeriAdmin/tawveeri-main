@@ -4667,3 +4667,75 @@ rows, which also remain unrepaired as instructed.
 the +70 canonicals, because those canonicals are now shared with other retailers — removing
 them would delete legitimate products. After rollback the +70 revert to single-store and
 the +8 comparables revert to non-comparable, which is the correct end state.
+
+---
+
+## CHECKPOINT #46 — ADR-175: CATEGORY-REGISTRY PILOT (laptop)
+
+**Pilot category chosen on the founder's two conditions, both measured:**
+largest classification failure (890 distinct laptop names absent from the knowledge
+layer) AND multi-retailer stock (12 stores; Amazon 251, Extra 212, Noon 180, BC Palace
+138). Laptop also had the highest canonical count already (722), proving it corroborates.
+
+### The gap was not what the category list suggested
+Bucketing unclassified names by keyword first suggested a MISSING category
+(`case_cover` 1,345 names / 13 stores; `storage` 634 / 15). **Sampling killed that:** the
+`storage` bucket was ~80% laptops whose titles merely mention SSD/ذاكرة. The real defect
+is an EXISTING category failing on merchant naming, not an unregistered one.
+
+Root cause: `extractManufacturerModel()` reads the **payload only**. Arabic listings put
+the MPN in the TITLE — `X1504VA-BQ575W`, `83UR007EAD`, `U7-14ILL10`, `9S7-14J112-1024` —
+and the family regexes are English-only, so «لابتوب اسوس فيفوبوك» loses family AND model.
+Deterministic probe of absent laptop-keyword names: 274 total, 133 correctly rejected as
+accessories, **73 identifiable (45 via the new title extractor)**.
+
+### THE FINDING THAT CHANGED THE DESIGN
+Wiring the title fallback in unconditionally, measured on ONE fixed window (store 2,
+`--replay-from 0`, 500 observations):
+
+| | before | unconditional | rescue-only |
+|---|---|---|---|
+| valid identity tier | 88 | 96 | **95** |
+| **corroborated canonicals** | **23** | **18** ❌ | **23** ✓ |
+
+**More identity, fewer comparisons.** A `MODEL:` key outranks the spec key, so listings
+that used to merge across stores on `brand\|cpu\|ram\|storage` split the moment one
+merchant writes `X1504VA` and another `X1504VA-BQ575W`. Precision rose; comparison
+coverage fell. **Precision and comparability are not the same axis, and comparison is the
+product.** Gating the rescue on an incomplete spec triple makes it zero-churn: an
+already-identifiable laptop keeps its exact key, so no existing comparison can break.
+
+### Measured result (Amazon + Noon replayed, full chain rebuilt)
+
+| Metric | Before | After | Δ |
+|---|---|---|---|
+| active canonicals | 7,269 | 7,310 | **+41** |
+| customer-visible products | 5,148 | 5,189 | **+41** |
+| **price-comparable products** | **771** | **776** | **+5** |
+| laptop canonicals | 722 | 825 | +103 |
+
+### Acceptance criteria — all four held
+1. **Zero precision regression.** Exactly one accessory sits under `detected_category='laptop'`
+   («باندل حقيبة لابتوب») and it is NOT from this unit: `normalizer_version=v9.0.2`,
+   `store_id='المنيع'`, dated 2026-06-29 — a row from the failed June bridge.
+2. **No CPU token ever extracted** — 11/11 fixtures, including `i5-1334U`, `7-255U`,
+   `X1-26-100`, `4.10GHz`, `14.0-inch`.
+3. **Baseline laptop canonicals did not fall** (722 → 825).
+4. **Measured as net-new comparables after `tps:refresh`**, never upsert counts.
+
+### Scope NOT covered (remaining headroom, deliberately unclaimed)
+Only stores 2 and 3 were replayed. Extra (212 missed names), BC Palace (138) and Almanea
+— which carries the richest Arabic laptop titles and still shows ~3,078 observations
+behind — were NOT replayed. **I will not extrapolate a yield from +5;** the honest next
+step is to replay one more store and measure again.
+
+### Rollback
+`git revert 9c13cc3`. The emitted rows need no deletion: the gate is rescue-only, so
+reverting stops new title-derived keys without invalidating existing ones. To fully
+restore prior state, reset cursors for stores 2 and 3 to 0 and re-sweep — writes are
+deterministic upserts (0 duplicates proven in #45).
+
+### Still deferred, recorded not forgotten
+1,166 duplicate `source_record_id`s (same observation under two categories) and 2,929
+Arabic `store_id` rows. Both schema-integrity defects producing silent failures. Own
+boundary each.
