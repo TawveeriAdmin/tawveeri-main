@@ -130,3 +130,94 @@ export function extractManufacturerModel(payload: Record<string, unknown>): stri
   }
   return null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NAME-DERIVED MODEL NUMBERS (ADR-175)
+//
+// WHY THIS EXISTS. `extractManufacturerModel` reads the payload only. Measured
+// 2026-08-02: of laptop-keyword observations absent from the knowledge layer, 45
+// were correctly rejected as accessories and 166 (79%) passed detection but
+// yielded NO identity — because the merchant put the model number in the TITLE and
+// not in a payload field. Arabic listings are the worst hit: the family regexes are
+// English-only, so «لابتوب اسوس فيفوبوك 15 X1504VA-BQ575W» loses its family AND its
+// model, and a listing carrying the strongest identity signal that exists resolves
+// to nothing.
+//
+// WHY IT IS SAFE. It reuses `hasModelNumberShape` and `isStoreInternalIdentifier` —
+// it does NOT introduce a second notion of what a model number is. On top of those
+// it adds ONE discriminator that the payload path never needed, because a title is
+// a crowded namespace and a payload field is not:
+//
+//   A CPU string passes the shape guard. `i5-1334U` has a letter, a digit, no
+//   whitespace and 8 characters. Extracting it as a model number would merge every
+//   laptop sharing a CPU into one canonical — a false merge, which is far worse than
+//   no identity (Constitution: unknown beats incorrect).
+//
+// The separator is DENSITY, verified against production strings:
+//   X1504VA-BQ575W  14 chars · 6 letters · 7 digits  → model   ✓
+//   83UR007EAD      10 chars · 5 letters · 5 digits  → model   ✓
+//   U7-14ILL10      10 chars · 4 letters · 5 digits  → model   ✓
+//   i5-1334U         8 chars · 2 letters · 5 digits  → CPU     ✗
+//   X1-26-100        9 chars · 1 letter  · 6 digits  → CPU     ✗
+//   7430U            5 chars                          → too short ✗
+//
+// Ties break toward the LONGEST candidate: a real MPN is longer than the noise it
+// competes with. Returning null stays a correct and common outcome.
+
+/** Tokens that are never a laptop model number even when they pass the shape guard. */
+const NAME_MODEL_CPU_PATTERNS: RegExp[] = [
+  /^i[3579]-\d{3,5}[A-Z]{0,2}$/i,        // i5-1334U, i7-13620H
+  /^(ultra|core)?-?\d-\d{3,4}[A-Z]{0,2}$/i, // 5-120U, 7-255U
+  /^[A-Z]\d-\d{2}-\d{2,3}$/i,            // X1-26-100 (Snapdragon)
+  /^\d{4,5}[A-Z]{1,2}$/i,                // 7430U, 13620H
+  /^(DDR\d|LPDDR\d|PCIE\d|USB\d|WIFI\d|BT\d)$/i,
+];
+
+/**
+ * A number welded to a unit is a SPECIFICATION, never a model number — `14.0-inch`
+ * passes the shape guard and carries 4 letters and 3 digits, so density alone lets it
+ * through. Anchored at both ends so a genuine MPN that merely ENDS in a unit letter
+ * (`X1504VA-BQ575W`) is untouched.
+ */
+const SPEC_UNIT_TOKEN = /^\d+(?:\.\d+)?[-–]?(?:inch|بوصة|gb|tb|mb|ghz|mhz|hz|cm|mm|kg|wh?|rpm|nits|bit)$/i;
+
+/** Words that mark the following token as a CPU, not a model. */
+const CPU_CONTEXT = ["معالج", "processor", "cpu", "core", "انتل", "intel", "ryzen", "رايزن", "سناب دراجون", "snapdragon", "الترا"];
+
+/**
+ * Extract a manufacturer model number from a product TITLE when the payload has
+ * none. Strict by construction; null is the expected result for most titles.
+ *
+ * This is the second sanctioned way to derive a `MODEL:` identity key, and it is
+ * deliberately narrower than the payload path.
+ */
+export function extractManufacturerModelFromName(name: string): string | null {
+  if (!name) return null;
+
+  // Arabic comma and common separators are token boundaries; keep -/._ inside tokens.
+  const rawTokens = name.split(/[\s،,;:()[\]{}"'؛]+/).filter(Boolean);
+
+  let best: string | null = null;
+  for (let i = 0; i < rawTokens.length; i++) {
+    const token = rawTokens[i].replace(/[.,،؛:]+$/, "");
+    if (!hasModelNumberShape(token)) continue;
+    if (isStoreInternalIdentifier(token)) continue;
+    if (NAME_MODEL_CPU_PATTERNS.some((re) => re.test(token))) continue;
+    if (SPEC_UNIT_TOKEN.test(token)) continue;
+
+    // Density. The CPU patterns above do the CPU work, so this only has to exclude
+    // short/thin noise: >=8 chars with at least 2 letters and 3 digits. Kept at 2
+    // letters because real MPNs are digit-heavy — MSI's `9S7-14J112-1024` carries
+    // just two.
+    const letters = (token.match(/[A-Za-z]/g) || []).length;
+    const digits = (token.match(/\d/g) || []).length;
+    if (token.length < 8 || letters < 2 || digits < 3) continue;
+
+    // A token directly after a CPU word is a CPU part number, not a product model.
+    const prev = (rawTokens[i - 1] || "").toLowerCase();
+    if (CPU_CONTEXT.some((w) => prev.includes(w))) continue;
+
+    if (!best || token.length > best.length) best = token;
+  }
+  return best ? best.toUpperCase() : null;
+}

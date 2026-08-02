@@ -6,7 +6,7 @@
 // never inferred. Ambiguity is flagged, not resolved by guessing.
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
-import { extractManufacturerModel } from "../../../src/lib/identity/store-identifiers";
+import { extractManufacturerModel, extractManufacturerModelFromName } from "../../../src/lib/identity/store-identifiers";
 import { normalizeArabic } from "../../tps-core/text";
 
 // ── Family / series per brand (canonical family token). Order matters: longer /
@@ -253,7 +253,25 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
   }
   const screen = extractScreen(fullText);
   const { gpu, discrete } = extractGpu(fullText);
-  const model_number = extractManufacturerModel(payload);
+  // RESCUE-ONLY name-derived model (ADR-175). Payload keeps absolute precedence.
+  //
+  // The title is read ONLY when the payload has no model AND the spec triple is
+  // incomplete — i.e. only for a listing that would otherwise get NO identity at all.
+  //
+  // WHY IT IS GATED THIS WAY, measured not assumed. Wiring the name fallback in
+  // unconditionally raised valid identities on a fixed window (88 -> 96) while DROPPING
+  // corroborated canonicals (23 -> 18). A `MODEL:` key outranks the spec key, so two
+  // listings that used to merge across stores on brand|cpu|ram|storage split apart the
+  // moment one merchant writes `X1504VA` and another writes `X1504VA-BQ575W`. Precision
+  // rose and comparison coverage fell — and comparison is the product.
+  //
+  // Gated on an incomplete spec triple, the rescue is zero-churn by construction: an
+  // already-identifiable laptop keeps the exact key it had, so no existing comparison
+  // can break. Same discipline as the ADR-072 fill-only extractors above.
+  const specTripleComplete = cpu !== null && ram !== null && storage !== null;
+  const model_number =
+    extractManufacturerModel(payload) ??
+    (specTripleComplete ? null : extractManufacturerModelFromName(fullText));
   const color = extractColor(fullText);
   const os_edition = extractOs(fullText);
 
