@@ -238,13 +238,17 @@ const _feedSet = new Set(INGEST_FEED_STORES);
 // schema-drift fix) keeps Extra's 838 prices fresh via the repaired Puppeteer JSON-LD scraper.
 // FOUNDER DECISION 2026-08-02 (closed):
 //   ACTIVATE swsg · re-admit samsung_ksa · DROP noon, lulu, sharafdg.
+// swsg was then RETIRED the same day under the Founder's own standing rule, on evidence:
+// it returns HTTP 403 to our production egress (verified in scraping_runs.error_summary)
+// while serving 40 TVs / 80 appliances / 40 kitchen / 40 phones to a Saudi IP. It was
+// activated in good faith believing it could be ingested; it cannot be, legitimately.
 // noon and sharafdg are refused at the retailer from our production egress (noon: request
 // stalls ~229s; sharafdg: HTTP 403 on search AND product pages, verified in
 // scraping_runs.error_summary). No proxy or paid egress is used to circumvent a deliberate
 // block. lulu was ingesting fine and was dropped by decision, not by failure.
 // All three are also removed from the DISPLAY gate — a retailer we cannot refresh must not
 // be shown, only get older. See src/lib/retailers/approved-retailers.ts.
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'extra,swsg,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'extra,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(20 * 60 * 1000), 10);   // 20m after boot (let the app + PostgREST settle before adding scraper load — 2026-07-27 incident)
