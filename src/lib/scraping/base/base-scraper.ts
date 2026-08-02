@@ -366,6 +366,12 @@ export abstract class BaseScraper {
     const categoryUrls = this.config.category_urls[category] || [];
     if (categoryUrls.length === 0) return products;
 
+    /** The third copy of the same swallow (sharafdg, the generic HTML base, and here).
+     *  A store that could not be reached at all returned [] and the run was recorded
+     *  `success` with 0 discovered — which is how swsg looked "activated" while ingesting
+     *  nothing. Kept per-store so a partial success is still a success. */
+    let lastError: unknown = null;
+
     for (const baseUrl of categoryUrls) {
       let consecutiveFailures = 0;
       let consecutiveAllDupPages = 0;
@@ -405,6 +411,7 @@ export abstract class BaseScraper {
           );
           await this.delay();
         } catch (err) {
+          lastError = err;
           consecutiveFailures++;
           console.error(`[${this.config.store_slug}] listing fetch failed at page ${page} of ${baseUrl}:`, err);
           if (consecutiveFailures >= 3) {
@@ -413,6 +420,10 @@ export abstract class BaseScraper {
           }
         }
       }
+    }
+    if (!products.length && lastError) {
+      const msg = lastError instanceof Error ? lastError.message : String(lastError);
+      throw new Error(`${this.config.store_slug} listing discovery produced nothing for ${category}: ${msg}`);
     }
     return products;
   }
