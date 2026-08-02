@@ -1,0 +1,141 @@
+{
+ "stamp": "20260802-133440",
+ "merges": [
+  {
+   "category": "tv",
+   "raw_obs_id": "45214",
+   "store_id": 2,
+   "from": "nikai|50|4k|led|NO_HZ",
+   "to": "nikai|MODEL:UHD50SLED",
+   "mpn": "UHD50SLED"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "45226",
+   "store_id": 2,
+   "from": "nikai|60|4k|led|NO_HZ",
+   "to": "nikai|MODEL:UHD60SLED",
+   "mpn": "UHD60SLED"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "557697",
+   "store_id": 3,
+   "from": "tcl|65|4k|mini_led|144",
+   "to": "tcl|MODEL:65C8K",
+   "mpn": "65C8K"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "557707",
+   "store_id": 3,
+   "from": "tcl|75|4k|mini_led|144",
+   "to": "tcl|MODEL:75P8L",
+   "mpn": "75P8L"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620596",
+   "store_id": 3,
+   "from": "tcl|98|4k|mini_led|144",
+   "to": "tcl|MODEL:98Q6C",
+   "mpn": "98Q6C"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620601",
+   "store_id": 3,
+   "from": "tcl|85|4k|mini_led|144",
+   "to": "tcl|MODEL:85P8L",
+   "mpn": "85P8L"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620615",
+   "store_id": 3,
+   "from": "tcl|75|4k|mini_led|144",
+   "to": "tcl|MODEL:75P8L",
+   "mpn": "75P8L"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620659",
+   "store_id": 3,
+   "from": "hisense|75|4k|mini_led|240",
+   "to": "hisense|MODEL:75U7Q",
+   "mpn": "75U7Q"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620678",
+   "store_id": 3,
+   "from": "hisense|75|4k|mini_led|144",
+   "to": "hisense|MODEL:75U7Q",
+   "mpn": "75U7Q"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620707",
+   "store_id": 3,
+   "from": "tcl|85|4k|mini_led|144",
+   "to": "tcl|MODEL:85C7L",
+   "mpn": "85C7L"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620922",
+   "store_id": 3,
+   "from": "hisense|85|4k|qled|60",
+   "to": "hisense|MODEL:85Q6Q",
+   "mpn": "85Q6Q"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620947",
+   "store_id": 3,
+   "from": "hisense|85|4k|mini_led|NO_HZ",
+   "to": "hisense|MODEL:85U7Q",
+   "mpn": "85U7Q"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620955",
+   "store_id": 3,
+   "from": "hisense|75|4k|mini_led|NO_HZ",
+   "to": "hisense|MODEL:75U7Q",
+   "mpn": "75U7Q"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "620966",
+   "store_id": 3,
+   "from": "hisense|85|4k|mini_led|144",
+   "to": "hisense|MODEL:85U7Q",
+   "mpn": "85U7Q"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "855388",
+   "store_id": 1,
+   "from": "skyworth|65|4k|qled|144",
+   "to": "skyworth|MODEL:65Q7700G",
+   "mpn": "65Q7700G"
+  },
+  {
+   "category": "tv",
+   "raw_obs_id": "855394",
+   "store_id": 1,
+   "from": "skyworth|55|4k|led|60",
+   "to": "skyworth|MODEL:55G6400G",
+   "mpn": "55G6400G"
+  },
+  {
+   "category": "laptop",
+   "raw_obs_id": "161750",
+   "store_id": 2,
+   "from": "hp|NO_FAMILY|ultra7|16|1024|16|igpu",
+   "to": "hp|MODEL:C20VYEA",
+   "mpn": "C20VYEA"
+  }
+ ]
+}

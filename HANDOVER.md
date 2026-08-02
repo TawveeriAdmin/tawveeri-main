@@ -5152,3 +5152,81 @@ No sweep, no `tps:refresh`, no production write — the +55 is a measured projec
 sweep, not a realised gain. Multi-Hz titles still take the first match. `SMART-UA65U8000HUXSA`
 still will not meet `UA65U8000HUXSA`. Almanea's 2,061-observation block stays low-confidence
 where its titles state no refresh at all. ADRs 163–175 still exist only in HANDOVER.
+
+---
+
+## CHECKPOINT #53 — ALL FOUR UNITS RUN. THE NUMBER IS **801**.
+
+**Committed, NOT pushed. Tests 1,147/1,147. Baseline was frozen at 2026-08-02T10:38:00Z
+(projection 5,193 · comparable 778 · single-store 4,204); it is now superseded by the
+figures below, which were produced by three serialized writes and are re-measurable.**
+
+### THE ANSWER TO THE CLOSING QUESTION
+
+**801 products are genuinely comparable** — 801 of 5,023 (15.9%), across 21 categories,
+every one backed by an **active** canonical with ≥2 stores holding a real price. Zero
+projection rows have no active canonical (checked; it was not zero when this session
+started). Top: air_conditioner 120 · mobile 110 · tv 104 · washing_machine 85 · laptop 76
+· tablet 56 · monitor 55 · audio 43 · refrigerator 41 · smartwatch 34.
+
+### CREATED AND DESTROYED, SEPARATELY, AT EVERY STEP
+
+| step | comparable | what moved |
+|---|---|---|
+| frozen baseline | **778** | — |
+| ADR-177 TV re-stage | **811** | **+33 created** |
+| honouring deactivation | **797** | **−14 destroyed**: 10 TV keys whose evidence moved away, 4 ADR-118 appliance `…\|NA` canonicals |
+| ADR-178 cross-tier | **801** | **+4 created** (key-level +9/−1; price-band and two-stores-with-prices still apply) |
+
+### THE TWO DEFECTS THAT MATTERED MORE THAN THE UNITS
+
+**1 · `is_active` did nothing a customer could see.** The projection query had no
+`is_active` filter and the builder never deleted, so **all 303 deactivated canonicals were
+still being served, 14 of them as multi-store COMPARISONS.** Four are the appliance `…|NA`
+canonicals ADR-118 deactivated in July *precisely because the comparison was false*. The
+decision was recorded, the write was made, and the customer kept seeing it for two weeks.
+Projection now filters on `is_active` and prunes rows whose canonical is inactive or gone.
+
+**2 · My own orphan check reported success while doing nothing.** It passed 351 keys to a
+single PostgREST `.in()` and destructured only `data` — the failed request read as "no
+orphans", and 97 TV canonicals stayed live with zero observations behind them. Now SQL,
+chunked, errors thrown, and filtered by `tps_version` so it cannot touch canonicals another
+writer owns (`model-corroboration-v1` legitimately has no staging row; deactivating on "no
+staging evidence" alone would have destroyed 39 real comparisons).
+
+### THE ESTIMATE CHAIN, AND WHY THE SMALLEST NUMBER IS THE TRUE ONE
+
+**536 → 157 → 17.** Three dry runs killed three proposals before any write: 489
+observations folding into `dell|MODEL:DDR5/512` (a RAM+storage pair as a model — would have
+destroyed 13 comparisons to create 2) · `acer|MODEL:LPDDR5` · and
+`samsung|85|4k|led|60 → samsung|MODEL:DU7000`, **ADR-176's own `QN90D-55` vs `QN90D-65`
+example reached independently** — DU7000 is a series Samsung ships at four sizes. Every step
+that made the number smaller made it true.
+
+### ALSO DONE
+- **ADRs 163–175 backfilled** into `docs/DECISIONS.md` from checkpoints #38–#51, and
+  **ADR-176 moved** from the bottom of the file (appended under an h2, below 150 older
+  entries, in a newest-first register) to its correct position. Register now continuous.
+- Arabic **HD/HDR prefix trap** fixed — `اتش دي` is a prefix of HDR/UHD/FHD and was turning
+  Extra's 75" 4K QLED into `hd`. Caught by reading a dry-run diff, not by a test.
+- Multi-Hz titles no longer resolve by word order; `SMART-` prefix stripped via a closed list.
+- `retailer-registry-coherence` was RED before this session (LuLu/Sharaf DG exemptions had
+  outlived their gap). Closed.
+
+### INSTRUMENTS
+`tps:tv-lowconf` · `tps:short-model-audit` · `restage-category.ts` · `cross-tier-merge.ts` ·
+corrected `tps:identity-impact` (it counted only `valid` rows, so a tier PROMOTION was
+invisible — this whole week's work would have measured as zero).
+
+### NOT DONE — and the honest reason
+- **Nothing is pushed.** The parser change is local; the Railway scheduler still stages NEW
+  observations with the old parser. **The data is fixed, the code path is not deployed.**
+- **18 health FAILs are ingestion staleness**, untouched: noon 76h · shaker 149h · najm 149h
+  · sonyworld/nakheel/eazyworld ~170h · hdf/mhzm/aletawik/pcpalace ~193h. Four stores are
+  current (amazon, extra, almanea, lulu). **This is now the largest constraint on the 801**,
+  and it is a scraping-schedule problem, not an identity one.
+- Almanea's 2,061 TV observations stay low-confidence where their titles state no refresh
+  rate — genuinely absent evidence, correctly rejected.
+- 46 non-TV canonicals are comparable with no staging evidence (39 of them
+  `model-corroboration-v1`, which builds legitimately outside staging). Measured, not acted
+  on: deactivating on that signal alone would destroy real comparisons.

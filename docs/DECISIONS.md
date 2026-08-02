@@ -6,6 +6,58 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-178 — The cross-tier merge under ADR-176: an estimate of 536 became 17 · Accepted (2026-08-02)
+
+**Context.** CHECKPOINT #49 diagnosed identity-tier asymmetry — two stores carrying the identical
+commercial variant never compare because one keys `brand|MODEL:<mpn>` and the other
+`brand|<size>|<res>|<panel>|<hz>`, and corroboration groups on the key. #49 estimated ~536 recoverable
+products; #50 measured 157 genuine bridges and proved ADR-060's clean-create rule converts **zero** of
+them, because every one requires merging classes that both already own observations. ADR-176 then set
+the policy: a merge requires the model number **literally in the raw name of both sides**, and *if that
+makes the gain far smaller, the smaller number is the correct one.*
+
+**Decision.** `scripts/tps-core/cross-tier-merge.ts` — not a matcher, a literal-string test run in both
+directions; dry by default, lane-locked (ADR-099), snapshotted to `docs/evidence/` before writing.
+Side A: some observation under the MODEL: key states the mpn in its own raw name. Side B: the
+spec-keyed observation states the SAME mpn in its own raw name. Plus the guards that stop a literal
+match from being the WRONG literal: standalone token never substring · no longer model-shaped token in
+either name starts with it · the next word is not a variant word (`55C6K` ≠ `55C6K PRO`) · exactly one
+candidate mpn, because two model numbers in one name is not an identity · same category, same brand.
+
+**THE MEASURED ANSWER: 536 → 157 → 17 observations. +9 comparisons created, −1 destroyed.**
+That is the correct number, and it is correct because the dry run killed three proposals before any
+write:
+
+| the dry run proposed | why it was refused |
+|---|---|
+| **489 observations** folded into `dell │ MODEL:DDR5/512` | a RAM-and-storage pair serving as a model. The slash guard required ≥4 characters a side and `512` is three. It would have compared every Dell carrying DDR5 and a 512 GB disk as one product — **destroying 13 comparisons to create 2**. |
+| `acer │ MODEL:LPDDR5` | a memory standard that satisfies every shape rule: six characters, letters and digits, no whitespace. `STANDARD_TOKENS` is an exact-match set and cannot express the family, so the pattern form was added. |
+| `samsung │ 85 │ 4k │ led │ 60` → `samsung │ MODEL:DU7000` | **ADR-176's own example, reached independently.** DU7000 is a SERIES that Samsung ships at 43", 55", 75" and 85"; the string encodes none of them. This is `QN90D-55` against `QN90D-65` exactly. |
+
+**THE DIMENSION GUARD, added because of the third.** A literal match on a string that cannot express
+the distinguishing dimension is not evidence that two listings are the same product. Where the spec key
+leads with a numeric discriminator (TV and monitor screen size), that number must also appear inside
+the model string: `UHD50SLED` for a `nikai|50|…` listing passes; `DU7000` for an `…|85|…` listing does
+not.
+
+**A merge target is re-validated, never trusted for already being in staging.**
+`isUsableModelIdentity()` is exported from the ADR-058 authority for exactly this: staging holds keys
+minted under older rules, and a merge amplifies a bad one across every listing it touches.
+
+**Realized on production:** 17 observations re-keyed, 8 canonicals written, 31 evidence-less canonicals
+deactivated, comparable products **797 → 801**. The key-level +9 and the product-level +4 differ
+because the ADR-034 price-band guard and the two-stores-with-prices rule both still apply after a
+merge — a merged identity is not automatically a displayable comparison.
+
+**Consequences.** The cross-tier opportunity is real and small: 17 observations, not 536. The distance
+between the estimate and the truth was three multiplications of a proxy — substring → identity class
+(3.4× over), class → safely mergeable (ADR-060 converts none), mergeable → literal-and-dimension-safe
+(9× over). **Every step that made the number smaller made it true.** The remaining cross-tier mass is
+not reachable by any rule that ADR-176 permits; it needs merchant data that states the model number,
+which is an acquisition problem, not an engineering one.
+
+---
+
 ### ADR-177 — Read what the merchant published: two sources one vocabulary, and short models by naming convention · Accepted (2026-08-02)
 
 **Context.** #51 aimed at the 22,835 Saudi listings carrying no identity, and named the trap in

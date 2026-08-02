@@ -82,12 +82,49 @@ const SPEC_COMPOUND_TOKEN = /\d+\.?\s*HZ$/i;
  * `UHD65SLED/UHD65SLED-FL`, `NTV5000SLED/NTV5000SLED3`. Apple's genuine slash form
  * (`MDHH4AB/A`, `MG1G4AH/A`) has a ONE-character suffix and is untouched.
  */
-const DUAL_MODEL_SLASH = /^[A-Za-z0-9._-]{4,}\/[A-Za-z0-9._-]{4,}$/;
+const DUAL_MODEL_SLASH = /^[A-Za-z0-9._-]{3,}\/[A-Za-z0-9._-]{3,}$/;
+
+/**
+ * A slash pair whose LEFT side is a memory/spec standard is a SPECIFICATION, whatever
+ * its right side looks like. `DDR5/512` slipped through the length rule — 512 is three
+ * characters — and was live in staging as `dell|MODEL:DDR5/512`. The cross-tier merge
+ * dry run then proposed folding 489 observations into it, which would have compared every
+ * Dell laptop carrying DDR5 and a 512 GB disk as one product. Caught before any write.
+ */
+const SPEC_LEAD_SLASH = /^(DDR\d|LPDDR\d|PROCESSOR|CPU|GPU|RAM|SSD|HDD|EMMC|NVME|WIFI\d?|USB\d?|HDMI\d?)\b/i;
+
+/**
+ * Memory/bus standards as a WHOLE token. `LPDDR5` satisfies every shape rule — six
+ * characters, letters and digits, no whitespace — and was live as `acer|MODEL:LPDDR5`.
+ * STANDARD_TOKENS is an exact-match set and cannot express the family, so this is the
+ * pattern form of the same idea.
+ */
+const MEMORY_STANDARD_TOKEN = /^(LP)?DDR\d[A-Z]?$/i;
+const SIZE_PREFIXED_MODEL = /^(\d{2,3})([A-Z][A-Z0-9]{1,3})$/;
+
 
 /** True when a token is a spec compound or a slash-joined pair rather than one MPN. */
 function isNotASingleModel(value: string): boolean {
   const v = value.trim();
-  return SPEC_COMPOUND_TOKEN.test(v) || DUAL_MODEL_SLASH.test(v);
+  if (SPEC_COMPOUND_TOKEN.test(v) || DUAL_MODEL_SLASH.test(v)) return true;
+  if (MEMORY_STANDARD_TOKEN.test(v)) return true;
+  return v.includes("/") && SPEC_LEAD_SLASH.test(v);
+}
+
+/**
+ * The authority's own verdict on a string already being used as a `MODEL:` identity.
+ *
+ * Exported because a consumer that MERGES identity classes must be able to refuse a
+ * target key that was written before a guard existed — staging holds keys minted by
+ * older rules, and a merge amplifies a bad one across every listing it touches.
+ */
+export function isUsableModelIdentity(value: string): boolean {
+  const v = (value ?? "").trim();
+  if (!v) return false;
+  if (isStoreInternalIdentifier(v) || isNotASingleModel(v)) return false;
+  // The ADR-177 size-prefixed form (`85P8L`) is 4–5 chars and so fails the global
+  // minimum by design; it is a complete model and a valid merge target.
+  return hasModelNumberShape(v) || SIZE_PREFIXED_MODEL.test(v.toUpperCase());
 }
 
 /**
@@ -222,7 +259,6 @@ export function extractManufacturerModel(payload: Record<string, unknown>): stri
 //                    dangerous half (a Pro listing written `55C6K PRO`).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SIZE_PREFIXED_MODEL = /^(\d{2,3})([A-Z][A-Z0-9]{1,3})$/;
 const VARIANT_SUFFIX_WORDS = new Set(["PRO", "PLUS", "MAX", "ULTRA", "EVO", "LITE"]);
 
 /**
