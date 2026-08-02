@@ -34,7 +34,7 @@ trust depends on. Both checks now exist; the second one is the launch metric.
 | **sharafdg** | **blocked at the retailer** | 78h | **HTTP 403 Forbidden** to our production egress, on search *and* product pages (8/8). Same URLs serve fine from a Saudi IP and from a different datacenter, so it is our egress range specifically. No credential-free API: `wp-json/wc/store/*` returns `rest_no_route`, sitemap 404s |
 | **shaker, najm, samsung_ksa** | **intentionally paused** | 84–152h | dropped from the ingestion set by Founder Directive 2026-07-27 (approved-27 scope cut). **Not failures.** They stopped ingesting on exactly that date |
 | **alnakheelk** | **approved, never scheduled** | 175h | in `APPROVED_STORE_IDS` (ADR-139) but never in the ingest set |
-| **swsg** | **approved, dormant** | 258h | approved `credential_free`; scraper dormant since 2026-07-22 |
+| **swsg** (الشتاء والصيف, swsg.co, store 8) | **retired — blocked at the retailer** | 258h | Activated by Founder decision 2026-08-02 and retired the same day on evidence. **Four routes tested, not one:** HTML listing → **HTTP 403** from production while the SAME scraper with the SAME headers returns 40 TVs / 80 appliances / 40 kitchen / 40 phones from a Saudi IP (so the block is on our egress IP, not our request shape) · Magento REST `/rest/V1/*` → **401, needs a merchant-issued integration token** · WooCommerce/Salla API → absent · sitemap.xml → works (8,959 URLs) but product pages carry only `WebSite`+`Organization` JSON-LD, **no `Product`**, so prices still require HTML from the same blocked host. **The only remaining route is a credentials decision** (ask Sheta & Saif for a Magento integration token) |
 | **hdf, goldenstore99, mhzm, aletawik, pcpalace, sonyworld, amnkwm, alsfeerzone, alhowaish, alduaalbarq, eazyworld** | **not approved** | 170–196h | acquisition-engine onboarding probes, never in the ingest set and not customer-visible. **Not failures** |
 | **blackbox** | **blocked, never ingested** | never | bot-walled; documented ADR-148 known gap |
 
@@ -70,3 +70,19 @@ trust depends on. Both checks now exist; the second one is the launch metric.
   or residential IP (a paid proxy) — a commercial commitment, deliberately not taken.
 - **shaker / najm / samsung_ksa / alnakheelk** are approved for *display* while excluded from
   *ingestion*, so they can show prices 4–8 days old. That contradiction is a scope decision.
+
+---
+
+## A note on how the swsg verdict was reached (process, not just outcome)
+
+The first retirement was decided after testing **one** route (HTML scraping). The founder
+questioned it, and three further routes were then tested — Magento REST, WooCommerce/Salla
+API, and sitemap+JSON-LD. **The verdict held, but the first pass was too thin to have
+carried it.**
+
+**Rule earned:** before declaring a retailer un-ingestible, test every sourcing mode the
+provider framework already supports — `scraper`, `api` (WooCommerce / Salla / Algolia /
+Shopify), `official_feed`, `csv_xml` — not just the one it happens to be configured with.
+shaker, najm and alnakheelk reach production through the `api` path while every HTML
+scraper on a blocked host cannot; the sourcing mode, not the retailer, is often the
+difference.
