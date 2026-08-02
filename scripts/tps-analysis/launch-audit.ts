@@ -77,7 +77,12 @@ async function measureLatency(url: string, body?: object): Promise<number | null
     // partner-generated link, partner documentation, or a reconciled conversion. Amazon
     // (documented Associates `tag`) and Noon (dashboard-generated `utm_source`) qualify.
     const VERIFIED_PROGRAMS = 2;
-    const dups = await one(`select count(*) n from (select tps_identity_key from canonical_products where is_active group by 1 having count(*)>1) d`);
+    // `tps_identity_key is not null` is load-bearing: SQL collapses every NULL into ONE
+    // group, so 2,338 active canonicals with no TPS identity were being reported as a single
+    // "duplicate card" — a phantom P1 gap that tps:health (which already excludes NULLs)
+    // correctly reported as none. Two instruments disagreeing is itself the defect.
+    const dups = await one(`select count(*) n from (select tps_identity_key from canonical_products
+      where is_active and tps_identity_key is not null group by 1 having count(*)>1) d`);
     const savings = await one(`select count(*) n, coalesce(round(sum(saving)),0) total from tps_product_projection where has_comparison and saving>0`);
 
     // ── performance (live HTTP) ──
