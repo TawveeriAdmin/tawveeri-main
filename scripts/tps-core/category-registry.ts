@@ -52,6 +52,13 @@ export const TPS_STORES = [
   { id: 20, name: "الهويش للأجهزة" }, { id: 21, name: "الضوء البارق" },
   // ADR-118: kitchen-appliance gap fill.
   { id: 22, name: "إيزي وورلد" },
+  // ADR-174: LuLu and Sharaf DG held 11,454 raw observations each side of a wall — they
+  // were scraped, stored, and then never swept, because absence from THIS list is the only
+  // thing that stops the progressive engine (`for (const s of TPS_STORES)`). Their
+  // tps_progress_cursors rows were missing as a CONSEQUENCE, not a cause: the cursor is
+  // upserted after a sweep, so a store not listed here can never acquire one. Names are the
+  // ones already approved in src/lib/scraping/config/store-configs/{lulu,sharafdg}.json.
+  { id: 23, name: "لولو هايبر ماركت" }, { id: 24, name: "شرف دي جي" },
 ];
 
 export interface CategoryDef {
