@@ -102,6 +102,389 @@ debt from ADR-176 stands: ADRs 163–175 still exist only in HANDOVER.
 
 ---
 
+### ADR-176 — Protected Trust Policy: canonical merges require a literal model-number match · Accepted (2026-08-02)
+
+**Status:** ACTIVE · Founder decision, 2026-08-02 · **Protected Trust Policy**
+
+**Policy.** Two canonicals may be merged into one comparison ONLY when the model number
+appears **literally in the raw name of both sides**. Never inferred, never derived from
+similarity, never probabilistic. If the evidence is anything less than a literal match,
+the two stay separate and the shopper sees one retailer honestly rather than two
+dishonestly.
+
+**Reasoning (founder).** A wrong comparison is worse than no comparison. A shopper
+comparing `QN90D-55` against `QN90D-65` buys the wrong size believing they found a better
+price. **No comparison delays trust; a wrong one destroys it.** This is "unknown beats
+incorrect" (Constitution principle 1) applied to identity.
+
+**Consequence, accepted in advance.** If this policy makes the cross-tier gain far smaller
+than the estimates, that smaller number is the CORRECT number. Yield is not a reason to
+weaken the rule.
+
+**Why it qualifies as a Protected Trust Policy — all three tests met:**
+1. It comes from a measured failure class (ADR-060's deferred merges; CHECKPOINT #50
+   measured 157 cross-tier bridges, 156 blocked precisely because merging them is unsafe).
+2. **Its reversal is silent.** Nothing breaks, no test fails, no error is logged — the
+   platform simply begins comparing different products as if they were one.
+3. Its reversal makes us claim something we cannot support: a price comparison between two
+   products that are not the same product.
+
+**Operational note.** ADR-060 (`write-alias-canonicals.ts`) already refuses these merges
+via its clean-create rule. This ADR makes that refusal a POLICY rather than an
+implementation detail, so no future mechanism can relax it for throughput.
+
+**Governance debt recorded here, not hidden:** ADRs 163–175 were written into HANDOVER.md
+but never into this register. CLAUDE.md requires every significant decision to land here.
+They should be backfilled from HANDOVER checkpoints #38–#50.
+
+---
+
+### ADR-175 — Title-derived model numbers, wired only where identity would otherwise fail · Accepted (2026-08-02)
+
+**Context.** Laptop was chosen as the category-registry pilot on the founder's two conditions, both
+measured: the largest classification failure (890 distinct laptop names absent from the knowledge
+layer) and genuine multi-retailer stock (12 stores; Amazon 251, Extra 212, Noon 180, BC Palace 138).
+
+**The gap was not the one the category list suggested.** Bucketing unclassified names by keyword
+first pointed at a MISSING category (`case_cover` 1,345 names / 13 stores; `storage` 634 / 15).
+Sampling killed that: the `storage` bucket was ~80% laptops whose titles merely mention SSD/ذاكرة.
+**The defect was an EXISTING category failing on merchant naming, not an unregistered one** — a
+result that only sampling could produce, and the reason bucket counts are not a work-list.
+
+**Root cause.** `extractManufacturerModel()` reads the PAYLOAD only. Arabic listings put the MPN in
+the TITLE (`X1504VA-BQ575W`, `83UR007EAD`, `U7-14ILL10`, `9S7-14J112-1024`), and the family regexes
+were English-only, so «لابتوب اسوس فيفوبوك 15 X1504VA-BQ575W» lost its family AND its model — a
+listing carrying the strongest identity signal that exists resolved to nothing. Deterministic probe
+of absent laptop-keyword names: 274 total, 133 correctly rejected as accessories, 73 identifiable
+(45 of them by the new title extractor).
+
+**THE FINDING THAT CHANGED THE DESIGN.** Wiring the title fallback in unconditionally, measured on
+one fixed window (store 2, `--replay-from 0`, 500 observations):
+
+| | before | unconditional | rescue-only |
+|---|---|---|---|
+| valid identity tier | 88 | 96 | **95** |
+| **corroborated canonicals** | **23** | **18** ❌ | **23** ✓ |
+
+**An identity change can RAISE identity counts while DESTROYING comparisons.** A listing that moves
+from a spec key to a model key stops meeting the store that stayed spec-keyed. So the fallback is
+**rescue-only**: it fires only where the listing would otherwise have no identity at all.
+
+**Decision.** `extractManufacturerModelFromName` in the ADR-058 authority, reusing
+`hasModelNumberShape`/`isStoreInternalIdentifier` plus one discriminator a payload field never
+needed — DENSITY, because a title is a crowded namespace and `i5-1334U` passes every shape test
+while being a CPU. Verified against production strings: `X1504VA-BQ575W` (6 letters/7 digits) is a
+model; `i5-1334U` (2/5) is not. Ties break toward the longest candidate.
+
+**Measured result:** +41 products, **+5 comparables**, +36 single-store.
+
+**Consequences.** Every identity change from here is measured as comparisons CREATED and DESTROYED
+separately, never as a net. See ADR-177, which wires this same reader into TV.
+
+---
+
+### ADR-174 — LuLu and Sharaf DG were absent from a hardcoded constant, not from the pipeline · Accepted (2026-08-02)
+
+**Context.** Both stores were approved for display and ingesting live — LuLu 5,854 observations,
+Sharaf DG 1,370 — with **zero** normalized observations and no progress cursor.
+
+**Root cause — the cursor was a symptom, not the disease.** `progressive-engine.ts` iterates
+`for (const s of TPS_STORES)`, a hardcoded constant in `category-registry.ts`, and neither store was
+in it. Their missing `tps_progress_cursors` rows were a CONSEQUENCE: the cursor is upserted *after* a
+sweep, so an unlisted store can never acquire one. **Seeding a cursor would have done nothing.**
+
+**Decision.** Two entries in a constant. No schema change, no DDL, no manual row writes.
+
+**Measured (baseline → after full chain rebuild):** normalized observations 127,167 → 130,805
+(+3,638) · active canonicals 7,191 → 7,261 (+70) · customer-visible products 5,070 → 5,140 (+70) ·
+**price-comparable 763 → 771 (+8)**. LuLu contributed 1,919 normalized rows, Sharaf DG 469; together
+88 canonicals and 19 comparable, of which 8 gained a second displayable retailer because of this
+unit (11 joined comparisons that already existed). Categories: monitor, audio, tablet, TV.
+
+**Consequences.** A store can be approved, ingesting, and invisible to every lag metric at once,
+because that metric iterates cursors and such a store has none. `retailer-registry-coherence`
+(ADR-148) is the regression gate; its known-gap entries for LuLu and Sharaf DG were retired on
+2026-08-02 once both were sweeping.
+
+---
+
+### ADR-173 — The «موثوق» tile is removed, not redefined · Accepted (2026-08-02)
+
+**Context.** The retailers page rendered a «موثوق»/Trusted count. `is_premium: false` is hardcoded in
+the store mapper and no measured definition of "trusted" existed anywhere, so the tile could only
+ever render 0.
+
+**Decision.** Remove it. Per the brief's explicit instruction, no replacement metric was invented —
+inventing one would have meant publishing a trust claim with nothing behind it.
+
+**Consequences.** A trust signal on the retailers page needs its own evidence definition first. The
+merchant-trust profiles (ADR-052) are the natural source when it is wanted.
+
+---
+
+### ADR-172 — PostgREST's `db-max-rows` silently truncated the retailers page to 7.6% of the table · Accepted (2026-08-02)
+
+**Context.** The retailers page selected `product_stores` with no `.range()` and no `.order()`.
+PostgREST capped the response at `db-max-rows` = 1000.
+
+**The three properties that made it invisible.** It understated by ~18× (**7.6%** of the table); it
+was **non-deterministic** (Extra read 85 then 57 on consecutive loads, because no `.order()` means no
+stable window); and it **hid two entire retailers**, which reads identically to "that retailer has no
+products".
+
+**Decision.** Paginate explicitly and in parallel. Result: 9 stores / 9,388 products, 3–5s in both
+locales.
+
+**Four hypotheses REJECTED by measurement, two of them the author's own:** (1) "identity resolution
+is the largest loss" — no, 98.3% of normalized observations already carry a canonical; (2) "header
+507 vs per-store sum 534 is a defect" — no, they match exactly (505 == 505, stable across 3 runs);
+the 534 was read from a truncated page; (3) "there is hidden comparison depth to release" — no, all
+730 canonicals with 2+ stores are already in the projection; (4) "the 2,337 active canonicals missing
+from the projection are recoverable volume" — no, they have zero normalized observations and are
+correctly excluded.
+
+**Consequences.** An unbounded PostgREST select is a silent truncation, not an error. Any query whose
+result feeds a COUNT a human will quote must be explicitly paginated and ordered.
+
+---
+
+### ADR-171 — Discoverability is an affordance, not a second door · Accepted (2026-08-02)
+
+**Context.** The وفّر advisor was reachable and undiscoverable. Two individually-correct removals left
+zero entry points: the homepage offer was removed on 2026-07-29 because the first screen carried
+**two doors**, and the nav item it was removed in favour of had been retired by ADR-152 as the
+forbidden choose-between-search-and-AI fork. The code comment still pointed at the vanished nav item.
+
+**Decision.** One line under the search input showing that a sentence is a valid query. `/search`
+already routes by intent from the same field the homepage posts to, so nothing new was wired — the
+novice describes a situation, the expert types a model, same box.
+
+**Alternatives rejected:** a separate «اسأل وفّر» button or card (recreates the two-doors failure and
+the ADR-152 fork) · restoring the nav item (recreates ADR-152's defect) · a floating bubble (excluded
+by REDESIGN_BRIEF §5) · contextual help after the first search (does not solve *first-time*
+discovery) · an onboarding modal (friction before first value; dismissed means buried).
+
+**One source for the teaching:** `src/lib/agent/need-phrasings.ts`, imported by BOTH the homepage and
+`/search`. Two surfaces teaching different sentences is the one-fact-two-representations defect this
+codebase has already paid for twice.
+
+**A REGRESSION SHIPPED AND CAUGHT IN THE SAME UNIT, recorded because the lesson is the value.** The
+first commit replaced the inline phrasings without adding the import: both identifiers were undefined
+at runtime and `/[locale]/search` — the primary customer surface — rendered its error boundary in both
+locales. Two verification failures let it through: (1) the check asserted `s.includes('need-phrasings')`
+*after* writing the file, and the comment just added contains that string — **the check passed on its
+own artefact**; (2) `next.config.ts` sets `typescript.ignoreBuildErrors: true`, so the build was green,
+and `tsc` DID report it but the output was read through `head -3`, showing only pre-existing warnings.
+**Rule earned: never verify an edit with a substring check against the file you just wrote, and never
+read a filtered typecheck when the filter is your own guess at the error.**
+
+---
+
+### ADR-170 — The homepage sent its visitor away without a comparison · Accepted (2026-08-02)
+
+**Context.** `/ar` and `/en` each rendered **8 bare retailer links and 0 `/go/` exits**, while
+`/ar/deals` on the same data class routed correctly to 26 product pages. Cost: no affiliate
+attribution, no `go_click` (the only storefront exit signal), and a comparison platform sending its
+visitor away on the first screen without a comparison.
+
+**Verified FIRST, in a real browser:** all four live exits returned **200** and were real product
+pages. **There was no dead link** — the defect was attribution and the missing comparison, not
+breakage. Saying that precisely is what separates it from the string-reading error that produced the
+Jarir report.
+
+**Decision.** Build the destination server-side, preferring **compare page → `/go` exit → drop**.
+`tps_listing_price_facts` carries no observation id and no canonical (checked against
+`information_schema`), so the join is on the observation's own raw URL — the same field `/go` reads,
+which makes a resolved id guaranteed to work. 131 of 300 candidates (43.7%) resolve, ample for a
+4-card strip. Exits carry `source=home_deal`.
+
+**Verified in production, both locales:** `direct=0 · go=3 · compare=1`; each `/go` → 302 to a real
+product page; the compare page renders 2 retailer exits. Retailer displayability and approved
+affiliate identifiers untouched.
+
+---
+
+### ADR-169 — A measured effect smaller than the sample's own variance is not evidence · Accepted (2026-08-02)
+
+**Context.** Three prompt-level changes (ADR-166/167/168) were about to be recorded as validated
+improvements on the strength of before/after suppression rates taken from small samples.
+
+**Decision — recorded in `docs/ENGINEERING-RULES.md` as a standing rule, not a note on one unit:**
+
+> **A measured effect smaller than the sample's own variance cannot validate an engineering change.
+> It cannot refute one either. It is not evidence in either direction.**
+
+Establish the noise floor before claiming a delta · prefer the decomposed signal to the headline ·
+non-deterministic systems need far larger n · "unvalidated" is the honest verdict · **more data beats
+more changes.**
+
+**Applied immediately, to the author's own work.** The noise floor is **±19 points**, measured from
+two natural samples with no code change between them (31% n=16, 50% n=24):
+
+| unit | mechanism | status |
+|---|---|---|
+| ADR-166 evidence contract | sound, proven by regression test | **partly validated** — 86% → 31–50% is far outside the noise floor |
+| ADR-167 evidence boundary block | sound | **UNVALIDATED** — 50% → 46% is inside ±19pt |
+| ADR-168 `customerPrice()` | sound, proven by regression test | **UNVALIDATED at the rate level**; the rule-level fall (10 → 3) does survive the floor |
+
+All three remain in the codebase: each has a sound mechanism, a unit test, and no measured harm.
+**Neither ADR-167 nor ADR-168 may be cited as a proven rate improvement.**
+
+**Consequences.** Further validation of prompt work is blocked on real customer traffic (n≥100 to see
+an 8-point effect). Synthetic samples cannot supply it — they are our guesses about what shoppers type.
+
+---
+
+### ADR-168 — One representation of a customer-facing price · Accepted (2026-08-02)
+
+**Context.** The same price was formatted in more than one place in the assistant path, so a figure
+could be rendered in a shape the evidence bundle had not declared.
+
+**Decision.** A single `customerPrice()` representation, used everywhere a price is rendered for a
+customer, so the rendered figure and the declared figure cannot drift.
+
+**Status, per ADR-169:** the rule-level effect (`saving-or-price-without-provenance` 10 → 3) survives
+the noise floor; the overall rate change does not. **UNVALIDATED at the rate level, kept on mechanism.**
+
+---
+
+### ADR-167 — The evidence boundary is stated to the model as a block · Accepted (2026-08-02)
+
+**Context.** Supplied evidence was spread through the prompt, leaving the model to infer which
+figures it was permitted to state.
+
+**Decision.** State the boundary as one explicit block: these are the figures you may use, and
+nothing else is available.
+
+**Status, per ADR-169:** 50% → 46% is inside the ±19-point noise floor. **UNVALIDATED — sound
+mechanism, unit-tested, no measured harm, kept but not citable as an improvement.**
+
+---
+
+### ADR-166 — The AI-assistant route must use the same published-evidence builder as the decision engine · Accepted (2026-08-02)
+
+**Context.** The first production session with the assistant enabled lasted ~10 minutes and
+**suppressed 6 of 7 answers (86%)**, against a pre-declared >30% rollback threshold. Rules fired:
+`saving-or-price-without-provenance` ×5, `comparison-claimed-without-two-retailers` ×1.
+`unavailable`: 0 — no unsupported claim reached a customer.
+
+**F7 was right and the route's contract was incomplete.** Every suppressed price was REAL and
+SUPPLIED in the prompt — the route declared retailers and store counts and **not one price**, so the
+validator correctly refused to certify figures nobody had published. The same defect ADR-162 fixed
+for the decision engine, on the one route that never received the fix.
+
+| route | evidence |
+|---|---|
+| `/api/v1/agent/decide` | `buildPublishedEvidence(...)` — the shared contract |
+| `/api/ai-assistant` (before) | hand-built, `kind:'retailer-count'` only, **zero `price` figures** |
+
+**Decision — one contract, not a copy.** The route maps its facts into the shape
+`buildPublishedEvidence` already understands and calls the same builder. Prices are declared where
+the prompt prints them — every per-store price and `best_price` from search, `bestPrice`/`averagePrice`
+from deals, `currentBestPrice`/`lowestEver`/`average` from price intelligence — each beside its
+render, so the two cannot drift. A test asserts the route contains **no hand-rolled figure literals**:
+a second bundle format would be a second policy.
+
+**Measured separately, as required:** true supported answers suppressed 5 of 7 → **0** · genuine
+violations blocked 23/23 → **23/23 unchanged**, plus 7 new genuine-violation cases still rejected
+under the new bundle · `unavailable` 0 → 0 · false rejections 0 of 2,023 → 0 of 2,023. **Genuine
+rejections did not decrease** — had both numbers fallen, the guard would have been weakened.
+
+---
+
+### ADR-165 — The vocabulary scanner reads the AST, and its coverage map is published · Accepted (2026-08-02)
+
+**Context.** §1b of `vocabulary-scan` matched quoted string literals with a regex. It had already
+missed a live comprehensive-market claim three times, because the claim was **JSX text content**, not
+a quoted literal.
+
+**Decision.** Parse the AST rather than the text, and publish what the instrument can and cannot see:
+
+| surface | covered |
+|---|---|
+| locale/message JSON · string literals in components | ✅ (literals now via AST) |
+| **JSX/TSX text nodes** | ✅ **new — the blind spot that escaped three scans** |
+| template literals (static spans) · shared `.ts` constants · metadata/title/description · Open Graph · JSON-LD builders | ✅ new |
+| **alt text · aria-label · placeholder · title** | ✅ **new — a claim spoken aloud is still a claim** |
+| server-rendered fallback HTML | ✅ §2 (rendered bytes) |
+| client-only fallback text | ✅ via source, ❌ not via §2 |
+
+**Outside §1b BY DESIGN, and repository scanning must never be implied to cover them:**
+model-generated runtime text (F7·2 validator) · retailer-originated remote content (provider/evidence
+controls) · database content (TPS evidence layer) · externally configured copy (none today).
+
+**Known positives proven before any zero was believed:** `tests/vocabulary/source-scan.test.ts`, 22
+fixtures, all caught, including the exact JSX claim that escaped. Fixtures live in tests, never in
+production source.
+
+**Findings: 47 → 10, all classified.** One live violation fixed (`product-detail-client`: "across
+every store" / «بين كل المتاجر» → §9 approved wording); 6 false positives (sentences about our
+ACTIVITY or COVERAGE, plus a `50/50` layout ratio); 1 approved wording; 3 out of scope (prompt text in
+the then-closed generative route).
+
+---
+
+### ADR-164 — Interception is not deadness · Accepted (2026-08-02)
+
+**Context.** A dead-code sweep proposed deleting several route files that production answers with a
+307.
+
+**Decision.** Delete only what meets all six criteria. **One module qualified:**
+`src/app/[locale]/landing-client.tsx` — zero static imports (two comment mentions only), no
+`LandingClient` symbol referenced anywhere, no dynamic or lazy import, not a route file, no
+error-boundary or not-found reference, unreachable by locale routing.
+
+**NOT deleted:** `src/app/how-it-works/page.tsx` and `src/app/about/page.tsx` are **route files**;
+Next resolves `/how-it-works` and `/about` to them and production returns 307 only because middleware
+redirects to the locale route. **Interception is not deadness, and it is config-dependent** — deleting
+them changes behaviour the moment the matcher changes.
+
+**The find that mattered most.** `src/app/[locale]/how-it-works/page.tsx` is LIVE (200, both locales)
+and carried «من جميع المتاجر» — a comprehensive-market claim forbidden since 2026-07-30. **§1b missed
+it** because the scanner read quoted literals and this is JSX text content. It was found by grepping
+the repo for the CLAIM rather than trusting the scanner. (Closed by ADR-165.)
+
+**Claims replaced with pre-approved wording only, no new claim invented:** `[locale]/how-it-works`
+(live) and `app/how-it-works` «من جميع المتاجر» → «من متاجر سعودية» · `landing.json` ×2 keys ×2
+locales → the §9 capability statement · `agent.json:measuredExitNote` → «الأسعار من رصدنا» ·
+`ai-assistant` prompt context «السعر الحالي الأفضل» → «أفضل سعر رصدناه». **A prompt steering the model
+toward retired wording is a defect even while the surface is closed** — it would have produced answers
+the validator then correctly suppressed.
+
+---
+
+### ADR-163 — A confidence score that cannot be explained in customer language is not displayed · Accepted (2026-08-02)
+
+**Context.** The advisor rendered «درجة الثقة 75%» and «درجة الثقة الإجمالية: 75/100». A shopper
+cannot act on 75, cannot tell it from 71, and cannot learn what would raise it.
+
+**Decision — three parts.**
+
+**1 · Raw scores are gone.** Replaced by `TrustSummary`, which states the EVIDENCE behind the score in
+words — «سعر مؤكَّد في 3 متاجر» / "Price corroborated at 3 retailers", or «رصدناه في متجر واحد» when
+there is one. The tier is the engine's own, never re-derived in the view; the cited breakdown stays
+one tap away.
+
+**2 · F7 governs the deterministic advisor.** CHECKPOINT #25 recorded, correctly, that F7 does not
+*govern* a surface with no runtime generation — but that was a statement about risk, not coverage. The
+advisor's sentences are **composed at runtime** from data (`أوفر بـ${diff} ريال`), and a repository
+search cannot catch what a template produces. `guardAdvisorPayload` validates every prose field before
+the response leaves the route.
+
+**Failure behaviour differs from F7·2 deliberately: WITHHOLD the sentence, never rewrite, never
+suppress the whole answer.** A generated answer is one artefact, so editing it manufactures a claim. A
+deterministic answer is a LIST of independently-derived statements — dropping one withholds a claim
+without inventing one, and suppressing all of them would delete a correct recommendation because an
+adjacent sentence failed. It fires **zero times** on real production output (2,026/2,026 strings pass);
+a guard that never fires is the difference between "we checked" and "we believe".
+
+**3 · The scanner's blind spot is closed** (first pass): `vocabulary-scan` read `messages/` only, so a
+claim hardcoded in a component was invisible. New §1b scans 216 component files. **Two live violations
+fixed:** `price-alerts/page.tsx` carried «السعر الحالي» / "the current price" hardcoded — wording §10
+retired, which the message-bundle fix could not reach.
+
+---
+
 ### ADR-162 — The engine publishes every figure it renders · Accepted (2026-08-01)
 
 **Context.** F7·3 measured, on production, four strings per query stating a saving —
@@ -2695,40 +3078,3 @@ Even if reachable, invoking the pipeline blindly would write canonical products 
 **Context:** merchant listings are fragmented, inconsistent, and change constantly; identity must be stable while commerce is fluid.
 **Decision:** the three-layer TPS model; identity requires ≥2-store corroboration; `raw_observations` immutable; `price_history` append-only; every identity decision logged.
 **Consequences:** the platform's moat — a corroborated, provenance-complete, time-deep knowledge graph. Full spec in `docs/TPS.md`.
-
----
-
-## ADR-176 — PROTECTED TRUST POLICY: canonical merges require a literal model-number match
-
-**Status:** ACTIVE · Founder decision, 2026-08-02 · **Protected Trust Policy**
-
-**Policy.** Two canonicals may be merged into one comparison ONLY when the model number
-appears **literally in the raw name of both sides**. Never inferred, never derived from
-similarity, never probabilistic. If the evidence is anything less than a literal match,
-the two stay separate and the shopper sees one retailer honestly rather than two
-dishonestly.
-
-**Reasoning (founder).** A wrong comparison is worse than no comparison. A shopper
-comparing `QN90D-55` against `QN90D-65` buys the wrong size believing they found a better
-price. **No comparison delays trust; a wrong one destroys it.** This is "unknown beats
-incorrect" (Constitution principle 1) applied to identity.
-
-**Consequence, accepted in advance.** If this policy makes the cross-tier gain far smaller
-than the estimates, that smaller number is the CORRECT number. Yield is not a reason to
-weaken the rule.
-
-**Why it qualifies as a Protected Trust Policy — all three tests met:**
-1. It comes from a measured failure class (ADR-060's deferred merges; CHECKPOINT #50
-   measured 157 cross-tier bridges, 156 blocked precisely because merging them is unsafe).
-2. **Its reversal is silent.** Nothing breaks, no test fails, no error is logged — the
-   platform simply begins comparing different products as if they were one.
-3. Its reversal makes us claim something we cannot support: a price comparison between two
-   products that are not the same product.
-
-**Operational note.** ADR-060 (`write-alias-canonicals.ts`) already refuses these merges
-via its clean-create rule. This ADR makes that refusal a POLICY rather than an
-implementation detail, so no future mechanism can relax it for throughput.
-
-**Governance debt recorded here, not hidden:** ADRs 163–175 were written into HANDOVER.md
-but never into this register. CLAUDE.md requires every significant decision to land here.
-They should be backfilled from HANDOVER checkpoints #38–#50.
