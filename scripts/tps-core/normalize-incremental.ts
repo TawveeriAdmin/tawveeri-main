@@ -28,6 +28,14 @@ import { Client } from "pg";
 import { CATEGORY_DEFS } from "./category-registry";
 import { runSweepUnit } from "./progressive-engine";
 import { assertFingerprint } from "./tps-batch";
+// Supabase's direct host is IPv6-only. Both pg connections below (the backlog probe and
+// the ADR-099 lane lock) used SUPABASE_DB_URL raw and died on
+// `ENOTFOUND db.<ref>.supabase.co` the moment IPv6 was unavailable — taking the lane lock
+// with them, so the serialization guard failed CLOSED and no sweep could run at all.
+// CLAUDE.md already requires routing through the pooler; this is that rule applied to the
+// guard itself.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { toPoolerDbUrl } = require("./pooler-url.js") as { toPoolerDbUrl: (raw: string) => string };
 
 const arg = (name: string, dflt: number) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -55,7 +63,7 @@ const arg = (name: string, dflt: number) => {
   // enough for the server to drop it, so a successful run ended in ECONNRESET and reported
   // nothing. Connect, ask, disconnect.
   const ask = async <T extends Record<string, unknown>>(sql: string): Promise<T[]> => {
-    const c = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+    const c = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false } });
     await c.connect();
     try { return (await c.query<T>(sql)).rows; } finally { await c.end(); }
   };
@@ -129,7 +137,7 @@ const arg = (name: string, dflt: number) => {
   // hourly chain for the duration of a purely diagnostic run.
   if (process.env.NORMALIZE_LANE_LOCK !== "0" && !dryRun) {
     try {
-      lockClient = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+      lockClient = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false } });
       await lockClient.connect();
       haveLane = (await lockClient.query<{ ok: boolean }>(`select pg_try_advisory_lock($1) ok`, [LANE_KEY])).rows[0].ok;
     } catch (e) {
