@@ -146,6 +146,10 @@ export class ScrapingOrchestrator {
       let productsMarkedMissing = 0;
       let productsMarkedOutOfStock = 0;
       let errors = 0;
+      /** Why each category failed. The reason used to exist only in container stdout,
+       *  which nothing outside the container can read — so a store could fail every run
+       *  for days while the durable record said "success, 0 discovered". */
+      const categoryErrors: string[] = [];
       const seenProductStoreIds = new Set<string>();
 
       const CATEGORY_CONCURRENCY = Math.max(
@@ -219,6 +223,7 @@ export class ScrapingOrchestrator {
           };
         } catch (error) {
           console.error(`[${storeSlug}/${category}] discovery failed:`, error);
+          categoryErrors.push(`${category}: ${describeReason(error)}`.slice(0, 400));
           return { discovered: 0, created: 0, linked: 0, errors: 1 };
         }
       };
@@ -333,6 +338,7 @@ export class ScrapingOrchestrator {
         products_marked_missing: productsMarkedMissing,
         products_marked_out_of_stock: productsMarkedOutOfStock,
         errors,
+        error_messages: categoryErrors.slice(0, 10),
         duration_ms: Date.now() - startTime,
       };
     } catch (error) {
