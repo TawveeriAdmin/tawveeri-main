@@ -5440,7 +5440,13 @@ almanea 0.8 · najm 1.2 · shaker 1.2 · alnakheelk 1.2 · samsung_ksa 2.5 · am
 
 **No proxies, no paid egress, no circumvention. Nothing was forced.**
 
-### DNC160 — VERIFIED, AND ONE HALF OF IT WAS WRONG
+### DNC160 — ⚠ THIS SECTION WAS WRONG. See CHECKPOINT #58 and ADR-181.
+> DNC160 is a customer COUPON, not a tracking parameter. The verification below proved only
+> that our own chosen string reached the destination — it could not prove Noon recognised it,
+> and Noon does not. The real mechanism is `utm_source=C1000094L&utm_medium=referral`.
+> Left in place unedited because the mistake is the lesson.
+
+### DNC160 — as originally (and wrongly) recorded
 The exit link was always right:
 `…/p/?o=…&utm_source=tawveeri&utm_medium=affiliate&utm_campaign=DNC160&utm_content=<subid>`
 (Amazon control: `?tag=tawveeri-21&ascsubtag=<subid>`). Clicks are recorded — 1,165 rows.
@@ -5467,3 +5473,59 @@ cf0fe2c  ADRs + attribution tag      git revert cf0fe2c
 bb2b629  noon robots-permitted path  git revert bb2b629
 7dc80a0  Magento GraphQL adapter     git revert 7dc80a0
 ```
+
+---
+
+## CHECKPOINT #58 — NOON ATTRIBUTION CORRECTED · DNC160 WAS A COUPON
+
+**Pushed. Tests 1,148/1,148. ADR-181 records the decision and the rule it produced.**
+
+### WHAT WAS WRONG
+`/go` appended `utm_campaign=DNC160` to every Noon exit. **DNC160 is a customer COUPON**
+(10% cashback, capped 25 SAR, typed at checkout) — a different system in the same partner
+dashboard. Noon's actual mechanism is the **publisher ID**:
+
+    utm_source=C1000094L&utm_medium=referral
+
+**Every Noon click since launch almost certainly earned nothing.**
+
+### WHY MY EARLIER "VERIFIED" WAS WORTHLESS — the lesson
+CHECKPOINT #57 recorded DNC160 as verified because the parameters appeared on a live 302
+next to Amazon's working control. That proved **the string we chose arrived at the
+destination**. It could not prove Noon recognised it, because nothing in our possession said
+what Noon keys on. **I verified our own output against our own assumption and called it
+evidence.** One link generated from the partner dashboard settled in seconds what our config
+had asserted for weeks.
+
+> **RULE: an affiliate parameter can only be verified against the PROGRAM — a
+> partner-generated link, partner documentation, or a reconciled conversion. "Our value
+> appears on the redirect" answers a question nobody asked. Until one of those three exists,
+> a program's attribution is UNVERIFIED and must be recorded as such.**
+
+### `o=` — INVESTIGATED BEFORE SHIPPING, because it gated the fix
+- every organic product link on Noon's own listing pages carries `?o=` — **50/50 measured**
+- valid, absent and deliberately **bogus** `o=` all render the identical product/price/seller
+- all params survive Noon's `/ar-sa/` → `/saudi-ar/` redirect
+
+⇒ `o=` is Noon's internal link token, **not partner-specific and not an attribution key**.
+Preserved when the source URL carries one; never synthesized by us.
+
+### VERIFIED IN PRODUCTION
+```
+NOON    o=eff243a145ab475f · utm_source=C1000094L · utm_medium=referral · utm_content=<clickId>
+AMAZON  tag=tawveeri-21 · ascsubtag=<clickId>                                       ← control
+```
+DNC160 appears nowhere in the exit path; a test now asserts it never can.
+
+### DNC160 PUT WHERE IT BELONGS
+Inserted as a real coupon against store 3 (noon), bilingual terms, `percentage` 10 capped 25.
+Live: `/api/coupons` returns it, `/ar/coupons` 200. **First active coupon in the table** — so
+LAUNCH_VOCABULARY §3's ban on «حصرية»/"exclusive" still stands; one coupon is not an
+exclusive offer.
+
+### ROLLBACK
+```
+<this>   ADR-181 + checkpoint      git revert <sha>
+4bf69de  C1000094L attribution     git revert 4bf69de
+```
+Coupon row: `delete from coupons where code = 'DNC160';`
