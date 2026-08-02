@@ -30,8 +30,17 @@
 //   >=2-store comparison rule, rounding, and the ON CONFLICT (tps_identity_key)
 //   upsert semantics are all preserved exactly.
 // • Idempotent: re-running over unchanged evidence produces identical rows.
-// • Never deletes. A canonical that loses its prices keeps its row with
-//   store_count 0, exactly as under v2.
+// • Never deletes ON PRICE LOSS. A canonical that loses its prices keeps its row
+//   with store_count 0, exactly as under v2.
+// • DEACTIVATION IS DIFFERENT, and was not honoured at all until 2026-08-02. The
+//   source query had no `is_active` filter and this builder never deleted, so
+//   `is_active = false` did nothing a customer could see: 303 deactivated canonicals
+//   were still being served, 14 of them still displaying a multi-store COMPARISON.
+//   Four of those are the appliance `…|NA` canonicals ADR-118 deactivated precisely
+//   because their comparison was false — the decision was recorded, the write was
+//   made, and the customer kept seeing the comparison for two weeks. Deactivation now
+//   filters here AND prunes the serving row, because a serving table that cannot
+//   forget is not a projection of the truth.
 //
 // Usage: npx tsx scripts/build-tps-projection.ts [--dry] [--quiet]
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,6 +186,7 @@ async function main() {
     from canonical_products c
     left join agg a on a.canonical_product_id = c.id
     where c.tps_identity_key is not null
+      and c.is_active
     order by c.id
   `);
   queries++;
@@ -244,12 +254,25 @@ async function main() {
     written += res.rowCount ?? 0;
   }
   const writeMs = Date.now() - t2;
+
+  // ── PHASE 4: prune rows whose canonical is gone or deactivated ────────────
+  // Scoped to exactly that: a row is removed only when NO active canonical claims
+  // its identity key. A canonical that merely lost its prices still has an active
+  // row and keeps its projection entry at store_count 0, unchanged from v2.
+  const pruned = await pg.query(
+    `delete from tps_product_projection p
+      where not exists (
+        select 1 from canonical_products c
+         where c.tps_identity_key = p.tps_identity_key and c.is_active)`
+  );
+  queries++;
   const totalMs = Date.now() - t0;
 
   if (!QUIET) {
     console.log(`TPS Layer 5 — Projection v3 (set-based)`);
     console.log(`  canonicals read : ${rows.length}   (${readMs} ms, 1 query)`);
-    console.log(`  rows written    : ${written}       (${writeMs} ms, ${queries - 1} statements)`);
+    console.log(`  rows written    : ${written}       (${writeMs} ms, ${queries - 2} statements)`);
+    console.log(`  rows PRUNED     : ${pruned.rowCount ?? 0}   (canonical inactive or gone)`);
     console.log(`  comparable      : ${comparable} (>=2 stores)`);
     console.log(`  TOTAL           : ${(totalMs / 1000).toFixed(1)}s across ${queries} queries`);
   }

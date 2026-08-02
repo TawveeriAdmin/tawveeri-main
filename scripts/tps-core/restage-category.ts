@@ -153,23 +153,42 @@ const LANE_KEY = 814_8148;
   const singles = await corroboratePass(sb, def, keys, { singleStore: true });
   console.log(`corroborate (exactly 1 store, Layer 2): resolved-single=${singles.singleStore} canonicals=${singles.canonicalsWritten}`);
 
-  // ── keys left with NO members: their canonical is now unsupported ──────────
-  const orphans: string[] = [];
-  for (let i = 0; i < keys.length; i += 100) {
-    const chunk = keys.slice(i, i + 100);
-    const { data } = await sb.from("tps_identity_staging").select("identity_key").eq("category", category).in("identity_key", chunk);
-    const alive = new Set((data ?? []).map((r: { identity_key: string }) => r.identity_key));
-    for (const k of chunk) if (!alive.has(k)) orphans.push(k);
-  }
+  // ── canonicals this category owns whose key has NO evidence left ───────────
+  //
+  // THIS RAN AND SILENTLY DID NOTHING THE FIRST TIME. It passed 351 keys to a single
+  // PostgREST `.in()` and destructured only `data`, so the failed request read as "no
+  // orphans" and 97 TV canonicals — 10 of them still displaying a two-store comparison —
+  // stayed live with zero observations behind them. A comparison with no evidence is the
+  // exact thing the Constitution forbids, and the check that was supposed to catch it
+  // reported success. Now: SQL, chunked, errors thrown, and the version filter that keeps
+  // it from touching canonicals this category does not own.
+  //
+  // The `tps_version` filter is load-bearing. `model-corroboration-v1` (ADR-049) and
+  // `alias-reconciliation-v1` (ADR-060) build canonicals from raw_observations WITHOUT
+  // going through staging — 39 of them are legitimately comparable and legitimately have
+  // no staging row. Deactivating on "no staging evidence" alone would have destroyed them.
+  const orphanRows = await pg.query<{ id: string; tps_identity_key: string; store_count: number | null }>(
+    `select c.id, c.tps_identity_key, p.store_count
+       from canonical_products c
+       left join tps_product_projection p on p.tps_identity_key = c.tps_identity_key
+      where c.is_active = true
+        and c.tps_version = $1
+        and not exists (select 1 from tps_identity_staging s where s.identity_key = c.tps_identity_key)`,
+    [def.version]
+  );
+  const orphans = orphanRows.rows;
+  console.log(`\ncanonicals owned by ${def.version} with zero remaining evidence: ${orphans.length}` +
+    ` (of which still shown as comparable: ${orphans.filter((o) => (o.store_count ?? 0) >= 2).length})`);
   if (orphans.length) {
-    const { data: live } = await sb.from("canonical_products").select("id, tps_identity_key").in("tps_identity_key", orphans).eq("is_active", true);
-    const rows = (live ?? []) as { id: string; tps_identity_key: string }[];
-    console.log(`\nkeys with zero remaining evidence: ${orphans.length}; still-active canonicals among them: ${rows.length}`);
-    if (rows.length) {
-      const { error } = await sb.from("canonical_products").update({ is_active: false, data_updated_at: new Date().toISOString() }).in("id", rows.map((r) => r.id));
+    for (let i = 0; i < orphans.length; i += 200) {
+      const ids = orphans.slice(i, i + 200).map((o) => o.id);
+      const { error } = await sb.from("canonical_products")
+        .update({ is_active: false, data_updated_at: new Date().toISOString() }).in("id", ids);
       if (error) throw new Error(`deactivate: ${error.message}`);
-      console.log(`DEACTIVATED ${rows.length} canonicals whose identity key no longer has a single observation:`);
-      for (const r of rows.slice(0, 20)) console.log(`   ${r.tps_identity_key}`);
+    }
+    console.log(`DEACTIVATED ${orphans.length} canonicals whose identity key no longer has a single observation:`);
+    for (const r of orphans.filter((o) => (o.store_count ?? 0) >= 2).slice(0, 20)) {
+      console.log(`   ${r.tps_identity_key}  (was showing ${r.store_count} stores)`);
     }
   }
 
