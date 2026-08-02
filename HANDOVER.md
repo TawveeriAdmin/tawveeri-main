@@ -5401,3 +5401,69 @@ b60f18a  listing-config swallow       git revert b60f18a
 9972cb9  generic-html swallow         git revert 9972cb9
 2d9bfb3  retailer decisions           git revert 2d9bfb3
 ```
+
+---
+
+## CHECKPOINT #57 — NOON AND SWSG ARE IN PRODUCTION
+
+**Pushed. Tests 1,148/1,148. `tps:health` 0 FAIL · 2 WARN · 35 OK.**
+
+### BOTH RETAILERS WERE ROUTE PROBLEMS, NOT RETAILER PROBLEMS
+
+| | observations | freshness | in comparable products |
+|---|---:|---:|---:|
+| **noon** | **11,295** | **0.2h** | **306** |
+| **swsg** | **6,276** | **0.3h** | **160** |
+
+**All 10 active retailers inside the SLO.** noon 0.2 · swsg 0.3 · jarir 0.7 · extra 0.7 ·
+almanea 0.8 · najm 1.2 · shaker 1.2 · alnakheelk 1.2 · samsung_ksa 2.5 · amazon 6.7h.
+
+### THE NUMBERS
+
+| Figure | Before | After |
+|---|---:|---:|
+| customer-visible products | 5,139 | **5,398** |
+| comparable (all stores) | 807 | **883** |
+| **comparable AND displayable** | **419** | **705** |
+
+**705 is the announceable number** (+286, +68%).
+
+### HOW EACH WAS RECOVERED — ADR-179 / ADR-180
+- **swsg** — Magento 2 ships a **public unauthenticated GraphQL endpoint**; `swsg.co/graphql`
+  answers 4,274 products. Built as a platform-class adapter beside Salla/Shopify/WooCommerce/
+  Algolia, so the next Magento merchant is configuration, not code. The 403 was never worked
+  around — a different, published door was used.
+- **noon** — its `/_svc/` API is **disallowed by noon.com/robots.txt** (`Disallow: /_svc/`)
+  AND blocked from our egress. We should never have been calling it. The permitted listing +
+  product pages are server-rendered and publish full `@type:Product` JSON-LD. 144 products
+  verified from production egress.
+
+**No proxies, no paid egress, no circumvention. Nothing was forced.**
+
+### DNC160 — VERIFIED, AND ONE HALF OF IT WAS WRONG
+The exit link was always right:
+`…/p/?o=…&utm_source=tawveeri&utm_medium=affiliate&utm_campaign=DNC160&utm_content=<subid>`
+(Amazon control: `?tag=tawveeri-21&ascsubtag=<subid>`). Clicks are recorded — 1,165 rows.
+
+**But the attribution RECORD was wrong.** `outbound_clicks.affiliate_tag` took "whichever
+param was listed first", which for Noon is `utm_source=tawveeri` — so every Noon click was
+filed under `tawveeri`, not `DNC160`. The link earned; the ledger would not have reconciled.
+Fixed: the tag now comes from the param that actually carries the code.
+
+**Still unresolved and NOT resolvable by us:** the code exists in two conventions —
+`utm_campaign=DNC160` (what `/go` sends) and `aff_code=DNC160`
+(`src/lib/transactions/affiliate-config.ts`, unused), and `docs/AFFILIATE-ENROLLMENT.md`
+still calls the live one a *placeholder*. **If Noon's program keys on `aff_code`, the clicks
+attribute nowhere.** One question to Noon's partner team settles it.
+
+### THE RULE, NOW APPLIED TWICE
+> Before declaring a retailer un-ingestible, test every sourcing mode the framework
+> supports — and check whether the route you are using is one the site permits at all.
+
+### ROLLBACK
+```
+cf0fe2c  ADRs + attribution tag      git revert cf0fe2c
+1495ee8  un-retire noon + swsg       git revert 1495ee8
+bb2b629  noon robots-permitted path  git revert bb2b629
+7dc80a0  Magento GraphQL adapter     git revert 7dc80a0
+```
