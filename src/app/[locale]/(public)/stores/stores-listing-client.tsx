@@ -115,23 +115,30 @@ export default function StoresListingClient() {
         // (collapsed GCC-market variants) and would overstate by 4.6×.
         const counts = new Map<number, number>();
         try {
+          // PAGES RUN IN PARALLEL. Sequentially this took 11s to first paint — the fix for a
+          // wrong number must not become a slow page. One HEAD request gets the exact total, then
+          // every page is requested at once; 14 parallel range requests settle in about a second.
           const PAGE = 1000;
+          const { count: totalRows } = await sb
+            .from('product_stores')
+            .select('product_id', { count: 'exact', head: true });
+          // Bounded: a pathological total cannot fan out unbounded requests.
+          const pages = Math.min(Math.ceil((totalRows ?? 0) / PAGE), 60);
+          const results = await Promise.all(
+            Array.from({ length: pages }, (_, i) =>
+              sb.from('product_stores')
+                .select('store_id, product_id')
+                .order('product_id', { ascending: true })
+                .range(i * PAGE, i * PAGE + PAGE - 1),
+            ),
+          );
           const seen = new Map<number, Set<string>>();
-          for (let from = 0; ; from += PAGE) {
-            const { data: psRows, error: pageErr } = await sb
-              .from('product_stores')
-              .select('store_id, product_id')
-              .order('product_id', { ascending: true })
-              .range(from, from + PAGE - 1);
-            if (pageErr) throw pageErr;
+          for (const { data: psRows } of results) {
             const rows = (psRows || []) as unknown as { store_id: number; product_id: string }[];
             rows.forEach((r) => {
               if (!seen.has(r.store_id)) seen.set(r.store_id, new Set());
               seen.get(r.store_id)!.add(r.product_id);
             });
-            // A short page means the last page. A hard ceiling stops a pathological loop from
-            // hammering the API if the table grows unexpectedly.
-            if (rows.length < PAGE || from > 200_000) break;
           }
           seen.forEach((set, storeId) => counts.set(storeId, set.size));
         } catch { /* counts are best-effort */ }
