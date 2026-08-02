@@ -6,7 +6,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { getStoreDisplayName } from '@/lib/logos';
-import { isApprovedStore } from '@/lib/retailers/approved-retailers';
+import { isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import {
   Select,
   SelectContent,
@@ -147,9 +147,14 @@ export default function StoresListingClient() {
           // Approved-27 scope gate (Founder Directive 2026-07-27): show ONLY approved retailers
           // that have real customer-visible offers. No non-approved store, no zero-product /
           // "coming soon" card ever appears in the active directory.
+          // isDisplayableRetailer, NOT isApprovedStore. The two gates answer different
+          // questions — approved-to-INGEST vs may-be-SHOWN — and this directory is a display
+          // surface. Using the ingestion gate here is what once put LuLu on customer cards
+          // while it held zero comparison offers, and after the 2026-08-02 retirements it
+          // would have kept showing noon, lulu, sharafdg and blackbox as live retailers.
           .filter((s: any) => {
             const slug = s.slug || String(s.id);
-            return isApprovedStore(slug) && (counts.get(s.id) || 0) > 0;
+            return isDisplayableRetailer(slug) && (counts.get(s.id) || 0) > 0;
           })
           .map((s: any) => {
           const slug = s.slug || String(s.id);

@@ -223,7 +223,12 @@ if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRE
 // NOTE: production Railway env vars (INGEST_FEED_STORES / INGEST_STORES) OVERRIDE these defaults —
 // they MUST be updated to drop shaker/najm/samsung_ksa for the scope reduction to fully take
 // effect on the running scheduler (see docs/RETAILER-MATRIX.md → "Founder actions required").
-const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'almanea').split(',').map((s) => s.trim()).filter(Boolean);
+// FOUNDER DECISION 2026-08-02 (closed): re-admit shaker, najm and alnakheelk to ingestion.
+// All three are `sourcing: "api"` in the provider registry (WooCommerce / Salla structured
+// feeds), so they belong in the FEED loop — putting them in the scraper set would ingest
+// them by the wrong path, and the _feedSet exclusion below guarantees no store is ever
+// ingested twice.
+const INGEST_FEED_STORES = (process.env.INGEST_FEED_STORES ?? 'almanea,shaker,najm,alnakheelk').split(',').map((s) => s.trim()).filter(Boolean);
 const _feedSet = new Set(INGEST_FEED_STORES);
 // noon (Rakhys's #1, internal-catalog API) + lulu (Akinon/Cloudflare via Puppeteer) were recovered
 // 2026-07-27 as the 5th & 6th active retailers. Kept here so the scheduler auto-refreshes + grows
@@ -231,7 +236,15 @@ const _feedSet = new Set(INGEST_FEED_STORES);
 // extra added 2026-07-27: its own (broken) schedule only runs discovery and never refreshed prices,
 // so Extra went stale. The INGEST loop's price-update path (now unblocked — see runPriceUpdateJob
 // schema-drift fix) keeps Extra's 838 prices fresh via the repaired Puppeteer JSON-LD scraper.
-const INGEST_STORES = (process.env.INGEST_STORES ?? 'noon,lulu,sharafdg,extra').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
+// FOUNDER DECISION 2026-08-02 (closed):
+//   ACTIVATE swsg · re-admit samsung_ksa · DROP noon, lulu, sharafdg.
+// noon and sharafdg are refused at the retailer from our production egress (noon: request
+// stalls ~229s; sharafdg: HTTP 403 on search AND product pages, verified in
+// scraping_runs.error_summary). No proxy or paid egress is used to circumvent a deliberate
+// block. lulu was ingesting fine and was dropped by decision, not by failure.
+// All three are also removed from the DISPLAY gate — a retailer we cannot refresh must not
+// be shown, only get older. See src/lib/retailers/approved-retailers.ts.
+const INGEST_STORES = (process.env.INGEST_STORES ?? 'extra,swsg,samsung_ksa').split(',').map((s) => s.trim()).filter(Boolean).filter((s) => !_feedSet.has(s));
 const INGEST_DISCOVERY_MS = parseInt(process.env.INGEST_DISCOVERY_MS || String(12 * 60 * 60 * 1000), 10); // 12h
 const INGEST_PRICE_MS = parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10);           // 6h
 const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || String(20 * 60 * 1000), 10);   // 20m after boot (let the app + PostgREST settle before adding scraper load — 2026-07-27 incident)
@@ -239,6 +252,9 @@ const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || Stri
 const INGEST_CATEGORIES = {
   shaker: ['tv', 'appliance', 'kitchen'],
   samsung_ksa: ['tv', 'mobile'],
+  // swsg (Sheta & Saif) activated 2026-08-02. Its catalogue is appliances/kitchen-led;
+  // `tv` is included because that is where cross-retailer overlap actually exists.
+  swsg: ['tv', 'appliance', 'kitchen', 'smartphone'],
   // valid ProductCategory enums only (NOT 'smartwatch'/'headphones' — use 'wearable'/'audio').
   noon: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'monitor', 'gaming', 'appliance', 'camera'],
   lulu: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'kitchen', 'appliance', 'monitor'],

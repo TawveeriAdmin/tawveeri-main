@@ -11,7 +11,7 @@ import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/utils';
 import { SEARCH_STORE_DISPLAY_NAMES, getSearchStoreLogoPath } from '@/lib/scraping/product-adapter';
 import { SUPPORTED_SEARCH_STORES } from '@/lib/scraping/search/store-registry';
-import { isApprovedStore } from '@/lib/retailers/approved-retailers';
+import { isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import {
   Tag,
   DollarSign,
@@ -132,7 +132,8 @@ export function FilterSidebar({
   // non-approved stores (e.g. samsung_ksa, shaker) never appear as a public filter.
   const availableStores = useMemo(() => {
     return [...SUPPORTED_SEARCH_STORES]
-      .filter((slug) => isApprovedStore(slug))
+      // Display surface → the DISPLAY gate. See stores-listing-client for why.
+      .filter((slug) => isDisplayableRetailer(slug))
       .map((slug) => {
         const names = SEARCH_STORE_DISPLAY_NAMES[slug];
         return {

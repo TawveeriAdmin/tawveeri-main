@@ -5288,3 +5288,67 @@ c10f530  price queue rotation               git revert c10f530
 8b777ce  failure reason plumbing            git revert 8b777ce
 aa94213  fetch failure != success + reaper  git revert aa94213
 ```
+
+---
+
+## CHECKPOINT #55 — RETAILER DECISIONS APPLIED · THE THREE FIGURES, DEFINED
+
+**Founder decision 2026-08-02, CLOSED. Applied, verified, pushed.** Tests 1,148/1,148.
+
+### ⚠ THE THREE FIGURES — NEVER MERGE THESE
+
+| Figure | Value | Definition | What it is NOT |
+|---|---:|---|---|
+| **storefront offer rows** | **~9,300** | rows in `product_stores` — the retailers-page count from ADR-172's pagination fix | not products; Jarir alone holds 4,578 rows for 994 distinct products |
+| **customer-visible products** | **5,023** | rows in `tps_product_projection`, each backed by an ACTIVE canonical | not the catalogue; 303 unsupported rows were pruned 2026-08-02 |
+| **comparable products** | **801** | projection rows with `store_count >= 2` | **628** of those had >=2 offers from *approved* retailers; **428** after the 2026-08-02 retirements |
+
+> **801 is the number that means anything to a customer** — and after this decision the
+> honest customer-facing figure is **428**, because a comparison a customer can SEE must be
+> built from retailers we still show. Report 428 with the definition attached, never bare.
+
+**The catalogue is sufficient. Retailer breadth is not the constraint.** No acquisition work
+is open and none should be opened.
+
+### DECISIONS APPLIED
+- **swsg ACTIVATED** — added to `INGEST_STORES` with categories tv/appliance/kitchen/smartphone.
+- **Re-admitted to ingestion:** shaker, najm, alnakheelk (all `sourcing:"api"` → the FEED loop,
+  not the scraper loop, so no store is ever ingested twice) and samsung_ksa (scraper).
+- **noon, lulu, sharafdg, blackbox → INACTIVE AND HIDDEN.** Removed from `APPROVED_STORE_IDS`
+  and added to `COMPARISON_DISPLAY_EXCLUDED`. **No proxy, no paid egress** — circumventing a
+  deliberate block is fragile and wrong for a platform built on transparency.
+- **Measured cost, recorded not hidden: comparable-with-approved-offers 628 → 428 (−200).**
+
+### DNC160 — VERIFIED ATTACHING (the check that had never been done)
+Live production exit, same method as Amazon's control:
+```
+noon    /go → 302 → …/p/?utm_source=tawveeri&utm_medium=affiliate&utm_campaign=DNC160&utm_content=<subid>
+amazon  /go → 302 → …/dp/B0CX94G62T?tag=tawveeri-21&ascsubtag=<subid>          (control, works)
+```
+**It attaches.** Two caveats recorded rather than smoothed over:
+1. The code exists in **two conventions** — `utm_campaign=DNC160` (what `/go` actually sends)
+   and `aff_code=DNC160` (`src/lib/transactions/affiliate-config.ts`, unused by the exit path).
+   `docs/AFFILIATE-ENROLLMENT.md` still calls the utm form a *placeholder*. If Noon's program
+   keys on `aff_code`, every Noon click is unattributed — the exit still works, the revenue
+   does not. **Unresolvable without Noon's partner documentation; noon is hidden anyway.**
+2. No legitimate Noon data or deep-link route exists without credentials, so per the standing
+   rule noon is inactive and hidden.
+
+### THE STANDING RULE NOW IN CODE
+> **A retailer that cannot be ingested legitimately is inactive AND hidden — never merely
+> un-ingested.** Encoded in `approved-retailers.ts`, asserted by
+> `tests/retailers/approved-scope.test.ts`, and it covers every future case without escalation.
+
+### A GATE DIVERGENCE CLOSED IN THE SAME UNIT
+`isApprovedStore` (may we INGEST) and `isDisplayableRetailer` (may we SHOW) are different
+questions, and two customer surfaces — the stores directory and the search filter sidebar —
+were using the INGESTION gate to make a DISPLAY decision. They would have kept showing all
+four retired retailers. Both now use the display gate. This is the same defect class that
+once put LuLu on 3 customer cards while it held zero comparison offers.
+
+### ROLLBACK
+```
+<this commit>  retailer decisions      git revert <sha>
+7648b15  cap + freshness doc           git revert 7648b15
+6c2dc62  price updates → observations  git revert 6c2dc62
+```

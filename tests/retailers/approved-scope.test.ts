@@ -2,6 +2,7 @@ import {
   isApprovedStore,
   isApprovedStoreId,
   resolveApprovedSlug,
+  isDisplayableRetailer,
   APPROVED_RETAILERS,
 } from '@/lib/retailers/approved-retailers';
 import { normalizeStoreUrl } from '@/lib/catalog/normalizeStoreUrl';
@@ -46,10 +47,25 @@ describe('approved-retailer scope gate', () => {
     expect(isApprovedStore('')).toBe(false);
   });
 
-  it('gates by numeric store id (approved 1,2,3,4,5,7,8,9,10,18; rejects 6,11,22)', () => {
-    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 18]) expect(isApprovedStoreId(id)).toBe(true);
+  it('gates by numeric store id (approved 1,2,4,5,6,7,8,9,18)', () => {
+    for (const id of [1, 2, 4, 5, 6, 7, 8, 9, 18]) expect(isApprovedStoreId(id)).toBe(true);
     for (const id of [11, 22]) expect(isApprovedStoreId(id)).toBe(false);
     expect(isApprovedStoreId(null)).toBe(false);
+  });
+
+  /**
+   * Founder decision 2026-08-02, standing rule: a retailer that cannot be ingested
+   * legitimately is inactive AND hidden. These four must stay rejected — re-admitting one
+   * silently is exactly the regression this asserts against, because the harm (a price
+   * that only gets older) is invisible on the surface.
+   */
+  it('keeps the four retired retailers hidden (noon 3, blackbox 10, lulu 23, sharafdg 24)', () => {
+    // Both gates, because they answer different questions: the id gate is ingestion
+    // approval, `isDisplayableRetailer` is whether a customer may be shown the retailer.
+    for (const id of [3, 10, 23, 24]) expect(isApprovedStoreId(id)).toBe(false);
+    for (const slug of ['noon', 'blackbox', 'lulu', 'sharafdg']) {
+      expect(isDisplayableRetailer(slug)).toBe(false);
+    }
   });
 
   it('lists 30 distinct approved merchants (26 portfolio + 4 admitted on overlap)', () => {

@@ -29,7 +29,9 @@ import { TPS_STORES } from '../../scripts/tps-core/category-registry';
 
 /** Approved store ids deliberately not yet in the normalization sweep, with reasons. */
 const KNOWN_UNSWEPT: Record<number, string> = {
-  10: 'blackbox — approved but bot-walled; zero observations ever ingested, so nothing to sweep',
+  // blackbox (10) removed 2026-08-02: it is no longer approved for display either, under the
+  // standing rule that a retailer which cannot be ingested legitimately is inactive AND
+  // hidden. A known-gap entry for a non-approved store fails the third test below by design.
   // lulu (23) and sharafdg (24) were removed on 2026-08-02: both are now in TPS_STORES
   // and sweeping (lulu holds 1,135 normalized TV observations alone), so the exemption
   // had outlived its gap — which is precisely what the test below is for.

@@ -86,16 +86,30 @@ export const APPROVED_RETAILERS: ApprovedRetailer[] = [
 export const APPROVED_SLUGS: ReadonlySet<string> = new Set(APPROVED_RETAILERS.map((r) => r.slug));
 
 /** Numeric `stores.id` values (production) whose slug is approved. */
+/**
+ * DISPLAY GATE.
+ *
+ * STANDING RULE (Founder decision 2026-08-02): **a retailer that cannot be ingested
+ * legitimately is inactive AND hidden — never merely un-ingested.** Showing a retailer we
+ * can no longer refresh means showing a price that only gets older, which is the failure
+ * mode this platform exists to prevent. No proxies and no paid egress are used to
+ * circumvent a deliberate block: that is fragile and it is not what a platform built on
+ * transparency should do. This rule covers every future case without escalation.
+ *
+ * Removed 2026-08-02 under that rule, with the measured cost recorded rather than hidden —
+ * comparable products carrying >=2 APPROVED offers fell 628 -> 428:
+ *   · noon (3)     — HTTP-timeout blocked from our egress; DNC160 attaches correctly, so
+ *                    re-admitting is a config change if a legitimate data route ever exists
+ *   · lulu (23)    — Founder decision 2026-08-02: not important. Was ingesting fine
+ *   · sharafdg (24)— HTTP 403 to our egress; no credential-free route exists
+ *   · blackbox (10)— bot-walled, ZERO observations ever ingested
+ */
 export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   1, // jarir
   2, // amazon
-  3, // noon
   4, // extra
   5, // almanea
-  8, // swsg (Sheta & Saif)
-  10, // blackbox
-  23, // lulu (LuLu Hypermarket) — added 2026-07-27
-  24, // sharafdg (Sharaf DG) — added 2026-07-27
+  8, // swsg (Sheta & Saif) — activated 2026-08-02 by Founder decision
   7,  // shaker      — ADR-139, admitted on measured overlap 2026-07-29
   9,  // najm        — ADR-139
   18, // alnakheelk  — ADR-139
@@ -195,7 +209,15 @@ export function isApprovedStore(identifier?: string | null): boolean {
  * makes an unsupported comparison claim acceptable. If either retailer later reaches real
  * comparison depth, amend the vocabulary FIRST with the measurement, then remove it from here.
  */
-export const COMPARISON_DISPLAY_EXCLUDED: ReadonlySet<string> = new Set(['lulu', 'sharafdg']);
+export const COMPARISON_DISPLAY_EXCLUDED: ReadonlySet<string> = new Set([
+  'lulu', 'sharafdg',
+  // Added 2026-08-02 under the standing rule that a retailer we cannot refresh is inactive
+  // AND hidden. Both are also out of APPROVED_STORE_IDS, so this is belt-and-braces: the
+  // ingestion gate and the display gate answer different questions and only one of them
+  // knowing is how LuLu once reached 3 customer cards while holding zero comparison offers.
+  'noon',      // refused at the retailer from our egress; every price we hold only ages
+  'blackbox',  // bot-walled, zero observations ever ingested
+]);
 
 /** True iff this retailer may be shown to a customer as a source of a price/comparison. */
 export function isDisplayableRetailer(identifier?: string | number | null): boolean {
