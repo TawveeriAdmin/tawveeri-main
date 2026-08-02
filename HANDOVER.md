@@ -4519,3 +4519,69 @@ every price we show is an observation with a timestamp and a source.
 **What we must not say:** that we compare "12,000 products" (that is relations, not
 products), that any retailer is "trusted" (no measured definition exists), or that
 9,378 products are comparable (763 are).
+
+---
+
+## CHECKPOINT #44 — TPS BRIDGE: GATE §1 FAILED, NO WRITE PERFORMED (2026-08-02)
+
+**Authorised unit: the carried-but-unobserved TPS bridge. NOT EXECUTED.**
+Gate §1 ("prove the source population") failed. Per §5 the unit stopped before any
+production write. Nothing was written. Rollback is not required: no rows were emitted.
+
+### Why the unit died — my audit finding was wrong
+
+CHECKPOINT #43 claimed 4,526 products are "carried but never observed" at Noon,
+Amazon and Jarir. **That figure was an artefact of a NULL-poisoned anti-join.**
+`raw_observations.raw_url` is NULL for these stores (Noon: 0 of 11,127 rows carry a
+URL; Jarir: 9,714 of 90,205). My anti-join tested `r.raw_url = ps.product_url`, which
+is NULL for nearly every row, so `NOT EXISTS` returned true for almost everything.
+
+Re-keyed on `raw_name` — the key these stores actually populate — the real population is:
+
+| Store | Storefront products | Genuinely never observed |
+|---|---|---|
+| Noon | 3,749 | **7** (0.2%) |
+| Jarir | 982 | **1** (0.1%) |
+| Amazon SA | 1,825 | **0** |
+
+**8 products, not 4,526.** Verified non-spurious: sampled storefront names match
+exactly ONE raw observation each (not zero, not many). The bridge would have written
+~6,676 duplicate observations for near-zero gain.
+
+I flagged this exact hazard in #43 ("the raw→normalized URL gap is partly a join
+artefact because layers key URLs differently") and then built a recommendation on top
+of the same artefact anyway. **A stated caveat is not a control.**
+
+### The prior art that should have warned me
+
+`normalized_product_observations` already contains 2,133 rows with
+`source_table='products'` (2026-06-29/30) — a PREVIOUS run of this same bridge. It
+failed silently: **0 canonicals**, empty `normalized_payload`, and `store_id` holding
+Arabic store NAMES. Those rows ARE the §7 "Arabic store_id" finding. Same rows, same
+cause. They are Almanea/Extra only, so they never collided with this unit's target.
+
+### Where the products actually stall — measured
+
+- **Identity is NOT the loss.** For Noon every category normalizes at 100% yield
+  (laptop 958/958, monitor 552/552, tablet 188/188, air_fryer 187/187).
+- **Normalizer backlog is NOT the loss.** Stores 1, 2, 3, 4, 5 all report `behind=0`.
+- **The loss is category registration.** Only 2,590 of Noon's 11,127 observations ever
+  receive a `detected_category`; the rest fall outside the registry and are skipped.
+- **Two stores are disconnected outright:** LuLu (23) and Sharaf DG (24) hold 11,454
+  raw observations / 495 distinct products and have **no `tps_progress_cursors` row at
+  all**. The normalizer has never been told they exist. `stores.name_en` is also NULL
+  for both.
+
+### §7 recorded as instructed — schema-integrity defect, not a curiosity
+
+`normalized_product_observations.store_id` is `text` and holds two different types:
+integer ids and Arabic names (المنيع 1,681, اكسترا 1,080, جرير 168 = 2,929 rows).
+Rows keyed by name cannot join `stores.id`, so they can never corroborate — worth ~69
+canonicals. **Definition drift inside the schema will produce another silent failure.**
+Own boundary, not this one.
+
+### Gates
+
+§1 prove source population — **FAILED (8 products, not 4,526)** · §2 identity/provenance
+— not reached · §3 idempotency — not reached (and `idx_npo_source` is NOT unique, so
+there is no DB-level duplicate guard today) · §4–6 — not reached. No production write.
