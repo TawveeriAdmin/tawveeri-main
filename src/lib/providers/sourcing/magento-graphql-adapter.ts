@@ -94,6 +94,38 @@ function toProduct(origin: string, it: MagentoItem, category?: string): ScrapedP
   } as unknown as ScrapedProduct;
 }
 
+/**
+ * KEYED SEARCH — the seed path for ADR-146 overlap-seeded discovery.
+ *
+ * Magento's `products(search: …)` is the same public endpoint the catalogue pull uses, just
+ * aimed. That matters: overlap-seeded discovery needs to ask "do you carry THIS product we
+ * already hold from one other retailer", and a category traversal cannot ask that. Blind
+ * traversal costs ~120 fetched products per new comparison and leaves 4 single-retailer rows
+ * behind for every comparable one; seeding measured ~7.7 and 1 orphan (ADR-146).
+ *
+ * Returns [] rather than throwing: a seed that finds nothing is a normal, informative result.
+ */
+export async function magentoSearch(origin: string, term: string, limit = 5): Promise<ScrapedProduct[]> {
+  const q = `query S($t:String!,$n:Int!){products(search:$t,pageSize:$n,currentPage:1){items{sku name url_key stock_status price_range{minimum_price{final_price{value currency}}} image{url}}}}`;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 25000);
+    const res = await fetch(`${origin.replace(/\/+$/, "")}/graphql`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "user-agent": UA, accept: "application/json" },
+      body: JSON.stringify({ query: q, variables: { t: term.slice(0, 120), n: Math.min(limit, 20) } }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) return [];
+    const json = (await res.json()) as { data?: { products?: { items?: MagentoItem[] } } };
+    const items = json?.data?.products?.items ?? [];
+    return items.map((it) => toProduct(origin, it)).filter((p): p is ScrapedProduct => p !== null);
+  } catch {
+    return [];
+  }
+}
+
 export const magentoGraphqlAdapter: SourcingAdapter = {
   mode: "api",
 

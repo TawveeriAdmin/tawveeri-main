@@ -16,6 +16,7 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env.local') });
 import pg from 'pg';
+import { toPoolerDbUrl } from '../tps-core/pooler-url';
 
 const args = process.argv.slice(2);
 const slug = args.find((a) => !a.startsWith('--')) || 'noon';
@@ -23,7 +24,7 @@ const GO = args.includes('--go');
 const TARGETS = parseInt(args.find((a) => a.startsWith('--targets='))?.split('=')[1] || '250', 10);
 const HITS = parseInt(args.find((a) => a.startsWith('--hits='))?.split('=')[1] || '3', 10);
 
-const STORE_ID: Record<string, number> = { noon: 3, extra: 4, almanea: 5, amazon: 2, jarir: 1 };
+const STORE_ID: Record<string, number> = { noon: 3, extra: 4, almanea: 5, amazon: 2, jarir: 1, swsg: 8, shaker: 7, najm: 9, alnakheelk: 18 };
 
 /** Retailer display names as written into `price_history.store_name`, per store. */
 const STORE_NAMES: Record<string, string[]> = {
@@ -32,13 +33,17 @@ const STORE_NAMES: Record<string, string[]> = {
   almanea: ['المنيع', 'almanea', '5'],
   amazon: ['أمازون', 'أمازون السعودية', 'amazon', '2'],
   jarir: ['جرير', 'مكتبة جرير', 'jarir', '1'],
+  swsg: ['الشتاء والصيف', 'swsg', '8'],
+  shaker: ['شاكر', 'shaker', '7'],
+  najm: ['نجم الأجهزة', 'najm', '9'],
+  alnakheelk: ['متجر النخيل', 'alnakheelk', '18'],
 };
 
 (async () => {
   const storeId = STORE_ID[slug];
   if (!storeId) throw new Error(`unknown store ${slug}`);
 
-  const pgc = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+  const pgc = new pg.Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL!), ssl: { rejectUnauthorized: false } });
   await pgc.connect();
 
   // TARGETS: canonicals we hold from exactly ONE retailer, that this retailer does NOT
@@ -72,8 +77,21 @@ const STORE_NAMES: Record<string, string[]> = {
   const { ProductService } = await import('../../src/lib/scraping/services/product-service');
   const { IngestionService } = await import('../../src/lib/scraping/services/ingestion-service');
   const orch = new ScrapingOrchestrator();
-  const scraper = orch.getScraperForStore(slug);
-  if (!scraper) throw new Error('no scraper');
+  // SEARCH DISPATCH. A scraper-sourced retailer is seeded through its own keyed search
+  // (`scrapeApiPage`); an API-sourced one has no such method — swsg is served by Magento
+  // GraphQL, whose `products(search:)` IS the keyed search. Seeding must follow the
+  // retailer's actual sourcing mode, which is the same lesson ADR-179/180 produced.
+  const { getProvider } = await import('../../src/lib/providers/registry');
+  const { magentoSearch } = await import('../../src/lib/providers/sourcing/magento-graphql-adapter');
+  const provider = getProvider(slug);
+  const magentoOrigin = provider?.sourcing === 'api' ? provider?.magento?.origin : undefined;
+  const scraper = magentoOrigin ? null : orch.getScraperForStore(slug);
+  if (!scraper && !magentoOrigin) throw new Error('no scraper and no api search for ' + slug);
+  const searchFor = async (seed: string, category: string): Promise<unknown[]> =>
+    magentoOrigin
+      ? await magentoSearch(magentoOrigin, seed, HITS)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      : await (scraper as any).scrapeApiPage(seed, 1, category, HITS);
   const productService = new ProductService();
   // CRITICAL (learned by measurement 2026-07-30): `createOrUpdateProduct` writes ONLY the
   // storefront layer. `price_history` — and therefore every comparison — is produced by
@@ -89,7 +107,30 @@ const STORE_NAMES: Record<string, string[]> = {
   const svcStoreId: string | null = await (orch as any).getStoreId(slug);
   if (!svcStoreId) throw new Error(`could not resolve store id for ${slug}`);
 
+  /**
+   * RELEVANCE GATE — added 2026-08-02 after the swsg dry run reported a 100% hit rate that
+   * was entirely fuzzy. Magento's `products(search:)` matches any shared token, so the seed
+   * "lenovo Idea Tab 11 128GB 5G" returned a Lenovo MOUSE and an oil heater with 11 FINS,
+   * and "dell 27 FHD Monitor" returned a SAMSUNG monitor. Writing those produces
+   * single-retailer orphans at best and a FALSE COMPARISON at worst — the precise harm
+   * ADR-176 exists to prevent, and the precise bloat ADR-146 exists to avoid.
+   *
+   * The gate is ADR-176's own standard: the target's MODEL NUMBER must appear LITERALLY in
+   * the hit's name or sku. Never inferred, never fuzzy. A target with no model number cannot
+   * be verified this way and is skipped rather than guessed at.
+   *
+   * This will cut the hit rate hard. That smaller number is the correct one.
+   */
+  const norm = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const relevant = (target: { model_number: string | null }, hit: Record<string, unknown>): boolean => {
+    const model = norm(target.model_number);
+    if (model.length < 5) return false;                 // too short to be discriminating
+    const hay = norm(hit.name_en) + '|' + norm(hit.name_ar) + '|' + norm(hit.sku);
+    return hay.includes(model);
+  };
+
   let queried = 0, fetched = 0, written = 0, created = 0, linked = 0, errors = 0, noHit = 0, rawWritten = 0;
+  let rejectedIrrelevant = 0, skippedNoModel = 0;
   // A run id makes every row this experiment writes attributable forever — the permanent
   // fix for the attribution problem that made the first run unreadable.
   const runId: string | null = null;
@@ -100,9 +141,11 @@ const STORE_NAMES: Record<string, string[]> = {
     const seed = [t.brand, t.model_number || t.name_en.split(/[,|(]/)[0]].join(' ').replace(/\s+/g, ' ').trim().slice(0, 90);
     queried++;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hits: any[] = await (scraper as any).scrapeApiPage(seed, 1, t.category);
-      const top = (hits || []).slice(0, HITS);
+      const hits = (await searchFor(seed, t.category)) as any[];
+      const candidates = (hits || []).slice(0, HITS);
+      // Gate BEFORE counting a hit: an irrelevant match is not a hit, it is noise.
+      const top = candidates.filter((h) => relevant(t, h));
+      rejectedIrrelevant += candidates.length - top.length;
       fetched += top.length;
       if (top.length === 0) { noHit++; continue; }
       if (!GO) continue;
@@ -126,6 +169,7 @@ const STORE_NAMES: Record<string, string[]> = {
     store: slug, mode: GO ? 'LIVE' : 'DRY',
     targets: targets.length, queried, hits_fetched: fetched, targets_with_no_hit: noHit,
     written, created, linked, errors, raw_observations_written: rawWritten,
+    rejected_irrelevant: rejectedIrrelevant, skipped_no_model: skippedNoModel,
     hit_rate_pct: queried ? Math.round((queried - noHit) / queried * 1000) / 10 : 0,
   }, null, 2));
   process.exit(0);

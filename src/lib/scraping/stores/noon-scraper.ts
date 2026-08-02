@@ -164,7 +164,7 @@ export class NoonScraper extends BaseScraper {
    * the HTML (`/saudi-en/{slug}/{SKU}/p/`). We enumerate those, then read each product
    * page's JSON-LD for the price. Bounded per page like every other adapter.
    */
-  private async scrapeListingPage(query: string, page: number, category: ProductCategory): Promise<ScrapedProduct[]> {
+  private async scrapeListingPage(query: string, page: number, category: ProductCategory, limit?: number): Promise<ScrapedProduct[]> {
     // BASE_URL already carries the `/saudi-en` market segment, and the hrefs in the page
     // are absolute-from-root (`/saudi-en/…`) — so the listing URL must NOT repeat it and the
     // product URL must be joined to the ORIGIN, not to BASE_URL.
@@ -206,12 +206,12 @@ export class NoonScraper extends BaseScraper {
     return out;
   }
 
-  private async scrapeApiPage(query: string, page: number, category: ProductCategory): Promise<ScrapedProduct[]> {
+  private async scrapeApiPage(query: string, page: number, category: ProductCategory, limit?: number): Promise<ScrapedProduct[]> {
     // ROBOTS COMPLIANCE (2026-08-02): noon.com/robots.txt says `Disallow: /_svc/`, and this
     // method called `/_svc/catalog/api/v3/`. Using it was against the site's stated policy
     // whether or not it worked, so discovery now goes through the permitted listing pages.
     // The API path is retained ONLY as dead code below for reference and is never called.
-    return this.scrapeListingPage(query, page, category);
+    return this.scrapeListingPage(query, page, category, limit);
   }
 
   /** @deprecated Disallowed by noon.com/robots.txt (`Disallow: /_svc/`). Never call. */
