@@ -4739,3 +4739,58 @@ deterministic upserts (0 duplicates proven in #45).
 1,166 duplicate `source_record_id`s (same observation under two categories) and 2,929
 Arabic `store_id` rows. Both schema-integrity defects producing silent failures. Own
 boundary each.
+
+---
+
+## CHECKPOINT #47 — EXTRA/ALMANEA REPLAY: THRESHOLD SET, RESULT PENDING
+
+### The threshold, fixed BEFORE the run (as required)
+- **Justifies continuing:** **>=15** net-new comparables from Extra + Almanea (776 -> 791) —
+  3x the Amazon+Noon yield on similar input, meaning replay yield scales with stores left.
+- **Means classification is not where the volume is:** **<=5** — same magnitude as two
+  stores ago despite two more retailers, retiring replay-of-classification as a lever.
+- 6–14 is ambiguous and treated as a STOP unless concentrated in a category with
+  demonstrated cross-retailer overlap.
+
+### Baseline (frozen before replay)
+canonicals 7,310 · projection 5,189 · **comparable 776**
+store_count distribution: 0→211 · 1→4,202 · 2→591 · 3→136 · 4→42 · 5→7
+
+### A BLOCKING DEFECT WAS FOUND AND FIXED FIRST (commit e380131)
+The replay failed instantly with `ENOTFOUND db.vyceqrzttspyycdpojtn.supabase.co`.
+Supabase's direct host is IPv6-only; BOTH pg connections in `normalize-incremental.ts`
+used `SUPABASE_DB_URL` raw. One of them is the **ADR-099 lane lock**, so the
+serialization guard **failed CLOSED** — no sweep could run at all, and the symptom looked
+like a database outage rather than a resolver problem. CLAUDE.md already required routing
+through `pooler-url.js`; that rule now applies to the guard itself.
+**This was silently blocking ALL manual normalization, not just this unit.**
+
+### STATE AT HANDOFF — replay INCOMPLETE, threshold NOT yet testable
+- Extra (store 4): cursor reset to 0; **~8,500 of 54,378 replayed (~16%)**, still draining.
+- Almanea (store 5): **not started**, 3,242 behind.
+- `tps:refresh` NOT run since the replay began, so `comparable` still reads 776 — that is
+  a stale figure, not a result.
+- **No verdict is claimed against the threshold.** Judging a >=15 test on a 16% replay
+  would repeat the exact error this stopping rule exists to prevent.
+
+### Note: `--batches` is hard-capped at 20 (10,000 observations/run)
+`Math.min(20, arg("batches", 6))`. A 54k store needs ~6 sequential runs; observed
+throughput was lower still (~2,000/run). Any future full-store replay must budget for this.
+
+### TO COMPLETE (no new decisions needed)
+1. Drain store 4 to `behind=0` (repeat `--stores 4 --limit 12000 --batches 20`).
+2. Drain store 5 (one run).
+3. `npm run tps:refresh` — NOT concurrently with any sweep (ADR-099).
+4. Re-measure canonicals / projection / **comparable** and the store_count distribution;
+   compare against the frozen baseline above and report against the threshold.
+The hourly scheduler will drain both stores on its own now that the pooler fix has landed,
+so this completes without manual intervention if left alone.
+
+### Rollback
+Replay itself needs none — writes are deterministic upserts (0 duplicates proven in #45)
+and the cursors are already reset, so re-sweeping only rebuilds what was there.
+`git revert e380131` reverts the pooler fix, but that would re-break all manual
+normalization and is not advised.
+
+### Still deferred, unchanged
+1,166 duplicate `source_record_id`s · 2,929 Arabic `store_id` rows. Own boundary each.
