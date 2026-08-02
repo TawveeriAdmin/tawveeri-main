@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
         products_discovered: result.products_discovered,
         products_updated: result.products_linked,
         errors_count: result.errors,
+        error_summary: result.error_messages?.length ? result.error_messages : undefined,
       });
     }
 

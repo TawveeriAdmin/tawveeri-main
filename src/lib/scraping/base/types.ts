@@ -214,6 +214,10 @@ export interface DiscoveryResult {
   products_marked_missing?: number;
   products_marked_out_of_stock?: number;
   errors: number;
+  /** Why each category failed, carried into scraping_runs.error_summary. A run that
+   *  fetched nothing must be able to say what refused it — previously the reason
+   *  existed only in container stdout and the durable record said "success". */
+  error_messages?: string[];
   duration_ms: number;
 }
 
