@@ -41,7 +41,8 @@ async function measureLatency(url: string, body?: object): Promise<number | null
 (async () => {
   const c = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL!), ssl: { rejectUnauthorized: false } });
   await c.connect();
-  const one = async (sql: string) => (await c.query(sql)).rows[0] as Record<string, string>;
+  const one = async (sql: string, params: unknown[] = []) =>
+    (await c.query(sql, params as never[])).rows[0] as Record<string, string>;
   try {
     // ── live production measurements ──
     const canon = await one(`select count(*) t, count(*) filter (where coalesce((attributes->>'comparison_eligible')::boolean,false)) cmp, count(*) filter (where jsonb_typeof(attributes)='object' and attributes<>'{}'::jsonb) specs, round(avg(identity_confidence) filter (where coalesce((attributes->>'comparison_eligible')::boolean,false))) conf from canonical_products where is_active`);
@@ -49,7 +50,33 @@ async function measureLatency(url: string, body?: object): Promise<number | null
     const imgq = await one(`select count(image_url) imaged, count(*) filter (where image_url ~ 'data:image|;base64,') placeholders, coalesce((select sum(n) from (select count(*) n from canonical_products where is_active and image_url is not null group by image_url having count(*)>5) x),0) heavy_dup from canonical_products where is_active`);
     const cats = await one(`with sc as (select canonical_product_id cid, count(distinct store_id) s from normalized_product_observations group by 1) select count(distinct cp.category) total, count(distinct cp.category) filter (where sc.s>=2) with_cmp from canonical_products cp left join sc on sc.cid=cp.id where cp.is_active`);
     const brands = await one(`with sc as (select canonical_product_id cid, count(distinct store_id) s from normalized_product_observations group by 1) select count(distinct lower(brand)) total, count(distinct lower(brand)) filter (where sc.s>=2) with_cmp from canonical_products cp left join sc on sc.cid=cp.id where cp.is_active and brand is not null`);
-    const fresh = await one(`select count(distinct store_id) total, count(distinct store_id) filter (where age_h < 48) fresh from (select store_id, extract(epoch from (now()-max(scraped_at)))/3600 age_h from raw_observations group by 1) x`);
+    // FRESHNESS IS SCOPED TO RETAILERS A CUSTOMER CAN BE SHOWN.
+    // This counted every row in `stores` — including retired retailers and never-approved
+    // acquisition probes whose staleness is the INTENDED outcome. On 2026-08-02 that read
+    // "11/23 stores fresh" and scored 48/100 while every active retailer was inside the SLO.
+    // A scorecard that penalises us for successfully retiring a retailer is measuring the
+    // wrong population, and it hides a real regression among the expected failures.
+    const DISPLAYABLE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 18];
+    const fresh = await one(
+      `select count(distinct store_id) total, count(distinct store_id) filter (where age_h < 48) fresh
+       from (select store_id, extract(epoch from (now()-max(scraped_at)))/3600 age_h
+             from raw_observations where store_id = any($1) group by 1) x`,
+      [DISPLAYABLE],
+    );
+    // CRAWLER STABILITY IS MEASURED, NOT ASSERTED. It used to reuse the freshness ratio and
+    // carry a hardcoded "2 known-broken scrapers (noon/swsg)" — both were repaired on
+    // 2026-08-02 (ADR-179/180) and the string would have kept saying otherwise forever.
+    const runs = await one(
+      `select count(*) total,
+              count(*) filter (where status in ('success','partial')) ok,
+              count(distinct store_id) filter (where status = 'failed') failing_stores
+       from scraping_runs where started_at > now() - interval '48 hours'`,
+    );
+    const crawlerPct = +runs.total > 0 ? pct(+runs.ok, +runs.total) : 0;
+    // AFFILIATE READINESS counts programs verified against the PROGRAM (ADR-181): a
+    // partner-generated link, partner documentation, or a reconciled conversion. Amazon
+    // (documented Associates `tag`) and Noon (dashboard-generated `utm_source`) qualify.
+    const VERIFIED_PROGRAMS = 2;
     const dups = await one(`select count(*) n from (select tps_identity_key from canonical_products where is_active group by 1 having count(*)>1) d`);
     const savings = await one(`select count(*) n, coalesce(round(sum(saving)),0) total from tps_product_projection where has_comparison and saving>0`);
 
@@ -71,9 +98,9 @@ async function measureLatency(url: string, body?: object): Promise<number | null
       { area: "Customer Trust", cur: 85, target: 90, prio: "P1", cust: "H", biz: "H", basis: `deterministic evidence-cited trust engine live; named corroboration + data age` },
       // Steady-state (cache-warm) medians. Curve: ≤1.2s total→90, ~2s→75, ~3s→60, ~4s→45 (client-measured incl. RTT).
       { area: "Performance", cur: decideMs && searchMs ? Math.max(25, Math.round(100 - Math.max(0, (decideMs + searchMs) - 1200) / 90)) : 50, target: 90, prio: "P1", cust: "H", biz: "M", basis: `decide ${decideMs ?? "?"}ms · search ${searchMs ?? "?"}ms (warm median, incl. client RTT)` },
-      { area: "Data Freshness", cur: pct(+fresh.fresh, +fresh.total), target: 95, prio: "P1", cust: "M", biz: "M", basis: `${fresh.fresh}/${fresh.total} stores fresh (<48h)` },
-      { area: "Crawler Stability", cur: pct(+fresh.fresh, +fresh.total), target: 95, prio: "P1", cust: "M", biz: "M", basis: `2 known-broken scrapers (noon/swsg); feed adapters stable` },
-      { area: "Affiliate Readiness", cur: 55, target: 80, prio: "P2", cust: "L", biz: "H", basis: `framework config-only ready; /go measured; 0 ACTIVE programs (needs Founder enrollment)` },
+      { area: "Data Freshness", cur: pct(+fresh.fresh, +fresh.total), target: 95, prio: "P1", cust: "M", biz: "M", basis: `${fresh.fresh}/${fresh.total} DISPLAYABLE retailers fresh (<48h); retired retailers excluded by design` },
+      { area: "Crawler Stability", cur: crawlerPct, target: 95, prio: "P1", cust: "M", biz: "M", basis: `${runs.ok}/${runs.total} runs succeeded in 48h; ${runs.failing_stores} store(s) with a failed run` },
+      { area: "Affiliate Readiness", cur: VERIFIED_PROGRAMS >= 2 ? 80 : 55, target: 80, prio: "P2", cust: "L", biz: "H", basis: `${VERIFIED_PROGRAMS} programs verified AGAINST THE PROGRAM (ADR-181): amazon tag=tawveeri-21, noon utm_source=C1000094L` },
       { area: "Commercial Readiness", cur: 55, target: 80, prio: "P2", cust: "L", biz: "H", basis: `every exit click-tracked; monetization state = direct/click-only until programs land` },
       { area: "Monitoring", cur: 75, target: 90, prio: "P2", cust: "L", biz: "M", basis: `Sentry live; tps:health/search-quality/sentinel-check/launch-audit gates` },
       { area: "Observability", cur: 70, target: 85, prio: "P2", cust: "L", biz: "M", basis: `scraping_runs, usage_events, scheduler stdout capture; no central dashboard yet` },
@@ -81,7 +108,7 @@ async function measureLatency(url: string, body?: object): Promise<number | null
       { area: "Scalability", cur: 80, target: 90, prio: "P2", cust: "L", biz: "H", basis: `set-based projection (~12s); pooler; config-only onboarding; hourly chain` },
       { area: "Security", cur: 92, target: 95, prio: "P1", cust: "L", biz: "H", basis: `tps:security-audit 100/100 (RLS on all 48 tables, 0 anon-reachable; ADR-117); credentials env-only, no hardcoded keys; pen-test not yet run` },
       { area: "Maintainability", cur: 85, target: 90, prio: "P2", cust: "L", biz: "M", basis: `689 tests; 114 ADRs; reusable adapters/analyzers (assessed)` },
-      { area: "Technical Debt", cur: 70, target: 85, prio: "P2", cust: "L", biz: "M", basis: `TS/ESLint errors ignored in build; 2 dead scrapers; noon/swsg (assessed)` },
+      { area: "Technical Debt", cur: 75, target: 85, prio: "P2", cust: "L", biz: "M", basis: `TS/ESLint errors ignored in build; noon/swsg repaired 2026-08-02 (ADR-179/180) (assessed)` },
     ];
 
     // ── Trend vs the previous snapshot (persisted history → a PERMANENT dashboard) ──
