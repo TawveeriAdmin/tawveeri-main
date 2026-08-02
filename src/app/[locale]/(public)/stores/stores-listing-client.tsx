@@ -222,11 +222,6 @@ export default function StoresListingClient() {
 
   
 
-  const premiumCount = useMemo(
-    () => stores.filter((store) => Boolean(store.is_premium)).length,
-    [stores],
-  );
-
   const productsTotal = useMemo(
     () => stores.reduce((sum, store) => sum + (store.total_products ?? 0), 0),
     [stores],
@@ -275,7 +270,7 @@ export default function StoresListingClient() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] dark:bg-[color:var(--color-surface-container)]">
+          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] dark:bg-[color:var(--color-surface-container)]">
             <StoreMetric
               value={loading ? '...' : stores.length.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
               label={isRTL ? 'متجر' : 'Stores'}
@@ -284,10 +279,16 @@ export default function StoresListingClient() {
               value={loading ? '...' : productsTotal.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
               label={isRTL ? 'منتج' : 'Products'}
             />
-            <StoreMetric
-              value={loading ? '...' : premiumCount.toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
-              label={isRTL ? 'موثوق' : 'Trusted'}
-            />
+            {/* THE «موثوق» / "Trusted" TILE IS REMOVED (ADR-173).
+                It counted `stores.filter(s => s.is_premium)` — and `is_premium` is hardcoded
+                `false` two hundred lines above, for every store, with no column behind it. The
+                tile could only ever render 0. It was not an unpopulated field or a stale metric:
+                there is no measured, approved definition of "trusted store" anywhere in the
+                vocabulary for it to display.
+                A zero beside a trust word is worse than absent — a shopper reads "0 trusted" as
+                a statement about our retailers, which is a claim we never made and cannot
+                evidence. Removed rather than replaced: inventing a trust score to fill a tile is
+                exactly how an unevidenced claim reaches a customer. */}
           </div>
         </div>
       </section>
