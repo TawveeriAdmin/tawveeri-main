@@ -4585,3 +4585,85 @@ Own boundary, not this one.
 §1 prove source population — **FAILED (8 products, not 4,526)** · §2 identity/provenance
 — not reached · §3 idempotency — not reached (and `idx_npo_source` is NOT unique, so
 there is no DB-level duplicate guard today) · §4–6 — not reached. No production write.
+
+---
+
+## CHECKPOINT #45 — ADR-174: LULU + SHARAF DG SWEPT INTO THE KNOWLEDGE LAYER
+
+**Executed. Both stores are now in the TPS sweep. My own projection was REJECTED.**
+
+### Root cause — the cursor was a symptom, not the disease
+`progressive-engine.ts` iterates `for (const s of TPS_STORES)`, a hardcoded constant in
+`category-registry.ts`. LuLu (23) and Sharaf DG (24) were simply absent from it. Their
+missing `tps_progress_cursors` rows were a CONSEQUENCE — the cursor is upserted *after* a
+sweep, so an unlisted store can never acquire one. **Seeding a cursor would have done
+nothing.** The fix was two entries in a constant. No schema change, no DDL, no manual
+row writes.
+
+### Measured result (baseline → after full chain rebuild)
+
+| Metric | Before | After | Δ |
+|---|---|---|---|
+| normalized observations | 127,167 | 130,805 | +3,638 |
+| active canonicals | 7,191 | 7,261 | **+70** |
+| customer-visible products | 5,070 | 5,140 | **+70** |
+| **price-comparable products** | **763** | **771** | **+8** |
+
+LuLu 1,919 normalized rows · Sharaf DG 469 · together **88 canonicals, 19 comparable**,
+of which **8 gained a second displayable retailer because of this unit** (11 joined
+comparisons that already existed). Categories: monitor, audio, tablet, TV.
+
+### THE PROJECTION IS REJECTED — say it plainly
+I forecast **400–495 products**. Measured: **70**. Off by ~6x.
+The error: I equated *distinct raw product names* (495) with *products that survive
+identity*. LuLu's 10,084 observations are ~45x time-duplicated and collapse to **44 valid
+identity keys**; Sharaf DG's 1,370 to 36. **Distinct names are not distinct products.**
+The "9/9 corroborated" dry-run signal was real but measured upsert rows, not net-new
+canonicals — the identical conflation that killed the previous unit one checkpoint ago.
+**Two units in a row failed on the same class of error: a counter that does not count
+what its name suggests.**
+
+### Gates
+- §1 population — proven, then contradicted my own forecast. Reported.
+- §2 provenance — `source_table='raw_observations'`, real `observed_at` (`o.observed_at ?? now`),
+  integer store_id. Nothing invented.
+- §3 idempotency — **PROVEN: 0 duplicates across all 2,388 rows** (`count(*)` =
+  `count(distinct source_record_id)`). Structural, not incidental: row ids are
+  `stableUuid(raw_obs_id)` and `write_ac_batch` uses `on conflict (id) do update` for
+  observations/canonicals and `do nothing` for matches, so matches are never reassigned.
+- §4 safety — no conflicting writer at start, lane lock active, bounded batches, resumable
+  via cursor, one store at a time.
+- §5 **no schema changes.**
+- §6 outbound — **100% URL coverage on both stores.** Exits verified live:
+  LuLu `/go` → 302 luluhypermarket.com · Sharaf DG `/go` → 302 saudi.sharafdg.com.
+  Compare page `/ar/compare/samsung|32|qhd|180|ips` renders 200 with Sharaf DG present.
+
+### §3 DISPLAYABILITY — STOPS FOR THE FOUNDER
+`tps_merchant_trust`: both stores **`sample_size = 0, confidence = low`**.
+**They do NOT meet the displayable-retailer standard for trust claims.** No vocabulary
+amendment is proposed; the exclusion stands on the evidence it was set on.
+
+**But note a distinction the pipeline already acted on:** entering the knowledge layer made
+their OFFERS render on comparison pages immediately. An offer row is a factual observed
+price with a working exit — that is evidence-backed. A *trust verdict* about the merchant
+is not. **Founder decision required:** is offer display acceptable while trust display
+stays excluded, or should these two be suppressed from comparison surfaces entirely until
+they have a trust sample?
+
+### Pre-existing defect found, NOT repaired (own boundary)
+`normalized_product_observations` holds **1,166 duplicate `source_record_id`s** among
+`raw_observations`-sourced rows — the same raw observation normalized under two different
+categories. None are mine (my stores: 0 dupes). Separate from the 2,929 Arabic-`store_id`
+rows, which also remain unrepaired as instructed.
+
+### Rollback — concrete, and honestly qualified
+1. `git revert b668497 ec3a60a`
+2. `update stores set name_ar=null, name_en=null where id in (23,24);`
+3. `delete from normalized_product_observations where store_id in ('23','24');`
+   `delete from tps_progress_cursors where store_id in (23,24);`
+4. `npm run tps:refresh`
+
+**Qualification:** steps 1–4 fully remove these stores' offers. They do NOT cleanly undo
+the +70 canonicals, because those canonicals are now shared with other retailers — removing
+them would delete legitimate products. After rollback the +70 revert to single-store and
+the +8 comparables revert to non-comparable, which is the correct end state.
