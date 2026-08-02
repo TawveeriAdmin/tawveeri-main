@@ -62,6 +62,7 @@ export class NoonScraper extends BaseScraper {
     const categoryQuery = this.extractCategoryQuery('', category);
     if (!categoryQuery) return products;
 
+    let lastError: unknown = null;
     try {
       for (let page = 1; page <= maxPages; page++) {
         try {
@@ -70,11 +71,25 @@ export class NoonScraper extends BaseScraper {
           products.push(...pageProducts);
           await this.delay();
         } catch (error) {
+          // Same defect as Sharaf DG, different shape: every page error was logged to
+          // stdout and then discarded, so a category that fetched NOTHING returned an
+          // empty array and the run was recorded as `success`. Measured 2026-08-02:
+          // Noon discovery ran for ~229 SECONDS per category (the API stalls from the
+          // production egress and every page times out), discovered 0, and reported
+          // success — for three days.
+          lastError = error;
           console.error(`[Noon] Error scraping page ${page}:`, error);
         }
       }
     } finally {
       await this.cleanup();
+    }
+
+    // Errors that produced nothing are a failure. Errors that still produced products
+    // are a partial success and are kept.
+    if (!products.length && lastError) {
+      const msg = lastError instanceof Error ? lastError.message : String(lastError);
+      throw new Error(`noon discovery produced nothing for "${categoryQuery}": ${msg}`);
     }
 
     return products;

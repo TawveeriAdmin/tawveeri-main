@@ -66,6 +66,48 @@ export interface FinishRunParams {
  * Never throws — if logging fails, the caller should proceed and rely on
  * orchestrator-level error handling.
  */
+/**
+ * Close out runs this store left in `running`/`pending` past the point where they could
+ * still be alive, marking them `failed` with a reason.
+ *
+ * WHY. A run row is opened before the scrape and closed after it. If the process dies,
+ * is redeployed, or the request times out, the row is never closed and stays `running`
+ * forever. Measured 2026-08-02: **60 such rows**, the oldest 266 hours old — noon 30,
+ * jarir 15, extra 8. Two concrete harms, both silent:
+ *   1. `hasActiveRun` treats a corpse as a live run for its 120-minute window, so the
+ *      store is skipped ("active run in progress") and cannot be re-attempted.
+ *   2. platform-health FAILs on stuck scheduled runs, so a real stuck run is
+ *      indistinguishable from the accumulated debris and nobody can act on either.
+ *
+ * Reaping on `startRun` keeps this self-healing with no new cron and no new table: the
+ * next attempt for a store cleans up that store's corpses first.
+ */
+export async function reapStaleRuns(storeId: number | null, staleAfterMinutes = 120): Promise<number> {
+  if (storeId == null) return 0;
+  try {
+    const supabase = createServerClient();
+    const cutoff = new Date(Date.now() - staleAfterMinutes * 60_000).toISOString();
+    const { data, error } = await (supabase as any)
+      .from('scraping_runs')
+      .update({
+        status: 'failed',
+        finished_at: new Date().toISOString(),
+        error_message: `run never completed — reaped after ${staleAfterMinutes}m`,
+      })
+      .eq('store_id', storeId)
+      .in('status', ['running', 'pending'])
+      .lt('started_at', cutoff)
+      .select('id');
+    if (error) { console.error('[run-logger] reapStaleRuns error:', error.message); return 0; }
+    const n = data?.length ?? 0;
+    if (n) console.log(`[run-logger] reaped ${n} stale run(s) for store ${storeId}`);
+    return n;
+  } catch (err) {
+    console.error('[run-logger] reapStaleRuns threw:', err);
+    return 0;
+  }
+}
+
 export async function startRun(params: StartRunParams): Promise<number | null> {
   try {
     const supabase = createServerClient();

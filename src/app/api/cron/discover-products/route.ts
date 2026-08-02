@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ScrapingOrchestrator } from '@/lib/scraping/services/scraping-orchestrator';
 import type { DiscoveryOptions } from '@/lib/scraping/base/types';
 import { createServerClient } from '@/lib/database';
-import { startRun, finishRun, failRun, hasActiveRun } from '@/lib/scraping/services/run-logger';
+import { startRun, finishRun, failRun, hasActiveRun, reapStaleRuns } from '@/lib/scraping/services/run-logger';
 
 export const maxDuration = 900;
 
@@ -39,6 +39,12 @@ export async function POST(request: NextRequest) {
 
     if (!runId && !options.dry_run) {
       const storeId = await lookupStoreId(options.store_slug);
+
+      // Reap BEFORE the overlap check, never after: a run row that was never closed
+      // (process death, redeploy, request timeout) is indistinguishable from a live run
+      // to `hasActiveRun`, so a corpse can skip this store for its whole window. Reaping
+      // first means the guard only ever compares against runs that could still be alive.
+      await reapStaleRuns(storeId);
 
       // Overlap protection: if this store already has a run in progress, skip
       // rather than double-scrape. The dispatcher supplies its own run_id, so

@@ -75,7 +75,20 @@ export class SharafDgScraper extends BaseScraper {
       try {
         searchHtml = await this.fetchPage(`${ORIGIN}/en/?s=${encodeURIComponent(query)}&paged=${page}`);
       } catch (e) {
-        console.error(`[SharafDG] search fetch failed p${page}:`, e instanceof Error ? e.message : e);
+        // A FETCH FAILURE WITH NOTHING COLLECTED IS A FAILURE, NOT AN EMPTY RESULT.
+        //
+        // This used to `break`, returning [] — so the orchestrator saw 0 products and 0
+        // errors and recorded the run as `success`. Measured 2026-08-02: every Sharaf DG
+        // discovery run for three days was "success, 0 discovered, ~1.3s", because
+        // `fetchPage` throws a 4xx immediately and the throw was swallowed here. The
+        // store had been dark since 2026-07-30 and every health signal said the run
+        // worked. A successful invocation is not successful ingestion.
+        //
+        // Failing AFTER partial collection still breaks and keeps what was collected —
+        // that genuinely is a partial success.
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[SharafDG] search fetch failed p${page}:`, msg);
+        if (out.length === 0) throw new Error(`sharafdg discovery fetch failed on page ${page} (${query}): ${msg}`);
         break;
       }
       const urls = this.extractProductUrls(searchHtml).filter((u) => !seenUrls.has(u));
