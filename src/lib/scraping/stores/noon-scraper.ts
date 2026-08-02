@@ -109,20 +109,13 @@ export class NoonScraper extends BaseScraper {
         return this.scrapeProductPageHtml(productUrl);
       }
 
-      const apiUrl = `${NOON_API_URL}?q=${encodeURIComponent(sku)}&limit=1`;
-
-      const data = await this.fetchJson<Record<string, unknown>>(apiUrl, {
-        'x-locale': 'en-sa',
-        'x-platform': 'web',
-        'x-content': 'desktop',
-      });
-
-      const hits = this.extractHits(data);
-      if (hits.length === 0) {
-        return this.scrapeProductPageHtml(productUrl);
-      }
-
-      return this.parseApiProduct(hits[0], productUrl);
+      // ROBOTS COMPLIANCE: this used `/_svc/catalog/api/v3/`, which noon.com/robots.txt
+      // explicitly disallows. The product page is permitted (`Allow: /`) and publishes the
+      // same facts as JSON-LD — name, sku, brand, price, priceCurrency, availability — so
+      // the compliant route is also the better-documented one. `sku` stays extracted above
+      // because it is still the continuity key (ADR-149).
+      void sku;
+      return this.scrapeProductPageHtml(productUrl);
     } catch (error) {
       this.logError({
         type: 'network',
@@ -164,7 +157,48 @@ export class NoonScraper extends BaseScraper {
     return categoryMap[category] || category;
   }
 
+  /**
+   * Discover via ROBOTS-PERMITTED listing pages instead of the disallowed `/_svc/` API.
+   *
+   * Noon's search/category pages are server-rendered and carry ~50 product links each in
+   * the HTML (`/saudi-en/{slug}/{SKU}/p/`). We enumerate those, then read each product
+   * page's JSON-LD for the price. Bounded per page like every other adapter.
+   */
+  private async scrapeListingPage(query: string, page: number, category: ProductCategory): Promise<ScrapedProduct[]> {
+    // BASE_URL already carries the `/saudi-en` market segment, and the hrefs in the page
+    // are absolute-from-root (`/saudi-en/…`) — so the listing URL must NOT repeat it and the
+    // product URL must be joined to the ORIGIN, not to BASE_URL.
+    const origin = new URL(BASE_URL).origin;
+    const url = `${BASE_URL}/search/?q=${encodeURIComponent(query)}&page=${page}`;
+    const html = await this.fetchPage(url);
+    const links = [...new Set(
+      [...html.matchAll(/href="(\/saudi-en\/[^"]*?\/[A-Z0-9]{8,}\/p\/[^"]*)"/g)].map((m) => m[1]),
+    )];
+    if (!links.length) return [];
+
+    const out: ScrapedProduct[] = [];
+    const MAX_PER_PAGE = 24;   // bounded: this is an N+1 crawl over allowed pages
+    for (const href of links.slice(0, MAX_PER_PAGE)) {
+      const productUrl = href.startsWith('http') ? href : `${origin}${href}`;
+      try {
+        const p = await this.scrapeProductPageHtml(productUrl);
+        if (p) out.push({ ...p, category } as ScrapedProduct);
+      } catch { /* one bad product page never fails the page */ }
+      await this.delay();
+    }
+    return out;
+  }
+
   private async scrapeApiPage(query: string, page: number, category: ProductCategory): Promise<ScrapedProduct[]> {
+    // ROBOTS COMPLIANCE (2026-08-02): noon.com/robots.txt says `Disallow: /_svc/`, and this
+    // method called `/_svc/catalog/api/v3/`. Using it was against the site's stated policy
+    // whether or not it worked, so discovery now goes through the permitted listing pages.
+    // The API path is retained ONLY as dead code below for reference and is never called.
+    return this.scrapeListingPage(query, page, category);
+  }
+
+  /** @deprecated Disallowed by noon.com/robots.txt (`Disallow: /_svc/`). Never call. */
+  private async scrapeApiPageDisallowed(query: string, page: number, category: ProductCategory): Promise<ScrapedProduct[]> {
     const url = `${NOON_API_URL}?q=${encodeURIComponent(query)}&page=${page}&limit=50&sort%5Bby%5D=relevance&sort%5Bdir%5D=desc`;
 
     const maxRetries = 3;
@@ -305,8 +339,65 @@ export class NoonScraper extends BaseScraper {
     }
   }
 
+  /**
+   * JSON-LD `@type: Product` from a Noon product page — the ROBOTS-PERMITTED price source.
+   *
+   * `robots.txt` reads `Disallow: /_svc/` `Disallow: /_vs/` `Allow: /`, and `/_svc/` is
+   * exactly the internal catalog API this scraper used to call. Product and listing pages
+   * are explicitly allowed and carry complete structured data:
+   *   {"@type":"Product","name":…,"sku":"N70158925V","brand":"Samsung",
+   *    "offers":{"price":1238,"priceCurrency":"SAR","availability":".../InStock"}}
+   * So the permitted route is strictly better as well as compliant — it is the merchant's
+   * own published structured data rather than an endpoint they asked crawlers to leave alone.
+   */
+  private parseProductJsonLd(html: string, productUrl: string): ScrapedProduct | null {
+    const blocks = [...html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g)];
+    for (const b of blocks) {
+      let node: Record<string, unknown>;
+      try { node = JSON.parse(b[1]); } catch { continue; }
+      const type = String((node as { '@type'?: unknown })['@type'] ?? '');
+      if (!type.includes('Product')) continue;
+
+      const offers = (node.offers ?? {}) as Record<string, unknown>;
+      const currency = String(offers.priceCurrency ?? '').toUpperCase();
+      // Market scoping: never ingest a foreign-currency price.
+      if (currency && currency !== 'SAR') return null;
+      const price = this.toNumber(offers.price);
+      const title = String(node.name ?? '').trim();
+      if (!title || !price || price <= 0) return null;
+
+      const brandNode = node.brand as { name?: string } | string | undefined;
+      const brand = (typeof brandNode === 'string' ? brandNode : brandNode?.name) || 'Unknown';
+      const avail = String(offers.availability ?? '');
+      const image = node.image;
+      const imageUrl = Array.isArray(image) ? String(image[0] ?? '') : typeof image === 'string' ? image : '';
+
+      return {
+        name_ar: title,
+        name_en: title,
+        brand,
+        model: this.extractModelFromTitle(title, brand),
+        sku: node.sku ? String(node.sku) : extractNoonSku(productUrl),
+        current_price: price,
+        original_price: null,
+        availability: /OutOfStock|SoldOut/i.test(avail) ? 'out_of_stock' : 'in_stock',
+        product_url: productUrl,
+        image_urls: imageUrl ? [imageUrl] : [],
+        specifications: {},
+        description_ar: null,
+        description_en: null,
+      } as unknown as ScrapedProduct;
+    }
+    return null;
+  }
+
   private async scrapeProductPageHtml(productUrl: string): Promise<ScrapedProduct | null> {
     const html = await this.fetchPage(productUrl);
+    // Structured data first — it is what the merchant publishes for consumption, and it
+    // survives the CSS churn that breaks selector scraping.
+    const fromLd = this.parseProductJsonLd(html, productUrl);
+    if (fromLd) return fromLd;
+
     const $ = this.getCheerio(html);
 
     const title = this.extractText($, 'h1') || this.extractText($, '[data-qa="pdp-name"]') || '';
