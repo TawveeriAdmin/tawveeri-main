@@ -161,3 +161,27 @@ describe('TV model number from the title (ADR-175) and short codes (ADR-177)', (
     expect(r.key).not.toContain('MODEL:');
   });
 });
+
+/** A title can state three rates; the panel's native rate is the identity axis. */
+describe('TV refresh rate when a title states several', () => {
+  it('refuses to guess when a title states three rates', () => {
+    // `60Hz MEMC` and `120Hz VRR` are the SAME shape with opposite meanings — one names
+    // the panel, the other a mode layered on it — so this title does not say what the
+    // panel is. First-match returned 60 and happened to be right for the P755; it was
+    // right by word order, not by evidence. Extra's declared field answers this
+    // authoritatively where it exists; a title alone does not.
+    const n = normalize('', 'TCL 55P755 Smart TV 4K UHD, 60Hz MEMC, 120Hz VRR, DLG 120Hz', 'TCL');
+    expect(n.payload.refresh_rate).toBeNull();
+  });
+  it('keeps the panel rate when the only other figure is mode-qualified', () => {
+    const n = normalize('', 'Hisense 65 Inch 4K QLED 60 Hz, game mode 120 Hz', 'Hisense');
+    expect(n.payload.refresh_rate).toBe(60);
+  });
+  it('returns null when two unqualified rates disagree — the text does not say which', () => {
+    const n = normalize('', 'Hisense 65 Inch 4K QLED 60Hz 144Hz Smart TV', 'Hisense');
+    expect(n.payload.refresh_rate).toBeNull();
+  });
+  it('still reads a single plainly-stated rate', () => {
+    expect(normalize('', 'Hisense 65" 4K QLED 144 Hz', 'Hisense').payload.refresh_rate).toBe(144);
+  });
+});

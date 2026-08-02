@@ -87,10 +87,29 @@ function extractPanel(text: string): string | null {
  * a 120 Hz gaming MODE on a 60 Hz panel. Reading it as 120 would merge a DLG set with
  * a genuine 120 Hz panel — the same class of over-merge refresh rate exists to prevent.
  */
+const REFRESH_MODE_WORDS = /vrr|memc|dlg|motion|game|boost|mode|clearmotion|trumotion|pqi|دي\s*ال\s*جي|وضع\s*الألعاب/i;
+
 function extractRefresh(text: string): number | null {
-  if (/\bdlg\b|دي\s*ال\s*جي/i.test(text)) return null;
-  const m = text.match(/\b(50|60|75|100|120|144|165|240)\s*(?:hz|هرتز|هيرتز)/i);
-  return m ? Number(m[1]) : null;
+  // A title can state several rates — TCL's `60Hz MEMC, 120Hz VRR, DLG 120Hz` states
+  // three. Taking the FIRST match made the answer depend on word order, and the
+  // panel's native rate is the identity axis while VRR/MEMC/DLG are gaming MODES
+  // layered on top of it. So: drop any figure qualified by a mode word, and if more
+  // than one distinct UNqualified rate survives, the text does not say which is the
+  // panel — return null. Unknown beats incorrect (a wrong rate merges a 60 Hz set
+  // with a 120 Hz one).
+  // Context is scoped to the PHRASE the figure sits in, not a character window: a
+  // merchant separates claims with commas, so `60 Hz, game mode 120 Hz` states a
+  // 60 Hz panel and a 120 Hz mode, while `60Hz MEMC` qualifies the 60 itself.
+  const found = new Set<number>();
+  for (const phrase of text.split(/[,،|()\[\]–—]+/)) {
+    if (REFRESH_MODE_WORDS.test(phrase)) continue;
+    // EVERY figure in the phrase, not just the first — `60Hz 144Hz` with no separator
+    // is still two claims, and taking the first is the word-order guess being removed.
+    for (const m of phrase.matchAll(/\b(50|60|75|100|120|144|165|240)\s*(?:hz|هرتز|هيرتز)/gi)) {
+      found.add(Number(m[1]));
+    }
+  }
+  return found.size === 1 ? [...found][0] : null;
 }
 function extractSeries(text: string): string | null {
   // partial series/model code often present in Jarir titles (Q71Q, QNED70, P7L,

@@ -171,3 +171,18 @@ describe("size-prefixed short models (ADR-177)", () => {
     expect(extractManufacturerModel({ model: "85P8L" })).toBeNull();
   });
 });
+
+/** LuLu welds `SMART-` onto a real MPN; three other stores publish it bare. */
+describe("marketing prefixes", () => {
+  it("strips a closed-list marketing prefix so the same TV meets itself", () => {
+    expect(extractManufacturerModel({ model: "SMART-UA65U8000HUXSA" })).toBe("UA65U8000HUXSA");
+    expect(extractManufacturerModelFromName("Samsung 65 Inch Smart TV SMART-UA65U8000HUXSA")).toBe("UA65U8000HUXSA");
+  });
+  it("never truncates a genuine MPN whose leading segment is part of the identity", () => {
+    expect(extractManufacturerModel({ model: "BRV-TB-T3PRO-CYN" })).toBe("BRV-TB-T3PRO-CYN");
+    expect(extractManufacturerModel({ model: "SM-S938BZKIMEA" })).toBe("SM-S938BZKIMEA");
+  });
+  it("leaves the prefix alone when the remainder is not a model on its own", () => {
+    expect(extractManufacturerModel({ model: "SMART-TV4K" })).toBe("SMART-TV4K");
+  });
+});

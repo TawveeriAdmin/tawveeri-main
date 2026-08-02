@@ -91,6 +91,35 @@ function isNotASingleModel(value: string): boolean {
 }
 
 /**
+ * Marketing words some merchants weld onto the front of a real MPN.
+ * Measured: LuLu publishes `SMART-UA65U8000HUXSA` while three other stores publish
+ * `UA65U8000HUXSA` — the same TV, unable to meet itself because of one prefix.
+ *
+ * Deliberately a CLOSED list of non-model words, not a general "strip up to the first
+ * hyphen" rule: `BRV-TB-T3PRO-CYN` and `SM-S938BZKIMEA` are genuine MPNs whose leading
+ * segment is part of the identity, and a general rule would silently truncate them.
+ */
+const MARKETING_PREFIXES = new Set(["SMART", "TV", "LED", "NEW", "ORIGINAL", "MODEL", "SCREEN"]);
+
+/**
+ * Remove a marketing prefix when what remains is itself a full-strength model number.
+ * Conservative by construction: if the remainder is not clearly an MPN on its own, the
+ * original string is returned untouched.
+ */
+function stripMarketingPrefix(value: string): string {
+  const i = value.indexOf("-");
+  if (i <= 0) return value;
+  const head = value.slice(0, i).toUpperCase();
+  const tail = value.slice(i + 1);
+  if (!MARKETING_PREFIXES.has(head)) return value;
+  const letters = (tail.match(/[A-Za-z]/g) || []).length;
+  const digits = (tail.match(/\d/g) || []).length;
+  if (tail.length < 8 || letters < 2 || digits < 3) return value;
+  if (!hasModelNumberShape(tail) || isStoreInternalIdentifier(tail) || isNotASingleModel(tail)) return value;
+  return tail;
+}
+
+/**
  * Minimum length for a model number used as an IDENTITY key.
  *
  * Matches the ADR-049 model-corroboration gate. Short codes are the dangerous
@@ -149,7 +178,7 @@ export function extractManufacturerModel(payload: Record<string, unknown>): stri
     if (!hasModelNumberShape(candidate)) continue;
     if (isStoreInternalIdentifier(candidate)) continue;
     if (isNotASingleModel(candidate)) continue;
-    return candidate.toUpperCase();
+    return stripMarketingPrefix(candidate.toUpperCase());
   }
   return null;
 }
@@ -323,5 +352,5 @@ export function extractManufacturerModelFromName(name: string): string | null {
 
     if (!best || token.length > best.length) best = token;
   }
-  return best ? best.toUpperCase() : null;
+  return best ? stripMarketingPrefix(best.toUpperCase()) : null;
 }
