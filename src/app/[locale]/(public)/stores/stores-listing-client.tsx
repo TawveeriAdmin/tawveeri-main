@@ -98,14 +98,41 @@ export default function StoresListingClient() {
         // Real per-store product counts = DISTINCT products per store (not raw offer rows). Some
         // stores carry duplicate product_stores rows (e.g. Jarir's collapsed GCC-market variants),
         // so a raw row count overstated the catalogue; count distinct product_id for an honest number.
+        // THE PAGE WAS COUNTING 7.6% OF THE CATALOGUE (ADR-172).
+        //
+        // This query had no `.range()`, and PostgREST caps an unbounded select at `db-max-rows`
+        // (1000 here). Measured against production: `content-range: 0-999/13201` — every
+        // per-store figure was computed from an arbitrary 1,000 of 13,201 rows, understating the
+        // catalogue by ~18×. Amazon read 93 against 1,834 real; noon 74 against 3,750.
+        //
+        // Worse than wrong, it was UNSTABLE: with no `.order()` the 1,000 rows PostgREST returns
+        // are not a defined subset, so the same page produced different numbers on different
+        // days (Extra 85, then 57) — a store's catalogue appearing to shrink for no reason.
+        //
+        // Paginated explicitly and ordered, so the set is complete and deterministic. Two narrow
+        // columns × 13k rows is a few hundred KB; the alternative — a row COUNT per store — is
+        // not equivalent, because Jarir carries 4,578 relation rows for 994 distinct products
+        // (collapsed GCC-market variants) and would overstate by 4.6×.
         const counts = new Map<number, number>();
         try {
+          const PAGE = 1000;
           const seen = new Map<number, Set<string>>();
-          const { data: psRows } = await sb.from('product_stores').select('store_id, product_id');
-          (psRows || []).forEach((r: { store_id: number; product_id: string }) => {
-            if (!seen.has(r.store_id)) seen.set(r.store_id, new Set());
-            seen.get(r.store_id)!.add(r.product_id);
-          });
+          for (let from = 0; ; from += PAGE) {
+            const { data: psRows, error: pageErr } = await sb
+              .from('product_stores')
+              .select('store_id, product_id')
+              .order('product_id', { ascending: true })
+              .range(from, from + PAGE - 1);
+            if (pageErr) throw pageErr;
+            const rows = (psRows || []) as unknown as { store_id: number; product_id: string }[];
+            rows.forEach((r) => {
+              if (!seen.has(r.store_id)) seen.set(r.store_id, new Set());
+              seen.get(r.store_id)!.add(r.product_id);
+            });
+            // A short page means the last page. A hard ceiling stops a pathological loop from
+            // hammering the API if the table grows unexpectedly.
+            if (rows.length < PAGE || from > 200_000) break;
+          }
           seen.forEach((set, storeId) => counts.set(storeId, set.size));
         } catch { /* counts are best-effort */ }
 
@@ -192,6 +219,8 @@ export default function StoresListingClient() {
 
     return result;
   }, [stores, searchQuery, sortBy, locale, storeFilter, isRTL]);
+
+  
 
   const premiumCount = useMemo(
     () => stores.filter((store) => Boolean(store.is_premium)).length,
