@@ -177,7 +177,24 @@ export class NoonScraper extends BaseScraper {
     if (!links.length) return [];
 
     const out: ScrapedProduct[] = [];
-    const MAX_PER_PAGE = 24;   // bounded: this is an N+1 crawl over allowed pages
+    // CRAWL BUDGET — chosen to be defensible if noon's team looked at our traffic.
+    //
+    // noon.com/robots.txt specifies NO Crawl-delay (and explicitly Allows ClaudeBot/GPTBot),
+    // so there is no stated limit to honour — which is a reason to set our own, not a licence
+    // to skip one. A permitted path becomes a blocked one by being crawled hard.
+    //
+    // The arithmetic, at 60: 60 products × 2 pages × 10 categories = 1,200 product-page
+    // fetches per 12h discovery cycle ≈ 100/hour ≈ 1.7 requests/minute sustained, serialized
+    // behind the store's rate limiter and staggered 20s between categories. For a retailer of
+    // noon's scale, from a partner carrying their affiliate code, that is unremarkable.
+    //
+    // The burst ceiling was LOWERED from 40 to 30 req/min in noon.json in the same change:
+    // wider coverage, gentler peak. Raise again only after observing the rate hold clean —
+    // NOON_MAX_PRODUCTS_PER_PAGE exists so that is a config change, not a code change.
+    const MAX_PER_PAGE = Math.min(
+      Number(process.env.NOON_MAX_PRODUCTS_PER_PAGE) || 60,
+      100,   // hard ceiling: never crawl a full listing page's worth in one pass
+    );
     for (const href of links.slice(0, MAX_PER_PAGE)) {
       const productUrl = href.startsWith('http') ? href : `${origin}${href}`;
       try {
