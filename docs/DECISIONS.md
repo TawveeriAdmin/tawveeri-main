@@ -2599,3 +2599,40 @@ Even if reachable, invoking the pipeline blindly would write canonical products 
 **Context:** merchant listings are fragmented, inconsistent, and change constantly; identity must be stable while commerce is fluid.
 **Decision:** the three-layer TPS model; identity requires ≥2-store corroboration; `raw_observations` immutable; `price_history` append-only; every identity decision logged.
 **Consequences:** the platform's moat — a corroborated, provenance-complete, time-deep knowledge graph. Full spec in `docs/TPS.md`.
+
+---
+
+## ADR-176 — PROTECTED TRUST POLICY: canonical merges require a literal model-number match
+
+**Status:** ACTIVE · Founder decision, 2026-08-02 · **Protected Trust Policy**
+
+**Policy.** Two canonicals may be merged into one comparison ONLY when the model number
+appears **literally in the raw name of both sides**. Never inferred, never derived from
+similarity, never probabilistic. If the evidence is anything less than a literal match,
+the two stay separate and the shopper sees one retailer honestly rather than two
+dishonestly.
+
+**Reasoning (founder).** A wrong comparison is worse than no comparison. A shopper
+comparing `QN90D-55` against `QN90D-65` buys the wrong size believing they found a better
+price. **No comparison delays trust; a wrong one destroys it.** This is "unknown beats
+incorrect" (Constitution principle 1) applied to identity.
+
+**Consequence, accepted in advance.** If this policy makes the cross-tier gain far smaller
+than the estimates, that smaller number is the CORRECT number. Yield is not a reason to
+weaken the rule.
+
+**Why it qualifies as a Protected Trust Policy — all three tests met:**
+1. It comes from a measured failure class (ADR-060's deferred merges; CHECKPOINT #50
+   measured 157 cross-tier bridges, 156 blocked precisely because merging them is unsafe).
+2. **Its reversal is silent.** Nothing breaks, no test fails, no error is logged — the
+   platform simply begins comparing different products as if they were one.
+3. Its reversal makes us claim something we cannot support: a price comparison between two
+   products that are not the same product.
+
+**Operational note.** ADR-060 (`write-alias-canonicals.ts`) already refuses these merges
+via its clean-create rule. This ADR makes that refusal a POLICY rather than an
+implementation detail, so no future mechanism can relax it for throughput.
+
+**Governance debt recorded here, not hidden:** ADRs 163–175 were written into HANDOVER.md
+but never into this register. CLAUDE.md requires every significant decision to land here.
+They should be backfilled from HANDOVER checkpoints #38–#50.
