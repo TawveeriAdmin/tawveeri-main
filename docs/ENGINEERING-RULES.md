@@ -328,3 +328,22 @@ Measured: swapping Jarir `/sa-en/` → `/sa-ar/` and Extra `/en-sa/` → `/ar-sa
 returned **404 on every case tested** — Jarir redirecting to `/page-not-found`. Those retailers use
 **different slugs per locale**, so the Arabic page exists at an address the transform cannot
 derive. The obvious fix would have converted a working English exit into a dead end.
+
+---
+
+## INSTRUMENT RULE — PowerShell mangles Arabic request bodies
+
+**Added 2026-08-03 (ADR-193 verification).**
+
+> **Never probe an Arabic-query API from PowerShell with an inline string body.**
+> `Invoke-RestMethod -Body '{"query":"مكيف"}'` and `curl.exe -d` both delivered the literal
+> bytes `????` to the server. The mangled query then category-defaulted to `mobile`, matched
+> nothing, and Algolia's fuzzy fallback returned junk hits — which read exactly like TWO real
+> production defects ("TPS injection dead" and "results polluted across queries"). Both were
+> the probe.
+
+Correct instruments: bash `curl --data-binary @file.json` with a UTF-8 file (Git Bash), or
+PowerShell with `[System.Text.Encoding]::UTF8.GetBytes($json)` as the body. Diagnostic that
+caught it: the server logged `words=["????"]` — **log what the server RECEIVED, not what the
+client believes it sent.** Same family as the header-only locale simulation (#42): rule out
+the instrument before investigating the system.
