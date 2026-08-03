@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
 import { buildAlternates } from '@/lib/seo/metadata';
+import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 
 interface CompareOffer {
   store_name:   string;
@@ -90,7 +91,7 @@ export async function generateMetadata({
   const data = await fetchCompare(decodedKey);
   if (!data) {
     return {
-      title: isAr ? 'مقارنة الأسعار | توفيري' : 'Price comparison | Tawveeri',
+      title: isAr ? 'مقارنة الأسعار' : 'Price comparison',
       alternates,
       // Nothing to compare ⇒ nothing worth indexing. Better an explicit noindex than a thin
       // page competing with the real ones.
@@ -103,7 +104,10 @@ export async function generateMetadata({
   const stores = data.summary.store_count;
 
   return {
-    title: isAr ? `${name} — مقارنة الأسعار | توفيري` : `${name} — price comparison | Tawveeri`,
+    // The locale layout applies `%s | توفيري` / `%s | Tawveeri`, so the brand must NOT be
+    // repeated here — it produced «… | توفيري | توفيري», in the one string search engines and
+    // AI assistants show as the headline.
+    title: isAr ? `${name} — مقارنة الأسعار` : `${name} — price comparison`,
     description: price
       ? (isAr
         ? `أرخص سعر رصدناه لـ ${name} هو ${price} ر.س، من ${stores} متاجر سعودية.`
@@ -188,7 +192,15 @@ export default async function TpsComparePage({
             price: String(o.price),
             priceCurrency: 'SAR',
             ...(o.product_url ? { url: o.product_url } : {}),
-            seller: { '@type': 'Organization', name: o.store_name },
+            // Name the retailer in the page's own language. The comparison loader returns the
+            // Arabic display name regardless of locale, so an English citation would otherwise
+            // list «مكتبة جرير» to an English reader. Falls back to what the page renders —
+            // a retailer we cannot resolve is still named exactly as the page names it, never
+            // dropped and never guessed.
+            seller: {
+              '@type': 'Organization',
+              name: retailerDisplayName(resolveApprovedSlug(o.store_name), isAr ? 'ar' : 'en') ?? o.store_name,
+            },
             availability: o.availability === 'out_of_stock'
               ? 'https://schema.org/OutOfStock'
               : 'https://schema.org/InStock',
