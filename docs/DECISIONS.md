@@ -6,6 +6,65 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-200 — A misparsed price killed the whole refresh chain; three-level containment · Accepted (2026-08-03)
+
+**Incident.** The ADR-195 reobserve run (15:44Z) re-fetched Amazon's Midea 12000-BTU split AC
+and the Amazon product-page scraper parsed **59.99 SAR** (an add-on/related-item price)
+against a 1,609-SAR history. The resulting 2,765% spread **overflowed
+`price_spread_pct numeric(5,2)` and failed the ENTIRE projection INSERT** — the chain went
+`fail(1)`; presentation, both search indexes and edges all skipped. One absurd row took down
+the platform's hourly refresh. (Also a false «أرخص سعر 60 ريال» would have won that
+comparison — the claim harm and the infrastructure harm came from the same row.)
+
+**Containment, three levels:**
+1. **Spill cleaned:** the three DERIVED rows deleted (price_history row · tps_identity_staging
+   raw_obs_id 983018 · npo 5a689280) — deleting them prevents corroboratePass re-emitting the
+   bad price on the next touched-key pass. **The raw observation (id 983018) is kept** — the
+   immutable record of what the scraper actually returned.
+2. **Price sanity gate in the instrument (reobserve):** a re-observed price >4× or <¼ of the
+   pair's last known price is rejected as `suspect_price` and logged, never ingested. Unknown
+   beats incorrect; a genuine >4× market move re-verifies on the next run's fresh fetch.
+3. **Blast-radius clamp in the projection:** `price_spread_pct` capped at the column's 999.99
+   ceiling — a bad offer may degrade one product's spread figure, never the platform's refresh.
+
+**Open (ledgered, not improvised):** the Amazon product-page PRICE selector shares ADR-183's
+title-selector fragility — the real fix is candidate-plausibility selection in the Amazon
+scraper itself, with fixtures, as its own unit.
+
+---
+
+### ADR-199 — 325 air conditioners reclassified out of storefront `accessories` · Accepted (2026-08-03)
+
+**Context (U6).** The storefront classifier filed split/window/cassette ACs under
+`products.category='accessories'` (325 of the category's 1,856 rows), which broke category
+pages/filters and forced the Arabic-title composer to read titles *because the category lies*
+(`storefront-arabic-title.ts` documents exactly this). The `product_category` enum blocker
+turned out not to exist: production's `products.category` is plain text and already holds 236
+`air_conditioner` rows.
+
+**Decision.** Data remediation in the ADR-185 pattern: deterministic guard (AC title signals
+present, accessory signals — cover/remote/bracket/cleaner/filter/stand, غطاء/ريموت/حامل/تنظيف/فلتر
+— absent), **25/25 random-sample hand audit clean**, before-state exported to
+`docs/evidence/ac-reclassify-2026-08-03.json`, then one idempotent UPDATE.
+**Measured: 325 updated · `air_conditioner` 236 → 561 · guard drained to 0.** The composer's
+title-reading stays — it is correct defence against future misfiles, no longer a workaround.
+**Rollback:** the evidence file holds every row id; `update products set category='accessories'
+where id in (…)` restores the prior state exactly.
+
+---
+
+### U3 CORRECTION (recorded under ADR-146/183 lineage) — Amazon seeding measured at 4.3% on the full tail · 2026-08-03
+
+The catalogue-completion lever measured exhausted first (shaker 585 = complete feed, swsg
+4,275/4,274 complete, najm near-complete), so the remaining ~900 Amazon gate-eligible targets
+were run: **900 queried · 47 observations written (11 created + 36 linked) · 0 errors · 413
+rejected by the relevance gate · hit rate 4.3%** — below #68's 7.1% (the tail thins as depth
+grows: 30% → 7.1% → 4.3% across 40 → 350 → 900). **The Amazon seeding lever is now spent**;
+its yield in comparables lands after normalization. Next comparison levers by measured hit
+rate: noon's ~522 gate-eligible targets at ~11% (small-sample), then U5 Arabic ingestion.
+
+---
+
 ### ADR-198 — The no-URL stale pairs are orphaned price lineages; URLs recovered through the row's own observation id · Accepted (2026-08-03)
 
 **Context.** 26–27 stale cheapest pairs had no recoverable URL and read as "never observed":

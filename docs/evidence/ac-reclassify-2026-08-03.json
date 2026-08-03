@@ -1,0 +1,1959 @@
+{
+  "measured_at": "2026-08-03T15:58:03.550Z",
+  "guard": "category = 'accessories' and (name_ar ~* 'مكيف|سبليت' or name_en ~* 'split ac|air.?condition|window ac') and name_ar !~* 'غطاء|ريموت|حامل|تنظيف|فلتر' and name_en !~* 'cover|remote|bracket|cleaner|filter|stand'",
+  "from": "accessories",
+  "to": "air_conditioner",
+  "sample_audit": "25/25 genuine ACs (hand-audited)",
+  "rows": [
+    {
+      "id": "00655faa-22e1-4638-8652-746030ec2e4b",
+      "name_ar": "مكيف صحراوي نقال هاني ويل 48 لتر CL48PM",
+      "name_en": "مكيف صحراوي نقال هاني ويل 48 لتر CL48PM",
+      "category": "accessories"
+    },
+    {
+      "id": "0068fb9f-afee-414a-ab19-a08ef008d9f4",
+      "name_ar": "مكيف مخفي هام، 45600 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM48HDU25INV",
+      "name_en": "مكيف مخفي هام، 45600 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM48HDU25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "01975178-cd48-42f4-8491-6c16002a4217",
+      "name_ar": "مكيف كاسيت هام، 21600 وحدة، بارد وحار، كومبرسر انفرتر، أبيض - HM24HCASM24INV",
+      "name_en": "مكيف كاسيت هام، 21600 وحدة، بارد وحار، كومبرسر انفرتر، أبيض - HM24HCASM24INV",
+      "category": "accessories"
+    },
+    {
+      "id": "02135eff-4c56-4c38-bb1a-2411b0c4d051",
+      "name_ar": "مكيف سبليت هاير 12400 وحدة بارد فقط واي فاي",
+      "name_en": "Haier Nano Cool Split AC, 12,400 BTU, Cool Only, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "029b6c49-f74f-4b28-be61-f28aa06cf8ce",
+      "name_ar": "مكيف صحراوي نقال اكسبير 70 لتر 3 سرعات XPAC-70LHD",
+      "name_en": "مكيف صحراوي نقال اكسبير 70 لتر 3 سرعات XPAC-70LHD",
+      "category": "accessories"
+    },
+    {
+      "id": "04a2e57f-d098-4d49-a4a2-da8b477d39c4",
+      "name_ar": "مكيف شباك جري 18000 وحدة بارد فقط",
+      "name_en": "Gree Window AC 18,000 BTU, Cold Only , R410a Refrigerant, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "05993621-e642-4a08-b3e4-414c71e428df",
+      "name_ar": "مكيف سبليت الزامل 22000 وحدة بارد فقط إنفرتر",
+      "name_en": "Zamil Inverter Split AC 22,000 BTU Cool Only, Anti-Corrosive Design, Auto Swing",
+      "category": "accessories"
+    },
+    {
+      "id": "05f62af9-9ca8-4e1a-88a9-7eed1fd98983",
+      "name_ar": "مكيف شباك ميديا 20500 وحدة إنفرتر واي فاي",
+      "name_en": "Midea Window AC, Wonder, 20,500 BTU, Inverter Compressor, WiFi, Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "06200863-5f4c-4934-a38a-8b18c6d96b8b",
+      "name_ar": "Haier Split AC 18 000 BTU Cool Only High Efficiency Inverter UVC Smart Wifi",
+      "name_en": "Haier Split AC 18,000 BTU, Cool Only, High Efficiency Inverter UVC Smart, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "08aa8c12-16d9-49cb-b398-ac74b6f42f31",
+      "name_ar": "مكيف سبليت هام، 18300 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، أبيض - HM18CSM23GO",
+      "name_en": "مكيف سبليت هام، 18300 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، أبيض - HM18CSM23GO",
+      "category": "accessories"
+    },
+    {
+      "id": "09fedb7b-1f99-459c-9fde-b9e0ad60e290",
+      "name_ar": "مكيف سبليت ميديا 17100 وحدة إنفرتر واي فاي",
+      "name_en": "Midea, Split AC, 17100 BTU , Inverter,Wifi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "0a2ecb9a-ea99-4b0c-bdd1-3d8c66e3a4d6",
+      "name_ar": "مكيف MTC جداري 22000 ح ب inverter ريش ذهبية MTC24HUT25INV",
+      "name_en": "مكيف MTC جداري 22000 ح ب inverter ريش ذهبية MTC24HUT25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "0a44c489-0082-48d3-812e-d699cd1fb10c",
+      "name_ar": "مكيف سبليت ميديا 31400 وحدة بارد فقط",
+      "name_en": "Midea Split AC 31,400 BTU,Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "0a92d901-fe6b-4257-a22b-8d9b3f6efb50",
+      "name_ar": "مكيف سبليت هام، 36000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM36CO25INV",
+      "name_en": "مكيف سبليت هام، 36000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM36CO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "0b50648d-b7a5-4ba2-95be-330876061433",
+      "name_ar": ",مكيف اكسبير نقال، 9000 BTU، أبيض – XPW-9-WCPA",
+      "name_en": ",مكيف اكسبير نقال، 9000 BTU، أبيض – XPW-9-WCPA",
+      "category": "accessories"
+    },
+    {
+      "id": "0c92fa6f-50fc-4844-87b9-473b4b45b63e",
+      "name_ar": "مكيف كليفناتور جداري 28600 وحدة حار بارد KTS36H KTS36H",
+      "name_en": "مكيف كليفناتور جداري 28600 وحدة حار بارد KTS36H KTS36H",
+      "category": "accessories"
+    },
+    {
+      "id": "0d5d6674-2ac7-47f0-b91d-0f74f3428d5f",
+      "name_ar": "مكيف شباك تي سي ال 18000 وحدة إنفرتر",
+      "name_en": "TCL, Window AC, 18,000 BTU, Inverter, Cooling/Heating",
+      "category": "accessories"
+    },
+    {
+      "id": "0d7e7386-ea04-4e00-a19b-7c40f87b55a8",
+      "name_ar": "مكيف هام شباك 17700 حار بارد HM18HWM25",
+      "name_en": "مكيف هام شباك 17700 حار بارد HM18HWM25",
+      "category": "accessories"
+    },
+    {
+      "id": "10081d0f-80e4-4257-b198-78362beb262f",
+      "name_ar": "مكيف سبليت ال جي 21500 وحدة إنفرتر",
+      "name_en": "LG Split AC, Gold Plus Dual Inverter, 21500 BTU, Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "100a9204-fd35-45e7-a6ee-5bb52cbc4999",
+      "name_ar": "مكيف شباك هايسينس 21600 وحدة حار/بارد",
+      "name_en": "Hisense Window AC, 21,600BTU, Heat and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "1231c349-d884-46a0-87aa-599b833bad74",
+      "name_ar": "مكيف سبليت تي سي ال 12400 وحدة إنفرتر واي فاي",
+      "name_en": "TCL Split AC, Inverter, BreezeIN 12,400 BTU, Cooling/Heating, WiFi",
+      "category": "accessories"
+    },
+    {
+      "id": "140b5d5b-ceea-4f60-9937-3bcdca4f8fe7",
+      "name_ar": "مكيف شباك فيشر، 18000 وحدة ، تبريد فقط، راوتري، أبيض - FWAC-T18CF",
+      "name_en": "مكيف شباك فيشر، 18000 وحدة ، تبريد فقط، راوتري، أبيض - FWAC-T18CF",
+      "category": "accessories"
+    },
+    {
+      "id": "14afa4bd-315d-4503-8fa6-7d613c5d3142",
+      "name_ar": "مكيف صحراوى الجزيره بلس 2022 كرتون 70 لتر بارد JAZ 70",
+      "name_en": "مكيف صحراوى الجزيره بلس 2022 كرتون 70 لتر بارد JAZ 70",
+      "category": "accessories"
+    },
+    {
+      "id": "14be2eaa-ba78-48fa-af1b-d8b1977fe02f",
+      "name_ar": "مكيف LG جداري بارد سمارت  18000 NS182C2 UK1 -NK1",
+      "name_en": "مكيف LG جداري بارد سمارت  18000 NS182C2 UK1 -NK1",
+      "category": "accessories"
+    },
+    {
+      "id": "14f50fb5-4412-4933-935b-248e8e5280ab",
+      "name_ar": "مكيف سبليت ميديا 22000 وحدة حار/بارد واي فاي",
+      "name_en": "Midea Split AC Mission Xtreme 22,000 BTU ,Heat&Cool,Ionizer,Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "151ec12d-4f13-4d44-9fc8-8ead00f77679",
+      "name_ar": "مكيف سبليت جينيرال 36000 وحدة بارد فقط إنفرتر",
+      "name_en": "General Split AC, 36,000 BTU, Cold Only, Inverter Compressor, R32 Eco, Blue Fin",
+      "category": "accessories"
+    },
+    {
+      "id": "16b73249-8f43-435a-b703-433565d8d35d",
+      "name_ar": "مكيف صحراوي الغدير 3/1 ح DCG/E/13/220",
+      "name_en": "مكيف صحراوي الغدير 3/1 ح DCG/E/13/220",
+      "category": "accessories"
+    },
+    {
+      "id": "16f4472c-1840-4d11-8b79-f792291f276b",
+      "name_ar": "مكيف فيشر جداري 18000 وحدة ح/ب FSACQD‐XF18HIB/FSACQD-XC18HIB",
+      "name_en": "مكيف فيشر جداري 18000 وحدة ح/ب FSACQD‐XF18HIB/FSACQD-XC18HIB",
+      "category": "accessories"
+    },
+    {
+      "id": "16fd513b-0f47-4202-b730-328330712460",
+      "name_ar": "مكيف جري انفرتر 11700 وحدة بارد GWC12AGC-S3DTA1C",
+      "name_en": "مكيف جري انفرتر 11700 وحدة بارد GWC12AGC-S3DTA1C",
+      "category": "accessories"
+    },
+    {
+      "id": "174668b3-0b38-4ef2-975a-5904fcf4ef69",
+      "name_ar": "مكيف تيرم جداري 11800 وحدة حار بارد (واي فاي) TRG12HS24WF",
+      "name_en": "مكيف تيرم جداري 11800 وحدة حار بارد (واي فاي) TRG12HS24WF",
+      "category": "accessories"
+    },
+    {
+      "id": "18cf7352-6c7b-41ee-b70f-033a20cac62d",
+      "name_ar": "مكيف ال جي جداري ارت كول بارد 18000 AM182C0.UK2-NK2",
+      "name_en": "مكيف ال جي جداري ارت كول بارد 18000 AM182C0.UK2-NK2",
+      "category": "accessories"
+    },
+    {
+      "id": "1ab8c578-66da-444f-8294-510a6f95dac7",
+      "name_ar": "مكيف سبليت الزامل 12200 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Zamil, Split AC, 12,200 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "1b99ad8d-6aaf-4034-a5bd-1d109495dfca",
+      "name_ar": "مكيف تيرم جداري 12200وحدة حار بارد (واي فاي) TRG12HS25WF",
+      "name_en": "مكيف تيرم جداري 12200وحدة حار بارد (واي فاي) TRG12HS25WF",
+      "category": "accessories"
+    },
+    {
+      "id": "1c24d84e-eee3-4615-88e3-388181c36bdf",
+      "name_ar": "مكيف سبليت من بيسك، 18000 وحدة حرارية ، بارد فقط، انفيرتر – BSACMA-FI18CBN",
+      "name_en": "مكيف سبليت من بيسك، 18000 وحدة حرارية ، بارد فقط، انفيرتر – BSACMA-FI18CBN",
+      "category": "accessories"
+    },
+    {
+      "id": "1c52107a-30ff-4896-a93a-7664f55ac120",
+      "name_ar": "مكيف سبليت وايت وستنجهاوس 18400 وحدة واي فاي",
+      "name_en": "White Westinghouse Split AC 18,400 BTU Cold WiFi",
+      "category": "accessories"
+    },
+    {
+      "id": "1ccacede-7f44-439f-8f86-a304d1cde1de",
+      "name_ar": "مكيف سبليت جري، 18000 وحدة، بارد فقط، كومبرسر انفرتر، أبيض - GWC18AVDXF-S6DTA1C",
+      "name_en": "مكيف سبليت جري، 18000 وحدة، بارد فقط، كومبرسر انفرتر، أبيض - GWC18AVDXF-S6DTA1C",
+      "category": "accessories"
+    },
+    {
+      "id": "1d9ba673-603d-473a-be20-9e3a0e9ab4f1",
+      "name_ar": "مكيف ال جي سبليت، 28000 وحدة حرارية، حار / بارد، كمبروسر روتاري، ابيض - LT302H0.NKO / LT302H0.UK0",
+      "name_en": "مكيف ال جي سبليت، 28000 وحدة حرارية، حار / بارد، كمبروسر روتاري، ابيض - LT302H0.NKO / LT302H0.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "1f4c46f4-cd27-4e04-a619-aa37e4a22970",
+      "name_ar": "مكيف سبليت الزامل 18000 وحدة حار/بارد R410A",
+      "name_en": "Zamil Comfort Split AC 18,000 BTU, Heat & Cool, Rotary Compressor, R410A, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "200ae456-84fc-4b49-824d-b1ce9899289a",
+      "name_ar": "مكيف وايت وستنجهاوس جداري 27400 وحدة بارد WWS30Z24I/C",
+      "name_en": "مكيف وايت وستنجهاوس جداري 27400 وحدة بارد WWS30Z24I/C",
+      "category": "accessories"
+    },
+    {
+      "id": "2098dd81-8b83-43a7-985b-8d1ec38079c7",
+      "name_ar": "مكيف شباك كرافت 17800 وحدة حار/بارد",
+      "name_en": "Crafft Window AC 17,800 BTU, Hot & Cool, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "210980f9-3994-48a5-9cfb-2892721c18d9",
+      "name_ar": "مكيف سبليت ويرلبول 22000 وحدة بارد فقط",
+      "name_en": "Whirlpool Split AC, 22,000 BTU, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "21809f13-79ba-4889-9824-292d310fd717",
+      "name_ar": "مكيف سبليت كلاس برو 23000 وحدة حار/بارد واي فاي",
+      "name_en": "ClassPro Split AC, 23000 BTU, Rotary Compressor,Wifi, 4 Ways Swing, Hot & Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "23504605-534b-4ae1-bf59-f30f6e72e39d",
+      "name_ar": "مكيف شباك تي سي ال 17500 وحدة",
+      "name_en": "TCL, Window AC, 17,500 BTU, Cooling/Heating, Low Noise, High Efficiency, Golden Fins",
+      "category": "accessories"
+    },
+    {
+      "id": "236c8853-5d8d-4d0c-912d-57f68beb015b",
+      "name_ar": "TCL Window AC 18 000 BTU Inverter Cooling",
+      "name_en": "TCL, Window AC, 18,000 BTU, Inverter, Cooling",
+      "category": "accessories"
+    },
+    {
+      "id": "23d75c27-df3d-4692-aed6-3adf3a482a0d",
+      "name_ar": "مكيف سبليت أوكس 12000 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "AUX, Split AC, 12,000 BTU, Hot & Cold, Inverter, WiFi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "24b48633-239d-4b32-988b-a7b86c2e20b7",
+      "name_ar": "مكيف ال جي جداري سمارت  حار بارد 18000 NS182H2 UK1 -NK1",
+      "name_en": "مكيف ال جي جداري سمارت  حار بارد 18000 NS182H2 UK1 -NK1",
+      "category": "accessories"
+    },
+    {
+      "id": "24fa286c-5e58-48d3-a05a-a71ff6aeb5cc",
+      "name_ar": "Haier Split AC 18 000 BTU Hot & Cold Nano Sterilization WIFI Ultra Inverter",
+      "name_en": "Haier, Split AC, 18,000 BTU, Hot & Cold, Nano Sterilization, WIFI, Ultra Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "2526626d-7a91-4c89-ae17-772968cec9f8",
+      "name_ar": "مكيف جري AI PLUS سبليت، 30000 وحدة، حار/بارد، انفرتر – GWH30AVEXH-S6DTA1A/I/O",
+      "name_en": "مكيف جري AI PLUS سبليت، 30000 وحدة، حار/بارد، انفرتر – GWH30AVEXH-S6DTA1A/I/O",
+      "category": "accessories"
+    },
+    {
+      "id": "2686f25c-d224-4b98-adb7-acf42f410b76",
+      "name_ar": "مكيف سبليت الزامل 27400 وحدة بارد فقط إنفرتر",
+      "name_en": "Zamil Inverter Split AC 27,400 BTU Cool Only, Anti-Corrosive Design, Auto Swing",
+      "category": "accessories"
+    },
+    {
+      "id": "2b0f3fca-ab54-4574-831c-f3cc9c6bd0a3",
+      "name_ar": "مكيف شباك تي سي ال 18000 وحدة حار/بارد",
+      "name_en": "TCL Window AC, 18,000 BTU, Heat & Cold, Golden Fins, Low Noise",
+      "category": "accessories"
+    },
+    {
+      "id": "2b3b667c-0ed8-4609-af71-39f1969388db",
+      "name_ar": "مكيف سبليت كلاس برو 12000 وحدة حار/بارد واي فاي",
+      "name_en": "ClassPro Split AC, 12,000 BTU, Rotary Compressor, Wifi,4 Ways Swing, Hot & Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "2cc88876-2760-427e-9ce0-40716cc8dbc2",
+      "name_ar": "مكيف هام سبليت جداري، 28000 وحدة، حار / بارد، كمبروسر روتاري انفرتر، ابيض – HM30HCO26INV",
+      "name_en": "مكيف هام سبليت جداري، 28000 وحدة، حار / بارد، كمبروسر روتاري انفرتر، ابيض – HM30HCO26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "2ccb7a5c-f37a-42d7-8073-325fe1f0132a",
+      "name_ar": "مكيف سبليت هام، 12000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM12HO25INV",
+      "name_en": "مكيف سبليت هام، 12000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM12HO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "2ea090fc-ef64-4a03-b6ef-583844967aff",
+      "name_ar": "مكيف شباك ميديا 18000 وحدة إنفرتر واي فاي",
+      "name_en": "Midea Window AC, Wonder, 18,000 BTU, Inverter Compressor, WiFi, Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "2f5f2e60-b034-4e72-823b-faa999a35aba",
+      "name_ar": "مكيف MTC جداري 12000 ح ب inverter ريش ذهبية MTC12HUT25INV",
+      "name_en": "مكيف MTC جداري 12000 ح ب inverter ريش ذهبية MTC12HUT25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "2f9e3aa3-9798-409d-b2e6-8cc29f83c25c",
+      "name_ar": "مكيف سامسونج WindFree جداري 20000 وحدة بارد AR24CVFCBWK/MG",
+      "name_en": "مكيف سامسونج WindFree جداري 20000 وحدة بارد AR24CVFCBWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "31ccad84-f3ef-4d89-8e74-92d2b6f81a51",
+      "name_ar": "مكيف سبليت كلفيناتور، 26800 وحدة، بارد فقط، كومبرسر روتاري، أبيض - KTS30C",
+      "name_en": "مكيف سبليت كلفيناتور، 26800 وحدة، بارد فقط، كومبرسر روتاري، أبيض - KTS30C",
+      "category": "accessories"
+    },
+    {
+      "id": "31e65bbf-055e-44ef-9646-ea956180fdbe",
+      "name_ar": "مكيف شباك الزامل 21600 وحدة حار/بارد",
+      "name_en": "Zamil, Window AC, 21,600 BTU, Hot & Cold, Rotary Compressor, Cool, Grey",
+      "category": "accessories"
+    },
+    {
+      "id": "31fc7186-9fba-4be9-9026-280750c48899",
+      "name_ar": "مكيف سبليت كلاس برو 12000 وحدة واي فاي",
+      "name_en": "ClassPro Split AC, 12,000 BTU, Rotary Compressor,Wifi, 4 Ways Swing, Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "33314a56-0e75-43c8-82c3-f71ac71df489",
+      "name_ar": "مكيف سبليت الزامل 18000 وحدة بارد فقط R410A",
+      "name_en": "Zamil Comfort Split AC 18,000 BTU, Cool Only, Rotary Compressor, R410A, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "3354aa96-5cb2-49ef-83e3-7e3fef81d466",
+      "name_ar": "مكيف ال جي جداري فريش 12000 وحدة ح ب NF122H0.NJ0 NF122H0.UJ0",
+      "name_en": "مكيف ال جي جداري فريش 12000 وحدة ح ب NF122H0.NJ0 NF122H0.UJ0",
+      "category": "accessories"
+    },
+    {
+      "id": "3410e7a8-a871-48ef-ad0b-59ad1f295b9a",
+      "name_ar": "مكيف LG جداري فريش 12000 وحدة بارد NF122C0.NJ0 NF122C0.UJ0",
+      "name_en": "مكيف LG جداري فريش 12000 وحدة بارد NF122C0.NJ0 NF122C0.UJ0",
+      "category": "accessories"
+    },
+    {
+      "id": "354ef8a9-2b02-495f-bcd1-12af116a2fce",
+      "name_ar": "هام  مكيف شباك، 18000 وحدة، بارد فقط، ابيض - HM18CWM25",
+      "name_en": "هام  مكيف شباك، 18000 وحدة، بارد فقط، ابيض - HM18CWM25",
+      "category": "accessories"
+    },
+    {
+      "id": "363de0bb-d5a6-411d-ba1d-23dae824178d",
+      "name_ar": "مكيف متنقل جري 16000 وحدة",
+      "name_en": "Gree Portable AC Cooling 16000 BTU, Oil Heating with Heat Pump Technology, White",
+      "category": "accessories"
+    },
+    {
+      "id": "372fefb8-b419-444d-acb5-69b13dd8fe62",
+      "name_ar": "مكيف سبليت كلاس برو 27000 وحدة واي فاي",
+      "name_en": "ClassPro Split AC, 27,000 BTU, WiFi, Highly Rotary Compressor,Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "37f7999b-64d8-4fbb-adc2-5c1ad0edc202",
+      "name_ar": "مكيف سبليت الزامل 24000 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Zamil, Split AC, 24,000 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "38cd927d-cccc-4e06-bfd3-7668dd1cce9a",
+      "name_ar": "مكيف سبليت سامسونج، 20500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR24DSFZAWK/MG",
+      "name_en": "مكيف سبليت سامسونج، 20500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR24DSFZAWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "3ae480fb-fe12-4096-a4d1-7dced16833ed",
+      "name_ar": "مكيف جري انفرتر 11700 وحدة ح/ب GWH12AGC-S3DTA1C",
+      "name_en": "مكيف جري انفرتر 11700 وحدة ح/ب GWH12AGC-S3DTA1C",
+      "category": "accessories"
+    },
+    {
+      "id": "3b70d993-56b4-4c43-8638-bb0454139b38",
+      "name_ar": "مكيف سبليت ميديا 18000 وحدة",
+      "name_en": "MIDEA Olympus, Split AC, 18,000 BTU, Cold, White",
+      "category": "accessories"
+    },
+    {
+      "id": "3c2343db-fbdc-4b0a-86c2-05046deb7d38",
+      "name_ar": "مكيف كلفيناتور جداري 18000 وحدة حار بارد KTS18H KTS18H",
+      "name_en": "مكيف كلفيناتور جداري 18000 وحدة حار بارد KTS18H KTS18H",
+      "category": "accessories"
+    },
+    {
+      "id": "3d30a9f0-9433-4c1a-8915-2c908c308847",
+      "name_ar": "مكيف ال جي سبليت، 22100 وحدة، بارد حار، كمبروسر انفرتر، ابيض - ND242H1.NK1",
+      "name_en": "مكيف ال جي سبليت، 22100 وحدة، بارد حار، كمبروسر انفرتر، ابيض - ND242H1.NK1",
+      "category": "accessories"
+    },
+    {
+      "id": "3d38a191-793d-4ebc-abb3-0bf6579c21de",
+      "name_ar": "مكيف سبليت ميديا 12100 وحدة بارد فقط",
+      "name_en": "Midea Split AC Olympus 12,100 BTU, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "3db78149-466b-426c-9b1d-9fa4c79a0a06",
+      "name_ar": "مكيف سبليت جري 28000 وحدة بارد فقط واي فاي",
+      "name_en": "Gree Split AC 28,000 BTU, Cold Only, Wifi, LED  Display.",
+      "category": "accessories"
+    },
+    {
+      "id": "3e13e437-2dea-4692-ab65-6ac67f1cf493",
+      "name_ar": "مكيف سبليت تي سي ال 18100 وحدة بارد فقط إنفرتر",
+      "name_en": "TCL, Split AC, Neo Cool, 18,100 BTU, Inverter, Cold Only, Fast Cooling",
+      "category": "accessories"
+    },
+    {
+      "id": "3e59f699-321b-4cc7-b829-d593a1262817",
+      "name_ar": "LG Split AC Gold Plus Dual Inverter 18000 BTU Heat & Cool",
+      "name_en": "LG Split AC, Gold Plus Dual Inverter, 18000 BTU, Heat & Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "3f19566c-1505-4fdc-a243-f5f436b5fcd3",
+      "name_ar": "مكيف شباك ميديا 17600 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Midea Wonder Window A/C Inverter,Wifi,17,600 Btu Heat&Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "3fa5f5f5-da23-4cbe-82c5-a28526280b39",
+      "name_ar": "مكيف TCL فريون 19000 وحدة ابيض TAC-19CPA/DM",
+      "name_en": "مكيف TCL فريون 19000 وحدة ابيض TAC-19CPA/DM",
+      "category": "accessories"
+    },
+    {
+      "id": "40d1528a-2b5e-4120-8fad-cbb9ef8914ad",
+      "name_ar": "مكيف سبليت سامسونج 20000 وحدة بارد فقط",
+      "name_en": "Samsung WindFree Smart Split AC, Cool Only , 20,000 BTU",
+      "category": "accessories"
+    },
+    {
+      "id": "43275923-63ff-4334-a93c-61eb5d4ae3f6",
+      "name_ar": "مكيف سبليت هاير 24000 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Haier, Split AC, 24,000 BTU, Hot & Cold, Nano Sterilization, WIFI, Ultra Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "43ca5b5f-56e2-4955-85c1-58c48160abfd",
+      "name_ar": "مكيف سبليت أوكس 36000 وحدة إنفرتر واي فاي",
+      "name_en": "AUX, Split AC, 36,000 BTU, Cold, Inverter, WiFi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "4466e708-e8fa-4c66-864f-5913e94a8aa3",
+      "name_ar": "مكيف LG فريش انفرتر 18000 بارد NF182C2 NK1 - NF182C2 UK1",
+      "name_en": "مكيف LG فريش انفرتر 18000 بارد NF182C2 NK1 - NF182C2 UK1",
+      "category": "accessories"
+    },
+    {
+      "id": "4473f4e5-ed0a-48f0-8ceb-23a77e85b9e3",
+      "name_ar": "مكيف ال جي جرين 17500 وحدة بارد NV182C1.NK0 NV182C1.UK0",
+      "name_en": "مكيف ال جي جرين 17500 وحدة بارد NV182C1.NK0 NV182C1.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "45570c7f-f372-44e7-b4d3-2bc233191309",
+      "name_ar": "مكيف سبليت هاير 18000 وحدة حار/بارد واي فاي",
+      "name_en": "Haier Nano Cool Split AC, 18,000 BTU, Heat & Cool, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "45ab16d9-59b2-49b5-8aaa-e2eb21b00ba9",
+      "name_ar": "مكيف صحراوي نقال اكسبير 80 لتر 3 سرعات XPAC-80LW",
+      "name_en": "مكيف صحراوي نقال اكسبير 80 لتر 3 سرعات XPAC-80LW",
+      "category": "accessories"
+    },
+    {
+      "id": "46715279-13aa-4397-a851-f47ef63997b4",
+      "name_ar": "مكيف شباك ادميرال 20100 وحدة بارد فقط",
+      "name_en": "Admiral Window AC 20,100 BTU, Cool only, Gold Fin, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "47229580-8a8e-40e7-9764-df88f0f25f47",
+      "name_ar": "مكيف سبليت جري أي بلس جداري 12000 وحدة، بارد/حار، كمبروسور انفرتر - GWH12AVCXB-S6DTA1E/I/O",
+      "name_en": "مكيف سبليت جري أي بلس جداري 12000 وحدة، بارد/حار، كمبروسور انفرتر - GWH12AVCXB-S6DTA1E/I/O",
+      "category": "accessories"
+    },
+    {
+      "id": "4770e647-81ee-49f6-8c31-c1405fe1c70d",
+      "name_ar": "مكيف جري سبليت واي فاي، 18000 وحدة، بارد، إنفرتر - GWC18AVDXE",
+      "name_en": "مكيف جري سبليت واي فاي، 18000 وحدة، بارد، إنفرتر - GWC18AVDXE",
+      "category": "accessories"
+    },
+    {
+      "id": "496ff28d-7e2b-4c5d-8403-b540e9de89f8",
+      "name_ar": "مكيف سبليت هاير 18000 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "Haier, Split AC, 18,000 BTU, Cool Only, Nano Sterilization, WIFI, Ultra Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "49cd44ad-0d17-4962-a8f4-ea8377031bbb",
+      "name_ar": "مكيف سبليت كلاس برو 31200 وحدة حار/بارد واي فاي",
+      "name_en": "ClassPro Split AC, 31,200 BTU,WIFI Function,4 Ways Swing, Heat & Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "4a04c6ab-6fda-472e-a19b-f5ec8956dcbc",
+      "name_ar": "مكيف كليفناتور جداري 18000 وحدة بارد KTS18CN KTS18CN",
+      "name_en": "مكيف كليفناتور جداري 18000 وحدة بارد KTS18CN KTS18CN",
+      "category": "accessories"
+    },
+    {
+      "id": "4a21277f-8f00-4bae-8723-fd1cdb2ef699",
+      "name_ar": "مكيف ال جي 12000 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "LG Spilt Air Conditioner 12000 BTU Cool Only, Inverter, WI-FI",
+      "category": "accessories"
+    },
+    {
+      "id": "4aae44b5-b2fe-46bd-a543-ea5344aeb81d",
+      "name_ar": "مكيف جري فريون ابيض متنقل 16000وحدة حار بارد GPH16AL-D3NTA3A",
+      "name_en": "مكيف جري فريون ابيض متنقل 16000وحدة حار بارد GPH16AL-D3NTA3A",
+      "category": "accessories"
+    },
+    {
+      "id": "4ac14a0a-7714-44b8-9c4b-918d4ada038e",
+      "name_ar": "مكيف سبليت الزامل 22200 وحدة حار/بارد R410A",
+      "name_en": "Zamil Comfort Split AC 22,200 BTU, Heat & Cool, Rotary Compressor, R410A, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "4b675e90-9aa4-465f-bd38-aeb7608a67a8",
+      "name_ar": "مكيف سبليت هاير 30000 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "Haier, Split AC, 30,000 BTU, Cool Only, Nano Sterilization, WIFI, Ultra Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "4bb9ff78-fcbb-4f9c-ba37-12f1387fe664",
+      "name_ar": "مكيف ال جي جداري تايتان 30000 حار بارد NT382H2.NR2-NT382H2.UR2",
+      "name_en": "مكيف ال جي جداري تايتان 30000 حار بارد NT382H2.NR2-NT382H2.UR2",
+      "category": "accessories"
+    },
+    {
+      "id": "4d17a45f-49e9-4118-a4aa-139da70747f9",
+      "name_ar": "مكيف صحراوي نقال اكسبير 40 لتر 3 سرعات XPAC-40LW",
+      "name_en": "مكيف صحراوي نقال اكسبير 40 لتر 3 سرعات XPAC-40LW",
+      "category": "accessories"
+    },
+    {
+      "id": "4dfb75e2-2f0c-4a8b-8660-93564ab729b9",
+      "name_ar": "مكيف سبليت سامسونج 17000 وحدة بارد فقط إنفرتر",
+      "name_en": "Samsung Split AC, Triple Inverter, 17,000 BTU, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "4e7a9934-c114-4ad4-8714-8910a290e04a",
+      "name_ar": "مكيف كلفيناتور جداري 18000 وحدة  بارد KTS18C5",
+      "name_en": "مكيف كلفيناتور جداري 18000 وحدة  بارد KTS18C5",
+      "category": "accessories"
+    },
+    {
+      "id": "4fc6294e-ed06-4c3f-b2f7-aecb4f6f6ce2",
+      "name_ar": "TCL Split AC SaveIN ULT T4 33 000 BTU Inverter Cooling Golden Fins",
+      "name_en": "TCL Split AC, SaveIN ULT T4, 33,000 BTU, Inverter, Cooling, Golden Fins",
+      "category": "accessories"
+    },
+    {
+      "id": "5039d1f9-6bd5-44b3-949d-1f8adbbac0d4",
+      "name_ar": "مكيف سبليت كلاس برو 18000 وحدة حار/بارد إنفرتر واي فاي INVERTER",
+      "name_en": "Classpro Split AC, 18,000 BTU, Heat & Cool, INVERTER, WIFI Function, 4D Air Flow, Gold Fin",
+      "category": "accessories"
+    },
+    {
+      "id": "50df0bfd-4160-44c8-8ea5-934c6428c679",
+      "name_ar": "مكيف ال جي جيت كول سبليت، 22500 وحدة، حار و بارد، ابيض - LO242H0 NK0 LO242H0 UK0",
+      "name_en": "مكيف ال جي جيت كول سبليت، 22500 وحدة، حار و بارد، ابيض - LO242H0 NK0 LO242H0 UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "51d5d695-cc3b-4629-85e9-d5a9fe2cf20c",
+      "name_ar": "مكيف كليفناتور جداري 26400 وحدة حار بارد KTS30H KTS30H",
+      "name_en": "مكيف كليفناتور جداري 26400 وحدة حار بارد KTS30H KTS30H",
+      "category": "accessories"
+    },
+    {
+      "id": "51f54ef9-d3ff-4ca0-83f7-f64f61918339",
+      "name_ar": "مكيف شباك كلاس برو 21800 وحدة بارد فقط",
+      "name_en": "Classpro Window AC, 21,800 BTU, Cooling Only, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "53a3adbd-6617-4235-86a9-1bb61f682c8c",
+      "name_ar": "مكيف شباك هايسنس، 21600 وحدة، حار وبارد، كومبرسر روتاري، ابيض - HW24HA23",
+      "name_en": "مكيف شباك هايسنس، 21600 وحدة، حار وبارد، كومبرسر روتاري، ابيض - HW24HA23",
+      "category": "accessories"
+    },
+    {
+      "id": "53b22a0e-8b80-4c3b-b7bd-ce5874dec564",
+      "name_ar": "مكيف سبليت هام، 24000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM24HO25INV",
+      "name_en": "مكيف سبليت هام، 24000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM24HO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "56907249-d9de-4ec9-b648-97a0d4f314aa",
+      "name_ar": "مكيف TCL نقال 9000 وحدة بارد TAC-09CPA/KN",
+      "name_en": "مكيف TCL نقال 9000 وحدة بارد TAC-09CPA/KN",
+      "category": "accessories"
+    },
+    {
+      "id": "571ac31f-ba0f-4240-94e5-4aca3f375c7d",
+      "name_ar": "مكيف متنقل ميديا 12000 وحدة بارد فقط",
+      "name_en": "Midea Portable A/C,12,000BTU, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "575f4795-b1f9-4c8b-8362-31bfe7c98c75",
+      "name_ar": "مكيف شباك جري 17600 وحدة حار/بارد",
+      "name_en": "Gree Window AC 17,600 BTU, Hot & Cold , R410a Refrigerant, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "59262f74-584d-4d7e-ace2-1fdcba65775c",
+      "name_ar": "مكيف تيرم جداي 18700 وحدة حار بارد (واي فاي) TRG18HS25WF",
+      "name_en": "مكيف تيرم جداي 18700 وحدة حار بارد (واي فاي) TRG18HS25WF",
+      "category": "accessories"
+    },
+    {
+      "id": "59ca0e94-8617-4a30-8cd8-d60847596687",
+      "name_ar": "مكيف سبليت جري 11600 وحدة حار/بارد",
+      "name_en": "Gree Split AC 11,600 BTU, Hot and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "5a6e79d8-903f-4245-bf6e-66a54a37d126",
+      "name_ar": "مكيف شباك هايسينس 18000 وحدة بارد فقط",
+      "name_en": "Hisense Window AC, 18000 BTU, Cold only",
+      "category": "accessories"
+    },
+    {
+      "id": "5c4f163c-1601-46df-bcb6-f73c5d2ce3de",
+      "name_ar": "هام  مكيف شباك 24،  وحدة حرارية، بارد / حار، أبيض - HM24HWM25",
+      "name_en": "هام  مكيف شباك 24،  وحدة حرارية، بارد / حار، أبيض - HM24HWM25",
+      "category": "accessories"
+    },
+    {
+      "id": "5d0bcb74-0b54-4f89-b854-db4bd35a3480",
+      "name_ar": "مكيف سبليت بوش 18300 وحدة بارد فقط",
+      "name_en": "Bosch Split Air Conditioner, 18,300 BTU, Cold Only, T3 Rotary, Polar White",
+      "category": "accessories"
+    },
+    {
+      "id": "5d2034d2-d934-4de7-aa22-9204bb46012b",
+      "name_ar": "مكيف شباك ميديا 24200 وحدة بارد فقط إنفرتر",
+      "name_en": "Midea, Wonder Window A/C, 24,200 BTU, Inverter Compressor, Cold Only, R32",
+      "category": "accessories"
+    },
+    {
+      "id": "5d973a8c-5bf6-4b0a-8bf9-6b391413a85a",
+      "name_ar": "مكيف سبليت كلاس برو 27000 وحدة حار/بارد واي فاي",
+      "name_en": "ClassPro Split AC, 27,000 BTU,WIFI Function,4 Ways Swing, Heat & Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "5e347a8a-1573-403a-9843-6faddeeef54c",
+      "name_ar": "مكيف وايت وستنجهاوس جداري 12100 وحدة بارد  WWS12Z24I/C",
+      "name_en": "مكيف وايت وستنجهاوس جداري 12100 وحدة بارد  WWS12Z24I/C",
+      "category": "accessories"
+    },
+    {
+      "id": "5ee43e68-0c7f-4b7e-9593-ffd0aa1d4e3a",
+      "name_ar": "مكيف ال جي سبليت، 28000 وحدة حرارية، تبريد فقط، كمبروسر روتاري، ابيض - LT302C0.NK0 / LT302C0.UK0",
+      "name_en": "مكيف ال جي سبليت، 28000 وحدة حرارية، تبريد فقط، كمبروسر روتاري، ابيض - LT302C0.NK0 / LT302C0.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "5f1a7800-e930-485e-ae73-f57c73f6d7ff",
+      "name_ar": "مكيف سبليت جري 22200 وحدة بارد فقط",
+      "name_en": "Gree Split AC, 22,200 BTU, Cold Only, Self Clean, Bluetooth, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "5f6d2c50-ee08-49a7-b039-abab05f2fdff",
+      "name_ar": "مكيف MTC جداري 27200 بارد ريش ذهبية توزيع رباعي MTC30CUT25",
+      "name_en": "مكيف MTC جداري 27200 بارد ريش ذهبية توزيع رباعي MTC30CUT25",
+      "category": "accessories"
+    },
+    {
+      "id": "6054fed0-f797-42f1-9248-bdd2b90521c2",
+      "name_ar": "مكيف LG جدارى 21500ب ND242C0.NK0 ND242C0.UK0 Dual Inverter",
+      "name_en": "مكيف LG جدارى 21500ب ND242C0.NK0 ND242C0.UK0 Dual Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "608ea1c1-70ca-41d1-b9b8-144df8f6836b",
+      "name_ar": "Zamil Window AC 17 800 BTU Hot & Cold Rotary Compressor Cool White",
+      "name_en": "Zamil, Window AC, 17,800 BTU, Hot & Cold, Rotary Compressor, Cool, White",
+      "category": "accessories"
+    },
+    {
+      "id": "618a7dc9-b339-490e-8372-55e13343b5b5",
+      "name_ar": "مكيف شباك هايسينس 21800 وحدة بارد فقط",
+      "name_en": "Hisense Window AC, 21,800BTU, Cold only",
+      "category": "accessories"
+    },
+    {
+      "id": "61e87b2f-78d9-4b83-93bb-54a56dce2def",
+      "name_ar": "مكيف كليفناتور شباك 20000 وحدة بارد KTSR24C5",
+      "name_en": "مكيف كليفناتور شباك 20000 وحدة بارد KTSR24C5",
+      "category": "accessories"
+    },
+    {
+      "id": "62f998dd-caea-492f-8b2d-ae8460a22d92",
+      "name_ar": "مكيف سبليت كلاس برو 23000 وحدة واي فاي",
+      "name_en": "ClassPro Split AC, 23000 BTU, Rotary Compressor,Wifi, 4 Ways Swing, Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "62fb4fc3-bc27-4d7d-a79d-1b12e7d67add",
+      "name_ar": "مكيف ال جي جداري سمارت  حار بارد 21000 NS242H3 NK1",
+      "name_en": "مكيف ال جي جداري سمارت  حار بارد 21000 NS242H3 NK1",
+      "category": "accessories"
+    },
+    {
+      "id": "631a9f7a-685c-49ec-85d2-91067478eedb",
+      "name_ar": "Gree Split Air Conditioner 12 000 BTU Cooling Only AI-PRO Inverter Wifi",
+      "name_en": "Gree Split Air Conditioner, 12,000 BTU, Cooling Only, AI-PRO, Inverter, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "63ff1f68-e9d1-4549-baf9-1f7546dcb67a",
+      "name_ar": "مكيف شباك كلاسيك 18500 وحدة بارد فقط",
+      "name_en": "Classic Window AC, 18,500 BTU Cool only",
+      "category": "accessories"
+    },
+    {
+      "id": "643351a8-4e28-48d2-a971-2d469925d723",
+      "name_ar": "مكيف هام جداري الذهبي 27000 حار بارد ريش ذهبية HM30HSM24GO",
+      "name_en": "مكيف هام جداري الذهبي 27000 حار بارد ريش ذهبية HM30HSM24GO",
+      "category": "accessories"
+    },
+    {
+      "id": "653a6516-81a9-40bc-8c5f-388d2a85ccc4",
+      "name_ar": "مكيف شباك جري 21800 وحدة بارد فقط",
+      "name_en": "Gree Window AC 21,800 BTU, Cold Only , R410a Refrigerant, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "657f7e7e-d26a-4fc9-885e-b88b08f25094",
+      "name_ar": "Samsung WindFree Smart Split AC Hot/Cold 17 500 BTU",
+      "name_en": "Samsung WindFree Smart Split AC Hot/Cold 17,500 BTU",
+      "category": "accessories"
+    },
+    {
+      "id": "665f99fc-60a1-4e59-a462-d85ba00e9d79",
+      "name_ar": "مكيف تيرم جداري24000 وحدة باردInverter (واي فاي) TRG24CS25WFINV",
+      "name_en": "مكيف تيرم جداري24000 وحدة باردInverter (واي فاي) TRG24CS25WFINV",
+      "category": "accessories"
+    },
+    {
+      "id": "668cafc9-8be0-4fc7-951e-460c1b7b90ba",
+      "name_ar": "Zamil Inverter Split AC 18 000 BTU Cool Only Anti-Corrosive Design Auto Swing",
+      "name_en": "Zamil Inverter Split AC 18,000 BTU Cool Only, Anti-Corrosive Design, Auto Swing",
+      "category": "accessories"
+    },
+    {
+      "id": "67149945-2c5c-4a40-a5d8-ade2849b16cd",
+      "name_ar": "مكيف سبليت هايسينس 18000 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "HISENSE, Split AC, 18,000 BTU, Cool Only, Wi-Fi, Inverter, White",
+      "category": "accessories"
+    },
+    {
+      "id": "6781a512-b7a9-405f-81a7-4d44b5876c20",
+      "name_ar": "مكيف متنقل كلاس برو 12000 وحدة",
+      "name_en": "ClassPro Portable AC, 12,000 BTU, Cold, White",
+      "category": "accessories"
+    },
+    {
+      "id": "67d80ab6-4f7c-41c2-ad87-8f575487808a",
+      "name_ar": "مكيف شباك كلاس برو 17200 وحدة حار/بارد",
+      "name_en": "Classpro Window AC, 17,200 BTU, Heat & Cool, GMCC Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "68b25aa9-61d7-4b04-88e2-f163c9395ca3",
+      "name_ar": "ClassPro Split AC 18 400 BTU Cold Wifi Function Rotary White",
+      "name_en": "ClassPro Split AC, 18,400 BTU, Cold, Wifi Function, Rotary, White",
+      "category": "accessories"
+    },
+    {
+      "id": "68d4f9d2-4784-4893-8c26-90c3220f7256",
+      "name_ar": "مكيف كليفناتور جداري 28600 وحدة بارد KTS36C KTS36C",
+      "name_en": "مكيف كليفناتور جداري 28600 وحدة بارد KTS36C KTS36C",
+      "category": "accessories"
+    },
+    {
+      "id": "68e858b3-b846-4931-a445-59f0680a839f",
+      "name_ar": "مكيف صحراوي نقال هام، 60 لتر، 3 سرعات - HMAC-60L-PRO",
+      "name_en": "مكيف صحراوي نقال هام، 60 لتر، 3 سرعات - HMAC-60L-PRO",
+      "category": "accessories"
+    },
+    {
+      "id": "6983163b-a865-433c-8471-4cebc295f738",
+      "name_ar": "مكيف صحراوي الجزيرة 1\\4 ح DCA/14/220",
+      "name_en": "مكيف صحراوي الجزيرة 1\\4 ح DCA/14/220",
+      "category": "accessories"
+    },
+    {
+      "id": "6c00316c-a8ca-4ce0-8f0a-2a7b75d533d7",
+      "name_ar": "مكيف شباك كرافت 18000 وحدة",
+      "name_en": "Crafft Window AC 18000 BTU, Cool, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "6c6036e0-036a-4027-b825-ee0e747a07e9",
+      "name_ar": "مكيف سبليت ال جي، 22000 وحدة ، تبريد فقط، كومبرسر انفرتر – AM242C2.NK2",
+      "name_en": "مكيف سبليت ال جي، 22000 وحدة ، تبريد فقط، كومبرسر انفرتر – AM242C2.NK2",
+      "category": "accessories"
+    },
+    {
+      "id": "6cf71594-95b1-4d7b-a037-327b0eea3e8d",
+      "name_ar": "مكيف سبليت جري 24000 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Gree Split Air Conditioner, 24,000 BTU, Heating & Cooling, AI-PRO, Inverter, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "6de1222e-c7e4-4737-a9e6-e0cc5386428d",
+      "name_ar": "مكيف كلفيناتور شباك 20000 وحدة  حار بارد KTSR24H5",
+      "name_en": "مكيف كلفيناتور شباك 20000 وحدة  حار بارد KTSR24H5",
+      "category": "accessories"
+    },
+    {
+      "id": "6f0280ac-e66d-4675-b962-9e53a9104213",
+      "name_ar": "مكيف شباك تي سي ال 20000 وحدة حار/بارد R410A",
+      "name_en": "TCL Window AC 20,000 BTU, Heat & Cold, Golden Fins, Low Noise, R410A",
+      "category": "accessories"
+    },
+    {
+      "id": "6fb39c0f-2249-48f6-8a15-a36d9da297c0",
+      "name_ar": "مكيف ام تي سي جداري، 18000 وحدة، حار/ بارد، انفرتر، ريش ذهبية - MTC18HUT25INV",
+      "name_en": "مكيف ام تي سي جداري، 18000 وحدة، حار/ بارد، انفرتر، ريش ذهبية - MTC18HUT25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "7123390e-d004-4585-b20b-ae4e283589c4",
+      "name_ar": "مكيف شباك تي سي ال 20600 وحدة إنفرتر",
+      "name_en": "TCL, Window AC, 20,600 BTU, Inverter, Cooling/Heating",
+      "category": "accessories"
+    },
+    {
+      "id": "71714abd-a51c-4dbe-9df5-d2cdd286dbd4",
+      "name_ar": "مكيف سبليت ال جي 22000 وحدة واي فاي",
+      "name_en": "LG, Split AC, 22,000 BTU, Cold, Rotary, WiFi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "72124925-5a13-42c5-b8b0-9d46908c406b",
+      "name_ar": "مكيف مخفي هام، 52200 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM60HDU25INV",
+      "name_en": "مكيف مخفي هام، 52200 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM60HDU25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "72d540c7-fb3e-4062-bf0a-905d92b012bf",
+      "name_ar": "مكيف سبليت هام، 31400 وحدة، بارد وحار، كومبرسر روتاري، ريش ذهبية، أبيض - HM36HSM24GO",
+      "name_en": "مكيف سبليت هام، 31400 وحدة، بارد وحار، كومبرسر روتاري، ريش ذهبية، أبيض - HM36HSM24GO",
+      "category": "accessories"
+    },
+    {
+      "id": "73ad5c04-f41b-46bb-82b9-3acde9ecf41f",
+      "name_ar": "مكيف سبليت جينيرال 36000 وحدة بارد فقط إنفرتر PHASE",
+      "name_en": "General Split AC, 36,000 BTU, Inverter Compressor, Cold Only, 3 PHASE/380V",
+      "category": "accessories"
+    },
+    {
+      "id": "7439abde-9ae2-4004-8135-256a15598e0a",
+      "name_ar": "مكيف سبليت أوكس 18600 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "AUX, Split Air Conditioner, 18,600 BTU, Heat & Cool, CA Ultra Cool, Inverter, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "74b0d124-e856-416d-87d8-d8f13097ecc2",
+      "name_ar": "مكيف سبليت هام، 24000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HM24CO25INV",
+      "name_en": "مكيف سبليت هام، 24000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HM24CO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "7554b026-a8c0-48b1-9d89-a9663f737601",
+      "name_ar": "مكيف سبليت الزامل 12200 وحدة إنفرتر واي فاي",
+      "name_en": "Zamil, Split AC, 12,200 BTU, Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "77bbf411-4cba-43bf-950f-37b6b0b23003",
+      "name_ar": "مكيف سبليت ميديا 29000 وحدة إنفرتر واي فاي",
+      "name_en": "Midea, Split AC, 29000 BTU , Inverter,Wifi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "78a3259d-e5b6-45a2-bde6-456c88f5a480",
+      "name_ar": "مكيف شباك وايت وستنجهاوس 21800 وحدة بارد فقط",
+      "name_en": "White Westinghouse, Window AC, 21,800 BTU, Cold Only.",
+      "category": "accessories"
+    },
+    {
+      "id": "78be3ad0-b610-49cb-b6eb-d315feef4da3",
+      "name_ar": "مكيف سبليت ميديا 12100 وحدة بارد فقط واي فاي",
+      "name_en": "Midea Split AC Mission Xtreme 12,100 BTU, Wifi,  Cool only",
+      "category": "accessories"
+    },
+    {
+      "id": "7943fade-d151-49e9-afd1-cd98feec3164",
+      "name_ar": "مكيف سبليت سامسونج ويند فري، 17500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR18CSFCBWK/MG",
+      "name_en": "مكيف سبليت سامسونج ويند فري، 17500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR18CSFCBWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "7a726d5e-24c7-4292-bba0-582b729fc2be",
+      "name_ar": "مكيف سبليت الزامل 34000 وحدة إنفرتر واي فاي",
+      "name_en": "Zamil, Split AC, 34,000 BTU, Cool, Wi-Fi, Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "7ab81318-586e-431f-991f-762d566e861f",
+      "name_ar": "مكيف تيرم جداري18000وحدة باردInverter(واي فاي)TRG18CS25WFINV",
+      "name_en": "مكيف تيرم جداري18000وحدة باردInverter(واي فاي)TRG18CS25WFINV",
+      "category": "accessories"
+    },
+    {
+      "id": "7c54820c-9285-4cae-a879-728c1dd83248",
+      "name_ar": "مكيف تيرم جداري 12300 وحدة بارد (واي فاي) TRG12CS25WF",
+      "name_en": "مكيف تيرم جداري 12300 وحدة بارد (واي فاي) TRG12CS25WF",
+      "category": "accessories"
+    },
+    {
+      "id": "7d0e8307-58f5-496e-9ff0-c874c09c420c",
+      "name_ar": "مكيف جريAI PLUS جدارى24000 بارد انفرترGWC24AVEXF-S6DTA1H/I/O",
+      "name_en": "مكيف جريAI PLUS جدارى24000 بارد انفرترGWC24AVEXF-S6DTA1H/I/O",
+      "category": "accessories"
+    },
+    {
+      "id": "7dcb6814-7d47-4bc9-bd7f-c699fc897433",
+      "name_ar": "مكيف سبليت جري 22500 وحدة حار/بارد واي فاي PULAR",
+      "name_en": "Gree PULAR Split AC, 22,500 BTU, Hot and Cold, Built-in Wifi, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "7def6d62-4ba1-40e9-8df5-5104aaa7b7db",
+      "name_ar": "مكيف ال جي دولابي، بارد، 48000 وحدة  - APNQ55GT3MA/APUQ55GT",
+      "name_en": "مكيف ال جي دولابي، بارد، 48000 وحدة  - APNQ55GT3MA/APUQ55GT",
+      "category": "accessories"
+    },
+    {
+      "id": "80333197-58ff-4fa9-a91d-b8e8d8b85b92",
+      "name_ar": "مكيف سبليت جينيرال 36000 وحدة حار/بارد إنفرتر",
+      "name_en": "General Split AC, 36,000 BTU, Hot and Cold, Inverter Compressor, R32 Eco, Blue Fin",
+      "category": "accessories"
+    },
+    {
+      "id": "8160ee83-dffd-4a48-880e-11ea8154acea",
+      "name_ar": "مكيف فيشر شباك 21800 وحدة بارد روتاري FWAC-H24CF",
+      "name_en": "مكيف فيشر شباك 21800 وحدة بارد روتاري FWAC-H24CF",
+      "category": "accessories"
+    },
+    {
+      "id": "817c2458-7b9c-4c24-a6a3-968b3734f9ad",
+      "name_ar": "مكيف سبليت سامسونج 18000 وحدة حار/بارد",
+      "name_en": "Samsung Split AC, 18000 BTU,Rotary Compressor,Heat and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "840d64c3-4692-4a74-9b1d-cd3a94579b3f",
+      "name_ar": "General Split AC 21 200 BTU Cold Only R32 Eco Inverter Compressor White",
+      "name_en": "General Split AC, 21,200 BTU, Cold Only, R32 Eco, Inverter Compressor, White",
+      "category": "accessories"
+    },
+    {
+      "id": "84177c05-fbaf-415b-89d4-b67186edfcb3",
+      "name_ar": "مكيف اوجنرال جداري 21200 وحده بارد تايلند ASSG24CMTAZ",
+      "name_en": "مكيف اوجنرال جداري 21200 وحده بارد تايلند ASSG24CMTAZ",
+      "category": "accessories"
+    },
+    {
+      "id": "84fdf0c1-83c2-4301-98c4-b5ebecbd38cf",
+      "name_ar": "مكيف تيرم جداري 23700 وحدة بارد (واي فاي) TRG24CS25WF",
+      "name_en": "مكيف تيرم جداري 23700 وحدة بارد (واي فاي) TRG24CS25WF",
+      "category": "accessories"
+    },
+    {
+      "id": "85c66958-ef8d-40d3-b565-ada9e4fd83a6",
+      "name_ar": "إم تي سي، 28000 وحدة حرارية، مكيف سبليت جداري، بارد إنفرتر، ريش ذهبية – MTC30CUT26INV",
+      "name_en": "إم تي سي، 28000 وحدة حرارية، مكيف سبليت جداري، بارد إنفرتر، ريش ذهبية – MTC30CUT26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "85e7cc27-859f-49f6-9f0c-faaffb94b127",
+      "name_ar": "Gree Split Air Conditioner 24 000 BTU Cooling Only AI-PRO Inverter Wifi",
+      "name_en": "Gree Split Air Conditioner, 24,000 BTU, Cooling Only, AI-PRO, Inverter, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "86e92d25-6046-4b0e-959c-49d80c2edfe3",
+      "name_ar": "Crafft Window AC 21 800 BTU Cool Only Rotary",
+      "name_en": "Crafft Window AC 21,800 BTU, Cool Only, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "881c1c8d-3ad0-42f8-952b-930f4ce29c4d",
+      "name_ar": "مكيف هام سبليت جداري، 35200 وحدة، حار / بارد، كمبروسر روتاري انفرتر، ابيض – HM36HCO26INV",
+      "name_en": "مكيف هام سبليت جداري، 35200 وحدة، حار / بارد، كمبروسر روتاري انفرتر، ابيض – HM36HCO26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "883d7f40-3506-4bce-84b1-3f4d72555acd",
+      "name_ar": "مكيف سبليت بوش 22100 وحدة بارد فقط",
+      "name_en": "Bosch Split Air Conditioner, 22,100  BTU, Cold Only, T3 Rotary, Polar White",
+      "category": "accessories"
+    },
+    {
+      "id": "88eaf96c-31bb-4910-9d0a-3aea8707096b",
+      "name_ar": "مكيف صحراوي CL25AE ,Honeywell",
+      "name_en": "مكيف صحراوي CL25AE ,Honeywell",
+      "category": "accessories"
+    },
+    {
+      "id": "89c84ddd-27f5-43ea-ba2f-72e532a467e7",
+      "name_ar": "مكيف هام شباك 21000 بارد HM24CWM22",
+      "name_en": "مكيف هام شباك 21000 بارد HM24CWM22",
+      "category": "accessories"
+    },
+    {
+      "id": "8aa2b1b2-df67-44d4-b72f-32c323868d98",
+      "name_ar": "مكيف ال جي سبليت، 18000 وحدة حرارية، حار / بارد، كمبروسر روتاري، ابيض - LK182H0.NK0 / LK182H0.UK0",
+      "name_en": "مكيف ال جي سبليت، 18000 وحدة حرارية، حار / بارد، كمبروسر روتاري، ابيض - LK182H0.NK0 / LK182H0.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "8bacdbf7-12c2-45d4-8294-6844ed54ca14",
+      "name_ar": "مكيف هام شباك 20800 حار بارد HM24HWM22",
+      "name_en": "مكيف هام شباك 20800 حار بارد HM24HWM22",
+      "category": "accessories"
+    },
+    {
+      "id": "8da7d935-56e3-4e21-a3ed-a0173fa33b02",
+      "name_ar": "مكيف شباك كرافت 21600 وحدة حار/بارد",
+      "name_en": "Crafft Window AC 21,600 BTU, Hot & Cool, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "8ece37f0-1b39-4b74-a88b-f3925f03cd44",
+      "name_ar": "مكيف سبليت هام، 19200 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM18HO25INV",
+      "name_en": "مكيف سبليت هام، 19200 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، ريش ذهبية، أبيض - HM18HO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "8ee96423-df30-49bd-b079-131f98f4590e",
+      "name_ar": "مكيف شباك الزامل 20800 وحدة حار/بارد",
+      "name_en": "Zamil Window AC, 20,800 BTU, Heat & Cool, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "903edcd7-cf3e-43f0-8135-b131dd7cf28c",
+      "name_ar": "موجه هواء مكيف ARTS",
+      "name_en": "موجه هواء مكيف ARTS",
+      "category": "accessories"
+    },
+    {
+      "id": "908d9082-0324-4458-bb70-512506cf2f1a",
+      "name_ar": "TCL Window AC 20 600 BTU Inverter Cooling",
+      "name_en": "TCL, Window AC, 20,600 BTU, Inverter, Cooling",
+      "category": "accessories"
+    },
+    {
+      "id": "925ef88b-593a-4094-a7b1-7441a0cb8fa3",
+      "name_ar": "مكيف اوجنرال جداري 1800 وحده بارد تايلند ASSG18CMTAZ",
+      "name_en": "مكيف اوجنرال جداري 1800 وحده بارد تايلند ASSG18CMTAZ",
+      "category": "accessories"
+    },
+    {
+      "id": "95af7e3e-be35-42f7-a2bf-ac4a58baea0e",
+      "name_ar": "مكيف سبليت جري أي بلس جداري 18000 وحدة، بارد/حار، كمبروسور انفرتر - GWH18AVDXE-S6DTA1B/I/O",
+      "name_en": "مكيف سبليت جري أي بلس جداري 18000 وحدة، بارد/حار، كمبروسور انفرتر - GWH18AVDXE-S6DTA1B/I/O",
+      "category": "accessories"
+    },
+    {
+      "id": "95dd5749-f161-4ffc-967c-aec9339fbc7d",
+      "name_ar": "مكيف سبليت الزامل 34000 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Zamil, Split AC, 34,000 BTU, Heat & Cool, Wi-Fi, Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "99856dce-6df0-45b5-91dc-10fb6d98806a",
+      "name_ar": "مكيف سبليت كلاسيك 23000 وحدة بارد فقط",
+      "name_en": "Classic Split AC, 23,000 BTU, Cool only",
+      "category": "accessories"
+    },
+    {
+      "id": "9cc11777-142b-460b-8d37-fde5c609d98e",
+      "name_ar": "مكيف صحراوي الغدير 2/1 ح DCG/E/12/220",
+      "name_en": "مكيف صحراوي الغدير 2/1 ح DCG/E/12/220",
+      "category": "accessories"
+    },
+    {
+      "id": "9d055f44-260d-4fbb-8699-2d8c6673e003",
+      "name_ar": "مكيف سبليت جري 18500 وحدة حار/بارد واي فاي",
+      "name_en": "Gree Split AC, 18,500 BTU Hot & Cold, WIFI Control",
+      "category": "accessories"
+    },
+    {
+      "id": "9d47ba53-e142-408d-b12d-57adfd96e2f9",
+      "name_ar": "مكيف شباك ميديا 24200 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "Midea Wonder Window A/C Inverter Compressor,Wifi,24,200 Btu Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "9fb95745-32a9-4068-b86c-06f4aa438235",
+      "name_ar": "Samsung WindFree Smart Split AC 20 500 BTU Hot/Cold",
+      "name_en": "Samsung WindFree Smart Split AC, 20,500 BTU Hot/Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "a19c7211-3773-4d2a-85ea-11e5c1ec8319",
+      "name_ar": "مكيف سبليت جري 18000 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "Gree Split Air Conditioner, 18,000 BTU, Cooling Only, AI-PRO, Inverter, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "a1ba21f0-24b4-41de-8e54-a8a0f4171afd",
+      "name_ar": "مكيف ال جي جدارى 18000ح/ب ND182H0.NK0 ND182H0.UK0 Dual Inverter",
+      "name_en": "مكيف ال جي جدارى 18000ح/ب ND182H0.NK0 ND182H0.UK0 Dual Inverter",
+      "category": "accessories"
+    },
+    {
+      "id": "a1cfdbb9-6575-44f2-a0f9-37b0ce9f5e28",
+      "name_ar": "مكيف مخفي هام، 33000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM36HDU25INV",
+      "name_en": "مكيف مخفي هام، 33000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM36HDU25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "a278ee4a-8ba2-49c5-bd30-9c9238be812a",
+      "name_ar": "مكيف LG جداري سمارت بارد 21500 NS242C3 UK1-NK1",
+      "name_en": "مكيف LG جداري سمارت بارد 21500 NS242C3 UK1-NK1",
+      "category": "accessories"
+    },
+    {
+      "id": "a284abbd-c5a1-43af-a0f3-afc88dca22d3",
+      "name_ar": "مكيف شباك كلاس برو 17200 وحدة بارد فقط",
+      "name_en": "Classpro Window AC, 17,200 BTU,Cool Only,Gold Fin, Digital LED Display",
+      "category": "accessories"
+    },
+    {
+      "id": "a46648d6-2ebd-4f64-9c36-e4014ff5d173",
+      "name_ar": "مكيف صحراوي نقال هاني ويل 60 لتر CL60PM",
+      "name_en": "مكيف صحراوي نقال هاني ويل 60 لتر CL60PM",
+      "category": "accessories"
+    },
+    {
+      "id": "a6f6864f-342c-4e84-8f93-dd5ad5e7b803",
+      "name_ar": "مكيف سبليت تي سي ال 18000 وحدة بارد فقط",
+      "name_en": "TCL Split AC, 18,000 BTU, Cool Only, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "a7d10076-d605-440d-b93e-ffd0f3544f80",
+      "name_ar": "مكيف سبليت هام، 12000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HHM12CO25INV",
+      "name_en": "مكيف سبليت هام، 12000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HHM12CO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "a7f9b34c-d8e3-4fe4-984d-2ed97c735bda",
+      "name_ar": "إم تي سي، 33000 وحدة حرارية، مكيف سبليت جداري، بارد إنفرتر، ريش ذهبية – MTC36CUT26INV",
+      "name_en": "إم تي سي، 33000 وحدة حرارية، مكيف سبليت جداري، بارد إنفرتر، ريش ذهبية – MTC36CUT26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "a8e28cb4-ed4e-4ff0-9d74-34bc012bafe7",
+      "name_ar": "مكيف وايت وستنجهاوس شباك 21800 وحدة بارد WWA25k22R",
+      "name_en": "مكيف وايت وستنجهاوس شباك 21800 وحدة بارد WWA25k22R",
+      "category": "accessories"
+    },
+    {
+      "id": "a92017b2-0d9f-4d14-8096-83835fe2956f",
+      "name_ar": "مكيف هواء متنقل من TCL، تبريد فقط، 12000 وحدة ، أبيض - TAC-12CPA/DL 5",
+      "name_en": "مكيف هواء متنقل من TCL، تبريد فقط، 12000 وحدة ، أبيض - TAC-12CPA/DL 5",
+      "category": "accessories"
+    },
+    {
+      "id": "a9f6c84f-4497-4a47-b72f-39726c7dc80a",
+      "name_ar": "مكيف صحراوي نقال هام 45 لتر 3 سرعات HMAC-45BM",
+      "name_en": "مكيف صحراوي نقال هام 45 لتر 3 سرعات HMAC-45BM",
+      "category": "accessories"
+    },
+    {
+      "id": "aa222502-725f-4f5e-a77b-18f6ef3b91cc",
+      "name_ar": "مكيف شباك جري 21400 وحدة حار/بارد",
+      "name_en": "Gree, Window AC Rotary Compressor 21,400 BTU, Hot and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "ab4e56a6-108c-47b6-8462-a6b132e185f9",
+      "name_ar": "Haier Nano cool Split AC 18 000 BTU WIFI Cool Only",
+      "name_en": "Haier Nano cool Split AC, 18,000 BTU, WIFI, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "ab5e280b-62a4-4169-9b2e-2c44c896d89b",
+      "name_ar": "Zamil Split AC 18 000 BTU Cool Wi-Fi Inverter Anti-Corrosive Design",
+      "name_en": "Zamil, Split AC, 18,000 BTU, Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "ac7a3683-e35c-4638-a749-b5551e254dbc",
+      "name_ar": "مكيف اكسبير جداري 18000 ح / ب inverter ريش ذهبية XP18HSA25INV",
+      "name_en": "مكيف اكسبير جداري 18000 ح / ب inverter ريش ذهبية XP18HSA25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "adc179b0-697e-4a19-886f-333b578441d9",
+      "name_ar": "مكيف تيرم جداري 23700 وحدة حار بارد (واي فاي) TRG24HS25WF",
+      "name_en": "مكيف تيرم جداري 23700 وحدة حار بارد (واي فاي) TRG24HS25WF",
+      "category": "accessories"
+    },
+    {
+      "id": "adc5e00d-2c5a-48ae-9bee-dbb0453cb778",
+      "name_ar": "مكيف سامسونج Inverter جداري 20000 وحدة بارد AR24TVHZBWKNMG",
+      "name_en": "مكيف سامسونج Inverter جداري 20000 وحدة بارد AR24TVHZBWKNMG",
+      "category": "accessories"
+    },
+    {
+      "id": "ae3dcf82-a207-4e3a-a1a4-7e0b6a89b0b1",
+      "name_ar": "مكيف سبليت ال جي، 18,000 وحدة ، تبريد فقط، كومبرسر انفرتر – NS182C3.NK3",
+      "name_en": "مكيف سبليت ال جي، 18,000 وحدة ، تبريد فقط، كومبرسر انفرتر – NS182C3.NK3",
+      "category": "accessories"
+    },
+    {
+      "id": "ae741cc2-b059-468a-8df0-a1b31172eb1b",
+      "name_ar": "مكيف شباك الزامل 18000 وحدة",
+      "name_en": "Zamil, Window AC, 18,000 BTU, Cold, Rotary Compressor, Cool, White",
+      "category": "accessories"
+    },
+    {
+      "id": "ae7ff54b-bbfb-4ce5-b4ea-198d88c4fd5a",
+      "name_ar": "مكيف كلفيناتور جداري 12300 وحدة حار بارد KTS12HI5",
+      "name_en": "مكيف كلفيناتور جداري 12300 وحدة حار بارد KTS12HI5",
+      "category": "accessories"
+    },
+    {
+      "id": "aed15391-3400-4a93-bca0-c5807ec35ff3",
+      "name_ar": "مكيف سبليت سامسونج، 17000 وحدة، بارد فقط، كومبرسر روتاري، أبيض - AR18DVFZAWK/MG",
+      "name_en": "مكيف سبليت سامسونج، 17000 وحدة، بارد فقط، كومبرسر روتاري، أبيض - AR18DVFZAWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "aede1444-0161-413b-a1bd-5afb7078933b",
+      "name_ar": "مكيف سبليت جري، 11900 وحدة، بارد فقط، كومبرسر روتاري، أبيض - GWC12AVCXB-D3NTA1A",
+      "name_en": "مكيف سبليت جري، 11900 وحدة، بارد فقط، كومبرسر روتاري، أبيض - GWC12AVCXB-D3NTA1A",
+      "category": "accessories"
+    },
+    {
+      "id": "af44c28f-7123-4321-b13d-78f7a20e25da",
+      "name_ar": "مكيف سبليت ال جي، 18,000 وحدة ، حار و بارد كومبرسر انفرتر – NS182H3.NK3",
+      "name_en": "مكيف سبليت ال جي، 18,000 وحدة ، حار و بارد كومبرسر انفرتر – NS182H3.NK3",
+      "category": "accessories"
+    },
+    {
+      "id": "af6838f7-ec5b-4dac-b845-49fdd7333ba4",
+      "name_ar": "مكيف تيرم جداري30000 وحدة باردInverter (واي فاي)TRG30CS25WFI",
+      "name_en": "مكيف تيرم جداري30000 وحدة باردInverter (واي فاي)TRG30CS25WFI",
+      "category": "accessories"
+    },
+    {
+      "id": "b0b65ba8-2106-484f-9366-298fa0114e11",
+      "name_ar": "مكيف كلفيناتور جداري 22000 وحدة  بارد KTS24C5",
+      "name_en": "مكيف كلفيناتور جداري 22000 وحدة  بارد KTS24C5",
+      "category": "accessories"
+    },
+    {
+      "id": "b23833a1-efd5-4dcd-ba3f-54705da05290",
+      "name_ar": "مكيف تيرم جداري 29000 وحدة بارد (واي فاي) TRG30CS25WF",
+      "name_en": "مكيف تيرم جداري 29000 وحدة بارد (واي فاي) TRG30CS25WF",
+      "category": "accessories"
+    },
+    {
+      "id": "b3ec4397-6b08-4e7e-9bc4-47b8bcffbb5e",
+      "name_ar": "مكيف سبليت جري 28000 وحدة حار/بارد واي فاي",
+      "name_en": "Gree Split AC 28,000 BTU, Hot & Cold, Wifi, LED Display.",
+      "category": "accessories"
+    },
+    {
+      "id": "b3f8b2b7-875c-47ec-ad34-f0b9c9ad7d4d",
+      "name_ar": "مكيف سبليت ام تي سي، 18000 وحدة، تبريد فقط، انفرتر، ابيض - MTC18CUT25INV",
+      "name_en": "مكيف سبليت ام تي سي، 18000 وحدة، تبريد فقط، انفرتر، ابيض - MTC18CUT25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "b5b0c105-336c-40ce-9993-347b92d41e68",
+      "name_ar": "مكيف شباك بيسيك 24200 وحدة حار/بارد",
+      "name_en": "BASIC, Window AC, 24,200 BTU, Hot & Cold , Rotary, White",
+      "category": "accessories"
+    },
+    {
+      "id": "b5d0e81d-f063-4d80-a765-af24ce4f1eea",
+      "name_ar": "مكيف شباك كلاس برو 22000 وحدة بارد فقط",
+      "name_en": "Classpro Window AC,22,000 BTU,Cool Only,Gold Fin,Rotary,Micro-channel",
+      "category": "accessories"
+    },
+    {
+      "id": "b60526bd-74f1-4d14-a17a-25086d9dea0b",
+      "name_ar": "مكيف سبليت جينيرال 19000 وحدة حار/بارد",
+      "name_en": "General Split AC 19,000 BTU, Hot and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "b751ce7b-06f2-43c2-8342-e10a20854664",
+      "name_ar": "مكيف كلفيناتور جداري 12300 وحدة حار بارد KTS12H KTS12H",
+      "name_en": "مكيف كلفيناتور جداري 12300 وحدة حار بارد KTS12H KTS12H",
+      "category": "accessories"
+    },
+    {
+      "id": "b75d9acc-7eeb-471c-82a0-7fc1699d896e",
+      "name_ar": "مكيف شباك وايت وستنجهاوس 21600 وحدة حار/بارد",
+      "name_en": "White Westinghouse, Window AC, 21,600 BTU, Hot & Cool.",
+      "category": "accessories"
+    },
+    {
+      "id": "b93b37ba-ae4a-4867-af02-a9bec691a333",
+      "name_ar": "مكيف سبليت ميديا 28400 وحدة بارد فقط واي فاي",
+      "name_en": "Midea Mission Xtreme, Split AC, 28,400 BTU, Cold Only, Ionizer, Wifi",
+      "category": "accessories"
+    },
+    {
+      "id": "b94664f4-44cf-4cc4-b042-f844f72defad",
+      "name_ar": "مكيف سبليت سامسونج 17000 وحدة",
+      "name_en": "Samsung WindFree Smart Split AC Cold 17,000 BTU",
+      "category": "accessories"
+    },
+    {
+      "id": "b99f53cd-2dd9-452c-9a7d-e7745700fdc6",
+      "name_ar": "مكيف سامسونج Inverter جداري 20000 وحدة بارد AR24DVFZAWK/MG",
+      "name_en": "مكيف سامسونج Inverter جداري 20000 وحدة بارد AR24DVFZAWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "bb6c940e-7e67-4d60-a073-5e1f8847d27a",
+      "name_ar": "مكيف سبليت ميديا 17400 وحدة إنفرتر واي فاي",
+      "name_en": "Midea Mission Xtreme, Split AC, 17400 BTU , Inverter,Heat, Wifi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "bc2925c8-d2d5-4556-9387-f5bb9f97fae9",
+      "name_ar": "Classpro Window AC 18 000 BTU Cool Only Rotary Compressor",
+      "name_en": "Classpro, Window AC, 18,000  BTU, Cool Only, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "bcfba438-0079-4437-aea6-8ebe05e5e01f",
+      "name_ar": "مكيف شباك ميديا 18000 وحدة بارد فقط إنفرتر",
+      "name_en": "Midea, Window AC , Wonder, 18,000 BTU, Cold Only, R32, Inverter Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "be3a1584-486e-432e-85fb-84b5dd485b0e",
+      "name_ar": "مكيف سبليت من بيسك، 12000 وحدة حرارية ، تبريد فقط، انفيرتر – BSACMA-FI12CB",
+      "name_en": "مكيف سبليت من بيسك، 12000 وحدة حرارية ، تبريد فقط، انفيرتر – BSACMA-FI12CB",
+      "category": "accessories"
+    },
+    {
+      "id": "be62c0ff-7ad0-4752-9867-15d22dcaa617",
+      "name_ar": "مكيف فراتيلي جداري23800بارد inverterواي فاي FO24CSA25INV",
+      "name_en": "مكيف فراتيلي جداري23800بارد inverterواي فاي FO24CSA25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "bf9cd638-e77d-44ac-a599-2b330e812d75",
+      "name_ar": "مكيف فراتيلي جداري 22000 وحدة بارد توزيع رباعي FO24CSM24",
+      "name_en": "مكيف فراتيلي جداري 22000 وحدة بارد توزيع رباعي FO24CSM24",
+      "category": "accessories"
+    },
+    {
+      "id": "c0048832-97ad-4386-bbf8-336f9bd356d2",
+      "name_ar": "مكيف شباك زيترست 21800 وحدة",
+      "name_en": "Ztrust Window AC 21,800 BTU Cold, Rotary,Light Grey",
+      "category": "accessories"
+    },
+    {
+      "id": "c18e7538-3a12-4326-b552-0b452a60c072",
+      "name_ar": "مكيف سبليت جينيرال 23700 وحدة حار/بارد",
+      "name_en": "General Split AC 23,700 BTU, Hot and Cold,",
+      "category": "accessories"
+    },
+    {
+      "id": "c33ecd39-5a15-4bcb-8d0c-4cb8bd36f6e1",
+      "name_ar": "مكيف سبليت جينيرال 24000 وحدة بارد فقط إنفرتر",
+      "name_en": "General, Split AC, 24,000 BTU, Inverter Compressor, Cold Only, Blue Fin",
+      "category": "accessories"
+    },
+    {
+      "id": "c39cad58-2ebf-4e35-beb9-a787389fceb0",
+      "name_ar": "مكيف سبليت جري أي بلس جداري 12000 وحدة، بارد، كمبروسور انفرتر - GWC12AVCXB-S6DTA1E/I/O",
+      "name_en": "مكيف سبليت جري أي بلس جداري 12000 وحدة، بارد، كمبروسور انفرتر - GWC12AVCXB-S6DTA1E/I/O",
+      "category": "accessories"
+    },
+    {
+      "id": "c4411b80-2f25-43e8-bcf0-bbdb2b208023",
+      "name_ar": "مكيف سبليت تي سي ال 22800 وحدة واي فاي",
+      "name_en": "TCL Split AC, BreezeIN 22,800 BTU, Cooling, WiFi, Gentle Breeze",
+      "category": "accessories"
+    },
+    {
+      "id": "c47543cc-4554-4356-a358-dbe690701478",
+      "name_ar": "مكيف تيرم شباك 17600 حار بارد TRGW18H23N",
+      "name_en": "مكيف تيرم شباك 17600 حار بارد TRGW18H23N",
+      "category": "accessories"
+    },
+    {
+      "id": "c4fe2efb-110f-4d27-ab02-790825134869",
+      "name_ar": "مكيف كاسيت هام 34000 واي فاي inverterحار بارد HM36HCASX26INV",
+      "name_en": "مكيف كاسيت هام 34000 واي فاي inverterحار بارد HM36HCASX26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "c57599a6-3bd9-4ca2-a350-529ca13ee345",
+      "name_ar": "مكيف كلفيناتور جداري 21600 وحدة  حار بارد KTS24H5",
+      "name_en": "مكيف كلفيناتور جداري 21600 وحدة  حار بارد KTS24H5",
+      "category": "accessories"
+    },
+    {
+      "id": "c5aeff29-11e8-4660-9499-4cfdcf4a9dd9",
+      "name_ar": "مكيف سبليت هام، 11900 وحدة، بارد وحار، كومبرسر روتاري، ريش ذهبية، أبيض - HM12HSM24GO",
+      "name_en": "مكيف سبليت هام، 11900 وحدة، بارد وحار، كومبرسر روتاري، ريش ذهبية، أبيض - HM12HSM24GO",
+      "category": "accessories"
+    },
+    {
+      "id": "c7a5602f-cf88-44a3-a3f1-261697a99680",
+      "name_ar": "مكيف شباك الزامل 21600 وحدة",
+      "name_en": "Zamil, Window AC, 21,600 BTU, Cold, Rotary Compressor, Cool, White",
+      "category": "accessories"
+    },
+    {
+      "id": "c7ddfc0e-ce54-441c-a223-82fcccbd27c2",
+      "name_ar": "مكيف سبليت هام، 19200 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HM18CO25INV",
+      "name_en": "مكيف سبليت هام، 19200 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HM18CO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "c94af0cd-57d4-42a4-9fa2-d1032e16746f",
+      "name_ar": "مكيف سبليت جينيرال 28000 وحدة بارد فقط إنفرتر",
+      "name_en": "General Split AC, 28,000 BTU, Inverter Compressor, Cold Only",
+      "category": "accessories"
+    },
+    {
+      "id": "c9d400a0-2cc5-4235-be15-5a66b80352f0",
+      "name_ar": "مكيف سبليت تي سي ال 18200 وحدة واي فاي",
+      "name_en": "TCL Split AC, BreezeIN 18,200 BTU, Cooling & Heating, WiFi",
+      "category": "accessories"
+    },
+    {
+      "id": "c9f4bd56-c60d-4a58-a3e5-df6ac5c8a9c7",
+      "name_ar": "مكيف ال جي سبليت، 23000 وحدة حرارية، حار / بارد، كمبروسر روتاري، ابيض - LK242H0.NK0 / LK242H0.UK0",
+      "name_en": "مكيف ال جي سبليت، 23000 وحدة حرارية، حار / بارد، كمبروسر روتاري، ابيض - LK242H0.NK0 / LK242H0.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "ca0b7ba2-d567-45ed-aba8-6c948d8efbc9",
+      "name_ar": "مكيف ال جي جداري تايتان 30000 بارد NT382C2.NR2-NT382C2.UR2",
+      "name_en": "مكيف ال جي جداري تايتان 30000 بارد NT382C2.NR2-NT382C2.UR2",
+      "category": "accessories"
+    },
+    {
+      "id": "ca84f374-ba52-42eb-8041-c21ffc729bdd",
+      "name_ar": "مكيف سبليت ميديا 22000 وحدة بارد فقط واي فاي",
+      "name_en": "Midea Split AC Mission Xtreme 22,000 BTU, Cool only,Ionizer, Wifi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "cb11187d-5530-4054-b80a-773ef57a1f1e",
+      "name_ar": "مكيف سبليت ال جي 22300 وحدة بارد فقط إنفرتر",
+      "name_en": "LG, Split AC, 22,300 BTU, AirFit, Dual Inverter Compressor, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "cb60cb84-4011-42ed-9f0b-10836ff7938c",
+      "name_ar": "مكيف كليفناتور جداري 21000 وحدة حار بارد KTS24H KTS24H",
+      "name_en": "مكيف كليفناتور جداري 21000 وحدة حار بارد KTS24H KTS24H",
+      "category": "accessories"
+    },
+    {
+      "id": "cbdbf016-e6b8-484b-a9cb-449e6136e523",
+      "name_ar": "مكيف سبليت من بيسك، 12000 وحدة حرارية ، حار / بارد، انفيرتر – BSACMA-FI12HB",
+      "name_en": "مكيف سبليت من بيسك، 12000 وحدة حرارية ، حار / بارد، انفيرتر – BSACMA-FI12HB",
+      "category": "accessories"
+    },
+    {
+      "id": "cc1c4fe3-22ea-4977-8de8-203aeeb88340",
+      "name_ar": "مكيف سبليت ميديا 18100 وحدة",
+      "name_en": "Midea Split AC Mission Xtreme, 18,100 BTU, Heat \\ Cool, Ionizer, White",
+      "category": "accessories"
+    },
+    {
+      "id": "cd503286-581e-4f62-b549-820a2417729e",
+      "name_ar": "مكيف صحراوي نقال اكسبير 55 لتر 3 سرعات XPAC-55LHD",
+      "name_en": "مكيف صحراوي نقال اكسبير 55 لتر 3 سرعات XPAC-55LHD",
+      "category": "accessories"
+    },
+    {
+      "id": "cd9062d8-1dec-45f5-a11e-a4b3f6f13f94",
+      "name_ar": "مكيف شباك تي سي ال 24200 وحدة",
+      "name_en": "TCL, Window AC, 24,200 BTU, Cooling/Heating, Low Noise, High Efficiency, Golden Fins",
+      "category": "accessories"
+    },
+    {
+      "id": "cdb5ee5a-d83b-46c6-b5f1-b6c7902a56ca",
+      "name_ar": "مكيف سبليت هام، 28000 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، أبيض - HM30CSM23GONU",
+      "name_en": "مكيف سبليت هام، 28000 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، أبيض - HM30CSM23GONU",
+      "category": "accessories"
+    },
+    {
+      "id": "cfc75b65-ba96-4445-bd22-7da6d7985092",
+      "name_ar": "مكيف شباك شارب 18000 وحدة بارد فقط",
+      "name_en": "Sharp Window AC, 18000 BTU, Cold Only, Rotary Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "cfd72517-f356-4f45-b35a-71e319fe4ada",
+      "name_ar": "مكيف هواء متنقل تي سي ال، 14000 وحدة، ابيض - TAC-14CPA/DM",
+      "name_en": "مكيف هواء متنقل تي سي ال، 14000 وحدة، ابيض - TAC-14CPA/DM",
+      "category": "accessories"
+    },
+    {
+      "id": "d043843c-d4a6-48da-88f8-5d4be9426bf8",
+      "name_ar": "مكيف سبليت جري، 30,000 وحدة، حار / بارد- GWH30AVEXH-D6NTA1A",
+      "name_en": "مكيف سبليت جري، 30,000 وحدة، حار / بارد- GWH30AVEXH-D6NTA1A",
+      "category": "accessories"
+    },
+    {
+      "id": "d11ff157-cfd6-4549-a824-20577d397bc2",
+      "name_ar": "مكيف سبليت ام تي سي، 12000 وحدة، تبريد فقط، انفرتر، ابيض - MTC12CUT25INV",
+      "name_en": "مكيف سبليت ام تي سي، 12000 وحدة، تبريد فقط، انفرتر، ابيض - MTC12CUT25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "d13e0f4c-51fb-4c0b-a52f-d10c9dbe6167",
+      "name_ar": "مكيف سبليت وايت وستنجهاوس، 21400 وحدة، بارد فقط، كومبرسر روتاري، أبيض - WWS24Z24I/C",
+      "name_en": "مكيف سبليت وايت وستنجهاوس، 21400 وحدة، بارد فقط، كومبرسر روتاري، أبيض - WWS24Z24I/C",
+      "category": "accessories"
+    },
+    {
+      "id": "d43e8554-e9b6-43e7-8d99-bfba64fe6d65",
+      "name_ar": "مكيف ال جي سبليت، 23000 وحدة حرارية، تبريد فقط، كمبروسر روتاري، ابيض - LK242C0.NK0 / LK242C0.UK0",
+      "name_en": "مكيف ال جي سبليت، 23000 وحدة حرارية، تبريد فقط، كمبروسر روتاري، ابيض - LK242C0.NK0 / LK242C0.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "d4e87298-537d-411a-b1ca-fcaee665d704",
+      "name_ar": "مكيف كاسيت هام، 18400 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، أبيض - HM18HCASX26INV",
+      "name_en": "مكيف كاسيت هام، 18400 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، أبيض - HM18HCASX26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "d66e398d-355e-4915-aab2-76914d5a5673",
+      "name_ar": "Midea Olympus Split AC 18 100 BTU Heat \\ Cool White",
+      "name_en": "Midea Olympus Split AC, 18,100 BTU, Heat \\ Cool, White",
+      "category": "accessories"
+    },
+    {
+      "id": "d66e9a98-e320-4325-8d41-533bfa128eca",
+      "name_ar": "مكيف ال جي سبليت، 18200 وحدة حرارية، تبريد فقط، كمبروسر روتاري، ابيض - LK182C0NK / LK18C0.UK0",
+      "name_en": "مكيف ال جي سبليت، 18200 وحدة حرارية، تبريد فقط، كمبروسر روتاري، ابيض - LK182C0NK / LK18C0.UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "d6d2e812-2458-4a2a-bbd1-2b54fbf9c939",
+      "name_ar": "مكيف سبليت سامسونج، 17500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR18DSFZAWK/MG",
+      "name_en": "مكيف سبليت سامسونج، 17500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR18DSFZAWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "d709fdf8-b559-44f5-8222-8fe191b8fef0",
+      "name_ar": "مكيف سبليت كلفيناتور، 22000 وحدة، بارد فقط، كومبرسر روتاري، أبيض - KTS24C4",
+      "name_en": "مكيف سبليت كلفيناتور، 22000 وحدة، بارد فقط، كومبرسر روتاري، أبيض - KTS24C4",
+      "category": "accessories"
+    },
+    {
+      "id": "d7128578-7383-4c16-bb96-68425a6e4370",
+      "name_ar": "مكيف سبليت الزامل 12400 وحدة بارد فقط R410A",
+      "name_en": "Zamil Comfort Split AC 12,400 BTU, Cool Only, Rotary, R410A, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "d812c9de-5193-45cd-b968-618d68be4f7d",
+      "name_ar": "مكيف سبليت من بيسك، 21,200 وحدة حرارية، تبريد فقط، انفرتر – BSACMA-FI24CB",
+      "name_en": "مكيف سبليت من بيسك، 21,200 وحدة حرارية، تبريد فقط، انفرتر – BSACMA-FI24CB",
+      "category": "accessories"
+    },
+    {
+      "id": "d87af608-c0c4-4b09-b084-979805788d12",
+      "name_ar": "مكيف سبليت هام، 12100 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، ابيض - HM12CSM23GO",
+      "name_en": "مكيف سبليت هام، 12100 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، ابيض - HM12CSM23GO",
+      "category": "accessories"
+    },
+    {
+      "id": "d890bee4-c99b-4f4c-9771-9f9bac000266",
+      "name_ar": "مكيف سبليت جري 11600 وحدة",
+      "name_en": "Gree, Split AC 11,600 BTU, Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "db8236da-18e5-484b-b198-12caaeaf720b",
+      "name_ar": "مكيف شباك بيسيك 24200 وحدة",
+      "name_en": "BASIC, Window AC, 24,200 BTU, Cold, Rotary, White",
+      "category": "accessories"
+    },
+    {
+      "id": "dc4d483a-6d0d-4ceb-9649-35f237b00876",
+      "name_ar": "مكيف سبليت هاير 12400 وحدة واي فاي",
+      "name_en": "Haier Nano cool Split AC, 12,400 BTU, WIFI, Cool & Heat",
+      "category": "accessories"
+    },
+    {
+      "id": "dcd26cd8-9c54-4685-b74f-cd249b0daecf",
+      "name_ar": "مكيف سبليت هاير 33000 وحدة إنفرتر واي فاي",
+      "name_en": "HAIER, Split AC, 33,000 BTU, Cold, Inverter UVC Smart, WiFi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "dd1f7892-3da4-4d27-bcfc-e63caf83174b",
+      "name_ar": "مكيف سبليت هاير 27400 وحدة واي فاي",
+      "name_en": "Haier Nano Cool Split AC, 27400 BTU, COOL, Wi-Fi",
+      "category": "accessories"
+    },
+    {
+      "id": "de7203b2-2500-4656-811d-93e926e34ac3",
+      "name_ar": "General Split AC 18 000 BTU Cold Only R32 Eco Inverter Compressor",
+      "name_en": "General Split AC, 18,000 BTU, Cold Only, R32 Eco, Inverter Compressor",
+      "category": "accessories"
+    },
+    {
+      "id": "e16d9378-5209-45a2-a1a3-efccbbbe253d",
+      "name_ar": "مكيف شباك ميديا 20200 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Midea Window AC, Wonder, 20,200 BTU, Inverter, Wi-Fi, Heat&Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "e1c77056-66ad-48b2-9282-745143dfbf2f",
+      "name_ar": "مكيف سبليت أوكس 18000 وحدة إنفرتر واي فاي",
+      "name_en": "AUX, Split AC, 18000 BTU, Cold, Inverter, WiFi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "e2289249-6afe-4dc0-9150-f9c640537660",
+      "name_ar": "مكيف اكسبير جداري 12000 ح/ ب inverter ريش ذهبية XP12HSA25INV",
+      "name_en": "مكيف اكسبير جداري 12000 ح/ ب inverter ريش ذهبية XP12HSA25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "e24cc737-24fb-43e0-abb2-e278dbddc1a7",
+      "name_ar": "مكيف سبليت الزامل 18000 وحدة حار/بارد إنفرتر",
+      "name_en": "Zamil Inverter Split AC 18,000 BTU Heat & Cool, Anti-Corrosive Design, Auto Swing",
+      "category": "accessories"
+    },
+    {
+      "id": "e27b56ac-9aa6-4274-90a2-a1dacc768efb",
+      "name_ar": "مكيف جري جداري18700وحدة ح/ب GWH18AVDXF-D3NTA1A  AI-MAX ON/OF",
+      "name_en": "مكيف جري جداري18700وحدة ح/ب GWH18AVDXF-D3NTA1A  AI-MAX ON/OF",
+      "category": "accessories"
+    },
+    {
+      "id": "e369117d-b921-4437-8379-a753426f731b",
+      "name_ar": "مكيف وايت وستنجهاوس شباك حار بادر 17800 WWA20K22HR",
+      "name_en": "مكيف وايت وستنجهاوس شباك حار بادر 17800 WWA20K22HR",
+      "category": "accessories"
+    },
+    {
+      "id": "e4822d12-7203-4634-8716-4a96723a7773",
+      "name_ar": "مكيف سبليت سامسونج ويند فري، 20500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR24CSFCBWK/MG",
+      "name_en": "مكيف سبليت سامسونج ويند فري، 20500 وحدة، بارد وحار، كومبرسر روتاري، أبيض - AR24CSFCBWK/MG",
+      "category": "accessories"
+    },
+    {
+      "id": "e4fa55d3-0af0-43df-b875-8d873ee4484d",
+      "name_ar": "مكيف سبليت الزامل 18000 وحدة حار/بارد إنفرتر واي فاي",
+      "name_en": "Zamil, Split AC, 18,000 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "e62c4c53-bb57-4614-aced-c86fa1a41528",
+      "name_ar": "Samsung WindFree Smart Split AC 17 000 BTU Cold WiFi",
+      "name_en": "Samsung WindFree Smart Split AC, 17,000 BTU, Cold, WiFi",
+      "category": "accessories"
+    },
+    {
+      "id": "e637c8f1-e31b-4a99-bccf-6e7f4868f64b",
+      "name_ar": "مكيف LG فريش انفرتر 21000 حار بارد NF242H3 NK1 - NF242H3 UK1",
+      "name_en": "مكيف LG فريش انفرتر 21000 حار بارد NF242H3 NK1 - NF242H3 UK1",
+      "category": "accessories"
+    },
+    {
+      "id": "e65ab77b-d90c-45ec-ab9d-390613b1ecb9",
+      "name_ar": "مكيف شباك تي سي ال 18000 وحدة",
+      "name_en": "TCL Window AC, 18,000 BTU, Cold, Golden Fins, Low Noise",
+      "category": "accessories"
+    },
+    {
+      "id": "e79a495b-6c58-40df-a864-ff62b129eaff",
+      "name_ar": "مكيف شباك تي سي ال 20000 وحدة",
+      "name_en": "TCL Window AC 20,000 BTU, Cold, Golden Fins, Low Noise",
+      "category": "accessories"
+    },
+    {
+      "id": "e8b32e34-7c2d-4e5d-ae13-c15465a73070",
+      "name_ar": "مكيف سبليت هايسينس 23000 وحدة بارد فقط إنفرتر واي فاي",
+      "name_en": "HISENSE, Split AC, 23,000 BTU, Cool Only, Wi-Fi, Inverter, White",
+      "category": "accessories"
+    },
+    {
+      "id": "e9454561-aac8-441a-bf8b-a6aefad65cbd",
+      "name_ar": "مكيف سبليت كلاس برو 17800 وحدة حار/بارد واي فاي",
+      "name_en": "ClassPro Split AC, 17800 BTU, Rotary Compressor, WiFi,4 Ways Swing, Hot & Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "e9a3b918-caae-4689-8fac-6ba6dff35d77",
+      "name_ar": "مكيف مخفي هام، 24000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM24HDU25INV",
+      "name_en": "مكيف مخفي هام، 24000 وحدة، بارد وحار، كومبرسر انفرتر، واي فاي، رمادي - HM24HDU25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "e9be2980-cd56-4b2d-936d-eb74e12e5b7d",
+      "name_ar": "مكيف سبليت وايت وستنجهاوس، 18000 وحدة، بارد فقط، كومبرسر روتاري، أبيض - WWS18Z24I/C",
+      "name_en": "مكيف سبليت وايت وستنجهاوس، 18000 وحدة، بارد فقط، كومبرسر روتاري، أبيض - WWS18Z24I/C",
+      "category": "accessories"
+    },
+    {
+      "id": "ea0bf422-d19e-44a9-9b18-2853f28078c6",
+      "name_ar": "مكيف كلفيناتور جداري 18000 وحدة حار بارد KTS18H5",
+      "name_en": "مكيف كلفيناتور جداري 18000 وحدة حار بارد KTS18H5",
+      "category": "accessories"
+    },
+    {
+      "id": "ea6f2732-c1f5-4c7b-9b55-552a1ce76c99",
+      "name_ar": "هام  مكيف شباك 24،  وحدة حرارية، بارد فقط، أبيض - HM24CWM25",
+      "name_en": "هام  مكيف شباك 24،  وحدة حرارية، بارد فقط، أبيض - HM24CWM25",
+      "category": "accessories"
+    },
+    {
+      "id": "eba7a9ac-0e6d-4f76-8e97-2f3f9276eefc",
+      "name_ar": "مكيف كاسيت هام 24000 واي فاي inverterحار بارد HM24HCASX26INV",
+      "name_en": "مكيف كاسيت هام 24000 واي فاي inverterحار بارد HM24HCASX26INV",
+      "category": "accessories"
+    },
+    {
+      "id": "ec10c480-4770-495e-917a-e386b17cf602",
+      "name_ar": "مكيف سبليت الزامل 22200 وحدة بارد فقط R410A",
+      "name_en": "Zamil Comfort Split AC 22,200 BTU, Cool Only, Rotary Compressor, R410A, Anti-Corrosive Design",
+      "category": "accessories"
+    },
+    {
+      "id": "ed42ec51-7dbe-4b34-9d08-6d718ff15e6d",
+      "name_ar": "مكيف سبليت جري 32200 وحدة بارد فقط واي فاي PULAR",
+      "name_en": "Gree PULAR Split AC, Wi-Fi, 32,200 BTU, Cold Only",
+      "category": "accessories"
+    },
+    {
+      "id": "ee0eb552-c8de-4a5b-8bed-ddcd616c6ff4",
+      "name_ar": "مكيف سبليت هام جولد، 21000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، أبيض - HM24CSM24GOINV",
+      "name_en": "مكيف سبليت هام جولد، 21000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، أبيض - HM24CSM24GOINV",
+      "category": "accessories"
+    },
+    {
+      "id": "ee3353be-9e69-43f7-9985-44e5263be729",
+      "name_ar": "مكيف شباك كلاس برو 18000 وحدة بارد فقط",
+      "name_en": "Classpro Window AC,18,000 BTU,Cool Only,Gold Fin,Rotary,Micro-channel",
+      "category": "accessories"
+    },
+    {
+      "id": "ee7e0a74-9091-48cf-a2dc-ab46bf9853d1",
+      "name_ar": "مكيف كلفيناتور شباك 17800 وحدة  حار بارد KTSR18H5",
+      "name_en": "مكيف كلفيناتور شباك 17800 وحدة  حار بارد KTSR18H5",
+      "category": "accessories"
+    },
+    {
+      "id": "ee983e63-5216-4b78-bfed-e047cda9f25e",
+      "name_ar": "مكيف سبليت إل جي، 22,100 وحدة ، بارد كومبرسر انفرتر – NS242C4.NK4",
+      "name_en": "مكيف سبليت إل جي، 22,100 وحدة ، بارد كومبرسر انفرتر – NS242C4.NK4",
+      "category": "accessories"
+    },
+    {
+      "id": "f334fc59-54e7-4592-9bd7-0cdf80f0e4ab",
+      "name_ar": "Midea Olympus Split AC 18 300 BTU Self-Cleanning Cool",
+      "name_en": "Midea Olympus Split AC 18,300 BTU , Self-Cleanning, Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "f3b4aee1-27b7-4e08-b710-808359b76e53",
+      "name_ar": "مكيف LG جيت كول 18300 وحدة حار بارد LO182H0 NK0 LO182H0 UK0",
+      "name_en": "مكيف LG جيت كول 18300 وحدة حار بارد LO182H0 NK0 LO182H0 UK0",
+      "category": "accessories"
+    },
+    {
+      "id": "f4889d9a-b151-412d-b9d9-809b939f2813",
+      "name_ar": "مكيف شباك زيترست 17800 وحدة حار/بارد",
+      "name_en": "Ztrust Window AC 17,800 BTU Heat & Cold, Light Grey",
+      "category": "accessories"
+    },
+    {
+      "id": "f548dd47-71e0-4b8f-904f-ee9e52bf2c88",
+      "name_ar": "Midea Split AC Mission Xtreme 28 000 BTU Cool Only",
+      "name_en": "Midea Split AC Mission Xtreme 28,000 BTU, Cool Only",
+      "category": "accessories"
+    },
+    {
+      "id": "f56a5ded-7202-430d-8272-c97fdd7d031f",
+      "name_ar": "مكيف سبليت تي سي ال 12000 وحدة إنفرتر واي فاي",
+      "name_en": "TCL Split AC, Inverter, BreezeIN 12,000 BTU, Cooling, WiFi",
+      "category": "accessories"
+    },
+    {
+      "id": "f5dc23d0-f679-4dad-a170-639b5f94bf42",
+      "name_ar": "مكيف سبليت ميديا 11900 وحدة حار/بارد واي فاي",
+      "name_en": "Midea Mission Xtreme, Split AC, 11900 BTU, Heat & Cool, Wifi, White",
+      "category": "accessories"
+    },
+    {
+      "id": "f6aec3a7-ee76-461a-b1e4-d95dfec7189b",
+      "name_ar": "مكيف صحراوي الجزيرة الفريد 1/3 ح DCA/13/220",
+      "name_en": "مكيف صحراوي الجزيرة الفريد 1/3 ح DCA/13/220",
+      "category": "accessories"
+    },
+    {
+      "id": "f7374e0c-e2df-4edd-bad5-13c7576c81da",
+      "name_ar": "مكيف جيبسون جدارى 17800 وحدة بارد AS18FE6HC AS18CE6HC",
+      "name_en": "مكيف جيبسون جدارى 17800 وحدة بارد AS18FE6HC AS18CE6HC",
+      "category": "accessories"
+    },
+    {
+      "id": "f9275599-aafa-4c46-9f64-53db1b3f48f1",
+      "name_ar": "مكيف شباك وايت وستنجهاوس 18000 وحدة",
+      "name_en": "White Westinghouse Window AC 18000 BTU Cool",
+      "category": "accessories"
+    },
+    {
+      "id": "f9340019-6aa7-4158-b406-798e378fabab",
+      "name_ar": "مكيف سبليت جري، 19,300 وحدة، بارد - GWC18AVDXF-D6NTA1A",
+      "name_en": "مكيف سبليت جري، 19,300 وحدة، بارد - GWC18AVDXF-D6NTA1A",
+      "category": "accessories"
+    },
+    {
+      "id": "f9893600-1ec2-42ec-8a75-87ee92e2761f",
+      "name_ar": "مكيف سبليت تي سي ال 22500 وحدة واي فاي",
+      "name_en": "TCL Split AC, BreezeIN 22,500 BTU, Cooling & Heating, WiFi",
+      "category": "accessories"
+    },
+    {
+      "id": "f9f67764-9592-446b-9cf4-1629a0f6b3f8",
+      "name_ar": "مكيف شباك هاير 21500 وحدة",
+      "name_en": "Haier Window AC, 21,500 BTU,Rotary Compressor, Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "fa6b8652-9905-4074-a72c-42348a951859",
+      "name_ar": "مكيف شباك وايت وستنجهاوس 17800 وحدة حار/بارد",
+      "name_en": "White Westinghouse Window AC 17,800 BTU Hot & Cool, Rotary",
+      "category": "accessories"
+    },
+    {
+      "id": "fa771b4e-8ef6-4990-af03-38f02abffa36",
+      "name_ar": "مكيف سبليت هام، 22000 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، أبيض - HM24CSM23GO",
+      "name_en": "مكيف سبليت هام، 22000 وحدة، بارد فقط، كومبرسر روتاري، ريش ذهبية، أبيض - HM24CSM23GO",
+      "category": "accessories"
+    },
+    {
+      "id": "fb52b477-4d79-4aa9-961f-565a3fb7d29e",
+      "name_ar": "مكيف سبليت هام، 18100 وحدة، بارد وحار، كومبرسر روتاري، ريش ذهبية، أبيض - HM18HSM24GO",
+      "name_en": "مكيف سبليت هام، 18100 وحدة، بارد وحار، كومبرسر روتاري، ريش ذهبية، أبيض - HM18HSM24GO",
+      "category": "accessories"
+    },
+    {
+      "id": "fc0b44ee-af3e-48e3-8f19-90192676b5b7",
+      "name_ar": "مكيف سبليت جري 18000 وحدة إنفرتر واي فاي",
+      "name_en": "Gree Pular Pro Inverter Split AC,Wi-Fi, 18,000 BTU, Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "fc6abf6e-2f57-4bac-b4c7-7bc06fd804ff",
+      "name_ar": "مكيف شباك زيترست 18000 وحدة",
+      "name_en": "Ztrust Window AC 18000 BTU Cold, Light Grey",
+      "category": "accessories"
+    },
+    {
+      "id": "fd44374e-011f-4d04-8abd-b0eed3c8ee60",
+      "name_ar": "مكيف شباك هايسينس 17800 وحدة حار/بارد",
+      "name_en": "Hisense Window AC, 17,800 BTU, Heat and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "fd8e9acf-2372-4bc8-8bef-f58a2177d41a",
+      "name_ar": "مكيف جري شباك 21800 وحدة بارد روتاري GJC24AE-D3NMTG1J",
+      "name_en": "مكيف جري شباك 21800 وحدة بارد روتاري GJC24AE-D3NMTG1J",
+      "category": "accessories"
+    },
+    {
+      "id": "fd95684f-3473-4046-b04d-b5755e34ef17",
+      "name_ar": "مكيف صحراوي الجزيرة 1\\2 ح DCA/12/220",
+      "name_en": "مكيف صحراوي الجزيرة 1\\2 ح DCA/12/220",
+      "category": "accessories"
+    },
+    {
+      "id": "fe0b829c-a4f4-41fd-ae58-674a18fbf2cb",
+      "name_ar": "مكيف سبليت هام، 30000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HM30CO25INV",
+      "name_en": "مكيف سبليت هام، 30000 وحدة، بارد فقط، كومبرسر انفرتر، واي فاي، ريش ذهبية، ابيض - HM30CO25INV",
+      "category": "accessories"
+    },
+    {
+      "id": "ff0220e6-fcca-4da9-8864-927a1aac52e6",
+      "name_ar": "مكيف شباك هاير 17200 وحدة حار/بارد",
+      "name_en": "Haier Window AC, 17,200 BTU, Heat and Cold",
+      "category": "accessories"
+    },
+    {
+      "id": "ffd5e7bc-494a-49e3-b858-09b5bd8b4069",
+      "name_ar": "مكيف شباك هاير 17200 وحدة بارد فقط",
+      "name_en": "Haier Window AC, 17,200 BTU, Cold Only",
+      "category": "accessories"
+    }
+  ]
+}

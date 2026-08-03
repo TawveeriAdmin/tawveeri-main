@@ -50,7 +50,7 @@ const STORE_NAMES: Record<string, string[]> = {
 const NAME_TO_SLUG = new Map<string, string>();
 for (const [slug, names] of Object.entries(STORE_NAMES)) for (const n of names) NAME_TO_SLUG.set(n.toLowerCase(), slug);
 
-type Target = { cid: string; slug: string; raw_url: string | null; raw_name: string; last_observed: string | null; tps_identity_key: string | null; url_source: "npo" | "legacy_raw" | null };
+type Target = { cid: string; slug: string; raw_url: string | null; raw_name: string; last_observed: string | null; tps_identity_key: string | null; url_source: "npo" | "legacy_raw" | null; last_price: number | null };
 
 (async () => {
   const url = toPoolerDbUrl(process.env.SUPABASE_DB_URL!);
@@ -97,6 +97,8 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
        where last_observed is null or last_observed < now() - ($${mapParams.length + 1}::int * interval '1 hour')
      )
      select s.cid, s.slug, s.last_observed::text, cp2.tps_identity_key,
+            (select ph3.price from price_history ph3 join m m5 on m5.k = lower(trim(ph3.store_name)) and m5.slug = s.slug
+             where ph3.canonical_product_id = s.cid order by ph3.observed_at desc limit 1) as last_price,
             coalesce(ro.raw_url, legacy.raw_url) as raw_url,
             coalesce(ro.raw_name, legacy.raw_name, '') raw_name,
             case when ro.raw_url is not null then 'npo'
@@ -194,7 +196,21 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
       if (!scraper) { errors++; r.err++; console.error(`  no scraper for ${t.slug}`); continue; }
       const product = await scraper.updateProductPrice(t.raw_url!);
       fetched++;
-      if (product && product.current_price > 0) {
+      // ADR-200 PRICE SANITY GATE — a re-observed price wildly off the pair's last known
+      // price is far more likely a parse defect (add-on/related-item price on the product
+      // page) than a real market move. Measured 2026-08-03: Amazon's Midea split AC parsed
+      // at 59.99 SAR against a 1,609 SAR history; the single row overflowed
+      // price_spread_pct and KILLED the whole projection write. Unknown beats incorrect:
+      // reject and log, never ingest a suspect price. Bounds are deliberately wide (4x)
+      // so real drops/spikes pass; a genuine >4x move re-verifies on the next run via a
+      // fresh fetch of the same page.
+      const suspect = product && product.current_price > 0 && t.last_price != null && t.last_price > 0
+        && (product.current_price > t.last_price * 4 || product.current_price < t.last_price / 4);
+      if (suspect) {
+        nulls++; r.null_++;
+        nullClasses["suspect_price"] = (nullClasses["suspect_price"] ?? 0) + 1;
+        console.log(`  NULL(suspect_price) ${t.slug} parsed=${product!.current_price} last=${t.last_price} ${String(t.raw_url).slice(0, 60)}`);
+      } else if (product && product.current_price > 0) {
         // Same production write path as the orchestrator's price loop: the observation
         // lands in raw_observations and the hourly scheduler normalizes it (ADR-099 —
         // this script never runs the chain itself).

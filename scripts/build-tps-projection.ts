@@ -111,8 +111,13 @@ export function deriveProjection(r: Row) {
 
   const saving = lowestPrice && highestPrice && highestPrice > lowestPrice
     ? parseFloat((highestPrice - lowestPrice).toFixed(2)) : null;
+  // ADR-200: capped at the column's numeric(5,2) ceiling. One absurd offer (a misparsed
+  // 59.99 against a 1,609 history) used to overflow the INSERT and kill the ENTIRE chain —
+  // projection, presentation, and both search indexes all skipped. A single bad row may
+  // degrade one product's spread figure; it must never take down the platform's refresh.
+  // (Spreads at the cap are themselves a mismatch signal the trust engine already lowers.)
   const priceSpreadPct = lowestPrice && highestPrice && lowestPrice > 0
-    ? parseFloat((((highestPrice - lowestPrice) / lowestPrice) * 100).toFixed(2)) : null;
+    ? Math.min(999.99, parseFloat((((highestPrice - lowestPrice) / lowestPrice) * 100).toFixed(2))) : null;
 
   const textForSearch = [
     r.name_ar, r.name_en, r.brand, r.category, cheapestStore,

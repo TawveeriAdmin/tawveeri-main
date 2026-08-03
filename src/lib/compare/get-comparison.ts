@@ -40,8 +40,18 @@ interface ObsRow {
   store_id: string | null;
   raw_name: string | null;
   confidence: number | null;
+  observed_at: string | null;
   normalized_payload: { _url?: unknown } | null;
 }
+
+// ADR-194 follow-up: price_history is append-only on CHANGED prices, so an offer whose
+// price is stable reads days-stale while the pipeline re-observes it daily. A pair's
+// newest normalized observation is that re-observation — a LATER, genuine event, so it
+// composes with (not through) displayedObservedAt's earliest-wins rule, which guards
+// signals describing the SAME event. Only rows after the 2026-07-31 provenance fix count:
+// older npo stamps carry processing time and could overstate freshness — the exact harm
+// observed-freshness.ts exists to prevent.
+const NPO_PROVENANCE_TRUSTED_FROM = Date.parse('2026-07-31T00:00:00Z');
 
 export interface CompareOffer {
   store_slug: string;
@@ -167,18 +177,26 @@ export async function getComparison(params: {
   // ── 3. exit URLs + listing titles, keyed by the SAME slug ────
   const { data: observations } = await supabase
     .from('normalized_product_observations')
-    .select('id, store_id, raw_name, confidence, normalized_payload')
+    .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
     .eq('canonical_product_id', canonical.id);
 
   const listingBySlug = new Map<string, { url: string | null; rawName: string | null; confidence: number | null; obsId: string }>();
   // PROVENANCE INDEX (Principle 7). `normalized_payload._raw_id` points back at the
   // raw_observation that produced this offer, and that row carries the TRUE observation time.
   const rawIdByObsId = new Map<string, number>();
+  // ADR-194: newest trusted re-observation per retailer (see NPO_PROVENANCE_TRUSTED_FROM).
+  const reobservedBySlug = new Map<string, string>();
   for (const obs of (observations ?? []) as unknown as ObsRow[]) {
     const rawId = Number((obs.normalized_payload as Record<string, unknown> | null)?._raw_id);
     if (Number.isFinite(rawId)) rawIdByObsId.set(obs.id, rawId);
     const slug = resolveApprovedSlug(obs.store_id);
-    if (!slug || listingBySlug.has(slug)) continue;
+    if (!slug) continue;
+    const t = obs.observed_at ? Date.parse(obs.observed_at) : NaN;
+    if (Number.isFinite(t) && t >= NPO_PROVENANCE_TRUSTED_FROM) {
+      const prev = reobservedBySlug.get(slug);
+      if (!prev || t > Date.parse(prev)) reobservedBySlug.set(slug, obs.observed_at!);
+    }
+    if (listingBySlug.has(slug)) continue;
     const url = typeof obs.normalized_payload?._url === 'string' ? (obs.normalized_payload._url as string) : null;
     listingBySlug.set(slug, { url, rawName: obs.raw_name, confidence: obs.confidence, obsId: obs.id });
   }
@@ -217,18 +235,23 @@ export async function getComparison(params: {
         price: p.price,
         availability: p.availability,
         product_url: exitId ? `/go/${exitId}` : listing?.url ?? null,
-        // FRESHNESS: the oldest verified provenance signal, never the newest. See
-        // src/lib/intelligence/observed-freshness.ts for the rule and the measurement behind
-        // it. Falls back to the stored stamp when provenance does not resolve — the display
-        // can only ever become MORE conservative, never fresher.
-        observed_at:
-          displayedObservedAt({
+        // FRESHNESS, two rules composed:
+        // 1. For the PRICE-CHANGE event: the oldest verified provenance signal, never the
+        //    newest (observed-freshness.ts — signals describing the same event).
+        // 2. ADR-194: a LATER trusted re-observation of the pair (price unchanged by
+        //    construction — no newer price row exists) supersedes it: «رصدناه قبل X» must
+        //    state when we last SAW the offer, not when its price last moved.
+        observed_at: (() => {
+          const changeEvent = displayedObservedAt({
             stampedAt: p.observed_at,
             provenanceAt: (() => {
               const rawId = p.obsId ? rawIdByObsId.get(p.obsId) : undefined;
               return rawId != null ? scrapedAtByRawId.get(rawId) ?? null : null;
             })(),
-          }) ?? p.observed_at,
+          }) ?? p.observed_at;
+          const reobserved = reobservedBySlug.get(slug);
+          return reobserved && Date.parse(reobserved) > Date.parse(changeEvent) ? reobserved : changeEvent;
+        })(),
         confidence: listing?.confidence ?? canonical.identity_confidence ?? 100,
         is_verified: !!listing,
       };

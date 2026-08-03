@@ -6601,3 +6601,23 @@ in @graph. Parser reads JSON-LD first (selector fallback intact). Live: 7/7 jari
 pairs ingested, 0 nulls — jarir's stale set CLEARED. Stale pairs now ~124 and draining
 (extra remainder + amazon tail + 25 no-URL). Fixture-passed-live-failed lesson: the first
 extractor missed @graph — the fixture now mirrors the measured live shape.
+
+## ADDENDUM 6 — 2026-08-03 · CONTINUOUS-PHASE SWEEP (ADR-199/200/201 + U3 spent + healing verdict)
+- **HEALING VERDICT (16:00Z):** orphaned lineages HEAL — npo-never 27 → 17 (10 pairs gained
+  their first ledger rows under the price-row canonical). The identity-lineage repair unit is
+  NOT required; the loop heals incrementally. True-stale pairs **162 → 112** (−31% today).
+- **ADR-200 INCIDENT:** my reobserve run ingested a misparsed Amazon price (59.99 vs 1,609) →
+  price_spread_pct overflow → the ENTIRE projection insert failed → chain fail(1), search
+  indexes stale. Contained on three levels: derived-row spill cleaned (raw kept), price-sanity
+  gate (>4×/<¼ → suspect_price, never ingested), spread clamped at 999.99 so one row can only
+  ever degrade one product. Chain re-run: projection 26.5s OK. Ledgered: the Amazon PRICE
+  selector needs ADR-183-style candidate plausibility (own unit).
+- **ADR-199 (U6):** 325 ACs reclassified accessories → air_conditioner (236→561), 25/25
+  hand-audit, evidence JSON; guard drained; storefront index re-synced same hour.
+- **U3 SPENT:** amazon seeding 900 targets → 47 obs (11 created + 36 linked) · 4.3% (7.1%
+  didn't hold on the tail; 30→7.1→4.3 across 40/350/900). Next lever: noon ~522 eligible @
+  ~11% (small-sample).
+- **ADR-201:** /deals localized (was hardcoded Arabic + dir=rtl on /en); EN strings are
+  mirrors of approved Arabic claims; 14/14 pass checkCustomerText.
+- Instrument lesson #3: I mistook DB-UTC vs local (+3h) elapsed time and nearly declared a
+  healthy scheduler dead. Check `now()` FROM THE DB before calling anything stalled.
