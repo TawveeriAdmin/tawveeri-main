@@ -173,18 +173,31 @@ async function main() {
       select canonical_product_id,
              array_agg(store_name order by price asc, store_name asc) as stores,
              array_agg(price::text order by price asc, store_name asc) as prices,
-             -- last_observed_at = the most recent priced observation across stores; a
-             -- real per-product freshness signal for the Trust Engine (ADR-088), unlike
-             -- updated_at which is just the projection build time.
-             max(observed_at) as last_observed_at
+             -- Price-CHANGE recency only. price_history is append-only on CHANGED prices
+             -- (progressive-engine corroboratePass), so this max is when a price last
+             -- moved — NOT when the product was last observed. Kept as the fallback.
+             max(observed_at) as last_price_change_at
       from latest where price > 0
+      group by canonical_product_id
+    ),
+    -- ADR-194: the TRUE freshness signal. normalized_product_observations gets a row per
+    -- observation whether or not the price changed, so its max is "when we last SAW this
+    -- product". Reading price_history here overstated staleness by days for any product
+    -- whose price is simply stable — measured 2026-08-03: comparables' median "freshness"
+    -- read 104.4h from price_history vs 19.3h from observations.
+    obs as (
+      select canonical_product_id, max(observed_at) as last_observed_at
+      from normalized_product_observations
+      where canonical_product_id is not null
       group by canonical_product_id
     )
     select c.id::text as canonical_id, c.tps_identity_key, c.name_ar, c.name_en,
            c.brand, c.category, c.identity_confidence, c.attributes,
-           a.stores, a.prices, a.last_observed_at
+           a.stores, a.prices,
+           coalesce(o.last_observed_at, a.last_price_change_at) as last_observed_at
     from canonical_products c
     left join agg a on a.canonical_product_id = c.id
+    left join obs o on o.canonical_product_id = c.id
     where c.tps_identity_key is not null
       and c.is_active
     order by c.id

@@ -1,0 +1,167 @@
+﻿
+> tawveeri@0.2.2 tps:ui-journey
+> node scripts/tps-analysis/ui-journey.js --base https://tawveeri.com --width 390 --height 844
+
+◇ injected env (12) from .env.local // tip: ⌘ override existing { override: true }
+PASS  ar  (homepage)         HOME reach=Y 1search=Y 1waffar=Y claims=Y  · inputs=1 waffar=0 claims=0
+PASS  ar  iphone             CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  ايفون              CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  ar  لابتوب اتش بي      CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  macbook            CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  مكيف سبليت         CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  lg tv              PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  lg tv              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  غسالة سامسونج      PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  غسالة سامسونج      CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايباد              PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  ايباد              CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  ar  شاشة               CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ثلاجة              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  سماعات             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  طابعة              PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  طابعة              CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  ar  ps5                PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · 1 card(s) claim a store count with no compare link: card:Z-EDGE 24-inch IPS Gaming Monitor - 16:9 claims 2; no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  ps5                CARD rel=Y pick=Y store=Y price=N link=DEAD 2st  · 1 card(s) claim a store count with no compare link: card:Z-EDGE 24-inch IPS Gaming Monitor - 16:9 claims 2; no compare link on the first result card; card claims 2 stores but renders NO compare link; no outbound link found
+PASS  ar  شاحن               PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  شاحن               CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  مكيف 18000         CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  تلفزيون 65 بوصة    CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  laptop             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  ar  laptop             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  ar  washing machine    PICK rel=N pick=N store=Y price=Y link=OK 1st  · top pick unrelated: "BLACK+DECKER Coffee Machine, 650W, Includes 360ml Travel Mug with Lid, Auto-Off, Permanent Filter, Overfill Protection, Compact Design, Easy Storage, ECO Friendly, Black/Silver - DCT10-B5"; no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  ar  washing machine    CARD rel=N pick=N store=Y price=Y link=OK 1st  · top pick unrelated: "BLACK+DECKER Coffee Machine, 650W, Includes 360ml Travel Mug with Lid, Auto-Off, Permanent Filter, Overfill Protection, Compact Design, Easy Storage, ECO Friendly, Black/Silver - DCT10-B5"; no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  ar  مروحة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  ar  ميكروويف           CARD rel=Y pick=Y store=Y price=Y link=OK 3st  · 2 card(s) claim a store count with no compare link: card:Royal 20L Manual Microwave Oven, 700W Po claims 2 | card:Royal 30L Digital Microwave Oven, 950W P claims 2
+PASS  ar  iPhone 16 Pro Max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  iphone 16 pro max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  ايفون ١٦ برو ماكس ٢٥٦ CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  جوال ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  Galaxy S24 Ultra 512 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  ar  ايفون 15 128       CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  ar  MacBook Air M2 256 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  (homepage)         HOME reach=Y 1search=Y 1waffar=Y claims=Y  · inputs=1 waffar=0 claims=0
+PASS  en  iphone             CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  ايفون              CARD rel=Y pick=Y store=Y price=Y link=OK 5st
+PASS  en  لابتوب اتش بي      CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  macbook            CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  مكيف سبليت         CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  lg tv              PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+FAIL  en  lg tv              CARD rel=Y pick=Y store=N price=Y link=OK 4st  · no store name on card
+PASS  en  غسالة سامسونج      PICK rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  غسالة سامسونج      CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايباد              PICK rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  ايباد              CARD rel=Y pick=Y store=Y price=Y link=OK 2st
+PASS  en  شاشة               CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ثلاجة              CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  سماعات             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  طابعة              PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  طابعة              CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  en  ps5                PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · 1 card(s) claim a store count with no compare link: card:Z-EDGE 24-inch IPS Gaming Monitor - 16:9 claims 2; no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  ps5                CARD rel=Y pick=Y store=Y price=N link=DEAD 2st  · 1 card(s) claim a store count with no compare link: card:Z-EDGE 24-inch IPS Gaming Monitor - 16:9 claims 2; no compare link on the first result card; card claims 2 stores but renders NO compare link; no outbound link found
+PASS  en  شاحن               PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  شاحن               CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  مكيف 18000         CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  تلفزيون 65 بوصة    CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  laptop             PICK rel=Y pick=Y store=Y price=Y link=OK 3st
+PASS  en  laptop             CARD rel=Y pick=Y store=Y price=Y link=OK 3st
+FAIL  en  washing machine    PICK rel=N pick=N store=Y price=Y link=OK 1st  · top pick unrelated: "BLACK+DECKER Coffee Machine, 650W, Includes 360ml Travel Mug with Lid, Auto-Off, Permanent Filter, Overfill Protection, Compact Design, Easy Storage, ECO Friendly, Black/Silver - DCT10-B5"; no compare link on the top pick; single-store (no compare page) — price check vacuous
+FAIL  en  washing machine    CARD rel=N pick=N store=Y price=Y link=OK 1st  · top pick unrelated: "BLACK+DECKER Coffee Machine, 650W, Includes 360ml Travel Mug with Lid, Auto-Off, Permanent Filter, Overfill Protection, Compact Design, Easy Storage, ECO Friendly, Black/Silver - DCT10-B5"; no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              PICK rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the top pick; single-store (no compare page) — price check vacuous
+PASS  en  مروحة              CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+FAIL  en  ميكروويف           CARD rel=Y pick=Y store=Y price=Y link=OK 3st  · 2 card(s) claim a store count with no compare link: card:Royal 20L Manual Microwave Oven, 700W Po claims 2 | card:Royal 30L Digital Microwave Oven, 950W P claims 2
+PASS  en  iPhone 16 Pro Max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  iphone 16 pro max 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  ايفون ١٦ برو ماكس ٢٥٦ CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  جوال ايفون 16 برو ماكس 256 CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  Galaxy S24 Ultra 512 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+PASS  en  ايفون 15 128       CARD rel=Y pick=Y store=Y price=Y link=OK 4st
+PASS  en  MacBook Air M2 256 CARD rel=Y pick=Y store=Y price=Y link=OK 1st  · no compare link on the first result card; single-store (no compare page) — price check vacuous
+
+── SUMMARY ────────────────────────────────
+base: https://tawveeri.com
+PASS RATE (overall): 65/76 = 85.5%
+COMPARISON JOURNEY:  51/56 = 91.1%   <-- LAUNCH GATE
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ relevant         │ 72     │
+│ sensible_pick    │ 72     │
+│ store_visible    │ 75     │
+│ price_consistent │ 74     │
+│ link_lands       │ 74     │
+└──────────────────┴────────┘
+By surface (each judged in its own right — a gate carried by one surface is not a working product):
+┌─────────────┬──────────┬────────┬─────────────────────┬───────────────────┐
+│ (index)     │ journeys │ passed │ comparison_journeys │ comparison_passed │
+├─────────────┼──────────┼────────┼─────────────────────┼───────────────────┤
+│ smart_pick  │ 18       │ 14     │ 10                  │ 10                │
+│ homepage    │ 2        │ 2      │ 0                   │ 0                 │
+│ result_card │ 56       │ 49     │ 46                  │ 41                │
+└─────────────┴──────────┴────────┴─────────────────────┴───────────────────┘
+Instrument (what the numbers were read from):
+┌───────────────────────────┬────────┐
+│ (index)                   │ Values │
+├───────────────────────────┼────────┤
+│ journeys_with_a_card      │ 76     │
+│ read_from_card_attributes │ 74     │
+│ subject_smart_pick        │ 18     │
+│ subject_result_card       │ 56     │
+└───────────────────────────┴────────┘
+Arabic vs English (a defect in one script is invisible in a blended rate):
+┌─────────────────┬──────────┬────────┬─────────────────────┬───────────────────┐
+│ (index)         │ journeys │ passed │ comparison_journeys │ comparison_passed │
+├─────────────────┼──────────┼────────┼─────────────────────┼───────────────────┤
+│ arabic_queries  │ 46       │ 44     │ 38                  │ 36                │
+│ english_queries │ 30       │ 21     │ 18                  │ 15                │
+└─────────────────┴──────────┴────────┴─────────────────────┴───────────────────┘
+Exact-model / exact-variant (new set — the promise the customer actually types):
+┌───────────────────┬────────┐
+│ (index)           │ Values │
+├───────────────────┼────────┤
+│ journeys          │ 16     │
+│ correct_product   │ 16     │
+│ correct_variant   │ 16     │
+│ full_journey_pass │ 16     │
+└───────────────────┴────────┘
+Unhonoured store claims (cards claiming N stores with no compare link):
+┌────────────────────────┬────────┐
+│ (index)                │ Values │
+├────────────────────────┼────────┤
+│ pages_with_a_violation │ 4      │
+│ pages_checked          │ 58     │
+│ cards_violating        │ 6      │
+└────────────────────────┴────────┘
+⚠  2 journey(s) fell back to TEXT parsing — those store counts/prices are inferred, not published by the card. Treat them as a wider error bar.
+Outbound link buckets (BLOCKED is excluded from the pass rate, not failed):
+┌──────────────────┬────────┐
+│ (index)          │ Values │
+├──────────────────┼────────┤
+│ OK               │ 74     │
+│ BLOCKED_excluded │ 0      │
+│ DEAD             │ 2      │
+└──────────────────┴────────┘
+Link check is trustable for 100% of journeys.
+
+Cross-language pick mismatches (19):
+  iphone: ar="جوال آبل iPhone 16 128 جيجابايت"  en="Apple iPhone 16 128GB"
+  ايفون: ar="جوال آبل iPhone 16 128 جيجابايت"  en="Apple iPhone 16 128GB"
+  لابتوب اتش بي: ar="لابتوب اتش بي elitebook، i5-8، 8GB رام، 256GB"  en="Hp elitebook i5-8 8GB 256GB Laptop"
+  macbook: ar="لابتوب ابل macbook air، m4، 16GB رام، 256GB"  en="Apple macbook air m4 16GB 256GB Laptop"
+  مكيف سبليت: ar="مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد"  en="Gree Split AC 18000 BTU Inverter hot cold"
+  شاشة: ar="تلفزيون سامسونج UA65U8000FUXZN"  en="Samsung UA65U8000FUXZN TV"
+  ثلاجة: ar="ثلاجة lg single door 380 لتر انفرتر"  en="lg single door refrigerator 380L inverter"
+  سماعات: ar="هواوي Freebuds Se 2 سماعات أذن"  en="Huawei Freebuds Se 2 Earbuds"
+  مكيف 18000: ar="مكيف سبليت إل جي، 18000 وحدة، انفرتر، حار وبارد"  en="Lg Split AC 18000 BTU Inverter hot cold"
+  تلفزيون 65 بوصة: ar="تلفزيون تي سي إل 65 بوصة 4K UHD Mini LED 144Hz ذكي"  en="Tcl 65" 4K UHD Mini LED 144Hz Smart TV"
+  ميكروويف: ar="مايكرويف lg 20 لتر"  en="lg microwave 20 L"
+  iPhone 16 Pro Max 256: ar="جوال آبل iPhone 16 Pro Max 256 جيجابايت"  en="Apple iPhone 16 Pro Max 256GB"
+  iphone 16 pro max 256: ar="جوال آبل iPhone 16 Pro Max 256 جيجابايت"  en="Apple iPhone 16 Pro Max 256GB"
+  ايفون 16 برو ماكس 256: ar="جوال آبل iPhone 16 Pro Max 256 جيجابايت"  en="Apple iPhone 16 Pro Max 256GB"
+  ايفون ١٦ برو ماكس ٢٥٦: ar="جوال آبل iPhone 16 Pro Max 256 جيجابايت"  en="Apple iPhone 16 Pro Max 256GB"
+  جوال ايفون 16 برو ماكس 256: ar="جوال آبل iPhone 16 Pro Max 256 جيجابايت"  en="Apple iPhone 16 Pro Max 256GB"
+  Galaxy S24 Ultra 512: ar="جوال سامسونج Galaxy S24 Ultra 512 جيجابايت"  en="Samsung Galaxy S24 Ultra 512GB"
+  ايفون 15 128: ar="جوال آبل iPhone 15 128 جيجابايت"  en="Apple iPhone 15 128GB"
+  MacBook Air M2 256: ar="لابتوب ابل macbook air، m2، 8GB رام، 256GB"  en="Apple macbook air m2 8GB 256GB Laptop"

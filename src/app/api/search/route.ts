@@ -762,6 +762,31 @@ async function searchTPSCanonical(
     );
     const prices = priceChunks.flatMap((c) => (c.data ?? []) as unknown as PriceRow[]);
 
+    // ADR-194 — TRUE per-store observation recency. price_history is append-only on CHANGED
+    // prices, so its observed_at is when the price last MOVED; a stable price reads days
+    // stale while the pipeline observes it daily. normalized_product_observations has a row
+    // per observation, so its newest row per (canonical, store) is the honest «آخر رصد».
+    type ObsRow = { canonical_product_id: string; store_id: string | null; observed_at: string };
+    const obsChunks = await Promise.all(
+      Array.from({ length: Math.ceil(ids.length / CHUNK) }, (_, i) =>
+        supabase
+          .from('normalized_product_observations')
+          .select('canonical_product_id, store_id, observed_at')
+          .in('canonical_product_id', ids.slice(i * CHUNK, (i + 1) * CHUNK))
+          .order('observed_at', { ascending: false })
+          .limit(4000),
+      ),
+    );
+    // First (newest) row per (canonical, resolved retailer) wins — same windowing trade-off
+    // as the price chunks above.
+    const trueObserved = new Map<string, string>();
+    for (const r of obsChunks.flatMap((c) => (c.data ?? []) as unknown as ObsRow[])) {
+      const slug = resolveApprovedSlug(r.store_id ?? '');
+      if (!slug || !r.observed_at) continue;
+      const key = `${r.canonical_product_id}|${slug}`;
+      if (!trueObserved.has(key)) trueObserved.set(key, r.observed_at);
+    }
+
     const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
@@ -811,8 +836,10 @@ async function searchTPSCanonical(
         // page's honest «رابط المتجر غير متاح لهذا العرض».
         product_url: v.obsId ? `/go/${v.obsId}` : '',
         // The observation's own time, carried to the surface: Master Book §31.5 — the
-        // observation time is visible, or the claim is not made (ADR-193).
-        observed_at: v.observedAt ?? null,
+        // observation time is visible, or the claim is not made (ADR-193). The newest
+        // TRUE observation (ADR-194) wins over the price-change date; the price-change
+        // date remains the floor so the field is never younger than real evidence.
+        observed_at: trueObserved.get(`${p.id}|${storeSlug}`) ?? v.observedAt ?? null,
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
         // Per-canonical now that more than one category can be searched at once. The UI

@@ -41,6 +41,11 @@ const flag = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[
 const JSON_OUT = argv.includes('--json');
 const ONLY_QUERY = flag('query', null);
 const ONLY_LOCALE = flag('locale', null);
+// Viewport override (Master Book §23: mobile IS the market). Defaults unchanged so every
+// prior log stays comparable; a mobile run is `--width 390 --height 844` and must be
+// reported as its own baseline, never mixed with desktop figures.
+const VIEW_W = parseInt(flag('width', '1366'), 10) || 1366;
+const VIEW_H = parseInt(flag('height', '2200'), 10) || 2200;
 
 // ── REGRESSION SET (fixed; the 20 queries every run since 2026-07-29 has used) ──
 const REGRESSION_QUERIES = [
@@ -666,7 +671,7 @@ async function homepageJourney(page, locale) {
     executablePath: findChrome(),
   });
   const page = await browser.newPage();
-  await page.setViewport({ width: 1366, height: 2200 });
+  await page.setViewport({ width: VIEW_W, height: VIEW_H });
   // Identify as a tester so nothing counts this run as real shopper traffic.
   await page.setUserAgent('Mozilla/5.0 (compatible; TawveeriUIJourney/1.0; headless harness; read-only)');
 

@@ -6,6 +6,43 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-194 — price_history.observed_at is price-CHANGE time, not observation time; freshness surfaces now read observations · Accepted (2026-08-03)
+
+**Context.** Sizing U2 (comparable-first cadence) contradicted itself: raw observations were
+flowing heavily (almanea 118,832 rows in 48h; normalization caught up, 3 rows behind) while
+`price_history`'s latest rows for the same comparables were days old. The mechanism is in
+`progressive-engine.ts` `corroboratePass`: **price_history is append-only on CHANGED prices** —
+a re-observed stable price writes no row. Every surface that read `price_history.observed_at`
+as "when we last observed this" — the projection's `last_observed_at` (→ trust freshness factor,
+advisor ADR-193 gate), the compare page's «رصدناه قبل X يومًا», and ADR-193's Smart Pick line —
+was therefore rendering **time-since-price-change as time-since-observation**.
+
+**Measured 2026-08-03 (queries in `IMPLEMENTATION_ROADMAP.md` / CHECKPOINT-2026-08-03):**
+- price-change basis: comparables' median "freshness" **104.4h**, cheapest-offer >7d **688/915 (75.2%)**.
+- observation basis (`normalized_product_observations` max per canonical): median **19.3h**,
+  488/917 within 24h, only **81** comparables truly unobserved >7d.
+- Of the 688 "stale" cheapest offers, **212 (31%) had been observed within 24h** — false staleness.
+
+**Decision.** One authority per question: `price_history` answers *what the price did*;
+`normalized_product_observations` answers *when we last looked*.
+1. The projection's `last_observed_at` now reads `max(npo.observed_at)` per canonical,
+   falling back to the price-change max where no npo row exists (never younger than evidence).
+   This corrects the trust freshness factor and the advisor's ADR-193 gate at the next chain tick.
+2. `searchTPSCanonical` enriches store entries with the newest npo row per (canonical, retailer)
+   — the Smart Pick's «آخر رصد» and its 168h gate now read true observation time.
+3. The gate itself is UNCHANGED — with a truthful signal it now withholds only genuinely
+   unobserved picks.
+
+**Consequences.** The U2 problem shrinks from "75% of comparison evidence is stale" to a
+true tail of **158 cheapest-offer pairs / 81 products** unobserved >7d, concentrated in
+amazon (111, not in the re-observation loop) and jarir (42, same); extra's share was mostly
+the false kind. Follow-ups owed: the compare page's per-offer «رصدناه قبل» still reads
+price_history (same fix pattern, own unit); a `last_price_change_at` could be EXPOSED as its
+own honest signal («السعر مستقر منذ N يوم») rather than discarded. **Rollback:** revert the
+commit; the projection heals on the next hourly chain run.
+
+---
+
 ### ADR-193 — The pick label is conditioned on the age of its price evidence · Accepted (2026-08-03)
 
 **Context.** ADR-192 left one gap open deliberately because it moves ranking: the Smart Pick

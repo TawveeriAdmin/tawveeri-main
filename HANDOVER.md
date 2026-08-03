@@ -6487,3 +6487,19 @@ probe. Use bash curl `--data-binary` with a UTF-8 file.
 `.range()` → PostgREST's 1,000-row cap silently hides ~215 of 1,215 active AC canonicals from
 injection (silent-truncation class; needs pagination like ADR-189's sitemap fix). Plus the four
 harness failures above and the «ايفون»→'apple' expansion defect (iPad as pick for «ايفون 16»).
+
+## ADDENDUM 2 — 2026-08-03 · ADR-194 SHIPPED · U2 REFRAMED BY MEASUREMENT
+Full detail: `docs/CHECKPOINT-2026-08-03-MASTER-BOOK-PHASE.md` (the consolidated checkpoint).
+- **price_history.observed_at is price-CHANGE time** (append-only on changed prices —
+  progressive-engine corroboratePass). Every freshness surface overstated staleness: comparables
+  read median 104.4h; the true observation median is **19.3h** (npo basis). 31% of the "stale"
+  cheapest offers had been observed within 24h.
+- Fixed: projection `last_observed_at` ← max(npo.observed_at) (chain-realized hourly);
+  searchTPSCanonical store entries ← newest npo per (canonical, retailer). Compare page's
+  per-offer «رصدناه قبل» still reads price_history — owed, same pattern, own unit.
+- **U2 true tail: 81 products / 158 cheapest pairs unobserved >7d — amazon 111 · jarir 42**
+  (neither store is in the price re-observation loop). U2b thresholds pre-stated in the
+  checkpoint doc. Mobile harness leg measured: identical to desktop (85.5%/91.1%; AR 33/38,
+  EN 32/38) — checks are viewport-independent.
+- Verify U2a after the next hourly chain tick: median projection freshness for displayable
+  comparables ≤24h; «مكيف» card's «آخر رصد» shows true observation age.
