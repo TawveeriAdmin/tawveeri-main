@@ -1,5 +1,5 @@
 // tests/intelligence/evidence-engine.test.ts — Trust & Evidence Engine (ADR-087).
-import { assessTrust } from "../../src/lib/intelligence/evidence-engine";
+import { assessTrust, observedAgoLabel, PICK_FRESHNESS_MAX_HOURS } from "../../src/lib/intelligence/evidence-engine";
 
 describe("assessTrust — evidence-grounded, deterministic, honest", () => {
   it("high trust: multi-store, precise identity, confident price history", () => {
@@ -62,5 +62,28 @@ describe("assessTrust — evidence-grounded, deterministic, honest", () => {
   it("is deterministic (same input → same output)", () => {
     const inp = { store_count: 3, identity_confidence: 88, has_comparison: true, price_confident: true, price_distinct_days: 9 };
     expect(assessTrust(inp)).toEqual(assessTrust(inp));
+  });
+});
+
+describe("observedAgoLabel — one rendering of observation age (ADR-193)", () => {
+  it("hours below 48h, days at 48h and above (day form is in the approved corpus)", () => {
+    expect(observedAgoLabel(0.4, "ar")).toBe("آخر رصد قبل أقل من ساعة");
+    expect(observedAgoLabel(3, "ar")).toBe("آخر رصد قبل 3 ساعة");
+    expect(observedAgoLabel(47, "en")).toBe("Last observed 47h ago");
+    // The founder-reported «آخر رصد قبل 99 ساعة» now reads in days.
+    expect(observedAgoLabel(99, "ar")).toBe("آخر رصد قبل 4 يومًا");
+    expect(observedAgoLabel(264, "ar")).toBe("آخر رصد قبل 11 يومًا");
+    expect(observedAgoLabel(264, "en")).toBe("Last observed 11 days ago");
+  });
+
+  it("the freshness factor's evidence line uses the shared label", () => {
+    const t = assessTrust({ store_count: 2, identity_confidence: 90, data_age_hours: 99 });
+    const fresh = t.factors.find((f) => f.key === "freshness")!;
+    expect(fresh.evidence_ar).toBe(observedAgoLabel(99, "ar"));
+    expect(fresh.evidence_en).toBe(observedAgoLabel(99, "en"));
+  });
+
+  it("the pick-label gate is the freshness floor band, owned here", () => {
+    expect(PICK_FRESHNESS_MAX_HOURS).toBe(168);
   });
 });

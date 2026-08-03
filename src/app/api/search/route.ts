@@ -11,6 +11,7 @@ import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDi
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { detectCompareIntent } from '@/lib/agent/compare-intent';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
+import { hoursSince, PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,9 @@ type DecisionLayer = {
     // `/go/<id>` exit: a comparison claim with no comparison to go to. When this is null the
     // card must not claim a store count at all (unknown beats incorrect).
     compare_url: string | null;
+    // ADR-193 — the observation time behind the claimed best price (the best-price store's
+    // own latest row). Null on live-scraped picks, whose observation is this request.
+    last_observed_at: string | null;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -527,16 +531,32 @@ function buildDecisionLayer(
   const trustworthyPick = !!best && best.best_price > 0 && bestMatchesQuery
     && !(queryIsMainProduct && bestIsAccessory);
 
-  const decisionCard = trustworthyPick && best
+  // ADR-193 — the pick's price claim carries its observation time, and the label is not
+  // awarded on evidence in the freshness floor band (>PICK_FRESHNESS_MAX_HOURS). The
+  // product still ranks in the grid below; only the claim is withheld (Master Book §31.5,
+  // P3: no dead end). Live-scraped picks carry no stored timestamp — their observation is
+  // this request — so the gate applies to TPS-sourced evidence only.
+  const bestStoreEntry = best
+    ? (best.stores.find((s) => s.current_price === best.best_price) ?? best.stores[0] ?? null)
+    : null;
+  const pickObservedAt = bestStoreEntry?.observed_at ?? null;
+  const pickAgeHours = hoursSince(pickObservedAt);
+  const pickTooStale = pickAgeHours != null && pickAgeHours > PICK_FRESHNESS_MAX_HOURS;
+  if (pickTooStale && best) {
+    console.warn(`[smart-pick-freshness] label withheld: age=${Math.round(pickAgeHours)}h > ${PICK_FRESHNESS_MAX_HOURS}h · "${(best.name_ar || best.name_en || '').slice(0, 60)}"`);
+  }
+
+  const decisionCard = trustworthyPick && best && !pickTooStale
     ? {
         title: best.name_ar,
         best_price: best.best_price,
-        store_name: best.stores.find((s) => s.current_price === best.best_price)?.store_name || best.stores[0]?.store_name || '',
-        product_url: best.stores.find((s) => s.current_price === best.best_price)?.product_url || best.stores[0]?.product_url || '',
+        store_name: bestStoreEntry?.store_name || '',
+        product_url: bestStoreEntry?.product_url || '',
         store_count: best.store_count,
         reason_ar: buildReasonAr(best, best.best_price === priceMin && priceMin > 0),
         is_tps: !!(best.has_tps_comparison || best.tps_compare_url),
         compare_url: best.tps_compare_url ?? null,
+        last_observed_at: pickObservedAt,
       }
     : null;
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
@@ -742,7 +762,7 @@ async function searchTPSCanonical(
     );
     const prices = priceChunks.flatMap((c) => (c.data ?? []) as unknown as PriceRow[]);
 
-    const latest = new Map<string, Map<string, { price: number; obsId: string }>>();
+    const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
       // `price_history.store_name`, which is not an identity: the same retailer appears
@@ -755,7 +775,7 @@ async function searchTPSCanonical(
       if (!slug) continue;
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
-      if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id });
+      if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id, observedAt: r.observed_at });
     }
 
     const out: GroupedSearchProduct[] = [];
@@ -790,6 +810,9 @@ async function searchTPSCanonical(
         // src/lib/compare/get-comparison.ts:183, which already got this right, and the compare
         // page's honest «رابط المتجر غير متاح لهذا العرض».
         product_url: v.obsId ? `/go/${v.obsId}` : '',
+        // The observation's own time, carried to the surface: Master Book §31.5 — the
+        // observation time is visible, or the claim is not made (ADR-193).
+        observed_at: v.observedAt ?? null,
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
         // Per-canonical now that more than one category can be searched at once. The UI

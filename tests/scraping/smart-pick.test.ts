@@ -67,3 +67,32 @@ describe('E8: the search route wires the detectors and the trust gate', () => {
     expect(routeSrc).toMatch(/is_tps:/);
   });
 });
+
+describe('ADR-193: the pick label is conditioned on the age of its price evidence', () => {
+  const cardSrc = fs.readFileSync(
+    path.join(process.cwd(), 'src', 'components', 'search', 'smart-pick-card.tsx'),
+    'utf8'
+  );
+  const decideSrc = fs.readFileSync(
+    path.join(process.cwd(), 'src', 'app', 'api', 'v1', 'agent', 'decide', 'route.ts'),
+    'utf8'
+  );
+
+  it('the search route withholds the card beyond the freshness floor band', () => {
+    expect(routeSrc).toMatch(/PICK_FRESHNESS_MAX_HOURS/);
+    expect(routeSrc).toMatch(/const pickTooStale = pickAgeHours != null && pickAgeHours > PICK_FRESHNESS_MAX_HOURS/);
+    expect(routeSrc).toMatch(/trustworthyPick && best && !pickTooStale/);
+  });
+
+  it('the card carries and renders the observation time at the point of claim', () => {
+    expect(routeSrc).toMatch(/last_observed_at: pickObservedAt/);
+    expect(cardSrc).toMatch(/observedAgoLabel\(/);
+    expect(cardSrc).toMatch(/smart-pick-observed/);
+    // No invented timestamp: the line renders only from a real observation (T2).
+    expect(cardSrc).toMatch(/observedAge != null &&/);
+  });
+
+  it('the advisor demotes the label, never the ranking, beyond the same band', () => {
+    expect(decideSrc).toMatch(/r\.is_smart_pick && !\(data_age_hours != null && data_age_hours > PICK_FRESHNESS_MAX_HOURS\)/);
+  });
+});

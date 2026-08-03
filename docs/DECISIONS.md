@@ -6,6 +6,49 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-193 — The pick label is conditioned on the age of its price evidence · Accepted (2026-08-03)
+
+**Context.** ADR-192 left one gap open deliberately because it moves ranking: the Smart Pick
+label is unconditioned on freshness — a stale observation could still be «اختيار توفيري» /
+«الاختيار الأنسب». The founder ordered the decision made under the Master Book. Measured first
+(2026-08-03, max(`observed_at`) per displayable comparable canonical): median freshest
+observation **103.6h (~4.3 days)**; 250/912 (27%) within 24h; **384/912 (42%) older than 7
+days**. Our own engine grades >72h freshness "weak" — so most comparison evidence sits below our
+own freshness standard. Separately, the search Smart Pick card rendered **no observation time at
+all** while claiming a best price: the route reads `observed_at` from `price_history` and
+dropped it. Externally verified the same day: **no incumbent** (idealo, Geizhals, PriceSpy,
+Google Shopping) shows per-offer freshness to consumers — Google *suppresses* stale offers,
+idealo validates merchant-side. Showing the timestamp is differentiation consistent with
+«رقمنا مرصود», not imitation.
+
+**Decision — disclose always, withhold at the floor, never touch the ranking.**
+1. **The observation time renders at the point of the price claim** (Master Book §31.5: «وقت
+   الرصد ظاهر — أو لا ادعاء»). `observed_at` is carried through the search route into
+   `decisionCard.last_observed_at` and rendered on the card. No timestamp is invented (T2):
+   live-scraped picks — whose observation is the request itself — carry null and show no line.
+2. **The label is withheld beyond the freshness floor band**: `PICK_FRESHNESS_MAX_HOURS = 168`,
+   owned by `evidence-engine.ts` (the band where the freshness factor already bottoms at 0.25).
+   Search: the decision card is not emitted; the product still ranks in the grid (P3 — no dead
+   end, the claim goes, not the answer). Advisor: `is_smart_pick` is demoted so the same product
+   renders as the first ordinary option — **suitability ranking untouched, because fit does not
+   age; the price claim does.** Unknown age never demotes (P2 handles unknown via the trust
+   score, not silent suppression).
+3. **One rendering of age**: `observedAgoLabel()` shared by the trust factors and the card —
+   hours <48h, days above («آخر رصد قبل 11 يومًا» is in the approved corpus). The
+   founder-reported «آخر رصد قبل 99 ساعة» now reads in days.
+4. **72h–168h is disclosure territory, not suppression**: withholding at 72h would strip the
+   label from 71% of comparables and punish products for our own observation cadence. The gate
+   at 168h currently affects the ~42% band — **and the honest fix for that band is not a wider
+   gate, it is re-observing comparables daily** (roadmap U2: comparable-first cadence).
+
+**Consequences.** Every served best-price claim either carries its observation time or is not
+made. Withheld picks are logged (`[smart-pick-freshness]`) so the gate's hit-rate is measurable,
+not guessed. The cadence unit (U2) is expected to empty the gate's band; the gate stays as the
+backstop that makes stale claims structurally impossible. Rollback: revert the commit; no data
+changes.
+
+---
+
 ### ADR-192 — Four founder-reported search defects: reproduce before you fix · Accepted (2026-08-03)
 
 **Context.** The founder reported four customer-visible defects by hand on

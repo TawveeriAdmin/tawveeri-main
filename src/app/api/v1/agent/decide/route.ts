@@ -8,7 +8,7 @@ import { shouldAsk } from "@/lib/agent/clarify";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
-import { assessTrust, hoursSince } from "@/lib/intelligence/evidence-engine";
+import { assessTrust, hoursSince, PICK_FRESHNESS_MAX_HOURS } from "@/lib/intelligence/evidence-engine";
 import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
 
 export const runtime = "nodejs";
@@ -174,7 +174,16 @@ export async function POST(req: NextRequest) {
       discount_honest: discountClaimed ? d!.verdict === "verified_drop" : null,
     });
     const data_age_hours = hoursSince((proj as { last_observed_at?: string | null } | undefined)?.last_observed_at);
-    return { ...r, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, stores: storeNames(r.canonical_id), data_age_hours, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
+    // ADR-193 — the pick LABEL is conditioned on the age of its price evidence. The
+    // suitability ranking is untouched (fit does not age; the price claim does): the same
+    // product stays first in the list, it just is not badged «الاختيار الأنسب» when its
+    // freshest observation sits in the freshness floor band. Unknown age does not demote
+    // (P2 handles unknown through the trust score, not through silent suppression).
+    const is_smart_pick = r.is_smart_pick && !(data_age_hours != null && data_age_hours > PICK_FRESHNESS_MAX_HOURS);
+    if (r.is_smart_pick && !is_smart_pick) {
+      console.warn(`[smart-pick-freshness] advisor label withheld: age=${Math.round(data_age_hours!)}h > ${PICK_FRESHNESS_MAX_HOURS}h · canonical=${r.canonical_id}`);
+    }
+    return { ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, stores: storeNames(r.canonical_id), data_age_hours, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
   const smartIdx = out.findIndex((r) => r.is_smart_pick);

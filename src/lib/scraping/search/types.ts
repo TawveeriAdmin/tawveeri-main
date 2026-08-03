@@ -19,4 +19,7 @@ export type SearchProduct = ScrapedProduct & {
   store_name: string;
   rating?: number | null;
   review_count?: number | null;
+  /** ISO time this price was observed (TPS `price_history` rows). Absent on live-scraped
+   *  entries, whose observation is the request itself. */
+  observed_at?: string | null;
 };

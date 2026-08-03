@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3 } from 'lucide-react';
+import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3, Clock } from 'lucide-react';
 import { Price } from '@/components/ui/price';
+import { hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 
 /**
  * SmartPickCard — surfaces Tawveeri's decision layer ("Smart Pick") at the top
@@ -32,6 +33,8 @@ export interface SmartPick {
   is_tps: boolean;
   /** The comparison page that honours `store_count`. Null ⇒ no comparison claim. */
   compare_url?: string | null;
+  /** ADR-193 — when the claimed best price was observed. Null ⇒ live-scraped this request. */
+  last_observed_at?: string | null;
 }
 
 export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: string }) {
@@ -42,6 +45,10 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
   const compareUrl = pick.compare_url || null;
   // The claim and the surface that backs it are one decision, made here once.
   const claimsComparison = pick.store_count >= 2 && !!compareUrl;
+  // ADR-193 / Master Book §31.5 — the observation time renders at the point of the price
+  // claim. No timestamp is invented (T2): when there is no stored observation (live-scraped
+  // pick), the line does not render.
+  const observedAge = hoursSince(pick.last_observed_at);
 
   return (
     <div
@@ -83,6 +90,12 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
         <div className="shrink-0 text-end">
           <div className="text-xs text-on-surface-variant">{isRTL ? 'أفضل سعر' : 'Best price'}</div>
           <Price amount={pick.best_price} className="text-xl font-bold text-primary-700 dark:text-primary-300 tabular-nums" />
+          {observedAge != null && (
+            <div data-testid="smart-pick-observed" className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-on-surface-variant">
+              <Clock className="h-3 w-3" aria-hidden />
+              <span>{observedAgoLabel(observedAge, isRTL ? 'ar' : 'en')}</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -67,6 +67,32 @@ export interface EvidenceInput {
 
 export const EVIDENCE_ENGINE_VERSION = "trust-v1";
 
+/**
+ * The freshness factor's floor band (value 0.25 below this). A "pick" label — the
+ * platform's strongest claim — is not awarded on evidence this old (Master Book §31.5:
+ * observation time visible, or no claim; ADR-193). One constant, one owner: surfaces gate
+ * on this, they do not re-derive their own threshold.
+ */
+export const PICK_FRESHNESS_MAX_HOURS = 168;
+
+/**
+ * The one customer-facing rendering of "how old is this observation". Both the trust
+ * factors and the pick surfaces use it — one fact, one representation. Day form
+ * ≥48h («آخر رصد قبل 11 يومًا» / "Last observed 11 days ago") is in the approved
+ * vocabulary corpus; hours below that.
+ */
+export function observedAgoLabel(hours: number, locale: "ar" | "en"): string {
+  const h = Math.max(0, hours);
+  if (locale === "ar") {
+    if (h < 1) return "آخر رصد قبل أقل من ساعة";
+    if (h < 48) return `آخر رصد قبل ${Math.round(h)} ساعة`;
+    return `آخر رصد قبل ${Math.round(h / 24)} يومًا`;
+  }
+  if (h < 1) return "Last observed under an hour ago";
+  if (h < 48) return `Last observed ${Math.round(h)}h ago`;
+  return `Last observed ${Math.round(h / 24)} days ago`;
+}
+
 const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
 const statusFor = (v: number, known: boolean): FactorStatus =>
   !known ? "unknown" : v >= 0.8 ? "strong" : v >= 0.55 ? "ok" : "weak";
@@ -134,8 +160,8 @@ export function assessTrust(e: EvidenceInput): TrustAssessment {
     factors.push({
       key: "freshness", label_ar: "حداثة البيانات", label_en: "Data freshness",
       weight: 0.14, value, contribution: Math.round(0.14 * value * 100), status: statusFor(value, known),
-      evidence_ar: known ? `آخر رصد قبل ${h < 1 ? "أقل من ساعة" : Math.round(h) + " ساعة"}` : "زمن آخر رصد غير معروف",
-      evidence_en: known ? `last observed ${h < 1 ? "under an hour" : Math.round(h) + "h"} ago` : "observation time unknown",
+      evidence_ar: known ? observedAgoLabel(h, "ar") : "زمن آخر رصد غير معروف",
+      evidence_en: known ? observedAgoLabel(h, "en") : "observation time unknown",
     });
     if (known && h > 72) { caveats_ar.push("قد تكون البيانات غير حديثة"); caveats_en.push("Data may be stale"); }
   }
