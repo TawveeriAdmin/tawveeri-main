@@ -141,7 +141,26 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
   const orch = new ScrapingOrchestrator();
   const ingestion = new IngestionService();
 
+  // ADR-196 phase 1 — a NULL is not one thing. First run measured 8 nulls; the extra ones
+  // were HTTP 404s: DELISTED pages whose stale prices still win best-price. Classify every
+  // null with a direct status probe so "gone" becomes recorded evidence, not silence
+  // (Appendix B: every attempt ends in an explicit state).
+  const classifyNull = async (u: string): Promise<"gone" | "parse_fail" | "blocked" | "network"> => {
+    try {
+      const res = await fetch(u, {
+        method: "GET", redirect: "follow",
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36" },
+        signal: AbortSignal.timeout(20000),
+      });
+      if (res.status === 404 || res.status === 410) return "gone";
+      if (res.status === 403 || res.status === 429 || res.status === 503) return "blocked";
+      return "parse_fail"; // page exists (2xx/3xx) but the scraper extracted no price
+    } catch { return "network"; }
+  };
+
   let fetched = 0, ingested = 0, nulls = 0, errors = 0;
+  const nullClasses: Record<string, number> = {};
+  const goneOffers: Array<{ cid: string; slug: string; url: string; last_observed: string | null }> = [];
   const perStoreResult: Record<string, { ok: number; null_: number; err: number }> = {};
   for (const t of picked) {
     const r = (perStoreResult[t.slug] ??= { ok: 0, null_: 0, err: 0 });
@@ -158,7 +177,10 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
         if (saved > 0) { ingested++; r.ok++; } else { errors++; r.err++; }
       } else {
         nulls++; r.null_++;
-        console.log(`  NULL ${t.slug} ${String(t.raw_url).slice(0, 80)}`);
+        const cls = await classifyNull(t.raw_url!);
+        nullClasses[cls] = (nullClasses[cls] ?? 0) + 1;
+        if (cls === "gone") goneOffers.push({ cid: t.cid, slug: t.slug, url: t.raw_url!, last_observed: t.last_observed });
+        console.log(`  NULL(${cls}) ${t.slug} ${String(t.raw_url).slice(0, 80)}`);
       }
     } catch (e) {
       errors++; r.err++;
@@ -167,9 +189,20 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
     await new Promise((res) => setTimeout(res, 1500)); // polite pacing on top of scraper delays
   }
 
+  // Durable evidence per run (docs/evidence pattern): the gone list is the input to the
+  // ADR-196 phase-2 delisting verdict — never a claim on its own, always re-verifiable.
+  if (goneOffers.length) {
+    const { writeFileSync, mkdirSync } = await import("fs");
+    mkdirSync("docs/evidence", { recursive: true });
+    const stamp = new Date().toISOString().slice(0, 10);
+    writeFileSync(`docs/evidence/reobserve-gone-${stamp}.json`,
+      JSON.stringify({ measured_at: new Date().toISOString(), method: "updateProductPrice null + direct GET status 404/410", offers: goneOffers }, null, 2));
+  }
+
   console.log(JSON.stringify({
     mode: "LIVE", stale_pairs: targets.length, no_url: noUrl, attempted: picked.length,
-    fetched, ingested, nulls, errors, per_store: perStoreResult,
+    fetched, ingested, nulls, null_classes: nullClasses, gone_offers: goneOffers.length,
+    errors, per_store: perStoreResult,
     note: "observations queued for the hourly normalizer; re-measure after the next chain tick",
   }, null, 2));
   process.exit(errors > 0 && ingested === 0 ? 1 : 0);

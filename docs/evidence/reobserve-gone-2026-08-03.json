@@ -1,0 +1,36 @@
+{
+  "measured_at": "2026-08-03T15:03:33.265Z",
+  "method": "updateProductPrice null + direct GET status 404/410",
+  "offers": [
+    {
+      "cid": "70ea64c6-d2e9-4f3e-97cd-c1427bee123b",
+      "slug": "extra",
+      "url": "https://www.extra.com/en-sa/large-appliances-/refrigerators/side-by-side-refrigerator/midea-refrigerator-and-freezer-side-by-side-13-2-cu-ft-fridge-6-9-cu-ft-freezer-black-mdrs791myu46d/p/MP00023744",
+      "last_observed": "2026-06-28 00:03:54.781955+00"
+    },
+    {
+      "cid": "6ffbfae3-0a5d-476b-93c7-c18ce63d2840",
+      "slug": "extra",
+      "url": "https://www.extra.com/en-sa/computer/laptops/gaming-laptops/aspire-lite-upgraded-version-with-15-6-fhd-display-core-3-8gb-ddr5-ram-512gb-ssd-windows-11pro/p/MP00048497",
+      "last_observed": "2026-07-12 18:03:57.530164+00"
+    },
+    {
+      "cid": "dbc1d742-d778-4a17-989f-b35e5758f8fb",
+      "slug": "extra",
+      "url": "https://www.extra.com/en-sa/computer/laptops/gaming-laptops/loq-15irx10-gaming-laptop-with-15-6-inch-full-hd-1920x1080-display-core-i7-13645hx-processor-16-ram-ddr5-512-ssd-8-nvidia-geforce-rtx-5060-graphics-upgraded-windows-11-pro-english-arabic-luna-gr/p/MP00049495",
+      "last_observed": "2026-07-12 18:03:57.530164+00"
+    },
+    {
+      "cid": "1a6d55ec-a27f-4a6e-b753-2d8e819da3aa",
+      "slug": "extra",
+      "url": "https://www.extra.com/en-sa/computer/laptops/gaming-laptops/250-g10-laptop-with-15-6-inch-full-hd-1920x1080-display-core-7-150-processor-16-ram-ddr5-512-ssd-upgraded-windows-11-pro-english-arabic-silver/p/MP00049496",
+      "last_observed": "2026-07-12 18:03:57.530164+00"
+    },
+    {
+      "cid": "dba6aadd-b4ed-452e-ab02-1018badd9e61",
+      "slug": "extra",
+      "url": "https://www.extra.com/en-sa/computer/laptops/gaming-laptops/15-fa2000nx-victus-gaming-laptop-with-15-6-inch-full-hd-1920x1080-display-core-i7-13620h-processor-24-ram-ddr5-1tb-ssd-6-nvidia-geforce-rtx-4050-graphics-upgraded-windows-11-pro-english-arabic-m/p/MP00049919",
+      "last_observed": "2026-07-13 06:04:16.931921+00"
+    }
+  ]
+}

@@ -6,6 +6,29 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-196 — A null re-observation is not one thing: gone offers are recorded evidence · Accepted (2026-08-03)
+
+**Context.** ADR-195's first runs returned nulls that hid two different truths. Direct status
+probes split them: **extra's nulls are HTTP 404/410 — DELISTED pages whose stale prices still
+win best-price** (5 confirmed, evidence in docs/evidence/reobserve-gone-2026-08-03.json), while
+**jarir's nulls are parse failures on live pages** (2/2 — a jarir parser defect on renewed/
+pre-order layouts, not delisting). Identity drift was also measured and cleared: 18 of 19
+realized amazon re-observations landed exactly on the targeted stale pair (1 drifted, ~5%) —
+the ADR-195 lever is normalize-lag-bound, not drift-capped.
+
+**Decision (phase 1).** reobserve-comparables classifies every null (gone · parse_fail ·
+blocked · network) via a direct GET, counts classes in its summary, and persists gone offers
+to docs/evidence/reobserve-gone-<date>.json. Every attempt now ends in an explicit state
+(Appendix B: silent failure).
+
+**Phase 2 — scoped, NOT started.** A (canonical, store) pair whose latest classification is
+gone must stop winning best-price on comparison surfaces (T3/P3: an offer that cannot be
+completed must not be claimed). Needs a persistence + surface-gating design: either an
+availability-bearing observation the pipeline already understands, or a small delist-signal
+table (migration + RLS). Decide with fresh context; the evidence files are the input.
+
+---
+
 ### ADR-195 — Targeted re-observation of comparables' cheapest offers · Accepted (2026-08-03)
 
 **Context.** After ADR-194 corrected the freshness signal, the TRUE stale tail measured
