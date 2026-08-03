@@ -6587,3 +6587,10 @@ Threshold unchanged: <50 within a week; floor ≈34 (26 no-URL + ~8 delisted-404
 - Note for the compare-page ADR-194 follow-up: `observed-freshness.ts` (2026-07-31) already
   governs per-offer display with a conservative earliest-signal rule — feed npo max in as a
   verified provenance signal there, do not bypass it.
+
+## LIVE VERIFICATION — ADR-196 PHASE 2 CONFIRMED IN PRODUCTION
+`/ar/compare/midea|side_by_side|370|standard` — the signalled اكسترا offer (previously the
+winning cheapest store, page 404) no longer renders; the comparison serves أمازون · جرير ·
+نون, all real offers. Request-time gating confirmed; the projection's counts follow at the
+next hourly chain tick (owed check: the five canonicals' store_count/cheapest_store per the
+ADR-196 query).
