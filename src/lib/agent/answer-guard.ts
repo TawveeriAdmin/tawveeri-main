@@ -77,10 +77,11 @@ export function guardAdvisorPayload<T extends Record<string, unknown>>(
       const childPath = path ? `${path}.${key}` : key;
       if (isProseKey(key) && Array.isArray(value)) {
         const kept: unknown[] = [];
-        for (const sentence of value) {
-          if (typeof sentence !== 'string') { kept.push(sentence); continue; }
+        const keptFrom: number[] = []; // original index of each survivor
+        value.forEach((sentence, originalIndex) => {
+          if (typeof sentence !== 'string') { kept.push(sentence); keptFrom.push(originalIndex); return; }
           const verdict: ValidationVerdict = validateGeneratedAnswer(sentence, evidence);
-          if (verdict.publish) { kept.push(sentence); continue; }
+          if (verdict.publish) { kept.push(sentence); keptFrom.push(originalIndex); return; }
           withheld.push({
             path: childPath,
             text: sentence,
@@ -93,8 +94,27 @@ export function guardAdvisorPayload<T extends Record<string, unknown>>(
             verdict, query: context.query, generated: sentence,
             surface: context.surface, timestamp: context.timestamp,
           });
-        }
+        });
         obj[key] = kept;
+        // WITHHOLDING A SENTENCE RENUMBERS EVERY SENTENCE AFTER IT (ADR-187).
+        //
+        // ADR-187 attached two INDEX-ALIGNED companions to `reasons_ar`: `reason_kinds` (what
+        // kind of claim each sentence is) and `headline_reasons` (which at most two the card
+        // leads with). Dropping an entry here without remapping them would leave the card
+        // rendering a survivor under the WITHHELD sentence's kind, or reading past the end —
+        // silently, and only on the day this guard first fires. The guard owns the mutation, so
+        // the guard keeps the aligned fields aligned.
+        if (key === 'reasons_ar' && kept.length !== value.length) {
+          const kinds = obj.reason_kinds;
+          if (Array.isArray(kinds)) obj.reason_kinds = keptFrom.map((i) => kinds[i]);
+          const headline = obj.headline_reasons;
+          if (Array.isArray(headline)) {
+            const remap = new Map(keptFrom.map((orig, next) => [orig, next]));
+            obj.headline_reasons = (headline as unknown[])
+              .map((i) => remap.get(i as number))
+              .filter((i): i is number => i !== undefined);
+          }
+        }
         continue;
       }
       walk(value, childPath);

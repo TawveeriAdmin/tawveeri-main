@@ -36,6 +36,71 @@ export interface ProductDNA {
   installation_class: string | null;
 }
 
+/**
+ * WHAT KIND OF STATEMENT A REASON IS (ADR-187 · REDESIGN_BRIEF §8).
+ *
+ * §8: *"Distinguish fact from inference from recommendation. Never invent a spec."* Every
+ * reason used to be a bare string, and the surface rendered all of them behind an identical
+ * green check — so «متوفر ومُقارَن في 3 متاجر» (measured, checkable) and «التكلفة الإجمالية
+ * التقديرية ~6643 ريال» (a MODEL: installation and annual electricity are estimated, never
+ * observed) were presented to the shopper as the same class of claim.
+ *
+ * The kind is declared where the reason is WRITTEN, by the scorer that knows what it just
+ * asserted. It is never inferred downstream by scanning our own prose — that would be
+ * re-deriving something we already knew, and it would drift the moment a sentence is reworded.
+ */
+export type ReasonKind =
+  | "identity"  // what the product IS — brand/line/capacity. The card title already says it.
+  | "fit"       // how it matches the need the SHOPPER stated. An inference we drew.
+  | "spec"      // a measured product fact, independent of the request.
+  | "evidence"  // what OUR observations show — corroboration across retailers. Measured.
+  | "estimate"  // a MODELLED figure: total cost of ownership, annual electricity.
+  | "caution";  // works against the stated need, or a fact we could not establish.
+
+/**
+ * Reasons and their kinds, written together so they cannot come apart.
+ *
+ * The scorers previously held `const reasons: string[] = []`. Replacing the array with this
+ * ledger is deliberate: it makes the compiler — not a reviewer — require every one of the 68
+ * sites that states a reason to also say what kind of statement it is. There is no partially
+ * classified state to leak.
+ */
+export class ReasonLedger {
+  readonly texts: string[] = [];
+  readonly kinds: ReasonKind[] = [];
+  add(kind: ReasonKind, text: string): void { this.texts.push(text); this.kinds.push(kind); }
+  /** Put a reason FIRST (what `reasons.unshift` used to do for the identity line). */
+  lead(kind: ReasonKind, text: string): void { this.texts.unshift(text); this.kinds.unshift(kind); }
+  identity(t: string) { this.lead("identity", t); }
+  fit(t: string) { this.add("fit", t); }
+  spec(t: string) { this.add("spec", t); }
+  evidence(t: string) { this.add("evidence", t); }
+  estimate(t: string) { this.add("estimate", t); }
+  caution(t: string) { this.add("caution", t); }
+}
+
+/**
+ * THE AT-MOST-TWO SENTENCES THE CARD SHOWS (ADR-187 · REDESIGN_BRIEF §8).
+ *
+ * §8: *"Two sentences of reasoning, maximum."* The founder's verdict on the previous agent was
+ * «كثير ومشتته» — too much, and scattered. The engine still produces its full cited list (the
+ * evidence panel and the F7 validator both read it); this chooses which two the shopper reads
+ * first, and the CHOICE belongs to the engine, never to the view (the ADR-163 rule).
+ *
+ * Two kinds are excluded because the card ALREADY states them elsewhere, and stating them twice
+ * is the scattering §8 objects to:
+ *   · `identity` — the card title is the product name.
+ *   · `evidence` — `TrustSummary` renders corroboration as the card's evidence line.
+ *
+ * A caution outranks a positive: if something works against what the shopper asked for, that is
+ * the sentence they need, not the best thing we can say.
+ */
+export function pickHeadlineReasons(kinds: ReasonKind[]): number[] {
+  const of = (k: ReasonKind) => kinds.map((x, i) => (x === k ? i : -1)).filter((i) => i >= 0);
+  const ordered = [...of("caution"), ...of("fit"), ...of("spec"), ...of("estimate")];
+  return ordered.slice(0, 2);
+}
+
 export interface Recommendation {
   canonical_id: string; tps_identity_key: string;
   title_ar: string | null; title_en: string | null; brand: string | null;
@@ -48,6 +113,10 @@ export interface Recommendation {
   trust: TrustAssessment;             // transparent, cited trust breakdown (ADR-087)
   is_smart_pick: boolean;
   reasons_ar: string[];
+  /** Same length and order as `reasons_ar` — what kind of claim each one is (ADR-187). */
+  reason_kinds: ReasonKind[];
+  /** Indices into `reasons_ar`; at most two. The sentences the card leads with (ADR-187). */
+  headline_reasons: number[];
   dna: Record<string, unknown>;       // category-specific Product DNA (AC/TV/tablet/…)
   go_offer_hint: string;              // canonical_id; the route attaches the measured-exit go_url
 }
@@ -99,7 +168,7 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
 
   const scored = rows.map((row) => {
     const dna = deriveAcDna(row);
-    const reasons: string[] = [];
+    const reasons = new ReasonLedger();
     let score = 0.5; // neutral base
 
     // 1. BTU fit (the dominant suitability signal for AC)
@@ -107,27 +176,28 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
       const rel = Math.abs(dna.capacity_btu - requiredBtu) / requiredBtu;
       const fit = Math.max(0, 1 - rel * 1.5); // penalize mis-size
       score += (fit - 0.5) * 0.5;
-      if (rel <= 0.12) reasons.push(`مناسب لغرفة ~${task.room_size_m2}م² (السعة ${dna.capacity_btu} وحدة تطابق المطلوب)`);
-      else if (dna.capacity_btu < requiredBtu) reasons.push(`⚠️ السعة ${dna.capacity_btu} أقل من المطلوب (~${requiredBtu} وحدة) لغرفة ${task.room_size_m2}م²`);
-      else reasons.push(`السعة ${dna.capacity_btu} وحدة (أكبر من ~${requiredBtu} المطلوب — تبريد أسرع، استهلاك أعلى)`);
+      if (rel <= 0.12) reasons.fit(`مناسب لغرفة ~${task.room_size_m2}م² (السعة ${dna.capacity_btu} وحدة تطابق المطلوب)`);
+      else if (dna.capacity_btu < requiredBtu) reasons.caution(`⚠️ السعة ${dna.capacity_btu} أقل من المطلوب (~${requiredBtu} وحدة) لغرفة ${task.room_size_m2}م²`);
+      else reasons.fit(`السعة ${dna.capacity_btu} وحدة (أكبر من ~${requiredBtu} المطلوب — تبريد أسرع، استهلاك أعلى)`);
     }
     // 2. Inverter for low electricity
-    if (dna.inverter) { score += wantsLowElec ? 0.18 : 0.06; reasons.push(wantsLowElec ? "إنفرتر — أوفر في فاتورة الكهرباء (أولويتك)" : "إنفرتر — كفاءة أعلى في الكهرباء"); }
-    else if (wantsLowElec) { score -= 0.1; reasons.push("عادي (غير إنفرتر) — استهلاك كهرباء أعلى"); }
+    if (dna.inverter) { score += wantsLowElec ? 0.18 : 0.06; if (wantsLowElec) reasons.fit("إنفرتر — أوفر في فاتورة الكهرباء (أولويتك)"); else reasons.spec("إنفرتر — كفاءة أعلى في الكهرباء"); }
+    else if (wantsLowElec) { score -= 0.1; reasons.caution("عادي (غير إنفرتر) — استهلاك كهرباء أعلى"); }
     // 3. Cooling mode fit
-    if (wantsHeating && dna.cooling_mode === "hot_cold") { score += 0.08; reasons.push("حار وبارد — يدفّئ شتاءً"); }
-    if (!wantsHeating && dna.cooling_mode === "cool_only") { reasons.push("بارد فقط — مناسب لأغلب أجواء المملكة"); }
+    if (wantsHeating && dna.cooling_mode === "hot_cold") { score += 0.08; reasons.fit("حار وبارد — يدفّئ شتاءً"); }
+    if (!wantsHeating && dna.cooling_mode === "cool_only") { reasons.spec("بارد فقط — مناسب لأغلب أجواء المملكة"); }
     // 4. Trust: cross-store corroboration
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر ومُقارَن في ${row.store_count} متاجر`); }
-    else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر ومُقارَن في ${row.store_count} متاجر`); }
+    else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
 
     const cost = estimateTotalCost(row.lowest_price, dna);
-    // 5. Total cost within budget (suitability, not commission)
+    // 5. Total cost within budget (suitability, not commission). ESTIMATE, not a measurement:
+    //    installation and annual electricity are modelled from KSA heuristics (ADR-187).
     if (task.budget_total && cost.total) {
-      if (cost.total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
-      else { score -= 0.12; reasons.push(`أعلى من ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
+      if (cost.total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
+      else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
     } else if (cost.total) {
-      reasons.push(`التكلفة الإجمالية التقديرية ~${cost.total} ريال (الجهاز ${cost.unit} + تركيب ${cost.installation} + كهرباء سنوية ~${cost.annual_electricity})`);
+      reasons.estimate(`التكلفة الإجمالية التقديرية ~${cost.total} ريال (الجهاز ${cost.unit} + تركيب ${cost.installation} + كهرباء سنوية ~${cost.annual_electricity})`);
     }
 
     const confidence = Math.min(95, Math.round(((row.identity_confidence ?? 70) + (row.store_count ?? 0) * 8) / 1.2));
@@ -147,7 +217,9 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
       store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
       suitability_score: Math.round(s.score * 100) / 100, confidence: trust.score, trust,
       is_smart_pick: i === 0,
-      reasons_ar: s.reasons,
+      reasons_ar: s.reasons.texts,
+      reason_kinds: s.reasons.kinds,
+      headline_reasons: pickHeadlineReasons(s.reasons.kinds),
       dna: s.dna as unknown as Record<string, unknown>,
       go_offer_hint: s.row.canonical_id,
     };
@@ -170,7 +242,7 @@ export function baseTrust(row: CanonicalRow): TrustAssessment {
   });
 }
 
-function assemble(scored: { row: CanonicalRow; dna: Record<string, unknown>; score: number; reasons: string[]; total: number | null; breakdown: Recommendation["cost_breakdown"] }[]): Recommendation[] {
+function assemble(scored: { row: CanonicalRow; dna: Record<string, unknown>; score: number; reasons: ReasonLedger; total: number | null; breakdown: Recommendation["cost_breakdown"] }[]): Recommendation[] {
   scored.sort((a, b) => b.score - a.score);
   return scored.map((s, i): Recommendation => {
     const trust = baseTrust(s.row);
@@ -181,7 +253,11 @@ function assemble(scored: { row: CanonicalRow; dna: Record<string, unknown>; sco
       store_count: s.row.store_count, comparison_available: !!s.row.has_comparison,
       suitability_score: Math.round(Math.max(0, Math.min(1, s.score)) * 100) / 100,
       confidence: trust.score, trust,
-      is_smart_pick: i === 0, reasons_ar: s.reasons, dna: s.dna, go_offer_hint: s.row.canonical_id,
+      is_smart_pick: i === 0,
+      reasons_ar: s.reasons.texts,
+      reason_kinds: s.reasons.kinds,
+      headline_reasons: pickHeadlineReasons(s.reasons.kinds),
+      dna: s.dna, go_offer_hint: s.row.canonical_id,
     };
   });
 }
@@ -200,18 +276,18 @@ export function decideTv(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
   const pr = task.priorities ?? [];
   const wantGaming = pr.includes("gaming"), wantMovies = pr.includes("movies"), wantSports = pr.includes("sports"), wantBright = pr.includes("bright_room");
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const dna = deriveTvDna(row); const reasons: string[] = [];
+    const a = row.attributes ?? {}; const dna = deriveTvDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const rr = typeof a.refresh_rate === "number" ? a.refresh_rate : null;
     const pq = a.panel ? (PANEL_QUALITY[String(a.panel)] ?? 0.5) : null;
-    if ((wantGaming || wantSports) && rr != null) { if (rr >= 120) { score += 0.18; reasons.push(`معدل تحديث ${rr}Hz — ممتاز للألعاب/الرياضة`); } else { score -= 0.05; reasons.push(`معدل تحديث ${rr}Hz — منخفض للألعاب`); } }
-    if (wantMovies && pq != null) { score += (pq - 0.5) * 0.4; reasons.push(pq >= 0.8 ? `شاشة ${a.panel} — جودة عالية للأفلام` : `شاشة ${a.panel} — جودة متوسطة`); }
-    if (wantBright && pq != null && pq >= 0.8) { score += 0.06; reasons.push(`لوحة ${a.panel} — سطوع جيد للغرف المضيئة`); }
-    if (a.resolution === "4k" || a.resolution === "8k") { score += 0.04; reasons.push(`دقة ${String(a.resolution).toUpperCase()}`); }
-    if (typeof a.screen_size === "number") reasons.push(`${a.screen_size} بوصة`);
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
+    if ((wantGaming || wantSports) && rr != null) { if (rr >= 120) { score += 0.18; reasons.fit(`معدل تحديث ${rr}Hz — ممتاز للألعاب/الرياضة`); } else { score -= 0.05; reasons.caution(`معدل تحديث ${rr}Hz — منخفض للألعاب`); } }
+    if (wantMovies && pq != null) { score += (pq - 0.5) * 0.4; if (pq >= 0.8) reasons.fit(`شاشة ${a.panel} — جودة عالية للأفلام`); else reasons.caution(`شاشة ${a.panel} — جودة متوسطة`); }
+    if (wantBright && pq != null && pq >= 0.8) { score += 0.06; reasons.fit(`لوحة ${a.panel} — سطوع جيد للغرف المضيئة`); }
+    if (a.resolution === "4k" || a.resolution === "8k") { score += 0.04; reasons.spec(`دقة ${String(a.resolution).toUpperCase()}`); }
+    if (typeof a.screen_size === "number") reasons.spec(`${a.screen_size} بوصة`);
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد");
     const total = row.lowest_price;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.fit(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك (${total} ريال)`); } }
     return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
   });
   return assemble(scored);
@@ -231,21 +307,21 @@ export function decideTablet(task: ShoppingTask, rows: CanonicalRow[]): Recommen
   const wantProductivity = use.includes("productivity"), wantReading = use.includes("reading"), wantGaming = use.includes("gaming");
   const needCell = t.connectivity_needed && t.connectivity_needed !== "wifi";
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const dna = deriveTabletDna(row); const reasons: string[] = [];
+    const a = row.attributes ?? {}; const dna = deriveTabletDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const storage = typeof a.storage === "number" ? a.storage : null;
     const size = typeof a.screen_size === "number" ? a.screen_size : null;
     const conn = a.connectivity as string | null;
-    if (needCell) { if (conn && conn !== "wifi") { score += 0.15; reasons.push(`اتصال ${conn.toUpperCase()} — يدعم الشريحة`); } else { score -= 0.15; reasons.push("واي فاي فقط — لا يدعم الشريحة (تحتاج خلوي)"); } }
-    else if (conn) reasons.push(conn === "wifi" ? "واي فاي" : `${conn.toUpperCase()}`);
-    if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.1; reasons.push(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
-    else if (storage != null) reasons.push(`تخزين ${storage}GB`);
-    if (wantProductivity && size != null) { if (size >= 11) { score += 0.1; reasons.push(`شاشة ${size}" — مناسبة للإنتاجية`); } else reasons.push(`شاشة ${size}" — صغيرة للإنتاجية`); }
-    if (wantReading && size != null && size <= 11) { score += 0.05; reasons.push(`شاشة ${size}" — خفيفة للقراءة`); }
-    if (wantGaming && storage != null && storage >= 128) { score += 0.06; reasons.push(`تخزين ${storage}GB — مناسب للألعاب`); }
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
+    if (needCell) { if (conn && conn !== "wifi") { score += 0.15; reasons.fit(`اتصال ${conn.toUpperCase()} — يدعم الشريحة`); } else { score -= 0.15; reasons.caution("واي فاي فقط — لا يدعم الشريحة (تحتاج خلوي)"); } }
+    else if (conn) reasons.spec(conn === "wifi" ? "واي فاي" : `${conn.toUpperCase()}`);
+    if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.1; reasons.fit(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.caution(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
+    else if (storage != null) reasons.spec(`تخزين ${storage}GB`);
+    if (wantProductivity && size != null) { if (size >= 11) { score += 0.1; reasons.fit(`شاشة ${size}" — مناسبة للإنتاجية`); } else reasons.caution(`شاشة ${size}" — صغيرة للإنتاجية`); }
+    if (wantReading && size != null && size <= 11) { score += 0.05; reasons.fit(`شاشة ${size}" — خفيفة للقراءة`); }
+    if (wantGaming && storage != null && storage >= 128) { score += 0.06; reasons.fit(`تخزين ${storage}GB — مناسب للألعاب`); }
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد");
     const total = row.lowest_price;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.fit(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك (${total} ريال)`); } }
     return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
   });
   return assemble(scored);
@@ -268,28 +344,28 @@ export function decideMobile(task: ShoppingTask, rows: CanonicalRow[]): Recommen
   const wantCamera = pr.includes("camera"), wantGaming = pr.includes("gaming"), wantBattery = pr.includes("battery"), wantLatest = pr.includes("latest");
   const maxGen = Math.max(0, ...rows.map((r) => genNumber((r.attributes ?? {}).generation) ?? 0));
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const dna = deriveMobileDna(row); const reasons: string[] = [];
+    const a = row.attributes ?? {}; const dna = deriveMobileDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const tier = variantTier(a.variant); const storage = a.storage != null ? Number(a.storage) : null; const gen = genNumber(a.generation);
-    if (wantCamera) { score += (tier - 0.5) * 0.3; if (tier >= 0.85) reasons.push(`إصدار ${a.variant} — كاميرا أفضل`); }
-    if (wantGaming) { score += (tier - 0.5) * 0.2; if (storage && storage >= 256) { score += 0.05; reasons.push(`تخزين ${storage}GB — مناسب للألعاب`); } }
-    if (wantBattery && /ultra|pro max|plus/i.test(String(a.variant))) { score += 0.08; reasons.push(`إصدار ${a.variant} — بطارية أكبر`); }
-    if (wantLatest && gen != null && maxGen > 0) { const rec = gen / maxGen; score += (rec - 0.5) * 0.3; if (gen === maxGen) reasons.push(`الجيل ${gen} — الأحدث`); }
-    if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.08; reasons.push(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
-    else if (storage != null) reasons.push(`تخزين ${storage}GB`);
+    if (wantCamera) { score += (tier - 0.5) * 0.3; if (tier >= 0.85) reasons.fit(`إصدار ${a.variant} — كاميرا أفضل`); }
+    if (wantGaming) { score += (tier - 0.5) * 0.2; if (storage && storage >= 256) { score += 0.05; reasons.fit(`تخزين ${storage}GB — مناسب للألعاب`); } }
+    if (wantBattery && /ultra|pro max|plus/i.test(String(a.variant))) { score += 0.08; reasons.fit(`إصدار ${a.variant} — بطارية أكبر`); }
+    if (wantLatest && gen != null && maxGen > 0) { const rec = gen / maxGen; score += (rec - 0.5) * 0.3; if (gen === maxGen) reasons.fit(`الجيل ${gen} — الأحدث`); }
+    if (t.storage_min && storage != null) { if (storage >= t.storage_min) { score += 0.08; reasons.fit(`تخزين ${storage}GB (يكفي)`); } else { score -= 0.12; reasons.caution(`⚠️ تخزين ${storage}GB أقل من المطلوب (${t.storage_min}GB)`); } }
+    else if (storage != null) reasons.spec(`تخزين ${storage}GB`);
     // ADR-081: storage-unspecified (NO_STORAGE canonical) — be explicit and cautious.
     // The price may reflect different storage configurations across merchants, so
     // this card must never win purely on a lower price, and if the shopper asked
     // for a minimum storage we cannot confirm it. Neutrality + explainability.
     else {
       score -= 0.04;
-      reasons.push("⚠️ السعة التخزينية غير محددة في هذه العروض — قد تختلف بين المتاجر");
-      if (t.storage_min) { score -= 0.06; reasons.push(`⚠️ لا يمكن تأكيد ${t.storage_min}GB المطلوبة`); }
+      reasons.caution("⚠️ السعة التخزينية غير محددة في هذه العروض — قد تختلف بين المتاجر");
+      if (t.storage_min) { score -= 0.06; reasons.caution(`⚠️ لا يمكن تأكيد ${t.storage_min}GB المطلوبة`); }
     }
-    reasons.unshift(`${a.family ?? row.brand} ${a.generation ?? ""} ${a.variant && a.variant !== "Standard" ? a.variant : ""}`.replace(/\s+/g, " ").trim());
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد");
+    reasons.identity(`${a.family ?? row.brand} ${a.generation ?? ""} ${a.variant && a.variant !== "Standard" ? a.variant : ""}`.replace(/\s+/g, " ").trim());
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد");
     const total = row.lowest_price;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.fit(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك (${total} ريال)`); } }
     return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
   });
   return assemble(scored);
@@ -312,20 +388,20 @@ export function decideLaptop(task: ShoppingTask, rows: CanonicalRow[]): Recommen
   const pr = task.priorities ?? [];
   const wantGaming = pr.includes("gaming"), wantProductivity = pr.includes("productivity"), wantPortability = pr.includes("portability");
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const dna = deriveLaptopDna(row); const reasons: string[] = [];
+    const a = row.attributes ?? {}; const dna = deriveLaptopDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const ram = a.ram != null ? Number(a.ram) : null; const storage = a.storage != null ? Number(a.storage) : null;
     const screen = a.screen != null ? Number(a.screen) : null; const gpu = (a.gpu as string) ?? null; const discrete = gpu ? gpu !== "igpu" : false;
-    if (wantGaming) { if (discrete) { score += 0.15; reasons.push(`كرت شاشة منفصل (${gpu?.toUpperCase()}) — مناسب للألعاب`); } else { score -= 0.08; reasons.push("كرت مدمج — ضعيف للألعاب"); } if (ram && ram >= 16) { score += 0.06; reasons.push(`رام ${ram}GB`); } }
-    if (wantProductivity) { if (ram && ram >= 16) { score += 0.1; reasons.push(`رام ${ram}GB — مناسب للإنتاجية`); } else if (ram) reasons.push(`رام ${ram}GB — متوسط للإنتاجية`); if (a.cpu) reasons.push(`معالج ${String(a.cpu).toUpperCase()}`); }
-    if (wantPortability && screen != null) { if (screen <= 14) { score += 0.08; reasons.push(`شاشة ${screen}" — خفيف ومحمول`); } else reasons.push(`شاشة ${screen}" — أكبر (أثقل)`); }
-    if (t.ram_min && ram != null) { if (ram >= t.ram_min) score += 0.06; else { score -= 0.1; reasons.push(`⚠️ رام ${ram}GB أقل من المطلوب (${t.ram_min}GB)`); } }
-    if (t.storage_min && storage != null && storage < t.storage_min) { score -= 0.08; reasons.push(`⚠️ تخزين ${storage}GB أقل من المطلوب`); }
-    else if (storage != null) reasons.push(`تخزين ${storage}GB`);
-    reasons.unshift(`${row.brand ?? ""} ${a.family ?? ""} ${a.cpu ? String(a.cpu).toUpperCase() : ""}`.replace(/\s+/g, " ").trim());
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    if (wantGaming) { if (discrete) { score += 0.15; reasons.fit(`كرت شاشة منفصل (${gpu?.toUpperCase()}) — مناسب للألعاب`); } else { score -= 0.08; reasons.caution("كرت مدمج — ضعيف للألعاب"); } if (ram && ram >= 16) { score += 0.06; reasons.spec(`رام ${ram}GB`); } }
+    if (wantProductivity) { if (ram && ram >= 16) { score += 0.1; reasons.fit(`رام ${ram}GB — مناسب للإنتاجية`); } else if (ram) reasons.caution(`رام ${ram}GB — متوسط للإنتاجية`); if (a.cpu) reasons.spec(`معالج ${String(a.cpu).toUpperCase()}`); }
+    if (wantPortability && screen != null) { if (screen <= 14) { score += 0.08; reasons.fit(`شاشة ${screen}" — خفيف ومحمول`); } else reasons.caution(`شاشة ${screen}" — أكبر (أثقل)`); }
+    if (t.ram_min && ram != null) { if (ram >= t.ram_min) score += 0.06; else { score -= 0.1; reasons.caution(`⚠️ رام ${ram}GB أقل من المطلوب (${t.ram_min}GB)`); } }
+    if (t.storage_min && storage != null && storage < t.storage_min) { score -= 0.08; reasons.caution(`⚠️ تخزين ${storage}GB أقل من المطلوب`); }
+    else if (storage != null) reasons.spec(`تخزين ${storage}GB`);
+    reasons.identity(`${row.brand ?? ""} ${a.family ?? ""} ${a.cpu ? String(a.cpu).toUpperCase() : ""}`.replace(/\s+/g, " ").trim());
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     const total = row.lowest_price;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.fit(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك (${total} ريال)`); } }
     return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
   });
   return assemble(scored);
@@ -351,19 +427,19 @@ export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Re
   const pr = task.priorities ?? [];
   const wantLowElec = pr.includes("low_electricity"), wantLarge = pr.includes("large") || /كبير|عائلة|large|family/.test((task as { parsed_from_text?: string }).parsed_from_text ?? "");
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const dna = deriveRefrigeratorDna(row); const reasons: string[] = [];
+    const a = row.attributes ?? {}; const dna = deriveRefrigeratorDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const liters = a.capacity_liters != null ? Number(a.capacity_liters) : null;
     const inverter = a.inverter === true; const type = (a.fridge_type as string) ?? null;
-    if (liters != null) { reasons.unshift(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${liters} لتر`.replace(/\s+/g, " ").trim()); if (wantLarge) { if (liters >= 500) { score += 0.12; reasons.push(`سعة ${liters} لتر — واسعة للعائلات`); } else reasons.push(`سعة ${liters} لتر — متوسطة`); } }
-    if (inverter) { score += wantLowElec ? 0.15 : 0.05; reasons.push(wantLowElec ? "إنفرتر — أوفر في الكهرباء (يعمل ٢٤ ساعة)" : "إنفرتر — كفاءة أعلى"); }
-    else if (wantLowElec) { score -= 0.08; reasons.push("عادي (غير إنفرتر) — استهلاك أعلى على مدار الساعة"); }
-    if (type === "french_door" || type === "side_by_side") reasons.push(`${type.replace(/_/g, " ")} — تصميم واسع`);
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    if (liters != null) { reasons.identity(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${liters} لتر`.replace(/\s+/g, " ").trim()); if (wantLarge) { if (liters >= 500) { score += 0.12; reasons.fit(`سعة ${liters} لتر — واسعة للعائلات`); } else reasons.caution(`سعة ${liters} لتر — متوسطة`); } }
+    if (inverter) { score += wantLowElec ? 0.15 : 0.05; if (wantLowElec) reasons.fit("إنفرتر — أوفر في الكهرباء (يعمل ٢٤ ساعة)"); else reasons.spec("إنفرتر — كفاءة أعلى"); }
+    else if (wantLowElec) { score -= 0.08; reasons.caution("عادي (غير إنفرتر) — استهلاك أعلى على مدار الساعة"); }
+    if (type === "french_door" || type === "side_by_side") reasons.spec(`${type.replace(/_/g, " ")} — تصميم واسع`);
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     const unit = row.lowest_price; const annual = fridgeAnnualElectricity(liters, inverter);
     const total = unit != null ? Math.round(unit + annual) : null;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك — التكلفة ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك — التكلفة ~${total} ريال`); } }
-    else if (total) reasons.push(`التكلفة التقديرية ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`);
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة ~${total} ريال`); } }
+    else if (total) reasons.estimate(`التكلفة التقديرية ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`);
     return { row, dna, score, reasons, total, breakdown: { unit: unit ?? null, installation: null, annual_electricity: annual } };
   });
   return assemble(scored);
@@ -382,20 +458,20 @@ export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): 
   const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
   const wantLarge = /كبير|عائلة|large|family/.test(text), wantDryer = /نشاف|نشافة|dryer|تجفيف/.test(text);
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const dna = deriveWashingMachineDna(row); const reasons: string[] = [];
+    const a = row.attributes ?? {}; const dna = deriveWashingMachineDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const kg = a.capacity_kg != null ? Number(a.capacity_kg) : null; const type = (a.washer_type as string) ?? null;
     const inverter = a.inverter === true; const combo = a.has_dryer === true;
-    reasons.unshift(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${kg != null ? kg + " كجم" : ""}`.replace(/\s+/g, " ").trim());
-    if (kg != null && wantLarge) { if (kg >= 10) { score += 0.1; reasons.push(`سعة ${kg} كجم — مناسبة للعائلات`); } else reasons.push(`سعة ${kg} كجم — متوسطة`); }
-    if (type === "front_load") { score += 0.06; reasons.push("تحميل أمامي — غسيل أعمق وأوفر ماءً"); }
-    if (inverter) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; reasons.push((wantLowElec || wantQuiet) ? "محرك إنفرتر — أهدأ وأوفر (أولويتك)" : "محرك إنفرتر — كفاءة أعلى"); }
-    else if (wantLowElec) { score -= 0.06; reasons.push("عادي (غير إنفرتر) — استهلاك أعلى"); }
-    if (combo) { score += wantDryer ? 0.1 : 0.03; reasons.push(wantDryer ? "غسالة ونشافة — تغسل وتجفف (أولويتك)" : "غسالة ونشافة مدمجة"); }
-    else if (wantDryer) { score -= 0.08; reasons.push("غسالة فقط — بدون نشافة"); }
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    reasons.identity(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${kg != null ? kg + " كجم" : ""}`.replace(/\s+/g, " ").trim());
+    if (kg != null && wantLarge) { if (kg >= 10) { score += 0.1; reasons.fit(`سعة ${kg} كجم — مناسبة للعائلات`); } else reasons.caution(`سعة ${kg} كجم — متوسطة`); }
+    if (type === "front_load") { score += 0.06; reasons.spec("تحميل أمامي — غسيل أعمق وأوفر ماءً"); }
+    if (inverter) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("محرك إنفرتر — أهدأ وأوفر (أولويتك)"); else reasons.spec("محرك إنفرتر — كفاءة أعلى"); }
+    else if (wantLowElec) { score -= 0.06; reasons.caution("عادي (غير إنفرتر) — استهلاك أعلى"); }
+    if (combo) { score += wantDryer ? 0.1 : 0.03; if (wantDryer) reasons.fit("غسالة ونشافة — تغسل وتجفف (أولويتك)"); else reasons.spec("غسالة ونشافة مدمجة"); }
+    else if (wantDryer) { score -= 0.08; reasons.caution("غسالة فقط — بدون نشافة"); }
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     const total = row.lowest_price;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.fit(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك (${total} ريال)`); } }
     return { row, dna, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
   });
   return assemble(scored);
@@ -431,32 +507,32 @@ export function decideAppliance(task: ShoppingTask, rows: CanonicalRow[]): Recom
   const wantLarge = pr.includes("large") || /كبير|كبيرة|عائلة|عائلية|family|large/.test(text);
   const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
   const scored = rows.map((row) => {
-    const a = row.attributes ?? {}; const reasons: string[] = [];
+    const a = row.attributes ?? {}; const reasons = new ReasonLedger();
     let score = 0.5;
     const type = (a.appliance_type as string | null) ?? null;
     const cap = a.capacity != null ? Number(a.capacity) : null;
     const unit = meta.metricAr ?? "";
     // headline
-    reasons.unshift(`${meta.nounAr} ${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""}${cap != null ? ` ${cap} ${unit}` : ""}`.replace(/\s+/g, " ").trim());
+    reasons.identity(`${meta.nounAr} ${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""}${cap != null ? ` ${cap} ${unit}` : ""}`.replace(/\s+/g, " ").trim());
     // capacity-for-household
     if (cap != null && meta.largeAt) {
-      if (wantLarge) { if (cap >= meta.largeAt) { score += 0.1; reasons.push(`سعة ${cap} ${unit} — مناسبة للعائلات`); } else reasons.push(`سعة ${cap} ${unit} — متوسطة`); }
+      if (wantLarge) { if (cap >= meta.largeAt) { score += 0.1; reasons.fit(`سعة ${cap} ${unit} — مناسبة للعائلات`); } else reasons.caution(`سعة ${cap} ${unit} — متوسطة`); }
     }
     // efficiency (inverter) — matters most where the appliance runs long/often
-    if (a.inverter === true) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; reasons.push((wantLowElec || wantQuiet) ? "إنفرتر — أهدأ وأوفر (أولويتك)" : "إنفرتر — كفاءة أعلى"); }
-    else if (wantLowElec && "inverter" in a && a.inverter === false) { score -= 0.05; reasons.push("عادي (غير إنفرتر)"); }
+    if (a.inverter === true) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("إنفرتر — أهدأ وأوفر (أولويتك)"); else reasons.spec("إنفرتر — كفاءة أعلى"); }
+    else if (wantLowElec && "inverter" in a && a.inverter === false) { score -= 0.05; reasons.caution("عادي (غير إنفرتر)"); }
     // requested features
     for (const [flag, want] of Object.entries(meta.featureWants ?? {})) {
       if (pr.includes(flag) && a[want] === true) { score += 0.06; }
     }
     // present features (neutral reasons — no score unless requested above)
-    for (const [flag, phrase] of Object.entries(meta.features)) if (a[flag] === true) reasons.push(phrase);
+    for (const [flag, phrase] of Object.entries(meta.features)) if (a[flag] === true) reasons.spec(phrase);
     // trust
-    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.push(`سعر موثوق — متوفر في ${row.store_count} متاجر`); }
-    else reasons.push("متوفر في متجر واحد — المقارنة غير متاحة");
+    if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); }
+    else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     // budget
     const total = row.lowest_price;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.push(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.push(`أعلى من ميزانيتك (${total} ريال)`); } }
+    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.fit(`ضمن ميزانيتك (${total} ريال)`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك (${total} ريال)`); } }
     return { row, dna: { brand: row.brand, appliance_type: type, capacity: cap, capacity_unit: a.capacity_unit ?? null }, score, reasons, total: total ?? null, breakdown: { unit: total ?? null, installation: null, annual_electricity: null } };
   });
   return assemble(scored);
@@ -530,9 +606,12 @@ export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: b
     case "washing_machine": return { supported: true, recommendations: decideWashingMachine(task, rows) };
     default: {
       if (APPLIANCE_META[task.category]) return { supported: true, recommendations: decideAppliance(task, rows) };
-      const scored = rows.map((row) => ({ row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0),
-        reasons: [(row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد"],
-        total: row.lowest_price ?? null, breakdown: { unit: row.lowest_price ?? null, installation: null, annual_electricity: null } }));
+      const scored = rows.map((row) => {
+        const reasons = new ReasonLedger();
+        reasons.evidence((row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد");
+        return { row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0), reasons,
+          total: row.lowest_price ?? null, breakdown: { unit: row.lowest_price ?? null, installation: null, annual_electricity: null } };
+      });
       return { supported: false, recommendations: assemble(scored) };
     }
   }

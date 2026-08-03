@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, ShieldCheck, Check, Store, ArrowLeft, ArrowRight, CircleAlert,
-  TrendingDown, Clock, Info, HelpCircle, AlertTriangle,
+  TrendingDown, Clock, Info, HelpCircle, AlertTriangle, Calculator,
 } from 'lucide-react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
@@ -121,17 +121,83 @@ function ClarifyPrompt({
   );
 }
 
-function Reasons({ reasons }: { reasons: string[] }) {
-  if (!reasons?.length) return null;
+/**
+ * TWO SENTENCES, AND YOU CAN TELL WHAT KIND OF SENTENCE EACH ONE IS (ADR-187 · §8).
+ *
+ * This rendered up to FIVE reasons, every one behind an identical green check. Two things in
+ * REDESIGN_BRIEF §8 were unmet by that, and the founder had already named the first:
+ *
+ *   *"Two sentences of reasoning, maximum."* — verdict on the previous agent: «كثير ومشتته».
+ *   *"Distinguish fact from inference from recommendation."* — «متوفر ومُقارَن في 3 متاجر»
+ *   (measured, checkable) and «التكلفة الإجمالية التقديرية ~6643 ريال» (a MODEL: installation
+ *   and annual electricity are estimated, never observed) wore the same tick.
+ *
+ * WHICH two is the ENGINE's decision (`headline_reasons`), not this component's — the ADR-163
+ * rule. Nothing is hidden: every remaining reason is one tap away under «لماذا هذا الترشيح؟».
+ *
+ * The old five-reason list is the fallback for a payload without `headline_reasons`, so a
+ * cached response from before this change still renders rather than going blank.
+ */
+const REASON_MARK: Record<string, { Icon: typeof Check; cls: string }> = {
+  caution: { Icon: CircleAlert, cls: 'text-warning-600' },
+  estimate: { Icon: Calculator, cls: 'text-on-surface-variant' },
+  fit: { Icon: Check, cls: 'text-success-600' },
+  spec: { Icon: Check, cls: 'text-success-600' },
+  evidence: { Icon: ShieldCheck, cls: 'text-success-600' },
+  identity: { Icon: Check, cls: 'text-success-600' },
+};
+
+function ReasonLine({ text, kind, t }: { text: string; kind?: string; t: TFn }) {
+  const mark = REASON_MARK[kind ?? 'spec'] ?? REASON_MARK.spec;
+  const { Icon, cls } = mark;
   return (
-    <ul className="mt-3 space-y-1.5">
-      {reasons.slice(0, 5).map((r, i) => (
-        <li key={i} className="flex items-start gap-2 text-sm text-on-surface-variant">
-          <Check className="mt-0.5 h-4 w-4 shrink-0 text-success-600" aria-hidden />
-          <span>{r}</span>
-        </li>
-      ))}
-    </ul>
+    <li className="flex items-start gap-2 text-sm text-on-surface-variant">
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${cls}`} aria-hidden />
+      <span>
+        {text}
+        {/* An estimate says so. A modelled figure presented as a measurement is the claim
+            §8 forbids, and the label is the cheapest possible way to keep it honest. */}
+        {kind === 'estimate' && (
+          <span className="ms-1.5 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-medium text-on-surface-variant">
+            {t('agent.estimateLabel')}
+          </span>
+        )}
+      </span>
+    </li>
+  );
+}
+
+function Reasons({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
+  const all = rec.reasons_ar ?? [];
+  if (!all.length) return null;
+  const kinds = rec.reason_kinds ?? [];
+  const headline = rec.headline_reasons ?? null;
+  // Pre-ADR-187 payload: keep the previous behaviour rather than render nothing.
+  if (!headline) {
+    return (
+      <ul className="mt-3 space-y-1.5">
+        {all.slice(0, 5).map((r, i) => <ReasonLine key={i} text={r} kind={kinds[i]} t={t} />)}
+      </ul>
+    );
+  }
+  const rest = all.map((text, i) => ({ text, i })).filter(({ i }) => !headline.includes(i));
+  return (
+    <>
+      <ul className="mt-3 space-y-1.5">
+        {headline.map((i) => <ReasonLine key={i} text={all[i]} kind={kinds[i]} t={t} />)}
+      </ul>
+      {rest.length > 0 && (
+        <details className="group mt-2">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-primary-700 dark:text-primary-300">
+            <span className="group-open:hidden">{t('agent.showAllReasons')}</span>
+            <span className="hidden group-open:inline">{t('agent.hideAllReasons')}</span>
+          </summary>
+          <ul className="mt-2 space-y-1.5">
+            {rest.map(({ text, i }) => <ReasonLine key={i} text={text} kind={kinds[i]} t={t} />)}
+          </ul>
+        </details>
+      )}
+    </>
   );
 }
 
@@ -356,7 +422,7 @@ function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation;
           {rec.reasons_ar?.length > 0 && (
             <p className="mt-2 text-xs font-semibold text-on-surface-variant">{t('agent.evidenceRecommendation')}</p>
           )}
-          <Reasons reasons={rec.reasons_ar} />
+          <Reasons rec={rec} t={t} />
           <ChoiceComparison rec={rec} loc={loc} t={t} />
           <Alternatives rec={rec} loc={loc} />
         </div>
@@ -380,7 +446,7 @@ function OptionCard({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation
             <DiscountTruthBadge rec={rec} loc={loc} />
             <TrustBadge rec={rec} loc={loc} />
           </div>
-          <Reasons reasons={rec.reasons_ar} />
+          <Reasons rec={rec} t={t} />
         </div>
         <div className="shrink-0"><CostBlock rec={rec} loc={loc} t={t} /></div>
       </div>

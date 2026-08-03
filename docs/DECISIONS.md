@@ -6,6 +6,101 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-188 — A safety gate that asserts a premise the founder retired is an ignored safety gate · Accepted (2026-08-03)
+
+**Context.** `tps:validator-verify` — the F7·2 gate — had **one failing check**, recorded in
+HANDOVER #42 as *"known-stale: `validator-verify` asserts `/api/ai-assistant` → 404; it returns
+200 by founder decision."* It had been red ever since.
+
+**A permanently red safety gate is worse than no gate.** Everything else in that run was green
+and correct; the single red line trained the reader to skim past a **FAIL** verdict on the guard
+that governs the only generative surface in the product. That is the state in which a real
+failure gets missed.
+
+**The assertion encoded the wrong property.** It was written when the surface was closed, and it
+asserted *absence*. The property F7 actually protects is: **no generated sentence reaches a
+customer without passing F7·2** — which is checkable in either state.
+
+**Decision.** §1 asserts the contract matching the deployed configuration:
+
+| state | asserted |
+|---|---|
+| **closed** (404) | the surface is shut — exactly the old check, unchanged |
+| **open** (200) | every answer is published **with** a verdict or reported `suppressed` **by** `f7-vocabulary-validator`; and a **live adversarial probe** — a category we do not cover, at a retailer that does not exist — comes back carrying **no price** |
+
+The adversarial probe is live rather than a fixture on purpose: F7 requires the assistant be
+*"tested adversarially before deployment"*, and the generator is live, so a fixture proves the
+guard against language the generator did not produce.
+
+**Result.** `GATE: PASS` for the first time since the surface was enabled — 4/4 must-pass answers
+publish, 23/23 adversarial cases blocked, 2,025 production strings validated with zero false
+rejections, and the open-surface probe returns no price for «كم سعر قارب صيد في متجر زوربلكس؟».
+
+**What this does NOT do.** It does not judge the quality of a generated answer, and it does not
+prove the generator is good. It proves the guard is running and closing. The two declared
+residuals (a wholly invented retailer name; prose asserting no fact) are unchanged and still
+declared in the gate's own output.
+
+---
+
+### ADR-187 — Two sentences, and you can tell which kind of sentence each one is · Accepted (2026-08-03)
+
+**Context.** Objective 3 — the وفّر advisor build-out (`REDESIGN_BRIEF` §8) — was recorded as
+blocked on *"F7's runtime vocabulary guard, which had never been scoped."* **That blocker no
+longer exists and had not been rechecked:** F7·1 (`src/lib/vocabulary/`), F7·2 (the
+post-generation validator, ADR-158), F7·3 (the adversarial suite as a permanent gate, ADR-159)
+and `guardAdvisorPayload` over the deterministic advisor (ADR-163) have all shipped. Verified
+here, not assumed: 453/453 agent+vocabulary tests, and the live gate green (**ADR-188**).
+
+**So §8 was audited bullet by bullet against production rather than rebuilt on a hunch.**
+
+| §8 requirement | state |
+|---|---|
+| hybrid card, not chat · structured follow-ups as buttons · contextual prompts · no login before value | **met** |
+| *"Parse what the user already said"* | **met** — «ابي مكيف رخيص لغرفه ٤٠ متر» returns `room_size_m2: 40`, `clarify: null` |
+| *"Confidence in plain language, or not at all"* | **met** (ADR-163) |
+| *"No recommendation without data"* · *"explicit fallback, never a dead end"* | **met** — honest empty state, and the advisor sits above the search results on the unified surface, so there is nothing to hand off *to* |
+| **"Two sentences of reasoning, maximum"** | **NOT met — the engine returned five and the card rendered five** |
+| **"Distinguish fact from inference from recommendation"** | **NOT met — all five wore the same green tick** |
+
+The two unmet bullets are the same defect seen from two sides, and the founder had already
+named it: the verdict on the previous agent was «كثير ومشتته». Measured on production, one AC
+card showed «مناسب لغرفة ~40م²» (an inference), «إنفرتر — كفاءة أعلى» (a product fact), «متوفر
+ومُقارَن في 3 متاجر» (**measured**, checkable) and «التكلفة الإجمالية التقديرية ~6643 ريال»
+(a **model** — installation and annual electricity are estimated, never observed) — all four
+behind an identical ✓. **A modelled figure wearing a measurement's tick is the claim §8 forbids.**
+
+**Decision.**
+1. **The kind is declared where the reason is written.** `ReasonKind` is one of `identity` ·
+   `fit` · `spec` · `evidence` · `estimate` · `caution`, and the scorer that states a reason says
+   what kind of statement it just made. **It is never inferred downstream by scanning our own
+   prose** — that re-derives something we already knew and drifts the moment a sentence is
+   reworded.
+2. **The compiler enforces it, not a reviewer.** The scorers held `const reasons: string[] = []`;
+   that is now a `ReasonLedger` whose only entry points carry a kind. All **106** call sites
+   across the eight category scorers had to be classified, and there is no partially-classified
+   state that can compile.
+3. **Which two sentences lead is the ENGINE's decision** (`headline_reasons`), never the view's
+   — the ADR-163 rule. `identity` is excluded because the card title already says it and
+   `evidence` because `TrustSummary` already renders it: **the corroboration claim was being
+   printed twice on the same card**, which is the scattering §8 objects to, in miniature.
+   A `caution` outranks anything positive — if something works against what the shopper asked
+   for, that is the sentence they need first.
+4. **An estimate says «تقديري».** Nothing is hidden: every remaining reason is one tap away.
+
+**A defect I introduced, and where it had to be fixed.** `reason_kinds` and `headline_reasons`
+are index-aligned with `reasons_ar` — and `guardAdvisorPayload` **removes entries from that
+array**. Withholding a sentence renumbers every sentence after it, so the card would have
+rendered a survivor under the withheld sentence's kind, or read past the end. Silently, and only
+on the day the guard first fires — which is today never (2,026/2,026 strings pass) and therefore
+exactly the kind of latent break that ships. Fixed in the **guard**, because the guard owns the
+mutation: it now remaps both companions when it drops a reason, with a test for the day it fires.
+
+**No new F7 surface.** The headline is *indices into already-guarded prose*; not one new
+customer-visible string is composed. Tests 1,227/1,227 (+40).
+
+---
+
 ### ADR-186 — The index the customer actually searches had no owner · Accepted (2026-08-03)
 
 **Context.** Found while measuring ADR-185, and it is the larger finding. 613 storefront and

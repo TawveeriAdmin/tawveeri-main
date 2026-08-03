@@ -44,5 +44,8 @@
   "showEvidence": "Show evidence",
   "hideEvidence": "Hide evidence",
   "trustCorroborated": "Price corroborated at {count} retailers",
-  "trustSingleSource": "Observed at one retailer"
+  "trustSingleSource": "Observed at one retailer",
+  "estimateLabel": "estimate",
+  "showAllReasons": "Why this recommendation?",
+  "hideAllReasons": "Hide details"
 }

@@ -44,5 +44,8 @@
   "showEvidence": "اعرض الأدلة",
   "hideEvidence": "أخفِ الأدلة",
   "trustCorroborated": "سعر مؤكَّد في {count} متاجر",
-  "trustSingleSource": "رصدناه في متجر واحد"
+  "trustSingleSource": "رصدناه في متجر واحد",
+  "estimateLabel": "تقديري",
+  "showAllReasons": "لماذا هذا الترشيح؟",
+  "hideAllReasons": "إخفاء التفاصيل"
 }

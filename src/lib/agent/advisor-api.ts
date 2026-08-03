@@ -5,6 +5,9 @@
 // parsed-task summary). No fabrication: helpers only reformat what the engine
 // returned; they never invent prices, stores, or reasons.
 
+/** What kind of statement a reason is (ADR-187). Mirrors `decision-engine.ts`'s own union. */
+export type ReasonKind = "identity" | "fit" | "spec" | "evidence" | "estimate" | "caution";
+
 export interface AdvisorRecommendation {
   canonical_id: string;
   tps_identity_key: string;
@@ -20,6 +23,18 @@ export interface AdvisorRecommendation {
   confidence: number;
   is_smart_pick: boolean;
   reasons_ar: string[];
+  /**
+   * ADR-187 · REDESIGN_BRIEF §8 — *"Distinguish fact from inference from recommendation."*
+   * Same length and order as `reasons_ar`. Declared by the engine where the reason is written;
+   * the view never classifies our own prose. Optional so an older cached payload still renders.
+   */
+  reason_kinds?: ReasonKind[] | null;
+  /**
+   * ADR-187 · REDESIGN_BRIEF §8 — *"Two sentences of reasoning, maximum."* Indices into
+   * `reasons_ar`, at most two, chosen by the ENGINE (the ADR-163 rule: the view never re-derives
+   * a judgement the engine already made).
+   */
+  headline_reasons?: number[] | null;
   dna: Record<string, unknown>;
   go_offer_hint: string;
   go_url: string | null;
