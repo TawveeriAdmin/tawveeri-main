@@ -5570,3 +5570,67 @@ Coverage (21/27), P1 Image Coverage (single-store backlog).
 f4d5210  scorecard scoping         git revert f4d5210
 ```
 Image backfill is fill-only and additive; no revert needed (it never overwrote a value).
+
+---
+
+## CHECKPOINT #60 — COMPARISON COVERAGE: +27 BANKED, AND THE LEVER RE-SIZED
+
+**Baseline frozen 2026-08-02 20:0x UTC: projection 5,398 · comparable 883 · 3+ store 221 ·
+COMPARABLE+DISPLAYABLE 705.**
+
+### RESULT — 705 → 732 (+27), and it did not come from seeding
+
+| | before | after |
+|---|---:|---:|
+| projection products | 5,398 | **5,456** |
+| comparable (all stores) | 883 | **903** |
+| **comparable AND displayable** | **705** | **732** |
+| swsg participating in a comparison | 160 | **192** |
+
+**The +27 came from COMPLETING swsg's catalogue, not from seeded search.** swsg's entire
+catalogue is **4,274 products**; we held 3,276 (77%). Pulling the rest cost **~43 GraphQL
+calls** → **~1.6 requests per new comparison**, against seeded discovery's 7.7 and blind
+traversal's 120. **For a retailer whose whole catalogue fits in a few dozen API calls,
+completing the pull beats seeding by an order of magnitude.** Seeding is for retailers too
+large to hold — noon, not swsg.
+
+### THE GATE THAT SAVED THE RUN FROM ITSELF
+The first swsg seeded dry run reported a **100% hit rate**. It was entirely fuzzy —
+Magento's `products(search:)` matches any shared token:
+```
+"lenovo Idea Tab 11 128GB 5G" → a Lenovo MOUSE, and an oil heater with 11 FINS
+"dell 27 FHD Monitor"         → a SAMSUNG monitor
+"apple MK2P3AB/A"             → Apple EarPods
+```
+Writing those makes orphans at best and a FALSE COMPARISON at worst. The gate is ADR-176's
+own standard — the target's model number must appear **literally** in the hit's name or sku.
+**150 targets → 446 rejected, 2 genuine hits (1.3%).** The smaller number is the correct one.
+
+### THE LEVER, RE-SIZED HONESTLY
+The gate needs a model number on the TARGET, and **only 1,263 of 7,807 active canonicals
+have one**. So the seeded lever is far smaller than the raw single-store count suggests:
+
+| retailer | single-store targets | **gate-eligible** |
+|---|---:|---:|
+| noon | 2,315 | **522** |
+| amazon | 2,374 | **530** |
+| extra | 1,917 | **295** |
+
+An ungated sample spent ~84% of its fetches on targets that could never be accepted, which
+is why the first three noon runs looked dead — `queried` never advanced and the summary
+never flushed. The target query now selects only gate-eligible rows.
+
+**⇒ MODEL-NUMBER COVERAGE ON OUR OWN CANONICALS (16%) IS THE BINDING CONSTRAINT ON SEEDED
+DISCOVERY — not the retailer's search.** That is the next lever, and it is parser work of
+exactly the kind ADR-175/177 already proved.
+
+### IN FLIGHT
+A gated noon seeded run (250 eligible targets) is running and writing. noon throttles
+hard — a few observations per 20 minutes — so it will take hours. Its yield is NOT counted
+in the +27 above.
+
+### ROLLBACK
+```
+a00db54  gate + api search path   git revert a00db54
+```
+swsg catalogue completion is additive evidence (raw_observations); nothing to revert.

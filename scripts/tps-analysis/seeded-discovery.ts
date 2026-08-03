@@ -66,6 +66,13 @@ const STORE_NAMES: Record<string, string[]> = {
      where mine.n = 1 and not mine.has_me and cp.is_active
        and cp.brand is not null and lower(cp.brand) in (select b from their_brands)
        and cp.name_en is not null and length(cp.name_en) > 8
+       -- ONLY GATE-ELIGIBLE TARGETS. The relevance gate requires the target's model number
+       -- to appear literally in the hit, so a target without one can never be accepted and
+       -- querying for it spends a fetch we can never use. Measured 2026-08-03: only 1,263 of
+       -- 7,807 active canonicals carry a usable model number, so an ungated sample wasted
+       -- ~84% of its fetches and looked like a dead run. Eligible targets: noon 522,
+       -- amazon 530, extra 295 — that is the true size of this lever.
+       and cp.model_number is not null and length(cp.model_number) >= 5
      order by md5(cp.id::text)
      limit $2`,
     [names, TARGETS],
@@ -161,7 +168,7 @@ const STORE_NAMES: Record<string, string[]> = {
         } catch { errors++; }
       }
     } catch { errors++; }
-    if (queried % 25 === 0) console.log(`  ${queried}/${targets.length} queried · ${fetched} hits · ${written} written (${linked} linked)`);
+    if (queried % 5 === 0) console.log(`  ${queried}/${targets.length} queried · ${fetched} hits · ${written} written (${linked} linked)`);
     await new Promise((r) => setTimeout(r, 700));
   }
 
@@ -172,5 +179,6 @@ const STORE_NAMES: Record<string, string[]> = {
     rejected_irrelevant: rejectedIrrelevant, skipped_no_model: skippedNoModel,
     hit_rate_pct: queried ? Math.round((queried - noHit) / queried * 1000) / 10 : 0,
   }, null, 2));
+  await new Promise((r) => setTimeout(r, 250)); // let stdout flush before exit
   process.exit(0);
 })().catch((e) => { console.error('ERR', e instanceof Error ? e.message : e); process.exit(1); });
