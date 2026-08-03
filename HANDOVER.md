@@ -6682,3 +6682,24 @@ Data-layer: delist signals table (`drop table tps_offer_delist_signals`) · AC r
 (evidence JSON has ids; reverse UPDATE) · almanea names (evidence JSON, reverse UPDATE) ·
 ADR-200 spill (3 derived rows deleted, raw 983018 kept) · seeds + reobservations are
 additive raw evidence, nothing to revert.
+
+## CORRECTION + ADR-202 CLOSE — 2026-08-03 · THE "720 TWIN ROWS" WERE A PREDICATE ERROR
+The previous resume point's "storefront EN/AR twin rows (720)" claim is RETRACTED. Measured:
+sku-twin groups = 1, Arabic-name twin groups = 0. The 720 "collisions" were rows colliding
+with THEMSELVES: the selection predicate counted `name_ar = name_en` as "no Arabic" even when
+BOTH fields hold the same Arabic. Honest split (2026-08-03): truly-no-Arabic = noon 3,877 ·
+amazon 1,851 · jarir 1,008 · extra 285 · **almanea only 3** — while **almanea has 1,270 rows
+with Arabic in BOTH fields** (the English surface shows Arabic). The dedup unit is CANCELLED
+on evidence. Shipped instead: `enrich-almanea-arabic-names.ts --field=en` filled **981/981**
+`name_en` values from the merchant's own EN Algolia index (exact-sku, Latin-verified,
+evidence JSON). U5's remaining real units: noon/amazon Arabic-page name enrichment.
+
+## FOUNDER DECISION RECORDED — STORELEADS RETIRED (REJECTED HYPOTHESIS, final)
+Paid for; produced no meaningful value. A paid generic retailer-discovery database does not
+add enough value — the relevant Saudi retailers are publicly identifiable and directly
+researchable. Never repurchase; never substitute another paid discovery DB without measured
+evidence of a gap public research cannot resolve. The requirement is live-evidence
+EVALUATION (overlap, ingestibility, identity quality), not discovery — `tps:acquire` is the
+instrument. Also: subagent research is currently unavailable (org API restriction) — the
+one partial agent claim (redsea=Shopify) was verified FALSE by direct probe (Next.js,
+products.json 404 — ADR-105's classification stands).

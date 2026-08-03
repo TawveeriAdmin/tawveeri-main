@@ -22,6 +22,10 @@ import { writeFileSync, mkdirSync } from "fs";
 import { toPoolerDbUrl } from "./pooler-url";
 
 const APPLY = process.argv.includes("--apply");
+// --field=ar (default): fill missing Arabic names from the AR index.
+// --field=en: the measured mirror (2026-08-03): 1,270 almanea rows carry the ARABIC name in
+// BOTH fields — the English surface shows Arabic. Fill name_en from the merchant's EN index.
+const FIELD = (process.argv.find((a) => a.startsWith("--field="))?.split("=")[1] === "en" ? "en" : "ar") as "ar" | "en";
 const LIMIT = parseInt(process.argv.find((a) => a.startsWith("--limit="))?.split("=")[1] || "2000", 10);
 const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
 
@@ -30,8 +34,9 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
   if (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg")) { console.error("refusing: not production"); process.exit(1); }
   const { getProvider } = await import("../../src/lib/providers/registry");
   const provider = getProvider("almanea");
-  const algolia = provider?.algolia;
-  if (!algolia) { console.error("no almanea algolia config"); process.exit(1); }
+  const base = provider?.algolia as ({ appId: string; apiKey: string; index: string; indexEn?: string } | undefined);
+  if (!base) { console.error("no almanea algolia config"); process.exit(1); }
+  const algolia = FIELD === "en" ? { ...base, index: base.indexEn || base.index } : base;
 
   const c = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await c.connect();
@@ -43,10 +48,12 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
      from products p
      join product_stores ps on ps.product_id = p.id
      join stores s on s.id = ps.store_id and s.slug = 'almanea'
-     where (p.name_ar is null or p.name_ar = '' or p.name_ar = p.name_en or p.name_ar !~ '[؀-ۿ]')
+     where (case when $2 = 'ar'
+                 then (p.name_ar is null or p.name_ar = '' or p.name_ar !~ '[؀-ۿ]')
+                 else (p.name_ar ~ '[؀-ۿ]' and p.name_ar = p.name_en) end)
        and ps.product_url ~ '/p-[A-Za-z0-9]+'
-     limit $1`, [LIMIT]);
-  console.log(`almanea storefront rows without Arabic (sku-linked): ${rows.length} · ${APPLY ? "APPLY" : "DRY"}`);
+     limit $1`, [LIMIT, FIELD]);
+  console.log(`almanea ${FIELD === "en" ? "Arabic-in-both (need EN)" : "no-Arabic (need AR)"} sku-linked rows: ${rows.length} · ${APPLY ? "APPLY" : "DRY"} · index ${algolia.index}`);
 
   const endpoint = `https://${algolia.appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(algolia.index)}/query`;
   const lookupAr = async (sku: string): Promise<string | null> => {
@@ -62,7 +69,10 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
     const hit = j.hits?.[0];
     // Exact SKU match only — a fuzzy hit could name a DIFFERENT product, worse than none.
     if (!hit?.name || String(hit.sku) !== sku) return null;
-    return hasArabic(hit.name) ? hit.name.trim() : null;
+    const name = hit.name.trim();
+    if (FIELD === "ar") return hasArabic(name) ? name : null;
+    // EN mode: the name must actually be Latin — the EN index sometimes carries Arabic too.
+    return /[A-Za-z]/.test(name) && !hasArabic(name) ? name : null;
   };
 
   const updates: Array<{ id: string; sku: string; beforeAr: string | null; afterAr: string }> = [];
@@ -76,7 +86,7 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
   console.log(`AR-index matches: ${updates.length} · misses: ${misses}`);
 
   mkdirSync("docs/evidence", { recursive: true });
-  writeFileSync(`docs/evidence/almanea-arabic-names-${new Date().toISOString().slice(0, 10)}.json`,
+  writeFileSync(`docs/evidence/almanea-${FIELD}-names-${new Date().toISOString().slice(0, 10)}.json`,
     JSON.stringify({ measured_at: new Date().toISOString(), mode: APPLY ? "apply" : "dry", source: `algolia ${algolia.index} (merchant's own AR index, exact-sku)`, updates }, null, 2));
 
   if (!APPLY) { console.log("dry — nothing written; evidence file holds the plan"); await c.end(); process.exit(0); }
@@ -86,21 +96,29 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
   const seen = new Set<string>();
   const withinDupes = updates.filter((u) => { const k = u.afterAr.trim().toLowerCase(); if (seen.has(k)) return true; seen.add(k); return false; });
   const withinDupeSet = new Set(withinDupes.map((u) => u.id));
-  const { rows: existing } = await c.query<{ n: string }>(
-    `select lower(trim(name_ar)) n from products where name_ar = any($1)`,
-    [updates.map((u) => u.afterAr)],
-  );
-  const existingSet = new Set(existing.map((e) => e.n));
-  const writable = updates.filter((u) => !withinDupeSet.has(u.id) && !existingSet.has(u.afterAr.trim().toLowerCase()));
+  let existingSet = new Set<string>();
+  if (FIELD === "ar") {
+    // name_ar is UNIQUE; name_en is not — only AR mode needs collision skipping.
+    const { rows: existing } = await c.query<{ n: string }>(
+      `select lower(trim(name_ar)) n from products where name_ar = any($1)`,
+      [updates.map((u) => u.afterAr)],
+    );
+    existingSet = new Set(existing.map((e) => e.n));
+  }
+  const writable = updates.filter((u) => (FIELD === "en" || !withinDupeSet.has(u.id)) && !existingSet.has(u.afterAr.trim().toLowerCase()));
   console.log(`collision-skipped: ${updates.length - writable.length} (within-batch ${withinDupes.length}, existing ${updates.length - writable.length - withinDupes.length})`);
 
   let written = 0;
   for (let i = 0; i < writable.length; i += 100) {
     const chunk = writable.slice(i, i + 100);
     const res = await c.query(
-      `update products p set name_ar = u.after_ar
-       from (select unnest($1::uuid[]) id, unnest($2::text[]) after_ar) u
-       where p.id = u.id and (p.name_ar is null or p.name_ar = '' or p.name_ar = p.name_en or p.name_ar !~ '[؀-ۿ]')`,
+      FIELD === "ar"
+        ? `update products p set name_ar = u.after_ar
+           from (select unnest($1::uuid[]) id, unnest($2::text[]) after_ar) u
+           where p.id = u.id and (p.name_ar is null or p.name_ar = '' or p.name_ar !~ '[؀-ۿ]')`
+        : `update products p set name_en = u.after_ar
+           from (select unnest($1::uuid[]) id, unnest($2::text[]) after_ar) u
+           where p.id = u.id and p.name_ar ~ '[؀-ۿ]' and p.name_ar = p.name_en`,
       [chunk.map((u) => u.id), chunk.map((u) => u.afterAr)],
     );
     written += res.rowCount ?? 0;
