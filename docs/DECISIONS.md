@@ -6,6 +6,26 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-203 — Noon Arabic display names from the merchant Arabic pages, code-derived and sku-verified · Accepted (2026-08-03)
+
+**Context (U5 slice 2).** 3,877 noon storefront rows carry no Arabic name — the largest single
+Arabic-experience gap. Noon URLs embed a stable product code (ADR-149), and the Arabic page
+derives from the code alone: /saudi-ar/x/<CODE>/p/. Raw HTTP to noon STALLS from every egress
+measured; NoonScraper.fetchPage succeeds (mechanism-probed: full Arabic page, JSON-LD Product
+name). Tamkeen/alsaif were evaluated the same evening and rejected (WAF-blocked / fallback-grid
+search with no sitemap) — recorded in HANDOVER with the three instrument-artifact catches.
+
+**Decision.** enrich-noon-arabic-names.ts: pull no-Arabic noon rows, fetch the code-derived
+Arabic page through the scraper, take the JSON-LD Product name, and require the page sku to
+EQUAL the URL code — a redirect to a different product must never rename ours. Display-only
+writes to products.name_ar (never observations — ADR-089); UNIQUE collisions detected and
+skipped; resumable by construction; evidence JSON per run. Probe: 9/10 matched, 0 sku
+mismatches, 1 honestly-Latin name skipped.
+
+**Rollback:** evidence files hold every (id, name) pair; reverse UPDATE restores.
+
+---
+
 ### ADR-200 — A misparsed price killed the whole refresh chain; three-level containment · Accepted (2026-08-03)
 
 **Incident.** The ADR-195 reobserve run (15:44Z) re-fetched Amazon's Midea 12000-BTU split AC
