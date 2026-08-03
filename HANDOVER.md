@@ -6285,3 +6285,96 @@ source and missed «مكتبة جرير» immediately — the guard now derives 
 1c94c8f  ADR-189 follow-through              git revert 1c94c8f
 5e9049f  ADR-189 sitemap/robots/compare SEO  git revert 5e9049f
 ```
+
+---
+
+# ═══════════ RESUME POINT — 2026-08-03 · SESSION CLOSED · START HERE ═══════════
+
+**Tree clean · everything pushed · head `e388d24` → (this commit) · tests 1,270/1,270 ·
+`tps:sitemap-verify` 11/11 PASS · `tps:validator-verify` PASS · `tps:health` 0 FAIL.**
+
+## ⚠ A FIGURE CORRECTION — "740" IS NOT A CLOSING NUMBER
+**740 was an INTERMEDIATE row** in CHECKPOINT #63's progression table (the value after ADR-182's
+model backfill, before extra-seeding and the duplicate merges). **#63 closed at 761**, and every
+checkpoint since has carried 761 forward. Do not resume from 740.
+
+## AND THE 761 ITSELF IS NOW STALE — RE-MEASURE BEFORE QUOTING
+Measured at close with `scripts/tps-analysis/comparable-count.sql` (approved-retailer method,
+`price_history` → active canonicals → `resolveApprovedSlug`):
+
+| figure | value | method |
+|---|---:|---|
+| canonicals with any offer | 7,567 | comparable-count.sql |
+| **comparable (≥2 approved retailers)** | **918** | comparable-count.sql |
+| ≥3 approved retailers | 235 | comparable-count.sql |
+| comparable **excluding display-excluded** (lulu · sharafdg · blackbox) | **908** | same query, `COMPARISON_DISPLAY_EXCLUDED` removed |
+| ≥3, display-gated | 228 | as above |
+| projection rows · `has_comparison` | 5,421 · 947 | `tps_product_projection` |
+
+**I am NOT claiming 761 → 908 as progress.** I could not confirm that this SQL reproduces the
+LAUNCH_VOCABULARY §10 method that produced 761 in #63, and *a figure that moves because the
+method moved is not progress* (process rule 2). `npm run tps:comparison-value` — the named
+instrument — **exceeds 10 minutes and was killed**; run it deliberately, once, as the first act
+of the next session and record which method the number came from.
+
+## WHERE EACH OBJECTIVE STANDS
+| # | objective | state |
+|---|---|---|
+| 1 | Comparable-and-displayable | **OPEN.** Amazon reopened at a measured **7.1%** (not the 30% I published from a 40-target sample — corrected in #68). 31 observations from the 350-target run are **queued, not yet normalized**; their yield is unmeasured. ~900 Amazon targets remain. |
+| 2 | English-vs-Arabic experience gap | **CLOSED** — 30% → 8% of Arabic result names carrying no Arabic (#64). |
+| 3 | وفّر advisor (§8) | **CLOSED** — F7 was already built; §8's two unmet bullets (two-sentence limit, fact/inference/recommendation) shipped (#65). |
+| 4 | AI-assistant citation | **PREREQUISITE BUILT, rest deliberately not started.** Every advertised URL was a 404 and the comparison pages were robots-disallowed (#66). llms.txt is measured ineffective (408 fetches / 500M AI-bot visits), so the honest next step is to *measure indexation*, not build more mechanism. |
+
+## START THE NEXT SESSION WITH THESE, IN ORDER
+1. **`npm run tps:comparison-value`** — once, deliberately, and record the method. Everything in
+   Objective 1 is unquotable until there is one figure from one named instrument.
+2. **Let the scheduler normalize the 31 queued Amazon observations, then re-measure.** Do **not**
+   run `normalize` by hand alongside the scheduler (ADR-099).
+3. **Decide Objective 1's next lever on cost per comparison**, not on availability: ~900 Amazon
+   targets at 7.1% ≈ 60 observations. Completing a small retailer's catalogue beat seeding by 5×
+   before (#60) — check that comparison first.
+4. Then §9 وكيل توفيري agent separation · §2.1 retailer tiers · §11 WCAG 2.2 AA.
+5. **In ~2 weeks:** re-run `tps:sitemap-verify` and a `site:tawveeri.com` query to see whether
+   any of the 1,876 comparison pages were indexed. That is the only honest read on Objective 4.
+
+## RAILWAY PREVIEW DOMAIN — SHIPPED AND CONFIRMED LIVE
+Fixed **entirely in code** (ADR-190, commit `1beae75`). **No Railway dashboard change was needed
+or made.** Re-confirmed at session close:
+```
+preview   https://tawveeri-main-production.up.railway.app/ar   200   x-robots-tag: noindex, follow
+canonical https://tawveeri.com/ar                              200   (no x-robots-tag — correct)
+preview robots.txt                                             0 Sitemap: lines (withheld)
+```
+Crawling is deliberately still allowed on the preview host so the `noindex` is readable —
+blocking it would leave the URL indexed on anchor text alone. Gated by three checks in
+`tps:sitemap-verify`.
+
+## OWED / KNOWN-OPEN
+- 55 refused duplicate pairs (ADR-184) — need a second evidence source, not a weaker gate.
+- 59 audio canonicals stay English until store-name-in-brand is cleaned (guard shipped, **cleanup
+  refused at a measured ≤2-comparison ceiling** — ADR-191).
+- 7,155 storefront rows need Arabic-storefront ingestion (ADR-089 URL-vs-SKU double-count hazard).
+- ACs filed under `category='accessories'` — worked around in the composer, not fixed.
+- `/deals` page is hardcoded Arabic in both locales.
+- ADR-183's live Amazon title re-verification is **DONE** (18/18 real names) — no longer owed.
+
+## ROLLBACK — NEWEST FIRST
+```
+e388d24  CHECKPOINT #68 docs                      git revert e388d24
+29224ce  ADR-191 store-name-as-brand guard        git revert 29224ce
+9b0b228  CHECKPOINT #67 docs                      git revert 9b0b228
+1beae75  ADR-190 canonical-host noindex           git revert 1beae75
+3662b38  CHECKPOINT #66 docs                      git revert 3662b38
+1c94c8f  ADR-189 compare title + localized sellers git revert 1c94c8f
+5e9049f  ADR-189 sitemap · robots · compare SEO   git revert 5e9049f
+8b3cfda  CHECKPOINT #65 docs                      git revert 8b3cfda
+ee1dab4  ADR-187/188 reason kinds + F7 gate       git revert ee1dab4
+aa43ed6  CHECKPOINT #64 docs                      git revert aa43ed6
+89a50d3  ADR-186 live search index owner          git revert 89a50d3
+e7a30c1  ADR-185 Arabic display names             git revert e7a30c1
+```
+**Data-layer rollbacks** (code revert alone does not undo these):
+- ADR-185 renamed 401 canonicals + 613 storefront titles. Every before/after pair is in
+  `docs/evidence/locale-name-remediation-2026-08-03.json`. Reverting the code and re-running
+  `refresh-intelligence.ts` restores the previous composed names; both remediations are idempotent.
+- The Amazon seed wrote **31 raw observations** — additive evidence, nothing to revert.
