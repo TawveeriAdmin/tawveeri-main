@@ -6378,3 +6378,80 @@ e7a30c1  ADR-185 Arabic display names             git revert e7a30c1
   `docs/evidence/locale-name-remediation-2026-08-03.json`. Reverting the code and re-running
   `refresh-intelligence.ts` restores the previous composed names; both remediations are idempotent.
 - The Amazon seed wrote **31 raw observations** — additive evidence, nothing to revert.
+
+---
+
+# ═══════════ RESUME POINT — 2026-08-03 (2) · MASTER BOOK PHASE OPENED · START HERE ═══════════
+
+**Supersedes the resume point above. Tree clean · pushed · tests 1,289/1,289 · build compiles
+(the `cp` step in `npm run build` is POSIX-only — run it under bash on Windows; Railway is
+unaffected).**
+
+## THE PHASE
+`docs/TAWVEERI_MASTER_BOOK.md` v1.2 is IN THE REPO (founder-supplied; ch. 33–35 merged before
+Appendix A; Appendix E added for post-approval external evidence). It governs product/CX below
+the Constitution. `IMPLEMENTATION_ROADMAP.md` (repo root) is the unit order. Phase rule:
+**products are inventory; comparable products are the product.**
+
+## THE FIVE EVIDENCE ANSWERS (2026-08-03, methods named — re-measure before quoting)
+| Q | figure | method |
+|---|---|---|
+| visible (knowledge) | 5,426 | `tps_product_projection` count |
+| visible (storefront) | 9,754 (9,557 in-stock) | `products` / `product_stores` |
+| ≥2 retailers | **922** (displayable **912**) | `comparable-count.sql` |
+| ≥3 retailers | 236 (displayable 229) | same |
+| comparison rate | 16.8% of projection · 12.2% of canonicals-with-offer | both denominators stated |
+| AR/EN reachability | **54/54 PASS live** | `unified-search-verify.js --base https://tawveeri.com` |
+
+**ONE FIGURE, ONE INSTRUMENT (resolves the 740/761 question):** the comparable count's named
+instrument is `scripts/tps-analysis/comparable-count.sql`. `tps:comparison-value` is a DIFFERENT
+instrument (per-category return-on-engineering; ran deliberately once: smartwatch 76.4%
+identified-where-comparison-possible; ~131 missing listings across multi-merchant smartwatch
+brands = U3 input). Do not present either as the other.
+
+## SHIPPED THIS SESSION — ADR-193 (`007fc32`, + `2dd211c` book, + `3f23c47` roadmap)
+Pick label conditioned on price-evidence age; observation time at the point of claim.
+- `decisionCard.last_observed_at` carried from `price_history.observed_at` (was read and dropped);
+  `SmartPickCard` renders shared `observedAgoLabel()` (day form ≥48h — approved corpus).
+- Label withheld beyond `PICK_FRESHNESS_MAX_HOURS = 168` (evidence-engine owns it): search emits
+  no card, advisor demotes `is_smart_pick`. Ranking untouched; unknown age never demotes (P2);
+  grid results always render (P3). Withheld picks logged `[smart-pick-freshness]`.
+
+## THE TWO MEASUREMENTS THAT SET THE NEXT UNIT (U2 — comparable-first observation cadence)
+1. Median freshest observation across the 912 displayable comparables: **103.6h**; 42% >7d;
+   only 27% <24h.
+2. **685/912 (75.1%) of comparables' CHEAPEST offer rows are >7d old** — a stale low price stays
+   "cheapest" BECAUSE it aged without re-observation. The best-price claim is structurally biased
+   toward stale evidence. U2 re-observes cheapest-offer listings first; success = median <24h and
+   the ADR-193 gate band ~empty. Mechanism: priority tier in `scraping_schedules`, ADR-099 rules
+   unchanged.
+
+## EXTERNAL EVIDENCE (Master Book Appendix E, sourced)
+- No incumbent (idealo/Geizhals/PriceSpy/Google Shopping) shows per-offer freshness to consumers;
+  Google suppresses on mismatch. Timestamps = differentiation.
+- **Kanbkam (kanbkam.com) does consumer price-history for amazon.sa/noon/extra/jarir** — qualify
+  every "no one in Saudi has price history" claim; depth unmeasured.
+- Agentic commerce settled on "discover in AI, buy on site"; no first-party evidence-cited price
+  API exists anywhere = open lane (U7, scope only).
+
+## FOUND, NOT FIXED (deliberately — own boundaries)
+- «ايفون 16» decision card is an **iPad**: `ARABIC_TO_ENGLISH` maps «ايفون»→['iphone','apple'],
+  so any Apple product satisfies the relevance group. Reproduce, then fix the expansion
+  (device-signal override exists for accessories; this is the sibling defect for brand terms).
+- Stale-cheapest bias also affects compare pages' best-price ordering (same evidence; U2 fixes
+  the data, but consider whether compare should surface per-offer ages — book §19 says yes:
+  «متى رُصد كل سعر»).
+
+## QUEUE (from IMPLEMENTATION_ROADMAP.md)
+U2 cadence (next) · U3 comparison lever by cost-per-comparison (tps:feed-probe first) ·
+U4 blocked (needs 2nd evidence source) · U5 Arabic ingestion · U6 AC misfiling · U7 scope only.
+Owed: mobile-leg journey measurement (the one deliberate `tps:ui-journey` run) — was NOT spent
+this session; spend it before or after U2 and re-baseline.
+
+## ROLLBACK
+```
+007fc32  ADR-193 pick freshness unit        git revert 007fc32
+3f23c47  roadmap (docs only)                git revert 3f23c47
+2dd211c  Master Book v1.2 (docs only)       git revert 2dd211c
+```
+No data-layer changes this session (all measurement was read-only).

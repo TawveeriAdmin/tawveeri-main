@@ -50,6 +50,11 @@ products that are the product.
 
 ### U2 — Comparable-first observation cadence
 *Class: trust + root cause of U1's gate · ch. 33.3 (quality is a rate) · §12.2 (the تخفيضات season, 1 Aug–31 Oct, is a high-signal window — every observation compounds)*
+- **Sharper measurement (2026-08-03): 685/912 (75.1%) of comparables' CHEAPEST offers are older
+  than 7 days** (vs 42% for freshest-any-store). A stale low price stays "cheapest" precisely
+  because it aged without re-observation — **the best-price claim is structurally biased toward
+  stale evidence.** Re-observation must start with the cheapest offer per comparable, not the
+  freshest.
 - The 912 comparables are ~2,100 store-listings. Re-observing them daily is small against the
   scheduler's existing volume, and it empties the >168h band that forces U1's label gate.
 - Mechanism: priority tier in the dispatcher (`scraping_schedules` coverage config) keyed on
