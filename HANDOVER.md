@@ -5711,3 +5711,64 @@ befbc13  CHECKPOINT #59 docs                 git revert befbc13
 f4d5210  scorecard scoping                   git revert f4d5210
 ```
 Catalogue completions (swsg, shaker) are additive `raw_observations` — nothing to revert.
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #62 · MODEL-NUMBER UNIT DONE · QUEUE 2–4 NOT STARTED ═══
+
+**Tree clean · pushed · tests 1,148/1,148 · `tps:health` 0 FAIL.**
+
+## THE MODEL-NUMBER UNIT — ADR-182
+
+**Model coverage 1,263 → 3,231 of 7,826 active canonicals (16% → 41%).**
+**Seed-eligible targets: noon 522 → 1,367 · amazon 530 → 1,250 · extra 295 → 763 (~2.6×).**
+
+**COMPARABLE+DISPLAYABLE: 739 → 740.** The backfill did **not** itself move the number, and
+it was not expected to — it is metadata that lets seeded discovery *aim*. Converting it is
+rate-limited (below).
+
+### THE TARGETING WAS WRONG TWICE BEFORE IT WAS RIGHT
+1. **air_conditioner looked like the prize** — 39,304 low-confidence rows, 0% model coverage.
+   But `requireValidTier: false` for AC, so those rows **already corroborate**; changing their
+   keys risks destroying working comparisons. Wrong target.
+2. **The "84% lack a model" framing overstated the identity prize.** In the categories where
+   low-confidence rows are genuinely dead (`requireValidTier: true`), the whole recoverable
+   set is **~16 comparisons** (smartwatch 9, monitor 7). Raw row counts are re-scrapes;
+   distinct listings are far fewer.
+⇒ So the unit became a **metadata backfill**, not an identity rescue. Identity rescue is the
+riskier change ADR-175 measured turning 23 corroborations into 18, and was deliberately avoided.
+
+### THE UNIQUE INDEX EARNED ITS KEEP
+`canonical_products_brand_model_number_idx UNIQUE (brand, model_number) WHERE NOT NULL` — the
+schema already treats brand+model as an identity, so a colliding value is never written.
+**137 collisions refused** (24 against existing canonicals, 113 where two proposals shared one
+brand+model: `apple|MMTN2ZE/A ×2`, `anker|A3012H21 ×2`).
+**Those 137 are duplicate canonicals of the SAME product** — a merge decision under ADR-176,
+listed in `docs/evidence/model-backfill-20260803-062248.json` and left alone. **They are a
+real, sized, ready follow-up unit.**
+
+## WHAT BLOCKS CONVERSION NOW
+- **noon rate-limits us to ~1 observation per 12 minutes** after today's traffic. A 400-target
+  seeded run is in flight and will take many hours. Its yield is not in the 740.
+- **Seeded discovery only supports noon + Magento-sourced retailers.** `extra` errored on all
+  12 targets — its scraper has no `scrapeApiPage`. **amazon and extra hold 2,013 eligible
+  targets between them and cannot be seeded at all until a keyed-search path is added to
+  those scrapers.** That is the highest-value follow-up: the targets now exist, the aim does not.
+
+## QUEUE STATUS
+1. **Comparable-and-displayable — 705 → 740 this session.** Not exhausted; blockers named above.
+2. English-vs-Arabic experience gap — **NOT STARTED**
+3. وفّر advisor (F7 runtime guard first) — **NOT STARTED**
+4. AI-assistant citation — **NOT STARTED**
+
+## ROLLBACK
+```
+4fe0e8d  ADR-182 model backfill      git revert 4fe0e8d   +  restore from
+                                     docs/evidence/model-backfill-20260803-062248.json
+1f264d7  WooCommerce retry           git revert 1f264d7
+a00db54  relevance gate + api search git revert a00db54
+745c7da  phantom duplicate fix       git revert 745c7da
+f4d5210  scorecard scoping           git revert f4d5210
+```
+The backfill is fill-only and additive; reverting the code does not unfill the column — use
+the snapshot to restore if ever needed.
