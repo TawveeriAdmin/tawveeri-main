@@ -12,6 +12,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 import { pickBestUrl } from "../tps-core/url-util";
+import { BRAND_AR } from "../tps-core/arabic-naming";
 import { tvPlugin, normalize as tvNormalize } from "../tps-plugins/tv";
 import {
   type TpsBatchOptions, type TpsBatchResult,
@@ -46,7 +47,10 @@ function stableUuid(seed: string): string {
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
 
-const BRAND_AR: Record<string, string> = { samsung: "سامسونج", lg: "إل جي", sony: "سوني", tcl: "تي سي إل", hisense: "هايسنس", toshiba: "توشيبا", nikai: "نيكاي", panasonic: "باناسونيك", philips: "فيليبس", dansat: "دان سات", skyworth: "سكاي ورث", haier: "هاير", vision: "فيجن" };
+// ADR-185: the TV brand map now lives in `tps-core/arabic-naming.ts` (imported above) so
+// there is ONE Arabic brand vocabulary rather than two that drift. The merged map is a
+// strict superset with byte-identical values for every brand TV uses — asserted in
+// tests/tps/arabic-naming.test.ts, so TV display names are unchanged by the move.
 const RES_EN: Record<string, string> = { "8k": "8K", "4k": "4K UHD", fhd: "Full HD", hd: "HD" };
 const PANEL_EN: Record<string, string> = { neo_qled: "Neo QLED", oled: "OLED", qned: "QNED", nanocell: "NanoCell", mini_led: "Mini LED", qled: "QLED", crystal: "Crystal UHD", led: "LED" };
 export function buildNames(key: string): { nameAr: string; nameEn: string } {

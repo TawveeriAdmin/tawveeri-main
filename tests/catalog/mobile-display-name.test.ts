@@ -1,6 +1,8 @@
 // tests/catalog/mobile-display-name.test.ts
 // ADR-084 regression: the ADR-081 NO_STORAGE sentinel is INTERNAL and must never
 // reach the customer as "NO_STORAGEGB" in a display name, nor as NaN in attrs.
+// ADR-185 updates the expected STRINGS (not the invariant): the Arabic name now carries
+// the Arabic category head and brand, and the "Galaxy S S25" series repetition is gone.
 import { CATEGORY_DEFS } from "../../scripts/tps-core/category-registry";
 
 const mobile = (CATEGORY_DEFS as unknown as Record<string, {
@@ -13,12 +15,13 @@ describe("mobile display name — NO_STORAGE sentinel never leaks", () => {
     const n = mobile.names("samsung|Galaxy S|S25|Ultra|NO_STORAGE");
     expect(n.nameAr).not.toMatch(/NO_STORAGE/);
     expect(n.nameEn).not.toMatch(/NO_STORAGE/);
-    expect(n.nameAr).toBe("samsung Galaxy S S25 Ultra");
-    expect(n.nameEn).toBe("Samsung Galaxy S S25 Ultra");
+    expect(n.nameAr).toBe("جوال سامسونج Galaxy S25 Ultra");
+    expect(n.nameEn).toBe("Samsung Galaxy S25 Ultra");
   });
 
   it("still renders storage for a specified canonical", () => {
     expect(mobile.names("apple|iPhone|17|Pro Max|256").nameEn).toBe("Apple iPhone 17 Pro Max 256GB");
+    expect(mobile.names("apple|iPhone|17|Pro Max|256").nameAr).toBe("جوال آبل iPhone 17 Pro Max 256 جيجابايت");
   });
 
   it("attrs returns storage_gb = null (never NaN) for NO_STORAGE", () => {

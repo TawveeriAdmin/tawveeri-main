@@ -25,6 +25,7 @@ import { buildNames as audioNames } from "../tps-matcher/audio-matcher-v1-dry";
 import { buildNames as cameraNames } from "../tps-matcher/camera-matcher-v1-dry";
 import { buildNames as acNames } from "../tps-matcher/ac-matcher-v1-dry";
 import { buildNames as laptopNames } from "../tps-matcher/laptop-matcher-v1-dry";
+import { mobileNames, smartwatchNames } from "./arabic-naming";
 
 // Stores in the recurring normalization sweep. ADR-060 adds Noon (3) and SWSG (8):
 // both were ingesting but excluded here, so neither could ever produce a canonical.
@@ -170,17 +171,15 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     category: "mobile", detected: "mobile", plugin: mobilePlugin,
     normalize: (a, b, br, pl) => mobileN(a, b, br, pl), version: "mobile-v1",
     filterKeywords: ["iphone", "ايفون", "galaxy", "جالاكسي", "جوال", "هاتف", "smartphone", "redmi", "ريدمي"],
-    names: (k) => {
-      const [brand, family, gen, variant, storage] = k.split("|");
-      const v = variant && variant !== "Standard" ? ` ${variant}` : "";
-      // ADR-081/084: NO_STORAGE is an internal sentinel for a storage-unspecified
-      // canonical — it must NEVER reach the customer as "NO_STORAGEGB". Omit the
-      // storage segment entirely (the Decision Engine already flags storage as
-      // unspecified in its reasons; the title just shows the model).
-      const storagePart = storage && storage !== "NO_STORAGE" ? ` ${storage}GB` : "";
-      const en = `${family} ${gen}${v}${storagePart}`.replace(/\s+/g, " ").trim();
-      return { nameAr: `${brand} ${en}`, nameEn: `${brand.charAt(0).toUpperCase()}${brand.slice(1)} ${en}` };
-    },
+    // ADR-185: nameAr was `${brand} ${englishLabel}` — the same English string with a
+    // lowercase brand, so 317 of 321 active mobile canonicals carried no Arabic character
+    // and an Arabic shopper searching «جالكسي» read 96% English names. `mobileNames` adds
+    // the Arabic category head and the transliterated brand, keeps the model line Latin,
+    // and de-duplicates the brand/series repetition that produced "Tecno Tecno Spark 12"
+    // and "Galaxy A A07" in BOTH locales.
+    // ADR-081/084 preserved: NO_STORAGE is an internal sentinel and must NEVER reach the
+    // customer as "NO_STORAGEGB" — `arabicStorage`/`mobileNames` omit the segment entirely.
+    names: (k) => mobileNames(k),
     attrs: (k) => {
       const p = k.split("|");
       // storage_gb must be null (not NaN) for a NO_STORAGE canonical, or downstream
@@ -200,14 +199,10 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     category: "smartwatch", detected: "smartwatch", plugin: smartwatchPlugin,
     normalize: (a, b, br, pl) => smartwatchN(a, b, br, pl), version: "smartwatch-v1",
     filterKeywords: ["ساعة ذكية", "smartwatch", "smart watch", "apple watch", "galaxy watch", "watch fit", "watch gt"],
-    names: (k) => {
-      const [brand, family, gen, variant, size, conn] = k.split("|");
-      const v = variant && variant !== "Standard" ? ` ${variant}` : "";
-      const sz = size && size !== "NO_SIZE" ? ` ${size}mm` : "";
-      const c = conn === "cellular" ? " Cellular" : "";
-      const label = `${family} ${gen}${v}${sz}${c}`.replace(/\s+/g, " ").trim();
-      return { nameAr: `${brand} ${label}`, nameEn: `${brand.charAt(0).toUpperCase()}${brand.slice(1)} ${label}` };
-    },
+    // ADR-185: same defect as mobile, at 100% — all 61 active smartwatch canonicals were
+    // named in English on the Arabic surface. Case size renders «46 ملم» and cellular
+    // «خلوي»; NO_SIZE stays an internal sentinel and is omitted, never rendered.
+    names: (k) => smartwatchNames(k),
     attrs: (k) => {
       const p = k.split("|");
       return {

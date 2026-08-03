@@ -6,6 +6,124 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-185 — The Arabic display name is a measured surface, and two plugins were never writing one · Accepted (2026-08-03)
+
+**Context.** Objective 2 of the queue — "the English-vs-Arabic experience gap" — had never been
+defined, so the first job was to measure it rather than assume where it lived. Three candidates
+were ruled out by measurement before anything was touched:
+
+| candidate | measured | verdict |
+|---|---|---|
+| UI copy parity | 1,617 keys · **2** missing in AR · **0** missing in EN · 1 untranslated string | not the gap |
+| English shopper seeing Arabic | `display_name_en` is **94.7%** Latin · **5** rows of 5,366 with none | not the gap |
+| Arabic shopper seeing English | `display_name_ar` is **57.4%** Arabic · **463** rows with **no Arabic character at all** | **this is the gap** |
+
+Measured where it actually reaches a customer, on production, reading the exact field the card
+renders (`product-card.tsx:94`): ten queries × two locales × 24 results.
+**73 of 240 Arabic result names (30%) carried no Arabic character. The English figure was 0 of 240.**
+Worst: «جالكسي» **96%**, «ايفون 16» **83%**.
+
+**Root cause, and it is narrow.** Every registered category plugin composes a real Arabic name from
+the verified identity key — `تلفزيون`, `شاشة`, `طابعة`, `تابلت`, `ثلاجة`, `غسالة`, `مكيف`. **Two do not.**
+`mobile-v1` and `smartwatch-v1` emitted `nameAr = ${brand} ${englishLabel}` — the English string
+with a lowercase brand — so **317 of 321** active mobile canonicals and **61 of 61** smartwatch
+canonicals carried no Arabic. A third path, the model/alias canonical writers, sets
+`name_ar = name_en = ` one display string.
+
+**Two defects were visible in BOTH locales while looking at this.** The family segment of an
+identity key repeats the brand (`tecno|Tecno Spark` → «Tecno Tecno Spark 12», `honor|Honor` →
+«Honor Honor X 5»), and a Samsung generation repeats the family's series letter
+(`samsung|Galaxy A|A07` → «Galaxy A A07», `Galaxy Z|Z Flip 7|Flip` → «Galaxy Z Flip 7 Flip»).
+Neither is an Arabic problem; both were shipping to every shopper.
+
+**Decision.**
+1. **One Arabic naming vocabulary**, `scripts/tps-core/arabic-naming.ts`. The TV brand map moved
+   into it so there are not two maps drifting apart; a test asserts every pre-existing TV
+   transliteration is byte-identical, so no TV name changed.
+2. **The category head and the brand carry the Arabic. Model lines and codes stay Latin.**
+   «جوال آبل iPhone 16 Pro Max 256 جيجابايت». *iPhone 16 Pro Max* is the name printed on the box
+   and the name the shopper types; a transliteration table over model lines is a drift surface
+   with no upside. This is the rule `arabic-titles.js` already follows.
+3. **A brand we have not curated is rendered in Latin, never guessed** — «جوال kieslect K11».
+   Unknown beats incorrect, and the Arabic head still makes the name readable.
+4. **Two repair paths, and neither invents anything.** COMPOSED recomputes mobile/smartwatch from
+   the **unchanged** identity key. OBSERVED takes the merchant's **own published Arabic title**
+   from an observation already matched to that canonical — «ابل ايفون اير، 256 جيجابايت، 5G – أسود».
+   Where a merchant printed an Arabic name, that name beats anything we would compose.
+5. **Collisions are detected, not discovered.** `canonical_products` carries
+   UNIQUE `(lower(trim(name_ar)), lower(trim(brand)))`. The remediation checks every proposed name
+   against the rows that will remain and against each other, and **refuses** rather than failing a
+   statement mid-run. One pair collided — two canonicals differing only by a variant segment that
+   was itself a duplicate — and refusing it surfaced a genuine duplicate card (ADR-184's territory).
+
+**The dry run had to be made to argue with itself.** A sample of eight hides exactly the defects
+the pass exists to remove: the first run looked clean and was hiding «Galaxy Z Flip 7 Flip» and
+«Galaxy Watch Ultra Ultra». The dry run now scans the **whole** proposed set for a repeated token
+and for a model label too thin to name anything, and prints every hit. Both defects were found
+that way, and the "thin label" check then produced eight false positives («Xiaomi 17 512GB» is
+correct) which is why it now ignores a bare numeric generation.
+
+**Measured result.** Projected products showing no Arabic **463 → 64 (−86%)**; among **comparable**
+products **135 → 5 (−96%)**; mobile 329 → 4, smartwatch 69 → 0. On production, the customer-visible
+figure moved **30% → 13%**.
+
+**Consequence that must not be forgotten: the repair is transient until the code is deployed.**
+The hourly scheduler re-normalizes through the **deployed** engine, so it re-wrote three repaired
+names with the old composition within half an hour of the run. Order is **deploy the code, then
+run the remediation** — a data repair that races its own pipeline is not a repair.
+
+**Not done, and why.** The remaining **59** zero-Arabic audio canonicals are left alone. A generic
+Arabic head would render «صوتيات sony world - ksa Wh-1000xm6» — the real defect in those rows is
+that **a store name is sitting in the brand field** (22 canonicals keyed `sony world - ksa|…`), and
+an Arabic wrapper around a wrong brand is not an improvement. They carry **0** comparisons.
+
+**The storefront layer is a separate, larger unit and is NOT touched.** `products.name_ar` equals
+`name_en` for **8,784 of 9,616** active rows, because the major retailers are scraped from their
+**English** storefronts. It cannot be repaired from what we hold: of 7,762 English-named rows,
+**0** have an Arabic title anywhere in `raw_observations`. Closing it means ingesting each
+retailer's Arabic storefront — which is a sourcing unit with a real hazard, since the normalizer
+keys on URL and not SKU (ADR-089), so an Arabic URL variant would double-count every offer.
+
+---
+
+### ADR-184 — Duplicate product cards merged; 73 merged, 55 refused by the gate · Accepted (2026-08-02) · *recorded retroactively*
+
+Recorded here 2026-08-03 to close a Decision Register gap: the decision shipped in commit
+`8273e42` and is described in full in HANDOVER CHECKPOINT #63. 130 products were held as two
+active projected canonicals — one named by bare MPN, one named properly — so a customer saw the
+same product twice at two prices, which reads as a comparison and is not one. **Gate is ADR-176's,
+unchanged:** the same model must appear literally in the raw evidence on both sides; **55 pairs
+were refused** because one side could not show it. Winner = more stores, then the more descriptive
+name, then older. Evidence snapshot: `docs/evidence/dupe-merge-*.json`.
+
+---
+
+### ADR-183 — Seeded discovery reuses the keyed-search layer, and Amazon was returning brands as titles · Accepted (2026-08-02) · *recorded retroactively*
+
+Recorded here 2026-08-03 to close a Decision Register gap: shipped in commit `7aa6fc5`, described
+in full in HANDOVER CHECKPOINT #63. Rather than write bespoke keyed-search methods per cron
+scraper, seeded discovery dispatches Magento GraphQL → the existing `src/lib/scraping/search/`
+layer → the cron scraper; **Extra went from 20 errors on 20 targets to 0**. Robots checked per
+retailer before use. Found en route: Amazon moved the title, `h2 span` returned the **brand** and
+`[data-cy="title-recipe"] a span` returned "Sponsored", so **every Amazon result on the customer
+search page rendered a brand where its product name should be**. Fixed by picking the first
+plausible candidate rather than trusting selector order. **Live re-verification is still owed** —
+the fix is fixture-proven only (`tests/scraping/amazon-search-title.test.ts`) because Amazon
+rate-limited the IP mid-investigation.
+
+---
+
+### ADR-182 — Canonical model-number backfill: metadata only, never identity · Accepted (2026-08-02) · *recorded retroactively*
+
+Recorded here 2026-08-03 to close a Decision Register gap: shipped in commit `4fe0e8d`, described
+in full in HANDOVER CHECKPOINT #62. Seeded discovery's relevance gate needs a model number on the
+**target**, and only 1,263 of 7,807 active canonicals had one — the binding constraint on the
+whole lever. The backfill extracts model numbers from titles and payloads and writes them as
+**metadata**; `tps_identity_key` is never derived from or altered by it. Coverage 16% → 41%;
+gate-eligible seed targets ×2.6. Evidence snapshot: `docs/evidence/model-backfill-*.json`.
+
+---
+
 ### ADR-181 — Noon attribution is a publisher ID, not a coupon code · Accepted (2026-08-02)
 
 **Context.** `/go` appended `utm_source=tawveeri&utm_medium=affiliate&utm_campaign=DNC160` to
