@@ -8,9 +8,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { MetadataRoute } from 'next';
+import { headers } from 'next/headers';
+import { isNonCanonicalHost } from '@/lib/seo/canonical-host';
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
+
+  /**
+   * ADR-190 — this file is served by the Railway preview domain too, and the middleware does
+   * NOT run for it (the matcher excludes `robots.txt`), so the host check has to live here.
+   *
+   * On a non-canonical host we **still allow crawling** and rely on the `X-Robots-Tag: noindex`
+   * header the middleware sets. Disallowing instead would be the classic self-defeating move: a
+   * crawler that cannot fetch the page never sees the `noindex`, and the URL stays indexed on
+   * anchor text alone. What we do withhold is the **sitemap reference** — there is no reason to
+   * hand a crawler 17,000 URLs from a host we are asking it to forget.
+   */
+  const nonCanonical = isNonCanonicalHost((await headers()).get('host'));
 
   return {
     rules: [
@@ -43,6 +57,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    ...(nonCanonical ? {} : { sitemap: `${baseUrl}/sitemap.xml` }),
   };
 }

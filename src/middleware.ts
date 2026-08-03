@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAuditLog } from '@/lib/auth/audit';
 import createIntlMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './i18n';
+import { isNonCanonicalHost, NON_CANONICAL_ROBOTS_TAG } from '@/lib/seo/canonical-host';
 
 /**
  * Combined Middleware: i18n + Auth + API Rate Limiting
@@ -150,6 +151,28 @@ const isConfiguredAdminEmail = (email?: string | null) => {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
+  /**
+   * ADR-190 — A DEPLOYMENT DOMAIN IS NOT A SECOND WEBSITE.
+   *
+   * Railway serves this app on `tawveeri-main-production.up.railway.app` as well as on
+   * `tawveeri.com`, and the preview host **is indexed** — a web search for «توفيري» returns it,
+   * showing our «المنتج غير موجود» page. Duplicate content splitting the authority of a domain
+   * that has very little to split.
+   *
+   * `noindex` is applied as a HEADER on every response from a non-canonical host, and crawling
+   * is deliberately still ALLOWED there. Blocking the crawler in `robots.txt` instead is the
+   * classic mistake: a crawler that cannot fetch the page never sees the `noindex`, and the URL
+   * stays indexed on anchor text alone. The rule is allow the fetch, refuse the index.
+   *
+   * Applied first, before every other branch, so it is on API responses, redirects and rate-limit
+   * rejections too — a header that only some responses carry is a header that leaks.
+   */
+  const nonCanonical = isNonCanonicalHost(request.headers.get('host'));
+  const markHost = <T extends NextResponse>(res: T): T => {
+    if (nonCanonical) res.headers.set('X-Robots-Tag', NON_CANONICAL_ROBOTS_TAG);
+    return res;
+  };
+
   // API routes: apply rate limiting, then pass through
   if (pathname.startsWith('/api/')) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -158,7 +181,7 @@ export async function middleware(request: NextRequest) {
     const { allowed, remaining, retryAfter } = checkRateLimit(ip, pathname);
 
     if (!allowed) {
-      return NextResponse.json(
+      return markHost(NextResponse.json(
         { error: 'Too many requests' },
         {
           status: 429,
@@ -167,10 +190,10 @@ export async function middleware(request: NextRequest) {
             'X-RateLimit-Remaining': '0',
           },
         }
-      );
+      ));
     }
 
-    const response = NextResponse.next();
+    const response = markHost(NextResponse.next());
     if (remaining >= 0) {
       response.headers.set('X-RateLimit-Remaining', String(remaining));
     }
@@ -184,11 +207,11 @@ export async function middleware(request: NextRequest) {
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt'
   ) {
-    return NextResponse.next();
+    return markHost(NextResponse.next());
   }
 
   // First, let next-intl handle the routing
-  const response = handleI18nRouting(request);
+  const response = markHost(handleI18nRouting(request));
 
   // THE ROOT LAYOUT READS THIS. `src/app/layout.tsx` sits above the `[locale]` segment and has
   // no route param, so the locale it puts in `<html lang>`/`<html dir>` — and the messages it
@@ -266,7 +289,7 @@ export async function middleware(request: NextRequest) {
   // (e.g. refreshed access tokens). Without this, token refreshes done in the
   // middleware are lost and the browser client cannot establish a session.
   const createRedirect = (url: URL) => {
-    const redirectResponse = NextResponse.redirect(url);
+    const redirectResponse = markHost(NextResponse.redirect(url));
     response.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });

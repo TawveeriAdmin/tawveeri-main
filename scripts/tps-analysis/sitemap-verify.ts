@@ -80,6 +80,31 @@ const classify = (u: string): Klass =>
   const conflict = byClass.compare.length > 0 && disallows.some((d) => /\/compare\/?\*?$|\/\*\/compare\/$/.test(d));
   check(!conflict, "robots.txt does not disallow what the sitemap offers", conflict ? `disallow rules: ${disallows.join(" ")}` : "no conflict");
 
+  // ── the deployment domain must not compete with the real one (ADR-190) ────────────────
+  //
+  // A web search for «توفيري» returned `tawveeri-main-production.up.railway.app` showing our
+  // «المنتج غير موجود» page — duplicate content splitting whatever authority tawveeri.com has.
+  // Checked here rather than assumed, because the canonical host and the `noindex` rule live in
+  // two files and this is the only place that sees both from outside.
+  const previewHost = arg("--preview-host", "tawveeri-main-production.up.railway.app");
+  if (previewHost && !BASE.includes(previewHost)) {
+    const pv = await fetch(`https://${previewHost}/ar`, { redirect: "manual" }).catch(() => null);
+    if (!pv) {
+      console.log(`SKIP  preview host ${previewHost} unreachable — nothing to assert`);
+    } else {
+      const tag = pv.headers.get("x-robots-tag") ?? "";
+      check(/noindex/i.test(tag), "the deployment domain serves X-Robots-Tag: noindex",
+        tag ? `"${tag}"` : `status ${pv.status}, header absent`);
+      // A noindex the crawler is forbidden to fetch is a noindex the crawler never reads.
+      const pvRobots = await fetch(`https://${previewHost}/robots.txt`).then((r) => r.text()).catch(() => "");
+      check(!/^Disallow:\s*\/\s*$/m.test(pvRobots),
+        "the deployment domain still ALLOWS crawling, so the noindex is readable",
+        /^Disallow:\s*\/\s*$/m.test(pvRobots) ? "blanket Disallow: / would hide the noindex" : "crawlable");
+      check(!/^Sitemap:/m.test(pvRobots), "the deployment domain does not advertise a sitemap",
+        /^Sitemap:/m.test(pvRobots) ? "still advertising" : "withheld");
+    }
+  }
+
   console.log("\n" + "=".repeat(72));
   console.log(failures === 0 ? "GATE: PASS" : `GATE: FAIL — ${failures} check(s) failing`);
   process.exit(failures === 0 ? 0 : 1);
