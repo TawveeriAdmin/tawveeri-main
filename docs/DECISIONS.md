@@ -6,6 +6,70 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-192 — Four founder-reported search defects: reproduce before you fix · Accepted (2026-08-03)
+
+**Context.** The founder reported four customer-visible defects by hand on
+`/ar/search?q=ابي مكيف رخيص لغرفه 40 متر`. Each was reproduced against production
+(headless Chrome, 1400px and 390px, `ar` and `en`) BEFORE any code was touched. Two were
+real, one is a working control that reads as broken, and one did not reproduce. Recording
+that split is the decision here — three of the four could have been "fixed" plausibly and
+wrongly.
+
+**1. «مدى ملاءمته لطلبك: 0.89%» — REAL, fixed.** `decision-engine.ts` emits
+`suitability_score` on a **0..1** scale (clamped, 2dp). `advisor-api.ts` rendered it as
+`${score}%`, so an **89% fit published as "0.89%"** — reading as *almost no match* on the
+product we ranked FIRST. Wrong by 100×, and a raw confidence percentage is not something a
+shopper can act on. Replaced with `suitabilityPhrase()`: deterministic bands over the
+engine's own score, stated in words, silent at 0. **The test fixture said
+`suitability_score: 88`** — the test encoded the same wrong scale as the view, which is
+exactly why nothing caught it. Fixture corrected to 0.88; a test now forbids any `%` in an
+evidence line.
+
+**2. «اكاكسترا» on every Extra card — REAL, fixed.** Not a garbled string: **two correct
+strings rendered 4px apart.** Search rows carry the store's Arabic DISPLAY NAME where a slug
+is expected (cards render `stores.slug ?? stores.id`). "اكسترا" missed `KNOWN_LOGO_FILES`
+(keyed `extra`), so `/logos/extra.png` was never requested **despite shipping in
+`public/logos/`**; the initials fallback then found no Latin letters and sliced the name
+itself to "اك" — printed beside the full name it came from. Added `canonicalStoreSlug()`
+(wrapping the existing `resolveApprovedSlug`) and applied it in `getSearchStoreLogoPath` /
+`hasStoreLogo` / `getStoreDisplayName` / `getStoreInitials`. The raw fallback is now
+**Latin-only**: with nothing to abbreviate, `<StoreLogo>` renders nothing rather than a badge
+duplicating the label beside it. This is the same store-identity-namespace collision as
+ADR-135 and ADR-191, surfacing a third time — now in the view layer. Verified live: 26
+`/logos/extra.png` loads, 0 Arabic initial badges, 0 occurrences of the artefact.
+
+**3. Empty bullets — NOT REPRODUCED, path closed anyway.** 0 empty list items across 97 on
+the page in both locales with every disclosure expanded; 0 empty strings anywhere in the
+`decide` payload. But `Reasons` mapped **engine-supplied `headline_reasons` indices**
+straight to `reasons_ar[i]` with no bounds check, and an out-of-range index renders a check
+mark followed by nothing — precisely the reported shape. `ReasonLine` now returns null on
+blank text, a blank index no longer consumes a headline slot, and `EvidencePanel` drops blank
+lines before its empty-group filter so a heading can never sit over an empty list.
+**Unreproduced is not disproven** (Standing Directive §6) — the guard costs nothing and makes
+the symptom impossible regardless of payload.
+
+**4. Sorting — NOT A DEFECT, deliberately not "fixed".** «الأقل سعرًا» works: measured order
+change with `data-best-price` ascending at both viewports, and the client posts
+`sort: price_low` (`/api/search` `compareBySort` handles it). It reads as broken because
+**the default relevance order for this query is already price-ascending, the top card is
+identical before and after, and the advisor answer above the grid is invariant to sort.**
+Distinct from the rating sort removed 2026-07-31, which had no implementation at all.
+Changing correct ranking behaviour to make a control feel responsive would trade truth for
+feedback; the perception gap goes back to the founder as a product question instead.
+
+**Consequences.** Two customer-visible falsehoods removed from the recommendation surface.
+Store logos now resolve across every identifier namespace, fixing the same latent bug in
+`comparison-table`, `best-price-card`, `store-comparison-panel` and `product-detail-sheet`.
+1283 tests green; build clean. **Rollback:** `git revert 218685f`.
+
+**Freshness note (raised alongside).** The Smart Pick carried «آخر رصد قبل 99 ساعة». Our own
+standard (`evidence-engine.ts`, freshness factor) marks >72h as weak and emits the caveat
+«قد تكون البيانات غير حديثة» — which it did. The figure is disclosed, not hidden; but the
+**Smart Pick label itself is unconditioned on freshness**, a real gap left open here rather
+than changed unilaterally, since it moves ranking.
+
+---
+
 ### ADR-191 — A store name is not a brand · Accepted (2026-08-03)
 
 **Context.** Found while measuring the residual Arabic-name gap (ADR-185). **22 active canonicals
