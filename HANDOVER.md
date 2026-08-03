@@ -6747,3 +6747,23 @@ unavailable (org API restriction); the one agent claim tested (redsea=Shopify) w
 ## BLOCKED (exact unblocking events)
 U4 55 dupes → a second identity-evidence source at audited precision · U7 build → the
 indexation measurement · subagent research → org enables Claude Code subscription access.
+
+## RETAILER PROBE RECORD — 2026-08-03 evening · TAMKEEN REJECTED (instrument grounds) · ALSAIF WAF-BLOCKED
+- **alsaif gallery: OUT** — Huawei CloudWAF intercepts plain requests as attacks (418). Same
+  class as blackbox; no circumvention.
+- **tamkeen: REJECTED FOR NOW — not on overlap, on measurability/ingestibility.** Three
+  instruments, each caught by its control: (1) static search probe scored 30/30 — pure
+  template echo (nonsense string also ×6); (2) rendered probe 0/30 — the search grid is a
+  40-card POPULAR fallback (an AC query's first card is a TV), card titles carry no models;
+  (3) product URLs DO embed model slugs (…-gs50wost) but there is NO sitemap (SPA shell at
+  every path) and the internal API 404s direct calls. Verdict per the research standard:
+  identity exists but every route is a heavy custom build, and the overlap that would justify
+  it cannot be cheaply verified. Sample preserved: docs/evidence/tamkeen-overlap-sample-*.json.
+  Method for the NEXT candidate: require a keyable search OR sitemap BEFORE sampling.
+- **noon Arabic enrichment scoped:** URLs derive by product code (/saudi-ar/x/<CODE>/p/), but
+  raw HTTP to noon stalls from here (the recorded egress behaviour) while NoonScraper's own
+  fetch path works (wrote 137 seed obs today). The build = batch the 3,877 codes through the
+  scraper's fetch + JSON-LD title extraction, display-only writes (never observations,
+  ADR-089). FIRST unit next session.
+- ADR-201 verified live: /en/deals dir=ltr English, no Arabic leak; /ar unchanged.
+- Autonomous loops confirmed self-driving (extra 17:36+, noon 235 rows — zero manual).
