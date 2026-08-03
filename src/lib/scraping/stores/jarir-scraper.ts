@@ -445,25 +445,34 @@ export class JarirScraper extends BaseScraper {
   }
 
   /**
-   * Parse product page HTML
+   * Parse product page HTML.
+   *
+   * ADR-197: jarir PRODUCT pages carry a schema.org Product JSON-LD block with the
+   * offer (price · currency · availability), while the config's `product_price`
+   * selector (`.product-tile__price`) is a category-TILE class — on a product page it
+   * matches nothing or, worse, a "related products" tile carrying a DIFFERENT
+   * product's price. Structured data therefore WINS when present; the selector path
+   * stays as the fallback for any page without JSON-LD.
    */
   private parseProductPage(html: string, productUrl: string): ScrapedProduct | null {
     const $ = this.getCheerio(html);
+    const ld = this.extractJsonLdProduct($);
 
     // Extract product data using selectors from config
-    const nameEn = this.extractText($, this.config.selectors.product_name) || '';
-    const nameAr = this.extractText($, this.config.selectors.product_name_ar || this.config.selectors.product_name) || '';
+    const nameEn = this.extractText($, this.config.selectors.product_name) || ld?.name || '';
+    const nameAr = this.extractText($, this.config.selectors.product_name_ar || this.config.selectors.product_name) || ld?.name || '';
     const priceText = this.extractText($, this.config.selectors.product_price) || '';
     const originalPriceText = this.config.selectors.product_original_price
       ? this.extractText($, this.config.selectors.product_original_price)
       : null;
-    const sku = this.config.selectors.product_sku
+    const sku = (this.config.selectors.product_sku
       ? this.extractText($, this.config.selectors.product_sku)
-      : null;
-    const availabilityText = this.extractText($, this.config.selectors.product_availability) || 'in_stock';
-    
-    // Parse price
-    const currentPrice = this.parsePrice(priceText);
+      : null) || ld?.sku || null;
+    const availabilityText = this.extractText($, this.config.selectors.product_availability)
+      || ld?.availability || 'in_stock';
+
+    // Parse price — structured data first (it names THIS product), selectors second.
+    const currentPrice = ld?.price ?? this.parsePrice(priceText);
     if (!currentPrice) {
       throw new Error(`Failed to parse price: ${priceText}`);
     }
@@ -596,6 +605,47 @@ export class JarirScraper extends BaseScraper {
     if (lowerUrl.includes('gaming') || lowerUrl.includes('game')) return 'gaming';
     
     return 'accessories'; // Default
+  }
+
+  /**
+   * ADR-197 — walk every `application/ld+json` block for a schema.org Product and
+   * return its offer facts. Returns null when no Product block parses; nothing is
+   * ever fabricated (a missing field stays absent). Same pattern as the Extra,
+   * Samsung and LuLu scrapers.
+   */
+  private extractJsonLdProduct($: cheerio.CheerioAPI): { name: string | null; price: number | null; availability: string | null; sku: string | null } | null {
+    let found: { name: string | null; price: number | null; availability: string | null; sku: string | null } | null = null;
+    $('script[type="application/ld+json"]').each((_, el) => {
+      if (found) return;
+      try {
+        const parsed = JSON.parse($(el).contents().text() || 'null');
+        // Jarir wraps every node in @graph ({"@context":…, "@graph":[…]}) — measured on
+        // the live S26 Ultra page, all three blocks. Unwrap it; handle array @type too.
+        const roots = Array.isArray(parsed) ? parsed : [parsed];
+        const nodes = roots.flatMap((r: Record<string, unknown> | null) =>
+          r && Array.isArray((r as { '@graph'?: unknown[] })['@graph']) ? (r as { '@graph': unknown[] })['@graph'] : [r]);
+        for (const rawNode of nodes) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const node = rawNode as any;
+          const t = node?.['@type'];
+          if (!node || !(t === 'Product' || (Array.isArray(t) && t.includes('Product')))) continue;
+          const offer = Array.isArray(node.offers) ? node.offers[0] : node.offers;
+          const priceRaw = offer?.price;
+          const price = priceRaw != null && Number.isFinite(Number(priceRaw)) && Number(priceRaw) > 0 ? Number(priceRaw) : null;
+          const availability = typeof offer?.availability === 'string'
+            ? (/OutOfStock|SoldOut|Discontinued/i.test(offer.availability) ? 'out_of_stock' : 'in_stock')
+            : null;
+          found = {
+            name: typeof node.name === 'string' && node.name.trim() ? node.name.trim() : null,
+            price,
+            availability,
+            sku: typeof node.sku === 'string' && node.sku.trim() ? node.sku.trim() : null,
+          };
+          return;
+        }
+      } catch { /* malformed block — keep walking */ }
+    });
+    return found;
   }
 
   /**

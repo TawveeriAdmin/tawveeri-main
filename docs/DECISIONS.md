@@ -6,6 +6,31 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-197 — Jarir product pages parse schema.org JSON-LD first · Accepted (2026-08-03)
+
+**Context.** ADR-196's null classification isolated jarir: every stale-pair re-observation
+returned parse_fail on LIVE pages (7/7). Reproduced directly: the page fetches fine (2.95MB)
+and carries a full Product JSON-LD offer, but the config's  selector
+() is a category-TILE class — on a product page it matches nothing, or
+worse, a related-products tile carrying a DIFFERENT product's price. Jarir's daily volume
+comes from LISTING-tile parsing (data-cnstrc-* attributes), so the product-PAGE path was
+broken invisibly — it is only exercised by per-URL price updates, which jarir never received
+until ADR-195.
+
+**Decision.**  reads the schema.org Product JSON-LD FIRST (price ·
+availability · sku · name), falling back to the selector path when no block parses. Jarir
+wraps every node in  — the first extractor missed this exactly (fixture passed, live
+failed) and was corrected by unwrapping  and accepting array ; the fixture now
+mirrors the live shape. Structured data wins deliberately: a tile selector on a product page
+can name the WRONG product, and a wrong price is worse than none.
+
+**Measured.** Live probe: S26 Ultra parses at 6099 SAR. Full jarir reobserve: **7/7 pairs
+ingested, 0 nulls** — jarir's stale set cleared in one pass. Tests 1,292 (3 new: JSON-LD
+wins over the decoy tile · selector fallback · honest OutOfStock mapping).
+**Rollback:** revert the commit; the selector path is unchanged underneath.
+
+---
+
 ### ADR-196 — A null re-observation is not one thing: gone offers are recorded evidence · Accepted (2026-08-03)
 
 **Context.** ADR-195's first runs returned nulls that hid two different truths. Direct status

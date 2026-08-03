@@ -6594,3 +6594,10 @@ winning cheapest store, page 404) no longer renders; the comparison serves أم�
 نون, all real offers. Request-time gating confirmed; the projection's counts follow at the
 next hourly chain tick (owed check: the five canonicals' store_count/cheapest_store per the
 ADR-196 query).
+
+## ADDENDUM 5 — 2026-08-03 · ADR-197: JARIR PRODUCT-PAGE PARSER FIXED (JSON-LD @graph)
+Jarir's product_price selector is a tile class; product pages carry Product JSON-LD wrapped
+in @graph. Parser reads JSON-LD first (selector fallback intact). Live: 7/7 jarir stale
+pairs ingested, 0 nulls — jarir's stale set CLEARED. Stale pairs now ~124 and draining
+(extra remainder + amazon tail + 25 no-URL). Fixture-passed-live-failed lesson: the first
+extractor missed @graph — the fixture now mirrors the measured live shape.
