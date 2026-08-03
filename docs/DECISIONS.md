@@ -6,6 +6,37 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-198 — The no-URL stale pairs are orphaned price lineages; URLs recovered through the row's own observation id · Accepted (2026-08-03)
+
+**Context.** 26–27 stale cheapest pairs had no recoverable URL and read as "never observed":
+no `normalized_product_observations` row exists for the (canonical, store) pair at all, and
+their `price_history` rows carry NULL `raw_observation_id` and (on recent rows) NULL
+`tps_observation_id` with date-precision batch stamps. Diagnosis followed the pairs' OLDER
+price rows, which DO carry `tps_observation_id` — and it resolves to an npo row **with the
+URL, under a DIFFERENT canonical**. These are **orphaned price lineages**: identity churn
+(restage/merge) moved the observation lineage to another canonical while the old canonical
+kept its price rows. Same integrity family as the 1,166 duplicate `source_record_id`s.
+
+**Two recovery routes were tried first and measured 0/26, recorded so nobody re-derives
+them:** (1) `identityKeyToSlug` → `products.slug` — the knowledge and storefront layers are
+different identity namespaces (ADR-189's exact lesson, re-learned); (2) `raw_observation_id`
+— these rows never carry it.
+
+**Decision.** The reobserve selection adds a fallback lateral that follows the pair's own
+newest `price_history.tps_observation_id` → `npo.normalized_payload._url`, ignoring the
+canonical mismatch — the URL is the offer's own provenance regardless of where its lineage
+now lives. Measured: **23/26 pairs recover a URL** (3 remain URL-less). `url_source`
+(`npo` | `legacy_raw`) is reported per run.
+
+**Open, deliberately.** If the normalizer assigns these re-observations to the OTHER
+canonical, the pairs will not heal and will reappear in the stale set — the trajectory after
+the next chain ticks decides whether the real fix is an identity-lineage repair unit
+(re-pointing orphaned price rows or retiring their canonicals via ADR-184 machinery). That
+repair is NOT improvised here. **Rollback:** revert the commit; the fallback is read-only
+selection logic.
+
+---
+
 ### ADR-197 — Jarir product pages parse schema.org JSON-LD first · Accepted (2026-08-03)
 
 **Context.** ADR-196's null classification isolated jarir: every stale-pair re-observation

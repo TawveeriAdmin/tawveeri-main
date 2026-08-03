@@ -50,7 +50,7 @@ const STORE_NAMES: Record<string, string[]> = {
 const NAME_TO_SLUG = new Map<string, string>();
 for (const [slug, names] of Object.entries(STORE_NAMES)) for (const n of names) NAME_TO_SLUG.set(n.toLowerCase(), slug);
 
-type Target = { cid: string; slug: string; raw_url: string | null; raw_name: string; last_observed: string | null };
+type Target = { cid: string; slug: string; raw_url: string | null; raw_name: string; last_observed: string | null; tps_identity_key: string | null; url_source: "npo" | "legacy_raw" | null };
 
 (async () => {
   const url = toPoolerDbUrl(process.env.SUPABASE_DB_URL!);
@@ -96,12 +96,16 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
        select * from tru
        where last_observed is null or last_observed < now() - ($${mapParams.length + 1}::int * interval '1 hour')
      )
-     select s.cid, s.slug, s.last_observed::text,
-            ro.raw_url, coalesce(ro.raw_name, '') raw_name
+     select s.cid, s.slug, s.last_observed::text, cp2.tps_identity_key,
+            coalesce(ro.raw_url, legacy.raw_url) as raw_url,
+            coalesce(ro.raw_name, legacy.raw_name, '') raw_name,
+            case when ro.raw_url is not null then 'npo'
+                 when legacy.raw_url is not null then 'legacy_raw' end as url_source
      from stale s
-     -- The offer's URL comes from the pair's newest normalized observation payload:
-     -- the normalizer stamps normalized_payload._url (raw_payload is NULL on current rows,
-     -- and source_record_id is a stableUuid — it cannot join raw_observations).
+     join canonical_products cp2 on cp2.id = s.cid
+     -- Primary URL source: the pair's newest normalized observation payload — the
+     -- normalizer stamps normalized_payload._url (raw_payload is NULL on current rows,
+     -- and npo.source_record_id is a stableUuid — it cannot join raw_observations).
      left join lateral (
        select npo.normalized_payload->>'_url' as raw_url, npo.raw_name
        from normalized_product_observations npo
@@ -111,9 +115,28 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
        order by npo.observed_at desc
        limit 1
      ) ro on true
+     -- ADR-198 fallback: ORPHANED PRICE LINEAGES. For these pairs the price rows'
+     -- tps_observation_id resolves to an npo row that carries the URL — but under a
+     -- DIFFERENT canonical (identity churn moved the observation lineage; the old
+     -- canonical kept the price rows). The URL is still the offer's own provenance, so
+     -- follow the price row's own observation id and ignore the canonical mismatch.
+     -- (Two rejected routes, both measured 0/26: identityKeyToSlug→products.slug — the
+     -- layers are different identity namespaces, ADR-189's exact lesson re-learned — and
+     -- raw_observation_id, which these rows never carry.)
+     left join lateral (
+       select npo2.normalized_payload->>'_url' as raw_url, npo2.raw_name
+       from price_history ph2
+       join m m4 on m4.k = lower(trim(ph2.store_name)) and m4.slug = s.slug
+       join normalized_product_observations npo2 on npo2.id = ph2.tps_observation_id
+       where ph2.canonical_product_id = s.cid
+         and coalesce(npo2.normalized_payload->>'_url', '') <> ''
+       order by ph2.observed_at desc
+       limit 1
+     ) legacy on true
      order by s.last_observed asc nulls first`,
     [...mapParams, STALE_HOURS],
   );
+
   if (!GO) await pgc.end(); // LIVE keeps the connection for delist-signal writes/heals
 
   // Bound the run: per-store cap first (throttle safety — amazon especially), then total.
@@ -130,7 +153,8 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
   }
   const noUrl = targets.filter((t) => !t.raw_url).length;
 
-  console.log(`reobserve-comparables — ${GO ? "LIVE" : "DRY"} — stale pairs ${targets.length} (no-url ${noUrl}) → picked ${picked.length} (limit ${LIMIT}, per-store ${PER_STORE}, stale>=${STALE_HOURS}h)`);
+  const srcCounts = picked.reduce((a, t) => { a[t.url_source ?? "npo"] = (a[t.url_source ?? "npo"] ?? 0) + 1; return a; }, {} as Record<string, number>);
+  console.log(`reobserve-comparables — ${GO ? "LIVE" : "DRY"} — stale pairs ${targets.length} (no-url ${noUrl}) → picked ${picked.length} (limit ${LIMIT}, per-store ${PER_STORE}, stale>=${STALE_HOURS}h) · url sources ${JSON.stringify(srcCounts)}`);
   for (const [slug, c] of perStore) console.log(`  ${slug.padEnd(12)} ${c}`);
   if (!GO) {
     for (const t of picked.slice(0, 15)) console.log(`  ${t.slug.padEnd(10)} last=${t.last_observed ?? "never"} ${String(t.raw_url).slice(0, 90)}`);
