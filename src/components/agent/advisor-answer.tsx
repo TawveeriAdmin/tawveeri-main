@@ -148,6 +148,11 @@ const REASON_MARK: Record<string, { Icon: typeof Check; cls: string }> = {
 };
 
 function ReasonLine({ text, kind, t }: { text: string; kind?: string; t: TFn }) {
+  // A bullet with no sentence in it is rendered structure making no statement. `text` comes
+  // from an ENGINE-supplied index (`headline_reasons`), which this view does not control and
+  // must not trust blindly — an index past the end of `reasons_ar` used to render a check
+  // mark followed by nothing at all.
+  if (!text?.trim()) return null;
   const mark = REASON_MARK[kind ?? 'spec'] ?? REASON_MARK.spec;
   const { Icon, cls } = mark;
   return (
@@ -174,18 +179,26 @@ function Reasons({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
   const headline = rec.headline_reasons ?? null;
   // Pre-ADR-187 payload: keep the previous behaviour rather than render nothing.
   if (!headline) {
+    const said = all.slice(0, 5).map((text, i) => ({ text, i })).filter(({ text }) => text?.trim());
+    if (!said.length) return null;
     return (
       <ul className="mt-3 space-y-1.5">
-        {all.slice(0, 5).map((r, i) => <ReasonLine key={i} text={r} kind={kinds[i]} t={t} />)}
+        {said.map(({ text, i }) => <ReasonLine key={i} text={text} kind={kinds[i]} t={t} />)}
       </ul>
     );
   }
-  const rest = all.map((text, i) => ({ text, i })).filter(({ i }) => !headline.includes(i));
+  // An engine-supplied index that resolves to nothing carries no reason, so it also must not
+  // reserve a slot — otherwise it would both print an empty bullet AND be excluded from `rest`.
+  const shown = headline.filter((i) => all[i]?.trim());
+  const rest = all.map((text, i) => ({ text, i })).filter(({ text, i }) => text?.trim() && !shown.includes(i));
+  if (!shown.length && !rest.length) return null;
   return (
     <>
-      <ul className="mt-3 space-y-1.5">
-        {headline.map((i) => <ReasonLine key={i} text={all[i]} kind={kinds[i]} t={t} />)}
-      </ul>
+      {shown.length > 0 && (
+        <ul className="mt-3 space-y-1.5">
+          {shown.map((i) => <ReasonLine key={i} text={all[i]} kind={kinds[i]} t={t} />)}
+        </ul>
+      )}
       {rest.length > 0 && (
         <details className="group mt-2">
           <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-primary-700 dark:text-primary-300">
@@ -365,7 +378,12 @@ function TrustSummary({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
  * own cited evidence; nothing is fabricated here.
  */
 function EvidencePanel({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
-  const g = evidenceGroups(rec, loc);
+  const raw = evidenceGroups(rec, loc);
+  // Evidence that says nothing is not evidence. Drop blank lines BEFORE the empty-group
+  // filter below, so a group whose only item was blank disappears with it rather than
+  // rendering a heading over an empty list.
+  const said = (xs: string[]) => xs.filter((x) => x?.trim());
+  const g = { facts: said(raw.facts), inferences: said(raw.inferences), insufficient: said(raw.insufficient), unknown: said(raw.unknown) };
   const groups: { key: string; items: string[]; label: string; hint?: string; Icon: typeof Check; cls: string; iconCls: string }[] = [
     { key: 'facts', items: g.facts, label: t('agent.evidenceFacts'), hint: t('agent.evidenceFactsHint'), Icon: Check, cls: 'border-success-200 bg-success-50/60 dark:border-success-900/50 dark:bg-success-950/20', iconCls: 'text-success-600' },
     { key: 'inferences', items: g.inferences, label: t('agent.evidenceInferences'), hint: t('agent.evidenceInferencesHint'), Icon: Info, cls: 'border-primary-100 bg-primary-50/40 dark:border-primary-900/50 dark:bg-primary-950/20', iconCls: 'text-primary-600' },

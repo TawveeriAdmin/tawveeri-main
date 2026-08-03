@@ -2,12 +2,14 @@
 // The customer-facing trust taxonomy (Founder Directive Part 2): evidenceGroups must
 // let a shopper DISTINGUISH verified fact vs inference vs unknown vs insufficient — and
 // must never invent evidence (it only reclassifies the engine's cited output).
-import { evidenceGroups, type AdvisorRecommendation } from "../../src/lib/agent/advisor-api";
+import { evidenceGroups, suitabilityPhrase, type AdvisorRecommendation } from "../../src/lib/agent/advisor-api";
 
 const base: AdvisorRecommendation = {
   canonical_id: "c1", tps_identity_key: "k1", title_ar: "منتج", title_en: "Product", brand: "samsung",
   unit_price: 1000, total_cost_estimate: 1000, cost_breakdown: { unit: 1000, installation: null, annual_electricity: null },
-  store_count: 3, comparison_available: true, suitability_score: 88, confidence: 80, is_smart_pick: true,
+  // 0..1 — the scale `decision-engine.ts` actually emits. This fixture said 88, which let the
+  // view render `${score}%` for years without a test noticing it published "0.89%" in production.
+  store_count: 3, comparison_available: true, suitability_score: 0.88, confidence: 80, is_smart_pick: true,
   reasons_ar: ["الأنسب لطلبك"], dna: {}, go_offer_hint: "", go_url: "/go/x",
   stores: ["المنيع", "اكسترا", "أمازون"], data_age_hours: 3,
   trust: {
@@ -39,8 +41,27 @@ describe("evidenceGroups — the Part-2 trust taxonomy", () => {
     const withCost: AdvisorRecommendation = { ...base, total_cost_estimate: 1300, cost_breakdown: { unit: 1000, installation: 300, annual_electricity: null } };
     const g = evidenceGroups(withCost, "ar");
     expect(g.inferences.some((f) => /تقديرية/.test(f))).toBe(true);   // total cost is inferred
-    expect(g.inferences.some((f) => /ملاءمته/.test(f))).toBe(true);   // suitability is inferred
+    expect(g.inferences).toContain("مطابق لما طلبته");                // suitability is inferred
     expect(g.facts.some((f) => /تقديرية/.test(f))).toBe(false);       // never a "fact"
+  });
+  it("states fit in words, never as a raw percentage", () => {
+    // The defect: a 0..1 score suffixed with '%' published "0.89%" — read as "almost no
+    // match" — on the product ranked FIRST. No evidence line may carry a bare % again.
+    for (const s of [0.05, 0.49, 0.5, 0.7, 0.83, 0.89, 1]) {
+      const g = evidenceGroups({ ...base, suitability_score: s }, "ar");
+      expect(g.inferences.some((f) => f.includes("%"))).toBe(false);
+      expect(g.inferences).toContain(suitabilityPhrase(s, "ar"));
+    }
+  });
+  it("suitabilityPhrase is banded, bilingual, and silent when there is no score", () => {
+    expect(suitabilityPhrase(0.9, "ar")).toBe("مطابق لما طلبته");
+    expect(suitabilityPhrase(0.75, "ar")).toBe("مناسب لطلبك");
+    expect(suitabilityPhrase(0.55, "ar")).toBe("مناسب جزئيًا لطلبك");
+    expect(suitabilityPhrase(0.2, "ar")).toBe("ملاءمته لطلبك محدودة");
+    expect(suitabilityPhrase(0.9, "en")).toBe("Matches what you asked for");
+    for (const empty of [0, -1, null, undefined, NaN]) {
+      expect(suitabilityPhrase(empty as number, "ar")).toBeNull();
+    }
   });
   it("single-store product surfaces insufficient-evidence, no named corroboration fact", () => {
     const single: AdvisorRecommendation = { ...base, comparison_available: false, store_count: 1, stores: ["المنيع"],

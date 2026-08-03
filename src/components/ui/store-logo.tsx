@@ -35,6 +35,10 @@ export function StoreLogo({ slug, size = 'md', alt, className, locale = 'ar' }: 
   const name = alt ?? getStoreDisplayName(slug, locale);
 
   if (failed || !hasStoreLogo(slug)) {
+    const initials = getStoreInitials(slug);
+    // No Latin initials to show (an Arabic-only identifier). Render nothing rather than a
+    // badge holding the first characters of the store name that is printed right beside it.
+    if (!initials) return null;
     return (
       <span
         aria-label={name}
@@ -45,7 +49,7 @@ export function StoreLogo({ slug, size = 'md', alt, className, locale = 'ar' }: 
         )}
         style={{ width: px, height: px, fontSize: Math.max(10, Math.round(px * 0.38)) }}
       >
-        {getStoreInitials(slug)}
+        {initials}
       </span>
     );
   }

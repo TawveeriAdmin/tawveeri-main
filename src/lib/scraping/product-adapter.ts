@@ -2,6 +2,7 @@ import type { ScrapedProduct } from './base/types';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import type { AvailabilityStatus } from '@/lib/database/types';
 import type { GroupedSearchProduct } from './search/product-grouper';
+import { resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 
 interface ScrapedProductWithStore extends ScrapedProduct {
   store?: string;
@@ -24,8 +25,27 @@ export const SEARCH_STORE_LOGO_BASENAME: Partial<Record<string, string>> = {
   samsung:          'samsung_ksa',
 };
 
+/**
+ * Resolve ANY store identifier the UI might hold — canonical slug, Arabic or English display
+ * name, or a numeric `stores.id` — to the canonical slug these logo maps are keyed by.
+ *
+ * REQUIRED, not a convenience. Search-result rows carry the store's Arabic DISPLAY NAME in
+ * `stores.id` (see `approved-retailers.ts`), and every card renders `stores.slug ?? stores.id`.
+ * Unresolved, "اكسترا" missed `KNOWN_LOGO_FILES` (which is keyed 'extra'), so the real
+ * `/logos/extra.png` was never requested and the initials fallback ran instead — where
+ * `getStoreInitials` found no Latin letters and fell back to the first two characters of the
+ * name itself. The card then printed those initials immediately beside the full name:
+ * "اك" + "اكسترا", which reads as the corrupted word «اكاكسترا».
+ *
+ * An unknown identifier resolves to itself, so nothing that worked before changes.
+ */
+export function canonicalStoreSlug(identifier: string | number | null | undefined): string {
+  const raw = String(identifier ?? '');
+  return resolveApprovedSlug(raw) ?? raw;
+}
+
 export function getSearchStoreLogoPath(slug: string): string {
-  const s = String(slug ?? '');
+  const s = canonicalStoreSlug(slug);
   const base = SEARCH_STORE_LOGO_BASENAME[s] ?? s;
   return `/logos/${base}.png`;
 }
@@ -34,7 +54,7 @@ export function getSearchStoreLogoPath(slug: string): string {
 // so the UI must render initials directly instead of firing a 404 request for a missing logo.
 const KNOWN_LOGO_FILES = new Set(['amazon', 'noon', 'jarir', 'extra', 'almanea', 'samsung_ksa', 'shaker', 'swsg']);
 export function hasStoreLogo(slug: string): boolean {
-  const s = String(slug ?? '');
+  const s = canonicalStoreSlug(slug);
   return KNOWN_LOGO_FILES.has(SEARCH_STORE_LOGO_BASENAME[s] ?? s);
 }
 

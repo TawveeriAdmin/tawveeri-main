@@ -36,3 +36,43 @@ describe('logos helpers — non-string slug must never throw', () => {
     expect(hasStoreLogo('najm')).toBe(false);
   });
 });
+
+// Regression for the founder-reported «اكاكسترا» on every Extra card in search results.
+// Search rows carry the store's Arabic DISPLAY NAME where a slug is expected. Unresolved,
+// "اكسترا" missed the logo map, so the initials fallback ran and produced "اك" — the first
+// two characters of the very name printed beside it. The two rendered as one corrupted word.
+describe('store identity — a display name or numeric id resolves to the canonical slug', () => {
+  const aliases: [string, string][] = [
+    ['اكسترا', 'extra'], ['إكسترا', 'extra'], ['4', 'extra'],
+    ['أمازون السعودية', 'amazon'], ['2', 'amazon'],
+    ['مكتبة جرير', 'jarir'], ['نون', 'noon'], ['المنيع', 'almanea'],
+  ];
+
+  it.each(aliases)('%s finds the same logo as its slug (%s)', (alias, slug) => {
+    expect(hasStoreLogo(alias)).toBe(hasStoreLogo(slug));
+    expect(getSearchStoreLogoPath(alias)).toBe(getSearchStoreLogoPath(slug));
+    expect(getStoreDisplayName(alias, 'ar')).toBe(getStoreDisplayName(slug, 'ar'));
+    expect(getStoreDisplayName(alias, 'en')).toBe(getStoreDisplayName(slug, 'en'));
+  });
+
+  it('Extra resolves to the bundled logo instead of falling back to initials', () => {
+    expect(hasStoreLogo('اكسترا')).toBe(true);
+    expect(getSearchStoreLogoPath('اكسترا')).toBe('/logos/extra.png');
+  });
+
+  it('initials are never a prefix of the Arabic name shown beside them', () => {
+    // Latin-only, so the badge can never duplicate the start of the adjacent Arabic label.
+    expect(getStoreInitials('اكسترا')).toBe('EX');
+    for (const [alias] of aliases) {
+      const initials = getStoreInitials(alias);
+      const name = getStoreDisplayName(alias, 'ar');
+      expect(initials).toMatch(/^[A-Z]*$/);
+      expect(initials === '' || !name.startsWith(initials)).toBe(true);
+    }
+  });
+
+  it('an unknown Arabic name yields no initials rather than a duplicated prefix', () => {
+    expect(getStoreInitials('متجر غير معروف')).toBe('');
+    expect(hasStoreLogo('متجر غير معروف')).toBe(false);
+  });
+});

@@ -74,6 +74,27 @@ export interface TrustSummary {
  * customer never confuses "why we suggest it" with "what we verified."
  */
 export interface EvidenceGroups { facts: string[]; inferences: string[]; insufficient: string[]; unknown: string[]; }
+
+/**
+ * How well the product fits the shopper's task, IN WORDS.
+ *
+ * `suitability_score` is a **0..1** value (`decision-engine.ts` clamps and rounds it to two
+ * decimals). This line used to render it as `${score}%`, which published "0.89%" — a fit of
+ * 89% shown as "almost no match" on the product we ranked FIRST. Two separate faults: the
+ * scale was wrong by 100×, and a raw confidence percentage is not something a shopper can
+ * act on. Confidence is stated in plain language or not at all.
+ *
+ * Bands are deterministic and derived only from the engine's own score — no new judgement is
+ * introduced here, and a score of 0 (or a missing one) says nothing rather than guessing.
+ */
+export function suitabilityPhrase(score: number | null | undefined, locale: Locale): string | null {
+  if (typeof score !== "number" || !Number.isFinite(score) || score <= 0) return null;
+  const ar = locale === "ar";
+  if (score >= 0.85) return ar ? "مطابق لما طلبته" : "Matches what you asked for";
+  if (score >= 0.7) return ar ? "مناسب لطلبك" : "Suitable for your request";
+  if (score >= 0.5) return ar ? "مناسب جزئيًا لطلبك" : "Partly suitable for your request";
+  return ar ? "ملاءمته لطلبك محدودة" : "Limited fit for your request";
+}
 export function evidenceGroups(rec: AdvisorRecommendation, locale: Locale): EvidenceGroups {
   const g: EvidenceGroups = { facts: [], inferences: [], insufficient: [], unknown: [] };
   const ar = locale === "ar";
@@ -92,7 +113,8 @@ export function evidenceGroups(rec: AdvisorRecommendation, locale: Locale): Evid
   }
   // Inferences — conclusions DERIVED from facts, not observed directly.
   if (hasTotalBeyondUnit(rec)) g.inferences.push(ar ? "التكلفة الكلية تقديرية (تشمل التركيب و/أو الكهرباء المقدّرة)" : "Total cost is an estimate (includes installation and/or est. electricity)");
-  if (typeof rec.suitability_score === "number" && rec.suitability_score > 0) g.inferences.push(ar ? `مدى ملاءمته لطلبك: ${rec.suitability_score}%` : `Fit for your request: ${rec.suitability_score}%`);
+  const fit = suitabilityPhrase(rec.suitability_score, locale);
+  if (fit) g.inferences.push(fit);
   // Honest caveats join "insufficient evidence".
   for (const c of (ar ? rec.trust?.caveats_ar : (rec.trust?.caveats_en ?? rec.trust?.caveats_ar)) ?? []) g.insufficient.push(c);
   // Dedupe each group (stable order).

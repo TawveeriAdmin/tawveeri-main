@@ -64,7 +64,7 @@ export function StoreCard({ store, locale }: StoreCardProps) {
                 className="w-full h-full object-contain p-3"
                 onError={handleLogoError}
               />
-            ) : (
+            ) : getStoreInitials(store.slug || storeName) ? (
               <span
                 aria-label={storeName}
                 role="img"
@@ -72,6 +72,10 @@ export function StoreCard({ store, locale }: StoreCardProps) {
               >
                 {getStoreInitials(store.slug || storeName)}
               </span>
+            ) : (
+              // No Latin initials to abbreviate — a plain tinted tile, with the store's name
+              // carrying the identification directly below it.
+              <span aria-hidden className="block h-full w-full bg-[var(--brand-bg-green)]" />
             )}
           </div>
         </div>
