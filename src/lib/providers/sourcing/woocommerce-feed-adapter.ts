@@ -133,20 +133,37 @@ export const wooCommerceFeedAdapter: SourcingAdapter = {
     const maxPages = Math.max(1, opts?.maxPages ?? 30);
     const search = opts?.query ? `&search=${encodeURIComponent(opts.query)}` : "";
     let totalPages = maxPages;
+    // ONE TRANSIENT ERROR MUST NOT TRUNCATE A CATALOGUE.
+    //
+    // This broke out of the loop on the first non-OK response. Measured 2026-08-03: shaker
+    // returned a single `page 2: HTTP 500` and the whole pull ended at **49 products** while
+    // we hold ~893 — and every later page was verified healthy seconds afterwards (200,
+    // 2.4 MB each). These are large responses from modest WordPress hosts, so an occasional
+    // 500 is expected; ending the catalogue on it is not. Retry the page with backoff, and
+    // only give up on that page after the retries are spent.
+    const MAX_ATTEMPTS = 3;
     for (let page = 1; page <= Math.min(maxPages, totalPages); page++) {
       const url = `${origin}/wp-json/wc/store/v1/products?per_page=${PER_PAGE}&page=${page}${search}`;
-      try {
-        const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; TawveeriBot/1.0)", accept: "application/json" } });
-        if (!res.ok) { errors.push(`page ${page}: HTTP ${res.status}`); break; }
-        const tp = Number(res.headers.get("x-wp-totalpages"));
-        if (Number.isFinite(tp) && tp > 0) totalPages = tp;
-        const rows = (await res.json()) as WooProduct[];
-        if (!Array.isArray(rows) || rows.length === 0) break;
-        for (const r of rows) { const m = mapWooProduct(r, provider.slug); if (m) products.push(m); }
-      } catch (e) {
-        errors.push(`page ${page}: ${e instanceof Error ? e.message : String(e)}`);
-        break;
+      let rows: WooProduct[] | null = null;
+      let lastErr = "";
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          if (attempt > 1) await new Promise((r) => setTimeout(r, 1500 * (attempt - 1)));
+          const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; TawveeriBot/1.0)", accept: "application/json" } });
+          if (!res.ok) { lastErr = `HTTP ${res.status}`; continue; }
+          const tp = Number(res.headers.get("x-wp-totalpages"));
+          if (Number.isFinite(tp) && tp > 0) totalPages = tp;
+          const body = (await res.json()) as WooProduct[];
+          if (!Array.isArray(body)) { lastErr = "non-array body"; continue; }
+          rows = body;
+          break;
+        } catch (e) {
+          lastErr = e instanceof Error ? e.message : String(e);
+        }
       }
+      if (rows === null) { errors.push(`page ${page}: ${lastErr} (after ${MAX_ATTEMPTS} attempts)`); break; }
+      if (rows.length === 0) break;
+      for (const r of rows) { const m = mapWooProduct(r, provider.slug); if (m) products.push(m); }
     }
     // Collapse EN/AR translation pairs (same SKU) into one bilingual offer so a
     // multilingual shop is not double-counted in raw_observations.
