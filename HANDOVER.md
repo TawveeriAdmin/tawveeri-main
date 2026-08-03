@@ -6455,3 +6455,35 @@ this session; spend it before or after U2 and re-baseline.
 2dd211c  Master Book v1.2 (docs only)       git revert 2dd211c
 ```
 No data-layer changes this session (all measurement was read-only).
+
+## ADDENDUM — 2026-08-03 · THE DELIBERATE HARNESS RUN (spent) + ADR-193 VERIFIED AT THE BOUNDARY
+
+**`tps:ui-journey --base https://tawveeri.com` → `docs/ui-journey-adr193-2026-08-03.log`.**
+**Overall 65/76 = 85.5% · comparison journeys 51/56 = 91.1% (launch gate).** Do NOT read this
+against #40's 93.8%/96.3% as a trend — the journey set grew (48 → 56 comparison journeys) and
+the homepage leg is now in the denominator; decompose before comparing (process rule 2).
+16/16 named-variant journeys full-pass · outbound links 74 OK / 2 DEAD · the 19 "cross-language
+pick mismatches" are the SAME products under ADR-185 localized names — an instrument
+string-comparison limit, not a product defect.
+
+**The 11 FAILs, enumerated (all pre-existing classes, none from ADR-193):**
+1. `ps5` ar+en — Z-EDGE monitor card claims 2 stores with NO compare link (T3 class) + the first
+   result card's outbound is DEAD (both DEAD links of the run).
+2. `washing machine` (EN) ar+en — top pick is a **coffee machine** ("machine" token match;
+   relevance defect, English query only).
+3. `ميكروويف` ar+en — two Royal microwave cards claim 2 stores, no compare link (T3 class).
+4. `lg tv` en — no store name on card.
+Unhonoured store claims overall: 6 cards / 4 pages of 58 checked.
+
+**ADR-193 verified in production, including at the exact boundary:** «ايفون 15» pick rendered
+WITH its timestamp at age 167.98h; re-probed minutes later past 168h → **card withheld**. «مكيف»
+grid serves 11 TPS products all carrying `observed_at`; the withheld Gree pick (219h) logged.
+
+**Instrument rule earned (docs/ENGINEERING-RULES.md):** PowerShell mangles Arabic request bodies
+to `????` — the apparent "TPS injection dead" and "cross-query pollution" findings were BOTH the
+probe. Use bash curl `--data-binary` with a UTF-8 file.
+
+**Found, not fixed (added to the ledger):** `searchTPSCanonical` fetches canonicals with no
+`.range()` → PostgREST's 1,000-row cap silently hides ~215 of 1,215 active AC canonicals from
+injection (silent-truncation class; needs pagination like ADR-189's sitemap fix). Plus the four
+harness failures above and the «ايفون»→'apple' expansion defect (iPad as pick for «ايفون 16»).
