@@ -6216,3 +6216,72 @@ Gated dry run, 40 targets: **hit rate 30%**, 0 errors, 104 irrelevant correctly 
 
 Baseline before the run: projection **5,419** · comparable **946** · 3+ store **246**.
 A 350-target `--go` run is in flight; its yield lands in the next checkpoint.
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #68 · SEED RUN MEASURED · A FIGURE I PUBLISHED WAS WRONG ═══
+
+**Tree clean · pushed · tests 1,270/1,270 · `tps:sitemap-verify` 11/11 PASS.**
+
+## CORRECTION — THE 30% AMAZON HIT RATE IN #67 WAS A SMALL-SAMPLE ARTEFACT
+I reported **30%** from a **40-target** dry run. The live **350-target** run measured **7.1%**.
+
+| | targets | hit rate |
+|---|---:|---:|
+| dry sample (#67, **published — wrong**) | 40 | 30% |
+| **live run (authoritative)** | **350** | **7.1%** |
+
+The first 40 targets are the best-covered ones; 350 reaches into the tail. **Amazon is still the
+best seeded retailer we have** (noon ~11% was itself measured on a small gate-eligible set; extra
+2.3%, swsg 1.3%) — but 30% was never real, and it is corrected here rather than left standing.
+*This is process rule 2 — decompose any number that jumps — applied to my own.*
+
+## SEED RUN RESULT
+`seeded-discovery amazon --go --targets=350`: **31 written · 24 created · 7 linked · 0 errors ·
+329 correctly rejected by the relevance gate.** The 31 observations are **not yet normalized** —
+the hourly scheduler owns realization (ADR-099) and they are queued for the next tick. **Their
+yield in comparable-and-displayable is therefore still PENDING and is not claimed here.**
+
+Baseline at close: projection **5,421** · comparable **947** · 3+ store **246**.
+**Remaining Amazon eligible targets: ~900.**
+
+## ADR-183's OWED LIVE VERIFICATION — DONE, PASSES
+Amazon's throttle has cleared. Three queries, both scripts: **18 of 18 titles are real product
+names · 0 brand-like.** The fixture-only caveat from #63 is closed.
+
+## ADR-191 — A STORE NAME IS NOT A BRAND
+22 canonicals keyed `sony world - ksa|…` (Sony WH-1000XM6, WF-C510, INZONE H3/H9) carry the
+RETAILER as their manufacturer. `brand` is the first segment of `tps_identity_key`, so the same
+headphone at another retailer **can never corroborate** with it.
+
+**Built the guard, refused the cleanup, and measured why:** only **2 of 7** affected models have a
+`sony`-branded twin, so re-keying is worth **≤2 comparisons** and needs ADR-184's merge machinery.
+**The ceiling is recorded so nobody re-derives it.** The guard rejects a store-identity brand to
+`null` at **both** derivation points (per-store adapters + generic progressive engine).
+
+**Exact match only.** "Samsung" must survive a store called *Samsung KSA*; "Sony" a store called
+*Sony World*. Most of the 33 tests defend that direction. A hand-written name list was the wrong
+source and missed «مكتبة جرير» immediately — the guard now derives from `TPS_STORES` **and**
+`APPROVED_RETAILERS`, so future merchants are covered without an edit.
+
+## QUEUE STATUS
+1. **Comparable-and-displayable 947** — Amazon reopened at a *measured* 7.1%; ~900 targets left.
+2. English-vs-Arabic — CLOSED (#64).
+3. وفّر advisor §8 — CLOSED (#65).
+4. AI-assistant citation — prerequisite built (#66); the rest is genuinely speculative.
+
+## NEXT
+1. **Let the scheduler normalize the 31 observations, then re-measure comparable.** Do not run
+   `normalize` by hand alongside it (ADR-099).
+2. Continue Amazon seeded discovery on the remaining ~900 targets — at 7.1% that is ~60 more
+   observations, so decide whether it beats catalogue completion for another retailer first.
+3. §9 وكيل توفيري agent separation · §2.1 retailer tiers · §11 WCAG 2.2 AA.
+4. Re-measure indexation in ~2 weeks (`tps:sitemap-verify` + a site: query).
+
+## ROLLBACK
+```
+29224ce  ADR-191 store-name-as-brand guard   git revert 29224ce
+1beae75  ADR-190 canonical host noindex      git revert 1beae75
+1c94c8f  ADR-189 follow-through              git revert 1c94c8f
+5e9049f  ADR-189 sitemap/robots/compare SEO  git revert 5e9049f
+```
