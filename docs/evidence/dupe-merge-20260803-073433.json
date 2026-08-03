@@ -1,0 +1,1595 @@
+{
+ "stamp": "20260803-073433",
+ "merges": [
+  {
+   "pair": "apple|MTJY3ZE/A",
+   "winner": {
+    "cid": "3843a32c-d216-4ba2-9046-c6a69674ffae",
+    "key": "apple|earpods",
+    "category": "audio",
+    "name": "Apple Earpods Earbuds",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:34.764+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "df87715a-9818-4f42-b1d0-7e3a58ab9ab3",
+    "key": "apple|MTJY3ZE/A",
+    "category": "audio",
+    "name": "Apple MTJY3ZE/A",
+    "storeCount": 1,
+    "created": "2026-07-24 18:55:05.142+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|EO-IC100BBEGWW",
+   "winner": {
+    "cid": "3ed24ae4-6747-449e-bd83-38fdfe9d1832",
+    "key": "samsung|IC100BBEGWW",
+    "category": "audio",
+    "name": "Samsung IC100BBEGWW",
+    "storeCount": 1,
+    "created": "2026-07-24 19:24:27.729+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "126c2a27-eebb-4b67-afb9-05d9f0ccdce7",
+    "key": "samsung|EO-IC100BBEGWW",
+    "category": "audio",
+    "name": "Samsung EO-IC100BBEGWW",
+    "storeCount": 1,
+    "created": "2026-07-30 03:43:52.826+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|SM-R640NZKAMEA",
+   "winner": {
+    "cid": "f3dcaede-ac61-46f8-89ec-2787cabec31b",
+    "key": "samsung|galaxy buds 4 pro",
+    "category": "audio",
+    "name": "Samsung Galaxy Buds 4 Pro Earbuds",
+    "storeCount": 3,
+    "created": "2026-07-23 12:05:24.574+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "5c9b04ef-55fa-4753-8803-6af63a617a4b",
+    "key": "samsung|R640NZKAMEA",
+    "category": "audio",
+    "name": "Samsung R640NZKAMEA",
+    "storeCount": 1,
+    "created": "2026-07-24 19:24:27.729+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "بيسوس|A00075500113-B1",
+   "winner": {
+    "cid": "9ff0ee50-b0ab-444d-a807-71f4e6941a7a",
+    "key": "بيسوس|A00075500113-B1",
+    "category": "audio",
+    "name": "بيسوس A00075500113-B1 Headphones",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:34.764+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "16e63792-13a7-408b-ae31-d412ebb8937d",
+    "key": "بيسوس|A00075500113B1",
+    "category": "audio",
+    "name": "بيسوس A00075500113B1",
+    "storeCount": 1,
+    "created": "2026-07-23 16:38:54.622+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|SM-R540NZKAMEA",
+   "winner": {
+    "cid": "8855250f-5504-4125-8384-6f69a9c533d7",
+    "key": "samsung|galaxy buds 4",
+    "category": "audio",
+    "name": "Samsung Galaxy Buds 4 Earbuds",
+    "storeCount": 3,
+    "created": "2026-07-23 12:05:24.574+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "3364fdba-7a96-4df8-9648-b558b8c20cee",
+    "key": "samsung|R540NZKAMEA",
+    "category": "audio",
+    "name": "Samsung R540NZKAMEA",
+    "storeCount": 1,
+    "created": "2026-07-24 19:24:27.729+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "xiaomi|BHR8395GL",
+   "winner": {
+    "cid": "2994f2a1-90bb-41fb-af1f-808b42ad4933",
+    "key": "xiaomi|redmi buds 6 active",
+    "category": "audio",
+    "name": "Xiaomi Redmi Buds 6 Active Earbuds",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:34.764+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "3e9e869c-7dca-4051-9403-7bb27acdf141",
+    "key": "xiaomi|BHR8395GL",
+    "category": "audio",
+    "name": "Xiaomi BHR8395GL",
+    "storeCount": 1,
+    "created": "2026-07-23 16:38:54.622+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "jbl|JBLCHARGE6SQUAD",
+   "winner": {
+    "cid": "b6f2be08-f8d8-44fb-9e46-f8e61995d2fd",
+    "key": "jbl|charge 6",
+    "category": "audio",
+    "name": "Jbl Charge 6 Speaker",
+    "storeCount": 3,
+    "created": "2026-07-22 00:36:22.664+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "a819411c-3d68-46b3-ab31-7f2f5fa4925a",
+    "key": "jbl|JBLCHARGE6SQUAD",
+    "category": "audio",
+    "name": "Jbl JBLCHARGE6SQUAD Speaker",
+    "storeCount": 1,
+    "created": "2026-07-24 19:07:01.195+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "jbl|JBLFLIP7BLK",
+   "winner": {
+    "cid": "a11f81c4-8165-4ae1-afed-64a5a58552a9",
+    "key": "jbl|flip 7",
+    "category": "audio",
+    "name": "Jbl Flip 7 Speaker",
+    "storeCount": 2,
+    "created": "2026-07-22 00:36:22.664+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "6ddb2865-7fd3-45cb-979e-3e597b01ecca",
+    "key": "jbl|JBLFLIP7BLK",
+    "category": "audio",
+    "name": "Jbl JBLFLIP7BLK Speaker",
+    "storeCount": 1,
+    "created": "2026-07-24 19:07:01.195+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "gree|GJE18AG-D3NMTG1J",
+   "winner": {
+    "cid": "a5579d53-cf74-4111-a5fa-a8d78bfaf7e0",
+    "key": "gree|window|NO_SERIES|17600|Standard|hot_cold",
+    "category": "air_conditioner",
+    "name": "Gree Window AC 17600 BTU Standard hot cold",
+    "storeCount": 2,
+    "created": "2026-07-22 00:36:28.309+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "5cd63521-183b-449a-8d02-d573078f7264",
+    "key": "gree|window|NO_SERIES|17600|NO_TECH|hot_cold",
+    "category": "air_conditioner",
+    "name": "Gree Window AC 17600 BTU hot cold",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "haam|HM24CSM23GO",
+   "winner": {
+    "cid": "f0dc1203-8289-4621-85a5-80a7449c7011",
+    "key": "haam|split|NO_SERIES|22000|Standard|cool_only",
+    "category": "air_conditioner",
+    "name": "Haam Split AC 22000 BTU Standard cool only",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:08.413+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "45123cf1-da46-4990-8876-f00d78a8e012",
+    "key": "haam|split|NO_SERIES|22000|NO_TECH|cool_only",
+    "category": "air_conditioner",
+    "name": "Haam Split AC 22000 BTU cool only",
+    "storeCount": 1,
+    "created": "2026-07-30 09:02:31.417+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|AR24DSFZAWK/MG",
+   "winner": {
+    "cid": "3ed6151b-1ab9-4008-98a1-16aded61f9e0",
+    "key": "samsung|split|NO_SERIES|20500|Standard|hot_cold",
+    "category": "air_conditioner",
+    "name": "Samsung Split AC 20500 BTU Standard hot cold",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:12.372+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "7f37f80c-ab7e-48e2-98f2-42a4f47f1515",
+    "key": "samsung|split|NO_SERIES|20500|Inverter|hot_cold",
+    "category": "air_conditioner",
+    "name": "Samsung Split AC 20500 BTU Inverter hot cold",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "بيسك|BSACMA-FI18CBN",
+   "winner": {
+    "cid": "82a7e24c-8767-4b09-9190-fda63ba7f898",
+    "key": "بيسك|split|NO_SERIES|18000|Inverter|cool_only",
+    "category": "air_conditioner",
+    "name": "بيسك Split AC 18000 BTU Inverter cool only",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "b0781676-87f7-4c5d-840b-2dd5378e4beb",
+    "key": "بيسك|split|NO_SERIES|18000|NO_TECH|cool_only",
+    "category": "air_conditioner",
+    "name": "بيسك Split AC 18000 BTU cool only",
+    "storeCount": 1,
+    "created": "2026-07-24 19:24:31.304+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "بيسك|BSACMA-FI12CB",
+   "winner": {
+    "cid": "c316e16c-87c5-421b-b3f9-433c2367533e",
+    "key": "بيسك|split|NO_SERIES|12000|Inverter|cool_only",
+    "category": "air_conditioner",
+    "name": "بيسك Split AC 12000 BTU Inverter cool only",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "98811184-e717-4d35-9dc5-254e5af7685e",
+    "key": "بيسك|split|NO_SERIES|12000|NO_TECH|cool_only",
+    "category": "air_conditioner",
+    "name": "بيسك Split AC 12000 BTU cool only",
+    "storeCount": 1,
+    "created": "2026-07-24 19:24:31.304+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|HW18CA23",
+   "winner": {
+    "cid": "bfc8b9c9-920a-428b-b5ff-d01697b5d354",
+    "key": "hisense|window|NO_SERIES|18000|NO_TECH|cool_only",
+    "category": "air_conditioner",
+    "name": "Hisense Window AC 18000 BTU cool only",
+    "storeCount": 2,
+    "created": "2026-07-29 06:30:48.054+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "12ae2663-ba17-4a92-8fa3-2ae725693034",
+    "key": "hisense|window|NO_SERIES|18000|Standard|cool_only",
+    "category": "air_conditioner",
+    "name": "Hisense Window AC 18000 BTU Standard cool only",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "ariston|ART84F1613XSA",
+   "winner": {
+    "cid": "a31fb261-6bc1-4c4c-94d6-3aa89ff66ef2",
+    "key": "ariston|top_mount|570|inverter",
+    "category": "refrigerator",
+    "name": "ariston top mount refrigerator 570L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 17:19:41.498+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "0d8c9e85-df70-46f7-8e8e-71cbeb70657f",
+    "key": "ariston|top_mount|420|standard",
+    "category": "refrigerator",
+    "name": "ariston top mount refrigerator 420L",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "ariston|ART70F6502XSA",
+   "winner": {
+    "cid": "72c22504-56d9-4e63-9ea2-bffeb1b802fa",
+    "key": "ariston|top_mount|480|inverter",
+    "category": "refrigerator",
+    "name": "ariston top mount refrigerator 480L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 17:19:41.498+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "45c9622a-320c-4929-8a0c-07394e1f4d8e",
+    "key": "ariston|top_mount|350|standard",
+    "category": "refrigerator",
+    "name": "ariston top mount refrigerator 350L",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "midea|MDRS791MYU46D",
+   "winner": {
+    "cid": "70ea64c6-d2e9-4f3e-97cd-c1427bee123b",
+    "key": "midea|side_by_side|370|standard",
+    "category": "refrigerator",
+    "name": "midea side by side refrigerator 370L",
+    "storeCount": 2,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "1c2c0d5f-d443-4c11-a6d3-a9fedd316ca7",
+    "key": "midea|top_mount|600|standard",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 600L",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:09.835+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "lg|LD141BBSIT",
+   "winner": {
+    "cid": "e2609c77-91f2-4634-b468-cbc17d1a5b86",
+    "key": "lg|single_door|380|inverter",
+    "category": "refrigerator",
+    "name": "lg single door refrigerator 380L inverter",
+    "storeCount": 3,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "26719079-62c4-41fd-afde-f50ed242eebf",
+    "key": "lg|single_door|390|inverter",
+    "category": "refrigerator",
+    "name": "lg single door refrigerator 390L inverter",
+    "storeCount": 1,
+    "created": "2026-07-26 09:08:18.35+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "lg|WFF0914MB",
+   "winner": {
+    "cid": "27b04c61-831e-40ac-8555-e3fa803efe90",
+    "key": "lg|front_load|9|combo",
+    "category": "washing_machine",
+    "name": "lg front load washer/dryer 9kg",
+    "storeCount": 4,
+    "created": "2026-07-22 12:41:23.005+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "8ac5a5d4-bc49-4b77-80fc-186e7e3b8168",
+    "key": "lg|front_load|9|washer",
+    "category": "washing_machine",
+    "name": "lg front load washer 9kg",
+    "storeCount": 4,
+    "created": "2026-07-22 12:41:23.005+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|WT3K1022UT6",
+   "winner": {
+    "cid": "ad72404d-4fe8-4b3b-972f-520f969a7958",
+    "key": "hisense|top_load|10|washer",
+    "category": "washing_machine",
+    "name": "hisense top load washer 10kg",
+    "storeCount": 4,
+    "created": "2026-07-22 12:41:23.005+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "790db7ca-eb9d-4f08-a31b-2fc499308a8e",
+    "key": "hisense|top_load|10|combo",
+    "category": "washing_machine",
+    "name": "hisense top load washer/dryer 10kg",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:45.827+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|WT3K1222UT6",
+   "winner": {
+    "cid": "fbbcd5ae-7878-43c7-b98c-1324b2b1ec20",
+    "key": "hisense|top_load|12|washer",
+    "category": "washing_machine",
+    "name": "hisense top load washer 12kg",
+    "storeCount": 4,
+    "created": "2026-07-22 12:41:23.005+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "fb7d1d71-e7c9-4bf2-bc4a-4727597a5d7b",
+    "key": "hisense|top_load|12|combo",
+    "category": "washing_machine",
+    "name": "hisense top load washer/dryer 12kg",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:45.827+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|WT3K8022UT6",
+   "winner": {
+    "cid": "a810282e-6078-43c5-ab62-1019bb49ce85",
+    "key": "hisense|top_load|8|washer",
+    "category": "washing_machine",
+    "name": "hisense top load washer 8kg",
+    "storeCount": 3,
+    "created": "2026-07-22 12:41:23.005+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "344177f1-5f95-4f6f-bc66-b143ec3f8dce",
+    "key": "hisense|top_load|8|combo",
+    "category": "washing_machine",
+    "name": "hisense top load washer/dryer 8kg",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:45.827+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "canon|RF18-45MM",
+   "winner": {
+    "cid": "f731d61a-2fd5-4079-a0a7-5db024d6d672",
+    "key": "canon|eos r100|18-45",
+    "category": "camera",
+    "name": "Canon Eos R100 Camera 18-45mm Kit",
+    "storeCount": 2,
+    "created": "2026-07-21 23:36:51.641+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "d4c1837b-71ad-47f2-b437-d358d942d2f6",
+    "key": "canon|eos r50|18-45",
+    "category": "camera",
+    "name": "Canon Eos R50 Camera 18-45mm Kit",
+    "storeCount": 2,
+    "created": "2026-07-21 23:36:51.641+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "canon|RF-S14-30MM",
+   "winner": {
+    "cid": "27d8cd5a-3b07-4d45-af29-b54018e64dc5",
+    "key": "canon|eos r50 v|14-30",
+    "category": "camera",
+    "name": "Canon Eos R50 V Camera 14-30mm Kit",
+    "storeCount": 1,
+    "created": "2026-07-22 00:36:24.509+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "eb85a232-3655-43b7-8a77-25e17791caca",
+    "key": "canon|eos r50 v|body",
+    "category": "camera",
+    "name": "Canon Eos R50 V Camera (Body)",
+    "storeCount": 1,
+    "created": "2026-07-22 00:36:24.509+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "lenovo|15ARP10E",
+   "winner": {
+    "cid": "f1cd1bd1-c3c1-4b41-b3bc-d5891dc353dd",
+    "key": "lenovo|loq|ryzen5-7|16|512|15.6|rtx3050",
+    "category": "laptop",
+    "name": "Lenovo loq ryzen5-7 16GB 512GB 15.6\" RTX3050 Laptop",
+    "storeCount": 2,
+    "created": "2026-07-22 13:40:42.904+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "566b289c-a577-485f-ba6e-f9bfccd7b492",
+    "key": "lenovo|loq|ryzen7|16|1024|15.6|rtx3050",
+    "category": "laptop",
+    "name": "Lenovo loq ryzen7 16GB 1TB 15.6\" RTX3050 Laptop",
+    "storeCount": 2,
+    "created": "2026-07-22 13:40:42.904+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "lenovo|15ARP10E",
+   "winner": {
+    "cid": "f1cd1bd1-c3c1-4b41-b3bc-d5891dc353dd",
+    "key": "lenovo|loq|ryzen5-7|16|512|15.6|rtx3050",
+    "category": "laptop",
+    "name": "Lenovo loq ryzen5-7 16GB 512GB 15.6\" RTX3050 Laptop",
+    "storeCount": 2,
+    "created": "2026-07-22 13:40:42.904+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "dd6a21db-5f14-4ffb-9358-bc11b237b4b2",
+    "key": "lenovo|loq|ryzen7-7|16|1024|15.6|rtx3050",
+    "category": "laptop",
+    "name": "Lenovo loq ryzen7-7 16GB 1TB 15.6\" RTX3050 Laptop",
+    "storeCount": 1,
+    "created": "2026-07-30 05:49:00.728+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "dahua|LM22-A200Y",
+   "winner": {
+    "cid": "327a2cf4-c8c2-41c8-ba53-8204d945f87c",
+    "key": "dahua|22|fhd|100|va",
+    "category": "monitor",
+    "name": "Dahua 22\" FHD 100Hz VA Monitor",
+    "storeCount": 2,
+    "created": "2026-07-24 06:05:38.383+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "d7926352-fba6-4dfe-abd0-c1aa43344b61",
+    "key": "dahua|22|fhd|120|va",
+    "category": "monitor",
+    "name": "Dahua 22\" FHD 120Hz VA Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 09:29:07.902+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "nikai|NRF170N",
+   "winner": {
+    "cid": "51cff1ef-79fd-4166-85a6-9e8dd5845209",
+    "key": "nikai|top_mount|130|standard",
+    "category": "refrigerator",
+    "name": "nikai top mount refrigerator 130L",
+    "storeCount": 3,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "a973d5f7-fc68-4816-96f1-d442b40dff60",
+    "key": "nikai|single_door|140|standard",
+    "category": "refrigerator",
+    "name": "nikai single door refrigerator 140L",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "lg|LS25CBBDIK",
+   "winner": {
+    "cid": "335515eb-bf61-4baa-a1d6-64899823c0b8",
+    "key": "lg|side_by_side|660|inverter",
+    "category": "refrigerator",
+    "name": "lg side by side refrigerator 660L inverter",
+    "storeCount": 3,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "e13cb07c-c1af-479d-8b68-16759935d4e5",
+    "key": "lg|side_by_side|660|standard",
+    "category": "refrigerator",
+    "name": "lg side by side refrigerator 660L",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:43.6+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "nikai|NRF450F",
+   "winner": {
+    "cid": "e0b422e3-5172-43b3-a8fc-675f6073e8a4",
+    "key": "nikai|top_mount|300|inverter",
+    "category": "refrigerator",
+    "name": "nikai top mount refrigerator 300L inverter",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "82b8c665-ef68-4862-ae94-9fea40521ce7",
+    "key": "nikai|top_mount|320|standard",
+    "category": "refrigerator",
+    "name": "nikai top mount refrigerator 320L",
+    "storeCount": 1,
+    "created": "2026-07-22 12:41:19.128+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hp|I5-1135G7",
+   "winner": {
+    "cid": "5be4b891-c360-4916-9631-e7c662603be5",
+    "key": "hp|elitebook|i5|16|512|14|igpu",
+    "category": "laptop",
+    "name": "Hp elitebook i5 16GB 512GB 14\" Laptop",
+    "storeCount": 1,
+    "created": "2026-07-22 00:36:38.141+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "5a307399-234f-4294-9da6-451471693114",
+    "key": "hp|probook|i5|8|256|14|igpu",
+    "category": "laptop",
+    "name": "Hp probook i5 8GB 256GB 14\" Laptop",
+    "storeCount": 1,
+    "created": "2026-07-23 12:05:46.596+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "asus|FA506NCG",
+   "winner": {
+    "cid": "4420e08e-69ba-40db-b188-b306e190bc12",
+    "key": "asus|tuf|ryzen7|8|512|NO_SCREEN|rtx3050",
+    "category": "laptop",
+    "name": "Asus tuf ryzen7 8GB 512GB RTX3050 Laptop",
+    "storeCount": 1,
+    "created": "2026-08-03 07:08:07.208+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "2826e0fe-7e6b-43ce-a4a2-f57ebaa65066",
+    "key": "asus|MODEL:FA506NCG",
+    "category": "laptop",
+    "name": "Asus FA506NCG Laptop",
+    "storeCount": 1,
+    "created": "2026-07-23 12:05:43.911+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "asus|VG279QM",
+   "winner": {
+    "cid": "d73ec7bd-7ec4-4b28-a9e7-bc484505de1d",
+    "key": "asus|27|fhd|280|ips",
+    "category": "monitor",
+    "name": "Asus 27\" FHD 280Hz IPS Monitor",
+    "storeCount": 1,
+    "created": "2026-07-24 06:07:55.486+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "98cdd23d-8c00-43fb-b61a-d6e4328d75c1",
+    "key": "asus|27|fhd|280|NO_PANEL",
+    "category": "monitor",
+    "name": "Asus 27\" FHD 280Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-24 06:07:55.486+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RL5N590NAIC",
+   "winner": {
+    "cid": "a6e08650-7f8b-4693-af4f-7079579db45b",
+    "key": "hisense|single_door|600|inverter",
+    "category": "refrigerator",
+    "name": "hisense single door refrigerator 600L inverter",
+    "storeCount": 4,
+    "created": "2026-07-24 06:08:51.837+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "f87658eb-396e-4d4e-b43b-4ea6490165dc",
+    "key": "hisense|single_door|590|standard",
+    "category": "refrigerator",
+    "name": "hisense single door refrigerator 590L",
+    "storeCount": 2,
+    "created": "2026-07-26 09:19:47.731+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "اريستون|ART84F1613XSA",
+   "winner": {
+    "cid": "01f2adef-7cdd-4efb-8c96-de7f5e030f52",
+    "key": "اريستون|top_mount|570|inverter",
+    "category": "refrigerator",
+    "name": "اريستون top mount refrigerator 570L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 16:38:43.275+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "645a3238-cc71-4f99-a82b-5101b61f5503",
+    "key": "اريستون|top_mount|420|standard",
+    "category": "refrigerator",
+    "name": "اريستون top mount refrigerator 420L",
+    "storeCount": 1,
+    "created": "2026-07-24 18:55:19.777+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "اريستون|ART83F6653XSA",
+   "winner": {
+    "cid": "bc26592c-1360-473b-9d98-3679497edd64",
+    "key": "اريستون|top_mount|630|inverter",
+    "category": "refrigerator",
+    "name": "اريستون top mount refrigerator 630L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 16:38:43.275+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "07cc82b5-7baa-4874-8f19-6fce3b3b1dac",
+    "key": "اريستون|top_mount|460|standard",
+    "category": "refrigerator",
+    "name": "اريستون top mount refrigerator 460L",
+    "storeCount": 1,
+    "created": "2026-07-24 18:55:19.777+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "اريستون|ART70F6502XSA",
+   "winner": {
+    "cid": "29f65fb3-8681-47a8-b5de-d91cd9222b04",
+    "key": "اريستون|top_mount|480|inverter",
+    "category": "refrigerator",
+    "name": "اريستون top mount refrigerator 480L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 16:38:43.275+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "c025dae2-939e-4836-ab0f-c88a45c6b460",
+    "key": "اريستون|top_mount|350|standard",
+    "category": "refrigerator",
+    "name": "اريستون top mount refrigerator 350L",
+    "storeCount": 1,
+    "created": "2026-07-24 18:55:19.777+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|HW-Q600F/SA",
+   "winner": {
+    "cid": "b9efac6e-d6af-4b99-81a4-73aea664939e",
+    "key": "samsung|HW-Q600F/SA",
+    "category": "audio",
+    "name": "Samsung HW-Q600F/SA Speaker",
+    "storeCount": 2,
+    "created": "2026-07-24 19:24:27.729+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "b03cb25a-1ac4-435a-99fd-e711077f4e7b",
+    "key": "samsung|Q600F/SA",
+    "category": "audio",
+    "name": "Samsung Q600F/SA Speaker",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:02.454+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|HW-Q800F/SA",
+   "winner": {
+    "cid": "a6fa111c-4c0d-410f-b086-7b7d175e079a",
+    "key": "samsung|HW-Q800F/SA",
+    "category": "audio",
+    "name": "Samsung HW-Q800F/SA Speaker",
+    "storeCount": 1,
+    "created": "2026-07-24 19:24:27.729+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "44571b7f-d97e-43f0-8bb0-27b59f974838",
+    "key": "samsung|Q800F/SA",
+    "category": "audio",
+    "name": "Samsung Q800F/SA Speaker",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:02.454+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "دايو|DW-C3871WH",
+   "winner": {
+    "cid": "9c8be049-26e4-4db1-9c4f-1ca53cf8ea3b",
+    "key": "دايو|front_load|13|washer",
+    "category": "washing_machine",
+    "name": "دايو front load washer 13kg",
+    "storeCount": 1,
+    "created": "2026-07-24 21:26:16.195+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "cd890b15-4be1-480c-84f8-83d43b4fd8c6",
+    "key": "دايو|front_load|13|combo",
+    "category": "washing_machine",
+    "name": "دايو front load washer/dryer 13kg",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:35.38+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "سامسون|WD90T654DBN/YL",
+   "winner": {
+    "cid": "6c13cb80-92bf-4ac1-8aeb-497a9236b1af",
+    "key": "سامسون|front_load|9|washer",
+    "category": "washing_machine",
+    "name": "سامسون front load washer 9kg",
+    "storeCount": 2,
+    "created": "2026-07-24 21:26:16.195+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "e6830837-45fd-4421-961b-8e27b022dac0",
+    "key": "سامسون|front_load|9|combo",
+    "category": "washing_machine",
+    "name": "سامسون front load washer/dryer 9kg",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:35.38+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "midea|MDRT866FGF46",
+   "winner": {
+    "cid": "7fb7fb46-f6fd-428f-9c95-7dd34ac185ed",
+    "key": "midea|top_mount|650|inverter",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 650L inverter",
+    "storeCount": 2,
+    "created": "2026-08-02 16:38:43.275+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "b8481f29-e2ee-445b-8f3c-92fa6128bfd9",
+    "key": "midea|top_mount|490|standard",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 490L",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:34.438+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "midea|MDRT765FGU46DO",
+   "winner": {
+    "cid": "6ff940f7-6e4d-4c49-8fb1-0a505bf3b262",
+    "key": "midea|top_mount|570|inverter",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 570L inverter",
+    "storeCount": 2,
+    "created": "2026-07-26 08:49:57.927+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "09449c63-2693-45b9-9927-2938c725e413",
+    "key": "midea|top_mount|410|standard",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 410L",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:34.438+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "midea|MDRT687FGU46DI",
+   "winner": {
+    "cid": "e7401487-9a23-41e9-9903-cbb2fb4f0ff8",
+    "key": "midea|top_mount|520|inverter",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 520L inverter",
+    "storeCount": 2,
+    "created": "2026-08-02 16:38:43.275+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "3453831e-9ce9-4042-9f2a-a0ee17f9d965",
+    "key": "midea|top_mount|370|standard",
+    "category": "refrigerator",
+    "name": "midea top mount refrigerator 370L",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:34.438+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "سامسون|RT47CG6442S9ZA",
+   "winner": {
+    "cid": "cacf3438-5034-4c30-aa4f-c00fa06e703a",
+    "key": "سامسون|top_mount|350|standard",
+    "category": "refrigerator",
+    "name": "سامسون top mount refrigerator 350L",
+    "storeCount": 2,
+    "created": "2026-07-24 22:53:34.438+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "c6e41c58-fc76-47b1-8a9f-6dc80c12ef10",
+    "key": "سامسون|top_mount|460|inverter",
+    "category": "refrigerator",
+    "name": "سامسون top mount refrigerator 460L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:09.835+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "سامسون|RT62K7050SL/ZA",
+   "winner": {
+    "cid": "1d0628ad-3a30-456f-8bbd-7546b9eca27f",
+    "key": "سامسون|top_mount|460|standard",
+    "category": "refrigerator",
+    "name": "سامسون top mount refrigerator 460L",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:34.438+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "f2bd7e9d-b569-483a-8eae-91db6a59f567",
+    "key": "سامسون|top_mount|160|standard",
+    "category": "refrigerator",
+    "name": "سامسون top mount refrigerator 160L",
+    "storeCount": 1,
+    "created": "2026-08-02 21:05:58.037+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "سامسون|RS57DG4000M9ZA",
+   "winner": {
+    "cid": "2db8e9df-8344-4950-b32d-eb5355d1a964",
+    "key": "سامسون|side_by_side|370|standard",
+    "category": "refrigerator",
+    "name": "سامسون side by side refrigerator 370L",
+    "storeCount": 1,
+    "created": "2026-07-24 22:53:34.438+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "1254f636-2ca8-405f-b60d-48f14d25ab70",
+    "key": "سامسون|top_mount|560|standard",
+    "category": "refrigerator",
+    "name": "سامسون top mount refrigerator 560L",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:09.835+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "midea|MDRD133FGU01",
+   "winner": {
+    "cid": "34f29259-9617-414e-8f8c-c8d4b180b790",
+    "key": "midea|single_door|80|standard",
+    "category": "refrigerator",
+    "name": "midea single door refrigerator 80L",
+    "storeCount": 1,
+    "created": "2026-07-24 23:14:05.65+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "2d51bef3-d503-4a8c-8984-9daae1f31ab4",
+    "key": "midea|single_door|90|standard",
+    "category": "refrigerator",
+    "name": "midea single door refrigerator 90L",
+    "storeCount": 1,
+    "created": "2026-08-02 21:05:58.037+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "mtc|MTC24CUT25INV",
+   "winner": {
+    "cid": "1f2fc38f-eccc-416c-9f0e-244d9bb6c873",
+    "key": "mtc|split|NO_SERIES|22000|Inverter|cool_only",
+    "category": "air_conditioner",
+    "name": "Mtc Split AC 22000 BTU Inverter cool only",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "b6b5dbd5-32c2-49af-bcfc-bb17e784fd9e",
+    "key": "mtc|split|NO_SERIES|22000|NO_TECH|cool_only",
+    "category": "air_conditioner",
+    "name": "Mtc Split AC 22000 BTU cool only",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "mtc|MTC18HUT25INV",
+   "winner": {
+    "cid": "c09e0b83-7004-4237-b96d-f21aa9cbecb4",
+    "key": "mtc|split|NO_SERIES|18000|Inverter|hot_cold",
+    "category": "air_conditioner",
+    "name": "Mtc Split AC 18000 BTU Inverter hot cold",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "3e08c5cc-ca15-4c1d-acb7-613b5e589d5b",
+    "key": "mtc|split|NO_SERIES|18000|NO_TECH|hot_cold",
+    "category": "air_conditioner",
+    "name": "Mtc Split AC 18000 BTU hot cold",
+    "storeCount": 1,
+    "created": "2026-08-02 16:38:39.787+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|HW-QS700F/SA",
+   "winner": {
+    "cid": "8012dd71-72d1-428c-9bf2-e104d1ce57c6",
+    "key": "samsung|HW-QS700F/SA",
+    "category": "audio",
+    "name": "Samsung HW-QS700F/SA Speaker",
+    "storeCount": 2,
+    "created": "2026-07-25 10:34:34.764+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "a3ba30cf-0d8e-4737-89ad-4305b4d4ef5d",
+    "key": "samsung|QS700F/SA",
+    "category": "audio",
+    "name": "Samsung QS700F/SA",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:02.454+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "philips|NA460/00",
+   "winner": {
+    "cid": "2a12ad35-256e-43da-88b6-2ef0bf8a455e",
+    "key": "philips|dual|10",
+    "category": "air_fryer",
+    "name": "philips dual air fryer 10 L",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:52.612+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "534967a5-5dec-4fe0-a0be-54bda9fca4a6",
+    "key": "philips|NA|10",
+    "category": "air_fryer",
+    "name": "philips air fryer 10 L",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:17.713+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "mtc|MTC12HUT25INV",
+   "winner": {
+    "cid": "016a6f55-00a7-459d-9efa-e567665862cc",
+    "key": "mtc|split|NO_SERIES|12000|Inverter|hot_cold",
+    "category": "air_conditioner",
+    "name": "Mtc Split AC 12000 BTU Inverter hot cold",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:36.948+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "626c8faa-8a4b-4735-bd0f-b854e6100a74",
+    "key": "mtc|split|NO_SERIES|12000|NO_TECH|hot_cold",
+    "category": "air_conditioner",
+    "name": "Mtc Split AC 12000 BTU hot cold",
+    "storeCount": 1,
+    "created": "2026-07-26 09:08:16.282+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "philips|HR2191/30",
+   "winner": {
+    "cid": "53c797c5-8f86-4047-8b1b-c30ec5697b74",
+    "key": "philips|NA|600",
+    "category": "blender",
+    "name": "philips blender 600 W",
+    "storeCount": 2,
+    "created": "2026-07-25 10:34:54.589+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "e58e14b0-fcfb-456d-bd2e-ceb9e99f253e",
+    "key": "philips|stand|600",
+    "category": "blender",
+    "name": "philips stand blender 600 W",
+    "storeCount": 1,
+    "created": "2026-07-30 09:02:50.258+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "xiaomi|ELA5587UK",
+   "winner": {
+    "cid": "b87f5a88-e955-4a9e-942f-87ce7fc53bba",
+    "key": "xiaomi|27|qhd|180|ips",
+    "category": "monitor",
+    "name": "Xiaomi 27\" QHD 180Hz IPS Monitor",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:31.733+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "783b3420-b891-459e-a581-ad3120990a86",
+    "key": "xiaomi|27|qhd|180|NO_PANEL",
+    "category": "monitor",
+    "name": "Xiaomi 27\" QHD 180Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-24 06:07:58.654+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|WT1D7021UT6",
+   "winner": {
+    "cid": "19b8971c-6f4d-4e41-8663-9eeee31a885d",
+    "key": "hisense|top_load|7|washer",
+    "category": "washing_machine",
+    "name": "hisense top load washer 7kg",
+    "storeCount": 2,
+    "created": "2026-07-26 09:19:48.847+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "53d9c28c-ac34-463d-a8a9-ecb00c1f4c29",
+    "key": "hisense|top_load|7|combo",
+    "category": "washing_machine",
+    "name": "hisense top load washer/dryer 7kg",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:45.827+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RT48W2NOI",
+   "winner": {
+    "cid": "ad49fdcd-7e36-4848-8499-b5f6a7593390",
+    "key": "hisense|top_mount|380|inverter",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 380L inverter",
+    "storeCount": 2,
+    "created": "2026-07-25 10:34:43.6+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "94aa3fa3-5437-49f8-abe2-9a326579610a",
+    "key": "hisense|top_mount|370|standard",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 370L",
+    "storeCount": 1,
+    "created": "2026-07-26 09:19:47.731+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RT3N635NADB",
+   "winner": {
+    "cid": "db4cef8c-738f-4760-97de-8acc5ebbcb0a",
+    "key": "hisense|top_mount|640|inverter",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 640L inverter",
+    "storeCount": 3,
+    "created": "2026-07-25 10:34:43.6+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "96237715-b02c-4d42-9e4a-b30fdd80181e",
+    "key": "hisense|top_mount|640|standard",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 640L",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:09.835+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RS3P558NAIC",
+   "winner": {
+    "cid": "c0cc1926-19e6-4bd3-875c-ba9dbf7f4bdd",
+    "key": "hisense|side_by_side|530|inverter",
+    "category": "refrigerator",
+    "name": "hisense side by side refrigerator 530L inverter",
+    "storeCount": 2,
+    "created": "2026-07-25 10:34:43.6+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "3c84d059-f24a-4aab-804e-44dd1b8cc3e6",
+    "key": "hisense|top_mount|530|inverter",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 530L inverter",
+    "storeCount": 1,
+    "created": "2026-07-26 09:19:47.731+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RS3P558NAIC",
+   "winner": {
+    "cid": "c0cc1926-19e6-4bd3-875c-ba9dbf7f4bdd",
+    "key": "hisense|side_by_side|530|inverter",
+    "category": "refrigerator",
+    "name": "hisense side by side refrigerator 530L inverter",
+    "storeCount": 2,
+    "created": "2026-07-25 10:34:43.6+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "4e636957-e48a-43d2-98ff-95fd815982f9",
+    "key": "hisense|top_mount|530|standard",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 530L",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:09.835+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RT66W2NLI",
+   "winner": {
+    "cid": "a0f5ed3c-c817-454a-a259-ad3fcf587ef2",
+    "key": "hisense|top_mount|510|standard",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 510L",
+    "storeCount": 2,
+    "created": "2026-07-26 08:49:57.927+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "40650cd1-fa78-4409-841d-f5c945e4aac4",
+    "key": "hisense|top_mount|500|inverter",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 500L inverter",
+    "storeCount": 1,
+    "created": "2026-07-25 10:34:43.6+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "hisense|RT5N565NAIC",
+   "winner": {
+    "cid": "fc090fc8-1b62-4760-887f-547b80c77ede",
+    "key": "hisense|top_mount|560|inverter",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 560L inverter",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:09.835+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "a399960b-bb4f-455d-aa5e-faf57b6585c1",
+    "key": "hisense|top_mount|560|standard",
+    "category": "refrigerator",
+    "name": "hisense top mount refrigerator 560L",
+    "storeCount": 1,
+    "created": "2026-07-26 08:49:57.927+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "samsung|HW-T400/ZN",
+   "winner": {
+    "cid": "ce044bb6-b2fb-4b2e-9039-37299ad18797",
+    "key": "samsung|HW-T400/ZN",
+    "category": "audio",
+    "name": "Samsung HW-T400/ZN Speaker",
+    "storeCount": 1,
+    "created": "2026-07-30 03:43:52.826+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "e90725c6-bd5d-44e8-89bf-d7be23207c13",
+    "key": "samsung|T400/ZN",
+    "category": "audio",
+    "name": "Samsung T400/ZN",
+    "storeCount": 1,
+    "created": "2026-08-02 21:05:50.352+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "gameon|GOE32FHD165VA",
+   "winner": {
+    "cid": "a7d7331b-5fb8-4506-a6e2-13068bca4ebe",
+    "key": "gameon|32|fhd|165|NO_PANEL",
+    "category": "monitor",
+    "name": "Gameon 32\" FHD 165Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 06:29:12.541+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "b7c3f78a-6410-4b6b-9be6-0f2fb02a6946",
+    "key": "gameon|32|fhd|165|va",
+    "category": "monitor",
+    "name": "Gameon 32\" FHD 165Hz VA Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:00:51.386+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "dahua|DHI-LM27-E231BN",
+   "winner": {
+    "cid": "fe03f9b4-6d6e-4ab4-9bc3-7473350c34a3",
+    "key": "dahua|27|fhd|200|ips",
+    "category": "monitor",
+    "name": "Dahua 27\" FHD 200Hz IPS Monitor",
+    "storeCount": 2,
+    "created": "2026-07-24 18:54:58.799+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "287000bd-7154-4ba9-901a-78c04155dc77",
+    "key": "dahua|27|fhd|200|NO_PANEL",
+    "category": "monitor",
+    "name": "Dahua 27\" FHD 200Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:00:51.386+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "ktc|2560X1440P",
+   "winner": {
+    "cid": "727786f6-95c1-4d54-b092-8c21baf41253",
+    "key": "ktc|32|qhd|180|NO_PANEL",
+    "category": "monitor",
+    "name": "Ktc 32\" QHD 180Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:00:51.386+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "176a0026-1d17-40bf-a529-ec4e094b122b",
+    "key": "ktc|27|qhd|180|NO_PANEL",
+    "category": "monitor",
+    "name": "Ktc 27\" QHD 180Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:00:51.386+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "gawfolk|3840X2160P",
+   "winner": {
+    "cid": "6d806c03-4dfa-46e7-90d7-0b46eb076f97",
+    "key": "gawfolk|32|4k|165|oled",
+    "category": "monitor",
+    "name": "Gawfolk 32\" 4K 165Hz OLED Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:00:51.386+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "73bdcc67-37a6-4a6f-a3ff-d4d4fe3a543c",
+    "key": "gawfolk|32|4k|240|oled",
+    "category": "monitor",
+    "name": "Gawfolk 32\" 4K 240Hz OLED Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:19:50.093+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "gawfolk|3840X2160P",
+   "winner": {
+    "cid": "6d806c03-4dfa-46e7-90d7-0b46eb076f97",
+    "key": "gawfolk|32|4k|165|oled",
+    "category": "monitor",
+    "name": "Gawfolk 32\" 4K 165Hz OLED Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:00:51.386+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "0b3d9d6f-f863-408c-8626-5a5ab1b1348a",
+    "key": "gawfolk|27|4k|60|ips",
+    "category": "monitor",
+    "name": "Gawfolk 27\" 4K 60Hz IPS Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:19:50.093+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "gawfolk|2560X1440P",
+   "winner": {
+    "cid": "96a6703b-7056-4fb2-aa1d-6377b5a0bf53",
+    "key": "gawfolk|27|qhd|165|ips",
+    "category": "monitor",
+    "name": "Gawfolk 27\" QHD 165Hz IPS Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:19:50.093+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "cc98afd4-a05b-4d41-8dfa-762addca7c72",
+    "key": "gawfolk|27|qhd|165|NO_PANEL",
+    "category": "monitor",
+    "name": "Gawfolk 27\" QHD 165Hz Monitor",
+    "storeCount": 1,
+    "created": "2026-07-30 07:19:50.093+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "nikai|NAF182DX",
+   "winner": {
+    "cid": "6b18d45e-9f60-4855-a051-3e559671e5ae",
+    "key": "nikai|dual|8.4",
+    "category": "air_fryer",
+    "name": "nikai dual air fryer 8.4 L",
+    "storeCount": 1,
+    "created": "2026-07-30 08:40:06.232+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "5af1fc2a-adba-4a2d-8093-288d26990c7e",
+    "key": "nikai|NA|8.4",
+    "category": "air_fryer",
+    "name": "nikai air fryer 8.4 L",
+    "storeCount": 1,
+    "created": "2026-08-02 18:20:17.713+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "apple|IPAD-2019",
+   "winner": {
+    "cid": "0072e5f1-cf2d-4f95-bce9-418b3fc6b969",
+    "key": "apple|ipad|gen7|32|wifi|10.2",
+    "category": "tablet",
+    "name": "Apple Ipad GEN7 10.2\" 32GB Wi-Fi",
+    "storeCount": 1,
+    "created": "2026-07-22 00:36:18.147+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "3a793afd-128c-4d54-8da1-6c80275d8dda",
+    "key": "apple|ipad|gen7|32|4g|NO_SIZE",
+    "category": "tablet",
+    "name": "Apple Ipad GEN7 32GB 4G/LTE",
+    "storeCount": 1,
+    "created": "2026-07-30 09:02:07.736+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "apple|IPAD-2019",
+   "winner": {
+    "cid": "0072e5f1-cf2d-4f95-bce9-418b3fc6b969",
+    "key": "apple|ipad|gen7|32|wifi|10.2",
+    "category": "tablet",
+    "name": "Apple Ipad GEN7 10.2\" 32GB Wi-Fi",
+    "storeCount": 1,
+    "created": "2026-07-22 00:36:18.147+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "6079d95e-f52b-4bd0-9257-81c62c17e0c3",
+    "key": "apple|ipad|gen7|32|4g|10.2",
+    "category": "tablet",
+    "name": "Apple Ipad GEN7 10.2\" 32GB 4G/LTE",
+    "storeCount": 1,
+    "created": "2026-07-30 09:02:07.736+00",
+    "literal": true
+   }
+  },
+  {
+   "pair": "haier|HRF-385NS",
+   "winner": {
+    "cid": "2b7e9d82-5e68-4253-9f5c-7d9d5e70ebf1",
+    "key": "haier|top_mount|360|inverter",
+    "category": "refrigerator",
+    "name": "haier top mount refrigerator 360L inverter",
+    "storeCount": 1,
+    "created": "2026-08-03 07:15:00.79+00",
+    "literal": true
+   },
+   "loser": {
+    "cid": "1368f5d5-1cee-4757-a5fe-e595546d3360",
+    "key": "haier|top_mount|360|standard",
+    "category": "refrigerator",
+    "name": "haier top mount refrigerator 360L",
+    "storeCount": 1,
+    "created": "2026-08-02 21:05:58.037+00",
+    "literal": true
+   }
+  }
+ ],
+ "refused": [
+  "apple|MMTN2ZE/A: model not literal on all sides",
+  "anker|A3012H21: model not literal on all sides",
+  "anker|A3948Z11: model not literal on all sides",
+  "anker|A3005HA1: model not literal on all sides",
+  "anker|A3948H12: model not literal on all sides",
+  "jbl|JBLT720BTBLU: model not literal on all sides",
+  "anker|A3949Z11: model not literal on all sides",
+  "jbl|JBLCHARGE5WHT: model not literal on all sides",
+  "jbl|JBLQUANTUM100BLK: model not literal on all sides",
+  "samsung|SM-S947BZKOMEA: model not literal on all sides",
+  "samsung|SM-R420NZKAMEA: model not literal on all sides",
+  "jbl|JBLCLIP5WHT: model not literal on all sides",
+  "anker|A3004H31: model not literal on all sides",
+  "jbl|JBLT310CBLU: model not literal on all sides",
+  "jbl|JBLGO4PUR: model not literal on all sides",
+  "samsung|SM-X930NZSEMEA: model not literal on all sides",
+  "jbl|JBLLIVE660NCWHT: model not literal on all sides",
+  "jbl|JBLLIVE460BTBLU: model not literal on all sides",
+  "jbl|JBLCLIP4BLU: model not literal on all sides",
+  "jbl|JBLXTREME4BLK: model not literal on all sides",
+  "jbl|JBLQ350WLBLK: model not literal on all sides",
+  "jbl|JBLT710BTBLU: model not literal on all sides",
+  "jbl|JBLQUANTUM300BLK: model not literal on all sides",
+  "jbl|JBLT760NCBLS: model not literal on all sides",
+  "samsung|SM-X736BZAEMEA: model not literal on all sides",
+  "jbl|JBLT205BLK: model not literal on all sides",
+  "jbl|JBLFLIP6RED: model not literal on all sides",
+  "lg|27GR83Q-B: model not literal on all sides",
+  "classpro|CLW24CHS: model not literal on all sides",
+  "samsung|AR18DVFZAWK/MG: model not literal on all sides",
+  "hisense|HUF48HAI23: model not literal on all sides",
+  "hisense|HW24CA23: model not literal on all sides",
+  "samsung|AR24TVHZBWKNMG: members span categories",
+  "classpro|CLS12H8SEC: model not literal on all sides",
+  "hisense|RS3N668SAID: model not literal on all sides",
+  "lg|WTV17HHW: members span categories",
+  "samsung|WD12TP34DSX: model not literal on all sides",
+  "lg|WTV11BNS: members span categories",
+  "hisense|WT5I1623DB6: model not literal on all sides",
+  "lg|WTV22HHM1: members span categories",
+  "lg|55UA80006LC: members span categories",
+  "samsung|LS27FG532EMXUE: model not literal on all sides",
+  "lg|27US550-W: model not literal on all sides",
+  "samsung|LS32BG650EMXUE: model not literal on all sides",
+  "samsung|SM-X930NZAAMEA: model not literal on all sides",
+  "samsung|SM-X620NZAAMEA: model not literal on all sides",
+  "samsung|SM-X820NZSAMEA: model not literal on all sides",
+  "samsung|SM-X115NDBAMEA: model not literal on all sides",
+  "lenovo|ZAFR0843SA: model not literal on all sides",
+  "kenwood|MPM02.000BK: members span categories",
+  "lenovo|ZAG70791SA: model not literal on all sides",
+  "samsung|HW-B400F/SA: model not literal on all sides",
+  "samsung|HW-B750F/SA: model not literal on all sides",
+  "jbl|JBLLIVE400BTBLK: model not literal on all sides",
+  "سامسون|UA55M70HAUXSA: members span categories"
+ ]
+}

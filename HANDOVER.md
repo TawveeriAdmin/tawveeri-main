@@ -5772,3 +5772,84 @@ f4d5210  scorecard scoping           git revert f4d5210
 ```
 The backfill is fill-only and additive; reverting the code does not unfill the column — use
 the snapshot to restore if ever needed.
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #63 · OBJ 1 EXTENSION DONE · QUEUE 2–4 NOT STARTED ═══
+
+**Tree clean · pushed · tests 1,152/1,152 · `tps:health` 0 FAIL · "duplicate product cards: none".**
+
+## SESSION RESULT — comparable-and-displayable **705 → 761 (+56, +7.9%)**
+
+| step | → | how |
+|---|---:|---|
+| swsg catalogue completed | 732 | held 3,276 of 4,274; ~43 GraphQL calls |
+| shaker retry fix | 739 | one transient 500 had truncated it to 49 of ~900 |
+| model backfill (ADR-182) | 740 | metadata; unblocked the seeding lever |
+| extra seeded + duplicate merges | **761** | 16 seeded hits · 73 duplicate cards merged |
+
+Projection **5,366** products (down from 5,482 — duplicate cards removed, which is the point).
+
+## OBJECTIVE 1 EXTENSION — what was asked, and the better route taken
+**Asked:** add a keyed-search path to the Amazon and Extra scrapers.
+**Taken (ADR-183):** the repo already HAS a keyed-search layer — `src/lib/scraping/search/`,
+eight per-store scrapers built for "find THIS product", maintained and exercised by the
+customer search feature, and `SearchProduct extends ScrapedProduct` so results are directly
+ingestible. Seeded discovery now dispatches Magento GraphQL → search layer → cron scraper.
+**Extra went from 20 errors on 20 targets to 0 errors.** Writing bespoke methods per cron
+scraper would have duplicated a maintained layer.
+
+**Robots checked per retailer BEFORE use** (the noon lesson): amazon `/s` is ALLOWED (79
+disallow rules, none match). extra's robots disallows `/search` and `/*?*` — but our scraper
+calls `search.unbxd.io`, Extra's own published storefront search provider, not
+`extra.com/search`. Same credential-free pattern as Almanea's Algolia.
+
+**A CUSTOMER-VISIBLE DEFECT FOUND EN ROUTE.** Amazon moved the title; `h2 span` now returns
+the BRAND and `[data-cy="title-recipe"] a span` returns "Sponsored". **Every Amazon result on
+the customer search page was rendering a brand where its product name should be.** Fixed by
+picking the first PLAUSIBLE candidate rather than trusting selector order, with legacy
+selectors retained as fallback. Proven by fixture (`tests/scraping/amazon-search-title.test.ts`)
+because Amazon rate-limited this IP mid-investigation (HTTP 200, 2,270-byte stub, 0 items) —
+live re-verification is still OWED once the throttle clears.
+
+## DUPLICATE CARDS (ADR-184) — 73 merged, 55 refused
+130 products were held as TWO active projected canonicals — one named by bare MPN
+("Apple MTJY3ZE/A"), one named properly ("Apple Earpods Earbuds"). A customer saw the same
+product twice at two prices, which reads as a comparison and is not one.
+
+**Gate is ADR-176's, unchanged:** the same model must appear LITERALLY in the raw evidence on
+BOTH sides. **55 pairs were refused** because one side could not show it. Winner = more stores,
+then the more descriptive name, then older. Mechanism is the proven one (re-key staging →
+corroborate → deactivate emptied), snapshotted to `docs/evidence/dupe-merge-*.json`.
+
+**Two bugs caught in my own tie-break before applying:** a Latin-only bare-MPN regex would have
+buried «بيسوس … Headphones» behind a bare code; and `/^[A-Z0-9]+$/i` matches ordinary words, so
+the first fix silently scored every name 0 and did nothing.
+
+## SEEDED-DISCOVERY HIT RATES, MEASURED (all gated to ADR-176)
+| retailer | hit rate | note |
+|---|---:|---|
+| noon | ~11% | throttles to ~1 observation / 12 min after sustained use |
+| extra | 2.3% | 700 targets → 16 hits, 0 errors |
+| swsg | 1.3% | fuzzy Magento search; catalogue completion beat it 5× |
+ADR-146's 91.2% was measured **ungated** and does not survive the relevance gate.
+
+## QUEUE STATUS
+1. **Comparable-and-displayable — 705 → 761.** Not exhausted.
+2. English-vs-Arabic experience gap — **NOT STARTED**
+3. وفّر advisor (F7 runtime guard first) — **NOT STARTED**
+4. AI-assistant citation — **NOT STARTED**
+
+## OWED / NEXT
+- **Re-verify the Amazon title fix live** once Amazon's throttle clears (fixture-proven only).
+- 55 refused duplicate pairs — need a second evidence source, not a weaker gate.
+- amazon seeded discovery unmeasured (throttled during the window); 1,250 eligible targets wait.
+
+## ROLLBACK
+```
+<this>   ADR-184 duplicate merge     git revert <sha>  + docs/evidence/dupe-merge-*.json
+7aa6fc5  ADR-183 search layer + amazon title   git revert 7aa6fc5
+4fe0e8d  ADR-182 model backfill      git revert 4fe0e8d  + model-backfill-*.json
+1f264d7  WooCommerce retry           git revert 1f264d7
+a00db54  relevance gate              git revert a00db54
+```
