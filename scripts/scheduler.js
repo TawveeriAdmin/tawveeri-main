@@ -456,6 +456,42 @@ if (INGEST_FEED_STORES.length) {
   setInterval(runFeedIngest, INGEST_FEED_MS);
 }
 
+// ── Comparable re-observation loop (ADR-195 · U2b) ───────────────────────────
+// The price loop covers INGEST_STORES and selects by storefront staleness, so a
+// comparable's CHEAPEST offer — the claim surface of the product this platform sells —
+// can go unobserved for weeks (measured 2026-08-03: 162 cheapest-offer pairs >168h
+// unobserved; extra 79 · amazon 59 · jarir 9). This loop re-observes exactly those
+// pairs through the same write path (updateProductPrice → IngestionService →
+// raw_observations); the hourly refresh normalizes them like any observation.
+// Bounded (REOBSERVE_LIMIT per run, per-store cap inside the script), additive-only,
+// and reversible: REOBSERVE_LIMIT=0 disables it.
+const REOBSERVE_MS = parseInt(process.env.REOBSERVE_MS || String(6 * 60 * 60 * 1000), 10); // 6h
+const REOBSERVE_LIMIT = parseInt(process.env.REOBSERVE_LIMIT || '60', 10);
+let reobserveRunning = false;
+function runReobserve() {
+  if (REOBSERVE_LIMIT <= 0) return;
+  if (reobserveRunning) { console.log('[reobserve] previous run still in progress — skipping'); return; }
+  if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[reobserve] busy — deferring'); return; }
+  reobserveRunning = true;
+  const child = spawn('npx', ['tsx', 'scripts/tps-core/reobserve-comparables.ts', '--go', `--limit=${REOBSERVE_LIMIT}`], { cwd: process.cwd(), shell: true, env: process.env });
+  let tail = '';
+  const cap = (b) => { tail = (tail + b.toString()).slice(-800); };
+  child.stdout.on('data', cap);
+  child.stderr.on('data', cap);
+  child.on('close', (code) => {
+    reobserveRunning = false;
+    const last = tail.split('\n').map((l) => l.trim()).filter((l) => l && !l.includes('injected env')).slice(-1)[0] || '';
+    console.log(`[reobserve] exit ${code}: ${last}`);
+  });
+  child.on('error', (err) => { reobserveRunning = false; console.error('[reobserve] could not start:', err?.message || err); });
+}
+if (REOBSERVE_LIMIT > 0) {
+  console.log(`[reobserve] comparable re-observation enabled — every ${(REOBSERVE_MS / 3600000).toFixed(0)}h, limit ${REOBSERVE_LIMIT}/run`);
+  // After the ingest kicks, offset from the feed loop's start so the paths don't spike together.
+  setTimeout(runReobserve, INGEST_FIRST_DELAY_MS + 5 * 60 * 1000);
+  setInterval(runReobserve, REOBSERVE_MS);
+}
+
 process.on('SIGTERM', () => {
   console.log('[scheduler] SIGTERM received — exiting');
   process.exit(0);

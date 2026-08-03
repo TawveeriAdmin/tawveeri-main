@@ -6519,3 +6519,33 @@ bounded ~50/run, amazon throttle-aware, serialized with the scheduler loops (ADR
 from `scheduler.js` like the feed loop. Threshold pre-stated: true-stale pairs 158 → <50 within
 a week of landing. Also owed: U2a post-tick verification (median ≤24h; «مكيف» card time), and
 the compare page's per-offer «رصدناه قبل» npo fix.
+
+## CORRECTION to "U2b MECHANISM FINDING" above — two claims were wrong; both re-measured
+1. **"The knowledge layer has NO targeted re-observation path" was WRONG.** The orchestrator's
+   price loop DOES ingest each refreshed price as a raw observation
+   (`scraping-orchestrator.ts` ~453, "a refreshed price must also become an observation"). I
+   grepped the ROUTE file and missed the orchestrator behind it. The real gap is narrower:
+   the loop serves only INGEST_STORES (extra · samsung_ksa · noon) and selects by
+   `product_stores.last_checked_at` — never by comparable/cheapest priority — so amazon and
+   jarir offers never enter it, and extra's stale comparables lose the queue to its ~9k other
+   offers.
+2. **The "amazon 111 · jarir 42" split was the PRICE-CHANGE-basis artifact.** True
+   (observation-basis) stale cheapest pairs, measured 2026-08-03: **162 total — extra 79 ·
+   amazon 59 · jarir 9 · others ≤5 · 26 with no recoverable URL.** The checkpoint doc's §3
+   store split is superseded by this line.
+
+## ADDENDUM 3 — 2026-08-03 · ADR-195 SHIPPED AND FIRST RUN MEASURED (U2b)
+`scripts/tps-core/reobserve-comparables.ts` (`npm run tps:reobserve`) + scheduler loop
+(every 6h, `REOBSERVE_LIMIT=60`, `=0` disables). **First live run: 50 attempted → 42 raw
+observations ingested (extra 17 · amazon 25/25 · jarir 0/2) · 8 nulls · 0 errors.**
+- **The extra nulls are HTTP 404s — delisted product pages.** Their stale prices still win
+  best-price. The knowledge layer has no delisting signal (an unobserved offer just goes
+  quiet); an observed-delisted verdict is the next trust unit. Both jarir fetches also
+  nulled (2-sample; classify before concluding).
+- **Threshold (pre-stated, ADR-195): true-stale cheapest pairs 162 → <50 within a week.**
+  Verification: the npo-based count moves on the hourly normalize tick — re-run the
+  checkpoint §3 observation-basis query after the next tick; expect ~120 after this run,
+  then the 6-hourly loop drains the remaining URL-recoverable pairs (136 of 162; 26 have
+  no recoverable URL and need discovery, not re-observation).
+- U2a verification also owed post-tick: projection median freshness ≤24h for displayable
+  comparables; «مكيف» card shows true observation age.

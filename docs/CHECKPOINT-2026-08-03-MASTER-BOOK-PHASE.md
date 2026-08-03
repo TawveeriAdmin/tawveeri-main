@@ -52,8 +52,9 @@ displayable comparables' cheapest offers "older than 7 days". Query (production,
 **Observation basis (the truth, ADR-194):** `price_history` is append-only on **changed** prices,
 so its `observed_at` is price-change time. Re-measured from `normalized_product_observations`
 (a row per observation): comparables' median true freshness **19.3h** · 488/917 within 24h ·
-only **81 products / 158 cheapest-offer pairs** truly unobserved >7d — concentrated in
-**amazon (111 pairs — not in the re-observation loop)** and **jarir (42 — same)**. Of the 688
+only **81 products / ~160 cheapest-offer pairs** truly unobserved >7d — **corrected split
+(observation basis, 2026-08-03): extra 79 · amazon 59 · jarir 9** (an earlier draft carried the
+price-change-basis split "amazon 111 / jarir 42" — superseded). Of the 688
 "stale" pairs, **212 (31%) had been observed within 24h**: false staleness. Fixed this session:
 projection `last_observed_at` and the search Smart Pick now read observation time (ADR-194);
 the compare page's per-offer line is the owed follow-up.

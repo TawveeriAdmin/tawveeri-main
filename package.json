@@ -44,6 +44,7 @@
     "tps:plugin-failures": "tsx scripts/tps-analysis/plugin-failures.ts",
     "tps:health": "tsx scripts/tps-analysis/platform-health.ts",
     "tps:refresh": "tsx scripts/tps-core/refresh-intelligence.ts",
+    "tps:reobserve": "tsx scripts/tps-core/reobserve-comparables.ts",
     "tps:presentation": "tsx scripts/tps-core/build-projection-presentation.ts",
     "tps:search-quality": "tsx scripts/tps-analysis/search-quality.ts",
     "tps:funnel": "tsx scripts/tps-analysis/catalog-funnel.ts",

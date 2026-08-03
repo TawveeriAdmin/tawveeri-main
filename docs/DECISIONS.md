@@ -6,6 +6,33 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-195 — Targeted re-observation of comparables' cheapest offers · Accepted (2026-08-03)
+
+**Context.** After ADR-194 corrected the freshness signal, the TRUE stale tail measured
+**162 cheapest-offer pairs unobserved >168h — extra 79 · amazon 59 · jarir 9 · 26 with no
+recoverable URL.** The orchestrator's price loop already ingests every refreshed price as an
+observation (an earlier session note claimed no such path existed — wrong, corrected in
+HANDOVER), but it serves only `INGEST_STORES` and selects by `product_stores.last_checked_at`.
+Nothing prioritises the offer that carries the platform's central claim: a comparable's
+cheapest price. A stale cheapest offer is doubly harmful — it is the claim surface AND it wins
+best-price *because* it aged (ADR-194's stale-cheapest bias).
+
+**Decision.** `scripts/tps-core/reobserve-comparables.ts` (`npm run tps:reobserve`): selects
+displayable comparables' cheapest offers whose newest normalized observation is >168h old,
+recovers each offer's URL from `normalized_payload._url` (raw_payload is NULL on current rows;
+`source_record_id` is a stableUuid and cannot join `raw_observations`), re-fetches through the
+store's existing `updateProductPrice`, and writes through `IngestionService.ingestBatch` — the
+same production write path as the price loop. Additive raw observations only; the hourly
+scheduler owns normalization (ADR-099). Bounded: `--limit` (default 50) with a per-store cap
+(default 25, throttle safety). Scheduler loop added (every `REOBSERVE_MS`, default 6h,
+`REOBSERVE_LIMIT=0` disables; defers to refresh/feed/ingest loops).
+
+**Threshold, set before landing:** true-stale cheapest pairs **162 → <50 within a week**.
+**Rollback:** `REOBSERVE_LIMIT=0` (or revert the commit); written observations are additive
+evidence, nothing to delete.
+
+---
+
 ### ADR-194 — price_history.observed_at is price-CHANGE time, not observation time; freshness surfaces now read observations · Accepted (2026-08-03)
 
 **Context.** Sizing U2 (comparable-first cadence) contradicted itself: raw observations were
