@@ -6,6 +6,50 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-186 — The index the customer actually searches had no owner · Accepted (2026-08-03)
+
+**Context.** Found while measuring ADR-185, and it is the larger finding. 613 storefront and
+canonical names were repaired and verified in the database — and the Arabic search page did not
+move. The renamed product («Whirlpool Split AC 22 000 BTU Cool Only» → «مكيف سبليت ويرلبول 22000
+وحدة بارد فقط») was confirmed changed in `products`, yet production kept serving the English
+string, and a search for that exact English string in `products` returned **zero rows**. The page
+was serving a record the database no longer held.
+
+**Root cause.** There are **two** Algolia indexes and the pipeline maintains the wrong one.
+
+| index | fed by | read by |
+|---|---|---|
+| `tawveeri_tps_products` | `sync-search-index.ts`, an **hourly chain step** | nothing on the customer path |
+| **`products`** | **nothing** | **`src/lib/algolia/search.ts` — `/api/search` calls it the PRIMARY path** |
+
+`scripts/tps-analysis/rebuild-products-index.ts` builds the live index and is referenced by **no**
+npm script, **no** cron route, **no** chain step and **no** PM2 entry. It was a manual one-off
+(2026-07-27). Everything the storefront layer has done since — new products, price changes,
+availability, and the Arabic titles — has been invisible to the customer's search.
+
+**And `tps:health` reported search as healthy throughout**, because its `index propagation` check
+watches `tps_product_projection.algolia_synced_at` — the freshness of the index nobody reads.
+**A monitor pointed at the wrong index is worse than no monitor: it manufactures confidence.**
+
+**Decision.**
+1. **`storefront-search` is a step in the intelligence chain** (`refresh-intelligence.ts`), marked
+   `slow` so it rides the full hourly chain rather than every fast tick. It is an atomic
+   `replaceAllObjects`, so a missed tick costs freshness and never correctness.
+2. **`tps:health` gains a `live search index` check** that reads the record count of the index
+   `/api/search` actually queries and compares it with the offered-product count. An unreachable
+   or uncredentialed Algolia reports **WARN/unknown**, never OK — we do not want the previous
+   failure mode back in a new costume.
+
+**Measured.** Rebuilding the index moved the Arabic search page from **14% → 8%** English-named
+results in a single pass, after 613 renames had moved it **not at all**. «مكيف» went from 13 of 24
+English-named to 2, and its Arabic character share from 40% to **85%**.
+
+**Consequence worth stating plainly.** This was never only a naming problem. Any storefront work
+— price accuracy, availability, new merchants — was landing in a database the customer's primary
+search path did not read. The naming task is what made it visible.
+
+---
+
 ### ADR-185 — The Arabic display name is a measured surface, and two plugins were never writing one · Accepted (2026-08-03)
 
 **Context.** Objective 2 of the queue — "the English-vs-Arabic experience gap" — had never been
@@ -64,8 +108,22 @@ that way, and the "thin label" check then produced eight false positives («Xiao
 correct) which is why it now ignores a bare numeric generation.
 
 **Measured result.** Projected products showing no Arabic **463 → 64 (−86%)**; among **comparable**
-products **135 → 5 (−96%)**; mobile 329 → 4, smartwatch 69 → 0. On production, the customer-visible
-figure moved **30% → 13%**.
+products **135 → 5 (−96%)**; mobile 329 → 4, smartwatch 69 → 0. In the storefront layer, **613**
+titles composed (184 + 429) under the refuse-on-loss gate. On production, the customer-visible
+figure moved **30% → 8%**, and the Arabic character share of an Arabic result name from **43% → 60%**.
+
+**The production figure had to be decomposed before it could be believed.** After the first pass it
+read 13%, and after renaming 613 more rows it read **14% — worse**. The result set is not a fixed
+population: better Arabic names rank Arabic-titled products higher, and the tail of 24 refills with
+different English-named ones. Chasing that number without decomposing it would have "proved" the
+storefront work was harmful. It was not — see **ADR-186**, which is what the investigation actually
+found and what finally moved the figure.
+
+**A second mis-categorisation surfaced through the same instrument.** The split air conditioners a
+shopper still read in English on the «مكيف» page were filed under `category = 'accessories'`, so a
+composer scoped by `category` never saw them. The runner is therefore **not** filtered by category
+at all: every English-named row is offered, and the composer's own `no_category` refusal — which
+reads the product type out of the merchant's title — is the gate. 6,464 rows were declined that way.
 
 **Consequence that must not be forgotten: the repair is transient until the code is deployed.**
 The hourly scheduler re-normalizes through the **deployed** engine, so it re-wrote three repaired

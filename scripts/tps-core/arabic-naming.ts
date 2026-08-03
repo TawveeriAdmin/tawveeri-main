@@ -164,6 +164,55 @@ export function smartwatchNames(key: string): { nameAr: string; nameEn: string }
   return { nameAr: ar, nameEn: en };
 }
 
+// ── Storefront layer (`products`) ───────────────────────────────────────────────────────
+// The knowledge layer composes from a verified identity key. The storefront layer has no
+// key — it has the merchant's own title and a `specifications` blob — so composition here
+// reads the FACTS OUT OF THE OBSERVED TITLE and refuses when it cannot carry them.
+
+export interface Capacity { btu?: number; liters?: number; kg?: number; cuft?: number }
+
+/**
+ * Capacity as the merchant stated it in the title: `18,000 BTU`, `22 200 BTU`, `380L`, `8 kg`.
+ * This exists because `specifications.capacity_btu` is null for EVERY English-named AC in the
+ * storefront layer while 166 of them state the BTU in the title — so a composer that reads only
+ * `specifications` silently drops the single most decision-relevant fact about an air conditioner.
+ */
+export function parseCapacity(title: string): Capacity {
+  const t = (title || "").replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  const out: Capacity = {};
+  const num = (m: RegExpMatchArray | null) => (m ? Number(m[1].replace(/[,\s]/g, "")) : undefined);
+  const btu = num(t.match(/(\d{1,2}[,\s]?\d{3})\s*BTU/i));
+  if (btu && btu >= 5000 && btu <= 60000) out.btu = btu;
+  const liters = num(t.match(/(\d{2,4})\s*(?:L\b|LITER|LITRE|LTR)/i));
+  if (liters && liters >= 20 && liters <= 1200) out.liters = liters;
+  const kg = num(t.match(/(\d{1,2}(?:\.\d)?)\s*KG\b/i));
+  if (kg && kg >= 3 && kg <= 30) out.kg = kg;
+  const cuft = num(t.match(/(\d{1,2}(?:\.\d)?)\s*(?:CU\.?\s?FT|CUBIC\s?FEET)/i));
+  if (cuft && cuft >= 2 && cuft <= 40) out.cuft = cuft;
+  return out;
+}
+
+/** Cooling mode as stated in the title. Absent ⇒ we say nothing, we do not assume cool-only. */
+export function parseCooling(title: string): "hot_cold" | "cool_only" | null {
+  const t = (title || "").toLowerCase();
+  // Merchants write every combination of hot/heat(ing) × cool/cold, joined by and, &, / or a
+  // comma, or by nothing at all ("Hot Cold Rotary Compressor").
+  if (/\b(hot|heat(ing)?)\s*(and|&|\/|,)?\s*(cool(ing)?|cold)\b/.test(t)) return "hot_cold";
+  if (/\b(cool(ing)?|cold)\s*only\b/.test(t)) return "cool_only";
+  return null;
+}
+
+/**
+ * True when the merchant's title STATES a capacity — deliberately independent of whether
+ * `parseCapacity` could read a plausible one. The two must not be the same question: a value
+ * outside our sanity band (a "99,000 BTU" listing) is a capacity claim we failed to read, and
+ * a rename that drops it is exactly the information loss this gate exists to prevent.
+ */
+export function statesCapacity(title: string): boolean {
+  const t = (title || "").replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  return /\d[\d,\s.]*\s*(BTU|L\b|LITER|LITRE|LTR|KG\b|CU\.?\s?FT|CUBIC\s?FEET)/i.test(t);
+}
+
 /** True when a string carries at least one Arabic character — the gate these names exist to pass. */
 export const hasArabic = (s: string | null | undefined): boolean => /[؀-ۿ]/.test(s || "");
 

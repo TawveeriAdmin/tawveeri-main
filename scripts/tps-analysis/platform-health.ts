@@ -173,6 +173,42 @@ const hours = (a: Date | null, b: Date | null): number | null =>
       : `${invisible} of ${idx.total} products (${pct.toFixed(1)}%) are missing or stale in search`,
     `${idx.unsynced} never synced, ${idx.stale} changed since sync; last sync ${idx.last}`);
 
+  // ── 6a. THE INDEX THE CUSTOMER ACTUALLY SEARCHES (ADR-186) ────────────────
+  // The check above watches `tawveeri_tps_products`, fed from the projection. It is NOT the
+  // index `/api/search` reads: that is `products` (src/lib/algolia/search.ts), the PRIMARY
+  // path, and until ADR-186 nothing rebuilt it — no chain step, no cron, no npm script. It sat
+  // frozen at a manual build while this monitor reported search as healthy. A check that
+  // watches the wrong index is worse than no check, so this one watches the live one.
+  const liveIdx = await one<{ eligible: number }>(`
+    select count(distinct p.id)::int eligible
+      from products p join product_stores ps on ps.product_id = p.id
+     where p.is_active and ps.current_price > 0`);
+  let liveCount: number | null = null;
+  try {
+    const appId = process.env.ALGOLIA_APP_ID || process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || "";
+    const key = process.env.ALGOLIA_ADMIN_KEY || "";
+    const name = process.env.ALGOLIA_INDEX_NAME || "products";
+    if (appId && key) {
+      const r = await fetch(`https://${appId}-dsn.algolia.net/1/indexes/${name}/query`, {
+        method: "POST",
+        headers: { "X-Algolia-Application-Id": appId, "X-Algolia-API-Key": key, "Content-Type": "application/json" },
+        body: JSON.stringify({ params: "query=&hitsPerPage=0" }),
+      });
+      if (r.ok) liveCount = (await r.json() as { nbHits?: number }).nbHits ?? null;
+    }
+  } catch { /* an unreachable Algolia is reported as unknown, never as healthy */ }
+  if (liveCount == null) {
+    add("search", "live search index", "WARN", "could not read the live `products` index",
+      "ALGOLIA_APP_ID / ALGOLIA_ADMIN_KEY missing or unreachable — freshness of the index the customer searches is UNKNOWN");
+  } else {
+    // The index holds only approved + in-scope products, so it is legitimately smaller than the
+    // eligible count. A large shortfall means it stopped being rebuilt.
+    const drift = liveIdx.eligible ? (100 * Math.abs(liveIdx.eligible - liveCount)) / liveIdx.eligible : 0;
+    add("search", "live search index", drift > 40 ? "FAIL" : drift > 25 ? "WARN" : "OK",
+      `${liveCount} records against ${liveIdx.eligible} offered products (${drift.toFixed(0)}% apart)`,
+      "this is the index /api/search reads; it is rebuilt by the `storefront-search` chain step");
+  }
+
   // ── 6b. CUSTOMER-FACING COMPLETENESS ─────────────────────────────────────
   // Freshness is not enough. This monitor's first version reported everything
   // green while EVERY product had no image and no way to buy — the projection

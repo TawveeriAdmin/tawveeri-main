@@ -86,6 +86,21 @@ const STEPS: Step[] = [
     run: () => runScript("scripts/tps-core/sync-search-index.ts"),
   },
   {
+    // ADR-186 — THE INDEX THE CUSTOMER ACTUALLY SEARCHES had no owner.
+    // `src/lib/algolia/search.ts` reads the `products` index and `/api/search` calls it the
+    // PRIMARY path (Supabase is the fallback), but nothing rebuilt it: no chain step, no cron
+    // route, no npm script, no PM2 entry. It was a manual one-off from 2026-07-27, so every
+    // storefront change since — new products, prices, availability, and 613 repaired Arabic
+    // titles — was invisible to search, while the chain dutifully refreshed the OTHER index
+    // (`tawveeri_tps_products`, the `search` step above) that the customer does not read.
+    // Measured: renaming 613 rows moved the Arabic search page not at all until this ran, then
+    // moved it from 14% to 8% English-named results in one pass.
+    // `slow` so it rides the full chain rather than every fast tick; it is an atomic
+    // replaceAllObjects, so a missed tick costs freshness and never correctness.
+    key: "storefront-search", label: "live customer search index (products → Algolia)", needs: [], slow: true,
+    run: () => runScript("scripts/tps-analysis/rebuild-products-index.ts"),
+  },
+  {
     key: "facts", label: "per-listing price facts (observations → facts)", needs: [],
     run: () => runScript("scripts/tps-core/build-listing-facts.ts"),
   },
