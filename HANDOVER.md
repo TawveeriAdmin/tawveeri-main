@@ -6503,3 +6503,19 @@ Full detail: `docs/CHECKPOINT-2026-08-03-MASTER-BOOK-PHASE.md` (the consolidated
   EN 32/38) — checks are viewport-independent.
 - Verify U2a after the next hourly chain tick: median projection freshness for displayable
   comparables ≤24h; «مكيف» card's «آخر رصد» shows true observation age.
+
+## U2b MECHANISM FINDING — 2026-08-03 (scoped, NOT started; context boundary reached)
+`/api/cron/update-prices` writes ONLY the storefront layer (`product_stores`) — it never emits
+`raw_observations`. Discovery is the sole knowledge-layer observation source, so **the TPS layer
+has NO targeted re-observation path**: a specific offer is re-observed only if a catalog crawl
+happens to resurface it. This — not scheduling — is why 158 cheapest-offer pairs (amazon 111 ·
+jarir 42) stay unobserved while both stores' crawls flow thousands of rows.
+
+**The unit, precisely:** `scripts/tps-core/reobserve-comparables.ts` — select the truly-stale
+cheapest pairs (query in `docs/CHECKPOINT-2026-08-03-MASTER-BOOK-PHASE.md` §3, npo basis),
+re-fetch each offer's `raw_url` via the store's existing scraper price path, write through the
+unified IngestionService into `raw_observations` (normalize picks it up like any observation),
+bounded ~50/run, amazon throttle-aware, serialized with the scheduler loops (ADR-099), driven
+from `scheduler.js` like the feed loop. Threshold pre-stated: true-stale pairs 158 → <50 within
+a week of landing. Also owed: U2a post-tick verification (median ≤24h; «مكيف» card time), and
+the compare page's per-offer «رصدناه قبل» npo fix.
