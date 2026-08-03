@@ -5853,3 +5853,115 @@ ADR-146's 91.2% was measured **ungated** and does not survive the relevance gate
 1f264d7  WooCommerce retry           git revert 1f264d7
 a00db54  relevance gate              git revert a00db54
 ```
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #64 · OBJECTIVE 2 CLOSED · QUEUE 3–4 NOT STARTED ═══
+
+**Tree clean · pushed · tests 1,187/1,187 · `tps:health` 0 FAIL · 3 WARN · 35 OK.**
+
+## OBJECTIVE 2 — English-vs-Arabic experience gap: **30% → 8%**
+
+The objective was never defined, so it was measured first. Three candidates ruled out before
+anything was touched:
+
+| candidate | measured | verdict |
+|---|---|---|
+| UI copy parity | 1,617 keys · 2 missing in AR · 0 in EN | not the gap |
+| English shopper seeing Arabic | `display_name_en` 94.7% Latin · 5 rows of 5,366 with none | not the gap |
+| **Arabic shopper seeing English** | **463 rows with no Arabic character at all** | **this is it** |
+
+Instrument: ten queries × two locales × 24 results on production, reading the exact field the
+card renders (`product-card.tsx:94`). **Baseline 73/240 (30%) Arabic names carried no Arabic
+character; English 0/240. Close 18/240 (8%), English still 0/240.** Arabic character share of an
+Arabic result name **43% → 60%**.
+
+| | before | after |
+|---|---:|---:|
+| projected products with no Arabic | 463 | **64** |
+| …of them **comparable** | 135 | **5** |
+| mobile / smartwatch canonicals | 329 / 69 | **4 / 0** |
+| storefront titles composed | — | **613** |
+
+## THE BIGGER FIND — ADR-186, and it is not about language
+613 names were repaired **and verified in the database**, and the Arabic search page **did not
+move**. Searching production for the English string it kept serving returned **zero rows** from
+`products` — the page was serving a record the database no longer held.
+
+**There are two Algolia indexes and the pipeline maintains the wrong one.**
+`tawveeri_tps_products` is rebuilt by an hourly chain step and **read by nothing on the customer
+path**. `products` is what `src/lib/algolia/search.ts` reads and `/api/search` calls the **PRIMARY**
+path — and it was fed by **nothing**: no npm script, no cron route, no chain step, no PM2 entry.
+`rebuild-products-index.ts` was a manual one-off from 2026-07-27. **Every storefront change since —
+new products, prices, availability — has been invisible to search.**
+
+**`tps:health` reported search healthy the whole time**, because its check watches the freshness of
+the index nobody reads. Rebuilding the live index moved the page **14% → 8%** in one pass after 613
+renames had moved it **not at all**.
+
+Fixed durably: `storefront-search` is now a chain step (slow tier), and `tps:health` gained a
+**`live search index`** check that reads the index `/api/search` actually queries — reporting
+**unknown, never OK**, when Algolia is unreachable.
+
+## THREE TRAPS THAT WOULD HAVE PRODUCED A FALSE RESULT
+1. **The repair races the pipeline.** The hourly scheduler re-normalizes through the **deployed**
+   engine and re-wrote three repaired names within half an hour. **Deploy the code, then run the
+   remediation** — never the reverse.
+2. **The production figure got WORSE (13% → 14%) after 613 more renames.** The result set is not a
+   fixed population: better Arabic names rank Arabic-titled products higher and the tail of 24
+   refills with different English-named ones. Decomposing that number is what found ADR-186.
+3. **A sample of eight hides the defects the pass exists to remove.** The first dry run looked
+   clean and was hiding «Galaxy Z Flip 7 Flip» and «Galaxy Watch Ultra Ultra». The dry run now
+   scans its whole proposal and prints every hit.
+
+## A LOADED GUN WAS REMOVED FROM THE REPO
+`scripts/tps-analysis/arabic-titles.js` looked ready to run and would have renamed 187 rows,
+**dropping the BTU from every one** — `capacity_btu` is null for *every* English-named AC while 166
+state it in the title — then failed silently on the `products.name_ar` unique index inside a bare
+`catch {}`. Replaced by a tested composer that reads capacity from the merchant's own title and
+**REFUSES to rename when a stated capacity cannot be carried**. 75 rows were refused on exactly
+that gate.
+
+## ALSO FIXED — visible in BOTH locales, not an Arabic issue
+«Tecno Tecno Spark 12» · «Honor Honor X 5» · «Galaxy A A07» · «Galaxy Z Flip 7 Flip» ·
+«Galaxy Watch Ultra Ultra» · «مكيف سبليت كرافت CRAFFT» (the storefront `brand` column already
+holds Arabic for many rows; the old composer appended the Latin brand on top).
+
+## NOT DONE, AND WHY
+- **59 audio canonicals stay English.** The real defect in them is that a **store name sits in the
+  brand field** — 22 canonicals keyed `sony world - ksa|…`. «صوتيات sony world - ksa Wh-1000xm6» is
+  Arabic garbage, not an improvement. **0** of them carry a comparison. *Fixing the brand is an
+  Objective-1 lever: those 22 would corroborate against other retailers' Sony listings.*
+- **7,155 storefront rows remain English-named.** They are phones/laptops/TVs, and they cannot be
+  repaired from what we hold: of 7,762 English-named rows, **0** have an Arabic title anywhere in
+  `raw_observations`. Closing it means ingesting each retailer's **Arabic storefront** — a sourcing
+  unit with a real hazard, since the normalizer keys on URL and not SKU (ADR-089), so an Arabic URL
+  variant would double-count every offer. **Scoped, not started.**
+- **Air conditioners are filed under `category = 'accessories'`** in the storefront layer. Worked
+  around (the composer reads the type from the title and ignores the stored category) but **not
+  fixed** — it still breaks category filtering and faceting for the shopper.
+- **ADR-182/183/184 had shipped as commits with no Decision Register entry.** Recorded
+  retroactively from their commits and CHECKPOINTs #62/#63, marked as such.
+
+## QUEUE STATUS
+1. Comparable-and-displayable — **761**, not exhausted; Amazon's 1,250 seed targets still untouched
+   (it throttled). Founder set this to lower priority.
+2. **English-vs-Arabic experience gap — CLOSED at 30% → 8%.**
+3. وفّر advisor (F7 runtime guard first) — **NOT STARTED**
+4. AI-assistant citation — **NOT STARTED**
+
+## OWED
+- Re-verify the Amazon title fix live (ADR-183) once the throttle clears — fixture-proven only.
+- 55 refused duplicate pairs (ADR-184) — need a second evidence source, not a weaker gate.
+- 1 refused name collision (ADR-185) — two canonicals differing only by a duplicate variant
+  segment; a genuine duplicate card in ADR-184's territory.
+
+## ROLLBACK
+```
+89a50d3  ADR-186 live index owner + storefront titles   git revert 89a50d3
+e7a30c1  ADR-185 Arabic display names                   git revert e7a30c1
+         + docs/evidence/locale-name-remediation-2026-08-03.json holds every before/after
+           name; re-running either remediation is idempotent, and reverting the code then
+           re-running `refresh-intelligence.ts` restores the previous names.
+8273e42  ADR-184 duplicate product cards                git revert 8273e42
+```
