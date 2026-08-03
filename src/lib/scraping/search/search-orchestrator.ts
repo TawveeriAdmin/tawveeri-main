@@ -14,7 +14,13 @@ import { groupSearchProducts, type GroupedSearchProduct } from './product-groupe
 import { normalizeSearchStores } from './store-registry';
 import { rankProducts } from './relevance-scorer';
 
-const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: number }) => Promise<StoreSearchResult> }> = {
+/**
+ * Exported (ADR-183) so OVERLAP-SEEDED DISCOVERY can reuse the same keyed-search layer the
+ * customer search feature uses, instead of each cron scraper growing its own. These are
+ * purpose-built for "find THIS product", which is exactly what seeding asks, and they are
+ * already maintained and exercised in production.
+ */
+export const SCRAPERS: Record<string, () => { search: (opts: { query: string; pages: number }) => Promise<StoreSearchResult> }> = {
   amazon: () => new AmazonSearchScraper(),
   noon: () => new NoonSearchScraper(),
   jarir: () => new JarirSearchScraper(),

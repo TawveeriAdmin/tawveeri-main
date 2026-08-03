@@ -94,11 +94,30 @@ const STORE_NAMES: Record<string, string[]> = {
   const magentoOrigin = provider?.sourcing === 'api' ? provider?.magento?.origin : undefined;
   const scraper = magentoOrigin ? null : orch.getScraperForStore(slug);
   if (!scraper && !magentoOrigin) throw new Error('no scraper and no api search for ' + slug);
-  const searchFor = async (seed: string, category: string): Promise<unknown[]> =>
-    magentoOrigin
-      ? await magentoSearch(magentoOrigin, seed, HITS)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      : await (scraper as any).scrapeApiPage(seed, 1, category, HITS);
+  // SEARCH DISPATCH, in preference order (ADR-183):
+  //   1. Magento GraphQL products(search:) — swsg
+  //   2. the KEYED SEARCH LAYER the customer search feature already uses — amazon, extra,
+  //      jarir, almanea, shaker, samsung_ksa, noon. Those scrapers are purpose-built for
+  //      "find THIS product", which is exactly what a seed asks, and they are already
+  //      maintained and exercised in production. Adding a bespoke keyed method to each cron
+  //      scraper would have duplicated all of it.
+  //   3. the cron scraper's own keyed path, where one exists (noon).
+  //
+  // ROBOTS CHECKED PER RETAILER BEFORE USE, after the noon lesson:
+  //   amazon — /s is ALLOWED (79 disallow rules under *, none match it)
+  //   extra  — its search scraper calls search.unbxd.io, Extra's own published storefront
+  //            search provider, NOT extra.com/search which their robots.txt disallows
+  const { SCRAPERS: SEARCH_SCRAPERS } = await import('../../src/lib/scraping/search/search-orchestrator');
+  const searchScraper = SEARCH_SCRAPERS[slug];
+  const searchFor = async (seed: string, category: string): Promise<unknown[]> => {
+    if (magentoOrigin) return await magentoSearch(magentoOrigin, seed, HITS);
+    if (searchScraper) {
+      const res = await searchScraper().search({ query: seed, pages: 1 });
+      return (res.products ?? []).slice(0, HITS);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await (scraper as any).scrapeApiPage(seed, 1, category, HITS);
+  };
   const productService = new ProductService();
   // CRITICAL (learned by measurement 2026-07-30): `createOrUpdateProduct` writes ONLY the
   // storefront layer. `price_history` — and therefore every comparison — is produced by

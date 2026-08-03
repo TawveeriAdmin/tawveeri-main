@@ -56,9 +56,29 @@ export class AmazonSearchScraper extends BaseSearchScraper {
     const asin = el.attr('data-asin');
     if (!asin) return null;
 
-    // Title
-    const titleEl = el.find('h2 a span, h2 span').first();
-    const title = titleEl.text().trim() || 'No title';
+    // Title.
+    //
+    // AMAZON MOVED IT, AND THE OLD SELECTOR NOW RETURNS THE BRAND. Measured 2026-08-03 on a
+    // live `/s?k=` page: `h2 span` yields "Haier", "Apple", "ViewSonic" — the brand line —
+    // while the product title lives in the title-recipe container. So every Amazon result on
+    // the customer search page was rendering with a brand where its name should be, and the
+    // seeded-discovery relevance gate could never match a model number against it.
+    //
+    // Ordered most-specific first, with the old selectors kept as a fallback so a future
+    // markup change degrades instead of breaking. `'No title'` is retained as the final
+    // fallback rather than an empty string, because callers treat it as a rejectable value.
+    // Selector ORDER is not enough, because the containers hold decorations too:
+    // `[data-cy="title-recipe"] a span` returns "Sponsored" on a sponsored card, and
+    // `h2 span` returns the brand. So gather candidates and take the first PLAUSIBLE one —
+    // long enough to be a product name, and not a known label. Falling back through the old
+    // selectors means a future markup change degrades rather than breaks.
+    const NON_TITLES = /^(sponsored|إعلان|ad|brand|results?)$/i;
+    const candidates: string[] = [];
+    el.find('a.s-line-clamp-4 span, a.s-line-clamp-3 span, a.s-line-clamp-2 span, [data-cy="title-recipe"] a span, h2 a span, h2 span')
+      .each((_i, node) => { const t = $(node).text().trim(); if (t) candidates.push(t); });
+    const title = candidates.find((t) => t.length >= 15 && !NON_TITLES.test(t))
+      ?? candidates.find((t) => !NON_TITLES.test(t))
+      ?? 'No title';
 
     // URL
     const linkEl = el.find('h2 a, a.a-link-normal.s-no-outline').first();
