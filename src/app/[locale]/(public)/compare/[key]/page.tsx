@@ -11,6 +11,7 @@ import { PublicPageShell } from '@/components/public/public-page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
+import { buildAlternates } from '@/lib/seo/metadata';
 
 interface CompareOffer {
   store_name:   string;
@@ -61,23 +62,56 @@ async function fetchCompare(key: string): Promise<CompareResult | null> {
   }
 }
 
+/**
+ * THE COMPARISON PAGE IS THE ONLY THING WE HAVE THAT NOBODY ELSE DOES, AND NOTHING COULD READ IT
+ * (ADR-189). Four independent reasons, all fixed here or in the same commit:
+ *
+ *   1. `generateMetadata` passed the RAW `key` to `fetchCompare` while the page body passed
+ *      `decodeURIComponent(key)`. The two disagreed, so the body rendered a real five-retailer
+ *      comparison under the generic fallback title «مقارنة الأسعار | توفيري» — on EVERY page.
+ *      Measured live before the fix: body contains "iPhone 16", title does not.
+ *   2. No `alternates`, so the page inherited the root canonical and declared itself a duplicate
+ *      of the HOMEPAGE — it could never be indexed (the ADR-156 failure, in a new place).
+ *   3. The title was Arabic-only regardless of locale.
+ *   4. No structured data, so a crawler or assistant reading the page saw prose, not offers.
+ *
+ * `robots.ts` additionally disallowed `/*​/compare/` outright; that is lifted in the same change.
+ */
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string; key: string }>;
 }): Promise<Metadata> {
-  const { key } = await params;
-  const data = await fetchCompare(key);
-  if (!data) return { title: 'مقارنة الأسعار | توفيري' };
+  const { locale, key } = await params;
+  // Decode exactly as the page body does. These two must not drift again.
+  const decodedKey = decodeURIComponent(key);
+  const isAr = locale !== 'en';
+  const alternates = buildAlternates(`/compare/${key}`, locale);
+  const data = await fetchCompare(decodedKey);
+  if (!data) {
+    return {
+      title: isAr ? 'مقارنة الأسعار | توفيري' : 'Price comparison | Tawveeri',
+      alternates,
+      // Nothing to compare ⇒ nothing worth indexing. Better an explicit noindex than a thin
+      // page competing with the real ones.
+      robots: { index: false, follow: true },
+    };
+  }
 
-  const name = data.canonical.name_ar || data.canonical.name_en;
+  const name = (isAr ? data.canonical.name_ar : data.canonical.name_en) || data.canonical.name_ar || data.canonical.name_en;
   const price = data.summary.lowest_price;
+  const stores = data.summary.store_count;
 
   return {
-    title: `${name} — مقارنة الأسعار | توفيري`,
+    title: isAr ? `${name} — مقارنة الأسعار | توفيري` : `${name} — price comparison | Tawveeri`,
     description: price
-      ? `أرخص سعر لـ ${name} هو ${price} ر.س. قارن الأسعار بين ${data.summary.store_count} متاجر.`
-      : `قارن أسعار ${name} بين أفضل المتاجر السعودية.`,
+      ? (isAr
+        ? `أرخص سعر رصدناه لـ ${name} هو ${price} ر.س، من ${stores} متاجر سعودية.`
+        : `The lowest price we observed for ${name} is ${price} SAR, across ${stores} Saudi retailers.`)
+      : (isAr
+        ? `قارن أسعار ${name} بين متاجر سعودية.`
+        : `Compare ${name} prices across Saudi retailers.`),
+    alternates,
   };
 }
 
@@ -122,8 +156,53 @@ export default async function TpsComparePage({
 
   const cheapestOffer = offers.find(o => o.store_name === summary.cheapest_store) ?? offers[0];
 
+  /**
+   * THE OFFERS, IN A FORM A MACHINE CAN READ (ADR-189).
+   *
+   * A crawler or an AI assistant reading this page saw prose and had to infer that it was a
+   * price comparison. `AggregateOffer` states it: this many retailers, this low price, this
+   * high price, this currency. That is the whole reason to publish a comparison page at all.
+   *
+   * EVERY FIGURE HERE IS ONE THE PAGE ALREADY RENDERS, taken from the same `summary`/`offers`
+   * the body reads — never recomputed, never rounded differently, never a figure the customer
+   * cannot see. Structured data that disagrees with the visible page is a fabricated claim
+   * with a schema wrapper on it, and it is also what gets a site penalised.
+   */
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    ...(canonical.brand ? { brand: { '@type': 'Brand', name: canonical.brand } } : {}),
+    ...(summary.lowest_price != null ? {
+      offers: {
+        '@type': 'AggregateOffer',
+        priceCurrency: 'SAR',
+        lowPrice: String(summary.lowest_price),
+        ...(summary.highest_price != null ? { highPrice: String(summary.highest_price) } : {}),
+        offerCount: summary.store_count,
+        // Named sellers, so the comparison is checkable rather than asserted.
+        offers: offers
+          .filter((o) => o.price > 0)
+          .map((o) => ({
+            '@type': 'Offer',
+            price: String(o.price),
+            priceCurrency: 'SAR',
+            ...(o.product_url ? { url: o.product_url } : {}),
+            seller: { '@type': 'Organization', name: o.store_name },
+            availability: o.availability === 'out_of_stock'
+              ? 'https://schema.org/OutOfStock'
+              : 'https://schema.org/InStock',
+          })),
+      },
+    } : {}),
+  };
+
   return (
     <PublicPageShell locale={locale}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* ── Breadcrumb ── */}

@@ -6,6 +6,85 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-189 — Every URL we advertised was a 404, and the one page worth citing was forbidden · Accepted (2026-08-03)
+
+**Context.** The founder offered a choice between §7.1's weighted deal score and Objective 4
+(AI-assistant citation), and invited a third option if the research produced one. It did.
+
+**§7.1 — the deals surface has no reach.** `tps:usage`: **0 deal events across 162 sessions**;
+`deals` does not appear in the surface breakdown at all. There are **12 real sessions in total**.
+The surface is also *already* percentage-ranked (`getDeals` sorts by strength then `discountPct`),
+so §7.1 would be rearranging a shelf nobody has ever walked past. External evidence also cuts
+against the pattern: **Idealo** ranks by price and states that no shop can buy a better position;
+**Kelkoo**'s weighted "relevance" order *"partly takes remuneration into account"*. **The weighted
+score is the industry's usual vehicle for letting commercial interest into ranking** — which our
+Constitution forbids outright. F4 already confines it to deals; nothing here argues for hurrying.
+
+**Objective 4 — the proposed mechanism is measured to be ineffective, and it has a prerequisite
+we fail at 100%.** Across **500M AI-bot visits**, only **408** fetched `llms.txt`; no major AI
+provider commits to reading it and Google has said it will not. But the prerequisite is the real
+finding: **an assistant cannot cite a page it cannot fetch.**
+
+**What was measured on production, 2026-08-03:**
+
+| | |
+|---|---|
+| product URLs in `sitemap.xml` | **1,190** |
+| of those that resolve **200** | **0** — every one 307 `/product/` → `/products/` → **404** |
+| catalogue offered for indexing | **595 of 5,366** (the sitemap filtered `category='mobile'`) |
+| comparison pages offered | **0** — and `/*/compare/` was **`Disallow`ed in robots.txt** |
+| what a web search for «توفيري» actually surfaces | our **«المنتج غير موجود»** page, on a Railway preview domain |
+
+**Root cause.** The sitemap published `identityKeyToSlug(canonical_products.tps_identity_key)` —
+a **knowledge-layer** slug — at `/[locale]/products/[slug]`, which resolves **`products.slug`**,
+the **storefront** layer. Two identity namespaces, one route. The ADR-122 drift family again.
+
+**And the comparison page — the only asset no competitor in Saudi has — could not be cited for
+five independent reasons**, all found by reading the live page rather than the code:
+1. `robots.txt` disallowed the whole path;
+2. it was absent from the sitemap;
+3. `generateMetadata` passed the **raw** `key` to the loader while the body passed
+   `decodeURIComponent(key)` — so every page rendered a real five-retailer comparison under the
+   generic fallback title «مقارنة الأسعار | توفيري»;
+4. no `alternates`, so it inherited the root canonical and **declared itself a duplicate of the
+   homepage** (ADR-156's failure, in a new place);
+5. **no structured data at all** — a crawler saw prose and had to infer that this was a price
+   comparison.
+
+**Decision.** Publish something worth citing, and check that it exists.
+1. **The sitemap emits URLs that resolve** — storefront slugs, **every** category, only rows with
+   a live offer, correctly paginated (the previous single call would have been truncated at
+   PostgREST's 1,000-row cap anyway). **7,552** product pages.
+2. **The 938 comparison pages are published and allowed**, at the file's highest priority. `/compare`
+   *without* a key stays disallowed: it renders per-visitor localStorage, which is not a page.
+3. **The comparison page is made readable** — decoded key (metadata and body can no longer
+   disagree), bilingual product-specific title, self-canonical with hreflang, and
+   `Product` + `AggregateOffer` JSON-LD naming each retailer and price. **Every figure is one the
+   page already renders**, taken from the same objects the body reads; structured data that
+   disagrees with the visible page is a fabricated claim with a schema wrapper on it.
+   A key with **no** live comparison returns `robots: noindex` from its own metadata, so thin
+   pages stay out without a blanket rule.
+4. **`tps:sitemap-verify` is the watcher.** It samples each URL class in the LIVE sitemap,
+   follows redirects (the final status is what a crawler records), and fails if any sampled URL
+   is not 200 — plus it cross-checks that `robots.txt` does not forbid what the sitemap offers,
+   because those two files disagreed for months and nothing compared them.
+
+**Verified before deploy:** 7,552 slugs + 938 keys resolved from the live database, 12 of 12
+sampled URLs return **200**.
+
+**Why this over both options, by the founder's own standard** — *does it move a customer to the
+right product, measurably?* The deals surface has 0 of 162 sessions. Objective 4's mechanism is
+unmeasured at best and, until this lands, impossible: **there was nothing to cite.** This is the
+prerequisite for Objective 4 rather than a detour from it, and it is the same work that makes the
+catalogue reachable by ordinary search.
+
+**Honest limit.** This makes the pages fetchable, readable and machine-parseable. It does **not**
+make anyone cite them, and no claim that it will should be published. The measurable outcome is
+the one asserted here: URLs resolving **0 → 12/12 sampled**, indexable comparison pages
+**0 → 938**, catalogue offered **595 → 8,490**.
+
+---
+
 ### ADR-188 — A safety gate that asserts a premise the founder retired is an ignored safety gate · Accepted (2026-08-03)
 
 **Context.** `tps:validator-verify` — the F7·2 gate — had **one failing check**, recorded in

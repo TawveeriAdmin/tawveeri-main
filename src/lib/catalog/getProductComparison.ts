@@ -112,17 +112,73 @@ export async function getProductComparison(slug: string): Promise<ProductCompari
 }
 
 // لقائمة المنتجات (نحتاجها للاختبار والفهرسة لاحقاً)
+/**
+ * SLUGS FOR THE SITEMAP — AND THEY MUST BE THE SLUGS THE PRODUCT ROUTE ACTUALLY READS (ADR-189).
+ *
+ * This returned `identityKeyToSlug(canonical_products.tps_identity_key)` — a KNOWLEDGE-layer
+ * slug — while `/[locale]/products/[slug]` resolves against `products.slug`, the STOREFRONT
+ * layer. Two identity namespaces, one route. Measured on production 2026-08-03:
+ * **1,190 of 1,190 product URLs in the live sitemap returned 404** (307 `/product/` →
+ * `/products/` → 404). Every page we advertised to every crawler and every AI assistant was
+ * dead, and what search engines actually surfaced for «توفيري» was our «المنتج غير موجود» page.
+ *
+ * It was also filtered to `category = 'mobile'`, so 89% of the catalogue was never offered for
+ * indexing at all — 595 products of 5,366.
+ *
+ * Now: storefront slugs, every category, and only rows that can actually render a page —
+ * active, with a real slug, and carrying at least one live offer. A sitemap is a claim that a
+ * URL is worth fetching; a URL with no offer is a page with nothing on it.
+ */
 export async function getAllProductSlugs(): Promise<{ slug: string; nameAr: string }[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data } = await supabase
-    .from("canonical_products")
-    .select("tps_identity_key, name_ar")
-    .eq("category", "mobile")
-    .eq("is_active", true);
-  return (data ?? []).map((p) => ({
-    slug: identityKeyToSlug(p.tps_identity_key ?? ""),
-    nameAr: p.name_ar,
-  }));
+  const out: { slug: string; nameAr: string }[] = [];
+  const PAGE = 1000;
+  // PostgREST caps a response at 1,000 rows; the previous single call silently truncated any
+  // larger result. Page explicitly rather than trusting the default.
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("slug, name_ar, product_stores!inner(current_price)")
+      .eq("is_active", true)
+      .not("slug", "is", null)
+      .gt("product_stores.current_price", 0)
+      .range(from, from + PAGE - 1);
+    if (error || !data?.length) break;
+    for (const p of data as { slug: string | null; name_ar: string | null }[]) {
+      // `product-<uuid>` slugs are placeholders from a failed slug derivation, not addresses
+      // worth publishing.
+      if (!p.slug || p.slug.startsWith("product-")) continue;
+      out.push({ slug: p.slug, nameAr: p.name_ar ?? "" });
+    }
+    if (data.length < PAGE) break;
+  }
+  // One row per product; the inner join above yields one row per OFFER.
+  const seen = new Set<string>();
+  return out.filter((p) => (seen.has(p.slug) ? false : (seen.add(p.slug), true)));
+}
+
+/**
+ * The comparison pages worth offering for indexing (ADR-189): canonicals the projection says
+ * carry live offers from ≥2 distinct approved retailers. These are the pages that state
+ * something no competitor in Saudi states, and until now they were robots-disallowed and absent
+ * from the sitemap.
+ */
+export async function getComparableIdentityKeys(): Promise<string[]> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+  const keys: string[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("tps_product_projection")
+      .select("tps_identity_key")
+      .eq("has_comparison", true)
+      .not("tps_identity_key", "is", null)
+      .range(from, from + PAGE - 1);
+    if (error || !data?.length) break;
+    for (const r of data as { tps_identity_key: string | null }[]) if (r.tps_identity_key) keys.push(r.tps_identity_key);
+    if (data.length < PAGE) break;
+  }
+  return [...new Set(keys)];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

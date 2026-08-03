@@ -68,7 +68,8 @@
     "tps:vocabulary-scan": "tsx scripts/tps-analysis/vocabulary-scan.ts",
     "tps:validator-verify": "tsx scripts/tps-analysis/validator-verify.ts",
     "tps:validation-log-health": "tsx scripts/tps-analysis/validation-log-health.ts",
-    "tps:noon-sitemap": "tsx scripts/tps-analysis/noon-sitemap-probe.ts"
+    "tps:noon-sitemap": "tsx scripts/tps-analysis/noon-sitemap-probe.ts",
+    "tps:sitemap-verify": "tsx scripts/tps-analysis/sitemap-verify.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",
