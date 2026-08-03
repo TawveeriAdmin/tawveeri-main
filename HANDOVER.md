@@ -6549,3 +6549,16 @@ observations ingested (extra 17 · amazon 25/25 · jarir 0/2) · 8 nulls · 0 er
   no recoverable URL and need discovery, not re-observation).
 - U2a verification also owed post-tick: projection median freshness ≤24h for displayable
   comparables; «مكيف» card shows true observation age.
+
+## VERIFICATION — 2026-08-03T14:23Z · U2a MET · U2b ON TRAJECTORY
+- **U2a MET:** projection median freshness for comparables **17.6h** (threshold ≤24h,
+  predicted 19.3h); 526/960 <24h · 881/960 <7d. Query: `tps_product_projection` where
+  `has_comparison`, age of `last_observed_at`.
+- **U2b:** true-stale cheapest pairs **162 → 137** after ONE manual run + ONE partial
+  normalize tick (34 of the 42 ingested observations realized so far; the rest land on
+  subsequent hourly sweeps). The 6-hourly loop (limit 60) covers the remaining ~110
+  URL-recoverable pairs within ~24h. Projected floor ≈ 34 pairs (26 no-URL + ~8 dead-404) —
+  under the <50/week threshold; both floor classes are ledgered as their own units
+  (discovery for no-URL · observed-delisted verdict for 404s — the NEXT trust unit).
+- **Live spot-check:** the «مكيف» Smart Pick — withheld yesterday at a false 219h — renders
+  again: `is_tps · 3 stores · آخر رصد قبل ~2h`, honest timestamp on the card.
