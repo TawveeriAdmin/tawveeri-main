@@ -6621,3 +6621,64 @@ extractor missed @graph — the fixture now mirrors the measured live shape.
   mirrors of approved Arabic claims; 14/14 pass checkCustomerText.
 - Instrument lesson #3: I mistook DB-UTC vs local (+3h) elapsed time and nearly declared a
   healthy scheduler dead. Check `now()` FROM THE DB before calling anything stalled.
+
+---
+
+# ═══════════ RESUME POINT — 2026-08-03 (3) · CONTINUOUS PHASE CLOSED AT CONTEXT BOUNDARY ═══════════
+
+**Supersedes prior resume points. Chain 9/9 healthy · tests 1,292 · tree clean at this commit.**
+
+## SHIPPED THIS CONTINUOUS LEG (all measured, all pushed)
+ADR-193 pick-freshness gate (boundary-verified live) · ADR-194 observation-vs-price-change
+truth (median 19.3h real vs 104.4h displayed) · ADR-195 reobserve loop (stale 162→112,
+scheduler-driven) · ADR-196 delist verdict + gating (5 dead cheapest offers off every
+surface, verified live) · ADR-197 jarir JSON-LD parser (7/7 cleared) · ADR-198 orphaned
+lineages (23/26 URLs recovered; HEALING VERIFIED npo-never 27→17 — lineage-repair unit NOT
+needed) · ADR-199 325 ACs reclassified (customer index re-synced) · ADR-200 misparse
+incident 3-level containment (chain was down one cycle, now 9/9) · ADR-201 /deals localized
+(14/14 vocabulary-clean EN mirrors) · ADR-202 almanea Arabic names (25 written; see finding
+below) · U3 SPENT: amazon 900@4.3% (47 obs) + **noon 522@21.5% (137 obs · 55 created + 80
+linked — the phase's best seeding result)**.
+
+## SEED YIELD PENDING
+The 184 seeded observations (amazon 47 + noon 137) normalize on the next chain ticks;
+re-measure comparable (`comparable-count.sql`) before quoting any figure.
+
+## NEW FINDING — STOREFRONT EN/AR TWIN ROWS (the real U5 blocker)
+ADR-202's apply hit 720/745 UNIQUE-collisions: the storefront holds SEPARATE Arabic-named
+rows (name_ar=name_en=Arabic) for the same almanea products as the English-named rows.
+U5's real unit is storefront twin-row dedup/merge (FK-heavy: product_stores, wishlists,
+views) — scope with care, never improvise. The remaining no-Arabic rows: noon 3,823
+(saudi-ar same-slug likely derivable) · amazon 1,867 (/-/ar/dp/ASIN deterministic; throttle-
+aware) · jarir 1,008 (slugs differ per locale — #42's 404 lesson applies).
+
+## MEANINGFUL UNBLOCKED UNITS REMAINING (in value order)
+1. Re-measure comparable after seed realization; then re-freeze U2b trajectory (112 → <50).
+2. Storefront EN/AR twin dedup (above) — unlocks the 720 + display integrity.
+3. Amazon product-page PRICE selector plausibility (ADR-200's open item; fixtures like ADR-183).
+4. noon/amazon Arabic-name enrichment via derivable AR pages (display-only writes, never
+   observations — ADR-089).
+5. §2.1 retailer tiers · §9 وكيل توفيري separation · §11 WCAG 2.2 AA (Master Book queue).
+6. ~2 weeks: `tps:sitemap-verify` + site: query (Objective 4 indexation read).
+
+## BLOCKED (unchanged)
+U4 duplicate pairs (needs 2nd identity evidence source, ADR-184) · U7 build (needs the
+indexation measurement first) · StoreLeads acquisition (paid, founder boundary).
+
+## ROLLBACK LEDGER (newest first — every unit independent)
+```
+(this commit)   ADR-202 script + U5 finding + resume point
+746b52b  ADR-199/200/201 sweep + compare-page ADR-194   git revert 746b52b
+ee09eed  ADR-198 lineage recovery                       git revert ee09eed
+4307614  evidence refresh                               git revert 4307614
+72abe06  ADR-196 phase 2 (delist gating)                git revert 72abe06  + delete from tps_offer_delist_signals
+84b16b0/1a9cec3  ADR-197 jarir parser                   git revert 84b16b0 1a9cec3
+0c548f5/76c151c  ADR-195 reobserve loop                 git revert 0c548f5 76c151c  (REOBSERVE_LIMIT=0 disables live)
+4ded4da/4701467  ADR-194 + checkpoint                   git revert 4ded4da 4701467
+007fc32  ADR-193 pick gate                              git revert 007fc32
+2dd211c/3f23c47  Master Book + roadmap (docs)           git revert 2dd211c 3f23c47
+```
+Data-layer: delist signals table (`drop table tps_offer_delist_signals`) · AC reclass
+(evidence JSON has ids; reverse UPDATE) · almanea names (evidence JSON, reverse UPDATE) ·
+ADR-200 spill (3 derived rows deleted, raw 983018 kept) · seeds + reobservations are
+additive raw evidence, nothing to revert.
