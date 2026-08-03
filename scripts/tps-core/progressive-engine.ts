@@ -6,6 +6,7 @@
 // writes still go through the verified atomic write_ac_batch; canonical/normalized
 // ids reuse the original matcher seeds (no duplicates). Idempotent; resumable.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { brandOrNull } from "./store-identity-guard";
 import { createHash } from "crypto";
 import { pickBestUrl } from "./url-util";
 import { CATEGORY_DEFS, TPS_STORES, type CategoryDef } from "./category-registry";
@@ -20,7 +21,10 @@ const asString = (v: unknown): string | null => (typeof v === "string" && v.trim
 function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   const nameAr = asString(p.nameAr) ?? asString(p.name_ar) ?? asString(p.name) ?? asString(rawName) ?? "";
   const nameEn = asString(p.nameEn) ?? asString(p.name_en) ?? asString(p.title) ?? "";
-  const brand = asString(p.brandEn) ?? asString(p.brand) ?? asString(p.brandAr) ?? null;
+  // ADR-191: a merchant feed that puts its OWN shop name in the brand field would otherwise
+  // become the first segment of the identity key, fencing that listing off from every other
+  // retailer selling the identical product. Rejected to null — unknown beats incorrect.
+  const brand = brandOrNull(asString(p.brandEn) ?? asString(p.brand) ?? asString(p.brandAr));
   return { nameAr, nameEn, brand, url: pickBestUrl(p) };
 }
 function extractPrice(p: Record<string, unknown>): number | null {

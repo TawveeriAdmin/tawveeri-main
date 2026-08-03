@@ -6,6 +6,39 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-191 — A store name is not a brand · Accepted (2026-08-03)
+
+**Context.** Found while measuring the residual Arabic-name gap (ADR-185). **22 active canonicals
+are keyed `sony world - ksa|…`** — Sony WH-1000XM6, WF-1000XM6, WF-C510, INZONE H3/H9, WH-G500 —
+because that merchant's feed puts its own shop name in the brand field.
+
+Two harms, and the second is the one that matters. The customer reads «sony world - ksa
+Wh-1000xm6» as a product name. And `brand` is the **first segment of `tps_identity_key`**, so the
+identical headphone sold by another retailer **can never corroborate with it** — the listing is
+fenced inside a brand namespace only that merchant occupies. A store identifier reaching an
+identity key breaks the Constitution's *one canonical identity · one canonical store identity*.
+
+**Decision — the guard, not the cleanup, and the measurement says why.** Of the seven affected
+models, only **two** (WH-1000XM6, INZONE H3) have a `sony`-branded twin at all, so re-keying the
+existing 22 rows is worth **at most 2 comparisons** — and re-keying needs ADR-184's full merge
+machinery. **Not done, deliberately, and the ceiling is recorded here so nobody re-derives it.**
+What is built is the guard that stops recurrence: a brand that resolves to a STORE identity is
+rejected to `null`, which is what "we do not know the brand" already means downstream. Applied at
+both brand-derivation points — the per-store adapters and the generic progressive engine — so the
+next feed that does this is caught on arrival rather than at one merchant's adapter.
+
+**Exact match only, never substring, and the tests are mostly about that.** "Samsung" must
+survive a store called *Samsung KSA*; "Sony" must survive a store called *Sony World*. A guard
+that ate real brands would be far worse than the defect it prevents, so an unrecognised value is
+always treated as a brand.
+
+**A hand-written list was the wrong source, and it failed immediately.** The first version missed
+«مكتبة جرير» because `TPS_STORES` calls that store «جرير». A hand-list of store names is always
+one merchant behind. The guard now derives from `TPS_STORES` **and** `APPROVED_RETAILERS`
+(slug · name_en · name_ar), so every future merchant is covered without an edit here.
+
+---
+
 ### ADR-189 — Every URL we advertised was a 404, and the one page worth citing was forbidden · Accepted (2026-08-03)
 
 **Context.** The founder offered a choice between §7.1's weighted deal score and Objective 4

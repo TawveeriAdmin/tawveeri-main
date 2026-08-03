@@ -5,6 +5,8 @@
 // يستقبل بيانات نظيفة دائماً ولا يعرف أي شيء عن بنية المتاجر.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { isStoreIdentity } from "./store-identity-guard";
+
 export interface AdaptedRow {
   nameAr: string;
   nameEn: string;
@@ -48,9 +50,28 @@ const cleanName = (v: string | null): string =>
     .replace(/^[-–|،,\s]+|[-–|،,\s]+$/g, "")
     .trim();
 
+/**
+ * A STORE NAME IS NOT A BRAND (ADR-191).
+ *
+ * Some feeds put the shop's own name in the brand field. Measured on production: **22 active
+ * canonicals keyed `sony world - ksa|…`** — Sony WH-1000XM6, WF-C510, INZONE H3/H9 — carrying
+ * the RETAILER as their manufacturer. The customer reads «sony world - ksa Wh-1000xm6» as a
+ * product name, and because `brand` is the first segment of the identity key, the same headphone
+ * sold by Jarir can never corroborate with it: one merchant's listing is fenced off inside its
+ * own brand namespace.
+ *
+ * This is the Constitution's own rule — *one canonical identity; one canonical store identity* —
+ * and a store identifier reaching an identity key breaks it. Rejecting here rather than at one
+ * merchant's adapter means the next feed that does this is caught on arrival.
+ *
+ * Rejected ⇒ `null`, which is what "we do not know the brand" already means downstream. Unknown
+ * beats incorrect, and a wrong brand is worse than no brand because it is silently load-bearing.
+ */
 const cleanBrand = (v: unknown): string | null => {
   const b = firstOfArray(v);
-  return b ? b.replace(/\s+/g, " ").trim() : null;
+  const brand = b ? b.replace(/\s+/g, " ").trim() : null;
+  if (!brand) return null;
+  return isStoreIdentity(brand) ? null : brand;
 };
 
 const TRACKING_PARAMS = [
