@@ -6562,3 +6562,13 @@ observations ingested (extra 17 · amazon 25/25 · jarir 0/2) · 8 nulls · 0 er
   (discovery for no-URL · observed-delisted verdict for 404s — the NEXT trust unit).
 - **Live spot-check:** the «مكيف» Smart Pick — withheld yesterday at a false 219h — renders
   again: `is_tps · 3 stores · آخر رصد قبل ~2h`, honest timestamp on the card.
+
+## FINAL RE-MEASURE — 2026-08-03T14:59Z · DELTA AGAINST THE 162 BASELINE
+**162 → 137 true-stale cheapest pairs (−25, −15.4%)** of 921 total. Store split:
+extra 79→76 · amazon 59→42 · jarir 9→7. Stable across 14:23Z and 14:59Z reads.
+**Conversion efficiency question (measure next session):** 42 observations ingested but 25
+pairs converted — the gap is either bounded normalize batches still draining (benign) or
+re-fetched products normalizing onto a DIFFERENT canonical than the stale pair (identity
+drift on refetch — would silently cap this lever). One query decides it: for the run's
+npo rows, compare canonical_product_id against the targeted cid list.
+Threshold unchanged: <50 within a week; floor ≈34 (26 no-URL + ~8 delisted-404).
