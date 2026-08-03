@@ -6703,3 +6703,47 @@ EVALUATION (overlap, ingestibility, identity quality), not discovery — `tps:ac
 instrument. Also: subagent research is currently unavailable (org API restriction) — the
 one partial agent claim (redsea=Shopify) was verified FALSE by direct probe (Next.js,
 products.json 404 — ADR-105's classification stands).
+
+---
+
+# ═══════════ RESUME POINT — 2026-08-03 (4) · PHASE BASELINE FROZEN 18:14Z · START HERE ═══════════
+
+**Supersedes prior resume points · tree clean at this commit · chain healthy.**
+
+## THE FROZEN COMPARISON BASELINE (2026-08-03T18:14Z — all queries named)
+| metric | value | method |
+|---|---:|---|
+| customer-visible (projection) | **5,450** | `tps_product_projection` count |
+| comparable (≥2 approved) | **955** | `comparable-count.sql` |
+| comparable DISPLAYABLE | **945** | same − COMPARISON_DISPLAY_EXCLUDED |
+| ≥3 approved / displayable | 239 / 230 | same |
+| comparison rate | **18.0%** of projection | has_comparison 980/5,450 |
+| median retailer count (comparables) | **2** | projection store_count median |
+| U2b true-stale cheapest pairs | **116** (baseline 162; threshold <50/wk, on trajectory) | checkpoint §3 observation-basis query |
+**Day's movement: comparable 918 → 955 (+37; displayable 908 → 945)** — seeds (noon 21.5% ·
+amazon 4.3%), reobserve loop, lineage healing, delist gating all realized.
+
+## THE DAY IN ADRs: 193–202 + corrections — see resume points (2)/(3) above for detail.
+
+## ACQUISITION CONCLUSION (research standard applied, instrument-measured)
+StoreLeads RETIRED (founder decision, rejected hypothesis — recorded). Eight fresh major
+candidates (tamkeen · alsaif · eddy · xcite · alhaqeel · hhm · emax · altheqa) evaluated by
+`tps:acquire`: **all `unknown` platform, 0 config-only onboardable** — second confirmation of
+ADR-105 (majors run closed enterprise platforms). Config-only universe = Salla/Zid/Woo/
+Shopify long-tail only. **Next-phase acquisition decision: ONE custom-scraper major chosen by
+variant overlap** (tamkeen/alsaif carry the same AC/appliance models as extra/almanea —
+verify overlap by hand-sampling 30 models before any build). Subagent research currently
+unavailable (org API restriction); the one agent claim tested (redsea=Shopify) was FALSE.
+
+## NEXT SESSION, IN ORDER
+1. U2b weekly check (116 → <50) — the loop runs itself; just re-measure.
+2. U5 real units: noon (3,877) / amazon (1,851) Arabic-name enrichment via their derivable
+   /ar pages (display-only writes, never observations — ADR-089).
+3. Amazon product-page PRICE selector plausibility (ADR-200's open item).
+4. Custom-scraper major: hand-verify overlap sample, then scope the build as its own ADR.
+5. §2.1 retailer tiers · §9 agent separation · §11 WCAG (Master Book queue).
+6. ~2026-08-17: indexation re-measure (tps:sitemap-verify + site: query) → Objective 4.
+
+## BLOCKED (exact unblocking events)
+U4 55 dupes → a second identity-evidence source at audited precision · U7 build → the
+indexation measurement · subagent research → org enables Claude Code subscription access.
