@@ -6170,3 +6170,49 @@ the table above. Indexation itself takes weeks and is not ours to command.
 8b3cfda  CHECKPOINT #65 docs                 git revert 8b3cfda
 ee1dab4  ADR-187/188 reason kinds + F7 gate  git revert ee1dab4
 ```
+
+---
+
+# ═══ CHECKPOINT #67 — CANONICAL HOST FIXED IN CODE · OBJ 1 REOPENED (AMAZON THROTTLE CLEARED) ═══
+
+**Tree clean · pushed · deployed · tests 1,237/1,237 · `tps:sitemap-verify` 11/11 GATE: PASS.**
+
+## ADR-190 — THE DEPLOYMENT DOMAIN, FIXED ENTIRELY IN CODE
+**No Railway dashboard change was needed.** Measured before: the preview host returned **200 with
+no `X-Robots-Tag`** and advertised `Sitemap: https://tawveeri.com/sitemap.xml`.
+
+- Middleware sets **`X-Robots-Tag: noindex, follow`** on every response from a non-canonical host,
+  applied **before every branch** so API responses, redirects and 429s carry it too.
+- **Crawling stays ALLOWED there.** Disallowing instead is the classic self-defeating move — a
+  crawler that cannot fetch the page never sees the `noindex`, and the URL stays indexed on anchor
+  text alone. *Allow the fetch, refuse the index.*
+- **`follow`, not `nofollow`:** every canonical, sitemap entry and internal href on that host
+  points at `NEXT_PUBLIC_APP_URL`, so following them passes the signal to `tawveeri.com` rather
+  than stranding it.
+- `robots.ts` is host-aware **on its own**, because the middleware matcher excludes `robots.txt`.
+  On a non-canonical host it withholds the sitemap reference.
+
+**The dangerous failure is not missing a duplicate — it is marking the REAL site `noindex`.**
+Every unknown resolves to canonical: missing env var, absent `Host`, localhost, and `www` all
+count as canonical. The tests are mostly about that direction.
+
+**Verified live:** preview `noindex, follow` · canonical **no header**. Gated by three new checks
+in `tps:sitemap-verify`.
+
+## ADR-183's OWED LIVE VERIFICATION — DONE, AND IT PASSES
+Amazon's throttle has cleared (`amazon.sa` serving 1.18 MB, not a 2 KB stub). The title fix was
+fixture-proven only since #63. Re-run live across three queries in both scripts:
+**18 of 18 titles are real product names · 0 brand-like.** Item closed.
+
+## OBJECTIVE 1 REOPENED — AND AMAZON IS THE BEST SEEDED RETAILER WE HAVE
+Gated dry run, 40 targets: **hit rate 30%**, 0 errors, 104 irrelevant correctly rejected.
+
+| retailer | gated hit rate |
+|---|---:|
+| **amazon** | **30%** |
+| noon | ~11% |
+| extra | 2.3% |
+| swsg | 1.3% |
+
+Baseline before the run: projection **5,419** · comparable **946** · 3+ store **246**.
+A 350-target `--go` run is in flight; its yield lands in the next checkpoint.
