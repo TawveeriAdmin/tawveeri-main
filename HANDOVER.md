@@ -6767,3 +6767,12 @@ indexation measurement · subagent research → org enables Claude Code subscrip
   ADR-089). FIRST unit next session.
 - ADR-201 verified live: /en/deals dir=ltr English, no Arabic leak; /ar unchanged.
 - Autonomous loops confirmed self-driving (extra 17:36+, noon 235 rows — zero manual).
+
+## U5 CLOSED — 2026-08-04 · ~5,160 STOREFRONT ROWS GAINED THE MERCHANT'S OWN ARABIC NAME
+Final split (re-measured): noon 3,877→**467** · amazon 1,851→**99** · almanea →3 (plus 981
+name_en fills) · jarir 1,005 (slugs underivable per locale — #42's measured 404s; parked
+with mechanism) · extra 285 (same class; parked). Residues classified: noon's 467 ≈ 437
+honestly-Latin titles (the merchant publishes no Arabic — never composed over) + ~30
+retryable; amazon's 99 ≈ 75 Latin + ~24 retryable. Every write sku/ASIN-verified against
+the fetched page; evidence JSON per batch in docs/evidence/. The enrichment scripts are
+resumable any time (`tps` scripts enrich-noon/-amazon/-almanea-arabic-names).
