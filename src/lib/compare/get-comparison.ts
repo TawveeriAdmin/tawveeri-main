@@ -138,12 +138,21 @@ export async function getComparison(params: {
     return { error: 'Failed to load prices', status: 500 };
   }
 
+  // ADR-196: offers measured GONE (404 on their own page) are excluded from the
+  // comparison — a dead offer must not win best-price. Signals heal on the next
+  // successful observation of the pair.
+  const { data: delistRows } = await supabase
+    .from('tps_offer_delist_signals')
+    .select('store_slug')
+    .eq('canonical_product_id', canonical.id);
+  const delistedSlugs = new Set((delistRows ?? []).map((d) => (d as { store_slug: string }).store_slug));
+
   // Latest price per APPROVED retailer. Rows are already newest-first, so the first
   // sighting of a slug wins. Non-approved retailers are out of scope (same gate as search).
   const latestBySlug = new Map<string, { price: number; availability: string | null; observed_at: string; obsId: string | null }>();
   for (const row of (prices ?? []) as unknown as PriceRow[]) {
     const slug = resolveApprovedSlug(row.store_name);
-    if (!slug || latestBySlug.has(slug)) continue;
+    if (!slug || latestBySlug.has(slug) || delistedSlugs.has(slug)) continue;
     const price = Number(row.price);
     if (!Number.isFinite(price) || price <= 0) continue;
     latestBySlug.set(slug, {

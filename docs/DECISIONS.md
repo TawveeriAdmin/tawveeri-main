@@ -21,11 +21,20 @@ blocked · network) via a direct GET, counts classes in its summary, and persist
 to docs/evidence/reobserve-gone-<date>.json. Every attempt now ends in an explicit state
 (Appendix B: silent failure).
 
-**Phase 2 — scoped, NOT started.** A (canonical, store) pair whose latest classification is
-gone must stop winning best-price on comparison surfaces (T3/P3: an offer that cannot be
-completed must not be claimed). Needs a persistence + surface-gating design: either an
-availability-bearing observation the pipeline already understands, or a small delist-signal
-table (migration + RLS). Decide with fresh context; the evidence files are the input.
+**Phase 2 — SHIPPED same day.** Persistence is `tps_offer_delist_signals` (migration 21:
+RLS enabled, service-role only, PK (canonical, store_slug), display name written from
+TPS_STORES at signal time so no SQL reader re-derives the store map). An availability-bearing
+observation was REJECTED: ingesting anything for a dead page would bump the pair's npo
+freshness signal and make the gone offer look healthy. The script writes the signal on a
+confirmed gone and HEALS it (deletes the row) on the next successful observation — re-listed
+offers rejoin comparison the moment they are seen. Gating in all three readers: the
+projection builder's `latest` CTE (anti-join), searchTPSCanonical, and get-comparison.
+**Measured impact before deploy: all five signalled offers were their comparison's
+cheapest_store** — dead pages were winning best-price on 5/5; after the gate three become
+honest single-store, one drops 3→2 stores, and every lowest_price is a real offer.
+Never rendered as a retailer statement (§6: unobserved ≠ untrue). Rollback:
+`REOBSERVE_LIMIT=0` stops new signals; `delete from tps_offer_delist_signals` + revert
+restores prior behaviour; `drop table` reverses the migration.
 
 ---
 

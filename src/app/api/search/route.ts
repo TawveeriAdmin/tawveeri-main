@@ -787,6 +787,15 @@ async function searchTPSCanonical(
       if (!trueObserved.has(key)) trueObserved.set(key, r.observed_at);
     }
 
+    // ADR-196: offers measured GONE (404 on their own page) are excluded — a dead offer
+    // must not win best-price. The table is small by construction (signals heal on the
+    // next successful observation), so one unfiltered read covers every candidate.
+    const { data: delistRows } = await supabase
+      .from('tps_offer_delist_signals')
+      .select('canonical_product_id, store_slug')
+      .limit(10000);
+    const delisted = new Set((delistRows ?? []).map((d) => `${(d as { canonical_product_id: string }).canonical_product_id}|${(d as { store_slug: string }).store_slug}`));
+
     const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
@@ -798,6 +807,7 @@ async function searchTPSCanonical(
       // Keyed on the resolved slug, the retailer can only be counted once.
       const slug = resolveApprovedSlug(r.store_name);
       if (!slug) continue;
+      if (delisted.has(`${r.canonical_product_id}|${slug}`)) continue; // ADR-196
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
       if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id, observedAt: r.observed_at });

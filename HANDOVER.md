@@ -6572,3 +6572,18 @@ re-fetched products normalizing onto a DIFFERENT canonical than the stale pair (
 drift on refetch — would silently cap this lever). One query decides it: for the run's
 npo rows, compare canonical_product_id against the targeted cid list.
 Threshold unchanged: <50 within a week; floor ≈34 (26 no-URL + ~8 delisted-404).
+
+## ADDENDUM 4 — 2026-08-03 · ADR-196 PHASE 2 SHIPPED: DELIST VERDICT + SURFACE GATING
+- `tps_offer_delist_signals` (migration 21, applied; RLS on, service-role only). Written on
+  confirmed gone (404/410 after the store's own scraper failed), HEALED on the next
+  successful observation. Availability-observation approach REJECTED: it would bump the dead
+  pair's freshness signal.
+- Gated in all three readers: projection `latest` CTE · searchTPSCanonical · get-comparison.
+- **5 measured gone offers backfilled from the evidence file — all five were their
+  comparison's cheapest_store.** Post-gate: 3 comparisons honestly become single-store,
+  one 3→2, every lowest_price a real offer.
+- Owed verification after deploy + next chain tick: the five canonicals' projection rows drop
+  the dead store (query in ADR-196); compare pages for those keys show real cheapest.
+- Note for the compare-page ADR-194 follow-up: `observed-freshness.ts` (2026-07-31) already
+  governs per-offer display with a conservative earliest-signal rule — feed npo max in as a
+  verified provenance signal there, do not bypass it.

@@ -23,6 +23,7 @@ import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import pg from "pg";
 import { toPoolerDbUrl } from "./pooler-url";
+import { TPS_STORES } from "./category-registry";
 
 const args = process.argv.slice(2);
 const GO = args.includes("--go");
@@ -113,7 +114,7 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
      order by s.last_observed asc nulls first`,
     [...mapParams, STALE_HOURS],
   );
-  await pgc.end();
+  if (!GO) await pgc.end(); // LIVE keeps the connection for delist-signal writes/heals
 
   // Bound the run: per-store cap first (throttle safety — amazon especially), then total.
   const perStore = new Map<string, number>();
@@ -174,12 +175,30 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
         // lands in raw_observations and the hourly scheduler normalizes it (ADR-099 —
         // this script never runs the chain itself).
         const saved = await ingestion.ingestBatch(t.slug, [product], STORE_ID[t.slug], null);
-        if (saved > 0) { ingested++; r.ok++; } else { errors++; r.err++; }
+        if (saved > 0) {
+          ingested++; r.ok++;
+          // HEAL: a successful observation of the pair retires any standing delist signal —
+          // re-listed offers rejoin comparison the moment they are seen again.
+          await pgc.query(`delete from tps_offer_delist_signals where canonical_product_id = $1 and store_slug = $2`, [t.cid, t.slug])
+            .catch((e) => console.error(`  heal failed ${t.slug}: ${e.message}`));
+        } else { errors++; r.err++; }
       } else {
         nulls++; r.null_++;
         const cls = await classifyNull(t.raw_url!);
         nullClasses[cls] = (nullClasses[cls] ?? 0) + 1;
-        if (cls === "gone") goneOffers.push({ cid: t.cid, slug: t.slug, url: t.raw_url!, last_observed: t.last_observed });
+        if (cls === "gone") {
+          goneOffers.push({ cid: t.cid, slug: t.slug, url: t.raw_url!, last_observed: t.last_observed });
+          // ADR-196 phase 2 — persist the verdict so surfaces stop letting this offer win
+          // best-price. Display name written from TPS_STORES (the one authoritative map).
+          const display = TPS_STORES.find((s) => s.id === STORE_ID[t.slug])?.name ?? t.slug;
+          await pgc.query(
+            `insert into tps_offer_delist_signals (canonical_product_id, store_slug, store_display_name, url, status_code)
+             values ($1, $2, $3, $4, 404)
+             on conflict (canonical_product_id, store_slug)
+             do update set url = excluded.url, observed_gone_at = now()`,
+            [t.cid, t.slug, display, t.raw_url],
+          ).catch((e) => console.error(`  signal write failed ${t.slug}: ${e.message}`));
+        }
         console.log(`  NULL(${cls}) ${t.slug} ${String(t.raw_url).slice(0, 80)}`);
       }
     } catch (e) {
@@ -198,6 +217,8 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
     writeFileSync(`docs/evidence/reobserve-gone-${stamp}.json`,
       JSON.stringify({ measured_at: new Date().toISOString(), method: "updateProductPrice null + direct GET status 404/410", offers: goneOffers }, null, 2));
   }
+
+  await pgc.end();
 
   console.log(JSON.stringify({
     mode: "LIVE", stale_pairs: targets.length, no_url: noUrl, attempted: picked.length,

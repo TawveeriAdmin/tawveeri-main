@@ -167,6 +167,14 @@ async function main() {
              ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at
       from price_history ph
       where ph.tps_observation_id is not null
+        -- ADR-196: an offer whose page is measured GONE (404/410 after the store's own
+        -- scraper failed) must not win best-price or count as a comparison store. The
+        -- signal heals (row deleted) the moment a later re-observation succeeds.
+        and not exists (
+          select 1 from tps_offer_delist_signals d
+          where d.canonical_product_id = ph.canonical_product_id
+            and d.store_display_name = ${STORE_NAME_CASE}
+        )
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),
     agg as (
