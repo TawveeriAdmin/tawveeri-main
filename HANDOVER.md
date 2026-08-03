@@ -6063,3 +6063,110 @@ aa43ed6  CHECKPOINT #64 docs                   git revert aa43ed6
 89a50d3  ADR-186 live index owner              git revert 89a50d3
 e7a30c1  ADR-185 Arabic display names          git revert e7a30c1
 ```
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #66 · THE INDEXABLE SURFACE WAS 100% DEAD ═══
+
+**Tree clean · pushed · deployed · tests 1,227/1,227 · `tps:sitemap-verify` GATE: PASS ·
+`tps:validator-verify` GATE: PASS · `tps:health` 0 FAIL.**
+
+## A CORRECTION I OWE THE RECORD
+I wrote that the brief "calls cheapest-first ranking a bug." **It does not.** Appendix **F4** is
+explicit — *"Search results present the cheapest comparable total first. A weighted deal score
+governs the deals surface only. **Two surfaces, two rules.**"* F4 even records that this had been
+misread before; mine was the third time. **Search ordering is not in question.**
+
+## THE CHOICE, DECIDED ON EVIDENCE — AND I TOOK A THIRD OPTION
+**§7.1 (weighted deal score) — the surface has no reach.** `tps:usage`: **0 deal events across
+162 sessions**; `deals` does not appear in the surface breakdown at all. **12 real sessions
+total.** `getDeals` already sorts by discount **percentage**, so §7.1 would rearrange a shelf
+nobody has walked past. External evidence cuts the same way: **Idealo** ranks by price and states
+no shop can buy a better position; **Kelkoo**'s weighted "relevance" order *"partly takes
+remuneration into account"*. **A weighted score is the industry's usual vehicle for letting
+commercial interest into ranking** — which our Constitution forbids.
+
+**Objective 4 (AI citation) — the obvious mechanism is measured to be ineffective.** Across
+**500M AI-bot visits, 408** fetched `llms.txt`; no major provider commits to reading it, Google
+has said it will not. **But its prerequisite is the real finding: an assistant cannot cite a page
+it cannot fetch.**
+
+## WHAT WAS MEASURED ON PRODUCTION
+| | |
+|---|---|
+| product URLs in `sitemap.xml` | **1,190** |
+| of those resolving **200** | **0** — every one 307 `/product/` → `/products/` → **404** |
+| catalogue offered for indexing | **595 of 5,366** (sitemap filtered `category='mobile'`) |
+| comparison pages offered | **0** — `/*/compare/` was **`Disallow`ed in robots.txt** |
+| what a web search for «توفيري» surfaces | our **«المنتج غير موجود»** page, on a Railway preview domain |
+
+**Root cause:** the sitemap published **knowledge-layer** identity slugs at a route that resolves
+**storefront** `products.slug`. Two namespaces, one route — the ADR-122 drift family again.
+
+**The comparison page — the one asset no Saudi competitor has — could not be cited for FIVE
+independent reasons**, all found by reading the live page rather than the code: robots-disallowed ·
+absent from the sitemap · `generateMetadata` passed the **raw** key while the body passed
+`decodeURIComponent(key)`, so every page rendered a real five-retailer comparison under the
+**generic fallback title** · no `alternates`, so it **canonicalised to the homepage** · **no
+structured data at all**.
+
+## RESULT (ADR-189), VERIFIED LIVE
+| | before | after |
+|---|---:|---:|
+| sitemap URLs | 1,204 | **16,994** |
+| sampled URLs resolving 200 | **1/12** | **36/36** (compare · product · static) |
+| indexable comparison pages | **0** | **1,876** (938 × 2 locales) |
+| products offered for indexing | 595 | **7,552** |
+
+```
+en title:  Apple iPhone 16 128GB — price comparison | Tawveeri
+ar title:  جوال آبل iPhone 16 128 جيجابايت — مقارنة الأسعار | توفيري
+AggregateOffer  low=1899 high=3239 count=5
+sellers    Jarir Bookstore, Noon, eXtra, Amazon Saudi Arabia, Almanea   (ar: مكتبة جرير, نون, …)
+```
+Every JSON-LD figure is one the page already renders, from the same objects the body reads.
+**Structured data that disagrees with the visible page is a fabricated claim with a schema
+wrapper on it** — and it is also what gets a site penalised.
+
+## GATED — `npm run tps:sitemap-verify`
+Samples each URL class in the **live** sitemap, **follows redirects** (the final status is what a
+crawler records), and fails if any sampled URL is not 200. It also cross-checks that `robots.txt`
+does not forbid what the sitemap offers — **those two files disagreed for months and nothing
+compared them.** Same failure class as ADR-186: owned by nobody, watched by nothing.
+
+## HONEST LIMIT — DO NOT OVERSTATE THIS
+This makes the pages fetchable, readable and machine-parseable. **It does not make anyone cite
+them, and no claim that it will may be published.** The measurable outcomes are the four rows in
+the table above. Indexation itself takes weeks and is not ours to command.
+
+## STILL OPEN, FOUND EN ROUTE — NOT FIXED
+- **The Railway preview domain `tawveeri-main-production.up.railway.app` is indexed** — duplicate
+  content splitting authority with `tawveeri.com`. Needs a canonical-host redirect or a
+  preview-domain `noindex`. **Not touched** — it is a deployment-config change, not code.
+- The `/deals` page is **hardcoded Arabic** (`dir="rtl"`, Arabic-only metadata) in both locales.
+  A residue of the same gap as #64.
+
+## QUEUE STATUS
+1. Comparable-and-displayable — **761**; Amazon's 1,250 seed targets untouched (founder: lower priority).
+2. English-vs-Arabic gap — **CLOSED** 30% → 8% (#64).
+3. وفّر advisor §8 — **CLOSED** (#65).
+4. **AI-assistant citation — its prerequisite is now built.** What remains is genuinely
+   speculative (llms.txt is measured ineffective); the honest next step is to *wait and measure
+   indexation*, not to build more mechanism.
+
+## NEXT, RECOMMENDED
+1. **Canonical-host fix** for the Railway preview domain — small, and it is currently splitting
+   whatever authority we have.
+2. **§9 وكيل توفيري agent separation** — contract + component only; ship nothing the backend lacks.
+3. **§2.1 retailer tiers** — cheap, unblocks an honest public retailer count.
+4. **§11 WCAG 2.2 AA pass** — never systematically done.
+5. Re-measure indexation in ~2 weeks (`tps:sitemap-verify` + a site: query) before any further
+   citation work.
+
+## ROLLBACK
+```
+1c94c8f  ADR-189 title + localized sellers   git revert 1c94c8f
+5e9049f  ADR-189 sitemap/robots/compare SEO  git revert 5e9049f
+8b3cfda  CHECKPOINT #65 docs                 git revert 8b3cfda
+ee1dab4  ADR-187/188 reason kinds + F7 gate  git revert ee1dab4
+```
