@@ -5634,3 +5634,80 @@ in the +27 above.
 a00db54  gate + api search path   git revert a00db54
 ```
 swsg catalogue completion is additive evidence (raw_observations); nothing to revert.
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #61 · OBJECTIVE 1 CLOSED · QUEUE 2–4 NOT STARTED ═══
+
+**Tree clean · pushed · tests 1,148/1,148 · `tps:health` 0 FAIL · 3 WARN · 34 OK.**
+
+## OBJECTIVE 1 — comparable-and-displayable: **705 → 739 (+34, +4.8%)**
+
+Measured identically before and after (LAUNCH_VOCABULARY §10 definition).
+Supporting: projection 5,398 → **5,482** · comparable all-stores 883 → **911** · 3+ store 221 → **233**.
+
+| step | 705 → | how |
+|---|---:|---|
+| swsg catalogue completed | **732** | held 3,276 of 4,274; pulled the rest in ~43 GraphQL calls |
+| shaker retry fix + noon seeded trickle | **739** | one transient 500 had been truncating shaker to 49 of ~900 |
+
+### WHAT WORKED, AND WHY
+**Completing a small catalogue beats seeding it.** swsg's whole catalogue is 4,274 products —
+43 API calls, **~1.6 requests per new comparison**, against seeded discovery's 7.7 and blind
+traversal's 120. Seeding is for catalogues too large to hold (noon), not small ones.
+
+**A retry was worth 12× a catalogue.** The WooCommerce adapter broke out of pagination on the
+first non-OK response; shaker returned one `page 2: HTTP 500` and the pull ended at **49 of
+~900** products, while every later page was verified healthy seconds later. Same defect family
+as the four fetch-failure swallows: a failure handled so that it produces a smaller,
+plausible-looking result instead of a loud one. **49 → 585 offers.**
+
+### WHAT FAILED, AND WHY
+**Seeded discovery on swsg — abandoned on evidence.** Its first dry run reported a **100% hit
+rate** that was entirely fuzzy (a "lenovo Idea Tab" seed returned a Lenovo MOUSE and an oil
+heater with 11 FINS; "dell 27 monitor" returned a SAMSUNG). Gated to ADR-176's literal-model
+standard: **446 rejected, 2 real hits — 1.3%.** Then the reframe made it moot: we already held
+77% of swsg and completing the pull was 5× cheaper per comparison.
+
+**Seeded discovery on noon — works, but small and slow.** Measured on gate-eligible targets:
+**110 queried → 12 hits (~11%)**, not ADR-146's ungated 91.2%. noon throttles hard (~2
+observations per 30 min). A run of 250 targets is still in flight; its yield is NOT in the +34.
+
+**Non-approved feed retailers deliberately NOT pulled** — mhzm 1,571, hdf 1,800,
+goldenstore99 1,255, sonyworld 237 offers are all available and all excluded, because they are
+not displayable and cannot move 705.
+
+### WHAT IS BLOCKED, AND WHAT WOULD UNBLOCK IT
+**The binding constraint on seeded discovery is OUR OWN model-number coverage: 1,263 of 7,807
+active canonicals (16%).** The relevance gate needs a model number on the TARGET, so:
+
+| retailer | single-store targets | gate-eligible |
+|---|---:|---:|
+| noon | 2,315 | **522** |
+| amazon | 2,374 | **530** |
+| extra | 1,917 | **295** |
+
+**Unblocking it is parser work of exactly the kind ADR-175/177 proved** — extracting model
+numbers from titles and payloads for the 84% that lack one. It multiplies every retailer's
+eligible target set at once, and it is the single highest-leverage next unit for Objective 1.
+
+## QUEUE STATUS
+1. **Comparable-and-displayable — WORKED, +34. Not exhausted**; next lever named above.
+2. English-vs-Arabic experience gap — **NOT STARTED**.
+3. وفّر advisor (F7 runtime guard first) — **NOT STARTED**.
+4. AI-assistant citation — **NOT STARTED**.
+
+## IN FLIGHT
+`seeded-discovery noon --targets=250` is still running and writing a trickle. Its observations
+will be normalized by the hourly scheduler; nothing is required of the next session.
+
+## ROLLBACK
+```
+1f264d7  WooCommerce retry (shaker 49→585)   git revert 1f264d7
+a566201  CHECKPOINT #60 docs                 git revert a566201
+a00db54  relevance gate + api search path    git revert a00db54
+befbc13  CHECKPOINT #59 docs                 git revert befbc13
+745c7da  phantom duplicate fix               git revert 745c7da
+f4d5210  scorecard scoping                   git revert f4d5210
+```
+Catalogue completions (swsg, shaker) are additive `raw_observations` — nothing to revert.
