@@ -10,17 +10,17 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Context.** ADR-196's null classification isolated jarir: every stale-pair re-observation
 returned parse_fail on LIVE pages (7/7). Reproduced directly: the page fetches fine (2.95MB)
-and carries a full Product JSON-LD offer, but the config's  selector
-() is a category-TILE class — on a product page it matches nothing, or
+and carries a full Product JSON-LD offer, but the config's `product_price` selector
+(`.product-tile__price`) is a category-TILE class — on a product page it matches nothing, or
 worse, a related-products tile carrying a DIFFERENT product's price. Jarir's daily volume
 comes from LISTING-tile parsing (data-cnstrc-* attributes), so the product-PAGE path was
 broken invisibly — it is only exercised by per-URL price updates, which jarir never received
 until ADR-195.
 
-**Decision.**  reads the schema.org Product JSON-LD FIRST (price ·
+**Decision.** `parseProductPage` reads the schema.org Product JSON-LD FIRST (price ·
 availability · sku · name), falling back to the selector path when no block parses. Jarir
-wraps every node in  — the first extractor missed this exactly (fixture passed, live
-failed) and was corrected by unwrapping  and accepting array ; the fixture now
+wraps every node in `@graph` — the first extractor missed this exactly (fixture passed, live
+failed) and was corrected by unwrapping `@graph` and accepting array `@type`; the fixture now
 mirrors the live shape. Structured data wins deliberately: a tile selector on a product page
 can name the WRONG product, and a wrong price is worse than none.
 
