@@ -5965,3 +5965,101 @@ e7a30c1  ADR-185 Arabic display names                   git revert e7a30c1
            re-running `refresh-intelligence.ts` restores the previous names.
 8273e42  ADR-184 duplicate product cards                git revert 8273e42
 ```
+
+---
+
+# ═══ RESUME HERE — 2026-08-03 CHECKPOINT #65 · OBJECTIVE 3 · §8 AUDITED AND ITS TWO GAPS CLOSED ═══
+
+**Tree clean · pushed · deployed · tests 1,227/1,227 · `tps:health` 0 FAIL · unified-search 54/54 ·
+`tps:validator-verify` GATE: PASS.**
+
+## THE STATED BLOCKER NO LONGER EXISTS
+The queue says *"وفّر advisor (F7 runtime guard first)"*. That was written when F7 had never been
+scoped. **F7·1** (`src/lib/vocabulary/`), **F7·2** (post-generation validator, ADR-158), **F7·3**
+(adversarial suite as a permanent gate, ADR-159) and **`guardAdvisorPayload`** over the
+deterministic advisor (ADR-163) have all since shipped. Verified rather than assumed: 453/453
+agent+vocabulary tests, and the live gate now green.
+
+## §8 AUDITED BULLET BY BULLET, AGAINST PRODUCTION
+| §8 requirement | state |
+|---|---|
+| hybrid card not chat · follow-ups as buttons · contextual prompts · no login before value | **met** |
+| *"Parse what the user already said"* | **met** — «ابي مكيف رخيص لغرفه ٤٠ متر» → `room_size_m2: 40`, `clarify: null` |
+| *"Confidence in plain language, or not at all"* | **met** (ADR-163) |
+| *"No recommendation without data"* · *"never a dead end"* | **met** — the advisor sits ABOVE the search results on the unified surface, so there is nothing to hand off *to* |
+| **"Two sentences of reasoning, maximum"** | **was NOT met** — engine returned five, card rendered five |
+| **"Distinguish fact from inference from recommendation"** | **was NOT met** — all five wore one green tick |
+
+The two gaps are one defect seen from two sides, and the founder had already named it: «كثير
+ومشتته». On a live AC card, «متوفر ومُقارَن في 3 متاجر» (**measured**) and «التكلفة الإجمالية
+التقديرية ~6643 ريال» (a **model** — installation and annual electricity are estimated, never
+observed) were the same class of claim to the reader.
+
+## WHAT SHIPPED (ADR-187)
+**The kind is declared where the reason is WRITTEN** — `identity · fit · spec · evidence ·
+estimate · caution` — never inferred downstream by scanning our own prose. The scorers'
+`const reasons: string[]` became a **`ReasonLedger`**, so the **compiler** required all **106**
+call sites across eight scorers to be classified; there is no partially-classified state that
+compiles.
+
+**Which two lead is the ENGINE's decision** (`headline_reasons`), not the view's — the ADR-163
+rule. `identity` and `evidence` are excluded because the title and `TrustSummary` already state
+them: **the corroboration claim was being printed twice on every card.** A `caution` outranks
+anything positive. An estimate renders «تقديري». Everything else is one tap away.
+
+**Live now:**
+```
+>> fit       مناسب لغرفة ~40م² (السعة 30000 وحدة تطابق المطلوب)
+>> spec      إنفرتر — كفاءة أعلى في الكهرباء
+   spec      بارد فقط — مناسب لأغلب أجواء المملكة
+   evidence  سعر موثوق — متوفر ومُقارَن في 2 متاجر        ← the TrustSummary badge, not a bullet
+   estimate  التكلفة الإجمالية التقديرية ~7943 ريال …     ← labelled «تقديري»
+```
+
+## A DEFECT I INTRODUCED, AND WHERE IT HAD TO BE FIXED
+`reason_kinds` and `headline_reasons` are index-aligned with `reasons_ar` — and
+**`guardAdvisorPayload` removes entries from that array.** Withholding one sentence renumbers
+every sentence after it, so the card would have rendered a survivor under the *withheld*
+sentence's kind, or read past the end. Silently, and only on the day the guard first fires —
+which is today never (2,026/2,026 strings pass), i.e. exactly the latent break that ships.
+**Fixed in the guard, because the guard owns the mutation**, with a test for the day it fires.
+
+## THE F7 GATE WAS RED, AND NOT FOR A SAFETY REASON (ADR-188)
+`tps:validator-verify` asserted `/api/ai-assistant` → **404**. The founder enabled the surface, so
+that check had been **failing ever since** — recorded in #42 as "known-stale". **A permanently red
+safety gate is an ignored safety gate**, and it sat next to 30 green lines on the guard that
+governs the only generative surface in the product.
+
+The assertion encoded the wrong property. It now asserts the contract for the **deployed state**:
+closed ⇒ 404; **open ⇒** every answer is published *with* a verdict or reported `suppressed` *by*
+`f7-vocabulary-validator`, **plus a LIVE adversarial probe** — an uncovered category at a retailer
+that does not exist — which must come back carrying **no price**. `GATE: PASS`, first time since
+the surface was enabled.
+
+## QUEUE STATUS
+1. Comparable-and-displayable — **761**; Amazon's 1,250 seed targets untouched (founder: lower priority).
+2. English-vs-Arabic experience gap — **CLOSED** 30% → 8% (#64).
+3. **وفّر advisor — §8's two unmet bullets CLOSED.** §8 is now met in full; see NEXT below.
+4. AI-assistant citation — **NOT STARTED**.
+
+## NEXT, IN ORDER (from the brief's own §6 recommendation, re-checked)
+1. **§7.1 explainable deal score** — ranking is cheapest-first and the brief calls that a bug.
+2. **§9 وكيل توفيري agent separation** — contract + component only; ship nothing the backend lacks.
+3. **§6.1 dynamic proof module** — partly present via verified deals; not qualification-gated.
+4. **§2.1 retailer tiers** — cheap, unblocks an honest public retailer count.
+5. **§11 WCAG 2.2 AA pass** — never systematically done.
+
+## OWED (unchanged from #64)
+- Re-verify the Amazon title fix live (ADR-183) once the throttle clears — fixture-proven only.
+- 55 refused duplicate pairs (ADR-184) — need a second evidence source, not a weaker gate.
+- 59 audio canonicals stay English until `sony world - ksa`-in-brand is fixed (also an Obj-1 lever).
+- 7,155 storefront rows need Arabic-storefront ingestion (ADR-089 URL-vs-SKU hazard). Scoped, not started.
+- ACs filed under `category='accessories'` — worked around, not fixed.
+
+## ROLLBACK
+```
+ee1dab4  ADR-187/188 reason kinds + F7 gate    git revert ee1dab4
+aa43ed6  CHECKPOINT #64 docs                   git revert aa43ed6
+89a50d3  ADR-186 live index owner              git revert 89a50d3
+e7a30c1  ADR-185 Arabic display names          git revert e7a30c1
+```
