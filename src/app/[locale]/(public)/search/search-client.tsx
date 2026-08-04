@@ -8,6 +8,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useAuth } from '@/lib/auth/auth-context';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
+import { initCampaignFromUrl } from '@/lib/analytics/campaign';
 import { ProductCard } from '@/components/products/product-card';
 import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-card';
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
@@ -244,7 +245,7 @@ export default function SearchClient() {
 
   // Keep the in-compare badge in sync with the floating bar / other tabs
   // Persist test/real opt-in (?test=1) so storefront funnel events separate testers from real users.
-  useEffect(() => { initTestModeFromUrl(); }, []);
+  useEffect(() => { initTestModeFromUrl(); initCampaignFromUrl(); }, []);
 
   useEffect(() => {
     const sync = () => {

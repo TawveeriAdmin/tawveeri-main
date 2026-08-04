@@ -23,6 +23,7 @@ import { ProductRatingDisplay } from '@/components/products/product-rating-displ
 import { ProductSpecifications } from '@/components/products/product-specifications';
 import { ComparisonTable } from '@/components/products/comparison-table';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
+import { initCampaignFromUrl } from '@/lib/analytics/campaign';
 import { BestPriceCard } from '@/components/products/best-price-card';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import {
@@ -483,7 +484,7 @@ export default function ProductDetailClient() {
  }, [slug, t]);
 
  // Persist test/real opt-in (?test=1) so storefront funnel events separate testers from real users.
- useEffect(() => { initTestModeFromUrl(); }, []);
+ useEffect(() => { initTestModeFromUrl(); initCampaignFromUrl(); }, []);
 
  // Funnel steps 3-5 on the storefront (render-based, standard for page-level steps):
  //  • product_view — the detail page loaded.

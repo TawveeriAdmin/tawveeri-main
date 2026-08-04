@@ -70,7 +70,8 @@
     "tps:validator-verify": "tsx scripts/tps-analysis/validator-verify.ts",
     "tps:validation-log-health": "tsx scripts/tps-analysis/validation-log-health.ts",
     "tps:noon-sitemap": "tsx scripts/tps-analysis/noon-sitemap-probe.ts",
-    "tps:sitemap-verify": "tsx scripts/tps-analysis/sitemap-verify.ts"
+    "tps:sitemap-verify": "tsx scripts/tps-analysis/sitemap-verify.ts",
+    "tps:social-readiness": "tsx scripts/tps-analysis/social-readiness.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.1",

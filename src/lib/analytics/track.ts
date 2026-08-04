@@ -8,6 +8,7 @@
 // the founder/QA can exercise the loop without polluting real-user validation metrics.
 
 import { getEntryVariant } from "./variant";
+import { getCampaign } from "./campaign";
 
 const SID_KEY = "tw_sid";
 const TEST_KEY = "tw_test";
@@ -75,7 +76,9 @@ export function track(event_type: EventType, props?: Record<string, unknown>): v
   try {
     let variant: string | undefined;
     try { variant = getEntryVariant(); } catch { /* noop */ }
-    const meta = { ...(props?.meta && typeof props.meta === "object" ? (props.meta as Record<string, unknown>) : {}), ...(variant ? { variant } : {}) };
+    let campaign: Record<string, unknown> = {};
+    try { campaign = { ...(getCampaign() ?? {}) }; } catch { /* noop */ }
+    const meta = { ...(props?.meta && typeof props.meta === "object" ? (props.meta as Record<string, unknown>) : {}), ...(variant ? { variant } : {}), ...campaign };
     const payload = JSON.stringify({ event_type, session_id: sessionId(), source: "web", ...props, meta });
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (isTestMode()) headers["x-tw-test"] = "1";

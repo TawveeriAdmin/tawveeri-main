@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { UnifiedHome } from './unified-home';
 import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
+import { initCampaignFromUrl } from '@/lib/analytics/campaign';
 import { getEntryVariant, applyVariantOverrideFromUrl } from '@/lib/analytics/variant';
 
 // The advisor-first vs search-first entry A/B (ADR-121) is superseded by the Founder's explicit
@@ -19,6 +20,7 @@ import { getEntryVariant, applyVariantOverrideFromUrl } from '@/lib/analytics/va
 export function BetaLanding({ locale, deals = [] }: { locale: string; deals?: HomeVerifiedDeal[] }) {
   useEffect(() => {
     initTestModeFromUrl();
+    initCampaignFromUrl();
     applyVariantOverrideFromUrl();
     track('landing_view', { source: 'landing', category: null, meta: { variant: getEntryVariant() } });
   }, []);

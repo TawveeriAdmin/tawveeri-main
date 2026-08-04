@@ -857,3 +857,39 @@ Content without evidence is liability.
 Qualified demand is the beginning of the business.
 
 **نهاية الوثيقة المعتمدة**
+
+---
+
+## AMENDMENT 1 — 2026-08-04 · live-researched confirmation, execution start (Controlled Demand Validation, Wave 1)
+
+Per this document's own §27-31 (research against the world before executing as a checklist),
+the execution session that opened this phase ran live research before building. Findings,
+each cited, each changing or confirming a specific decision below — nothing here touches the
+Master Book, Vocabulary, or Protected Trust Policies, which have their own amendment rules:
+
+1. **X's automation restriction is now enforced at the API level, not just policy** — a
+   2026-02-23 restriction blocks automated replies unless the original author mentions/quotes
+   first; a March 2026 enforcement wave suspended accounts still running keyword-triggered
+   reply bots. **Confirms §18.4 as-is** (human drafts, human sends) — now also technically
+   required, not just good practice. Source: [X API blocks automated spam replies](https://piunikaweb.com/2026/02/24/x-api-blocks-automated-spam-replies/).
+2. **Instagram is now Saudi Arabia's single largest platform by reach** (~76.8%/~27.9M users,
+   2026), ahead of X (~24.9M) and TikTok (~24.5M) — Saudis average ~3hrs/day on social, among
+   the highest globally. This does not overturn "X is where purchase-intent conversation
+   happens" (a claim about conversation type, not raw reach), but §5's framing of Instagram as
+   strictly a downstream "trust/reuse" tier should be read as **provisional** — its audience
+   is now the largest of the three, and proof-format content (not just Reels reusing TikTok
+   assets) is worth testing there once Wave 1 has a result to compare against. **No channel
+   reprioritization yet** — this is a note to revisit after Wave 1 data, not a change to
+   execute now. Source: [Saudi Arabia Social Media Statistics 2026](https://www.theglobalstatistics.com/saudi-arabia-social-media-users/).
+3. **The evidence-led/radical-transparency positioning is independently validated as a 2026
+   market trend**, not just an internal bet — 2026 industry commentary treats transparency as
+   the primary brand differentiator in a commoditized, AI-content-saturated market (Everlane's
+   "true cost" disclosure remains the reference case). **Confirms the honesty-as-close
+   positioning (§3/Playbook) as-is**, no change. Source: [Radical Transparency in Promotions](https://www.optimove.com/resources/blog/radical-transparency-in-promotions).
+4. TikTok Shop is live and growing fast in Saudi Arabia (Live Shopping +300% in 2026), but it
+   is a seller/storefront feature, irrelevant to a discovery-content account linking out to
+   our own site. **No change** — confirms §5.1 (no API/commerce integration before content is
+   proven).
+
+**Net effect of this research pass: the plan is confirmed as designed. One thing to watch
+after Wave 1 (Instagram's growing weight), nothing urgent enough to change before Wave 1 ships.**

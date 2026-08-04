@@ -6,6 +6,68 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-207 — Controlled Demand Validation, Wave 1: readiness instrument, UTM capture, Social Fact Pack tooling · Accepted (2026-08-04)
+
+**Context.** The founder's execution order for `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md`
+Phase 0 (Parallel Readiness) required, before any content is built: evidenced readiness gates,
+a production-derived Social Fact Pack, the Claims/Content Ledgers, a Launch Pack, and a check
+on whether social source/campaign/content is attributable through the journey.
+
+**Decision — three durable instruments shipped, read-only unless noted:**
+1. `scripts/tps-analysis/social-readiness.ts` (`npm run tps:social-readiness`) — the 8-gate
+   readiness check, writes `docs/SOCIAL-READINESS.md`. Measured 2026-08-04: 5,461 customer-
+   visible products, 961 comparable (≥2 retailers), 241 deep (≥3), 18.1% comparison rate,
+   median 2 retailers; AR/EN mobile journey 6/6 pass at 390×844 (`ui-journey.js`); real-traffic
+   30-day funnel search 447→results 178→product 3→comparison 23→outbound 43; Amazon/Noon
+   affiliate tags verified live via fresh `/go` redirects this session (not cited from the
+   stale ADR-181 record). **Gate 7 (social attribution) failed on this run** — see decision 2.
+2. `src/lib/analytics/campaign.ts` (new) + edits to `src/lib/analytics/track.ts`,
+   `beta-landing.tsx`, `product-detail-client.tsx`, `search-client.tsx` — closes gate 7.
+   Captures `utm_source/medium/campaign/content` from the landing URL into `sessionStorage`
+   (same lifetime/scope pattern as the existing test-mode flag) and merges it into every
+   `track()` call's `meta`, so `landing_view` through `go_click` in `usage_events` now carry
+   campaign attribution the moment a tagged link exists. No schema migration (`meta` is
+   jsonb). **Deliberately not done:** wiring `outbound_clicks.session_id` (column exists,
+   unused) — the client-side `go_click` event already carries session_id + campaign at click
+   time, and the alternative would touch the `/go` route, a Protected Trust Policy T5/F5
+   surface, for a marginal join. Revisit only if a real campaign needs exact revenue-side join.
+3. `scripts/tps-analysis/build-social-fact-pack.ts` (`marketing/SOCIAL_FACT_PACK_<date>.md`) —
+   pulls one candidate per category (deepest comparison first) from `tps_product_projection`,
+   joined to a **DISTINCT ON per store** query against `price_history` (not `ORDER BY ...
+   LIMIT N` — a store re-observed far more often than others fills an N-row window and pushes
+   a slower store's still-current row out of range; measured live on this run: the vacuum
+   candidate's 4th retailer disappeared entirely under `LIMIT 20`). Lowest/highest/saving are
+   **recomputed from the live per-store rows**, not read from the projection's cached fields,
+   which can drift between chain ticks (measured: cached highest 489 vs a live 579 SAR row for
+   the same candidate). Risk classification is keyed to the **headline (cheapest) offer's
+   freshness**, not the staleness of the priciest listed retailer — flagging the wrong offer's
+   age as the risk previously marked every multi-retailer candidate MEDIUM even when the actual
+   citable claim was hours old.
+
+**Live drift caught by design, not by luck.** The discount-integrity figure cached in
+`docs/LAUNCH_VOCABULARY.md`/`docs/LAUNCH_MARKETING_PLAYBOOK.md` (70%, itself a successor to
+87.7%→72%→71%) was already stale: a fresh `curl /api/v1/tps/discount-integrity` this session
+returned **60%** (9,003/15,010 checkable listings, measured 2026-08-04T09:38:13Z). This is the
+exact scenario the "never carry forward a cached number" rule exists for; `marketing/CLAIMS_LEDGER.md`
+and `marketing/LAUNCH_PACK_wave1.md` were corrected to 60% with the fresh timestamp before
+being marked ready for founder review — neither file is published.
+
+**Consequences.** `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md` gained an in-file Amendment 1 (own
+amendment path, not this ADR) recording live platform research (X's Feb/Mar 2026 automation
+API restriction confirms §18.4 as-is; Instagram's reach overtaking X/TikTok in Saudi Arabia is
+noted as a post-Wave-1 watch item, no reprioritization yet; TikTok Shop confirmed irrelevant
+pre-content-proof). `marketing/` now holds the full working set (Fact Pack, Claims Ledger,
+Content Ledger, UTM Convention, Response Policy, X Listening Lexicon, Launch Pack) — all
+`status: DRAFT` / `approval_state: PENDING_FOUNDER_APPROVAL`. Nothing published; no account
+created; no spend committed.
+
+**Rollback.** `git revert` this commit removes the two script files, `campaign.ts`, and the
+four small call-site edits (each a two-line addition, `initCampaignFromUrl()` alongside the
+existing `initTestModeFromUrl()`); delete `marketing/` and `docs/SOCIAL-READINESS.md` to fully
+undo. No data-layer changes; no migration to reverse.
+
+---
+
 ### ADR-206 — The Arabic mobile filter doorway gets its word back: visible «الفلاتر» label at every width · Accepted (2026-08-04)
 
 **Context.** Founder-verified observation (4 Aug 2026, Arabic mobile search journey): the

@@ -1,3 +1,87 @@
+# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #46 · CONTROLLED DEMAND VALIDATION WAVE 1 · READINESS PROVEN, UNPUBLISHED PACK BUILT, FOUNDER ACTION NEEDED TO SHIP ═══
+
+## PHASE — Controlled Demand Validation, Phase 0 (Parallel Readiness) → Wave 1 pack built, nothing published
+
+This is the execution prompt CHECKPOINT #45 named as "not yet issued." It has now run. See
+ADR-207 (docs/DECISIONS.md) for the full technical decision record — this entry is the resume
+point.
+
+### What's proven (evidence + query + timestamp, see docs/SOCIAL-READINESS.md)
+- 5,461 customer-visible products; **961 comparable (≥2 approved retailers), 241 deep (≥3)**
+  — `comparable-count.sql`, this session's run.
+- 18.1% comparison rate, median 2 retailers per comparable product.
+- AR/EN mobile journey (search→card→compare→outbound), 390×844: **6/6 pass** (iphone, مكيف
+  سبليت, macbook) — `node scripts/tps-analysis/ui-journey.js`.
+- Real-traffic 30-day funnel: search 447→results 178→product 3→comparison 23→outbound 43 (25
+  real sessions — pre-launch scale, consistent with "no real users yet").
+- **Affiliate attribution verified live, fresh, this session** (not cited from stale ADR-181):
+  `curl -I /go/<amazon-offer>` → `tag=tawveeri-21&ascsubtag=...`; `/go/<noon-offer>` →
+  `utm_source=C1000094L&utm_medium=referral&utm_content=...`. Both correct.
+- **The one real gap found and closed:** no UTM/campaign capture existed anywhere before this
+  session. Built `src/lib/analytics/campaign.ts` + 4 small call-site edits — closes the loop
+  from a social click through to `usage_events.go_click`, no schema migration. Deliberately did
+  NOT touch `outbound_clicks`/the `/go` route (T5/F5 surface) — see ADR-207 for why that's the
+  right stopping point.
+
+### What's built (all UNPUBLISHED — `marketing/` is new, nothing committed to any platform)
+- `marketing/SOCIAL_FACT_PACK_2026-08-04.md` — 12 candidates, one per category, live prices,
+  real per-store timestamps, comparison URLs (spot-checked 4, all HTTP 200), risk-classified by
+  the headline offer's freshness. **Expires 2026-08-06T09:28Z — re-run
+  `npx tsx scripts/tps-analysis/build-social-fact-pack.ts` before using past that window.**
+- `marketing/CLAIMS_LEDGER.md` — 8 claims, schema per Growth System §12, every one
+  `approval_state: PENDING_FOUNDER_APPROVAL`.
+- `marketing/CONTENT_LEDGER.csv` — 17 content items (5 video + 10 X + 2 carousel), schema per
+  §13, every row `status: DRAFT`.
+- `marketing/UTM_CONVENTION.md`, `marketing/RESPONSE_POLICY.md`, `marketing/X_LISTENING_LEXICON.md`
+  — operating references, no execution yet (no account exists to listen or reply from).
+- `marketing/LAUNCH_PACK_wave1.md` — the actual 5 TikTok scripts, 10 X posts, 2 IG carousels,
+  each with hypothesis/hook/claim_id/CTA/risk class/stop-continue threshold, voice per
+  `docs/LAUNCH_MARKETING_PLAYBOOK.md` §2/§3/§4/§6 (reused directly, not reinvented).
+- **Live drift caught mid-build:** the cached 70% discount-integrity figure in
+  LAUNCH_VOCABULARY/Playbook was stale — a fresh curl this session returned **60%**
+  (2026-08-04T09:38:13Z). Corrected in the Claims Ledger and Launch Pack before either was
+  marked ready. This is the "never carry forward a cached number" rule catching a real case,
+  not a hypothetical one.
+- `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md` gained **Amendment 1** (its own amendment path) from
+  live platform research: X's automation API restriction (Feb/Mar 2026) confirms §18.4 as-is
+  and is now technically enforced, not just policy; Instagram now leads Saudi reach — flagged
+  as a post-Wave-1 watch item, no reprioritization yet; TikTok Shop confirmed irrelevant
+  pre-content-proof. Master Book, Vocabulary, Protected Trust Policies — untouched (own
+  approval rules apply, correctly not touched by this session).
+
+### BLOCKED — exact unblocking action for each
+1. **No social account exists on any platform.** Unblocks on: founder creates TikTok/X/
+   Instagram accounts (credentials/OAuth — explicitly reserved to the founder).
+2. **No claim in the Claims Ledger is `APPROVED`.** Unblocks on: founder reviews
+   `marketing/CLAIMS_LEDGER.md` claim-by-claim and flips `approval_state`.
+3. **No content is scheduled.** Unblocks on: (1) + (2), then re-run the Fact Pack if >48h have
+   passed, then schedule per `marketing/LAUNCH_PACK_wave1.md`'s pre-publish checklist.
+4. **X listening hasn't started.** Unblocks on: (1) — `marketing/X_LISTENING_LEXICON.md` is
+   ready to use the moment an account exists.
+5. **Snapchat identity reservation** — not done this session (Growth System says reserve now,
+   manual-only later); needs (1) first regardless.
+
+### Rollback (this session, newest first — independent of engineering-track rollbacks above)
+```
+(this commit)   ADR-207 + marketing/ + campaign capture + readiness/fact-pack scripts
+                git revert <this commit hash>
+                Full manual undo: delete marketing/, docs/SOCIAL-READINESS.md,
+                scripts/tps-analysis/social-readiness.ts,
+                scripts/tps-analysis/build-social-fact-pack.ts, src/lib/analytics/campaign.ts;
+                revert the 4 one-line call-site edits (initCampaignFromUrl) and the
+                track.ts meta-merge line. No data-layer changes, no migration to reverse.
+```
+
+### Next unit
+Nothing engineering-side is required to ship Wave 1 — the pack is content-complete and the
+journey is proven. The next unit is the founder's: approve claims, create accounts, schedule.
+If more engineering runway opens first: (a) re-verify freshness on any MEDIUM-risk Fact Pack
+candidate before using it (mobile/AC/washing-machine/refrigerator/dishwasher/monitor/printer/
+vacuum all need a same-day reobserve before their headline price is cited — see Fact Pack per-
+candidate risk lines); (b) the U2b weekly check and Master Book §2.1/§9/§11 queue from
+CHECKPOINT #45 remain open and unrelated to this track.
+
+---
 # ═══ RESUME HERE — 2026-08-04 CHECKPOINT #45 · DOCUMENTATION CHECKPOINT CLOSED · PHASE TRANSITION RECORDED · SESSION CLOSED ═══
 
 ## PHASE TRANSITION — Master Book engineering execution → Controlled Demand Validation (social-growth execution)
