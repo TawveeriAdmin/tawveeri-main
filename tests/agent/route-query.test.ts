@@ -117,3 +117,24 @@ describe('namesASpecificModel', () => {
     expect(namesASpecificModel('مكيف هادئ وموفر')).toBe(false);
   });
 });
+
+// Regression (2026-08-04, docs/baselines/2026-08-04-ac-basket-query): the exact failing
+// production query routed to RETRIEVAL because the budget parser missed «بميزانيتي … ريال»,
+// so the advisor was silently never called (Waffar state: not-routed) while the identical
+// English sentence routed to advisory. The route must be language-independent.
+describe('routeQuery — basket query reaches the advisor in BOTH languages', () => {
+  it('«ابي 3 مكيفات بميزانيتي 5000 ريال» → advisory on the budget signal', () => {
+    const route = routeQuery('ابي 3 مكيفات بميزانيتي 5000 ريال');
+    expect(route.mode).toBe('advisory');
+    if (route.mode === 'advisory') {
+      expect(route.task.category).toBe('air_conditioner');
+      expect(route.task.budget_total).toBe(5000);
+      expect(route.task.quantity).toBe(3);
+      expect(route.reason).toMatch(/budget/);
+    }
+  });
+  it('the English equivalent routes the same way', () => {
+    const route = routeQuery('I want 3 air conditioners with a budget of 5000 SAR');
+    expect(route.mode).toBe('advisory');
+  });
+});

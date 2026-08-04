@@ -32,7 +32,9 @@ const norm = (t: string) => asciiDigits((t || "").toLowerCase()).replace(/٬/g, 
 
 function parseCategory(x: string): string | null {
   if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
-  if (/تلفزيون|تليفزيون|شاشة|television|\btv\b|smart tv/.test(x)) return "tv";
+  // Plural/ه-spelling stems (measured 2026-08-04): «شاشات», «ثلاجات», «غسالات» classified
+  // as NO category, so plural browse queries lost routing while their singulars worked.
+  if (/تلفزيون|تليفزيون|شاش[ةه]|شاشات|television|\btv\b|smart tv/.test(x)) return "tv";
   if (/تابلت|ايباد|آيباد|ipad|tablet|جالكسي تاب|galaxy tab|matepad/.test(x)) return "tablet";
   if (/لابتوب|لاب توب|laptop|notebook|macbook/.test(x)) return "laptop";
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
@@ -40,7 +42,7 @@ function parseCategory(x: string): string | null {
   if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s/.test(x)) return "mobile";
   // Appliances — ORDER MATTERS: dishwasher (غسالة صحون) before washing_machine (غسالة);
   // air_fryer (قلاية) and coffee_maker (specific) before generic checks.
-  if (/غسالة صحون|غسالة أطباق|غساله صحون|dishwasher|dish washer/.test(x)) return "dishwasher";
+  if (/غسال[ةه] صحون|غسالات صحون|غسالة أطباق|dishwasher|dish washer/.test(x)) return "dishwasher";
   if (/مايكرويف|ميكروويف|ميكرويف|microwave/.test(x)) return "microwave";
   if (/قلاية هوائية|قلايه هوائية|air ?fryer|قلاية بدون زيت/.test(x)) return "air_fryer";
   if (/منقي هواء|منقّي هواء|air purifier|air cleaner/.test(x)) return "air_purifier";
@@ -50,8 +52,8 @@ function parseCategory(x: string): string | null {
   if (/محمصة|محمصه|toaster/.test(x)) return "toaster";
   if (/خلاط|blender/.test(x)) return "blender";
   if (/فرن كهربائي|فرن غاز|فرن مدمج|built-?in oven|electric oven|gas oven/.test(x)) return "oven";
-  if (/ثلاجة|refrigerator|fridge|freezer/.test(x)) return "refrigerator";
-  if (/غسالة|washing machine|washer|نشافة|dryer/.test(x)) return "washing_machine";
+  if (/ثلاج|refrigerator|fridge|freezer/.test(x)) return "refrigerator";
+  if (/غسال|washing machine|washer|نشاف|dryer/.test(x)) return "washing_machine";
   return null;
 }
 
@@ -70,10 +72,39 @@ function parseRoomSize(x: string): number | undefined {
 }
 
 function parseBudget(x: string): number | null | undefined {
-  // "تحت 4000", "ميزانية 4000", "under 4000", "budget 4000", "4000 ريال"
-  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|في حدود|under|below|budget|max)\s*([\d,]{3,7})/) ||
-            x.match(/([\d,]{3,7})\s*(?:ريال|sar|sr)\b/);
+  // "تحت 4000", "ميزانية 4000", "بميزانيتي 5000", "under 4000", "budget 4000", "4000 ريال"
+  //
+  // MEASURED FAILURE (baseline 2026-08-04, «ابي 3 مكيفات بميزانيتي 5000 ريال»): the
+  // attached-morpheme form «بميزانيتي» (بـ + ميزانية + ـي) matched neither branch, AND the
+  // fallback ended in `\b` after «ريال` — JS `\b` never matches beside Arabic letters (the
+  // same trap as CHECKPOINT #17's digit failures), so «5000 ريال» parsed as no budget. The
+  // budget was silently dropped, no need signal fired, and the advisor was never routed —
+  // while the identical English sentence parsed fine. `\b` stays only after Latin tokens,
+  // where it is valid.
+  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|under|below|budget|max)\s*([\d,]{3,7})/) ||
+            x.match(/([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)/);
   if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
+  return undefined;
+}
+
+/**
+ * Quantity: a small count directly before the category noun («ابي 3 مكيفات»,
+ * "3 air conditioners"). Deliberately narrow — a number is a quantity ONLY when the very
+ * next word(s) classify as the query's own category, so «مكيف 24000» (BTU), «شاشة 65»
+ * (inches) and «تحت 4000» (budget) can never be misread as counts. Range 2–20: a count of
+ * one is the default and huge counts are far more likely to be model numbers.
+ * (Measured absence 2026-08-04: «3 مكيفات» had no field to land in and was silently lost.)
+ */
+function parseQuantity(x: string, category: string | null): number | undefined {
+  if (!category) return undefined;
+  const words = x.split(/\s+/);
+  for (let i = 0; i < words.length - 1; i++) {
+    if (!/^\d{1,2}$/.test(words[i])) continue;
+    const n = Number(words[i]);
+    if (n < 2 || n > 20) continue;
+    // Two-word window: English category nouns are phrases ("air conditioners").
+    if (parseCategory(words.slice(i + 1, i + 3).join(" ")) === category) return n;
+  }
   return undefined;
 }
 
@@ -129,6 +160,7 @@ export function parseShoppingTask(text: string): ParsedTask {
   const category = parseCategory(x);
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
+  const quantity = parseQuantity(x, category);
   const priorities = parsePriorities(x);
   const connectivity = parseConnectivity(x);
   const city = parseCity(x);
@@ -142,6 +174,7 @@ export function parseShoppingTask(text: string): ParsedTask {
     category: category ?? "",
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
+    quantity,
     parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,
   };
   // Tablet-specific structured fields.

@@ -4,6 +4,7 @@ import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/l
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
+import { buildBasketSummary } from "@/lib/agent/basket";
 import { shouldAsk } from "@/lib/agent/clarify";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
 import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-lookup";
@@ -48,6 +49,13 @@ export async function POST(req: NextRequest) {
   if (!task.category) {
     return NextResponse.json({ error: "category required (or provide `text` the parser can classify)", parsed }, { status: 400 });
   }
+  // Multi-unit honesty (basket, 2026-08-04): the engine prices ONE unit, so a request for
+  // N units with a TOTAL budget must reason against the per-unit ceiling (total ÷ N) —
+  // otherwise «ضمن ميزانيتك» would bless a single device that consumes the whole basket
+  // budget. The acknowledgement (quantity · total · per-unit · unknowns) is returned as
+  // `basket` and rendered by the answer surface; the ranking itself stays single-unit.
+  const basket = buildBasketSummary(task.quantity, task.budget_total ?? null, task.category);
+  const engineTask = basket?.per_unit_ceiling ? { ...task, budget_total: basket.per_unit_ceiling } : task;
   const supabase = createServerClient();
   // TPS tables aren't in the generated typed schema; the codebase accesses them via an
   // untyped handle (see store-identity.ts). Row shapes are asserted at the call sites.
@@ -84,7 +92,7 @@ export async function POST(req: NextRequest) {
       } as CanonicalRow;
     });
 
-  const { supported, recommendations } = decide(task, rows);
+  const { supported, recommendations } = decide(engineTask, rows);
 
   // P2-8 · "Ambiguous requests may ask ONE clarification question" — and the Constitution's
   // condition on it: *every clarification question must change the recommendation; questions
@@ -92,10 +100,10 @@ export async function POST(req: NextRequest) {
   // engine and the same candidate rows that produced the answer above, so a question can only
   // reach a customer when the engine has demonstrated it matters. Enforcing it at review time
   // is enforcing it nowhere.
-  const clarify = shouldAsk(task, rows);
+  const clarify = shouldAsk(engineTask, rows);
 
   if (!rows.length) {
-    return NextResponse.json({ version: "v1", task, supported, count: 0, recommendations: [],
+    return NextResponse.json({ version: "v1", task, supported, count: 0, recommendations: [], basket,
       note: "no canonical products with offers for this category yet" });
   }
   const recs = recommendations.slice(0, Math.min(10, Number(new URL(req.url).searchParams.get("limit")) || 6));
@@ -212,7 +220,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    version: "v1", task, parsed: parsed ?? undefined, supported,
+    version: "v1", task, parsed: parsed ?? undefined, supported, basket,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
     count: out.length, smart_pick: guarded.payload.smart_pick, recommendations: guarded.payload.recommendations, evidence,
     // Present ONLY when the engine proved the answer would change it.  still

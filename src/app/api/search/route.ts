@@ -10,6 +10,7 @@ import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
 import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { detectCompareIntent } from '@/lib/agent/compare-intent';
+import { parseShoppingTask } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
 
@@ -111,6 +112,17 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'هاتف': ['phone', 'smartphone', 'mobile'],
   'ايفون': ['iphone', 'apple'],
   'سامسونج': ['samsung'],
+  // PLURAL FORMS (measured 2026-08-04, docs/baselines/2026-08-04-ac-basket-query): the six
+  // matrix pairs showed plurals with no expansion entry form a relevance group of the bare
+  // plural string, which almost no product title contains — «شاشات» collapsed 48 → 1
+  // result, «جوالات» returned mixed junk. Each plural carries its English expansion AND its
+  // Arabic SINGULAR, because catalogue titles are written in the singular.
+  'جوالات': ['phone', 'smartphone', 'mobile', 'جوال'],
+  'هواتف': ['phone', 'smartphone', 'mobile', 'هاتف'],
+  'شاشات': ['tv', 'monitor', 'screen', 'display', 'شاشة'],
+  'ثلاجات': ['refrigerator', 'fridge', 'ثلاجة'],
+  'غسالات': ['washing machine', 'washer', 'غسالة'],
+  'لابتوبات': ['laptop', 'notebook', 'لابتوب'],
   'لابتوب': ['laptop', 'notebook'],
   'حاسوب': ['laptop', 'computer'],
   'كمبيوتر': ['computer', 'laptop', 'desktop'],
@@ -119,7 +131,7 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'سماعات': ['headphones', 'earbuds', 'audio'],
   'سماعة': ['headphone', 'earbuds', 'speaker'],
   'مكيف': ['split ac', 'air conditioner', 'ac'],
-  'مكيفات': ['split ac', 'air conditioner', 'ac'],
+  'مكيفات': ['split ac', 'air conditioner', 'ac', 'مكيف'],
   'سبليت': ['split'],
   'شباك': ['window'],
   'ثلاجة': ['refrigerator', 'fridge'],
@@ -215,7 +227,7 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   'مكيف', 'مكيفات', 'سبليت',
   'لابتوب', 'حاسوب', 'كمبيوتر',
   'تلفزيون', 'شاشه', 'شاشات',
-  'ثلاجه', 'فريزر', 'غساله', 'نشافه', 'مكنسه',
+  'ثلاجه', 'ثلاجات', 'فريزر', 'غساله', 'غسالات', 'نشافه', 'مكنسه', 'لابتوبات',
   'مايكروويف', 'ميكروويف', 'فرن', 'طابعه', 'راوتر', 'كاميرا', 'ساعه', 'تابلت',
   'ايباد', 'واتش', 'تاب', 'جالكسي',
   'سماعه', 'سماعات',
@@ -330,12 +342,25 @@ function hasACSignal(nameAr: string, nameEn: string): boolean {
   return arHit || enHit;
 }
 
+// Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
+// normalizeArabic'd words). MEASURED 2026-08-04 («ابي 3 مكيفات بميزانيتي 5000 ريال»):
+// «بميزانيتي» and «ريال» each formed a REQUIRED relevance word-group no product title can
+// contain, so the gate found zero survivors and disabled itself — unrelated categories then
+// shipped as confident results. Constraint language is not product language; it must never
+// enter retrieval or relevance. Kept as its own set so the Algolia query string can strip
+// exactly these without touching how ordinary stopwords behave.
+const BUDGET_WRAPPER = new Set<string>([
+  'ريال', 'ريالا', 'ريالات', 'بميزانيه', 'بميزانيتي', 'ميزانيه', 'ميزانيتي', 'الميزانيه',
+  'sar', 'riyal', 'riyals', 'budget',
+]);
+
 const STOPWORDS = new Set<string>([
   'افضل', 'احسن', 'ارخص', 'اغلى', 'رخيص', 'غالي', 'الافضل', 'الارخص',
   'جديد', 'الجديد', 'قديم', 'عرض', 'عروض', 'سعر', 'اسعار', 'الاسعار',
   'بكم', 'كم', 'في', 'من', 'على', 'مع', 'الى', 'او', 'و', 'ابي', 'ابغى', 'اريد', 'ودي',
   'best', 'cheapest', 'cheap', 'price', 'prices', 'new', 'offer', 'offers', 'deal', 'deals',
   'the', 'a', 'an', 'in', 'of', 'for', 'with', 'and', 'or', 'want',
+  ...BUDGET_WRAPPER,
 ]);
 
 function expandWordTerms(word: string): string[] {
@@ -917,6 +942,21 @@ export async function POST(request: NextRequest) {
     : compareIntent.kind === 'pair' ? compareIntent.subjects.join(' ')
     : typedQuery;
   const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
+  // Structured constraints, parsed ONCE by the same deterministic parser the advisor uses.
+  // A budget or quantity NUMBER is a constraint VALUE, not a product token: «5000» in
+  // «بميزانيتي 5000 ريال» must not retrieve products whose titles contain 5000, and «3»
+  // must not rank. (Measured 2026-08-04 — these tokens flooded retrieval with unrelated
+  // categories while the stated category sat unenforced; see the baseline directory.)
+  const constraintTask = rawQuery ? parseShoppingTask(rawQuery) : null;
+  const constraintNumbers = new Set<string>(
+    [constraintTask?.budget_total, constraintTask?.quantity]
+      .filter((n): n is number => typeof n === 'number')
+      .map(String),
+  );
+  // Need-shaped = an explicit category PLUS at least one parsed constraint. Only this
+  // shape gets the strict category gate below — model queries keep today's fallback.
+  const needShapedWithCategory = !!constraintTask?.category &&
+    (constraintNumbers.size > 0 || typeof constraintTask?.room_size_m2 === 'number');
   const supabase = createServerClient();
 
   // `slug` is REQUIRED here: the card links to /products/<product_slug>, and the product page
@@ -964,7 +1004,7 @@ export async function POST(request: NextRequest) {
       // Inject the Arabic→English expansion so Algolia (primary path) surfaces the many
       // English-named appliances (292 refrigerators, 246 washers…) for Arabic queries like ثلاجة/غسالة.
       // The expansion tokens are OPTIONAL words: a record matching any one (e.g. "refrigerator") returns.
-      const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !STOPWORDS.has(w));
+      const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !constraintNumbers.has(w));
       const englishExp = [...new Set(aqWords.flatMap((w) => lookupArToEn(w) || []).flatMap((m) => m.split(/\s+/)).filter((t) => t.length >= 2))];
       // Use the NORMALIZED (ة→ه folded) query so every query token matches an optionalWords entry —
       // otherwise the unfolded "ثلاجة" is treated as REQUIRED, matches nothing, and returns 0/junk
@@ -987,7 +1027,14 @@ export async function POST(request: NextRequest) {
         ? [...new Set(normalizeArabic(arVariant).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !aqWords.includes(w)))]
         : [];
       const expansions = [...englishExp, ...arabicExp];
-      const algoliaQuery = expansions.length ? `${normalizeArabic(rawQuery)} ${expansions.join(' ')}` : rawQuery;
+      // The SUBJECT of the request, not the sentence wrapping it (same rule as compare
+      // intent above): budget-wrapper words and constraint numbers are stripped from the
+      // engine query so they can never act as matching terms. Ordinary queries carry no
+      // such tokens and are byte-identical to before.
+      const subjectWords = normalizeArabic(rawQuery).split(/\s+/)
+        .filter((w) => w && !BUDGET_WRAPPER.has(w) && !constraintNumbers.has(w));
+      const subject = subjectWords.length ? subjectWords.join(' ') : normalizeArabic(rawQuery);
+      const algoliaQuery = expansions.length ? `${subject} ${expansions.join(' ')}` : subject;
       const algoliaRes = await searchAlgolia({
         query: algoliaQuery,
         optionalWords: expansions.length ? [...aqWords, ...expansions] : undefined,
@@ -1018,7 +1065,7 @@ export async function POST(request: NextRequest) {
   if (rawQuery && !algoliaProducts) {
     const normalized = normalizeArabic(rawQuery);
     const allWords = normalized.split(/\s+/).filter(Boolean);
-    const meaningful = allWords.filter((w) => !STOPWORDS.has(w));
+    const meaningful = allWords.filter((w) => !STOPWORDS.has(w) && !constraintNumbers.has(w));
     const words = meaningful.length > 0 ? meaningful : allWords;
     // The Arabic equivalent must widen the CANDIDATE POOL too, not only the post-filter: if
     // Arabic-titled products never enter the pool, no amount of matching afterwards can surface
@@ -1079,7 +1126,7 @@ export async function POST(request: NextRequest) {
   if (rawQuery && tpsCategories) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
-    const mw = aw.filter((w) => !STOPWORDS.has(w));
+    const mw = aw.filter((w) => !STOPWORDS.has(w) && !constraintNumbers.has(w));
     const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategories);
     if (tpsProducts.length) {
       products = [...tpsProducts, ...products];
@@ -1110,7 +1157,8 @@ export async function POST(request: NextRequest) {
   // it can be written in, so Arabic and Latin catalogue names stay reachable from either
   // language. This is the same class of bug as the ة/ى folding one above.
   const relevanceGroups: string[][] = queryIsMainProduct
-    ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean).filter((w) => !STOPWORDS.has(w))
+    ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean)
+        .filter((w) => !STOPWORDS.has(w) && !constraintNumbers.has(w))
         .map((w) => expandWordTerms(w).filter((t) => t.length >= 2))
         .filter((g) => g.length > 0 && !g.every((t) => GENERIC.has(t)))
     : [];
@@ -1119,6 +1167,7 @@ export async function POST(request: NextRequest) {
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
   // 16000 BTU". Only applies when it leaves results (never wipes the page).
+  let categoryEnforcedZero = false;
   if (rawQuery && queryIsMainProduct) {
     const wordGroups = relevanceGroups;
     if (wordGroups.length) {
@@ -1127,6 +1176,15 @@ export async function POST(request: NextRequest) {
         return wordGroups.every((group) => group.some((t) => hay.includes(t)));
       });
       if (gated.length > 0) products = gated;
+      else if (needShapedWithCategory) {
+        // Master Book category enforcement (measured 2026-08-04): a need-shaped query with
+        // an EXPLICIT category («ابي 3 مكيفات بميزانيتي 5000 ريال») must never fall back to
+        // unrelated products. Fewer or zero relevant results beat confident wrong ones.
+        // Model queries (no parsed category constraint shape) keep the soft fallback.
+        products = [];
+        categoryEnforcedZero = true;
+        console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — category "${constraintTask?.category}" matched nothing; returning honest zero instead of unrelated results`);
+      }
     }
   }
 
@@ -1176,11 +1234,15 @@ export async function POST(request: NextRequest) {
     decisionCard: DecisionLayer['decisionCard'];
     topMatches: DecisionTopMatch[];
     relaxed: boolean;
+    categoryEnforcedZero: boolean;
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
     total,
     relaxed:           relaxedResults,
+    // Observability for the honest-zero path (never silent): true when an explicit-category
+    // need query matched nothing and unrelated results were withheld rather than shown.
+    categoryEnforcedZero,
     page:              currentPage,
     pageSize:          currentPageSize,
     query:             typedQuery,

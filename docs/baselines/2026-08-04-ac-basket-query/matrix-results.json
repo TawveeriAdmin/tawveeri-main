@@ -1,0 +1,2749 @@
+{
+  "captured_at": "2026-08-04T06:11:09.512Z",
+  "engine": "production tawveeri.com + local layer replication @88419ac",
+  "rows": [
+    {
+      "id": "ac·isolated·sg",
+      "query": "مكيف",
+      "normalized": "مكيف",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "مكيف split ac air conditioner",
+        "optionalWords": [
+          "مكيف",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "مكيف",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 506,
+        "top100Distribution": {
+          "other": 62,
+          "tv_monitor": 15,
+          "air_conditioner": 11,
+          "microwave": 3,
+          "dishwasher": 3,
+          "mobile": 3,
+          "tablet": 2,
+          "washing_machine": 1
+        }
+      },
+      "afterRanking": {
+        "total": 496,
+        "distribution": {
+          "air_conditioner": 47,
+          "other": 1
+        },
+        "top5": [
+          "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد",
+          "مكيف شباك تي سي إل، 18000 وحدة، بارد فقط",
+          "مكيف وايت وستنجهاوس شباك 21800 وحدة بارد WWA25k22R",
+          "مكيف وايت وستنجهاوس شباك حار بادر 17800 WWA20K22HR",
+          "مكيف جري فريون ابيض متنقل 16000وحدة حار بارد GPH16AL-D3"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "almanea": 24,
+          "najm": 2,
+          "extra": 22,
+          "noon": 3,
+          "اكسترا": 6,
+          "المنيع": 2,
+          "amazon": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "ac·isolated·pl",
+      "query": "مكيفات",
+      "normalized": "مكيفات",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "مكيفات split ac air conditioner",
+        "optionalWords": [
+          "مكيفات",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "مكيفات",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 506,
+        "top100Distribution": {
+          "other": 62,
+          "tv_monitor": 15,
+          "air_conditioner": 11,
+          "microwave": 3,
+          "dishwasher": 3,
+          "mobile": 3,
+          "tablet": 2,
+          "washing_machine": 1
+        }
+      },
+      "afterRanking": {
+        "total": 484,
+        "distribution": {
+          "air_conditioner": 47,
+          "other": 1
+        },
+        "top5": [
+          "مكيف شباك جري، 18000 وحدة، انفرتر، بارد فقط",
+          "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد",
+          "مكيف شباك تي سي إل، 18000 وحدة، بارد فقط",
+          "مكيف وايت وستنجهاوس شباك 21800 وحدة بارد WWA25k22R",
+          "مكيف وايت وستنجهاوس شباك حار بادر 17800 WWA20K22HR"
+        ],
+        "overBudget5000": 1,
+        "decisionCard": true,
+        "stores": {
+          "almanea": 14,
+          "extra": 33,
+          "najm": 5,
+          "noon": 7,
+          "alnakheelk": 1,
+          "اكسترا": 6,
+          "المنيع": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "ac·sentence·sg·latin",
+      "query": "ابي 3 مكيف بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 مكيف بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 مكيف بميزانيتي 5000 ريال split ac air conditioner",
+        "optionalWords": [
+          "3",
+          "مكيف",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "مكيف",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 96,
+        "top100Distribution": {
+          "tv_monitor": 36,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "laptop": 7,
+          "camera": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 96,
+        "distribution": {
+          "tv_monitor": 26,
+          "smartwatch": 8,
+          "other": 4,
+          "air_conditioner": 2,
+          "camera": 2,
+          "tablet": 2,
+          "laptop": 2,
+          "network": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ام تي سي - 22000 وحدة حرارية - تبريد فقط - انفرتر - أبي",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "كاميرا ويب ام كيه 2 ممتازة FHD للبث والألعاب ومكالمات ا",
+          "جوال موتورولا 56 جيجا، رام 12+12 جيجابايت معززة، سعة تخ"
+        ],
+        "overBudget5000": 4,
+        "decisionCard": false,
+        "stores": {
+          "المنيع": 4,
+          "أمازون": 2,
+          "نون": 22,
+          "أمازون السعودية": 21
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "ac·sentence·pl·latin",
+      "query": "ابي 3 مكيفات بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 مكيفات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 مكيفات بميزانيتي 5000 ريال split ac air conditioner",
+        "optionalWords": [
+          "3",
+          "مكيفات",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "مكيفات",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 96,
+        "top100Distribution": {
+          "tv_monitor": 36,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "laptop": 7,
+          "camera": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 96,
+        "distribution": {
+          "tv_monitor": 26,
+          "smartwatch": 8,
+          "other": 4,
+          "air_conditioner": 2,
+          "camera": 2,
+          "tablet": 2,
+          "laptop": 2,
+          "network": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ام تي سي - 22000 وحدة حرارية - تبريد فقط - انفرتر - أبي",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "كاميرا ويب ام كيه 2 ممتازة FHD للبث والألعاب ومكالمات ا",
+          "جوال موتورولا 56 جيجا، رام 12+12 جيجابايت معززة، سعة تخ"
+        ],
+        "overBudget5000": 4,
+        "decisionCard": false,
+        "stores": {
+          "المنيع": 4,
+          "أمازون": 2,
+          "نون": 22,
+          "أمازون السعودية": 21
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "ac·sentence·pl·arabic-indic",
+      "query": "ابي ٣ مكيفات بميزانيتي ٥٠٠٠ ريال",
+      "normalized": "ابي 3 مكيفات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 مكيفات بميزانيتي 5000 ريال split ac air conditioner",
+        "optionalWords": [
+          "3",
+          "مكيفات",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "مكيفات",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 96,
+        "top100Distribution": {
+          "tv_monitor": 36,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "laptop": 7,
+          "camera": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 96,
+        "distribution": {
+          "tv_monitor": 26,
+          "smartwatch": 8,
+          "other": 4,
+          "air_conditioner": 2,
+          "camera": 2,
+          "tablet": 2,
+          "laptop": 2,
+          "network": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ام تي سي - 22000 وحدة حرارية - تبريد فقط - انفرتر - أبي",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "كاميرا ويب ام كيه 2 ممتازة FHD للبث والألعاب ومكالمات ا",
+          "جوال موتورولا 56 جيجا، رام 12+12 جيجابايت معززة، سعة تخ"
+        ],
+        "overBudget5000": 4,
+        "decisionCard": false,
+        "stores": {
+          "المنيع": 4,
+          "أمازون": 2,
+          "نون": 22,
+          "أمازون السعودية": 21
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "fridge·isolated·sg",
+      "query": "ثلاجة",
+      "normalized": "ثلاجه",
+      "parsed": {
+        "category": "refrigerator",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ثلاجه refrigerator fridge",
+        "optionalWords": [
+          "ثلاجه",
+          "refrigerator",
+          "fridge"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "ثلاجه",
+          "refrigerator",
+          "fridge"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 308,
+        "top100Distribution": {
+          "refrigerator": 100
+        }
+      },
+      "afterRanking": {
+        "total": 436,
+        "distribution": {
+          "refrigerator": 48
+        },
+        "top5": [
+          "ثلاجة lg single door 380 لتر انفرتر",
+          "ثلاجة midea side by side 510 لتر انفرتر",
+          "ثلاجة midea single door 350 لتر",
+          "ثلاجة hisense side by side 530 لتر انفرتر",
+          "ثلاجة hisense single door 600 لتر انفرتر"
+        ],
+        "overBudget5000": 2,
+        "decisionCard": true,
+        "stores": {
+          "shaker": 6,
+          "alnakheelk": 6,
+          "extra": 13,
+          "almanea": 9,
+          "amazon": 5,
+          "noon": 14,
+          "swsg": 10,
+          "najm": 1,
+          "اكسترا": 24
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "fridge·isolated·pl",
+      "query": "ثلاجات",
+      "normalized": "ثلاجات",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ثلاجات",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 262,
+        "top100Distribution": {
+          "refrigerator": 100
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "refrigerator": 48
+        },
+        "top5": [
+          "ثلاجة كلاس برو 1.6 قدم",
+          "ثلاجة كلاس برو 3.2 قدم",
+          "ثلاجة ريبون 10 لتر",
+          "ثلاجة دايو 2.7 قدم",
+          "ثلاجة كلاس برو 46 لتر 1.6 قدم"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "اكسترا": 43,
+          "شاكر": 5
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "fridge·sentence·sg·latin",
+      "query": "ابي 3 ثلاجة بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 ثلاجه بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "refrigerator",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 ثلاجه بميزانيتي 5000 ريال refrigerator fridge",
+        "optionalWords": [
+          "3",
+          "ثلاجه",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "refrigerator",
+          "fridge"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "ثلاجه",
+          "refrigerator",
+          "fridge"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 96,
+        "top100Distribution": {
+          "tv_monitor": 36,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "camera": 7,
+          "laptop": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 96,
+        "distribution": {
+          "tv_monitor": 24,
+          "smartwatch": 8,
+          "other": 7,
+          "air_conditioner": 2,
+          "tablet": 2,
+          "network": 2,
+          "camera": 1,
+          "laptop": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "سخان كهربائي صغير محمول للقهوة وإبريق الشاي من اتش اس ك",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "ساعة سي ام اف برو 2 من نوثينج ووتش، شاشة اموليد 1.35 بو",
+          "ساعة 3 برو من سي ام اف باللون البرتقالي"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون": 3,
+          "نون": 18,
+          "أمازون السعودية": 26,
+          "المنيع": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "fridge·sentence·pl·latin",
+      "query": "ابي 3 ثلاجات بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 ثلاجات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ابي 3 ثلاجات بميزانيتي 5000 ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 795,
+        "top100Distribution": {
+          "refrigerator": 61,
+          "other": 16,
+          "tv_monitor": 10,
+          "audio": 6,
+          "camera": 3,
+          "laptop": 2,
+          "network": 1,
+          "microwave": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "refrigerator": 42,
+          "other": 3,
+          "laptop": 1,
+          "tv_monitor": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ثلاجة كلاس برو 3.2 قدم",
+          "ساعة 3 برو من سي ام اف باللون البرتقالي",
+          "ثلاجة كلاس برو 92 لتر 3.2 قدم",
+          "مايديا ثلاجة – باب واحد – 3 قدم مكعب – أبيض – MDRD133FG",
+          "ثلاجة كلاس برو 12.9 قدم"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "اكسترا": 35,
+          "أمازون السعودية": 2,
+          "شاكر": 7,
+          "المنيع": 1,
+          "نون": 3
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "fridge·sentence·pl·arabic-indic",
+      "query": "ابي ٣ ثلاجات بميزانيتي ٥٠٠٠ ريال",
+      "normalized": "ابي 3 ثلاجات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ابي ٣ ثلاجات بميزانيتي ٥٠٠٠ ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 362,
+        "top100Distribution": {
+          "refrigerator": 94,
+          "tablet": 4,
+          "audio": 1,
+          "smartwatch": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "refrigerator": 48
+        },
+        "top5": [
+          "ثلاجة كلاس برو 1.6 قدم",
+          "ثلاجة كلاس برو 3.2 قدم",
+          "ثلاجة ريبون 10 لتر",
+          "ثلاجة دايو 2.7 قدم",
+          "ثلاجة كلاس برو 46 لتر 1.6 قدم"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "اكسترا": 43,
+          "شاكر": 5
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "screen·isolated·sg",
+      "query": "شاشة",
+      "normalized": "شاشه",
+      "parsed": {
+        "category": "tv",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "شاشه tv monitor screen display",
+        "optionalWords": [
+          "شاشه",
+          "tv",
+          "monitor",
+          "screen",
+          "display"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "شاشه",
+          "tv",
+          "monitor",
+          "screen",
+          "display"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 1767,
+        "top100Distribution": {
+          "tv_monitor": 100
+        }
+      },
+      "afterRanking": {
+        "total": 496,
+        "distribution": {
+          "tv_monitor": 48
+        },
+        "top5": [
+          "تلفزيون سامسونج UA65U8000FUXZN",
+          "تلفزيون تي سي إل 75 بوصة 4K UHD Mini LED 144Hz ذكي",
+          "تلفزيون سامسونج UA85U8000FUXSA",
+          "تلفزيون هايسنس 75 بوصة 4K UHD Mini LED 144Hz ذكي",
+          "تلفزيون إل جي 65QNED86A6A"
+        ],
+        "overBudget5000": 7,
+        "decisionCard": true,
+        "stores": {
+          "extra": 34,
+          "amazon": 24,
+          "lulu": 4,
+          "najm": 4,
+          "noon": 25,
+          "swsg": 10,
+          "jarir": 5,
+          "almanea": 11,
+          "sharafdg": 2,
+          "samsung_ksa": 3,
+          "shaker": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "screen·isolated·pl",
+      "query": "شاشات",
+      "normalized": "شاشات",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "شاشات",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "شاشات"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 1
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 1294,
+        "top100Distribution": {
+          "tv_monitor": 100
+        }
+      },
+      "afterRanking": {
+        "total": 1,
+        "distribution": {
+          "tv_monitor": 1
+        },
+        "top5": [
+          "شاشة ألعاب KTC بحجم 27 بوصة - شاشة بدقة 2K QHD 2560 × 1"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون": 1,
+          "نون": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "screen·sentence·sg·latin",
+      "query": "ابي 3 شاشة بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 شاشه بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "tv",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 شاشه بميزانيتي 5000 ريال tv monitor screen display",
+        "optionalWords": [
+          "3",
+          "شاشه",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "tv",
+          "monitor",
+          "screen",
+          "display"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "شاشه",
+          "tv",
+          "monitor",
+          "screen",
+          "display"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 94,
+        "top100Distribution": {
+          "tv_monitor": 34,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "camera": 7,
+          "laptop": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 94,
+        "distribution": {
+          "tv_monitor": 27,
+          "smartwatch": 8,
+          "other": 5,
+          "air_conditioner": 2,
+          "tablet": 2,
+          "camera": 1,
+          "laptop": 1,
+          "network": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "جوال موتورولا 56 جيجا، رام 12+12 جيجابايت معززة، سعة تخ",
+          "شاشة ألعاب جاوفولك اتساع 34 بوصة 21:9 اي بي اس دبليو اف",
+          "شاشة ألعاب 34 بوصة من زد-ايدج، 1 مللي ثانية، 165 هرتز، "
+        ],
+        "overBudget5000": 1,
+        "decisionCard": false,
+        "stores": {
+          "أمازون": 3,
+          "نون": 24,
+          "أمازون السعودية": 20,
+          "المنيع": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "screen·sentence·pl·latin",
+      "query": "ابي 3 شاشات بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 شاشات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ابي 3 شاشات بميزانيتي 5000 ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "شاشات"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 1030,
+        "top100Distribution": {
+          "tv_monitor": 90,
+          "smartwatch": 4,
+          "other": 3,
+          "camera": 2,
+          "laptop": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "tv_monitor": 44,
+          "smartwatch": 3,
+          "other": 1
+        },
+        "top5": [
+          "جهاز تشغيل ألعاب الفيديو الرقمية محمول باليد، بطاقة 64G",
+          "جهاز ألعاب R36S المحمول، جهاز ألعاب كلاسيكي، جهاز أركيد",
+          "جهاز ألعاب R36S المحمول، جهاز ألعاب محمول، جهاز أركيد ج",
+          "وحدة تحكم ألعاب محمولة R36s ريترو، شاشة 3.5 بوصة IPS OC",
+          "جهاز ألعاب محمول R36S، جهاز ألعاب فيديو، مزود ببطاقة ذا"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون السعودية": 9,
+          "نون": 36,
+          "أمازون": 1,
+          "المنيع": 3
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "screen·sentence·pl·arabic-indic",
+      "query": "ابي ٣ شاشات بميزانيتي ٥٠٠٠ ريال",
+      "normalized": "ابي 3 شاشات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ابي ٣ شاشات بميزانيتي ٥٠٠٠ ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "شاشات"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 868,
+        "top100Distribution": {
+          "tv_monitor": 92,
+          "smartwatch": 7,
+          "audio": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "tv_monitor": 43,
+          "smartwatch": 5
+        },
+        "top5": [
+          "شاشة ألعاب KTC بحجم 27 بوصة - شاشة بدقة 2K QHD 2560 × 1",
+          "شاشة ألعاب Z-EDGE IPS بحجم 24 بوصة - 16:9 Full HD 1920x",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "ساعة سي ام اف برو 2 من نوثينج ووتش، شاشة اموليد 1.35 بو",
+          "شاشة مسطحة انتري اسنشيال FHD بتردد 100 هرتز من سامسونج،"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون": 7,
+          "نون": 20,
+          "أمازون السعودية": 20,
+          "شاكر": 4
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "phone·isolated·sg",
+      "query": "جوال",
+      "normalized": "جوال",
+      "parsed": {
+        "category": "mobile",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "جوال phone smartphone mobile",
+        "optionalWords": [
+          "جوال",
+          "phone",
+          "smartphone",
+          "mobile"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "جوال",
+          "phone",
+          "smartphone",
+          "mobile"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 361,
+        "top100Distribution": {
+          "mobile": 42,
+          "tv_monitor": 20,
+          "audio": 12,
+          "tablet": 8,
+          "camera": 7,
+          "other": 6,
+          "smartwatch": 2,
+          "laptop": 2,
+          "air_conditioner": 1
+        }
+      },
+      "afterRanking": {
+        "total": 415,
+        "distribution": {
+          "mobile": 47,
+          "camera": 1
+        },
+        "top5": [
+          "جوال سامسونج Galaxy A07 64 جيجابايت",
+          "جوال سامسونج Galaxy A07 128 جيجابايت",
+          "جوال سامسونج Galaxy A17 128 جيجابايت",
+          "جوال سامسونج Galaxy A26 256 جيجابايت",
+          "جوال سامسونج Galaxy A36 256 جيجابايت"
+        ],
+        "overBudget5000": 6,
+        "decisionCard": false,
+        "stores": {
+          "extra": 42,
+          "amazon": 15,
+          "lulu": 5,
+          "swsg": 12,
+          "almanea": 37,
+          "noon": 20,
+          "jarir": 21,
+          "sharafdg": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "phone·isolated·pl",
+      "query": "جوالات",
+      "normalized": "جوالات",
+      "parsed": {
+        "category": "mobile",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "جوالات",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "جوالات"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 8
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 75,
+        "top100Distribution": {
+          "mobile": 32,
+          "tv_monitor": 23,
+          "audio": 9,
+          "camera": 6,
+          "tablet": 4,
+          "laptop": 1
+        }
+      },
+      "afterRanking": {
+        "total": 8,
+        "distribution": {
+          "audio": 3,
+          "camera": 2,
+          "tablet": 1,
+          "tv_monitor": 1,
+          "mobile": 1
+        },
+        "top5": [
+          "بطاقة ذاكرة microSD UHS I سعة 128GB لفيديو 4K على الجوا",
+          "كيبل شحن 3 × 1 متعدد الاستخدامات من رافياد بطول 4 قدم، ",
+          "سماعة الواقع الافتراضي ثلاثية الابعاد لاجهزة ايفون واند",
+          "نظارة الواقع الافتراضي في ار تشينكون من ميكنج تيك، نظار",
+          "سماعات واقع افتراضي متوافقة مع جوالات ايفون واندرويد بخ"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 8
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "phone·sentence·sg·latin",
+      "query": "ابي 3 جوال بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 جوال بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "mobile",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 جوال بميزانيتي 5000 ريال phone smartphone mobile",
+        "optionalWords": [
+          "3",
+          "جوال",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "phone",
+          "smartphone",
+          "mobile"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "جوال",
+          "phone",
+          "smartphone",
+          "mobile"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 93,
+        "top100Distribution": {
+          "tv_monitor": 34,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "camera": 7,
+          "laptop": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2
+        }
+      },
+      "afterRanking": {
+        "total": 93,
+        "distribution": {
+          "tv_monitor": 24,
+          "smartwatch": 8,
+          "other": 7,
+          "air_conditioner": 2,
+          "tablet": 2,
+          "network": 2,
+          "camera": 1,
+          "laptop": 1,
+          "audio": 1
+        },
+        "top5": [
+          "جوال موتورولا 56 جيجا، رام 12+12 جيجابايت معززة، سعة تخ",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "سخان كهربائي صغير محمول للقهوة وإبريق الشاي من اتش اس ك",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "ساعة سي ام اف برو 2 من نوثينج ووتش، شاشة اموليد 1.35 بو"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون السعودية": 24,
+          "أمازون": 3,
+          "نون": 20,
+          "المنيع": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "phone·sentence·pl·latin",
+      "query": "ابي 3 جوالات بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 جوالات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "mobile",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 جوالات بميزانيتي 5000 ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "جوالات"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 760,
+        "top100Distribution": {
+          "tv_monitor": 26,
+          "other": 25,
+          "camera": 13,
+          "audio": 10,
+          "mobile": 9,
+          "laptop": 7,
+          "tablet": 7,
+          "network": 2,
+          "microwave": 1
+        }
+      },
+      "afterRanking": {
+        "total": 98,
+        "distribution": {
+          "other": 16,
+          "tv_monitor": 15,
+          "audio": 5,
+          "laptop": 4,
+          "mobile": 3,
+          "camera": 2,
+          "tablet": 2,
+          "network": 1
+        },
+        "top5": [
+          "ماكينة صنع الساندوتشات من السلسلة 5000 بقدرة 750 وات HD",
+          "جوال نوثينج (3a) لايت 5G / 8 جيجابايت / 128 جيجابايت / ",
+          "جهاز ألعاب محمول كلاسيكي بتصميم ريترو، شاشة لمس OLED مق",
+          "جهاز تشغيل ألعاب الفيديو الرقمية G5 بشاشة HD ملونة بالك",
+          "ساعة 3 برو من سي ام اف باللون البرتقالي"
+        ],
+        "overBudget5000": 1,
+        "decisionCard": false,
+        "stores": {
+          "نون": 19,
+          "أمازون السعودية": 23,
+          "المنيع": 5,
+          "أمازون": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "phone·sentence·pl·arabic-indic",
+      "query": "ابي ٣ جوالات بميزانيتي ٥٠٠٠ ريال",
+      "normalized": "ابي 3 جوالات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "mobile",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي ٣ جوالات بميزانيتي ٥٠٠٠ ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "جوالات"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 173,
+        "top100Distribution": {
+          "mobile": 27,
+          "tv_monitor": 25,
+          "other": 13,
+          "audio": 9,
+          "camera": 9,
+          "tablet": 8,
+          "smartwatch": 4,
+          "laptop": 4,
+          "air_conditioner": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "tv_monitor": 20,
+          "mobile": 12,
+          "other": 5,
+          "camera": 4,
+          "smartwatch": 4,
+          "air_conditioner": 1,
+          "tablet": 1,
+          "audio": 1
+        },
+        "top5": [
+          "بطاقة ذاكرة microSD UHS I سعة 128GB لفيديو 4K على الجوا",
+          "جوال نوثينج (3a) لايت 5G / 8 جيجابايت / 128 جيجابايت / ",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "جوال ريدمي نوت 14 بذاكرة رام 8GB وذاكرة داخلية 256GB ال",
+          "سخان كهربائي صغير محمول للقهوة وإبريق الشاي من اتش اس ك"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون السعودية": 36,
+          "أمازون": 3,
+          "نون": 9,
+          "المنيع": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "laptop·isolated·sg",
+      "query": "لابتوب",
+      "normalized": "لابتوب",
+      "parsed": {
+        "category": "laptop",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "لابتوب laptop notebook",
+        "optionalWords": [
+          "لابتوب",
+          "laptop",
+          "notebook"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "لابتوب",
+          "laptop",
+          "notebook"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 853,
+        "top100Distribution": {
+          "tv_monitor": 84,
+          "laptop": 13,
+          "tablet": 2,
+          "smartwatch": 1
+        }
+      },
+      "afterRanking": {
+        "total": 500,
+        "distribution": {
+          "laptop": 40,
+          "tv_monitor": 8
+        },
+        "top5": [
+          "لابتوب لينوفو loq، ryzen5-7، 16GB رام، 512GB، 15.6\" RTX",
+          "لابتوب أسوس vivobook، core9، 16GB رام، 512GB، 16\"",
+          "لابتوب اتش بي elitebook، i5-8، 8GB رام، 256GB",
+          "لابتوب ديل، ryzen5-7، 8GB رام، 512GB، 15.6\"",
+          "لابتوب أيسر aspire، core3، 8GB رام، 256GB، 15.6\""
+        ],
+        "overBudget5000": 7,
+        "decisionCard": true,
+        "stores": {
+          "noon": 32,
+          "amazon": 10,
+          "extra": 26,
+          "jarir": 5,
+          "almanea": 5,
+          "نون": 7,
+          "المنيع": 2,
+          "أمازون": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "laptop·isolated·pl",
+      "query": "لابتوبات",
+      "normalized": "لابتوبات",
+      "parsed": {
+        "category": "laptop",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "لابتوبات",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 461,
+        "top100Distribution": {
+          "tv_monitor": 89,
+          "laptop": 11
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "tv_monitor": 41,
+          "laptop": 7
+        },
+        "top5": [
+          "لابتوب ديل كروم بوك 3100 (موديل 2019) | شاشة 11.6 بوصة ",
+          "لابتوب اتش بي ايليت بوك 840 G8 بشاشة FHD 14 بوصة ومعالج",
+          "لابتوب نوت بوك ايليت بوك 840 G8 14 بوصة (مجدد) | FHD - ",
+          "لابتوب لينوفو, IPS3 15IRH10, انتل كور i5-13240H, 8 جيجا",
+          "لابتوب فيفو بوك X1504VABQ4104 بشاشة 15.6 بوصة بدقة Full"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 10,
+          "أمازون": 5,
+          "المنيع": 4,
+          "نون": 29
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "laptop·sentence·sg·latin",
+      "query": "ابي 3 لابتوب بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 لابتوب بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "laptop",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 لابتوب بميزانيتي 5000 ريال laptop notebook",
+        "optionalWords": [
+          "3",
+          "لابتوب",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "laptop",
+          "notebook"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "لابتوب",
+          "laptop",
+          "notebook"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 96,
+        "top100Distribution": {
+          "tv_monitor": 36,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "laptop": 7,
+          "camera": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 96,
+        "distribution": {
+          "tv_monitor": 25,
+          "smartwatch": 8,
+          "other": 4,
+          "laptop": 3,
+          "air_conditioner": 2,
+          "tablet": 2,
+          "network": 2,
+          "camera": 1,
+          "audio": 1
+        },
+        "top5": [
+          "ايسر لاب توب كروم بوك 311 CBOA311-1H - انتل سيليرون N45",
+          "ايسر لاب توب كروم بوك 314 CBOA314-1H - انتل سيليرون N45",
+          "لابتوب 255 G9 بشاشة عالية الدقة مقاس 15.6 بوصة ومعالج ر",
+          "الكمبيوتر المحمول طراز لاتيتيود 3420 المزود بشاشة عرض ف",
+          "لابتوب ثينك باد L15 جين 4، معالج i7-1355U ذاكرة وصول عش"
+        ],
+        "overBudget5000": 2,
+        "decisionCard": false,
+        "stores": {
+          "أمازون السعودية": 24,
+          "نون": 20,
+          "أمازون": 3,
+          "المنيع": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "laptop·sentence·pl·latin",
+      "query": "ابي 3 لابتوبات بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 لابتوبات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "laptop",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 لابتوبات بميزانيتي 5000 ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 880,
+        "top100Distribution": {
+          "tv_monitor": 60,
+          "other": 16,
+          "laptop": 12,
+          "audio": 6,
+          "camera": 3,
+          "tablet": 1,
+          "network": 1,
+          "microwave": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "tv_monitor": 31,
+          "other": 11,
+          "laptop": 3,
+          "audio": 2,
+          "tablet": 1
+        },
+        "top5": [
+          "ساعة 3 برو من سي ام اف باللون البرتقالي",
+          "15 لابتوب بشاشة 15.6 بوصة بدقة Full HD (1920X1080) ومعا",
+          "لابتوب لينوفو, IPS3 15IRH10, انتل كور i5-13240H, 8 جيجا",
+          "لابتوب سليم 3 15IRH10 (نسخة محدثة) بشاشة IPS WUXGA بحجم",
+          "لابتوب IdeaPad Slim 3 15IRH10 (نسخة محدثة) بشاشة 15.3 ب"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 12,
+          "نون": 33,
+          "المنيع": 3
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "laptop·sentence·pl·arabic-indic",
+      "query": "ابي ٣ لابتوبات بميزانيتي ٥٠٠٠ ريال",
+      "normalized": "ابي 3 لابتوبات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "laptop",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي ٣ لابتوبات بميزانيتي ٥٠٠٠ ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 555,
+        "top100Distribution": {
+          "tv_monitor": 80,
+          "laptop": 13,
+          "tablet": 4,
+          "audio": 1,
+          "smartwatch": 1,
+          "air_conditioner": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "tv_monitor": 40,
+          "laptop": 6,
+          "air_conditioner": 1,
+          "smartwatch": 1
+        },
+        "top5": [
+          "لابتوب ديل كروم بوك 3100 (موديل 2019) | شاشة 11.6 بوصة ",
+          "لابتوب اتش بي ايليت بوك 840 G8 بشاشة FHD 14 بوصة ومعالج",
+          "لابتوب نوت بوك ايليت بوك 840 G8 14 بوصة (مجدد) | FHD - ",
+          "لابتوب لينوفو, IPS3 15IRH10, انتل كور i5-13240H, 8 جيجا",
+          "لابتوب فيفو بوك X1504VABQ4104 بشاشة 15.6 بوصة بدقة Full"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 11,
+          "أمازون": 5,
+          "المنيع": 4,
+          "نون": 28
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "washer·isolated·sg",
+      "query": "غسالة",
+      "normalized": "غساله",
+      "parsed": {
+        "category": "washing_machine",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "غساله washing machine washer",
+        "optionalWords": [
+          "غساله",
+          "washing",
+          "machine",
+          "washer"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "غساله",
+          "washing",
+          "machine",
+          "washer"
+        ]
+      ],
+      "gate": {
+        "wouldApply": true,
+        "survivorsInTop100": 100
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 265,
+        "top100Distribution": {
+          "washing_machine": 90,
+          "other": 4,
+          "dishwasher": 3,
+          "vacuum": 2,
+          "audio": 1
+        }
+      },
+      "afterRanking": {
+        "total": 438,
+        "distribution": {
+          "washing_machine": 48
+        },
+        "top5": [
+          "غسالة midea top load 6 كجم",
+          "غسالة midea top load 12 كجم",
+          "غسالة lg front load 7 كجم",
+          "غسالة hisense top load 8 كجم",
+          "غسالة hisense top load 10 كجم"
+        ],
+        "overBudget5000": 4,
+        "decisionCard": true,
+        "stores": {
+          "amazon": 21,
+          "swsg": 28,
+          "shaker": 15,
+          "extra": 43,
+          "alnakheelk": 21,
+          "almanea": 35,
+          "noon": 12,
+          "najm": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "washer·isolated·pl",
+      "query": "غسالات",
+      "normalized": "غسالات",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "غسالات",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 212,
+        "top100Distribution": {
+          "washing_machine": 82,
+          "dishwasher": 18
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "washing_machine": 42,
+          "dishwasher": 6
+        },
+        "top5": [
+          "غسالة متنقل دينكس 4.8 كجم",
+          "غسالة ادميرال 9 كجم",
+          "غسالة فيشر 8 كجم",
+          "غسالة ادميرال 14 كجم",
+          "غسالة فيشر 10 كجم"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "اكسترا": 37,
+          "شاكر": 11
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "washer·sentence·sg·latin",
+      "query": "ابي 3 غسالة بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 غساله بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": "washing_machine",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "ابي 3 غساله بميزانيتي 5000 ريال washing machine washer",
+        "optionalWords": [
+          "3",
+          "غساله",
+          "بميزانيتي",
+          "5000",
+          "ريال",
+          "washing",
+          "machine",
+          "washer"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "غساله",
+          "washing",
+          "machine",
+          "washer"
+        ],
+        [
+          "بميزانيتي"
+        ],
+        [
+          "5000"
+        ],
+        [
+          "ريال"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 96,
+        "top100Distribution": {
+          "tv_monitor": 36,
+          "other": 14,
+          "smartwatch": 10,
+          "tablet": 9,
+          "camera": 7,
+          "laptop": 7,
+          "audio": 7,
+          "network": 3,
+          "air_conditioner": 2,
+          "mobile": 1
+        }
+      },
+      "afterRanking": {
+        "total": 96,
+        "distribution": {
+          "tv_monitor": 24,
+          "smartwatch": 8,
+          "other": 7,
+          "air_conditioner": 2,
+          "tablet": 2,
+          "network": 2,
+          "camera": 1,
+          "laptop": 1,
+          "audio": 1
+        },
+        "top5": [
+          "طابعة ثلاثية الابعاد من فوجو اف دي ام مقاس 3.5 انش تعمل",
+          "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ",
+          "سخان كهربائي صغير محمول للقهوة وإبريق الشاي من اتش اس ك",
+          "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC",
+          "ساعة سي ام اف برو 2 من نوثينج ووتش، شاشة اموليد 1.35 بو"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون السعودية": 26,
+          "أمازون": 3,
+          "نون": 18,
+          "المنيع": 2
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "washer·sentence·pl·latin",
+      "query": "ابي 3 غسالات بميزانيتي 5000 ريال",
+      "normalized": "ابي 3 غسالات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ابي 3 غسالات بميزانيتي 5000 ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 743,
+        "top100Distribution": {
+          "other": 26,
+          "tv_monitor": 21,
+          "camera": 12,
+          "audio": 10,
+          "laptop": 8,
+          "dishwasher": 6,
+          "mobile": 6,
+          "tablet": 5,
+          "washing_machine": 3,
+          "network": 2,
+          "microwave": 1
+        }
+      },
+      "afterRanking": {
+        "total": 98,
+        "distribution": {
+          "other": 17,
+          "tv_monitor": 13,
+          "laptop": 4,
+          "dishwasher": 4,
+          "audio": 4,
+          "washing_machine": 2,
+          "mobile": 2,
+          "network": 1,
+          "camera": 1
+        },
+        "top5": [
+          "جهاز تشغيل ألعاب الفيديو الرقمية G5 بشاشة HD ملونة بالك",
+          "ساعة 3 برو من سي ام اف باللون البرتقالي",
+          "دايو غسالة تحميل علوي – حوضين – 12 كجم غسيل – 3 برامج –",
+          "لاب توب لينوفو ايديا باد سليم 3 15ARP10 83K700Q7AD، جيج",
+          "غسالة مايبي 11 كجم"
+        ],
+        "overBudget5000": 1,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 16,
+          "شاكر": 1,
+          "المنيع": 6,
+          "اكسترا": 1,
+          "نون": 24
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "washer·sentence·pl·arabic-indic",
+      "query": "ابي ٣ غسالات بميزانيتي ٥٠٠٠ ريال",
+      "normalized": "ابي 3 غسالات بميزانيتي 5000 ريال",
+      "parsed": {
+        "category": null,
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "category"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "no category could be classified"
+      },
+      "algolia": {
+        "query": "ابي ٣ غسالات بميزانيتي ٥٠٠٠ ريال",
+        "optionalWords": null,
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 312,
+        "top100Distribution": {
+          "washing_machine": 76,
+          "dishwasher": 18,
+          "tablet": 4,
+          "audio": 1,
+          "smartwatch": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "washing_machine": 42,
+          "dishwasher": 6
+        },
+        "top5": [
+          "غسالة متنقل دينكس 4.8 كجم",
+          "غسالة ادميرال 9 كجم",
+          "غسالة فيشر 8 كجم",
+          "غسالة ادميرال 14 كجم",
+          "غسالة فيشر 10 كجم"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "اكسترا": 37,
+          "شاكر": 11
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "no category could be classified"
+      }
+    },
+    {
+      "id": "ac·en·isolated·sg",
+      "query": "air conditioner",
+      "normalized": "air conditioner",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "air conditioner مكيف",
+        "optionalWords": [
+          "air",
+          "conditioner",
+          "مكيف"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 452,
+        "top100Distribution": {
+          "other": 71,
+          "tv_monitor": 17,
+          "microwave": 3,
+          "dishwasher": 3,
+          "mobile": 3,
+          "tablet": 2,
+          "washing_machine": 1
+        }
+      },
+      "afterRanking": {
+        "total": 109,
+        "distribution": {
+          "other": 35,
+          "tv_monitor": 7,
+          "air_conditioner": 5,
+          "washing_machine": 1
+        },
+        "top5": [
+          "قوالب بيض سيليكون للمقلاة الهوائية من يلا جوي، صواني كب",
+          "Honeywell Air Cooler 3-in-1 Evaporative Cooling Fan and",
+          "منقي هواء اكسبير ايونيزر 30 واط 3 سرعات 28 متر مؤقت XPA",
+          "KOOLEN Air Cooler 17L 80W White/Grey",
+          "Rebune Air Fryer 7L 1800W Black RE-11-067"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 1,
+          "اكسترا": 2,
+          "المنيع": 1,
+          "إكسترا": 1,
+          "extra": 4,
+          "نون": 38,
+          "amazon": 1
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "ac·en·isolated·pl",
+      "query": "air conditioners",
+      "normalized": "air conditioners",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "retrieval",
+        "reason": "category only — a browse, not a described need"
+      },
+      "algolia": {
+        "query": "air conditioners مكيف",
+        "optionalWords": [
+          "air",
+          "conditioners",
+          "مكيف"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 452,
+        "top100Distribution": {
+          "other": 71,
+          "tv_monitor": 17,
+          "microwave": 3,
+          "dishwasher": 3,
+          "mobile": 3,
+          "tablet": 2,
+          "washing_machine": 1
+        }
+      },
+      "afterRanking": {
+        "total": 95,
+        "distribution": {
+          "other": 39,
+          "tv_monitor": 8,
+          "washing_machine": 1
+        },
+        "top5": [
+          "قوالب بيض سيليكون للمقلاة الهوائية من يلا جوي، صواني كب",
+          "Honeywell Air Cooler 3-in-1 Evaporative Cooling Fan and",
+          "منقي هواء اكسبير ايونيزر 30 واط 3 سرعات 28 متر مؤقت XPA",
+          "KOOLEN Air Cooler 17L 80W White/Grey",
+          "Rebune Air Fryer 7L 1800W Black RE-11-067"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "أمازون السعودية": 1,
+          "اكسترا": 2,
+          "المنيع": 1,
+          "إكسترا": 1,
+          "نون": 43
+        }
+      },
+      "waffar": {
+        "state": "not-routed",
+        "detail": "category only — a browse, not a described need"
+      }
+    },
+    {
+      "id": "ac·en·sentence·pl",
+      "query": "I want 3 air conditioners with a budget of 5000 SAR",
+      "normalized": "I want 3 air conditioners with a budget of 5000 SAR",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": 5000,
+        "room_size_m2": null,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": [
+          "room_size_m2"
+        ]
+      },
+      "route": {
+        "mode": "advisory",
+        "reason": "need signals: budget"
+      },
+      "algolia": {
+        "query": "I want 3 air conditioners with a budget of 5000 SAR مكيف",
+        "optionalWords": [
+          "I",
+          "3",
+          "air",
+          "conditioners",
+          "budget",
+          "5000",
+          "SAR",
+          "مكيف"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0,
+        "note": "no groups — gate off"
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 1052,
+        "top100Distribution": {
+          "other": 30,
+          "tv_monitor": 23,
+          "laptop": 13,
+          "audio": 10,
+          "tablet": 8,
+          "camera": 6,
+          "mobile": 3,
+          "air_conditioner": 2,
+          "dishwasher": 2,
+          "smartwatch": 1,
+          "washing_machine": 1,
+          "network": 1
+        }
+      },
+      "afterRanking": {
+        "total": 100,
+        "distribution": {
+          "other": 16,
+          "tv_monitor": 15,
+          "laptop": 4,
+          "audio": 3,
+          "tablet": 3,
+          "air_conditioner": 2,
+          "network": 1,
+          "mobile": 1,
+          "camera": 1,
+          "dishwasher": 1,
+          "smartwatch": 1
+        },
+        "top5": [
+          "جهاز ألعاب محمول رجعي (لاعب واحد)، شاشة ملونة عالية الد",
+          "وسيط تخزين ذو حالة ثابتة محمول من سانديسك بسعة 2 تيرابا",
+          "طقم صواني فرن بيضاوي مؤلف من قطعتين الصغير 1.550 ليتر +",
+          "قابس تابو الذكي من تي بي لينك مع مراقبة الطاقة، يعمل مع",
+          "كاميرا  فائقة الدقة بتقنية PT 360 درجة لمراقبة كل زاوية"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": true,
+        "stores": {
+          "نون": 34,
+          "أمازون السعودية": 14
+        }
+      },
+      "waffar": {
+        "state": "passed",
+        "detail": {
+          "count": 4,
+          "supported": true,
+          "clarify": true
+        }
+      }
+    },
+    {
+      "id": "ac·control·worked-before",
+      "query": "مكيف رخيص لغرفه 40 متر",
+      "normalized": "مكيف رخيص لغرفه 40 متر",
+      "parsed": {
+        "category": "air_conditioner",
+        "budget_total": null,
+        "room_size_m2": 40,
+        "priorities": null,
+        "quantity": "NOT_EXTRACTED (no field exists)",
+        "unresolved": null
+      },
+      "route": {
+        "mode": "advisory",
+        "reason": "need signals: room_size"
+      },
+      "algolia": {
+        "query": "مكيف رخيص لغرفه 40 متر split ac air conditioner",
+        "optionalWords": [
+          "مكيف",
+          "لغرفه",
+          "40",
+          "متر",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        "filters": "(none — budget never becomes a price filter)"
+      },
+      "relevanceGroups": [
+        [
+          "مكيف",
+          "split",
+          "ac",
+          "air",
+          "conditioner"
+        ],
+        [
+          "لغرفه"
+        ],
+        [
+          "40"
+        ],
+        [
+          "متر"
+        ]
+      ],
+      "gate": {
+        "wouldApply": false,
+        "survivorsInTop100": 0
+      },
+      "candidatesBeforeRanking": {
+        "nbHits": 2,
+        "top100Distribution": {
+          "other": 2
+        }
+      },
+      "afterRanking": {
+        "total": 2,
+        "distribution": {
+          "other": 2
+        },
+        "top5": [
+          "طابعة ثلاثية الابعاد اف دي ام ثلاثية الابعاد من هوميسا،",
+          "طابعة ثلاثية الابعاد اف دي ام ثلاثية الابعاد من هوميسا،"
+        ],
+        "overBudget5000": 0,
+        "decisionCard": false,
+        "stores": {
+          "أمازون السعودية": 2
+        }
+      },
+      "waffar": {
+        "state": "passed",
+        "detail": {
+          "count": 4,
+          "supported": true,
+          "clarify": false
+        }
+      }
+    }
+  ]
+}

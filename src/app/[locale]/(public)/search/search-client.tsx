@@ -692,7 +692,20 @@ export default function SearchClient() {
           // "I could not help" panel above them would invent a failure the customer
           // does not have. `/advisor` still shows those states — there, the assistant
           // IS the page and saying nothing would leave a blank screen.
-          if (res.error || res.count === 0) return;
+          //
+          // Silent to the CUSTOMER, never to the ledger (2026-08-04): every advisor
+          // non-answer ends in a recorded state — rejected (engine returned empty) or
+          // unavailable (request/engine failure) — so a silent absence is measurable,
+          // not invisible. The routed-vs-not decision is already recorded by
+          // `advisor_query` above (fires only when routed).
+          if (res.error || res.count === 0) {
+            track(res.error ? 'error' : 'no_answer', {
+              query_text: query.trim(),
+              source: 'search',
+              meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected' },
+            });
+            return;
+          }
           setAdvisorResult(res);
           track('advisor_result', {
             query_text: query.trim(),
@@ -701,7 +714,16 @@ export default function SearchClient() {
             meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
           });
         })
-        .catch(() => { /* the results page stands on its own; never surface this */ });
+        .catch(() => {
+          // Never surfaced to the customer (the results page stands on its own) — but
+          // always recorded: an advisor request that died is `unavailable`, not nothing.
+          if (advisorCtrl.signal.aborted) return;
+          track('error', {
+            query_text: query.trim(),
+            source: 'search',
+            meta: { surface: 'advisor', advisor_state: 'unavailable' },
+          });
+        });
     }
 
     // Funnel step 1 — Search (storefront surface). Only on page 1 (a real new query),

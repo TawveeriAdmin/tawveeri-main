@@ -6,6 +6,80 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-205 — Need-sentence search defect: constraint language is not product language; budget/quantity are structured signals in both languages · Accepted (2026-08-04)
+
+**Context.** Founder-reported production defect on the Arabic mobile journey:
+«ابي 3 مكيفات بميزانيتي 5000 ريال» on `/ar/search` returned mostly unrelated categories
+(iPads, laptops, headphones), products above the stated 5,000 SAR budget, quantity 3
+unacknowledged, and no وفّر (Waffar) answer — while «مكيف رخيص لغرفه 40 متر» had worked.
+Before-baseline frozen and a 34-query singular/plural controlled matrix run
+(`docs/baselines/2026-08-04-ac-basket-query/`, FINDINGS.md + matrix-results.json).
+**The plural hypothesis was tested and rejected for this defect**: singular «ابي 3 مكيف …»
+failed identically; isolated «مكيف»/«مكيفات» both returned 47/48 ACs. Measured failing
+layers: (1) `parseBudget` missed the attached-morpheme form «بميزانيتي» AND the fallback
+«N ريال» pattern ended in `\b` after an Arabic letter, which never matches in JS — so the
+Arabic budget was silently dropped, no need signal fired, and the advisor was **not-routed**
+while the identical English sentence routed advisory and passed (a bilingual trust
+asymmetry); (2) quantity had no field anywhere; (3) retrieval sent the whole sentence to
+Algolia with every token optional, so «بميزانيتي»/«5000»/«ريال»/«3» acted as matching terms
+and flooded candidates (tv 36 · smartwatch 10 · AC 2 in top-100); (4) the relevance gate
+self-disabled because «بميزانيتي» formed a required word-group no title contains → 0
+survivors → gate skipped → junk shipped under the «مرتّبة حسب مطابقتها لبحثك» line.
+Secondary measured defect: plurals with no expansion entry («شاشات» 48→1 result, «جوالات»
+junk; «ثلاجات»/«غسالات» classified as no category).
+
+**Decision.**
+1. **Extraction (task-parser):** `parseBudget` gains «ميزانيتي» and drops the Arabic-side
+   `\b` (kept for Latin `sar`/`sr`, where it is valid). New deterministic `parseQuantity`:
+   a 2–20 count is a quantity ONLY when the immediately-following word(s) classify as the
+   query's own category — «مكيف 24000» (BTU), «شاشة 65» (inches), «تحت 4000» (budget) can
+   never be misread. `ShoppingTask.quantity` added. Plural/ه-spelling stems in
+   `parseCategory` (ثلاج/غسال/شاشات — the measured pairs only).
+2. **Retrieval + ranking (/api/search):** the query's structured constraints are parsed
+   once by the same parser the advisor uses; budget-wrapper tokens (`BUDGET_WRAPPER`:
+   ريال/ميزانية forms, sar/riyal/budget) and the parsed budget/quantity **numbers** are
+   excluded from the Algolia query string, optional words, the Supabase pool words and the
+   relevance groups. The six measured plural pairs get expansion entries carrying their
+   English terms AND their Arabic singular (titles are singular). **Category enforcement:**
+   for a need-shaped query (explicit parsed category + ≥1 parsed constraint) whose relevance
+   gate leaves zero survivors, the route now returns an honest ZERO (`categoryEnforcedZero:
+   true`, logged) instead of unrelated fallback results — fewer or zero relevant results
+   beat confident wrong ones (Master Book). Model queries keep the soft fallback.
+3. **Advisor honesty (decide route):** the engine prices ONE unit, so for quantity ≥2 the
+   route computes the per-unit ceiling (total ÷ N) and hands THAT to the engine; the
+   response carries `basket` {quantity, total_budget, per_unit_ceiling, note_ar/en} built by
+   the pure `buildBasketSummary` — acknowledging quantity, total, ~per-unit, and the
+   UNKNOWNS (installation/delivery inclusion), and stating the options are single-unit
+   prices, never a verified N-unit basket. Rendered above the answer (advisor-answer.tsx);
+   quantity appears in the understood-as chips. Wording follows the founder's directive
+   text; no estimate is fabricated.
+4. **Waffar state visibility (search-client):** every advisor non-answer now ends in a
+   recorded state — `no_answer`/`error` events with `advisor_state: rejected | unavailable`
+   (routed-but-empty / request-died), alongside the existing `advisor_query` (= routed).
+   The customer surface stays silent by design; the ledger does not.
+
+**Alternatives rejected:** an Arabic synonym/morphology patch before measurement (founder
+instruction; and the matrix showed morphology was NOT the failing variable for this query);
+hard price-filtering retrieval by the parsed budget (budget is a need signal for the
+advisor, not proof the shopper wants cheaper storefront results hidden — scope-creep);
+full basket optimisation (separately scoped below).
+
+**Basket Intent — scoped separately, NOT started.** Quantity-aware aggregate-budget basket
+construction (N units within one total, per-room capacities, mixed sets, installation
+bundling) needs: per-unit delivery/installation data we do not hold
+(`delivery_cost` = 0 on all rows), room-by-room inputs the clarify flow does not collect,
+and a basket-level ranking rule the engine does not define. Until those exist the honest
+surface is exactly what ships here: acknowledgement + per-unit ceiling + individual options.
+
+**Consequences.** The exact failing query now routes to the advisor with
+budget 5000 + quantity 3 in BOTH languages; retrieval for it is category-clean or honestly
+empty; the ranking-explanation line describes behaviour that actually happens for this
+class. Verified live before/after in this ADR's baseline directory. Regression coverage:
+tests/agent/task-parser.test.ts, route-query.test.ts, basket.test.ts (+1,307-test suite
+green). **Rollback:** revert the commit.
+
+---
+
 ### ADR-204 — Amazon PDP price extraction is buybox-scoped; a carousel price is another product's price · Accepted (2026-08-04)
 
 **Context.** ADR-200's open item. Reproduced on the live failing ASIN (B0FQCLJXPN): on a PDP

@@ -217,14 +217,26 @@ export interface AdvisorParsed {
   room_size_m2?: number;
   city?: string;
   budget_total?: number;
+  quantity?: number;
   priorities?: string[];
   unresolved?: string[];
+}
+
+/** Multi-unit acknowledgement (quantity · total budget · per-unit ceiling · unknowns).
+ *  Present only when the shopper asked for ≥2 units — see src/lib/agent/basket.ts. */
+export interface AdvisorBasket {
+  quantity: number;
+  total_budget: number | null;
+  per_unit_ceiling: number | null;
+  note_ar: string;
+  note_en: string;
 }
 
 export interface AdvisorResponse {
   version: string;
   task: Record<string, unknown> & { category?: string };
   parsed?: AdvisorParsed;
+  basket?: AdvisorBasket | null;
   supported: boolean;
   engine?: string;
   neutrality?: string;
@@ -318,6 +330,7 @@ export function parsedSummary(parsed: AdvisorParsed | undefined, locale: Locale)
   if (!parsed) return [];
   const chips: string[] = [];
   if (parsed.category) chips.push(categoryLabel(parsed.category, locale));
+  if (typeof parsed.quantity === "number" && parsed.quantity >= 2) chips.push(locale === "ar" ? `الكمية: ${parsed.quantity}` : `Qty: ${parsed.quantity}`);
   if (parsed.room_size_m2) chips.push(locale === "ar" ? `${parsed.room_size_m2} م²` : `${parsed.room_size_m2} m²`);
   if (parsed.budget_total) chips.push(locale === "ar" ? `تحت ${parsed.budget_total} ريال` : `under ${parsed.budget_total} SAR`);
   if (parsed.city) chips.push(parsed.city);

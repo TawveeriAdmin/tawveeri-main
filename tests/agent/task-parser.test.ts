@@ -87,3 +87,59 @@ describe("Task parser — fail-loud on unresolvable input", () => {
     expect(t.unresolved).toEqual(expect.arrayContaining(["room_size_m2"]));
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regression — the «ابي 3 مكيفات بميزانيتي 5000 ريال» production defect
+// (docs/baselines/2026-08-04-ac-basket-query). Budget: the attached-morpheme form
+// «بميزانيتي» and the Arabic-letter `\b` trap after «ريال» both silently dropped the
+// budget, so no need signal fired and the advisor was never routed. Quantity: no field
+// existed at all. These pin the extraction layer that measurement showed failing.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Task parser — basket query regression (2026-08-04)", () => {
+  it("parses the exact failing production query: category + budget + quantity", () => {
+    const t = parseShoppingTask("ابي 3 مكيفات بميزانيتي 5000 ريال");
+    expect(t.category).toBe("air_conditioner");
+    expect(t.budget_total).toBe(5000);
+    expect(t.quantity).toBe(3);
+  });
+  it("parses «بميزانيتي N» and bare «N ريال» (Arabic-boundary trap)", () => {
+    expect(parseShoppingTask("مكيف بميزانيتي 3000").budget_total).toBe(3000);
+    expect(parseShoppingTask("مكيف 2500 ريال").budget_total).toBe(2500);
+    expect(parseShoppingTask("ثلاجة بميزانية 4000 ريال").budget_total).toBe(4000);
+  });
+  it("parses Arabic-Indic numerals in the same sentence", () => {
+    const t = parseShoppingTask("ابي ٣ مكيفات بميزانيتي ٥٠٠٠ ريال");
+    expect(t.budget_total).toBe(5000);
+    expect(t.quantity).toBe(3);
+  });
+  it("parses the English equivalent", () => {
+    const t = parseShoppingTask("I want 3 air conditioners with a budget of 5000 SAR");
+    expect(t.category).toBe("air_conditioner");
+    expect(t.budget_total).toBe(5000);
+    expect(t.quantity).toBe(3);
+  });
+  it("never misreads a spec/budget number as a quantity", () => {
+    expect(parseShoppingTask("مكيف 24000 وحدة").quantity).toBeUndefined();      // BTU
+    expect(parseShoppingTask("شاشة 65 بوصة").quantity).toBeUndefined();         // inches
+    expect(parseShoppingTask("مكيف تحت 4000").quantity).toBeUndefined();        // budget
+    expect(parseShoppingTask("ايفون 15").quantity).toBeUndefined();             // model
+  });
+  it("quantity requires the category noun to follow the number", () => {
+    expect(parseShoppingTask("ابي 2 جوال").quantity).toBe(2);
+    expect(parseShoppingTask("جوال 12 جيجا رام").quantity).toBeUndefined();
+  });
+});
+
+describe("Task parser — plural category forms (matrix 2026-08-04)", () => {
+  it("classifies bare plurals that previously returned no category", () => {
+    expect(parseShoppingTask("ثلاجات").category).toBe("refrigerator");
+    expect(parseShoppingTask("غسالات").category).toBe("washing_machine");
+    expect(parseShoppingTask("شاشات").category).toBe("tv");
+  });
+  it("keeps the dishwasher/washer split for plural and ه-spelled forms", () => {
+    expect(parseShoppingTask("غسالات صحون").category).toBe("dishwasher");
+    expect(parseShoppingTask("غساله صحون").category).toBe("dishwasher");
+    expect(parseShoppingTask("غساله").category).toBe("washing_machine");
+    expect(parseShoppingTask("ثلاجه").category).toBe("refrigerator");
+  });
+});

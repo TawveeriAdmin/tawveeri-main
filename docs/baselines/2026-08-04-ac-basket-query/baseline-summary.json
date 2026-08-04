@@ -1,0 +1,563 @@
+{
+  "captured_at": "2026-08-04T06:03:20.271Z",
+  "url": "https://tawveeri.com/ar/search?q=%D8%A7%D8%A8%D9%8A%203%20%D9%85%D9%83%D9%8A%D9%81%D8%A7%D8%AA%20%D8%A8%D9%85%D9%8A%D8%B2%D8%A7%D9%86%D9%8A%D8%AA%D9%8A%205000%20%D8%B1%D9%8A%D8%A7%D9%84",
+  "api": "https://tawveeri.com/api/search",
+  "locale": "ar",
+  "device": "mobile iPhone UA, journey viewport 390x844",
+  "query": "ابي 3 مكيفات بميزانيتي 5000 ريال",
+  "http_status": 200,
+  "engine_version": {
+    "status": "ok",
+    "engine": "algolia+db",
+    "arabic": true,
+    "store": "inline-name",
+    "v": "v9-algolia-tps-canonical"
+  },
+  "count": 48,
+  "total": 96,
+  "relaxed": false,
+  "decisionCard": null,
+  "compareRoute": null,
+  "storeResults": {
+    "المنيع": 4,
+    "أمازون": 2,
+    "نون": 22,
+    "أمازون السعودية": 21
+  },
+  "priceStats": {
+    "min": 106.88,
+    "max": 9609,
+    "avg": 1515.7458542499999
+  },
+  "products": [
+    {
+      "name_ar": "ام تي سي - 22000 وحدة حرارية - تبريد فقط - انفرتر - أبيض - MTC24CUT25INV",
+      "name_en": "MTC Split AC, 22000 BTU, Cold, Inverter, White - MTC24CUT25INV",
+      "brand": "إم تي سي",
+      "best_price": 2298.999501,
+      "store_count": 1,
+      "stores": [
+        "المنيع"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ايه جي ام تابلت باد T2 اندرويد 14، شاشة FHD 1920x1200، ذاكرة RAM 4GB، روم 256GB (TF 512GB)، نظام تحديد المواقع/نوع C/بطارية 8000mAh، ثنائي شرائح الاتصال 4G LTE/5G Hz واي فاي/التعرف على الوجه",
+      "name_en": "AGM PAD T2 Tablet Android 14, FHD 1920x1200 Display, 4GB RAM, 256GB ROM (TF 512GB),GPS/Type-C/8000mAh Battery/Dual SIM 4G LTE/5G Hz WIFI/Face ID",
+      "brand": "Unknown",
+      "best_price": 639,
+      "store_count": 2,
+      "stores": [
+        "أمازون",
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ديل كروم بوك 11 3100 سيليرون N4000 2.6GHz 4GB 32GB eMMC AC BT باث 11.6 انش HD ام تي كروم او اس (مجدد)",
+      "name_en": "Dell 3100 Intel Celeron N4020 1.1GHz 4GB 32GB Webcam 11.6 Touch Screen Chromebook Chrome OS VH5H8",
+      "brand": "Dell",
+      "best_price": 217.02,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "كاميرا ويب ام كيه 2 ممتازة FHD للبث والألعاب ومكالمات الفيديو والتسجيل وخاصية اتش دي ار ومستشعر سوني وتحكم بي تي زد من الجاتو فيس كام - تعمل مع او بي اس وزووم وتيمز وغيرها للكمبيوتر/ماك | مستشعر سوني، تحكم PTZ، فيديو 1080p60 غير مضغوط، عناصر تحكم بنمط DSLR، غالق خصوصية سهل الانزلاق",
+      "name_en": "Elgato Facecam MK.2 – Premium Full HD Webcam for Streaming, Gaming, Video Calls, Recording, HDR Enabled, Sony Sensor, PTZ Control – Works with OBS, Zoom, Teams, and More, for PC/Mac",
+      "brand": "LG",
+      "best_price": 529,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "جوال موتورولا 56 جيجا، رام 12+12 جيجابايت معززة، سعة تخزين داخلية 256 جيجابايت، معالج ام تي كيه دايمنستي 7060، شاشة 6.7 بوصة FHD+ تحديث 120 هرتز، نظام اندرويد 15، بانتون بلاك اويستر",
+      "name_en": "MOTOROLA MOTO G56 5G, 12+12GB RAM Boost, 256 GB ROM, MTK Dimensity 7060, 6.7\" FHD+ Display 120Hz, Android 15, PANTONE Black Oyster",
+      "brand": "Unknown",
+      "best_price": 705.9,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة ذكية ريدمي ووتش 5 اكتيف بشاشة LCD 51 ملم وبطارية تدوم +18 يوم من 140 وضع رياضي وتتبع معدل ضربات القلب وتشبع الأكسجين ومقاومة للماء حتى 5 ايه تي ام ومكالمات بلوتوث وتتبع اللياقة البدنية، أسود",
+      "name_en": "Redmi Watch 5 Active Smartwatch, 51mm LCD Display, 18 Day Battery, 140+ Sports Modes, Heart Rate and SPO₂ Tracking, 5ATM Waterproof, Bluetooth Calls, Fitness Tracker, Sleep Monitor - Black",
+      "brand": "Unknown",
+      "best_price": 123.84,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة ذكية للرجال ، بلوتوث 1.52 \" هد شاشة ساعة ذكية مع معدل ضربات القلب النوم رصد عداد الخطى ، 21 وضع الرياضة اللياقة البدنية ووتش ، إب 67 للماء اللياقة البدنية المقتفي لالروبوت دائرة الرقابة الداخلية",
+      "name_en": "Smart Watch for Men,Bluetooth 1.52\" HD Screen Smartwatch with Heart Rate Sleep Monitor Pedometer, 21 Sports Mode Fitness Watch, IP67 Waterproof Fitness Tracker for Android iOS",
+      "brand": "RollsTimi ",
+      "best_price": 153.6,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "1.83 \" تفت غس الرياضة ساعة ذكية ، (الرد / إجراء المكالمات) ، إب 68 للماء اللياقة البدنية ووتش ، النوم رصد ، اللياقة البدنية المقتفي مع 123 وسائط الرياضة ، الساعات الذكية للرجال النساء",
+      "name_en": "1.83\" TFT GPS Sport Smart Watch, (Answer/Make Calls), IP68 Waterproof Fitness Watch, Sleep Monitor, Fitness Tracker with 123 Sport Modes, Smartwatches for Men Women",
+      "brand": "RollsTimi ",
+      "best_price": 178,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة ذكية للرجال 1.43 أمولد هد شاشة بلوتوث دعوة ووتش إب 68 للماء ارتداء اليومي ووتش النشاط المقتفي رصد معدل ضربات القلب الرياضة واللياقة البدنية ووتش ، ووتش دت ووتش س الشريط الأسود ساعة ذكية",
+      "name_en": "Men's smart watch 1.43 AMOLED HD screen Bluetooth call watch IP68 waterproof daily wear watch activity tracker heart rate monitor sports and fitness watch, Watch DT Watch X black tape smart watch",
+      "brand": "RollsTimi ",
+      "best_price": 225,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "إم كيه 88 ساعة ذكية عصرية للنساء ، مكالمة بلوتوث ، مراقبة النوم ، وضع التمرين المتعدد ، تعقب اللياقة البدنية ، آي بي 68 مقاوم للماء ، ساعة ذكية ماسية (فولاذ ذهبي)",
+      "name_en": "MK88 Women's Fashion Smart Watch, Bluetooth Call, Sleep Monitoring, Multi-exercise Mode, Fitness Tracker, IP68 Waterproof, Diamond Smart Watch (Golden Steel)",
+      "brand": "RollsTimi ",
+      "best_price": 249,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة ذكية للرجال والنساء (الرد / إجراء المكالمات) ، هد شاشة اللياقة البدنية المقتفي إب 67 للماء 100 + وسائط الرياضة ، رصد معدل ضربات القلب النوم ، عداد الخطى Silver",
+      "name_en": "Smart Watch for Men Women(Answer/Make Calls), HD Screen Fitness Tracker IP67 Waterproof 100+ Sport Modes, Heart Rate Sleep Monitor, Pedometer（Silver ）",
+      "brand": "RollsTimi ",
+      "best_price": 259,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "موسع WiFi AC2600 (RE650) من تي بي- لينك، حتى 2600 ميجابت في الثانية، موسع نطاق WiFi ثنائي التردد، منفذ جيجابت، معزز للانترنت، جهاز تقوية الاشارة ونقاط الوصول مزود بتقنية ام يو- ميمو 4×4",
+      "name_en": "TP-Link AC2600 WiFi Extender(RE650), Up to 1733Mbps, Dual Band WiFi Range Extender, Gigabit port, Internet Booster, Repeater, Access Point,4x4 MU-MIMO (UAE Version)",
+      "brand": "Unknown",
+      "best_price": 264.98,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة ذكية نسائية ، شاشة 1.75 بوصة عالية الدقة ، ساعة لياقة بدنية مقاومة للماء من آي بي 68 ، مكالمة بلوتوث (رد / جعل) ، مراقب معدل ضربات القلب / النوم ، متتبعات رياضية ، شريط إم كيه 90 وردي",
+      "name_en": "Women's Smartwatch, 1.75-Inch HD Screen, IP68 Waterproof Fitness Watch, Bluetooth Call (Answer/Make), Heart Rate/Sleep Monitor, Sports Trackers, MK90 Tape Pink",
+      "brand": "RollsTimi ",
+      "best_price": 268,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة ذكية للرجال/النساء-الرد / إجراء المكالمات ، 2026 جديد 1.53\" ساعة ذكية ، تعقب اللياقة البدنية مع وسائط ممارسة متعددة ، إب 68 عداد الخطى للماء ، النوم/خطوة رصد لالروبوت دائرة الرقابة الداخلية ، رت-دك 56",
+      "name_en": "Smart Watch for Men/Women，Answer/Make Calls, 2026 New 1.53\" Smartwatch, Fitness Tracker with Multiple Exercise Modes, IP68 Waterproof Pedometer, Sleep/Step Monitor for Android iOS,RT-DK56",
+      "brand": "RollsTimi ",
+      "best_price": 280,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة VA مسطحة بدقة كاملة الوضوح مقاس 21.5 بوصة مع تقنية إيه إم دي فري سينك أسود",
+      "name_en": "21.5-Inch Monitor Full HD VA Panel Flat With AMD FreeSync Black",
+      "brand": "LG",
+      "best_price": 449,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "تلفزيون غلوريا إل إي دي ذكي عالي الدقة مقاس 32 بوصة، نتفليكس، يوتيوب، ديزني بلس، أبل تي في بلس، ستارز بلاي أرابيا، بث أو إس إن، إم بي سي شاهد، إيروس ناو، Viu، سوني ليف، إتش بي أو ماكس غلوريا بلاك IX 32HD SMART أسود",
+      "name_en": "32 Inch HD Smart LED TV - HD 1366 x 768 Resolution, Latest Android Television, Quad Core, Frameless, A+ Panel, Android TV with Wi-Fi, 3 HDMI Ports , 2 USB, VGA, RJ45, 178° View, Slim Design, Netflix, YouTube, 2 Year Warranty - Gloria 32 Smart IX 32HD SMART IX 32HD SMART Black",
+      "brand": "Impex",
+      "best_price": 459,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة ألعاب تي يو اف 5 VG249Q5R من اسوس: 23.8 بوصة، FHD (1920×1080)، 200 هرتز، تقنية اي ال ام بي، 0.3 مللي ثانية (دقيقة)، مكبر صوت ستيريو، مركز ديسبلاي ويدجيت، تقنية الذكاء الاصطناعي البصرية - أسود",
+      "name_en": "ASUS TUF Gaming Series 5 VG249Q5R Gaming Monitor: 23.8-inch, Full HD(1920x1080), 200Hz, Fast IPS, ELMB, 0.3ms GTG (min.), Stereo speaker, DisplayWidget Center, AI Visual - Black",
+      "brand": "Asus",
+      "best_price": 499,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة LED بدقة كاملة الوضوح مقاس 27 بوصة بدقة 1920×1080 بكسل بتردد 75 هرتز مع تقنية إيه إم دي فري سينك ومنفذ HDMI وVGA طراز أسود",
+      "name_en": "Dell SE2722H 27'' Full HD LED Monitor, 1920x1080 Resolution, Up to 75Hz, VA-Panel, Anti-Glare, 8ms Response Time, 16:9 Aspect Ratio, 3H Hard Coating, AMD FreeSync, HDMI/VGA Port, Black | SE2722H BLACK",
+      "brand": "Unknown",
+      "best_price": 520,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "نظام واي فاي منزلي كامل ديكو ام 5 ايه سي 1300 ام يو-ميمو مكون من ثلاث قطع من تي بي-لينك، ابيض",
+      "name_en": "TP-Link Deco M5 AC1300 MU-MIMO Dual-Band Whole Home Wi-Fi System 3-Pack",
+      "brand": "Unknown",
+      "best_price": 589,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساوندكور بوم 2 من أنكر، مكبر صوت خارجي، 80 واط، مضخم صوت، باس أب 2.0، 24 ساعة تشغيل، مقاوم للماء IPX7، قابل للطفو، أضواء RGB، USB-C، EQ مخصص، بلوتوث 5.3، محمول للتخييم والشاطئ",
+      "name_en": "Soundcore Boom 2 by Anker, Outdoor Speaker, 80W, Subwoofer, BassUp 2.0, 24H Playtime, IPX7 Waterproof, Floatable, RGB Lights, USB-C, Custom EQ, Bluetooth 5.3, Portable for Camping and Beach - Green",
+      "brand": "Unknown",
+      "best_price": 599,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة VA منحنية مقاس 32 بوصة بدقة كاملة الوضوح ومنافذ توصيل VGA وHDMI وديسبلاي بورت مع تقنية إيه إم دي فري سينك طراز 322E1C أسود",
+      "name_en": "32-Inch Monitor, 322E1C, FHD Curved VA panel, VGA, HDMI/DisplayPort connectivity, AMD FreeSync technology Black",
+      "brand": "Philips",
+      "best_price": 736,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "تابلت هواوي ميت باد SE 11 بوصة 8+128 جيجا لون رمادي، قلم ام-بن لايت، شاشة عرض كاملة، بطارية ذات سعة كبيرة، حصري من أمازون هواوي كير+",
+      "name_en": "HUAWEI MatePad SE 11'' 8+128GB Nebula Grey Tablet, FullView Display, Large Capacity Battery, 1-Year Amazon Exclusive Huawei Care+",
+      "brand": "Huawei",
+      "best_price": 765,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة ‎210-AZKS/SE2722H مقاس 27 بوصة بدقة كاملة الوضوح (1920x1080) LED، معدل التحديث 75 هرتز مع تقنية إيه إم دي فري سينك لون أسود.",
+      "name_en": "210-AZKS/SE2722H Monitor With 27 Inch Full HD (1920x1080) LED Display, Refresh Rate 75 Hz with AMD FreeSync Black",
+      "brand": "DELL",
+      "best_price": 767,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ايسر لاب توب كروم بوك 311 CBOA311-1H - انتل سيليرون N4500، 4 جيجابايت، بطاقة ذاكرة اي ام ام سي 64 جيجابايت، بطاقة رسومات مدمجة، شاشة 11.6 اتش دي، نظام تشغيل كروم، اسود",
+      "name_en": "Acer Chromebook 311 CBOA311-1H Laptop - Intel Celeron N4500, 4GB, 64GB eMMC, Integrated Graphics, 11.6 HD, Chrome OS, Black",
+      "brand": "Acer",
+      "best_price": 903.2,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ايسر لاب توب كروم بوك 314 CBOA314-1H - انتل سيليرون N4500، 4 جيجابايت، ذاكرة اي ام ام سي 64 جيجابايت، بطاقة رسومات مدمجة، شاشة 14 بوصة فل اتش دي، نظام تشغيل كروم، اسود",
+      "name_en": "Acer Chromebook 314 CBOA314-1H Laptop - Intel Celeron N4500, 4GB, 64GB eMMC, Integrated Graphics, 14\" Full HD, Chrome OS, Black",
+      "brand": "Acer",
+      "best_price": 929.13,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة العاب G55C اوديسي G5 منحنية، 27\" بوصة (2560×1440) كيو اتش دي، شاشة ذات معدل تحديث عالى 165 هيرتز،  تقنية VA، سرعة الاستجابة حتى 1 مللي ثانية، تقنية أيه أم دي فري سينك و مزوده ب 2 منافذ HDMI",
+      "name_en": "27 inch Odyssey G5 Curved Gaming Monitor 2k QHD 2560x1440, HDR10, VA Panel Technology, 1ms Response Time, 165Hz Refresh Rate, AMD Free Sync, Flicker Free Black",
+      "brand": "Samsung",
+      "best_price": 1199,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة عرض 327E8QJAB بتقنية IPS مقاس 32 بوصة بمعدل تحديث 75 هرتز وزمن استجابة 4 مللي ثانية وبتقنية إيه إم دي فري سينك ومنع الوميض ومزودة بمكبرات صوت ومنفذ HDMI وVGA وديسبلاي بورت وبدقة 1920‎ x 1080 وبمعدل سطوع 250 شمعة لكل متر مربع أسود",
+      "name_en": "327E8QJAB 32 inch FHD Monitor, 75Hz/ 4ms/ IPS/ AMD FreeSync/ Speakers/ FlickerFree - (1920 x 1080, 250 cd/m², HDMI, VGA, DisplayPort) Black",
+      "brand": "Philips",
+      "best_price": 1599,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة مقاس 27 بوصة بدقة كاملة الوضوح طراز L27I-30 (تقنية IPS، دقة 4 مللي ثانية، وتردد يصل إلى 75 هرتز، منفذ HDMI + VGA، وتقنية أيه إم دي فري سينك) لون أسود",
+      "name_en": "27-Inch Fhd Monitor L27I-30 (Ips, 4Ms, Up To 75 Hz, HDMI + Vga, AMD Free sync) Black",
+      "brand": "Lenovo",
+      "best_price": 1670,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة العاب منحنية 32\" بوصة (2560x1440) معدل التحديث 240 هرتز، QHD، سرعة الاستجابة حتى 1 مللي ثانية، مزوده بتقنية أيه أم دي فري سينك بريميوم، مع مكبرات صوت ومنفذ HDMI 2.1",
+      "name_en": "32 Inch Curved Gaming Monitor G6 With QHD Resolution (2560x1440) Display VA Response Time Upto 1ms 240hz Refresh Rate & AMD FreeSync Premium Pro LS32BG650EMXUE Black",
+      "brand": "Samsung",
+      "best_price": 1899,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة العاب كمبيوتر اوديسي G6 منحنية، 27\" بوصة (2560×1440) كيو اتش دي، شاشة ذات معدل تحديث عالى،  تقنية VA، معدل التحديث 240 هيرتز، سرعة الاستجابة حتى 1 مللي ثانية، تقنية أيه أم دي فري سينك بريميوم، مزوده ب 2 منافذ HDMI، واي فاي و سماعات صوت",
+      "name_en": "Odyssey g6 27 Inch Curved (1000R) Smart Gaming Monitor With 2K QHD 2560 × 1440 Resolution & 240hz Refresh Rate 1ms GTG, HDMI 2.1, Wi-Fi, HDR600, FreeSync Premium Pro,  Speaker, Gaming Hub Black",
+      "brand": "Samsung",
+      "best_price": 2199,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "طابعة ثلاثية الابعاد من فوجو اف دي ام مقاس 3.5 انش تعمل باللمس TMC2208 بدون سواق، حجم الطباعة 220 × 220 × 260 ملم، الة طباعة ثلاثية الابعاد ووظيفة استئناف الطباعة",
+      "name_en": "FOOJO FDM DIY 3D Printer 3.5-inch Color Touch Screen TMC2208 Slient Driver, Printing Size 220×220×260mm 3D Printing Machine Resume Printing Function",
+      "brand": "Unknown",
+      "best_price": 2312.41,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "آبل آيباد برو 11 إنش (2025) بمعالج إم 5، سعة 512 جيجابايت، واي فاي/ خلوي - اسود",
+      "name_en": "Apple iPad 11 Pro M5 2025, 11 Inch, 512GB, Wi-Fi/Cellular - Black",
+      "brand": "ابل",
+      "best_price": 6349.000501,
+      "store_count": 1,
+      "stores": [
+        "المنيع"
+      ],
+      "over_budget_5000": true
+    },
+    {
+      "name_ar": "كانون كاميرا رقمية اي او اس R50 RF-S18-45 ملم هي اس تي ام (اسود)",
+      "name_en": "Canon Digital Camera EOS R50 RF-S18-45mm is STM (Black)",
+      "brand": "Unknown",
+      "best_price": 2969,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "الكمبيوتر المحمول طراز لاتيتيود 3420 المزود بشاشة عرض فائقة الدقة بالكامل مقاس 14 بوصة ومعالج كور i7-1165G7 / ذاكرة رام سعة 8 جيجابايت / سعة تخزين 512 جيجابايت إس إس دي / بدون ويندوز / بطاقة رسومات انفيديا جى فورس ام اكس 450 سعة 2 جيجابايت الإنجليزية/العربية أسود",
+      "name_en": "Latitude 3420 Laptop With 14-nch FHD Display Display, Core i7-1165G7 Processor/8GB RAM/512GB SSD/DOS(Without Windows)/2GB NVIDIA GeForce MX450 Graphics English/Arabic Black",
+      "brand": "DELL",
+      "best_price": 4499,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "لابتوب ثينك باد L15 جين 4، معالج i7-1355U ذاكرة وصول عشوائي 16 جيجا دي دي ار فور، 512 جيجا اس اس دي ام.2، رسومات ايريس اكس اي مدمجة، 15.6 بوصة فائقة الدقة نظام تشغيل ويندوز 11 برو الإنجليزية/العربية أسود",
+      "name_en": "ThinkPad L15 Gen 4 Laptops, i7-1355U, 16GB DDR4, 512GB SSD M.2, Integrated Iris Xe Graphics, 15.6 Inch FHD Win 11 Pro English/Arabic Black",
+      "brand": "Lenovo",
+      "best_price": 6344,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": true
+    },
+    {
+      "name_ar": "ابل آيباد برو 13 إنش (2025) بمعالج إم 5، سعة 256 جيجابايت، واي فاي/ خلوي - اسود",
+      "name_en": "Apple iPad 11 Pro M5 2025, 13 Inch, 256GB, WiFi/Cellular - Black",
+      "brand": "ابل",
+      "best_price": 7899.005001,
+      "store_count": 1,
+      "stores": [
+        "المنيع"
+      ],
+      "over_budget_5000": true
+    },
+    {
+      "name_ar": "لابتوب ثينك باد P14s جيل 3 مع شاشة 14 بوصة فائقة الدقة (1920x1080) ، معالج كور i7-1260P / ذاكرة وصول عشوائي 16 جيجابايت رام دي دي ار فور / سعة تخزين 512 جيجابايت اس اس دي ام.2 / نظام تشغيل ويندوز 11 برو / بطاقة رسومات انتل اكس اي مدمج الإنجليزية/العربية أسود",
+      "name_en": "ThinkPad P14s Gen 3 Laptop With 14-inch FHD (1920x1080) Display ,Core i7-1260P Processor/16GB RAM DDR4/512GB SSD M.2/Windows 11 Pro/Integrated Intel Xe Graphics/ English/Arabic Black",
+      "brand": "Lenovo",
+      "best_price": 9609,
+      "store_count": 1,
+      "stores": [
+        "نون"
+      ],
+      "over_budget_5000": true
+    },
+    {
+      "name_ar": "سخان كهربائي صغير محمول للقهوة وإبريق الشاي من اتش اس كيو ام ايه، مصنوع من السيراميك بلوح ساخن كهربائي، يوضع على سطح الطاولة، للماء المغلي والشاي والقهوة، 800 واط (أبيض)",
+      "name_en": "HSQMA Electric Mini Coffee Pot Warmer, Electric Teapot Stove Portable, 800W Electric Ceramic Stove Coffee Heater, Teapot Warmer, Heater Stove Countertop Burner for Boiling Water, Tea, Coffee (White)",
+      "brand": "Unknown",
+      "best_price": 106.88,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة سي ام اف برو 2 من نوثينج ووتش، شاشة اموليد 1.35 بوصة ونظام تحديد المواقع العالمي و120 وضع رياضي وخوارزمية نوم ذكية ومكالمات بلوتوث تقليل ضوضاء بذكاء اصطناعي، رمادي داكن، إصدار الشرق الأوسط",
+      "name_en": "CMF BY NOTHING",
+      "brand": "Unknown",
+      "best_price": 249,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "ساعة 3 برو من سي ام اف باللون البرتقالي",
+      "name_en": "CMF Watch 3 Pro Orange",
+      "brand": "Unknown",
+      "best_price": 328,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة ألعاب جاوفولك اتساع 34 بوصة 21:9 اي بي اس دبليو اف اتش دي 2 كيه(2560×1080) تحديث 120 هرتز، 120% sRGB، سطوع 350 شمعة/م مربع، فري سينك، HDR10، دي بي و اتش دي ام اي للترفيه والعمل والمنزل (أبيض) | 2K (2560x1080) 120% sRGB 350cd/㎡ فري سينك HDR10 DP HDMI مناسب للترفيه والمكتب والاستخدام المنزلي (ابيض)",
+      "name_en": "Gawfolk 34\" inch Ultrawide 21:9 IPS Gaming Monitor WFHD 120Hz Computer Display Screen 2K(2560x1080) 120% sRGB 350cd/㎡ FreeSync HDR10 DP HDMI Suitable for entertainment, office and home use (White)",
+      "brand": "Unknown",
+      "best_price": 736,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة ألعاب 34 بوصة من زد-ايدج، 1 مللي ثانية، 165 هرتز، فائقة الاتساع 2 كيه، نسبة امتداد 21:9، دقة 3440×1440، لوحة IPS، زوايا عرض 178 درجة، ايه ام دي فري سينك، اتصالات قوية، UG34W",
+      "name_en": "Z-EDGE 34-inch Gaming Monitor, 1ms,165Hz, Ultrawide 2K, 21:9 Aspect Ratio, 3440x1440 Resolution, IPS Panel, 178° Viewing Angles, AMD FreeSync, Powerful Connections, UG34W",
+      "brand": "Unknown",
+      "best_price": 949.99,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "شاشة فائقة الاتساع 34 بوصة، شاشة ألعاب منحنية WQHD بدقة 3440 × 1440 وتردد 165 هرتز، شاشة كمبيوتر 1500R بتقنية HDR، فري سينك وجي سينك، اتش دي ام اي، منفذ عرض، تثبيت فيسا، تعديل بمحور ارتفاع دوار | شاشة كمبيوتر 1500R، HDR، فري سينك وجي سينك، HDMI، منفذ عرض، فيسا، تعديل محوري ارتفاع دوار للإمالة،",
+      "name_en": "KTC 34 Inch Ultrawide 165Hz WQHD 3440X1440 Curved Gaming Monitor, 1500R PC Monitor, HDR, FreeSync & G-Sync, HDMI, DisplayPort, VESA, Tilt Swivel Height Pivot Adjustment, H34S18S",
+      "brand": "Unknown",
+      "best_price": 969.54,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "تلفزيون ذكي 55P61L نحيف 55 بوصة 2026 بدقة 4K وتقنية HDR 10+ للألعاب بنظام جوجل TV، مع ميزة تحسن الألوان وتقنية دولبي فيجن اتموس وDTS فيرتوال X ورقاقة ام اي ام سي لسلاسة الحركة وجيم ماستر من تي سي ال",
+      "name_en": "TCL 65P61L Television 65 Inch Smart TV 4K UHD HDR 10+ Gaming Google TV, Dynamic Color Enhancement, Dolby Vision Atmo, DTS Virtual X, MEMC, Game Master with Slim Design (2026 Model)",
+      "brand": "Google",
+      "best_price": 1339,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "تلفزيون 55T61D ذكي موديل 2026 مقاس 55 بوصة بدقة 4K QLED وكريستال كوانتوم ملون HDR 10+ لتلفزيون جوجل للألعاب ودولبي فيجن اتموس ودي تي اس فيرتشوال:اكس وام اي ام سي وجيم ماستر بتصميم نحيف من تي سي ال",
+      "name_en": "TCL 55T61D Television 55 Inch Smart TV 4K Premium QLED Colorful Quantum Crystal HDR 10+ Gaming Google TV, Dolby Vision Atmos, DTS Virtual:X, MEMC, Game Master with Slim Design (2026 Model)",
+      "brand": "Google",
+      "best_price": 1339,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "تلفزيون ذكي نحيف 65 بوصة 65P71K QLED مع بلورات كوانتوم ملونة، يدعم HDR 10+ وجوجل تي في مُحسّن للألعاب صوت دولبي فيجن اتموس ودي تي اس فيرتشوال اكس وميزة ام اي ام سي تحكم صوتي، جيم ماستر 4K من تي سي ال",
+      "name_en": "TCL 65T61D Television 65 Inch Smart TV 4K Premium QLED Colorful Quantum Crystal HDR 10+ Gaming Google TV, Dolby Vision Atmos, DTS Virtual:X, MEMC, Game Master with Slim Design (2026 Model)",
+      "brand": "Google",
+      "best_price": 1949,
+      "store_count": 1,
+      "stores": [
+        "أمازون"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "لاب توب لينوفو ايديا باد سليم 3 15ARP10 83K700Q7AD، جيجابايت 512 SSD، جيجابايت 16 رام، 15.3 بوصة، WUXGA IPS هرتز 60، اي ام دي راديون 680M، ويندوز 11 هوم - رمادي",
+      "name_en": "Lenovo IdeaPad Slim 3 15ARP10 83K700Q7AD, AMD Ryzen 7 170, 512GB SSD, 16GB, 15.3 Inch, Windows 11 Home - Grey",
+      "brand": "لينوفو",
+      "best_price": 2498.996001,
+      "store_count": 1,
+      "stores": [
+        "المنيع"
+      ],
+      "over_budget_5000": false
+    },
+    {
+      "name_ar": "وحدة تحكم الفيديو الرقمية X7 من ميااوكيان محمول باليد قياس 4.1 بوصة - مع ذراع مزدوجة وذاكرة بسعة 8 جيجابايت و1000 لعبة مدمجة ويدعم الاتصال مع شاشة التلفزيون مع مشغل ام بي 5",
+      "name_en": "Morelian X7 4.3 Inch Video Game Console Handheld Game Players Double Rocker 8GB Memory Built in 1000 Games MP5 Game Controller TV Output",
+      "brand": "Unknown",
+      "best_price": 136.31,
+      "store_count": 1,
+      "stores": [
+        "أمازون السعودية"
+      ],
+      "over_budget_5000": false
+    }
+  ]
+}

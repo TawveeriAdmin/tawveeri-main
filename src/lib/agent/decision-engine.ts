@@ -15,6 +15,9 @@ export interface ShoppingTask {
   city?: string;
   priorities?: string[]; // e.g. ["quiet","low_electricity","heating"]
   budget_total?: number | null;
+  /** Units requested («ابي 3 مكيفات»). ≥2 only; absent means one. The engine prices ONE
+   *  unit — callers divide the total budget before handing it in (see decide route). */
+  quantity?: number | null;
 }
 
 export interface CanonicalRow {

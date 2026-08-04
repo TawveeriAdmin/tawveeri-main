@@ -554,6 +554,16 @@ export function AdvisorAnswer({
         </div>
       )}
 
+      {/* Multi-unit (basket) acknowledgement — quantity, total budget, per-unit ceiling,
+          and the UNKNOWNS (installation/delivery). Rendered whenever the shopper asked for
+          ≥2 units so an individually-priced option is never presented as fulfilling a
+          multi-unit request (Founder directive 2026-08-04; unknown beats incorrect). */}
+      {result.basket?.note_ar && (
+        <div className="mb-4 rounded-xl border border-primary-200 bg-primary-50/60 p-3 text-sm leading-relaxed text-on-surface dark:border-primary-900/50 dark:bg-primary-950/30" data-testid="advisor-basket-note">
+          {loc === 'ar' ? result.basket.note_ar : (result.basket.note_en || result.basket.note_ar)}
+        </div>
+      )}
+
       {/* Error (unparseable) */}
       {result.error && (
         <div className="rounded-2xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-900/50 dark:bg-warning-950/30">
