@@ -1,4 +1,57 @@
-# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #44 · ADR-206 MOBILE FILTER DOORWAY · FOUNDER-COMPRESSED UNIT ═══
+# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #45 · DOCUMENTATION CHECKPOINT CLOSED · PHASE TRANSITION RECORDED · SESSION CLOSED ═══
+
+## PHASE TRANSITION — Master Book engineering execution → Controlled Demand Validation (social-growth execution)
+
+**Docs-only checkpoint. No product code touched. No marketing execution began.**
+
+### What this closes
+Engineering execution under `docs/TAWVEERI_MASTER_BOOK.md` (Master Book Phase, see
+`docs/CHECKPOINT-2026-08-03-MASTER-BOOK-PHASE.md` and CHECKPOINT #43/#44 above) reached a
+governed documentation handoff point. Two new governing documents were authored and are now
+committed:
+- `docs/LAUNCH_MARKETING_PLAYBOOK.md` — voice, message order, format. Companion to
+  `docs/LAUNCH_VOCABULARY.md`.
+- `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md` v1.1 — the operating constitution for demand
+  acquisition, content, listening and attribution, including Appendix D (app-channel
+  decision: native app deferred, PWA is the approved bridge).
+
+### Governing hierarchy confirmed
+```
+LAUNCH_VOCABULARY.md            → governs what Tawveeri may publicly claim
+LAUNCH_MARKETING_PLAYBOOK.md    → governs voice, wording order, content format
+TAWVEERI_SOCIAL_GROWTH_SYSTEM.md → governs strategy, measurement, operating rules
+[execution prompt, not yet issued] → governs autonomous implementation
+```
+All three files verified present at their documented paths. Internal cross-references are
+consistent: the Growth System doc correctly cites the Master Book, `LAUNCH_VOCABULARY.md`
+and the Playbook as superior/companion authorities; the Playbook correctly cites
+`LAUNCH_VOCABULARY.md` as the claims authority.
+
+**Linkage gap recorded, not fixed (out of this checkpoint's scope):** `docs/README.md` (the
+repo's documented "full index" per `CLAUDE.md`) does not yet list either new file, and
+`docs/DECISIONS.md` has no ADR for their creation. `docs/TAWVEERI_MASTER_BOOK.md` does not
+reference either subordinate document by name. Not corrected here — this checkpoint verifies
+and records, it does not expand scope.
+
+### Referenced roadmap — does NOT exist
+`marketing/SOCIAL_IMPLEMENTATION_ROADMAP.md`, cited by the Growth System doc §28 as a
+governed file, **was not found** — no `marketing/` directory exists in the repository at
+all. Recorded per instruction; **not invented or created during this limited checkpoint.**
+
+### Explicit non-authorizations (binding until a founder-approved execution prompt says otherwise)
+- **No public post has been authorised** — on any platform, in any format.
+- **No social account connection has been authorised** — no OAuth, no API credential, no
+  Buffer/scheduler connection for TikTok, X, Instagram, Snapchat, or YouTube.
+- **No outreach has been authorised** — no reply, no DM, no comment, cold or owned.
+- **No unmeasured public claim has been authorised** — every prior CAN-SAY constraint in
+  `LAUNCH_VOCABULARY.md` remains in force; nothing in this checkpoint adds or loosens a claim.
+
+### Next unit (not started)
+Whatever the founder's execution prompt scopes under Controlled Demand Validation — Phase 0
+(Parallel Readiness) per `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md` §27. Not begun.
+
+---
+# ═══ 2026-08-04 CHECKPOINT #44 · ADR-206 MOBILE FILTER DOORWAY · FOUNDER-COMPRESSED UNIT ═══
 
 ## UNIT — mobile filter/sort discoverability on /ar/search (founder-observed 4 Aug)
 
