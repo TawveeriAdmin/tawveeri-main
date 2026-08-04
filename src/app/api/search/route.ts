@@ -1047,11 +1047,14 @@ export async function POST(request: NextRequest) {
         : [];
       const expansions = [...englishExp, ...arabicExp];
       // The SUBJECT of the request, not the sentence wrapping it (same rule as compare
-      // intent above): budget-wrapper words and constraint numbers are stripped from the
-      // engine query so they can never act as matching terms. Ordinary queries carry no
-      // such tokens and are byte-identical to before.
+      // intent above): stopwords, budget-wrapper words and constraint numbers are stripped
+      // from the engine query so they can never act as matching or ranking terms. A query
+      // word absent from optionalWords is effectively REQUIRED-and-ranked by the engine —
+      // measured 2026-08-04: «want»/«with» left in the EN basket sentence outranked every
+      // Arabic-titled AC with English junk titles containing those function words. Ordinary
+      // product queries carry none of these tokens and are unchanged.
       const subjectWords = normalizeArabic(rawQuery).split(/\s+/)
-        .filter((w) => w && !BUDGET_WRAPPER.has(w) && !constraintNumbers.has(w));
+        .filter((w) => w && !STOPWORDS.has(w) && !constraintNumbers.has(w));
       const subject = subjectWords.length ? subjectWords.join(' ') : normalizeArabic(rawQuery);
       const algoliaQuery = expansions.length ? `${subject} ${expansions.join(' ')}` : subject;
       const algoliaRes = await searchAlgolia({
