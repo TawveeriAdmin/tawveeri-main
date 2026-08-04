@@ -1,15 +1,15 @@
 {
-  "captured_at": "2026-08-04T06:57:52.234Z",
-  "commit": "14c2803",
+  "captured_at": "2026-08-04T07:34:30.319Z",
+  "commit": "ef9546c",
   "results": [
     {
       "id": "ar",
       "query": "ابي 3 مكيفات بميزانيتي 5000 ريال",
       "search": {
-        "total": 461,
+        "total": 496,
         "count": 48,
         "categoryEnforcedZero": false,
-        "ac_of_returned": "47/48",
+        "ac_of_returned": "48/48",
         "over_budget_5000": 0,
         "top8": [
           {
@@ -95,13 +95,57 @@
       "id": "en",
       "query": "I want 3 air conditioners with a budget of 5000 SAR",
       "search": {
-        "total": 0,
-        "count": 0,
-        "categoryEnforcedZero": true,
-        "ac_of_returned": "0/0",
+        "total": 16,
+        "count": 16,
+        "categoryEnforcedZero": false,
+        "ac_of_returned": "16/16",
         "over_budget_5000": 0,
-        "top8": [],
-        "decisionCard": null
+        "top8": [
+          {
+            "n": "مكيف سبليت ال جي 18000 وحدة إنفرتر",
+            "price": 1560,
+            "stores": 1
+          },
+          {
+            "n": "LG Spilt Air Conditioner 12000 BTU Cool Only Inverter WI-FI",
+            "price": 1080,
+            "stores": 1
+          },
+          {
+            "n": "Basic Window Air Conditioner Cold 18 000 BTU Rotary",
+            "price": 1149,
+            "stores": 1
+          },
+          {
+            "n": "Bosch Split Air Conditioner 22 100 BTU Cold Only T3 Rotary P",
+            "price": 1200,
+            "stores": 1
+          },
+          {
+            "n": "Basic Window Air Conditioner Hot and Cold 17 800 BTU Rotary",
+            "price": 1319,
+            "stores": 1
+          },
+          {
+            "n": "Star vision 16000 BTU Hot&Cold Portable Air Conditioner, Aut",
+            "price": 1699,
+            "stores": 1
+          },
+          {
+            "n": "Gree Split Air Conditioner 12 000 BTU Cooling Only AI-PRO In",
+            "price": 1969,
+            "stores": 1
+          },
+          {
+            "n": "Bosch Split Air Conditioner 18 300 BTU Cold Only T3 Rotary P",
+            "price": 1999,
+            "stores": 1
+          }
+        ],
+        "decisionCard": {
+          "title": "مكيف سبليت ال جي 18000 وحدة إنفرتر",
+          "price": 1560
+        }
       },
       "advisor": {
         "count": 4,

@@ -365,6 +365,11 @@ function hasACSignal(nameAr: string, nameEn: string): boolean {
 const BUDGET_WRAPPER = new Set<string>([
   'ريال', 'ريالا', 'ريالات', 'بميزانيه', 'بميزانيتي', 'ميزانيه', 'ميزانيتي', 'الميزانيه',
   'sar', 'riyal', 'riyals', 'budget',
+  // Room-size constraint language, same class (measured on the founder's reference query
+  // «مكيف رخيص لغرفه 40 متر» — لغرفه/متر formed impossible groups and zeroed the grid the
+  // advisor was answering above). The parsed room NUMBER joins constraintNumbers below.
+  'غرفه', 'لغرفه', 'غرفتي', 'الغرفه', 'مساحه', 'مساحتها', 'بمساحه', 'متر', 'امتار',
+  'room', 'bedroom', 'sqm', 'meter', 'meters', 'square',
 ]);
 
 const STOPWORDS = new Set<string>([
@@ -969,7 +974,7 @@ export async function POST(request: NextRequest) {
   // categories while the stated category sat unenforced; see the baseline directory.)
   const constraintTask = rawQuery ? parseShoppingTask(rawQuery) : null;
   const constraintNumbers = new Set<string>(
-    [constraintTask?.budget_total, constraintTask?.quantity]
+    [constraintTask?.budget_total, constraintTask?.quantity, constraintTask?.room_size_m2]
       .filter((n): n is number => typeof n === 'number')
       .map(String),
   );
