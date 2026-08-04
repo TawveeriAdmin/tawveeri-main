@@ -6,6 +6,83 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-208 — Controlled Demand Validation Wave 1: founder-review corrections + checkpoint close · Accepted (2026-08-04)
+
+**Context.** ADR-207 shipped the Wave 1 pack (Social Fact Pack, Claims/Content Ledgers, UTM
+capture, Launch Pack) for founder review. Three review passes followed, each surfacing real
+defects the founder needed corrected before the pack could be called approval-ready. This ADR
+records the corrections and the resulting checkpoint close.
+
+**Corrections applied, across three review passes:**
+1. **Account-status accuracy.** The X account **@Tawveeri already exists** — it was not
+   connected/authorised, never "nonexistent." Corrected in `HANDOVER.md`. TikTok, Instagram,
+   Snapchat were checked without credentials (public profile probes only: TikTok returned
+   "Couldn't find this account"; Instagram's public `web_profile_info` endpoint returned
+   "Page Not Found"; Snapchat's `/add/<user>` redirect 404'd, differential-tested against a
+   known-live handle that returns 200) and are now worded as "no clearly matching public
+   account was found during the check" — never a claim that a username is available; that is
+   the founder's to confirm at actual account creation.
+2. **Ledger bookkeeping fixed, not deferred.** `marketing/CONTENT_LEDGER.csv` and
+   `marketing/CLAIMS_LEDGER.md` both wrongly cross-referenced `carousel-01` to the volatile
+   discount-integrity claim (claim-05) — the carousel's actual slide copy never used that
+   number (it uses claim-06/07/08 only). Both files corrected directly.
+2b. **Missing content found and completed.** A verification pass (this ADR) found
+   `carousel-02` was the only one of 22 content items without a literal, exact copy block in
+   the founder-facing package — it had a prose description only. Added the exact 5-slide
+   template text (this session's 4 known prices, explicitly marked as a template snapshot to
+   be replaced with revalidated numbers on assembly day).
+3. **Template-approval framing.** Any founder approval of a price-bearing item is now recorded
+   as approval of its **template and script only** — every price/retailer/timestamp/landing
+   link must be revalidated immediately before actual filming/scheduling/publishing,
+   regardless of elapsed time. The Fact Pack's 48h figure is its own snapshot expiry, not a
+   validity guarantee for that whole window.
+4. **Sequence corrected.** First public move (once approved and connected): `x-01`, published
+   then manually pinned. Second: `x-06`, only after same-day revalidation. TikTok video content
+   is gated entirely on TikTok account creation — not sequenced relative to X at all.
+5. **Thread renumbered.** With `x-04` (the volatile-claim reply) on HOLD, the actual thread is
+   **four** parts (`x-01→x-02→x-03→x-05`, labeled 1/4→4/4), never presented as an incomplete
+   "1/5→5/5" with a silent gap at part 4.
+6. **Metrics reframed as observational.** The "10 qualified sessions / 72h" stop/continue
+   figure is now explicitly labeled an early observation checkpoint, not a pass/fail verdict —
+   material given the pre-launch traffic baseline (25 real sessions/30 days before any social
+   push). Impressions, link clicks, attributed sessions, SAFJ, SDGS, and sample-size
+   limitations are reported separately, never blended into one number.
+7. **SAFJ / SDGS formally defined**, per the founder's governing definitions, in
+   `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md` §2 (a gap found on verification: neither term
+   existed anywhere in the repository before this ADR, despite being referenced as
+   already-governing — now codified there as the source of truth, kept strictly separate,
+   never merged):
+   - **SAFJ (Social-attributed Fulfilled Journey):** a social-attributed session that opens a
+     valid comparison for one canonical product with ≥2 displayable retailers, or produces an
+     attributable merchant outbound click from a verified product/comparison route.
+   - **SDGS (Social Demand Gap Session):** a social-attributed session that produces a
+     zero-result query, a meaningful reformulation, unresolved purchase intent, or a requested
+     product with no fulfillable comparison.
+8. `video-05`, `x-04`, `carousel-02` confirmed HOLD throughout — never moved to any
+   publishable state. Reply drafts (5) confirmed as voice/style examples only — approval of
+   style is explicitly not authorization to send; every real discovered-intent reply still
+   requires human review and manual sending.
+
+**Decision — checkpoint closed, nothing executed.** As of this ADR: 0 claims `APPROVED` (8
+`PENDING_FOUNDER_APPROVAL`), all 17 content rows `DRAFT`, `video-05`/`x-04`/`carousel-02` on
+`HOLD`. No content published, scheduled, or approved for execution. No social account
+connected or created. No external reply sent. No paid commitment made. Founder decisions on
+the content table, and on account creation/connection, are **deferred** until the founder is
+ready to begin public execution — this ADR records a correctly-parked state, not a launch.
+
+**Consequences.** `marketing/LAUNCH_PACK_wave1.md` was brought in line with the corrected,
+founder-reviewed package (thread renumbering, HOLD banners, the missing reply-drafts section,
+the corrected posting order, the template-approval framing) — previously only the standalone
+review artifact had these corrections; the repository's durable copy is now the same document
+the founder actually reviewed.
+
+**Rollback.** `git revert` this commit restores the pre-correction wording in `HANDOVER.md`,
+`marketing/CLAIMS_LEDGER.md`, `marketing/CONTENT_LEDGER.csv`, `marketing/LAUNCH_PACK_wave1.md`,
+and `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md`. No data-layer changes, no migration to reverse,
+no external side effect to undo (nothing was published/scheduled/connected).
+
+---
+
 ### ADR-207 — Controlled Demand Validation, Wave 1: readiness instrument, UTM capture, Social Fact Pack tooling · Accepted (2026-08-04)
 
 **Context.** The founder's execution order for `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md`

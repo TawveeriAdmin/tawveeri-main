@@ -11,6 +11,12 @@ founder sign-off") and the fact that this whole Launch Pack is explicitly built 
 **unpublished**, nothing here goes live until reviewed and its state is changed to `APPROVED`
 by the founder, claim by claim.
 
+**Founder-review checkpoint closed 2026-08-04 (HANDOVER checkpoint #47, ADR-208).** All ten
+corrections from the founder's review passes are verified applied. **Every claim below
+remains `PENDING_FOUNDER_APPROVAL` — no claim has been marked `APPROVED`.** The decision on
+each is deferred until the founder is ready to begin public execution; this is a stopping
+point, not an approval.
+
 ---
 
 ```yaml
@@ -88,11 +94,15 @@ by the founder, claim by claim.
   expires_at: "same day as publish only (re-curl every time, no exceptions)"
   product_or_scope: "all examined offers, not a specific product — the 'among the offers we
     examined' qualifier from vocabulary MUST stay attached, never dropped"
-  allowed_platforms: [x, instagram]
+  allowed_platforms: [x, tiktok]
   approval_state: PENDING_FOUNDER_APPROVAL
-  published_content_ids: [cdv-w1-video-05, cdv-w1-x-04, cdv-w1-carousel-01]
+  published_content_ids: [cdv-w1-video-05, cdv-w1-x-04]
   rollback_or_correction: if the re-curled figure differs from 70% at publish time, use the
     fresh number and cite the new date — never the cached 70%.
+  correction_2026-08-04: "cdv-w1-carousel-01 was removed from this list — its actual slide
+    copy (see marketing/LAUNCH_PACK_wave1.md) uses claim-08, not this claim; the earlier
+    listing here and in CONTENT_LEDGER.csv was a bookkeeping error, now fixed in both files,
+    not deferred."
 
 - claim_id: cdv-w1-claim-06
   public_wording_ar: "نقول متى ما كنا لا نعرف."

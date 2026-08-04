@@ -1,23 +1,54 @@
 # LAUNCH PACK — WAVE 1 (Controlled Demand Validation)
-**Status: UNPUBLISHED.** Everything in this file is a draft awaiting founder review. No
-account exists yet on any platform (see final report). Nothing here is scheduled.
+**Status: FOUNDER-REVIEW CHECKPOINT CLOSED, 2026-08-04. Still fully unpublished.** Every
+content item below remains `DRAFT`/`PENDING_FOUNDER_APPROVAL`/`HOLD` — nothing has been
+published, scheduled, or approved for execution. This document was corrected during the
+founder-review cycle (see HANDOVER checkpoint #47, ADR-208) to match the final approved-for-
+review package. Founder decisions on the content table are **deferred** until the founder is
+ready to begin public execution.
+
+**Account status (verified, no credentials requested or handled):**
+- **X: @Tawveeri exists** but is not connected or authorised for this workflow.
+- **TikTok, Instagram, Snapchat:** no clearly matching public account was found during the
+  check. This is not a claim that no account exists, and it is **not** a claim that the
+  username "tawveeri" is available — availability is only confirmed by the founder at actual
+  account-creation time.
+- Account creation and connection are both deferred until the founder is ready.
 
 **Evidence source:** marketing/SOCIAL_FACT_PACK_2026-08-04.md (measured 2026-08-04T09:28:20Z,
 production `vyceqrzttspyycdpojtn`) + marketing/CLAIMS_LEDGER.md (claim_id references below).
 **Voice/order source:** docs/LAUNCH_MARKETING_PLAYBOOK.md (§2 voice, §3 order, §4/§6 templates
 — reused directly, not reinvented). **Vocabulary source:** docs/LAUNCH_VOCABULARY.md.
-**Every price cited expires 48h from the Fact Pack's measurement time** (2026-08-06T09:28Z).
-If this pack is used after that window, re-run `npx tsx scripts/tps-analysis/build-social-fact-pack.ts`
-and refresh every number before publishing anything.
 
-**Stop/continue thresholds, defined before any measurement exists (per KPI conventions
-already in `scripts/tps-analysis/usage-report.ts`):** a piece **continues** (repeat the
-hook/format) if it drives ≥10 qualified demand sessions (see docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md
-§2) attributable via its `utm_content` within 72h of posting, AND generates no correction/
-complaint about accuracy. A piece **stops** (do not repeat this hook/format, log why in
-CONTENT_LEDGER.csv's `decision` column) if it drives <3 qualified demand sessions in 72h, OR
-draws any reply/comment disputing the price/claim's accuracy (pull, re-verify, then decide
-whether to correct-and-relink or retire).
+**Approval of any price-bearing item below is approval of its TEMPLATE AND SCRIPT ONLY.**
+Every price, retailer, timestamp and landing journey must be revalidated immediately before
+filming, scheduling or publishing — regardless of how much time has passed. The 48h figure
+below is the Fact Pack snapshot's own expiry, not a guarantee that a price claim stays valid
+for that whole window; revalidate same-day, always, even at hour 1.
+**Every price cited expires 48h from the Fact Pack's measurement time** (2026-08-06T09:28Z) —
+past that window the snapshot is unusable outright and the Fact Pack must be re-run
+(`npx tsx scripts/tps-analysis/build-social-fact-pack.ts`) before any further use.
+
+**Metrics framing (SAFJ / SDGS — governing definitions, docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md
+§2, formalized 2026-08-04):**
+- **SAFJ (Social-attributed Fulfilled Journey):** a social-attributed session that either
+  opens a valid comparison for one canonical product with ≥2 displayable retailers, or
+  produces an attributable merchant outbound click from a verified product/comparison route.
+- **SDGS (Social Demand Gap Session):** a social-attributed session that produces a
+  zero-result query, a meaningful reformulation, unresolved purchase intent, or a requested
+  product with no fulfillable comparison.
+- Kept strictly separate — a session is never counted as both, and neither is redefined or
+  merged with the other.
+
+**Stop/continue thresholds are an early OBSERVATION checkpoint, not a definitive pass/fail
+verdict** — especially at this account's pre-launch size (a handful of followers or fewer,
+first posts ever; real-traffic baseline is 25 real sessions/30 days before any social push).
+A piece is **worth repeating** (same hook/format again) if it drives ≥10 SAFJ attributable via
+its `utm_content` within 72h of posting, AND draws no correction/complaint about accuracy. A
+piece is **worth pausing** (do not repeat this hook/format yet, log why in CONTENT_LEDGER.csv's
+`decision` column) if it drives <3 SAFJ in 72h, OR draws any reply/comment disputing the
+price/claim's accuracy (pull, re-verify, then decide whether to correct-and-relink or retire).
+Report SAFJ, SDGS, impressions, link clicks and attributed sessions **separately**, never
+blended into one pass/fail number, and always alongside the sample-size caveat above.
 
 ---
 
@@ -98,7 +129,9 @@ product, no founder talking head, hook in the first 2 seconds, one CTA at the en
 - **Risk class:** LOW (headline 107h old — inside window, re-verify at publish).
 - **Stop/continue:** per pack-level threshold.
 
-### Video 5 — Trust/differentiation (no single product; the "why" piece)
+### Video 5 — Trust/differentiation (no single product; the "why" piece) — **HOLD**
+**Status: HOLD.** Excluded from the recommended first batch and from any batch until
+re-measured same-day at actual publish time (see rollback/correction on claim-05).
 - **Hypothesis:** after four proof pieces, one piece explaining the discount-integrity
   finding builds the differentiation Master Book/Playbook §1 calls for ("our finding is a
   measurement against a standard that already exists, not an accusation").
@@ -128,10 +161,19 @@ the day this is actually filmed — do not trust even 60% past today.)*
 
 ## PART 2 — TEN X POSTS
 
-### Thread (5 parts — Playbook §4 template, reused verbatim in structure, adapted wording
-kept as close to the approved template as the content allows)
+### Launch thread — FOUR parts (x-04 excluded, not a gap in a five-part count)
+**Correction, 2026-08-04:** x-04 (the discount-integrity reply) is on HOLD — see below — and
+is **not** part of the numbered thread. The thread that actually runs is four parts:
+x-01 → x-02 → x-03 → x-05, labeled 1/4 → 4/4. The posted tweet text itself never contained an
+explicit "1/5" or "1/4" label (X's own UI chains replies visually); this numbering is internal
+reference only, now corrected to match what will actually be published — never "1/5 → 5/5"
+with a silent gap at part 4. Recommended sequence: **x-01 is published and pinned FIRST**
+(the anchor/launch post), the three replies complete the thread shortly after, and only THEN
+does any single per-product post (x-06 onward) go out, each after its own same-day
+revalidation. TikTok content does not enter this sequence at all — it is gated entirely on
+TikTok account creation, independent of X's timeline.
 
-**cdv-w1-x-01 — Post 1 (the benefit) — claim_id cdv-w1-claim-07**
+**cdv-w1-x-01 — Part 1/4 (the benefit, published + pinned first) — claim_id cdv-w1-claim-07**
 ```
 قبل تشتري، شوف فرق السعر.
 
@@ -146,7 +188,7 @@ kept as close to the approved template as the content allows)
 tawveeri.com/ar?utm_source=x&utm_medium=organic_social&utm_campaign=controlled_demand_validation_wave1&utm_content=cdv-w1-x-01
 ```
 
-**cdv-w1-x-02 — Reply 1 (the difference) — claim_id cdv-w1-claim-08**
+**cdv-w1-x-02 — Part 2/4 (the difference) — claim_id cdv-w1-claim-08**
 ```
 وش المختلف في توفيري؟
 
@@ -156,7 +198,7 @@ tawveeri.com/ar?utm_source=x&utm_medium=organic_social&utm_campaign=controlled_d
 نشرح كيف وصلنا له.
 ```
 
-**cdv-w1-x-03 — Reply 2 (the proof, real spread we observed) — claim_id cdv-w1-claim-03**
+**cdv-w1-x-03 — Part 3/4 (the proof, real spread we observed) — claim_id cdv-w1-claim-03**
 ```
 مثال حقيقي رصدناه بأنفسنا:
 
@@ -170,7 +212,8 @@ this version cites only our OWN observed cross-retailer spread — no specific "
 advertised X, we say Y" comparison exists as verified evidence this session, so none is
 claimed. Do not add one without a fresh, dated instrument backing it.*
 
-**cdv-w1-x-04 — Reply 3 (the measurement, conditional) — claim_id cdv-w1-claim-05**
+**cdv-w1-x-04 — HOLD, excluded from the thread — claim_id cdv-w1-claim-05**
+**Status: HOLD.** Not part of the 4-part thread that runs — the thread ends at x-05 (4/4).
 ```
 في العروض اللي فحصناها، 60% من الخصومات المعلنة كانت تقارن بسعر
 ما ظهر في سجل رصدنا أبدًا.
@@ -178,11 +221,10 @@ claimed. Do not add one without a fresh, dated instrument backing it.*
 لهذا نبيّن لك أعلى سعر رصدناه، بدل ما نكرر السعر المشطوب.
 ```
 *(60% = this session's live re-curl, 2026-08-04T09:38:13Z. Re-curl again at actual publish.)*
-**Do not post without re-curling the figure same-day** (see claim-05). If not reproducible
-that day, drop this reply from the thread entirely — the Playbook explicitly allows dropping
-this reply rather than posting stale evidence.
+**Do not post without re-curling the figure same-day** (see claim-05). Excluded from the
+recommended first sequence entirely, per the same volatility that holds video-05.
 
-**cdv-w1-x-05 — Reply 4 (the invitation) — claim_id cdv-w1-claim-06**
+**cdv-w1-x-05 — Part 4/4, thread close (the invitation) — claim_id cdv-w1-claim-06**
 ```
 هذي أول نسخة من توفيري.
 
@@ -190,7 +232,9 @@ this reply rather than posting stale evidence.
 وش لقيت؟ ووين أخطأنا؟
 ```
 
-### Five standalone single posts
+### Five standalone single posts (recommended: SECOND in the sequence, after the thread,
+each gated on its own same-day price/journey revalidation — not part of the smallest first
+move, which is x-01 alone)
 
 **cdv-w1-x-06 — TV — claim_id cdv-w1-claim-01**
 ```
@@ -229,9 +273,15 @@ tawveeri.com/ar?utm_source=x&utm_medium=organic_social&utm_campaign=controlled_d
 ---
 
 ## PART 3 — TWO CAROUSELS (Instagram)
+Both gated on Instagram account creation (no clearly matching account found during this
+session's check) in addition to any content-approval status below.
 
 ### cdv-w1-carousel-01 — "كيف يشتغل توفيري" (How Tawveeri works), 6 slides
 Order per Playbook §3: benefit → how it works → evidence → limits, honesty line as the CLOSE.
+**Correction, 2026-08-04:** this carousel's claim association was fixed in
+`marketing/CLAIMS_LEDGER.md` and `marketing/CONTENT_LEDGER.csv` — it uses claim-06/07/08 only;
+the discount-integrity claim (claim-05) was never in its actual slide copy and the earlier
+ledger cross-reference listing it was a bookkeeping error, now corrected in both files.
 1. **Benefit:** «قبل تشتري، شوف فرق السعر.»
 2. **How it works (1):** «تدوّر على منتجك في توفيري.» [screenshot: search]
 3. **How it works (2):** «نبيّن لك من أي متجر جا السعر، ومتى رصدناه.» [screenshot: result card with "آخر سعر رصدناه" label]
@@ -239,22 +289,98 @@ Order per Playbook §3: benefit → how it works → evidence → limits, honest
 5. **Limits — claim-07:** «ما زلنا في البداية، والتغطية مو كاملة.» (uncounted, no catalog-size figure per vocabulary)
 6. **Close — claim-06:** «وإذا ما عرفنا، نقولها بوضوح. جرّب توفيري.» + link with `utm_content=cdv-w1-carousel-01`
 
-### cdv-w1-carousel-02 — "أسعار رصدناها هالأسبوع" (Prices we caught this week), 5 slides
-One slide per product (TV, Apple Watch, air fryer, blender), each showing: product name,
-"آخر سعر رصدناه" + value + retailer + observation date (pulled fresh from the Fact Pack at
-publish time, not these cached numbers), closing slide repeats claim-06 honesty line + link
-with `utm_content=cdv-w1-carousel-02`.
-**Before assembling this carousel, re-run** `npx tsx scripts/tps-analysis/build-social-fact-pack.ts`
-**and use whatever numbers that run produces — never the numbers frozen in this document once
-more than 48h have passed since 2026-08-04T09:28:20Z.**
+### cdv-w1-carousel-02 — "أسعار رصدناها هالأسبوع" (Prices we caught this week), 5 slides — **HOLD**
+**Status: HOLD.** Most time-sensitive item in the pack — it bundles four prices at once.
+Exact slide copy (this session's snapshot, template only):
+1. تلفزيون سامسونج UA55U8000HUXSA — آخر سعر رصدناه: 1,649 ريال (أمازون) — رُصد بتاريخ [يُحدَّث يوم التجميع الفعلي]
+2. ساعة Apple Watch 11 46mm — آخر سعر رصدناه: 1,579 ريال (أمازون) — رُصد بتاريخ [يُحدَّث يوم التجميع الفعلي]
+3. قلاية هوائية فيليبس 9 لتر — آخر سعر رصدناه: 779 ريال — رُصد بتاريخ [يُحدَّث يوم التجميع الفعلي]
+4. خلاط فيليبس 450 واط — آخر سعر رصدناه: 119 ريال — رُصد بتاريخ [يُحدَّث يوم التجميع الفعلي]
+5. **Close — claim-06:** «وإذا ما عرفنا، نقولها بوضوح. جرّب توفيري.» + link with `utm_content=cdv-w1-carousel-02`
+
+Even after HOLD is lifted, all four prices above must be re-measured in full on the actual
+assembly day — `npx tsx scripts/tps-analysis/build-social-fact-pack.ts` — no exceptions, and
+never carried forward from this document once more than 48h have passed since
+2026-08-04T09:28:20Z.
 
 ---
 
+## PART 4 — FIVE REPLY DRAFTS (voice/style examples only — not replies to any real post)
+
+No real post has been replied to yet — the X account is not connected and no listening has
+begun (see `marketing/X_LISTENING_LEXICON.md`). These five are illustrative scenario
+templates approving the **voice and structure only**. Approving them authorizes nothing to be
+sent: every real discovered-intent reply still requires human review and manual sending
+(`marketing/RESPONSE_POLICY.md`), regardless of this approval.
+
+**reply-01 — high buying intent**
+*Scenario (hypothetical):* "ابغى اشتري تلفزيون سامسونج بس ما ادري وين ارخص سعر"
+```
+آخر سعر رصدناه لهذا التلفزيون كان 1,649 ريال عند أمازون بتاريخ [التاريخ الفعلي وقت الرد] —
+تقدر تشوف باقي المتاجر اللي رصدنا فيها نفس الجهاز من هنا: [رابط مقارنة محدد]
+```
+
+**reply-02 — comparison question**
+*Scenario (hypothetical):* "ايش الفرق بين توفيري ومواقع الكوبونات؟"
+```
+ما نحسب التوفير من رقم مشطوب. نحسبه من أسعار رصدناها بأنفسنا — عشان كذا رقمنا قد يكون أقل
+من رقم المتجر، بس نقدر نشرح كيف وصلنا له.
+```
+
+**reply-03 — fake-discount complaint (MEDIUM risk — never names a retailer negatively)**
+*Scenario (hypothetical):* "هذا المتجر يسوي خصم وهمي، يرفعون السعر قبل العرض!"
+```
+نقيس هذا الموضوع فعلاً بدل ما نفترضه. من العروض اللي فحصناها، نسبة منها تشير لسعر ما رصدناه
+إحنا من قبل — يعني مو بالضرورة تلاعب، بس هو سعر ما شفناه إحنا. إذا حاب نشوف آخر سعر رصدناه
+لنفس المنتج، قول لي اسمه.
+```
+
+**reply-04 — deal-rumor verification**
+*Scenario (hypothetical):* "سمعت إن فيه عرض قوي على قلاية فيليبس الهوائية، حد يعرف إذا صحيح؟"
+```
+ما نقدر نأكد عروض ما رصدناها إحنا بأنفسنا. آخر سعر رصدنا له كان 779 ريال بتاريخ [كذا] — إذا
+عندك رقم مختلف، ودّينا نتأكد.
+```
+
+**reply-05 — general thanks/engagement**
+*Scenario (hypothetical):* "جربت توفيري اليوم، طلعت مفيدة!"
+```
+يعطيك العافية! إذا لقيت شي غلط أو ناقص، قول لنا نصلّحه — نبي نكون صريحين حتى مع أخطائنا.
+```
+
+---
+
+## Corrected recommended posting order (illustrative sequencing only — nothing scheduled)
+1. **x-01** — publish first, then pin manually on @Tawveeri (once connected and approved).
+2. **x-02 → x-03 → x-05** — complete the 4-part launch thread as replies under x-01.
+3. **x-06** — only after same-day revalidation of the TV price/retailer/link.
+4. **x-07, x-08, x-09** — each only after its own same-day revalidation.
+5. **x-10** — no claim, no revalidation needed, anytime in the sequence.
+6. **video-01 through video-04** — begin only once a TikTok account exists; independent of
+   the X sequence above, each still needs same-day revalidation at time of filming.
+7. **carousel-01** — begins only once an Instagram account exists.
+8. **Held indefinitely within this wave:** video-05, x-04, carousel-02.
+
 ## Pre-publish checklist (every piece, no exceptions)
-1. Re-run the Fact Pack if >48h have passed since 2026-08-04T09:28:20Z; update every price.
-2. Re-curl the discount-integrity figure same-day for any piece using claim-05.
+1. Re-run the Fact Pack if >48h have passed since 2026-08-04T09:28:20Z; update every price —
+   and even inside that window, revalidate immediately before actual use regardless (see the
+   template-approval note at the top of this document).
+2. Re-curl the discount-integrity figure same-day for any piece using claim-05 (video-05,
+   x-04) — both remain HOLD until this happens AND the founder lifts the hold explicitly.
 3. Confirm the destination URL is live and the UTM string matches marketing/UTM_CONVENTION.md.
 4. Confirm no LuLu/Sharaf DG retailer is named (Fact Pack candidates used here don't include
    either, but re-check on any substitution).
 5. Founder approval state on every claim_id used must read `APPROVED`, not
    `PENDING_FOUNDER_APPROVAL`, before anything is scheduled.
+6. Confirm the target account exists and is connected/created before scheduling anything on
+   that platform (X: connect @Tawveeri; TikTok/Instagram: create first; Snapchat: reserve
+   the identity only, no content planned yet).
+7. Any real reply to a real discovered post is drafted, then reviewed and sent by a human —
+   never automated, regardless of how closely it matches an approved style example above.
+
+## Founder-review checkpoint status — 2026-08-04
+All ten corrections from the founder's review passes verified complete (see HANDOVER
+checkpoint #47, ADR-208). Content-approval decisions on every item in this pack are
+**deferred** until the founder is ready to begin public execution — nothing here is approved
+for publishing. Account creation (TikTok, Instagram) and account connection (@Tawveeri) are
+also deferred until the founder is ready.

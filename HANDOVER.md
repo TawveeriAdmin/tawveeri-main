@@ -1,3 +1,77 @@
+# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #47 · CONTROLLED DEMAND VALIDATION WAVE 1 · FOUNDER-REVIEW CHECKPOINT CLOSED · EXECUTION DEFERRED TO FOUNDER ═══
+
+## PHASE — Controlled Demand Validation, Wave 1 pack reviewed, corrected, and closed at a founder-review checkpoint
+
+Supersedes CHECKPOINT #46 for status purposes (that checkpoint's readiness evidence still
+stands unchanged — see ADR-207). This checkpoint records three founder review passes over the
+Wave 1 pack, the corrections each surfaced, and the final closed state. Full detail: ADR-208.
+
+### Corrections applied this cycle (see ADR-208 for complete detail)
+1. Account status corrected: **@Tawveeri exists, not connected** (was wrongly recorded as
+   "no account exists" in CHECKPOINT #46 — fixed here and in this file's own prior entry).
+   TikTok/Instagram/Snapchat: "no clearly matching public account was found during the check"
+   — verified via public, credential-free probes; no username-availability claim made.
+2. `marketing/CONTENT_LEDGER.csv` + `marketing/CLAIMS_LEDGER.md`: `carousel-01`'s wrong
+   cross-reference to the volatile discount-integrity claim (claim-05) removed — fixed
+   directly, not deferred, per explicit founder instruction.
+3. A verification pass caught `carousel-02` as the one content item (of 22) missing its exact,
+   literal copy in the founder package — added the missing 5-slide template text.
+4. Every price-bearing item reframed: founder approval = **template/script approval only**;
+   every price/retailer/timestamp/link needs same-day revalidation before actual use,
+   regardless of elapsed time — the 48h figure is a snapshot expiry, not a validity guarantee.
+5. Recommended sequence corrected: **x-01 first** (publish, then pin manually), **x-06
+   second** (only after same-day revalidation); TikTok video content gated entirely on TikTok
+   account creation, not sequenced against X at all.
+6. X thread renumbered: with `x-04` on HOLD, the real thread is **4 parts**
+   (`x-01→x-02→x-03→x-05`, 1/4→4/4) — never an incomplete "1/5→5/5."
+7. The "10 qualified sessions/72h" figure reframed as an early observation checkpoint, not a
+   pass/fail verdict, given the pre-launch traffic baseline (25 real sessions/30 days). SAFJ,
+   SDGS, impressions, link clicks, attributed sessions and sample limitations now reported
+   separately per the founder's own instruction.
+8. **SAFJ / SDGS formally codified** in `docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md` §2 (verified:
+   neither term existed in the repo before this checkpoint, despite being referenced as
+   already-governing — now the source of truth, kept strictly separate):
+   - SAFJ (Social-attributed Fulfilled Journey): opens a valid comparison for one canonical
+     product with ≥2 displayable retailers, or produces an attributable merchant outbound
+     click from a verified product/comparison route.
+   - SDGS (Social Demand Gap Session): a zero-result query, a meaningful reformulation,
+     unresolved purchase intent, or a requested product with no fulfillable comparison.
+9. `video-05`, `x-04`, `carousel-02` confirmed HOLD. Reply drafts (5) confirmed style-only —
+   never authorization to send a real reply.
+10. Repo brought in line with the reviewed package: `marketing/LAUNCH_PACK_wave1.md` now
+    carries every correction above (previously only the standalone review artifact had them).
+
+### Closed state — verified, not asserted
+- Claims: 8 total, **0 `APPROVED`**, 8 `PENDING_FOUNDER_APPROVAL` (`marketing/CLAIMS_LEDGER.md`).
+- Content: 17 rows, **all `DRAFT`** (`marketing/CONTENT_LEDGER.csv`).
+- HOLD confirmed on `video-05`, `x-04`, `carousel-02`.
+- No account connected, no account created, no external reply sent, no paid commitment made.
+- No commit beyond this checkpoint's own; nothing pushed until this checkpoint's commit.
+
+### Deferred — exact next founder actions, in the order they unblock work
+1. Review and approve the selected first X posts (start with `x-01`, then the rest of the
+   4-part thread, then the four single per-product posts) in `marketing/CLAIMS_LEDGER.md` /
+   `marketing/CONTENT_LEDGER.csv` — flip `approval_state`/`status` claim-by-claim.
+2. Connect `@Tawveeri` only when ready (login/OAuth is the founder's own action; no credential
+   requested or handled by this work).
+3. Verify or create TikTok and Instagram accounts (username availability confirmed by the
+   founder at creation time — not claimed available here).
+4. Reserve the Snapchat identity when ready (name reservation only, per Growth System §5.2 —
+   no content planned for that channel yet).
+5. Revalidate every price, retailer, timestamp and landing journey immediately before filming,
+   scheduling or publishing any approved item — re-run
+   `npx tsx scripts/tps-analysis/build-social-fact-pack.ts` and, for any item using claim-05,
+   re-curl `https://tawveeri.com/api/v1/tps/discount-integrity` same-day.
+
+### Rollback
+```
+(this commit)   ADR-208 + corrected HANDOVER/ledgers/Launch Pack/Growth System (SAFJ/SDGS)
+                git revert <this commit hash>
+```
+No data-layer changes, no migration, no external side effect (nothing published, scheduled,
+connected, or sent) — every change here is documentation/ledger text.
+
+---
 # ═══ RESUME HERE — 2026-08-04 CHECKPOINT #46 · CONTROLLED DEMAND VALIDATION WAVE 1 · READINESS PROVEN, UNPUBLISHED PACK BUILT, FOUNDER ACTION NEEDED TO SHIP ═══
 
 ## PHASE — Controlled Demand Validation, Phase 0 (Parallel Readiness) → Wave 1 pack built, nothing published
@@ -33,7 +107,15 @@ point.
 - `marketing/CONTENT_LEDGER.csv` — 17 content items (5 video + 10 X + 2 carousel), schema per
   §13, every row `status: DRAFT`.
 - `marketing/UTM_CONVENTION.md`, `marketing/RESPONSE_POLICY.md`, `marketing/X_LISTENING_LEXICON.md`
-  — operating references, no execution yet (no account exists to listen or reply from).
+  — operating references, no execution yet. **Correction (2026-08-04, later same day):** an
+  X account already exists — **@Tawveeri**. It is simply not yet connected/authorised for
+  posting or listening in this workflow. Verified this session, no login used, no credentials
+  requested/handled: TikTok `@tawveeri` — confirmed absent ("Couldn't find this account").
+  Instagram `tawveeri` — confirmed absent ("Page Not Found • Instagram", via the public
+  `web_profile_info` endpoint). Snapchat `@tawveeri` — confirmed absent (404, differential-
+  tested against a known-live handle which returns 200). X itself blocks unauthenticated
+  profile probes (redirects to a login wall) so it could not be independently re-confirmed
+  by this method — the founder's direct statement is the record.
 - `marketing/LAUNCH_PACK_wave1.md` — the actual 5 TikTok scripts, 10 X posts, 2 IG carousels,
   each with hypothesis/hook/claim_id/CTA/risk class/stop-continue threshold, voice per
   `docs/LAUNCH_MARKETING_PLAYBOOK.md` §2/§3/§4/§6 (reused directly, not reinvented).
@@ -50,8 +132,11 @@ point.
   approval rules apply, correctly not touched by this session).
 
 ### BLOCKED — exact unblocking action for each
-1. **No social account exists on any platform.** Unblocks on: founder creates TikTok/X/
-   Instagram accounts (credentials/OAuth — explicitly reserved to the founder).
+1. **X account @Tawveeri exists but is not connected/authorised for this workflow; TikTok,
+   Instagram and Snapchat accounts do not exist yet (verified this session, see correction
+   note above).** Unblocks on: founder connects/authorises @Tawveeri (credentials/OAuth —
+   explicitly reserved to the founder) and separately decides whether/when to create TikTok,
+   Instagram and Snapchat accounts.
 2. **No claim in the Claims Ledger is `APPROVED`.** Unblocks on: founder reviews
    `marketing/CLAIMS_LEDGER.md` claim-by-claim and flips `approval_state`.
 3. **No content is scheduled.** Unblocks on: (1) + (2), then re-run the Fact Pack if >48h have
