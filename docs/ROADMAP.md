@@ -13,7 +13,7 @@ Two views: *where the product is on the capability ladder*, and *the engineering
 | **L1** | **Discovery** — users find products | ✅ Live |
 | **L2** | **Comparison** — stores, prices, availability, offers | ✅ Live (canonical comparison for covered categories) |
 | **L3** | **Knowledge** — specs, differences, guides, FAQs, buying advice | 🟡 Partial — decision layer surfaced as Smart Pick in search; TPS **comparison** covers `mobile`/`ac`/`tv`/`tablet`/`audio`/`camera` (6 live categories — evidence-backed sweep complete); `laptop` built + precise but 0 catalog corroboration (ADR-032); appliance deferred (single-store) |
-| **L4** | **AI Shopping** — Waffar reasons, compares, explains, recommends | 🟡 Present on web; deterministic-engine-backed; not yet on all clients |
+| **L4** | **AI Shopping** — Waffar reasons, compares, explains, recommends | 🟡 Present on web; deterministic-engine-backed; not yet on all clients. Need-sentence routing is bilingual (Arabic budget morphology fixed), multi-unit requests get an honest basket acknowledgement (quantity · total · per-unit ceiling · unknowns), and every advisor non-answer records a state — ADR-205. Full Basket Intent scoped, not started (ADR-205). |
 | **L5** | **Commerce Intelligence** — market understanding, prediction, merchant & consumer intelligence, APIs | ⚪ Foundational data exists; capabilities not yet built |
 
 **Current position:** solidly L2, converging toward a complete L3 and a broader L4. The gating work is knowledge-construction automation and platform consolidation, not new surfaces.

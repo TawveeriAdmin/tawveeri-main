@@ -1,0 +1,184 @@
+{
+  "captured_at": "2026-08-04T06:42:28.938Z",
+  "commit": "f7d6e6b",
+  "results": [
+    {
+      "id": "ar",
+      "query": "ابي 3 مكيفات بميزانيتي 5000 ريال",
+      "search": {
+        "total": 461,
+        "count": 48,
+        "categoryEnforcedZero": false,
+        "ac_of_returned": "47/48",
+        "over_budget_5000": 0,
+        "top8": [
+          {
+            "n": "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد",
+            "price": 2699,
+            "stores": 3
+          },
+          {
+            "n": "مكيف شباك تي سي إل، 18000 وحدة، بارد فقط",
+            "price": 1199,
+            "stores": 2
+          },
+          {
+            "n": "مكيف وايت وستنجهاوس شباك 21800 وحدة بارد WWA25k22R",
+            "price": 1267,
+            "stores": 2
+          },
+          {
+            "n": "مكيف وايت وستنجهاوس شباك حار بادر 17800 WWA20K22HR",
+            "price": 1299,
+            "stores": 2
+          },
+          {
+            "n": "مكيف جري فريون ابيض متنقل 16000وحدة حار بارد GPH16AL-D3NTA3A",
+            "price": 1979,
+            "stores": 2
+          },
+          {
+            "n": "مكيف متنقل جري، 16000 وحدة، حار وبارد",
+            "price": 1979,
+            "stores": 2
+          },
+          {
+            "n": "مكيف سبليت FreshDV إل جي، 12000 وحدة، بارد فقط",
+            "price": 2449,
+            "stores": 2
+          },
+          {
+            "n": "مكيف سبليت هاير، 18000 وحدة، انفرتر، حار وبارد",
+            "price": 2629,
+            "stores": 2
+          }
+        ],
+        "decisionCard": {
+          "title": "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد",
+          "price": 2699
+        }
+      },
+      "advisor": {
+        "count": 4,
+        "supported": true,
+        "error": null,
+        "parsed": {
+          "category": "air_conditioner",
+          "budget_total": 5000,
+          "quantity": 3
+        },
+        "basket": {
+          "quantity": 3,
+          "total_budget": 5000,
+          "per_unit_ceiling": 1666,
+          "note_ar": "فهمنا أنك تريد 3 × مكيف بميزانية إجمالية 5,000 ريال — أي نحو 1,666 ريال للجهاز الواحد. الخيارات أدناه أسعار لجهاز واحد وليست سلة 3 أجهزة مؤكّدة، وشمول التركيب والتوصيل في السعر غير مؤكّد.",
+          "note_en": "We understood you want 3 × Air conditioner with a total budget of 5,000 SAR — about 1,666 SAR per unit. The options below are single-unit prices, not a verified 3-unit basket, and whether installation/delivery is included is not confirmed."
+        },
+        "clarify": "room_size_m2",
+        "top": [
+          {
+            "t": "مكيف شباك اروو، 18 وحدة، بارد فقط",
+            "unit": 1276
+          },
+          {
+            "t": "مكيف شباك وستنجهاوس، 18 وحدة، عادي، بارد فقط",
+            "unit": 1639
+          },
+          {
+            "t": "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد",
+            "unit": 2699
+          }
+        ]
+      }
+    },
+    {
+      "id": "en",
+      "query": "I want 3 air conditioners with a budget of 5000 SAR",
+      "search": {
+        "total": 100,
+        "count": 48,
+        "categoryEnforcedZero": false,
+        "ac_of_returned": "4/48",
+        "over_budget_5000": 0,
+        "top8": [
+          {
+            "n": "جهاز ألعاب محمول رجعي (لاعب واحد)، شاشة ملونة عالية الدقة مق",
+            "price": 106.82,
+            "stores": 1
+          },
+          {
+            "n": "وسيط تخزين ذو حالة ثابتة محمول من سانديسك بسعة 2 تيرابايت (ق",
+            "price": 736.98,
+            "stores": 1
+          },
+          {
+            "n": "طقم صواني فرن بيضاوي مؤلف من قطعتين الصغير 1.550 ليتر + الكب",
+            "price": 45,
+            "stores": 1
+          },
+          {
+            "n": "المحمولة FM/AM/SW راديو بطارية استقبال FM استقبال ممتاز واضح",
+            "price": 60,
+            "stores": 1
+          },
+          {
+            "n": "قابس تابو الذكي من تي بي لينك مع مراقبة الطاقة، يعمل مع اماز",
+            "price": 85.25,
+            "stores": 1
+          },
+          {
+            "n": "كاميرا  فائقة الدقة بتقنية PT 360 درجة لمراقبة كل زاوية في ا",
+            "price": 89,
+            "stores": 1
+          },
+          {
+            "n": "جهاز ألعاب ريترو كلاسيكي محمول K36 بشاشة IPS مقاس 3.5 بوصة –",
+            "price": 91,
+            "stores": 1
+          },
+          {
+            "n": "K36 Portable Classic Retro Game Console with 3.5-inch IPS Sc",
+            "price": 97,
+            "stores": 1
+          }
+        ],
+        "decisionCard": {
+          "title": "جهاز ألعاب محمول رجعي (لاعب واحد)، شاشة ملونة عالية الدقة مق",
+          "price": 106.82
+        }
+      },
+      "advisor": {
+        "count": 4,
+        "supported": true,
+        "error": null,
+        "parsed": {
+          "category": "air_conditioner",
+          "budget_total": 5000,
+          "quantity": 3
+        },
+        "basket": {
+          "quantity": 3,
+          "total_budget": 5000,
+          "per_unit_ceiling": 1666,
+          "note_ar": "فهمنا أنك تريد 3 × مكيف بميزانية إجمالية 5,000 ريال — أي نحو 1,666 ريال للجهاز الواحد. الخيارات أدناه أسعار لجهاز واحد وليست سلة 3 أجهزة مؤكّدة، وشمول التركيب والتوصيل في السعر غير مؤكّد.",
+          "note_en": "We understood you want 3 × Air conditioner with a total budget of 5,000 SAR — about 1,666 SAR per unit. The options below are single-unit prices, not a verified 3-unit basket, and whether installation/delivery is included is not confirmed."
+        },
+        "clarify": "room_size_m2",
+        "top": [
+          {
+            "t": "مكيف شباك اروو، 18 وحدة، بارد فقط",
+            "unit": 1276
+          },
+          {
+            "t": "مكيف شباك وستنجهاوس، 18 وحدة، عادي، بارد فقط",
+            "unit": 1639
+          },
+          {
+            "t": "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد",
+            "unit": 2699
+          }
+        ]
+      }
+    }
+  ]
+}

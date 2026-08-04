@@ -238,6 +238,10 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   // right product existed and we showed the wrong one. Third bug of this exact class,
   // after the ة/ى folding and the برو/pro generic-stripping ones.
   'galaxy', 'macbook', 'ipad', 'airpods', 'pixel',
+  // 'conditioner(s)': the EN phrase "air conditioner(s)" carried NO main-product word, so
+  // the relevance gate never engaged for it and the EN basket sentence kept junk results
+  // while the AR one was fixed (measured 2026-08-04 after-run). 'air' alone stays generic.
+  'conditioner', 'conditioners',
   'phone', 'iphone', 'smartphone', 'mobile', 'laptop', 'tv', 'television',
   'refrigerator', 'fridge', 'freezer', 'washer', 'dryer', 'vacuum',
   'microwave', 'oven', 'printer', 'router', 'camera', 'tablet', 'headphones',
@@ -367,6 +371,13 @@ function expandWordTerms(word: string): string[] {
   const norm = normalizeArabic(word).toLowerCase();
   const terms = new Set<string>();
   if (norm) terms.add(norm);
+  // English plural → singular as an ADDITIONAL term (never a replacement): catalogue titles
+  // are singular ("Air Conditioner"), so a plural query word ("conditioners") formed a
+  // relevance group no title could satisfy (measured 2026-08-04 — the EN mirror of the
+  // Arabic-plural gap fixed in ARABIC_TO_ENGLISH). Latin-only and length-guarded so model
+  // codes and Arabic words are untouched; an over-eager strip only adds a term that
+  // matches nothing.
+  if (/^[a-z]{4,}s$/.test(norm)) terms.add(norm.slice(0, -1));
   const mapped = lookupArToEn(word);
   if (mapped) {
     for (const m of mapped) {
@@ -1023,8 +1034,11 @@ export async function POST(request: NextRequest) {
       // Added as OPTIONAL words, exactly like the English expansion: recall widens, nothing is
       // required, and a record still has to match the query to rank.
       const arVariant = expandQueriesForRetailSearch(rawQuery).find((v) => v !== rawQuery.trim());
+      // `!constraintNumbers` here too: the variant keeps the sentence's numbers, and without
+      // this they re-entered the engine query through the expansion after being stripped
+      // from aqWords (measured on the EN basket sentence, 2026-08-04 after-run).
       const arabicExp = arVariant
-        ? [...new Set(normalizeArabic(arVariant).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !aqWords.includes(w)))]
+        ? [...new Set(normalizeArabic(arVariant).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !constraintNumbers.has(w) && !aqWords.includes(w)))]
         : [];
       const expansions = [...englishExp, ...arabicExp];
       // The SUBJECT of the request, not the sentence wrapping it (same rule as compare
