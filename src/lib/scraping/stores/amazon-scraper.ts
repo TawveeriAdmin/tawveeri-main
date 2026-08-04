@@ -261,14 +261,22 @@ export class AmazonScraper extends BaseScraper {
     const title = this.extractText($, '#productTitle') || '';
     if (!title) return null;
 
-    // Price selectors
+    // Price selectors — BUYBOX-SCOPED ONLY (ADR-204). The old list ended with a
+    // page-GLOBAL `.a-price .a-offscreen`, and measured on a live PDP variant with no
+    // buybox at all, the first global match sits inside `sims-simsContainer` — the
+    // "similar items" carousel — i.e. a DIFFERENT product's price. That is how a
+    // 1,609-SAR split AC was recorded at 59.99 and took down the projection chain
+    // (ADR-200). A page without a buybox has no price for THIS product: return null
+    // (unknown beats incorrect) and let the reobserve classifier handle the page.
     let price: number | null = null;
     const priceSelectors = [
+      '#corePrice_feature_div .a-offscreen',
+      '#corePriceDisplay_desktop_feature_div .a-price .a-offscreen',
+      '#apex_desktop .a-price .a-offscreen',
+      '#centerCol .a-price .a-offscreen',
+      '#tp_price_block_total_price_ww .a-offscreen',
       '#priceblock_ourprice',
       '#priceblock_dealprice',
-      '.a-price .a-offscreen',
-      '#corePrice_feature_div .a-offscreen',
-      '#tp_price_block_total_price_ww .a-offscreen',
     ];
     for (const sel of priceSelectors) {
       const priceText = this.extractText($, sel);
@@ -279,11 +287,13 @@ export class AmazonScraper extends BaseScraper {
     }
     if (!price) return null;
 
-    // Original price
+    // Original price — same scoping rule: a strike-through price from a carousel is a
+    // different product's "was". Buybox column only.
     let originalPrice: number | null = null;
-    const origText = this.extractText($, '.a-price.a-text-price .a-offscreen') ||
+    const origText = this.extractText($, '#centerCol .a-price.a-text-price .a-offscreen') ||
+                     this.extractText($, '#corePriceDisplay_desktop_feature_div .a-price.a-text-price .a-offscreen') ||
                      this.extractText($, '#listPrice') ||
-                     this.extractText($, '.basisPrice .a-offscreen');
+                     this.extractText($, '#centerCol .basisPrice .a-offscreen');
     if (origText) originalPrice = this.parsePrice(origText);
 
     // ASIN

@@ -6,6 +6,23 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-204 — Amazon PDP price extraction is buybox-scoped; a carousel price is another product's price · Accepted (2026-08-04)
+
+**Context.** ADR-200's open item. Reproduced on the live failing ASIN (B0FQCLJXPN): on a PDP
+variant with NO buybox, every legacy selector was empty and the global fallback's first match
+sat inside sims-simsContainer — the similar-items carousel. The 59.99 that overflowed the
+projection chain was another product's price, mechanically guaranteed by DOM order.
+
+**Decision.** Price and original-price selectors are BUYBOX-SCOPED only (#corePrice*,
+#apex_desktop, #centerCol, #tp_price_block, legacy ids). The page-global fallback is REMOVED:
+a page without a buybox has no price for this product — return null (unknown beats
+incorrect) and let the reobserve classifier handle the page. Fixtures pin all three
+behaviours (carousel-only → null · buybox beats an earlier decoy · scoped original price).
+Together with ADR-200's sanity gate and spread clamp this closes the misparse class at
+three independent layers. **Rollback:** revert the commit.
+
+---
+
 ### ADR-203 — Noon Arabic display names from the merchant Arabic pages, code-derived and sku-verified · Accepted (2026-08-03)
 
 **Context (U5 slice 2).** 3,877 noon storefront rows carry no Arabic name — the largest single
