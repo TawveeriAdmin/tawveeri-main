@@ -1,0 +1,43 @@
+{
+  "captured_at": "2026-08-04T08:01:48.842Z",
+  "url": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81&priceMax=3000&stores=jarir",
+  "viewport": "390x844 mobile",
+  "atTop": {
+    "title": "البحث عن المنتجات | توفيري",
+    "filterEntry": {
+      "ariaLabel": "المرشحات",
+      "visibleText": "2",
+      "visibleLabelSpans": "2",
+      "rect": {
+        "w": 48,
+        "h": 36,
+        "top": 615
+      },
+      "inViewport": true,
+      "badgeText": "2"
+    },
+    "visibleSortControls": [],
+    "activeFilterChipCount": 2,
+    "filterCountPill": true,
+    "resultCountShown": true
+  },
+  "afterScroll": {
+    "title": "البحث عن المنتجات | توفيري",
+    "filterEntry": {
+      "ariaLabel": "المرشحات",
+      "visibleText": "2",
+      "visibleLabelSpans": "2",
+      "rect": {
+        "w": 48,
+        "h": 36,
+        "top": -10563
+      },
+      "inViewport": false,
+      "badgeText": "2"
+    },
+    "visibleSortControls": [],
+    "activeFilterChipCount": 2,
+    "filterCountPill": true,
+    "resultCountShown": true
+  }
+}

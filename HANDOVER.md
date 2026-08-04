@@ -1,4 +1,42 @@
-# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #43 · ADR-205 SHIPPED & PRODUCTION-VERIFIED · SESSION CLOSED ═══
+# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #44 · ADR-206 MOBILE FILTER DOORWAY · FOUNDER-COMPRESSED UNIT ═══
+
+## UNIT — mobile filter/sort discoverability on /ar/search (founder-observed 4 Aug)
+
+**Founder compressed the unit mid-execution (quota constraint): Stage A minimum only —
+labelled Arabic button + active-filter count. Research beyond what had already completed
+was skipped on instruction.**
+
+**Before-evidence frozen FIRST** (`docs/baselines/2026-08-04-mobile-filter-discoverability/`):
+production mobile entry was a **48×36px icon-only button, visible text ""**, aria-label
+«المرشحات» (≠ the sheet's own title «الفلاتر»), no sort outside the sheet, out of viewport
+after ~60% scroll. Count badge + removable chips already existed and rendered (verified) —
+the defect was the doorway, not the applied-state machinery. Desktop healthy.
+
+**Measurement truth:** filter/sort engagement **not previously measurable** — 0 matching
+rows in `usage_events`, no such event types exist. Own traffic majority-mobile (574/867
+real events, 9/16 sessions, 42/42 real go_clicks mobile — small denominators, recorded as
+such). No fabricated baseline; claim threshold set at ≥100 real mobile search sessions
+AFTER instrumentation exists.
+
+**Research (completed before compression, free):** Amazon.sa/Noon/Extra/IKEA-SA/idealo all
+text-labelled; Noon/Extra/IKEA/idealo separate sort; Amazon/Noon/IKEA/idealo persistent
+placement; Extra's Arabic label is exactly «الفلاتر». Jarir/AliExpress/Shein/Google
+Shopping not renderable — recorded as limitations, not evidence.
+
+**Shipped (ADR-206):** label visible at EVERY width (was `hidden sm:inline`), Arabic word
+unified to «الفلاتر», trigger 44px (`h-11`), badge + chips kept. Files:
+`search-client.tsx`, `messages/ar/search.json` (one value),
+`tests/search/mobile-filter-entry.test.ts` (6 source-contract guards).
+Tests **1,313/1,313**. Boundaries respected: no retrieval/ranking/filter-semantics/URL
+changes; protected surfaces untouched; desktop toolbar is `lg:hidden` → non-regression.
+
+**Deferred WITH owners/triggers (ADR-206, not unowned):** separate visible mobile sort ·
+sticky toolbar · filter/sort instrumentation (the prerequisite for any behavioural claim).
+**Honest completion:** engineering defect resolved; behavioural impact measurement pending
+sufficient production traffic + instrumentation.
+
+---
+# ═══ 2026-08-04 CHECKPOINT #43 · ADR-205 SHIPPED & PRODUCTION-VERIFIED · SESSION CLOSED ═══
 
 **Tree clean · pushed · deployed (6 rolling deploys, each live-verified) · server response AND
 mobile DOM verified.** Commits `f7d6e6b · 14c2803 · b95e6da · 82e06b1 · ef9546c · dd62e61`.

@@ -1529,21 +1529,22 @@ export default function SearchClient() {
                       : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
                     }
                     <div className="flex items-center gap-2">
-                      {/* P2-7 (4.1.2): the label below is `hidden sm:inline`, so below 640px
-                          this button renders as a bare icon with NO accessible name — axe
-                          reported it CRITICAL on search/mobile in both locales. The visible
-                          label is kept as-is; aria-label carries the name at every width. */}
+                      {/* ADR-206: the text label renders at EVERY width. Production evidence
+                          (2026-08-04, 390×844) showed the only filter doorway on phones was a
+                          bare 48×36 icon — the label was `hidden sm:inline`. aria-label stays
+                          equal to the visible text (2.5.3 label-in-name); h-11 lifts the touch
+                          target to 44px. The word is «الفلاتر», matching the sheet it opens. */}
                       <Button
                         ref={mobileFiltersTriggerRef}
                         variant="outline"
                         size="sm"
-                        className="relative"
+                        className="relative h-11"
                         aria-label={t('search.mobileFilters')}
                         aria-expanded={mobileFiltersOpen}
                         onClick={() => setMobileFiltersOpen(true)}
                       >
                         <SlidersHorizontal className="w-4 h-4" />
-                        <span className="hidden sm:inline ms-1">{t('search.mobileFilters')}</span>
+                        <span className="ms-1">{t('search.mobileFilters')}</span>
                         {activeFilterCount > 0 && (
                           <span className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-[var(--brand-gold)] text-[var(--brand-dark-text)] text-xs flex items-center justify-center font-bold">
                             {activeFilterCount}

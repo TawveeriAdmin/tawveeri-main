@@ -1,0 +1,362 @@
+{
+  "captured_at": "2026-08-04T08:04:10.363Z",
+  "viewport": "390x844 mobile",
+  "results": [
+    {
+      "name": "amazon-sa-ar",
+      "url": "https://www.amazon.sa/s?k=%D9%85%D9%83%D9%8A%D9%81&language=ar_AE",
+      "lang": "ar-ae",
+      "ok": true,
+      "title": "Amazon.sa : مكيف",
+      "dir": "rtl",
+      "bodyLen": 9626,
+      "controls": [
+        {
+          "text": "",
+          "aria": "أيقونة جميع عوامل التصفية",
+          "tag": "BUTTON",
+          "hasIcon": true,
+          "position": "sticky",
+          "top": 155,
+          "h": 22,
+          "w": 24
+        },
+        {
+          "text": "",
+          "aria": "أيقونة جميع عوامل التصفية",
+          "tag": "SPAN",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 156,
+          "h": 20,
+          "w": 20
+        },
+        {
+          "text": "",
+          "aria": "فلتر برايم, غير مختار",
+          "tag": "A",
+          "hasIcon": true,
+          "position": "sticky",
+          "top": 190,
+          "h": 29,
+          "w": 84
+        },
+        {
+          "text": "وأكثر",
+          "aria": "قم بتطبيق فلتر 4 نجوم وأكثر لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 117
+        },
+        {
+          "text": "جميع الخصومات",
+          "aria": "قم بتطبيق فلتر جميع الخصومات لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 100
+        },
+        {
+          "text": "صفقات اليوم",
+          "aria": "قم بتطبيق فلتر صفقات اليوم لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 80
+        },
+        {
+          "text": "إلى1,600ريال",
+          "aria": "قم بتطبيق فلتر إلى1,600ريال لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 90
+        },
+        {
+          "text": "1,600 إلى 3,000ريال",
+          "aria": "قم بتطبيق فلتر 1,600 إلى 3,000ريال لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 133
+        },
+        {
+          "text": "3,000 إلى 4,800ريال",
+          "aria": "قم بتطبيق فلتر 3,000 إلى 4,800ريال لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 133
+        },
+        {
+          "text": "4,800 ريال وأكثر",
+          "aria": "قم بتطبيق فلتر 4,800 ريال وأكثر لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 109
+        },
+        {
+          "text": "احصل عليه خلال ساعتين",
+          "aria": "قم بتطبيق فلتر احصل عليه خلال ساعتين لتضييق النتائ",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 139
+        },
+        {
+          "text": "احصل عليها اليوم",
+          "aria": "قم بتطبيق فلتر احصل عليها اليوم لتضييق النتائج",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 150,
+          "h": 32,
+          "w": 103
+        }
+      ]
+    },
+    {
+      "name": "noon-sa-ar",
+      "url": "https://www.noon.com/saudi-ar/search/?q=%D9%85%D9%83%D9%8A%D9%81",
+      "lang": "ar-SA",
+      "ok": true,
+      "title": "نوّنها أونلاين في السعودية",
+      "dir": "rtl",
+      "bodyLen": 16602,
+      "controls": [
+        {
+          "text": "ألعاب فرز الأشكال",
+          "aria": "",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "static",
+          "top": 196,
+          "h": 26,
+          "w": 100
+        },
+        {
+          "text": "ترتيب حسب",
+          "aria": "",
+          "tag": "BUTTON",
+          "hasIcon": true,
+          "position": "fixed",
+          "top": 742,
+          "h": 22,
+          "w": 98
+        },
+        {
+          "text": "تصنيف حسب",
+          "aria": "",
+          "tag": "BUTTON",
+          "hasIcon": true,
+          "position": "fixed",
+          "top": 742,
+          "h": 22,
+          "w": 108
+        }
+      ]
+    },
+    {
+      "name": "jarir-sa-ar",
+      "url": "https://www.jarir.com/sa-ar/catalogsearch/result?search=%D9%85%D9%83%D9%8A%D9%81",
+      "lang": "ar",
+      "ok": true,
+      "title": "404 غير موجود",
+      "dir": "rtl",
+      "bodyLen": 738,
+      "controls": []
+    },
+    {
+      "name": "extra-sa-ar",
+      "url": "https://www.extra.com/ar-sa/search/?text=%D9%85%D9%83%D9%8A%D9%81",
+      "lang": "ar",
+      "ok": true,
+      "title": "بحث مكيف - إكسترا",
+      "dir": "rtl",
+      "bodyLen": 3938,
+      "controls": [
+        {
+          "text": "الفلاتر",
+          "aria": "",
+          "tag": "BUTTON",
+          "hasIcon": false,
+          "position": "static",
+          "top": 229,
+          "h": 40,
+          "w": 131
+        },
+        {
+          "text": "ترتيب",
+          "aria": "",
+          "tag": "SECTION",
+          "hasIcon": false,
+          "position": "static",
+          "top": 229,
+          "h": 40,
+          "w": 131
+        }
+      ]
+    },
+    {
+      "name": "aliexpress-en",
+      "url": "https://www.aliexpress.com/w/wholesale-air-conditioner.html",
+      "lang": "",
+      "ok": true,
+      "title": "Captcha Interception",
+      "dir": "ltr",
+      "bodyLen": 92,
+      "controls": []
+    },
+    {
+      "name": "shein-sa-ar",
+      "url": "https://ar.shein.com/pdsearch/%D9%85%D9%83%D9%8A%D9%81/",
+      "lang": "en",
+      "ok": true,
+      "title": "SHEIN.com is mainly design and produce fashion clothing for women all over the w",
+      "dir": "rtl",
+      "bodyLen": 0,
+      "controls": []
+    },
+    {
+      "name": "idealo-de",
+      "url": "https://www.idealo.de/preisvergleich/MainSearchProductCategory.html?q=klimaanlage",
+      "lang": "de-DE",
+      "ok": true,
+      "title": "Klimaanlage (2026) zum Bestpreis | idealo.de",
+      "dir": "ltr",
+      "bodyLen": 15261,
+      "controls": [
+        {
+          "text": "Sortieren",
+          "aria": "",
+          "tag": "DIV",
+          "hasIcon": true,
+          "position": "sticky",
+          "top": 172,
+          "h": 32,
+          "w": 121
+        },
+        {
+          "text": "Sortieren",
+          "aria": "",
+          "tag": "SPAN",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 180,
+          "h": 16,
+          "w": 58
+        },
+        {
+          "text": "Filtern",
+          "aria": "",
+          "tag": "DIV",
+          "hasIcon": true,
+          "position": "sticky",
+          "top": 218,
+          "h": 32,
+          "w": 86
+        },
+        {
+          "text": "Filtern",
+          "aria": "",
+          "tag": "SPAN",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 226,
+          "h": 16,
+          "w": 40
+        }
+      ]
+    },
+    {
+      "name": "pricerunner-uk",
+      "url": "https://www.pricerunner.com/results?q=air%20conditioner",
+      "lang": "en-GB",
+      "ok": true,
+      "title": "air conditioner - PriceRunner",
+      "dir": "ltr",
+      "bodyLen": 4610,
+      "controls": [
+        {
+          "text": "Clear filters",
+          "aria": "",
+          "tag": "A",
+          "hasIcon": false,
+          "position": "relative",
+          "top": 313,
+          "h": 20,
+          "w": 79
+        }
+      ]
+    },
+    {
+      "name": "google-shopping",
+      "url": "https://www.google.com/search?q=air+conditioner&tbm=shop",
+      "lang": "",
+      "ok": true,
+      "title": "https://www.google.com/search?q=air+conditioner&udm=28&sei=5Jxxatq9IaHDnsEPuu2Qo",
+      "dir": "ltr",
+      "bodyLen": 360,
+      "controls": []
+    },
+    {
+      "name": "ikea-sa-ar",
+      "url": "https://www.ikea.com/sa/ar/search/?q=%D9%85%D8%B1%D9%88%D8%AD%D8%A9",
+      "lang": "ar-SA",
+      "ok": true,
+      "title": "ابحث عن \"مروحة\" - IKEA",
+      "dir": "rtl",
+      "bodyLen": 2258,
+      "controls": [
+        {
+          "text": "ترتيب حسب",
+          "aria": "",
+          "tag": "BUTTON",
+          "hasIcon": false,
+          "position": "sticky",
+          "top": 373,
+          "h": 40,
+          "w": 121
+        },
+        {
+          "text": "جميع الفلاتر",
+          "aria": "",
+          "tag": "BUTTON",
+          "hasIcon": true,
+          "position": "sticky",
+          "top": 373,
+          "h": 40,
+          "w": 137
+        },
+        {
+          "text": "إعدادات ملفات تعريف الارتباط",
+          "aria": "إعدادات ملفات تعريف الارتباط، يفتح مربع حوار مركز ",
+          "tag": "BUTTON",
+          "hasIcon": false,
+          "position": "fixed",
+          "top": 773,
+          "h": 40,
+          "w": 320
+        }
+      ]
+    }
+  ]
+}

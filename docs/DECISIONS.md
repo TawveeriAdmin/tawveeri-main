@@ -6,6 +6,81 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-206 — The Arabic mobile filter doorway gets its word back: visible «الفلاتر» label at every width · Accepted (2026-08-04)
+
+**Context.** Founder-verified observation (4 Aug 2026, Arabic mobile search journey): the
+mobile filter panel on `/ar/search` works once opened, but its only entry point was a bare
+slider icon beside the result count — no Arabic text, no separately visible sort, and the
+control scrolls away with the list. Desktop shows the full rail and a visible segmented sort.
+Production before-evidence frozen at
+`docs/baselines/2026-08-04-mobile-filter-discoverability/` (390×844 + 1440×900, zero-filter
+and filtered URLs): the entry was a **48×36px icon-only button, visible text ""**, accessible
+name `aria-label="المرشحات"` — a *different word* than the sheet it opens («الفلاتر») — no
+sort control outside the sheet, and `inViewport:false` after scrolling ~60% of the list.
+Applied state partially existed already: a count badge and removable chips render when
+filters are active (both verified live), so the defect was the unlabelled doorway, not the
+applied-state machinery.
+
+**Measurement truth (production `usage_events`, real traffic only, 2026-07-25→08-04).**
+Filter/sort interaction was **never instrumented — 0 rows match any filter/sort event or
+meta key; the behavioural baseline is `not previously measurable`.** The event whitelist
+(`src/lib/analytics/track.ts` + `/api/events`) contains no filter/sort types. Tawveeri's own
+traffic is majority-mobile: 574 of 867 real events (66%), 9 of 16 real sessions, and **42 of
+42 real `go_click` exits were mobile** — but 16 sessions is too small a denominator for a
+stable share claim, and no general "Saudi mobile share" statistic is admitted as project
+evidence. Any future claim that filter engagement improved requires ≥100 real mobile search
+sessions after instrumentation exists, compared against a recorded window — until then the
+honest report is: *engineering defect resolved; behavioural impact measurement pending.*
+
+**Research (live-rendered, mobile 390×844, before the founder compressed the unit;
+`research/probe-results.json` + screenshots).** Verifiable experiences: Amazon.sa (AR) —
+sticky text+icon «جميع عوامل التصفية»; Noon SA (AR) — fixed, **separate** «ترتيب حسب» /
+«تصنيف حسب» text+icon; Extra (AR) — labelled text buttons **«الفلاتر» / «ترتيب»**; IKEA SA
+(AR) — sticky «ترتيب حسب» / «جميع الفلاتر»; idealo (comparison) — sticky "Sortieren" /
+"Filtern". Not measurable (unrendered or bot-gated, recorded as limitations): Jarir,
+AliExpress, Shein, Google Shopping, PriceRunner (partial). Baymard's filter-UI guidance
+concurs: a *clearly labelled* button opening a bottom sheet, applied filters always surfaced
+as removable chips, and the control kept visible while scrolling. **The dominant pattern is
+text-labelled, sort separated, persistent placement — no verified experience uses an
+icon-only entry.** Tawveeri's bottom sheet + chips already match convention; only the
+doorway did not.
+
+**Decision (founder-compressed to Stage A minimum, quota-constrained).** Smallest reversible
+change: (1) the visible text label on the filter trigger renders at **every** width — it was
+`hidden sm:inline`, i.e. hidden on all phones; (2) the Arabic word becomes **«الفلاتر»**,
+matching the sheet's own title and Extra's convention (was «المرشحات», which also made the
+accessible name disagree with the panel it opened); (3) trigger height raised to 44px
+(`h-11`) meeting the touch-target bar; (4) the existing active-count badge and chips are
+kept, now anchored to a labelled control. Files: `search-client.tsx` (label span + height +
+comment), `messages/ar/search.json` (one value). EN "Filters" unchanged. Guard tests:
+`tests/search/mobile-filter-entry.test.ts` (label never breakpoint-hidden, name = visible
+label, badge present, 44px, «الفلاتر» consistency).
+
+**Rejected/deferred, with owners and triggers (NOT unowned suggestions).**
+- **Separate visible mobile sort (Option A's «ترتيب» half)** — supported by 4 of 5 researched
+  experiences and by desktop parity; deferred by explicit founder compression. Trigger to
+  reconsider: instrumentation shows mobile sort-change rate materially below desktop's, or
+  the next mobile-journey unit opens this surface. `SortSelector` already supports narrow
+  widths (scroll-snap) — the implementation is a one-line placement when approved.
+- **Sticky/persistent toolbar (Options B/C)** — supported by Amazon/Noon/IKEA/idealo and
+  Baymard, but interacts with iOS Safari chrome, the header, and result-space consumption;
+  deferred as Stage B. Trigger: same instrumentation, plus a scroll-depth signal.
+- **Filter/sort instrumentation** (`filter_open/apply/clear`, `sort_change`, dismissal,
+  active-count/locale/viewport meta) — required before any behavioural claim; deferred by
+  the same compression. It is the *prerequisite* for both triggers above, so it is the first
+  candidate when this surface reopens.
+- **Option D (combined control) and E (label-only without count)** — rejected: D contradicts
+  the separated-sort convention the research found; E discards an applied-state affordance
+  that already exists and costs nothing.
+
+**Consequences.** The Arabic mobile journey's filter doorway is now a labelled, 44px,
+count-badged button whose accessible name matches its visible word and the panel it opens.
+Filter semantics, retrieval, ranking, URL/state behaviour: untouched. Desktop: unchanged
+(the toolbar is `lg:hidden`; ≥640px widths already showed the label). Rollback: revert one
+commit (two-line UI change + one translation value + guard tests).
+
+---
+
 ### ADR-205 — Need-sentence search defect: constraint language is not product language; budget/quantity are structured signals in both languages · Accepted (2026-08-04)
 
 **Context.** Founder-reported production defect on the Arabic mobile journey:
