@@ -1,3 +1,69 @@
+# ═══ RESUME HERE — 2026-08-04 CHECKPOINT #43 · ADR-205 SHIPPED & PRODUCTION-VERIFIED · SESSION CLOSED ═══
+
+**Tree clean · pushed · deployed (6 rolling deploys, each live-verified) · server response AND
+mobile DOM verified.** Commits `f7d6e6b · 14c2803 · b95e6da · 82e06b1 · ef9546c · dd62e61`.
+
+## UNIT — the «ابي 3 مكيفات بميزانيتي 5000 ريال» production relevance defect (founder-reported)
+
+**Before-baseline frozen FIRST** (rule 1: baseline → act → re-measure):
+`docs/baselines/2026-08-04-ac-basket-query/` — full API response, mobile DOM screenshot
+(390×844), 34-query singular/plural controlled matrix with per-layer probes, FINDINGS.md
+(now carries the AFTER table too).
+
+### The founder's plural hypothesis was TESTED and REJECTED
+Singular «ابي 3 مكيف …» failed identically; isolated «مكيف»/«مكيفات» both returned 47/48
+ACs. The failing variable was the need-sentence wrapper, not morphology. (Real but distinct
+plural defects existed and were fixed: «شاشات» 1→48, «جوالات» junk→47/48.)
+
+### Measured failing layers (all four founder-reported failures localized before any code)
+1. **Budget extraction** — «بميزانيتي» (attached morpheme) unmatched AND «N ريال» dead on
+   the `\b`-beside-Arabic trap (same class as CHECKPOINT #17; memory updated). English
+   parsed fine → the same need got the advisor in English and silence in Arabic.
+2. **Quantity** — no field existed anywhere.
+3. **Retrieval** — whole sentence to Algolia all-tokens-optional; «بميزانيتي»/«5000»/
+   «ريال»/«3» acted as matching terms (candidates: tv 36 · smartwatch 10 · AC 2).
+4. **Relevance gate self-disable** — «بميزانيتي» formed a group nothing matches → 0
+   survivors → gate skipped → junk shipped under «مرتّبة حسب مطابقتها لبحثك».
+   Waffar state: **not-routed**, and non-answers were recorded nowhere.
+
+### Shipped (ADR-205 + 5 follow-ups, each fixing a defect the after-MEASUREMENT surfaced)
+- task-parser: «بميزانيتي»/«N ريال» budgets; deterministic `quantity` (2–20 immediately
+  before the category noun — BTU/inches/budget can never be misread); plural stems.
+- /api/search: constraint language excluded from retrieval + relevance (BUDGET_WRAPPER incl.
+  room tokens; parsed budget/quantity/room numbers); subject = stopword-free; **all token
+  filters case-insensitive (uppercase "SAR" was member five of the class)**; plural + EN→AR
+  expansion entries ('conditioner(s)'→مكيف/سبليت, Latin-plural singularization);
+  need-shaped queries with explicit category return **honest zero** (`categoryEnforcedZero`)
+  instead of unrelated fallback.
+- decide route: per-unit ceiling (total ÷ N) fed to the engine; `basket` acknowledgement
+  (quantity · total · ~per-unit · UNKNOWNS: installation/delivery) rendered above the answer;
+  quantity in understood-as chips. Pure helper `src/lib/agent/basket.ts`.
+- search-client: every advisor non-answer records a state — `no_answer`/`error` with
+  `advisor_state: rejected | unavailable`. Silent to the customer, never to the ledger.
+
+### Production verification (final deploy, settled)
+| | before | after |
+|---|---|---|
+| AR sentence AC share | ~2/48 junk | **48/48**, 0 over-budget, AC Smart Pick (3 stores) |
+| AR Waffar | silent | basket note «3 × مكيف … ~1,666 ريال للجهاز» + room clarify + 4 options |
+| EN sentence grid | 4/48 junk | **16/16 AC** |
+| Control «مكيف رخيص لغرفه 40 متر» grid | 2 junk | **47/48 AC** |
+| 34-query matrix | 4 failing layers | every row category-pure; 15/15 AR need-sentences → Waffar **passed** |
+
+**Deploy-watch note:** mid-rollout (uptime 0) production briefly served junk/cold states —
+re-measure AFTER the roll settles before diagnosing (caught twice this session).
+
+**Basket Intent (full N-unit optimisation): SCOPED, NOT STARTED** — ADR-205 (needs
+delivery/installation data we hold as 0, per-room inputs, a basket-level ranking rule).
+
+**Known residuals, recorded not fixed:** EN isolated retrieval still thinner than AR (16 vs
+496 total — pre-existing EN/AR gap class); plural coverage beyond the six measured pairs
+unmeasured; advisor states ride existing `no_answer`/`error` event types (funnel view TBD).
+
+Tests **1,307/1,307** · unified-search harness **54/54 PASS** against production post-deploy ·
+rollback: `git revert dd62e61 ef9546c 82e06b1 b95e6da 14c2803 f7d6e6b`.
+
+---
 # ═══ RESUME HERE — 2026-08-02 CHECKPOINT #42 · UNIT C REJECTED ON EVIDENCE · SESSION CLOSED ═══
 
 **Tree clean · pushed · NO product change made.** `AI_ASSISTANT_ENABLED` = ON, untouched.

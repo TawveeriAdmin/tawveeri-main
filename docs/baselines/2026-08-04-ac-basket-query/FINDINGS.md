@@ -1,5 +1,36 @@
 # Baseline + controlled matrix — «ابي 3 مكيفات بميزانيتي 5000 ريال» (2026-08-04)
 
+## AFTER — ADR-205 shipped, production-verified (same day)
+
+Commits `f7d6e6b → dd62e61` (6 deploys, each verified live). Artifacts:
+`after-summary.json`, `matrix-results-after.json`, `dom-after-mobile.png` + `dom-after-state.json`.
+
+| Measure | BEFORE | AFTER |
+|---|---|---|
+| AR sentence — AC share of returned results | ~2/48 (iPads, laptops, watches) | **48/48** |
+| AR — items above the stated 5,000 SAR budget | 4 | **0** |
+| AR — Smart Pick | none | AC, 3-store comparison |
+| AR — Waffar | silent (**not-routed**) | **passed**: basket note (3 × مكيف · 5,000 total · ~1,666/جهاز · installation/delivery unknown), quantity chip, room-size clarify, 4 AC options |
+| EN sentence — grid | junk (4/48 AC) | **16/16 AC** |
+| Control «مكيف رخيص لغرفه 40 متر» — grid | 2 junk items | **47/48 AC** |
+| «شاشات» isolated | 1 result | 48/48 TVs |
+| «جوالات» isolated | 8 mixed junk | 47/48 mobiles |
+| 34-query matrix | 4 layers failing | **every row category-pure; all 15 AR need-sentences route advisory and Waffar passes** |
+
+Mobile DOM (390×844) verified: advisor block + AI disclosure render, basket note verbatim,
+understood-as chips «مكيف · الكمية: 3 · تحت 5000 ريال», room-size question, AC cards below,
+ranking-explanation line now describes behaviour that actually happens.
+
+Five residual defects were found by the after-measurement itself and fixed in the follow-up
+commits: constraint numbers leaking back via the Arabic-variant expansion; 'conditioner(s)'
+not a main-product word; EN plural matching no singular title; **uppercase "SAR" passing the
+lowercase stopword filter (case-sensitivity — the fifth measured member of this class)**;
+room-size constraint tokens (لغرفه/متر/40) zeroing the control query's grid.
+
+---
+
+## BEFORE (original findings)
+
 **Status:** BEFORE-baseline, frozen prior to any change. Production `tawveeri.com`,
 locale `ar`, mobile UA, journey viewport 390×844. Raw artifacts in this directory:
 `api-search-response.json` (full server response), `baseline-summary.json`,
