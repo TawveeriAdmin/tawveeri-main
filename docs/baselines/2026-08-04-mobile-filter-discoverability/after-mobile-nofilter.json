@@ -1,0 +1,43 @@
+{
+  "captured_at": "2026-08-04T08:12:39.238Z",
+  "url": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81",
+  "viewport": "390x844 mobile",
+  "atTop": {
+    "title": "البحث عن المنتجات | توفيري",
+    "filterEntry": {
+      "ariaLabel": "الفلاتر",
+      "visibleText": "الفلاتر",
+      "visibleLabelSpans": "الفلاتر",
+      "rect": {
+        "w": 96,
+        "h": 44,
+        "top": 615
+      },
+      "inViewport": true,
+      "badgeText": null
+    },
+    "visibleSortControls": [],
+    "activeFilterChipCount": 0,
+    "filterCountPill": false,
+    "resultCountShown": true
+  },
+  "afterScroll": {
+    "title": "البحث عن المنتجات | توفيري",
+    "filterEntry": {
+      "ariaLabel": "الفلاتر",
+      "visibleText": "الفلاتر",
+      "visibleLabelSpans": "الفلاتر",
+      "rect": {
+        "w": 96,
+        "h": 44,
+        "top": -10475
+      },
+      "inViewport": false,
+      "badgeText": null
+    },
+    "visibleSortControls": [],
+    "activeFilterChipCount": 0,
+    "filterCountPill": false,
+    "resultCountShown": true
+  }
+}

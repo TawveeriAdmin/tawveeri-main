@@ -47,3 +47,16 @@ separate visible mobile sort, sticky placement, filter/sort instrumentation.
 
 **Honest completion line:** engineering defect resolved; behavioural impact measurement
 pending sufficient production traffic (and pending instrumentation).
+
+## AFTER — production verified post-deploy (2026-08-04 ~08:2xZ, `after-*.json/png`)
+
+| Check | Before (mobile 390×844) | After (mobile 390×844) |
+|---|---|---|
+| Filter entry visible text | "" (icon only) | **«الفلاتر»** |
+| Button size | 48×36px | **96×44px** |
+| Accessible name | «المرشحات» (≠ sheet) | **«الفلاتر» = visible label = sheet title** |
+| Count + chips (2 filters) | badge «2» + 2 chips | badge «2» + 2 chips (kept) |
+| In viewport after ~60% scroll | false | false — **deferred (Stage B, ADR-206)** |
+
+Desktop after: identical to before — sort options visible, chips render, mobile trigger
+hidden (`w:0`). **Non-regression confirmed on the rendered DOM.**
