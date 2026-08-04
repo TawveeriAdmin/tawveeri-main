@@ -197,10 +197,14 @@ const ARABIC_TO_ENGLISH_NORM: Record<string, string[]> = Object.fromEntries(
   Object.entries(ARABIC_TO_ENGLISH).map(([k, v]) => [normalizeArabic(k), v]),
 );
 function lookupArToEn(word: string): string[] | undefined {
+  // `.toLowerCase()` matters for the LATIN keys (conditioner/conditioners): a typed
+  // "Conditioners" otherwise misses its expansion — the same case trap that let an
+  // uppercase "SAR" through the stopword filters (2026-08-04).
+  const lw = word.toLowerCase();
   return (
-    ARABIC_TO_ENGLISH[word] ||
-    ARABIC_TO_ENGLISH[normalizeArabic(word)] ||
-    ARABIC_TO_ENGLISH_NORM[normalizeArabic(word)]
+    ARABIC_TO_ENGLISH[lw] ||
+    ARABIC_TO_ENGLISH[normalizeArabic(lw)] ||
+    ARABIC_TO_ENGLISH_NORM[normalizeArabic(lw)]
   );
 }
 
@@ -1020,7 +1024,7 @@ export async function POST(request: NextRequest) {
       // Inject the Arabic→English expansion so Algolia (primary path) surfaces the many
       // English-named appliances (292 refrigerators, 246 washers…) for Arabic queries like ثلاجة/غسالة.
       // The expansion tokens are OPTIONAL words: a record matching any one (e.g. "refrigerator") returns.
-      const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !constraintNumbers.has(w));
+      const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !STOPWORDS.has(w.toLowerCase()) && !constraintNumbers.has(w));
       const englishExp = [...new Set(aqWords.flatMap((w) => lookupArToEn(w) || []).flatMap((m) => m.split(/\s+/)).filter((t) => t.length >= 2))];
       // Use the NORMALIZED (ة→ه folded) query so every query token matches an optionalWords entry —
       // otherwise the unfolded "ثلاجة" is treated as REQUIRED, matches nothing, and returns 0/junk
@@ -1043,7 +1047,7 @@ export async function POST(request: NextRequest) {
       // this they re-entered the engine query through the expansion after being stripped
       // from aqWords (measured on the EN basket sentence, 2026-08-04 after-run).
       const arabicExp = arVariant
-        ? [...new Set(normalizeArabic(arVariant).split(/\s+/).filter((w) => w && !STOPWORDS.has(w) && !constraintNumbers.has(w) && !aqWords.includes(w)))]
+        ? [...new Set(normalizeArabic(arVariant).split(/\s+/).filter((w) => w && !STOPWORDS.has(w.toLowerCase()) && !constraintNumbers.has(w) && !aqWords.includes(w)))]
         : [];
       const expansions = [...englishExp, ...arabicExp];
       // The SUBJECT of the request, not the sentence wrapping it (same rule as compare
@@ -1054,7 +1058,7 @@ export async function POST(request: NextRequest) {
       // Arabic-titled AC with English junk titles containing those function words. Ordinary
       // product queries carry none of these tokens and are unchanged.
       const subjectWords = normalizeArabic(rawQuery).split(/\s+/)
-        .filter((w) => w && !STOPWORDS.has(w) && !constraintNumbers.has(w));
+        .filter((w) => w && !STOPWORDS.has(w.toLowerCase()) && !constraintNumbers.has(w));
       const subject = subjectWords.length ? subjectWords.join(' ') : normalizeArabic(rawQuery);
       const algoliaQuery = expansions.length ? `${subject} ${expansions.join(' ')}` : subject;
       const algoliaRes = await searchAlgolia({
@@ -1087,7 +1091,7 @@ export async function POST(request: NextRequest) {
   if (rawQuery && !algoliaProducts) {
     const normalized = normalizeArabic(rawQuery);
     const allWords = normalized.split(/\s+/).filter(Boolean);
-    const meaningful = allWords.filter((w) => !STOPWORDS.has(w) && !constraintNumbers.has(w));
+    const meaningful = allWords.filter((w) => !STOPWORDS.has(w.toLowerCase()) && !constraintNumbers.has(w));
     const words = meaningful.length > 0 ? meaningful : allWords;
     // The Arabic equivalent must widen the CANDIDATE POOL too, not only the post-filter: if
     // Arabic-titled products never enter the pool, no amount of matching afterwards can surface
@@ -1148,7 +1152,7 @@ export async function POST(request: NextRequest) {
   if (rawQuery && tpsCategories) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
-    const mw = aw.filter((w) => !STOPWORDS.has(w) && !constraintNumbers.has(w));
+    const mw = aw.filter((w) => !STOPWORDS.has(w.toLowerCase()) && !constraintNumbers.has(w));
     const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategories);
     if (tpsProducts.length) {
       products = [...tpsProducts, ...products];
@@ -1180,7 +1184,7 @@ export async function POST(request: NextRequest) {
   // language. This is the same class of bug as the ة/ى folding one above.
   const relevanceGroups: string[][] = queryIsMainProduct
     ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean)
-        .filter((w) => !STOPWORDS.has(w) && !constraintNumbers.has(w))
+        .filter((w) => !STOPWORDS.has(w.toLowerCase()) && !constraintNumbers.has(w))
         .map((w) => expandWordTerms(w).filter((t) => t.length >= 2))
         .filter((g) => g.length > 0 && !g.every((t) => GENERIC.has(t)))
     : [];
