@@ -132,6 +132,11 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'سماعة': ['headphone', 'earbuds', 'speaker'],
   'مكيف': ['split ac', 'air conditioner', 'ac'],
   'مكيفات': ['split ac', 'air conditioner', 'ac', 'مكيف'],
+  // EN→AR mirror for the AC noun (measured 2026-08-04 after-run): most AC titles are
+  // Arabic-only, so the EN word-group could never match them and the EN basket sentence
+  // fell to the honest-zero path. Same map, same mechanism, opposite direction.
+  'conditioner': ['مكيف', 'سبليت'],
+  'conditioners': ['conditioner', 'مكيف', 'سبليت'],
   'سبليت': ['split'],
   'شباك': ['window'],
   'ثلاجة': ['refrigerator', 'fridge'],

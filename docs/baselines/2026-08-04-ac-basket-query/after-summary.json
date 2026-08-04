@@ -1,6 +1,6 @@
 {
-  "captured_at": "2026-08-04T06:42:28.938Z",
-  "commit": "f7d6e6b",
+  "captured_at": "2026-08-04T06:57:52.234Z",
+  "commit": "14c2803",
   "results": [
     {
       "id": "ar",
@@ -95,57 +95,13 @@
       "id": "en",
       "query": "I want 3 air conditioners with a budget of 5000 SAR",
       "search": {
-        "total": 100,
-        "count": 48,
-        "categoryEnforcedZero": false,
-        "ac_of_returned": "4/48",
+        "total": 0,
+        "count": 0,
+        "categoryEnforcedZero": true,
+        "ac_of_returned": "0/0",
         "over_budget_5000": 0,
-        "top8": [
-          {
-            "n": "جهاز ألعاب محمول رجعي (لاعب واحد)، شاشة ملونة عالية الدقة مق",
-            "price": 106.82,
-            "stores": 1
-          },
-          {
-            "n": "وسيط تخزين ذو حالة ثابتة محمول من سانديسك بسعة 2 تيرابايت (ق",
-            "price": 736.98,
-            "stores": 1
-          },
-          {
-            "n": "طقم صواني فرن بيضاوي مؤلف من قطعتين الصغير 1.550 ليتر + الكب",
-            "price": 45,
-            "stores": 1
-          },
-          {
-            "n": "المحمولة FM/AM/SW راديو بطارية استقبال FM استقبال ممتاز واضح",
-            "price": 60,
-            "stores": 1
-          },
-          {
-            "n": "قابس تابو الذكي من تي بي لينك مع مراقبة الطاقة، يعمل مع اماز",
-            "price": 85.25,
-            "stores": 1
-          },
-          {
-            "n": "كاميرا  فائقة الدقة بتقنية PT 360 درجة لمراقبة كل زاوية في ا",
-            "price": 89,
-            "stores": 1
-          },
-          {
-            "n": "جهاز ألعاب ريترو كلاسيكي محمول K36 بشاشة IPS مقاس 3.5 بوصة –",
-            "price": 91,
-            "stores": 1
-          },
-          {
-            "n": "K36 Portable Classic Retro Game Console with 3.5-inch IPS Sc",
-            "price": 97,
-            "stores": 1
-          }
-        ],
-        "decisionCard": {
-          "title": "جهاز ألعاب محمول رجعي (لاعب واحد)، شاشة ملونة عالية الدقة مق",
-          "price": 106.82
-        }
+        "top8": [],
+        "decisionCard": null
       },
       "advisor": {
         "count": 4,
