@@ -35,6 +35,10 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
        and ps.product_url ~ '/dp/[A-Z0-9]{10}'
      limit $1`, [LIMIT]);
   console.log(`amazon no-Arabic asin-linked rows: ${rows.length} · ${APPLY ? "APPLY" : "DRY"}`);
+  // The fetch loop below runs for many minutes; a pooled connection held idle through it
+  // gets killed and the WRITE phase then dies on ECONNRESET (happened twice). Close now,
+  // reconnect fresh when it is time to write.
+  await c.end();
 
   const updates: Array<{ id: string; asin: string; afterAr: string }> = [];
   let fetchFail = 0, noTitle = 0, asinMissing = 0, notArabic = 0;
@@ -57,11 +61,13 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
   writeFileSync(`docs/evidence/amazon-ar-names-${stamp}.json`,
     JSON.stringify({ measured_at: new Date().toISOString(), mode: APPLY ? "apply" : "dry", source: "amazon.sa /-/ar/dp/<ASIN> #productTitle (asin-verified)", updates }, null, 2));
 
-  if (!APPLY) { console.log("dry — nothing written"); await c.end(); process.exit(0); }
+  if (!APPLY) { console.log("dry — nothing written"); process.exit(0); }
 
+  const w = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  await w.connect();
   const seen = new Set<string>();
   const dedup = updates.filter((u) => { const k = u.afterAr.trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
-  const { rows: existing } = await c.query<{ n: string }>(
+  const { rows: existing } = await w.query<{ n: string }>(
     `select lower(trim(name_ar)) n from products where name_ar = any($1)`, [dedup.map((u) => u.afterAr)]);
   const existingSet = new Set(existing.map((e) => e.n));
   const writable = dedup.filter((u) => !existingSet.has(u.afterAr.trim().toLowerCase()));
@@ -70,7 +76,7 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
   let written = 0;
   for (let i = 0; i < writable.length; i += 100) {
     const chunk = writable.slice(i, i + 100);
-    const res = await c.query(
+    const res = await w.query(
       `update products p set name_ar = u.after_ar
        from (select unnest($1::uuid[]) id, unnest($2::text[]) after_ar) u
        where p.id = u.id and (p.name_ar is null or p.name_ar = '' or p.name_ar !~ '[؀-ۿ]')`,
@@ -79,6 +85,6 @@ const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
     written += res.rowCount ?? 0;
   }
   console.log(`written: ${written}/${writable.length} (of ${updates.length} matched)`);
-  await c.end();
+  await w.end();
   process.exit(0);
 })().catch((e) => { console.error("ERR", e instanceof Error ? e.message : e); process.exit(1); });

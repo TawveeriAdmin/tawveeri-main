@@ -6776,3 +6776,13 @@ honestly-Latin titles (the merchant publishes no Arabic — never composed over)
 retryable; amazon's 99 ≈ 75 Latin + ~24 retryable. Every write sku/ASIN-verified against
 the fetched page; evidence JSON per batch in docs/evidence/. The enrichment scripts are
 resumable any time (`tps` scripts enrich-noon/-amazon/-almanea-arabic-names).
+
+## U5 TERMINAL — 2026-08-04 · FLOORS REACHED: noon 303 · amazon 72 · almanea 3
+~6,600 storefront rows healed in total (5,380+ Arabic names + 981 English names), every write
+verified against the merchant's own page. The floors are honest residue: Latin-published
+titles (the merchant ships no Arabic — never composed over) + a few dead/no-title pages.
+Root-cause fix shipped in both enrichment scripts: the write phase opens a FRESH connection
+after the multi-minute fetch loop (the pooler killed idle connections mid-run — 3 batch
+deaths measured before the fix, 0 after). jarir 1,005 / extra 285 stay parked (underivable
+per-locale slugs, #42). Remaining queue: amazon price-selector unit (ADR-200 open item,
+failing case ASIN B0FQCLJXPN 59.99-vs-1,609) · Master Book §2.1/§9/§11 · U2b weekly check.
