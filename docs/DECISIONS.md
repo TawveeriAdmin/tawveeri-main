@@ -6,6 +6,107 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-211 — P0 production incident: false Amazon TV price on Best Deals (SAR 259 vs real SAR 8,699); storefront price-truth gate · Accepted (2026-08-05)
+
+**Context.** An external user reported Tawveeri's public Best Deals surface showing Amazon
+Saudi's LG OLED65C56LA (65" OLED evo C5 TV, ASIN `B0F8JHSMMD`) at **SAR 259**, badged "عرض
+قوي", claiming ~98% below its recorded original price of SAR 12,599. The real Amazon.sa price
+for this exact ASIN/variation is SAR 8,699. Treated as a P0 price-truth and public-trust
+incident per the founder's directive; investigated read-only first against production
+(`vyceqrzttspyycdpojtn`).
+
+**Root cause.** `product_stores` row `07ccc0c5-e6b6-423e-b9ea-e2456209580e` was written with
+`current_price = 259` on 2026-08-02T15:44:49Z by the storefront price-refresh cron
+(`POST /api/cron/update-prices` → `ScrapingOrchestrator.runPriceUpdateJob` →
+`AmazonScraper.scrapeProductPage()` → `ProductService.updateProductPrice()`). This predates
+**ADR-200** (accepted 2026-08-03) and **ADR-204** (accepted 2026-08-04), which fixed the exact
+bug class in the Amazon PDP parser: a page-global price-selector fallback that could match a
+DIFFERENT DOM element (a carousel/related-item price) than this product's own buybox. This row
+was written by the pre-fix selector and was never re-scraped since the fix shipped. `raw_
+observations` holds no row for this write (confirming it came from the price-refresh path, not
+the discovery/ingest path, which is the only path that logs raw observations). `original_price`
+(12,599) and `is_deal` (true) were set once at product creation (~2026-07-27) from a separate,
+apparently-legitimate scrape and were never re-evaluated on subsequent price refreshes —
+`ProductService.updateProductPrice()` only ever wrote `current_price`, so a stale "deal" flag
+survived alongside a now-bogus price. **The structural gap the parser fix did not close:**
+neither `ProductService.updateProductPrice()`/`linkProductToStore()` (write path) nor
+`getDeals.ts` (Best Deals read path, the Knowledge-layer deal engine over `product_stores`) ever
+performed ANY sanity check — no comparison to the prior price, no outlier bound, no
+corroboration requirement. A correct parser can still occasionally return a wrong number; until
+this ADR, nothing downstream would have caught it.
+
+**Immediate mitigation (before any code change).** Quarantined the exact offer in place —
+`current_price`/`original_price`/`is_deal` left completely untouched as evidence, never
+overwritten with the correct SAR 8,699. Verified anon-key (public) reads of this row return
+empty, and the product's storefront detail view shows zero offers for it — confirmed absent from
+search, product page, comparison, and Best Deals.
+
+**Blast-radius audit** (all `product_stores`, 14,081 rows; `is_deal=true` with a recorded
+`original_price`: 749 rows before remediation):
+- **Extreme (≥85% off): 4 total, all Amazon, all quarantined** — the TV above; Redmi 15C
+  smartphone SAR 24.28 vs was SAR 749 (96.8% off, same 2026-08-02 refresh, same pre-fix code
+  path); Dell 3100 Chromebook SAR 217.02 vs was SAR 1,888.42 (88.5% off, same day/path); a
+  Makayuron WiFi smart-plug 4-pack with an implausible SAR 783.25 "was" price (zero
+  `price_history` rows to corroborate either value, last touched 2026-07-05, a different,
+  older defect — a bad `original_price` capture, not a refresh misparse).
+- **Suspicious (70–84.9% off): 4**, not auto-quarantined — no evidence beyond the ratio itself,
+  and `PRICE_INTEGRITY.md` (2026-07-28, live-verified) already documents genuine ~69.99%
+  Extra flash discounts as a real recurring pattern; left live pending manual spot-check.
+- **Confirmed valid (<70% off): 741.**
+- **Mislabeled `is_deal` badge (13 rows):** `is_deal=true` with `original_price <= current_price`
+  — no discount at all, a false claim on the badge itself (not the price). Cleared (`is_deal
+  → false`); `current_price`/`original_price` untouched.
+- **Best Deals Contract exposure:** 658 of the (then-)749 deal-flagged products (~88%) carry
+  the claim from a single retailer with zero corroboration — structurally the same shape as
+  this incident. Not retroactively hidden (no evidence any specific one is false), but the
+  permanent gate below blocks this shape going forward for extreme discounts.
+- **Unresolved:** none of the audited rows could be confirmed as an installment/financing
+  capture specifically — the live DOM state that produced 259 is gone (page since changed) and
+  cannot be re-fetched retroactively; the mechanism match to ADR-200/204's documented bug class
+  (wrong DOM element, not a parsing-logic error) is exact and sufficient to act on.
+
+**Permanent price-truth gate (`src/lib/intelligence/price-truth-gate.ts`), two layers:**
+1. **Write-time (`assessPriceTransition`).** Reuses ADR-200's already-accepted bound: a newly
+   scraped price more than 4× or less than ¼ of the price already trusted for that exact
+   listing is never written to `current_price` — it is held as `price_pending_value` and the
+   row is quarantined (`price_quarantined_at`/`price_quarantine_reason`, new nullable columns
+   on `product_stores`, migration `scripts/database/29-price-truth-quarantine.sql`). A SECOND
+   consecutive observation that agrees with the pending value (within 2%) confirms a genuine —
+   if surprising — market move and clears the quarantine; a lone misparse never reaches the
+   public price. Wired into both storefront write paths: `ProductService.updateProductPrice()`
+   (the price-refresh cron) and `linkProductToStore()` (discovery re-scrapes of an existing
+   offer). A structured `[price-quarantine]` log line (ADR-149 pattern) fires on every reject.
+2. **Read-time (`isExtremeUncorroboratedDiscount`).** Best Deals contract: a discount ≥75%
+   (chosen above Extra's documented genuine 69.99% ceiling, `PRICE_INTEGRITY.md`) from a single
+   retailer is never published as a deal — it must corroborate with a second store. Wired into
+   `getDeals.ts`.
+3. **RLS closes every anon/browser read path in one place:** the public `SELECT` policy on
+   `product_stores` now requires `price_quarantined_at IS NULL` — product page, search filters,
+   store pages all inherit this automatically, with zero per-call-site changes needed. Service-
+   role paths bypass RLS by design, so `getDeals.ts`, the search API route
+   (`applyCommonFilters`), and `getProductSeoData` (meta description) each got an explicit
+   `.is('price_quarantined_at', null)` filter.
+4. **Monitoring:** `npm run price:quarantine-report` (read-only) lists every currently
+   quarantined offer for human review.
+
+**Regression coverage:** `tests/intelligence/price-truth-gate.test.ts` (26 assertions total
+across this and the existing ADR-204 suite, full run 84 suites/1,339 tests green) — pins the
+exact incident numbers (259 vs a last-known 8,699 rejected; the same 98%-off/single-store shape
+blocked from Best Deals; corroborated by a 2nd store, allowed) plus the pending/confirm
+mechanism and edge cases (new listing, non-positive price, boundary ratio).
+
+**Consequences.** `current_price`/`original_price` on all 4 quarantined rows remain exactly as
+scraped — no fabricated correction was ever written, per the founder's explicit instruction.
+Un-quarantining any of them (once the real Amazon price is re-verified live) requires either a
+confirmed second scrape through the normal cron, or a manual `UPDATE ... SET
+price_quarantined_at = NULL, current_price = <verified value> WHERE id = ...` with the
+verification noted in the reason column first. **Rollback:** drop the 4 new `product_stores`
+columns and restore the previous `USING (true)` RLS policy (both in the migration file's
+header comment); revert the `price-truth-gate.ts` wiring commits — the underlying ADR-200/204
+parser fix is untouched by any of this and does not need to be reverted.
+
+---
+
 ### ADR-210 — Production incident: email confirmation redirected to localhost · Accepted (2026-08-05)
 
 **Context.** Founder-reported launch-blocking defect: registering with email/password on
