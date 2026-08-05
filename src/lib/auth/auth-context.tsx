@@ -7,6 +7,15 @@ import { UserRole } from '@/lib/database/types';
 import { createAuditLog } from './audit';
 import { createNotification, sendWelcomeEmail } from './notifications';
 
+// NEXT_PUBLIC_APP_URL is the canonical override; window.location.origin is the
+// safe fallback so a misconfigured/missing env var can never resolve to localhost
+// in production (or a hardcoded prod URL in local dev).
+function getAppOrigin(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (typeof window !== 'undefined') return window.location.origin;
+  return '';
+}
+
 interface AuthUser extends Omit<User, 'phone'> {
   role?: UserRole;
   full_name?: string;
@@ -345,7 +354,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? { email, password }
         : { phone: phone!, password };
 
-      const { data, error } = await supabase.auth.signUp(authData);
+      const { data, error } = await supabase.auth.signUp(
+        email
+          ? { ...authData, options: { emailRedirectTo: `${getAppOrigin()}/auth/callback` } }
+          : authData
+      );
 
       if (error) throw error;
 
@@ -552,7 +565,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+          redirectTo: `${getAppOrigin()}/auth/callback`,
         },
       });
 
@@ -619,7 +632,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+        redirectTo: `${getAppOrigin()}/auth/reset-password`,
       });
 
       if (error) throw error;
