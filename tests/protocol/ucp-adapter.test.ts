@@ -39,7 +39,7 @@ describe("UCP adapter", () => {
   });
   it("ranking-blind: emits no affiliate/commission/revenue fields", () => {
     const s = JSON.stringify(u).toLowerCase();
-    expect(s).not.toMatch(/affiliate|commission|revenue|tawveeri-21/);
+    expect(s).not.toMatch(/affiliate|commission|revenue|tawveeri0f-21/);
   });
 });
 
@@ -56,6 +56,6 @@ describe("Protocol-neutral: ACP adapter from the SAME canonical shape", () => {
     expect(a.link).toBe("/go/o2");
   });
   it("ranking-blind: no affiliate/commission fields", () => {
-    expect(JSON.stringify(a).toLowerCase()).not.toMatch(/affiliate|commission|revenue|tawveeri-21/);
+    expect(JSON.stringify(a).toLowerCase()).not.toMatch(/affiliate|commission|revenue|tawveeri0f-21/);
   });
 });

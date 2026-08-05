@@ -25,7 +25,7 @@ export interface AffiliateParam {
  */
 export interface AffiliateConfig {
   network: AffiliateNetworkId;
-  /** Amazon Associates tracking id (e.g. "tawveeri-21"). */
+  /** Amazon Associates tracking id (e.g. "tawveeri0f-21"). */
   trackingId?: string;
   /** Generic query params for the `param` network (e.g. aff_code, utm_*). */
   params?: AffiliateParam[];

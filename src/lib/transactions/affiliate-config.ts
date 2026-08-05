@@ -7,7 +7,7 @@ export interface AffiliateParam {
 export type AffiliateConfig = AffiliateParam | null;
 
 export const DEFAULT_STORE_AFFILIATE_CONFIG: Record<string, AffiliateParam> = {
-  amazon: { param: 'tag', value: 'tawveeri-21' },
+  amazon: { param: 'tag', value: 'tawveeri0f-21' },
   // C1000094L is the PUBLISHER ID from noon's partner dashboard — the thing that tracks a
   // link. DNC160 was never a tracking parameter at all: it is a customer COUPON code
   // (10% cashback, capped 25 SAR) typed at checkout, a separate system in the same

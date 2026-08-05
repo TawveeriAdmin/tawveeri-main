@@ -117,8 +117,8 @@ observing, so re-measure before publishing rather than quoting this line.**
   the discount claim, not the price
 - Almanea: prices verified 5/5 exact against the live customer surface. 216,711 of that
   retailer's 337,118 observations sit on the dev host — a data decision, not a bug
-- Amazon affiliate `tawveeri-21` is the only active programme. Electronics commission
-  1–3%
+- Amazon affiliate `tawveeri0f-21` is the only active programme (rotated from `tawveeri-21`
+  2026-08-05). Electronics commission 1–3%
 
 **Competition:**
 - Rakhys: 27 stores, ~70,600 listings, 7,572 smartphones of which 5,305 are AliExpress.

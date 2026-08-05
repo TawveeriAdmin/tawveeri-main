@@ -5,7 +5,7 @@
 //   2. resolve its RetailerProvider (registry) and build the monetized, attributed
 //      exit link via the provider framework (ADR-085) — the SINGLE affiliate path,
 //      replacing the old in-route AFFILIATE_RULES / affiliate-config / normalizeStoreUrl
-//      tag divergence. Amazon → tawveeri-21 + ascsubtag; others per their config.
+//      tag divergence. Amazon → tawveeri0f-21 + ascsubtag; others per their config.
 //   3. record the click (offer, program, tag, sub_id, source) in outbound_clicks
 //   4. 302 to the store.
 // Adding/adjusting an affiliate program is now a change in src/lib/providers, not here.

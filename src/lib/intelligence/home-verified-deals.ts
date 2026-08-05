@@ -32,7 +32,7 @@ export interface HomeVerifiedDeal {
    *
    * Never the raw retailer URL. Measured 2026-08-01: the homepage rendered 8 bare retailer
    * links and ZERO `/go/` exits, so every click left Tawveeri with no affiliate attribution
-   * (`tag=tawveeri-21`) and no `go_click` — the only storefront exit signal we have — while
+   * (`tag=tawveeri0f-21`) and no `go_click` — the only storefront exit signal we have — while
    * a comparison platform sent its visitor away on the first screen without a comparison.
    *
    * Preference order, decided by what we can actually deliver:

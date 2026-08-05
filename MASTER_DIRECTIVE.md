@@ -70,8 +70,8 @@ Label every material statement: **[MEASURED today]** / **[INFERRED]** / **[ASSUM
 - Store overlap among the majors is dominated by Extra+Almanea (236 of 428 = 55%).
 - Noon is present but thin (809 URLs) — the largest deepening opportunity among
   approved retailers.
-- Amazon SA affiliate active (`tawveeri-21`), electronics commission 1–3%.
-  No other retailer programme is active.
+- Amazon SA affiliate active (`tawveeri0f-21`, rotated from `tawveeri-21` 2026-08-05),
+  electronics commission 1–3%. No other retailer programme is active.
 
 **Competition:**
 - Rakhys (rakhys.com, NexuMind): 27 stores, ~70,600 listings, 7,572 smartphones of

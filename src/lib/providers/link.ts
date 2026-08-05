@@ -27,7 +27,7 @@ const NETWORKS: Record<string, AffiliateNetwork> = {
 export function hostFallbackConfig(host: string): AffiliateConfig {
   const h = host.toLowerCase();
   if (isAmazonHost(h)) {
-    return { network: "amazon", trackingId: "tawveeri-21", supportsSubId: true, subIdParam: "ascsubtag" };
+    return { network: "amazon", trackingId: "tawveeri0f-21", supportsSubId: true, subIdParam: "ascsubtag" };
   }
   if (h.includes("noon.com")) {
     return {

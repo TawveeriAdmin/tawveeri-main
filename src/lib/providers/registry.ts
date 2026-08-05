@@ -2,7 +2,7 @@
 // The pluggable RetailerProvider registry + feature flags (ADR-085).
 //
 // Each of the current 8 production stores is a provider. Today every store is sourced
-// by `scraper`; Amazon is monetized by the Amazon Associates network (tawveeri-21) and
+// by `scraper`; Amazon is monetized by the Amazon Associates network (tawveeri0f-21) and
 // Noon by the generic `param` network. Retailers with no known program are `direct`
 // (unknown beats incorrect — we never invent a tag). Adding a retailer or flipping its
 // sourcing to an official feed is a data change here, not a code change elsewhere.
@@ -15,7 +15,7 @@ import type { RetailerProvider, SourcingMode, AffiliateNetworkId } from "./types
 
 const BASE: Record<string, RetailerProvider> = {
   jarir:       { slug: "jarir",       storeId: 1, displayName: "Jarir",             displayNameAr: "جرير",             enabled: true, sourcing: "scraper", affiliate: null },
-  amazon:      { slug: "amazon",      storeId: 2, displayName: "Amazon SA",         displayNameAr: "أمازون",           enabled: true, sourcing: "scraper", affiliate: { network: "amazon", trackingId: "tawveeri-21", supportsSubId: true, subIdParam: "ascsubtag" } },
+  amazon:      { slug: "amazon",      storeId: 2, displayName: "Amazon SA",         displayNameAr: "أمازون",           enabled: true, sourcing: "scraper", affiliate: { network: "amazon", trackingId: "tawveeri0f-21", supportsSubId: true, subIdParam: "ascsubtag" } },
   noon:        { slug: "noon",        storeId: 3, displayName: "Noon",              displayNameAr: "نون",              enabled: true, sourcing: "scraper", affiliate: { network: "param", trackingId: "noon", params: [{ name: "utm_source", value: "C1000094L" }, { name: "utm_medium", value: "referral" }], supportsSubId: true, subIdParam: "utm_content" } },
   extra:       { slug: "extra",       storeId: 4, displayName: "eXtra",             displayNameAr: "اكسترا",           enabled: true, sourcing: "scraper", affiliate: null },
   // Almanea powers its headless storefront with a PUBLIC Algolia index (search-only keys

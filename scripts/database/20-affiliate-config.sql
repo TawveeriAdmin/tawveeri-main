@@ -8,7 +8,7 @@ UPDATE stores
 SET affiliate_config = jsonb_build_object(
   'enabled', true,
   'param', 'tag',
-  'value', 'tawveeri-21'
+  'value', 'tawveeri0f-21'
 )
 WHERE slug = 'amazon'
   AND affiliate_config IS NULL;

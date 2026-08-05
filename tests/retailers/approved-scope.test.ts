@@ -89,6 +89,6 @@ describe('normalizeStoreUrl — Jarir GCC-market → Saudi (sa-en)', () => {
 describe('normalizeStoreUrl — Amazon canonical /dp/ASIN', () => {
   it('collapses a bloated search-referral URL to /dp/ASIN?tag', () => {
     const bloated = 'https://www.amazon.sa/-/en/HONOR-X6c-256GB/dp/B0FGWKKFL5/ref=sr_1_5?keywords=honor&qid=1&sr=1-5';
-    expect(normalizeStoreUrl('amazon', bloated)).toBe('https://www.amazon.sa/dp/B0FGWKKFL5?tag=tawveeri-21');
+    expect(normalizeStoreUrl('amazon', bloated)).toBe('https://www.amazon.sa/dp/B0FGWKKFL5?tag=tawveeri0f-21');
   });
 });

@@ -2,11 +2,11 @@
 // REFERENCE affiliate-network adapter: Amazon Associates (ADR-085).
 //
 // Amazon is the first reference implementation because the program is already live
-// (tracking id `tawveeri-21`). It demonstrates every capability the framework must
+// (tracking id `tawveeri0f-21`). It demonstrates every capability the framework must
 // support for any future network:
 //   • advanced link generation — collapse a noisy PDP URL to the canonical
 //     `/dp/<ASIN>` deep link (shorter, stable, higher-trust);
-//   • affiliate tag injection — `tag=tawveeri-21` (never clobbered if already present);
+//   • affiliate tag injection — `tag=tawveeri0f-21` (never clobbered if already present);
 //   • per-click sub-id attribution — `ascsubtag=<clickId>` ties the outbound click to
 //     a future Amazon-reported conversion (Amazon allows one sub-tag up to 100 chars).
 //
@@ -31,7 +31,7 @@ function sanitizeSubId(clickId: string | number | undefined): string | null {
 export const amazonNetwork: AffiliateNetwork = {
   id: "amazon",
   build(url: URL, config: AffiliateConfig, ctx: LinkContext): AffiliateLinkResult {
-    const tag = (config.trackingId && config.trackingId.trim()) || "tawveeri-21";
+    const tag = (config.trackingId && config.trackingId.trim()) || "tawveeri0f-21";
     const subId = sanitizeSubId(ctx.clickId);
     try {
       const asin = url.pathname.match(ASIN_RE)?.[1]?.toUpperCase();

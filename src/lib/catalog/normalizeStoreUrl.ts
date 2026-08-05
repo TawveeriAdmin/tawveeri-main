@@ -34,10 +34,10 @@ export function normalizeStoreUrl(
         url.pathname.match(/\/gp\/product\/([A-Z0-9]{10})/i);
 
       if (asinMatch && asinMatch[1]) {
-        return `https://www.amazon.sa/dp/${asinMatch[1].toUpperCase()}?tag=tawveeri-21`;
+        return `https://www.amazon.sa/dp/${asinMatch[1].toUpperCase()}?tag=tawveeri0f-21`;
       }
 
-      url.searchParams.set("tag", "tawveeri-21");
+      url.searchParams.set("tag", "tawveeri0f-21");
       return url.toString();
     }
 
