@@ -38,6 +38,7 @@
     "sidebar": {
       "adminPanel": "Admin Panel",
       "dashboard": "Dashboard",
+      "commandCenter": "Command Center",
       "profile": "Profile",
       "users": "Users",
       "products": "Products",

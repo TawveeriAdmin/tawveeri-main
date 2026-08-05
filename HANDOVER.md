@@ -1,3 +1,74 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #51 · FOUNDER COMMERCE COMMAND CENTER SHIPPED · ADR-213 ═══
+
+## Founder-authorised execution unit: live traffic dashboard + greenfield affiliate reconciliation
+
+**Full detail: ADR-213.** This entry is the resume point.
+
+### What shipped (production-verified)
+- **`/admin/command-center`** — live Founder Summary dashboard. Lifts the exact funnel/KPI SQL
+  already validated in `scripts/tps-analysis/usage-report.ts` (not re-derived) into
+  `src/lib/admin/command-center-queries.ts`, adds period filtering (today/yesterday/7d/30d/custom,
+  Asia/Riyadh calendar days, no DST). REAL-only headlines, TEST volume always shown alongside
+  never blended (Data Quality Contract Rule 2). Data-quality banner surfaces tracking-stopped /
+  go_click↔outbound_clicks divergence / missing Amazon tag inline. Nav entry added to
+  `admin-sidebar.tsx` + `messages/{ar,en}/admin.json` (`commandCenter` key).
+- **Affiliate Reconciliation Layer (greenfield)** — migration `scripts/database/30-affiliate-reconciliation.sql`
+  **applied to production**: `affiliate_reports` + `affiliate_conversions`, RLS enabled, zero
+  policies (service-role only, verified via `pg_tables`/`pg_policies` post-apply — matches
+  `usage_events` convention). Column-mapped CSV importer (`src/lib/admin/affiliate-csv.ts`,
+  `/api/admin/affiliate/reports` GET+POST, UI at `/admin/affiliate`) — mapping-based rather than
+  a hardcoded Amazon column list, because no live account access exists in this environment to
+  confirm exact export headers. Match tiers EXACT/PROBABLE/AGGREGATE_ONLY/UNMATCHED against
+  `outbound_clicks.sub_id`, idempotent via file sha256 checksum.
+- **5 governing docs frozen**: `docs/ANALYTICS_ATTRIBUTION_AUDIT.md`, `docs/METRIC_DEFINITIONS.md`,
+  `docs/DATA_QUALITY_CONTRACT.md`, `docs/FOUNDER_COMMERCE_COMMAND_CENTER.md`,
+  `docs/AFFILIATE_RECONCILIATION_CONTRACT.md`.
+
+### Real bug caught mid-build (read-only production introspection)
+`outbound_clicks` predates the numbered-migration schema files and isn't declared anywhere in
+the repo. It was assumed (reasonably, by analogy with `usage_events`) to have a `created_at`
+column — it actually has `clicked_at`. Caught via a read-only `information_schema.columns` query
+before shipping, not in production. Lesson: **never assume a column name for a table with no
+migration-file record — introspect first**, same spirit as the ADR-125 System-A/B naming rule.
+
+### Live baseline at ship time (production, 2026-08-05)
+REAL: 36 sessions, 489 search, 217 results (44.4% answer rate — **MISS** vs the existing 80%
+launch gate, a real open product-quality issue, not a tracking defect, out of scope here), 49
+outbound clicks, 10.0% Search→Exit. TEST: 166 sessions, 2,557 search — TEST outnumbers REAL
+~4.6×, confirming Data Quality Contract Rule 2 (never blend) is load-bearing, not theoretical.
+
+### Verification performed
+`tsc --noEmit` clean on all new files. `npm run build` clean (new route `/[locale]/admin/command-center`
+and `/api/admin/affiliate/reports` both compiled). Full test suite: **1352/1352 passed** (was
+1343 per ADR-212 + 9 new `tests/admin/affiliate-csv.test.ts` cases — one of which caught a real
+fabrication bug: `parseNumber("n/a")` was silently returning `0` instead of `null`, fixed before
+ship). `npm run lint`/`npx eslint` is **broken pre-existing** in this environment
+(`ERR_PACKAGE_PATH_NOT_EXPORTED` on `eslint/config`, reproduces on a clean invocation with no
+files specified) — not caused by this unit, not fixed by this unit (out of scope; flag to founder
+if it needs fixing). Interactive browser click-through of `/admin/command-center` was **not**
+possible: this sandboxed Windows dev environment's Next.js dev server crashes on *every* admin
+page (including pre-existing `/admin/dashboard`, `/admin/analytics`) with a Jest-worker
+child-process exception — confirmed environment-wide, not specific to the new page.
+
+### Deferred (not rejected — see FOUNDER_COMMERCE_COMMAND_CENTER.md for why)
+AI founder brief / natural-language querying, forecasting, alert delivery (Slack/email) — real
+sample too small (36 sessions) to justify, no delivery channel authorized. External BI
+(PostHog/Mixpanel/Amplitude/GA4/Metabase/Looker/Power BI) evaluated and rejected — reaffirms
+ADR-120, not re-litigated.
+
+### Exact stop boundary (founder action needed, everything else already shipped)
+To exercise affiliate reconciliation end-to-end: **Amazon Associates Central → Reports →
+Earnings Report** (or Orders Report, broken out by Tracking ID if available) → any recent period
+since the `tawveeri0f-21` tag rotation (ADR-212) → **CSV** download → share the file or just its
+header row (no credentials needed). Full detail: `docs/AFFILIATE_RECONCILIATION_CONTRACT.md`.
+
+### Not touched / not reopened
+ADR-207's deliberate choice not to join `session_id`/UTM into `outbound_clicks` — respected, not
+overturned. ADR-211/212 (P0 price incident, tag rotation) — closed, not reopened. SendGrid custom
+SMTP — explicitly out of scope per this unit's own directive, still deferred.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #50 (CLOSED) · P0 FALSE-PRICE INCIDENT CONTAINED · PRICE-TRUTH GATE + TRUTHFUL LABEL RULE LIVE ═══
 
 ## INCIDENT — Amazon TV showed SAR 259 on Best Deals against a real SAR 8,699; permanent gate shipped

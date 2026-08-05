@@ -16,6 +16,7 @@ import {
   Ticket,
   Bot,
   Activity,
+  Gauge,
   PanelLeftClose,
   PanelLeftOpen,
   X,
@@ -38,6 +39,7 @@ const STORAGE_KEY = 'tawveeri-admin-sidebar-collapsed';
 
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+  { href: '/admin/command-center', icon: Gauge, key: 'commandCenter' },
   { href: '/admin/profile', icon: User, key: 'profile' },
   { href: '/admin/users', icon: Users, key: 'users' },
   { href: '/admin/products', icon: Package, key: 'products' },
@@ -52,8 +54,8 @@ const navItems = [
 ];
 
 const navGroups = [
-  { key: 'core', items: navItems.slice(0, 7) },
-  { key: 'operations', items: navItems.slice(7) },
+  { key: 'core', items: navItems.slice(0, 8) },
+  { key: 'operations', items: navItems.slice(8) },
 ];
 
 export function AdminSidebar({ locale }: AdminSidebarProps) {

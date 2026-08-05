@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/auth/server';
 import { AffiliateSettingsCard } from '@/components/admin/affiliate-settings-card';
+import { AffiliateReportUpload } from '@/components/admin/affiliate-report-upload';
 import { AlertCircle, HandCoins } from 'lucide-react';
 
 export default async function AdminAffiliatePage({
@@ -85,6 +86,8 @@ export default async function AdminAffiliatePage({
           </p>
         </div>
       )}
+
+      <AffiliateReportUpload locale={locale} />
     </div>
   );
 }
