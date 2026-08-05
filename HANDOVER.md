@@ -1,3 +1,63 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #49 (CLOSED) · PRODUCTION EMAIL-CONFIRMATION INCIDENT FULLY RESOLVED · DASHBOARD + CODE FIX BOTH DEPLOYED AND VERIFIED ═══
+
+## INCIDENT — email confirmation redirected to localhost:3000, ERR_CONNECTION_FAILED
+
+**Urgent, founder-reported, production.** Full detail: ADR-210. This entry is the resume
+point.
+
+### Root cause — two independent defects
+1. **Supabase Auth Site URL** (dashboard, project `vyceqrzttspyycdpojtn`) was left at its
+   project-creation default, `http://localhost:3000`. Fixed by the founder directly: Site URL
+   → `https://tawveeri.com`; `https://tawveeri.com/auth/callback` +
+   `https://tawveeri.com/auth/reset-password` added to Redirect URLs.
+2. **`src/lib/auth/auth-context.tsx`'s `signUp()`** called `supabase.auth.signUp(authData)`
+   with no `emailRedirectTo` at all. `signInWithOAuth`/`resetPassword` had a related latent
+   bug: raw `process.env.NEXT_PUBLIC_APP_URL` with no fallback resolves to the literal string
+   `"undefined"` when unset (confirmed unset in `.env.local`). Fixed: `getAppOrigin()` helper
+   (env override, `window.location.origin` fallback) wired into all three call sites.
+
+### Fix applied
+- **Dashboard** (already live, applied directly by the founder): Site URL + Redirect URLs
+  corrected — see ADR-210.
+- **Code** (commit `9e309a5`, pushed to `main`, deployed via Railway): `getAppOrigin()` added;
+  `signUp()` now passes `emailRedirectTo`; `signInWithOAuth`/`resetPassword` use the same
+  helper instead of the raw env var.
+
+### Verification — live production, this session
+- Deployed bundle confirmed live: drove the real signup form at
+  `https://tawveeri.com/ar/auth/signup` with a real browser and captured the actual outgoing
+  request — `POST .../auth/v1/signup?redirect_to=https%3A%2F%2Ftawveeri.com%2Fauth%2Fcallback`.
+- Generated a real confirmation link with that same target and followed it: `303` →
+  `tawveeri.com/auth/callback`, account's `email_confirmed_at` flipped `true` immediately
+  after. No localhost anywhere in the chain.
+- SMTP determination (not part of the original ask, resolved as a byproduct): four real
+  `signUp()` calls hit Supabase's built-in mailer rate limit (`email rate limit exceeded`,
+  429) after only 2–3 sends — strong evidence Auth email currently rides the **Supabase
+  default mailer, not SendGrid**. `SENDGRID_API_KEY` is unset locally; SendGrid is used only
+  by `src/lib/auth/notifications.ts` for app-triggered email. Cancelling SendGrid today would
+  not touch confirmation/reset/magic-link email. **Custom SMTP was deliberately NOT enabled**
+  per the founder's explicit scope instruction.
+- All test accounts (admin-generated throwaway `@example.com` / `@tawveeri.com` addresses, no
+  real inbox touched, no PII) deleted via the admin API after verification. Zero leftover test
+  users in production `auth.users`.
+
+### Follow-up, not fixed here (flagged, not blocking)
+Supabase's default mailer's ~2–4/hour cap is a latent risk independent of this incident — a
+real signup wave would silently start failing to send confirmation emails. Enabling custom
+SMTP (SendGrid) for Supabase Auth removes that ceiling. Founder decision, out of scope here.
+
+### Rollback
+`git revert 9e309a5` — reverts `src/lib/auth/auth-context.tsx` only, pure client-side code, no
+data-layer impact. **Do not revert the Supabase dashboard Site URL / Redirect URLs change** —
+that alone is what stops confirmation links from resolving to localhost; reverting it
+re-breaks the incident even with the code fix still in place.
+
+**Status: this incident is CLOSED.** Dashboard config — fixed by the founder, verified.
+Code — fixed, committed, pushed, deployed, verified against real production. No further
+action needed on this incident.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #48 (CLOSED) · PRODUCTION OTP INCIDENT FULLY RESOLVED · STORAGE + SMS DELIVERY + FULL CUSTOMER JOURNEY ALL VERIFIED ═══
 
 ## INCIDENT — phone OTP send/login was completely blocked in production; root-caused and fixed

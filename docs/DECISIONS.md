@@ -6,6 +6,65 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-210 — Production incident: email confirmation redirected to localhost · Accepted (2026-08-05)
+
+**Context.** Founder-reported launch-blocking defect: registering with email/password on
+https://tawveeri.com sent a working confirmation email, but clicking "Confirm your Mail"
+redirected to `http://localhost:3000` → `ERR_CONNECTION_FAILED`. Treated as a production
+regression per the founder's directive.
+
+**Root cause — two independent defects, both required to fully close this:**
+1. **Supabase Auth dashboard (project `vyceqrzttspyycdpojtn`):** Site URL was left at its
+   project-creation default, `http://localhost:3000`. GoTrue falls back to Site URL for any
+   confirmation link that doesn't carry an explicit `emailRedirectTo`/allow-listed
+   `redirect_to`. Fixed by the founder directly: Site URL → `https://tawveeri.com`;
+   `https://tawveeri.com/auth/callback` and `https://tawveeri.com/auth/reset-password` added
+   to Redirect URLs.
+2. **Code (`src/lib/auth/auth-context.tsx`):** `signUp()` called
+   `supabase.auth.signUp(authData)` with no `emailRedirectTo` option at all — so even with the
+   Site URL fixed, GoTrue had no path-specific target and would have landed users on the bare
+   root instead of `/auth/callback`. `signInWithOAuth` and `resetPassword` had a related latent
+   bug: they read `process.env.NEXT_PUBLIC_APP_URL` directly with no fallback, which resolves
+   to the literal string `"undefined"` in any environment where that var is unset (confirmed
+   unset in `.env.local`; `docs/ENVIRONMENT-AUTHORITY.md` already flagged this as a known gap).
+   Fixed (commit `9e309a5`): added `getAppOrigin()` — prefers `NEXT_PUBLIC_APP_URL`, falls back
+   to `window.location.origin` — and wired it into all three call sites. This can never resolve
+   to a hardcoded localhost in production or a hardcoded production URL in local dev, since
+   `window.location.origin` always matches wherever the request actually came from.
+
+**Verification (live evidence, production, this session):**
+- Before the code fix, generated a real signup confirmation link via the admin API: `redirect_to`
+  correctly resolved to `https://tawveeri.com` (proves the Site URL fix alone was already
+  effective) but landed on the bare root, not `/auth/callback` — confirms the code gap
+  independently of the dashboard fix.
+- After deploy, drove the actual live signup form at `https://tawveeri.com/ar/auth/signup` with
+  a real headless browser and captured the outgoing network request: `POST
+  .../auth/v1/signup?redirect_to=https%3A%2F%2Ftawveeri.com%2Fauth%2Fcallback` — the deployed
+  frontend now sends the exact intended target on every real signup.
+- Generated a fresh confirmation link with that same explicit redirect target and followed it:
+  `303` → `tawveeri.com/auth/callback`, and the test account's `email_confirmed_at` flipped to
+  `true` immediately after. Full loop closed: no localhost, correct route, account confirms.
+- SMTP determination: four real `signUp()` calls a few seconds apart hit `email rate limit
+  exceeded` (429) after only 2–3 sends — Supabase's default/shared mailer caps new projects at
+  roughly 2–4 emails/hour specifically to push production traffic onto custom SMTP. This is
+  strong evidence Auth email currently rides the **Supabase default mailer, not SendGrid**.
+  SendGrid (`SENDGRID_API_KEY`, confirmed unset in `.env.local`) is used only by
+  `src/lib/auth/notifications.ts` for app-triggered emails (welcome, price-drop, coupon
+  expiry, etc.) — cancelling SendGrid would not affect confirmation/reset/magic-link email at
+  all under the current configuration. Not verified directly against the dashboard SMTP
+  toggle — inferred from the rate-limit signature. **Custom SMTP was explicitly NOT enabled
+  during this incident**, per the founder's instruction to scope this fix narrowly.
+- All test accounts created during verification (admin-generated, `@example.com`/
+  `@tawveeri.com` throwaway addresses, no real person's inbox touched) were deleted via the
+  admin API afterward — no lingering test users in production `auth.users`.
+
+**Follow-up, not fixed here (flagged for a future, deliberate pass):** Supabase's default
+mailer's ~2–4/hour cap is itself a latent production risk independent of this incident — a
+real signup wave would silently start failing to send confirmation emails at all. Enabling
+custom SMTP (SendGrid) for Supabase Auth, not just app-triggered email, removes that ceiling.
+
+---
+
 ### ADR-209 — Production incident: phone OTP send/login blocked — missing `phone_otps` table · Accepted (2026-08-05)
 
 **Context.** Founder-reported launch-blocking defect: every OTP request on
