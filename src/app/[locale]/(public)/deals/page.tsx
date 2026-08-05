@@ -127,16 +127,20 @@ export default async function DealsPage({ params }: { params: { locale: string }
               href={`/${params.locale}/products/${d.slug}`}
               className="group relative rounded-2xl border border-outline-variant bg-surface p-4 hover:border-[var(--brand-green)] hover:shadow-md transition"
             >
-              {/* شارة قوة العرض — من الطبقة المعرفية */}
-              <div
-                className={`absolute top-3 z-10 rounded-full px-2.5 py-1 text-xs font-bold ${isAr ? "right-3" : "left-3"} ${
-                  d.strength === "hot"
-                    ? "bg-orange-100 text-orange-700 border border-orange-300"
-                    : "bg-green-100 text-green-700 border border-green-300"
-                }`}
-              >
-                {d.strength === "hot" ? t.hot : t.good}
-              </div>
+              {/* شارة قوة العرض — من الطبقة المعرفية. ADR-211 micro-patch: عرض بلا
+                  دليل (متجر واحد بلا تاريخ أسعار) لا يستحق أي ادعاء تقييمي، ولو
+                  ليّناً مثل "سعر جيد" — تُحجب الشارة كاملاً لهذا المستوى. */}
+              {d.labelTier !== "single" && (
+                <div
+                  className={`absolute top-3 z-10 rounded-full px-2.5 py-1 text-xs font-bold ${isAr ? "right-3" : "left-3"} ${
+                    d.strength === "hot"
+                      ? "bg-orange-100 text-orange-700 border border-orange-300"
+                      : "bg-green-100 text-green-700 border border-green-300"
+                  }`}
+                >
+                  {d.strength === "hot" ? t.hot : t.good}
+                </div>
+              )}
 
               {/* الصورة */}
               <div className="flex h-40 items-center justify-center">

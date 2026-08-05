@@ -138,12 +138,23 @@ export function tierAllowsStrongDealBadge(tier: DealLabelTier): boolean {
   return tier !== "single";
 }
 
+/**
+ * Whether ANY evaluative badge — including the softer "سعر جيد"/"Good price" — may
+ * be shown for this tier. ADR-211 micro-patch (2026-08-05): "good price" is still an
+ * evaluation ("this is a decent deal"), and a plain single-retailer offer with no
+ * historical baseline has no evidence to back even that soft a claim. Only the plain
+ * availability statement is truthful at this tier.
+ */
+export function tierAllowsAnyBadge(tier: DealLabelTier): boolean {
+  return tier !== "single";
+}
+
 export function dealLabelText(tier: DealLabelTier, storeName: string): { ar: string; en: string } {
   switch (tier) {
     case "multi_store":
-      return { ar: "أقل سعر بين المتاجر المتاحة", en: "Lowest among available retailers" };
+      return { ar: "الأقل بين المتاجر المتاحة", en: "Lowest among available retailers" };
     case "single_stable_baseline":
-      return { ar: "سعر منخفض عن المعتاد", en: "Lower than usual" };
+      return { ar: "أقل من المعتاد", en: "Lower than usual" };
     case "single":
     default:
       return { ar: `السعر المتاح لدى ${storeName}`, en: `Available at ${storeName}` };

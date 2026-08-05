@@ -11,6 +11,7 @@ import {
   isExtremeUncorroboratedDiscount,
   classifyDealLabelTier,
   tierAllowsStrongDealBadge,
+  tierAllowsAnyBadge,
   dealLabelText,
   SANITY_MAX_RATIO,
   EXTREME_DISCOUNT_PCT,
@@ -103,7 +104,7 @@ describe('isExtremeUncorroboratedDiscount (Best Deals read-time gate)', () => {
  * only "available at [store]" — never "best price" / "strong deal".
  */
 describe('classifyDealLabelTier / tierAllowsStrongDealBadge / dealLabelText', () => {
-  it('a single retailer with no price history is tier "single" — the weakest claim', () => {
+  it('a single retailer with no price history is tier "single" — the weakest claim, and earns NO badge at all', () => {
     const tier = classifyDealLabelTier({
       corroboratingStoreCount: 1,
       priceHistoryObservationCount: 0,
@@ -111,6 +112,8 @@ describe('classifyDealLabelTier / tierAllowsStrongDealBadge / dealLabelText', ()
     });
     expect(tier).toBe('single');
     expect(tierAllowsStrongDealBadge(tier)).toBe(false);
+    // ADR-211 micro-patch: not even the softer "good price" evaluation is earned here.
+    expect(tierAllowsAnyBadge(tier)).toBe(false);
     const label = dealLabelText(tier, 'Amazon SA');
     expect(label.ar).toBe('السعر المتاح لدى Amazon SA');
     expect(label.en).toBe('Available at Amazon SA');
@@ -127,8 +130,9 @@ describe('classifyDealLabelTier / tierAllowsStrongDealBadge / dealLabelText', ()
     });
     expect(tier).toBe('multi_store');
     expect(tierAllowsStrongDealBadge(tier)).toBe(true);
+    expect(tierAllowsAnyBadge(tier)).toBe(true);
     const label = dealLabelText(tier, 'irrelevant');
-    expect(label.ar).toBe('أقل سعر بين المتاجر المتاحة');
+    expect(label.ar).toBe('الأقل بين المتاجر المتاحة');
     expect(label.en).toBe('Lowest among available retailers');
   });
 
@@ -140,8 +144,9 @@ describe('classifyDealLabelTier / tierAllowsStrongDealBadge / dealLabelText', ()
     });
     expect(tier).toBe('single_stable_baseline');
     expect(tierAllowsStrongDealBadge(tier)).toBe(true);
+    expect(tierAllowsAnyBadge(tier)).toBe(true);
     const label = dealLabelText(tier, 'irrelevant');
-    expect(label.ar).toBe('سعر منخفض عن المعتاد');
+    expect(label.ar).toBe('أقل من المعتاد');
     expect(label.en).toBe('Lower than usual');
   });
 
