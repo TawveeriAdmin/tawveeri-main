@@ -117,6 +117,51 @@ correctly but the SMS is never sent.
 
 ---
 
+**RESOLUTION — 2026-08-05, later same day: SMS delivery and the full customer journey are
+now VERIFIED, not just the database fix.** The founder added `AUTHENTICA_API_KEY` to the
+production environment. Confirmed present without ever printing or logging its value: the
+live `/api/auth/send-phone-otp` response changed from `"Authentica API key not configured..."`
+to the safe bilingual message class, which only happens once `authenticaService`'s internal
+`!runtimeApiKey` check passes.
+
+**Real end-to-end production test, performed by the founder on their own real Saudi mobile
+number** (never shared with or handled by this session — phone number and OTP code both
+stayed on the founder's device and out of this conversation):
+- Arabic registration (new user): OTP request PASS · SMS received PASS · OTP verification
+  PASS · registration completed PASS.
+- Existing-user login (same number, second session): new SMS received PASS · OTP
+  verification PASS · logged in PASS · logout PASS.
+
+**Independently corroborated in production, read-only, masked, zero PII exposed** (this
+session, immediately after the founder's report — figures only, no phone numbers):
+`users`: 1 row, `auth_provider='phone'`, `phone_verified=true` (matches "one real
+registration"). `login_sessions`: 1 row (matches "one real login," device fingerprinting
+working). `phone_otps`: 4 rows total, **0 active/leftover — every one already `is_used`**, 2
+with `verified_at` set (one per completed flow) — this is the same invalidation logic
+`tests/auth/phone-otp.test.ts`'s "resend" test already covers, now also confirmed against a
+real request/response cycle: no orphaned or double-active OTP survived either flow.
+`admin_logs`: exactly one `user_signup` and one `user_login` event, matching 1:1. No leftover
+rows for the synthetic diagnostic number (`+966500000000`) used during root-cause work —
+already cleaned in the prior session, reconfirmed still clean (0 rows).
+
+**Authentica delivery reference (requirement to confirm, this session).** Authentica's
+response can include a `messageId`/`id` field (`src/lib/auth/authentica.ts` reads
+`data.messageId || data.id`). Currently this value is returned once in the `send-phone-otp`
+JSON response to the client and **is not persisted anywhere** — not in `phone_otps` (no
+column for it), not in any log. This is safe (nothing sensitive leaks — a provider message ID
+is not PII or a secret) but means there is no durable record today for delivery
+reconciliation or support lookup if the founder ever needs to ask Authentica about a specific
+send. Recorded as a possible future enhancement, not implemented here — out of scope for
+closing this incident, and adding a persistence path is a new unit, not a bug fix.
+
+**Status: CLOSED.** Database persistence: fixed and verified (this ADR, first section).
+SMS delivery: verified (this resolution). Full customer journey — new-user registration,
+existing-user login — verified end-to-end in real production by the founder, independently
+corroborated at the database layer by this session. No further code change was required to
+reach this state; only the environment variable and the founder's manual test were needed.
+
+---
+
 ### ADR-208 — Controlled Demand Validation Wave 1: founder-review corrections + checkpoint close · Accepted (2026-08-04)
 
 **Context.** ADR-207 shipped the Wave 1 pack (Social Fact Pack, Claims/Content Ledgers, UTM

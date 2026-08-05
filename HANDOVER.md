@@ -1,4 +1,4 @@
-# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #48 · PRODUCTION INCIDENT CLOSED · OTP STORAGE FIXED · SMS DELIVERY STILL BLOCKED ON A MISSING SECRET ═══
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #48 (CLOSED) · PRODUCTION OTP INCIDENT FULLY RESOLVED · STORAGE + SMS DELIVERY + FULL CUSTOMER JOURNEY ALL VERIFIED ═══
 
 ## INCIDENT — phone OTP send/login was completely blocked in production; root-caused and fixed
 
@@ -69,11 +69,36 @@ change, no data-layer impact.
 **Database: do NOT revert.** Dropping `phone_otps` would immediately re-break OTP for every
 user. The table creation is a standing production fix, not something this rollback touches.
 
-### Next founder action (the only thing blocking a fully working OTP flow now)
-Add `AUTHENTICA_API_KEY` to the production (Railway) environment. Once set, re-run the same
-live check (`curl -X POST https://tawveeri.com/api/auth/send-phone-otp -d '{"phone":"<a real
-test number>"}'`) and confirm an SMS actually arrives — that is the one remaining unverified
-step, and it needs a real phone to receive the code.
+### ~~Next founder action~~ — DONE, 2026-08-05 later same day
+`AUTHENTICA_API_KEY` was added to production. Confirmed present without ever printing its
+value (the live "not configured" error disappeared once it was set).
+
+### FINAL RESOLUTION — full customer journey verified end-to-end in real production
+The founder ran the complete flow on their own real Saudi mobile number — never shared with
+or handled by this session (no phone number, no OTP code, appeared anywhere in this work):
+- **Arabic registration (new user):** OTP request PASS · SMS received PASS · OTP verification
+  PASS · registration completed PASS.
+- **Existing-user login (same number):** new SMS received PASS · OTP verification PASS ·
+  logged in PASS · logout PASS.
+
+**Independently corroborated in production, read-only, masked, zero PII** (this session,
+right after the founder's report): `users` 1 row (`auth_provider='phone'`,
+`phone_verified=true`) · `login_sessions` 1 row · `phone_otps` 4 rows, **0 active/leftover,
+all `is_used`**, 2 `verified_at` set (one per flow — no orphaned OTP survived either request)
+· `admin_logs` exactly 1 `user_signup` + 1 `user_login` · zero leftover rows for the
+`+966500000000` synthetic diagnostic number used during root-cause work (already cleaned,
+reconfirmed still clean).
+
+**Authentica delivery reference:** `messageId`/`id` is returned once in the API response to
+the client and is not persisted anywhere (no column on `phone_otps`, no log). Safe (not a
+secret, not PII) but there is no durable record for delivery reconciliation today — noted as
+a possible future enhancement, not built here (would be a new unit, not part of this fix).
+
+**Status: this incident is CLOSED.** Database persistence — fixed and verified. SMS
+delivery — verified. Full customer journey (registration + login) — verified in real
+production by the founder, independently corroborated at the database layer. No further
+action needed unless the founder wants the Authentica reference persisted in future (separate,
+optional unit).
 
 ---
 # ═══ RESUME HERE — 2026-08-04 CHECKPOINT #47 · CONTROLLED DEMAND VALIDATION WAVE 1 · FOUNDER-REVIEW CHECKPOINT CLOSED · EXECUTION DEFERRED TO FOUNDER ═══
