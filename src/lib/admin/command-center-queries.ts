@@ -4,6 +4,7 @@
 // REAL-only for every headline number; TEST volume always computed alongside, never blended in.
 // Metric definitions: docs/METRIC_DEFINITIONS.md. Data-quality rules: docs/DATA_QUALITY_CONTRACT.md.
 import { createServerClient } from '@/lib/database';
+import { getAffiliateConfig } from '@/lib/transactions/affiliate-config';
 
 export type Period = 'today' | 'yesterday' | '7d' | '30d' | 'custom';
 
@@ -414,13 +415,12 @@ export async function getCommandCenterData(period: Period, customStart?: string,
   const range = resolvePeriod(period, customStart, customEnd);
   const prev = previousRange(range);
 
-  const [events, prevEvents, outboundRows, lastEvent, amazonStore] = await Promise.all([
+  const [events, prevEvents, outboundRows, lastEvent] = await Promise.all([
     fetchUsageEvents(range.start, range.end),
     fetchUsageEvents(prev.start, prev.end),
     fetchOutboundClicks(range.start, range.end),
     (createServerClient() as unknown as { from: (table: string) => any })
       .from('usage_events').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
-    createServerClient().from('stores').select('affiliate_config').eq('slug', 'amazon').maybeSingle(),
   ]);
 
   const realEvents = events.filter((e) => !e.is_test);
@@ -448,8 +448,11 @@ export async function getCommandCenterData(period: Period, customStart?: string,
   const goClickDivergencePct = real.outbound > 0
     ? Math.abs(real.outbound - outboundReal.clicks) / real.outbound
     : null;
-  const affiliateConfig = amazonStore.data?.affiliate_config as { tag?: string } | null | undefined;
-  const amazonTagConfigured = Boolean(affiliateConfig?.tag);
+  // Authoritative source is code, not the `stores` table — `stores.affiliate_config` (migration 20)
+  // was never applied to production (ADR-212) and isn't read by the actual exit path either way.
+  // DEFAULT_STORE_AFFILIATE_CONFIG (src/lib/transactions/affiliate-config.ts) mirrors the live
+  // Provider Registry value (src/lib/providers/registry.ts).
+  const amazonTagConfigured = Boolean(getAffiliateConfig('amazon')?.value);
 
   // REAL-only campaign attribution for the headline view — TEST go_clicks (including any
   // controlled verification journey) are computed too but never blended into the REAL summary.

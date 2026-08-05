@@ -12,9 +12,14 @@ export default async function AdminAffiliatePage({
   const isRTL = locale === 'ar';
   const supabase = await createClient();
 
+  // `affiliate_config` is deliberately NOT selected here — that column (migration 20) was
+  // never applied to production (ADR-212) and, where it exists elsewhere, isn't what the
+  // actual exit path reads anyway. The Provider Registry (src/lib/providers/registry.ts,
+  // ADR-085) / DEFAULT_STORE_AFFILIATE_CONFIG is the real authoritative source — see
+  // AffiliateSettingsCard, which now reads from there, read-only.
   const { data: stores, error } = await supabase
     .from('stores')
-    .select('id, slug, name_ar, name_en, website_url, affiliate_config')
+    .select('id, slug, name_ar, name_en, website_url')
     .in('slug', ['amazon', 'noon'])
     .order('slug');
 
@@ -31,8 +36,8 @@ export default async function AdminAffiliatePage({
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-on-surface-variant dark:text-white/60">
               {isRTL
-                ? 'عدّل أكواد أمازون ونون من هنا. سيتم استخدامها تلقائياً عند ضغط المستخدم على عرض في المتجر.'
-                : 'Edit Amazon and Noon affiliate codes here. They are applied automatically when users click View at Store.'}
+                ? 'أكواد أمازون ونون معروضة هنا للمرجع — يتم إدارتها في الكود (src/lib/providers/registry.ts) وتُطبّق تلقائياً عند ضغط المستخدم على عرض في المتجر.'
+                : 'Amazon and Noon affiliate codes shown here for reference — managed in code (src/lib/providers/registry.ts), applied automatically when users click View at Store.'}
             </p>
           </div>
           <span className="inline-flex items-center gap-2 rounded-full border border-[#d7ece5] bg-[#f8fcfa] px-3 py-1.5 text-xs font-black text-on-surface-variant dark:border-[#263b33] dark:bg-[#101713] dark:text-white/60">
@@ -66,7 +71,6 @@ export default async function AdminAffiliatePage({
               name_ar: string;
               name_en: string;
               website_url: string;
-              affiliate_config?: Record<string, unknown> | null;
             }}
             locale={locale}
           />

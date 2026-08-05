@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Explicit, not relying on Next.js auto-detecting cookies() usage inside requireAdmin() to opt
+// this segment out of static optimization / the client Router Cache. An admin/role decision must
+// never be served from a cached render — every request re-evaluates requireAdmin() fresh.
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export default async function AdminLayout({
   children,
   params,

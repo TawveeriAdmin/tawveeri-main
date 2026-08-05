@@ -1,3 +1,26 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #53 · LIVE PRODUCTION DEFECTS · ADR-215 · FOUNDER ADMIN PROMOTED ═══
+
+## Founder phone-admin account promoted; two live defects diagnosed, one fixed, one hardened
+
+**Full detail: ADR-215.** This entry is the resume point.
+
+### Founder admin access
+The single phone-confirmed production account (phone ending `***2768`) was promoted `users.role: customer → admin` — a one-row, minimal DB write, nothing else touched (email confirmation, auth.users, tokens all untouched, verified before/after). This is the only admin-role account in the system.
+
+### Defect 1 — command-center Unauthorized — diagnosed, not reproduced server-side
+Full audit of the authorization chain (middleware, `requireAdmin()`, RLS, HTTP caching, service worker) found **no reproducible server-side bug** — `users.role` is confirmed `admin` right now, RLS permits the self-read, `Cache-Control: no-store` confirmed on both routes, `sw.js` has no fetch/caching logic at all. Most likely explanation: a stale Next.js client-side Router Cache entry from a pre-promotion visit. Did not guess-fix the symptom (founder explicitly said not to assume/guess). Applied a real, justified hardening regardless of root cause: `src/app/[locale]/admin/layout.tsx` now has explicit `dynamic = 'force-dynamic'` + `fetchCache = 'force-no-store'`, removing any ambiguity about the entire `/admin/*` tree ever being statically optimized. **Founder action**: retry now with a hard refresh / fresh tab; if it still fails, that would be new evidence of an actual bug worth re-opening with more detail (exact error, whether it happens on first load or only after navigating from elsewhere).
+
+### Defect 2 — `stores.affiliate_config` — real bug, fixed
+Confirmed (already known from ADR-212) that migration 20's `stores.affiliate_config` column was never applied to production, and isn't read by the real exit path (Provider Registry, ADR-085) either way. `/admin/affiliate/page.tsx` (pre-existing) and its `PATCH` route both queried/wrote it — broken this whole time, just now surfaced. **Also caught the same bug freshly introduced in this session's own ADR-213 work** (`command-center-queries.ts`'s `amazonTagConfigured` check) — fixed before it ever went live-tested. Fix: removed the column from every admin-surface query; `AffiliateSettingsCard` is now read-only, sourced from `getAffiliateConfig()` (the real authoritative code-based source, exactly mirroring the Provider Registry); the `PATCH` route returns `410 Gone` with an explanation instead of a raw Postgres error if ever called.
+
+### Verification
+`tsc --noEmit`: zero errors in every touched file. `npm run build`: clean. Full test suite: **1377/1377 passed** (was 1365 + 12 new: `tests/admin/auth-source.test.ts`, `tests/admin/affiliate-config-source.test.ts`). RLS on `users` re-verified (`users_select_self` policy present and correct). No admin credentials available in this environment to click through the authenticated experience myself — same boundary as the prior checkpoint.
+
+### Not touched / not reopened
+No new schema. Migration 20 is now fully dead code (no writer left). SendGrid, AI forecasting, external BI, email-auth repair, Amazon CSV — untouched, explicitly out of scope per this task's own directive.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #52 · COMMAND CENTER CLOSEOUT · ADR-214 · DEPLOY BEHAVIORALLY VERIFIED ═══
 
 ## Founder closeout on ADR-213: fixed a real metrics bug, closed the campaign-to-outbound gap, verified deploy

@@ -1,13 +1,5 @@
-'use client';
-
-import { useMemo, useState } from 'react';
-import { ExternalLink, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ExternalLink, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/components/ui/use-toast';
 import { applyAffiliateTag, getAffiliateConfig } from '@/lib/transactions/affiliate-config';
 
 interface AffiliateSettingsCardProps {
@@ -17,107 +9,56 @@ interface AffiliateSettingsCardProps {
     name_ar: string;
     name_en: string;
     website_url: string;
-    affiliate_config?: Record<string, unknown> | null;
   };
   locale: string;
 }
 
+// Read-only by design (fixed 2026-08-05): this used to be an editable form writing to
+// `stores.affiliate_config`, a column that was never applied to production (ADR-212) and,
+// even where present, isn't what the actual `/go` exit path reads — the code-based Provider
+// Registry / DEFAULT_STORE_AFFILIATE_CONFIG (src/lib/providers/registry.ts,
+// src/lib/transactions/affiliate-config.ts) is the real authoritative source. Presenting an
+// editable "Save" button that silently did nothing meaningful would be fabricating a working
+// feature — so this now just shows the real, live value, and says where to change it.
 export function AffiliateSettingsCard({ store, locale }: AffiliateSettingsCardProps) {
   const isRTL = locale === 'ar';
-  const { toast } = useToast();
-  const initialConfig = getAffiliateConfig(store.slug, store.affiliate_config);
-  const [enabled, setEnabled] = useState(initialConfig?.enabled !== false);
-  const [param, setParam] = useState(initialConfig?.param || '');
-  const [value, setValue] = useState(initialConfig?.value || '');
-  const [saving, setSaving] = useState(false);
-
+  const config = getAffiliateConfig(store.slug);
   const storeName = isRTL ? store.name_ar : store.name_en;
-  const previewUrl = useMemo(
-    () => applyAffiliateTag(store.website_url, store.slug, { enabled, param, value }) || store.website_url,
-    [enabled, param, store.slug, store.website_url, value],
-  );
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/stores/${store.id}/affiliate`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled, param, value }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update affiliate settings');
-      }
-
-      toast({
-        title: isRTL ? 'تم حفظ إعدادات العمولة' : 'Affiliate settings saved',
-        description: storeName,
-      });
-    } catch (error) {
-      toast({
-        title: isRTL ? 'فشل الحفظ' : 'Save failed',
-        description: error instanceof Error ? error.message : String(error),
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const previewUrl = applyAffiliateTag(store.website_url, store.slug) || store.website_url;
 
   return (
     <Card className="rounded-[1.35rem] border-[#d7ece5] bg-white shadow-none hover:shadow-none dark:border-[#263b33] dark:bg-[#141c18]">
       <CardHeader>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="text-xl font-black text-on-surface dark:text-white">{storeName}</CardTitle>
-            <p className="mt-1 text-sm leading-6 text-on-surface-variant dark:text-white/60">
-              {isRTL
-                ? 'أضف كود العمولة الذي سيُرفق تلقائياً بروابط الشراء لهذا المتجر.'
-                : 'Configure the affiliate parameter automatically appended to outbound store links.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Label htmlFor={`affiliate-enabled-${store.id}`} className="text-sm font-bold text-on-surface-variant dark:text-white/65">
-              {isRTL ? 'مفعّل' : 'Enabled'}
-            </Label>
-            <Switch
-              id={`affiliate-enabled-${store.id}`}
-              checked={enabled}
-              onCheckedChange={setEnabled}
-            />
-          </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <CardTitle className="text-xl font-black text-on-surface dark:text-white">{storeName}</CardTitle>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8fcfa] px-2.5 py-1 text-[11px] font-black text-on-surface-variant dark:bg-[#101713] dark:text-white/60">
+            <Lock className="h-3 w-3" />
+            {isRTL ? 'مُدار بالكود' : 'Code-managed'}
+          </span>
         </div>
+        <p className="mt-1 text-sm leading-6 text-on-surface-variant dark:text-white/60">
+          {isRTL
+            ? 'للتعديل: src/lib/providers/registry.ts ثم نشر التحديث.'
+            : 'To change: edit src/lib/providers/registry.ts and deploy.'}
+        </p>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor={`affiliate-param-${store.id}`} className="font-bold text-on-surface dark:text-white">
-              {isRTL ? 'اسم معامل الرابط' : 'URL parameter'}
-            </Label>
-            <Input
-              id={`affiliate-param-${store.id}`}
-              dir="ltr"
-              value={param}
-              onChange={(event) => setParam(event.target.value)}
-              placeholder={store.slug === 'amazon' ? 'tag' : 'aff_code'}
-              className="h-11 rounded-2xl border-[#d7ece5] bg-[#f8fcfa] font-mono dark:border-[#263b33] dark:bg-[#101713] dark:text-white"
-            />
+      <CardContent className="space-y-4">
+        {config ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'معامل الرابط' : 'URL parameter'}</p>
+              <p dir="ltr" className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] px-3 py-2 font-mono text-sm text-on-surface dark:border-[#263b33] dark:bg-[#101713] dark:text-white">{config.param}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'كود العمولة' : 'Affiliate code'}</p>
+              <p dir="ltr" className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] px-3 py-2 font-mono text-sm text-on-surface dark:border-[#263b33] dark:bg-[#101713] dark:text-white">{config.value}</p>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor={`affiliate-value-${store.id}`} className="font-bold text-on-surface dark:text-white">
-              {isRTL ? 'كود العمولة' : 'Affiliate code'}
-            </Label>
-            <Input
-              id={`affiliate-value-${store.id}`}
-              dir="ltr"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              placeholder={store.slug === 'amazon' ? 'tawveeri0f-21' : 'C1000094L'}
-              className="h-11 rounded-2xl border-[#d7ece5] bg-[#f8fcfa] font-mono dark:border-[#263b33] dark:bg-[#101713] dark:text-white"
-            />
-          </div>
-        </div>
+        ) : (
+          <p className="text-sm text-on-surface-variant dark:text-white/50">
+            {isRTL ? 'لا يوجد برنامج عمولات مُهيأ لهذا المتجر — الروابط تخرج مباشرة (direct).' : 'No affiliate program configured for this store — exits go out direct.'}
+          </p>
+        )}
 
         <div className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] p-3 dark:border-[#263b33] dark:bg-[#101713]">
           <p className="text-xs font-black text-on-surface-variant dark:text-white/55">
@@ -134,15 +75,6 @@ export function AffiliateSettingsCard({ store, locale }: AffiliateSettingsCardPr
             <ExternalLink className="h-3.5 w-3.5 shrink-0" />
           </a>
         </div>
-
-        <Button
-          onClick={save}
-          disabled={saving || (enabled && (!param.trim() || !value.trim()))}
-          className="rounded-2xl bg-[#1f6f59] px-5 font-black text-white hover:bg-[#1b604d]"
-        >
-          <Save className="h-4 w-4" />
-          {saving ? (isRTL ? 'جار الحفظ...' : 'Saving...') : (isRTL ? 'حفظ الإعدادات' : 'Save settings')}
-        </Button>
       </CardContent>
     </Card>
   );
