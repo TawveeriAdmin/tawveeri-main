@@ -33,6 +33,8 @@ interface AdminHeaderProps {
 const subscribe = () => () => {};
 
 const pageTitleMap: Record<string, string> = {
+  '/admin/command-center': 'admin.sidebar.commandCenter',
+  '/admin/retailer-report': 'admin.sidebar.retailerReport',
   '/admin/dashboard': 'admin.sidebar.dashboard',
   '/admin/users': 'admin.users.title',
   '/admin/products': 'admin.products.title',

@@ -17,6 +17,7 @@ import {
   Bot,
   Activity,
   Gauge,
+  FileBarChart,
   PanelLeftClose,
   PanelLeftOpen,
   X,
@@ -38,8 +39,9 @@ interface AdminSidebarProps {
 const STORAGE_KEY = 'tawveeri-admin-sidebar-collapsed';
 
 const navItems = [
-  { href: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
   { href: '/admin/command-center', icon: Gauge, key: 'commandCenter' },
+  { href: '/admin/retailer-report', icon: FileBarChart, key: 'retailerReport' },
+  { href: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
   { href: '/admin/profile', icon: User, key: 'profile' },
   { href: '/admin/users', icon: Users, key: 'users' },
   { href: '/admin/products', icon: Package, key: 'products' },
@@ -54,8 +56,8 @@ const navItems = [
 ];
 
 const navGroups = [
-  { key: 'core', items: navItems.slice(0, 8) },
-  { key: 'operations', items: navItems.slice(8) },
+  { key: 'core', items: navItems.slice(0, 9) },
+  { key: 'operations', items: navItems.slice(9) },
 ];
 
 export function AdminSidebar({ locale }: AdminSidebarProps) {
@@ -118,7 +120,7 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
         collapsed ? 'justify-center px-2' : 'gap-3 px-5'
       )}>
         <Link
-          href={`/${locale}/admin/dashboard`}
+          href={`/${locale}/admin/command-center`}
           className={cn(
             'inline-flex shrink-0 items-center gap-3 rounded-2xl p-1 transition-colors hover:bg-[#eff8f5] dark:hover:bg-white/8',
             collapsed && 'justify-center'
@@ -229,7 +231,7 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
         {/* Header */}
         <div className="flex h-14 items-center justify-between border-b border-outline-variant px-4">
           <Link
-            href={`/${locale}/admin/dashboard`}
+            href={`/${locale}/admin/command-center`}
             onClick={() => setMobileOpen(false)}
             className="inline-flex items-center gap-2.5"
           >

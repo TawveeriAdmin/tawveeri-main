@@ -1,3 +1,31 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #54 · FOUNDER COMMERCIAL INTELLIGENCE · ADR-216 ═══
+
+## Simplified the Command Center around 7 business questions; baseline, retailer report, opportunities, daily email
+
+**Full detail: ADR-216.** This entry is the resume point.
+
+### What shipped
+- **Official baseline** 2026-08-06 00:00 Asia/Riyadh. Default founder view excludes everything before it (labeled PRE-LAUNCH TESTING, never shown as real signal); `?historical=1` shows everything, nothing ever deleted.
+- **Admin-activity exclusion** (future-only): `tw_admin` cookie set inside the already-gated `/admin` layout, checked in `/api/events` and `/go` — admin's own browsing no longer pollutes REAL metrics going forward.
+- **Commercial vocabulary**: Qualified visits referred / Confirmed retailer redirects / Referred product interest / Referred category demand — replacing raw diagnostic language on the primary view. Command Center now defaults to **Today vs Yesterday** (was 30d) and moved the old funnel/gate/surface detail into a collapsed "Technical detail" `<details>` block.
+- **`/admin/retailer-report`** — retailer + date-range selector, qualified sessions/confirmed redirects/top products/top categories/daily trend, deterministic narrative, known limitations, CSV export (aggregated only, no personal/session data — regression-tested), print-friendly (native browser print-to-PDF, no library added).
+- **`/admin/command-center/opportunities`** — two evidence-based signals computed from data already fetched: no-agreement retailers receiving real referrals, high-search/zero-coverage categories. EARLY SIGNAL below 30 sample.
+- **Daily founder email** — `src/lib/admin/daily-report.ts` (deterministic Arabic brief, not an LLM call — sample too small to justify one) + `POST /api/cron/daily-founder-report` (Bearer CRON_SECRET, recipient from `FOUNDER_DAILY_REPORT_EMAIL`, sends via direct SendGrid call). Finishes and reports the gap instead of failing if SendGrid/recipient env vars are missing.
+- **Founder Command Center** is now the first nav item and the admin default landing after login (middleware + sidebar/logo links updated); "Command Center" renamed "Founder Command Center" (AR: مركز قيادة المؤسس).
+
+### Verification
+`tsc --noEmit`: zero new errors (two pre-existing errors — `admin-header.tsx` dropdown typing, `api/events/route.ts` untyped-table insert — confirmed present before this change too, just shifted by line number). `npm run build`: clean, all new routes present. Full test suite: **1402/1402 passed** (was 1377 + 25 new: `commercial-baseline.test.ts`, `admin-exclusion.test.ts`, `export-and-email-safety.test.ts`).
+
+### Founder action still needed
+1. **Confirm the daily email actually sends**: I don't have `SENDGRID_API_KEY` in this environment to test locally. Once this commit is live, call `curl -X POST https://tawveeri.com/api/cron/daily-founder-report -H "Authorization: Bearer $CRON_SECRET"` — if `FOUNDER_DAILY_REPORT_EMAIL` isn't set on Railway yet, set it first (any address, e.g. `info@tawveeri.com`). The route reports back exactly which env var is missing if either is absent — it does not fail silently.
+2. **Schedule it**: add a Railway Cron Job hitting that same URL/header daily at 05:00 UTC (08:00 Asia/Riyadh). This route itself doesn't self-schedule.
+3. Same pre-existing gap as prior checkpoints: no Railway dashboard/API access in this session to confirm which exact commit is actively serving traffic — verify via Railway dashboard.
+
+### Not touched / not reopened
+No new schema, no Amazon CSV, no SendGrid SMTP/auth work, no external BI, no catalogue work — all explicitly out of scope per this task's own directive. ADR-207/211/212/213/214/215 decisions unchanged.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #53 · LIVE PRODUCTION DEFECTS · ADR-215 · FOUNDER ADMIN PROMOTED ═══
 
 ## Founder phone-admin account promoted; two live defects diagnosed, one fixed, one hardened

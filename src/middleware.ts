@@ -308,13 +308,14 @@ export async function middleware(request: NextRequest) {
     return createRedirect(redirectUrl);
   }
 
-  // Redirect to dashboard if accessing auth routes while logged in
+  // Redirect after login. Admins land on the Founder Command Center (ADR-216) — the
+  // founder's daily-use screen — not the legacy admin dashboard. Customer routing unchanged.
   if (isAuthRoute && user) {
     const role = await getUserRole();
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname =
       role === 'admin'
-        ? `/${validLocale}/admin/dashboard`
+        ? `/${validLocale}/admin/command-center`
         : `/${validLocale}/dashboard`;
     return createRedirect(redirectUrl);
   }

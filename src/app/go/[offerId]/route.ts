@@ -73,9 +73,12 @@ export async function GET(
   // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
   if (!/^https?:\/\//i.test(link.url)) return home();
 
-  // Real vs test exit (Part 6): a tester carries the `tw_test` cookie (?test=1); bots by UA.
+  // Real vs test exit (Part 6): a tester carries the `tw_test` cookie (?test=1); bots by UA;
+  // `tw_admin` (ADR-216) marks an authenticated admin's own browsing, set only inside the
+  // already-role-gated /admin layout — never fabricated from a self-reported flag.
   const ua = req.headers.get("user-agent") ?? "";
   const isTest = req.cookies.get("tw_test")?.value === "1" ||
+    req.cookies.get("tw_admin")?.value === "1" ||
     req.nextUrl.searchParams.get("tw_test") === "1" ||
     /bot|crawl|spider|slurp|headless|puppeteer|playwright|lighthouse|python-requests|curl|wget/i.test(ua);
 

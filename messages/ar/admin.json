@@ -38,7 +38,8 @@
     "sidebar": {
       "adminPanel": "لوحة التحكم",
       "dashboard": "لوحة التحكم",
-      "commandCenter": "مركز القيادة",
+      "commandCenter": "مركز قيادة المؤسس",
+      "retailerReport": "تقرير المتجر",
       "profile": "الملف الشخصي",
       "users": "المستخدمين",
       "products": "المنتجات",

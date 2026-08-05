@@ -11,6 +11,13 @@ export type Period = 'today' | 'yesterday' | '7d' | '30d' | 'custom';
 // Saudi Arabia does not observe DST — a fixed UTC+3 offset is correct year-round.
 const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
 
+// ADR-216 — Founder Commercial Intelligence: the official commercial baseline. Traffic before
+// this instant is founder/family/Cowork/controlled-verification activity, not representative
+// customer behavior (founder-confirmed). Historical rows are NEVER deleted or reclassified —
+// this only changes what the DEFAULT founder view includes. An explicit `includeHistorical`
+// flag on getCommandCenterData() surfaces everything, clearly labeled, for anyone who wants it.
+export const COMMERCIAL_BASELINE = new Date('2026-08-06T00:00:00+03:00');
+
 function riyadhMidnightUtc(daysAgo: number): Date {
   const riyadhNow = new Date(Date.now() + RIYADH_OFFSET_MS);
   riyadhNow.setUTCHours(0, 0, 0, 0);
@@ -44,7 +51,7 @@ export function resolvePeriod(period: Period, customStart?: string, customEnd?: 
   }
 }
 
-function previousRange({ start, end }: DateRange): { start: Date; end: Date } {
+export function previousRange({ start, end }: DateRange): { start: Date; end: Date } {
   const durationMs = end.getTime() - start.getTime();
   return { start: new Date(start.getTime() - durationMs), end: start };
 }
@@ -82,7 +89,7 @@ const ROW_CAP = 20_000;
 // usage_events/outbound_clicks are added via raw migration SQL and aren't in the generated
 // Database types (same reason src/app/go/[offerId]/route.ts and src/app/api/events/route.ts
 // don't type them) — cast at the call site rather than widening the shared client type.
-async function fetchUsageEvents(start: Date, end: Date): Promise<UsageEventRow[]> {
+export async function fetchUsageEvents(start: Date, end: Date): Promise<UsageEventRow[]> {
   const supabase = createServerClient() as unknown as { from: (table: string) => any };
   const { data, error } = await supabase
     .from('usage_events')
@@ -94,7 +101,7 @@ async function fetchUsageEvents(start: Date, end: Date): Promise<UsageEventRow[]
   return (data ?? []) as UsageEventRow[];
 }
 
-async function fetchOutboundClicks(start: Date, end: Date): Promise<OutboundClickRow[]> {
+export async function fetchOutboundClicks(start: Date, end: Date): Promise<OutboundClickRow[]> {
   const supabase = createServerClient() as unknown as { from: (table: string) => any };
   const { data, error } = await supabase
     .from('outbound_clicks')
@@ -365,6 +372,22 @@ export interface CommandCenterData {
   };
   campaignAttribution: CampaignAttributionSummary;
   confidence: Record<string, MetricConfidence>;
+  // Commercial-proof headline vocabulary (ADR-216) — what the founder/retailer report actually says.
+  commercial: {
+    qualifiedVisitsReferred: number;
+    confirmedRetailerRedirects: number;
+    referredProductInterest: number;
+    referredCategoryDemand: Array<{ category: string; count: number }>;
+    topSearchTerms: Array<{ query: string; count: number }>;
+    topReferredProducts: ReferredProductRow[];
+    retailers: RetailerReferralRow[];
+  };
+  baseline: {
+    date: string; // ISO — COMMERCIAL_BASELINE
+    currentIsPreLaunch: boolean;
+    previousIsPreLaunch: boolean;
+    includesHistorical: boolean;
+  };
 }
 
 // Confidence states — Data Quality Contract Rule 1: missing/estimated data is never shown as an
@@ -379,19 +402,142 @@ const METRIC_CONFIDENCE: Record<string, MetricConfidence> = {
   search: { state: 'ESTIMATED', note: 'Deduped: the unified search page can fire both a storefront and an advisor event for one action (ADR-214) — collapsed to one action per query within a 3s window.' },
   results: { state: 'ESTIMATED', note: 'Same dedup as Search — see ADR-214.' },
   outbound: { state: 'CONFIRMED', note: 'Exact go_click event count from usage_events.' },
+  qualifiedVisitsReferred: { state: 'CONFIRMED', note: 'Distinct REAL session_id values with at least one confirmed retailer redirect (go_click) — session-level, not a person count.' },
   comparisonView: { state: 'CONFIRMED', note: 'Exact comparison_view event count from usage_events — no proven duplication on this step.' },
   answerRate: { state: 'ESTIMATED', note: 'Derived from deduped Search/Results — precision depends on sample size; below 100 real sessions this is a directional signal, not a verdict.' },
   campaignAttribution: { state: 'ESTIMATED', note: 'Session-level join between usage_events UTM capture and outbound_clicks by nearest timestamp — not a guaranteed exact per-click match. See docs/AFFILIATE_RECONCILIATION_CONTRACT.md and ADR-214.' },
   affiliateCommission: { state: 'UNAVAILABLE', note: 'No affiliate report imported yet — see /admin/affiliate.' },
 };
 
-function summarizeOutbound(rows: OutboundClickRow[], isTest: boolean) {
+export function summarizeOutbound(rows: OutboundClickRow[], isTest: boolean) {
   const filtered = rows.filter((r) => r.is_test === isTest);
   return {
     clicks: filtered.length,
     distinctProducts: new Set(filtered.map((r) => r.canonical_product_id).filter(Boolean)).size,
     monetized: filtered.filter((r) => r.affiliate_program && r.affiliate_program !== 'direct').length,
   };
+}
+
+// ── Commercial-proof vocabulary (ADR-216) ───────────────────────────────────────────────────
+// Founder-facing wording, deliberately conservative: a redirect is never called a sale, an
+// anonymous session is never called a customer, a click attempt is never called a confirmed
+// arrival. "Qualified visit" = a REAL session that reached at least one confirmed retailer
+// redirect (go_click) — session-level, not person-level.
+export function qualifiedReferredSessions(events: UsageEventRow[]): number {
+  return new Set(events.filter((e) => e.event_type === 'go_click' && e.session_id).map((e) => e.session_id)).size;
+}
+
+// outbound_clicks carries no category — join canonical_product_id -> canonical_products.category.
+// Read-only, additive, bounded to the distinct products actually referred in the period.
+async function referredCategoryDemand(rows: OutboundClickRow[]): Promise<Array<{ category: string; count: number }>> {
+  const ids = Array.from(new Set(rows.map((r) => r.canonical_product_id).filter((x): x is string => Boolean(x))));
+  if (ids.length === 0) return [];
+  const supabase = createServerClient() as unknown as { from: (table: string) => any };
+  const { data, error } = await supabase.from('canonical_products').select('id, category').in('id', ids);
+  if (error || !data) return [];
+  const categoryById = new Map<string, string>((data as Array<{ id: string; category: string | null }>).map((p) => [p.id, p.category || '(unparsed)']));
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.canonical_product_id) continue;
+    const cat = categoryById.get(r.canonical_product_id) || '(unparsed)';
+    counts.set(cat, (counts.get(cat) || 0) + 1);
+  }
+  return Array.from(counts.entries()).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count);
+}
+
+// Exact search terms customers typed — ALL real search-type actions, not only the no-answer
+// subset (that remains `unmetDemand`). Deduped at the SAME action-cluster granularity as the
+// funnel (ADR-214) so a query that fired both a storefront and an advisor event isn't counted twice.
+export function topSearchTerms(events: UsageEventRow[], limit = 10): Array<{ query: string; count: number }> {
+  const seen = new Map<string, number>(); // key: session|query|bucket -> last cluster ts, for de-dup
+  const counts = new Map<string, number>();
+  const sorted = events
+    .filter((e) => SEARCH_TYPES.has(e.event_type) && e.query_text && e.session_id)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  for (const e of sorted) {
+    const key = `${e.session_id}|${e.query_text}`;
+    const ts = new Date(e.created_at).getTime();
+    const lastTs = seen.get(key);
+    if (lastTs !== undefined && ts - lastTs <= ACTION_WINDOW_MS) continue; // same action, already counted
+    seen.set(key, ts);
+    const text = e.query_text!.trim();
+    if (!text) continue;
+    counts.set(text, (counts.get(text) || 0) + 1);
+  }
+  return Array.from(counts.entries()).map(([query, count]) => ({ query, count })).sort((a, b) => b.count - a.count).slice(0, limit);
+}
+
+// Top products that actually drove a confirmed retailer redirect — answers "which products
+// caused these exits" with real names, not just an opaque canonical_product_id count.
+export interface ReferredProductRow { id: string; nameAr: string; nameEn: string; count: number }
+
+export async function topReferredProducts(rows: OutboundClickRow[], limit = 10): Promise<ReferredProductRow[]> {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.canonical_product_id) continue;
+    counts.set(r.canonical_product_id, (counts.get(r.canonical_product_id) || 0) + 1);
+  }
+  const ids = Array.from(counts.keys());
+  if (ids.length === 0) return [];
+  const supabase = createServerClient() as unknown as { from: (table: string) => any };
+  const { data } = await supabase.from('canonical_products').select('id, name_ar, name_en').in('id', ids);
+  const names = new Map<string, { nameAr: string; nameEn: string }>(
+    ((data ?? []) as Array<{ id: string; name_ar: string | null; name_en: string | null }>)
+      .map((p) => [p.id, { nameAr: p.name_ar || p.id, nameEn: p.name_en || p.id }])
+  );
+  return Array.from(counts.entries())
+    .map(([id, count]) => ({ id, count, ...(names.get(id) || { nameAr: id, nameEn: id }) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+// Per-retailer breakdown for the Retailer Partnership Report (ADR-216) — same commercial
+// vocabulary, scoped to one store. `storeSlug` matches outbound_clicks.store_name (which stores
+// the provider's store_id/slug, not a display name — resolve display name at the UI layer via
+// the Provider Registry).
+export interface RetailerReferralRow {
+  storeSlug: string;
+  qualifiedSessions: number;
+  confirmedRedirects: number;
+  distinctProducts: number;
+  hasAffiliateProgram: boolean;
+}
+
+export function retailerBreakdown(realEvents: UsageEventRow[], outboundRows: OutboundClickRow[]): RetailerReferralRow[] {
+  const realOutboundRows = outboundRows.filter((r) => !r.is_test);
+  const bySlug = new Map<string, OutboundClickRow[]>();
+  for (const r of realOutboundRows) {
+    const key = r.store_name || '(unknown)';
+    const arr = bySlug.get(key);
+    if (arr) arr.push(r); else bySlug.set(key, [r]);
+  }
+  const goClickSessionsByStore = new Map<string, Set<string>>();
+  // usage_events.go_click doesn't carry store reliably for every surface — qualified sessions
+  // here are approximated from outbound_clicks' own session-less rows is not possible (ADR-207),
+  // so "qualified sessions" per retailer counts DISTINCT outbound_clicks rows' click timestamps
+  // clustered per session isn't available either; use REAL go_click events whose canonical_id
+  // matches a product referred to this store as the best-available session proxy.
+  const productsByStore = new Map<string, Set<string>>();
+  for (const [slug, rows] of bySlug) {
+    productsByStore.set(slug, new Set(rows.map((r) => r.canonical_product_id).filter((x): x is string => Boolean(x))));
+  }
+  for (const e of realEvents) {
+    if (e.event_type !== 'go_click' || !e.session_id || !e.canonical_id) continue;
+    for (const [slug, products] of productsByStore) {
+      if (products.has(e.canonical_id)) {
+        const set = goClickSessionsByStore.get(slug) ?? new Set<string>();
+        set.add(e.session_id);
+        goClickSessionsByStore.set(slug, set);
+      }
+    }
+  }
+  return Array.from(bySlug.entries()).map(([storeSlug, rows]) => ({
+    storeSlug,
+    qualifiedSessions: goClickSessionsByStore.get(storeSlug)?.size ?? 0,
+    confirmedRedirects: rows.length,
+    distinctProducts: new Set(rows.map((r) => r.canonical_product_id).filter(Boolean)).size,
+    hasAffiliateProgram: rows.some((r) => r.affiliate_program && r.affiliate_program !== 'direct'),
+  })).sort((a, b) => b.confirmedRedirects - a.confirmedRedirects);
 }
 
 function buildGate(real: Funnel, kpis: CommandCenterData['kpis']) {
@@ -411,14 +557,34 @@ function buildGate(real: Funnel, kpis: CommandCenterData['kpis']) {
   return { checks, verdict };
 }
 
-export async function getCommandCenterData(period: Period, customStart?: string, customEnd?: string): Promise<CommandCenterData> {
+export async function getCommandCenterData(
+  period: Period,
+  customStart?: string,
+  customEnd?: string,
+  includeHistorical: boolean = false
+): Promise<CommandCenterData> {
   const range = resolvePeriod(period, customStart, customEnd);
   const prev = previousRange(range);
 
+  // Pre-launch labeling is judged against the ORIGINAL requested window, before any clipping —
+  // "today" on 2026-08-05 is entirely pre-baseline and must say so, not silently show 0.
+  const currentIsPreLaunch = range.end <= COMMERCIAL_BASELINE;
+  const previousIsPreLaunch = prev.end <= COMMERCIAL_BASELINE;
+
+  // Default view clips the fetch window to the official baseline — historical rows are never
+  // deleted, just excluded from the DEFAULT founder headline (ADR-216). includeHistorical=true
+  // (an explicit, labeled toggle) fetches the unclipped range instead.
+  const fetchRange = includeHistorical
+    ? range
+    : { start: new Date(Math.max(range.start.getTime(), COMMERCIAL_BASELINE.getTime())), end: range.end, label: range.label };
+  const fetchPrev = includeHistorical
+    ? prev
+    : { start: new Date(Math.max(prev.start.getTime(), COMMERCIAL_BASELINE.getTime())), end: prev.end };
+
   const [events, prevEvents, outboundRows, lastEvent] = await Promise.all([
-    fetchUsageEvents(range.start, range.end),
-    fetchUsageEvents(prev.start, prev.end),
-    fetchOutboundClicks(range.start, range.end),
+    fetchUsageEvents(fetchRange.start, fetchRange.end),
+    fetchUsageEvents(fetchPrev.start, fetchPrev.end),
+    fetchOutboundClicks(fetchRange.start, fetchRange.end),
     (createServerClient() as unknown as { from: (table: string) => any })
       .from('usage_events').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
@@ -459,6 +625,13 @@ export async function getCommandCenterData(period: Period, customStart?: string,
   const goClickEventsReal = realEvents.filter((e) => e.event_type === 'go_click');
   const campaignAttribution = computeCampaignAttribution(goClickEventsReal, outboundRows);
 
+  const realOutboundRows = outboundRows.filter((r) => !r.is_test);
+  const [categoryDemand, retailers, referredProducts] = await Promise.all([
+    referredCategoryDemand(realOutboundRows),
+    Promise.resolve(retailerBreakdown(realEvents, outboundRows)),
+    topReferredProducts(realOutboundRows),
+  ]);
+
   return {
     range,
     real,
@@ -480,5 +653,20 @@ export async function getCommandCenterData(period: Period, customStart?: string,
     },
     campaignAttribution,
     confidence: METRIC_CONFIDENCE,
+    commercial: {
+      qualifiedVisitsReferred: qualifiedReferredSessions(realEvents),
+      confirmedRetailerRedirects: outboundReal.clicks,
+      referredProductInterest: outboundReal.distinctProducts,
+      referredCategoryDemand: categoryDemand,
+      topSearchTerms: topSearchTerms(realEvents),
+      topReferredProducts: referredProducts,
+      retailers,
+    },
+    baseline: {
+      date: COMMERCIAL_BASELINE.toISOString(),
+      currentIsPreLaunch,
+      previousIsPreLaunch,
+      includesHistorical: includeHistorical,
+    },
   };
 }
