@@ -319,6 +319,10 @@ export interface Database {
           last_error: string | null;
           created_at: string;
           updated_at: string;
+          price_quarantined_at: string | null;
+          price_quarantine_reason: string | null;
+          price_pending_value: number | null;
+          price_pending_since: string | null;
         };
         Insert: {
           id?: string;
@@ -349,6 +353,10 @@ export interface Database {
           last_error?: string | null;
           created_at?: string;
           updated_at?: string;
+          price_quarantined_at?: string | null;
+          price_quarantine_reason?: string | null;
+          price_pending_value?: number | null;
+          price_pending_since?: string | null;
         };
         Update: {
           id?: string;
@@ -379,6 +387,10 @@ export interface Database {
           last_error?: string | null;
           created_at?: string;
           updated_at?: string;
+          price_quarantined_at?: string | null;
+          price_quarantine_reason?: string | null;
+          price_pending_value?: number | null;
+          price_pending_since?: string | null;
         };
         Relationships: [];
       };

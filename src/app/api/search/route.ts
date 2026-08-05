@@ -470,6 +470,10 @@ function productMatchesAllWords(row: ProductRow, wordTermsList: string[][], altT
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyCommonFilters(query: any, body: SearchBody): any {
+  // This route uses the service-role client, which bypasses RLS (the RLS policy on
+  // product_stores already hides quarantined rows from anon/browser reads) — filter
+  // explicitly. See price-truth-gate.ts / P0 incident 2026-08-05.
+  query = query.is('product_stores.price_quarantined_at', null);
   if (body.category && body.category !== 'all') query = query.eq('category', body.category);
   if (body.brands && body.brands.length > 0) query = query.in('brand', body.brands);
   else if (body.brand) query = query.ilike('brand', body.brand);

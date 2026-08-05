@@ -38,6 +38,10 @@ export const getProductSeoData = cache(async (slugOrId: string) => {
     `)
     .eq(column, slugOrId)
     .eq('is_active', true)
+    // Service-role query bypasses the RLS policy that hides quarantined offers from
+    // anon/browser reads — filter explicitly so a quarantined price never seeds the
+    // page's meta description. See price-truth-gate.ts / P0 incident 2026-08-05.
+    .is('product_stores.price_quarantined_at', null)
     .maybeSingle();
 
   // `undefined` = the lookup FAILED (never assert absence from a fault — that is exactly what

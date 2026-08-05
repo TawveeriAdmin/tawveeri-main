@@ -4,6 +4,7 @@ import { ProductMatcher } from '../matching/product-matcher';
 import { extractSpecsFromTitle } from '../config/spec-configs';
 import { classifyFromTitle } from '../utils/category-utils';
 import type { Database } from '@/lib/database/types';
+import { assessPriceTransition } from '@/lib/intelligence/price-truth-gate';
 
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
 
@@ -265,7 +266,7 @@ export class ProductService {
 
     const { data: existing } = await this.supabase
       .from('product_stores')
-      .select('id, current_price')
+      .select('id, current_price, price_pending_value')
       .eq('product_id', productId)
       .eq('store_id', storeId)
       .maybeSingle();
@@ -273,8 +274,37 @@ export class ProductService {
     const updateData = baseData as Partial<ProductStoreRow>;
 
     if (existing) {
-      if (existing.current_price !== scrapedProduct.current_price) {
+      // Same price-truth gate as updateProductPrice() — this re-link path also
+      // overwrites current_price on an EXISTING offer (discovery re-scrapes), so it
+      // needs the identical protection. See price-truth-gate.ts.
+      const transition = assessPriceTransition({
+        newPrice: scrapedProduct.current_price,
+        priorPrice: existing.current_price,
+        pendingValue: existing.price_pending_value,
+      });
+
+      if (!transition.credible) {
+        console.error(`[price-quarantine] ${JSON.stringify({
+          product_store_id: existing.id, product_id: productId, store_id: storeId,
+          rejected_price: scrapedProduct.current_price, prior_price: existing.current_price,
+          reason: transition.reason, at: new Date().toISOString(),
+        })}`);
+        delete updateData.current_price;
+        delete updateData.original_price;
+        delete updateData.is_deal;
+        updateData.price_quarantined_at = new Date().toISOString();
+        updateData.price_quarantine_reason = transition.reason;
+        updateData.price_pending_value = scrapedProduct.current_price;
+        updateData.price_pending_since = new Date().toISOString();
+      } else if (existing.current_price !== scrapedProduct.current_price) {
         updateData.last_price_change_at = new Date().toISOString();
+
+        if (transition.confirmsPending) {
+          updateData.price_quarantined_at = null;
+          updateData.price_quarantine_reason = null;
+          updateData.price_pending_value = null;
+          updateData.price_pending_since = null;
+        }
 
         await this.recordPriceHistory(existing.id, scrapedProduct.current_price, {
           originalPrice: scrapedProduct.original_price,
@@ -319,7 +349,7 @@ export class ProductService {
   ): Promise<void> {
     const { data: existing, error: fetchError } = await this.supabase
       .from('product_stores')
-      .select('id, current_price')
+      .select('id, current_price, price_pending_value')
       .eq('product_id', productId)
       .eq('store_id', storeId)
       .single();
@@ -328,11 +358,55 @@ export class ProductService {
       throw new Error(`Product-store link not found: ${fetchError?.message || 'Not found'}`);
     }
 
+    // Price-truth gate (P0 incident 2026-08-05, see docs/DECISIONS.md and
+    // src/lib/intelligence/price-truth-gate.ts). A scraped price that jumps outside
+    // ADR-200's 4x/¼ sanity bound vs the price we already trust is never written
+    // straight to current_price — unknown beats incorrect. It is held as "pending";
+    // only a SECOND consecutive observation that agrees with it confirms a genuine
+    // market move. A one-off misparse (a carousel/related-item price, an installment
+    // figure, a decimal slip) never reaches the public price.
+    const transition = assessPriceTransition({
+      newPrice: price,
+      priorPrice: existing.current_price,
+      pendingValue: existing.price_pending_value,
+    });
+
+    if (!transition.credible) {
+      // Structured, greppable line (ADR-149 pattern) — the monitoring instrument
+      // (npm run price:quarantine-report) surfaces these; Railway log alerts can grep
+      // `[price-quarantine]` directly.
+      console.error(`[price-quarantine] ${JSON.stringify({
+        product_store_id: existing.id, product_id: productId, store_id: storeId,
+        rejected_price: price, prior_price: existing.current_price, reason: transition.reason,
+        at: new Date().toISOString(),
+      })}`);
+      await this.supabase
+        .from('product_stores')
+        .update({
+          price_quarantined_at: new Date().toISOString(),
+          price_quarantine_reason: transition.reason,
+          price_pending_value: price,
+          price_pending_since: new Date().toISOString(),
+          last_checked_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+      return;
+    }
+
     const updateData: Partial<ProductStoreRow> = {
       current_price: price,
       availability: availability as ProductStoreRow['availability'],
       last_checked_at: new Date().toISOString(),
     };
+
+    // A confirmed transition clears any prior quarantine/pending state — the price
+    // is now trusted and should be visible again.
+    if (transition.confirmsPending) {
+      updateData.price_quarantined_at = null;
+      updateData.price_quarantine_reason = null;
+      updateData.price_pending_value = null;
+      updateData.price_pending_since = null;
+    }
 
     if (await this.supportsRefreshTracking()) {
       updateData.last_scraped_at = new Date().toISOString();

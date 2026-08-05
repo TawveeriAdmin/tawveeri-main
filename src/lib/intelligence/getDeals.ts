@@ -13,6 +13,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { isApprovedStoreId } from "@/lib/retailers/approved-retailers";
+import { isExtremeUncorroboratedDiscount } from "@/lib/intelligence/price-truth-gate";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -58,6 +59,9 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
       stores(name_ar, name_en, slug)`)
     .eq("is_deal", true)
     .not("original_price", "is", null)
+    // Service-role queries bypass RLS (which already hides quarantined rows from
+    // anon/browser reads) — filter explicitly here too. See price-truth-gate.ts.
+    .is("price_quarantined_at", null)
     .order("updated_at", { ascending: false })
     .limit(1200);
   if (error || !data?.length) return [];
@@ -82,6 +86,11 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
   for (const agg of byProduct.values()) {
     const discountPct = Math.round(((agg.was - agg.best) / agg.was) * 100);
     if (discountPct < minDiscountPct) continue;
+    // Best Deals contract (P0 incident 2026-08-05): an extreme discount claim from a
+    // single retailer, with nothing else corroborating it, is not honest to publish —
+    // it is exactly the shape of the false 98%-off TV claim. Quarantine for
+    // revalidation by omission; never auto-promote. See price-truth-gate.ts.
+    if (isExtremeUncorroboratedDiscount({ discountPct, corroboratingStoreCount: agg.stores.size })) continue;
     const strength: DealStrength = discountPct >= HOT_DISCOUNT_PCT ? "hot" : "good";
     deals.push({
       productId: agg.product.id,

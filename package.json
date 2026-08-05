@@ -45,6 +45,7 @@
     "tps:health": "tsx scripts/tps-analysis/platform-health.ts",
     "tps:refresh": "tsx scripts/tps-core/refresh-intelligence.ts",
     "tps:reobserve": "tsx scripts/tps-core/reobserve-comparables.ts",
+    "price:quarantine-report": "tsx scripts/tps-analysis/price-quarantine-report.ts",
     "tps:presentation": "tsx scripts/tps-core/build-projection-presentation.ts",
     "tps:search-quality": "tsx scripts/tps-analysis/search-quality.ts",
     "tps:funnel": "tsx scripts/tps-analysis/catalog-funnel.ts",
