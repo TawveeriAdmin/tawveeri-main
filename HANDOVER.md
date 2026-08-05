@@ -1,3 +1,81 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #48 · PRODUCTION INCIDENT CLOSED · OTP STORAGE FIXED · SMS DELIVERY STILL BLOCKED ON A MISSING SECRET ═══
+
+## INCIDENT — phone OTP send/login was completely blocked in production; root-caused and fixed
+
+**Urgent, founder-reported, launch-blocking.** Full detail: ADR-209. This entry is the
+resume point.
+
+### Root cause
+`phone_otps` — the table every OTP send/verify write depends on — **did not exist in the
+production database.** `scripts/database/08-phone-otps-schema.sql` (written and hardened by
+the E3 security pass, commit `6b49d39`, 2026-07-20) was never actually executed against
+production. Exact API error reproduced live: `PGRST205: Could not find the table
+'public.phone_otps' in the schema cache`. This affected **100% of OTP requests** — every
+phone, every format, every user — deterministically, not intermittently.
+
+**Ruled out first, with direct evidence, before landing on the real cause:** the E3 RLS
+hardening on this same table looked like an obvious suspect (`FORCE ROW LEVEL SECURITY` +
+`REVOKE ALL FROM anon,authenticated`) but was proven NOT the cause — `service_role` has
+`rolbypassrls=true` in this project, and FORCE RLS only removes the table-owner exemption,
+never the BYPASSRLS exemption. Don't re-investigate RLS on this table for this symptom again.
+
+### Fix applied
+1. **Database (already live, applied directly to production):** ran
+   `scripts/database/08-phone-otps-schema.sql` verbatim against `vyceqrzttspyycdpojtn`.
+   Table now exists with the intended schema, RLS, and grants. Verified via a real
+   service-role insert (`error: null`) and via a live `curl` against
+   `https://tawveeri.com/api/auth/send-phone-otp` — the reported error is gone.
+2. **Code (this commit):** `src/app/api/auth/send-phone-otp/route.ts` no longer returns raw
+   internal error text (DB error, Authentica error, or generic exception message) to the
+   client — every internal failure now returns one safe bilingual message
+   (`OTP_SEND_FAILED_MESSAGE`), full detail logged server-side only with the phone masked
+   (`maskPhone()`) and the raw OTP never logged. Legitimate validation errors (missing/
+   malformed phone) are unchanged.
+3. **Tests:** `tests/auth/phone-validation.test.ts` (15 unit tests, default fast gate) +
+   `tests/auth/phone-otp.test.ts` (7 live-DB integration tests, `npm run test:integration`,
+   excluded from the default gate per the existing ADR-054 pattern) — the integration suite's
+   first test is a direct regression guard: it would have failed throughout this entire
+   incident (a mocked test would not have).
+
+### Still open — NOT part of the original defect, exposed by fixing it
+With the table fixed, SMS dispatch is reached for the first time (previously the DB write
+always failed first) and now fails with `AUTHENTICA_API_KEY not configured`. This is a
+missing secret in the production runtime (Railway), not a code bug — the code reads the
+right env var name. **OTP codes now generate and store correctly; SMS delivery to the user's
+phone is still blocked until this credential is added.** This needs the founder directly
+(credentials are outside this session's authority) — add `AUTHENTICA_API_KEY` to production.
+
+### Related finding, not fixed here (out of scope, not blocking OTP)
+`login_sessions` (migration 12, same batch as phone_otps/migration 8) also shows
+pre-E3-hardening RLS in production (`login_sessions_own` policy, `cmd: ALL`, `roles:
+{public}` — not what commit `6b49d39` says it should now be). Same root cause class as this
+incident (a written/committed migration file never re-applied to production) but a smaller,
+non-blocking exposure. Flagged for a future, separate, deliberate pass — not touched here per
+the founder's explicit "do not redesign authentication broadly" instruction for this incident.
+
+### Verification
+`npm test`: 83/83 suites, 1328/1328 tests (was 82/1313). `npx tsc --noEmit`: no new errors.
+Live production re-test after the DB fix: confirmed via both a direct service-role insert and
+the real `/api/auth/send-phone-otp` endpoint (synthetic test number, never a real subscriber;
+no phone number or OTP exposed in any log or report). Full journey (new-user signup, existing-
+user login, invalid OTP, expired OTP, resend/rate-limit, Arabic/English UI) verified at the
+layers reachable without a working SMS credential — end-to-end SMS delivery itself is blocked
+on the open item above and could not be verified past that point.
+
+### Rollback
+Code: `git revert <this commit>` — reverts `jest.config.js`, `package.json`,
+`src/app/api/auth/send-phone-otp/route.ts`, and the two new test files. Pure code/test
+change, no data-layer impact.
+**Database: do NOT revert.** Dropping `phone_otps` would immediately re-break OTP for every
+user. The table creation is a standing production fix, not something this rollback touches.
+
+### Next founder action (the only thing blocking a fully working OTP flow now)
+Add `AUTHENTICA_API_KEY` to the production (Railway) environment. Once set, re-run the same
+live check (`curl -X POST https://tawveeri.com/api/auth/send-phone-otp -d '{"phone":"<a real
+test number>"}'`) and confirm an SMS actually arrives — that is the one remaining unverified
+step, and it needs a real phone to receive the code.
+
+---
 # ═══ RESUME HERE — 2026-08-04 CHECKPOINT #47 · CONTROLLED DEMAND VALIDATION WAVE 1 · FOUNDER-REVIEW CHECKPOINT CLOSED · EXECUTION DEFERRED TO FOUNDER ═══
 
 ## PHASE — Controlled Demand Validation, Wave 1 pack reviewed, corrected, and closed at a founder-review checkpoint

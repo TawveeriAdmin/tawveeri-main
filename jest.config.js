@@ -27,6 +27,7 @@ const customJestConfig = {
     '<rootDir>/tests/auth/audit.test.ts',
     '<rootDir>/tests/auth/notifications.test.ts',
     '<rootDir>/tests/auth/profile.test.ts',
+    '<rootDir>/tests/auth/phone-otp.test.ts',
   ],
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',

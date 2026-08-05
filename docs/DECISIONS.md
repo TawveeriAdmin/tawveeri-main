@@ -6,6 +6,117 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-209 — Production incident: phone OTP send/login blocked — missing `phone_otps` table · Accepted (2026-08-05)
+
+**Context.** Founder-reported launch-blocking defect: every OTP request on
+https://tawveeri.com returned `{"error":"Failed to store OTP"}`, HTTP 500, with no SMS ever
+sent. Treated as a production regression per the founder's directive.
+
+**Investigation (live evidence, this session, production `vyceqrzttspyycdpojtn`):**
+- Reproduced directly against the live route: `curl -X POST https://tawveeri.com/api/auth/send-phone-otp`
+  returned the exact reported error.
+- `git log` surfaced a plausible-looking suspect first — ADR (commit `6b49d39`, 2026-07-20,
+  "E3: close RLS exposure at its root") had added `ENABLE`/`FORCE ROW LEVEL SECURITY` +
+  `REVOKE ALL FROM anon, authenticated` to `phone_otps` in
+  `scripts/database/08-phone-otps-schema.sql`. This was investigated and ruled out with
+  direct evidence: `service_role` in this project has `rolbypassrls = true`
+  (`select rolbypassrls from pg_roles where rolname='service_role'`), and `FORCE ROW LEVEL
+  SECURITY` only removes the table-*owner* RLS exemption — it does not affect a role with the
+  `BYPASSRLS` attribute, which service_role always uses regardless. RLS was not the cause.
+- Direct inspection of production (`information_schema.tables`, `pg_class`) found **the
+  `phone_otps` table did not exist in the production database at all** — `select * from
+  phone_otps` failed with `relation "phone_otps" does not exist`. Calling the insert through
+  the exact same `@supabase/supabase-js` service-role client the route uses returned
+  `PGRST205: Could not find the table 'public.phone_otps' in the schema cache` — the literal,
+  exact API error behind "Failed to store OTP".
+- Cross-checked `schema_migrations` (production): it only tracks the TPS/knowledge-layer
+  chain (`001A_foundation` … `006_store_identity`), never the numbered app-schema files in
+  `scripts/database/` (01–22+, including 08-phone-otps-schema.sql). Those files are applied
+  manually, one at a time, with no tracked/enforced completeness — confirmed by a second,
+  related finding: `login_sessions` (migration 12, same file batch as 08) exists in
+  production but with a **pre-hardening** RLS policy (`login_sessions_own`, `cmd: ALL`,
+  `roles: {public}`) that does not match what commit `6b49d39` says 12-login-sessions.sql
+  should now contain — i.e. that migration file was also never re-applied after the E3
+  hardening. Flagged for the founder's awareness; not fixed here (out of scope for this
+  incident, not blocking OTP).
+- `users` table: 0 rows in production. Consistent with the project's own "no real users yet"
+  status (memory: strategic-position) — this is a pre-launch defect being caught before
+  traffic, not a regression that broke live customers.
+
+**Root cause.** `scripts/database/08-phone-otps-schema.sql` — the migration that creates the
+`phone_otps` table — was written, reviewed, and hardened (E3) in the repository, but **was
+never executed against the production database.** Every OTP request failed at the very first
+database write, before ever reaching the SMS provider. This affected **100% of OTP requests,
+every phone number, every format, every user** — deterministic, not intermittent, not
+format-specific — because the failure was "table doesn't exist," not a data-dependent
+condition.
+
+**Fix — smallest safe change:** applied `scripts/database/08-phone-otps-schema.sql` verbatim
+against production (no schema changes, no redesign — the file was already correct).
+Verified: table created with the intended columns, `ENABLE`+`FORCE ROW LEVEL SECURITY`,
+grants limited to `postgres`/`service_role` only, no unique constraint beyond the primary
+key (so resend-for-the-same-phone cannot deadlock on a duplicate key). Live re-test via the
+service-role client: insert succeeds (`error: null`). Live re-test via `curl` against
+`https://tawveeri.com/api/auth/send-phone-otp`: the specific reported error is gone.
+
+**Second, separate finding — SMS dispatch now reached, blocked by a missing secret.** With
+the table fixed, the request path now reaches Authentica (previously unreachable, since the
+DB write always failed first) and fails there: `AUTHENTICA_API_KEY not configured`. This is a
+missing environment variable in the production runtime, not a code defect — `src/lib/auth/authentica.ts`
+reads `process.env.AUTHENTICA_API_KEY` correctly and the name matches `.env.example`. This
+cannot be fixed from here (credentials are explicitly out of scope for this session) and is
+recorded as an open founder action: add `AUTHENTICA_API_KEY` to the production environment.
+**OTP storage now works; OTP delivery via SMS is still blocked until that secret is added.**
+
+**Message-safety fix (independent of the root cause, same incident).** The route
+(`src/app/api/auth/send-phone-otp/route.ts`) previously returned raw internal error text to
+the client for every internal failure path: the DB error string ("Failed to store OTP" —
+what triggered this incident), the Authentica error string (which itself leaked "API key not
+configured" — a second, smaller information exposure), and the generic catch-all's
+`error.message`. All three now return one safe, bilingual, non-technical message
+(`OTP_SEND_FAILED_MESSAGE`); the real error is logged server-side only, with the phone number
+masked (`maskPhone()` — keeps a short prefix, redacts the rest) and the raw OTP never logged
+anywhere in this route (confirmed by inspection — it never was). Legitimate, actionable
+validation responses (missing phone, invalid Saudi format) are unchanged — only internal/
+technical failure paths were touched.
+
+**Tests added.** `tests/auth/phone-validation.test.ts` (pure unit tests, default fast gate):
+Saudi phone format normalization across every accepted input shape, rejection cases,
+`generateOTP()` shape. `tests/auth/phone-otp.test.ts` (live-DB integration suite, run via
+`npm run test:integration`, excluded from the default gate per the existing ADR-054
+convention alongside `audit`/`notifications`/`profile`): asserts the table exists and accepts
+an insert (the direct regression guard for this exact incident — a mocked-client unit test
+would have passed throughout the whole outage), active-OTP read-back, expired-OTP exclusion,
+used-OTP exclusion, wrong-code mismatch, and resend-without-unique-constraint-conflict.
+
+**Verification.** `npm test` — 83/83 suites, 1328/1328 tests (was 82/1313; +1 suite/+15 tests
+from the new unit file, the integration file correctly excluded). `npx tsc --noEmit` — no new
+errors in changed files. Live production re-test post-fix (DB layer): confirmed via
+service-role insert and via the real `/api/auth/send-phone-otp` endpoint — the specific
+reported error no longer occurs; the next-stage Authentica error is now visible instead
+(expected, given the missing secret above), and it is masked appropriately once the code
+deploys.
+
+**Consequences / contract change.** None to the authentication contract itself — the fix
+restores the schema the code already assumed. The user-facing error contract for OTP-send
+failures changes: clients now always receive the same safe bilingual message for any
+internal failure, never a technical string. `docs/ENGINEERING-TRANSITION-PLAN.md`'s
+verification methodology is reinforced here: production, not the migration file's existence
+in the repo, is the only source of truth for whether a migration actually ran.
+
+**Rollback.** `git revert` the commit touching `jest.config.js`, `package.json`,
+`src/app/api/auth/send-phone-otp/route.ts`, and the two new test files — pure code/test
+rollback, no data-layer impact. The database fix (creating `phone_otps`) is **not**
+part of that commit and does not revert with it: dropping the table would immediately
+re-break OTP for every user and must never be done as a "rollback" of this ADR. If the table
+itself must ever be reverted, that is a distinct, explicit, founder-approved action.
+
+**Open founder action (blocks OTP delivery, not OTP storage):** add `AUTHENTICA_API_KEY` to
+the production environment (Railway). Until then, OTP codes are generated and stored
+correctly but the SMS is never sent.
+
+---
+
 ### ADR-208 — Controlled Demand Validation Wave 1: founder-review corrections + checkpoint close · Accepted (2026-08-04)
 
 **Context.** ADR-207 shipped the Wave 1 pack (Social Fact Pack, Claims/Content Ledgers, UTM

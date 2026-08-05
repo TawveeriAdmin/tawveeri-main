@@ -8,8 +8,22 @@ import { validateSaudiPhone, generateOTP } from '@/lib/auth/phone-validation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Safe, bilingual, user-facing message for any internal OTP-send failure (DB, SMS
+// provider, or unexpected error). Never return the underlying technical error to the
+// client (2026-08-05 incident: a raw Postgres/PostgREST error string — and separately
+// an SMS-provider config error — were both shown directly to the user). Full detail
+// goes to server logs only, phone masked, OTP never logged.
+const OTP_SEND_FAILED_MESSAGE =
+  'تعذر إرسال رمز التحقق. حاول مرة أخرى. / Failed to send the verification code. Please try again.';
+
+// Redacts a phone number for logs: keeps the country/operator prefix, drops the rest.
+// Never log a full phone number (PII) or the raw OTP code.
+function maskPhone(phone: string): string {
+  return phone.length > 6 ? `${phone.slice(0, 5)}***${phone.slice(-2)}` : '***';
+}
 
 export async function POST(request: NextRequest) {
+  let formattedPhoneForLogging: string | undefined;
   try {
     let body;
     try {
@@ -41,6 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     const formattedPhone = phoneValidation.formatted!;
+    formattedPhoneForLogging = formattedPhone;
 
     // Generate OTP
     const otpCode = generateOTP();
@@ -75,9 +90,14 @@ export async function POST(request: NextRequest) {
       });
 
     if (insertError) {
-      console.error('Error storing OTP:', insertError);
+      // Detailed error stays server-side only; the client never sees the DB error text.
+      console.error('Error storing OTP', {
+        phone: maskPhone(formattedPhone),
+        code: insertError.code,
+        message: insertError.message,
+      });
       return NextResponse.json(
-        { error: 'Failed to store OTP' },
+        { error: OTP_SEND_FAILED_MESSAGE },
         { status: 500 }
       );
     }
@@ -86,9 +106,14 @@ export async function POST(request: NextRequest) {
     const smsResult = await authenticaService.sendOTP(formattedPhone, otpCode);
 
     if (!smsResult.success) {
-      console.error('Failed to send OTP via Authentica:', smsResult.error);
+      // smsResult.error may describe internal config state (e.g. a missing provider
+      // key) — log it for engineers, never return it to the client.
+      console.error('Failed to send OTP via SMS provider', {
+        phone: maskPhone(formattedPhone),
+        detail: smsResult.error,
+      });
       return NextResponse.json(
-        { error: smsResult.error || 'Failed to send OTP. Please try again.' },
+        { error: OTP_SEND_FAILED_MESSAGE },
         { status: 500 }
       );
     }
@@ -99,10 +124,12 @@ export async function POST(request: NextRequest) {
       messageId: smsResult.messageId,
     });
   } catch (error) {
-    console.error('Send OTP error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    console.error('Send OTP error', {
+      phone: formattedPhoneForLogging ? maskPhone(formattedPhoneForLogging) : undefined,
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: errorMessage },
+      { error: OTP_SEND_FAILED_MESSAGE },
       { status: 500 }
     );
   }
