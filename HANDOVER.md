@@ -1,3 +1,34 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #52 · COMMAND CENTER CLOSEOUT · ADR-214 · DEPLOY BEHAVIORALLY VERIFIED ═══
+
+## Founder closeout on ADR-213: fixed a real metrics bug, closed the campaign-to-outbound gap, verified deploy
+
+**Full detail: ADR-214.** This entry is the resume point.
+
+### The big finding
+The originally-reported **44.4% answer rate (MISS)** was a measurement bug, not a product signal. The unified `/search` page fires both a storefront event AND an advisor event for the same user action when a query routes to the advisor (`search-client.tsx`) — proven in production (147/314 real `search` events, 30/161 real `results` events were same-action echoes, stable across every correlation window tested 1-60s). Fixed via a 3-second same-`(session,query_text)` clustering dedup in `buildFunnel()` (`src/lib/admin/command-center-queries.ts`), ported into `scripts/tps-analysis/usage-report.ts` too (same shared function, so the CLI artifact and live dashboard can't diverge). **Corrected: 83.6% answer rate — PASS.** Every launch-gate KPI now passes except minimum sample size (37 real sessions < 100). This directly validates the founder's instruction not to draw a product-quality conclusion before proving the denominator.
+
+### Campaign-to-outbound gap — closed without touching the protected `/go` path
+Root cause was a missing READ-side join, not missing instrumentation — `track()` already merges captured UTM into every event's `meta`, including `go_click`. `computeCampaignAttribution()` joins `go_click` events to `outbound_clicks` by `(canonical_product_id, is_test, nearest clicked_at within 10s)` — session-level, UNKNOWN when no UTM captured, never person-level. **Zero changes** to `/go/[offerId]/route.ts`, the Amazon tag/ascsubtag/ASIN path, any non-Amazon retailer, or any link-generation call site. ADR-207 not reopened — its decision not to wire `outbound_clicks.session_id` remains correct; this join doesn't need it.
+
+**Production-verified controlled journey (2026-08-05, TEST-tagged)**: `POST /api/events` (landing_view, go_click, `x-tw-test:1`, `meta.utm_source=controlled_test_adr214`) → `GET /go/<real-offer-id>?tw_test=1` (real production redirect, 302 to the real retailer) → read-only verified `outbound_clicks` recorded `is_test=true` → `computeCampaignAttribution()` correctly resolved `utmSource: "controlled_test_adr214"`, `matchedOutboundClick: true` → confirmed **zero leakage into REAL** (`select count(*) where session_id like 'controlled-test-adr214%' and is_test=false` = 0).
+
+### Deploy verified behaviorally, not just by build
+No Railway CLI/API access in this environment. Verified instead via production HTTP behavior on `https://tawveeri.com`: all 4 new admin pages return clean `307 → /unauthorized` (not 404/500) unauthenticated; `/api/admin/affiliate/reports` returns exactly `403 {"error":"Unauthorized"}` — the precise shape only this unit's code produces, proof commit 35a88b2+ is live. **Could not click through as an authenticated admin** — zero admin users exist in the production `users` table (read-only verified), and creating/promoting one is a user-identity write this unit will not do unilaterally. Exact founder action needed: either open `/admin/command-center` on a phone and report back, or authorize creation of a dedicated QA admin account.
+
+### Founder-facing trust
+Every headline card, the funnel header, the commerce section, and the new campaign-attribution card now show a compact confidence badge (CONFIRMED/ESTIMATED/DELAYED/INCOMPLETE/UNAVAILABLE) with reasoning in a native tooltip — `ConfidenceBadge` in `page.tsx`, states defined once in `command-center-queries.ts` (`METRIC_CONFIDENCE`). Data-quality banner extended with the session-concentration signal (`topSessionSearchShare`, ~50% at ship time — disclosed, not excluded).
+
+### Mobile
+Real browser/Playwright verification not possible (dev server crashes on every admin page in this sandbox — confirmed environment-wide before concluding that; zero admin users to authenticate as on production). Did a code-level audit and fixed two real issues found: headline cards and funnel-step cards had no base `grid-cols`, so Tailwind's bare `grid` class left them effectively single-column-stacked at narrow widths (not broken, just not compact) — changed to `grid-cols-2`/`grid-cols-3` at base. Tables already wrapped in `overflow-x-auto`. RTL already handled via `isRTL` ternaries and logical `text-start`/`text-end`.
+
+### Verification
+`tsc --noEmit`: zero errors in every file this unit touched (pre-existing errors in unrelated files — `checkout/page.tsx`, `stores/[id]/affiliate/route.ts`, `transactions/tracking.ts`, various `scripts/*` — untouched, unrelated). `npm run build`: clean. Full test suite: **1365/1365 passed** (was 1352 + 13 new in `tests/admin/command-center-queries.test.ts`, covering the dedup clustering, concentration signal, and campaign attribution join). RLS re-verified on all 4 measurement tables (`usage_events`, `outbound_clicks`, `affiliate_reports`, `affiliate_conversions`) — RLS on, zero policies, service-role only.
+
+### Not touched / not reopened
+ADR-207's core decision (no `outbound_clicks.session_id`) — respected. ADR-211/212 — closed, not reopened. No SendGrid, AI forecasting, external BI, social, or catalogue work — explicitly out of scope per this closeout's own directive.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #51 · FOUNDER COMMERCE COMMAND CENTER SHIPPED · ADR-213 ═══
 
 ## Founder-authorised execution unit: live traffic dashboard + greenfield affiliate reconciliation

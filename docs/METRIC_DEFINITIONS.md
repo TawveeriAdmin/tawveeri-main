@@ -21,24 +21,31 @@ Every metric below is computed **REAL-only** (`is_test = false`) unless stated o
 | **Sessions** | Distinct `session_id` values with ≥1 event, `is_test=false`. **Not** a person-count — session_id is a client-generated, session-scoped identifier; a returning person on a new browser session counts twice. | `count(distinct session_id) from usage_events where is_test=false` | Selected period, Asia/Riyadh | CONFIRMED |
 | **"Real visitors"** | We deliberately do **not** publish this label. There is no cookie/identity layer that survives across sessions for anonymous users, so "unique person" cannot be asserted. Dashboards say **Sessions**, never "visitors," until a durable anonymous ID exists. | — | — | UNAVAILABLE (by design, not a bug) |
 | **New vs. returning session** | A session's `session_id` is "returning" if the same id has events on ≥2 distinct calendar days (matches the retention definition already used in `tps:usage`). | `usage_events`, grouped by `session_id`, `count(distinct created_at::date)` | Selected period | ESTIMATED |
-| **Source / campaign / content** | `usage_events.meta->>'utm_source'` etc., captured at landing per ADR-207. Only reliable up to the point of capture — see UTM-to-exit gap below. | `usage_events.meta` | Selected period | CONFIRMED (capture) / UNAVAILABLE (join to exit) |
+| **Source / campaign / content (at capture)** | `usage_events.meta->>'utm_source'` etc., captured at landing per ADR-207. | `usage_events.meta` | Selected period | CONFIRMED |
+| **Campaign → outbound attribution** | Session-level join (ADR-214) between a `go_click` event's captured UTM and the matching `outbound_clicks` row (same `canonical_product_id`, same `is_test`, nearest `clicked_at` within 10s). No captured UTM resolves to **UNKNOWN**, never "direct", never zero. Never a person-level claim — see `computeCampaignAttribution()` in `src/lib/admin/command-center-queries.ts`. | `usage_events` ⋈ `outbound_clicks` | Selected period | ESTIMATED |
 
 ## Product journey (funnel)
 
-Six-step funnel, identical definition to `scripts/tps-analysis/usage-report.ts` (not re-derived):
+Six-step funnel, action-deduped per ADR-214 (see below) — SQL lives once in `src/lib/admin/command-center-queries.ts` (`buildFunnel`), imported by both `/admin/command-center` and `scripts/tps-analysis/usage-report.ts` so the two can't silently diverge:
 
 | Step | `event_type` | Numerator | Denominator (conversion shown) |
 |---|---|---|---|
-| 1 Search | `search`, `advisor_query` | count | — |
-| 2 Results (valid result returned) | `results`, `advisor_result` | count | Step 1 |
-| 3 Product opened | `product_view` | count | Step 2 |
-| 4 Comparison opened | `comparison_view` | count | Step 3 |
-| 5 Evidence viewed | `evidence_view` | count | Step 4 |
-| 6 Outbound (retailer exit) | `go_click` | count | Step 4 (Comparison→Exit CTR) |
+| 1 Search | `search`, `advisor_query` | deduped action count | — |
+| 2 Results (valid result returned) | `results`, `advisor_result` | deduped action count | Step 1 |
+| 3 Product opened | `product_view` | raw count | Step 2 |
+| 4 Comparison opened | `comparison_view` | raw count | Step 3 |
+| 5 Evidence viewed | `evidence_view` | raw count | Step 4 |
+| 6 Outbound (retailer exit) | `go_click` | raw count | Step 4 (Comparison→Exit CTR) |
 
-Off-funnel: **Zero-result** = `event_type='no_answer'` (numerator: `no_answer`, denominator: Search). **Errors** = `event_type='error'`. **Reformulation** is not currently instrumented as a distinct event — UNAVAILABLE (would require correlating consecutive `search` events per session within a short window; not built, noted as a future lever if unmet-demand analysis needs it).
+**Dedup rule (ADR-214):** the unified `/search` page can fire both a storefront event (`search`/`results`/`no_answer`) AND an advisor event (`advisor_query`/`advisor_result`/`no_answer`/`error`) for the SAME user action, when the query routes to the advisor. Events sharing `(session_id, query_text)` within a 3-second window are counted as **one action**, not one per event row. Verified in production: this affected 147/314 `search` events and 30/161 `results` events (46.8% and 18.6% of raw counts respectively) — a real measurement bug, corrected, not a design choice being introduced fresh. `product_view`/`comparison_view`/`evidence_view`/`go_click` are NOT deduped — no evidence of the same duplication pattern on those steps.
 
-All conversions computed **event-level** (matches `tps:usage`) for the funnel table; a **session-level** view (what fraction of sessions that searched also exited) is shown separately, matching the existing A/B-arm methodology.
+Off-funnel: **Zero-result** = `event_type='no_answer'` counted only when the same action never also reached Results (numerator: deduped `no_answer`-only actions, denominator: Search). **Errors** = `event_type='error'`, counted once per action regardless of clustering. **Reformulation** is not currently instrumented as a distinct event — UNAVAILABLE.
+
+**Session concentration signal**: `topSessionSearchShare` — the single most active session's share of REAL search actions in the period. Surfaced as a data-quality banner above 30%. This is disclosure, not exclusion: a high share could mean one genuine heavy user or unflagged internal browsing, and the dashboard does not guess which (Data Quality Contract Rule 8).
+
+All conversions computed **action-level** (post-dedup) for the funnel table; a **session-level** view (what fraction of sessions that searched also exited) is shown separately, matching the existing A/B-arm methodology.
+
+**Historical note:** before this fix (ADR-213 baseline), the dashboard reported search=489/results=217/answer-rate=44.4% — that reading was a measurement artifact of the double-count, not a valid product-quality conclusion. The corrected reading (2026-08-05) is search=232/results=194/answer rate=83.6% (PASS vs the 80% launch gate). This correction is documented, not silently overwritten — see ADR-214.
 
 ## Commerce (retailer exit + affiliate)
 

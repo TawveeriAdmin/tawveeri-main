@@ -14,10 +14,11 @@ Every headline number is REAL-only (`is_test=false`). TEST volume (our own QA/`?
 
 There is no durable anonymous identity (no long-lived first-party ID beyond a session). The command center says **"sessions,"** not **"visitors"** or **"people,"** everywhere. This is a wording constraint on every card, not just documentation.
 
-## Rule 4 — Attribution joins that don't exist are stated, not implied
+## Rule 4 — Attribution joins are labeled at the precision they actually have
 
-- UTM (source/campaign/content) is captured at landing (`usage_events.meta`) but is **not** joined into `outbound_clicks` (ADR-207, deliberate). Any "which campaign drove this exit" view is built from `usage_events` session correlation only, labeled **ESTIMATED**, never presented as an exact per-click join.
-- `outbound_clicks.session_id` exists as a column but is unpopulated (ADR-207). Do not query it as if it were live without first confirming it's been backfilled/wired.
+- **UPDATED (ADR-214):** campaign→outbound attribution is now computed — a `go_click` event's captured UTM is joined to the matching `outbound_clicks` row by `(canonical_product_id, is_test, nearest clicked_at within 10s)`. This is a **session-level, ESTIMATED** join, never presented as a guaranteed exact per-click match, and never a person-level claim. Production-verified with a controlled TEST journey 2026-08-05 (ADR-214).
+- `outbound_clicks.session_id` still exists as a column and is still unpopulated (ADR-207, unchanged) — the ADR-214 join deliberately does not need it. Do not query `session_id` on `outbound_clicks` as if it were live.
+- A `go_click` with no captured UTM resolves to `utmSource: null` (**UNKNOWN** in the UI) — never `"direct"`, never folded into zero.
 
 ## Rule 5 — Affiliate match confidence is tiered and shown, not collapsed
 
@@ -34,6 +35,8 @@ Below existing thresholds already established in `tps:usage` (min 100 sessions, 
 ## Rule 8 — Internal/founder traffic
 
 Classification today is binary (`is_test` true/false) via the `?test=1` cookie and a bot-UA regex — there is no separate "founder/Cowork" tier distinct from TEST. If founder browsing without `?test=1` pollutes REAL counts, that's a known residual risk, not silently fixed by guessing at IP/device heuristics (would risk false-excluding real customers). Flagged here as a limitation; not solved without a deliberate, reversible identification signal (e.g. an internal-only cookie set at a known admin login), which is a follow-up decision, not assumed in this unit.
+
+**Partial mitigation (ADR-214):** `topSessionSearchShare` surfaces what fraction of REAL search actions came from the single most active session, shown as a data-quality banner above 30%. This does not exclude or reclassify anything — it discloses concentration so the founder can judge, since we don't have evidence to distinguish "one heavy genuine user" from "unflagged internal browsing." Production example at ship time: one session was ~50% of REAL search volume over 30 days.
 
 ## Rule 9 — Historical comparability
 

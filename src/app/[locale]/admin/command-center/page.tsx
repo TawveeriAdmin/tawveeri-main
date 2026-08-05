@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {
   AlertTriangle, CheckCircle2, Search, FileSearch, Eye, Scale, BookOpen, ExternalLink,
 } from 'lucide-react';
-import { getCommandCenterData, type Period } from '@/lib/admin/command-center-queries';
+import { getCommandCenterData, type Period, type ConfidenceState } from '@/lib/admin/command-center-queries';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,26 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
   );
 }
 
+// Compact confidence badge (Data Quality Contract Rule 1/6) — a small colored tag, full reasoning
+// in the native `title` tooltip so mobile never has to render a paragraph per card.
+const CONFIDENCE_STYLE: Record<ConfidenceState, string> = {
+  CONFIRMED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  ESTIMATED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  DELAYED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  INCOMPLETE: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  UNAVAILABLE: 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/50',
+};
+const CONFIDENCE_LABEL_AR: Record<ConfidenceState, string> = {
+  CONFIRMED: 'مؤكد', ESTIMATED: 'مقدّر', DELAYED: 'متأخر', INCOMPLETE: 'غير مكتمل', UNAVAILABLE: 'غير متاح',
+};
+function ConfidenceBadge({ state, note, isRTL }: { state: ConfidenceState; note: string; isRTL: boolean }) {
+  return (
+    <span title={note} className={`inline-flex shrink-0 cursor-help items-center rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide ${CONFIDENCE_STYLE[state]}`}>
+      {isRTL ? CONFIDENCE_LABEL_AR[state] : state}
+    </span>
+  );
+}
+
 export default async function CommandCenterPage({
   params,
   searchParams,
@@ -41,7 +61,7 @@ export default async function CommandCenterPage({
   const period: Period = (PERIODS as string[]).includes(sp.period || '') ? (sp.period as Period) : (sp.start && sp.end ? 'custom' : '30d');
 
   const data = await getCommandCenterData(period, sp.start, sp.end);
-  const { real, test, prevReal, kpis, gate, surfaces, topDemand, unmetDemand, outboundReal, outboundTest, quality } = data;
+  const { real, test, prevReal, kpis, gate, surfaces, topDemand, unmetDemand, outboundReal, outboundTest, quality, campaignAttribution, confidence } = data;
 
   const periodLabel = (p: Period) => ({
     today: isRTL ? 'اليوم' : 'Today',
@@ -52,10 +72,10 @@ export default async function CommandCenterPage({
   })[p];
 
   const headline = [
-    { label: isRTL ? 'الجلسات (حقيقية)' : 'Real sessions', value: real.sessions, prev: prevReal.sessions },
-    { label: isRTL ? 'عمليات البحث' : 'Searches', value: real.search, prev: prevReal.search },
-    { label: isRTL ? 'مقارنات مفتوحة' : 'Comparisons opened', value: real.comparisonView, prev: prevReal.comparisonView },
-    { label: isRTL ? 'الخروج للمتاجر' : 'Retailer outbound clicks', value: real.outbound, prev: prevReal.outbound },
+    { label: isRTL ? 'الجلسات (حقيقية)' : 'Real sessions', value: real.sessions, prev: prevReal.sessions, confidenceKey: 'sessions' },
+    { label: isRTL ? 'عمليات البحث' : 'Searches', value: real.search, prev: prevReal.search, confidenceKey: 'search' },
+    { label: isRTL ? 'مقارنات مفتوحة' : 'Comparisons opened', value: real.comparisonView, prev: prevReal.comparisonView, confidenceKey: 'comparisonView' },
+    { label: isRTL ? 'الخروج للمتاجر' : 'Retailer outbound clicks', value: real.outbound, prev: prevReal.outbound, confidenceKey: 'outbound' },
   ];
 
   return (
@@ -100,7 +120,7 @@ export default async function CommandCenterPage({
       </section>
 
       {/* Data-quality banner (Rule 6/7/8 — never hide missing/stale data) */}
-      {(quality.trackingStopped || !quality.amazonTagConfigured || (quality.goClickOutboundDivergencePct ?? 0) > 0.15) && (
+      {(quality.trackingStopped || !quality.amazonTagConfigured || (quality.goClickOutboundDivergencePct ?? 0) > 0.15 || quality.topSessionSearchShare > 0.3) && (
         <Card className="border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -108,6 +128,13 @@ export default async function CommandCenterPage({
               {quality.trackingStopped && <p>{isRTL ? 'لم يتم رصد أي حدث تتبع خلال آخر 6 ساعات — تحقق من التتبع.' : 'No tracking event in the last 6 hours — check instrumentation.'}</p>}
               {!quality.amazonTagConfigured && <p>{isRTL ? 'كود أمازون التابع غير مُهيأ في stores.affiliate_config.' : 'Amazon affiliate tag is not configured in stores.affiliate_config.'}</p>}
               {(quality.goClickOutboundDivergencePct ?? 0) > 0.15 && <p>{isRTL ? `تباين ${fpct(quality.goClickOutboundDivergencePct!)} بين go_click و outbound_clicks — أحد المسارين يفقد أحداثاً.` : `${fpct(quality.goClickOutboundDivergencePct!)} divergence between go_click events and outbound_clicks rows — one pipe is dropping events.`}</p>}
+              {quality.topSessionSearchShare > 0.3 && (
+                <p>
+                  {isRTL
+                    ? `جلسة واحدة تمثل ${fpct(quality.topSessionSearchShare)} من أحداث البحث الحقيقية — قد تكون هذه معدلات مركّزة في مستخدم واحد نشط أو تصفّح داخلي غير مُعلَّم، لا نفترض أيهما.`
+                    : `One session accounts for ${fpct(quality.topSessionSearchShare)} of REAL search actions — aggregate rates may be dominated by one actor (a heavy genuine user or unflagged internal browsing; we don't assume which). See docs/DATA_QUALITY_CONTRACT.md Rule 8.`}
+                </p>
+              )}
             </div>
           </div>
         </Card>
@@ -120,12 +147,16 @@ export default async function CommandCenterPage({
       </p>
 
       {/* Headline cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {headline.map((h) => {
           const tr = trend(h.value, h.prev);
+          const conf = confidence[h.confidenceKey];
           return (
             <Card key={h.label}>
-              <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{h.label}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{h.label}</p>
+                {conf && <ConfidenceBadge state={conf.state} note={conf.note} isRTL={isRTL} />}
+              </div>
               <p className="mt-2 text-3xl font-black tabular-nums text-on-surface dark:text-white">{h.value}</p>
               {tr && (
                 <p className={`mt-1 text-xs font-bold ${tr.dir === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -139,8 +170,11 @@ export default async function CommandCenterPage({
 
       {/* Funnel */}
       <Card>
-        <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'رحلة العميل الكاملة' : 'Full customer journey'}</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'رحلة العميل الكاملة' : 'Full customer journey'}</h2>
+          <ConfidenceBadge state={confidence.search.state} note={confidence.search.note} isRTL={isRTL} />
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
           {[
             { icon: Search, label: isRTL ? 'بحث' : 'Search', value: real.search, conv: null },
             { icon: FileSearch, label: isRTL ? 'نتائج' : 'Results', value: real.results, conv: fpct(kpis.answerRate) },
@@ -181,7 +215,10 @@ export default async function CommandCenterPage({
 
       {/* Commerce / affiliate */}
       <Card>
-        <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'التجارة والعمولات' : 'Commerce & affiliate'}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'التجارة والعمولات' : 'Commerce & affiliate'}</h2>
+          <ConfidenceBadge state={confidence.affiliateCommission.state} note={confidence.affiliateCommission.note} isRTL={isRTL} />
+        </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div>
             <p className="text-xs text-on-surface-variant dark:text-white/50">{isRTL ? 'نقرات خروج مقاسة' : 'Measured exits'}</p>
@@ -198,6 +235,43 @@ export default async function CommandCenterPage({
               : 'Orders/shipped/commission: UNAVAILABLE — no affiliate report imported yet. See /admin/affiliate.'}
           </div>
         </div>
+      </Card>
+
+      {/* Campaign → outbound attribution (ADR-214) */}
+      <Card>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'الحملة → الخروج' : 'Campaign → outbound'}</h2>
+          <ConfidenceBadge state={confidence.campaignAttribution.state} note={confidence.campaignAttribution.note} isRTL={isRTL} />
+        </div>
+        <p className="mt-1 text-xs text-on-surface-variant dark:text-white/50">
+          {isRTL
+            ? 'مستوى الجلسة فقط — لا نزعم تحديد هوية شخصية. بدون دليل حملة تبقى غير معروفة، لا "مباشر" ولا صفر.'
+            : 'Session-level only — never a person-level claim. No captured campaign stays UNKNOWN, never "direct" and never zero.'}
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-on-surface-variant dark:text-white/50">{isRTL ? 'حملة معروفة' : 'Known campaign'}</p>
+            <p className="text-2xl font-black tabular-nums text-on-surface dark:text-white">{campaignAttribution.withKnownCampaign} / {campaignAttribution.totalGoClicks}</p>
+          </div>
+          <div>
+            <p className="text-xs text-on-surface-variant dark:text-white/50">{isRTL ? 'غير معروف' : 'UNKNOWN'}</p>
+            <p className="text-2xl font-black tabular-nums text-on-surface-variant dark:text-white/40">{campaignAttribution.unknownCampaign}</p>
+          </div>
+          <div>
+            <p className="text-xs text-on-surface-variant dark:text-white/50">{isRTL ? 'مطابق لسجل الخروج' : 'Matched to outbound_clicks'}</p>
+            <p className="text-2xl font-black tabular-nums text-on-surface dark:text-white">{campaignAttribution.matchedToOutboundClicks} / {campaignAttribution.totalGoClicks}</p>
+          </div>
+        </div>
+        {campaignAttribution.bySource.length > 0 && (
+          <div className="mt-3 space-y-1 text-sm">
+            {campaignAttribution.bySource.map((s) => (
+              <div key={s.source} className="flex items-center justify-between">
+                <span className="text-on-surface-variant dark:text-white/60">{s.source}</span>
+                <span className="font-bold tabular-nums text-on-surface dark:text-white">{s.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* By surface */}

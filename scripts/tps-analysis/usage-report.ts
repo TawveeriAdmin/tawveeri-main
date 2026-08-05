@@ -17,6 +17,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { writeFileSync } from "fs";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
+import { buildFunnel as buildFunnelShared, type UsageEventRow } from "../../src/lib/admin/command-center-queries";
 
 // ── Launch-readiness KPI thresholds (transparent + editable). A "public-launch signal"
 //    requires a minimum real sample AND every quality KPI to pass. ─────────────────────
@@ -47,24 +48,21 @@ type Funnel = {
   const now = String((await rows("select now() ts"))[0].ts);
 
   // ── Funnel counts by REAL/TEST ─────────────────────────────────────────────
-  const funnelRows = await rows(`
-    select is_test,
-      count(*) filter (where event_type in ('search','advisor_query'))   as search,
-      count(*) filter (where event_type in ('results','advisor_result')) as results,
-      count(*) filter (where event_type='product_view')                  as product_view,
-      count(*) filter (where event_type='comparison_view')               as comparison_view,
-      count(*) filter (where event_type='evidence_view')                 as evidence_view,
-      count(*) filter (where event_type='go_click')                      as outbound,
-      count(*) filter (where event_type='no_answer')                     as no_answer,
-      count(*) filter (where event_type='error')                         as errors,
-      count(distinct session_id)                                         as sessions
-    from usage_events group by is_test`);
+  // ADR-214: the unified /search page can fire BOTH a storefront event (search/results) AND an
+  // advisor event (advisor_query/advisor_result) for the SAME user action when a query routes to
+  // the advisor — a plain FILTER-based count double-counts that action. Fetch raw rows and dedupe
+  // via the SAME clustering logic the live /admin/command-center dashboard uses
+  // (src/lib/admin/command-center-queries.ts buildFunnel) so the CLI artifact and the live
+  // dashboard can never silently diverge — "Trust is one thing, computed one way."
+  const rawEventRows = (await c.query(
+    `select event_type, session_id, is_test, source, category, query_text, canonical_id, created_at, meta
+     from usage_events`
+  )).rows as UsageEventRow[];
   const grab = (test: boolean): Funnel => {
-    const r = funnelRows.find((x) => Boolean(x.is_test) === test);
-    const n = (k: string) => Number(r?.[k] ?? 0);
-    return { search: n("search"), results: n("results"), product_view: n("product_view"),
-      comparison_view: n("comparison_view"), evidence_view: n("evidence_view"), outbound: n("outbound"),
-      no_answer: n("no_answer"), errors: n("errors"), sessions: n("sessions") };
+    const f = buildFunnelShared(rawEventRows.filter((r) => Boolean(r.is_test) === test));
+    return { search: f.search, results: f.results, product_view: f.productView,
+      comparison_view: f.comparisonView, evidence_view: f.evidenceView, outbound: f.outbound,
+      no_answer: f.noAnswer, errors: f.errors, sessions: f.sessions };
   };
   const real = grab(false), test = grab(true);
 

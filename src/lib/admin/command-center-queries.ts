@@ -48,18 +48,19 @@ function previousRange({ start, end }: DateRange): { start: Date; end: Date } {
   return { start: new Date(start.getTime() - durationMs), end: start };
 }
 
-interface UsageEventRow {
+export interface UsageEventRow {
   event_type: string;
   session_id: string | null;
   is_test: boolean;
   source: string | null;
   category: string | null;
   query_text: string | null;
+  canonical_id: string | null;
   created_at: string;
   meta: Record<string, unknown> | null;
 }
 
-interface OutboundClickRow {
+export interface OutboundClickRow {
   is_test: boolean;
   canonical_product_id: string | null;
   affiliate_program: string | null;
@@ -67,7 +68,7 @@ interface OutboundClickRow {
   clicked_at: string;
 }
 
-const EVENT_COLUMNS = 'event_type, session_id, is_test, source, category, query_text, created_at, meta';
+const EVENT_COLUMNS = 'event_type, session_id, is_test, source, category, query_text, canonical_id, created_at, meta';
 // outbound_clicks predates the numbered-migration schema files and isn't declared anywhere in the
 // repo — confirmed via read-only information_schema introspection: its timestamp column is
 // `clicked_at`, not `created_at`. Verify against production before assuming a column name here.
@@ -118,22 +119,170 @@ export interface Funnel {
 
 const SEARCH_TYPES = new Set(['search', 'advisor_query']);
 const RESULTS_TYPES = new Set(['results', 'advisor_result']);
+const CLUSTERED_TYPES = new Set(['search', 'advisor_query', 'results', 'advisor_result', 'no_answer', 'error']);
 
-function buildFunnel(events: UsageEventRow[]): Funnel {
+// ADR-214: the unified /search page fires BOTH a storefront `search` event AND, when the query
+// routes to the advisor (routeQuery in search-client.tsx), an `advisor_query` event for the SAME
+// user action — two synchronous, un-awaited track() calls in the same function, not two searches.
+// Same pattern on the results side (`results`/`advisor_result`/`no_answer`/`error`). Verified in
+// production (read-only, 2026-08-05): 147/314 real `search` events and 30/161 real `results` events
+// are such same-action echoes of each other, stable across 1-60s correlation windows tested — not a
+// timing coincidence. This clusters same-(session,query_text) events within ACTION_WINDOW_MS into one
+// action so the funnel counts INTENT once, not per event row. A later, genuinely new search for the
+// same text (gap > the window) still counts as its own action.
+const ACTION_WINDOW_MS = 3_000;
+
+interface DedupedCounts { search: number; results: number; noAnswer: number; errors: number }
+
+function dedupeFunnelActions(events: UsageEventRow[]): DedupedCounts {
+  const groups = new Map<string, Array<{ ts: number; type: string }>>();
+  for (const e of events) {
+    if (!CLUSTERED_TYPES.has(e.event_type) || !e.session_id) continue;
+    const key = `${e.session_id}|${e.query_text ?? ''}`;
+    const arr = groups.get(key);
+    const entry = { ts: new Date(e.created_at).getTime(), type: e.event_type };
+    if (arr) arr.push(entry); else groups.set(key, [entry]);
+  }
+
+  let search = 0, results = 0, noAnswer = 0, errors = 0;
+  for (const arr of groups.values()) {
+    arr.sort((a, b) => a.ts - b.ts);
+    let clusterStart = 0;
+    for (let i = 1; i <= arr.length; i++) {
+      const atBoundary = i === arr.length || arr[i].ts - arr[clusterStart].ts > ACTION_WINDOW_MS;
+      if (!atBoundary) continue;
+      const cluster = arr.slice(clusterStart, i);
+      const hasSearch = cluster.some((x) => SEARCH_TYPES.has(x.type));
+      const hasResults = cluster.some((x) => RESULTS_TYPES.has(x.type));
+      const hasNoAnswer = cluster.some((x) => x.type === 'no_answer');
+      const hasError = cluster.some((x) => x.type === 'error');
+      if (hasSearch) search++;
+      if (hasResults) results++;
+      else if (hasNoAnswer) noAnswer++; // only a dead end if the action never reached results
+      if (hasError) errors++; // off-funnel signal, tracked once per action regardless of clustering
+      clusterStart = i;
+    }
+  }
+  return { search, results, noAnswer, errors };
+}
+
+export function buildFunnel(events: UsageEventRow[]): Funnel {
   const sessions = new Set<string>();
-  let search = 0, results = 0, productView = 0, comparisonView = 0, evidenceView = 0, outbound = 0, noAnswer = 0, errors = 0;
+  let productView = 0, comparisonView = 0, evidenceView = 0, outbound = 0;
   for (const e of events) {
     if (e.session_id) sessions.add(e.session_id);
-    if (SEARCH_TYPES.has(e.event_type)) search++;
-    else if (RESULTS_TYPES.has(e.event_type)) results++;
-    else if (e.event_type === 'product_view') productView++;
+    if (e.event_type === 'product_view') productView++;
     else if (e.event_type === 'comparison_view') comparisonView++;
     else if (e.event_type === 'evidence_view') evidenceView++;
     else if (e.event_type === 'go_click') outbound++;
-    else if (e.event_type === 'no_answer') noAnswer++;
-    else if (e.event_type === 'error') errors++;
   }
+  const { search, results, noAnswer, errors } = dedupeFunnelActions(events);
   return { search, results, productView, comparisonView, evidenceView, outbound, noAnswer, errors, sessions: sessions.size };
+}
+
+// Transparency signal (Data Quality Contract Rule 7/8): what share of REAL search actions came
+// from the single most active session. High concentration means aggregate rates are dominated by
+// one actor (heavy genuine user OR unflagged internal/founder browsing) — we don't guess which;
+// we surface it so the founder can judge, rather than silently excluding or silently averaging it away.
+export function topSessionSearchShare(events: UsageEventRow[]): { share: number; sessionEventCount: number; totalSearchEvents: number } {
+  const perSession = new Map<string, number>();
+  let total = 0;
+  for (const e of events) {
+    if (e.event_type !== 'search' && e.event_type !== 'advisor_query') continue;
+    if (!e.session_id) continue;
+    total++;
+    perSession.set(e.session_id, (perSession.get(e.session_id) || 0) + 1);
+  }
+  let max = 0;
+  for (const n of perSession.values()) max = Math.max(max, n);
+  return { share: total > 0 ? max / total : 0, sessionEventCount: max, totalSearchEvents: total };
+}
+
+// ── Campaign-to-outbound attribution (ADR-214) ──────────────────────────────────────────────
+// Closes the gap ADR-207 deliberately left open, WITHOUT touching /go, the Amazon tag/ascsubtag/
+// ASIN path, any non-Amazon retailer, or any link-generation call site: the client's track()
+// helper (src/lib/analytics/track.ts) already merges the session's captured UTM (sessionStorage,
+// src/lib/analytics/campaign.ts) into EVERY event's `meta`, including `go_click` — the gap was
+// never missing instrumentation, it was a missing READ-side correlation between that `go_click`
+// usage_event and the corresponding `outbound_clicks` row (which carries the retailer/tag detail
+// but no UTM). This is a pure, additive, read-only join over existing immutable data.
+//
+// Session-level only — never claims person-level attribution. Rows with no captured UTM resolve
+// to UNKNOWN, never "direct" and never folded into zero (Data Quality Contract Rule 1/4).
+const ATTRIBUTION_MATCH_WINDOW_MS = 10_000;
+
+export interface CampaignAttributionRow {
+  sessionId: string;
+  clickedAt: string;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  matchedOutboundClick: boolean;
+  storeName: string | null;
+  affiliateProgram: string | null;
+  isTest: boolean;
+}
+
+export interface CampaignAttributionSummary {
+  totalGoClicks: number;
+  withKnownCampaign: number;
+  unknownCampaign: number;
+  matchedToOutboundClicks: number;
+  bySource: Array<{ source: string; count: number }>;
+  rows: CampaignAttributionRow[];
+}
+
+export function computeCampaignAttribution(
+  goClickEvents: UsageEventRow[],
+  outboundRows: OutboundClickRow[]
+): CampaignAttributionSummary {
+  const rows: CampaignAttributionRow[] = goClickEvents.map((e) => {
+    const meta = e.meta ?? {};
+    const utmSource = typeof meta.utm_source === 'string' ? meta.utm_source : null;
+    const clickTs = new Date(e.created_at).getTime();
+
+    // Nearest-timestamp match on canonical_product_id, same is_test state, within the window —
+    // session_id can't be used (outbound_clicks.session_id is unpopulated, ADR-207) so this is
+    // the safest available join key without touching the write path.
+    let best: OutboundClickRow | null = null;
+    let bestDelta = Infinity;
+    for (const o of outboundRows) {
+      if (o.is_test !== e.is_test) continue;
+      if (!e.canonical_id || o.canonical_product_id !== e.canonical_id) continue;
+      const delta = Math.abs(new Date(o.clicked_at).getTime() - clickTs);
+      if (delta <= ATTRIBUTION_MATCH_WINDOW_MS && delta < bestDelta) { best = o; bestDelta = delta; }
+    }
+
+    return {
+      sessionId: e.session_id || '',
+      clickedAt: e.created_at,
+      utmSource,
+      utmMedium: typeof meta.utm_medium === 'string' ? meta.utm_medium : null,
+      utmCampaign: typeof meta.utm_campaign === 'string' ? meta.utm_campaign : null,
+      utmContent: typeof meta.utm_content === 'string' ? meta.utm_content : null,
+      matchedOutboundClick: best !== null,
+      storeName: best?.store_name ?? null,
+      affiliateProgram: best?.affiliate_program ?? null,
+      isTest: e.is_test,
+    };
+  });
+
+  const bySourceMap = new Map<string, number>();
+  let withKnownCampaign = 0, matchedToOutboundClicks = 0;
+  for (const r of rows) {
+    if (r.utmSource) { withKnownCampaign++; bySourceMap.set(r.utmSource, (bySourceMap.get(r.utmSource) || 0) + 1); }
+    if (r.matchedOutboundClick) matchedToOutboundClicks++;
+  }
+
+  return {
+    totalGoClicks: rows.length,
+    withKnownCampaign,
+    unknownCampaign: rows.length - withKnownCampaign,
+    matchedToOutboundClicks,
+    bySource: Array.from(bySourceMap.entries()).map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count),
+    rows,
+  };
 }
 
 export interface SurfaceRow {
@@ -211,8 +360,29 @@ export interface CommandCenterData {
     trackingStopped: boolean;
     goClickOutboundDivergencePct: number | null;
     amazonTagConfigured: boolean;
+    topSessionSearchShare: number;
   };
+  campaignAttribution: CampaignAttributionSummary;
+  confidence: Record<string, MetricConfidence>;
 }
+
+// Confidence states — Data Quality Contract Rule 1: missing/estimated data is never shown as an
+// exact number without saying so. CONFIRMED = direct count from an immutable append-only row.
+// ESTIMATED = derived via a documented heuristic (dedup clustering, nearest-timestamp join).
+// UNAVAILABLE = not measurable yet with current instrumentation/imported data.
+export type ConfidenceState = 'CONFIRMED' | 'ESTIMATED' | 'DELAYED' | 'INCOMPLETE' | 'UNAVAILABLE';
+export interface MetricConfidence { state: ConfidenceState; note: string }
+
+const METRIC_CONFIDENCE: Record<string, MetricConfidence> = {
+  sessions: { state: 'CONFIRMED', note: 'Exact distinct session_id count from usage_events.' },
+  search: { state: 'ESTIMATED', note: 'Deduped: the unified search page can fire both a storefront and an advisor event for one action (ADR-214) — collapsed to one action per query within a 3s window.' },
+  results: { state: 'ESTIMATED', note: 'Same dedup as Search — see ADR-214.' },
+  outbound: { state: 'CONFIRMED', note: 'Exact go_click event count from usage_events.' },
+  comparisonView: { state: 'CONFIRMED', note: 'Exact comparison_view event count from usage_events — no proven duplication on this step.' },
+  answerRate: { state: 'ESTIMATED', note: 'Derived from deduped Search/Results — precision depends on sample size; below 100 real sessions this is a directional signal, not a verdict.' },
+  campaignAttribution: { state: 'ESTIMATED', note: 'Session-level join between usage_events UTM capture and outbound_clicks by nearest timestamp — not a guaranteed exact per-click match. See docs/AFFILIATE_RECONCILIATION_CONTRACT.md and ADR-214.' },
+  affiliateCommission: { state: 'UNAVAILABLE', note: 'No affiliate report imported yet — see /admin/affiliate.' },
+};
 
 function summarizeOutbound(rows: OutboundClickRow[], isTest: boolean) {
   const filtered = rows.filter((r) => r.is_test === isTest);
@@ -281,6 +451,11 @@ export async function getCommandCenterData(period: Period, customStart?: string,
   const affiliateConfig = amazonStore.data?.affiliate_config as { tag?: string } | null | undefined;
   const amazonTagConfigured = Boolean(affiliateConfig?.tag);
 
+  // REAL-only campaign attribution for the headline view — TEST go_clicks (including any
+  // controlled verification journey) are computed too but never blended into the REAL summary.
+  const goClickEventsReal = realEvents.filter((e) => e.event_type === 'go_click');
+  const campaignAttribution = computeCampaignAttribution(goClickEventsReal, outboundRows);
+
   return {
     range,
     real,
@@ -298,6 +473,9 @@ export async function getCommandCenterData(period: Period, customStart?: string,
       trackingStopped,
       goClickOutboundDivergencePct: goClickDivergencePct,
       amazonTagConfigured,
+      topSessionSearchShare: topSessionSearchShare(realEvents).share,
     },
+    campaignAttribution,
+    confidence: METRIC_CONFIDENCE,
   };
 }
