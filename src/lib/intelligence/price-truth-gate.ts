@@ -90,3 +90,62 @@ export function isExtremeUncorroboratedDiscount(input: {
 }): boolean {
   return input.discountPct >= EXTREME_DISCOUNT_PCT && input.corroboratingStoreCount < 2;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADR-211 bounded closeout (2026-08-05) — the smallest truthful public-label rule.
+//
+// A "best price" / "strong deal" claim is a superiority claim: it says this offer
+// beats the alternatives. That is only true when we actually have alternatives to
+// compare against — either other retailers, or our own price history for the same
+// listing. Neither of those is optional evidence; each tier below states exactly
+// what it requires and nothing is claimed beyond it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DealLabelTier = "single" | "single_stable_baseline" | "multi_store";
+
+/**
+ * Threshold for "reproducible and sufficiently stable" price-history baseline
+ * (tier single_stable_baseline). NOT hardcoded blind — verified against production
+ * 2026-08-05 first: of 741 then-live single/multi-store deal rows, 649 (87.6%) had
+ * ZERO price_history observations, only 1 had >=5, and only 1 spanned >=7 distinct
+ * days (avg span 1.6 days). These thresholds are therefore near-dormant BY HONEST
+ * NECESSITY today, not a bug — they encode what "stable" actually requires and will
+ * start firing as price_history genuinely deepens, rather than being loosened to
+ * manufacture claims the data doesn't support.
+ */
+export const STABLE_BASELINE_MIN_OBSERVATIONS = 5;
+export const STABLE_BASELINE_MIN_DISTINCT_DAYS = 7;
+
+export function classifyDealLabelTier(input: {
+  corroboratingStoreCount: number;
+  priceHistoryObservationCount: number;
+  priceHistoryDistinctDays: number;
+}): DealLabelTier {
+  if (input.corroboratingStoreCount >= 2) return "multi_store";
+  if (
+    input.priceHistoryObservationCount >= STABLE_BASELINE_MIN_OBSERVATIONS &&
+    input.priceHistoryDistinctDays >= STABLE_BASELINE_MIN_DISTINCT_DAYS
+  ) {
+    return "single_stable_baseline";
+  }
+  return "single";
+}
+
+/** Whether a "hot"/"strong deal" superiority badge may be shown for this tier. A
+ *  plain single-retailer offer with no historical baseline never earns it — that is
+ *  exactly the "عرض قوي" claim this ADR exists to stop making on one retailer alone. */
+export function tierAllowsStrongDealBadge(tier: DealLabelTier): boolean {
+  return tier !== "single";
+}
+
+export function dealLabelText(tier: DealLabelTier, storeName: string): { ar: string; en: string } {
+  switch (tier) {
+    case "multi_store":
+      return { ar: "أقل سعر بين المتاجر المتاحة", en: "Lowest among available retailers" };
+    case "single_stable_baseline":
+      return { ar: "سعر منخفض عن المعتاد", en: "Lower than usual" };
+    case "single":
+    default:
+      return { ar: `السعر المتاح لدى ${storeName}`, en: `Available at ${storeName}` };
+  }
+}

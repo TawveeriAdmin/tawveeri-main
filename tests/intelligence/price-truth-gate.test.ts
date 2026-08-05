@@ -9,8 +9,13 @@
 import {
   assessPriceTransition,
   isExtremeUncorroboratedDiscount,
+  classifyDealLabelTier,
+  tierAllowsStrongDealBadge,
+  dealLabelText,
   SANITY_MAX_RATIO,
   EXTREME_DISCOUNT_PCT,
+  STABLE_BASELINE_MIN_OBSERVATIONS,
+  STABLE_BASELINE_MIN_DISTINCT_DAYS,
 } from '../../src/lib/intelligence/price-truth-gate';
 
 describe('assessPriceTransition (write-time gate)', () => {
@@ -87,5 +92,72 @@ describe('isExtremeUncorroboratedDiscount (Best Deals read-time gate)', () => {
 
   it('exactly at the threshold from a single store is blocked', () => {
     expect(isExtremeUncorroboratedDiscount({ discountPct: EXTREME_DISCOUNT_PCT, corroboratingStoreCount: 1 })).toBe(true);
+  });
+});
+
+/**
+ * ADR-211 bounded closeout (2026-08-05) — the smallest truthful public-label rule.
+ * A "best price"/"strong deal" claim is a superiority claim and requires evidence:
+ * either a second corroborating retailer, or a reproducible, stable price-history
+ * baseline for that exact listing. A bare single-retailer offer with neither gets
+ * only "available at [store]" — never "best price" / "strong deal".
+ */
+describe('classifyDealLabelTier / tierAllowsStrongDealBadge / dealLabelText', () => {
+  it('a single retailer with no price history is tier "single" — the weakest claim', () => {
+    const tier = classifyDealLabelTier({
+      corroboratingStoreCount: 1,
+      priceHistoryObservationCount: 0,
+      priceHistoryDistinctDays: 0,
+    });
+    expect(tier).toBe('single');
+    expect(tierAllowsStrongDealBadge(tier)).toBe(false);
+    const label = dealLabelText(tier, 'Amazon SA');
+    expect(label.ar).toBe('السعر المتاح لدى Amazon SA');
+    expect(label.en).toBe('Available at Amazon SA');
+    // Never the forbidden superiority phrases for this tier.
+    expect(label.ar).not.toContain('أفضل سعر');
+    expect(label.en.toLowerCase()).not.toContain('best price');
+  });
+
+  it('two or more corroborating retailers is tier "multi_store" regardless of history', () => {
+    const tier = classifyDealLabelTier({
+      corroboratingStoreCount: 2,
+      priceHistoryObservationCount: 0,
+      priceHistoryDistinctDays: 0,
+    });
+    expect(tier).toBe('multi_store');
+    expect(tierAllowsStrongDealBadge(tier)).toBe(true);
+    const label = dealLabelText(tier, 'irrelevant');
+    expect(label.ar).toBe('أقل سعر بين المتاجر المتاحة');
+    expect(label.en).toBe('Lowest among available retailers');
+  });
+
+  it('a single retailer WITH a reproducible, stable baseline earns "lower than usual"', () => {
+    const tier = classifyDealLabelTier({
+      corroboratingStoreCount: 1,
+      priceHistoryObservationCount: STABLE_BASELINE_MIN_OBSERVATIONS,
+      priceHistoryDistinctDays: STABLE_BASELINE_MIN_DISTINCT_DAYS,
+    });
+    expect(tier).toBe('single_stable_baseline');
+    expect(tierAllowsStrongDealBadge(tier)).toBe(true);
+    const label = dealLabelText(tier, 'irrelevant');
+    expect(label.ar).toBe('سعر منخفض عن المعتاد');
+    expect(label.en).toBe('Lower than usual');
+  });
+
+  it('below the stable-baseline threshold on EITHER axis stays tier "single"', () => {
+    const shortOnObs = classifyDealLabelTier({
+      corroboratingStoreCount: 1,
+      priceHistoryObservationCount: STABLE_BASELINE_MIN_OBSERVATIONS - 1,
+      priceHistoryDistinctDays: STABLE_BASELINE_MIN_DISTINCT_DAYS,
+    });
+    expect(shortOnObs).toBe('single');
+
+    const shortOnDays = classifyDealLabelTier({
+      corroboratingStoreCount: 1,
+      priceHistoryObservationCount: STABLE_BASELINE_MIN_OBSERVATIONS,
+      priceHistoryDistinctDays: STABLE_BASELINE_MIN_DISTINCT_DAYS - 1,
+    });
+    expect(shortOnDays).toBe('single');
   });
 });

@@ -160,6 +160,11 @@ export default async function DealsPage({ params }: { params: { locale: string }
                 </span>
               )}
 
+              {/* ADR-211 — الادعاء الوحيد المسموح لهذا العرض حسب دليله: متجر واحد ← توفر
+                  فقط، متجر واحد بتاريخ أسعار مستقر ← أقل من المعتاد، متجران فأكثر ← أقل
+                  سعر بين المتاجر. لا "أفضل سعر" لمتجر واحد بلا دليل. */}
+              <p className="mt-1 text-xs font-semibold text-on-surface">{isAr ? d.labelAr : d.labelEn}</p>
+
               {/* السعر والخصم الحقيقي */}
               <div className="mt-2 flex items-end justify-between">
                 <div>
@@ -180,9 +185,6 @@ export default async function DealsPage({ params }: { params: { locale: string }
                   <div className="text-sm font-bold text-[var(--brand-green-dark)]" title={t.pctTitle}>{t.pctLabel(d.discountPct)}</div>
                 )}
               </div>
-
-              {/* السبب — نص الطبقة المعرفية كما هو */}
-              <p className="mt-2 text-xs text-on-surface-variant leading-relaxed">{d.reason}</p>
             </a>
           ))}
         </div>

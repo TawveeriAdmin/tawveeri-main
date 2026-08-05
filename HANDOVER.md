@@ -1,3 +1,78 @@
+# ═══ RESUME HERE — 2026-08-05 CHECKPOINT #50 (CLOSED) · P0 FALSE-PRICE INCIDENT CONTAINED · PRICE-TRUTH GATE + TRUTHFUL LABEL RULE LIVE ═══
+
+## INCIDENT — Amazon TV showed SAR 259 on Best Deals against a real SAR 8,699; permanent gate shipped
+
+**Founder-reported, public-trust P0.** Full detail: ADR-211. This entry is the resume point.
+
+### Root cause
+`product_stores` row for Amazon ASIN `B0F8JHSMMD` (LG OLED65C56LA) got `current_price=259`
+on 2026-08-02, one day before ADR-200/ADR-204 (2026-08-03/04) fixed the exact Amazon-PDP
+misparse class (a page-global price selector matching a DIFFERENT DOM element — a carousel
+item, not the buybox). Never re-scraped since. Independently, **no sanity check existed
+anywhere** on the storefront write path (`ProductService.updateProductPrice`/
+`linkProductToStore`) or the Best Deals read path (`getDeals.ts`) — a parser fix alone
+can't catch every bad number.
+
+### Affected scope (14,081 `product_stores` rows audited)
+8 offers now quarantined total: the TV + 3 more extreme (≥85% off, same 2026-08-02
+Amazon window) found in the first blast-radius pass; +4 more from the mandated 70–85%
+revalidation sweep, ALL of which failed independent live re-verification (2 Amazon ASINs
+now 404/delisted, 1 Amazon page has no live buybox to confirm, 1 LuLu page blocked by WAF
+with zero price_history corroboration) — quarantined per "if unproven, quarantine."
+13 separate rows had a false `is_deal=true` badge with no actual discount; badge cleared
+(price untouched). `current_price`/`original_price` on ALL quarantined rows are UNTOUCHED —
+never overwritten, evidence preserved for forensics/appeal.
+
+### Mitigation
+- Quarantine columns on `product_stores` (`price_quarantined_at`/`_reason`/`_pending_value`/
+  `_pending_since`) + RLS policy `price_quarantined_at IS NULL` — hides quarantined rows from
+  every anon/browser read (product page, search, store pages) in one place, zero per-surface
+  code needed. Service-role paths (getDeals, search route, SEO metadata) got explicit filters.
+- `is_deal` also flipped `false` on every quarantined row — belt-and-suspenders so the
+  claim disappears even on any code path not yet aware of the new column.
+
+### Permanent gate (`src/lib/intelligence/price-truth-gate.ts`)
+1. **Write-time:** a price outside ADR-200's 4×/¼ sanity bound vs. the last trusted price
+   for that listing is quarantined, not written; a SECOND consistent observation confirms a
+   genuine move. Wired into both storefront write paths.
+2. **Read-time:** Best Deals never publishes a ≥75% discount from an uncorroborated single
+   retailer.
+3. **Truthful label rule (ADR-211 bounded closeout):** every deal now carries a `labelTier`
+   — `single` (one retailer, no history) → "Available at [store]"; `single_stable_baseline`
+   (≥5 observations spanning ≥7 distinct days for that exact listing — verified against
+   production first: 649/741 live deal rows had ZERO price history, so this tier is honestly
+   near-dormant today, not a bug) → "Lower than usual"; `multi_store` (≥2 retailers each
+   independently flagging the same product as a deal) → "Lowest among available retailers".
+   "أفضل سعر"/"Best price"/"عرض قوي" (the hot/strong-deal badge) is now IMPOSSIBLE for a
+   bare single-retailer offer — enforced in code (`tierAllowsStrongDealBadge`), verified
+   against all 628 live candidates (100% currently tier `single`, zero forbidden phrasing,
+   zero wrongly-hot badges).
+- Monitoring: `npm run price:quarantine-report`.
+
+### Remaining quarantine queue — normal controlled revalidation, no forced recovery
+All 8 stay quarantined pending fresh evidence; none restored without it.
+| offer | store | reason class | last checked |
+|---|---|---|---|
+| LG OLED65C56LA TV (B0F8JHSMMD) | Amazon SA | pre-ADR-204 misparse | 2026-08-02 |
+| Redmi 15C (B0DQKXXJ16) | Amazon SA | pre-ADR-204 misparse, same window | 2026-08-02 |
+| Dell 3100 Chromebook (B0825CYCMH) | Amazon SA | pre-ADR-204 misparse, same window | 2026-08-02 |
+| Makayuron smart-plug (B0BBCGW1NN) | Amazon SA | implausible `original_price`, 0 history | 2026-07-05 |
+| KTC 48" OLED monitor (B0F5B7W1H3) | Amazon SA | live buybox unconfirmable (ADR-204 shape) | 2026-08-05 (re-verify) |
+| "Smart Watch" generic (B0H33P3LWL) | Amazon SA | ASIN now 404 / delisted | 2026-08-05 (re-verify) |
+| AcclaFit Smartwatch (B0H1RDW6BY) | Amazon SA | ASIN now 404 / delisted | 2026-08-05 (re-verify) |
+| Nikai Soundbar (2550073) | LuLu Hypermarket | WAF-blocked, 0 history corroboration | 2026-08-05 (re-verify) |
+
+### Verified, this session, live production
+Anon-key reads of all 8 quarantined ids return empty (RLS). Arabic and English `/deals`
+confirmed clean of the false TV, live. `tests/intelligence/price-truth-gate.test.ts`
+(31 assertions) reproduces the exact incident numbers and passes; full suite 1,343/1,343.
+
+### Status: CONTAINED. Not "closed forever" — the 8-item quarantine queue is a live,
+normal-priority follow-up (re-scrape each on its own schedule; restore only on fresh
+matching evidence, never by assumption). Permanent gate is live for all future scrapes.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #49 (CLOSED) · PRODUCTION EMAIL-CONFIRMATION INCIDENT FULLY RESOLVED · DASHBOARD + CODE FIX BOTH DEPLOYED AND VERIFIED ═══
 
 ## INCIDENT — email confirmation redirected to localhost:3000, ERR_CONNECTION_FAILED
