@@ -1,3 +1,29 @@
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #56 · DAILY FOUNDER EMAIL CONFIRMED DELIVERED · CRON SCHEDULED ═══
+
+## Fresh controlled test confirmed delivered by founder; daily cron now live
+
+**Full detail: this checkpoint + chat history for the scheduling session (2026-08-06).** Continues checkpoint #55's "exact next task." This entry is the resume point.
+
+### Delivery confirmed
+The fresh controlled test of `POST /api/cron/daily-founder-report` (SendGrid `202`, message ID `a5H8WF6wTjGRkzl1hbGsHw`) — **founder-confirmed as arrived**. Delivery is now verified end-to-end for the first time (checkpoint #55's prior test, before the incident was discovered, was reported "not received"). Report content was real-data-driven (`getCommandCenterData('yesterday')`, Riyadh calendar day 2026-08-05) and correctly hit the pre-launch baseline gate (`baseline.currentIsPreLaunch`) — no fabricated numbers, matches ADR-216.
+
+### Daily cron — now scheduled
+New dedicated Railway service **`daily-founder-report-cron`** (id `60b98b9f-dcf7-488e-a029-a01b130ec378`, production environment), sourced from the same repo/branch (`TawveeriAdmin/tawveeri-main` @ `main`) — mirrors the existing `node` service's pattern (a service dedicated to one cron endpoint, `startCommand` does a single `fetch` + exit, no persistent process).
+- **Schedule**: `0 5 * * *` (05:00 UTC daily = 08:00 Asia/Riyadh — Saudi Arabia has no DST, fixed UTC+3 year-round).
+- **Target**: `POST https://tawveeri.com/api/cron/daily-founder-report` with `Authorization: Bearer $CRON_SECRET`.
+- **restartPolicyType**: `NEVER` (single run per trigger, no restart-loop after the script exits).
+- **`CRON_SECRET`**: set via Railway variable reference `${{tawveeri-main.CRON_SECRET}}` — never typed or displayed as a raw value during this session.
+- **Duplicate check**: queried `cronSchedule` via the Railway GraphQL API on all 4 services in the production environment (`amusing-amazement`, `node`, `tawveeri-main`, `daily-founder-report-cron`) before AND after creating this one — confirmed exactly one non-null `cronSchedule` in the project, on the new service.
+- **Verified**: initial build reached `SUCCESS` (~2 min, standard Next.js build via the repo's `railway.toml`). Next expected run: **2026-08-07 05:00 UTC / 08:00 Asia/Riyadh**.
+
+### Pre-existing anomaly noticed, NOT touched (out of scope for this task)
+The `node` service (id `6c89fedf-6fc6-488d-a651-be101e549b9c`) has a `startCommand` that fetches `/api/cron/discover-firecrawl` with `CRON_SECRET`, but its `cronSchedule` is `null` — so it is **not actually running on any schedule** despite looking configured for one. Likely leftover/incomplete setup from an earlier session. Left exactly as found; flagging for whoever owns the Firecrawl discovery cron to investigate separately.
+
+### Not touched / not reopened
+Report logic (`src/lib/admin/daily-report.ts`), the pre-launch baseline gate, auth, affiliate tracking, dashboards, marketing, the `node` service's misconfiguration above. No second test email sent. Git history rewrite/force-push still deferred (separate founder approval required, per #55).
+
+---
+
 # ═══ RESUME HERE — 2026-08-06 CHECKPOINT #55 · SENDGRID SECURITY INCIDENT CONTAINED · TICKET #26429850 · RCA DRAFTED, NOT SENT ═══
 
 ## SendGrid account compromise (unauthorized activity reported April 2026) — root-caused, contained, RCA drafted
