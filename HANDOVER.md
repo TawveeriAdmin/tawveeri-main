@@ -17,6 +17,9 @@ Checkpoint #55's full root-cause/containment record and evidence remain below. O
 ### Not touched (this update)
 No email sent. Cron not modified or recreated. SendGrid keys, Railway variables, auth, affiliate tracking, dashboards, marketing, and `discover-firecrawl` untouched. No code changes — documentation only.
 
+### Next verification (exact resume point)
+Confirm tomorrow's **automatic** cron-triggered email arrives — first unattended run of `daily-founder-report-cron` at **2026-08-07 05:00 UTC / 08:00 Asia/Riyadh**. Everything up to and including the manual controlled test (checkpoint #56) has been verified; the automatic trigger itself has not yet fired. Separately, `discover-firecrawl`'s missing `cronSchedule` (noted in checkpoint #56) remains an untouched follow-up item, not part of this incident.
+
 ---
 
 # CHECKPOINT #56 · DAILY FOUNDER EMAIL CONFIRMED DELIVERED · CRON SCHEDULED
