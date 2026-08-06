@@ -81,6 +81,40 @@ describe("mapNextjsSsrProduct", () => {
     expect(JSON.stringify({ current_price: r.current_price, original_price: r.original_price })).not.toContain('"1"');
   });
 
+  // ── campaign_eligibility: derived from the product's OWN category[] membership ─────
+  // (2026-08-06 release pass — see docs/BLACKBOX-RETAILER-ONBOARDING.md §15, ADR-219)
+  it("marks campaign_eligibility when the product's own category[] carries the campaign id", () => {
+    const r = mapNextjsSsrProduct(
+      realShapedProduct({ category: [{ category_id: 1133, url_key: "riyal-festival" }, { category_id: 1134, url_key: "home-appliances-offers" }] }),
+      URL,
+    ) as unknown as Record<string, unknown>;
+    const specs = r.specifications as { campaign_eligibility?: { campaign_category_id: number; source: string } };
+    expect(specs.campaign_eligibility).toEqual({ campaign_category_id: 1134, source: "category_membership" });
+  });
+
+  it("omits campaign_eligibility when the product is not tagged in the campaign category", () => {
+    const r = mapNextjsSsrProduct(
+      realShapedProduct({ category: [{ category_id: 176, url_key: "refrigerator" }] }),
+      URL,
+    ) as unknown as Record<string, unknown>;
+    expect((r.specifications as Record<string, unknown>).campaign_eligibility).toBeUndefined();
+  });
+
+  it("omits campaign_eligibility entirely when there is no category array", () => {
+    const r = mapNextjsSsrProduct(realShapedProduct(), URL) as unknown as Record<string, unknown>;
+    expect((r.specifications as Record<string, unknown>).campaign_eligibility).toBeUndefined();
+  });
+
+  it("does not require the broader riyal-festival id (1133) alone — only the specific sub-category (1134)", () => {
+    // Scoped deliberately narrower than the general festival (~736 general-merchandise items)
+    // to avoid generalizing the campaign beyond the retailer's own tweet-linked category.
+    const r = mapNextjsSsrProduct(
+      realShapedProduct({ category: [{ category_id: 1133, url_key: "riyal-festival" }] }),
+      URL,
+    ) as unknown as Record<string, unknown>;
+    expect((r.specifications as Record<string, unknown>).campaign_eligibility).toBeUndefined();
+  });
+
   it("omits specifications.free_gifts entirely when there are none", () => {
     const r = mapNextjsSsrProduct(realShapedProduct(), URL) as unknown as Record<string, unknown>;
     expect((r.specifications as Record<string, unknown>).free_gifts).toBeUndefined();

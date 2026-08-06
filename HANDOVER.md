@@ -1,4 +1,44 @@
-# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #59 · BLACK BOX KSA RELEASED FOR DISPLAY · CROSS-RETAILER DISPLAY-GATE LEAK FOUND AND FIXED ═══
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #60 · BLACK BOX RIYAL-FESTIVAL CAMPAIGN RELEASED (LEVEL 2) · OFFICIAL EVIDENCE + AUTO-EXPIRY ═══
+
+## Black Box's "مهرجان الريال" conditional-offer campaign released at Level 2 (product-level eligibility) using the retailer's own verified X post as evidence, with automatic 72h TTL expiry — no exact SAR-1 pair was fabricated
+
+**Full detail: `docs/BLACKBOX-RETAILER-ONBOARDING.md` §15 + ADR-219 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #59 as the resume point (#59's leak-fix content preserved below).
+
+### What happened
+Founder supplied official first-party evidence: `https://x.com/blackboxksa/status/2085321446625091743` (verified account, posted 2026-08-06T11:05:50Z — same day) confirming "buy fridge get washer for 1 SAR / buy washer get dishwasher for 1 SAR." The tweet's own `bit.ly` link was resolved (not assumed) to `blackbox.com.sa/riyal-festival-c-1133/home-appliances-offers-c-1134` — a specific 42-product major-appliance campaign category. Fetched 30 of those products directly: each one's OWN `category[]` array confirms membership (self-contained, per-product evidence). But only 3/30 carry the platform's real `free_gifts[]` pairing data, and none of those 3 show a literal "1 SAR" price (real values: 555–2,249 SAR) — the true SAR-1 amount is almost certainly a cart-level rule not observable from static product pages without actually transacting, which this pass correctly did not attempt.
+
+### Decision: LEVEL 2 release, not Level 1
+Released product-level eligibility ("this product is eligible for the Riyal offer, exact gift varies by store terms") for every product currently tagged category 1134 — wording never states a specific SAR amount. Where real `free_gifts[]` pairs exist (3/30), they continue to surface via the existing `conditional_offer` field with their own real (non-fabricated) price. No Level 1 "...بريال واحد" claim was made anywhere, since it isn't proven at the SKU level.
+
+### Automatic expiry (no invented end date)
+No `valid_until` exists anywhere in Black Box's data. A conservative **72-hour TTL** substitutes — evidence older than that auto-hides with zero manual action. Re-armed by the EXISTING scheduler's normal periodic re-ingestion of store 10 (no new cron/service created). Early removal by Black Box is handled by the same mechanism: the next re-observation simply omits the category tag, indistinguishable from ordinary expiry.
+
+### Implementation
+- `src/lib/providers/sourcing/nextjs-ssr-adapter.ts` — captures `category[]`, stamps `specifications.campaign_eligibility` when category 1134 is present.
+- `src/lib/providers/campaigns/blackbox-riyal-festival.ts` (new) — preserved official evidence (`CAMPAIGN_SOURCE`) + TTL/freshness logic.
+- `src/app/api/v1/tps/search/route.ts` — attaches `campaign_eligibility` alongside the existing `conditional_offer`, both TTL-gated.
+- `src/lib/providers/registry.ts` — `categoryKeywords` widened (dryer/freezer/oven/wash-tower) so the scheduler keeps covering the full campaign cluster automatically.
+
+### Production run
+30 confirmed campaign-category products re-ingested directly (bounded, targeted): 30/30 mapped, 30/30 carry `campaign_eligibility`, 3/30 also carry `free_gifts`. Written to `raw_observations`; reaches the API once the scheduler's normal (untouched) sweep normalizes them.
+
+### Tests
+`tests/providers/blackbox-riyal-festival.test.ts` (new, 12 tests) + 4 new adapter tests + 2 new v1-search-helpers tests. **Full suite: 94/94 suites, 1441/1441 tests.**
+
+### Not done (documented, not silently skipped)
+- No Level 1 (exact SAR-1 pair) claim anywhere — genuinely unconfirmed.
+- No web-UI campaign badge — still no storefront product page exists for Black Box (same limitation as checkpoint #59).
+- 12 of 42 live campaign products not yet directly re-ingested (scheduler will pick them up via the widened `categoryKeywords`).
+
+### Not touched
+Auth, OTP, SendGrid, the daily Founder-report cron, Amazon/Noon attribution, unrelated retailers, dashboards, marketing systems, `discover-firecrawl`. No new Railway service created; no existing cron service modified.
+
+### Next verification (exact resume point)
+Confirm via `/api/v1/tps/search` that at least one of the 30 freshly-ingested campaign products shows `campaign_eligibility` once the scheduler's next normalize sweep picks them up (the underlying raw data is confirmed correct; only the normalize timing was pending at the time of this checkpoint — see the conversation this checkpoint originates from for whichever live result landed before the final report). If the Founder later obtains the exact SAR-1 pairing from Black Box directly (not inferred), that upgrades specific products from Level 2 to Level 1.
+
+---
+
+# ═══ 2026-08-06 CHECKPOINT #59 · BLACK BOX KSA RELEASED FOR DISPLAY · CROSS-RETAILER DISPLAY-GATE LEAK FOUND AND FIXED ═══
 
 ## Black Box released for customer display (9 genuine multi-store comparisons) — AND a real pre-existing leak that let display-excluded retailers (blackbox/lulu/sharafdg) show on compare + search-API surfaces was found and fixed
 

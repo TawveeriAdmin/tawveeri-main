@@ -5,6 +5,7 @@ import { algoliasearch } from 'algoliasearch';
 import { normalizeSearchQuery } from '@/lib/search/query-normalize';
 import { resolveApprovedSlug, isDisplayableRetailer, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { mapFreeGiftToConditionalOffer, summarizeOffers, type ConditionalOfferEvidence } from '@/lib/tps/v1-search-helpers';
+import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,7 +100,8 @@ export async function GET(req: NextRequest) {
   // the one place `offersByCanon` is assembled; every summary field below is RECOMPUTED
   // from this filtered list rather than trusted from the projection row (fixed 2026-08-06,
   // alongside the same gap in get-comparison.ts and searchTPSCanonical).
-  const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; store_name: string; price: number | null; go_url: string; availability: string; conditional_offer: ConditionalOfferEvidence | null }[]>();
+  const now = new Date();
+  const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; store_name: string; price: number | null; go_url: string; availability: string; conditional_offer: ConditionalOfferEvidence | null; campaign_eligibility: CampaignEligibilityEvidence | null }[]>();
   if (ids.length) {
     const { data: obs } = await supabase
       .from('normalized_product_observations')
@@ -125,17 +127,22 @@ export async function GET(req: NextRequest) {
       kept.push({ o, slug });
     }
 
-    // Conditional-offer evidence (free_gifts[]) lives only on raw_observations.payload —
-    // normalize plugins don't carry it into normalized_payload. Join back via `_raw_id`
-    // (the SAME provenance pointer get-comparison.ts uses) — read-only, no schema change.
+    // Conditional-offer evidence (free_gifts[]) AND campaign-eligibility evidence (category
+    // membership) both live only on raw_observations.payload — normalize plugins don't carry
+    // either into normalized_payload. Join back via `_raw_id` (the SAME provenance pointer
+    // get-comparison.ts uses) — read-only, no schema change. Both are TTL-gated by `now`
+    // (see blackbox-riyal-festival.ts) — stale evidence fails closed automatically.
     const rawIds = kept.map(({ o }) => o.normalized_payload?._raw_id).filter((v): v is number => Number.isFinite(v));
     const conditionalByRawId = new Map<number, ConditionalOfferEvidence>();
+    const eligibilityByRawId = new Map<number, CampaignEligibilityEvidence>();
     if (rawIds.length) {
       const db = supabase as unknown as { from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } } };
       const { data: raws } = await db.from('raw_observations').select('id, scraped_at, payload').in('id', rawIds);
-      for (const r of (raws ?? []) as { id: number; scraped_at: string | null; payload: { specifications?: { free_gifts?: Array<Record<string, unknown>> } } }[]) {
-        const mapped = mapFreeGiftToConditionalOffer(r.payload, r.scraped_at);
+      for (const r of (raws ?? []) as { id: number; scraped_at: string | null; payload: { specifications?: { free_gifts?: Array<Record<string, unknown>>; campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
+        const mapped = mapFreeGiftToConditionalOffer(r.payload, r.scraped_at, now);
         if (mapped) conditionalByRawId.set(r.id, mapped);
+        const eligibility = deriveCampaignEligibility(r.payload?.specifications?.campaign_eligibility, r.scraped_at, now);
+        if (eligibility) eligibilityByRawId.set(r.id, eligibility);
       }
     }
 
@@ -147,6 +154,7 @@ export async function GET(req: NextRequest) {
         offer_id: o.id, store_id: o.store_id ?? '', store_slug: slug, store_name: retailerDisplayName(slug, 'ar') ?? slug,
         price: priceKey ? latestPrice.get(priceKey) ?? null : null, go_url: `/go/${o.id}`, availability: 'in_stock',
         conditional_offer: (Number.isFinite(rawId) ? conditionalByRawId.get(rawId as number) : undefined) ?? null,
+        campaign_eligibility: (Number.isFinite(rawId) ? eligibilityByRawId.get(rawId as number) : undefined) ?? null,
       });
       offersByCanon.set(o.canonical_product_id, list);
     }

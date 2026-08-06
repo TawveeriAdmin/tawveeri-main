@@ -2,6 +2,7 @@
 // Pure helpers for GET /api/v1/tps/search — extracted so they're independently unit-testable
 // (Next.js route files may only export route handlers / route config, not arbitrary named
 // exports) and reusable by other TPS-layer surfaces if needed later.
+import { isCampaignEvidenceFresh } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 
 export interface ConditionalOfferEvidence {
   addon_name_ar: string | null; addon_name_en: string | null;
@@ -17,13 +18,20 @@ export interface ConditionalOfferEvidence {
  * HARD INVARIANT (tested): the returned object's `addon_price` must never be readable as,
  * or confused with, the qualifying product's own `current_price` — callers attach this as a
  * SEPARATE `conditional_offer` field on an offer, never merge its price into the offer itself.
+ *
+ * FRESHNESS (auto-expiry): returns null once `scrapedAt` is older than
+ * `CAMPAIGN_FRESHNESS_TTL_HOURS` relative to `now` — no `valid_until` exists anywhere in the
+ * retailer's own data, so a conservative TTL stands in for it (see blackbox-riyal-festival.ts).
+ * Fails closed: stale evidence simply stops being returned, no manual action required.
  */
 export function mapFreeGiftToConditionalOffer(
   payload: { specifications?: { free_gifts?: Array<Record<string, unknown>> } } | null | undefined,
   scrapedAt: string | null,
+  now: Date,
 ): ConditionalOfferEvidence | null {
   const gift = payload?.specifications?.free_gifts?.[0];
   if (!gift) return null;
+  if (!isCampaignEvidenceFresh(scrapedAt, now)) return null;
   return {
     addon_name_ar: (gift.name_ar as string) ?? null,
     addon_name_en: (gift.name_en as string) ?? null,

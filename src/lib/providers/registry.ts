@@ -46,8 +46,14 @@ const BASE: Record<string, RetailerProvider> = {
   // proprietary backend, sourced via the sitemap + `__NEXT_DATA__` adapter (see
   // nextjs-ssr-adapter.ts, docs/BLACKBOX-RETAILER-ONBOARDING.md). Bounded to major-appliance
   // categories the Founder flagged (fridges/washers/dishwashers/ACs/TVs/laptops/mobiles) —
-  // widen `categoryKeywords` only after a production audit of this scope passes.
-  blackbox:    { slug: "blackbox",    storeId: 10, displayName: "Black Box",         displayNameAr: "الصندوق الأسود",   enabled: true, sourcing: "api", affiliate: null, nextjsSsr: { origin: "https://blackbox.com.sa", categoryKeywords: ["refrigerator", "washing-machine", "dishwasher", "air-conditioner", "split", "television", "laptop", "mobile"] } },
+  // Widened 2026-08-06 (ADR-219) after the display-audit passed: added dryer/freezer/oven/
+  // wash-tower — all genuinely major-appliance and, per the official campaign category
+  // (blackbox.com.sa/riyal-festival-c-1133/home-appliances-offers-c-1134, linked from the
+  // retailer's own verified 2026-08-06 post), part of the SAME campaign cluster as
+  // fridges/washers/dishwashers. Keeps the scheduler's normal sweep covering every
+  // campaign-eligible product without a one-off manual re-ingestion each time Black Box
+  // changes the category.
+  blackbox:    { slug: "blackbox",    storeId: 10, displayName: "Black Box",         displayNameAr: "الصندوق الأسود",   enabled: true, sourcing: "api", affiliate: null, nextjsSsr: { origin: "https://blackbox.com.sa", categoryKeywords: ["refrigerator", "washing-machine", "dishwasher", "air-conditioner", "split", "television", "laptop", "mobile", "dryer", "freezer", "oven", "wash-tower"] } },
   // ADR-097 — high-overlap mainstream electronics stores onboarded via the JSON-LD
   // storefront adapter (Salla + Zid; the adapter parses /p{id} and /products/{slug}).
   // Phones (hdf/goldenstore99/mhzm/aletawik) carry standard iPhone/Samsung/Xiaomi models

@@ -83,6 +83,7 @@ interface NextDataFreeGift {
   product_image?: string;
 }
 interface NextDataPricesWithTax { price?: number | string; original_price?: number | string; }
+interface NextDataCategory { category_id?: number; name?: string; url_key?: string; }
 interface NextDataProductProps {
   sku?: string;
   name?: string[] | string;
@@ -92,8 +93,28 @@ interface NextDataProductProps {
   /** Absolute CDN image URLs (preferred over the relative `image` field). */
   _media_?: { image?: { image?: string; position?: string | number }[] };
   free_gifts?: NextDataFreeGift[];
+  /** Every category this product belongs to — includes the campaign categories when the
+   *  retailer has genuinely tagged this SKU as eligible (see CAMPAIGN_CATEGORY_ID below). */
+  category?: NextDataCategory[];
   [key: string]: unknown;
 }
+
+/**
+ * Official Black Box "الأجهزة المنزلية الكبيرة" (major-appliance) Riyal-Festival campaign
+ * sub-category, verified 2026-08-06 as the EXACT destination of the retailer's own official
+ * X post (https://x.com/blackboxksa/status/2085321446625091743, verified account, posted
+ * 2026-08-06T11:05:50Z): "اشترِ ثلاجة، واحصل على غسالة بـ 1 ريال فقط / اشترِ غسالة، واحصل على
+ * غسالة صحون بـ 1 ريال فقط" (buy a fridge, get a washer for 1 SAR only / buy a washer, get a
+ * dishwasher for 1 SAR only), resolved via the tweet's own bit.ly link. A product's OWN
+ * `category[]` array carries this id when the retailer has genuinely tagged it as
+ * campaign-eligible — this is per-product, self-correcting evidence: if Black Box removes a
+ * SKU from the campaign, the next re-observation simply won't carry this id anymore (no
+ * separate "removal detection" needed). Scoped to the SPECIFIC sub-category the tweet links
+ * to (1134), not the broad "مهرجان الريال" parent (1133, ~736 general-merchandise items) —
+ * narrower is more defensible ("do not generalize the offer to all refrigerators/washing
+ * machines/dishwashers").
+ */
+export const CAMPAIGN_CATEGORY_ID = 1134;
 
 /** Extract `props.pageProps.displayedProductsRatings` (the real product record — verified
  *  live 2026-08-06; the outer `pageProps` carries only page chrome/i18n) from a Next.js
@@ -132,6 +153,16 @@ export function mapNextjsSsrProduct(p: NextDataProductProps, url: string): Scrap
       addon_regular_price: g.product_price ?? null,
       url: g.url ?? null,
     }));
+  }
+  // Campaign eligibility — TRUE only when THIS observation's own category[] carries the
+  // campaign id right now (see CAMPAIGN_CATEGORY_ID doc). Never inferred, never hardcoded
+  // per-SKU: re-derived fresh on every re-observation, so it self-expires the moment Black
+  // Box removes a product from the campaign without any separate deactivation logic.
+  if (p.category?.some((c) => c.category_id === CAMPAIGN_CATEGORY_ID)) {
+    specifications.campaign_eligibility = {
+      campaign_category_id: CAMPAIGN_CATEGORY_ID,
+      source: "category_membership",
+    };
   }
   return {
     name_ar: name,

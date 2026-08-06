@@ -5,6 +5,10 @@
 // the DB-backed route.
 import { mapFreeGiftToConditionalOffer, summarizeOffers } from '@/lib/tps/v1-search-helpers';
 
+const NOW = new Date('2026-08-06T20:00:00Z');
+const FRESH = '2026-08-06T18:39:26.138Z'; // ~1h20m before NOW — well inside the 72h TTL
+const STALE = '2026-08-01T00:00:00Z'; // ~5.8 days before NOW — past the 72h TTL
+
 describe('mapFreeGiftToConditionalOffer', () => {
   it('maps a real-shaped free_gifts record to conditional-offer evidence', () => {
     const payload = {
@@ -18,28 +22,28 @@ describe('mapFreeGiftToConditionalOffer', () => {
         ],
       },
     };
-    const r = mapFreeGiftToConditionalOffer(payload, '2026-08-06T18:39:26.138Z');
+    const r = mapFreeGiftToConditionalOffer(payload, FRESH, NOW);
     expect(r).toMatchObject({
       addon_name_ar: 'فريزر افقي هايسنس',
       addon_price: 959,
       addon_regular_price: 1799,
       addon_url: 'https://www.blackbox.com.sa/product/hisense-2-in-1-convertible-freezer-p-131218013160102',
       evidence_type: 'first_party_structured',
-      last_verified_at: '2026-08-06T18:39:26.138Z',
+      last_verified_at: FRESH,
     });
   });
 
   it('returns null when there is no free_gifts evidence', () => {
-    expect(mapFreeGiftToConditionalOffer({ specifications: {} }, null)).toBeNull();
-    expect(mapFreeGiftToConditionalOffer(null, null)).toBeNull();
-    expect(mapFreeGiftToConditionalOffer({ specifications: { free_gifts: [] } }, null)).toBeNull();
+    expect(mapFreeGiftToConditionalOffer({ specifications: {} }, FRESH, NOW)).toBeNull();
+    expect(mapFreeGiftToConditionalOffer(null, FRESH, NOW)).toBeNull();
+    expect(mapFreeGiftToConditionalOffer({ specifications: { free_gifts: [] } }, FRESH, NOW)).toBeNull();
   });
 
   // ── HARD INVARIANT: addon_price can never be mistaken for a standalone/current price ──
   it('always carries an explicit note that addon_price is not the offer price', () => {
     const r = mapFreeGiftToConditionalOffer(
       { specifications: { free_gifts: [{ addon_price: '1', url: 'x' }] } },
-      null,
+      FRESH, NOW,
     );
     expect(r!.note.toLowerCase()).toContain('never');
     expect(r!.note).toContain('current_price');
@@ -48,12 +52,25 @@ describe('mapFreeGiftToConditionalOffer', () => {
   it('a literal SAR-1 addon_price is confined to its own field, never a price field name', () => {
     const r = mapFreeGiftToConditionalOffer(
       { specifications: { free_gifts: [{ addon_price: '1', addon_regular_price: '99', url: 'gift' }] } },
-      null,
+      FRESH, NOW,
     );
     // The object must expose exactly one price-shaped value ("1"), and only under addon_price.
     expect(r!.addon_price).toBe(1);
     const keys = Object.keys(r!).filter((k) => (r as unknown as Record<string, unknown>)[k] === 1);
     expect(keys).toEqual(['addon_price']);
+  });
+
+  // ── AUTOMATIC EXPIRY: no valid_until exists anywhere in Black Box's data, so a TTL stands
+  // in for it. Stale evidence must fail closed with no manual action. ──
+  it('fails closed (returns null) once the evidence is older than the freshness TTL', () => {
+    const payload = { specifications: { free_gifts: [{ addon_price: '959', url: 'x' }] } };
+    expect(mapFreeGiftToConditionalOffer(payload, STALE, NOW)).toBeNull();
+    expect(mapFreeGiftToConditionalOffer(payload, FRESH, NOW)).not.toBeNull();
+  });
+
+  it('fails closed when there is no evidence timestamp at all (stale-without-end-date)', () => {
+    const payload = { specifications: { free_gifts: [{ addon_price: '959', url: 'x' }] } };
+    expect(mapFreeGiftToConditionalOffer(payload, null, NOW)).toBeNull();
   });
 });
 

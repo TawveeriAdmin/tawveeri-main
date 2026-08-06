@@ -1,14 +1,18 @@
 # Black Box KSA — Retailer Onboarding & Promotional Intelligence
 
-**Status date: 2026-08-06 (two passes same day).**
+**Status date: 2026-08-06 (three passes same day).**
 **Pass 1 decision (ADR-217): BOUNDED_CATEGORY_ONBOARDING — ingestion-only, not displayed.**
 **Pass 2 decision (ADR-218): RELEASED for customer display**, after a recorded production audit
 passed F3, plus a real pre-existing cross-retailer display-gate leak found and fixed in the same
 pass (see §14).
+**Pass 3 decision (ADR-219): campaign LEVEL 2 web release** — official first-party evidence
+(the retailer's own verified X post) confirmed the "مهرجان الريال" mechanism is real and active,
+but not the exact SAR-1 pairing; product-level eligibility is released with automatic TTL-based
+expiry (see §15).
 
 This document is the durable record for onboarding Black Box (الصندوق الأسود, blackbox.com.sa)
-into Tawveeri, superseding every prior "blackbox bot-walled" note in this repo. See ADR-217 and
-ADR-218 in `docs/DECISIONS.md` for the decision-register entries.
+into Tawveeri, superseding every prior "blackbox bot-walled" note in this repo. See ADR-217,
+ADR-218, and ADR-219 in `docs/DECISIONS.md` for the decision-register entries.
 
 ---
 
@@ -410,3 +414,121 @@ See the conversation/commit this section originates from for the exact live re-c
 compare/haier|single_door|150|standard` and a sample of newly-displayable search results —
 recorded at the time of the release commit rather than duplicated here to avoid this document
 drifting from the actual verified commit.
+
+## 15. Campaign release pass (ADR-219, same day) — official evidence, Level 2, automatic expiry
+
+**This section supersedes §7's "not implemented" framing for the campaign notice** — §6/§7's
+findings (the `free_gifts[]` mechanism, no exact SAR-1 pair confirmed) still stand and are not
+contradicted; what changed is that the Founder supplied genuine official first-party evidence
+that this pass could verify and act on.
+
+### Official evidence
+`https://x.com/blackboxksa/status/2085321446625091743` — verified organization account
+(69,247 followers), posted **2026-08-06T11:05:50Z** (same day as this pass). Verbatim:
+
+> مهرجان الريال 🔥 على الموعد بالصندوق الأسود!
+> اشترِ ثلاجة ، واحصل على غسالة بـ 1 ريال فقط
+> أو
+> اشترِ غسالة، واحصل على غسالة صحون بـ 1 ريال فقط
+> وقسّطها بالطريقة اللي تناسبك
+> ✅ تقسيط بنكي حتى 12 شهر
+> ✅ إمكان أو مدفوع حتى 6 دفعات
+> ✅ تمارا حتى 12 دفعة
+> تسوق الان
+
+Contains a shortened campaign link, `bit.ly/45iKJ4k`, which was **resolved** (not assumed) to
+`https://www.blackbox.com.sa/riyal-festival-c-1133/home-appliances-offers-c-1134?utm_source=
+social&utm_medium=organic&utm_campaign=haa`. Preserved verbatim, with author/timestamp
+metadata, in `src/lib/providers/campaigns/blackbox-riyal-festival.ts` (`CAMPAIGN_SOURCE`) —
+this is durable evidence, kept even if the post is later deleted by the retailer.
+
+### Verified campaign status
+| Question | Answer |
+|---|---|
+| Active? | **Yes** — the linked category (id 1134) is live, `is_active: "1"`, and served 42 real products at verification time. |
+| Start date | The post's own timestamp: 2026-08-06T11:05:50Z. No earlier evidence of this specific run was sought. |
+| End date | **None found anywhere in first-party data.** `category.is_active` is a boolean, not a date. Not invented — a TTL substitutes (below). |
+| Exact qualifying/add-on pairs | **Not confirmed** for a literal "1 SAR" price. 3 of 30 sampled campaign-category products carry a real, structured `free_gifts[]` pair (555–2,249 SAR — not "1"); the rest carry no pairing data at all in static product JSON. |
+| Online/in-store | The campaign link is a normal storefront URL — confirmed available online. In-store availability not independently verified (no first-party statement found either way). |
+| Branch/quantity restrictions | Not found in first-party data. |
+| Financing | Confirmed from the post itself: bank installment up to 12 months, Emkan/Madfu up to 6 payments, Tamara up to 12 payments. |
+| Delivery/installation/warranty | Not campaign-specific — governed by Black Box's normal store-wide terms (`blackbox.com.sa/terms-conditions`), not re-verified in this pass. |
+
+### Release decision: LEVEL 2 (product-level eligibility), not Level 1
+Every product whose own `category[]` array carries `category_id: 1134` **right now** (at the
+time of its most recent observation) is marked eligible. Wording deliberately states NO SAR
+amount:
+
+- **AR:** «هذا المنتج مؤهل لعرض الريال من الصندوق الأسود. تختلف الهدية والموديل حسب شروط المتجر.»
+- **EN:** "This product is eligible for Black Box's Riyal offer. The exact gift and model vary by the retailer's terms."
+
+This is Level 2, not Level 1, because the retailer's own structured per-SKU data (`free_gifts[]`)
+does not show a literal "1 SAR" value on any sampled campaign product — the true SAR-1 price is
+most likely a cart-level rule (the `RiyalOfferDuplicateNotAllowed`/`RiyalOfferQtyIncreaseNotAllowed`
+i18n strings found in ADR-217) applied only once both items are actually in a cart, which this
+read-only verification pass correctly does not simulate (transacting against a live retailer
+to observe checkout pricing is out of this task's scope). Where a real `free_gifts[]` pair DOES
+exist (3 of 30 sampled), it continues to surface via the existing `conditional_offer` field with
+its own real (non-"1") price — never merged with the Level 2 eligibility wording.
+
+### Implementation
+- `CAMPAIGN_CATEGORY_ID = 1134` in `src/lib/providers/sourcing/nextjs-ssr-adapter.ts` —
+  `mapNextjsSsrProduct` now reads the product's own `category[]` and stamps
+  `specifications.campaign_eligibility = { campaign_category_id: 1134, source:
+  "category_membership" }` when present. Nothing hardcoded per-SKU — re-derived fresh on every
+  re-observation.
+- `src/lib/providers/campaigns/blackbox-riyal-festival.ts` (new) — `CAMPAIGN_SOURCE` (preserved
+  official evidence), `CAMPAIGN_FRESHNESS_TTL_HOURS = 72`, `isCampaignEvidenceFresh()`,
+  `deriveCampaignEligibility()`.
+- `GET /api/v1/tps/search` — every offer now carries both `conditional_offer` (free_gifts-based,
+  exact pair when it exists) and `campaign_eligibility` (category-based, Level 2), both
+  evaluated against a single shared `now` and both TTL-gated.
+- `src/lib/providers/registry.ts` — `blackbox.nextjsSsr.categoryKeywords` widened (dryer,
+  freezer, oven, wash-tower) so the scheduler's normal periodic sweep keeps covering the whole
+  campaign product cluster without further manual runs.
+
+### Automatic expiry — no invented end date
+No `valid_until` exists anywhere in Black Box's first-party data. Per this task's explicit
+instruction not to invent one, evidence is TTL-gated instead: **72 hours** from its own
+`raw_observations.scraped_at`. Once evidence exceeds that age, `campaign_eligibility` /
+`conditional_offer` simply return `null` — no manual action, no Founder prompt, nothing to
+delete. The TTL is re-armed automatically by the EXISTING scheduler's normal periodic
+re-ingestion of store 10 (already wired via `TPS_STORES`, ADR-217) — **no new cron/service was
+created**, satisfying "must not require a future Founder prompt to remove it" with
+infrastructure that already exists. Early deactivation (Black Box removing a SKU from the
+campaign before the TTL) is a natural consequence of the SAME mechanism: the next
+re-observation of that SKU simply won't carry `category_id: 1134` at all, which is
+indistinguishable from — and handled identically to — ordinary TTL expiry. No preserved
+evidence is ever deleted; only the LIVE eligibility flag stops being returned.
+
+### Production run (this pass)
+30 of the 42 live campaign-category products were fetched directly and re-ingested (bounded,
+targeted — not a full re-crawl): **30/30 mapped, 30/30 carry `campaign_eligibility`, 3/30 also
+carry `free_gifts`.** Written to `raw_observations`; will reach `GET /api/v1/tps/search` once
+the scheduler's normal (untouched, ADR-099-respecting) sweep normalizes them — the same pattern
+used successfully in ADR-217/218.
+
+### Waffar
+No change beyond ADR-218's existing protection (Waffar's `/api/search` call is unaffected by
+this pass — `campaign_eligibility`/`conditional_offer` are exposed via `/api/v1/tps/search`,
+the platform's designed integration point for structured reasoning by future Waffar-class
+consumers, same as ADR-218).
+
+### Regression tests
+`tests/providers/blackbox-riyal-festival.test.ts` (new, 12 tests): official-evidence
+preservation, no-invented-`valid_until`, TTL fresh/stale/missing-timestamp/future-clock-skew,
+Level-2-wording-never-states-a-SAR-amount (regex-asserted), and the "removed from campaign ≡
+stale evidence" equivalence. `tests/providers/nextjs-ssr-adapter.test.ts` (+4): category-1134
+detection, non-membership, no-category-array, and NOT triggering on the broader parent 1133
+alone. `tests/providers/v1-search-helpers.test.ts` (+2): `conditional_offer` now also fails
+closed on stale/missing evidence. **Full suite: 94/94 suites, 1441/1441 tests.**
+
+### Known limitations (this pass)
+- No Level 1 (exact SAR-1 pair) release anywhere — genuinely unconfirmed in structured data.
+- No web-UI badge/component — still no storefront-layer product page exists for Black Box
+  products (same limitation as ADR-218); Level 2 evidence is API-layer only.
+- Only 30 of 42 live campaign products were directly re-ingested this pass (bounded, targeted);
+  the remaining 12 will be picked up by the scheduler's normal sweep now that
+  `categoryKeywords` is widened.
+- Branch-level/quantity restrictions and in-store availability were not found in first-party
+  data and are not represented (absence is not claimed as "no restrictions" — simply not shown).
