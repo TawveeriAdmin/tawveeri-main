@@ -19,6 +19,16 @@ export const runtime = 'nodejs';
 // account dashboard.
 const COMPROMISED_KEY_NAME = 'Tawveeri-Mail';
 
+// Explicit founder-confirmed allowlist for the 2026-08-06 containment cleanup — two keys
+// created 7 minutes apart on 2026-04-29 (pattern consistent with automated persistence-key
+// creation by whoever misused the compromised key) and one unused duplicate of today's
+// production key name. Both id AND name must match before deletion — never just one.
+const CLEANUP_ALLOWLIST: Array<{ id: string; expectedName: string }> = [
+  { id: 'AdzVJK9WSxSbSgx_YXSwWg', expectedName: 'auto_send_20260429_025643_n2020' },
+  { id: 'c7ZiUKduRrWQ1VA3UgDGfA', expectedName: 'auto_send_20260429_024928_n2020' },
+  { id: 'aODNjH4LQr2iUp_f14oZDQ', expectedName: 'tawveeri-production-mail-2026-08-06' },
+];
+
 interface SgKeyMeta { api_key_id: string; name: string }
 
 function requireAuth(request: NextRequest): NextResponse | null {
@@ -156,5 +166,30 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
   }
 
-  return NextResponse.json({ error: 'Unknown or missing action. Use ?action=restrict-self or ?action=revoke-old.' }, { status: 400 });
+  if (action === 'revoke-cleanup') {
+    const results = [];
+    for (const target of CLEANUP_ALLOWLIST) {
+      if (target.id === identity.selfId) {
+        results.push({ id: target.id, expectedName: target.expectedName, performed: false, reason: 'refused: matches the currently active self key — never revoking self' });
+        continue;
+      }
+      const accountEntry = (identity.allKeys ?? []).find((k) => k.id === target.id);
+      if (!accountEntry) {
+        results.push({ id: target.id, expectedName: target.expectedName, performed: false, reason: 'not found in account — may already be removed' });
+        continue;
+      }
+      if (accountEntry.name !== target.expectedName) {
+        results.push({ id: target.id, expectedName: target.expectedName, actualName: accountEntry.name, performed: false, reason: 'refused: account name does not match expected name for this id — not an exact match' });
+        continue;
+      }
+      const res = await fetch(`https://api.sendgrid.com/v3/api_keys/${target.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      results.push({ id: target.id, name: accountEntry.name, performed: res.status === 204, sendgridStatus: res.status });
+    }
+    return NextResponse.json({ action, results }, { status: 200 });
+  }
+
+  return NextResponse.json({ error: 'Unknown or missing action. Use ?action=restrict-self, revoke-old, or revoke-cleanup.' }, { status: 400 });
 }
