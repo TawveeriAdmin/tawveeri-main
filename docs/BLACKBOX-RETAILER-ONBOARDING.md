@@ -560,11 +560,25 @@ spot a conditional-offer note belongs.
 **Explicitly not done:** no new storefront/product-page architecture (none was needed); no
 Level 1 claim; no change to the TTL, scheduler, or any prior decision.
 
-**Live verification:** `/ar/compare/lg|side_by_side|660|inverter` (a canonical carrying a
-freshly campaign-eligible Black Box offer from §15's targeted ingestion) — confirmed the note
-renders with the correct Arabic Level-2 wording, a real freshness timestamp, and the official
-campaign link, while the page's other (non-eligible) offers show nothing extra. See the
-conversation/commit this section originates from for the exact captured result.
+**A real bug found by the first live check, then fixed.** The first deploy showed NOTHING on
+`/ar/compare/lg|side_by_side|660|inverter` despite the underlying data being correct — the
+first live check this task explicitly requires caught it. Root cause: `get-comparison.ts`
+resolved each offer's `raw_observations` row via `price_history.tps_observation_id`, which only
+advances when the PRICE changes. The Black Box fridge's price hadn't changed between its
+original ingestion and the campaign-targeted re-ingestion, so the link still pointed at the
+OLDER, pre-campaign observation. `GET /api/v1/tps/search` never had this bug (it reads
+`normalized_product_observations` directly, ordered by `observed_at`, not through price
+linkage). **Fixed** by adding `newestRawIdBySlug` — the truly most-recent observation per
+retailer, independent of price movement — and using it specifically for the
+`campaign_eligibility` lookup (the existing price-linked freshness logic for `observed_at` is
+unchanged).
+
+**Live verification (after the fix):** `getComparison({ identityKey: 'lg|side_by_side|660|
+inverter' })` called directly against production confirmed the Black Box offer now carries
+`campaign_eligibility` (correct Level 2 message, correct freshness timestamp, correct official
+link) while Amazon/SWSG/Almanea/Alnakheel on the same product correctly show `null`. Redeployed
+and reconfirmed on the live page — see the conversation/commit this section originates from for
+the exact captured result.
 
 **Tests:** TypeScript clean (same pre-existing Supabase-generated-types class already tolerated
 elsewhere in this file — no new error categories). Full suite unaffected: 94/94 suites,

@@ -198,6 +198,14 @@ export async function getComparison(params: {
   const rawIdByObsId = new Map<string, number>();
   // ADR-194: newest trusted re-observation per retailer (see NPO_PROVENANCE_TRUSTED_FROM).
   const reobservedBySlug = new Map<string, string>();
+  // Newest raw_id per retailer, by observed_at — DELIBERATELY independent of
+  // `price_history.tps_observation_id` (which only advances when the PRICE changes). Evidence
+  // like `campaign_eligibility` can appear on a fresh re-observation with an unchanged price —
+  // reproduced live 2026-08-06: a Black Box fridge's price_history row still pointed at an
+  // observation from BEFORE campaign tagging, hours after a newer, campaign-tagged
+  // re-observation existed, because the price hadn't moved. Non-price evidence must track the
+  // truly latest observation, not the latest price change.
+  const newestRawIdBySlug = new Map<string, { t: number; rawId: number }>();
   for (const obs of (observations ?? []) as unknown as ObsRow[]) {
     const rawId = Number((obs.normalized_payload as Record<string, unknown> | null)?._raw_id);
     if (Number.isFinite(rawId)) rawIdByObsId.set(obs.id, rawId);
@@ -207,6 +215,10 @@ export async function getComparison(params: {
     if (Number.isFinite(t) && t >= NPO_PROVENANCE_TRUSTED_FROM) {
       const prev = reobservedBySlug.get(slug);
       if (!prev || t > Date.parse(prev)) reobservedBySlug.set(slug, obs.observed_at!);
+    }
+    if (Number.isFinite(t) && Number.isFinite(rawId)) {
+      const prev = newestRawIdBySlug.get(slug);
+      if (!prev || t > prev.t) newestRawIdBySlug.set(slug, { t, rawId });
     }
     if (listingBySlug.has(slug)) continue;
     const url = typeof obs.normalized_payload?._url === 'string' ? (obs.normalized_payload._url as string) : null;
@@ -224,9 +236,14 @@ export async function getComparison(params: {
   const scrapedAtByRawId = new Map<number, string>();
   const campaignByRawId = new Map<number, CampaignEligibilityEvidence>();
   {
-    const rawIds = [...latestBySlug.values()]
+    const priceLinkedRawIds = [...latestBySlug.values()]
       .map((p) => (p.obsId ? rawIdByObsId.get(p.obsId) : undefined))
       .filter((v): v is number => Number.isFinite(v as number));
+    // Union with the truly-newest-per-retailer raw_ids (see newestRawIdBySlug above) — the
+    // two sets overlap whenever the price is also the latest thing that changed, and diverge
+    // exactly when non-price evidence (like campaign tagging) is newer than the last price move.
+    const newestRawIds = [...newestRawIdBySlug.values()].map((v) => v.rawId);
+    const rawIds = [...new Set([...priceLinkedRawIds, ...newestRawIds])];
     if (rawIds.length) {
       // `raw_observations.id` is a bigint, which the generated types surface as string, so the
       // typed builder rejects a number[]. Narrow loose view rather than reaching for `any`.
@@ -275,8 +292,10 @@ export async function getComparison(params: {
         })(),
         confidence: listing?.confidence ?? canonical.identity_confidence ?? 100,
         is_verified: !!listing,
+        // Keyed off the truly-newest observation for this retailer (newestRawIdBySlug), NOT
+        // the price-linked one — see the comment above newestRawIdBySlug for why they diverge.
         campaign_eligibility: (() => {
-          const rawId = p.obsId ? rawIdByObsId.get(p.obsId) : undefined;
+          const rawId = newestRawIdBySlug.get(slug)?.rawId;
           return rawId != null ? campaignByRawId.get(rawId) ?? null : null;
         })(),
       };

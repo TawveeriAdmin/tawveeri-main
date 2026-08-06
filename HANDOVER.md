@@ -11,6 +11,9 @@ Checkpoint #60 released `campaign_eligibility` at the API layer only, deferring 
 - `src/lib/compare/get-comparison.ts` — `CompareOffer.campaign_eligibility`, TTL-gated identically to the API.
 - `src/app/[locale]/(public)/compare/[key]/page.tsx` — small `CampaignEligibilityNote` (Level 2 wording only, freshness line, official campaign link) on the featured offer and each "All Offers" row. Deliberately secondary styling — never resembles a price.
 
+### A real bug caught by the first live check, then fixed
+First deploy showed nothing on the compare page despite correct underlying data. Root cause: `get-comparison.ts` resolved each offer's raw observation via `price_history.tps_observation_id`, which only advances on a PRICE change — the Black Box fridge's price hadn't moved between ingestions, so the link still pointed at the pre-campaign observation. `GET /api/v1/tps/search` never had this bug (reads `normalized_product_observations` directly). Fixed with a new `newestRawIdBySlug` index (truly latest observation per retailer, independent of price) used specifically for the campaign lookup. Verified directly against production (`getComparison()` called standalone) before redeploying, then reconfirmed live.
+
 ### Not done (correctly, not a shortfall)
 No new storefront/product-page architecture — none was needed. No Level 1 claim. No change to the TTL, scheduler, or any prior decision.
 
