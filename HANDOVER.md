@@ -1,4 +1,42 @@
-# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #57 · SENDGRID INCIDENT CLOSED · RCA SENT, TICKET #28844285 CONFIRMED REACTIVATION ═══
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #58 · BLACK BOX KSA ONBOARDED (BOUNDED_CATEGORY_ONBOARDING) · INGESTION-ONLY, NOT DISPLAYED ═══
+
+## Black Box (الصندوق الأسود) onboarded — domain-collision defect corrected, new Next.js-SSR adapter, 200 raw_observations written, still NOT customer-visible
+
+**Full detail: `docs/BLACKBOX-RETAILER-ONBOARDING.md` + ADR-217 in `docs/DECISIONS.md`.** This entry is the resume point, superseding checkpoint #57 as HANDOVER's head (#57's SendGrid content is untouched below).
+
+### What happened
+Founder flagged a time-sensitive Black Box SAR-1 bundle campaign (fridge→washer, washer→dishwasher) and asked for retailer onboarding + campaign intelligence. Investigation found the codebase's existing Black Box record (`stores.id=10`, `src/lib/providers/registry.ts`, `src/lib/retailers/approved-retailers.ts`) pointed at `blackboxksa.com` — **a different, unrelated merchant** (outdoor/camping gear). Every prior "Black Box bot-walled" finding in this repo tested the wrong domain. The real domain, `blackbox.com.sa`, is a Next.js-SSR storefront with a credential-free `sitemap.xml` + per-product `__NEXT_DATA__` JSON — no CAPTCHA, no JS execution needed.
+
+### Decision: BOUNDED_CATEGORY_ONBOARDING
+- Domain corrected in the DB row (`stores.id=10`) and in code (no duplicate identity created).
+- New adapter `src/lib/providers/sourcing/nextjs-ssr-adapter.ts`, bounded to major-appliance categories.
+- `blackbox` re-admitted to `APPROVED_STORE_IDS` AND `TPS_STORES` (ingestion + normalization sweep) but **stays in `COMPARISON_DISPLAY_EXCLUDED`** — F3: not customer-visible until a production audit is recorded (this checkpoint's metrics are the ingestion-side audit; DISPLAY approval is a separate, not-yet-done step).
+- Campaign: the platform's real conditional "gift" mechanism (`free_gifts[]`, native "1 SAR Offer" i18n strings, an active "مهرجان الريال" category) was confirmed structurally, but the Founder's SPECIFIC fridge→washer/washer→dishwasher pairing was NOT corroborated to first-party precision — so no campaign/promotion schema was built (would be speculative) and nothing campaign-related is customer-facing. `free_gifts[]` is preserved as evidence in `specifications.free_gifts`, verified live to never leak into a price field (hard SAR-1 invariant — see ADR-217).
+- 200 `raw_observations` written to production (199 bounded run + 1 targeted round-trip check), 0 below the 5 SAR price-integrity floor, 0 pointing at the wrong domain, manual audit 8/8 pass.
+- No public claim changed — Black Box isn't displayed, so `docs/LAUNCH_VOCABULARY.md`'s 705 figure needed no amendment (verified, not assumed).
+
+### Tests
+`tests/providers/nextjs-ssr-adapter.test.ts` (new), `tests/retailers/approved-scope.test.ts` (updated for blackbox's new ingest-yes/display-no status), `tests/pipeline/retailer-registry-coherence.test.ts` (unaffected — blackbox now in both `APPROVED_STORE_IDS` and `TPS_STORES`, so no known-gap entry needed). Full targeted suite: 266/266 passing. `next.config.ts` image `remotePatterns` extended for `store.ops.blackbox.com.sa`.
+
+### Not done (documented, not silently skipped)
+- **Full-catalogue onboarding** — bounded to major-appliance categories deliberately; widen only after auditing this scope.
+- **Display approval** — F3 requires its own recorded audit; not performed here.
+- **Promotion/campaign schema** — no verified pairing data to populate one responsibly; would be speculative configuration.
+- **Affiliate program** — none found; `affiliate: null` → correct `direct` exit, no fabricated tag.
+- `normalize`/`build-tps-projection` — intentionally not run manually (ADR-099); left to the scheduler's normal hourly sweep now that store 10 is in `TPS_STORES`.
+
+### Not touched
+Auth, OTP, SendGrid, the daily Founder-report cron, Amazon/Noon affiliate attribution, unrelated retailer adapters, Master Book, marketing content systems, `discover-firecrawl`.
+
+### Exact next commercial action (Founder)
+Contact Black Box (unified number 8003022200 / `online@blackbox.com.sa`) about (a) a formal affiliate/referral program (none found publicly), and (b) official terms for the SAR-1 conditional campaign (exact eligible pairs, dates, channel scope) — needed before Tawveeri can safely represent that specific promotion rather than only the general mechanism recorded in ADR-217.
+
+### Next verification (exact resume point)
+Run the scheduler's normal hourly `normalize` sweep (do not trigger manually per ADR-099) and, once store 10 has passed through it, measure real comparison gains (matched canonicals, new comparisons) — currently unmeasured (`docs/BLACKBOX-RETAILER-ONBOARDING.md` §11 flags this explicitly). Only after that, and a deliberate manual production-surface audit, consider removing `blackbox` from `COMPARISON_DISPLAY_EXCLUDED`.
+
+---
+
+# ═══ 2026-08-06 CHECKPOINT #57 · SENDGRID INCIDENT CLOSED · RCA SENT, TICKET #28844285 CONFIRMED REACTIVATION ═══
 
 ## SendGrid security incident operationally closed — RCA sent manually, reactivation confirmed, cron live
 

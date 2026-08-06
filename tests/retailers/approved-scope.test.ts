@@ -46,25 +46,40 @@ describe('approved-retailer scope gate', () => {
     expect(isApprovedStore('')).toBe(false);
   });
 
-  it('gates by numeric store id (approved 1,2,3,4,5,6,7,8,9,18)', () => {
-    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 18]) expect(isApprovedStoreId(id)).toBe(true);
+  it('gates by numeric store id (approved 1,2,3,4,5,6,7,8,9,10,18)', () => {
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 18]) expect(isApprovedStoreId(id)).toBe(true);
     for (const id of [11, 22]) expect(isApprovedStoreId(id)).toBe(false);
     expect(isApprovedStoreId(null)).toBe(false);
   });
 
   /**
    * Founder decision 2026-08-02, standing rule: a retailer that cannot be ingested
-   * legitimately is inactive AND hidden. These four must stay rejected — re-admitting one
-   * silently is exactly the regression this asserts against, because the harm (a price
-   * that only gets older) is invisible on the surface.
+   * legitimately is inactive AND hidden. lulu/sharafdg have no credential-free route and
+   * must stay rejected at BOTH gates — re-admitting one silently is exactly the regression
+   * this asserts against, because the harm (a price that only gets older) is invisible on
+   * the surface.
    */
-  it('keeps the three retired retailers hidden (blackbox 10, lulu 23, sharafdg 24)', () => {
+  it('keeps the two retired retailers fully hidden (lulu 23, sharafdg 24)', () => {
     // Both gates, because they answer different questions: the id gate is ingestion
     // approval, `isDisplayableRetailer` is whether a customer may be shown the retailer.
-    for (const id of [10, 23, 24]) expect(isApprovedStoreId(id)).toBe(false);
-    for (const slug of ['blackbox', 'lulu', 'sharafdg']) {
+    for (const id of [23, 24]) expect(isApprovedStoreId(id)).toBe(false);
+    for (const slug of ['lulu', 'sharafdg']) {
       expect(isDisplayableRetailer(slug)).toBe(false);
     }
+  });
+
+  /**
+   * Black Box (blackbox, store 10) RECOVERED for ingestion 2026-08-06 — the earlier
+   * "bot-walled" finding tested the wrong domain (blackboxksa.com, an unrelated merchant);
+   * the real domain (blackbox.com.sa) sources credential-free. F3 still applies: ingestion
+   * approval is NOT display approval. This must stay approved-but-hidden until a production
+   * audit is recorded in docs/BLACKBOX-RETAILER-ONBOARDING.md — do not flip
+   * isDisplayableRetailer('blackbox') to true without that audit.
+   */
+  it('approves blackbox (10) for ingestion but keeps it display-excluded pending audit', () => {
+    expect(isApprovedStoreId(10)).toBe(true);
+    expect(isApprovedStore('blackbox')).toBe(true);
+    expect(isDisplayableRetailer('blackbox')).toBe(false);
   });
 
   it('lists 30 distinct approved merchants (26 portfolio + 4 admitted on overlap)', () => {

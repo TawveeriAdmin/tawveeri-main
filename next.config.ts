@@ -60,6 +60,11 @@ const nextConfig: NextConfig = {
      { protocol: 'https', hostname: '**.samsung.com' },
      { protocol: 'https', hostname: 'cdn.shopify.com' },
      { protocol: 'https', hostname: '**.shopify.com' },
+     // Black Box KSA (blackbox.com.sa) — media served from the ops backend, not the
+     // storefront domain. See docs/BLACKBOX-RETAILER-ONBOARDING.md.
+     { protocol: 'https', hostname: 'store.ops.blackbox.com.sa' },
+     { protocol: 'https', hostname: 'blackbox.com.sa' },
+     { protocol: 'https', hostname: '**.blackbox.com.sa' },
    ],
  },
  async headers() {

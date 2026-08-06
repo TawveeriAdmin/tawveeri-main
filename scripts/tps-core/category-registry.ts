@@ -60,6 +60,12 @@ export const TPS_STORES = [
   // upserted after a sweep, so a store not listed here can never acquire one. Names are the
   // ones already approved in src/lib/scraping/config/store-configs/{lulu,sharafdg}.json.
   { id: 23, name: "لولو هايبر ماركت" }, { id: 24, name: "شرف دي جي" },
+  // ADR-149 (Black Box onboarding, 2026-08-06): approved for ingestion via the corrected
+  // domain (blackbox.com.sa) + Next.js-SSR adapter. Listed here so ingestion is not a
+  // repeat of the LuLu/Sharaf DG defect above (approved + ingesting + never swept = never
+  // reaches a canonical or a comparison). Still display-excluded pending a production audit
+  // (see docs/BLACKBOX-RETAILER-ONBOARDING.md, src/lib/retailers/approved-retailers.ts).
+  { id: 10, name: "الصندوق الأسود" },
 ];
 
 export interface CategoryDef {

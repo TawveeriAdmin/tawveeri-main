@@ -37,10 +37,17 @@ const BASE: Record<string, RetailerProvider> = {
   swsg:        { slug: "swsg",        storeId: 8, displayName: "SWSG",              displayNameAr: "الشتاء والصيف",    enabled: true, sourcing: "api", affiliate: null, magento: { origin: "https://swsg.co" } },
   // Salla storefronts (ADR-095) — sourced credential-free via sitemap + product JSON-LD.
   // najm.store carries mainstream appliances (Samsung/Toshiba/Fisher/Fresh) with real
-  // overlap potential; blackboxksa.com is niche (camping/appliances) + its sitemap is
-  // UA-gated, so it is registered config-ready but disabled pending a category-crawl fallback.
+  // overlap potential.
   najm:        { slug: "najm",        storeId: 9,  displayName: "Najm Alajhiza",     displayNameAr: "نجم الأجهزة",      enabled: true,  sourcing: "api", affiliate: null, salla: { origin: "https://najm.store" } },
-  blackbox:    { slug: "blackbox",    storeId: 10, displayName: "BlackBox",          displayNameAr: "الصندوق الأسود",   enabled: false, sourcing: "api", affiliate: null, salla: { origin: "https://blackboxksa.com" } },
+  // DOMAIN CORRECTED 2026-08-06: the OLD config here (`salla: { origin: "blackboxksa.com" }`)
+  // was wrong on BOTH axes — blackboxksa.com is a different, unrelated merchant (outdoor/
+  // camping gear), and even for the real store it would have been the wrong platform (not
+  // Salla). The real Black Box is blackbox.com.sa: a Next.js-SSR storefront over a
+  // proprietary backend, sourced via the sitemap + `__NEXT_DATA__` adapter (see
+  // nextjs-ssr-adapter.ts, docs/BLACKBOX-RETAILER-ONBOARDING.md). Bounded to major-appliance
+  // categories the Founder flagged (fridges/washers/dishwashers/ACs/TVs/laptops/mobiles) —
+  // widen `categoryKeywords` only after a production audit of this scope passes.
+  blackbox:    { slug: "blackbox",    storeId: 10, displayName: "Black Box",         displayNameAr: "الصندوق الأسود",   enabled: true, sourcing: "api", affiliate: null, nextjsSsr: { origin: "https://blackbox.com.sa", categoryKeywords: ["refrigerator", "washing-machine", "dishwasher", "air-conditioner", "split", "television", "laptop", "mobile"] } },
   // ADR-097 — high-overlap mainstream electronics stores onboarded via the JSON-LD
   // storefront adapter (Salla + Zid; the adapter parses /p{id} and /products/{slug}).
   // Phones (hdf/goldenstore99/mhzm/aletawik) carry standard iPhone/Samsung/Xiaomi models

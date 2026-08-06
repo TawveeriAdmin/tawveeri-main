@@ -80,6 +80,24 @@ export interface MagentoConfig {
   origin: string;
 }
 
+/**
+ * Headless Next.js storefront over a proprietary (non-GraphQL) backend — e.g. Black Box
+ * KSA (blackbox.com.sa): a custom `api.ops.*` REST backend rendered through Next.js SSR,
+ * NOT standard Magento GraphQL despite Magento-shaped media paths, and NOT Salla/Zid
+ * (no JSON-LD, no Salla storefront API — verified live 2026-08-06). Every product page
+ * embeds its full server-rendered record in `<script id="__NEXT_DATA__">`
+ * `props.pageProps` — no credentials, no JS execution needed, no API guesswork. The
+ * sitemap enumerates every product URL credential-free. One adapter covers any
+ * Next.js-SSR storefront of this shape; onboarding another one is configuration, not code.
+ */
+export interface NextjsSsrConfig {
+  origin: string;
+  sitemapUrl?: string;
+  /** English-slug keywords a product URL must contain to be in scope (bounded-category
+   *  onboarding). Omit to pull the whole catalogue. Case-insensitive substring match. */
+  categoryKeywords?: string[];
+}
+
 /** A retailer bound to its sourcing + monetization adapters. */
 export interface RetailerProvider {
   slug: string;
@@ -102,6 +120,8 @@ export interface RetailerProvider {
   shopify?: ShopifyConfig;
   /** Optional Magento 2 storefront (sourcing 'api' via the public GraphQL adapter). */
   magento?: MagentoConfig;
+  /** Optional Next.js-SSR storefront (sourcing 'api' via the sitemap + __NEXT_DATA__ adapter). */
+  nextjsSsr?: NextjsSsrConfig;
 }
 
 /** Per-exit context used for attribution when building an affiliate link. */

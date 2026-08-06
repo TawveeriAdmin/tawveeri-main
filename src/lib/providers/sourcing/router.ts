@@ -11,14 +11,15 @@ import { algoliaFeedAdapter } from "./algolia-feed-adapter";
 import { sallaFeedAdapter } from "./salla-feed-adapter";
 import { shopifyFeedAdapter } from "./shopify-feed-adapter";
 import { magentoGraphqlAdapter } from "./magento-graphql-adapter";
+import { nextjsSsrAdapter } from "./nextjs-ssr-adapter";
 import { scraperAdapter } from "./scraper-adapter";
 
 // Order = preference. A structured feed (Algolia index, Salla sitemap+JSON-LD, WooCommerce
 // Store API, then a generic official/CSV/XML feed) is preferred over scraping; the scraper
 // is the universal fallback. First adapter whose supports() matches wins. Algolia/Salla/
-// WooCommerce all use sourcing 'api' but disambiguate on their config (algolia{} / salla{}
-// / feedUrl).
-const ADAPTERS: SourcingAdapter[] = [algoliaFeedAdapter, sallaFeedAdapter, shopifyFeedAdapter, magentoGraphqlAdapter, wooCommerceFeedAdapter, feedAdapter, scraperAdapter];
+// WooCommerce/Next.js-SSR all use sourcing 'api' but disambiguate on their config
+// (algolia{} / salla{} / feedUrl / nextjsSsr{}).
+const ADAPTERS: SourcingAdapter[] = [algoliaFeedAdapter, sallaFeedAdapter, shopifyFeedAdapter, magentoGraphqlAdapter, nextjsSsrAdapter, wooCommerceFeedAdapter, feedAdapter, scraperAdapter];
 
 /** The adapter that will actually serve this provider (feed if configured, else scraper). */
 export function resolveSourcingAdapter(provider: RetailerProvider): SourcingAdapter {

@@ -43,7 +43,14 @@ export const APPROVED_RETAILERS: ApprovedRetailer[] = [
   { slug: 'almanea',       name_en: 'Almanea',                     name_ar: 'المنيع',           domain: 'almanea.sa',          source: 'active' },
   { slug: 'swsg',          name_en: 'Sheta & Saif',                name_ar: 'الشتاء والصيف',    domain: 'swsg.co',             source: 'credential_free' },
   { slug: 'lulu',          name_en: 'LuLu Hypermarket',            name_ar: 'لولو هايبر ماركت', domain: 'luluhypermarket.com', source: 'commercial' },
-  { slug: 'blackbox',      name_en: 'Black Box',                   name_ar: 'الصندوق الأسود',   domain: 'blackboxksa.com',     source: 'blocked' },
+  // DOMAIN CORRECTED 2026-08-06: `blackboxksa.com` is a DIFFERENT, unrelated merchant
+  // (outdoor/camping gear, car accessories, tea/coffee brewing sets — verified live). The
+  // real Black Box (appliances/electronics; unified number 8003022200) is at
+  // `blackbox.com.sa`. Every prior "blackbox bot-walled" finding in this codebase tested
+  // the WRONG domain. blackbox.com.sa verified live: Next.js SSR storefront, sitemap.xml +
+  // per-product `__NEXT_DATA__` JSON, credential-free, no CAPTCHA/JS challenge on product
+  // pages. See docs/BLACKBOX-RETAILER-ONBOARDING.md.
+  { slug: 'blackbox',      name_en: 'Black Box',                   name_ar: 'الصندوق الأسود',   domain: 'blackbox.com.sa',     source: 'credential_free' },
   { slug: 'alsaifgallery', name_en: 'Alsaif Gallery',              name_ar: 'السيف غاليري',     domain: 'alsaifgallery.com',   source: 'credential_free' },
   { slug: 'jehazak',       name_en: 'Jehazak',                     name_ar: 'جهازك',            domain: null,                  source: 'blocked' },
   { slug: 'sharafdg',      name_en: 'Sharaf DG',                   name_ar: 'شرف دي جي',        domain: 'sharafdg.com',        source: 'commercial' },
@@ -102,7 +109,12 @@ export const APPROVED_SLUGS: ReadonlySet<string> = new Set(APPROVED_RETAILERS.ma
  *                    re-admitting is a config change if a legitimate data route ever exists
  *   · lulu (23)    — Founder decision 2026-08-02: not important. Was ingesting fine
  *   · sharafdg (24)— HTTP 403 to our egress; no credential-free route exists
- *   · blackbox (10)— bot-walled, ZERO observations ever ingested
+ *   · blackbox (10)— RECOVERED 2026-08-06: the "bot-walled" finding tested the WRONG
+ *                    domain (blackboxksa.com, an unrelated merchant). The real domain,
+ *                    blackbox.com.sa, is credential-free via sitemap+__NEXT_DATA__ (see
+ *                    docs/BLACKBOX-RETAILER-ONBOARDING.md). Re-admitted for INGESTION only,
+ *                    bounded to major-appliance categories; still in
+ *                    COMPARISON_DISPLAY_EXCLUDED below pending a production audit (F3).
  */
 export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   1, // jarir
@@ -121,6 +133,8 @@ export const APPROVED_STORE_IDS: ReadonlySet<number> = new Set([
   9,  // najm        — ADR-139
   18, // alnakheelk  — ADR-139
   6,  // samsung_ksa — ADR-143, admitted 2026-07-30 after ingestion
+  10, // blackbox    — RECOVERED 2026-08-06, domain-corrected + sourcing-verified. Ingestion
+      // only; NOT customer-displayable yet (COMPARISON_DISPLAY_EXCLUDED below).
 ]);
 
 /**
@@ -222,7 +236,12 @@ export const COMPARISON_DISPLAY_EXCLUDED: ReadonlySet<string> = new Set([
   // AND hidden. Both are also out of APPROVED_STORE_IDS, so this is belt-and-braces: the
   // ingestion gate and the display gate answer different questions and only one of them
   // knowing is how LuLu once reached 3 customer cards while holding zero comparison offers.
-  'blackbox',  // bot-walled, zero observations ever ingested
+  // blackbox (10) — ingestion re-admitted 2026-08-06 (corrected domain, see
+  // docs/BLACKBOX-RETAILER-ONBOARDING.md), but display stays EXCLUDED here until a
+  // production audit (real product identity, real prices, real outbound links, manual
+  // sample review) has actually passed — approved for ingestion is not approved for
+  // display (F3). Remove only after that audit is recorded.
+  'blackbox',
   // noon and swsg were BOTH here and are both gone (ADR-179/180). Each was retired on a
   // single sourcing mode and recovered on another: swsg via Magento's public GraphQL,
   // noon via its robots-PERMITTED listing+JSON-LD pages after we stopped calling the
