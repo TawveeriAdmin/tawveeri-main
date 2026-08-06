@@ -37,10 +37,13 @@ describe("Retailer report CSV export carries no personal or session data", () =>
 });
 
 describe("Daily founder report recipient is never hardcoded", () => {
-  it("the cron route reads the recipient from FOUNDER_DAILY_REPORT_EMAIL", () => {
+  it("the cron route reads the recipient from FOUNDER_DAILY_REPORT_EMAIL with no literal fallback", () => {
     const src = read("src/app/api/cron/daily-founder-report/route.ts");
-    expect(src).toMatch(/process\.env\.FOUNDER_DAILY_REPORT_EMAIL/);
-    expect(src).not.toMatch(/info@tawveeri\.com['"]\s*;?\s*$/m); // no fallback literal recipient
+    // The recipient assignment itself must have no `||` fallback — unlike SENDGRID_FROM_EMAIL,
+    // which legitimately falls back to a known sender address (not a recipient, not a secret).
+    const recipientLine = src.split("\n").find((l) => l.includes("const recipient ="));
+    expect(recipientLine).toMatch(/process\.env\.FOUNDER_DAILY_REPORT_EMAIL/);
+    expect(recipientLine).not.toMatch(/\|\|/);
   });
 
   it("requires Bearer CRON_SECRET auth, same convention as every other /api/cron/* route", () => {
