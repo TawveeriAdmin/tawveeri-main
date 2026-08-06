@@ -1,4 +1,25 @@
-# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #56 · DAILY FOUNDER EMAIL CONFIRMED DELIVERED · CRON SCHEDULED ═══
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #57 · SENDGRID INCIDENT CLOSED · RCA SENT, TICKET #28844285 CONFIRMED REACTIVATION ═══
+
+## SendGrid security incident operationally closed — RCA sent manually, reactivation confirmed, cron live
+
+**Full detail: checkpoints #55 (root cause + containment) and #56 (delivery test + cron scheduling) below — this entry is a documentation closeout only, no new engineering action taken.** This entry is the resume point.
+
+### Final facts recorded
+- **RCA sent manually to SendGrid Support** by the founder — supersedes checkpoint #55's "RCA drafted, not sent" (wording corrected there accordingly).
+- **SendGrid Support ticket #28844285** confirmed account reactivation and full functionality — founder-reported, not independently re-verified by this session (consistent with checkpoint #55's evidence-vs-founder-reported distinction; ticket contents are dashboard/support-side, not checkable via API).
+- **Controlled Founder report email delivered successfully** — established in checkpoint #56 (SendGrid `202`, message ID `a5H8WF6wTjGRkzl1hbGsHw`, founder-confirmed arrival).
+- **Daily Founder report cron is live** — established in checkpoint #56, `daily-founder-report-cron` service, `0 5 * * *` UTC = 08:00 Asia/Riyadh.
+- **Incident status: operationally closed.** Root cause (leaked key in a public PDF), containment (key revocation + scope restriction), delivery verification, and RCA communication are all complete.
+
+### Preserved, not altered
+Checkpoint #55's full root-cause/containment record and evidence remain below. Only the stale "RCA drafted, not sent" wording was corrected to reflect it was subsequently sent — no RCA content, ticket history, or evidence was deleted.
+
+### Not touched (this update)
+No email sent. Cron not modified or recreated. SendGrid keys, Railway variables, auth, affiliate tracking, dashboards, marketing, and `discover-firecrawl` untouched. No code changes — documentation only.
+
+---
+
+# CHECKPOINT #56 · DAILY FOUNDER EMAIL CONFIRMED DELIVERED · CRON SCHEDULED
 
 ## Fresh controlled test confirmed delivered by founder; daily cron now live
 
@@ -24,11 +45,11 @@ Report logic (`src/lib/admin/daily-report.ts`), the pre-launch baseline gate, au
 
 ---
 
-# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #55 · SENDGRID SECURITY INCIDENT CONTAINED · TICKET #26429850 · RCA DRAFTED, NOT SENT ═══
+# CHECKPOINT #55 · SENDGRID SECURITY INCIDENT CONTAINED · TICKET #26429850 · RCA SENT AND ACKNOWLEDGED
 
-## SendGrid account compromise (unauthorized activity reported April 2026) — root-caused, contained, RCA drafted
+## SendGrid account compromise (unauthorized activity reported April 2026) — root-caused, contained, RCA sent and acknowledged
 
-**Full detail: this checkpoint + chat history for the SendGrid remediation session (2026-08-06).** No ADR filed for this incident (security response, not an architecture decision) — this HANDOVER entry is the authoritative record. This entry is the resume point.
+**Full detail: this checkpoint + chat history for the SendGrid remediation session (2026-08-06).** No ADR filed for this incident (security response, not an architecture decision) — this HANDOVER entry is the authoritative record. Superseded as the resume point by checkpoint #57 (incident closeout); this entry is preserved as the incident history and evidence record.
 
 ### Root cause (verified by this session, not guessed)
 A SendGrid API key (name "Tawveeri-Mail", full access) was committed in cleartext inside `Tawveeri_Domain_Setup_Report_EN.pdf` on 2026-02-25, in the **public** GitHub repo `TawveeriAdmin/tawveeri-main`. Confirmed exact match (by both name and non-secret key ID `TqnDnQ-tRNCvBc4fBWhpyw`) between the exposed key and a still-active account key. Also found two keys (`auto_send_20260429_025643_n2020`, `auto_send_20260429_024928_n2020`) created 7 minutes apart on 2026-04-29 — consistent with automated persistence-key creation by whoever misused the compromised key; this is the most likely explanation for the "unauthorized activity" SendGrid flagged that month, though not proven with certainty.
@@ -43,16 +64,16 @@ A SendGrid API key (name "Tawveeri-Mail", full access) was committed in cleartex
 Once the production key was correctly restricted to `mail.send` only, it **lost the ability to list/delete other account keys** (confirmed `403` on `GET /v3/api_keys` — itself proof the restriction is real, not just reported). Deleting the remaining two suspicious keys and the one duplicate key therefore had to happen via the SendGrid dashboard directly, which the founder did. Similarly, none of the following are checkable via any API key regardless of scope — dashboard/account-level actions only:
 - **Suspicious/duplicate keys removed**: `auto_send_20260429_025643_n2020`, `auto_send_20260429_024928_n2020`, duplicate `tawveeri-production-mail-2026-08-06` (id `aODNjH4LQr2iUp_f14oZDQ`) — founder confirmed done.
 - **Account password rotated + SMS two-factor authentication enabled** — founder confirmed done.
-- **SendGrid Support confirmed the account was reactivated** — founder confirmed done.
+- **SendGrid Support confirmed the account was reactivated** — founder confirmed done; SendGrid Support ticket #28844285.
 
 ### RCA status
-Final draft prepared (incident description, root cause with confirmed-vs-unknown facts kept separate, resolution actions, corrective/preventive actions) reflecting all of the above. **Not sent** — explicitly held per founder instruction pending their final review.
+Draft prepared (incident description, root cause with confirmed-vs-unknown facts kept separate, resolution actions, corrective/preventive actions) reflecting all of the above. **RCA sent and acknowledged** — sent manually to SendGrid Support by the founder; SendGrid Support ticket #28844285 confirmed the account was reactivated and fully functional (founder-reported; see checkpoint #57).
 
-### Exact next task
-**Send one fresh controlled test of the daily founder email** (`POST /api/cron/daily-founder-report`, Bearer `CRON_SECRET`) now that the SendGrid account is reactivated and the key is fixed — the last test (before this incident was discovered) was reported "not received," which is what triggered this whole investigation, so delivery has never been confirmed working end-to-end. Do this before scheduling anything.
+### Exact next task (completed — see checkpoints #56 and #57)
+~~Send one fresh controlled test of the daily founder email~~ — done in checkpoint #56: delivered and founder-confirmed. Daily cron scheduled in checkpoint #56. Incident closed out in checkpoint #57.
 
 ### Daily cron
-**Still not scheduled** — explicitly held per repeated founder instruction throughout this incident. Once the fresh test is confirmed received, add a Railway Cron Job hitting the same URL/header daily at 05:00 UTC (08:00 Asia/Riyadh).
+**Scheduled** — see checkpoint #56: `daily-founder-report-cron` Railway service, `0 5 * * *` UTC (08:00 Asia/Riyadh).
 
 ### Not touched / not reopened
 Git history rewrite/force-push (deferred, separate approval required). No new schema. No Amazon CSV, no auth/affiliate/dashboard changes, no external BI. ADR-207/211–216 decisions unchanged.
