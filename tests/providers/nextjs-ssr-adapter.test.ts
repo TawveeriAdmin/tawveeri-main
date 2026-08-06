@@ -105,8 +105,8 @@ describe("blackbox provider registration (2026-08-06 onboarding)", () => {
     expect(JSON.stringify(provider)).not.toContain("blackboxksa.com");
   });
 
-  it("is approved for ingestion but still NOT displayable pending a production audit (F3)", () => {
+  it("is approved for ingestion AND display, after a recorded production audit passed (ADR-218)", () => {
     expect(isApprovedStoreId(10)).toBe(true);
-    expect(isDisplayableRetailer("blackbox")).toBe(false);
+    expect(isDisplayableRetailer("blackbox")).toBe(true);
   });
 });

@@ -24,7 +24,7 @@
 // Touches: nothing.
 
 import { createServerClient } from '@/lib/database';
-import { resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
 
 interface PriceRow {
@@ -157,12 +157,20 @@ export async function getComparison(params: {
     .eq('canonical_product_id', canonical.id);
   const delistedSlugs = new Set((delistRows ?? []).map((d) => (d as { store_slug: string }).store_slug));
 
-  // Latest price per APPROVED retailer. Rows are already newest-first, so the first
-  // sighting of a slug wins. Non-approved retailers are out of scope (same gate as search).
+  // Latest price per DISPLAYABLE retailer. Rows are already newest-first, so the first
+  // sighting of a slug wins. `isDisplayableRetailer`, not `resolveApprovedSlug` alone: a
+  // store can be approved for INGESTION (raw_observations flows, normalize sweeps it) while
+  // still being display-excluded (F3 — lulu/sharafdg/blackbox as of 2026-08-06). Before this
+  // fix this function used `resolveApprovedSlug` only, so any display-excluded retailer's
+  // price_history row rendered on the compare page the moment it reached price_history —
+  // reproduced live: blackbox (899 SAR) shown on /ar/compare/haier|single_door|150|standard
+  // hours after ingestion, despite being in COMPARISON_DISPLAY_EXCLUDED. Fixed here and in
+  // `searchTPSCanonical` (src/app/api/search/route.ts) — the two surfaces ADR-135 requires
+  // to derive from the same source now actually share the same gate.
   const latestBySlug = new Map<string, { price: number; availability: string | null; observed_at: string; obsId: string | null }>();
   for (const row of (prices ?? []) as unknown as PriceRow[]) {
     const slug = resolveApprovedSlug(row.store_name);
-    if (!slug || latestBySlug.has(slug) || delistedSlugs.has(slug)) continue;
+    if (!slug || !isDisplayableRetailer(slug) || latestBySlug.has(slug) || delistedSlugs.has(slug)) continue;
     const price = Number(row.price);
     if (!Number.isFinite(price) || price <= 0) continue;
     latestBySlug.set(slug, {
@@ -190,7 +198,7 @@ export async function getComparison(params: {
     const rawId = Number((obs.normalized_payload as Record<string, unknown> | null)?._raw_id);
     if (Number.isFinite(rawId)) rawIdByObsId.set(obs.id, rawId);
     const slug = resolveApprovedSlug(obs.store_id);
-    if (!slug) continue;
+    if (!slug || !isDisplayableRetailer(slug)) continue;
     const t = obs.observed_at ? Date.parse(obs.observed_at) : NaN;
     if (Number.isFinite(t) && t >= NPO_PROVENANCE_TRUSTED_FROM) {
       const prev = reobservedBySlug.get(slug);

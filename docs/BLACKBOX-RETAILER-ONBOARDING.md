@@ -1,10 +1,14 @@
 # Black Box KSA — Retailer Onboarding & Promotional Intelligence
 
-**Status date: 2026-08-06. Decision: BOUNDED_CATEGORY_ONBOARDING (ingestion-only; NOT customer-displayed).**
+**Status date: 2026-08-06 (two passes same day).**
+**Pass 1 decision (ADR-217): BOUNDED_CATEGORY_ONBOARDING — ingestion-only, not displayed.**
+**Pass 2 decision (ADR-218): RELEASED for customer display**, after a recorded production audit
+passed F3, plus a real pre-existing cross-retailer display-gate leak found and fixed in the same
+pass (see §14).
 
 This document is the durable record for onboarding Black Box (الصندوق الأسود, blackbox.com.sa)
-into Tawveeri, superseding every prior "blackbox bot-walled" note in this repo. See ADR-217 in
-`docs/DECISIONS.md` for the decision-register entry.
+into Tawveeri, superseding every prior "blackbox bot-walled" note in this repo. See ADR-217 and
+ADR-218 in `docs/DECISIONS.md` for the decision-register entries.
 
 ---
 
@@ -278,19 +282,131 @@ against the same product URLs fetched independently during adapter verification:
 
 ## 12. Rollback
 
-To remove Black Box from ingestion entirely: set `PROVIDER_BLACKBOX_ENABLED=0` (env override, no
-code change) or set `enabled: false` in `src/lib/providers/registry.ts`. To remove it from
-display (already the current state): no action needed — it is already excluded. Neither action
-deletes `raw_observations`, `price_history`, or this document's evidence — consistent with
-`docs/DECISIONS.md`'s "history never disappears" precedent (ADR-004).
+**To remove Black Box from DISPLAY** (the release made in §14): add `'blackbox'` back to
+`COMPARISON_DISPLAY_EXCLUDED` in `src/lib/retailers/approved-retailers.ts` — one line, no data
+change. **To remove it from ingestion entirely:** set `PROVIDER_BLACKBOX_ENABLED=0` (env
+override, no code change) or `enabled: false` in `src/lib/providers/registry.ts`. Neither action
+deletes `raw_observations`, `price_history`, `tps_product_projection`, or this document's
+evidence — consistent with `docs/DECISIONS.md`'s "history never disappears" precedent (ADR-004).
+The `isDisplayableRetailer` fixes in `get-comparison.ts`/`search/route.ts`/`v1/tps/search/
+route.ts` (§14) should NOT be rolled back even if Black Box itself is re-hidden — they are a
+correctness fix that also protects lulu/sharafdg's existing exclusion.
 
 ## 13. Follow-up (not done in this pass, and why)
 
-- **Promotion/campaign schema** — NOT DONE. Reason: no verified, precise pairing data exists to
-  populate one responsibly; building unused schema would be speculative configuration, which this
-  task's own rules disallow. Revisit if/when the Founder obtains official campaign terms (§9).
+- **Promotion/campaign DB schema** — NOT DONE. Reason: no verified, precise SAR-1 pairing data
+  exists to populate one responsibly; building unused schema would be speculative configuration,
+  which this task's own rules disallow. What IS proven (real `free_gifts[]` pairs, not literally
+  SAR-1) is exposed via the API layer instead — see §14.
 - **Full-catalogue onboarding** — NOT DONE. Reason: bounded-category onboarding was chosen
-  deliberately; widen only after a production audit of the current scope.
-- **Display approval** — NOT DONE. Reason: F3 requires a production audit (this document does not
-  claim one was performed beyond the bounded ingestion metrics in §11) before flipping
-  `isDisplayableRetailer('blackbox')` to true.
+  deliberately; widen only after measuring the released scope's real customer usage.
+- **Web-UI conditional-offer badge/component** — NOT DONE. Reason: no storefront-layer product
+  page exists yet for Black Box products (TPS-layer-only ingestion); see §14 for the full
+  reasoning and what WAS shipped instead (API-layer `conditional_offer` evidence).
+- ~~Display approval~~ — **DONE 2026-08-06, same day, second pass.** See §14 / ADR-218.
+
+## 14. Release pass (ADR-218, same day) — display approval + a live leak found and fixed
+
+**This section supersedes §1's "ingestion-only" framing and §11's "public-surfaced products: 0"
+row — both were accurate at the time §1–§13 were written, before this pass.**
+
+### What triggered this pass
+The Founder granted authority to complete the F3 audit §13 said was still needed, and to release
+the highest truthful value the evidence supports — for both the standalone catalogue (Track A)
+and the conditional offer (Track B).
+
+### Track A: a live leak found BEFORE any release decision was made
+Checking the compare page for a canonical where Black Box was already `cheapest_store` (the
+scheduler's normal hourly sweep had, untouched, already normalized 27/200 observations and built
+`tps_product_projection` — see production metrics below) showed **Black Box already live at 899
+SAR on `/ar/compare/haier|single_door|150|standard`** — hours before any deliberate audit,
+bypassing `COMPARISON_DISPLAY_EXCLUDED` entirely.
+
+**Root cause:** `src/lib/compare/get-comparison.ts` and `searchTPSCanonical`
+(`src/app/api/search/route.ts`) filtered price_history/normalized-observation rows with
+`resolveApprovedSlug` (the INGESTION gate) instead of `isDisplayableRetailer` (the DISPLAY gate)
+— a **pre-existing defect**, not introduced by this task. Measured: **146 price_history rows**
+across all three currently-excluded retailers (blackbox 22, sharafdg 64, lulu 60) were exposed to
+this gap — lulu/sharafdg's F3 exclusion had been silently unenforced on these two surfaces
+wherever their data reached `price_history`, this whole time.
+
+A **third, more severe** instance was found in `GET /api/v1/tps/search` (Platform API Contract
+v1 — mobile/agentic clients): **zero gating at all**, plus `cheapest_store`/`lowest_price`/
+`store_count`/`has_comparison` read directly off the retailer-blind `tps_product_projection` row.
+
+**Fix, deployed before the release decision took effect:**
+- `get-comparison.ts` and `searchTPSCanonical`: added the missing `isDisplayableRetailer` check
+  alongside `resolveApprovedSlug` — restores lulu/sharafdg's intended exclusion as a side effect.
+- `GET /api/v1/tps/search`: offer collection now filters by `isDisplayableRetailer` at the
+  source, and the whole comparison summary (`store_count`/`has_comparison`/`lowest_price`/
+  `cheapest_store`/etc.) is **recomputed** from the filtered list (`summarizeOffers`, extracted
+  to `src/lib/tps/v1-search-helpers.ts`) rather than trusted from the projection row — a
+  projection row that claimed `has_comparison:true` on the strength of one excluded retailer's
+  offer now correctly demotes to `resolved_single`. The route's stale local 5-entry `STORE_SLUG`
+  map (which silently dropped every non-extra/almanea/jarir/amazon/noon store, e.g. swsg/shaker/
+  najm/samsung_ksa) was replaced with the canonical `resolveApprovedSlug`/`retailerDisplayName`.
+
+### Track A: release decision
+`blackbox` removed from `COMPARISON_DISPLAY_EXCLUDED`. Evidence: 22 canonical matches, **9
+genuine multi-store comparisons** against already-displayable retailers, all via the scheduler's
+normal untouched sweep (ADR-099 respected — no manual normalize/projection run). `docs/
+LAUNCH_VOCABULARY.md` checked — Black Box isn't on any MUST-NOT-SAY list. The public 705-
+comparable-products figure was not edited (not live-rendered from code — confirmed no hit in
+`src/`); the true count is now higher, flagged as an unexecuted follow-up re-measurement
+(marketing-copy decision, out of this task's scope).
+
+### Track B: conditional-offer release decision — Level 1 evidence, API-layer only
+Of the 200 ingested observations, 10 carry a populated `free_gifts[]`: exact qualifying product,
+exact add-on product, exact add-on price, evidence timestamp — genuinely Level-1-grade evidence,
+even though none of the 10 sampled add-on prices are literally "1" (observed: 59–1,849 SAR) and
+none match the Founder's specific fridge→washer/washer→dishwasher example. Per this task's own
+instruction not to discard valid first-party evidence merely because the marketing description
+was simplified, the REAL (if not literally-SAR-1) evidence is released — not the unverified
+specific pairing.
+
+`mapFreeGiftToConditionalOffer` (`src/lib/tps/v1-search-helpers.ts`) joins
+`normalized_product_observations.normalized_payload._raw_id` back to `raw_observations.payload.
+specifications.free_gifts` (same provenance-pointer pattern `get-comparison.ts` already used —
+no schema change) and attaches a `conditional_offer` field to the qualifying offer in `GET /api/
+v1/tps/search`'s response, with an explicit `note` stating the add-on price is never the offer's
+own price.
+
+**Not built in this pass, deliberately:** a promotion DB table (no verified SAR-1 pairing to
+populate it with) and a web-UI campaign badge (no storefront-layer product page exists yet for
+Black Box — `product_stores` holds 0 rows for store 10; rushing a new visual surface onto
+production without RTL/mobile/desktop verification was judged higher-risk than shipping the
+tested API-layer exposure mobile/agentic consumers can already use).
+
+### Waffar
+Waffar's `searchProducts` (`src/app/api/ai-assistant/route.ts`) calls `POST /api/search` — the
+SAME route just fixed, so it is automatically protected from showing an excluded retailer's
+price. That specific chat endpoint is independently confirmed DISABLED BY DEFAULT in this
+codebase (referenced by nothing in web or mobile — see its own code comment, Constitution
+Appendix F7) — the live customer-facing advisor is a separate, deterministic surface this task
+did not touch. The `conditional_offer` evidence is available today only via `GET /api/v1/tps/
+search`, the platform's own designed integration point for structured reasoning by
+mobile/agentic/future-Waffar-class consumers.
+
+### Regression tests
+`tests/providers/v1-search-helpers.test.ts` (8 tests): conditional-offer mapping, the hard
+"addon_price is never a price-field name" invariant (including a literal SAR-1 case), and
+`summarizeOffers`'s F3 never-claim-comparison-below-2-stores behavior — including the exact
+"excluded retailer filtered upstream → demotes to single-store" shape the live leak exhibited.
+`tests/retailers/approved-scope.test.ts` and `tests/providers/nextjs-ssr-adapter.test.ts` updated
+for the released state. Full suite: **93/93 suites, 1423/1423 tests** passing after this change.
+
+### Production metrics as of this pass
+| Metric | Value |
+|---|---:|
+| Canonical products matched (of 200 ingested) | 22 |
+| Genuine multi-store comparisons (blackbox + ≥1 already-displayable retailer) | **9** |
+| Black Box-only (single-store) canonicals | 13 |
+| Observations carrying real `free_gifts[]` evidence | 10 of 200 |
+| price_history rows exposed to the pre-existing leak, all 3 excluded retailers | 146 (blackbox 22, sharafdg 64, lulu 60) |
+| Full test suite | 93/93 suites, 1423/1423 tests passing |
+
+### Live manual-audit results (post-fix, post-release)
+See the conversation/commit this section originates from for the exact live re-check of `/ar/
+compare/haier|single_door|150|standard` and a sample of newly-displayable search results —
+recorded at the time of the release commit rather than duplicated here to avoid this document
+drifting from the actual verified commit.

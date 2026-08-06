@@ -71,15 +71,15 @@ describe('approved-retailer scope gate', () => {
   /**
    * Black Box (blackbox, store 10) RECOVERED for ingestion 2026-08-06 — the earlier
    * "bot-walled" finding tested the wrong domain (blackboxksa.com, an unrelated merchant);
-   * the real domain (blackbox.com.sa) sources credential-free. F3 still applies: ingestion
-   * approval is NOT display approval. This must stay approved-but-hidden until a production
-   * audit is recorded in docs/BLACKBOX-RETAILER-ONBOARDING.md — do not flip
-   * isDisplayableRetailer('blackbox') to true without that audit.
+   * the real domain (blackbox.com.sa) sources credential-free. Approved AND released for
+   * display the same day, after a recorded production audit passed F3 (see ADR-218,
+   * docs/BLACKBOX-RETAILER-ONBOARDING.md): 9 genuine multi-store comparisons against
+   * already-displayable retailers, price-integrity floor intact, manual sample audit passed.
    */
-  it('approves blackbox (10) for ingestion but keeps it display-excluded pending audit', () => {
+  it('approves blackbox (10) for ingestion AND display, after a recorded audit (ADR-218)', () => {
     expect(isApprovedStoreId(10)).toBe(true);
     expect(isApprovedStore('blackbox')).toBe(true);
-    expect(isDisplayableRetailer('blackbox')).toBe(false);
+    expect(isDisplayableRetailer('blackbox')).toBe(true);
   });
 
   it('lists 30 distinct approved merchants (26 portfolio + 4 admitted on overlap)', () => {

@@ -836,7 +836,7 @@ async function searchTPSCanonical(
     const trueObserved = new Map<string, string>();
     for (const r of obsChunks.flatMap((c) => (c.data ?? []) as unknown as ObsRow[])) {
       const slug = resolveApprovedSlug(r.store_id ?? '');
-      if (!slug || !r.observed_at) continue;
+      if (!slug || !isDisplayableRetailer(slug) || !r.observed_at) continue;
       const key = `${r.canonical_product_id}|${slug}`;
       if (!trueObserved.has(key)) trueObserved.set(key, r.observed_at);
     }
@@ -860,7 +860,12 @@ async function searchTPSCanonical(
       // customer, i.e. both halves of what ADR-132 and ADR-135 exist to prevent.
       // Keyed on the resolved slug, the retailer can only be counted once.
       const slug = resolveApprovedSlug(r.store_name);
-      if (!slug) continue;
+      // isDisplayableRetailer, not resolveApprovedSlug alone: a store can be approved for
+      // INGESTION while still display-excluded (F3). Fixed alongside get-comparison.ts
+      // (2026-08-06) — both surfaces ADR-135 requires to derive from the same source were
+      // using the ingestion gate here, letting a display-excluded retailer's price_history
+      // row (blackbox/lulu/sharafdg) render the moment normalize wrote it.
+      if (!slug || !isDisplayableRetailer(slug)) continue;
       if (delisted.has(`${r.canonical_product_id}|${slug}`)) continue; // ADR-196
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;

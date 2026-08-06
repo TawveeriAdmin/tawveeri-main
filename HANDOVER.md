@@ -1,8 +1,44 @@
-# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #58 · BLACK BOX KSA ONBOARDED (BOUNDED_CATEGORY_ONBOARDING) · INGESTION-ONLY, NOT DISPLAYED ═══
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #59 · BLACK BOX KSA RELEASED FOR DISPLAY · CROSS-RETAILER DISPLAY-GATE LEAK FOUND AND FIXED ═══
+
+## Black Box released for customer display (9 genuine multi-store comparisons) — AND a real pre-existing leak that let display-excluded retailers (blackbox/lulu/sharafdg) show on compare + search-API surfaces was found and fixed
+
+**Full detail: `docs/BLACKBOX-RETAILER-ONBOARDING.md` §14 + ADR-218 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #58 as the resume point (#58's ingestion-only content is preserved below, superseded where noted).
+
+### What happened
+Founder granted authority to complete the F3 audit checkpoint #58 left open and release the highest truthful value the evidence supports. Before making that release decision, checking the compare page for a canonical where Black Box was already the scheduler-computed `cheapest_store` showed **it was already live at 899 SAR on `/ar/compare/haier|single_door|150|standard`** — hours before any deliberate audit, because `get-comparison.ts` and `searchTPSCanonical` (`src/app/api/search/route.ts`) were filtering offers with the INGESTION gate (`resolveApprovedSlug`) instead of the DISPLAY gate (`isDisplayableRetailer`) — a **pre-existing defect**, not introduced this session. Measured: 146 price_history rows across all three currently display-excluded retailers (blackbox 22, sharafdg 64, lulu 60) were exposed to this gap. A third, more severe instance (zero gating at all, plus a retailer-blind `cheapest_store`/`has_comparison`) was found in the public `GET /api/v1/tps/search` API contract (mobile/agentic clients).
+
+### Fixed (all three surfaces, before the release took effect)
+- `src/lib/compare/get-comparison.ts`, `src/app/api/search/route.ts` (`searchTPSCanonical`): added the missing `isDisplayableRetailer` check — restores lulu/sharafdg's intended exclusion as a side effect (same code path, same defect class — not scope creep).
+- `src/app/api/v1/tps/search/route.ts`: offers now filtered at collection time; the whole comparison summary is **recomputed** from the filtered list (`summarizeOffers`, new `src/lib/tps/v1-search-helpers.ts`) instead of trusted from the retailer-blind projection row. Its stale 5-entry local store map (silently dropping swsg/shaker/najm/samsung_ksa/etc.) was replaced with the canonical resolver.
+
+### Release decision
+`blackbox` removed from `COMPARISON_DISPLAY_EXCLUDED` — released for search, compare, and the v1 API. Evidence: 22 canonical matches (via the scheduler's own untouched hourly sweep, ADR-099 respected), **9 genuine multi-store comparisons** against already-displayable retailers (almanea/swsg/extra/noon/alnakheelk). lulu/sharafdg remain excluded (no change to that decision — only the enforcement bug is fixed). No public claim (705 comparable-products figure, retailer counts) was edited.
+
+### Conditional-offer (Track B) decision: Level 1 evidence, API-layer only
+10 of 200 ingested observations carry a populated `free_gifts[]` — exact qualifying product, exact add-on, exact price, evidence timestamp (none literally "1 SAR"; observed 59–1,849 SAR; none match the Founder's specific fridge→washer example). Exposed via a new `conditional_offer` field on `GET /api/v1/tps/search` offers (`mapFreeGiftToConditionalOffer`, joins back to `raw_observations` via the existing `_raw_id` provenance pointer — no schema change), with an explicit note that the add-on price is never the offer's own price. No DB promotion schema and no web-UI campaign badge were built this pass — documented as deliberate, not an oversight (see ADR-218 / onboarding doc §14 for why).
+
+### Tests
+`tests/providers/v1-search-helpers.test.ts` (new, 8 tests) — conditional-offer mapping, the hard addon_price-is-never-a-price-field invariant, and the F3 never-claim-comparison-below-2-stores behavior reproducing the exact leak shape. `tests/retailers/approved-scope.test.ts` + `tests/providers/nextjs-ssr-adapter.test.ts` updated for the released state. **Full suite: 93/93 suites, 1423/1423 tests passing.**
+
+### Not done (documented, not silently skipped)
+- Promotion/campaign DB schema — no verified SAR-1 pairing to populate it with.
+- Web-UI conditional-offer badge — no storefront-layer product page exists yet for Black Box products.
+- Public comparable-products figure (705) re-measurement — not live-rendered from code, so nothing was silently changed, but the true count is now higher; re-measuring and amending `docs/LAUNCH_VOCABULARY.md` is a marketing-copy decision, left as a follow-up.
+- Full-catalogue onboarding — still deliberately bounded to the categoryKeywords scope.
+
+### Not touched
+Auth, OTP, SendGrid, the daily Founder-report cron, Amazon/Noon affiliate attribution, unrelated retailers, dashboards, marketing content systems, `discover-firecrawl`.
+
+### Next verification (exact resume point)
+Confirm the live compare-page and search-API re-checks recorded in the release commit still hold after the next scheduler sweep (the display fix is structural, so this should be a formality, not a real risk). Consider whether the Founder wants the 705 comparable-products figure re-measured and amended in `docs/LAUNCH_VOCABULARY.md` now that Black Box contributes real comparisons. If the Founder later obtains official Black Box campaign terms (exact SAR-1 pairing, dates), that's the trigger to build the promotion schema deferred in ADR-217/218.
+
+---
+
+# ═══ 2026-08-06 CHECKPOINT #58 · BLACK BOX KSA ONBOARDED (BOUNDED_CATEGORY_ONBOARDING) · INGESTION-ONLY, NOT DISPLAYED ═══
 
 ## Black Box (الصندوق الأسود) onboarded — domain-collision defect corrected, new Next.js-SSR adapter, 200 raw_observations written, still NOT customer-visible
 
-**Full detail: `docs/BLACKBOX-RETAILER-ONBOARDING.md` + ADR-217 in `docs/DECISIONS.md`.** This entry is the resume point, superseding checkpoint #57 as HANDOVER's head (#57's SendGrid content is untouched below).
+**Full detail: `docs/BLACKBOX-RETAILER-ONBOARDING.md` + ADR-217 in `docs/DECISIONS.md`.** Superseded by checkpoint #59 above (Black Box is now released for display) — preserved here as history.
 
 ### What happened
 Founder flagged a time-sensitive Black Box SAR-1 bundle campaign (fridge→washer, washer→dishwasher) and asked for retailer onboarding + campaign intelligence. Investigation found the codebase's existing Black Box record (`stores.id=10`, `src/lib/providers/registry.ts`, `src/lib/retailers/approved-retailers.ts`) pointed at `blackboxksa.com` — **a different, unrelated merchant** (outdoor/camping gear). Every prior "Black Box bot-walled" finding in this repo tested the wrong domain. The real domain, `blackbox.com.sa`, is a Next.js-SSR storefront with a credential-free `sitemap.xml` + per-product `__NEXT_DATA__` JSON — no CAPTCHA, no JS execution needed.

@@ -3,6 +3,8 @@ import { createServerClient } from '@/lib/database';
 import { productTrust } from '@/lib/intelligence/evidence-engine';
 import { algoliasearch } from 'algoliasearch';
 import { normalizeSearchQuery } from '@/lib/search/query-normalize';
+import { resolveApprovedSlug, isDisplayableRetailer, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { mapFreeGiftToConditionalOffer, summarizeOffers, type ConditionalOfferEvidence } from '@/lib/tps/v1-search-helpers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,7 +24,10 @@ const TPS_INDEX = process.env.ALGOLIA_TPS_INDEX || 'tawveeri_tps_products';
 function normalizeArabic(s: string): string {
   return (s || '').replace(/[ً-ٰٟ]/g, '').replace(/[آأإٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ـ/g, '').toLowerCase().trim();
 }
-const STORE_SLUG: Record<string, string> = { 'اكسترا': 'extra', 'المنيع': 'almanea', 'جرير': 'jarir', 'أمازون': 'amazon', 'نون': 'noon' };
+// Resolves ANY store identifier (numeric store_id text OR Arabic display name) through the
+// SAME canonical resolver every other surface uses — the local 5-entry map this replaced
+// (extra/almanea/jarir/amazon/noon only) silently dropped every other approved store's
+// offers from this endpoint (swsg/shaker/najm/samsung_ksa/etc never resolved to a slug).
 
 interface Canon {
   canonical_id: string; tps_identity_key: string;
@@ -85,12 +90,20 @@ export async function GET(req: NextRequest) {
   }
 
   const ids = [...canon.map((c) => c.canonical_id), ...discovery.map((c) => c.canonical_id)];
-  // Offers = normalized observations (offer_id) + latest price per store.
-  const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; price: number | null; go_url: string; availability: string }[]>();
+  // Offers = normalized observations (offer_id) + latest price per store, DISPLAYABLE stores
+  // only. `tps_product_projection` (and the Algolia index synced from it) is built
+  // retailer-blind — a display-excluded retailer's offer can be the row that made
+  // `has_comparison`/`store_count`/`cheapest_store` true/N/"الصندوق الأسود" at build time.
+  // This endpoint is a public API contract (mobile/agentic clients, `go_url` per offer) —
+  // it must never hand a display-excluded retailer's price to a caller. Filtered here, at
+  // the one place `offersByCanon` is assembled; every summary field below is RECOMPUTED
+  // from this filtered list rather than trusted from the projection row (fixed 2026-08-06,
+  // alongside the same gap in get-comparison.ts and searchTPSCanonical).
+  const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; store_name: string; price: number | null; go_url: string; availability: string; conditional_offer: ConditionalOfferEvidence | null }[]>();
   if (ids.length) {
     const { data: obs } = await supabase
       .from('normalized_product_observations')
-      .select('id, store_id, canonical_product_id, observed_at')
+      .select('id, store_id, canonical_product_id, observed_at, normalized_payload')
       .in('canonical_product_id', ids)
       .order('observed_at', { ascending: false });
     const { data: prices } = await supabase
@@ -101,57 +114,97 @@ export async function GET(req: NextRequest) {
     const latestPrice = new Map<string, number>();
     for (const p of prices ?? []) { const k = `${p.canonical_product_id}|${p.store_name}`; if (!latestPrice.has(k)) latestPrice.set(k, Number(p.price)); }
     const seenStore = new Set<string>();
-    for (const o of obs ?? []) {
-      const key = `${o.canonical_product_id}|${o.store_id}`;
+    type NormObs = { id: string; store_id: string | null; canonical_product_id: string; observed_at: string | null; normalized_payload: { _raw_id?: number } | null };
+    const kept: { o: NormObs; slug: string }[] = [];
+    for (const o of (obs ?? []) as NormObs[]) {
+      const slug = resolveApprovedSlug(o.store_id);
+      if (!slug || !isDisplayableRetailer(slug)) continue;
+      const key = `${o.canonical_product_id}|${slug}`;
       if (seenStore.has(key)) continue; // one authoritative offer per store
       seenStore.add(key);
+      kept.push({ o, slug });
+    }
+
+    // Conditional-offer evidence (free_gifts[]) lives only on raw_observations.payload —
+    // normalize plugins don't carry it into normalized_payload. Join back via `_raw_id`
+    // (the SAME provenance pointer get-comparison.ts uses) — read-only, no schema change.
+    const rawIds = kept.map(({ o }) => o.normalized_payload?._raw_id).filter((v): v is number => Number.isFinite(v));
+    const conditionalByRawId = new Map<number, ConditionalOfferEvidence>();
+    if (rawIds.length) {
+      const db = supabase as unknown as { from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } } };
+      const { data: raws } = await db.from('raw_observations').select('id, scraped_at, payload').in('id', rawIds);
+      for (const r of (raws ?? []) as { id: number; scraped_at: string | null; payload: { specifications?: { free_gifts?: Array<Record<string, unknown>> } } }[]) {
+        const mapped = mapFreeGiftToConditionalOffer(r.payload, r.scraped_at);
+        if (mapped) conditionalByRawId.set(r.id, mapped);
+      }
+    }
+
+    for (const { o, slug } of kept) {
+      const priceKey = [...latestPrice.keys()].find((k) => k.startsWith(`${o.canonical_product_id}|`) && resolveApprovedSlug(k.split('|')[1]) === slug);
+      const rawId = o.normalized_payload?._raw_id;
       const list = offersByCanon.get(o.canonical_product_id) ?? [];
       list.push({
-        offer_id: o.id, store_id: o.store_id, store_slug: STORE_SLUG[o.store_id] ?? o.store_id,
-        price: latestPrice.get(key) ?? null, go_url: `/go/${o.id}`, availability: 'in_stock',
+        offer_id: o.id, store_id: o.store_id ?? '', store_slug: slug, store_name: retailerDisplayName(slug, 'ar') ?? slug,
+        price: priceKey ? latestPrice.get(priceKey) ?? null : null, go_url: `/go/${o.id}`, availability: 'in_stock',
+        conditional_offer: (Number.isFinite(rawId) ? conditionalByRawId.get(rawId as number) : undefined) ?? null,
       });
       offersByCanon.set(o.canonical_product_id, list);
     }
   }
 
-  const results = canon.map((c, i) => {
-    // Evidence-grounded trust (ADR-087) — comparison rows carry cross-store spread too.
-    const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: c.has_comparison, price_spread_pct: c.price_spread_pct, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
-    return {
-      canonical_id: c.canonical_id,
-      tps_identity_key: c.tps_identity_key,
-      title_ar: c.display_name_ar, title_en: c.display_name_en,
-      brand: c.brand, category: c.category, image_url: c.image_url,
-      lowest_price: c.lowest_price, highest_price: c.highest_price, saving: c.saving,
-      price_spread_pct: c.price_spread_pct, store_count: c.store_count,
-      has_comparison: c.has_comparison, comparison_available: true, confidence: t.score,
-      trust: { score: t.score, tier: t.tier, caveats_ar: t.caveats_ar },
-      canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
-      decision: { is_smart_pick: i === 0 && !!c.has_comparison, reason_ar: c.has_comparison ? `متوفر في ${c.store_count} متاجر` : null },
-      tps_version: 'tps-v1', kind: 'canonical', updated_at: c.updated_at,
-      offers: (offersByCanon.get(c.canonical_id) ?? []).sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9)),
-    };
-  });
+  /** Recompute the comparison summary from DISPLAYABLE offers only — never trust the
+   *  retailer-blind projection's store_count/cheapest_store/has_comparison directly. */
+  function summarize(canonicalId: string) {
+    const s = summarizeOffers(offersByCanon.get(canonicalId) ?? []);
+    return { ...s, offers: s.sorted };
+  }
+
+  const results = canon
+    .map((c, i) => {
+      const s = summarize(c.canonical_id);
+      if (s.store_count === 0) return null; // every offer was display-excluded — nothing to show
+      // F3: never claim a comparison the (now-filtered) data can't fulfil. A projection row
+      // built has_comparison:true from an excluded retailer's offer demotes to resolved_single.
+      const t = productTrust({ store_count: s.store_count, identity_confidence: c.identity_confidence, has_comparison: s.has_comparison, price_spread_pct: s.price_spread_pct, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
+      return {
+        canonical_id: c.canonical_id,
+        tps_identity_key: c.tps_identity_key,
+        title_ar: c.display_name_ar, title_en: c.display_name_en,
+        brand: c.brand, category: c.category, image_url: c.image_url,
+        lowest_price: s.lowest_price, highest_price: s.highest_price, saving: s.saving,
+        price_spread_pct: s.price_spread_pct, store_count: s.store_count,
+        has_comparison: s.has_comparison, comparison_available: s.has_comparison, confidence: t.score,
+        trust: { score: t.score, tier: t.tier, caveats_ar: t.caveats_ar },
+        canonical_url: s.has_comparison ? c.compare_url : null, cheapest_store: s.cheapest_store,
+        decision: { is_smart_pick: i === 0 && s.has_comparison, reason_ar: s.has_comparison ? `متوفر في ${s.store_count} متاجر` : null },
+        tps_version: 'tps-v1', kind: s.has_comparison ? 'canonical' : 'resolved_single',
+        offers: s.offers,
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   // Layer 2 — resolved-single: known identity, one offer, NO comparison claim.
   const canonIds = new Set(canon.map((c) => c.canonical_id));
   const discoveryOut = discovery
     .filter((c) => !canonIds.has(c.canonical_id))
     .map((c) => {
-      const t = productTrust({ store_count: c.store_count, identity_confidence: c.identity_confidence, has_comparison: false, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
+      const s = summarize(c.canonical_id);
+      if (s.store_count === 0) return null;
+      const t = productTrust({ store_count: s.store_count, identity_confidence: c.identity_confidence, has_comparison: false, tps_identity_key: c.tps_identity_key, last_observed_at: c.last_observed_at });
       return {
         canonical_id: c.canonical_id, tps_identity_key: c.tps_identity_key,
         title_ar: c.display_name_ar, title_en: c.display_name_en,
         brand: c.brand, category: c.category, image_url: c.image_url,
-        lowest_price: c.lowest_price, store_count: c.store_count,
+        lowest_price: s.lowest_price, store_count: s.store_count,
         has_comparison: false, comparison_available: false, confidence: t.score,
         trust: { score: t.score, tier: t.tier, caveats_ar: t.caveats_ar },
-        canonical_url: c.compare_url, cheapest_store: c.cheapest_store,
+        canonical_url: c.compare_url, cheapest_store: s.cheapest_store,
         decision: { is_smart_pick: false, reason_ar: 'متوفر في متجر واحد · المقارنة غير متاحة' },
         tps_version: 'tps-v1', kind: 'resolved_single',
-        offers: (offersByCanon.get(c.canonical_id) ?? []).slice(0, 1),
+        offers: s.offers.slice(0, 1),
       };
-    });
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   return NextResponse.json({
     version: 'v1', query: rawQ, normalized_query: q, count: results.length,

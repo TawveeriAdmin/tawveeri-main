@@ -236,12 +236,17 @@ export const COMPARISON_DISPLAY_EXCLUDED: ReadonlySet<string> = new Set([
   // AND hidden. Both are also out of APPROVED_STORE_IDS, so this is belt-and-braces: the
   // ingestion gate and the display gate answer different questions and only one of them
   // knowing is how LuLu once reached 3 customer cards while holding zero comparison offers.
-  // blackbox (10) — ingestion re-admitted 2026-08-06 (corrected domain, see
-  // docs/BLACKBOX-RETAILER-ONBOARDING.md), but display stays EXCLUDED here until a
-  // production audit (real product identity, real prices, real outbound links, manual
-  // sample review) has actually passed — approved for ingestion is not approved for
-  // display (F3). Remove only after that audit is recorded.
-  'blackbox',
+  //
+  // blackbox (10) — REMOVED from this set 2026-08-06 (RELEASED) after a recorded production
+  // audit passed the F3 bar: domain-corrected + sourcing-verified (see
+  // docs/BLACKBOX-RETAILER-ONBOARDING.md), 200 raw_observations ingested and independently
+  // verified (0 below the price-integrity floor, 0 wrong-domain), the scheduler's normal
+  // sweep matched 22 canonicals with 9 GENUINE multi-store comparisons against already-
+  // displayable retailers (almanea/swsg/extra/noon/alnakheelk), and a manual sample audit
+  // passed. Full metrics + the live-leak this release also required fixing (get-comparison.ts
+  // and searchTPSCanonical were reading the INGESTION gate, not this DISPLAY gate — a
+  // pre-existing defect that also silently affected lulu/sharafdg) are recorded in ADR-218.
+  //
   // noon and swsg were BOTH here and are both gone (ADR-179/180). Each was retired on a
   // single sourcing mode and recovered on another: swsg via Magento's public GraphQL,
   // noon via its robots-PERMITTED listing+JSON-LD pages after we stopped calling the
