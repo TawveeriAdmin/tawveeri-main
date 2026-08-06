@@ -1,3 +1,38 @@
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #55 · SENDGRID SECURITY INCIDENT CONTAINED · TICKET #26429850 · RCA DRAFTED, NOT SENT ═══
+
+## SendGrid account compromise (unauthorized activity reported April 2026) — root-caused, contained, RCA drafted
+
+**Full detail: this checkpoint + chat history for the SendGrid remediation session (2026-08-06).** No ADR filed for this incident (security response, not an architecture decision) — this HANDOVER entry is the authoritative record. This entry is the resume point.
+
+### Root cause (verified by this session, not guessed)
+A SendGrid API key (name "Tawveeri-Mail", full access) was committed in cleartext inside `Tawveeri_Domain_Setup_Report_EN.pdf` on 2026-02-25, in the **public** GitHub repo `TawveeriAdmin/tawveeri-main`. Confirmed exact match (by both name and non-secret key ID `TqnDnQ-tRNCvBc4fBWhpyw`) between the exposed key and a still-active account key. Also found two keys (`auto_send_20260429_025643_n2020`, `auto_send_20260429_024928_n2020`) created 7 minutes apart on 2026-04-29 — consistent with automated persistence-key creation by whoever misused the compromised key; this is the most likely explanation for the "unauthorized activity" SendGrid flagged that month, though not proven with certainty.
+
+### What's verified by this session (I checked these myself, via API, non-secret metadata only)
+- Compromised key **"Tawveeri-Mail" revoked** — confirmed gone from the account's key list (`204` on delete, then absent on re-list).
+- Production key **`tawveeri-production-mail-2026-08-06` (id `tbWunExLQ42c9qegIP0NZw`) restricted to `mail.send` only** — confirmed via live scope check (only `mail.send` + two SendGrid account-status flags that carry no permission).
+- Exposed PDF **removed from `main`** — commit `ab40a40`. Still present in git history (unchanged on purpose — a force-push history rewrite is a separate, explicitly deferred task requiring founder approval; not done, not attempted).
+- No email sent, no secret ever displayed/logged, no cron scheduled, no auth/affiliate/dashboard code touched during this remediation.
+
+### What's founder-reported, not independently re-verified by this session
+Once the production key was correctly restricted to `mail.send` only, it **lost the ability to list/delete other account keys** (confirmed `403` on `GET /v3/api_keys` — itself proof the restriction is real, not just reported). Deleting the remaining two suspicious keys and the one duplicate key therefore had to happen via the SendGrid dashboard directly, which the founder did. Similarly, none of the following are checkable via any API key regardless of scope — dashboard/account-level actions only:
+- **Suspicious/duplicate keys removed**: `auto_send_20260429_025643_n2020`, `auto_send_20260429_024928_n2020`, duplicate `tawveeri-production-mail-2026-08-06` (id `aODNjH4LQr2iUp_f14oZDQ`) — founder confirmed done.
+- **Account password rotated + SMS two-factor authentication enabled** — founder confirmed done.
+- **SendGrid Support confirmed the account was reactivated** — founder confirmed done.
+
+### RCA status
+Final draft prepared (incident description, root cause with confirmed-vs-unknown facts kept separate, resolution actions, corrective/preventive actions) reflecting all of the above. **Not sent** — explicitly held per founder instruction pending their final review.
+
+### Exact next task
+**Send one fresh controlled test of the daily founder email** (`POST /api/cron/daily-founder-report`, Bearer `CRON_SECRET`) now that the SendGrid account is reactivated and the key is fixed — the last test (before this incident was discovered) was reported "not received," which is what triggered this whole investigation, so delivery has never been confirmed working end-to-end. Do this before scheduling anything.
+
+### Daily cron
+**Still not scheduled** — explicitly held per repeated founder instruction throughout this incident. Once the fresh test is confirmed received, add a Railway Cron Job hitting the same URL/header daily at 05:00 UTC (08:00 Asia/Riyadh).
+
+### Not touched / not reopened
+Git history rewrite/force-push (deferred, separate approval required). No new schema. No Amazon CSV, no auth/affiliate/dashboard changes, no external BI. ADR-207/211–216 decisions unchanged.
+
+---
+
 # ═══ RESUME HERE — 2026-08-05 CHECKPOINT #54 · FOUNDER COMMERCIAL INTELLIGENCE · ADR-216 ═══
 
 ## Simplified the Command Center around 7 business questions; baseline, retailer report, opportunities, daily email
