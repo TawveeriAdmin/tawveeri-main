@@ -112,10 +112,13 @@ export async function POST(request: NextRequest) {
     if (!identity.selfId) {
       return NextResponse.json({ action, performed: false, reason: 'Could not determine the current key\'s non-secret ID from its format — refusing to guess which account key to modify.' }, { status: 200 });
     }
+    // SendGrid's PATCH /v3/api_keys/{id} only updates the name; changing scopes requires PUT
+    // with both name and scopes in the body (confirmed via a live 400 "invalid request" on the
+    // scopes-only PATCH attempt) — the name is preserved as-is, only scopes are restricted.
     const res = await fetch(`https://api.sendgrid.com/v3/api_keys/${identity.selfId}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scopes: ['mail.send'] }),
+      body: JSON.stringify({ name: identity.selfName, scopes: ['mail.send'] }),
     });
     const body = await res.json().catch(() => null);
     return NextResponse.json({
