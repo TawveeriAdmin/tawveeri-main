@@ -1,4 +1,31 @@
-# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #60 · BLACK BOX RIYAL-FESTIVAL CAMPAIGN RELEASED (LEVEL 2) · OFFICIAL EVIDENCE + AUTO-EXPIRY ═══
+# ═══ RESUME HERE — 2026-08-06 CHECKPOINT #61 · BLACK BOX CAMPAIGN ELIGIBILITY NOW VISIBLE ON THE COMPARE PAGE ═══
+
+## Bounded feasibility check → the compare page could safely receive campaign_eligibility with a small change, so it now shows the Level 2 note — no new storefront built
+
+**Full detail: `docs/BLACKBOX-RETAILER-ONBOARDING.md` §16 + ADR-220 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #60 as the resume point (#60's API-layer release preserved below).
+
+### What happened
+Checkpoint #60 released `campaign_eligibility` at the API layer only, deferring UI because no Black Box storefront product page exists. A follow-up task asked for a bounded check: reuse an existing surface if one can safely receive the field, otherwise report the blocker and stop. Found: `get-comparison.ts` already runs the identical `_raw_id → raw_observations` join the API uses (for freshness disclosure) — reading `campaign_eligibility` off the same row cost one field, no new query, no new architecture.
+
+### Implemented
+- `src/lib/compare/get-comparison.ts` — `CompareOffer.campaign_eligibility`, TTL-gated identically to the API.
+- `src/app/[locale]/(public)/compare/[key]/page.tsx` — small `CampaignEligibilityNote` (Level 2 wording only, freshness line, official campaign link) on the featured offer and each "All Offers" row. Deliberately secondary styling — never resembles a price.
+
+### Not done (correctly, not a shortfall)
+No new storefront/product-page architecture — none was needed. No Level 1 claim. No change to the TTL, scheduler, or any prior decision.
+
+### Tests
+TypeScript clean (same pre-existing tolerated Supabase-types class, no new error categories). Full suite unaffected: 94/94 suites, 1441/1441 tests. UI verified live rather than via a mocked unit test, matching this codebase's existing pattern for `get-comparison.ts` (no prior test file).
+
+### Not touched
+Auth, OTP, SendGrid, the daily Founder-report cron, Amazon/Noon attribution, unrelated retailers, dashboards, marketing systems, `discover-firecrawl`. No scheduler change, no TTL change, no new Railway service.
+
+### Next verification (exact resume point)
+None outstanding for this feature — see the conversation this checkpoint originates from for the live confirmation on `/ar/compare/lg|side_by_side|660|inverter`. If the Founder later obtains the exact SAR-1 pairing from Black Box directly, that's the trigger to add Level 1 wording for specific products (architecture already supports it without further changes).
+
+---
+
+# ═══ 2026-08-06 CHECKPOINT #60 · BLACK BOX RIYAL-FESTIVAL CAMPAIGN RELEASED (LEVEL 2) · OFFICIAL EVIDENCE + AUTO-EXPIRY ═══
 
 ## Black Box's "مهرجان الريال" conditional-offer campaign released at Level 2 (product-level eligibility) using the retailer's own verified X post as evidence, with automatic 72h TTL expiry — no exact SAR-1 pair was fabricated
 

@@ -26,6 +26,7 @@
 import { createServerClient } from '@/lib/database';
 import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
+import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 
 interface PriceRow {
   store_name: string;
@@ -63,6 +64,9 @@ export interface CompareOffer {
   observed_at: string;
   confidence: number;
   is_verified: boolean;
+  /** Level-2 conditional-campaign evidence (e.g. Black Box's "مهرجان الريال") — never a
+   *  price claim, TTL-gated, null once stale or absent. See blackbox-riyal-festival.ts. */
+  campaign_eligibility: CampaignEligibilityEvidence | null;
 }
 
 export interface ComparisonResult {
@@ -212,7 +216,13 @@ export async function getComparison(params: {
   // Resolve the true observation time for the offers we are about to render. Read-only, one
   // indexed lookup, bounded by the number of retailers on this product. If it fails we simply
   // have no provenance and the stored stamp stands — never an estimate.
+  //
+  // The SAME row also carries `payload.specifications.campaign_eligibility` (e.g. Black Box's
+  // "مهرجان الريال" — see nextjs-ssr-adapter.ts / blackbox-riyal-festival.ts) — read here at
+  // no extra query cost and TTL-gated below, so a stale campaign flag silently stops showing
+  // without any manual action (2026-08-06, ADR-220).
   const scrapedAtByRawId = new Map<number, string>();
+  const campaignByRawId = new Map<number, CampaignEligibilityEvidence>();
   {
     const rawIds = [...latestBySlug.values()]
       .map((p) => (p.obsId ? rawIdByObsId.get(p.obsId) : undefined))
@@ -223,9 +233,12 @@ export async function getComparison(params: {
       const db = supabase as unknown as {
         from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } };
       };
-      const { data: raws } = await db.from('raw_observations').select('id, scraped_at').in('id', rawIds);
-      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null }[]) {
+      const now = new Date();
+      const { data: raws } = await db.from('raw_observations').select('id, scraped_at, payload').in('id', rawIds);
+      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null; payload: { specifications?: { campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
         if (r.scraped_at) scrapedAtByRawId.set(Number(r.id), r.scraped_at);
+        const eligibility = deriveCampaignEligibility(r.payload?.specifications?.campaign_eligibility, r.scraped_at, now);
+        if (eligibility) campaignByRawId.set(Number(r.id), eligibility);
       }
     }
   }
@@ -262,6 +275,10 @@ export async function getComparison(params: {
         })(),
         confidence: listing?.confidence ?? canonical.identity_confidence ?? 100,
         is_verified: !!listing,
+        campaign_eligibility: (() => {
+          const rawId = p.obsId ? rawIdByObsId.get(p.obsId) : undefined;
+          return rawId != null ? campaignByRawId.get(rawId) ?? null : null;
+        })(),
       };
     })
     .sort((a, b) => a.price - b.price);

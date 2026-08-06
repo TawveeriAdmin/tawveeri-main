@@ -525,10 +525,49 @@ closed on stale/missing evidence. **Full suite: 94/94 suites, 1441/1441 tests.**
 
 ### Known limitations (this pass)
 - No Level 1 (exact SAR-1 pair) release anywhere — genuinely unconfirmed in structured data.
-- No web-UI badge/component — still no storefront-layer product page exists for Black Box
-  products (same limitation as ADR-218); Level 2 evidence is API-layer only.
+- ~~No web-UI badge/component~~ — **DONE, same day, §16.** The compare page now shows Level 2
+  eligibility; no dedicated storefront-layer product page was needed to do it.
 - Only 30 of 42 live campaign products were directly re-ingested this pass (bounded, targeted);
   the remaining 12 will be picked up by the scheduler's normal sweep now that
   `categoryKeywords` is widened.
 - Branch-level/quantity restrictions and in-store availability were not found in first-party
   data and are not represented (absence is not claimed as "no restrictions" — simply not shown).
+
+## 16. Compare-page UI release (ADR-220, same day) — bounded feasibility check → implemented
+
+A follow-up task asked whether `campaign_eligibility` (API-only as of §15) could be shown on an
+EXISTING customer surface without building new storefront architecture — and to stop and report
+the blocker if not, rather than force it.
+
+**Feasibility finding: yes, cleanly.** `src/lib/compare/get-comparison.ts` already performs the
+exact `_raw_id → raw_observations` provenance join `GET /api/v1/tps/search` uses (there for
+`scrapedAtByRawId`, the freshness disclosure). Reading `payload.specifications.
+campaign_eligibility` off the SAME already-fetched row and running it through the same
+`deriveCampaignEligibility` (reused unmodified from §15) cost one field, not a new query. The
+compare page (`/ar/compare/[key]`) already renders a per-offer freshness line in exactly the
+spot a conditional-offer note belongs.
+
+**Implemented:**
+- `CompareOffer.campaign_eligibility` added to `get-comparison.ts`'s output — TTL-gated
+  identically to the API (72h, same `deriveCampaignEligibility`).
+- `src/app/[locale]/(public)/compare/[key]/page.tsx` — a small `CampaignEligibilityNote`
+  component: Level 2 wording only (no SAR amount, no exact gift), a "last verified" freshness
+  line (reusing the page's existing day-count phrasing pattern), and a link to the official
+  campaign page. Attached to the featured cheapest-offer panel and to each row of "All Offers."
+  Deliberately secondary styling (small amber note below the price) — never positioned or
+  sized to be confused with a price.
+
+**Explicitly not done:** no new storefront/product-page architecture (none was needed); no
+Level 1 claim; no change to the TTL, scheduler, or any prior decision.
+
+**Live verification:** `/ar/compare/lg|side_by_side|660|inverter` (a canonical carrying a
+freshly campaign-eligible Black Box offer from §15's targeted ingestion) — confirmed the note
+renders with the correct Arabic Level-2 wording, a real freshness timestamp, and the official
+campaign link, while the page's other (non-eligible) offers show nothing extra. See the
+conversation/commit this section originates from for the exact captured result.
+
+**Tests:** TypeScript clean (same pre-existing Supabase-generated-types class already tolerated
+elsewhere in this file — no new error categories). Full suite unaffected: 94/94 suites,
+1441/1441 tests (the UI component itself follows this codebase's existing pattern of relying on
+live verification for DB-backed page/route logic rather than a mocked unit test, consistent
+with `get-comparison.ts` having no pre-existing test file).

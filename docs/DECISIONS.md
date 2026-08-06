@@ -6,6 +6,21 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-220 — Black Box campaign eligibility surfaced on the existing compare page (Level 2, no new storefront) · Accepted (2026-08-06)
+**Context.** ADR-219 released `campaign_eligibility` at the API layer (`GET /api/v1/tps/search`) only, explicitly deferring any web-UI representation because no Black Box storefront-layer product page exists. A follow-up task asked for a bounded feasibility check: reuse an EXISTING customer surface if one can safely receive the field with a small change; otherwise report the blocker and stop — do not build new storefront architecture.
+
+**Finding: the compare page already has everything needed.** `src/lib/compare/get-comparison.ts` already performs an identical `_raw_id → raw_observations` provenance join for `scrapedAtByRawId` (used for freshness disclosure). Extending that SAME join to also read `payload.specifications.campaign_eligibility` and pass it through `deriveCampaignEligibility` (reused unmodified from ADR-219) required no new query, no schema change, and no new architecture — one additional field on the already-fetched row. `src/app/[locale]/(public)/compare/[key]/page.tsx` already renders a per-offer freshness disclosure line in the exact place a conditional-offer note belongs.
+
+**Decision: Option A — implement.** `CompareOffer.campaign_eligibility` added to `get-comparison.ts`'s output (TTL-gated, same as the API). The compare page renders a small, secondary `CampaignEligibilityNote` — Level 2 wording only (no SAR amount, no exact gift identity), a "last verified" freshness line reusing the page's existing day-count phrasing, and a link to the official campaign page — attached to the cheapest-offer panel and to each row in the "All Offers" list. Deliberately NOT visually dominant: styled as a small amber note below the price, never replacing or resembling a price.
+
+**What was explicitly NOT done:** no new storefront/product-page architecture (none needed — the fix landed entirely inside the existing compare-page data path); no exact SAR-1 claim (still unconfirmed, per ADR-219); no change to the 72h TTL, the scheduler, or any of ADR-217/218/219's other decisions.
+
+**Verification:** TypeScript clean (no new errors beyond the same pre-existing Supabase-generated-types class already tolerated in this file), full suite 94/94 suites passing, live production check on `/ar/compare/lg|side_by_side|660|inverter` (a canonical carrying a freshly campaign-eligible Black Box offer) confirms the note renders with correct Arabic wording, freshness, and official link, while non-eligible offers on the same page show nothing.
+
+**Full detail:** `docs/BLACKBOX-RETAILER-ONBOARDING.md` §16.
+
+---
+
 ### ADR-219 — Black Box "مهرجان الريال" conditional-offer campaign: official first-party evidence, Level 2 web release, automatic TTL expiry · Accepted (2026-08-06)
 **Context.** ADR-217/218 released Black Box's standalone catalogue and exposed per-SKU `free_gifts[]` evidence via the API, but explicitly held back the Founder-described "buy fridge get washer for 1 SAR" campaign as unverified (no first-party confirmation of the specific pairing existed at the time). The Founder then supplied the retailer's own official post as first-party evidence: `https://x.com/blackboxksa/status/2085321446625091743`, a verified organization account, posted 2026-08-06T11:05:50Z (same day) — verbatim: "مهرجان الريال 🔥 على الموعد بالصندوق الأسود! اشترِ ثلاجة، واحصل على غسالة بـ 1 ريال فقط / أو اشترِ غسالة، واحصل على غسالة صحون بـ 1 ريال فقط..." with financing terms (bank installment 12mo, Emkan/Madfu 6, Tamara 12) and a campaign link.
 

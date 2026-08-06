@@ -6,13 +6,21 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, ShieldCheck, Trophy, ArrowRight } from 'lucide-react';
+import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
+
+interface CampaignEligibility {
+  eligible: true;
+  message_ar: string;
+  message_en: string;
+  official_source_url: string;
+  last_verified_at: string;
+}
 
 interface CompareOffer {
   store_name:   string;
@@ -23,6 +31,7 @@ interface CompareOffer {
   confidence:   number;
   observed_at:  string;
   is_verified:  boolean;
+  campaign_eligibility: CampaignEligibility | null;
 }
 
 interface CompareResult {
@@ -117,6 +126,43 @@ export async function generateMetadata({
         : `Compare ${name} prices across Saudi retailers.`),
     alternates,
   };
+}
+
+/** Same day-count freshness phrasing already used for `observed_at` below, reused for the
+ *  campaign's "last verified" disclosure so the two freshness signals read consistently. */
+function freshnessLabel(iso: string, isAr: boolean): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return isAr ? 'اليوم' : 'today';
+  if (days === 1) return isAr ? 'أمس' : 'yesterday';
+  return isAr ? `قبل ${days} يومًا` : `${days} days ago`;
+}
+
+/**
+ * Level-2 conditional-campaign notice (e.g. Black Box's "مهرجان الريال" — see
+ * blackbox-riyal-festival.ts, ADR-220). Deliberately small and secondary: this states
+ * ELIGIBILITY, never a price — the badge must never look like, or sit where a customer
+ * would read it as, a second product price. TTL-gated upstream (get-comparison.ts); once
+ * `campaign_eligibility` goes null (stale or removed by the retailer) this renders nothing,
+ * automatically, with no code change needed here.
+ */
+function CampaignEligibilityNote({ offer, isAr }: { offer: CompareOffer; isAr: boolean }) {
+  const c = offer.campaign_eligibility;
+  if (!c) return null;
+  return (
+    <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 px-2.5 py-1.5">
+      <Gift className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" />
+      <div className="min-w-0 text-[11px] leading-snug text-amber-900 dark:text-amber-300">
+        <p>{isAr ? c.message_ar : c.message_en}</p>
+        <p className="mt-0.5 text-amber-700/80 dark:text-amber-400/70">
+          {isAr ? `آخر تحقق: ${freshnessLabel(c.last_verified_at, true)}` : `Last verified: ${freshnessLabel(c.last_verified_at, false)}`}
+          {' · '}
+          <a href={c.official_source_url} target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">
+            {isAr ? 'تحقق من الشروط لدى المتجر' : "Confirm terms with the retailer"}
+          </a>
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default async function TpsComparePage({
@@ -328,6 +374,8 @@ export default async function TpsComparePage({
               </div>
             </div>
 
+            <CampaignEligibilityNote offer={cheapestOffer} isAr={isAr} />
+
             {cheapestOffer.product_url ? (
               <a
                 href={cheapestOffer.product_url}
@@ -361,8 +409,9 @@ export default async function TpsComparePage({
               {offers.map((offer, idx) => (
                 <div
                   key={`${offer.store_name}-${idx}`}
-                  className="flex items-center justify-between gap-4 px-4 py-4 hover:bg-[color:var(--color-surface-container-low)] transition-colors"
+                  className="px-4 py-4 hover:bg-[color:var(--color-surface-container-low)] transition-colors"
                 >
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-semibold text-on-surface">{offer.store_name}</span>
                     <span className="text-xs text-on-surface-variant truncate max-w-[200px] mt-0.5">
@@ -415,6 +464,8 @@ export default async function TpsComparePage({
                       </span>
                     )}
                   </div>
+                </div>
+                <CampaignEligibilityNote offer={offer} isAr={isAr} />
                 </div>
               ))}
             </div>
