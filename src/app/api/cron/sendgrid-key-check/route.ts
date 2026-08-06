@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       isMailSendOnlyProfile: scopes.length > 0 && scopes.every((s) => s.startsWith('mail.send')),
       self: { id: identity.selfId, name: identity.selfName, isCompromisedByName: identity.isCompromisedByName },
       accountKeys: identity.allKeys, // [{id, name}] — non-secret metadata for every key in the account
+      accountKeysListStatus: identity.listStatus, // HTTP status of the underlying GET /v3/api_keys call — diagnostic only
     });
   } catch (error) {
     return NextResponse.json({ sendgridApiKeyPresent: true, keyValid: null, error: error instanceof Error ? error.message : 'check failed' }, { status: 200 });
