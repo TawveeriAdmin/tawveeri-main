@@ -1,3 +1,43 @@
+# ═══ RESUME HERE — 2026-08-07 CHECKPOINT #62 · P0 PRICE-TRUTH FIXED (PLATFORM-WIDE) · P1 RETAILER DIRECTORY NEXT ═══
+
+## Corroboration was picking the historic CHEAPEST price ever staged per store, not the current one — fixed, unit-tested, deployed, production-verified live; a bounded stale-price disclosure shipped alongside it
+
+**Full detail: ADR-221 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #61 as the resume point (#61's content preserved below). P1 (retailer public-directory consistency — Black Box/Winter & Summer missing from `/stores`) is the explicit next unit in the same task; not started as of this checkpoint if you are resuming mid-session, otherwise see whichever later checkpoint covers it.
+
+### What happened
+Founder reported `/ar/compare/lg|side_by_side|660|inverter` ranking Amazon "cheapest" at a stale 3,919 SAR while Amazon's real price was 4,164.15 and Black Box may have undercut it. Traced end-to-end (read-only first): `raw_observations`/`normalized_product_observations` already held the correct 4,164.15 SAR Amazon price from TWO successful re-scrapes on 2026-08-06 — the pipeline had already done its job — but `price_history` still showed 3,919 from 2026-07-23.
+
+### Root cause
+`corroboratePass` (`scripts/tps-core/progressive-engine.ts`) picked each store's price via `priced.reduce((a,b) => a.price <= b.price ? a : b)` over ALL staging ever accumulated for an identity_key (`tps_identity_staging` is a permanent, unpruned per-observation log by design). A price can only ever fall to its historic minimum and get stuck there forever — a genuine later price rise always loses the min-reduce to an older, cheaper row that never leaves the table. Platform-wide measurement confirmed this was systemic: every major retailer's price_history showed a median "freshest observation" of 100–340+ hours despite scraping running every 6–24h.
+
+### Fix
+Extracted + fixed the selection (`selectCurrentOffer`, unit-tested, 6 cases) to pick the MOST RECENTLY OBSERVED priced offer per store, never the cheapest ever seen — a single change that benefits every category/store pairing platform-wide, not just this canonical. Added a bounded stale-price disclosure: `get-comparison.ts` computes `stale`/`cheapest_stale` (reusing evidence-engine's existing 72h `STALE_CAVEAT_HOURS`, newly exported — one authority per question), and the compare page shows a small secondary note on any stale offer (same pattern as the existing `CampaignEligibilityNote`).
+
+### Amazon / Black Box / Winter & Summer — independently re-verified live, not assumed from the Founder's screenshot
+- **Amazon**: confirmed 4,164.15 SAR live (exact match to the Founder's own check) — a real price rise the pipeline had already captured and was discarding.
+- **Black Box**: re-scraped live (495 fresh observations via its provider feed) — confirmed 4,749 SAR / 8,999 original for the exact SKU, UNCHANGED. **The Founder's 4,037 SAR was not reproduced** — reported as unresolved (possible flash discount already ended, or cart/coupon-conditional), not guessed. Two known Black Box SKUs map into this canonical at genuinely different prices (4,749 vs 4,899) — a real, secondary variant-looseness in this "fallback"-tier identity key, noted but not in scope to fix here.
+- **Winter & Summer**: confirmed 4,899 SAR live, unchanged — not the source of the discrepancy.
+
+### Production execution (ADR-099 respected)
+Waited for the in-flight automatic hourly refresh to finish (heartbeat + idle `pg_stat_activity` confirmed), then ran two additive-only bounded steps: targeted re-observation of the three offers via the SAME write path `reobserve-comparables.ts` uses, then ONE serialized `refresh-intelligence.ts --only normalize` pass (corroborated 32 identity keys platform-wide, not just this canonical). No concurrent heavy job, no manual price patch.
+
+### Live before/after (`https://tawveeri.com/ar/compare/lg%7Cside_by_side%7C660%7Cinverter`)
+Before: Amazon 3,919 (stale, wrongly cheapest). After: Amazon 4,164 ("رصدناه اليوم", still genuinely cheapest — truthfully this time), Black Box 4,749, Winter & Summer 4,899, Alnakheelk 4,899 (all "رصدناه اليوم"), Almanea 4,899 — **"رصدناه قبل 4 يومًا" with the new stale-disclosure caveat rendering live** (not re-touched by this session's targeted re-observation, so its genuine staleness is now honestly disclosed instead of silently presented as current).
+
+### Tests
+`tests/pipeline/price-current-offer-selection.test.ts` (new, 6 cases). Full suite: 95/95 suites, 1447/1447 tests (was 94/1441). TypeScript clean (only the same pre-existing tolerated Supabase-generated-types class in `get-comparison.ts`, no new error categories).
+
+### Cadence/architecture measurement (kept for P1 and future reference)
+Intelligence refresh (normalize→corroborate→project): hourly. `INGEST_STORES` (scraper, production value: `noon,lulu,sharafdg,extra`): discovery 12h, price-update 6h/300 products/store. `INGEST_FEED_STORES` (`almanea,shaker,najm,alnakheelk,swsg`): every 6h. `reobserve-comparables` (ADR-195): every 6h/60 total, but ONLY ever re-verifies a comparable's current CHEAPEST offer. **Amazon, Jarir, Black Box, Samsung Saudi are in none of the three scheduled loops** — a non-cheapest or non-comparable listing from these four has no automated re-verification path. Real gap, deliberately not re-architected in this unit (out of P0's bound).
+
+### Not touched
+Black Box's SAR-1 conditional-campaign semantics/TTL, auth/OTP, SendGrid, the daily Founder-report cron, Amazon/Noon affiliate neutrality, unrelated retailers, search architecture, TPS identity rules, the compare-page `go_click` instrumentation gap (known, explicitly out of scope).
+
+### Next (P1, same task, not yet started as of this checkpoint)
+Retailer public-directory consistency: `/ar/stores` reports 7 stores and is missing Black Box and Winter & Summer despite both being genuine, display-approved, customer-visible comparison offers (proven live on this exact page). Prior audit found Black Box has `raw_observations` but zero legacy `product_stores` rows and `/stores` partly depends on `product_stores` population — Founder directive: do not assume that's the final desired architecture: find the correct governed source-of-truth reconciliation, not a two-name hardcode.
+
+---
+
 # ═══ RESUME HERE — 2026-08-06 CHECKPOINT #61 · BLACK BOX CAMPAIGN ELIGIBILITY NOW VISIBLE ON THE COMPARE PAGE ═══
 
 ## Bounded feasibility check → the compare page could safely receive campaign_eligibility with a small change, so it now shows the Level 2 note — no new storefront built
