@@ -362,12 +362,23 @@ export default async function TpsComparePage({
         {cheapestOffer && (
           <div className="relative overflow-hidden rounded-2xl border-2 border-[var(--brand-green)]/40 bg-[color:var(--color-surface-container-low)] p-5 md:p-6">
             {/* With a single offer there is no "best" — claiming one would be a false
-                comparison (ADR-135). The badge appears only when something was compared. */}
+                comparison (ADR-135). The badge appears only when something was compared.
+                P0 claim-safety (2026-08-07): «أفضل سعر الآن» ("best price NOW") is the same
+                overclaim §10 of docs/LAUNCH_VOCABULARY.md already retired («أفضل سعر حالياً» /
+                "Current best price") — a superiority-plus-currency claim this evidence cannot
+                back once it is stale (measured: 86.7% of comparable canonicals currently have a
+                stale offer sitting at the numeric minimum). When `cheapestOffer.stale`, this
+                switches to the ALREADY-GOVERNED replacement text (§10: «آخر سعر رصدناه» /
+                "Last Observed Price" — reused verbatim, not new copy) instead of the superiority
+                badge. Still the numerically lowest offer, still shown, still fully priced — only
+                the claim of verified currentness is withdrawn. Fresh offers are unaffected. */}
             {offers.length > 1 && (
               <div className="flex items-center gap-2 mb-4">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
                   <Trophy className="h-3 w-3" />
-                  {isAr ? 'أفضل سعر' : 'Best Price'}
+                  {cheapestOffer.stale
+                    ? (isAr ? 'آخر سعر رصدناه' : 'Last Observed Price')
+                    : (isAr ? 'أفضل سعر' : 'Best Price')}
                 </span>
               </div>
             )}
@@ -376,7 +387,9 @@ export default async function TpsComparePage({
               <div className="flex flex-col min-w-0">
                 <span className="text-xs text-on-surface-variant mb-1">
                   {offers.length > 1
-                    ? (isAr ? 'أفضل سعر الآن عند' : 'Best price at')
+                    ? (cheapestOffer.stale
+                        ? (isAr ? 'آخر سعر رصدناه عند' : 'Last observed price at')
+                        : (isAr ? 'أفضل سعر الآن عند' : 'Best price at'))
                     : (isAr ? 'متوفر عند' : 'Available at')}
                 </span>
                 <span className="text-base font-bold text-on-surface">
