@@ -1,3 +1,41 @@
+# ═══ RESUME HERE — 2026-08-07 CHECKPOINT #64 · BOUNDED PRICE-FRESHNESS CLOSURE · 4 RETAILERS ADDED TO EXISTING LOOPS + STALE CLAIM-SAFETY WORDING ═══
+
+## Amazon/Jarir/Samsung Saudi/Black Box added to the EXISTING scraper/feed loops (config only) + the compare page no longer says "best price NOW" for a stale offer
+
+**Full detail: ADR-223 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #63 as the resume point (#63's P1 content preserved below). Does NOT reopen ADR-221 or ADR-222.
+
+### What happened
+Follow-up to ADR-221's finding that Amazon/Jarir/Black Box/Samsung Saudi sat outside the three scheduled refresh loops. Did the mandated global research pass first (Google Merchant Center, idealo/PriceRunner/PriceSpy, 2026 agentic-commerce sources) — found no universal safe staleness threshold anywhere, and confirmed Tawveeri's existing disclosure approach is already consistent with (arguably ahead of) documented practice. Then measured production fresh rather than trusting ADR-221's numbers: confirmed the gap is real, and worse than reported — Black Box and Samsung Saudi aren't even in `reobserve-comparables.ts`'s store map, so they had ZERO automated re-observation of any kind (not even incidental). Platform-wide: **903 of 1,041 (86.7%) active comparable canonicals currently have their numerically cheapest offer backed by evidence older than 72h.**
+
+### Decision: BOTH small changes (Option 4), no new architecture
+1. **Coverage, config-only.** All four retailers already have a WORKING existing integration (amazon/jarir/samsung_ksa: `ScrapingOrchestrator` scraper, already `sourcing:"scraper"` in the provider registry; blackbox: the `nextjsSsr` provider adapter, already proven live at 495-offer scale during the P0 session). Added them to the Railway env vars that already drive the existing loops — `INGEST_STORES` and `INGEST_FEED_STORES` — no new service, no new code path, no new scheduler.
+2. **Claim-safety, one file.** The compare page's featured-offer badge read «أفضل سعر الآن» ("best price NOW") **even when the offer was stale**. Same overclaim `docs/LAUNCH_VOCABULARY.md` §10 already retired for the same stated reason ("we report observed evidence, not a guaranteed current market price"). Switched to that SAME already-Founder-approved replacement text verbatim when `cheapestOffer.stale` — «آخر سعر رصدناه» / "Last Observed Price" — no new copy. Fresh offers unaffected.
+
+### Verification (production)
+Env vars confirmed set (`INGEST_STORES=noon,lulu,sharafdg,almanea,extra,amazon,jarir,samsung_ksa`; `INGEST_FEED_STORES=almanea,shaker,najm,alnakheelk,swsg,blackbox`); scheduler confirmed freshly booted with the new values active (`tps_scheduler_heartbeat`, new pid, ticking). Compare page verified live both ways: the already-fresh LG-fridge canonical still reads "Best Price Now" (unaffected); a genuinely stale live example (Jarir, Samsung Z Fold 7, 11 days old) confirmed via raw HTML to now render «آخر سعر رصدناه» with the existing stale caveat still beneath it.
+
+### 72-hour threshold
+Retained unchanged. No evidence — global or production — argued for a different number.
+
+### Tests
+No new test file (compare page has no prior unit test — same established precedent as `get-comparison.ts`, verified live). TypeScript clean. Full suite unaffected: 95/95 suites, 1447/1447 tests.
+
+### Found via audit, documented for LATER, NOT started
+- Demand-aware refresh prioritization (weight the scheduler by recent search/`/go`/comparison signals) — a real subsystem, not a config change; genuinely useful per research, correctly out of this bound.
+- The vocabulary scanner's `price-currency-claim` regex doesn't match «الآن» (only «الحالي» variants) — this instance was found by manual audit. Extending the regex needs a codebase-wide false-positive sweep first.
+- The legacy product-detail page (`BestPriceCard`, `/products/[slug]`) has the identical unconditional "best price now" wording, but its data source (`product_stores.last_checked_at`) is a different, unmeasured pipeline — flagged, not fixed, per "measure before implementing."
+
+### Deployment
+Commit `2a22eba` on top of `92dd692`/`8fa2004`/`45e90fe`/`2ccb21e` — confirmed `SUCCESS` on `tawveeri-main`.
+
+### Not touched
+ADR-221, ADR-222 (not reopened), Black Box campaign/TTL, Amazon/Noon affiliate neutrality, `isDisplayableRetailer()`, retailer counts, `go_click` instrumentation, Founder daily report, auth/OTP, SendGrid, anon-grants hardening, any new scheduling architecture.
+
+### Next
+Public Truth / price-freshness work is closed for this task. Three LATER items above are candidates for a future unit if the Founder wants them — none started.
+
+---
+
 # ═══ RESUME HERE — 2026-08-07 CHECKPOINT #63 · P1 RETAILER DIRECTORY RECONCILED · PUBLIC TRUTH PROGRAM CLOSED ═══
 
 ## Trusted Stores directory was counting only the legacy product_stores table — fixed with a general TPS-layer fallback (found 2 more affected retailers beyond the Founder's original report), deployed, production-verified
