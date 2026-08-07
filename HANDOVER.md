@@ -7968,3 +7968,77 @@ separate risk surface. IndexNow — researched, low-priority (Bing/Yandex only).
 2. Everything already queued before this mission (U2b weekly check, custom-scraper major
    overlap verification, Master Book §2.1/§9/§11) is UNCHANGED and still next in line — this
    was a bounded, separate mission per the founder's own scope fence, not a phase-2 continuation.
+
+---
+
+# ═══════════ RESUME POINT — 2026-08-07 (2) · PUBLIC-TRUST/IA CLOSEOUT SHIPPED · START HERE ═══════════
+
+## MISSION: make the public information/trust layer intentional before real marketing (founder brief)
+Bounded mission, separate from the SEO/AI-discoverability unit shipped earlier the same day
+(ADR-226) — see `docs/DECISIONS.md` ADR-227 for full reasoning per decision.
+
+## SHIPPED — ADR-227, commit `9575246`, pushed to `origin/main`
+- **Contact (`/contact`) and FAQ (`/faq`) built** — both were true 404s, linked from the footer
+  on every page. Contact: email-only (`info@tawveeri.com`, already the site's real operational
+  address), categorized mailto links, explicit Tawveeri-vs-retailer distinction, no phone/
+  WhatsApp (the founder-mentioned number `0554311038` is NOT provisioned/confirmed anywhere in
+  the codebase — do not publish it without direct founder confirmation). FAQ: native
+  `<details>` accordion, covers the customer journey, ONE canonical affiliate disclosure
+  (`#affiliate`, open by default) carrying Amazon's exact required wording.
+- **Terms + Privacy rewritten.** Both previously called `t('legal.terms')`/`t('legal.privacy')`
+  — no `legal` namespace exists anywhere in `messages/{ar,en}`, so both rendered the literal
+  key as their heading in production. Replaced with real, tailored bilingual copy (non-seller
+  role, retailer-transaction disclaimer, real PDPL data map, cross-border processor disclosure
+  for Supabase/SendGrid). No CR/VAT/address fabricated — flagged as a founder action item.
+- **Coupons demoted from primary nav** (header quicklinks + footer), route/data untouched.
+  Production has exactly ONE coupon (Noon `DNC160`, ADR-181) with `expires_at=null` — real
+  source, zero revalidation contract. Verified via anon REST directly against production.
+- **Deals kept** — real evidence-tiered engine (ADR-129/211), just fixed stale "phone deals"
+  copy that undersold its actual all-category scope.
+- **Footer**: "Made in Saudi Arabia" removed, replaced with «قارن، وفر بذكاء» / "Compare smart.
+  Save more."; Blog link removed (no content exists); redundant "Search products" link removed;
+  per-page commission blurbs consolidated into ONE sitewide footer line → FAQ `#affiliate`.
+- **How It Works fully rebuilt** — previous version had no header/footer, ignored `[locale]`
+  (served Arabic on `/en`), hardcoded dark palette, a stale/wrong retailer list, and a
+  "complete safety" guarantee Tawveeri can't make. Same consumer-journey altitude as `/about`,
+  zero proprietary mechanics, zero retailer count (LAUNCH_VOCABULARY's retired-count amendment).
+- **About**: one sentence reworded — "our number is often lower than the retailer's" could read
+  as "Tawveeri sells below the retailer's price." Now explicit: it's about the discount
+  percentage we publish vs. what the retailer advertises, not a selling price.
+- **Stores**: one non-repeated no-partnership clarification added; `stores.json` subtitle fixed
+  (was «متاجرنا الشريكة» / "our partner stores" — an unsupported partnership claim).
+- **404**: added a "browse categories" recovery link. **Sitemap**: added `/contact`, `/faq`.
+
+**Verified before deploy:** `tsc --noEmit` clean on every touched file (pre-existing unrelated
+errors elsewhere untouched); full suite 95/95 suites, 1450/1450 tests; local dev server —
+every visible header/footer/info-page destination curled 200 in both locales, unknown routes
+still 404; grepped rendered HTML to confirm zero `legal.terms`-style leaked i18n keys, zero
+rendered "Made in Saudi"/blog/coupons-nav text, contact mailtos well-formed, FAQ affiliate
+wording present, How It Works no longer contains the stale retailer grid, Deals headline fixed,
+Stores disclaimer present. **`npm run build` locally hit Windows-specific ENOENT races in
+Next's post-build trace/copy phase (different file each retry — 500.html rename, then a
+webpack chunk resolve, then `_app.js.nft.json`)** — NOT a code defect: `Generating static pages
+(41/41)` succeeded cleanly three consecutive attempts, meaning every route including the new
+ones rendered without runtime error each time; only Next's Windows-only housekeeping step is
+flaky in this environment. Deploy verification was done against the live pushed commit instead.
+
+## FOUNDER ACTION ITEMS (from ADR-227 — not resolved this session, by design)
+1. Confirm whether `0554311038` is provisioned for public Tawveeri support / WhatsApp Business.
+   Not published until confirmed.
+2. Real CR number / VAT number / registered address for Terms/Privacy, if and when they exist.
+3. Whether Maroof/MC Business Platform registration applies to a non-transacting comparison
+   site — no primary source resolved this either way; worth a direct query to MC.
+4. Separate, unresolved ENGINEERING question (Amazon Associates Participation Requirements
+   §2(b)): whether `/go`/comparison cards show LIVE Amazon pricing vs. a cached scrape when
+   comparing against other retailers, and whether the lowest "used" price is shown where
+   available. Out of this mission's bound (touches the price engine) — flagged, not fixed.
+
+## NOT DONE THIS SESSION (deliberately — see ADR-227 for reasoning)
+No blog. No coupon-ingestion infrastructure. No new affiliate agreements. No retailer onboarding.
+No TPS/ranking/price-engine changes. No legal entity/CR creation.
+
+## NEXT SESSION
+1. Verify the founder action items above once the founder has answered them, and update
+   Contact/Terms/Privacy accordingly.
+2. Everything queued before this mission (U2b weekly check, custom-scraper overlap
+   verification, Master Book §2.1/§9/§11, Search Console baseline from ADR-226) is UNCHANGED.
