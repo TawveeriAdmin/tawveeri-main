@@ -359,6 +359,15 @@ export default function StoresListingClient() {
                 ? 'قارن المتاجر والعروض من متاجر السعودية في صفحة واحدة واضحة.'
                 : 'Compare stores and offers from Saudi stores in one clear page.'}
             </p>
+
+            {/* ONE placement for this clarification (mission §10) — not repeated per-card or
+                per-page elsewhere. Store names/logos are trademarks of their owners, used only
+                to identify a price source. */}
+            <p className="mt-3 max-w-2xl text-[12.5px] leading-6 text-[color:var(--color-on-surface-variant)]/80">
+              {isRTL
+                ? 'المتاجر الظاهرة هنا هي مصادر الأسعار والمنتجات التي نرصدها. ظهور متجر لا يعني بحد ذاته شراكة أو رعاية أو تأييدًا من توفيري، إلا إذا ذُكر ذلك صراحة.'
+                : 'Stores shown here are sources of the prices and products we observe. A store’s appearance does not by itself mean a partnership, sponsorship, or endorsement by Tawveeri, unless explicitly stated.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] dark:bg-[color:var(--color-surface-container)]">

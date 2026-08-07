@@ -48,12 +48,12 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
     ? [
         { title: 'مصدر السعر ظاهر', desc: 'نعرض لك من أي متجر جاء السعر، ومتى رصدناه.' },
         { title: 'الرابط يوصلك للمنتج نفسه', desc: 'الرابط ينقلك إلى نفس المنتج في المتجر.' },
-        { title: 'لا ننشر توفيرًا لم نرصده', desc: 'لا ننشر توفيرًا إلا إذا رصدناه بأنفسنا — ورقمنا غالبًا أقل من رقم المتجر.' },
+        { title: 'لا ننشر توفيرًا لم نرصده', desc: 'لا ننشر نسبة خصم إلا إذا رصدنا الانخفاض بأنفسنا — ونسبتنا غالبًا أقل من نسبة الخصم التي يعلنها المتجر، لأننا لا نحتسب خصمًا لم نشهده.' },
       ]
     : [
         { title: 'The source is visible', desc: 'We show which retailer each price came from, and when we observed it.' },
         { title: 'The link goes to that product', desc: 'The link takes you to that exact product at the retailer.' },
-        { title: 'We publish only what we observed', desc: 'We publish a saving only when we observed the drop ourselves — our number is often lower than the retailer’s.' },
+        { title: 'We publish only what we observed', desc: 'We publish a discount percentage only when we observed the price drop ourselves — our figure is often lower than the retailer’s advertised discount, because we don’t count a discount we didn’t witness.' },
       ];
 
   return (

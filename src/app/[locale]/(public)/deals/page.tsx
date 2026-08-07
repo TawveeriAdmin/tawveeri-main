@@ -18,7 +18,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE
 
 const T = {
   ar: {
-    metaTitle: "عروض الجوالات الحقيقية اليوم — مكتشفة تلقائياً",
+    // ADR-related fix (public-trust/IA closeout, 2026-08-07): this copy said "عروض الجوالات"
+    // (PHONE deals) — a leftover from when the surface was mobile-only. getDeals() has
+    // sourced ALL categories from product_stores since the ADR-129/211 rewrite; the headline
+    // undersold what the page actually shows and was never corrected. Fixed to match scope.
+    metaTitle: "عروض حقيقية اليوم — مكتشفة تلقائياً",
     metaDesc:
       "عروض حقيقية محسوبة من تاريخ الأسعار الفعلي في المتاجر السعودية — لا خصومات مزعومة. أسعار أقل من المتوسط وأقل أسعار مسجّلة، محدّثة تلقائياً على مدار اليوم.",
     h1: "🔥 عروض اليوم الحقيقية",
@@ -34,11 +38,11 @@ const T = {
     emptyBody: "محرك العروض يراقب الأسعار على مدار اليوم — عُد قريباً، أو",
     browse: "تصفّح الفئات",
     footer:
-      "الخصومات محسوبة مقابل السعر الأصلي المسجّل في المتجر. الأسعار تتغير — توفيري قد يحصل على عمولة عند الشراء عبر الروابط.",
+      "الخصومات محسوبة مقابل السعر الأصلي المسجّل في المتجر. الأسعار تتغير — تحقق من السعر النهائي في صفحة المتجر.",
     numberLocale: "ar-SA",
   },
   en: {
-    metaTitle: "Real phone deals today — detected automatically",
+    metaTitle: "Real deals today — detected automatically",
     metaDesc:
       "Real deals computed from actual price history at Saudi retailers — no claimed discounts. Prices below the average and lowest recorded prices, refreshed automatically through the day.",
     h1: "🔥 Today's real deals",
@@ -54,7 +58,7 @@ const T = {
     emptyBody: "The deal engine watches prices through the day — check back soon, or",
     browse: "browse categories",
     footer:
-      "Discounts are computed against the original price recorded at the store. Prices change — Tawveeri may earn a commission on purchases through links.",
+      "Discounts are computed against the original price recorded at the store. Prices change — check the final price on the retailer's page.",
     numberLocale: "en-US",
   },
 } as const;
@@ -79,7 +83,7 @@ export default async function DealsPage({ params }: { params: { locale: string }
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: isAr ? "عروض الجوالات الحقيقية في السعودية" : "Real phone deals in Saudi Arabia",
+    name: isAr ? "عروض حقيقية في السعودية" : "Real deals in Saudi Arabia",
     itemListElement: deals.map((d, i) => ({
       "@type": "ListItem",
       position: i + 1,

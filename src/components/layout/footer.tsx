@@ -20,27 +20,33 @@ export function Footer() {
   const { locale, isRTL } = useLocale();
   const t = useTranslations();
 
+  // IA CLOSEOUT (2026-08-07, public-trust mission). Every link here must earn its place:
+  //   - Blog removed: no maintained content destination exists (was a 404 already).
+  //   - Coupons removed from primary nav: production holds exactly ONE coupon row with no
+  //     expiry-tracking or revalidation contract (`expires_at` is null, so the expiry-warning
+  //     cron can never fire on it). The route still exists — not deleted, just not promoted.
+  //   - "بحث المنتجات"/"Search products" removed: it duplicated the header's own search field
+  //     and the "Browse all products" link already inside the categories menu — no distinct
+  //     destination of its own.
+  //   - Contact/FAQ were dead links (404) — now real pages, see src/app/[locale]/contact,
+  //     src/app/[locale]/faq.
   const columns: FooterColumn[] = useMemo(
     () =>
       isRTL
         ? [
             {
-              title: 'عن توفيري',
+              title: 'توفيري',
               links: [
                 { href: `/${locale}/about`,        label: 'من نحن'            },
                 { href: `/${locale}/how-it-works`, label: 'كيف تعمل المنصة'  },
-                { href: `/${locale}/blog`,          label: 'المدونة'           },
-                // الوظائف حُذفت — لا وظائف معلنة حالياً
               ],
             },
             {
-              title: 'تسوّق وقارن',
+              title: 'اكتشف',
               links: [
-                { href: `/${locale}/search`,     label: 'بحث المنتجات' },
-                { href: `/${locale}/deals`,      label: 'العروض'        },
-                { href: `/${locale}/coupons`,    label: 'الكوبونات'     },
-                { href: `/${locale}/stores`,     label: 'المتاجر'       },
-                { href: `/${locale}/categories`, label: 'الفئات'        },
+                { href: `/${locale}/categories`, label: 'الفئات'   },
+                { href: `/${locale}/stores`,     label: 'المتاجر' },
+                { href: `/${locale}/deals`,      label: 'العروض'  },
               ],
             },
             {
@@ -50,7 +56,6 @@ export function Footer() {
                 { href: `/${locale}/faq`,     label: 'الأسئلة الشائعة'   },
                 { href: `/${locale}/terms`,   label: 'الشروط والأحكام'   },
                 { href: `/${locale}/privacy`, label: 'سياسة الخصوصية'   },
-                // مركز المساعدة حُذف — يُعاد لاحقاً عند اكتمال المحتوى
               ],
             },
             {
@@ -67,21 +72,18 @@ export function Footer() {
           ]
         : [
             {
-              title: 'About',
+              title: 'Tawveeri',
               links: [
                 { href: `/${locale}/about`,        label: 'Who we are'       },
                 { href: `/${locale}/how-it-works`, label: 'How it works'     },
-                { href: `/${locale}/blog`,          label: 'Blog'             },
               ],
             },
             {
-              title: 'Shop & Compare',
+              title: 'Discover',
               links: [
-                { href: `/${locale}/search`,     label: 'Search products' },
-                { href: `/${locale}/deals`,      label: 'Deals'           },
-                { href: `/${locale}/coupons`,    label: 'Coupons'         },
-                { href: `/${locale}/stores`,     label: 'Stores'          },
-                { href: `/${locale}/categories`, label: 'Categories'      },
+                { href: `/${locale}/categories`, label: 'Categories' },
+                { href: `/${locale}/stores`,     label: 'Stores'     },
+                { href: `/${locale}/deals`,      label: 'Deals'      },
               ],
             },
             {
@@ -125,7 +127,7 @@ export function Footer() {
                 {isRTL ? 'توفيري' : 'Tawveeri'}
               </span>
               <span className="t-small mt-0.5 text-white/60">
-                {isRTL ? 'قارن. وفّر. بذكاء.' : 'Compare. Save. Smart.'}
+                {isRTL ? 'قارن، وفر بذكاء' : 'Compare smart. Save more.'}
               </span>
             </div>
           </div>
@@ -160,8 +162,38 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Bottom — copyright only (تطبيق حُذف — غير جاهز) */}
-        <div className="flex flex-col items-start gap-4 border-t border-white/10 pt-10 md:flex-row md:items-center md:justify-between">
+        {/* Affiliate disclosure — the ONE sitewide location (Founder Directive C). Short and
+            non-repeating on purpose: full detail lives in one FAQ answer this line links to.
+            The Amazon Associates Operating Agreement requires a "clear and prominent"
+            disclosure; a persistent footer line satisfies that without turning it into a
+            repeated sales message on every page. */}
+        <div className="border-t border-white/10 pt-6 text-white/50">
+          <p className="t-small">
+            {isRTL ? (
+              <>
+                توفيري منصّة مقارنة مستقلة. قد نحصل على عمولة من بعض المتاجر عند الشراء عبر
+                روابطنا — هذا لا يؤثر أبدًا على الأسعار أو الترتيب.{' '}
+                <Link href={`/${locale}/faq#affiliate`} className="underline hover:text-white">
+                  التفاصيل في الأسئلة الشائعة
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Tawveeri is an independent comparison platform. We may earn a commission from
+                some stores when you buy through our links — this never affects prices or
+                ranking.{' '}
+                <Link href={`/${locale}/faq#affiliate`} className="underline hover:text-white">
+                  Details in our FAQ
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </div>
+
+        {/* Bottom — copyright + brand line */}
+        <div className="flex flex-col items-start gap-4 border-t border-white/10 pt-6 md:flex-row md:items-center md:justify-between">
           <p className="t-small text-white/60">
             {isRTL
               ? `© ${new Date().getFullYear()} توفيري. جميع الحقوق محفوظة.`
@@ -170,10 +202,9 @@ export function Footer() {
           {/* P2-7 (1.4.3): white/30 on the #1A1A1A footer measured 2.72:1 in BOTH themes —
               the footer is dark either way, so this failed for every visitor. white/60 is
               the opacity the copyright line beside it already uses, and measures 6.9:1. */}
-          <div className="flex items-center gap-2 text-white/60 text-xs">
-            <span>🇸🇦</span>
-            <span>{isRTL ? 'مصنوع في السعودية' : 'Made in Saudi Arabia'}</span>
-          </div>
+          <p className="t-small font-semibold text-white/60">
+            {isRTL ? 'قارن، وفر بذكاء' : 'Compare smart. Save more.'}
+          </p>
         </div>
 
       </div>

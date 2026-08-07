@@ -8,7 +8,7 @@
 // a not-found boundary has no params. `/en/<missing>` therefore answers in English and `/ar/…`
 // in Arabic, instead of showing both languages stacked and hoping one of them was wanted.
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Search, LayoutGrid } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { getRequestLocale } from '@/lib/i18n/request-locale';
 
@@ -38,6 +38,13 @@ export default function NotFound() {
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             {isAr ? 'ابحث عن منتج' : 'Search for a product'}
+          </Link>
+          <Link
+            href={`/${locale}/categories`}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-outline-variant px-6 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+            {isAr ? 'تصفّح الفئات' : 'Browse categories'}
           </Link>
           <Link
             href={`/${locale}`}

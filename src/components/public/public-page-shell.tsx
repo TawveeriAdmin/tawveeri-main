@@ -22,7 +22,7 @@ import {
   CookingPot, Gamepad2, Globe, Headphones, Heart, Home,
   Laptop, LayoutDashboard, LayoutGrid, LogOut, Monitor, Moon,
   Package, Printer, Refrigerator, Search, SlidersHorizontal,
-  Smartphone, Sparkle, Store, Sun, Tablet, Tag, Ticket, Tv,
+  Smartphone, Sparkle, Store, Sun, Tablet, Tag, Tv,
   User, WashingMachine, Watch, Wifi,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -160,10 +160,12 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
   // ("Customers never choose between search · AI search · assistant"). The capability did
   // not go anywhere: the search box now routes need-based queries to the same reasoning
   // engine and renders the same answer component, and `/advisor` redirects into it.
+  // Coupons removed from primary nav (public-trust closeout, 2026-08-07): production holds
+  // exactly one coupon with no expiry-tracking contract — not a browsable surface yet. Route
+  // still resolves for anyone with the link; see footer.tsx for the fuller rationale.
   const quickNavLinks: Array<{ href: string; label: string; icon?: typeof Store }> = [
     { href: `/${locale}/stores`, label: t('nav.stores'), icon: Store },
     { href: `/${locale}/deals`, label: t('nav.deals'), icon: Tag },
-    { href: `/${locale}/coupons`, label: t('nav.coupons'), icon: Ticket },
   ];
 
   const isFakeEmail = user?.email?.startsWith('phone_') ?? false;
