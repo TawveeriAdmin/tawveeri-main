@@ -58,6 +58,33 @@ export interface SweepMetrics { fetched: number; staged: number; saturated: bool
 
 const GLOBAL = "_all_"; // cursor category for the single-pass scan
 
+/** One staged offer as seen by `selectCurrentOffer` — the subset of `Stg` fields it needs. */
+export interface StagedOfferForSelection { raw_obs_id: number; price: number | null; observed_at?: string | null }
+
+/**
+ * "Current price" for one (identity_key, store) pair = the MOST RECENTLY OBSERVED
+ * priced offer, never the historically cheapest one.
+ *
+ * `corroboratePass` groups ALL staging ever accumulated for a touched identity_key
+ * (see the load below — "across all slices ever normalized"), so this runs over a
+ * store's entire observation history, not just this run's new evidence. Picking by
+ * MIN(price) here (the pre-2026-08-07 behavior) meant a price could only ever fall to
+ * its historic low and get stuck there permanently: a later genuine price rise is a
+ * NEW staging row with a HIGHER price, which the min-reduce always loses to an older,
+ * cheaper row that never leaves the table. Reproduced live (P0 incident, 2026-08-07):
+ * an Amazon listing correctly re-scraped at 4,164.15 SAR twice on 2026-08-06 still lost
+ * to its own 3,919 SAR staging row from 2026-07-23, so the compare page kept ranking
+ * Amazon "cheapest" on a two-week-stale price. Ties keep the first-seen row.
+ */
+export function selectCurrentOffer<T extends StagedOfferForSelection>(priced: T[], fallback: T): T {
+  if (!priced.length) return fallback;
+  return priced.reduce((a, b) => {
+    const ta = a.observed_at ? Date.parse(a.observed_at) : -Infinity;
+    const tb = b.observed_at ? Date.parse(b.observed_at) : -Infinity;
+    return tb > ta ? b : a;
+  });
+}
+
 // ── Single-pass NORMALIZE across ALL categories. One id-indexed scan per store
 //    (no ILIKE → no slow filter, no per-category re-scan). Each row is classified
 //    by every plugin's detect(); matches are staged into their category. Global
@@ -292,7 +319,8 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     for (const sid of storeIds) {
       const so = offers.filter((o) => o.store_id === sid);
       const priced = so.filter((o) => o.price !== null);
-      const r = (priced.length ? priced.reduce((a, b) => (a.price! <= b.price! ? a : b)) : so[0]);
+      // See selectCurrentOffer's doc comment — P0 price-truth incident, 2026-08-07.
+      const r = selectCurrentOffer(priced, so[0]);
       matchRows.push({ raw_observation_id: normById.get(r.raw_obs_id), canonical_product_id: canonicalId, match_method: "tps_identity_key", confidence: groupConf, is_verified: false, matched_at: now, identity_resolution_event_id: null });
       // THE PRICE EVENT CARRIES WHEN WE OBSERVED IT, not when we processed it.
       //

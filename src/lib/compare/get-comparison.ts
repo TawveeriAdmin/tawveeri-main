@@ -26,6 +26,7 @@
 import { createServerClient } from '@/lib/database';
 import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
+import { STALE_CAVEAT_HOURS } from '@/lib/intelligence/evidence-engine';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 
 interface PriceRow {
@@ -62,6 +63,9 @@ export interface CompareOffer {
   availability: string | null;
   product_url: string | null;
   observed_at: string;
+  /** True when this offer's evidence is older than STALE_CAVEAT_HOURS — see the
+   *  computation site for why this exists (P0, 2026-08-07). */
+  stale: boolean;
   confidence: number;
   is_verified: boolean;
   /** Level-2 conditional-campaign evidence (e.g. Black Box's "مهرجان الريال") — never a
@@ -86,6 +90,10 @@ export interface ComparisonResult {
     highest_price: number | null;
     saving: number | null;
     store_count: number;
+    /** True when the offer backing `cheapest_store`/`lowest_price` is stale (see
+     *  CompareOffer.stale) — a surface must disclose this before letting a customer
+     *  act on "cheapest" as if it were freshly verified (P0, 2026-08-07). */
+    cheapest_stale: boolean;
   };
   offers: CompareOffer[];
   message?: string;
@@ -135,7 +143,7 @@ export async function getComparison(params: {
 
   const empty: ComparisonResult = {
     canonical: canonicalOut,
-    summary: { cheapest_store: null, lowest_price: null, highest_price: null, saving: null, store_count: 0 },
+    summary: { cheapest_store: null, lowest_price: null, highest_price: null, saving: null, store_count: 0, cheapest_stale: false },
     offers: [],
     message: 'No approved-retailer offers for this product yet',
   };
@@ -266,6 +274,23 @@ export async function getComparison(params: {
       const listing = listingBySlug.get(slug);
       // Prefer the measured /go exit (attributed) and fall back to the observed listing URL.
       const exitId = p.obsId ?? listing?.obsId ?? null;
+      // FRESHNESS, two rules composed:
+      // 1. For the PRICE-CHANGE event: the oldest verified provenance signal, never the
+      //    newest (observed-freshness.ts — signals describing the same event).
+      // 2. ADR-194: a LATER trusted re-observation of the pair (price unchanged by
+      //    construction — no newer price row exists) supersedes it: «رصدناه قبل X» must
+      //    state when we last SAW the offer, not when its price last moved.
+      const observedAt = (() => {
+        const changeEvent = displayedObservedAt({
+          stampedAt: p.observed_at,
+          provenanceAt: (() => {
+            const rawId = p.obsId ? rawIdByObsId.get(p.obsId) : undefined;
+            return rawId != null ? scrapedAtByRawId.get(rawId) ?? null : null;
+          })(),
+        }) ?? p.observed_at;
+        const reobserved = reobservedBySlug.get(slug);
+        return reobserved && Date.parse(reobserved) > Date.parse(changeEvent) ? reobserved : changeEvent;
+      })();
       return {
         store_slug: slug,
         store_name: retailerDisplayName(slug, locale) ?? slug,
@@ -273,23 +298,14 @@ export async function getComparison(params: {
         price: p.price,
         availability: p.availability,
         product_url: exitId ? `/go/${exitId}` : listing?.url ?? null,
-        // FRESHNESS, two rules composed:
-        // 1. For the PRICE-CHANGE event: the oldest verified provenance signal, never the
-        //    newest (observed-freshness.ts — signals describing the same event).
-        // 2. ADR-194: a LATER trusted re-observation of the pair (price unchanged by
-        //    construction — no newer price row exists) supersedes it: «رصدناه قبل X» must
-        //    state when we last SAW the offer, not when its price last moved.
-        observed_at: (() => {
-          const changeEvent = displayedObservedAt({
-            stampedAt: p.observed_at,
-            provenanceAt: (() => {
-              const rawId = p.obsId ? rawIdByObsId.get(p.obsId) : undefined;
-              return rawId != null ? scrapedAtByRawId.get(rawId) ?? null : null;
-            })(),
-          }) ?? p.observed_at;
-          const reobserved = reobservedBySlug.get(slug);
-          return reobserved && Date.parse(reobserved) > Date.parse(changeEvent) ? reobserved : changeEvent;
-        })(),
+        observed_at: observedAt,
+        // P0 stale-price safety (2026-08-07): "current price" must never be presented as
+        // freshly verified when it isn't. Reuses evidence-engine's single caveat threshold
+        // (STALE_CAVEAT_HOURS) rather than inventing a second one — one authority per
+        // question. Disclosure, not exclusion or reordering: a slow-cadence store's real
+        // last-known price is still a real price, so it still competes for "cheapest" — the
+        // page must say so plainly when that offer wins, not silently present it as current.
+        stale: (Date.now() - Date.parse(observedAt)) / 3_600_000 > STALE_CAVEAT_HOURS,
         confidence: listing?.confidence ?? canonical.identity_confidence ?? 100,
         is_verified: !!listing,
         // Keyed off the truly-newest observation for this retailer (newestRawIdBySlug), NOT
@@ -317,6 +333,7 @@ export async function getComparison(params: {
       saving,
       // DISTINCT RETAILERS, not offer rows — a store must never be counted twice (ADR-132).
       store_count: offers.length,
+      cheapest_stale: offers[0]?.stale ?? false,
     },
     offers,
   };

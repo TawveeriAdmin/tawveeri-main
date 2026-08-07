@@ -6,7 +6,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift } from 'lucide-react';
+import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift, AlertTriangle } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
@@ -30,6 +30,7 @@ interface CompareOffer {
   product_url:  string | null;
   confidence:   number;
   observed_at:  string;
+  stale:        boolean;
   is_verified:  boolean;
   campaign_eligibility: CampaignEligibility | null;
 }
@@ -51,6 +52,7 @@ interface CompareResult {
     highest_price:  number | null;
     saving:         number | null;
     store_count:    number;
+    cheapest_stale: boolean;
   };
   offers: CompareOffer[];
 }
@@ -161,6 +163,28 @@ function CampaignEligibilityNote({ offer, isAr }: { offer: CompareOffer; isAr: b
           </a>
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * P0 stale-price safety (2026-08-07): a price built from evidence older than
+ * STALE_CAVEAT_HOURS (evidence-engine.ts) must never be presented as freshly
+ * verified, especially when it is winning "cheapest". Disclosure, not exclusion —
+ * `offer.stale`/`get-comparison.ts` compute this from the SAME observed_at already
+ * rendered per offer below; this just makes it impossible to miss on the offer that
+ * actually determines the page's headline claim. Renders nothing once re-observed.
+ */
+function StaleEvidenceNote({ offer, isAr }: { offer: CompareOffer; isAr: boolean }) {
+  if (!offer.stale) return null;
+  return (
+    <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-900/40 px-2.5 py-1.5">
+      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-orange-700 dark:text-orange-400" />
+      <p className="min-w-0 text-[11px] leading-snug text-orange-900 dark:text-orange-300">
+        {isAr
+          ? 'هذا السعر مبني على آخر رصد لدينا وقد لا يعكس السعر الحالي لدى المتجر — تحقق منه قبل الشراء.'
+          : "This price is based on our last observation and may not reflect the retailer's current price — verify before buying."}
+      </p>
     </div>
   );
 }
@@ -375,6 +399,7 @@ export default async function TpsComparePage({
             </div>
 
             <CampaignEligibilityNote offer={cheapestOffer} isAr={isAr} />
+            <StaleEvidenceNote offer={cheapestOffer} isAr={isAr} />
 
             {cheapestOffer.product_url ? (
               <a
@@ -466,6 +491,7 @@ export default async function TpsComparePage({
                   </div>
                 </div>
                 <CampaignEligibilityNote offer={offer} isAr={isAr} />
+                <StaleEvidenceNote offer={offer} isAr={isAr} />
                 </div>
               ))}
             </div>

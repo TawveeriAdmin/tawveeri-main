@@ -76,6 +76,15 @@ export const EVIDENCE_ENGINE_VERSION = "trust-v1";
 export const PICK_FRESHNESS_MAX_HOURS = 168;
 
 /**
+ * Beyond this age, evidence is old enough to caveat as possibly stale (factor 4
+ * below). Reused outside the trust score itself wherever a surface needs to know
+ * "is this specific piece of evidence too old to present as current" without
+ * re-deriving its own threshold (e.g. the compare page's stale-price disclosure,
+ * P0 2026-08-07) — one authority per question.
+ */
+export const STALE_CAVEAT_HOURS = 72;
+
+/**
  * The one customer-facing rendering of "how old is this observation". Both the trust
  * factors and the pick surfaces use it — one fact, one representation. Day form
  * ≥48h («آخر رصد قبل 11 يومًا» / "Last observed 11 days ago") is in the approved
@@ -163,7 +172,7 @@ export function assessTrust(e: EvidenceInput): TrustAssessment {
       evidence_ar: known ? observedAgoLabel(h, "ar") : "زمن آخر رصد غير معروف",
       evidence_en: known ? observedAgoLabel(h, "en") : "observation time unknown",
     });
-    if (known && h > 72) { caveats_ar.push("قد تكون البيانات غير حديثة"); caveats_en.push("Data may be stale"); }
+    if (known && h > STALE_CAVEAT_HOURS) { caveats_ar.push("قد تكون البيانات غير حديثة"); caveats_en.push("Data may be stale"); }
   }
 
   // ── 5. Price consistency (0.08) — low cross-store spread = verification (ADR-077). ──
