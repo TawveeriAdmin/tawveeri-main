@@ -1,22 +1,36 @@
-# ═══ NEXT TASK — NOT STARTED · NOON AFFILIATE INTEGRATION (dedicated fresh session) ═══
+# ═══ RESUME HERE — 2026-08-07 CHECKPOINT #65 · NOON AFFILIATE ATTRIBUTION CORRECTED (ADR-181 → ADR-224) ═══
 
-**Status: not started in Claude Code.** No code, no ADR, no production change. This block exists only to carry forward Founder-gathered external evidence so the next session doesn't have to re-collect it. The engineering "RESUME HERE" pointer for completed work is checkpoint #64 immediately below — start there for context, then move to this task fresh.
+## Noon exits were carrying a stale/wrong publisher id (C1000094L) since ADR-181 — corrected to the real, dashboard-verified value across BOTH live Noon exit paths, deployed, production-verified
 
-### Founder-collected evidence (external, independent of this repo — treat as a starting point to verify, not as a proven contract)
-- Noon Affiliate Support (`affiliate.support@noon.com`) confirmed tracking/eligible conversions are managed through the Founder's Noon Affiliate account; performance/orders/commissions live in the Affiliate dashboard.
-- Founder logged into `affiliates.noon.partners` — account exposes: Home, Campaigns, Payments, Reports, Commission Structures, Terms & Conditions, Help & Support.
-- `Everyday Campaign` is ACTIVE, visible period 2026-04-22 to 2026-12-31.
-- Noon supports `Generate Custom Link` for direct product/catalogue URLs.
-- **One controlled deep-link test performed by the Founder**, product `N70177225V`: generated affiliate short link `https://s.noon.com/bEYIZNEGIn0`, opened it, confirmed it resolves to the SAME product. The resulting URL preserved `product id: N70177225V`, `o=b99870410d54bb4f`, and carried `utm_source=C1000264L`, `utm_medium=AFFfbc721aa80c8`, `utm_campaign=CMP2ce0b63a6a1anoon`, `adjust_deeplink_js=1`.
+**Full detail: ADR-224 in `docs/DECISIONS.md`.** This entry supersedes the "NEXT TASK — NOT STARTED" placeholder that previously sat here (the Noon Affiliate task started and finished in this session) and checkpoint #64 as the resume point (#64's content preserved below). Does not reopen ADR-221/222/223.
 
-### Explicit constraint carried forward
-This is evidence from **ONE** product test. **Do not generalize these exact parameter values into a universal Noon link-construction contract, and do not hardcode them.** The next session's first job is to research and independently prove Noon's actual link semantics (multiple products/categories, campaign vs. custom-link behavior, parameter stability) before any production integration — same evidentiary bar this session applied to price-freshness and retailer-directory work.
+### What happened
+Founder generated TWO independent, controlled Noon affiliate links via the dashboard's own "Generate Custom Link" feature, inside the active "Everyday Campaign," for two unrelated products (`N70177225V`, `N70395349V`). Both resolved correctly to their real product and both carried a byte-identical attribution set — `utm_source=C1000264L`, `utm_medium=AFFfbc721aa80c8`, `utm_campaign=CMP2ce0b63a6a1anoon`, `adjust_deeplink_js=1` — none of which matched what Tawveeri had been sending (`utm_source=C1000094L&utm_medium=referral`, set by ADR-181 on 2026-08-02 from a less specific, non-campaign-scoped link). Research (Adjust's documented UTM-mapping convention — Noon's affiliate short-links appear to run on Adjust) supports reading these as network/campaign/account-stable identifiers, not per-product values.
 
-### Likely future objective (not a plan, not started)
-`Tawveeri /go` → preserve the exact Noon product destination → apply valid Tawveeri Noon affiliate attribution → preserve Tawveeri's own internal outbound attribution → verify Noon-side tracking actually fires → keep affiliate economics fully neutral to organic ranking (constitutional invariant, non-negotiable).
+### Fix — both live Noon exit paths (found via audit, not assumed to be one path)
+1. **Governed `/go` boundary** (`src/lib/providers/registry.ts` + `link.ts`) — full 4-parameter set.
+2. **Legacy card/detail-page exit path** (`src/lib/transactions/affiliate-config.ts`, used by `product-card.tsx`/`product-detail-client.tsx`/`store-comparison-panel.tsx`) — this system's type only carries ONE param, so it gets `utm_source=C1000264L` alone. Documented as a known, accepted asymmetry, not expanded in this fix.
 
-### Explicitly deferred, not for this closeout or the opening of the next session without further Founder direction
-go_click instrumentation gap, anon/authenticated GRANT hardening, demand-aware refresh, unified storefront/TPS projection, further freshness optimization, new retailer onboarding, social/marketing, E16+ roadmap.
+### Ranking neutrality — proved
+`.affiliate`/`applyAffiliateTag` are read in exactly 4 places repo-wide, none in any ranking/search/recommendation function. `store-comparison-panel.tsx` sorts by price before affiliate tagging is even invoked. Unchanged by this fix — only a value was corrected, not the architecture.
+
+### Verification (production)
+Two real, current Noon offers redirected live via `/go/<offerId>` — both preserved exact product identity, both carried the corrected attribution, both recorded in `outbound_clicks` (`affiliate_program: "noon"`, `affiliate_tag: "C1000264L"`). Amazon (`tag=tawveeri0f-21`) and Jarir (no program, direct) reconfirmed unaffected.
+
+### Cannot be verified without a real purchase
+Whether Noon's Adjust integration actually credits the Founder's account for a resulting order — needs a real transaction reconciled in Noon's own Reports dashboard, or Noon-side confirmation. Not claimed as proven; no purchase was made or authorized.
+
+### Tests
+`tests/providers/affiliate-framework.test.ts`: 2 assertions corrected, 1 new test added (full param set + `o=` preservation + product-path integrity). Full suite: 95/95 suites, 1448/1448 tests. TypeScript clean.
+
+### Deployment
+Commit `cbbacdc` on top of the day's prior commits — confirmed `SUCCESS` on `tawveeri-main`.
+
+### Not touched
+ADR-221/222/223 (not reopened), price freshness, retailer directory, Amazon affiliate implementation (reconfirmed unchanged), TPS identity, Black Box campaign, `go_click` instrumentation, Founder daily report, auth/OTP, SendGrid, any commission/order/payment reconciliation, any new affiliate platform.
+
+### Next (documented, not started)
+Expanding the legacy `affiliate-config.ts` path to carry the full parameter set (parity with `/go`) — a real but small type change, deferred. Re-verifying `utm_campaign` if Noon rotates off "Everyday Campaign." Real-purchase conversion verification, whenever the Founder is ready to authorize one.
 
 ---
 
