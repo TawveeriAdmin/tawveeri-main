@@ -1,0 +1,24 @@
+# Config-as-code for ONLY the `daily-founder-report-cron` Railway service — isolated from the
+# shared /railway.toml (used by tawveeri-main/node/amusing-amazement) on purpose.
+#
+# ROOT CAUSE (2026-08-07): this service used to rely on a dashboard-only startCommand override
+# (a one-shot `node -e "fetch(...)"` call against POST /api/cron/daily-founder-report). Every
+# service in this Railway project builds from the same repo/branch, and a push to `main` (any
+# commit, unrelated to this service) triggers Railway to redeploy every connected service using
+# `configFile: "/railway.toml"` — which resolves `[deploy].startCommand` to "npm run start" for
+# ALL of them, silently discarding the dashboard override. The 2026-08-06 21:00 UTC push
+# redeployed this service with "npm run start" (the full Next.js server, which never exits), so
+# the 2026-08-07 05:00 UTC (08:00 Riyadh) cron trigger never made the intended HTTP request —
+# zero hits to /api/cron/daily-founder-report, no SendGrid call, no email.
+#
+# Fix: this service now points its `railwayConfigFile` at THIS file instead of the shared one, so
+# a push to main can never again silently overwrite its startCommand — the correct one-shot fetch
+# command is versioned here.
+[build]
+builder = "RAILPACK"
+buildCommand = "npm install --legacy-peer-deps && npm run build"
+
+[deploy]
+startCommand = "node -e \"fetch('https://tawveeri.com/api/cron/daily-founder-report',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET,'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>{console.log(JSON.stringify(d));process.exit(0)}).catch(e=>{console.error(e);process.exit(1)})\""
+restartPolicyType = "NEVER"
+cronSchedule = "0 5 * * *"
