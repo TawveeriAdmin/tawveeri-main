@@ -14,12 +14,14 @@ function read(relPath: string): string {
 describe("getAffiliateConfig — code-managed, no DB dependency", () => {
   it("resolves amazon's tag without any DB-sourced override", () => {
     expect(getAffiliateConfig("amazon")).toEqual(DEFAULT_STORE_AFFILIATE_CONFIG.amazon);
-    expect(getAffiliateConfig("amazon")?.value).toBe("tawveeri0f-21");
+    expect(getAffiliateConfig("amazon")?.[0]?.value).toBe("tawveeri0f-21");
   });
 
-  it("resolves noon's real publisher-id param (ADR-181), not a fabricated one", () => {
+  it("resolves noon's real attribution params (ADR-224/225), not a fabricated one", () => {
     expect(getAffiliateConfig("noon")).toEqual(DEFAULT_STORE_AFFILIATE_CONFIG.noon);
-    expect(getAffiliateConfig("noon")?.param).toBe("utm_source");
+    const params = getAffiliateConfig("noon") ?? [];
+    expect(params.map((p) => p.param)).toEqual(["utm_source", "utm_medium", "utm_campaign", "adjust_deeplink_js"]);
+    expect(params.find((p) => p.param === "utm_source")?.value).toBe("C1000264L");
   });
 
   it("returns null (direct exit) for a store with no known program — never invents a tag", () => {
@@ -29,6 +31,27 @@ describe("getAffiliateConfig — code-managed, no DB dependency", () => {
   it("applyAffiliateTag appends the correct param with no config argument passed", () => {
     const url = applyAffiliateTag("https://www.amazon.sa/dp/B0ABC", "amazon");
     expect(url).toContain("tag=tawveeri0f-21");
+  });
+
+  // ADR-225 (2026-08-07): this legacy path (product-card.tsx / store-comparison-panel.tsx,
+  // one of the highest-traffic customer surfaces) used to carry only utm_source — a real,
+  // measurable attribution-leak risk since every piece of real Noon evidence (ADR-224) shows
+  // utm_source/utm_medium/utm_campaign/adjust_deeplink_js always appearing together.
+  it("applyAffiliateTag carries the FULL noon param set, not just utm_source", () => {
+    const url = applyAffiliateTag("https://www.noon.com/saudi-en/some-product/N123/p/?o=abc123", "noon")!;
+    const u = new URL(url);
+    expect(u.searchParams.get("utm_source")).toBe("C1000264L");
+    expect(u.searchParams.get("utm_medium")).toBe("AFFfbc721aa80c8");
+    expect(u.searchParams.get("utm_campaign")).toBe("CMP2ce0b63a6a1anoon");
+    expect(u.searchParams.get("adjust_deeplink_js")).toBe("1");
+    expect(u.searchParams.get("o")).toBe("abc123"); // Noon's own offer token, untouched
+  });
+
+  it("applyAffiliateTag never clobbers a param already present on the source URL", () => {
+    const url = applyAffiliateTag("https://www.noon.com/saudi-en/p/N123?utm_campaign=EXISTING", "noon")!;
+    const u = new URL(url);
+    expect(u.searchParams.get("utm_campaign")).toBe("EXISTING");
+    expect(u.searchParams.get("utm_source")).toBe("C1000264L"); // other params still applied
   });
 });
 

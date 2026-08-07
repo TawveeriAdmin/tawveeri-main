@@ -618,7 +618,7 @@ export async function getCommandCenterData(
   // was never applied to production (ADR-212) and isn't read by the actual exit path either way.
   // DEFAULT_STORE_AFFILIATE_CONFIG (src/lib/transactions/affiliate-config.ts) mirrors the live
   // Provider Registry value (src/lib/providers/registry.ts).
-  const amazonTagConfigured = Boolean(getAffiliateConfig('amazon')?.value);
+  const amazonTagConfigured = Boolean(getAffiliateConfig('amazon')?.[0]?.value);
 
   // REAL-only campaign attribution for the headline view — TEST go_clicks (including any
   // controlled verification journey) are computed too but never blended into the REAL summary.

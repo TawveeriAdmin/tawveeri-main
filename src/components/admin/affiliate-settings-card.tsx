@@ -44,15 +44,19 @@ export function AffiliateSettingsCard({ store, locale }: AffiliateSettingsCardPr
       </CardHeader>
       <CardContent className="space-y-4">
         {config ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'معامل الرابط' : 'URL parameter'}</p>
-              <p dir="ltr" className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] px-3 py-2 font-mono text-sm text-on-surface dark:border-[#263b33] dark:bg-[#101713] dark:text-white">{config.param}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'كود العمولة' : 'Affiliate code'}</p>
-              <p dir="ltr" className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] px-3 py-2 font-mono text-sm text-on-surface dark:border-[#263b33] dark:bg-[#101713] dark:text-white">{config.value}</p>
-            </div>
+          <div className="space-y-3">
+            {config.map((p) => (
+              <div key={p.param} className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'معامل الرابط' : 'URL parameter'}</p>
+                  <p dir="ltr" className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] px-3 py-2 font-mono text-sm text-on-surface dark:border-[#263b33] dark:bg-[#101713] dark:text-white">{p.param}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'كود العمولة' : 'Affiliate code'}</p>
+                  <p dir="ltr" className="rounded-2xl border border-[#d7ece5] bg-[#f8fcfa] px-3 py-2 font-mono text-sm text-on-surface dark:border-[#263b33] dark:bg-[#101713] dark:text-white">{p.value}</p>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-sm text-on-surface-variant dark:text-white/50">
