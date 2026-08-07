@@ -1,3 +1,38 @@
+# ═══ RESUME HERE — 2026-08-07 CHECKPOINT #63 · P1 RETAILER DIRECTORY RECONCILED · PUBLIC TRUTH PROGRAM CLOSED ═══
+
+## Trusted Stores directory was counting only the legacy product_stores table — fixed with a general TPS-layer fallback (found 2 more affected retailers beyond the Founder's original report), deployed, production-verified
+
+**Full detail: ADR-222 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #62 as the resume point (#62's P0 content preserved below). Both halves of the Public Truth Consistency Program (P0 price-truth, P1 retailer-directory truth) are now closed.
+
+### What happened
+`/ar/stores` reported 7 stores and omitted Black Box and Winter & Summer (swsg) despite both being real, `isDisplayableRetailer`-approved, customer-visible comparison offers (proven live on the compare page in checkpoint #62). Audited every customer surface's retailer-truth source first: search filters, compare, `/api/v1/tps/search`, `/api/search`, and Best Deals all already gate through `isDisplayableRetailer()` — only `/stores` had an extra, undocumented condition.
+
+### Root cause
+`stores-listing-client.tsx` additionally required `product_stores` (legacy storefront-layer table) count > 0. Confirmed against production: swsg and blackbox both have 0 `product_stores` rows — genuinely onboarded through the TPS pipeline only, never backfilled into the older schema. **Two more retailers had the identical, previously-unflagged defect**: `alnakheelk` (متجر النخيل) and `najm` (نجم الأجهزة) — both display-approved, both zero legacy rows, both silently missing from their own directory before this fix.
+
+### Fix
+No store name hardcoded anywhere. For any `isDisplayableRetailer()`-approved store whose legacy count is zero, fall back to a TPS-layer count (distinct active `canonical_product_id` in `price_history`, same alias-resolution `get-comparison.ts` already trusts for this column). Legacy-or-TPS, never summed — no double-counting possible. Filtered server-side by store name rather than pulling price_history's 100k+ rows client-side (would have hit the same PostgREST row-cap defect ADR-172 already fixed once); chunked the follow-up `canonical_products` lookup to 150 ids/call after a 500+-id call intermittently failed in this exact environment.
+
+### Verification (production, anon key — the real customer credential)
+**11 displayable stores, was 7**: Amazon 1,867 · Noon 4,355 · Almanea 1,298 · Extra 886 · Jarir 1,053 · **Alnakheelk 287 (new)** · Shaker 265 · **Winter & Summer 460 (new)** · **Najm 66 (new)** · Samsung Saudi 42 · **Black Box 53 (new)**. Sum-of-per-store total rises ~9,766 → ~10,632 (same "sum of each store's own catalogue" definition the page already used — not a new, stricter, or looser count concept). Confirmed `lulu` (195 legacy products) and `sharafdg` (144) correctly remain excluded (`isDisplayableRetailer = false`) — the reconciliation does not leak an ingestion-only retailer into the public directory.
+
+### Incidental finding, not acted on
+`anon`/`authenticated` hold broad INSERT/UPDATE/DELETE/TRUNCATE grants on 6 tables including `canonical_products`/`price_history`/`raw_observations`. Verified NOT exploitable — RLS is enabled on all six, only SELECT-only public-read policies exist (or, for `raw_observations`/`normalized_product_observations`, zero policies at all = fully default-denied to anon). A real defense-in-depth gap (grants broader than the RLS policies need), not an active hole. Flagged for a dedicated hardening pass with Founder sign-off; deliberately not touched in this unit (platform-wide blast radius, unrelated to the reported defect).
+
+### Tests
+No new unit test file (client-fetched page, same established precedent as `get-comparison.ts` — verified against live production data instead). TypeScript clean. Full suite unaffected: 95/95 suites, 1447/1447 tests.
+
+### Deployment
+Commit `8fa2004` (P1 fix) on top of `2ccb21e`/`45e90fe` (P0 fix + docs) — all confirmed live on every Railway service (`tawveeri-main`, `node`, `amusing-amazement`, `daily-founder-report-cron`) via `serviceInstance.latestDeployment` at commit `8fa2004`, all `SUCCESS`.
+
+### Not touched
+Black Box/Winter & Summer ingestion or campaign logic, any other retailer's existing count, `isDisplayableRetailer()` itself (already correct), search architecture, TPS identity rules, the anon-grants hardening noted above, auth/OTP, SendGrid, the daily Founder-report cron, Amazon/Noon affiliate neutrality, the compare-page `go_click` instrumentation gap (still known, still out of scope).
+
+### Next
+Public Truth Consistency Program (P0 + P1) is closed. No outstanding resume item from this unit. Two candidates noted but NOT started, for a future task if the Founder wants them: (1) the anon-grants hardening pass above, (2) a real unified retailer/product projection across the storefront and TPS layers, if the two schemas continue converging (ADR-222's rejected "Option B") — the count-level fallback shipped here is deliberately the smaller, bounded fix, not that larger architecture.
+
+---
+
 # ═══ RESUME HERE — 2026-08-07 CHECKPOINT #62 · P0 PRICE-TRUTH FIXED (PLATFORM-WIDE) · P1 RETAILER DIRECTORY NEXT ═══
 
 ## Corroboration was picking the historic CHEAPEST price ever staged per store, not the current one — fixed, unit-tested, deployed, production-verified live; a bounded stale-price disclosure shipped alongside it
