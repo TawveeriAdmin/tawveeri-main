@@ -6,7 +6,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { getStoreDisplayName } from '@/lib/logos';
-import { isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
+import { isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import {
   Select,
   SelectContent,
@@ -143,6 +143,82 @@ export default function StoresListingClient() {
           seen.forEach((set, storeId) => counts.set(storeId, set.size));
         } catch { /* counts are best-effort */ }
 
+        // TPS-layer fallback (P1, 2026-08-07): a retailer can be genuinely
+        // display-approved and customer-visible in comparison (compare/search — both
+        // already gate on `isDisplayableRetailer`, proven live for Black Box) while
+        // holding ZERO `product_stores` rows, because its offers were onboarded through
+        // the TPS pipeline (raw_observations → normalized_product_observations →
+        // price_history) and never backfilled into the older storefront schema.
+        // `counts` above answers "how many legacy-layer products" — this answers "does
+        // this retailer have ANY real comparison presence at all" for the retailers the
+        // legacy count reports zero for, so a real, approved retailer is never silently
+        // dropped from its own directory just because it lives on the newer layer.
+        // Not a duplicate-count risk: only consulted for stores whose legacy count is 0,
+        // so a store's total is EITHER the legacy count OR the TPS count, never both.
+        const tpsCounts = new Map<number, number>();
+        try {
+          const zeroLegacySlugs = new Set(
+            (rawStores || [])
+              .filter((s: any) => (counts.get(s.id) || 0) === 0)
+              .map((s: any) => s.slug || String(s.id)),
+          );
+          if (zeroLegacySlugs.size > 0) {
+            // canonical_products/price_history are TPS-knowledge-layer tables, outside the
+            // generated storefront-layer types (same loose-cast pattern get-comparison.ts
+            // uses for these tables server-side).
+            const tpsSb = sb as unknown as { from: (table: string) => any };
+            // price_history is append-only (a row per PRICE CHANGE, not per store) — ~100k+
+            // rows platform-wide, so it must be filtered server-side to just the stores in
+            // question rather than paginated in full client-side. `store_name` carries known
+            // alias variants (resolveApprovedSlug handles this for arbitrary rows elsewhere);
+            // for a targeted `.in()` filter, the two locale display names plus the raw slug
+            // cover every variant this codebase actually writes.
+            const candidateNames = [...zeroLegacySlugs].flatMap((slug) => [
+              retailerDisplayName(slug, 'ar'),
+              retailerDisplayName(slug, 'en'),
+              slug,
+            ].filter((v): v is string => Boolean(v)));
+            // Even scoped to a couple of stores, price_history's append-on-change history can
+            // exceed PostgREST's db-max-rows cap — paginate explicitly (same ADR-172 lesson
+            // as the product_stores fetch above) rather than trust a single `.limit()`.
+            const PH_PAGE = 1000;
+            const { count: phTotal } = await tpsSb.from('price_history').select('store_name', { count: 'exact', head: true }).in('store_name', candidateNames);
+            const phPages = Math.min(Math.ceil((phTotal ?? 0) / PH_PAGE), 40);
+            const phResults = await Promise.all(
+              Array.from({ length: phPages }, (_, i) =>
+                tpsSb.from('price_history').select('store_name, canonical_product_id').in('store_name', candidateNames).range(i * PH_PAGE, i * PH_PAGE + PH_PAGE - 1),
+              ),
+            );
+            const rows = phResults.flatMap((r) => (r.data || [])) as { store_name: string; canonical_product_id: string }[];
+            // Small, targeted is_active lookup — only for canonicals these specific stores
+            // actually reference, not the whole active catalogue.
+            const idsToCheck = [...new Set(rows.map((r) => r.canonical_product_id))];
+            // Chunked: an `.in()` filter with hundreds of UUIDs can build a query string long
+            // enough to fail at the edge/proxy layer — measured directly against this exact
+            // query (500+ ids in one call intermittently failed; 150-id chunks did not).
+            const activeIds = new Set<string>();
+            const ID_CHUNK = 150;
+            for (let i = 0; i < idsToCheck.length; i += ID_CHUNK) {
+              const chunk = idsToCheck.slice(i, i + ID_CHUNK);
+              const { data: activeRows } = await tpsSb.from('canonical_products').select('id').eq('is_active', true).in('id', chunk);
+              for (const c of (activeRows || []) as { id: string }[]) activeIds.add(c.id);
+            }
+            const bySlug = new Map<string, Set<string>>();
+            for (const r of rows) {
+              const slug = resolveApprovedSlug(r.store_name);
+              if (!slug || !zeroLegacySlugs.has(slug)) continue;
+              if (!activeIds.has(r.canonical_product_id)) continue;
+              if (!bySlug.has(slug)) bySlug.set(slug, new Set());
+              bySlug.get(slug)!.add(r.canonical_product_id);
+            }
+            for (const s of rawStores || []) {
+              const slug = (s as any).slug || String((s as any).id);
+              const set = bySlug.get(slug);
+              if (set) tpsCounts.set((s as any).id, set.size);
+            }
+          }
+        } catch { /* TPS fallback is best-effort — legacy counts still stand */ }
+
         const mapped: StoreSummary[] = (rawStores || [])
           // Approved-27 scope gate (Founder Directive 2026-07-27): show ONLY approved retailers
           // that have real customer-visible offers. No non-approved store, no zero-product /
@@ -154,7 +230,8 @@ export default function StoresListingClient() {
           // would have kept showing noon, lulu, sharafdg and blackbox as live retailers.
           .filter((s: any) => {
             const slug = s.slug || String(s.id);
-            return isDisplayableRetailer(slug) && (counts.get(s.id) || 0) > 0;
+            const total = (counts.get(s.id) || 0) || (tpsCounts.get(s.id) || 0);
+            return isDisplayableRetailer(slug) && total > 0;
           })
           .map((s: any) => {
           const slug = s.slug || String(s.id);
@@ -167,7 +244,9 @@ export default function StoresListingClient() {
             website_url: s.link || null,
             average_rating: null,
             total_reviews: null,
-            total_products: counts.get(s.id) || 0,
+            // Legacy (product_stores) count when present, else the TPS-layer count —
+            // never summed (see the tpsCounts computation above for why that's safe).
+            total_products: (counts.get(s.id) || 0) || (tpsCounts.get(s.id) || 0),
             is_featured: false,
             is_premium: false,
             status: 'active',
