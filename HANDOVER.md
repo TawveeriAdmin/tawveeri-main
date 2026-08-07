@@ -1,3 +1,25 @@
+# ═══ NEXT TASK — NOT STARTED · NOON AFFILIATE INTEGRATION (dedicated fresh session) ═══
+
+**Status: not started in Claude Code.** No code, no ADR, no production change. This block exists only to carry forward Founder-gathered external evidence so the next session doesn't have to re-collect it. The engineering "RESUME HERE" pointer for completed work is checkpoint #64 immediately below — start there for context, then move to this task fresh.
+
+### Founder-collected evidence (external, independent of this repo — treat as a starting point to verify, not as a proven contract)
+- Noon Affiliate Support (`affiliate.support@noon.com`) confirmed tracking/eligible conversions are managed through the Founder's Noon Affiliate account; performance/orders/commissions live in the Affiliate dashboard.
+- Founder logged into `affiliates.noon.partners` — account exposes: Home, Campaigns, Payments, Reports, Commission Structures, Terms & Conditions, Help & Support.
+- `Everyday Campaign` is ACTIVE, visible period 2026-04-22 to 2026-12-31.
+- Noon supports `Generate Custom Link` for direct product/catalogue URLs.
+- **One controlled deep-link test performed by the Founder**, product `N70177225V`: generated affiliate short link `https://s.noon.com/bEYIZNEGIn0`, opened it, confirmed it resolves to the SAME product. The resulting URL preserved `product id: N70177225V`, `o=b99870410d54bb4f`, and carried `utm_source=C1000264L`, `utm_medium=AFFfbc721aa80c8`, `utm_campaign=CMP2ce0b63a6a1anoon`, `adjust_deeplink_js=1`.
+
+### Explicit constraint carried forward
+This is evidence from **ONE** product test. **Do not generalize these exact parameter values into a universal Noon link-construction contract, and do not hardcode them.** The next session's first job is to research and independently prove Noon's actual link semantics (multiple products/categories, campaign vs. custom-link behavior, parameter stability) before any production integration — same evidentiary bar this session applied to price-freshness and retailer-directory work.
+
+### Likely future objective (not a plan, not started)
+`Tawveeri /go` → preserve the exact Noon product destination → apply valid Tawveeri Noon affiliate attribution → preserve Tawveeri's own internal outbound attribution → verify Noon-side tracking actually fires → keep affiliate economics fully neutral to organic ranking (constitutional invariant, non-negotiable).
+
+### Explicitly deferred, not for this closeout or the opening of the next session without further Founder direction
+go_click instrumentation gap, anon/authenticated GRANT hardening, demand-aware refresh, unified storefront/TPS projection, further freshness optimization, new retailer onboarding, social/marketing, E16+ roadmap.
+
+---
+
 # ═══ RESUME HERE — 2026-08-07 CHECKPOINT #64 · BOUNDED PRICE-FRESHNESS CLOSURE · 4 RETAILERS ADDED TO EXISTING LOOPS + STALE CLAIM-SAFETY WORDING ═══
 
 ## Amazon/Jarir/Samsung Saudi/Black Box added to the EXISTING scraper/feed loops (config only) + the compare page no longer says "best price NOW" for a stale offer
