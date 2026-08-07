@@ -429,7 +429,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
                     const Icon = HEADER_CATEGORY_ICONS[cat.key] ?? Package;
                     return (
                       <DropdownMenuItem key={cat.key} asChild className="cursor-pointer">
-                        <Link href={`/${locale}/search?q=${encodeURIComponent(cat.query)}`} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2">
+                        <Link href={`/${locale}/categories/${cat.slug}`} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2">
                           <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-700">
                             <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                           </span>

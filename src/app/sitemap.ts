@@ -9,6 +9,7 @@
 
 import type { MetadataRoute } from 'next';
 import { getAllProductSlugs, getComparableIdentityKeys } from '@/lib/catalog/getProductComparison';
+import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
 
 const baseUrl =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -45,19 +46,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
   );
 
-  // 2) كتالوج الجوالات
-  const catalogEntries: MetadataRoute.Sitemap = locales.map((locale) => ({
-    url: `${baseUrl}/${locale}/mobiles`,
-    lastModified: now,
-    changeFrequency: 'daily' as const,
-    priority: 0.9,
-    alternates: {
-      languages: {
-        ar: `${baseUrl}/ar/mobiles`,
-        en: `${baseUrl}/en/mobiles`,
-      },
-    },
-  }));
+  // 2) صفحات الفئات — /categories/<slug>
+  //
+  // This used to be a single hardcoded `/mobiles` entry — a route that has redirected to
+  // `/search?category=smartphone` since ADR-122 (retired duplicate entry point). The
+  // sitemap advertised a URL that never renders its own content, the exact defect
+  // ADR-189 found and fixed for product/compare pages, just not caught here yet.
+  //
+  // Now: every category that clears the SAME live gate used for site navigation
+  // (`getNavigableCategories`, ADR-150 — ≥30 comparable canonicals), each pointing at its
+  // real, indexable decision page. A category that drops below the threshold disappears
+  // from both navigation and the sitemap together, from the one shared measurement.
+  let catalogEntries: MetadataRoute.Sitemap = [];
+  try {
+    const cats = await getNavigableCategories();
+    catalogEntries = cats.flatMap((cat) =>
+      locales.map((locale) => ({
+        url: `${baseUrl}/${locale}/categories/${cat.slug}`,
+        lastModified: now,
+        changeFrequency: 'daily' as const,
+        priority: 0.85,
+        alternates: {
+          languages: {
+            ar: `${baseUrl}/ar/categories/${cat.slug}`,
+            en: `${baseUrl}/en/categories/${cat.slug}`,
+          },
+        },
+      }))
+    );
+  } catch {
+    // DB unavailable — skip dynamic entries
+  }
 
   // 3) صفحات المنتجات — ADR-189
   //

@@ -46,7 +46,7 @@ export default async function CategoriesPage({ params }: { params: Promise<{ loc
             {cats.map((c) => (
               <Link
                 key={c.key}
-                href={`/${locale}/search?q=${encodeURIComponent(c.query)}`}
+                href={`/${locale}/categories/${c.slug}`}
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
                   textDecoration: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)',

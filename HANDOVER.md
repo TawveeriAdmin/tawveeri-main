@@ -7907,3 +7907,64 @@ after the multi-minute fetch loop (the pooler killed idle connections mid-run �
 deaths measured before the fix, 0 after). jarir 1,005 / extra 285 stay parked (underivable
 per-locale slugs, #42). Remaining queue: amazon price-selector unit (ADR-200 open item,
 failing case ASIN B0FQCLJXPN 59.99-vs-1,609) · Master Book §2.1/§9/§11 · U2b weekly check.
+
+---
+
+# ═══════════ RESUME POINT — 2026-08-07 · SEO/AI-DISCOVERABILITY MISSION, UNIT 1 SHIPPED · START HERE ═══════════
+
+**Note: this HANDOVER wasn't touched 2026-08-05→08-07 — that window's work (ADR-209 through
+ADR-225: production incidents, Command Center, Black Box campaign, Noon affiliate correction)
+is recorded in `docs/DECISIONS.md` only. Read ADR-209–225 for that gap before assuming this
+file is complete.**
+
+## MISSION: make Tawveeri's product intelligence legible to Google/AI assistants (founder brief)
+Checked first: ADR-189 (2026-08-03) already solved product/comparison-page sitemap+robots+
+structured-data, and researched-and-rejected `llms.txt`. Re-verified live 2026-08-07: robots.txt
+200 and still exempts `/compare/[key]`, sitemap.xml 200. That foundation is healthy — this
+session builds ON it, not instead of it. Full external research (Labeb live audit, current
+Google/AI-crawler docs, idealo/PriceRunner/PriceSpy benchmark) done via 3 parallel agents —
+see ADR-226 and the session's consolidated report for findings; not re-summarized here.
+
+## SHIPPED — ADR-226: real, indexable Category Decision Pages
+`/categories/[slug]` was a blind `redirect()` to `/search?q=...` (client-rendered, no
+structured data) — the exact "وش ارخص مكيف" gap the founder named. Now a real server-rendered
+decision page reusing 100% existing infra: `findNavigableCategory` (ADR-150's live ≥30-
+comparable gate) decides which categories exist; new `getCategoryOverview()` reads
+`tps_product_projection` directly for price range/brands/top products, each linking to its own
+`/compare/[key]` (where the real `AggregateOffer` lives — this page only carries a truthful
+`ItemList`+`BreadcrumbList`). Header dropdown + `/categories` index now link here instead of
+`/search?q=`; `sitemap.ts`'s dead `/mobiles` entry (301s since ADR-122) replaced with the live
+category list. 11 categories qualify today: air-conditioners, phones, laptops, tvs, monitors,
+refrigerators, washers, audio, tablets, smartwatches, blenders.
+
+**Caught and fixed in the same pass: a reproduced soft-404/soft-redirect defect.**
+`(product)/layout.tsx` already documented this once — `(public)/loading.tsx`'s Suspense
+boundary flushes an HTTP 200 shell before a later `notFound()`/`redirect()` can change the
+status. `/categories/[slug]` inherited it the moment it gained a *real* conditional
+notFound/redirect (the old blind-redirect version never needed one to work). Measured on a
+local **production** build (not dev — dev mode was flaky from stacked test processes and is
+not trustworthy for this class of check): under `(public)`, alias slug AND unknown slug both
+answered 200. Fixed the same way `(product)` was: moved into a new sibling `(category)` route
+group with no `loading.tsx`. Re-verified: unknown slug → 404, alias → 307, canonical → 200.
+
+**Verified before calling it done:** `npm run build` clean, `tsc --noEmit` zero new errors,
+local prod server (`next start`) — all 11 categories 200 with correct bilingual title/canonical/
+hreflang, JSON-LD (`CollectionPage`+`BreadcrumbList`+`ItemList`) present and matches rendered
+content, header/index links updated, sitemap emits the live list. Files: `getCategoryOverview.ts`
+(new), `(category)/categories/[slug]/page.tsx` (moved+rewritten), `(category)/layout.tsx` (new),
+`categories/page.tsx` + `public-page-shell.tsx` (link swaps), `sitemap.ts` (fixed), `categories.ts`
+(deleted, orphaned). Read-only queries throughout, no schema/write-path touched.
+
+## NOT DONE THIS SESSION (see consolidated report for full ledger + reasoning)
+Normalized AC facets (BTU/type/inverter) — no extraction built yet, correctly out of scope
+(Labeb's own BTU mess isn't their real edge). Customer-facing price-history charts — deferred,
+separate risk surface. IndexNow — researched, low-priority (Bing/Yandex only). Retailer radar
+(Tier A/B/C) — research-only per the mission's own bound, not executed.
+
+## NEXT SESSION
+1. Deploy this (commit/push already done this session if you're reading this after that step —
+   check `git log` for ADR-226's commit) and pull a live Search Console / `site:` baseline once
+   Google has re-crawled (days, not this session).
+2. Everything already queued before this mission (U2b weekly check, custom-scraper major
+   overlap verification, Master Book §2.1/§9/§11) is UNCHANGED and still next in line — this
+   was a bounded, separate mission per the founder's own scope fence, not a phase-2 continuation.
