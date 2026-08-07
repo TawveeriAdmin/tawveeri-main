@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: isAr ? 'الأسئلة الشائعة' : 'FAQ',
     description: isAr
-      ? 'إجابات مختصرة عن كيفية عمل توفيري، ومصدر الأسعار، وكيف نربح.'
-      : 'Short answers about how Tawveeri works, where prices come from, and how we make money.',
+      ? 'إجابات مختصرة عن كيفية عمل توفيري، ومصدر الأسعار.'
+      : 'Short answers about how Tawveeri works and where prices come from.',
     alternates: { canonical: `/${isAr ? 'ar' : 'en'}/faq` },
   };
 }
@@ -98,21 +98,6 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
           q: 'هل جميع متاجر ومنتجات السعودية مشمولة؟',
           a: 'لا. نغطي مجموعة من المتاجر السعودية النشطة ونوسّعها باستمرار، لكننا لا نغطي كل متجر أو كل منتج في السوق السعودي. حين لا نعرف شيئًا، نقول ذلك بدل الادّعاء بتغطية شاملة.',
         },
-        {
-          id: 'affiliate',
-          q: 'كيف يربح توفيري؟ (الإفصاح عن العمولة)',
-          a: (
-            <>
-              <p style={{ margin: '0 0 10px' }}>
-                توفيري مستقل تمامًا في الترتيب والتوصية — العمولة لا تدخل أبدًا في أي ترتيب أو تصنيف نعرضه. هذا مبدأ ثابت، وليس وعدًا تسويقيًا.
-              </p>
-              <p style={{ margin: 0 }}>
-                عندما تشتري عبر بعض روابطنا، قد نحصل على عمولة من المتجر — دون أي كلفة إضافية عليك. كعضو في برنامج Amazon Associates، يربح توفيري من المشتريات المؤهلة عبر روابط أمازون
-                (<span dir="ltr">As an Amazon Associate, Tawveeri earns from qualifying purchases</span>). لا توجد لنا حاليًا شراكات رسمية أو رعاية من أي متجر تعرضه توفيري — برنامج أمازون التسويقي هو الوحيد الفعّال حاليًا.
-              </p>
-            </>
-          ),
-        },
       ]
     : [
         {
@@ -180,20 +165,6 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
           q: 'Are all Saudi retailers and products included?',
           a: 'No. We cover a set of active Saudi retailers and keep expanding it, but we do not cover every store or every product in the Saudi market. When we don’t know something, we say so rather than claiming full coverage.',
         },
-        {
-          id: 'affiliate',
-          q: 'How does Tawveeri make money? (Affiliate disclosure)',
-          a: (
-            <>
-              <p style={{ margin: '0 0 10px' }}>
-                Tawveeri’s ranking and recommendations are fully independent — commission never enters any ranking or recommendation we show. That’s a fixed rule, not a marketing promise.
-              </p>
-              <p style={{ margin: 0 }}>
-                When you buy through some of our links, we may earn a commission from the store — at no extra cost to you. As an Amazon Associate, Tawveeri earns from qualifying purchases made through Amazon links. We currently have no official partnerships with, or sponsorship from, any store shown on Tawveeri — the Amazon affiliate programme is the only one active today.
-              </p>
-            </>
-          ),
-        },
       ];
 
   return (
@@ -211,10 +182,6 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
             <details
               key={item.q}
               id={item.id}
-              // The affiliate answer is open by default: it's the one item linked to
-              // directly (footer's `#affiliate` anchor), and a closed <details> ignores a
-              // URL fragment — CSS can't force the native `open` attribute on via :target.
-              open={item.id === 'affiliate'}
               style={{
                 background: 'var(--color-surface-container-low)',
                 border: '1px solid var(--color-outline-variant)',
