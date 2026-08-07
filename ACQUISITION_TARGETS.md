@@ -70,5 +70,36 @@ For an **enterprise** platform (SACO/Xcite): **HIGH** — a bespoke `BaseScraper
 
 ---
 
+## 4b. Retailer Opportunity Radar — founder-named candidates, research-only (2026-08-07)
+
+Requested by the founder's SEO/AI-discoverability mission as its Phase-12 deliverable (research
+only — no onboarding authorized here). Checked first: ADR-105 (35-retailer platform sweep),
+`src/lib/retailers/approved-retailers.ts` + `docs/RETAILER-MATRIX.md` (current single source of
+truth on what's already approved/ingested), and HANDOVER's 2026-08-03 `tps:acquire` re-probe
+(tamkeen/alsaif/eddy/xcite/alhaqeel/hhm/emax/altheqa — all still `unknown` platform). Fresh
+WebSearch/WebFetch research done for candidates not previously evaluated.
+
+**TIER A — high incremental comparison value**
+| Candidate | Domain | Why |
+|---|---|---|
+| **Bukhamsen** | bukhamsen.com | **[MEASURED 2026-08-07]** Live WooCommerce Store API confirmed by direct query (`wp-json/wc/store/v1/products` returns valid pricing/stock JSON) — the SAME config-only adapter class already proven (ADR-089/108), cheapest possible technical win found this session. Genuinely multi-brand: AC (TCL/Haier/Fisher/Calvinator), washers (LG/Samsung), TVs (LG/Skyworth) — real brand overlap with current majors. 14+ Eastern-Province branches, est. 1979 — real scale, not a shell. **Best new candidate found; not previously in any register.** |
+| **Xcite (Alghanim)** | xcite.com.sa | Independently re-confirmed 3× (ADR-105 2026-07-26; `tps:acquire` re-probe 2026-08-03; ranked #2 in §4 above) as genuine multi-brand electronics (TV/mobile/laptop/appliance) with predicted HIGH overlap. Enterprise/closed platform — requires the same custom-scraper investment already earmarked for SACO. No new finding, but the founder named it directly so it's re-surfaced here with its full history. |
+| **Al-Khunaizan** | alkhunaizan.sa | **Already on Tawveeri's own approved list** (`source: 'credential_free'`) — Magento with a working public sitemap, same proven pattern class as Alsaif Gallery ("scrapeable, engineering only, no credential needed" per RETAILER-MATRIX.md). Genuine appliance retailer, zero data ingested yet. Lowest legal/access risk of anything evaluated today — this is a pure engineering-backlog item, not a new evaluation. (Note: supersedes ADR-105's older "unknown enterprise platform" read on this same retailer — the sitemap-based path wasn't on record yet at that time.) |
+
+**TIER B — useful category-depth value**
+- **Al-Husayani** (alhusayani.sa) — genuine 30+-brand AC/appliance specialist (Zamil, Hitachi, Frigidaire — real overlap signal), but OpenCart platform = custom-scraper cost, unmeasured overlap.
+- **Fouzan Center** (fouzancenter.com) — Salla-confirmed (cheap, proven adapter), large claimed scale, but catalog spans furniture/textiles beyond pure appliances — needs a category-mix check.
+- **Sultan.sa** — promising profile (55 yrs, AC/appliances, multi-city) but platform undetermined (fetch blocked) — needs a basic technical probe.
+- **Al Bassam Appliances** — named-fit plausible, but only assessed once (ADR-105) as "unknown enterprise platform," no category/overlap detail since — needs a fresh look.
+
+**TIER C — low incremental value / defer**
+- **Carrefour Saudi** — hard-disqualified by §1's existing rule (hypermarket, electronics minority of catalog) AND has a documented specific blocker (RETAILER-MATRIX.md: "Akamai + delivery-area session → headless yields wrong product/price; will NOT fabricate"). Already `commercial`-gated on the approved list — only a partnership, never scraping, is safe here.
+- **Ahmed Abdulwahed** — confirmed NOT an operating storefront (`source: 'not_a_store'`, "Live Soon" placeholder per RETAILER-MATRIX.md). Nothing to observe.
+- **Al-Abbad AC & Home Appliances** (alabbadest.com — the correct entity; a same-named "Al-Abbad Trading" at alabbadco.com is an unrelated plumbing/hardware distributor) — Salla-confirmed/cheap, but small regional scale (2–3 Eastern-Province branches) and its AC line is single-brand (Leon), tripping §1's single-brand disqualifier for its core category.
+
+**Not onboarded. No architecture change. Full source list and per-candidate detail in the session's research transcript if needed later.**
+
+---
+
 ## 5. THE ONE ACTION THAT UNBLOCKS THIS
 **Founder:** open StoreLeads → Technologies filter → is **Salla** and **Zid** listed? Yes → export ~150–300 KSA Salla/Zid/Woo/Shopify electronics domains and hand them over; I rank by measured overlap and onboard the config-only subset autonomously. No → we scope a Salla/Zid data source (approval boundary). Until then, acquisition is process-ready but input-starved, and **Connect System A (Phase 2.5) is the higher-value work anyway** — it releases the ~564 already held.
