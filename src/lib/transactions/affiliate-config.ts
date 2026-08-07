@@ -8,11 +8,16 @@ export type AffiliateConfig = AffiliateParam | null;
 
 export const DEFAULT_STORE_AFFILIATE_CONFIG: Record<string, AffiliateParam> = {
   amazon: { param: 'tag', value: 'tawveeri0f-21' },
-  // C1000094L is the PUBLISHER ID from noon's partner dashboard — the thing that tracks a
-  // link. DNC160 was never a tracking parameter at all: it is a customer COUPON code
-  // (10% cashback, capped 25 SAR) typed at checkout, a separate system in the same
-  // dashboard. Sending it as `utm_campaign` matched neither mechanism.
-  noon: { param: 'utm_source', value: 'C1000094L' },
+  // ADR-224 (2026-08-07) superseded ADR-181's C1000094L: two real "Generate Custom Link"
+  // links from the dashboard's Everyday Campaign (different products) both carried
+  // C1000264L instead, with C1000094L on neither. This legacy single-param path (unlike
+  // the Provider Registry's `param` network, ADR-085) can only carry ONE query param, so
+  // it carries utm_source alone — the same account-identifying value the governed `/go`
+  // path leads its own param list with. A known, accepted limitation: a customer exiting
+  // through this legacy card/detail-page path gets weaker attribution (missing
+  // utm_medium/utm_campaign/adjust_deeplink_js) than one exiting through `/go`, which is
+  // still correct-if-partial rather than wrong, and unchanged in shape from before this fix.
+  noon: { param: 'utm_source', value: 'C1000264L' },
 };
 
 export function normalizeAffiliateConfig(input: unknown): AffiliateConfig {

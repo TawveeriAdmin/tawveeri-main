@@ -30,10 +30,17 @@ export function hostFallbackConfig(host: string): AffiliateConfig {
     return { network: "amazon", trackingId: "tawveeri0f-21", supportsSubId: true, subIdParam: "ascsubtag" };
   }
   if (h.includes("noon.com")) {
+    // Kept identical to the registry's noon entry (ADR-224) — this path only fires for a
+    // raw Noon URL with no resolved provider, but must monetize the same way either way.
     return {
       network: "param",
       trackingId: "noon",
-      params: [{ name: "utm_source", value: "C1000094L" }, { name: "utm_medium", value: "referral" }],
+      params: [
+        { name: "utm_source", value: "C1000264L" },
+        { name: "utm_medium", value: "AFFfbc721aa80c8" },
+        { name: "utm_campaign", value: "CMP2ce0b63a6a1anoon" },
+        { name: "adjust_deeplink_js", value: "1" },
+      ],
       supportsSubId: true,
       subIdParam: "utm_content",
     };

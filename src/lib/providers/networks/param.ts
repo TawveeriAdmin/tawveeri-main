@@ -16,8 +16,8 @@ function sanitizeSubId(clickId: string | number | undefined): string | null {
  *
  * The recorded `tag` used to be "whichever param happened to be listed first" — position,
  * not meaning. `utm_source` leads the list for referral programs because that is where a
- * publisher ID lives (noon: `utm_source=C1000094L`); `aff_code` stays ahead of it for
- * programs that use a dedicated code param.
+ * publisher/network id lives (noon: `utm_source=C1000264L`, ADR-224); `aff_code` stays
+ * ahead of it for programs that use a dedicated code param.
  *
  * HISTORY WORTH KEEPING (2026-08-02): this file previously said the exit link "was always
  * correct" and called DNC160 the partner code. Both were wrong. DNC160 is a customer COUPON
