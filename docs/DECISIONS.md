@@ -6,6 +6,21 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-225 — Legacy Noon exit path carried partial attribution on a high-traffic surface; widened to the full parameter set · Accepted (2026-08-07)
+**Context.** Bounded closeout verification on ADR-224 (not a reopening): (1) audit production Noon URLs for legacy/conflicting UTMs the never-clobber rule might have let survive, (2) measure whether the legacy card/detail-page exit path (flagged in ADR-224 as carrying only `utm_source`) is still customer-reachable, and whether that's a real leakage risk.
+
+**Finding 1 — no conflicting UTMs exist.** Queried all 3,599 current Noon `normalized_product_observations` (the exact source both `/go` and the legacy path read from) for any pre-existing `utm_*`/`aff*`/`ref*`/`tag`/`subid`/`click`-like query parameter. **Zero matches.** Every stored Noon URL is clean (product path + Noon's own `o=` token only). The never-clobber rule was never actually engaged in production; no code change was needed for this half.
+
+**Finding 2 — the legacy path is not dead code, and partial attribution on it is a real risk.** `applyAffiliateTag` (`src/lib/transactions/affiliate-config.ts`) is called by `ProductCard` and `StoreComparisonPanel`, both imported by `search-client.tsx` — the main search-results page, one of the highest-traffic customer surfaces in the app. ADR-224 shipped this path with `utm_source=C1000264L` alone (the type only held one param at the time). But every piece of real Noon evidence collected in ADR-224 — two independently-generated dashboard links, different products — shows `utm_source`/`utm_medium`/`utm_campaign`/`adjust_deeplink_js` always appearing together, never `utm_source` alone. Shipping a combination with no supporting evidence of working on a major traffic path is a real, measurable leakage risk, not a proven-safe parity gap to defer.
+
+**Decision.** Widened `AffiliateParam`/`DEFAULT_STORE_AFFILIATE_CONFIG` from a single `{param, value}` to an array — mirroring the governed Provider Registry's own `AffiliateConfig.params[]` shape (`src/lib/providers/types.ts`) rather than inventing a new pattern. `applyAffiliateTag` now loops over the array applying the same never-clobber rule per param. Noon's legacy path now carries the identical 4-parameter set the `/go` path does; Amazon (one param) is unaffected by construction. Explicitly rejected: rerouting the legacy path through `/go` instead — that would change which table records the click (`transactions`/`trackProductClick` vs `outbound_clicks`), a bigger, unrelated architecture change outside this verification's bound.
+
+**Consequences.** Two call sites reading the old single-object shape fixed: `command-center-queries.ts`'s `amazonTagConfigured` check (`?.[0]?.value`), and the admin `AffiliateSettingsCard` (now renders each param as its own row). No new table, no new tracking system, no schema change. `tests/admin/affiliate-config-source.test.ts`: 2 new tests (full param-set application, never-clobber-with-existing-utm_campaign). Full suite: 95/95 suites, 1450/1450 tests. TypeScript clean.
+
+**Not touched:** ADR-221/222/223/224 (not reopened), the `/go` boundary itself (already correct), Amazon's affiliate config, outbound-click tracking architecture, ranking/search logic.
+
+---
+
 ### ADR-224 — Noon affiliate attribution corrected: C1000094L (ADR-181) superseded by C1000264L, with the real Everyday Campaign parameter set · Accepted (2026-08-07)
 **Context.** New commercial-infrastructure task: make eligible Noon outbound journeys attributable to the Founder's official Noon Affiliate account, without touching product destination, ranking, or trust. Not a reopening of ADR-181 — a continuation of its own stated rule: "an affiliate parameter can only be verified against the PROGRAM, never against our own config... until [dashboard/documentation/reconciled-conversion evidence] exists for a program, its attribution is unverified."
 

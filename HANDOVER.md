@@ -1,3 +1,29 @@
+# ═══ RESUME HERE — 2026-08-07 CHECKPOINT #66 · NOON CLOSEOUT VERIFICATION · LEGACY EXIT PATH WAS LEAKING PARTIAL ATTRIBUTION ON A HIGH-TRAFFIC SURFACE ═══
+
+## Two bounded checks on the Noon closeout: no conflicting UTMs found in production (no action needed); the legacy exit path IS live on the main search page and was under-attributed — fixed
+
+**Full detail: ADR-225 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #65 as the resume point (#65's content preserved below). Does not reopen ADR-221/222/223/224.
+
+### Check 1 — legacy/conflicting Noon UTMs in production: NONE found
+Queried all 3,599 current Noon `normalized_product_observations`. Zero carry any pre-existing `utm_*`/`aff*`/`ref*`/tracking-like parameter. The never-clobber rule was never actually engaged. No code change needed for this half — documented as evidence.
+
+### Check 2 — is the legacy exit path customer-reachable: YES, and it mattered
+`applyAffiliateTag` (the legacy path ADR-224 flagged as carrying only `utm_source`) is called by `ProductCard`/`StoreComparisonPanel`, both used on `search-client.tsx` — the **main search-results page**, not a rare edge case. Every real Noon evidence link (ADR-224) always shows all four attribution parameters together, never `utm_source` alone — so shipping a bare `utm_source` on the highest-traffic surface was a real, measurable leakage risk.
+
+### Fix
+Widened `AffiliateParam`/`DEFAULT_STORE_AFFILIATE_CONFIG` (`src/lib/transactions/affiliate-config.ts`) from a single `{param,value}` to an array — mirroring the governed Provider Registry's own shape rather than a new pattern. The legacy path now carries the identical 4-parameter set `/go` does. Did NOT reroute the legacy path through `/go` (would have changed which table records the click — out of bound).
+
+### Tests / deploy
+2 new tests (`tests/admin/affiliate-config-source.test.ts`). Full suite: 95/95 suites, 1450/1450 tests. TypeScript clean. Commit `b5e827c`, confirmed `SUCCESS` on `tawveeri-main`.
+
+### Not touched
+ADR-221/222/223/224 (not reopened), the `/go` boundary (already correct), Amazon's config, outbound-click tracking architecture, ranking/search logic.
+
+### Next
+Noon Affiliate integration + its closeout verification are both complete. No outstanding item from this unit.
+
+---
+
 # ═══ RESUME HERE — 2026-08-07 CHECKPOINT #65 · NOON AFFILIATE ATTRIBUTION CORRECTED (ADR-181 → ADR-224) ═══
 
 ## Noon exits were carrying a stale/wrong publisher id (C1000094L) since ADR-181 — corrected to the real, dashboard-verified value across BOTH live Noon exit paths, deployed, production-verified
