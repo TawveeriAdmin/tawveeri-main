@@ -3,9 +3,17 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createAuditLog } from '@/lib/auth/audit';
 import { createNotification, sendPasswordChangedEmail } from '@/lib/auth/notifications';
+import { requireRequestAuth } from '@/lib/auth/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    let authUser;
+    try {
+      authUser = await requireRequestAuth(request);
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { userId, email, language } = body;
 
@@ -14,6 +22,10 @@ export async function POST(request: NextRequest) {
         { error: 'User ID is required' },
         { status: 400 }
       );
+    }
+
+    if (userId !== authUser.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const supabase = createServerClient();
