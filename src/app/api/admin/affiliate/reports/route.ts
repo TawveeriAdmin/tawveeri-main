@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     const reportIds = (reports || []).map((r: { id: string }) => r.id);
-    let tierCounts: Record<string, Record<string, number>> = {};
+    const tierCounts: Record<string, Record<string, number>> = {};
     if (reportIds.length > 0) {
       const { data: conversions, error: convError } = await supabase
         .from('affiliate_conversions')

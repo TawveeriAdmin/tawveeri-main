@@ -210,6 +210,11 @@ export function ProductCard({
   // what renders, which is the inconsistency that omission would have created.
   const hasDestination = Boolean(product.tps_compare_url) || Boolean(externalProductUrl);
 
+  // eslint-disable-next-line react-hooks/static-components -- closes over product, isDbProduct,
+  // productLink, handleEnsureAndNavigate, navigating and onCardClick; hoisting to module scope
+  // would require threading all of these through as props, a disproportionate refactor for this
+  // upgrade. No remount-identity risk in practice: `product`/`onCardClick` are stable per render
+  // pass and this wrapper only ever wraps its own card's children.
   const LinkWrapper = ({ children }: { children: React.ReactNode }) =>
     !hasDestination && !onCardClick ? (
       <div className="flex flex-col h-full">{children}</div>
@@ -305,6 +310,7 @@ export function ProductCard({
         </div>
       )}
 
+      {/* eslint-disable-next-line react-hooks/static-components -- see justification above LinkWrapper's definition */}
       <LinkWrapper>
         <div className="relative w-full aspect-square overflow-hidden rounded-t-[var(--radius-lg)] bg-[color:var(--color-surface-container-low)]">
           <ProductImageFrame

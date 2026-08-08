@@ -266,7 +266,8 @@ async function main() {
 
    let color:string|null=null, model_number:string|null=null;
    let payload:Record<string,unknown>={};
-   let ignored:string[]=[], ambiguity_flags:string[]=[];
+   let ignored:string[]=[];
+   const ambiguity_flags:string[]=[];
    let keyResult:{key:string|null;status:KeyStatus;reason?:string}={key:null,status:"invalid",reason:"category not supported yet"};
 
    if (category==="mobile") {

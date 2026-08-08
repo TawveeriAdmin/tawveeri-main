@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/simple-intl-provider';
@@ -42,6 +42,8 @@ import {
 import type { ProductCategory } from '@/lib/database/types';
 
 const RECENTLY_VIEWED_KEY = 'tawveeri.recentlyViewedProducts';
+
+type TFn = ReturnType<typeof useTranslations>;
 
 interface RecentSearch {
   id: string;
@@ -95,6 +97,82 @@ interface DashboardProduct {
   }>;
 }
 
+/* ── Category icon fallback for missing images ── */
+function getCategoryIcon(category: string) {
+  switch (category) {
+    case 'smartphones': return Smartphone;
+    case 'laptops': return Laptop;
+    case 'tvs': return Tv;
+    case 'audio': return Headphones;
+    case 'wearables': return Watch;
+    case 'cameras': return Camera;
+    case 'gaming': return Gamepad2;
+    default: return Package;
+  }
+}
+
+/* ── Horizontal scroll product card ── */
+function ProductScrollCard({
+  product,
+  size = 'md',
+  locale,
+  t,
+}: {
+  product: DashboardProduct;
+  size?: 'sm' | 'md';
+  locale: string;
+  t: TFn;
+}) {
+  const FallbackIcon = getCategoryIcon(product.category);
+
+  return (
+    <SharedProductRailCard
+      product={product}
+      locale={locale}
+      href={`/${locale}/products/${product.slug}`}
+      size={size}
+      priceUnavailableLabel={t('products.priceNotAvailable')}
+      fallbackIcon={createElement(FallbackIcon, { className: size === 'sm' ? 'h-8 w-8' : 'h-10 w-10' })}
+    />
+  );
+}
+
+/* ── Section header ── */
+function SectionHeader({
+  title,
+  href,
+  badge,
+  t,
+  isRTL,
+}: {
+  title: string;
+  href?: string;
+  badge?: React.ReactNode;
+  t: TFn;
+  isRTL: boolean;
+}) {
+  const ChevronNav = isRTL ? ChevronLeft : ChevronRight;
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <h2 className="truncate text-lg font-black tracking-tight text-on-surface">{title}</h2>
+          {badge}
+        </div>
+      </div>
+      {href && (
+        <Link
+          href={href}
+          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--brand-green-dark)] transition-colors hover:bg-[var(--brand-bg-green)]"
+        >
+          {t('dashboard.viewAll')}
+          <ChevronNav className="h-3.5 w-3.5" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [supabase] = useState(() =>
     typeof window !== 'undefined' ? getSupabaseBrowserClient() : null
@@ -105,7 +183,6 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const isRTL = locale === 'ar';
   const ArrowNav = isRTL ? ArrowLeft : ArrowRight;
-  const ChevronNav = isRTL ? ChevronLeft : ChevronRight;
 
   const [wishlistCount, setWishlistCount] = useState(0);
   const [alertsCount, setAlertsCount] = useState(0);
@@ -296,57 +373,6 @@ export default function DashboardPage() {
 
   const productsTracked = wishlistCount + alertsCount;
 
-  /* ── Category icon fallback for missing images ── */
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'smartphones': return Smartphone;
-      case 'laptops': return Laptop;
-      case 'tvs': return Tv;
-      case 'audio': return Headphones;
-      case 'wearables': return Watch;
-      case 'cameras': return Camera;
-      case 'gaming': return Gamepad2;
-      default: return Package;
-    }
-  };
-
-  /* ── Horizontal scroll product card ── */
-  const ProductScrollCard = ({ product, size = 'md' }: { product: DashboardProduct; size?: 'sm' | 'md' }) => {
-    const FallbackIcon = getCategoryIcon(product.category);
-
-    return (
-      <SharedProductRailCard
-        product={product}
-        locale={locale}
-        href={`/${locale}/products/${product.slug}`}
-        size={size}
-        priceUnavailableLabel={t('products.priceNotAvailable')}
-        fallbackIcon={<FallbackIcon className={size === 'sm' ? 'h-8 w-8' : 'h-10 w-10'} />}
-      />
-    );
-  };
-
-  /* ── Section header ── */
-  const SectionHeader = ({ title, href, badge }: { title: string; href?: string; badge?: React.ReactNode }) => (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <h2 className="truncate text-lg font-black tracking-tight text-on-surface">{title}</h2>
-          {badge}
-        </div>
-      </div>
-      {href && (
-        <Link
-          href={href}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--brand-green-dark)] transition-colors hover:bg-[var(--brand-bg-green)]"
-        >
-          {t('dashboard.viewAll')}
-          <ChevronNav className="h-3.5 w-3.5" />
-        </Link>
-      )}
-    </div>
-  );
-
   /* ── Notification type icon color ── */
   const getNotifColor = (type: string) => {
     if (type === 'price_drop') return 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400';
@@ -483,7 +509,7 @@ export default function DashboardPage() {
       {/* Alerts + notifications */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-7">
-          <SectionHeader title={t('dashboard.section.priceAlerts')} href={`/${locale}/price-alerts`} />
+          <SectionHeader title={t('dashboard.section.priceAlerts')} href={`/${locale}/price-alerts`} t={t} isRTL={isRTL} />
           {loading ? (
             <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>
           ) : priceAlerts.length === 0 ? (
@@ -547,7 +573,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-5">
-          <SectionHeader title={t('dashboard.section.notifications')} href={`/${locale}/notifications`} />
+          <SectionHeader title={t('dashboard.section.notifications')} href={`/${locale}/notifications`} t={t} isRTL={isRTL} />
           {loading ? (
             <div className="space-y-3">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-14 rounded-2xl" />)}</div>
           ) : notifications.length === 0 ? (
@@ -591,6 +617,8 @@ export default function DashboardPage() {
       <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5">
         <SectionHeader
           title={t('dashboard.section.recommendations')}
+          t={t}
+          isRTL={isRTL}
           badge={
             <Badge variant="outline" className="rounded-full text-[10px]">
               <Sparkles className="me-1 h-3 w-3" />
@@ -606,7 +634,7 @@ export default function DashboardPage() {
           </div>
         ) : recommendations.length > 0 ? (
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {recommendations.map(p => <ProductScrollCard key={`rec-${p.id}`} product={p} />)}
+            {recommendations.map(p => <ProductScrollCard key={`rec-${p.id}`} product={p} locale={locale} t={t} />)}
           </div>
         ) : (
           <EmptyState icon={<ShoppingBag className="h-8 w-8" />} title={t('dashboard.noRecommendations')} className="py-10" />
@@ -616,21 +644,21 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         {(loading || favorites.length > 0) && (
           <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-7">
-            <SectionHeader title={t('dashboard.section.favorites')} href={`/${locale}/wishlist`} />
+            <SectionHeader title={t('dashboard.section.favorites')} href={`/${locale}/wishlist`} t={t} isRTL={isRTL} />
             {loading ? (
               <div className="flex gap-3 overflow-hidden">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-[220px] w-[200px] shrink-0 rounded-xl" />)}
               </div>
             ) : (
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                {favorites.map(p => <ProductScrollCard key={`fav-${p.id}`} product={p} />)}
+                {favorites.map(p => <ProductScrollCard key={`fav-${p.id}`} product={p} locale={locale} t={t} />)}
               </div>
             )}
           </section>
         )}
 
         <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5 xl:col-span-5">
-          <SectionHeader title={t('dashboard.section.recentSearches')} />
+          <SectionHeader title={t('dashboard.section.recentSearches')} t={t} isRTL={isRTL} />
           {recentSearches.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {recentSearches.map(s => (
@@ -653,9 +681,9 @@ export default function DashboardPage() {
 
       {recentlyViewed.length > 0 && (
         <section className="rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-4 shadow-[var(--elevation-1)] md:p-5">
-          <SectionHeader title={t('dashboard.section.recentlyViewed')} />
+          <SectionHeader title={t('dashboard.section.recentlyViewed')} t={t} isRTL={isRTL} />
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {recentlyViewed.map(p => <ProductScrollCard key={`rv-${p.id}`} product={p} size="sm" />)}
+            {recentlyViewed.map(p => <ProductScrollCard key={`rv-${p.id}`} product={p} size="sm" locale={locale} t={t} />)}
           </div>
         </section>
       )}

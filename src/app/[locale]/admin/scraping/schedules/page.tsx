@@ -237,6 +237,21 @@ const SCHEDULE_TEXT = {
 };
 
 type SortField = 'store' | 'job_type' | 'is_enabled' | 'last_run_at' | 'next_run_at';
+
+function SortIcon({
+  field,
+  sortField,
+  sortDir,
+}: {
+  field: SortField;
+  sortField: SortField;
+  sortDir: 'asc' | 'desc';
+}) {
+  if (sortField !== field) return <ArrowUpDown className="ms-1 inline h-3 w-3 opacity-40" />;
+  return sortDir === 'asc'
+    ? <ArrowUp className="ms-1 inline h-3 w-3" />
+    : <ArrowDown className="ms-1 inline h-3 w-3" />;
+}
 type SortDir = 'asc' | 'desc';
 
 export default function ScrapingSchedulesPage() {
@@ -417,13 +432,6 @@ export default function ScrapingSchedulesPage() {
     return result;
   }, [rows, edits, searchQuery, jobTypeFilter, enabledFilter, sortField, sortDir]);
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <ArrowUpDown className="ms-1 inline h-3 w-3 opacity-40" />;
-    return sortDir === 'asc'
-      ? <ArrowUp className="ms-1 inline h-3 w-3" />
-      : <ArrowDown className="ms-1 inline h-3 w-3" />;
-  };
-
   const activeFilterCount =
     (jobTypeFilter !== 'all' ? 1 : 0) + (enabledFilter !== 'all' ? 1 : 0);
 
@@ -539,13 +547,13 @@ export default function ScrapingSchedulesPage() {
                   className="font-semibold cursor-pointer select-none"
                   onClick={() => toggleSort('store')}
                 >
-                  {text.store} <SortIcon field="store" />
+                  {text.store} <SortIcon field="store" sortField={sortField} sortDir={sortDir} />
                 </TableHead>
                 <TableHead
                   className="font-semibold cursor-pointer select-none"
                   onClick={() => toggleSort('job_type')}
                 >
-                  {text.job} <SortIcon field="job_type" />
+                  {text.job} <SortIcon field="job_type" sortField={sortField} sortDir={sortDir} />
                 </TableHead>
                 {visibleCols.categories && <TableHead className="font-semibold">{text.categories}</TableHead>}
                 {visibleCols.enabled && (
@@ -553,7 +561,7 @@ export default function ScrapingSchedulesPage() {
                     className="font-semibold cursor-pointer select-none"
                     onClick={() => toggleSort('is_enabled')}
                   >
-                    {text.enabled} <SortIcon field="is_enabled" />
+                    {text.enabled} <SortIcon field="is_enabled" sortField={sortField} sortDir={sortDir} />
                   </TableHead>
                 )}
                 {visibleCols.cron && <TableHead className="font-semibold">{text.cron}</TableHead>}
@@ -610,7 +618,7 @@ export default function ScrapingSchedulesPage() {
                     className="font-semibold cursor-pointer select-none"
                     onClick={() => toggleSort('next_run_at')}
                   >
-                    {text.nextRun} <SortIcon field="next_run_at" />
+                    {text.nextRun} <SortIcon field="next_run_at" sortField={sortField} sortDir={sortDir} />
                   </TableHead>
                 )}
                 {visibleCols.last_run && (
@@ -618,7 +626,7 @@ export default function ScrapingSchedulesPage() {
                     className="font-semibold cursor-pointer select-none"
                     onClick={() => toggleSort('last_run_at')}
                   >
-                    {text.lastRun} <SortIcon field="last_run_at" />
+                    {text.lastRun} <SortIcon field="last_run_at" sortField={sortField} sortDir={sortDir} />
                   </TableHead>
                 )}
                 <TableHead className="font-semibold">{text.actions}</TableHead>

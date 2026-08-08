@@ -156,7 +156,8 @@ const STORE_NAMES: Record<string, string[]> = {
   };
 
   let queried = 0, fetched = 0, written = 0, created = 0, linked = 0, errors = 0, noHit = 0, rawWritten = 0;
-  let rejectedIrrelevant = 0, skippedNoModel = 0;
+  let rejectedIrrelevant = 0;
+  const skippedNoModel = 0;
   // A run id makes every row this experiment writes attributable forever — the permanent
   // fix for the attribution problem that made the first run unreadable.
   const runId: string | null = null;

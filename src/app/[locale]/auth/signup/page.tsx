@@ -32,6 +32,30 @@ const FacebookIcon = () => (
  </svg>
 );
 
+// Helper component for error messages
+function ErrorMessage({ message, t }: { message: string; t: ReturnType<typeof useTranslations> }) {
+  if (!message) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 text-sm text-error" role="alert" aria-live="polite">
+      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+      <span>{t(`auth.validation.${message}`)}</span>
+    </div>
+  );
+}
+
+// Helper component for success messages
+function SuccessMessage({ message, t }: { message: string; t: ReturnType<typeof useTranslations> }) {
+  if (!message) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 text-sm text-success">
+      <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+      <span>{t(`auth.validation.${message}`)}</span>
+    </div>
+  );
+}
+
 export default function SignupPage() {
  const t = useTranslations();
  const params = useParams();
@@ -240,30 +264,6 @@ export default function SignupPage() {
  }
  };
 
- // Helper component for error messages
- const ErrorMessage = ({ message }: { message: string }) => {
- if (!message) return null;
-
- return (
- <div className="flex items-center gap-1.5 mt-1.5 text-sm text-error" role="alert" aria-live="polite">
- <AlertCircle className="w-4 h-4 flex-shrink-0" />
- <span>{t(`auth.validation.${message}`)}</span>
- </div>
- );
- };
-
- // Helper component for success messages
- const SuccessMessage = ({ message }: { message: string }) => {
- if (!message) return null;
-
- return (
- <div className="flex items-center gap-1.5 mt-1.5 text-sm text-success">
- <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
- <span>{t(`auth.validation.${message}`)}</span>
- </div>
- );
- };
-
  return (
  <div className="h-screen flex overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
  {/* Left Side - Form */}
@@ -347,7 +347,7 @@ export default function SignupPage() {
  className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border ${errors.fullName && touched.fullName ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.fullName && touched.fullName ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
  />
  </div>
- {touched.fullName && <ErrorMessage message={errors.fullName} />}
+ {touched.fullName && <ErrorMessage message={errors.fullName} t={t} />}
  </div>
 
  {/* Email Field */}
@@ -371,7 +371,7 @@ export default function SignupPage() {
  className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-surface-container border ${errors.email && touched.email ? 'border-warning-500' : 'border-outline-variant'} rounded-xl text-on-surface placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.email && touched.email ? 'focus:ring-warning-500' : 'focus:ring-primary-500'} focus:border-transparent transition-all`}
  />
  </div>
- {touched.email && <ErrorMessage message={errors.email} />}
+ {touched.email && <ErrorMessage message={errors.email} t={t} />}
  </div>
 
  {/* Password Field */}
@@ -401,7 +401,7 @@ export default function SignupPage() {
  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
  </button>
  </div>
- {formData.password && <ErrorMessage message={errors.password} />}
+ {formData.password && <ErrorMessage message={errors.password} t={t} />}
  </div>
 
  {/* Confirm Password Field */}
@@ -431,8 +431,8 @@ export default function SignupPage() {
  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
  </button>
  </div>
- {formData.confirmPassword && errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} />}
- {formData.confirmPassword && !errors.confirmPassword && <SuccessMessage message="passwordMatch" />}
+ {formData.confirmPassword && errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} t={t} />}
+ {formData.confirmPassword && !errors.confirmPassword && <SuccessMessage message="passwordMatch" t={t} />}
  </div>
 
  {/* Terms Agreement */}
@@ -449,7 +449,7 @@ export default function SignupPage() {
  {t('auth.termsAgreement')}
  </label>
  </div>
- {errors.terms && <ErrorMessage message={errors.terms} />}
+ {errors.terms && <ErrorMessage message={errors.terms} t={t} />}
  </div>
 
  {/* Sign Up Button */}
