@@ -319,7 +319,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const auth = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`)
+  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`)
     return json({ error: 'Unauthorized' }, 401);
   const results: any[] = [];
   for (const adapter of getEnabledAdapters()) {
