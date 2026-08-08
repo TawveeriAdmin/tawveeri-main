@@ -88,6 +88,36 @@ const nextConfig: NextConfig = {
          { key: 'X-Content-Type-Options', value: 'nosniff' },
          { key: 'X-Frame-Options', value: 'DENY' },
          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+         // HSTS: site is served exclusively over HTTPS (Railway/tawveeri.com). Safe to
+         // enforce unconditionally — there is no intentional plain-HTTP surface to break.
+         { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+         // Only `camera` is used in-app (barcode scanner, src/components/search/barcode-scanner.tsx
+         // via getUserMedia). Everything else this app does not use is explicitly denied.
+         { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()' },
+         // REPORT-ONLY DRAFT — audit-time addition (2026-08-08). Not enforced: this repo could
+         // not be built/run to verify it doesn't break Supabase/Algolia/Sentry/image-CDN/OAuth
+         // traffic or the inline theme-flash script in src/app/layout.tsx. Ships as
+         // Report-Only so browsers log violations to the console without blocking anything;
+         // the coordinator should watch those reports for a few days, tighten the directives
+         // (particularly 'unsafe-inline'/'unsafe-eval' on script-src), then promote it to a
+         // real `Content-Security-Policy` header.
+         {
+           key: 'Content-Security-Policy-Report-Only',
+           value: [
+             "default-src 'self'",
+             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+             "style-src 'self' 'unsafe-inline'",
+             "img-src 'self' data: blob: https:",
+             "font-src 'self' data:",
+             "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://*.algolia.net https://*.algolianet.com https://*.sentry.io https://*.ingest.sentry.io",
+             "frame-src 'self'",
+             "object-src 'none'",
+             "base-uri 'self'",
+             "form-action 'self'",
+             "frame-ancestors 'none'",
+             'upgrade-insecure-requests',
+           ].join('; '),
+         },
        ],
      },
    ];
