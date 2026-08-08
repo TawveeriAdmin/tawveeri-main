@@ -74,21 +74,26 @@ export async function getRequestUserProfile(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!data) {
-    const isBootstrapAdmin = user.email
-      ? getConfiguredAdminEmails().has(user.email.toLowerCase())
-      : false;
+  const isBootstrapAdmin = user.email
+    ? getConfiguredAdminEmails().has(user.email.toLowerCase())
+    : false;
 
+  if (!data) {
     return {
       ...user,
       role: (isBootstrapAdmin ? 'admin' : 'customer') as UserRole,
     };
   }
 
+  // Live env-var check, same as getUserProfile() in server.ts — bootstrap
+  // admin is never trusted from a persisted DB value, so removing an email
+  // from ADMIN_EMAILS revokes API-route admin access immediately, not just
+  // on server-rendered pages. A genuinely admin-promoted account (role set
+  // directly in the DB, not via this bootstrap path) is unaffected.
   return {
     ...user,
     ...data,
-    role: data.role as UserRole,
+    role: (isBootstrapAdmin ? 'admin' : data.role) as UserRole,
   };
 }
 

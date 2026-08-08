@@ -151,14 +151,14 @@ export async function getUserProfile() {
     };
   }
 
-  if (isBootstrapAdmin && data.role !== 'admin') {
-    // Best effort: keep DB role consistent for bootstrap admin accounts.
-    await supabase
-      .from('users')
-      .update({ role: 'admin' })
-      .eq('id', user.id);
-  }
-
+  // Bootstrap admin is intentionally NEVER persisted to `users.role` — it must
+  // stay a live, per-request check against ADMIN_EMAILS. Persisting it (the
+  // prior behavior) meant removing an email from ADMIN_EMAILS did not actually
+  // revoke access: the DB row stayed 'admin' forever after the first write,
+  // since data.role below would already read back 'admin' on every later
+  // request regardless of the env var. A genuinely admin-promoted account
+  // (via the real admin UI) is unaffected — its role lives in `data.role`
+  // either way, bootstrap or not.
   return {
     ...user,
     ...data,
