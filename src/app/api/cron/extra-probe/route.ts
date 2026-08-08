@@ -1,11 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 // Probe: استخراج مقطع HTML خام حول أول بطاقة منتج لتحديد البنية الكاملة
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get('authorization');
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const url = 'https://www.extra.com/ar-sa/white-goods/air-conditioner/cp/4-402?pageSize=24&pg=0';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30000);
