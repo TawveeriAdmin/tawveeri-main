@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { ProductForm } from '@/components/store/product-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function NewProductPage({
- params,
-}: {
- params: Promise<{ locale: string }>;
-}) {
+export default function NewProductPage(
+ props: {
+  params: Promise<{ locale: string }>;
+ }
+) {
+ const params = use(props.params);
  const [locale, setLocale] = useState<string>('en');
  const [storeId, setStoreId] = useState<string | null>(null);
  const [loading, setLoading] = useState(true);
@@ -20,7 +21,7 @@ export default function NewProductPage({
  const isRTL = locale === 'ar';
 
  useEffect(() => {
- params.then((p) => setLocale(p.locale));
+ setLocale(params.locale);
  }, [params]);
 
  useEffect(() => {

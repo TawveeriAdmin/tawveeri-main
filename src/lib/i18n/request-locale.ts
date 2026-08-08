@@ -15,8 +15,8 @@ import { locales, defaultLocale } from '@/i18n';
  * `[locale]` is a dynamic segment with no `generateStaticParams`, so every page under it was
  * already rendered on demand.
  */
-export function getRequestLocale(): string {
-  const h = headers();
+export async function getRequestLocale(): Promise<string> {
+  const h = await headers();
   const candidate = h.get('x-locale') || h.get('x-next-intl-locale') || '';
   return locales.includes(candidate as (typeof locales)[number]) ? candidate : defaultLocale;
 }

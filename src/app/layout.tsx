@@ -82,7 +82,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = getRequestLocale();
+  const locale = await getRequestLocale();
 
   // Which categories may appear in navigation — measured live, never hardcoded (ADR-150).
   // Failure returns [] inside the helper, so a bad read hides the menu rather than

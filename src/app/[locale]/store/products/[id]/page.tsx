@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -14,11 +14,12 @@ const BarChart = dynamic(
   { ssr: false }
 );
 
-export default function EditProductPage({
- params,
-}: {
- params: Promise<{ locale: string; id: string }>;
-}) {
+export default function EditProductPage(
+ props: {
+  params: Promise<{ locale: string; id: string }>;
+ }
+) {
+ const params = use(props.params);
  const [locale, setLocale] = useState<string>('en');
  const [productId, setProductId] = useState<string>('');
  const [storeId, setStoreId] = useState<string | null>(null);
@@ -30,10 +31,8 @@ export default function EditProductPage({
  const isRTL = locale === 'ar';
 
  useEffect(() => {
- params.then((p) => {
- setLocale(p.locale);
- setProductId(p.id);
- });
+ setLocale(params.locale);
+ setProductId(params.id);
  }, [params]);
 
  useEffect(() => {

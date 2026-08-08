@@ -65,7 +65,8 @@ const T = {
 
 const dict = (locale: string) => (locale === "en" ? T.en : T.ar);
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const t = dict(params.locale);
   return {
     title: t.metaTitle,
@@ -74,7 +75,8 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   };
 }
 
-export default async function DealsPage({ params }: { params: { locale: string } }) {
+export default async function DealsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const deals = await getDeals(24);
   const t = dict(params.locale);
   const isAr = params.locale !== "en";
@@ -150,7 +152,7 @@ export default async function DealsPage({ params }: { params: { locale: string }
               <div className="flex h-40 items-center justify-center">
                 {d.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={d.imageUrl} alt={d.nameAr} className="h-full object-contain" />
+                  (<img src={d.imageUrl} alt={d.nameAr} className="h-full object-contain" />)
                 ) : (
                   <div className="text-gray-300 text-sm">{t.noImage}</div>
                 )}

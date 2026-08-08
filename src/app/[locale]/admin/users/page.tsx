@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { formatDate, formatNumber } from '@/lib/formatting';
 import { Input } from '@/components/ui/input';
@@ -192,11 +192,12 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 
 // ─── Page ─────────────────────────────────────────────────
 
-export default function AdminUsersPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default function AdminUsersPage(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
   const [locale, setLocale] = useState('en');
   const t = useTranslations();
   const router = useRouter();
@@ -241,7 +242,7 @@ export default function AdminUsersPage({
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
   useEffect(() => {
-    params.then((p) => setLocale(p.locale));
+    setLocale(params.locale);
   }, [params]);
 
   // ─── Data loading ───────────────────────────────────────

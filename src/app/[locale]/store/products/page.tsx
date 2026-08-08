@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { Input } from '@/components/ui/input';
@@ -47,11 +47,12 @@ interface ProductStore {
  };
 }
 
-export default function StoreProductsPage({
- params,
-}: {
- params: Promise<{ locale: string }>;
-}) {
+export default function StoreProductsPage(
+ props: {
+  params: Promise<{ locale: string }>;
+ }
+) {
+ const params = use(props.params);
  const [locale, setLocale] = useState<string>('en');
  const t = useTranslations();
  const [products, setProducts] = useState<ProductStore[]>([]);
@@ -73,7 +74,7 @@ export default function StoreProductsPage({
  const numberLocale = isRTL ? 'ar-SA' : 'en-US';
 
  useEffect(() => {
- params.then((p) => setLocale(p.locale));
+ setLocale(params.locale);
  }, [params]);
 
  useEffect(() => {

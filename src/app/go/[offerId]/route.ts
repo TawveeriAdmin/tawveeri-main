@@ -26,10 +26,8 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_P
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { offerId: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ offerId: string }> }) {
+  const params = await props.params;
   const { offerId } = params;
   // MEASURED DEFECT (2026-07-30): this was `new URL("/", req.url)`. Behind Railway's proxy
   // `req.url` is the INTERNAL bind address, so an unresolvable exit returned

@@ -12,8 +12,8 @@ import { Search, LayoutGrid } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { getRequestLocale } from '@/lib/i18n/request-locale';
 
-export default function NotFound() {
-  const locale = getRequestLocale();
+export default async function NotFound() {
+  const locale = await getRequestLocale();
   const isAr = locale === 'ar';
 
   return (

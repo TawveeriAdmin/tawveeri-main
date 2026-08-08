@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Input } from '@/components/ui/input';
 import {
@@ -179,11 +179,12 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 
 // ─── Page ─────────────────────────────────────────────────
 
-export default function AdminTransactionsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default function AdminTransactionsPage(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
   const [locale, setLocale] = useState('en');
   const t = useTranslations();
   const { toast } = useToast();
@@ -229,7 +230,7 @@ export default function AdminTransactionsPage({
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    params.then((p) => setLocale(p.locale));
+    setLocale(params.locale);
   }, [params]);
 
   // ─── Data loading ───────────────────────────────────────

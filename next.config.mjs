@@ -5,19 +5,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   output: 'standalone',
   generateBuildId: async () => {
     return `build-${Date.now()}`;
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
-    // Required on Next.js 14 for instrumentation.ts `register()` to run (it became
-    // the default in Next 15). Without it the hook silently never fires — which is
-    // why the ADR-078 in-process scheduler would never start in production. ADR-078.
-    instrumentationHook: true,
   },
   images: {
     remotePatterns: [

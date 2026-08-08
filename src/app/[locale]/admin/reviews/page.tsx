@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Input } from '@/components/ui/input';
 import {
@@ -167,11 +167,12 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 
 // ─── Page ─────────────────────────────────────────────────
 
-export default function AdminReviewsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default function AdminReviewsPage(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
   const [locale, setLocale] = useState('en');
   const t = useTranslations();
   const { toast } = useToast();
@@ -217,7 +218,7 @@ export default function AdminReviewsPage({
   const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
 
   useEffect(() => {
-    params.then((p) => setLocale(p.locale));
+    setLocale(params.locale);
   }, [params]);
 
   // ─── Data loading ───────────────────────────────────────

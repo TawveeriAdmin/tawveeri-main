@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Input } from '@/components/ui/input';
 import {
@@ -105,11 +105,12 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 
 // ─── Page ─────────────────────────────────────────────────
 
-export default function AdminLogsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default function AdminLogsPage(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
   const [locale, setLocale] = useState('en');
   const t = useTranslations();
   const isRTL = locale === 'ar';
@@ -149,7 +150,7 @@ export default function AdminLogsPage({
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    params.then((p) => setLocale(p.locale));
+    setLocale(params.locale);
   }, [params]);
 
   // ─── Load filter options ────────────────────────────────
