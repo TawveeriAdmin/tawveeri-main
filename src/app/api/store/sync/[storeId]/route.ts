@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { createNotification } from '@/lib/auth/notifications';
 import { createAuditLog } from '@/lib/auth/audit';
+import { requireRequestStore } from '@/lib/auth/api-auth';
 import type { Database } from '@/lib/database/types';
 
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
@@ -37,6 +38,14 @@ export async function POST(
 ) {
   try {
     const { storeId } = await params;
+
+    let profile;
+    try {
+      profile = await requireRequestStore(request);
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body: SyncRequest = await request.json();
 
     if (!body.products || !Array.isArray(body.products)) {
@@ -44,6 +53,19 @@ export async function POST(
     }
 
     const supabase = createServerClient();
+
+    if (profile.role !== 'admin') {
+      const { data: ownedStore } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .eq('created_by', profile.id)
+        .maybeSingle();
+
+      if (!ownedStore) {
+        return NextResponse.json({ error: 'Store not found or not owned by this account' }, { status: 403 });
+      }
+    }
     const results: Array<{ product_id: string; status: 'created' | 'updated' | 'error'; error?: string }> = [];
     const priceChanges: Array<{ product_id: string; old_price: number; new_price: number }> = [];
 
