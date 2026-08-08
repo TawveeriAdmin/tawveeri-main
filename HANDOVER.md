@@ -1,3 +1,44 @@
+# ═══ RESUME HERE — 2026-08-08 CHECKPOINT #67 · NEXT.JS SECURITY UPGRADE — CLOSED ═══
+
+## MISSION: eliminate 9 known CVEs on Next.js 14.2.35 (EOL, unpatched) — CLOSED, deployed, verified healthy
+
+**Full detail: ADR-228 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #66 as the resume point (#66's content preserved below). Does not reopen anything from #66 or earlier.
+
+### What was upgraded
+Next.js 14.2.35 → **16.3.0** (direct jump, not staged through 15), React 18.3.1 → 19.2.8. Closes all 9 CVEs from Vercel's July 2026 security batch (SSRF, Server Action DoS, cache-confusion ×2, image-optimization DoS, endpoint disclosure) plus the 16.x-only middleware/proxy bypass (CVE-2026-64642) — all fixed at 16.2.11+, none backported to 14.x. Also bumped for compatibility: `@sentry/nextjs` 8→10, `next-intl` 3→4, `next-themes` 0.3→0.4, `eslint` 8→9.39.5 (10.x breaks `eslint-config-next`'s bundled `eslint-plugin-react`).
+
+### Exact deployed commit
+`e776dae776fa37f00fa8631cd643013262124179` — `main` and `origin/main` both confirmed at this SHA; live production confirmed serving it via `/api/debug/scheduler`. git status clean.
+
+### Verification result
+Full async-params/searchParams/cookies/headers codemod migration across the route surface. Zero shipped-code TypeScript regressions — proven via matched-dependency diff (clean `main` + identical upgraded deps = 554 errors; candidate = 552; zero files worse, one improved). Build/lint/test suite all clean (95/95 suites, 1450/1450 tests). All protected files (about, how-it-works, assistant, api/ai-assistant, api/search, footer, public-page-shell, search-autocomplete) and `WAFFAR_SYSTEM_PROMPT` confirmed byte-for-byte untouched. 30+ minute post-deploy production monitoring: zero restarts, zero OOM, all critical routes 200 throughout.
+
+### Rollback reference (not needed — kept for the record)
+Pre-deploy state was `origin/main` at `72d5109375ab3a69d443ff69dbcaea42f038ed7e`. If ever needed: `git revert e776dae` (or the range back to `72d5109`) on `main`, push, Railway auto-redeploys. No schema/data changes in this upgrade — pure application-code/dependency change, so no DB rollback would be needed.
+
+### Sentry / Browserless / scheduler status — all confirmed live in production
+- **Sentry**: real test event captured, delivered (`flush()`=true), and the alert email arrived — confirmed by the founder directly.
+- **Browserless**: live LuLu scrape proved `browser.process()`=null (no local Chromium spawned) and `wsEndpoint` host = `production-sfo.browserless.io`. In production during monitoring, a real `[noon]` discovery cycle ran with no "falling back to local Puppeteer" warning.
+- **Scheduler** (ADR-078): `instrumentation.ts` unchanged, spawned cleanly on the new deploy (pid confirmed, zero errors/exits across the full monitoring window), a real refresh-chain attempt and a real discovery cycle both observed firing live.
+
+### Production incident during monitoring — investigated, classified, NOT a regression
+Sentry issue `JAVASCRIPT-NEXTJS-3` ("router state header was sent but could not be parsed") — 6 occurrences, one tight burst 1.5–4 min after deploy boot, zero recurrence over the rest of the 30+ min window. Confirmed via Vercel's own GitHub issue tracker (#92961, #92907, #91723) as Next.js's documented "version skew" behavior: a client holding a pre-deploy router-state-tree header format hits the newly-deployed server. The exact affected page type (tested directly with a real comparison key) rendered a clean 200 throughout. No rollback triggered.
+
+### Intentionally deferred pre-existing issue — NOT part of this mission, NOT touched
+Two unrelated defects already present on `main` before this upgrade, confirmed unchanged (same signature, same behavior) after it:
+1. `[dispatcher] fetchDueSchedules error: column scraping_schedules.max_pages does not exist` — recurring dispatcher error, every tick.
+2. `[refresh] full chain FAILED` at the `resolved-single` step, cascading skips downstream (projection/presentation/search/edges) — intelligence-refresh chain has been failing repeatedly independent of this deploy.
+
+Both are schema/pipeline issues unrelated to the Next.js/React version bump — flagged for a future session, deliberately not investigated or fixed here per the founder's explicit no-unrelated-work instruction.
+
+### NOT DONE THIS SESSION (deliberately)
+No credential rotation (no evidence any secret left the trusted local environment — a full production `.env` dump landed in this session's chat transcript when pulling `BROWSERLESS_API_KEY`/`NEXT_PUBLIC_SENTRY_DSN` from Railway; flagged to the founder at the time, rotation decision left to them). No fix for the two pre-existing issues above. No further engineering workstream started.
+
+## NEXT SESSION
+Founder to decide next project direction separately. If credential rotation is wanted for the secrets that appeared in this session's transcript (Supabase service-role key, DB password, `ADMIN_PASSWORD`, `CRON_SECRET`, `MATCH_SECRET`, Anthropic/SendGrid/Algolia-admin/Authentica/Firecrawl keys, VAPID private key), that's a founder call, not auto-actioned. The two pre-existing pipeline defects noted above are unclaimed.
+
+---
+
 # ═══ RESUME HERE — 2026-08-07 CHECKPOINT #66 · NOON CLOSEOUT VERIFICATION · LEGACY EXIT PATH WAS LEAKING PARTIAL ATTRIBUTION ON A HIGH-TRAFFIC SURFACE ═══
 
 ## Two bounded checks on the Noon closeout: no conflicting UTMs found in production (no action needed); the legacy exit path IS live on the main search page and was under-attributed — fixed
