@@ -6,9 +6,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createClient } from "@supabase/supabase-js";
+import { INTERNAL_TOKENS } from "@/lib/vocabulary/internal-vocabulary";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// نفس قائمة sentinels التي تُمنع من الظهور في الاسم المعروض (internal-vocabulary.ts) —
+// identityKeyToSlug كانت الطريق الوحيد المتبقي لتسرّبها: إلى الـ URL بدل الاسم المعروض.
+const SLUG_SENTINEL_TOKENS = new Set(
+  (INTERNAL_TOKENS.find((t) => t.id === "identity-sentinel")?.tokens ?? []).map((t) => t.toLowerCase())
+);
 
 export interface StoreOffer {
   offerId: string;        // normalized_product_observations.id → يُستخدم في /go/{offerId}
@@ -39,8 +46,17 @@ export interface ProductComparison {
 
 // slug = tps_identity_key محولاً لصيغة URL آمنة
 // "apple|iPhone|16|Pro Max|256" → "apple-iphone-16-pro-max-256"
+// أي مقطع sentinel داخلي (NO_STORAGE, NO_TECH, ...) يُحذف بدل تحويله لنص — نفس القاعدة
+// التي تمنعه من الظهور في الاسم المعروض، لأن رابطاً يحتوي "no_storage" هو تسريب أيضاً
+// (وينتج صفحة 404 بمجرد ترقية هوية المنتج عند توفر السعة).
 export function identityKeyToSlug(key: string): string {
-  return key.toLowerCase().replace(/\|/g, "-").replace(/\s+/g, "-").replace(/=/g, "-");
+  const segments = key.split("|").filter((seg) => !SLUG_SENTINEL_TOKENS.has(seg.trim().toLowerCase()));
+  return segments
+    .join("|")
+    .toLowerCase()
+    .replace(/\|/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/=/g, "-");
 }
 
 export async function getProductComparison(slug: string): Promise<ProductComparison | null> {
