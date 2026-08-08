@@ -34,17 +34,63 @@ export abstract class BaseScraper {
   }
 
   /**
-   * Initialize browser and page
+   * Launch (or connect to) a browser.
+   *
+   * Puppeteer/Chromium historically ran IN-PROCESS with the web server (ADR-078's scheduler is a
+   * child of the same container) — a heavy scrape competes with the web server for the container's
+   * own memory/thread budget. Confirmed as the direct cause of a production OOM kill, 2026-08-08
+   * (Zygote fork failures + pthread_create resource exhaustion during Amazon discovery).
+   *
+   * When BROWSERLESS_API_KEY is set, connect to a remote Chromium session on Browserless.io
+   * instead of launching one locally — the browser process (and its memory) then lives entirely
+   * outside this container. If that connection fails or times out for ANY reason (bad key, quota
+   * exhausted, Browserless outage, network issue), fall back to the local launch — a scrape must
+   * degrade, never hard-fail, if the external dependency has a bad day.
    */
-  async initialize(): Promise<void> {
-    if (this.browser) return; // Already initialized
+  private async launchBrowser(): Promise<Browser> {
+    const browserlessKey = process.env.BROWSERLESS_API_KEY;
+    if (browserlessKey) {
+      try {
+        const wsEndpoint =
+          process.env.BROWSERLESS_WS_ENDPOINT || 'wss://production-sfo.browserless.io';
+        const url = `${wsEndpoint}${wsEndpoint.includes('?') ? '&' : '?'}token=${browserlessKey}`;
+        const connectTimeoutMs = parseInt(process.env.BROWSERLESS_CONNECT_TIMEOUT_MS || '15000', 10);
+        const browser = await Promise.race([
+          puppeteer.connect({ browserWSEndpoint: url }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Browserless connect timed out')), connectTimeoutMs)
+          ),
+        ]);
+        return browser;
+      } catch (err) {
+        // ws's ErrorEvent (a bad token surfaces as one, not a plain Error) isn't an
+        // `instanceof Error` — pull `.message` off whatever shape actually came back
+        // rather than dumping the whole socket/request object into the logs.
+        const msg =
+          (err as { message?: unknown })?.message ??
+          (err as { error?: { message?: unknown } })?.error?.message ??
+          String(err);
+        console.warn(
+          `    [${this.config.store_slug}] Browserless connect failed, falling back to local Puppeteer: ${msg}`
+        );
+      }
+    }
 
-    this.browser = await puppeteer.launch({
+    return puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       // Respect an explicit Chrome path when set (prod pinning / envs without the bundled download).
       ...(process.env.PUPPETEER_EXECUTABLE_PATH ? { executablePath: process.env.PUPPETEER_EXECUTABLE_PATH } : {}),
     });
+  }
+
+  /**
+   * Initialize browser and page
+   */
+  async initialize(): Promise<void> {
+    if (this.browser) return; // Already initialized
+
+    this.browser = await this.launchBrowser();
 
     this.page = await this.browser.newPage();
     
