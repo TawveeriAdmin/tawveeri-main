@@ -362,6 +362,39 @@ export function parsedSummary(parsed: AdvisorParsed | undefined, locale: Locale)
   return chips;
 }
 
+/**
+ * Field-tagged version of `parsedSummary`, for the "فهمنا منك" Constraint Ledger (Unified
+ * Intelligence mission, Section 7 — 2026-08-09). `parsedSummary` above stays untouched (its
+ * exact output is pinned by `tests/agent/advisor-api.test.ts`); this is a sibling that adds
+ * WHICH field each chip came from and whether removing it is a coherent action, so the UI can
+ * offer "tap to modify" without re-deriving field identity from a label string.
+ *
+ * `category` is never removable — it is the subject of the request, not a constraint on it;
+ * removing it would not narrow the search, it would erase what's being searched for.
+ */
+export interface ConstraintChip {
+  field: string;
+  label: string;
+  removable: boolean;
+}
+export function parsedConstraintChips(parsed: AdvisorParsed | undefined, locale: Locale): ConstraintChip[] {
+  if (!parsed) return [];
+  const chips: ConstraintChip[] = [];
+  if (parsed.category) chips.push({ field: "category", label: categoryLabel(parsed.category, locale), removable: false });
+  if (typeof parsed.quantity === "number" && parsed.quantity >= 2) {
+    chips.push({ field: "quantity", label: locale === "ar" ? `الكمية: ${parsed.quantity}` : `Qty: ${parsed.quantity}`, removable: true });
+  }
+  if (parsed.room_size_m2) {
+    chips.push({ field: "room_size_m2", label: locale === "ar" ? `${parsed.room_size_m2} م²` : `${parsed.room_size_m2} m²`, removable: true });
+  }
+  if (parsed.budget_total) {
+    chips.push({ field: "budget_total", label: locale === "ar" ? `تحت ${parsed.budget_total} ريال` : `under ${parsed.budget_total} SAR`, removable: true });
+  }
+  if (parsed.city) chips.push({ field: "city", label: parsed.city, removable: true });
+  for (const p of parsed.priorities ?? []) chips.push({ field: `priority:${p}`, label: priorityLabel(p, locale), removable: true });
+  return chips;
+}
+
 /** Fallback exit target when a recommendation has no measured-exit go_url yet. */
 export function exitHref(rec: AdvisorRecommendation, locale: Locale): string {
   if (rec.go_url) return rec.go_url;

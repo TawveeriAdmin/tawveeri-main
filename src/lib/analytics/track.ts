@@ -65,6 +65,11 @@ export type EventType =
   // answer. Off-funnel (does not gate the search→...→go_click chain), tracked separately
   // as a growth-loop signal per the founder's Gate 10 direction.
   | "advisor_share"
+  // Constraint Ledger (2026-08-09, Unified Intelligence mission, Section 7) — a shopper
+  // tapped to remove a constraint ("فهمنا منك") the parser understood. Off-funnel; measures
+  // how often the parser understood something the shopper did NOT mean, which is the signal
+  // that should drive parser precision work, not guesswork.
+  | "advisor_constraint_removed"
   | "search" | "results"                 // storefront surface: Search / Results
   | "product_view"                       // Product View (both surfaces)
   | "comparison_view"                    // Comparison seen (≥2 stores)

@@ -726,7 +726,7 @@ export default function SearchClient() {
             return;
           }
           setAdvisorResult(res);
-          saveJourneyTask(res.parsed); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
+          saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
           track('advisor_result', {
             query_text: query.trim(),
             category: res.parsed?.category ?? null,
@@ -1748,6 +1748,33 @@ export default function SearchClient() {
                         .then((res) => {
                           if (ctrl.signal.aborted || res.error || res.count === 0) return;
                           setAdvisorResult(res);
+                        })
+                        .catch(() => { /* the answer already on screen stands */ });
+                    }}
+                    onRemoveConstraint={(field) => {
+                      // Constraint Ledger (Section 7) — re-ask as a STRUCTURED task built
+                      // from what was last understood, minus the removed field, rather than
+                      // the raw text: re-parsing the same sentence would just re-extract the
+                      // same field right back (the phrase is still there). No separate
+                      // "narrowed" branch to keep in step with `onClarify` above — same
+                      // abort/track/set pattern, opposite direction (removes, not fills).
+                      const parsed = advisorResult?.parsed;
+                      if (!parsed?.category) return;
+                      const body: Record<string, unknown> = { category: parsed.category };
+                      if (field !== 'room_size_m2' && parsed.room_size_m2) body.room_size_m2 = parsed.room_size_m2;
+                      if (field !== 'budget_total' && parsed.budget_total) body.budget_total = parsed.budget_total;
+                      if (field !== 'city' && parsed.city) body.city = parsed.city;
+                      if (field !== 'quantity' && parsed.quantity) body.quantity = parsed.quantity;
+                      const priorities = (parsed.priorities ?? []).filter((p) => field !== `priority:${p}`);
+                      if (priorities.length) body.priorities = priorities;
+                      advisorAbortRef.current?.abort();
+                      const ctrl = new AbortController();
+                      advisorAbortRef.current = ctrl;
+                      askAdvisor(body, { signal: ctrl.signal, limit: 4 })
+                        .then((res) => {
+                          if (ctrl.signal.aborted || res.error) return;
+                          setAdvisorResult(res);
+                          saveJourneyTask(res.parsed);
                         })
                         .catch(() => { /* the answer already on screen stands */ });
                     }}

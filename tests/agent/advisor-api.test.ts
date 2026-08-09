@@ -5,7 +5,7 @@
  */
 import {
   categoryLabel, priorityLabel, recTitle, comparisonBadge, costLines,
-  hasTotalBeyondUnit, parsedSummary, exitHref, verdictTone, verdictText, choiceReasons, discountLine,
+  hasTotalBeyondUnit, parsedSummary, parsedConstraintChips, exitHref, verdictTone, verdictText, choiceReasons, discountLine,
   type AdvisorRecommendation, type PriceIntel,
 } from "../../src/lib/agent/advisor-api";
 
@@ -76,6 +76,26 @@ describe("parsedSummary — how the free text was understood", () => {
   });
   it("returns empty for no parse", () => {
     expect(parsedSummary(undefined, "ar")).toEqual([]);
+  });
+});
+
+describe("parsedConstraintChips — the Constraint Ledger's field-tagged chips (Section 7)", () => {
+  it("tags every chip with its source field", () => {
+    const chips = parsedConstraintChips(
+      { category: "air_conditioner", room_size_m2: 30, budget_total: 4000, priorities: ["quiet"] }, "ar",
+    );
+    expect(chips.map((c) => c.field)).toEqual(["category", "room_size_m2", "budget_total", "priority:quiet"]);
+  });
+  it("category is never removable — it is the subject, not a constraint", () => {
+    const chips = parsedConstraintChips({ category: "laptop" }, "ar");
+    expect(chips.find((c) => c.field === "category")?.removable).toBe(false);
+  });
+  it("every other field IS removable", () => {
+    const chips = parsedConstraintChips({ category: "laptop", budget_total: 3000, city: "Riyadh" }, "en");
+    expect(chips.filter((c) => c.field !== "category").every((c) => c.removable)).toBe(true);
+  });
+  it("returns empty for no parse (same as parsedSummary)", () => {
+    expect(parsedConstraintChips(undefined, "ar")).toEqual([]);
   });
 });
 

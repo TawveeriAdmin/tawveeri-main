@@ -9,10 +9,11 @@ import {
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
-  comparisonBadge, costLines, exitHref, hasTotalBeyondUnit, parsedSummary, recTitle,
+  comparisonBadge, costLines, exitHref, hasTotalBeyondUnit, recTitle,
   verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel, evidenceGroups,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
+import { ConstraintLedger } from '@/components/agent/constraint-ledger';
 import { track } from '@/lib/analytics/track';
 
 /**
@@ -551,6 +552,7 @@ export function AdvisorAnswer({
   source = 'agent',
   className = 'mt-8',
   onClarify,
+  onRemoveConstraint,
 }: {
   result: AdvisorResponse;
   locale: string;
@@ -558,6 +560,9 @@ export function AdvisorAnswer({
   className?: string;
   /** Re-runs the same query with the answered field filled in. Omit and no question shows. */
   onClarify?: (field: string, value: number) => void;
+  /** Constraint Ledger (Section 7) — removes one understood constraint and re-runs the
+   *  request without it. Omit and the ledger renders read-only (no × buttons). */
+  onRemoveConstraint?: (field: string) => void;
 }) {
   const t = useTranslations();
   const loc: Locale = locale === 'ar' ? 'ar' : 'en';
@@ -567,7 +572,6 @@ export function AdvisorAnswer({
 
   const smart = result?.smart_pick ?? null;
   const rest = (result?.recommendations ?? []).filter((r) => !r.is_smart_pick);
-  const chips = parsedSummary(result?.parsed, loc);
 
   return (
     <section className={className} aria-live="polite" data-testid="advisor-answer">
@@ -595,21 +599,12 @@ export function AdvisorAnswer({
         />
       )}
 
-      {/* Understood-as chips */}
-      {chips.length > 0 && (
-        <div className="mb-4">
-          <span className="text-xs text-on-surface-variant">{t('agent.understoodAs')}:</span>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {chips.map((c, i) => (
-              <span key={`${c}-${i}`} className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">{c}</span>
-            ))}
-          </div>
-          {result.parsed?.unresolved?.includes('room_size_m2') && (
-            <p className="mt-2 inline-flex items-center gap-1 text-xs text-warning-700 dark:text-warning-400">
-              <CircleAlert className="h-3.5 w-3.5" aria-hidden />{t('agent.addRoomSize')}
-            </p>
-          )}
-        </div>
+      {/* Understood-as constraint ledger — tap-to-modify (Section 7, "فهمنا منك") */}
+      <ConstraintLedger parsed={result.parsed} locale={loc} onRemove={onRemoveConstraint} />
+      {result.parsed?.unresolved?.includes('room_size_m2') && (
+        <p className="-mt-2.5 mb-4 inline-flex items-center gap-1 text-xs text-warning-700 dark:text-warning-400">
+          <CircleAlert className="h-3.5 w-3.5" aria-hidden />{t('agent.addRoomSize')}
+        </p>
       )}
 
       {/* Multi-unit (basket) acknowledgement — quantity, total budget, per-unit ceiling,

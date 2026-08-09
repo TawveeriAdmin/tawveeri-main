@@ -8,6 +8,8 @@
   "thinking": "Analyzing your request…",
   "examplesLabel": "Try:",
   "understoodAs": "Understood your request as",
+  "removeConstraintHint": "Tap × to remove anything we misread",
+  "removeConstraint": "Remove",
   "smartPickLabel": "Best fit",
   "whyLabel": "Why this pick?",
   "moreOptions": "Other good options",

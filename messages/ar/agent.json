@@ -8,6 +8,8 @@
   "thinking": "أحلّل طلبك…",
   "examplesLabel": "جرّب:",
   "understoodAs": "فهمت طلبك كالتالي",
+  "removeConstraintHint": "اضغط × لإزالة أي شرط لم تقصده",
+  "removeConstraint": "إزالة",
   "smartPickLabel": "الاختيار الأنسب",
   "whyLabel": "لماذا هذا الاختيار؟",
   "moreOptions": "خيارات أخرى مناسبة",
