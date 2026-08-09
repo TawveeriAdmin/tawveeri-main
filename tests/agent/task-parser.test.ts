@@ -43,6 +43,16 @@ describe("Task parser — English + other categories", () => {
     expect((t as { ram_min?: number }).ram_min).toBe(16);
     expect(t.budget_total).toBe(5000);
   });
+
+  // MEASURED DEFECT (2026-08-10, D→E mission Part C live verification): the founder's own
+  // Part C example phrase "ابيه 16 رام" — bare digit + رام, no جيجا/gb unit word between —
+  // did not parse a ram_min signal at all, which meant it fell through to a literal 2-result
+  // catalog search instead of NEEDS_DISCOVERY/advisory. "16 رام" (no جيجا) is at least as
+  // common in Saudi colloquial phrasing as "16 جيجا رام".
+  it("laptop ram: bare 'N رام' (no جيجا/gb unit word) still parses — the founder's own Part C phrase", () => {
+    expect((parseShoppingTask("ابيه لابتوب 16 رام") as { ram_min?: number }).ram_min).toBe(16);
+    expect((parseShoppingTask("لابتوب رام 8") as { ram_min?: number }).ram_min).toBe(8);
+  });
   it("recognizes refrigerator and washing machine categories", () => {
     expect(parseShoppingTask("ثلاجة كبيرة").category).toBe("refrigerator");
     expect(parseShoppingTask("غسالة أوتوماتيك").category).toBe("washing_machine");

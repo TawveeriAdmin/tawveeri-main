@@ -283,6 +283,15 @@ export function parseShoppingTask(text: string): ParsedTask {
   }
   if (category === "tv" && priorities.length) task.priorities = priorities;
   if (category === "mobile" && storage_min) task.storage_min = storage_min;
-  if (category === "laptop") { if (storage_min) task.storage_min = storage_min; const rm = x.match(/(\d{1,2})\s*(?:جيجا|gb)\s*رام|رام\s*(\d{1,2})/); const r = rm ? Number(rm[1] || rm[2]) : null; if (r && [4, 8, 16, 32, 64].includes(r)) (task as ParsedTask & { ram_min?: number }).ram_min = r; }
+  if (category === "laptop") {
+    if (storage_min) task.storage_min = storage_min;
+    // "16 رام" (bare digit + رام, no جيجا/gb between) is the common colloquial form —
+    // e.g. the founder's own D→E mission Part C example phrase "ابيه 16 رام" — not just
+    // the fuller "16 جيجا رام" / "16GB رام". Both sides ("X رام" and "رام X") stay optional
+    // on the جيجا/gb unit word so either phrasing parses to the same ram_min signal.
+    const rm = x.match(/(\d{1,2})\s*(?:(?:جيجا|gb)\s*)?رام|رام\s*(?:(?:من|قدرها)\s*)?(\d{1,2})/);
+    const r = rm ? Number(rm[1] || rm[2]) : null;
+    if (r && [4, 8, 16, 32, 64].includes(r)) (task as ParsedTask & { ram_min?: number }).ram_min = r;
+  }
   return task;
 }
