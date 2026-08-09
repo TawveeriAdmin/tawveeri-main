@@ -9,7 +9,8 @@ import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algol
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
 import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
-import { detectCompareIntent } from '@/lib/agent/compare-intent';
+import { routeQuery } from '@/lib/agent/route-query';
+import type { CompareIntent } from '@/lib/agent/compare-intent';
 import { parseShoppingTask } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
@@ -1097,7 +1098,17 @@ export async function POST(request: NextRequest) {
   // So retrieval runs on the SUBJECT of the request, not on the sentence wrapping it. The
   // typed query is still what gets echoed back and displayed — we search for what they
   // meant, and show them what they asked.
-  const compareIntent = detectCompareIntent(typedQuery);
+  //
+  // ONE TAWVEERI BRAIN (2026-08-09): comparison intent used to be detected here
+  // independently (a direct `detectCompareIntent()` call), while `routeQuery()` separately
+  // decided retrieval-vs-advisory client-side — two uncoordinated classifiers reading the
+  // same sentence. `routeQuery()` now classifies comparison intent too (same underlying
+  // `detectCompareIntent`, just called from the one shared place), so this route consumes
+  // its verdict instead of re-deriving it. Nothing downstream changes: `compareIntent` is
+  // the identical `CompareIntent` value it always was, still passed to
+  // `resolveComparisonRoute` and used to extract the search subject exactly as before.
+  const queryRoute = routeQuery(typedQuery);
+  const compareIntent: CompareIntent = queryRoute.mode === 'comparison' ? queryRoute.compareIntent : { kind: 'none', reason: queryRoute.reason };
   const rawQuery =
     compareIntent.kind === 'single' ? compareIntent.subject
     : compareIntent.kind === 'pair' ? compareIntent.subjects.join(' ')

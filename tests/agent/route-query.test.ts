@@ -5,6 +5,39 @@
 // what must reason, and — more importantly — what must NOT.
 import { routeQuery, namesASpecificModel, ADVISABLE_CATEGORIES } from '@/lib/agent/route-query';
 
+// ONE TAWVEERI BRAIN (2026-08-09): comparison intent used to be detected only inside
+// src/app/api/search/route.ts, independently of this shared classifier — so a comparison
+// sentence with no explicit model number (e.g. a "which type is better" question) had
+// nothing here to recognize it, and would fall through to whatever the category/need-signal
+// rules happened to produce. `routeQuery` now classifies comparison intent FIRST, before the
+// "named model" retrieval rule — which matters because many comparison sentences (both sides
+// naming a model) would otherwise satisfy that rule by accident and lose their comparison
+// framing entirely.
+describe('routeQuery — comparison intent is classified explicitly, checked before "named model"', () => {
+  const comparisons: Array<[string, string]> = [
+    ['S25 ولا iPhone 17؟', 'both sides name a model — must NOT fall through to plain retrieval'],
+    ['ايهما افضل ايفون 17 برو ولا S25 الترا', 'pair marker + two named models'],
+    ['قارن اسعار ايفون 16', 'single-product price comparison marker'],
+    ['which is better iphone 17 or galaxy s25', 'English pair marker'],
+    ['الفرق بين مكيف جري ومكيف ال جي', 'comparison of two named things with no digits at all'],
+  ];
+  it.each(comparisons)('%s → comparison (%s)', (query) => {
+    const route = routeQuery(query);
+    if (route.mode !== 'comparison') throw new Error(`expected comparison, got ${route.mode}: ${route.reason}`);
+    expect(route.compareIntent.kind).not.toBe('none');
+  });
+
+  it('a plain named-model query (no comparison marker) still routes to retrieval, not comparison', () => {
+    const route = routeQuery('iphone 15');
+    expect(route.mode).toBe('retrieval');
+  });
+
+  it('a needs-based query with no comparison marker still routes to advisory, not comparison', () => {
+    const route = routeQuery('مكيف لغرفة 30 متر هادئ تحت 4000');
+    expect(route.mode).toBe('advisory');
+  });
+});
+
 describe('routeQuery — need-based queries reach the reasoning engine', () => {
   const advisory: Array<[string, string]> = [
     ['مكيف لغرفة 30 متر هادئ وموفر للكهرباء تحت 4000', 'AC with room size, priorities and budget'],

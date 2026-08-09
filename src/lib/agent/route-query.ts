@@ -8,8 +8,21 @@
 // audited rather than guessed at.
 //
 // It decides ONLY the route. It does not fetch, rank, or render.
+//
+// UNIFIED TAWVEERI INTELLIGENCE (2026-08-09, founder architectural clarification — closing
+// the "two parallel intent detectors" gap toward orchestration): comparison intent used to
+// be detected independently in src/app/api/search/route.ts, via its own direct call to
+// `detectCompareIntent()`, while this file separately decided retrieval-vs-advisory. Same
+// query, two uncoordinated classifiers. Comparison verification (does the data actually
+// support a comparison page?) stays OUT of this file on purpose — it is async and
+// DB-bound, which would break `routeQuery`'s pure/synchronous contract above — but
+// comparison DETECTION (`detectCompareIntent`, already pure and deterministic, ADR-002)
+// belongs in the SAME shared classifier as retrieval/advisory, not a second one. This file
+// is now the single place that decides WHAT KIND of question a query is; resolve-
+// comparison.ts remains the single place that verifies whether the answer is deliverable.
 import { parseShoppingTask, type ParsedTask } from './task-parser';
 import { APPLIANCE_META } from './decision-engine';
+import { detectCompareIntent, type CompareIntent } from './compare-intent';
 
 /**
  * Categories the decision engine can actually advise on — read from the engine's own
@@ -29,7 +42,9 @@ export const ADVISABLE_CATEGORIES: ReadonlySet<string> = new Set([
 
 export type QueryRoute =
   | { mode: 'retrieval'; reason: string; task: ParsedTask | null }
-  | { mode: 'advisory'; reason: string; task: ParsedTask };
+  | { mode: 'advisory'; reason: string; task: ParsedTask }
+  // `compareIntent.kind` is never 'none' here — see the guard in routeQuery() below.
+  | { mode: 'comparison'; reason: string; task: ParsedTask | null; compareIntent: CompareIntent };
 
 /**
  * A need signal is the customer describing a SITUATION rather than naming a product:
@@ -73,6 +88,11 @@ export function namesASpecificModel(text: string): boolean {
  *
  * The order is the rule, and each step exists because skipping it produces a worse answer
  * than the entry point already gives today:
+ *   0. Comparison intent               → comparison. «S25 ولا iPhone 17؟» is a request to
+ *      weigh two named things against each other, not a need to reason about or a plain
+ *      browse — checked FIRST because a comparison sentence can otherwise satisfy the
+ *      "named model" retrieval rule below by accident (both sides often name a model),
+ *      which used to route it to plain retrieval with no comparison framing at all.
  *   1. No category we can name        → retrieval. We cannot advise on what we cannot classify.
  *   2. Category we cannot advise on   → retrieval. Better plain results than "not supported".
  *   3. A named model                  → retrieval. They asked where and how much, not what.
@@ -84,6 +104,11 @@ export function routeQuery(text: string): QueryRoute {
   if (!raw) return { mode: 'retrieval', reason: 'empty query', task: null };
 
   const task = parseShoppingTask(raw);
+
+  const compareIntent = detectCompareIntent(raw);
+  if (compareIntent.kind !== 'none') {
+    return { mode: 'comparison', reason: `comparison marker: ${compareIntent.marker}`, task, compareIntent };
+  }
 
   if (!task.category) {
     return { mode: 'retrieval', reason: 'no category could be classified', task };

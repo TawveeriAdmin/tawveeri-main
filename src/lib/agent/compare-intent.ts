@@ -41,8 +41,16 @@ const SINGLE_MARKERS = [
   'cheapest', 'best price', 'lowest price', 'where is the cheapest',
 ];
 
-/** Infix separators that split a pair when no "between" marker framed it. */
-const PAIR_SEPARATORS = [' vs. ', ' vs ', ' versus ', ' مقابل ', ' او ', ' or ', ' and ', ' و '];
+/** Infix separators that split a pair when no "between" marker framed it.
+ *
+ * MEASURED FAILURE (2026-08-09, production acceptance journey «S25 ولا iPhone 17؟»):
+ * «ولا» — the everyday colloquial Saudi "or" in a comparison question — was entirely
+ * missing. Only the formal « او » was recognized, so this extremely common phrasing
+ * (space-delimited, distinct from the attached-morpheme «ولا» that CAN appear inside a
+ * word like «شوكولاتة») fell through to plain retrieval with no comparison framing at
+ * all. Kept space-delimited like every other separator here, so it never matches inside
+ * a single word with no surrounding spaces. */
+const PAIR_SEPARATORS = [' vs. ', ' vs ', ' versus ', ' مقابل ', ' او ', ' ولا ', ' or ', ' and ', ' و '];
 
 export type CompareIntent =
   | { kind: 'none'; reason: string }
@@ -113,9 +121,13 @@ export function detectCompareIntent(text: string): CompareIntent {
     return { kind: 'none', reason: `marker "${m}" with no nameable subject` };
   }
 
-  // A bare "X vs Y" carries the intent without any verb.
+  // A bare "X vs Y" carries the intent without any verb. «ولا» belongs in this marker
+  // check (not just PAIR_SEPARATORS): it unambiguously means "or" as a standalone word —
+  // unlike bare «و» ("and"), which is deliberately EXCLUDED here because most sentences
+  // containing it are a single request with two conjoined qualities («لابتوب ألعاب
+  // وشاشة كبيرة»), not a comparison of two things.
   const bare = splitPair(x);
-  if (bare && /\bvs\b|\bversus\b|مقابل/.test(x)) return { kind: 'pair', subjects: bare, marker: 'vs' };
+  if (bare && /\bvs\b|\bversus\b|مقابل|ولا/.test(x)) return { kind: 'pair', subjects: bare, marker: /ولا/.test(x) ? 'ولا' : 'vs' };
 
   return { kind: 'none', reason: 'no comparison marker' };
 }
