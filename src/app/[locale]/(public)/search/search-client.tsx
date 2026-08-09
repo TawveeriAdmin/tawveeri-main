@@ -745,6 +745,22 @@ export default function SearchClient() {
     const decisionIntent = classifyDecisionIntent(query.trim(), { hasActiveDecisionState: !!readDecisionState() });
     const route = decisionIntent.route;
 
+    // ── D→E MISSION, SECTION 10 · "STARTING A NEW MISSION" ──────────────────────────────
+    // A turn that reaches here was NOT mutation-shaped (`handleMutationTurn` returned
+    // 'not_a_mutation') — but it can still name a DIFFERENT category than an active mission's
+    // own DecisionState, e.g. «طيب ابي مكيف للصالة» typed right after a phone mission. That
+    // query has no need signal of its own (routeQuery correctly sends it to plain retrieval —
+    // P2-8's own "a bare category is a browse, not a need" rule, untouched by this mission), so
+    // it never reaches `applyParsedTask`'s own mission-switch check. Left alone, the OLD
+    // mission's chips/budget/priorities would keep rendering as "current understanding" for a
+    // category the customer has visibly moved on from. Clearing here is deliberately narrow:
+    // only when a category was actually classified AND it differs from the active mission's —
+    // an unclassifiable or same-category query never touches the existing mission.
+    const activeStateForBrowse = readDecisionState();
+    if (activeStateForBrowse && route.task?.category && route.task.category !== activeStateForBrowse.category) {
+      clearDecisionState();
+    }
+
     setLoading(true);
     setError(null);
     setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
