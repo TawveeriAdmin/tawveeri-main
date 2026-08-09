@@ -102,6 +102,25 @@ describe("Flagship task: AC, 30m² Riyadh, low_electricity", () => {
     expect(recs[0].is_smart_pick).toBe(true);
     expect(recs.filter((r) => r.is_smart_pick).length).toBe(1);
   });
+
+  // CATEGORY DECISION CONTRACT (Section 9, 2026-08-09): noise level (dB) is not extracted
+  // anywhere in the pipeline (category-contracts.ts marks it 'unknown' for air_conditioner).
+  // A stated "quiet" priority used to be parsed and then silently dropped — never scored,
+  // never disclosed. It must now be honestly disclosed on every candidate, never fabricated
+  // as either a positive ("quiet") or negative claim, and never affect the score.
+  it("a stated 'quiet' priority is honestly disclosed as unverifiable, never fabricated, never scored", () => {
+    const withQuiet = decideAc(task, rows); // task already includes "quiet"
+    for (const r of withQuiet) {
+      expect(r.reasons_ar.some((x) => x.includes("مستوى الضجيج"))).toBe(true);
+      expect(r.reasons_ar.some((x) => /هادئ|صامت|quiet/i.test(x) && !x.includes("الضجيج"))).toBe(false);
+    }
+    const withoutQuiet = decideAc({ ...task, priorities: ["low_electricity"] }, rows);
+    expect(withoutQuiet.every((r) => !r.reasons_ar.some((x) => x.includes("مستوى الضجيج")))).toBe(true);
+    // Scores are identical whether or not "quiet" was stated — the disclosure never scores.
+    const scoresWith = withQuiet.map((r) => r.canonical_id + ":" + r.suitability_score).sort();
+    const scoresWithout = withoutQuiet.map((r) => r.canonical_id + ":" + r.suitability_score).sort();
+    expect(scoresWith).toEqual(scoresWithout);
+  });
 });
 
 describe("TV decision — use-fit (deterministic, ranking-blind)", () => {
@@ -182,6 +201,23 @@ describe("Laptop decision — use-fit (deterministic, single-store honest)", () 
       lap({ family: "omen", cpu: "i9", ram: 32, storage: 1024, screen: 17, gpu: "rtx4080", price: 8000, stores: 1, id: "big" }),
     ]);
     expect(recs[0].canonical_id).toBe("small");
+  });
+
+  // CATEGORY DECISION CONTRACT (Section 9's own worked example, 2026-08-09): "خفيف" requires
+  // verified weight evidence; unknown weight ≠ lightweight. No laptop weight is extracted
+  // anywhere in the pipeline (see category-contracts.ts) — screen size is a real proxy for
+  // portability, but is not weight, and must never be dressed up as a bare "light" claim.
+  it("portability reasoning never asserts \"خفيف\" as a bare fact — screen size only, weight disclosed as unconfirmed", () => {
+    const recs = decideLaptop({ category: "laptop", priorities: ["portability"] }, [
+      lap({ family: "spectre", cpu: "ultra7", ram: 16, storage: 512, screen: 13.5, gpu: "igpu", price: 5000, stores: 1, id: "small" }),
+      lap({ family: "omen", cpu: "i9", ram: 32, storage: 1024, screen: 17, gpu: "rtx4080", price: 8000, stores: 1, id: "big" }),
+    ]);
+    for (const r of recs) {
+      const portabilityLine = r.reasons_ar.find((t) => /للحمل/.test(t));
+      expect(portabilityLine).toBeDefined();
+      expect(portabilityLine).not.toMatch(/خفيف/); // never a bare "light" claim
+      expect(portabilityLine).toMatch(/الوزن الفعلي غير مؤكد/); // weight is always disclosed as unconfirmed
+    }
   });
 });
 

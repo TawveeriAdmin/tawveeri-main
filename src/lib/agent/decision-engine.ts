@@ -193,6 +193,14 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
     // 2. Inverter for low electricity
     if (dna.inverter) { score += wantsLowElec ? 0.18 : 0.06; if (wantsLowElec) reasons.fit("إنفرتر — أوفر في فاتورة الكهرباء (أولويتك)"); else reasons.spec("إنفرتر — كفاءة أعلى في الكهرباء"); }
     else if (wantsLowElec) { score -= 0.1; reasons.caution("عادي (غير إنفرتر) — استهلاك كهرباء أعلى"); }
+    // 2b. Quiet operation — CATEGORY DECISION CONTRACT (Section 9): noise level (dB) is not
+    // extracted anywhere in the pipeline (`category-contracts.ts`'s AC contract marks
+    // `noise_level_db` 'unknown'). `wantsQuiet` used to be parsed and then silently dropped —
+    // never scored, never disclosed — which is a softer failure than fabricating a claim, but
+    // still leaves the shopper unaware their stated priority could not be acted on. Disclosed
+    // honestly instead, never scored (no data to score on; unknown must never read as either
+    // a positive or a violation).
+    if (wantsQuiet) reasons.caution("⚠️ لا تتوفر لدينا بيانات مستوى الضجيج (ديسيبل) لهذا المنتج حاليًا");
     // 3. Cooling mode fit
     if (wantsHeating && dna.cooling_mode === "hot_cold") { score += 0.08; reasons.fit("حار وبارد — يدفّئ شتاءً"); }
     if (!wantsHeating && dna.cooling_mode === "cool_only") { reasons.spec("بارد فقط — مناسب لأغلب أجواء المملكة"); }
@@ -404,7 +412,17 @@ export function decideLaptop(task: ShoppingTask, rows: CanonicalRow[]): Recommen
     const screen = a.screen != null ? Number(a.screen) : null; const gpu = (a.gpu as string) ?? null; const discrete = gpu ? gpu !== "igpu" : false;
     if (wantGaming) { if (discrete) { score += 0.15; reasons.fit(`كرت شاشة منفصل (${gpu?.toUpperCase()}) — مناسب للألعاب`); } else { score -= 0.08; reasons.caution("كرت مدمج — ضعيف للألعاب"); } if (ram && ram >= 16) { score += 0.06; reasons.spec(`رام ${ram}GB`); } }
     if (wantProductivity) { if (ram && ram >= 16) { score += 0.1; reasons.fit(`رام ${ram}GB — مناسب للإنتاجية`); } else if (ram) reasons.caution(`رام ${ram}GB — متوسط للإنتاجية`); if (a.cpu) reasons.spec(`معالج ${String(a.cpu).toUpperCase()}`); }
-    if (wantPortability && screen != null) { if (screen <= 14) { score += 0.08; reasons.fit(`شاشة ${screen}" — خفيف ومحمول`); } else reasons.caution(`شاشة ${screen}" — أكبر (أثقل)`); }
+    // PORTABILITY (Category Decision Contract, Section 9's own worked example): no laptop
+    // weight is extracted anywhere in the pipeline (see category-contracts.ts's `laptop`
+    // contract — `weight` is 'unknown'). Screen size is a REAL attribute and a genuine,
+    // named correlate of portability, but it is NOT weight — a small-screen laptop is not
+    // guaranteed to be light. "خفيف" (light) must never be asserted as a bare fact; the
+    // reason states exactly what IS known (screen size) and says the weight itself is
+    // unconfirmed, every time this signal fires.
+    if (wantPortability && screen != null) {
+      if (screen <= 14) { score += 0.08; reasons.fit(`شاشة ${screen}" صغيرة — أسهل للحمل عادةً (الوزن الفعلي غير مؤكد في بياناتنا)`); }
+      else { reasons.caution(`شاشة ${screen}" أكبر — عادةً أصعب للحمل (الوزن الفعلي غير مؤكد في بياناتنا)`); }
+    }
     if (t.ram_min && ram != null) { if (ram >= t.ram_min) score += 0.06; else { score -= 0.1; reasons.caution(`⚠️ رام ${ram}GB أقل من المطلوب (${t.ram_min}GB)`); } }
     if (t.storage_min && storage != null && storage < t.storage_min) { score -= 0.08; reasons.caution(`⚠️ تخزين ${storage}GB أقل من المطلوب`); }
     else if (storage != null) reasons.spec(`تخزين ${storage}GB`);
