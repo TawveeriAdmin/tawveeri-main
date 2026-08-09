@@ -1434,8 +1434,25 @@ export async function POST(request: NextRequest) {
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
   // 16000 BTU". Only applies when it leaves results (never wipes the page).
+  //
+  // MEASURED DEFECT (2026-08-10, D→E mission Section 11 refrigerator re-verification): a
+  // sentence-shaped need description that ALSO happens to contain a bare category noun
+  // («ابي ثلاجة كبيرة للعائلة موفرة للكهرباء وميزانيتي 3000 ريال» — "ثلاجة" is in
+  // MAIN_PRODUCT_TYPES) took THIS branch (`queryIsMainProduct=true`) instead of the
+  // sentence-shaped elif below, and its own relevance-gate is weaker: the descriptive words
+  // («كبيرة»/«للعائلة»/«موفرة»/«للكهرباء») never literally appear in real product titles, so
+  // `gated` came back empty, `needShapedWithCategory` did not zero it either, and `products`
+  // was left as the full unfiltered 324-item category pool — never wrong-category (every
+  // result was a genuine refrigerator), but never the honest zero this query deserved either.
+  // The AC-phrased twin of this exact query ("مكيف" is ALSO in MAIN_PRODUCT_TYPES) happened
+  // to zero correctly through this same branch, which is exactly the fragility Section 6
+  // warns about — a "real product search is almost never 6+ words" fix must not depend on
+  // which specific descriptive words a given category's catalog titles happen to contain.
+  // `looksLikeSentenceNotProductQuery` now takes priority over a bare category-noun match:
+  // a 9-word natural-language description is not a literal product-name search regardless of
+  // which recognized noun it happens to contain.
   let categoryEnforcedZero = false;
-  if (rawQuery && queryIsMainProduct) {
+  if (rawQuery && queryIsMainProduct && !looksLikeSentenceNotProductQuery(rawQuery)) {
     const wordGroups = relevanceGroups;
     if (wordGroups.length) {
       const gated = products.filter((p) => {
@@ -1453,13 +1470,14 @@ export async function POST(request: NextRequest) {
         console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — category "${constraintTask?.category}" matched nothing; returning honest zero instead of unrelated results`);
       }
     }
-  } else if (rawQuery && !queryIsMainProduct && looksLikeSentenceNotProductQuery(rawQuery)) {
-    // GENERIC candidate-eligibility floor (Section 6): no product-type noun AND not shaped
-    // like a product search at all — the same "zero beats wrong" rule as above, for the case
-    // that rule's own `queryIsMainProduct` gate was never designed to cover.
+  } else if (rawQuery && looksLikeSentenceNotProductQuery(rawQuery)) {
+    // GENERIC candidate-eligibility floor (Section 6): sentence-shaped — whether or not it
+    // also contains a recognized product-type noun — is not a product-name search. Same
+    // "zero beats wrong" rule as above, now applied unconditionally for this shape rather
+    // than only when `queryIsMainProduct` happened to be false.
     products = [];
     categoryEnforcedZero = true;
-    console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — sentence-shaped query, no recognized product-type noun; returning honest zero instead of unfiltered results`);
+    console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — sentence-shaped query; returning honest zero instead of unfiltered results`);
   }
 
   // Product principle (official 2026-07-27): every comparable card shows its stores auto-sorted from

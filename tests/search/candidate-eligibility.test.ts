@@ -38,4 +38,20 @@ describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility
     // of whether a noun happens to be recognized.
     expect(looksLikeSentenceNotProductQuery("موديل XR500 ابيض")).toBe(false);
   });
+
+  // MEASURED DEFECT (2026-08-10, D→E mission Section 11 refrigerator re-verification): the
+  // ORIGINAL comment above ("only ever CALLED when isMainProductTypeQuery already returned
+  // false") turned out to be the bug's own root cause, not just this function's calling
+  // convention. «ابي ثلاجة كبيرة للعائلة موفرة للكهرباء وميزانيتي 3000 ريال» contains "ثلاجة"
+  // (a recognized MAIN_PRODUCT_TYPES noun), so `isMainProductTypeQuery` returned true and the
+  // route's OTHER (weaker) relevance-gate branch ran instead — leaving 324 unfiltered
+  // refrigerator results on screen instead of the honest zero the mission's own "zero beats
+  // wrong" principle calls for. The route-level fix (src/app/api/search/route.ts) now checks
+  // this function FIRST, regardless of whether a category noun is also present — this test
+  // pins that a category-noun-bearing sentence still classifies as sentence-shaped, which is
+  // the precondition the route-level fix depends on.
+  it("a sentence-shaped query that ALSO contains a recognized category noun is still sentence-shaped", () => {
+    expect(looksLikeSentenceNotProductQuery("ابي ثلاجة كبيرة للعائلة موفرة للكهرباء وميزانيتي 3000 ريال")).toBe(true);
+    expect(looksLikeSentenceNotProductQuery("ابي مكيف لغرفة 30 متر هادي وموفر للكهرباء وميزانيتي 2500 ريال")).toBe(true);
+  });
 });
