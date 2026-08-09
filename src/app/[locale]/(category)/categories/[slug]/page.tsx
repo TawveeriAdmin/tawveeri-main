@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Store } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
@@ -100,7 +100,12 @@ export default async function CategorySlugPage({
   // consolidate onto the one canonical slug rather than letting several URLs serve
   // identical content (the exact duplicate-content failure ADR-156/ADR-189 already found
   // and fixed once, in a different place).
-  if (slug !== cat.slug) redirect(`/${locale}/categories/${cat.slug}`);
+  //
+  // permanentRedirect, not redirect (2026-08-09 crawler truth parity, Section 27): this
+  // mapping is permanent by construction (an alias never becomes its own canonical slug) —
+  // 308 tells crawlers to consolidate link equity onto the canonical URL instead of
+  // re-checking the alias forever.
+  if (slug !== cat.slug) permanentRedirect(`/${locale}/categories/${cat.slug}`);
 
   const name = isAr ? cat.labelAr : cat.labelEn;
   const overview = await getCategoryOverview(cat.key);
