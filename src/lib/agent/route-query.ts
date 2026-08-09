@@ -72,15 +72,39 @@ function needSignals(task: ParsedTask): string[] {
  * number is deliberately NOT a model — it is far more often a budget ("تحت 4000") or a
  * size ("30 متر"), both of which are need signals.
  */
-const MODEL_TOKEN = /(?:^|\s)(?=[a-z]*\d)(?=\d*[a-z])[a-z0-9][a-z0-9-]{2,}(?=\s|$)/i;
+const MODEL_TOKEN = /(?:^|\s)(?=[a-z]*\d)(?=\d*[a-z])[a-z0-9][a-z0-9-]{2,}(?=\s|$)/gi;
 const NAMED_SERIES = /iphone|galaxy|macbook|ipad|pixel|redmi|poco|vivobook|thinkpad|elitebook|inspiron|latitude|omen|nitro|rog|zenbook|ideapad|بيسبوك|ايفون|آيفون|جالكسي/i;
+
+/**
+ * MEASURED DEFECT (2026-08-10, D→E mission Part F — live-verified English-language
+ * adversarial sweep): "laptop with 8gb ram under 2000" silently never reached the advisor
+ * at all — confirmed via network capture, `/api/v1/agent/decide` was never called, only the
+ * literal catalog search ran, which then matched nothing and rendered an honest-but-wrong
+ * "No results found" for a need the decision engine answers perfectly when called directly
+ * (verified: the SAME text posted straight to `/api/v1/agent/decide` returns count 4,
+ * supported true). Root cause: `MODEL_TOKEN` matches ANY token mixing digits and letters —
+ * "8gb" IS such a token (digit "8" + letters "gb"), so `namesASpecificModel` treated a plain
+ * English spec shorthand as if it were a product code like "s24" or "g835lw", routing the
+ * whole query to `retrieval` before `needSignals` (budget=2000, which WAS parsed correctly)
+ * ever got a chance to route it to `advisory`. Arabic RAM/storage phrasing never triggered
+ * this ("16 جيجا رام" has a space and non-Latin script; `MODEL_TOKEN` is ASCII-only) — this
+ * silently broke the English decision-engine path for effectively any spec-bearing English
+ * query ("16gb ram", "128gb storage", "6000mah battery", "4k tv", …), which is common
+ * phrasing, not an edge case.
+ */
+const SPEC_UNIT_TOKEN = /^\d+(?:gb|tb|mb|mah|hz|ghz|mhz|w|kg|g|mm|cm|inch|in|mp|nit|nits|k|kwh|btu)$/i;
 
 export function namesASpecificModel(text: string): boolean {
   const t = (text || '').trim();
   if (!t) return false;
   // "iphone 15", "galaxy s24" — a known series followed by any number is a model.
   if (NAMED_SERIES.test(t) && /\d/.test(t)) return true;
-  return MODEL_TOKEN.test(t);
+  const matches = t.match(MODEL_TOKEN) ?? [];
+  // A token is a model candidate unless it is ENTIRELY a number+unit spec ("8gb", "6000mah",
+  // "4k") — those describe a need, not a product identity, no matter how model-shaped they
+  // look structurally. A genuine model code ("s24", "g835lw", "rtx4050") never matches this,
+  // since it starts with a letter, not a digit.
+  return matches.some((tok) => !SPEC_UNIT_TOKEN.test(tok.trim()));
 }
 
 /**

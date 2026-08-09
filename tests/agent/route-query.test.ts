@@ -149,6 +149,23 @@ describe('namesASpecificModel', () => {
     expect(namesASpecificModel('quiet energy saving air conditioner')).toBe(false);
     expect(namesASpecificModel('مكيف هادئ وموفر')).toBe(false);
   });
+
+  // MEASURED DEFECT (2026-08-10, D→E mission Part F — live network-capture verification):
+  // "laptop with 8gb ram under 2000" never reached the advisor at all — /api/v1/agent/decide
+  // was never called, only the literal catalog search ran (which matched nothing and showed
+  // an honest-but-wrong "No results found"), even though posting the identical text straight
+  // to the decide endpoint returns a real answer (count 4, supported true). "8gb" mixes a
+  // digit and letters exactly like a model token ("s24"), so it wrongly forced retrieval mode
+  // before the budget signal ever got a chance to route this to advisory.
+  it('a number+unit spec token ("8gb", "6000mah", "4k") is a need signal, never a model', () => {
+    expect(namesASpecificModel('laptop with 8gb ram under 2000')).toBe(false);
+    expect(namesASpecificModel('phone with 6000mah battery')).toBe(false);
+    expect(namesASpecificModel('4k tv under 3000')).toBe(false);
+    expect(namesASpecificModel('128gb storage phone')).toBe(false);
+    expect(routeQuery('laptop with 8gb ram under 2000').mode).toBe('advisory');
+    // A genuine model code must still be detected even when a spec token sits right next to it.
+    expect(namesASpecificModel('galaxy s24 with 256gb storage')).toBe(true);
+  });
 });
 
 // Regression (2026-08-04, docs/baselines/2026-08-04-ac-basket-query): the exact failing
