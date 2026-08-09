@@ -506,7 +506,15 @@ function isWrapperWord(rawWord: string): boolean {
     for (const c of possessiveSuffixCandidates(b)) candidates.add(c);
   }
   for (const c of candidates) if (c !== w && isKnownWrapper(c)) return true;
-  return isPossessiveQualityDescriptor(w);
+  // MEASURED FAILURE (2026-08-09, 10-journey acceptance sweep): «وبطاريته قوية» still
+  // collapsed while «بطاريته» alone and «وتصويره» both worked. Root cause: this check ran
+  // against the ORIGINAL word only — for «وبطاريته», the ة/ا→ت elision check needs the
+  // leading و stripped FIRST («بطاريته» → stem «بطاري» → «بطاريه» ∈ dictionary), but «و» was
+  // still attached when this function received the whole word, so the reconstructed stem
+  // became «وبطاريه» (never in the dictionary) instead of «بطاريه». Checked against every
+  // `bases` candidate (both the original word and its و-stripped form), not just the
+  // original — same fix shape as the prefix/suffix candidates above.
+  return bases.some(isPossessiveQualityDescriptor);
 }
 
 // MEASURED FAILURE (Gate 3 sweep, 2026-08-09; tracked as a follow-up rather than patched at
