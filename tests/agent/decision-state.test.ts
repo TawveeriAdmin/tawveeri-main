@@ -10,6 +10,7 @@
 import {
   createDecisionState, applyParsedTask, applyDecisionResult, removeConstraint,
   saveDecisionState, readDecisionState, clearDecisionState,
+  markSelectedProduct, decisionStateToAdvisorBody,
 } from "@/lib/agent/decision-state";
 import type { AdvisorParsed } from "@/lib/agent/advisor-api";
 
@@ -131,6 +132,44 @@ describe("removeConstraint — the Constraint Ledger's write path (Section 7)", 
     const s0 = createDecisionState();
     const s1 = removeConstraint(s0, "budget_total");
     expect(s1.conversation_turn).toBe(1);
+  });
+});
+
+describe("markSelectedProduct — the compare page's write path (Section 44 closure)", () => {
+  it("sets selected_product", () => {
+    const s0 = createDecisionState();
+    const s1 = markSelectedProduct(s0, "canon-123");
+    expect(s1.selected_product).toBe("canon-123");
+  });
+  it("overwrites a prior selection — whichever happened most recently is the current focus", () => {
+    const s0 = markSelectedProduct(createDecisionState(), "canon-old");
+    const s1 = markSelectedProduct(s0, "canon-new");
+    expect(s1.selected_product).toBe("canon-new");
+  });
+});
+
+describe("decisionStateToAdvisorBody — the ONE shared request-body builder (Section 44 closure)", () => {
+  it("returns null when there is no category to reason about — never fabricates a question", () => {
+    expect(decisionStateToAdvisorBody(createDecisionState())).toBeNull();
+  });
+  it("builds a body from the state's category and hard constraints", () => {
+    const s = applyParsedTask(createDecisionState(), { category: "air_conditioner", room_size_m2: 30, budget_total: 4000, city: "Riyadh", priorities: ["quiet"] }, "NEEDS_DISCOVERY");
+    expect(decisionStateToAdvisorBody(s)).toEqual({
+      category: "air_conditioner", room_size_m2: 30, budget_total: 4000, city: "Riyadh", priorities: ["quiet"],
+    });
+  });
+  it("categoryOverride wins over the state's own category — e.g. asking about a DIFFERENT product's category than the last search", () => {
+    const s = applyParsedTask(createDecisionState(), { category: "laptop", budget_total: 3000 }, "NEEDS_DISCOVERY");
+    const body = decisionStateToAdvisorBody(s, "air_conditioner");
+    expect(body?.category).toBe("air_conditioner");
+  });
+  it("omits fields the state does not have — never invents a budget/room-size/city", () => {
+    const s = applyParsedTask(createDecisionState(), { category: "laptop" }, "NEEDS_DISCOVERY");
+    const body = decisionStateToAdvisorBody(s)!;
+    expect(body).not.toHaveProperty("budget_total");
+    expect(body).not.toHaveProperty("room_size_m2");
+    expect(body).not.toHaveProperty("city");
+    expect(body).not.toHaveProperty("priorities");
   });
 });
 

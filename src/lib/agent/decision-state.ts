@@ -181,6 +181,38 @@ export function removeConstraint(state: DecisionState, field: string): DecisionS
   };
 }
 
+/**
+ * Records that a shopper is now looking at a SPECIFIC product (e.g. viewing a compare page) —
+ * distinct from `applyDecisionResult`'s `selected_product`, which is set from a RANKED
+ * recommendation's smart pick. This is set from direct navigation/viewing, not a ranking
+ * outcome, but is the SAME field: whichever happened most recently is the shopper's current
+ * focus, which is the only thing a "what am I looking at" question needs to answer.
+ */
+export function markSelectedProduct(state: DecisionState, canonicalId: string): DecisionState {
+  return { ...state, selected_product: canonicalId, updated_at: new Date().toISOString() };
+}
+
+/**
+ * THE UNIFICATION HELPER (Section 44 closure, 2026-08-09): every surface that asks the
+ * decision engine a question builds its request body from THIS function and no other — the
+ * mechanism by which "search/product/compare/Waffar use the SAME decision state" stops being
+ * a claim and becomes a single, shared, testable code path. Returns null when there is no
+ * category to reason about (nothing a caller can honestly ask the engine yet).
+ */
+export function decisionStateToAdvisorBody(
+  state: DecisionState,
+  categoryOverride?: string,
+): Record<string, unknown> | null {
+  const category = categoryOverride || state.category;
+  if (!category) return null;
+  const body: Record<string, unknown> = { category };
+  if (typeof state.hard_constraints.room_size_m2 === 'number') body.room_size_m2 = state.hard_constraints.room_size_m2;
+  if (typeof state.hard_constraints.budget_total === 'number') body.budget_total = state.hard_constraints.budget_total;
+  if (typeof state.hard_constraints.city === 'string') body.city = state.hard_constraints.city;
+  if (state.soft_preferences.length) body.priorities = state.soft_preferences;
+  return body;
+}
+
 // ── Storage (same-tab, best-effort — mirrors journey-context.ts's discipline) ──────────────
 const STATE_KEY = 'tawveeri:decision_state';
 const MAX_AGE_MS = 45 * 60_000; // same freshness window as journey-context.ts, for one consistent rule

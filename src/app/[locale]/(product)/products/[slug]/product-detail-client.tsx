@@ -46,7 +46,8 @@ import { CouponBadge } from '@/components/ui/coupon-badge';
 import { Ticket } from 'lucide-react';
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
-import { readJourneyTask } from '@/lib/agent/journey-context';
+import { readJourneyTask, saveJourneyTask } from '@/lib/agent/journey-context';
+import { readDecisionState, decisionStateToAdvisorBody } from '@/lib/agent/decision-state';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import { generateAffiliateUrl } from '@/lib/transactions/tracking';
@@ -655,18 +656,28 @@ export default function ProductDetailClient() {
  if (!product?.category || advisorLoading) return;
  setAdvisorAsked(true);
  setAdvisorLoading(true);
- const carried = readJourneyTask(product.category); // same-category-only, see journey-context.ts
+ // SECTION 44 CLOSURE (2026-08-09, ADR-234): reads the SAME DecisionState search's
+ // NEEDS_DISCOVERY/COUNTERFACTUAL branches read from — `decisionStateToAdvisorBody`, the
+ // one shared body-builder every surface now uses — not only the legacy narrow
+ // `readJourneyTask` view. Category-scoped exactly as before (`readJourneyTask`'s own
+ // discipline): a laptop budget must never leak into an AC consultation, so prior
+ // constraints are borrowed ONLY when the state's own category matches this product's.
+ // Falls back to the legacy reader when DecisionState has nothing for this category (e.g.
+ // an older tab that predates the Phase 2 shadow-write) — never a required capability.
+ const state = readDecisionState();
+ const matchingState = state?.category === product.category ? state : null;
+ const carried = matchingState ? null : readJourneyTask(product.category);
+ const body = matchingState
+ ? decisionStateToAdvisorBody(matchingState, product.category)!
+ : { category: product.category, ...carried };
  track('advisor_query', {
  query_text: product.name_ar || product.name_en || product.category,
  category: product.category,
  source: 'product_page',
- meta: { carried_journey_context: !!carried },
+ meta: { carried_journey_context: !!matchingState || !!carried },
  });
  try {
- const res = await askAdvisor(
- { category: product.category, ...carried },
- { limit: 4 },
- );
+ const res = await askAdvisor(body, { limit: 4 });
  if (res.error || res.count === 0) {
  track(res.error ? 'error' : 'no_answer', {
  category: product.category, source: 'product_page',
@@ -675,6 +686,10 @@ export default function ProductDetailClient() {
  setAdvisorResult(null);
  } else {
  setAdvisorResult(res);
+ // Writes back into the SAME DecisionState via saveJourneyTask's shadow-write (ADR-230)
+ // — the product page is now a genuine read/write participant, not a one-way consumer
+ // of context established elsewhere.
+ saveJourneyTask(res.parsed, product.name_ar || product.name_en || product.category);
  track('advisor_result', {
  category: product.category, source: 'product_page',
  meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },

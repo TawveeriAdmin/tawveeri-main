@@ -13,6 +13,7 @@ import { Price } from '@/components/ui/price';
 import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
+import { CompareStateSync } from '@/components/agent/compare-state-sync';
 
 interface CampaignEligibility {
   eligible: true;
@@ -285,6 +286,7 @@ export default async function TpsComparePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <CompareStateSync canonicalId={canonical.id} />
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* ── Breadcrumb ── */}

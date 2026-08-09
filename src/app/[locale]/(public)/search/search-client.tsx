@@ -15,7 +15,7 @@ import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
-import { readDecisionState } from '@/lib/agent/decision-state';
+import { readDecisionState, decisionStateToAdvisorBody } from '@/lib/agent/decision-state';
 import {
   parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual,
   type CounterfactualComparison,
@@ -250,6 +250,9 @@ export default function SearchClient() {
   // before/after decision-engine comparison, built only when a delta and the prior budget
   // are both nameable. See classifyDecisionIntent's COUNTERFACTUAL branch below.
   const [counterfactualComparison, setCounterfactualComparison] = useState<CounterfactualComparison | null>(null);
+  // Section 44 closure — EXTERNAL_PRODUCT_REFERENCE (a pasted URL). An honest "not yet"
+  // notice instead of running the URL string as a garbage catalog search.
+  const [externalReferenceNotice, setExternalReferenceNotice] = useState(false);
   // Comparison routing. Computed server-side by /api/search and only when the query carries
   // comparison intent — the client never decides whether a comparison can be delivered.
   const [compareRoute, setCompareRoute] = useState<CompareRoute | null>(null);
@@ -681,6 +684,42 @@ export default function SearchClient() {
   ) {
     void _unusedStores;
     void _unusedPages;
+
+    // classifyDecisionIntent WRAPS routeQuery (Phase 2, ADR-230) — `.route` is byte-identical
+    // to what a bare `routeQuery(query.trim())` call would have returned, so every existing
+    // `route.mode` branch below is unchanged. `.intent` additionally exposes the fuller
+    // taxonomy (Section 5). Computed FIRST, before any state mutation, so the two "do not
+    // touch the current screen" branches just below (FOLLOW_UP_REASONING,
+    // EXTERNAL_PRODUCT_REFERENCE — Section 44 closure) never flash a loading state or clear
+    // the answer already on screen before deciding to leave it alone.
+    const decisionIntent = classifyDecisionIntent(query.trim(), { hasActiveDecisionState: !!readDecisionState() });
+    const route = decisionIntent.route;
+
+    // SECTION 44 CLOSURE — FOLLOW_UP_REASONING: «طيب ليش هذا أفضل؟» names no category/product
+    // of its own; running it as a literal product-catalog search would return zero/garbage
+    // results and WIPE the answer that already answers it (the smart pick's own
+    // "chosen over X because…" explanation is already on screen). The honest behavior is a
+    // complete no-op — the shopper asked what changed, not to start over — this branch
+    // touches NO state, runs no fetch, and leaves the current screen exactly as it was.
+    if (decisionIntent.intent === 'FOLLOW_UP_REASONING' && currentPage === 1 && advisorResult) {
+      track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'follow_up_reasoning_noop' } });
+      setLoading(false);
+      return;
+    }
+
+    // SECTION 44 CLOSURE — EXTERNAL_PRODUCT_REFERENCE: a pasted URL. The full verification
+    // flow (Section 21) stays research+design only this mission — but silently running the
+    // URL STRING as a catalog search (returning garbage/empty results) would be worse than
+    // doing nothing. An honest, explicit "not yet" notice — never a fabricated match, never
+    // silent confusion presented as "no results".
+    if (decisionIntent.intent === 'EXTERNAL_PRODUCT_REFERENCE' && currentPage === 1) {
+      track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'external_product_reference' } });
+      setExternalReferenceNotice(true);
+      setLoading(false);
+      return;
+    }
+    if (currentPage === 1) setExternalReferenceNotice(false);
+
     setLoading(true);
     setError(null);
     setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
@@ -706,61 +745,90 @@ export default function SearchClient() {
     advisorAbortRef.current?.abort();
     setAdvisorResult(null);
     setCounterfactualComparison(null); // a stale before/after must never outlive its query
-    // classifyDecisionIntent WRAPS routeQuery (Phase 2, ADR-230) — `.route` is byte-identical
-    // to what a bare `routeQuery(query.trim())` call would have returned, so every existing
-    // `route.mode` branch below is unchanged. `.intent` additionally exposes the fuller
-    // taxonomy (Section 5) — used just below for COUNTERFACTUAL.
-    const decisionIntent = classifyDecisionIntent(query.trim(), { hasActiveDecisionState: !!readDecisionState() });
-    const route = decisionIntent.route;
-    setAdvisorPending(route.mode === 'advisory' && currentPage === 1);
-    if (route.mode === 'advisory' && currentPage === 1) {
+
+    // SECTION 44 CLOSURE — DEAL_EVALUATION / SAME_PRODUCT_VERIFICATION / MERCHANT_SELECTION:
+    // classified by the SAME `classifyDecisionIntent` call above but, until now, never
+    // consumed — a query like «وين أشتريه؟» fell through to whatever `route.mode` alone
+    // produced (almost always plain retrieval), identically to before this mission existed.
+    // These three ask a question the engine's OWN evidence already answers per
+    // recommendation (`price_intel`/`discount_intel` for a deal, `stores`/`go_url` for a
+    // merchant, the `identity` trust factor for same-product verification) — so they fire
+    // the SAME advisor pipeline the NEEDS_DISCOVERY branch below uses, not a new one.
+    // Mutually exclusive with `route.mode === 'advisory'` below (never a duplicate request
+    // for the same query) — the two are combined into one gate.
+    const isAdvisory = route.mode === 'advisory';
+    const isEvidenceIntent = !isAdvisory && (
+      decisionIntent.intent === 'DEAL_EVALUATION' ||
+      decisionIntent.intent === 'SAME_PRODUCT_VERIFICATION' ||
+      decisionIntent.intent === 'MERCHANT_SELECTION'
+    );
+    setAdvisorPending((isAdvisory || isEvidenceIntent) && currentPage === 1);
+
+    const handleAdvisorResponse = (res: AdvisorResponse, reasonMeta: string) => {
+      setAdvisorPending(false);
+      // Render only a real answer. An error or an empty set on the UNIFIED surface must stay
+      // silent: the results below are a perfectly good answer, and an "I could not help"
+      // panel above them would invent a failure the customer does not have. `/advisor` still
+      // shows those states — there, the assistant IS the page and saying nothing would leave
+      // a blank screen.
+      //
+      // Silent to the CUSTOMER, never to the ledger (2026-08-04): every advisor non-answer
+      // ends in a recorded state — rejected (engine returned empty) or unavailable
+      // (request/engine failure) — so a silent absence is measurable, not invisible.
+      if (res.error || res.count === 0) {
+        track(res.error ? 'error' : 'no_answer', {
+          query_text: query.trim(),
+          source: 'search',
+          meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected', reason: reasonMeta },
+        });
+        return;
+      }
+      setAdvisorResult(res);
+      saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
+      track('advisor_result', {
+        query_text: query.trim(),
+        category: res.parsed?.category ?? null,
+        source: 'search',
+        meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick, reason: reasonMeta },
+      });
+    };
+
+    if (isAdvisory && currentPage === 1) {
       const advisorCtrl = new AbortController();
       advisorAbortRef.current = advisorCtrl;
       advisorQueryRef.current = query.trim();
       track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: route.reason } });
       askAdvisor({ text: query.trim() }, { signal: advisorCtrl.signal, limit: 4 })
-        .then((res) => {
-          if (advisorCtrl.signal.aborted) return;
-          setAdvisorPending(false);
-          // Render only a real answer. An error or an empty set on the UNIFIED surface
-          // must stay silent: the results below are a perfectly good answer, and an
-          // "I could not help" panel above them would invent a failure the customer
-          // does not have. `/advisor` still shows those states — there, the assistant
-          // IS the page and saying nothing would leave a blank screen.
-          //
-          // Silent to the CUSTOMER, never to the ledger (2026-08-04): every advisor
-          // non-answer ends in a recorded state — rejected (engine returned empty) or
-          // unavailable (request/engine failure) — so a silent absence is measurable,
-          // not invisible. The routed-vs-not decision is already recorded by
-          // `advisor_query` above (fires only when routed).
-          if (res.error || res.count === 0) {
-            track(res.error ? 'error' : 'no_answer', {
-              query_text: query.trim(),
-              source: 'search',
-              meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected' },
-            });
-            return;
-          }
-          setAdvisorResult(res);
-          saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
-          track('advisor_result', {
-            query_text: query.trim(),
-            category: res.parsed?.category ?? null,
-            source: 'search',
-            meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
-          });
-        })
+        .then((res) => { if (!advisorCtrl.signal.aborted) handleAdvisorResponse(res, route.reason); })
         .catch(() => {
           // Never surfaced to the customer (the results page stands on its own) — but
           // always recorded: an advisor request that died is `unavailable`, not nothing.
           if (advisorCtrl.signal.aborted) return;
           setAdvisorPending(false);
-          track('error', {
-            query_text: query.trim(),
-            source: 'search',
-            meta: { surface: 'advisor', advisor_state: 'unavailable' },
-          });
+          track('error', { query_text: query.trim(), source: 'search', meta: { surface: 'advisor', advisor_state: 'unavailable' } });
         });
+    } else if (isEvidenceIntent && currentPage === 1) {
+      // The query text alone often names no category («وين أشتريه؟» has none) — merge with
+      // the Decision State's own category/constraints via the SAME shared helper the
+      // COUNTERFACTUAL branch and the product page both use (`decisionStateToAdvisorBody`,
+      // ADR-234's closure) so there is exactly one way any surface builds this request body.
+      const state = readDecisionState();
+      const body = state ? decisionStateToAdvisorBody(state) : null;
+      if (!body) {
+        setAdvisorPending(false); // nothing to reason about yet — an honest no-op, not a fabricated answer
+      } else {
+        const advisorCtrl = new AbortController();
+        advisorAbortRef.current = advisorCtrl;
+        advisorQueryRef.current = query.trim();
+        track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: decisionIntent.intent } });
+        askAdvisor(body, { signal: advisorCtrl.signal, limit: 4 })
+          .then((res) => { if (!advisorCtrl.signal.aborted) handleAdvisorResponse(res, decisionIntent.intent); })
+          .catch(() => {
+            if (advisorCtrl.signal.aborted) return;
+            setAdvisorPending(false);
+            track('error', { query_text: query.trim(), source: 'search', meta: { surface: 'advisor', advisor_state: 'unavailable' } });
+          });
+      }
     }
 
     // ── Section 12 · COUNTERFACTUAL — «لو زدت الميزانية 500 وش بيتغير؟» ────────────────
@@ -773,13 +841,11 @@ export default function SearchClient() {
       const delta = parseCounterfactualDelta(query.trim());
       const state = readDecisionState();
       const currentBudget = typeof state?.hard_constraints.budget_total === 'number' ? state.hard_constraints.budget_total : null;
-      const category = state?.category;
-      if (delta && currentBudget != null && category) {
+      // decisionStateToAdvisorBody (ADR-234's closure) — the SAME helper the evidence-intent
+      // branch above and the product page both build their request body with.
+      const baseBody = state ? decisionStateToAdvisorBody(state) : null;
+      if (delta && currentBudget != null && baseBody) {
         const newBudget = applyCounterfactualDelta(currentBudget, delta);
-        const baseBody: Record<string, unknown> = { category, budget_total: currentBudget };
-        if (typeof state.hard_constraints.room_size_m2 === 'number') baseBody.room_size_m2 = state.hard_constraints.room_size_m2;
-        if (typeof state.hard_constraints.city === 'string') baseBody.city = state.hard_constraints.city;
-        if (state.soft_preferences.length) baseBody.priorities = state.soft_preferences;
         const cfCtrl = new AbortController();
         track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'counterfactual', delta } });
         Promise.all([
@@ -1774,6 +1840,19 @@ export default function SearchClient() {
                     "start over". */}
                 {!loading && !error && counterfactualComparison && (
                   <CounterfactualCard comparison={counterfactualComparison} locale={locale} />
+                )}
+
+                {/* Section 44 closure — EXTERNAL_PRODUCT_REFERENCE (a pasted URL). An honest
+                    "not yet" notice — the full verification flow (Section 21) stays
+                    research+design only this mission — rather than silently running the URL
+                    string as a garbage catalog search. */}
+                {!loading && !error && externalReferenceNotice && (
+                  <div
+                    data-testid="external-reference-notice"
+                    className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-surface-container-low p-4 text-sm text-on-surface-variant"
+                  >
+                    {t('agent.externalReferenceNotice')}
+                  </div>
                 )}
 
                 {/* P2-8 · UNIFIED SEARCH — the reasoning engine's answer, when this query
