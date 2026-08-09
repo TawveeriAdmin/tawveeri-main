@@ -117,7 +117,13 @@ export function applyParsedTask(state: DecisionState, task: AdvisorParsed, inten
     : state.explicit_preferences;
   return {
     ...state,
-    category: task.category ?? state.category,
+    // `task.category` is a plain `string` on `AdvisorParsed`/`ParsedTask` (never `null`) —
+    // `parseShoppingTask` returns `category: ""` when nothing was classified, so `??` alone
+    // does NOT fall back (empty string is not null/undefined). MEASURED (2026-08-09, Section
+    // 43 multi-turn missions): a category-less follow-up turn ("خليه تحت 4000") silently
+    // wiped an already-established category. Truthy check, matching the convention
+    // `journey-context.ts`'s own `saveJourneyTask` guard already uses for the same reason.
+    category: task.category || state.category,
     intent,
     hard_constraints,
     soft_preferences,

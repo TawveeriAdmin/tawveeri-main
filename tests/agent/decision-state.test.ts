@@ -63,6 +63,18 @@ describe("applyParsedTask — additive across turns, never re-interpreted from s
     expect(s2.conversation_turn).toBe(2);
   });
 
+  // MEASURED (2026-08-09, Section 43 multi-turn missions): parseShoppingTask returns
+  // `category: ""` (an empty STRING, never null) when nothing was classified. A follow-up
+  // turn's parsed task therefore carries `category: ""`, not `category: undefined` — `??`
+  // alone does not fall back on an empty string, so a naive `task.category ?? state.category`
+  // would silently WIPE an already-established category on every category-less follow-up.
+  it("a category-less follow-up turn (task.category === '', the parser's real shape) never wipes the established category", () => {
+    const s0 = createDecisionState();
+    const s1 = applyParsedTask(s0, { category: "laptop", budget_total: 5000 }, "NEEDS_DISCOVERY");
+    const s2 = applyParsedTask(s1, { category: "", budget_total: 5000 } as never, "FOLLOW_UP_REASONING");
+    expect(s2.category).toBe("laptop");
+  });
+
   it("a later turn's budget OVERWRITES an earlier turn's budget for the same field", () => {
     const s0 = createDecisionState();
     const s1 = applyParsedTask(s0, { category: "laptop", budget_total: 5000 }, "NEEDS_DISCOVERY");
