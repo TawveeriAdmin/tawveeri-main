@@ -19,6 +19,22 @@ describe("classifyDecisionIntent — the 12-way taxonomy", () => {
     expect(r.intent).toBe("COUNTERFACTUAL");
   });
 
+  // "طيب ارخص؟" (2026-08-10, D→E mission Part A/C) — a founder-named example follow-up,
+  // classified as COUNTERFACTUAL but gated on an active mission, UNLIKE "لو زدت"/"لو رفعت"
+  // above. See CHEAPER_MARKERS' own comment in decision-intent.ts for why: "أرخص" alone is a
+  // perfectly ordinary FRESH need description («ابي جوال ارخص من 2000 ريال»), not a
+  // hypothetical that only makes sense against an existing baseline.
+  it("COUNTERFACTUAL (cheaper): «طيب ارخص؟» requires active state — without it, falls through", () => {
+    const withState = classifyDecisionIntent("طيب ارخص؟", { hasActiveDecisionState: true });
+    expect(withState.intent).toBe("COUNTERFACTUAL");
+    const withoutState = classifyDecisionIntent("طيب ارخص؟", { hasActiveDecisionState: false });
+    expect(withoutState.intent).not.toBe("COUNTERFACTUAL");
+  });
+  it("a FRESH need description that happens to contain «ارخص» is NOT swept into COUNTERFACTUAL — it stays a normal advisory/browse query", () => {
+    const r = classifyDecisionIntent("ابي جوال ارخص من 2000 ريال", { hasActiveDecisionState: false });
+    expect(r.intent).not.toBe("COUNTERFACTUAL");
+  });
+
   it("CONSTRAINT_CHANGE requires active state — without it, falls through", () => {
     const withState = classifyDecisionIntent("خليها ميزانية اعلى", { hasActiveDecisionState: true });
     expect(withState.intent).toBe("CONSTRAINT_CHANGE");

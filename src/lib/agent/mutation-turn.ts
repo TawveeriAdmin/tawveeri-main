@@ -19,7 +19,7 @@ import {
   isNewMissionSwitch, saveDecisionState, type DecisionState,
 } from './decision-state';
 import {
-  parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual,
+  parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual, compareCheaperOption,
   type CounterfactualComparison,
 } from './counterfactual';
 import { askAdvisor, type AdvisorResponse } from './advisor-api';
@@ -83,9 +83,28 @@ export async function handleMutationTurn(
 
   if (intent === 'COUNTERFACTUAL') {
     const delta = parseCounterfactualDelta(text);
+    if (!delta) return { intent: decisionIntent, outcome: { kind: 'no_context' } };
+
+    if (delta.kind === 'cheapest') {
+      // "طيب ارخص" (2026-08-10, D→E mission Part A/C). Re-ranks the recommendations already
+      // on screen (or re-fetches the SAME structured body once if nothing is cached) — no
+      // new eligibility/ranking logic, `compareCheaperOption` only diffs what `decide()`
+      // already vetted. Deliberately NON-COMMITTING: unlike a real budget change, "show me
+      // cheaper" does not alter the shopper's stated budget or priorities, so the cheaper
+      // pick does NOT replace the smart pick in state — doing so would silently redefine
+      // "best pick" as "cheapest pick", exactly the price-over-eligibility inversion Part B
+      // forbids in the other direction.
+      const baseBody = decisionStateToAdvisorBody(state);
+      if (!baseBody) return { intent: decisionIntent, outcome: { kind: 'no_context' } };
+      const current = currentAdvisorResult ?? await askAdvisor(baseBody, { signal: opts?.signal, limit: 4 });
+      const comparison = compareCheaperOption(current);
+      if (!comparison) return { intent: decisionIntent, outcome: { kind: 'no_context' } };
+      return { intent: decisionIntent, outcome: { kind: 'counterfactual', comparison, newState: state } };
+    }
+
     const currentBudget = typeof state.hard_constraints.budget_total === 'number' ? state.hard_constraints.budget_total : null;
     const baseBody = decisionStateToAdvisorBody(state);
-    if (!delta || currentBudget == null || !baseBody) return { intent: decisionIntent, outcome: { kind: 'no_context' } };
+    if (currentBudget == null || !baseBody) return { intent: decisionIntent, outcome: { kind: 'no_context' } };
     const newBudget = applyCounterfactualDelta(currentBudget, delta);
     const [before, after] = await Promise.all([
       askAdvisor(baseBody, { signal: opts?.signal, limit: 4 }),

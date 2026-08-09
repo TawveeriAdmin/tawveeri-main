@@ -1832,6 +1832,38 @@ export default function SearchClient() {
                     locale={locale}
                     source="search"
                     className="mb-6"
+                    followUp={(() => {
+                      // Section 9 · POST-DECISION CONTINUATION, repositioned (D→E mission
+                      // Part A — founder-mandated discoverability fix, 2026-08-10). Rendered
+                      // by AdvisorAnswer itself, immediately after the primary pick and
+                      // BEFORE "More options" — not as a page-level sibling after the whole
+                      // answer, which live evidence showed put it a full screen or more below
+                      // where a shopper would ever see it. Still NOT a second input box
+                      // (research: every credible shopping-AI product keeps ONE continuous
+                      // input, and Amazon's own published UX review found a hidden second
+                      // surface goes undiscovered) — these chips make the SAME box's
+                      // mutation-handling capability (mutation-turn.ts) visible and tappable,
+                      // and the explicit "start new search" action gives the shopper the
+                      // boundary Baymard's research found most e-commerce sites never provide.
+                      const activeState = readDecisionState();
+                      if (!activeState) return null;
+                      return (
+                        <FollowUpSuggestions
+                          state={activeState}
+                          locale={locale}
+                          onSelect={(text) => setSearchQuery(text)}
+                          onStartNew={() => {
+                            clearDecisionState();
+                            setAdvisorResult(null);
+                            setCounterfactualComparison(null);
+                            setExternalReferenceNotice(false);
+                            setSearchQuery('');
+                            setDebouncedQuery('');
+                            setCurrentPage(1);
+                          }}
+                        />
+                      );
+                    })()}
                     onClarify={(field, value) => {
                       // Re-ask the SAME text with the answered field filled in, so an
                       // answered question follows the identical path a shopper who had
@@ -1880,35 +1912,6 @@ export default function SearchClient() {
                     }}
                   />
                 )}
-
-                {/* Section 9 · POST-DECISION CONTINUATION — "how should we refine this same
-                    decision?" (D→E mission North Star). NOT a second input box (research
-                    finding: every credible shopping-AI product keeps ONE continuous input,
-                    and Amazon's own published UX review found a hidden second surface goes
-                    undiscovered) — these chips make the SAME box's mutation-handling
-                    capability (mutation-turn.ts) visible and tappable, and the explicit
-                    "start new search" action gives the shopper the boundary Baymard's
-                    research found most e-commerce sites never provide. */}
-                {!loading && !error && advisorResult && (() => {
-                  const activeState = readDecisionState();
-                  if (!activeState) return null;
-                  return (
-                    <FollowUpSuggestions
-                      state={activeState}
-                      locale={locale}
-                      onSelect={(text) => setSearchQuery(text)}
-                      onStartNew={() => {
-                        clearDecisionState();
-                        setAdvisorResult(null);
-                        setCounterfactualComparison(null);
-                        setExternalReferenceNotice(false);
-                        setSearchQuery('');
-                        setDebouncedQuery('');
-                        setCurrentPage(1);
-                      }}
-                    />
-                  );
-                })()}
 
                 {/* Smart Pick — the retrieval layer's trustworthy pick, gated server-side.
                     SUPPRESSED when the reasoning engine has answered. Both are "our pick",

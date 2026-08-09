@@ -9,7 +9,7 @@
  * ("إلى") must win over relative ones in the same sentence, and every caller must handle
  * both kinds — there is no single "amount" that always means "add this much" anymore.
  */
-import { parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual } from "@/lib/agent/counterfactual";
+import { parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual, compareCheaperOption } from "@/lib/agent/counterfactual";
 import type { AdvisorResponse, AdvisorRecommendation } from "@/lib/agent/advisor-api";
 
 const pick = (over: Partial<AdvisorRecommendation> = {}): AdvisorRecommendation => ({
@@ -55,6 +55,18 @@ describe("parseCounterfactualDelta — absolute vs relative, never guesses an am
     expect(parseCounterfactualDelta("لو زدت الميزانية شوي")).toBeNull();
     expect(parseCounterfactualDelta("مكيف لغرفة 30 متر")).toBeNull();
   });
+
+  // "طيب ارخص" (2026-08-10, D→E mission Part A/C — one of the founder's own named example
+  // follow-ups). Checked ONLY after every number-bearing form above returns null: a sentence
+  // naming a real amount always means that amount, never falls back to "cheaper".
+  it("«طيب ارخص؟» and «أوفر» parse as kind:'cheapest', with no amount to guess", () => {
+    expect(parseCounterfactualDelta("طيب ارخص؟")).toEqual({ kind: "cheapest" });
+    expect(parseCounterfactualDelta("أبيه أوفر")).toEqual({ kind: "cheapest" });
+    expect(parseCounterfactualDelta("cheaper please")).toEqual({ kind: "cheapest" });
+  });
+  it("a number-bearing sentence never falls back to 'cheapest', even if it also says أرخص", () => {
+    expect(parseCounterfactualDelta("لو رفعت الميزانية إلى 4000 عشان ألقى شي أرخص من قبل")).toEqual({ kind: "absolute", value: 4000 });
+  });
 });
 
 describe("applyCounterfactualDelta", () => {
@@ -70,6 +82,55 @@ describe("applyCounterfactualDelta", () => {
   });
   it("absolute: never negative", () => {
     expect(applyCounterfactualDelta(3000, { kind: "absolute", value: -100 })).toBe(0);
+  });
+  it("cheapest: never called in practice (mutation-turn.ts branches away first) — returns the budget unchanged for type-exhaustiveness", () => {
+    expect(applyCounterfactualDelta(3000, { kind: "cheapest" })).toBe(3000);
+  });
+});
+
+describe("compareCheaperOption — re-ranks the SAME already-fetched, already-eligible candidates by cost, never re-fetches or re-derives eligibility", () => {
+  it("returns null when no candidate carries a cost at all — honest 'nothing to say'", () => {
+    const current = resp({ smart_pick: null, recommendations: [] });
+    expect(compareCheaperOption(current)).toBeNull();
+  });
+
+  it("says the current pick is already the cheapest when no candidate beats it", () => {
+    const smart = pick({ canonical_id: "c1", unit_price: 2000, total_cost_estimate: 2500 });
+    const current = resp({ smart_pick: smart, recommendations: [smart, pick({ canonical_id: "c2", unit_price: 2800, total_cost_estimate: 3200 })] });
+    const cmp = compareCheaperOption(current)!;
+    expect(cmp.kind).toBe("cheapest");
+    expect(cmp.changed).toBe(false);
+    expect(cmp.explanation_ar).toMatch(/الأرخص/);
+  });
+
+  it("finds a genuinely cheaper eligible option and reports the price delta", () => {
+    const smart = pick({ canonical_id: "c1", unit_price: 2500, total_cost_estimate: 2900, reasons_ar: ["سعة أكبر", "إنفرتر"] });
+    const cheaper = pick({ canonical_id: "c2", unit_price: 1900, total_cost_estimate: 2100, reasons_ar: ["سعر موثوق"] });
+    const current = resp({ smart_pick: smart, recommendations: [smart, cheaper] });
+    const cmp = compareCheaperOption(current)!;
+    expect(cmp.changed).toBe(true);
+    expect(cmp.price_delta).toBe(1900 - 2500);
+    // "وش أتنازل عنه؟" — only reasons the ORIGINAL pick had that the cheaper one lacks,
+    // filtered to the same qualifying vocabulary compareCounterfactual's worth_it uses.
+    expect(cmp.giveUp_reasons_ar).toEqual(["سعة أكبر"]);
+  });
+
+  it("gives an honest 'not enough evidence' signal (empty array, not a guess) when the engine's own reasons name no specific difference", () => {
+    const smart = pick({ canonical_id: "c1", unit_price: 2500, total_cost_estimate: 2900, reasons_ar: ["سعر موثوق"] });
+    const cheaper = pick({ canonical_id: "c2", unit_price: 1900, total_cost_estimate: 2100, reasons_ar: [] });
+    const current = resp({ smart_pick: smart, recommendations: [smart, cheaper] });
+    const cmp = compareCheaperOption(current)!;
+    expect(cmp.changed).toBe(true);
+    expect(cmp.giveUp_reasons_ar).toEqual([]);
+  });
+
+  it("works even with no smart pick at all — compares against the cheapest of the plain recommendations", () => {
+    const cheaper = pick({ canonical_id: "c2", unit_price: 1500, total_cost_estimate: 1700, is_smart_pick: false });
+    const other = pick({ canonical_id: "c3", unit_price: 3000, total_cost_estimate: 3400, is_smart_pick: false });
+    const current = resp({ smart_pick: null, recommendations: [other, cheaper] });
+    const cmp = compareCheaperOption(current)!;
+    expect(cmp.changed).toBe(true);
+    expect(cmp.after.unit_price).toBe(1500);
   });
 });
 

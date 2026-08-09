@@ -298,3 +298,13 @@ describe("Task parser — CONSTRAINT_CHANGE absolute-target budget regression (2
     expect(parseShoppingTask("مكيف تحت 4000").budget_total).toBe(4000);
   });
 });
+
+// MEASURED GAP (2026-08-10, D→E mission Part A — one of the founder's own named example
+// follow-ups, «أبيه أهدأ»): the comparative form «أهدأ» ("quieter") matched none of the
+// base-form quiet spellings, so this priority was silently dropped.
+describe("Task parser — comparative-form priority regression (2026-08-10)", () => {
+  it("recognizes «أهدأ» (comparative \"quieter\") as the quiet priority, same as the base form «هادئ»", () => {
+    expect(parseShoppingTask("طيب أبيه أهدأ").priorities).toEqual(expect.arrayContaining(["quiet"]));
+    expect(parseShoppingTask("مكيف اهدا شوي").priorities).toEqual(expect.arrayContaining(["quiet"]));
+  });
+});

@@ -53,6 +53,20 @@ const COUNTERFACTUAL_MARKERS = [
   'لو زدت', 'لو رفعت', 'لو نزلت', 'لو خفضت', 'لو غيرت الميزانيه', 'لو زاد', 'ايش يتغير لو',
   'وش يتغير لو', 'ماذا لو', 'اذا رفعت', 'اذا زدت', 'what if', 'if i increase', 'if i raise',
 ];
+/**
+ * "طيب ارخص" / "وش أتنازل عنه لو أبي أوفر" (2026-08-10, D→E mission Part A/C — two of the
+ * founder's own named example follow-ups). Classified as COUNTERFACTUAL, answered by
+ * `parseCounterfactualDelta`'s `kind: 'cheapest'` branch and `compareCheaperOption`.
+ *
+ * DELIBERATELY NOT added to COUNTERFACTUAL_MARKERS above and checked WITHOUT
+ * `ctx.hasActiveDecisionState`, unlike "لو زدت"/"لو رفعت": those markers describe a
+ * hypothetical that only makes sense against an existing baseline. "أرخص" does not — «ابي
+ * جوال ارخص من 2000 ريال» is a perfectly ordinary FRESH need description (task-parser.ts's
+ * bare number+«ريال» fallback already extracts budget_total=2000 from it with no marker
+ * involved) that must keep routing to NEEDS_DISCOVERY like any other first turn. Gating this
+ * on an active mission is what tells the two apart.
+ */
+const CHEAPER_MARKERS = ['ارخص', 'أرخص', 'اوفر', 'أوفر', 'اتنازل', 'أتنازل', 'cheaper', 'cheapest'];
 const CONSTRAINT_CHANGE_MARKERS = [
   'بدل كذا', 'بدل الميزانيه', 'غير الميزانيه', 'غير المدينه', 'خليها', 'خليه', 'شيل شرط',
   'احذف شرط', 'الغي شرط', 'عدل الطلب', 'change the budget', 'remove the constraint', 'update my budget',
@@ -119,6 +133,11 @@ export function classifyDecisionIntent(text: string, ctx: DecisionIntentContext 
   if (cf) return { intent: 'COUNTERFACTUAL', reason: `counterfactual marker: ${cf}`, route };
 
   if (ctx.hasActiveDecisionState) {
+    // "أرخص"/"اوفر" — see CHEAPER_MARKERS' own comment for why this is gated here and not
+    // folded into the unconditional COUNTERFACTUAL_MARKERS check above.
+    const cheaper = matchesAny(x, CHEAPER_MARKERS);
+    if (cheaper) return { intent: 'COUNTERFACTUAL', reason: `cheaper marker: ${cheaper}`, route };
+
     const cc = matchesAny(x, CONSTRAINT_CHANGE_MARKERS);
     if (cc) return { intent: 'CONSTRAINT_CHANGE', reason: `constraint-change marker: ${cc}`, route };
 

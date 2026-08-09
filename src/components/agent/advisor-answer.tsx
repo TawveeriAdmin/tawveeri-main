@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, ShieldCheck, Check, Store, ArrowLeft, ArrowRight, CircleAlert,
@@ -553,6 +553,7 @@ export function AdvisorAnswer({
   className = 'mt-8',
   onClarify,
   onRemoveConstraint,
+  followUp,
 }: {
   result: AdvisorResponse;
   locale: string;
@@ -563,6 +564,19 @@ export function AdvisorAnswer({
   /** Constraint Ledger (Section 7) — removes one understood constraint and re-runs the
    *  request without it. Omit and the ledger renders read-only (no × buttons). */
   onRemoveConstraint?: (field: string) => void;
+  /**
+   * MEASURED DEFECT (2026-08-10, D→E mission Part A — founder-mandated discoverability
+   * fix): `<FollowUpSuggestions>` used to render as a page-level sibling AFTER this entire
+   * component, which includes "More options" — 3-4 further OptionCards, each with its own
+   * evidence toggle. Live production evidence showed the chips sitting a full screen or more
+   * below the primary answer, effectively undiscoverable without deliberate scrolling.
+   * Research (ChatGPT/Claude/Perplexity/Baymard/NN's Rufus postmortem) converges on ONE
+   * principle: a follow-up affordance belongs to the ANSWER, scoped immediately under it —
+   * not to the page, and not after every alternative. This slot renders right after the
+   * smart pick's own share action and BEFORE "More options", so the shopper sees it before
+   * they'd need to scroll past any alternative they did not ask to see.
+   */
+  followUp?: ReactNode;
 }) {
   const t = useTranslations();
   const loc: Locale = locale === 'ar' ? 'ar' : 'en';
@@ -664,6 +678,10 @@ export function AdvisorAnswer({
           <ShareDecisionButton rec={smart} loc={loc} t={t} source={source} />
         </div>
       )}
+
+      {/* Continue the conversation — scoped to THIS answer, before any alternative the
+          shopper did not ask to see (see the `followUp` prop doc above). */}
+      {smart && followUp}
 
       {/* More options */}
       {rest.length > 0 && (

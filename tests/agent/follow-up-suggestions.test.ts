@@ -35,6 +35,7 @@ describe("buildFollowUpSuggestions", () => {
     const suggestions = buildFollowUpSuggestions(state);
     const expected: Record<string, string> = {
       raise_budget: "COUNTERFACTUAL",
+      cheaper: "COUNTERFACTUAL",
       why: "FOLLOW_UP_REASONING",
       where: "MERCHANT_SELECTION",
     };

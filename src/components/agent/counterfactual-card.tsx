@@ -24,6 +24,7 @@ export function CounterfactualCard({
   const t = useTranslations();
   const loc: Locale = locale === 'ar' ? 'ar' : 'en';
   const explanation = loc === 'ar' ? comparison.explanation_ar : comparison.explanation_en;
+  const title = comparison.kind === 'cheapest' ? t('agent.cheaperTitle') : t('agent.counterfactualTitle');
 
   return (
     <div
@@ -32,7 +33,7 @@ export function CounterfactualCard({
     >
       <div className="mb-3 flex items-center gap-1.5">
         <ArrowLeftRight className="h-4 w-4 text-primary-600" aria-hidden />
-        <span className="text-sm font-bold text-on-surface">{t('agent.counterfactualTitle')}</span>
+        <span className="text-sm font-bold text-on-surface">{title}</span>
       </div>
       {comparison.changed && (
         <div className="mb-3 grid grid-cols-2 gap-3">
@@ -55,6 +56,25 @@ export function CounterfactualCard({
         </div>
       )}
       <p className="text-sm leading-relaxed text-on-surface">{explanation}</p>
+      {/* "وش أتنازل عنه لو أبي أوفر؟" (2026-08-10, D→E mission Part A/C) — only for the
+          "cheaper" comparison, and only when the pick actually changed (nothing is given up
+          if the current pick was already the cheapest). An honest "not enough evidence" line
+          when the engine's own reasons don't name a specific difference — never a guessed
+          one ("smaller screen", "less RAM") that was never measured. */}
+      {comparison.kind === 'cheapest' && comparison.changed && (
+        <div className="mt-3 border-t border-primary-100 pt-3 dark:border-primary-900/40">
+          <p className="text-xs font-semibold text-on-surface-variant">{t('agent.giveUpLabel')}</p>
+          {comparison.giveUp_reasons_ar.length > 0 ? (
+            <ul className="mt-1.5 space-y-1">
+              {comparison.giveUp_reasons_ar.map((r, i) => (
+                <li key={i} className="text-xs leading-relaxed text-on-surface-variant">{r}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">{t('agent.giveUpUnknown')}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@
 // production decision engine already produced (fully evidence-cited, F7-guarded) — this
 // module only diffs and phrases, exactly the "engines decide, this only compares" discipline
 // the rest of `src/lib/agent/` follows. Deterministic and LLM-free (ADR-002).
-import type { AdvisorResponse } from './advisor-api';
+import type { AdvisorResponse, AdvisorRecommendation } from './advisor-api';
 
 /**
  * MEASURED PRODUCTION FAILURE (2026-08-09, founder's own journey): «لو رفعت ميزانيتي إلى
@@ -22,10 +22,19 @@ import type { AdvisorResponse } from './advisor-api';
  * baseline this computed 3000+4000=7000, a phantom budget the shopper never stated.
  * `kind: 'absolute'` vs `'relative'` makes the distinction impossible to skip — every caller
  * must handle both, not assume "amount" always means "add this much".
+ *
+ * `kind: 'cheapest'` (2026-08-10, D→E mission Part A/C — one of the founder's own named
+ * example follow-ups, «طيب ارخص»). Deliberately NOT a budget delta at all: "give me
+ * something cheaper" names no number, so forcing it through the increase/decrease parser
+ * would mean guessing an amount — exactly the fabrication this file's own top comment
+ * forbids. It re-ranks the SAME already-fetched, already-eligible candidate set by cost
+ * instead (see `compareCheaperOption` below) — no new decision-engine call, no ranking
+ * logic re-derived here.
  */
 export type CounterfactualDelta =
   | { kind: 'absolute'; value: number }
-  | { kind: 'relative'; direction: 'increase' | 'decrease'; amount: number };
+  | { kind: 'relative'; direction: 'increase' | 'decrease'; amount: number }
+  | { kind: 'cheapest' };
 
 const ARABIC_INDIC = /[٠-٩۰-۹]/g;
 const asciiDigits = (t: string) =>
@@ -58,18 +67,33 @@ export function parseCounterfactualDelta(text: string): CounterfactualDelta | nu
   const dec = x.match(/(?:نزلت|خفضت|قللت|نقصت|تنزيل|decrease|lower|reduce|drop)\D{0,20}?(\d{2,6})/);
   if (dec) return { kind: 'relative', direction: 'decrease', amount: Number(dec[1]) };
 
+  // "cheapest", checked ONLY after every number-bearing form fails to match — a sentence
+  // that names an actual amount always means that amount, never a vague "cheaper" fallback.
+  if (/ارخص|أرخص|اوفر|أوفر|cheaper|cheapest/.test(x)) return { kind: 'cheapest' };
+
   return null;
 }
 
-/** The adjusted budget a counterfactual delta implies, never negative. */
+/**
+ * The adjusted budget a counterfactual delta implies, never negative.
+ *
+ * Never actually called with `kind: 'cheapest'` — `mutation-turn.ts` branches to
+ * `compareCheaperOption` before reaching this function, since "cheaper" re-ranks existing
+ * candidates rather than computing a new budget at all. The explicit branch below exists
+ * only so this stays exhaustive for the type checker rather than silently falling through.
+ */
 export function applyCounterfactualDelta(currentBudget: number, delta: CounterfactualDelta): number {
   if (delta.kind === 'absolute') return Math.max(0, delta.value);
+  if (delta.kind === 'cheapest') return currentBudget;
   return delta.direction === 'increase'
     ? currentBudget + delta.amount
     : Math.max(0, currentBudget - delta.amount);
 }
 
 export interface CounterfactualComparison {
+  /** Which question this comparison answers — the card needs it to pick the right header and
+   *  whether a "what do you give up" section applies at all (2026-08-10, Part A/C). */
+  kind: 'budget' | 'cheapest';
   changed: boolean;
   /** Was NOT within budget before, IS within budget after — the "unlocks a new option" case. */
   newlyUnlocked: boolean;
@@ -86,6 +110,16 @@ export interface CounterfactualComparison {
    */
   worth_it: boolean | null;
   worth_it_reasons_ar: string[];
+  /**
+   * "وش أتنازل عنه لو أبي أوفر؟" (what do I give up if I want to save money?) — one of the
+   * founder's own named example follow-ups (2026-08-10). Only meaningful for `kind:
+   * 'cheapest'`; always `[]` for a budget comparison. Populated ONLY from reasons the engine
+   * itself attached to the BEFORE pick that it did NOT also attach to the cheaper AFTER pick
+   * — never guessed. An empty array on a CHANGED cheaper pick is a real, distinct signal
+   * (see `compareCheaperOption`): the caller must render an honest "not enough evidence"
+   * caveat, not silence.
+   */
+  giveUp_reasons_ar: string[];
   explanation_ar: string;
   explanation_en: string;
 }
@@ -118,6 +152,7 @@ export function compareCounterfactual(
   // options, no hero pick), now surfaced through the counterfactual panel too.
   if (!b && !a) {
     return {
+      kind: 'budget',
       changed: false,
       newlyUnlocked: false,
       before: { title_ar: null, title_en: null, unit_price: null, budget_satisfied: before.budget_satisfied ?? true },
@@ -125,6 +160,7 @@ export function compareCounterfactual(
       price_delta: null,
       worth_it: null,
       worth_it_reasons_ar: [],
+      giveUp_reasons_ar: [],
       explanation_ar: `لا نملك ترشيحًا واثقًا بما يكفي للمقارنة بين الميزانيتين — نعرض كل الخيارات المتاحة بدلًا من ترشيح واحد.`,
       explanation_en: `We don't have a single confident pick yet to compare the two budgets — every available option is shown instead of one recommendation.`,
     };
@@ -172,6 +208,7 @@ export function compareCounterfactual(
   }
 
   return {
+    kind: 'budget',
     changed,
     newlyUnlocked,
     before: { title_ar: b?.title_ar ?? null, title_en: b?.title_en ?? null, unit_price: b?.unit_price ?? null, budget_satisfied: beforeSatisfied },
@@ -179,6 +216,71 @@ export function compareCounterfactual(
     price_delta,
     worth_it,
     worth_it_reasons_ar: worthItReasons,
+    giveUp_reasons_ar: [],
+    explanation_ar,
+    explanation_en,
+  };
+}
+
+/**
+ * "طيب ارخص" / "وش أتنازل عنه لو أبي أوفر؟" (2026-08-10, D→E mission Part A/C — two of the
+ * founder's own named example follow-ups). Deliberately built on the SAME already-fetched
+ * `AdvisorResponse.recommendations` array a shopper is already looking at — no new
+ * decision-engine call, no re-derived eligibility or ranking. Every candidate in that array
+ * already cleared `decide()`'s own eligibility gate; this only re-sorts by cost and diffs
+ * two ALREADY-VETTED picks, exactly the "engines decide, this only compares" discipline
+ * `compareCounterfactual` above follows for a budget change.
+ *
+ * Returns null only when there is truly nothing prices to compare (no candidate carries a
+ * cost at all) — an honest "nothing to say", never a fabricated one.
+ */
+export function compareCheaperOption(current: AdvisorResponse): CounterfactualComparison | null {
+  const b = current.smart_pick ?? null;
+  const candidates = current.recommendations ?? [];
+  const costOf = (r: AdvisorRecommendation) => r.total_cost_estimate ?? r.unit_price ?? null;
+  const withCost = candidates.filter((r) => costOf(r) != null);
+  if (!withCost.length) return null;
+  const a = withCost.reduce((min, r) => (costOf(r)! < costOf(min)! ? r : min), withCost[0]);
+
+  const changed = b?.canonical_id !== a.canonical_id;
+  const price_delta = a.unit_price != null && b?.unit_price != null ? Math.round(a.unit_price - b.unit_price) : null;
+
+  // "وش أتنازل عنه؟" — ONLY reasons the engine attached to the pick being LEFT (before) that
+  // it did NOT also attach to the cheaper pick (after) — the mirror image of `worthItReasons`
+  // above. An empty array on a changed pick is a real, distinct signal: the engine's own
+  // evidence does not name a specific tradeoff, so the caller must say so honestly rather
+  // than stay silent or invent one ("smaller screen", "less RAM") that was never measured.
+  const lostReasons = changed
+    ? (b?.reasons_ar ?? []).filter((r) => !a.reasons_ar.includes(r))
+    : [];
+  const giveUpReasons = lostReasons.filter((r) => /fit|أفضل|أوفر|أعلى|أكبر|أسرع|كاميرا|بطارية|شاشة|كرت شاشة|سعة/.test(r));
+
+  let explanation_ar: string;
+  let explanation_en: string;
+  if (!changed) {
+    const title = a.title_ar ?? a.title_en ?? '';
+    const titleEn = a.title_en ?? a.title_ar ?? '';
+    explanation_ar = `"${title}" هو بالفعل الأرخص ضمن خياراتك الموثّقة — لا يوجد خيار أوفر منه.`;
+    explanation_en = `"${titleEn}" is already the cheapest of your documented options — nothing cheaper is available.`;
+  } else {
+    const title = a.title_ar ?? a.title_en ?? '';
+    const titleEn = a.title_en ?? a.title_ar ?? '';
+    const deltaAr = price_delta != null ? ` — أوفر بـ${Math.abs(price_delta)} ريال` : '';
+    const deltaEn = price_delta != null ? ` — ${Math.abs(price_delta)} SAR cheaper` : '';
+    explanation_ar = `الأرخص ضمن خياراتك الموثّقة هو "${title}"${deltaAr}، لكنه ليس بالضرورة الأنسب لاستخدامك.`;
+    explanation_en = `The cheapest of your documented options is "${titleEn}"${deltaEn} — not necessarily the best fit for your use.`;
+  }
+
+  return {
+    kind: 'cheapest',
+    changed,
+    newlyUnlocked: false,
+    before: { title_ar: b?.title_ar ?? null, title_en: b?.title_en ?? null, unit_price: b?.unit_price ?? null, budget_satisfied: current.budget_satisfied ?? true },
+    after: { title_ar: a.title_ar ?? null, title_en: a.title_en ?? null, unit_price: a.unit_price ?? null, budget_satisfied: current.budget_satisfied ?? true },
+    price_delta,
+    worth_it: null, // "worth it" only applies to a benefit gained by spending MORE — not this direction
+    worth_it_reasons_ar: [],
+    giveUp_reasons_ar: giveUpReasons,
     explanation_ar,
     explanation_en,
   };

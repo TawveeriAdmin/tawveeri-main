@@ -35,6 +35,15 @@ export function buildFollowUpSuggestions(state: DecisionState): FollowUpSuggesti
     });
   }
 
+  // "طيب ارخص؟" (2026-08-10, D→E mission Part A/C — one of the founder's own named example
+  // follow-ups). Only offered once tapping it can actually answer something: `compareCheaperOption`
+  // needs at least the current recommendations, which only exist once a pick is already shown —
+  // same precondition this whole function already has (it is only called with an active state).
+  suggestions.push({
+    key: 'cheaper', label_ar: 'طيب أرخص؟', label_en: 'What about cheaper?',
+    prefill_ar: 'طيب أرخص؟', prefill_en: 'What about a cheaper option?',
+  });
+
   suggestions.push({
     key: 'why', label_ar: 'ليش هذا أفضل؟', label_en: 'Why this one?',
     prefill_ar: 'ليش هذا أفضل؟', prefill_en: 'Why is this the best pick?',

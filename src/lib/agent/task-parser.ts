@@ -167,7 +167,10 @@ function polarityBeforeMatch(x: string, re: RegExp): Polarity | null {
 const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «هادي» (no hamza) added 2026-08-09 — colloquial spelling measured live in the founder's
   // Golden Query; «هادئ» alone missed the everyday-typed form (same class as CHECKPOINT #17).
-  ["quiet", /هادئ|هادي|هادى|هدوء|صامت|quiet|silent|low ?noise/],
+  // «أهدأ» (comparative "quieter" — 2026-08-10, D→E mission Part A, one of the founder's own
+  // named example follow-ups «أبيه أهدأ») was missing: none of the base-form spellings match
+  // the comparative, so «طيب أبيه أهدأ» parsed NO priority at all before this fix.
+  ["quiet", /هادئ|هادي|هادى|أهدأ|اهدا|هدوء|صامت|quiet|quieter|silent|low ?noise/],
   ["low_electricity", /موفر|توفير|كهرباء|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/],
   ["heating", /تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/],
   ["gaming", /ألعاب|العاب|قيمنق|gaming|games/],
