@@ -14,7 +14,13 @@ import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-ca
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
-import { routeQuery } from '@/lib/agent/route-query';
+import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
+import { readDecisionState } from '@/lib/agent/decision-state';
+import {
+  parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual,
+  type CounterfactualComparison,
+} from '@/lib/agent/counterfactual';
+import { CounterfactualCard } from '@/components/agent/counterfactual-card';
 import { ComparisonAnswer, type CompareRoute } from '@/components/search/comparison-answer';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
@@ -240,6 +246,10 @@ export default function SearchClient() {
   // The query the advisor answer belongs to, so a clarification can re-ask the SAME text
   // rather than whatever is in the input box by the time the shopper answers.
   const advisorQueryRef = useRef<string>('');
+  // Counterfactual reasoning (Section 12, "لو زدت الميزانية 500 وش بيتغير؟") — a real
+  // before/after decision-engine comparison, built only when a delta and the prior budget
+  // are both nameable. See classifyDecisionIntent's COUNTERFACTUAL branch below.
+  const [counterfactualComparison, setCounterfactualComparison] = useState<CounterfactualComparison | null>(null);
   // Comparison routing. Computed server-side by /api/search and only when the query carries
   // comparison intent — the client never decides whether a comparison can be delivered.
   const [compareRoute, setCompareRoute] = useState<CompareRoute | null>(null);
@@ -695,7 +705,13 @@ export default function SearchClient() {
     //      newer query's results.
     advisorAbortRef.current?.abort();
     setAdvisorResult(null);
-    const route = routeQuery(query.trim());
+    setCounterfactualComparison(null); // a stale before/after must never outlive its query
+    // classifyDecisionIntent WRAPS routeQuery (Phase 2, ADR-230) — `.route` is byte-identical
+    // to what a bare `routeQuery(query.trim())` call would have returned, so every existing
+    // `route.mode` branch below is unchanged. `.intent` additionally exposes the fuller
+    // taxonomy (Section 5) — used just below for COUNTERFACTUAL.
+    const decisionIntent = classifyDecisionIntent(query.trim(), { hasActiveDecisionState: !!readDecisionState() });
+    const route = decisionIntent.route;
     setAdvisorPending(route.mode === 'advisory' && currentPage === 1);
     if (route.mode === 'advisory' && currentPage === 1) {
       const advisorCtrl = new AbortController();
@@ -745,6 +761,38 @@ export default function SearchClient() {
             meta: { surface: 'advisor', advisor_state: 'unavailable' },
           });
         });
+    }
+
+    // ── Section 12 · COUNTERFACTUAL — «لو زدت الميزانية 500 وش بيتغير؟» ────────────────
+    // Fires only when ALL THREE are true: the intent classifies as COUNTERFACTUAL, a delta
+    // is nameable from the text (never guessed), and a prior category+budget exist in the
+    // Decision State (Phase 2) to vary — a counterfactual with nothing to compare against
+    // has nothing honest to say, so it silently does not fire (same "silent to the customer,
+    // never fabricated" discipline as the advisory branch above).
+    if (decisionIntent.intent === 'COUNTERFACTUAL' && currentPage === 1) {
+      const delta = parseCounterfactualDelta(query.trim());
+      const state = readDecisionState();
+      const currentBudget = typeof state?.hard_constraints.budget_total === 'number' ? state.hard_constraints.budget_total : null;
+      const category = state?.category;
+      if (delta && currentBudget != null && category) {
+        const newBudget = applyCounterfactualDelta(currentBudget, delta);
+        const baseBody: Record<string, unknown> = { category, budget_total: currentBudget };
+        if (typeof state.hard_constraints.room_size_m2 === 'number') baseBody.room_size_m2 = state.hard_constraints.room_size_m2;
+        if (typeof state.hard_constraints.city === 'string') baseBody.city = state.hard_constraints.city;
+        if (state.soft_preferences.length) baseBody.priorities = state.soft_preferences;
+        const cfCtrl = new AbortController();
+        track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'counterfactual', delta } });
+        Promise.all([
+          askAdvisor(baseBody, { signal: cfCtrl.signal, limit: 4 }),
+          askAdvisor({ ...baseBody, budget_total: newBudget }, { signal: cfCtrl.signal, limit: 4 }),
+        ])
+          .then(([before, after]) => {
+            if (cfCtrl.signal.aborted) return;
+            const cmp = compareCounterfactual(before, after, newBudget);
+            if (cmp) setCounterfactualComparison(cmp);
+          })
+          .catch(() => { /* the current answer on screen stands — no counterfactual shown */ });
+      }
     }
 
     // Funnel step 1 — Search (storefront surface). Only on page 1 (a real new query),
@@ -1718,6 +1766,14 @@ export default function SearchClient() {
                     the comparison page's own loader — this surface only renders the verdict. */}
                 {!loading && !error && compareRoute && compareRoute.route !== 'none' && (
                   <ComparisonAnswer route={compareRoute} locale={locale} />
+                )}
+
+                {/* Section 12 · COUNTERFACTUAL — «لو زدت الميزانية 500 وش بيتغير؟». A real
+                    before/after comparison, shown above the (unchanged) current answer
+                    rather than replacing it — the shopper asked "what would change", not
+                    "start over". */}
+                {!loading && !error && counterfactualComparison && (
+                  <CounterfactualCard comparison={counterfactualComparison} locale={locale} />
                 )}
 
                 {/* P2-8 · UNIFIED SEARCH — the reasoning engine's answer, when this query
