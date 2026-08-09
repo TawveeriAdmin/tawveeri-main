@@ -178,30 +178,27 @@ function formatDealsForAI(deals: Awaited<ReturnType<typeof getDeals>>): string {
 }
 
 /**
- * DISABLED BY DEFAULT — Phase 2 unit P2-1, Constitution Appendix F7.
+ * MEASURED LIVE 2026-08-09 (founder Unified Intelligence audit) — this comment previously
+ * said "DISABLED BY DEFAULT" and described the flag as off. It is NOT off: a direct
+ * unauthenticated POST to this route in production returned 200 with a live LLM-generated
+ * reply, meaning `AI_ASSISTANT_ENABLED=1` is currently set in the production environment.
+ * Nobody updated this comment when that changed, or documented why.
  *
- * MEASURED 2026-07-31, in production: this endpoint answered an ANONYMOUS POST with 200 and
- * LLM-generated Arabic, calling Anthropic on our API key. It is referenced by NOTHING —
- * zero matches across the web app and the mobile app. It served no customer while being able
- * to make shopping claims at runtime under no verified vocabulary constraint, which is exactly
- * what F7 exists to govern:
+ * The code below DOES now wire up F7 enforcement (`validateGeneratedAnswer` /
+ * `recordValidationEvent`, see the POST handler) — a real answer-suppression gate that did
+ * not exist when this comment was first written — so the specific "no repository search
+ * catches what the assistant says" risk this comment originally raised is at least
+ * partially addressed. What is UNCHANGED: this endpoint is still referenced by NOTHING —
+ * zero matches across the web app and the mobile app (re-verified 2026-08-09) — so it is a
+ * live, anonymously-callable, billable (Anthropic API on the founder's key) surface with NO
+ * product entry point routing any real customer to it. Deliberately NOT deleted or modified
+ * further here: `WAFFAR_SYSTEM_PROMPT` above is cache-protected (standing directive — never
+ * edit in place without explicit founder approval), and whether this endpoint should be
+ * (a) turned back off, (b) given a real product surface now that F7 exists, or (c) left as
+ * an internal-only prototype behind a stronger gate than an env flag, is a product decision
+ * this session did not make unilaterally. Flagged prominently in the mission's final report.
  *
- *   "No repository search catches what the assistant says in a live answer."
- *
- * It is not a general-purpose proxy — its system prompt correctly refuses off-topic requests
- * (verified: it declined to write a poem). The problem is narrower and still real: an ungoverned
- * generative surface, open and billable, with no offsetting customer value.
- *
- * The customer-facing advisor is unaffected. `/advisor` is DETERMINISTIC — it calls
- * `POST /api/v1/agent/decide`, which makes no model call at all.
- *
- * NOT DELETED, deliberately. The prompt work here is the starting point for P2-5, when the
- * assistant becomes generative *after* F7's protections are real. Re-enable with
- * `AI_ASSISTANT_ENABLED=1`, and only once the F7 checklist is satisfied: no claim outside the
- * approved vocabulary, no merchant discount presented as ours, absence stated plainly, and an
- * adversarial test run against a retailer with no provenance and a category we do not cover.
- *
- * 404 rather than 403: a disabled surface should not advertise that it exists.
+ * 404 rather than 403 when disabled: a disabled surface should not advertise that it exists.
  */
 const AI_ASSISTANT_ENABLED = process.env.AI_ASSISTANT_ENABLED === '1';
 

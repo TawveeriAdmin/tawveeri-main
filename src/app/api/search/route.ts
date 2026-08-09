@@ -414,9 +414,17 @@ const PREFERENCE_WRAPPER = new Set<string>([
   'العاب', 'قيمنق', 'افلام', 'سينما', 'رياضه', 'كره', 'مباريات', 'مضيئه',
   'اضاءه', 'انتاجيه', 'عمل', 'قراءه', 'كتب',
   'بطاريه', 'احدث', 'خفيف', 'محمول', 'للسفر', 'كبير', 'كبيره', 'عائله', 'عائليه',
+  // MEASURED FAILURE (2026-08-09, 10-journey acceptance sweep): «لابتوب للدراسة والبرمجة
+  // وميزانيتي 3500 وخفيف» and «آيباد للدراسة والرسم بحدود 2500» both collapsed —
+  // «دراسة»/«برمجة»/«رسم» (study/programming/drawing use-case descriptors) and «تصوير»/
+  // «ممتاز» (photography/excellent — MEASURED on «جوال تصويره ممتاز وبطاريته قوية») were
+  // never in this dictionary at all. Each is a USE-CASE or QUALITY descriptor, not product-
+  // title text — no laptop title literally says «للدراسة».
+  'دراسه', 'برمجه', 'رسم', 'تصوير', 'ممتاز', 'ممتازه',
   'gaming', 'games', 'movies', 'cinema', 'netflix', 'sports', 'football',
   'productivity', 'work', 'office', 'reading', 'books', 'battery', 'latest', 'newest',
   'portable', 'lightweight', 'travel', 'large', 'family', 'big', 'powerful', 'strong',
+  'study', 'studying', 'programming', 'coding', 'drawing', 'sketching', 'photography', 'excellent', 'great',
 ]);
 
 const STOPWORDS = new Set<string>([
@@ -458,6 +466,24 @@ const STOPWORDS = new Set<string>([
 // already hit twice. Generalized below: strip an optional leading و, THEN try لل/ال/ل on
 // what's left (and on the un-stripped word too, since ل/لل/ال can appear without و) —
 // never a blind strip, every candidate is checked against the same closed dictionary.
+// MEASURED FAILURE (2026-08-09, founder 10-journey acceptance sweep): «جوال تصويره ممتاز
+// وبطاريته قوية تحت 2500» collapsed. «تصويره» ("its photography/camera") is a REGULAR
+// possessive attachment — «تصوير» (a consonant-final noun) + «ه», no ة/ا→ت elision — a
+// different pattern than the «كاميرا→كاميرته» class `isPossessiveQualityDescriptor` already
+// handles. Generalized here: try stripping a plain trailing ه/ها/هم/ك/ي (longest first) and
+// check the remainder against the same closed wrapper dictionary — never a blind strip, and
+// deliberately NOT applied to BARE category nouns for the same reason the prefix logic
+// isn't («تصوير» itself is not a product category, so no bare-noun collision risk here the
+// way «كاميرا»/«شاشة» would have had).
+const REGULAR_POSSESSIVE_SUFFIXES = ['ها', 'هم', 'ه', 'ك', 'ي'];
+function possessiveSuffixCandidates(w: string): string[] {
+  const out: string[] = [];
+  for (const suf of REGULAR_POSSESSIVE_SUFFIXES) {
+    if (w.length > suf.length + 2 && w.endsWith(suf)) out.push(w.slice(0, -suf.length));
+  }
+  return out;
+}
+
 function isWrapperWord(rawWord: string): boolean {
   const w = rawWord.toLowerCase();
   if (STOPWORDS.has(w)) return true;
@@ -470,6 +496,7 @@ function isWrapperWord(rawWord: string): boolean {
     if (b.length > 4 && b.startsWith('لل')) candidates.add(b.slice(2));
     else if (b.length > 3 && b.startsWith('ال')) candidates.add(b.slice(2));
     else if (b.length > 2 && b[0] === 'ل') candidates.add(b.slice(1));
+    for (const c of possessiveSuffixCandidates(b)) candidates.add(c);
   }
   for (const c of candidates) if (c !== w && isKnownWrapper(c)) return true;
   return isPossessiveQualityDescriptor(w);

@@ -167,6 +167,51 @@ describe("Task parser — Golden Query regression (2026-08-09)", () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 10-JOURNEY ACCEPTANCE SWEEP regression (2026-08-09, founder Unified Intelligence
+// mission): live production testing of the laptop/mobile decision journeys found real
+// priority-RECOGNITION gaps (distinct from the search-route relevance-stripping gaps
+// fixed in the same pass — those pin the search-route side; these pin the parser side).
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Task parser — 10-journey acceptance sweep (2026-08-09)", () => {
+  it("recognizes «بطاريته»/«بطاريتها» (possessive battery) as the battery priority, same as bare «بطارية»", () => {
+    // MEASURED: بطارية → بطاريته shifts the final ة to ت before a possessive pronoun
+    // attaches, so the bare substring «بطارية» is never present in the possessive form —
+    // the golden acceptance query «جوال …وبطاريته قوية…» produced NO battery priority at
+    // all before this fix.
+    expect(parseShoppingTask("جوال بطاريته قوية").priorities).toEqual(expect.arrayContaining(["battery"]));
+    expect(parseShoppingTask("جوال بطاريتها قوية").priorities).toEqual(expect.arrayContaining(["battery"]));
+    expect(parseShoppingTask("جوال بطارية قوية").priorities).toEqual(expect.arrayContaining(["battery"])); // unchanged
+  });
+  it("«تصويره» (possessive camera/photography) already matched via substring containment — no regression", () => {
+    expect(parseShoppingTask("جوال تصويره ممتاز").priorities).toEqual(expect.arrayContaining(["camera"]));
+  });
+  it("recognizes «دراسة»/«برمجة» (study/programming) as the productivity priority", () => {
+    expect(parseShoppingTask("لابتوب للدراسة").priorities).toEqual(expect.arrayContaining(["productivity"]));
+    expect(parseShoppingTask("لابتوب للبرمجة").priorities).toEqual(expect.arrayContaining(["productivity"]));
+  });
+  it("parses the full laptop decision journey: category + budget + priorities", () => {
+    const t = parseShoppingTask("أبي لابتوب للدراسة والبرمجة وميزانيتي 3500 وخفيف");
+    expect(t.category).toBe("laptop");
+    expect(t.budget_total).toBe(3500);
+    expect(t.priorities).toEqual(expect.arrayContaining(["productivity", "portability"]));
+  });
+  it("parses the full mobile decision journey: category + camera + battery + budget", () => {
+    const t = parseShoppingTask("أبي جوال تصويره ممتاز وبطاريته قوية تحت 2500");
+    expect(t.category).toBe("mobile");
+    expect(t.budget_total).toBe(2500);
+    expect(t.priorities).toEqual(expect.arrayContaining(["camera", "battery"]));
+  });
+  it("household size («لعائلة 6 أشخاص») is a soft «large» preference, never an invented exact capacity", () => {
+    // Governing rule (founder direction): household size is USE CONTEXT, not a fabricated
+    // liters/kg requirement — the parser must not invent a numeric capacity target from it.
+    const washer = parseShoppingTask("أبي غسالة لعائلة 6 أشخاص هادية وموفرة وميزانيتي 3000");
+    expect(washer.priorities).toEqual(expect.arrayContaining(["large", "quiet", "low_electricity"]));
+    const fridge = parseShoppingTask("أبي ثلاجة لعائلة 6 أشخاص كبيرة وموفرة تحت 5000");
+    expect(fridge.priorities).toEqual(expect.arrayContaining(["large", "low_electricity"]));
+  });
+});
+
 describe("Task parser — plural category forms (matrix 2026-08-04)", () => {
   it("classifies bare plurals that previously returned no category", () => {
     expect(parseShoppingTask("ثلاجات").category).toBe("refrigerator");

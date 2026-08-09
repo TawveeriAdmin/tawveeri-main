@@ -122,10 +122,19 @@ function parsePriorities(x: string): string[] {
   if (/أفلام|افلام|سينما|movies|cinema|netflix/.test(x)) p.add("movies");
   if (/رياضة|كرة|مباريات|sports|football/.test(x)) p.add("sports");
   if (/غرفة مضيئة|إضاءة|bright ?room|sunny/.test(x)) p.add("bright_room");
-  if (/إنتاجية|انتاجية|عمل|productivity|work|office/.test(x)) p.add("productivity");
+  // «دراسة»/«برمجة» (study/programming) added 2026-08-09 — measured on «لابتوب للدراسة
+  // والبرمجة»: neither use-case was recognized at all, so a laptop request for exactly the
+  // RAM/CPU-focused fit this priority already scores for produced no priority signal.
+  if (/إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|productivity|work|office|study|studying|programming|coding/.test(x)) p.add("productivity");
   if (/قراءة|reading|كتب|books/.test(x)) p.add("reading");
   if (/كاميرا|تصوير|صور|camera|photo/.test(x)) p.add("camera");
-  if (/بطارية|battery/.test(x)) p.add("battery");
+  // «بطاريته»/«بطاريتها» (possessive "its/his battery") added 2026-08-09 — measured on «جوال
+  // …وبطاريته قوية…»: the bare «بطارية» pattern does not match, because Arabic shifts the
+  // final ة to ت before a possessive pronoun attaches (بطارية → بطاريته), so the substring
+  // «بطارية» is never present in the possessive form. «بطاريت» is the shared root of every
+  // possessive-suffixed form (ـه/ـها/ـهم/ـك/ـي), so matching on it covers all of them without
+  // enumerating each pronoun.
+  if (/بطارية|بطاريت|battery/.test(x)) p.add("battery");
   if (/أحدث|احدث|جديد|latest|newest/.test(x)) p.add("latest");
   if (/خفيف|محمول|portable|lightweight|light ?weight|للسفر|travel/.test(x)) p.add("portability");
   if (/كبير|كبيرة|عائلة|عائلية|large|family|big/.test(x)) p.add("large");
