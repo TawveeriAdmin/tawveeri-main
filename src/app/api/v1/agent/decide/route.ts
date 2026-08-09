@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
-import { decide, explainChoice, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
+import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
@@ -218,6 +218,46 @@ export async function POST(req: NextRequest) {
   const smart = smartIdx >= 0 ? out[smartIdx] : null;
   const runnerUp = out.find((r, i) => i !== smartIdx);
   const smartWithChoice = smart ? { ...smart, chosen_over: explainChoice(smart, runnerUp) } : null;
+
+  // AC SMART PICK AUDIT (2026-08-09, founder direction): the per-item reason text already
+  // carries "⚠️ السعة X أقل من المطلوب" when a candidate under-sizes, but the TOP-LEVEL
+  // "الاختيار الأنسب" (Best Pick) label carried no equivalent disclosure — a shopper could
+  // read the crown without registering the caveat sitting inside a collapsed reasons list.
+  // MEASURED on the Golden Query: the Smart Pick (20500 BTU, ~14.6% under a 24000-BTU room)
+  // beats two correctly-sized 24000 BTU candidates in the SAME shortlist whose device price
+  // is comfortably under budget (2,820 / 2,362 SAR) but whose ESTIMATED total cost
+  // (device + modelled installation + modelled annual electricity) crosses the stated
+  // budget — decideAc's soft total-cost penalty (-0.12) outweighs their better BTU-fit
+  // score. This is coherent, not a bug (the hard budget gate correctly gates on the
+  // VERIFIED device price, not the estimate — see decision-engine.ts) — but a shopper
+  // reading only the crowned pick would not know a properly-sized option exists at all.
+  // Same governing rule as `budgetNote`: never present a partial match as an unqualified
+  // winner without saying so.
+  const capacityNote = (() => {
+    if (engineTask.category !== "air_conditioner" || !engineTask.room_size_m2 || !smart) return null;
+    const requiredBtu = requiredBtuForRoom(engineTask.room_size_m2);
+    const smartBtu = Number((smart.dna as { capacity_btu?: unknown })?.capacity_btu);
+    if (!Number.isFinite(smartBtu)) return null;
+    const relOf = (btu: number) => Math.abs(btu - requiredBtu) / requiredBtu;
+    if (relOf(smartBtu) <= AC_BTU_FIT_TOLERANCE) return null; // the pick itself already fits — nothing to disclose
+    // Is there a correctly-sized option among the SAME shown shortlist? Named honestly if
+    // so — including that its own total cost may be why it did not win — never invented.
+    const betterFit = out.find((r) => {
+      const btu = Number((r.dna as { capacity_btu?: unknown })?.capacity_btu);
+      return Number.isFinite(btu) && relOf(btu) <= AC_BTU_FIT_TOLERANCE;
+    });
+    if (betterFit) {
+      const overBudget = engineTask.budget_total != null && (betterFit.total_cost_estimate ?? betterFit.unit_price ?? 0) > engineTask.budget_total;
+      return {
+        ar: `الاختيار المرشّح لا يصل للسعة الموصى بها بالكامل (~${requiredBtu} وحدة لغرفة ${engineTask.room_size_m2}م²). يوجد خيار بالسعة الصحيحة — "${betterFit.title_ar ?? betterFit.title_en}"${overBudget ? ` — لكن تكلفته الإجمالية التقديرية (شاملة التركيب والكهرباء) تتجاوز ميزانيتك، رغم أن سعر الجهاز نفسه لا يتجاوزها` : ''}.`,
+        en: `The recommended pick does not fully reach the suggested capacity (~${requiredBtu} BTU for a ${engineTask.room_size_m2}m² room). A correctly-sized option exists — "${betterFit.title_en ?? betterFit.title_ar}"${overBudget ? ` — but its estimated total cost (including modelled installation and electricity) exceeds your budget, even though the unit price alone does not` : ''}.`,
+      };
+    }
+    return {
+      ar: `لا يوجد ضمن الخيارات المعروضة اليوم مكيف يصل للسعة الموصى بها بالكامل (~${requiredBtu} وحدة لغرفة ${engineTask.room_size_m2}م²) — الاختيار المعروض هو الأقرب المتاح ضمن الأدلة الحالية.`,
+      en: `None of the options shown today reach the fully recommended capacity (~${requiredBtu} BTU for a ${engineTask.room_size_m2}m² room) — the option shown is the closest available given current evidence.`,
+    };
+  })();
   // THE PUBLISHED EVIDENCE CONTRACT (ADR-162). Every customer-visible figure this answer renders,
   // declared with its provenance, so a consumer can verify any number WITHOUT knowing how the
   // engine works and without inferring anything from field names. Built from the same objects the
@@ -247,6 +287,9 @@ export async function POST(req: NextRequest) {
     // `budget_note` below). Absent/true when no budget was stated at all.
     budget_satisfied: anyWithinBudget,
     budget_note: budgetNote,
+    // AC-only, present ONLY when the Smart Pick itself under/over-sizes beyond the same
+    // tolerance its own reason text uses — never silent about a partial capacity match.
+    capacity_note: capacityNote,
     // Present ONLY when the engine proved the answer would change it.  still
     // carries its reason so the decision is auditable rather than inferred from silence.
     clarify: clarify.ask ? { question: clarify.question, reason: clarify.reason } : null,

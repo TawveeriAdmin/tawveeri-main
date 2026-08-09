@@ -246,6 +246,18 @@ export interface AdvisorResponse {
   note?: string;
   error?: string;
   /**
+   * MEASURED GAP (2026-08-09, founder AC Smart Pick audit): both fields existed on the API
+   * response since the earlier budget-hard-gate work but were never added to this type or
+   * rendered anywhere — a trust disclosure computed server-side and silently lost before it
+   * reached a customer. `budget_satisfied` is false only when a budget was stated AND no
+   * candidate meets it (see `budget_note` for the honest explanation + closest option).
+   */
+  budget_satisfied?: boolean;
+  budget_note?: { ar: string; en: string } | null;
+  /** AC-only. Present when the Smart Pick itself doesn't reach the room-appropriate
+   *  capacity within the same tolerance its own reason text uses. */
+  capacity_note?: { ar: string; en: string } | null;
+  /**
    * P2-8. Present ONLY when the engine proved a different answer would change the
    * recommendation (see `clarify.ts` → `shouldAsk`). Absent means "do not ask" — either the
    * field was already supplied or the answer could not move anything.
@@ -308,12 +320,24 @@ export function comparisonBadge(rec: AdvisorRecommendation, locale: Locale): { t
   return { text: locale === "ar" ? "متجر واحد — المقارنة غير متاحة" : "Single store — no comparison", verified: false };
 }
 
-/** Cost breakdown lines the engine supplied (only non-null parts; never fabricated). */
+/**
+ * Cost breakdown lines the engine supplied (only non-null parts; never fabricated).
+ *
+ * MEASURED LABELING DEFECT (2026-08-09, founder AC Smart Pick audit): `installation` and
+ * `annual_electricity` are computed by the exact same heuristic mechanism in
+ * decision-engine.ts's `estimateTotalCost()` — a flat SAR figure for installation, a
+ * BTU/inverter formula for electricity, NEITHER measured nor quoted — yet only the
+ * electricity line carried "(تقديري)"/"Est." in its label. A shopper reading "تركيب: 350
+ * ريال" with no qualifier would reasonably read it as a firm, quoted price rather than the
+ * same class of model estimate as the electricity line right below it. `unit` (the device
+ * price) is the one FACT in this breakdown — it stays unqualified because it IS a real,
+ * observed retailer price, not an estimate.
+ */
 export function costLines(rec: AdvisorRecommendation, locale: Locale): { label: string; amount: number }[] {
   const b = rec.cost_breakdown ?? { unit: null, installation: null, annual_electricity: null };
   const lines: { label: string; amount: number }[] = [];
   if (b.unit != null) lines.push({ label: locale === "ar" ? "سعر الجهاز" : "Unit price", amount: b.unit });
-  if (b.installation != null && b.installation > 0) lines.push({ label: locale === "ar" ? "تركيب" : "Installation", amount: b.installation });
+  if (b.installation != null && b.installation > 0) lines.push({ label: locale === "ar" ? "تركيب (تقديري)" : "Est. installation", amount: b.installation });
   if (b.annual_electricity != null && b.annual_electricity > 0) lines.push({ label: locale === "ar" ? "كهرباء سنوية (تقديري)" : "Est. annual electricity", amount: b.annual_electricity });
   return lines;
 }

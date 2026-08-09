@@ -622,6 +622,23 @@ export function AdvisorAnswer({
         </div>
       )}
 
+      {/* Never present a partial match as an unqualified winner (2026-08-09, founder AC
+          Smart Pick audit). Both notes are computed server-side from the SAME data the
+          card below renders — nothing re-derived or invented here — but were previously
+          silently dropped: present on the API response with no UI ever reading them. */}
+      {result.budget_note && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm leading-relaxed text-on-surface dark:border-warning-900/50 dark:bg-warning-950/30" data-testid="advisor-budget-note">
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning-600" aria-hidden />
+          <span>{loc === 'ar' ? result.budget_note.ar : result.budget_note.en}</span>
+        </div>
+      )}
+      {result.capacity_note && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm leading-relaxed text-on-surface dark:border-warning-900/50 dark:bg-warning-950/30" data-testid="advisor-capacity-note">
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning-600" aria-hidden />
+          <span>{loc === 'ar' ? result.capacity_note.ar : result.capacity_note.en}</span>
+        </div>
+      )}
+
       {/* Error (unparseable) */}
       {result.error && (
         <div className="rounded-2xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-900/50 dark:bg-warning-950/30">

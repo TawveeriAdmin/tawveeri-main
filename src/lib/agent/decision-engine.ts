@@ -163,6 +163,13 @@ function estimateTotalCost(unit: number | null, dna: ProductDNA): Recommendation
 }
 
 // ── Deterministic AC decision. Returns ranked recommendations. RANKING-BLIND. ──
+// Shared with the decide route (2026-08-09, founder AC Smart Pick audit): the SAME bar
+// decideAc's own reason text uses for "مناسب/تطابق المطلوب" vs "⚠️ أقل من المطلوب" must be
+// the one thing that decides whether the route discloses "no candidate fully reaches the
+// recommended capacity" — a second, independently-chosen threshold could disagree with the
+// reason text on the very same candidate, which is worse than not having the disclosure.
+export const AC_BTU_FIT_TOLERANCE = 0.12;
+
 export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const wantsQuiet = (task.priorities ?? []).includes("quiet");
   const wantsLowElec = (task.priorities ?? []).includes("low_electricity");
@@ -179,7 +186,7 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
       const rel = Math.abs(dna.capacity_btu - requiredBtu) / requiredBtu;
       const fit = Math.max(0, 1 - rel * 1.5); // penalize mis-size
       score += (fit - 0.5) * 0.5;
-      if (rel <= 0.12) reasons.fit(`مناسب لغرفة ~${task.room_size_m2}م² (السعة ${dna.capacity_btu} وحدة تطابق المطلوب)`);
+      if (rel <= AC_BTU_FIT_TOLERANCE) reasons.fit(`مناسب لغرفة ~${task.room_size_m2}م² (السعة ${dna.capacity_btu} وحدة تطابق المطلوب)`);
       else if (dna.capacity_btu < requiredBtu) reasons.caution(`⚠️ السعة ${dna.capacity_btu} أقل من المطلوب (~${requiredBtu} وحدة) لغرفة ${task.room_size_m2}م²`);
       else reasons.fit(`السعة ${dna.capacity_btu} وحدة (أكبر من ~${requiredBtu} المطلوب — تبريد أسرع، استهلاك أعلى)`);
     }
