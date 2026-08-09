@@ -497,7 +497,12 @@ function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation;
         <div className="min-w-0">
           <h3 className="text-lg font-bold text-on-surface">{recTitle(rec, loc)}</h3>
           {rec.reasons_ar?.length > 0 && (
-            <p className="mt-2 text-xs font-semibold text-on-surface-variant">{t('agent.evidenceRecommendation')}</p>
+            // id + scroll-mt: target for the "ليش هذا أفضل؟" follow-up chip (search-client.tsx's
+            // MutationOutcome 'noop' handler) — a "why" question, with an active mission, is
+            // answered by THIS reasoning already on screen (ADR-per mutation-turn.ts's own
+            // comment), so the chip must not be a silent no-op with zero visible reaction; it
+            // scrolls to and briefly highlights the answer that was already here.
+            <p id="advisor-why-reasons" className="mt-2 scroll-mt-24 text-xs font-semibold text-on-surface-variant">{t('agent.evidenceRecommendation')}</p>
           )}
           <Reasons rec={rec} t={t} />
           <ChoiceComparison rec={rec} loc={loc} t={t} />

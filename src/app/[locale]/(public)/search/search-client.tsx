@@ -705,9 +705,25 @@ export default function SearchClient() {
       if (outcome.kind !== 'not_a_mutation') {
         setAdvisorPending(false);
         switch (outcome.kind) {
-          case 'noop':
+          case 'noop': {
             track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'follow_up_reasoning_noop' } });
+            // MEASURED DEFECT (2026-08-10, D→E mission Part C live verification): a "why"
+            // question is architecturally a no-op — the reasoning is already on screen — but
+            // that used to mean literally ZERO visible reaction to a prominent, tappable
+            // suggestion chip. A shopper tapping "ليش هذا أفضل؟" and seeing nothing happen
+            // reads as broken, not "already answered". Scroll to and briefly highlight the
+            // reasoning that answers it, rather than fabricating new text for a question the
+            // page already answers.
+            const target = document.getElementById('advisor-why-reasons')
+              ?? document.querySelector('[data-testid="advisor-answer"]');
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              const highlightClasses = ['ring-2', 'ring-primary-300', 'rounded-xl', 'transition-shadow', 'duration-700'];
+              target.classList.add(...highlightClasses);
+              window.setTimeout(() => target.classList.remove(...highlightClasses), 1800);
+            }
             break;
+          }
           case 'external_reference_notice':
             track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'external_product_reference' } });
             setExternalReferenceNotice(true);
