@@ -225,3 +225,58 @@ describe("Task parser — plural category forms (matrix 2026-08-04)", () => {
     expect(parseShoppingTask("ثلاجه").category).toBe("refrigerator");
   });
 });
+
+// NEGATION POLARITY (2026-08-09, D→E mission, Section 7 — the founder's own production
+// failure). MEASURED: «ابي جوال تصويره ممتاز وبطاريته قوية وميزانيتي 3000 ريال وما يهمني
+// الألعاب» recorded "gaming" as a POSITIVE priority — the exact opposite of what the shopper
+// said. These pin the fix and the distinction the mission's own examples draw between a
+// neutral dismissal («ما يهمني») and an active rejection («ما أبي»/«بدون»).
+describe("Task parser — negation polarity (2026-08-09)", () => {
+  it("THE FOUNDER'S EXACT SENTENCE: gaming is de-prioritized, never a positive priority", () => {
+    const t = parseShoppingTask("ابي جوال تصويره ممتاز وبطاريته قوية وميزانيتي 3000 ريال وما يهمني الألعاب");
+    expect(t.category).toBe("mobile");
+    expect(t.budget_total).toBe(3000);
+    expect(t.priorities).toEqual(expect.arrayContaining(["camera", "battery"]));
+    expect(t.priorities).not.toContain("gaming"); // the regression: this used to be true
+    expect(t.deprioritized_priorities).toEqual(expect.arrayContaining(["gaming"]));
+  });
+
+  it("«ما يهمني الوزن» — de-prioritizes portability, not a positive want", () => {
+    const t = parseShoppingTask("لابتوب للألعاب ما يهمني الوزن");
+    expect(t.priorities).not.toContain("portability");
+    expect(t.deprioritized_priorities).toEqual(expect.arrayContaining(["portability"]));
+    expect(t.priorities).toEqual(expect.arrayContaining(["gaming"])); // unrelated positive priority unaffected
+  });
+
+  it("«مو مهم الألعاب» — colloquial de-prioritize marker (not just «ما يهمني»)", () => {
+    const t = parseShoppingTask("جوال تصويره ممتاز مو مهم الألعاب");
+    expect(t.deprioritized_priorities).toEqual(expect.arrayContaining(["gaming"]));
+    expect(t.priorities ?? []).not.toContain("gaming");
+  });
+
+  it("«ما أبي 5G» — EXCLUDE is a stronger polarity than de-prioritize, kept separate", () => {
+    const t = parseShoppingTask("جوال ما أبي شريحة 5G");
+    // connectivity words aren't in PRIORITY_KEYWORDS, so this specifically tests that an
+    // "ما أبي" marker preceding an unrelated priority word (none here) does not crash and
+    // that excluded_priorities is the field EXCLUDE polarity lands in when it does match —
+    // proven directly below with a keyword EXCLUDE actually fires on.
+    void t;
+    const t2 = parseShoppingTask("جوال ما أبي الألعاب");
+    expect(t2.excluded_priorities).toEqual(expect.arrayContaining(["gaming"]));
+    expect(t2.priorities ?? []).not.toContain("gaming");
+    expect(t2.deprioritized_priorities ?? []).not.toContain("gaming");
+  });
+
+  it("a positive priority elsewhere in the same sentence as a negated one is unaffected", () => {
+    const t = parseShoppingTask("جوال تصويره ممتاز وما يهمني الألعاب وبطاريته قوية");
+    expect(t.priorities).toEqual(expect.arrayContaining(["camera", "battery"]));
+    expect(t.deprioritized_priorities).toEqual(["gaming"]);
+  });
+
+  it("no negation present — unchanged positive-priority behavior (no regression)", () => {
+    const t = parseShoppingTask("لابتوب للألعاب خفيف");
+    expect(t.priorities).toEqual(expect.arrayContaining(["gaming", "portability"]));
+    expect(t.deprioritized_priorities).toBeUndefined();
+    expect(t.excluded_priorities).toBeUndefined();
+  });
+});

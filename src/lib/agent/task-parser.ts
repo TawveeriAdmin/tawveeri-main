@@ -111,34 +111,98 @@ function parseQuantity(x: string, category: string | null): number | undefined {
   return undefined;
 }
 
-function parsePriorities(x: string): string[] {
-  const p = new Set<string>();
+/**
+ * NEGATION POLARITY (2026-08-09, D→E mission, Section 7 — founder's own production
+ * failure). MEASURED: «ابي جوال تصويره ممتاز وبطاريته قوية وميزانيتي 3000 ريال وما يهمني
+ * الألعاب» — «ما يهمني الألعاب» ("gaming doesn't matter to me") matched the SAME bare
+ * substring regex as a POSITIVE "gaming" priority, so the parser recorded the shopper as
+ * WANTING gaming performance — the exact opposite of what they said. Every keyword group
+ * below is now checked for a preceding negation marker before being added as a positive
+ * priority at all.
+ *
+ * Two distinct polarities, not one — the mission's own examples («ما يهمني» vs «ما أبي») are
+ * different strengths of statement and must not collapse to the same thing:
+ *   - DE-PRIORITIZE («ما يهمني», «مو مهم», «غير مهم») — "don't optimize for this", a neutral
+ *     dismissal. The item is simply left OUT of positive `priorities` (the engine already
+ *     treats an absent priority as neutral — no fabricated exclusion needed).
+ *   - EXCLUDE («ما أبي», «ما اريد», «بدون», «ممنوع») — an active rejection, stronger than
+ *     de-prioritization. Recorded separately (`excluded`) so a future hard-constraint pass
+ *     has real data to act on, without silently narrowing the candidate set today just
+ *     because this parser learned the word exists.
+ * A window of the 12 characters immediately BEFORE the matched keyword is checked — Arabic
+ * negation precedes what it negates («ما يهمني الألعاب», not «الألعاب ما يهمني»).
+ *
+ * MEASURED (2026-08-09): a wider 20-character window let a negation marker BLEED across a
+ * clause boundary into a later, unrelated keyword — «...وما يهمني الألعاب وبطاريته قوية»
+ * (gaming doesn't matter to me, AND battery matters) incorrectly de-prioritized "battery"
+ * too, because "ما يهمني" sat within 20 characters of "بطاريته" despite belonging to the
+ * PRIOR clause. 12 characters is wide enough to catch every marker immediately preceding its
+ * own keyword (the longest, «مو لازم», plus a space, is well under that) while too narrow to
+ * reach across a "و"-joined clause to a keyword it was never meant to negate.
+ */
+const DEPRIORITIZE_MARKERS = /ما ?يهمني|مو ?مهم|مب ?مهم|غير ?مهم|مو ?لازم|مب ?لازم/;
+const EXCLUDE_MARKERS = /ما ?(?:ابي|أبي|اريد|أريد|احتاج|أحتاج)|بدون|ممنوع|مو ?(?:ابي|أبي)|مب ?(?:ابي|أبي)/;
+const NEGATION_WINDOW_CHARS = 12;
+
+type Polarity = "positive" | "deprioritized" | "excluded";
+
+function polarityBeforeMatch(x: string, re: RegExp): Polarity | null {
+  const m = re.exec(x);
+  if (!m) return null;
+  const window = x.slice(Math.max(0, m.index - NEGATION_WINDOW_CHARS), m.index);
+  if (EXCLUDE_MARKERS.test(window)) return "excluded";
+  if (DEPRIORITIZE_MARKERS.test(window)) return "deprioritized";
+  return "positive";
+}
+
+const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «هادي» (no hamza) added 2026-08-09 — colloquial spelling measured live in the founder's
   // Golden Query; «هادئ» alone missed the everyday-typed form (same class as CHECKPOINT #17).
-  if (/هادئ|هادي|هادى|هدوء|صامت|quiet|silent|low ?noise/.test(x)) p.add("quiet");
-  if (/موفر|توفير|كهرباء|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/.test(x)) p.add("low_electricity");
-  if (/تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/.test(x)) p.add("heating");
-  if (/ألعاب|العاب|قيمنق|gaming|games/.test(x)) p.add("gaming");
-  if (/أفلام|افلام|سينما|movies|cinema|netflix/.test(x)) p.add("movies");
-  if (/رياضة|كرة|مباريات|sports|football/.test(x)) p.add("sports");
-  if (/غرفة مضيئة|إضاءة|bright ?room|sunny/.test(x)) p.add("bright_room");
+  ["quiet", /هادئ|هادي|هادى|هدوء|صامت|quiet|silent|low ?noise/],
+  ["low_electricity", /موفر|توفير|كهرباء|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/],
+  ["heating", /تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/],
+  ["gaming", /ألعاب|العاب|قيمنق|gaming|games/],
+  ["movies", /أفلام|افلام|سينما|movies|cinema|netflix/],
+  ["sports", /رياضة|كرة|مباريات|sports|football/],
+  ["bright_room", /غرفة مضيئة|إضاءة|bright ?room|sunny/],
   // «دراسة»/«برمجة» (study/programming) added 2026-08-09 — measured on «لابتوب للدراسة
   // والبرمجة»: neither use-case was recognized at all, so a laptop request for exactly the
   // RAM/CPU-focused fit this priority already scores for produced no priority signal.
-  if (/إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|productivity|work|office|study|studying|programming|coding/.test(x)) p.add("productivity");
-  if (/قراءة|reading|كتب|books/.test(x)) p.add("reading");
-  if (/كاميرا|تصوير|صور|camera|photo/.test(x)) p.add("camera");
+  ["productivity", /إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|productivity|work|office|study|studying|programming|coding/],
+  ["reading", /قراءة|reading|كتب|books/],
+  ["camera", /كاميرا|تصوير|صور|camera|photo/],
   // «بطاريته»/«بطاريتها» (possessive "its/his battery") added 2026-08-09 — measured on «جوال
   // …وبطاريته قوية…»: the bare «بطارية» pattern does not match, because Arabic shifts the
   // final ة to ت before a possessive pronoun attaches (بطارية → بطاريته), so the substring
   // «بطارية» is never present in the possessive form. «بطاريت» is the shared root of every
   // possessive-suffixed form (ـه/ـها/ـهم/ـك/ـي), so matching on it covers all of them without
   // enumerating each pronoun.
-  if (/بطارية|بطاريت|battery/.test(x)) p.add("battery");
-  if (/أحدث|احدث|جديد|latest|newest/.test(x)) p.add("latest");
-  if (/خفيف|محمول|portable|lightweight|light ?weight|للسفر|travel/.test(x)) p.add("portability");
-  if (/كبير|كبيرة|عائلة|عائلية|large|family|big/.test(x)) p.add("large");
-  return [...p];
+  ["battery", /بطارية|بطاريت|battery/],
+  ["latest", /أحدث|احدث|جديد|latest|newest/],
+  // «وزن» (weight) added 2026-08-09 — Section 7's own worked example «ما يهمني الوزن» ("the
+  // weight doesn't matter to me") named a word this group never matched at all, positive or
+  // negative — a shopper mentioning weight either way was previously invisible to the parser.
+  ["portability", /خفيف|محمول|portable|lightweight|light ?weight|للسفر|travel|وزن/],
+  ["large", /كبير|كبيرة|عائلة|عائلية|large|family|big/],
+];
+
+interface PriorityParse {
+  positive: string[];
+  deprioritized: string[];
+  excluded: string[];
+}
+
+function parsePriorities(x: string): PriorityParse {
+  const positive = new Set<string>();
+  const deprioritized = new Set<string>();
+  const excluded = new Set<string>();
+  for (const [key, re] of PRIORITY_KEYWORDS) {
+    const polarity = polarityBeforeMatch(x, re);
+    if (polarity === "positive") positive.add(key);
+    else if (polarity === "deprioritized") deprioritized.add(key);
+    else if (polarity === "excluded") excluded.add(key);
+  }
+  return { positive: [...positive], deprioritized: [...deprioritized], excluded: [...excluded] };
 }
 
 function parseConnectivity(x: string): string | undefined {
@@ -166,6 +230,11 @@ export interface ParsedTask extends ShoppingTask {
   ram_min?: number;
   parsed_from_text: string;
   unresolved?: string[]; // fields the parser could not extract (fail-loud transparency)
+  /** Section 7 (2026-08-09): stated but explicitly de-prioritized ("ما يهمني X") — never
+   *  scored as a positive priority, but preserved for display/state, not silently dropped. */
+  deprioritized_priorities?: string[];
+  /** Section 7: actively rejected ("ما أبي X", "بدون X") — stronger than de-prioritized. */
+  excluded_priorities?: string[];
 }
 
 /** Parse free-text into a ShoppingTask. Returns null category if undetectable. */
@@ -175,7 +244,8 @@ export function parseShoppingTask(text: string): ParsedTask {
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
   const quantity = parseQuantity(x, category);
-  const priorities = parsePriorities(x);
+  const priorityParse = parsePriorities(x);
+  const priorities = priorityParse.positive;
   const connectivity = parseConnectivity(x);
   const city = parseCity(x);
   const storage_min = parseStorageMin(x);
@@ -190,6 +260,8 @@ export function parseShoppingTask(text: string): ParsedTask {
     budget_total: budget_total ?? undefined,
     quantity,
     parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,
+    deprioritized_priorities: priorityParse.deprioritized.length ? priorityParse.deprioritized : undefined,
+    excluded_priorities: priorityParse.excluded.length ? priorityParse.excluded : undefined,
   };
   // Tablet-specific structured fields.
   if (category === "tablet") {

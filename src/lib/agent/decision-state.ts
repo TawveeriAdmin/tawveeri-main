@@ -43,6 +43,17 @@ export interface DecisionState {
    *  guess is never presented with the same confidence as something the shopper said. */
   explicit_preferences: string[];
   inferred_preferences: string[];
+  /**
+   * NEGATION POLARITY (Section 7, 2026-08-09 — founder's own production failure: "ما يهمني
+   * الألعاب" was recorded as WANTING gaming, the opposite of what was said). Kept as two
+   * SEPARATE lists, not folded into `soft_preferences` with a minus sign, so the Constraint
+   * Ledger can render a visibly different chip for "don't optimize for this" vs "positively
+   * want this" — collapsing them back into one list would lose the distinction the mission's
+   * own examples ("ما يهمني" vs "ما أبي") explicitly require preserving.
+   */
+  deprioritized_preferences: string[];
+  /** Actively rejected ("ما أبي X", "بدون X") — stronger than de-prioritized. */
+  excluded_preferences: string[];
   /** Fields the parser could not extract (`ParsedTask.unresolved`) — carried so a later
    *  clarification or Constraint Ledger prompt can target exactly what's missing. */
   unresolved_questions: string[];
@@ -80,6 +91,8 @@ export function createDecisionState(): DecisionState {
     soft_preferences: [],
     explicit_preferences: [],
     inferred_preferences: [],
+    deprioritized_preferences: [],
+    excluded_preferences: [],
     unresolved_questions: [],
     current_candidate_set: [],
     eliminated_candidates: [],
@@ -98,38 +111,76 @@ export function createDecisionState(): DecisionState {
 const HARD_CONSTRAINT_FIELDS: (keyof AdvisorParsed)[] = ['room_size_m2', 'budget_total', 'city'];
 
 /**
+ * True when `task` names a category that genuinely SWITCHES away from an already-established
+ * mission (Section 10, 2026-08-09 D→E mission — "طيب ابي مكيف للصالة" after a phone mission
+ * must not carry camera/battery priorities into the AC consultation). The FIRST turn
+ * establishing a category is never a "switch" — there is nothing yet to carry over
+ * incorrectly, so `!state.category` alone must not trip this.
+ */
+export function isNewMissionSwitch(state: DecisionState, task: AdvisorParsed): boolean {
+  return !!task.category && !!state.category && task.category !== state.category;
+}
+
+/**
  * Fold a freshly-parsed task into the state — additively. A field present in `task` overwrites
  * the same field in `hard_constraints`/`soft_preferences`; a field ABSENT from `task` is left
  * as it was, never cleared. That is the "must not re-interpret the whole conversation from
  * scratch" rule made concrete: turn 2 saying only a budget does not erase turn 1's room size.
+ *
+ * EXCEPT across a genuine mission switch (`isNewMissionSwitch`) — there, "additive" would be
+ * the bug, not the feature: a laptop's RAM priority or an AC's room size has no meaning for a
+ * washing machine, and must not silently apply to it. The new mission starts from a truly
+ * empty state (same `journey_id` and a continuing `conversation_turn` count — still the same
+ * browsing session — but every constraint/preference/candidate field reset).
  */
 export function applyParsedTask(state: DecisionState, task: AdvisorParsed, intent: DecisionIntent): DecisionState {
-  const hard_constraints = { ...state.hard_constraints };
+  const base: DecisionState = isNewMissionSwitch(state, task)
+    ? { ...createDecisionState(), journey_id: state.journey_id, conversation_turn: state.conversation_turn }
+    : state;
+
+  const hard_constraints = { ...base.hard_constraints };
   for (const field of HARD_CONSTRAINT_FIELDS) {
     const v = task[field];
     if (v !== undefined && v !== null) hard_constraints[field] = v as number | string;
   }
-  const soft_preferences = task.priorities?.length
-    ? [...new Set([...state.soft_preferences, ...task.priorities])]
-    : state.soft_preferences;
-  const explicit_preferences = task.priorities?.length
-    ? [...new Set([...state.explicit_preferences, ...task.priorities])]
-    : state.explicit_preferences;
+  // A key can only hold ONE polarity at a time — the freshest statement wins. If this turn
+  // states something positively, it must not also linger as de-prioritized/excluded from an
+  // earlier turn (and vice versa for the two negative polarities below): "ما يهمني الألعاب"
+  // now, "ابي جوال للألعاب" later, means gaming is wanted again, not both at once.
+  const newPositive = new Set(task.priorities ?? []);
+  const newDeprioritized = new Set(task.deprioritized_priorities ?? []);
+  const newExcluded = new Set(task.excluded_priorities ?? []);
+
+  const soft_preferences = newPositive.size
+    ? [...new Set([...base.soft_preferences, ...newPositive])]
+    : base.soft_preferences;
+  const explicit_preferences = newPositive.size
+    ? [...new Set([...base.explicit_preferences, ...newPositive])]
+    : base.explicit_preferences;
+  const deprioritized_preferences = [...new Set([...base.deprioritized_preferences, ...newDeprioritized])]
+    .filter((k) => !newPositive.has(k) && !newExcluded.has(k));
+  const excluded_preferences = [...new Set([...base.excluded_preferences, ...newExcluded])]
+    .filter((k) => !newPositive.has(k));
+  const soft_preferences_final = soft_preferences.filter((k) => !newDeprioritized.has(k) && !newExcluded.has(k));
+  const explicit_preferences_final = explicit_preferences.filter((k) => !newDeprioritized.has(k) && !newExcluded.has(k));
+
   return {
-    ...state,
+    ...base,
     // `task.category` is a plain `string` on `AdvisorParsed`/`ParsedTask` (never `null`) —
     // `parseShoppingTask` returns `category: ""` when nothing was classified, so `??` alone
     // does NOT fall back (empty string is not null/undefined). MEASURED (2026-08-09, Section
     // 43 multi-turn missions): a category-less follow-up turn ("خليه تحت 4000") silently
     // wiped an already-established category. Truthy check, matching the convention
     // `journey-context.ts`'s own `saveJourneyTask` guard already uses for the same reason.
-    category: task.category || state.category,
+    category: task.category || base.category,
     intent,
     hard_constraints,
-    soft_preferences,
-    explicit_preferences,
-    unresolved_questions: task.unresolved?.length ? [...new Set(task.unresolved)] : state.unresolved_questions,
-    conversation_turn: state.conversation_turn + 1,
+    soft_preferences: soft_preferences_final,
+    explicit_preferences: explicit_preferences_final,
+    deprioritized_preferences,
+    excluded_preferences,
+    unresolved_questions: task.unresolved?.length ? [...new Set(task.unresolved)] : base.unresolved_questions,
+    conversation_turn: base.conversation_turn + 1,
     updated_at: new Date().toISOString(),
   };
 }
@@ -171,11 +222,15 @@ export function removeConstraint(state: DecisionState, field: string): DecisionS
   delete hard_constraints[field];
   const soft_preferences = state.soft_preferences.filter((p) => p !== field);
   const explicit_preferences = state.explicit_preferences.filter((p) => p !== field);
+  const deprioritized_preferences = state.deprioritized_preferences.filter((p) => p !== field);
+  const excluded_preferences = state.excluded_preferences.filter((p) => p !== field);
   return {
     ...state,
     hard_constraints,
     soft_preferences,
     explicit_preferences,
+    deprioritized_preferences,
+    excluded_preferences,
     conversation_turn: state.conversation_turn + 1,
     updated_at: new Date().toISOString(),
   };

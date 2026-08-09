@@ -15,12 +15,11 @@ import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
-import { readDecisionState, decisionStateToAdvisorBody } from '@/lib/agent/decision-state';
-import {
-  parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual,
-  type CounterfactualComparison,
-} from '@/lib/agent/counterfactual';
+import { readDecisionState, clearDecisionState } from '@/lib/agent/decision-state';
+import { handleMutationTurn } from '@/lib/agent/mutation-turn';
+import type { CounterfactualComparison } from '@/lib/agent/counterfactual';
 import { CounterfactualCard } from '@/components/agent/counterfactual-card';
+import { FollowUpSuggestions } from '@/components/agent/follow-up-suggestions';
 import { ComparisonAnswer, type CompareRoute } from '@/components/search/comparison-answer';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { SearchHistory } from '@/components/search/search-history';
@@ -685,40 +684,66 @@ export default function SearchClient() {
     void _unusedStores;
     void _unusedPages;
 
+    // ── D→E MISSION, SECTION 5 · "FOLLOW-UP IS A STATE MUTATION, NOT A SEARCH" ──────────
+    // THE FOUNDER'S OWN PRODUCTION FAILURE: «طيب لو رفعت ميزانيتي إلى 4000 ريال وش بيتغير؟»,
+    // typed into this SAME primary box after a phone mission, used to fall through to the
+    // plain product-catalog search below — a whole Arabic sentence run as a literal query,
+    // which is how a $49 phone-accessory cable ended up "recommended" alongside 18 generic
+    // results. `handleMutationTurn` (mutation-turn.ts) is the ONE shared function — also
+    // called by the dedicated post-decision refinement composer, Section 9 — that decides
+    // whether this turn continues an existing mission and, if so, EXECUTES it without ever
+    // reaching the catalog search. Computed FIRST, before any state mutation, so a turn that
+    // resolves to "leave the screen alone" (FOLLOW_UP_REASONING) never even flashes a loading
+    // state first.
+    if (currentPage === 1) {
+      const mutationCtrl = new AbortController();
+      advisorAbortRef.current?.abort();
+      advisorAbortRef.current = mutationCtrl;
+      setAdvisorPending(true);
+      const { intent: decisionIntent, outcome } = await handleMutationTurn(query.trim(), advisorResult, { signal: mutationCtrl.signal });
+      if (mutationCtrl.signal.aborted) return;
+      if (outcome.kind !== 'not_a_mutation') {
+        setAdvisorPending(false);
+        switch (outcome.kind) {
+          case 'noop':
+            track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'follow_up_reasoning_noop' } });
+            break;
+          case 'external_reference_notice':
+            track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'external_product_reference' } });
+            setExternalReferenceNotice(true);
+            break;
+          case 'no_context':
+            // A mutation-shaped question with nothing to act on (no active mission, or no
+            // nameable delta/target) — honest silence, never a fabricated answer. The screen
+            // is left exactly as it was, same as `noop`.
+            track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: `mutation_no_context:${decisionIntent.intent}` } });
+            break;
+          case 'counterfactual':
+            setCounterfactualComparison(outcome.comparison);
+            track('advisor_result', { query_text: query.trim(), source: 'search', meta: { reason: 'counterfactual', changed: outcome.comparison.changed, worth_it: outcome.comparison.worth_it } });
+            break;
+          case 'mutation':
+            setAdvisorResult(outcome.advisorResult);
+            track('advisor_result', {
+              query_text: query.trim(), category: outcome.advisorResult.parsed?.category ?? null, source: 'search',
+              meta: { count: outcome.advisorResult.count, supported: outcome.advisorResult.supported, has_smart_pick: !!outcome.advisorResult.smart_pick, reason: decisionIntent.intent },
+            });
+            break;
+        }
+        return; // NEVER falls through to the plain catalog search for a mutation-shaped turn.
+      }
+      setAdvisorPending(false);
+      setExternalReferenceNotice(false);
+    }
+
     // classifyDecisionIntent WRAPS routeQuery (Phase 2, ADR-230) — `.route` is byte-identical
     // to what a bare `routeQuery(query.trim())` call would have returned, so every existing
-    // `route.mode` branch below is unchanged. `.intent` additionally exposes the fuller
-    // taxonomy (Section 5). Computed FIRST, before any state mutation, so the two "do not
-    // touch the current screen" branches just below (FOLLOW_UP_REASONING,
-    // EXTERNAL_PRODUCT_REFERENCE — Section 44 closure) never flash a loading state or clear
-    // the answer already on screen before deciding to leave it alone.
+    // `route.mode` branch below is unchanged. Re-classified here (cheap, pure, synchronous)
+    // for the fields `handleMutationTurn`'s return does not expose — this path only runs when
+    // the turn was NOT a mutation (a fresh search/browse/comparison/need), so re-deriving the
+    // SAME classification here is not a second decision, just a second read of it.
     const decisionIntent = classifyDecisionIntent(query.trim(), { hasActiveDecisionState: !!readDecisionState() });
     const route = decisionIntent.route;
-
-    // SECTION 44 CLOSURE — FOLLOW_UP_REASONING: «طيب ليش هذا أفضل؟» names no category/product
-    // of its own; running it as a literal product-catalog search would return zero/garbage
-    // results and WIPE the answer that already answers it (the smart pick's own
-    // "chosen over X because…" explanation is already on screen). The honest behavior is a
-    // complete no-op — the shopper asked what changed, not to start over — this branch
-    // touches NO state, runs no fetch, and leaves the current screen exactly as it was.
-    if (decisionIntent.intent === 'FOLLOW_UP_REASONING' && currentPage === 1 && advisorResult) {
-      track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'follow_up_reasoning_noop' } });
-      setLoading(false);
-      return;
-    }
-
-    // SECTION 44 CLOSURE — EXTERNAL_PRODUCT_REFERENCE: a pasted URL. The full verification
-    // flow (Section 21) stays research+design only this mission — but silently running the
-    // URL STRING as a catalog search (returning garbage/empty results) would be worse than
-    // doing nothing. An honest, explicit "not yet" notice — never a fabricated match, never
-    // silent confusion presented as "no results".
-    if (decisionIntent.intent === 'EXTERNAL_PRODUCT_REFERENCE' && currentPage === 1) {
-      track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'external_product_reference' } });
-      setExternalReferenceNotice(true);
-      setLoading(false);
-      return;
-    }
-    if (currentPage === 1) setExternalReferenceNotice(false);
 
     setLoading(true);
     setError(null);
@@ -746,119 +771,43 @@ export default function SearchClient() {
     setAdvisorResult(null);
     setCounterfactualComparison(null); // a stale before/after must never outlive its query
 
-    // SECTION 44 CLOSURE — DEAL_EVALUATION / SAME_PRODUCT_VERIFICATION / MERCHANT_SELECTION:
-    // classified by the SAME `classifyDecisionIntent` call above but, until now, never
-    // consumed — a query like «وين أشتريه؟» fell through to whatever `route.mode` alone
-    // produced (almost always plain retrieval), identically to before this mission existed.
-    // These three ask a question the engine's OWN evidence already answers per
-    // recommendation (`price_intel`/`discount_intel` for a deal, `stores`/`go_url` for a
-    // merchant, the `identity` trust factor for same-product verification) — so they fire
-    // the SAME advisor pipeline the NEEDS_DISCOVERY branch below uses, not a new one.
-    // Mutually exclusive with `route.mode === 'advisory'` below (never a duplicate request
-    // for the same query) — the two are combined into one gate.
-    const isAdvisory = route.mode === 'advisory';
-    const isEvidenceIntent = !isAdvisory && (
-      decisionIntent.intent === 'DEAL_EVALUATION' ||
-      decisionIntent.intent === 'SAME_PRODUCT_VERIFICATION' ||
-      decisionIntent.intent === 'MERCHANT_SELECTION'
-    );
-    setAdvisorPending((isAdvisory || isEvidenceIntent) && currentPage === 1);
-
-    const handleAdvisorResponse = (res: AdvisorResponse, reasonMeta: string) => {
-      setAdvisorPending(false);
-      // Render only a real answer. An error or an empty set on the UNIFIED surface must stay
-      // silent: the results below are a perfectly good answer, and an "I could not help"
-      // panel above them would invent a failure the customer does not have. `/advisor` still
-      // shows those states — there, the assistant IS the page and saying nothing would leave
-      // a blank screen.
-      //
-      // Silent to the CUSTOMER, never to the ledger (2026-08-04): every advisor non-answer
-      // ends in a recorded state — rejected (engine returned empty) or unavailable
-      // (request/engine failure) — so a silent absence is measurable, not invisible.
-      if (res.error || res.count === 0) {
-        track(res.error ? 'error' : 'no_answer', {
-          query_text: query.trim(),
-          source: 'search',
-          meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected', reason: reasonMeta },
-        });
-        return;
-      }
-      setAdvisorResult(res);
-      saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
-      track('advisor_result', {
-        query_text: query.trim(),
-        category: res.parsed?.category ?? null,
-        source: 'search',
-        meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick, reason: reasonMeta },
-      });
-    };
-
-    if (isAdvisory && currentPage === 1) {
+    // NEEDS_DISCOVERY only from here — every other intent (DEAL_EVALUATION,
+    // SAME_PRODUCT_VERIFICATION, MERCHANT_SELECTION, COUNTERFACTUAL, CONSTRAINT_CHANGE,
+    // FOLLOW_UP_REASONING, EXTERNAL_PRODUCT_REFERENCE) was already fully handled — and
+    // returned from — by `handleMutationTurn` above. This branch and the plain product
+    // search below it are UNCHANGED from before the D→E mission.
+    setAdvisorPending(route.mode === 'advisory' && currentPage === 1);
+    if (route.mode === 'advisory' && currentPage === 1) {
       const advisorCtrl = new AbortController();
       advisorAbortRef.current = advisorCtrl;
       advisorQueryRef.current = query.trim();
       track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: route.reason } });
       askAdvisor({ text: query.trim() }, { signal: advisorCtrl.signal, limit: 4 })
-        .then((res) => { if (!advisorCtrl.signal.aborted) handleAdvisorResponse(res, route.reason); })
+        .then((res) => {
+          if (advisorCtrl.signal.aborted) return;
+          setAdvisorPending(false);
+          // Render only a real answer. An error or an empty set on the UNIFIED surface must
+          // stay silent: the results below are a perfectly good answer. Silent to the
+          // CUSTOMER, never to the ledger — every advisor non-answer ends in a recorded state.
+          if (res.error || res.count === 0) {
+            track(res.error ? 'error' : 'no_answer', {
+              query_text: query.trim(), source: 'search',
+              meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected' },
+            });
+            return;
+          }
+          setAdvisorResult(res);
+          saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
+          track('advisor_result', {
+            query_text: query.trim(), category: res.parsed?.category ?? null, source: 'search',
+            meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
+          });
+        })
         .catch(() => {
-          // Never surfaced to the customer (the results page stands on its own) — but
-          // always recorded: an advisor request that died is `unavailable`, not nothing.
           if (advisorCtrl.signal.aborted) return;
           setAdvisorPending(false);
           track('error', { query_text: query.trim(), source: 'search', meta: { surface: 'advisor', advisor_state: 'unavailable' } });
         });
-    } else if (isEvidenceIntent && currentPage === 1) {
-      // The query text alone often names no category («وين أشتريه؟» has none) — merge with
-      // the Decision State's own category/constraints via the SAME shared helper the
-      // COUNTERFACTUAL branch and the product page both use (`decisionStateToAdvisorBody`,
-      // ADR-234's closure) so there is exactly one way any surface builds this request body.
-      const state = readDecisionState();
-      const body = state ? decisionStateToAdvisorBody(state) : null;
-      if (!body) {
-        setAdvisorPending(false); // nothing to reason about yet — an honest no-op, not a fabricated answer
-      } else {
-        const advisorCtrl = new AbortController();
-        advisorAbortRef.current = advisorCtrl;
-        advisorQueryRef.current = query.trim();
-        track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: decisionIntent.intent } });
-        askAdvisor(body, { signal: advisorCtrl.signal, limit: 4 })
-          .then((res) => { if (!advisorCtrl.signal.aborted) handleAdvisorResponse(res, decisionIntent.intent); })
-          .catch(() => {
-            if (advisorCtrl.signal.aborted) return;
-            setAdvisorPending(false);
-            track('error', { query_text: query.trim(), source: 'search', meta: { surface: 'advisor', advisor_state: 'unavailable' } });
-          });
-      }
-    }
-
-    // ── Section 12 · COUNTERFACTUAL — «لو زدت الميزانية 500 وش بيتغير؟» ────────────────
-    // Fires only when ALL THREE are true: the intent classifies as COUNTERFACTUAL, a delta
-    // is nameable from the text (never guessed), and a prior category+budget exist in the
-    // Decision State (Phase 2) to vary — a counterfactual with nothing to compare against
-    // has nothing honest to say, so it silently does not fire (same "silent to the customer,
-    // never fabricated" discipline as the advisory branch above).
-    if (decisionIntent.intent === 'COUNTERFACTUAL' && currentPage === 1) {
-      const delta = parseCounterfactualDelta(query.trim());
-      const state = readDecisionState();
-      const currentBudget = typeof state?.hard_constraints.budget_total === 'number' ? state.hard_constraints.budget_total : null;
-      // decisionStateToAdvisorBody (ADR-234's closure) — the SAME helper the evidence-intent
-      // branch above and the product page both build their request body with.
-      const baseBody = state ? decisionStateToAdvisorBody(state) : null;
-      if (delta && currentBudget != null && baseBody) {
-        const newBudget = applyCounterfactualDelta(currentBudget, delta);
-        const cfCtrl = new AbortController();
-        track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'counterfactual', delta } });
-        Promise.all([
-          askAdvisor(baseBody, { signal: cfCtrl.signal, limit: 4 }),
-          askAdvisor({ ...baseBody, budget_total: newBudget }, { signal: cfCtrl.signal, limit: 4 }),
-        ])
-          .then(([before, after]) => {
-            if (cfCtrl.signal.aborted) return;
-            const cmp = compareCounterfactual(before, after, newBudget);
-            if (cmp) setCounterfactualComparison(cmp);
-          })
-          .catch(() => { /* the current answer on screen stands — no counterfactual shown */ });
-      }
     }
 
     // Funnel step 1 — Search (storefront surface). Only on page 1 (a real new query),
@@ -1915,6 +1864,35 @@ export default function SearchClient() {
                     }}
                   />
                 )}
+
+                {/* Section 9 · POST-DECISION CONTINUATION — "how should we refine this same
+                    decision?" (D→E mission North Star). NOT a second input box (research
+                    finding: every credible shopping-AI product keeps ONE continuous input,
+                    and Amazon's own published UX review found a hidden second surface goes
+                    undiscovered) — these chips make the SAME box's mutation-handling
+                    capability (mutation-turn.ts) visible and tappable, and the explicit
+                    "start new search" action gives the shopper the boundary Baymard's
+                    research found most e-commerce sites never provide. */}
+                {!loading && !error && advisorResult && (() => {
+                  const activeState = readDecisionState();
+                  if (!activeState) return null;
+                  return (
+                    <FollowUpSuggestions
+                      state={activeState}
+                      locale={locale}
+                      onSelect={(text) => setSearchQuery(text)}
+                      onStartNew={() => {
+                        clearDecisionState();
+                        setAdvisorResult(null);
+                        setCounterfactualComparison(null);
+                        setExternalReferenceNotice(false);
+                        setSearchQuery('');
+                        setDebouncedQuery('');
+                        setCurrentPage(1);
+                      }}
+                    />
+                  );
+                })()}
 
                 {/* Smart Pick — the retrieval layer's trustworthy pick, gated server-side.
                     SUPPRESSED when the reasoning engine has answered. Both are "our pick",

@@ -264,6 +264,37 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   'microwave', 'oven', 'printer', 'router', 'camera', 'tablet', 'headphones',
 ]);
 
+/**
+ * CANDIDATE ELIGIBILITY, GENERICALLY (2026-08-09, D→E mission, Section 6 — the founder's
+ * "cable ranked as a phone recommendation" production failure).
+ *
+ * AUDITED (not the specific bug — that is fixed at the call site by routing follow-up/
+ * mutation sentences away from this endpoint entirely, see `mutation-turn.ts`): when
+ * `isMainProductTypeQuery` is false, the relevance/category gate below is SKIPPED
+ * unconditionally — whatever Algolia/Supabase's word-level fuzzy match returned is served
+ * unfiltered. That is true for ANY caller, not only a follow-up sentence: a sentence-shaped
+ * query with no recognized product-type noun reaching this endpoint by any path had no
+ * category boundary at all.
+ *
+ * This is the generic fix Section 6 asks for — not "detect this one phrasing", but "a
+ * sentence with no product-type noun is not a product query, regardless of why it arrived
+ * here". A real product search is almost never 6+ words or phrased as a question; when a
+ * query has neither a recognized product-type noun NOR product-search shape, honest zero
+ * (matching the SAME "zero beats wrong" precedent `categoryEnforcedZero` already uses just
+ * below) is safer than serving whatever a fuzzy match happened to surface.
+ */
+export function looksLikeSentenceNotProductQuery(raw: string): boolean {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 6) return true; // a real product query is almost never this long
+  // Space-padded on BOTH sides, markers required to have a space on both sides too — the
+  // same CHECKPOINT #17 lesson this codebase has already paid for elsewhere: `\b` never
+  // matches beside Arabic letters, and a bare substring check is worse — «مكيف» (AC)
+  // contains «كيف» ("how") as a substring, so an unpadded/one-sided check would misfire on
+  // an ordinary AC query. Requiring spaces on BOTH sides of the marker is what a real word
+  // boundary means here.
+  return /[؟?]| وش | ليش | كيف | هل | متى | وين /.test(` ${words.join(' ')} `);
+}
+
 function isMainProductTypeQuery(raw: string): boolean {
   const norm = normalizeArabic(raw).toLowerCase();
   const words = norm.split(/\s+/).filter(Boolean);
@@ -1422,6 +1453,13 @@ export async function POST(request: NextRequest) {
         console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — category "${constraintTask?.category}" matched nothing; returning honest zero instead of unrelated results`);
       }
     }
+  } else if (rawQuery && !queryIsMainProduct && looksLikeSentenceNotProductQuery(rawQuery)) {
+    // GENERIC candidate-eligibility floor (Section 6): no product-type noun AND not shaped
+    // like a product search at all — the same "zero beats wrong" rule as above, for the case
+    // that rule's own `queryIsMainProduct` gate was never designed to cover.
+    products = [];
+    categoryEnforcedZero = true;
+    console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — sentence-shaped query, no recognized product-type noun; returning honest zero instead of unfiltered results`);
   }
 
   // Product principle (official 2026-07-27): every comparable card shows its stores auto-sorted from

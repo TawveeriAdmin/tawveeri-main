@@ -1,5 +1,6 @@
 // src/lib/agent/counterfactual.ts
-// COUNTERFACTUAL REASONING (2026-08-09, Unified Intelligence mission, Phase 4 · Section 12).
+// COUNTERFACTUAL REASONING (2026-08-09, Unified Intelligence mission, Phase 4 · Section 12;
+// fixed 2026-08-09, D→E mission, Section 1 — the founder's own production failure).
 //
 // The North Star's own example: «لو زدت الميزانية 500 وش بيتغير؟» — a shopper asking what
 // changes if a constraint moves, WITHOUT restarting the conversation. `decision-intent.ts`
@@ -13,10 +14,18 @@
 // the rest of `src/lib/agent/` follows. Deterministic and LLM-free (ADR-002).
 import type { AdvisorResponse } from './advisor-api';
 
-export interface CounterfactualDelta {
-  direction: 'increase' | 'decrease';
-  amount: number;
-}
+/**
+ * MEASURED PRODUCTION FAILURE (2026-08-09, founder's own journey): «لو رفعت ميزانيتي إلى
+ * 4000 ريال» ("if I raise my budget TO 4000 SAR") was parsed as a RELATIVE delta of +4000 —
+ * the old shape only had `{direction, amount}`, and the "رفعت" (raise) marker fired before
+ * anyone checked for "إلى" (TO — an absolute target, not an amount to add). On a 3000 SAR
+ * baseline this computed 3000+4000=7000, a phantom budget the shopper never stated.
+ * `kind: 'absolute'` vs `'relative'` makes the distinction impossible to skip — every caller
+ * must handle both, not assume "amount" always means "add this much".
+ */
+export type CounterfactualDelta =
+  | { kind: 'absolute'; value: number }
+  | { kind: 'relative'; direction: 'increase' | 'decrease'; amount: number };
 
 const ARABIC_INDIC = /[٠-٩۰-۹]/g;
 const asciiDigits = (t: string) =>
@@ -27,22 +36,34 @@ const asciiDigits = (t: string) =>
 const norm = (t: string) => asciiDigits((t || '').toLowerCase());
 
 /**
- * Extract a budget delta from counterfactual phrasing («لو زدت الميزانية 500», «لو رفعت
- * ٥٠٠», «if I raise it by 500»). Returns null when no delta is nameable — a counterfactual
- * intent with no parseable amount has nothing to compute, and guessing an amount would be
- * exactly the fabrication Section 0 forbids.
+ * Extract a budget change from counterfactual phrasing. Returns null when no amount is
+ * nameable — a counterfactual intent with no parseable target has nothing to compute, and
+ * guessing an amount would be exactly the fabrication Section 0 forbids.
+ *
+ * ABSOLUTE ("إلى"/"الى" — TO a stated total) is checked FIRST and wins over the relative
+ * markers below it, because «رفعت ميزانيتي إلى 4000» contains BOTH "رفعت" (raise, a relative
+ * marker) AND "إلى 4000" (to 4000, the actual absolute target) in the same sentence — the
+ * founder's own production phrasing. Absolute markers also cover «خليها 4000» / «خليتها
+ * 4000» ("make it 4000") — a target stated without "raise/lower" at all.
  */
 export function parseCounterfactualDelta(text: string): CounterfactualDelta | null {
   const x = norm(text);
+
+  const abs = x.match(/(?:الى|إلى|خليها|خليتها|خله|خلها|تكون)\D{0,10}?(\d{2,6})/);
+  if (abs) return { kind: 'absolute', value: Number(abs[1]) };
+
   const inc = x.match(/(?:زدت|زياده|زيادة|رفعت|زاد|increase|raise|add)\D{0,20}?(\d{2,6})/);
-  if (inc) return { direction: 'increase', amount: Number(inc[1]) };
+  if (inc) return { kind: 'relative', direction: 'increase', amount: Number(inc[1]) };
+
   const dec = x.match(/(?:نزلت|خفضت|قللت|نقصت|تنزيل|decrease|lower|reduce|drop)\D{0,20}?(\d{2,6})/);
-  if (dec) return { direction: 'decrease', amount: Number(dec[1]) };
+  if (dec) return { kind: 'relative', direction: 'decrease', amount: Number(dec[1]) };
+
   return null;
 }
 
 /** The adjusted budget a counterfactual delta implies, never negative. */
 export function applyCounterfactualDelta(currentBudget: number, delta: CounterfactualDelta): number {
+  if (delta.kind === 'absolute') return Math.max(0, delta.value);
   return delta.direction === 'increase'
     ? currentBudget + delta.amount
     : Math.max(0, currentBudget - delta.amount);
@@ -55,6 +76,16 @@ export interface CounterfactualComparison {
   before: { title_ar: string | null; title_en: string | null; unit_price: number | null; budget_satisfied: boolean };
   after: { title_ar: string | null; title_en: string | null; unit_price: number | null; budget_satisfied: boolean };
   price_delta: number | null;
+  /**
+   * "وهل يستاهل؟" (is it worth it?) — Section 8's own required framing. `null` when the
+   * pick did not change (nothing to weigh) or a priority-linked benefit cannot be
+   * evidence-backed; NEVER guessed from category stereotypes ("phones are usually better
+   * with more budget") — only from a REASON the engine itself attached to the new pick that
+   * ALSO matches a priority the shopper stated. See `worthItReasons` below for exactly which
+   * evidence qualifies.
+   */
+  worth_it: boolean | null;
+  worth_it_reasons_ar: string[];
   explanation_ar: string;
   explanation_en: string;
 }
@@ -81,6 +112,16 @@ export function compareCounterfactual(
   const newlyUnlocked = !beforeSatisfied && afterSatisfied;
   const price_delta =
     a?.unit_price != null && b?.unit_price != null ? Math.round(a.unit_price - b.unit_price) : null;
+
+  // "هل يستاهل؟" — ONLY from reasons the engine itself already attached to the new pick that
+  // it did NOT also attach to the old pick (a genuinely NEW capability the extra budget
+  // bought), never a category-stereotype guess. `reasons_ar` already carries provenance
+  // (identity/fit/spec/evidence/estimate/caution, ADR-187) — this reads it, never invents it.
+  const newReasons = changed
+    ? (a?.reasons_ar ?? []).filter((r) => !(b?.reasons_ar ?? []).includes(r))
+    : [];
+  const worthItReasons = newReasons.filter((r) => /fit|أفضل|أوفر|أعلى|أكبر|أسرع|كاميرا|بطارية|شاشة|كرت شاشة/.test(r));
+  const worth_it = changed ? worthItReasons.length > 0 : null;
 
   let explanation_ar: string;
   let explanation_en: string;
@@ -112,6 +153,8 @@ export function compareCounterfactual(
     before: { title_ar: b?.title_ar ?? null, title_en: b?.title_en ?? null, unit_price: b?.unit_price ?? null, budget_satisfied: beforeSatisfied },
     after: { title_ar: a?.title_ar ?? null, title_en: a?.title_en ?? null, unit_price: a?.unit_price ?? null, budget_satisfied: afterSatisfied },
     price_delta,
+    worth_it,
+    worth_it_reasons_ar: worthItReasons,
     explanation_ar,
     explanation_en,
   };

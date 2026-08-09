@@ -18,7 +18,7 @@
 import { parseShoppingTask } from "@/lib/agent/task-parser";
 import { decide, type CanonicalRow, type ShoppingTask, type Recommendation } from "@/lib/agent/decision-engine";
 import { classifyDecisionIntent } from "@/lib/agent/decision-intent";
-import { createDecisionState, applyParsedTask, applyDecisionResult, type DecisionState } from "@/lib/agent/decision-state";
+import { createDecisionState, applyParsedTask, applyDecisionResult, isNewMissionSwitch, type DecisionState } from "@/lib/agent/decision-state";
 import { parseCounterfactualDelta, applyCounterfactualDelta, compareCounterfactual } from "@/lib/agent/counterfactual";
 import type { AdvisorResponse, AdvisorRecommendation } from "@/lib/agent/advisor-api";
 
@@ -112,7 +112,7 @@ describe("Multi-turn mission: AC, Riyadh, quiet — constraint narrowed on a LAT
     expect(t4Intent.intent).toBe("COUNTERFACTUAL");
 
     const delta = parseCounterfactualDelta("لو رفعت الميزانية 500 وش يتغير؟")!;
-    expect(delta).toEqual({ direction: "increase", amount: 500 });
+    expect(delta).toEqual({ kind: "relative", direction: "increase", amount: 500 });
 
     const currentBudget = state.hard_constraints.budget_total as number;
     const newBudget = applyCounterfactualDelta(currentBudget, delta);
@@ -184,5 +184,143 @@ describe("Multi-turn mission: laptop — the mission's own worked example (gamin
     const out = decide(task, rows);
     const pick = out.recommendations.find((r) => r.is_smart_pick)!;
     expect(pick.dna.discrete_gpu).toBe(true); // gaming, from turn 1, still honored on turn 3's decide()
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// THE FOUNDER'S OWN PRODUCTION FAILURE (D→E mission, Section 11 — 2026-08-09), verbatim.
+//
+// T1: "ابي جوال تصويره ممتاز وبطاريته قوية وميزانيتي 3000 ريال وما يهمني الألعاب"
+// T2: "طيب لو رفعت ميزانيتي إلى 4000 ريال وش بيتغير؟ وهل يستاهل أدفع الزيادة؟"
+//
+// Production observed: unrelated generic products entered results, a SAR 49 cable was
+// "recommended", the counterfactual referenced a phantom SAR 7000, and the phone mission's
+// own priorities were not correctly reflected. Every one of those is traced to a specific,
+// now-fixed defect: (1) mutation-shaped turns reached the plain catalog search at all —
+// fixed in mutation-turn.ts / search-client.tsx; (2) "رفعت … إلى 4000" was parsed as a
+// RELATIVE +4000 delta instead of an ABSOLUTE target — fixed in counterfactual.ts; (3) "ما
+// يهمني الألعاب" was recorded as a POSITIVE gaming priority — fixed in task-parser.ts.
+// ─────────────────────────────────────────────────────────────────────────────────────────
+const mobileRow = (o: { family: string; generation: string; variant: string; storage: number; price: number; stores: number; id?: string }): CanonicalRow => ({
+  canonical_id: o.id ?? `m${++n}`, tps_identity_key: "k", display_name_ar: `${o.family} ${o.generation} ${o.variant}`, display_name_en: "phone",
+  brand: "apple", category: "mobile", image_url: null, lowest_price: o.price, store_count: o.stores,
+  has_comparison: o.stores >= 2, identity_confidence: 90,
+  attributes: { family: o.family, generation: o.generation, variant: o.variant, storage: o.storage, ram_values: [] },
+});
+
+describe("THE FOUNDER'S PRODUCTION JOURNEY — phone, camera+battery, budget 3000 → 4000, gaming de-prioritized", () => {
+  const T1 = "ابي جوال تصويره ممتاز وبطاريته قوية وميزانيتي 3000 ريال وما يهمني الألعاب";
+  const T2 = "طيب لو رفعت ميزانيتي إلى 4000 ريال وش بيتغير؟ وهل يستاهل أدفع الزيادة؟";
+
+  const rows = [
+    mobileRow({ family: "iPhone", generation: "16", variant: "Standard", storage: 128, price: 2200, stores: 2, id: "budget" }),
+    mobileRow({ family: "iPhone", generation: "16", variant: "Plus", storage: 256, price: 2800, stores: 2, id: "good-3000" }),
+    mobileRow({ family: "iPhone", generation: "16", variant: "Ultra", storage: 512, price: 3800, stores: 3, id: "flagship-3800" }),
+  ];
+
+  let state: DecisionState;
+  let t1Advisor: AdvisorResponse;
+
+  it("T1 — category=mobile, budget=3000, camera+battery positive, gaming DE-PRIORITIZED (never positive)", () => {
+    const t1Intent = classifyDecisionIntent(T1, { hasActiveDecisionState: false });
+    expect(t1Intent.intent).toBe("NEEDS_DISCOVERY");
+
+    const parsed = parseShoppingTask(T1);
+    expect(parsed.category).toBe("mobile");
+    expect(parsed.budget_total).toBe(3000);
+    expect(parsed.priorities).toEqual(expect.arrayContaining(["camera", "battery"]));
+    expect(parsed.priorities ?? []).not.toContain("gaming"); // THE regression
+    expect(parsed.deprioritized_priorities).toEqual(expect.arrayContaining(["gaming"]));
+
+    const advisorParsed = { ...parsed, budget_total: parsed.budget_total ?? undefined, quantity: parsed.quantity ?? undefined };
+    state = applyParsedTask(createDecisionState(), advisorParsed, "NEEDS_DISCOVERY");
+    expect(state.category).toBe("mobile");
+    expect(state.hard_constraints.budget_total).toBe(3000);
+    expect(state.soft_preferences.sort()).toEqual(["battery", "camera"]);
+    expect(state.deprioritized_preferences).toEqual(["gaming"]);
+
+    const task: ShoppingTask = { category: state.category!, ...state.hard_constraints, priorities: state.soft_preferences };
+    const out = decide(task, rows);
+    expect(out.supported).toBe(true);
+    // NO ACCESSORY EVER ENTERS THIS SET — `rows` is the category-scoped candidate set
+    // decide/route.ts constructs (`.eq('category', task.category)`); a cable's own category
+    // is never "mobile", so it structurally cannot appear here. This is the same guarantee
+    // in test form, not a new one.
+    expect(out.recommendations.every((r) => rows.some((row) => row.canonical_id === r.canonical_id))).toBe(true);
+    expect(out.anyWithinBudget).toBe(true);
+    const pick = out.recommendations.find((r) => r.is_smart_pick)!;
+    expect(pick.unit_price).toBeLessThanOrEqual(3000); // the flagship (3800) must not win — it's over budget
+
+    state = applyDecisionResult(state, { recommendations: out.recommendations, smart_pick: pick, budget_satisfied: out.anyWithinBudget });
+    t1Advisor = {
+      version: "v1", task: {}, supported: out.supported, count: out.recommendations.length,
+      smart_pick: pick as unknown as AdvisorResponse["smart_pick"],
+      recommendations: out.recommendations as unknown as AdvisorResponse["recommendations"],
+      budget_satisfied: out.anyWithinBudget,
+    };
+  });
+
+  it("T2 — classifies COUNTERFACTUAL; the delta is ABSOLUTE 4000, never a phantom 7000", () => {
+    const t2Intent = classifyDecisionIntent(T2, { hasActiveDecisionState: true });
+    expect(t2Intent.intent).toBe("COUNTERFACTUAL");
+
+    const delta = parseCounterfactualDelta(T2)!;
+    expect(delta).toEqual({ kind: "absolute", value: 4000 }); // NOT { direction: 'increase', amount: 4000 }
+
+    const currentBudget = state.hard_constraints.budget_total as number;
+    const newBudget = applyCounterfactualDelta(currentBudget, delta);
+    expect(newBudget).toBe(4000); // THE regression check: never 7000
+  });
+
+  it("T2 — category/camera/battery/gaming-deprioritization all PERSIST; only budget mutates", () => {
+    // isNewMissionSwitch must be false — T2 names no category at all, so this is a
+    // refinement of the SAME mission, not a switch (Section 10's own distinction).
+    const t2Parsed = parseShoppingTask(T2);
+    expect(isNewMissionSwitch(state, { ...t2Parsed, budget_total: t2Parsed.budget_total ?? undefined, quantity: t2Parsed.quantity ?? undefined })).toBe(false);
+    expect(state.category).toBe("mobile");
+    expect(state.soft_preferences.sort()).toEqual(["battery", "camera"]);
+    expect(state.deprioritized_preferences).toEqual(["gaming"]);
+  });
+
+  it("T2 — the REAL before/after at the corrected budget: the flagship unlocks, evidence-grounded, phones only", () => {
+    const newBudget = 4000; // from the previous test — re-stated so this test stands alone
+    const afterTask: ShoppingTask = { category: state.category!, budget_total: newBudget, priorities: state.soft_preferences };
+    const afterOut = decide(afterTask, rows);
+    expect(afterOut.anyWithinBudget).toBe(true);
+    // Every candidate is still phone-only — the budget mutation never widened the category.
+    expect(afterOut.recommendations.every((r) => rows.some((row) => row.canonical_id === r.canonical_id))).toBe(true);
+
+    const afterPick = afterOut.recommendations.find((r) => r.is_smart_pick)!;
+    const afterAdvisor: AdvisorResponse = {
+      version: "v1", task: {}, supported: afterOut.supported, count: afterOut.recommendations.length,
+      smart_pick: afterPick as unknown as AdvisorResponse["smart_pick"],
+      recommendations: afterOut.recommendations as unknown as AdvisorResponse["recommendations"],
+      budget_satisfied: afterOut.anyWithinBudget,
+    };
+
+    const cmp = compareCounterfactual(t1Advisor, afterAdvisor, newBudget)!;
+    expect(cmp).not.toBeNull();
+    // THE FLAGSHIP GENUINELY UNLOCKS: at 3000 it was gated out by budget; at 4000 its
+    // stronger camera+battery variant tier ("Ultra") outscores the 3000-budget pick.
+    expect(cmp.changed).toBe(true);
+    expect(cmp.after.unit_price).toBe(3800);
+    // "هل يستاهل؟" — grounded ONLY in reasons the engine itself attached to the NEW pick,
+    // never a fabricated camera/battery superiority claim.
+    expect(cmp.worth_it).toBe(true);
+    expect(cmp.worth_it_reasons_ar.length).toBeGreaterThan(0);
+    expect(cmp.explanation_ar).toMatch(/4000/);
+    expect(cmp.explanation_ar).not.toMatch(/7000/); // the exact phantom value production showed
+  });
+
+  it("merchant neutrality — the recommendation carries no commission/ranking signal, only suitability+trust+price", () => {
+    // decide()'s own contract (decision-engine.ts's own documentation, unchanged by this
+    // mission): ranking is suitability + trust (corroboration) + total cost ONLY. Structural
+    // check that no recommendation object carries any commission/affiliate-weighted field.
+    const task: ShoppingTask = { category: "mobile", budget_total: 4000, priorities: ["camera", "battery"] };
+    const out = decide(task, rows);
+    for (const r of out.recommendations) {
+      expect(Object.keys(r)).not.toContain("commission");
+      expect(Object.keys(r)).not.toContain("affiliate_weight");
+    }
   });
 });

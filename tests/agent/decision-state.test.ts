@@ -10,7 +10,7 @@
 import {
   createDecisionState, applyParsedTask, applyDecisionResult, removeConstraint,
   saveDecisionState, readDecisionState, clearDecisionState,
-  markSelectedProduct, decisionStateToAdvisorBody,
+  markSelectedProduct, decisionStateToAdvisorBody, isNewMissionSwitch,
 } from "@/lib/agent/decision-state";
 import type { AdvisorParsed } from "@/lib/agent/advisor-api";
 
@@ -64,6 +64,51 @@ describe("applyParsedTask — additive across turns, never re-interpreted from s
     expect(s2.conversation_turn).toBe(2);
   });
 
+  // NEGATION POLARITY (Section 7, 2026-08-09 — founder's own production failure). Pins that
+  // DecisionState preserves the de-prioritized/excluded distinction rather than folding
+  // negated mentions into positive `soft_preferences`, and that a key can only hold ONE
+  // polarity — a later positive restatement clears an earlier negative one, and vice versa.
+  describe("negation polarity — the DecisionState preserves the distinction", () => {
+    it("folds deprioritized_priorities into deprioritized_preferences, never into soft_preferences", () => {
+      const s0 = createDecisionState();
+      const s1 = applyParsedTask(s0, { category: "mobile", priorities: ["camera", "battery"], deprioritized_priorities: ["gaming"] }, "NEEDS_DISCOVERY");
+      expect(s1.soft_preferences.sort()).toEqual(["battery", "camera"]);
+      expect(s1.deprioritized_preferences).toEqual(["gaming"]);
+    });
+
+    it("folds excluded_priorities separately from deprioritized", () => {
+      const s0 = createDecisionState();
+      const s1 = applyParsedTask(s0, { category: "mobile", excluded_priorities: ["gaming"] }, "NEEDS_DISCOVERY");
+      expect(s1.excluded_preferences).toEqual(["gaming"]);
+      expect(s1.deprioritized_preferences).toEqual([]);
+      expect(s1.soft_preferences).toEqual([]);
+    });
+
+    it("a later POSITIVE restatement clears an earlier de-prioritization of the same key", () => {
+      const s0 = createDecisionState();
+      const s1 = applyParsedTask(s0, { category: "mobile", deprioritized_priorities: ["gaming"] }, "NEEDS_DISCOVERY");
+      const s2 = applyParsedTask(s1, { priorities: ["gaming"] }, "CONSTRAINT_CHANGE");
+      expect(s2.soft_preferences).toEqual(["gaming"]);
+      expect(s2.deprioritized_preferences).toEqual([]);
+    });
+
+    it("a later NEGATIVE restatement clears an earlier positive statement of the same key", () => {
+      const s0 = createDecisionState();
+      const s1 = applyParsedTask(s0, { category: "mobile", priorities: ["gaming"] }, "NEEDS_DISCOVERY");
+      const s2 = applyParsedTask(s1, { deprioritized_priorities: ["gaming"] }, "CONSTRAINT_CHANGE");
+      expect(s2.soft_preferences).toEqual([]);
+      expect(s2.deprioritized_preferences).toEqual(["gaming"]);
+    });
+
+    it("removeConstraint clears a de-prioritized/excluded key too, not just positive/hard ones", () => {
+      const s0 = createDecisionState();
+      const s1 = applyParsedTask(s0, { category: "mobile", deprioritized_priorities: ["gaming"], excluded_priorities: ["latest"] }, "NEEDS_DISCOVERY");
+      const s2 = removeConstraint(s1, "gaming");
+      expect(s2.deprioritized_preferences).toEqual([]);
+      expect(s2.excluded_preferences).toEqual(["latest"]); // untouched
+    });
+  });
+
   // MEASURED (2026-08-09, Section 43 multi-turn missions): parseShoppingTask returns
   // `category: ""` (an empty STRING, never null) when nothing was classified. A follow-up
   // turn's parsed task therefore carries `category: ""`, not `category: undefined` — `??`
@@ -88,6 +133,63 @@ describe("applyParsedTask — additive across turns, never re-interpreted from s
     const s1 = applyParsedTask(s0, { category: "laptop", priorities: ["gaming"] }, "NEEDS_DISCOVERY");
     const s2 = applyParsedTask(s1, { priorities: ["gaming", "portability"] }, "NEEDS_DISCOVERY");
     expect(s2.soft_preferences.sort()).toEqual(["gaming", "portability"]);
+  });
+});
+
+// NEW MISSION DETECTION (Section 10, 2026-08-09 D→E mission). MEASURED risk: without this,
+// «طيب ابي مكيف للصالة» after a phone mission would keep camera/battery priorities and a
+// 3000 SAR phone budget attached to an air conditioner consultation — nonsensical, and
+// exactly what the founder's directive named as a must-not-regress case.
+describe("isNewMissionSwitch / applyParsedTask — category switch resets the mission, never merges into it", () => {
+  it("isNewMissionSwitch is false on the FIRST turn establishing a category (nothing to carry over incorrectly yet)", () => {
+    expect(isNewMissionSwitch(createDecisionState(), { category: "mobile" })).toBe(false);
+  });
+
+  it("isNewMissionSwitch is false when the category is unchanged or absent", () => {
+    const s = applyParsedTask(createDecisionState(), { category: "mobile" }, "NEEDS_DISCOVERY");
+    expect(isNewMissionSwitch(s, { category: "mobile" })).toBe(false);
+    expect(isNewMissionSwitch(s, {})).toBe(false); // "طيب سامسونج بس" — no category at all, a refinement
+  });
+
+  it("isNewMissionSwitch is true when an ESTABLISHED category genuinely changes", () => {
+    const s = applyParsedTask(createDecisionState(), { category: "mobile" }, "NEEDS_DISCOVERY");
+    expect(isNewMissionSwitch(s, { category: "air_conditioner" })).toBe(true);
+  });
+
+  it("THE NAMED RISK: a category switch does NOT carry the old mission's priorities/budget/constraints", () => {
+    const s0 = createDecisionState();
+    const s1 = applyParsedTask(s0, { category: "mobile", budget_total: 3000, priorities: ["camera", "battery"], deprioritized_priorities: ["gaming"] }, "NEEDS_DISCOVERY");
+    const s2 = applyParsedTask(s1, { category: "air_conditioner", room_size_m2: 30 }, "NEEDS_DISCOVERY");
+    expect(s2.category).toBe("air_conditioner");
+    expect(s2.hard_constraints.room_size_m2).toBe(30);
+    expect(s2.hard_constraints.budget_total).toBeUndefined(); // the phone budget must NOT leak in
+    expect(s2.soft_preferences).toEqual([]); // camera/battery must NOT leak in
+    expect(s2.deprioritized_preferences).toEqual([]);
+  });
+
+  it("the journey_id is preserved across a mission switch — still the same browsing session", () => {
+    const s0 = createDecisionState();
+    const s1 = applyParsedTask(s0, { category: "mobile" }, "NEEDS_DISCOVERY");
+    const s2 = applyParsedTask(s1, { category: "laptop" }, "NEEDS_DISCOVERY");
+    expect(s2.journey_id).toBe(s1.journey_id);
+  });
+
+  it("conversation_turn keeps counting across a mission switch, never resets to 0", () => {
+    const s0 = createDecisionState();
+    const s1 = applyParsedTask(s0, { category: "mobile" }, "NEEDS_DISCOVERY");
+    const s2 = applyParsedTask(s1, { budget_total: 3000 }, "NEEDS_DISCOVERY");
+    const s3 = applyParsedTask(s2, { category: "air_conditioner" }, "NEEDS_DISCOVERY");
+    expect(s3.conversation_turn).toBe(3);
+  });
+
+  it("a same-category refinement after a switch still accumulates normally (the reset is one-time, not sticky)", () => {
+    const s0 = createDecisionState();
+    const s1 = applyParsedTask(s0, { category: "mobile", priorities: ["camera"] }, "NEEDS_DISCOVERY");
+    const s2 = applyParsedTask(s1, { category: "air_conditioner", room_size_m2: 30 }, "NEEDS_DISCOVERY");
+    const s3 = applyParsedTask(s2, { budget_total: 4000 }, "CONSTRAINT_CHANGE");
+    expect(s3.category).toBe("air_conditioner");
+    expect(s3.hard_constraints.room_size_m2).toBe(30); // still there from s2
+    expect(s3.hard_constraints.budget_total).toBe(4000); // newly added, additive within the NEW mission
   });
 });
 

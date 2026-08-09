@@ -220,6 +220,11 @@ export interface AdvisorParsed {
   quantity?: number;
   priorities?: string[];
   unresolved?: string[];
+  /** Section 7 (2026-08-09): stated but explicitly de-prioritized ("ما يهمني X") — never a
+   *  positive priority, preserved for display/state rather than silently dropped. */
+  deprioritized_priorities?: string[];
+  /** Section 7: actively rejected ("ما أبي X", "بدون X") — stronger than de-prioritized. */
+  excluded_priorities?: string[];
 }
 
 /** Multi-unit acknowledgement (quantity · total budget · per-unit ceiling · unknowns).
