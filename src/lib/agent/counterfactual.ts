@@ -104,7 +104,31 @@ export function compareCounterfactual(
 ): CounterfactualComparison | null {
   const b = before.smart_pick ?? null;
   const a = after.smart_pick ?? null;
-  if (!b && !a) return null;
+
+  // MEASURED (2026-08-09, D→E mission Section 11 laptop journey — isolated, reproducible, NOT
+  // the cross-fork contamination first suspected): a category/query the decision engine has
+  // not reached smart-pick confidence for (this exact gaming-laptop budget+priority
+  // combination returned 4 real recommendations, none flagged `is_smart_pick`) made this
+  // function return null for EVERY counterfactual turn regardless of phrasing — an engine-
+  // confidence gap, not a parser bug. Returning null here left "what if I lower my budget?"
+  // completely unanswered: `mutation-turn.ts`'s `no_context` outcome leaves the screen exactly
+  // as it was, which reads as "nothing happened", not as the honest disclosure Section 0
+  // requires. The honest answer is not silence — it is the same "no confident single pick yet"
+  // disclosure the plain results view already gives via «خيارات أخرى مناسبة» (other suitable
+  // options, no hero pick), now surfaced through the counterfactual panel too.
+  if (!b && !a) {
+    return {
+      changed: false,
+      newlyUnlocked: false,
+      before: { title_ar: null, title_en: null, unit_price: null, budget_satisfied: before.budget_satisfied ?? true },
+      after: { title_ar: null, title_en: null, unit_price: null, budget_satisfied: after.budget_satisfied ?? true },
+      price_delta: null,
+      worth_it: null,
+      worth_it_reasons_ar: [],
+      explanation_ar: `لا نملك ترشيحًا واثقًا بما يكفي للمقارنة بين الميزانيتين — نعرض كل الخيارات المتاحة بدلًا من ترشيح واحد.`,
+      explanation_en: `We don't have a single confident pick yet to compare the two budgets — every available option is shown instead of one recommendation.`,
+    };
+  }
 
   const changed = b?.canonical_id !== a?.canonical_id;
   const beforeSatisfied = before.budget_satisfied ?? true;

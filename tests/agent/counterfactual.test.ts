@@ -74,8 +74,24 @@ describe("applyCounterfactualDelta", () => {
 });
 
 describe("compareCounterfactual — built ONLY from two real decision-engine answers", () => {
-  it("returns null when neither side has a smart pick — never fabricates a comparison", () => {
-    expect(compareCounterfactual(resp(), resp(), 4500)).toBeNull();
+  // MEASURED (2026-08-09, D→E mission Section 11 laptop journey — isolated, reproducible via
+  // captured request/response bodies, not the cross-fork tab contamination first suspected): a
+  // real gaming-laptop query at a real budget returned 4 real recommendations with NONE flagged
+  // `is_smart_pick` — an engine-confidence gap, not a parser bug. The OLD behavior (return null)
+  // made every counterfactual turn on that query a silent no-op: `mutation-turn.ts` reads null
+  // as "no_context" and leaves the screen exactly as it was, which reads as "nothing happened"
+  // rather than the honest disclosure Section 0 requires. It must never fabricate a pick, but it
+  // must also never go silent — it now returns the same "no confident single pick yet"
+  // disclosure the plain results view already gives via «خيارات أخرى مناسبة».
+  it("never returns null when neither side has a smart pick — surfaces an honest disclosure instead of going silent", () => {
+    const cmp = compareCounterfactual(resp(), resp(), 4500)!;
+    expect(cmp).not.toBeNull();
+    expect(cmp.changed).toBe(false);
+    expect(cmp.worth_it).toBeNull();
+    expect(cmp.before.title_ar).toBeNull();
+    expect(cmp.after.title_ar).toBeNull();
+    expect(cmp.explanation_ar).toMatch(/لا نملك ترشيحًا واثقًا/);
+    expect(cmp.explanation_en).toMatch(/don't have a single confident pick/);
   });
 
   it("detects no change — the same pick wins at both budgets", () => {
