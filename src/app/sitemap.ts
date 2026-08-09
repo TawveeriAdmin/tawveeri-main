@@ -22,9 +22,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // 1) الصفحات الثابتة (الموجودة فعلاً في الموقع)
+  // `/search` removed (2026-08-09, crawler truth parity): the page now emits
+  // `robots: noindex` (its dynamic results are client-fetched, never real content for a
+  // crawler — see its own generateMetadata comment) — listing a noindexed URL in the
+  // sitemap is a contradictory signal and wastes crawl budget for nothing. `/categories`
+  // and the per-category `/categories/[slug]` entries below are the real discoverable
+  // surface (ADR-226).
   const staticPages = [
     '',
-    '/search',
     '/deals',
     '/about',
     '/how-it-works',
