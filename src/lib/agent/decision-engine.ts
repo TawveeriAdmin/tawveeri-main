@@ -596,26 +596,95 @@ export function explainChoice(pick: Recommendation, runnerUp: Recommendation | u
   };
 }
 
+/**
+ * MEASURED GAP (2026-08-09, founder architectural clarification): every category decider
+ * treats `budget_total` as a SOFT scoring input — +0.06 within budget, -0.12 over — never
+ * as a hard eligibility gate. -0.12 is small next to BTU-fit (~±0.25), inverter (+0.18) or
+ * trust (+0.08), so an OVER-BUDGET candidate with strong fit/trust could still outscore an
+ * in-budget one and be crowned Smart Pick — silently relaxing a stated hard constraint,
+ * which the Constitution forbids exactly as much as a false zero-result. Retrieval
+ * (`/api/search`'s `inferredMaxPrice`) was already fixed to hard-filter; this closes the
+ * same gap on the DECISION side.
+ *
+ * Applied ONCE, centrally, in the dispatcher — not inside each of the 8 category deciders
+ * — so their own nuanced within-budget ranking (BTU fit, inverter, trust, …) is completely
+ * untouched, and their existing direct unit tests (which call `decideAc`/`decideAppliance`/…
+ * directly, bypassing this dispatcher) keep passing unchanged. Only candidates reachable
+ * through `decide()` — the actual `/api/v1/agent/decide` route — get the hard gate.
+ *
+ * Rule: an in-budget candidate always outranks an over-budget one, regardless of
+ * suitability score (never silently relax a hard constraint). Order WITHIN each side is
+ * untouched (the category decider's own suitability ranking still decides ties). A
+ * candidate with UNKNOWN cost is treated as satisfying the budget — unknown must never be
+ * treated as a violation ("unknown beats incorrect"). When every priced candidate exceeds
+ * budget, the fallback is the existing suitability-sorted order (already true today) — but
+ * now explicitly flagged via `anyWithinBudget` so the answer surface can render the honest
+ * "لا يوجد خيار مطابق تحت X… أقرب خيار هو Y" message (brief §10) instead of presenting the
+ * closest over-budget item as if it satisfied the request.
+ *
+ * Gates on `unit_price` (the VERIFIED, observed device price) — deliberately NOT
+ * `total_cost_estimate`. Total cost bundles installation/annual-electricity, which are
+ * MODELLED estimates (KSA heuristics, ADR-187), not measurements; hard-excluding a product
+ * because a projection pushed it a few hundred SAR over would gate a real fact on an
+ * estimate's error margin. MEASURED regression caught by the flagship benchmark
+ * (`ac-riyadh-30m-quiet-saving`, tests/agent/saudi-agent-benchmark.test.ts): gating on
+ * total_cost_estimate demoted the well-sized 24000 BTU inverter unit (unit price 2600,
+ * comfortably under a 4000 budget, but estimated total ~4545 once installation + estimated
+ * annual electricity are added) below an undersized 18000 BTU unit whose lower estimated
+ * total happened to clear the same bar. The estimated total remains a SOFT signal in each
+ * decider's own scoring (unchanged, still nudges ranking toward genuinely cheaper-to-run
+ * options within the verified-price-gated set) — it just does not hard-exclude.
+ */
+function applyBudgetGate(
+  task: ShoppingTask,
+  recommendations: Recommendation[],
+): { recommendations: Recommendation[]; anyWithinBudget: boolean } {
+  const budget = task.budget_total;
+  if (!budget || budget <= 0 || recommendations.length === 0) {
+    return { recommendations, anyWithinBudget: true }; // no stated budget — nothing to gate
+  }
+  const withinBudget: Recommendation[] = [];
+  const overBudget: Recommendation[] = [];
+  for (const r of recommendations) {
+    const cost = r.unit_price; // verified device price — see doc comment above
+    if (cost == null || cost <= budget) withinBudget.push(r);
+    else overBudget.push(r);
+  }
+  const anyWithinBudget = withinBudget.length > 0;
+  const ordered = anyWithinBudget ? [...withinBudget, ...overBudget] : recommendations;
+  // `is_smart_pick` was set by the category decider against ITS pre-gate order; recompute
+  // against the post-gate order so the flag always names the actual rank-0 item.
+  const recomputed = ordered.map((r, i) => ({ ...r, is_smart_pick: i === 0 }));
+  return { recommendations: recomputed, anyWithinBudget };
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
-export function decide(task: ShoppingTask, rows: CanonicalRow[]): { supported: boolean; recommendations: Recommendation[] } {
-  switch (task.category) {
-    case "air_conditioner": return { supported: true, recommendations: decideAc(task, rows) };
-    case "tv": return { supported: true, recommendations: decideTv(task, rows) };
-    case "tablet": return { supported: true, recommendations: decideTablet(task, rows) };
-    case "mobile": return { supported: true, recommendations: decideMobile(task, rows) };
-    case "laptop": return { supported: true, recommendations: decideLaptop(task, rows) };
-    case "refrigerator": return { supported: true, recommendations: decideRefrigerator(task, rows) };
-    case "washing_machine": return { supported: true, recommendations: decideWashingMachine(task, rows) };
-    default: {
-      if (APPLIANCE_META[task.category]) return { supported: true, recommendations: decideAppliance(task, rows) };
-      const scored = rows.map((row) => {
-        const reasons = new ReasonLedger();
-        reasons.evidence((row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد");
-        return { row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0), reasons,
-          total: row.lowest_price ?? null, breakdown: { unit: row.lowest_price ?? null, installation: null, annual_electricity: null } };
-      });
-      return { supported: false, recommendations: assemble(scored) };
+export function decide(
+  task: ShoppingTask,
+  rows: CanonicalRow[],
+): { supported: boolean; recommendations: Recommendation[]; anyWithinBudget: boolean } {
+  const base: { supported: boolean; recommendations: Recommendation[] } = (() => {
+    switch (task.category) {
+      case "air_conditioner": return { supported: true, recommendations: decideAc(task, rows) };
+      case "tv": return { supported: true, recommendations: decideTv(task, rows) };
+      case "tablet": return { supported: true, recommendations: decideTablet(task, rows) };
+      case "mobile": return { supported: true, recommendations: decideMobile(task, rows) };
+      case "laptop": return { supported: true, recommendations: decideLaptop(task, rows) };
+      case "refrigerator": return { supported: true, recommendations: decideRefrigerator(task, rows) };
+      case "washing_machine": return { supported: true, recommendations: decideWashingMachine(task, rows) };
+      default: {
+        if (APPLIANCE_META[task.category]) return { supported: true, recommendations: decideAppliance(task, rows) };
+        const scored = rows.map((row) => {
+          const reasons = new ReasonLedger();
+          reasons.evidence((row.store_count ?? 0) >= 2 ? `سعر موثوق — متوفر في ${row.store_count} متاجر` : "متوفر في متجر واحد");
+          return { row, dna: {}, score: 0.5 + ((row.store_count ?? 0) >= 2 ? 0.08 : 0), reasons,
+            total: row.lowest_price ?? null, breakdown: { unit: row.lowest_price ?? null, installation: null, annual_electricity: null } };
+        });
+        return { supported: false, recommendations: assemble(scored) };
+      }
     }
-  }
+  })();
+  const gated = applyBudgetGate(task, base.recommendations);
+  return { supported: base.supported, recommendations: gated.recommendations, anyWithinBudget: gated.anyWithinBudget };
 }

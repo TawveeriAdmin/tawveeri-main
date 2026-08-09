@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       } as CanonicalRow;
     });
 
-  const { supported, recommendations } = decide(engineTask, rows);
+  const { supported, recommendations, anyWithinBudget } = decide(engineTask, rows);
 
   // P2-8 · "Ambiguous requests may ask ONE clarification question" — and the Constitution's
   // condition on it: *every clarification question must change the recommendation; questions
@@ -193,6 +193,26 @@ export async function POST(req: NextRequest) {
     }
     return { ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, stores: storeNames(r.canonical_id), data_age_hours, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });
+  // Never silently relax a hard budget (brief §10/§24): when the gate found NO in-budget
+  // candidate, say so explicitly and name the closest (cheapest) option instead of quietly
+  // presenting a suitability-sorted over-budget item as if it satisfied the request. Uses
+  // `unit_price` — the SAME verified-price basis `decide()`'s budget gate itself uses (not
+  // `total_cost_estimate`, which bundles modelled installation/electricity estimates) — so
+  // this note and `anyWithinBudget` can never disagree about what "closest" means.
+  const budgetNote = (() => {
+    if (anyWithinBudget || !engineTask.budget_total) return null;
+    const cheapest = out.reduce<{ cost: number; title_ar: string | null; title_en: string | null } | null>((min, r) => {
+      const cost = r.unit_price;
+      if (cost == null) return min;
+      return !min || cost < min.cost ? { cost, title_ar: r.title_ar, title_en: r.title_en } : min;
+    }, null);
+    if (!cheapest) return null;
+    return {
+      ar: `لم أجد خيارًا موثقًا تحت ${engineTask.budget_total} ريال. أقرب خيار هو "${cheapest.title_ar ?? cheapest.title_en}" بسعر ~${Math.round(cheapest.cost)} ريال.`,
+      en: `No documented option under ${engineTask.budget_total} SAR. The closest is "${cheapest.title_en ?? cheapest.title_ar}" at ~${Math.round(cheapest.cost)} SAR.`,
+    };
+  })();
+
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
   const smartIdx = out.findIndex((r) => r.is_smart_pick);
   const smart = smartIdx >= 0 ? out[smartIdx] : null;
@@ -223,6 +243,10 @@ export async function POST(req: NextRequest) {
     version: "v1", task, parsed: parsed ?? undefined, supported, basket,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
     count: out.length, smart_pick: guarded.payload.smart_pick, recommendations: guarded.payload.recommendations, evidence,
+    // true unless a budget was stated AND no candidate satisfies it (never silent — see
+    // `budget_note` below). Absent/true when no budget was stated at all.
+    budget_satisfied: anyWithinBudget,
+    budget_note: budgetNote,
     // Present ONLY when the engine proved the answer would change it.  still
     // carries its reason so the decision is auditable rather than inferred from silence.
     clarify: clarify.ask ? { question: clarify.question, reason: clarify.reason } : null,

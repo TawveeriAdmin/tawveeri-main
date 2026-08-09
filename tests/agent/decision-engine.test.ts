@@ -190,6 +190,61 @@ describe("Category dispatcher", () => {
     for (const c of ["air_conditioner", "tv", "tablet", "mobile", "laptop"]) expect(decide({ category: c }, []).supported).toBe(true);
     expect(decide({ category: "furniture" }, []).supported).toBe(false);
   });
+
+  // MEASURED GAP (2026-08-09, founder architectural clarification): every category decider
+  // only ever applied budget as a SOFT score adjustment (+0.06 within / -0.12 over), never
+  // as a hard eligibility gate — so a well-fitting OVER-BUDGET candidate could still be
+  // crowned Smart Pick despite a stated hard budget. `decide()` (the dispatcher — the actual
+  // path `/api/v1/agent/decide` calls) now hard-gates: any in-budget candidate outranks any
+  // over-budget one, regardless of suitability score.
+  describe("Budget is a HARD constraint through the dispatcher (never silently relaxed)", () => {
+    it("an in-budget but worse-fitting candidate outranks a better-fitting over-budget one", () => {
+      const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30, budget_total: 2500 };
+      const rows = [
+        // Perfect BTU fit + inverter + 2-store trust — the OLD engine would rank this #1
+        // even over budget, since -0.12 is small next to those bonuses.
+        ac({ btu: 24000, tech: "Inverter", cool: "cool_only", price: 6000, stores: 2, canonical_id: "great-fit-over-budget" }),
+        // Undersized, non-inverter, single-store — clearly worse suitability — but its
+        // total cost (unit + install + estimated annual electricity) is within budget.
+        ac({ btu: 12000, tech: "Standard", cool: "cool_only", price: 800, stores: 1, canonical_id: "worse-fit-in-budget" }),
+      ];
+      const { recommendations, anyWithinBudget } = decide(task, rows);
+      expect(anyWithinBudget).toBe(true);
+      expect(recommendations[0].canonical_id).toBe("worse-fit-in-budget");
+      expect(recommendations[0].is_smart_pick).toBe(true);
+      expect(recommendations[1].canonical_id).toBe("great-fit-over-budget");
+      expect(recommendations[1].is_smart_pick).toBe(false);
+    });
+
+    it("bypassing the dispatcher (calling decideAc directly) keeps the old soft-only behavior unchanged", () => {
+      // Same fixture as above, called directly — proves the gate lives ONLY in the
+      // dispatcher and every category decider's own unit tests remain valid unchanged.
+      const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30, budget_total: 2500 };
+      const recs = decideAc(task, [
+        ac({ btu: 24000, tech: "Inverter", cool: "cool_only", price: 6000, stores: 2, canonical_id: "great-fit-over-budget" }),
+        ac({ btu: 12000, tech: "Standard", cool: "cool_only", price: 800, stores: 1, canonical_id: "worse-fit-in-budget" }),
+      ]);
+      expect(recs[0].canonical_id).toBe("great-fit-over-budget"); // unchanged: soft penalty only
+    });
+
+    it("when NO candidate is within budget, falls back to the suitability-sorted order and reports anyWithinBudget=false", () => {
+      const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30, budget_total: 100 };
+      const rows = [
+        ac({ btu: 24000, tech: "Inverter", cool: "cool_only", price: 6000, stores: 2, canonical_id: "expensive-good-fit" }),
+        ac({ btu: 12000, tech: "Standard", cool: "cool_only", price: 5000, stores: 1, canonical_id: "expensive-bad-fit" }),
+      ];
+      const { recommendations, anyWithinBudget } = decide(task, rows);
+      expect(anyWithinBudget).toBe(false);
+      expect(recommendations).toHaveLength(2); // never emptied — the closest options still show
+      expect(recommendations[0].canonical_id).toBe("expensive-good-fit"); // suitability order preserved
+    });
+
+    it("no stated budget never gates anything (no-op)", () => {
+      const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30 };
+      const { anyWithinBudget } = decide(task, [ac({ btu: 24000, tech: "Inverter", price: 6000, stores: 2 })]);
+      expect(anyWithinBudget).toBe(true);
+    });
+  });
 });
 
 describe("Refrigerator decision — efficiency + capacity (deterministic, single-store honest)", () => {
