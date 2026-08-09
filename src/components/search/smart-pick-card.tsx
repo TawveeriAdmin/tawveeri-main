@@ -35,6 +35,17 @@ export interface SmartPick {
   compare_url?: string | null;
   /** ADR-193 — when the claimed best price was observed. Null ⇒ live-scraped this request. */
   last_observed_at?: string | null;
+  /**
+   * ONE TAWVEERI BRAIN (2026-08-09): the same evidence-engine trust computation
+   * (`productTrust`) Waffar's decide() route cites for its Smart Pick, now also
+   * attached here so both surfaces share one trust source instead of this card's
+   * "our pick" claim resting only on the private ranking heuristic that chose it.
+   * Optional — older cached responses may not carry it. Not yet rendered on this
+   * card (the existing is_tps/claimsComparison badges already communicate
+   * corroboration); kept as data for now rather than adding a second trust badge
+   * without a considered design pass.
+   */
+  trust?: { score: number; tier: 'high' | 'medium' | 'low' | string } | null;
 }
 
 export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: string }) {

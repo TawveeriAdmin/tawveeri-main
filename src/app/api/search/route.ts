@@ -12,7 +12,7 @@ import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { detectCompareIntent } from '@/lib/agent/compare-intent';
 import { parseShoppingTask } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
-import { hoursSince, PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
+import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -100,6 +100,13 @@ type DecisionLayer = {
     // ADR-193 — the observation time behind the claimed best price (the best-price store's
     // own latest row). Null on live-scraped picks, whose observation is this request.
     last_observed_at: string | null;
+    // ONE TAWVEERI BRAIN (2026-08-09): the "our pick" claim now cites the SAME evidence-
+    // engine trust computation Waffar's decide() route uses (productTrust), instead of
+    // being backed only by the private scoreProduct() ranking heuristic that chose it.
+    // Does NOT change which product wins — scoreProduct still ranks the whole grid,
+    // untouched — this only makes the WINNING pick's trust claim shared/citable rather
+    // than implicit. See buildDecisionLayer().
+    trust: TrustAssessment;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -681,6 +688,14 @@ function buildDecisionLayer(
         is_tps: !!(best.has_tps_comparison || best.tps_compare_url),
         compare_url: best.tps_compare_url ?? null,
         last_observed_at: pickObservedAt,
+        // Shared evidence source (see DecisionLayer type comment) — computed from signals
+        // already available on the winning card; never changes which product is `best`.
+        trust: productTrust({
+          store_count: best.store_count,
+          has_comparison: best.has_tps_comparison ?? (best.store_count >= 2),
+          tps_identity_key: best.tps_identity_key ?? null,
+          last_observed_at: pickObservedAt,
+        }),
       }
     : null;
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
