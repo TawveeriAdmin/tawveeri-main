@@ -13,6 +13,7 @@ import { ProductCard } from '@/components/products/product-card';
 import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-card';
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
+import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { routeQuery } from '@/lib/agent/route-query';
 import { ComparisonAnswer, type CompareRoute } from '@/components/search/comparison-answer';
 import type { ProductCardProduct } from '@/components/products/product-card';
@@ -725,6 +726,7 @@ export default function SearchClient() {
             return;
           }
           setAdvisorResult(res);
+          saveJourneyTask(res.parsed); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
           track('advisor_result', {
             query_text: query.trim(),
             category: res.parsed?.category ?? null,

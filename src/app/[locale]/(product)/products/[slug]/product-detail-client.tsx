@@ -38,10 +38,15 @@ import {
  ShieldCheck,
  Store,
  TrendingDown,
+ Sparkles,
+ Loader2,
 } from 'lucide-react';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { Ticket } from 'lucide-react';
+import { AdvisorAnswer } from '@/components/agent/advisor-answer';
+import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
+import { readJourneyTask } from '@/lib/agent/journey-context';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
 import { generateAffiliateUrl } from '@/lib/transactions/tracking';
@@ -128,6 +133,20 @@ export default function ProductDetailClient() {
  const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [galleryOpen, setGalleryOpen] = useState(false);
  const [viewCount, setViewCount] = useState<number | null>(null);
+ // ONE TAWVEERI BRAIN (2026-08-09): Waffar reasoning embedded in the product journey, not
+ // only after a failed search. On-demand (button click), never auto-fired on page load —
+ // the reasoning engine is a real DB-backed request, not a free client-side render, so it
+ // runs only when the shopper actually asks. Seeded from the viewed product's OWN category
+ // plus any matching journey context carried from a prior search (same category only —
+ // see journey-context.ts). Deliberately NOT grounded to "this exact canonical product":
+ // `products.canonical_product_id` was verified (2026-08-09) to point at legacy
+ // canonical_products rows with NO tps_identity_key and NO tps_product_projection row —
+ // disjoint from the real TPS graph `decide()` reads — so claiming a specific-product
+ // identity link here would silently violate single-source-of-truth. The consultation is
+ // honestly framed as evidence for this CATEGORY/need, same as the search-page answer.
+ const [advisorResult, setAdvisorResult] = useState<AdvisorResponse | null>(null);
+ const [advisorLoading, setAdvisorLoading] = useState(false);
+ const [advisorAsked, setAdvisorAsked] = useState(false);
  const [compareIds, setCompareIds] = useState<Set<string>>(() => {
  if (typeof window === 'undefined') return new Set();
  try {
@@ -632,6 +651,43 @@ export default function ProductDetailClient() {
  }
  };
 
+ const handleAskWaffar = async () => {
+ if (!product?.category || advisorLoading) return;
+ setAdvisorAsked(true);
+ setAdvisorLoading(true);
+ const carried = readJourneyTask(product.category); // same-category-only, see journey-context.ts
+ track('advisor_query', {
+ query_text: product.name_ar || product.name_en || product.category,
+ category: product.category,
+ source: 'product_page',
+ meta: { carried_journey_context: !!carried },
+ });
+ try {
+ const res = await askAdvisor(
+ { category: product.category, ...carried },
+ { limit: 4 },
+ );
+ if (res.error || res.count === 0) {
+ track(res.error ? 'error' : 'no_answer', {
+ category: product.category, source: 'product_page',
+ meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected' },
+ });
+ setAdvisorResult(null);
+ } else {
+ setAdvisorResult(res);
+ track('advisor_result', {
+ category: product.category, source: 'product_page',
+ meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
+ });
+ }
+ } catch {
+ track('error', { category: product.category, source: 'product_page', meta: { surface: 'advisor', advisor_state: 'unavailable' } });
+ setAdvisorResult(null);
+ } finally {
+ setAdvisorLoading(false);
+ }
+ };
+
  const handleViewAtStore = (productStore: ProductStore) => {
  // Funnel step 6 — Outbound Click. The storefront exits via generateAffiliateUrl+window.open (NOT /go),
  // so this event is the ONLY measurement of storefront exits. Fired first (keepalive) so a slow/failed
@@ -944,6 +1000,46 @@ export default function ProductDetailClient() {
  <span className="truncate">{t('product.share')}</span>
  </button>
  </div>
+
+ {/* ONE TAWVEERI BRAIN — Waffar reasoning embedded in the product journey (2026-08-09),
+     not a separate chatbot bolted on after search fails. Reuses the exact same
+     askAdvisor + AdvisorAnswer already proven on /search; never claims a specific-
+     product identity link (see the state-declaration comment above for why). */}
+ {product.category && (
+   <section className="rounded-[1.35rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5">
+     {!advisorAsked && (
+       <button
+         type="button"
+         onClick={handleAskWaffar}
+         className="flex w-full items-center justify-between gap-3 text-start"
+       >
+         <span className="flex items-center gap-2 text-sm font-bold text-on-surface">
+           <Sparkles className="h-4.5 w-4.5 text-[var(--brand-green-dark)]" />
+           {locale === 'ar' ? 'اسأل وفّر: هل يناسبني هذا النوع من الاختيارات؟' : 'Ask Waffar: does this kind of pick fit me?'}
+         </span>
+         <span className="shrink-0 rounded-full bg-[var(--brand-bg-green)] px-3 py-1 text-xs font-semibold text-[var(--brand-green-dark)]">
+           {locale === 'ar' ? 'اسأل' : 'Ask'}
+         </span>
+       </button>
+     )}
+     {advisorAsked && advisorLoading && (
+       <div className="flex items-center gap-2 t-body text-on-surface-variant">
+         <Loader2 className="h-4 w-4 animate-spin" />
+         {locale === 'ar' ? 'وفّر يجهّز إجابة مبنية على الأدلة…' : 'Waffar is preparing an evidence-based answer…'}
+       </div>
+     )}
+     {advisorAsked && !advisorLoading && advisorResult && (
+       <AdvisorAnswer result={advisorResult} locale={locale as 'ar' | 'en'} source="product_page" />
+     )}
+     {advisorAsked && !advisorLoading && !advisorResult && (
+       <p className="t-body text-on-surface-variant">
+         {locale === 'ar'
+           ? 'ما توفر عندنا دليل كافٍ لتقييم هذا النوع الآن.'
+           : "We don't have enough evidence to assess this category right now."}
+       </p>
+     )}
+   </section>
+ )}
 
  {productDescription && (
  <section className="rounded-[1.35rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5">
