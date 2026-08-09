@@ -370,6 +370,35 @@ const BUDGET_WRAPPER = new Set<string>([
   // advisor was answering above). The parsed room NUMBER joins constraintNumbers below.
   'غرفه', 'لغرفه', 'غرفتي', 'الغرفه', 'مساحه', 'مساحتها', 'بمساحه', 'متر', 'امتار',
   'room', 'bedroom', 'sqm', 'meter', 'meters', 'square',
+  // MEASURED FAILURE (2026-08-09, Golden Query «مكيف لغرفة 30 متر هادي تحت 4000»): the
+  // wrapper words «تحت»/«اقل»/«أقل»/«بحدود»/«حدود»/«يتعدى» — every non-«ميزانية» phrasing
+  // `parseBudget` already recognizes — were never added here, so once a room-size constraint
+  // consumed the other STOPWORDS/BUDGET_WRAPPER slots, the budget wrapper word became its
+  // OWN required relevance group with no product title containing it, and the AND-gate
+  // zeroed out (`categoryEnforcedZero`) exactly like the ميزانيتي defect ADR-205 fixed.
+  // Live-verified before this fix: «…لغرفة 30 متر بحدود 4000» → 0, «…لغرفة 30 متر ما
+  // يتعدى 4000» → 0, while «…لغرفة 30 متر» alone → 496.
+  'تحت', 'اقل', 'أقل', 'حدود', 'بحدود', 'يتعدى', 'دون', 'حد', 'اكثر', 'أكثر',
+  'under', 'below', 'max', 'less', 'exceed', 'exceeds',
+]);
+
+// Soft-preference trigger words `parsePriorities` (task-parser.ts) already classifies
+// structurally («هادئ» → priority "quiet", «موفر» → "low_electricity", …). A preference is
+// NOT product language — no catalogue title says «هادئ» — so it must never become a
+// REQUIRED literal relevance group, exactly like BUDGET_WRAPPER above. MEASURED FAILURE
+// (2026-08-09): «مكيف لغرفة 30 متر هادي» AND «…هادئ» (both spellings — parsePriorities
+// already matched هادئ, recognition was never the problem) both collapsed 496 → 0, because
+// recognizing a word as a structured priority never removed the literal word from
+// relevanceGroups. Kept in sync with parsePriorities' own trigger vocabulary.
+const PREFERENCE_WRAPPER = new Set<string>([
+  'هادي', 'هادئ', 'هادى', 'هادئه', 'هادية', 'هدوء', 'صامت', 'صامته', 'quiet', 'silent',
+  'موفر', 'توفير', 'كهرباء', 'فاتوره', 'اقتصادي', 'تدفئه', 'دفء',
+  'العاب', 'قيمنق', 'افلام', 'سينما', 'رياضه', 'كره', 'مباريات', 'مضيئه',
+  'اضاءه', 'انتاجيه', 'عمل', 'قراءه', 'كتب',
+  'بطاريه', 'احدث', 'خفيف', 'محمول', 'للسفر', 'كبير', 'كبيره', 'عائله', 'عائليه',
+  'gaming', 'games', 'movies', 'cinema', 'netflix', 'sports', 'football',
+  'productivity', 'work', 'office', 'reading', 'books', 'battery', 'latest', 'newest',
+  'portable', 'lightweight', 'travel', 'large', 'family', 'big',
 ]);
 
 const STOPWORDS = new Set<string>([
@@ -379,6 +408,7 @@ const STOPWORDS = new Set<string>([
   'best', 'cheapest', 'cheap', 'price', 'prices', 'new', 'offer', 'offers', 'deal', 'deals',
   'the', 'a', 'an', 'in', 'of', 'for', 'with', 'and', 'or', 'want',
   ...BUDGET_WRAPPER,
+  ...PREFERENCE_WRAPPER,
 ]);
 
 function expandWordTerms(word: string): string[] {

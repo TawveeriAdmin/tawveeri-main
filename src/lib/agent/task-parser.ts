@@ -81,7 +81,10 @@ function parseBudget(x: string): number | null | undefined {
   // budget was silently dropped, no need signal fired, and the advisor was never routed —
   // while the identical English sentence parsed fine. `\b` stays only after Latin tokens,
   // where it is valid.
-  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|under|below|budget|max)\s*([\d,]{3,7})/) ||
+  // «بحدود 4000» — attached-morpheme form of «في حدود», same class of gap as «بميزانيتي»
+  // above (fixed 2026-08-04). «ما يتعدى» / «لا يتعدى» ("does not exceed") added 2026-08-09,
+  // measured live: «…لغرفة 30 متر ما يتعدى 4000» parsed no budget before this fix.
+  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|حدود|يتعدى|under|below|budget|max)\s*([\d,]{3,7})/) ||
             x.match(/([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)/);
   if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
   return undefined;
@@ -110,7 +113,9 @@ function parseQuantity(x: string, category: string | null): number | undefined {
 
 function parsePriorities(x: string): string[] {
   const p = new Set<string>();
-  if (/هادئ|هدوء|صامت|quiet|silent|low ?noise/.test(x)) p.add("quiet");
+  // «هادي» (no hamza) added 2026-08-09 — colloquial spelling measured live in the founder's
+  // Golden Query; «هادئ» alone missed the everyday-typed form (same class as CHECKPOINT #17).
+  if (/هادئ|هادي|هادى|هدوء|صامت|quiet|silent|low ?noise/.test(x)) p.add("quiet");
   if (/موفر|توفير|كهرباء|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/.test(x)) p.add("low_electricity");
   if (/تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/.test(x)) p.add("heating");
   if (/ألعاب|العاب|قيمنق|gaming|games/.test(x)) p.add("gaming");

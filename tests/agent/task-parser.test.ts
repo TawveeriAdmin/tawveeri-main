@@ -130,6 +130,43 @@ describe("Task parser — basket query regression (2026-08-04)", () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GOLDEN QUERY regression (2026-08-09): «مكيف لغرفة 30 متر هادي تحت 4000» — founder-reported,
+// live-verified production defect. «مكيف لغرفة 30 متر» alone returned 496 results; adding
+// «هادي» (quiet, no-hamza spelling) and/or «تحت 4000» collapsed it to 0 via
+// `categoryEnforcedZero`. Root cause: `parseBudget`'s wrapper phrasings («تحت»/«بحدود»/
+// «يتعدى») and `parsePriorities`' trigger words were never added to the search route's
+// BUDGET_WRAPPER/PREFERENCE_WRAPPER strip sets, so they survived as literal REQUIRED
+// relevance-group text no AC title contains. These pin the parser-layer half of the fix;
+// the route-level strip sets are covered by the live before/after capture in the commit.
+describe("Task parser — Golden Query regression (2026-08-09)", () => {
+  it("parses budget for every wrapper phrasing parseBudget claims to support", () => {
+    expect(parseShoppingTask("مكيف تحت 4000").budget_total).toBe(4000);
+    expect(parseShoppingTask("مكيف اقل من 4000").budget_total).toBe(4000);
+    expect(parseShoppingTask("مكيف أقل من 4000").budget_total).toBe(4000);
+    expect(parseShoppingTask("مكيف بحدود 4000").budget_total).toBe(4000); // attached morpheme, same class as بميزانيتي
+    expect(parseShoppingTask("مكيف في حدود 4000").budget_total).toBe(4000);
+    expect(parseShoppingTask("مكيف ما يتعدى 4000").budget_total).toBe(4000);
+  });
+  it("recognizes «هادي» (no-hamza colloquial spelling) as the quiet priority, same as «هادئ»", () => {
+    expect(parseShoppingTask("مكيف هادي").priorities).toEqual(expect.arrayContaining(["quiet"]));
+    expect(parseShoppingTask("مكيف هادئ").priorities).toEqual(expect.arrayContaining(["quiet"]));
+  });
+  it("parses the full Golden Query: category + room size + budget, regardless of quiet spelling", () => {
+    for (const q of [
+      "مكيف لغرفة 30 متر هادي تحت 4000",
+      "مكيف لغرفة 30 متر هادئ تحت 4000",
+      "مكيف لغرفة 30 متر هادي بحدود 4000",
+    ]) {
+      const t = parseShoppingTask(q);
+      expect(t.category).toBe("air_conditioner");
+      expect(t.room_size_m2).toBe(30);
+      expect(t.budget_total).toBe(4000);
+      expect(t.priorities).toEqual(expect.arrayContaining(["quiet"]));
+    }
+  });
+});
+
 describe("Task parser — plural category forms (matrix 2026-08-04)", () => {
   it("classifies bare plurals that previously returned no category", () => {
     expect(parseShoppingTask("ثلاجات").category).toBe("refrigerator");

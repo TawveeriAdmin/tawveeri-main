@@ -221,6 +221,15 @@ export default function SearchClient() {
   // reasoning engine's answer when it does. Fetched ALONGSIDE the results, never before
   // them — the results must not wait on reasoning.
   const [advisorResult, setAdvisorResult] = useState<AdvisorResponse | null>(null);
+  // MEASURED DEFECT (2026-08-09, Golden Query «مكيف لغرفة 30 متر هادي تحت 4000»): the advisor
+  // is fetched async and un-awaited (by design, see below), but the "No Results" empty state
+  // only checked `products.length === 0` — never `advisorResult` or an in-flight request. A
+  // needs-based query whose literal retrieval legitimately returns 0 (or returns 0 for the
+  // seconds before the advisor resolves) showed a discouraging «لم نعثر على نتائج» ABOVE a
+  // correct, evidence-backed Waffar answer that had already loaded or was about to. This
+  // tracks the in-flight window so the empty state can be suppressed while Waffar is working,
+  // not only after it has answered.
+  const [advisorPending, setAdvisorPending] = useState(false);
   const advisorAbortRef = useRef<AbortController | null>(null);
   // The query the advisor answer belongs to, so a clarification can re-ask the SAME text
   // rather than whatever is in the input box by the time the shopper answers.
@@ -680,6 +689,7 @@ export default function SearchClient() {
     advisorAbortRef.current?.abort();
     setAdvisorResult(null);
     const route = routeQuery(query.trim());
+    setAdvisorPending(route.mode === 'advisory' && currentPage === 1);
     if (route.mode === 'advisory' && currentPage === 1) {
       const advisorCtrl = new AbortController();
       advisorAbortRef.current = advisorCtrl;
@@ -688,6 +698,7 @@ export default function SearchClient() {
       askAdvisor({ text: query.trim() }, { signal: advisorCtrl.signal, limit: 4 })
         .then((res) => {
           if (advisorCtrl.signal.aborted) return;
+          setAdvisorPending(false);
           // Render only a real answer. An error or an empty set on the UNIFIED surface
           // must stay silent: the results below are a perfectly good answer, and an
           // "I could not help" panel above them would invent a failure the customer
@@ -719,6 +730,7 @@ export default function SearchClient() {
           // Never surfaced to the customer (the results page stands on its own) — but
           // always recorded: an advisor request that died is `unavailable`, not nothing.
           if (advisorCtrl.signal.aborted) return;
+          setAdvisorPending(false);
           track('error', {
             query_text: query.trim(),
             source: 'search',
@@ -1613,8 +1625,20 @@ export default function SearchClient() {
                   </Alert>
                 )}
 
-                {/* No Results */}
-                {!loading && !error && products.length === 0 && (debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
+                {/* Waffar is still reasoning about a needs-based query whose literal
+                    retrieval came back empty — show a working state, never a false negative
+                    claim while the evidence-backed answer is still in flight. */}
+                {!loading && !error && products.length === 0 && advisorPending && !advisorResult && (
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] px-4 py-6 t-body text-on-surface-variant">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {locale === 'ar' ? 'وفّر يبحث عن أفضل خيار يناسب طلبك…' : 'Waffar is finding the best match for your request…'}
+                  </div>
+                )}
+
+                {/* No Results — never shown while Waffar has answered or is still working on
+                    this need: showing «لم نعثر على نتائج» above a real evidence-backed answer
+                    is a false claim (measured defect, Golden Query, 2026-08-09). */}
+                {!loading && !error && products.length === 0 && !advisorPending && !advisorResult && (debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
                   <div className="space-y-6">
                     <EmptyState
                       variant="search"
