@@ -378,7 +378,11 @@ const BUDGET_WRAPPER = new Set<string>([
   // zeroed out (`categoryEnforcedZero`) exactly like the ميزانيتي defect ADR-205 fixed.
   // Live-verified before this fix: «…لغرفة 30 متر بحدود 4000» → 0, «…لغرفة 30 متر ما
   // يتعدى 4000» → 0, while «…لغرفة 30 متر» alone → 496.
-  'تحت', 'اقل', 'أقل', 'حدود', 'بحدود', 'يتعدى', 'دون', 'حد', 'اكثر', 'أكثر',
+  // «يتعدي» not «يتعدى»: normalizeArabic folds ى→ي, so the unfolded alef-maqsura spelling
+  // never actually reaches this Set comparison (MEASURED, 2026-08-09 — «يتعدى» sat in this
+  // set the whole time and the query still collapsed, because the runtime token was
+  // «يتعدي»). Same folding trap as the ة/ى class documented elsewhere in this file.
+  'تحت', 'اقل', 'أقل', 'حدود', 'بحدود', 'يتعدي', 'دون', 'حد', 'اكثر', 'أكثر',
   'under', 'below', 'max', 'less', 'exceed', 'exceeds',
 ]);
 
