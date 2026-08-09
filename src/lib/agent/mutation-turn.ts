@@ -113,7 +113,21 @@ export async function handleMutationTurn(
   // same normalization the real API response already performs implicitly via its JSON
   // round-trip — see multi-turn-missions.test.ts's identical note).
   const rawParsed = parseShoppingTask(text);
-  const parsed = { ...rawParsed, budget_total: rawParsed.budget_total ?? undefined, quantity: rawParsed.quantity ?? undefined };
+  // MEASURED FAILURE (2026-08-09, D→E mission Section 11 category sweep — 5 of 6 categories
+  // hit this independently): a mutation turn's own text often names no category at all
+  // («غير الميزانية إلى 4000» — the category was already established by the mission this turn
+  // is continuing). `parseShoppingTask` has no knowledge of `state` and unconditionally flags
+  // "category" as unresolved whenever ITS OWN text lacks one — every one of those turns then
+  // spuriously carried `unresolved_questions:["category"]` into a mission whose category was
+  // never actually in question. Stripped here, once: this whole branch only runs when `state`
+  // is truthy and (checked below) this is NOT a category switch, so the active mission's
+  // category is already resolved by definition.
+  const parsed = {
+    ...rawParsed,
+    budget_total: rawParsed.budget_total ?? undefined,
+    quantity: rawParsed.quantity ?? undefined,
+    unresolved: rawParsed.unresolved?.filter((u) => u !== 'category'),
+  };
   if (isNewMissionSwitch(state, parsed)) {
     // A genuine category switch mid-refinement ("طيب ابي مكيف للصالة") is a NEW mission, not
     // a mutation of this one — the caller's normal primary-search flow should handle it.

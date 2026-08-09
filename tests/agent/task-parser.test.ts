@@ -280,3 +280,21 @@ describe("Task parser — negation polarity (2026-08-09)", () => {
     expect(t.excluded_priorities).toBeUndefined();
   });
 });
+
+// MEASURED FAILURE (2026-08-09, D→E mission Section 11 category sweep): «غير الميزانية إلى
+// 4000» — a bare CONSTRAINT_CHANGE turn with no category noun and no «ريال» suffix — parsed
+// budget_total as undefined in 5 of 6 category journeys (laptop, tablet, washer, refrigerator,
+// TV all hit this independently), because parseBudget required its marker word to be followed
+// directly by whitespace+digits, or digits directly followed by «ريال». Neither held here: «إلى»
+// sits between «ميزانية» and the number, and the sentence never states a currency at all.
+describe("Task parser — CONSTRAINT_CHANGE absolute-target budget regression (2026-08-09)", () => {
+  it("parses «X إلى N» budget phrasing with no currency word and no category noun", () => {
+    expect(parseShoppingTask("غير الميزانية إلى 4000").budget_total).toBe(4000);
+    expect(parseShoppingTask("غير الميزانية إلى 3200").budget_total).toBe(3200);
+    expect(parseShoppingTask("خليها الميزانية إلى 6000").budget_total).toBe(6000);
+  });
+  it("still parses the original directly-adjacent phrasing (no regression)", () => {
+    expect(parseShoppingTask("مكيف ميزانية 4000").budget_total).toBe(4000);
+    expect(parseShoppingTask("مكيف تحت 4000").budget_total).toBe(4000);
+  });
+});

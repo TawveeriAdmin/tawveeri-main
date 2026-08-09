@@ -84,7 +84,16 @@ function parseBudget(x: string): number | null | undefined {
   // «بحدود 4000» — attached-morpheme form of «في حدود», same class of gap as «بميزانيتي»
   // above (fixed 2026-08-04). «ما يتعدى» / «لا يتعدى» ("does not exceed") added 2026-08-09,
   // measured live: «…لغرفة 30 متر ما يتعدى 4000» parsed no budget before this fix.
-  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|حدود|يتعدى|under|below|budget|max)\s*([\d,]{3,7})/) ||
+  //
+  // MEASURED FAILURE (2026-08-09, D→E mission Section 11 category sweep — laptop/tablet/
+  // washer/refrigerator/TV forks all hit this independently): «غير الميزانية إلى 4000» ("change
+  // the budget TO 4000") matched neither branch — «ميزانية» is followed by «إلى» before the
+  // number, not directly by whitespace+digits, and there is no «ريال» suffix. The optional
+  // «(?:الى|إلى|to)\s*» below is the SAME absolute-target vocabulary already handled in
+  // `counterfactual.ts`'s `parseCounterfactualDelta`, propagated here so CONSTRAINT_CHANGE
+  // (and every other mutation intent sharing this parser) recognizes it too — a fix that
+  // exists in one budget parser and not this one is still the same bug from the caller's view.
+  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|حدود|يتعدى|under|below|budget|max)\s*(?:الى|إلى|to)?\s*([\d,]{3,7})/) ||
             x.match(/([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)/);
   if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
   return undefined;
