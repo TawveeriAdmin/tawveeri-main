@@ -421,10 +421,17 @@ const PREFERENCE_WRAPPER = new Set<string>([
   // never in this dictionary at all. Each is a USE-CASE or QUALITY descriptor, not product-
   // title text — no laptop title literally says «للدراسة».
   'دراسه', 'برمجه', 'رسم', 'تصوير', 'ممتاز', 'ممتازه',
+  // «أشخاص»/«شخص» (people/person, as in «لعائلة 6 أشخاص») — MEASURED 2026-08-09: household-
+  // size phrasing («غسالة لعائلة 6 أشخاص وميزانيتي 3000») still collapsed after «لعائلة» was
+  // stripped, because «أشخاص» itself was never in this dictionary. The bare digit «6» is
+  // already safe on its own — `expandWordTerms`'s length>=2 filter drops single-character
+  // terms, so a lone household-size number never forms a relevance group.
+  'اشخاص', 'شخص',
   'gaming', 'games', 'movies', 'cinema', 'netflix', 'sports', 'football',
   'productivity', 'work', 'office', 'reading', 'books', 'battery', 'latest', 'newest',
   'portable', 'lightweight', 'travel', 'large', 'family', 'big', 'powerful', 'strong',
   'study', 'studying', 'programming', 'coding', 'drawing', 'sketching', 'photography', 'excellent', 'great',
+  'people', 'person', 'members',
 ]);
 
 const STOPWORDS = new Set<string>([
