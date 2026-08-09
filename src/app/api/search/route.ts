@@ -1049,6 +1049,22 @@ export async function POST(request: NextRequest) {
   // shape gets the strict category gate below — model queries keep today's fallback.
   const needShapedWithCategory = !!constraintTask?.category &&
     (constraintNumbers.size > 0 || typeof constraintTask?.room_size_m2 === 'number');
+
+  // A parsed budget was stripped from RELEVANCE (2026-08-09 fix, above) so «تحت 4000»
+  // stops zeroing the query — but stripping alone left the browse grid showing products
+  // above the stated budget as if they matched it, which is a confident-wrong result the
+  // Constitution forbids just as much as a false zero. When the sentence names an explicit
+  // category AND a high-confidence budget, and the caller did not already choose a price
+  // filter via the sidebar (never override an explicit user filter), apply the parsed
+  // budget as a REAL retrieval-level ceiling — same mechanism `applyCommonFilters` already
+  // uses for the filter sidebar, just fed from the sentence instead of a slider. Recorded
+  // on the response as `inferredMaxPrice` (never silent) so the client can disclose it.
+  const inferredMaxPrice =
+    needShapedWithCategory && typeof constraintTask?.budget_total === 'number' && typeof body.max_price !== 'number'
+      ? constraintTask.budget_total
+      : null;
+  if (inferredMaxPrice !== null) body.max_price = inferredMaxPrice;
+
   const supabase = createServerClient();
 
   // `slug` is REQUIRED here: the card links to /products/<product_slug>, and the product page
@@ -1333,6 +1349,7 @@ export async function POST(request: NextRequest) {
     topMatches: DecisionTopMatch[];
     relaxed: boolean;
     categoryEnforcedZero: boolean;
+    inferredMaxPrice: number | null;
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
@@ -1341,6 +1358,10 @@ export async function POST(request: NextRequest) {
     // Observability for the honest-zero path (never silent): true when an explicit-category
     // need query matched nothing and unrelated results were withheld rather than shown.
     categoryEnforcedZero,
+    // Never silent (2026-08-09): a budget PARSED FROM THE SENTENCE, not chosen via the
+    // filter sidebar, that is now acting as a real retrieval ceiling. The client must
+    // disclose this ("طبّقنا ميزانيتك ≤ N ريال"), never apply it invisibly.
+    inferredMaxPrice,
     page:              currentPage,
     pageSize:          currentPageSize,
     query:             typedQuery,
@@ -1384,6 +1405,18 @@ export async function POST(request: NextRequest) {
 
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
   let result = products;
+  // MEASURED GAP (2026-08-09): `applyCommonFilters`/Algolia apply min/max_price at the
+  // DB/index level, but TPS-injected canonical products (`searchTPSCanonical`, merged in
+  // AFTER those calls) never pass through either — so a query-parsed budget could still let
+  // an over-budget TPS product into the grid while the UI told the shopper their budget was
+  // applied. Enforced here too so every product in the response, from either source, obeys
+  // the same price bound.
+  if (typeof body.min_price === 'number') {
+    result = result.filter((product) => product.best_price >= body.min_price!);
+  }
+  if (typeof body.max_price === 'number') {
+    result = result.filter((product) => product.best_price <= body.max_price!);
+  }
   if (body.deals_only) {
     result = result.filter((product) =>
       product.stores.some((s) => s.original_price && s.current_price && s.original_price > s.current_price)

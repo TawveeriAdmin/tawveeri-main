@@ -216,6 +216,11 @@ export default function SearchClient() {
   const [savedProductNames, setSavedProductNames] = useState<Set<string>>(new Set());
   const [storeStats, setStoreStats] = useState<{ total: number; successful: number } | null>(null);
   const [smartPick, setSmartPick] = useState<SmartPick | null>(null);
+  // A budget PARSED FROM THE QUERY TEXT (never a sidebar choice) that the route applied as
+  // a real retrieval-level price ceiling (2026-08-09) — Constitution/trust requires this be
+  // disclosed to the customer, never silent, so the grid isn't quietly narrower than what
+  // the header count implies without the shopper knowing why.
+  const [appliedBudget, setAppliedBudget] = useState<number | null>(null);
   // P2-8 (UNIFIED SEARCH). One entry point; the system decides internally which capability
   // the query needs. `routeQuery` makes that decision deterministically and this holds the
   // reasoning engine's answer when it does. Fetched ALONGSIDE the results, never before
@@ -669,6 +674,7 @@ export default function SearchClient() {
     setError(null);
     setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
     setCompareRoute(null); // a stale comparison claim must never outlive its query
+    setAppliedBudget(null); // a stale inferred-budget disclosure must never outlive its query
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
 
@@ -844,6 +850,7 @@ export default function SearchClient() {
       // server-side (null when the best match is an accessory for a product
       // query), so we render it verbatim without re-judging.
       setSmartPick(((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null);
+      setAppliedBudget(((data as unknown) as { inferredMaxPrice?: number | null }).inferredMaxPrice ?? null);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});
@@ -1610,6 +1617,18 @@ export default function SearchClient() {
                         onClearAll={clearAllFilters}
                         storeNameResolver={(slug) => getStoreDisplayName(slug, locale as 'ar' | 'en')}
                       />
+                    </div>
+                  )}
+                  {/* A budget PARSED FROM THE TYPED SENTENCE (never a sidebar choice) is now
+                      acting as a real price ceiling on these results — disclosed, never
+                      silent (2026-08-09). Distinct from ActiveFilterChips because it did not
+                      come from a filter the shopper clicked. */}
+                  {appliedBudget !== null && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[var(--brand-green)]/40 bg-[var(--brand-bg-green)] px-3 py-1 t-small text-[var(--brand-green-dark)]">
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      {locale === 'ar'
+                        ? `طبّقنا الميزانية المذكورة في بحثك: ${appliedBudget.toLocaleString('ar')} ريال أو أقل`
+                        : `Applied the budget from your search: ${appliedBudget.toLocaleString('en')} SAR or less`}
                     </div>
                   )}
                 </div>

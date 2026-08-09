@@ -1,4 +1,5 @@
 import { normalizeArabic } from '@/lib/search/arabic-normalize';
+import { parseShoppingTask } from '@/lib/agent/task-parser';
 
 // Semantic regression for the CONFIRMED #1 failure: "ايفون ١٦" returned ZERO results because the
 // Arabic-Indic numeral ١٦ never matched the catalogue's ASCII "16". These tests assert the
@@ -31,5 +32,29 @@ describe('Arabic search normalization — semantic regression (#1 zero-result)',
     expect(qualifiesAsComparison(0)).toBe(false);
     expect(qualifiesAsComparison(2)).toBe(true);
     expect(qualifiesAsComparison(3)).toBe(true);
+  });
+
+  // MEASURED GAP (2026-08-09): fixing the categoryEnforcedZero collapse by stripping budget
+  // wrapper words from relevance is not the same as the grid actually respecting the stated
+  // budget — a need-shaped query's parsed budget must become a REAL retrieval-level price
+  // ceiling (`body.max_price`), never merely removed from text matching, or the route shows
+  // confident-wrong (above-budget) products under a header claiming the budget was understood.
+  // This mirrors the exact inference condition in src/app/api/search/route.ts
+  // (`inferredMaxPrice`) so a change there that silently drops the guard is caught here too.
+  it('a need-shaped query with a parsed category+budget infers a max_price ceiling', () => {
+    const inferMaxPrice = (task: ReturnType<typeof parseShoppingTask>, explicitMaxPrice?: number) => {
+      const needShaped = !!task.category && (typeof task.budget_total === 'number' || typeof task.room_size_m2 === 'number');
+      return needShaped && typeof task.budget_total === 'number' && typeof explicitMaxPrice !== 'number'
+        ? task.budget_total
+        : null;
+    };
+    expect(inferMaxPrice(parseShoppingTask('مكيف لغرفة 30 متر هادي تحت 4000'))).toBe(4000);
+    // An explicit sidebar filter is the shopper's own choice — it must never be overridden
+    // by a budget merely mentioned in the sentence.
+    expect(inferMaxPrice(parseShoppingTask('مكيف لغرفة 30 متر هادي تحت 4000'), 6000)).toBeNull();
+    // No category → not need-shaped → never infer a filter from a bare number.
+    expect(inferMaxPrice(parseShoppingTask('تحت 4000'))).toBeNull();
+    // Category with no parsed budget → nothing to infer.
+    expect(inferMaxPrice(parseShoppingTask('مكيف لغرفة 30 متر'))).toBeNull();
   });
 });
