@@ -448,13 +448,29 @@ const STOPWORDS = new Set<string>([
 // stripped as a 2-char unit (لـ + assimilated الـ elides the ا), and bare «ل» as 1 char
 // (e.g. «لصالتي»-style "for my living room" phrasing), each only accepted when the
 // remainder is a KNOWN wrapper word — never a blind strip.
+// MEASURED FAILURE (2026-08-09, category-generalization check): «تلفزيون للألعاب والأفلام
+// تحت 3000» still collapsed. «والأفلام» stacks TWO proclitics — و ("and") THEN the
+// unassimilated definite article ال ("the") — which the single-level checks below did not
+// compose: stripping و alone left «الأفلام», which matched neither «أفلام» (already in
+// PREFERENCE_WRAPPER) nor anything else. Arabic proclitics compose (و + ل/لل/ال, or just
+// ل/لل/ال alone), and hand-enumerating every combination is the same unbounded problem
+// already hit twice. Generalized below: strip an optional leading و, THEN try لل/ال/ل on
+// what's left (and on the un-stripped word too, since ل/لل/ال can appear without و) —
+// never a blind strip, every candidate is checked against the same closed dictionary.
 function isWrapperWord(rawWord: string): boolean {
   const w = rawWord.toLowerCase();
   if (STOPWORDS.has(w)) return true;
   const isKnownWrapper = (s: string) => BUDGET_WRAPPER.has(s) || PREFERENCE_WRAPPER.has(s);
-  if (w.length > 2 && w[0] === 'و' && isKnownWrapper(w.slice(1))) return true;
-  if (w.length > 4 && w.startsWith('لل') && isKnownWrapper(w.slice(2))) return true;
-  if (w.length > 2 && w[0] === 'ل' && isKnownWrapper(w.slice(1))) return true;
+  const candidates = new Set<string>();
+  const bases = [w];
+  if (w.length > 2 && w[0] === 'و') bases.push(w.slice(1));
+  for (const b of bases) {
+    candidates.add(b);
+    if (b.length > 4 && b.startsWith('لل')) candidates.add(b.slice(2));
+    else if (b.length > 3 && b.startsWith('ال')) candidates.add(b.slice(2));
+    else if (b.length > 2 && b[0] === 'ل') candidates.add(b.slice(1));
+  }
+  for (const c of candidates) if (c !== w && isKnownWrapper(c)) return true;
   return false;
 }
 
