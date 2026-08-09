@@ -386,6 +386,76 @@ function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   return true;
 }
 
+/**
+ * Does the QUERY ITSELF ask for an accessory (2026-08-10, D→E mission Part B — the founder's
+ * own distinction: "I want an iPhone 16" vs "I want an iPhone 16 case"). Reuses the SAME
+ * accessory vocabulary `hasAccessoryHint` already applies to PRODUCT titles — this is the
+ * missing other half: nothing previously checked whether the search text itself signals
+ * accessory intent, so a genuine accessory search like «جراب ايفون» would set
+ * `queryIsMainProduct=true` (from "ايفون") and then penalize/exclude the very cases the
+ * shopper is asking for. Any eligibility exclusion keyed on `queryIsMainProduct` below must
+ * be skipped when this returns true.
+ */
+export function isAccessoryShapedQuery(raw: string): boolean {
+  const norm = normalizeArabic(raw).toLowerCase();
+  return (
+    ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
+    ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
+    ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
+  );
+}
+
+/**
+ * CANDIDATE ELIGIBILITY, HARD (2026-08-10, D→E mission Part B — founder mandate: "FILTER
+ * ELIGIBILITY FIRST. SORT SECOND. PRICE MAY RANK ELIGIBLE PRODUCTS. PRICE MUST NEVER MAKE AN
+ * INELIGIBLE PRODUCT ELIGIBLE"). Two DISTINCT defects, one fix:
+ *
+ * (1) `hasAccessoryHint`-flagged products used to be handled ONLY by a SCORE penalty
+ *     (`scoreProduct`'s `accessoryPenalty`) and a sort-tail rule (`compareBySort`) — both are
+ *     RANKING treatments, not eligibility ones. Excluded here entirely instead: gone from the
+ *     candidate set before any sort mode runs, so no sort (default, price-low, price-high)
+ *     can ever surface one for a device query, by construction rather than convention.
+ *
+ * (2) MEASURED LIVE (production, "لابتوب" sorted lowest price first, 2026-08-10): "لابتوب
+ *     pingcool PC18" (4 SAR), "لابتوب baseus SUZC-0G" (21 SAR — baseus is an accessory-only
+ *     brand, never sold a laptop), "لابتوب لينوفو GX41K08218" (75 SAR), and an actual
+ *     "internal speaker assembly for laptop" (101 SAR, tagged "hot deal") ALL ranked above
+ *     every genuine laptop (cheapest real one ~196 SAR renewed). NONE of these matched
+ *     `hasAccessoryHint`'s keyword list — the titles use brand names and cryptic model codes,
+ *     not descriptive accessory words ("شاحن", "كفر", …), proving keyword matching alone
+ *     cannot catch this class of junk. A genuine device of ANY category never sells for a
+ *     small fraction of what every OTHER matching result costs — computed from the SAME
+ *     candidate set already fetched (the median, robust to a handful of outliers, never the
+ *     mean), not a guessed category-specific dollar floor, which this mission's own "unknown
+ *     beats incorrect" principle forbids. 15% of the observed median leaves a genuine
+ *     clearance-priced device (routinely 30-60% of median) untouched while catching every
+ *     measured junk item above (all under 5% of the ~2,299+ SAR laptop median).
+ *
+ * Gated by the CALLER on `queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)` — a
+ * shopper explicitly searching for an accessory («شاحن لابتوب») must still see genuine
+ * accessories; this exists to protect a DEVICE search from accessory junk, not to hide
+ * accessories from someone who wants one. Never wipes the page: each stage only applies its
+ * filter when the result is non-empty, so an unrelated/degenerate case falls back to the
+ * unfiltered set rather than a confident (and possibly wrong) zero — `categoryEnforcedZero`
+ * elsewhere already owns that decision for a genuinely unmatched query.
+ */
+export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number }>(
+  products: T[],
+): T[] {
+  let result = products;
+  const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
+  if (keywordFiltered.length > 0) result = keywordFiltered;
+
+  const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
+  if (positivePrices.length >= 4) {
+    const median = positivePrices[Math.floor(positivePrices.length / 2)];
+    const floor = median * 0.15;
+    const priceFiltered = result.filter((p) => p.best_price <= 0 || p.best_price >= floor);
+    if (priceFiltered.length > 0) result = priceFiltered;
+  }
+  return result;
+}
+
 function hasACSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
@@ -1490,6 +1560,18 @@ export async function POST(request: NextRequest) {
   }
 
   products = applyPostFilters(products, body);
+
+  // Part B eligibility hardening — see `excludeIneligibleCandidates`'s own doc comment for
+  // the full measured evidence and reasoning. Gated the same way as every other eligibility
+  // rule in this file: only for a confirmed device-type query that does NOT itself signal
+  // accessory intent.
+  if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
+    const beforeCount = products.length;
+    products = excludeIneligibleCandidates(products);
+    if (products.length !== beforeCount) {
+      console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
+    }
+  }
 
   if (rawQuery) {
     const prices = products.map((p) => p.best_price).filter((n) => n > 0);
