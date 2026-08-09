@@ -47,5 +47,7 @@
   "trustSingleSource": "Observed at one retailer",
   "estimateLabel": "estimate",
   "showAllReasons": "Why this recommendation?",
-  "hideAllReasons": "Hide details"
+  "hideAllReasons": "Hide details",
+  "shareDecision": "Share this decision",
+  "shareCopied": "Copied ✓"
 }

@@ -61,6 +61,10 @@ export type EventType =
   // shoppers actually want to answer — asked-vs-answered is the measure that decides
   // whether the question set grows or shrinks.
   | "advisor_clarified"
+  // Decision Receipt (2026-08-09, scoped share MVP) — a shopper shared/copied Waffar's
+  // answer. Off-funnel (does not gate the search→...→go_click chain), tracked separately
+  // as a growth-loop signal per the founder's Gate 10 direction.
+  | "advisor_share"
   | "search" | "results"                 // storefront surface: Search / Results
   | "product_view"                       // Product View (both surfaces)
   | "comparison_view"                    // Comparison seen (≥2 stores)

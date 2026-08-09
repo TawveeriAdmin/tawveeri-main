@@ -471,6 +471,32 @@ function isWrapperWord(rawWord: string): boolean {
     else if (b.length > 2 && b[0] === 'ل') candidates.add(b.slice(1));
   }
   for (const c of candidates) if (c !== w && isKnownWrapper(c)) return true;
+  return isPossessiveQualityDescriptor(w);
+}
+
+// MEASURED FAILURE (Gate 3 sweep, 2026-08-09; tracked as a follow-up rather than patched at
+// the time — closing it now that the higher-value decision-agent work is done): «جوال
+// كاميرته ممتازة تحت 2500» and «جوال بطاريته تحت 2000» both collapsed. «كاميرته»/«بطاريته»
+// are possessive-suffixed quality descriptors ("its camera"/"its battery") — genuine Arabic
+// morphology, not another proclitic: attaching a possessive pronoun (ـه/ـها/ـهم/ـك/ـي) to an
+// ة- or ا-final noun shifts the ending to ت (كاميرا→كاميرته, بطارية→بطاريته).
+//
+// Deliberately NOT added to PREFERENCE_WRAPPER: «كاميرا» is itself the CAMERA category noun
+// (parseCategory) and «شاشة» the TV one — stripping the BARE noun would risk a plain
+// category browse ("كاميرا") silently losing its own relevance term the way «شاشة» almost
+// did in an earlier draft of this fix. This check only fires when a possessive suffix is
+// PRESENT — a shopper never types the bare possessive form ("كاميرته") to browse a
+// category, so gating on the suffix is safe by construction, not just by the closed
+// dictionary. Scoped to the measured nouns; not a general possessive stemmer.
+const POSSESSIVE_QUALITY_BASES = new Set(['كاميرا', 'بطاريه', 'شاشه', 'سرعه', 'ذاكره']);
+const POSSESSIVE_SUFFIXES = ['تها', 'تهم', 'ته', 'تك', 'تي'];
+function isPossessiveQualityDescriptor(w: string): boolean {
+  for (const suf of POSSESSIVE_SUFFIXES) {
+    if (w.length > suf.length + 2 && w.endsWith(suf)) {
+      const stem = w.slice(0, -suf.length);
+      if (POSSESSIVE_QUALITY_BASES.has(stem + 'ا') || POSSESSIVE_QUALITY_BASES.has(stem + 'ه')) return true;
+    }
+  }
   return false;
 }
 

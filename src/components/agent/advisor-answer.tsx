@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, ShieldCheck, Check, Store, ArrowLeft, ArrowRight, CircleAlert,
-  TrendingDown, Clock, Info, HelpCircle, AlertTriangle, Calculator,
+  TrendingDown, Clock, Info, HelpCircle, AlertTriangle, Calculator, Share2,
 } from 'lucide-react';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
@@ -372,6 +372,64 @@ function TrustSummary({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
 }
 
 /**
+ * DECISION RECEIPT (2026-08-09, scoped MVP — see final report for the fuller spec and why
+ * this scope was chosen over a persisted permalink). "Share this decision" — a text summary
+ * of Waffar's actual answer (title, price, corroboration, evidence-cited by construction
+ * since every field is read from `rec`, never re-derived here) plus the CURRENT page URL.
+ *
+ * Deliberately NOT a new backend surface: no new DB table, no RLS to design, no server
+ * write, no stale-cache risk. The link always re-fetches live, so a receipt opened next
+ * week shows next week's real price — never a frozen snapshot silently going stale under a
+ * "receipt" label, which would be a truth violation the moment the price moves. Uses the
+ * Web Share API where available (native share sheet — WhatsApp/X/etc.), falling back to a
+ * clipboard copy with a toast-free (no extra dependency) inline confirmation.
+ */
+function ShareDecisionButton({ rec, loc, t, source }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; source: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleShare = async () => {
+    const title = recTitle(rec, loc);
+    const price = rec.unit_price;
+    const badge = comparisonBadge(rec, loc);
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const text = loc === 'ar'
+      ? `وفّر رشّح: ${title}${price != null ? ` — ${Math.round(price).toLocaleString('ar')} ريال` : ''} (${badge.text})`
+      : `Waffar picked: ${title}${price != null ? ` — ${Math.round(price).toLocaleString('en')} SAR` : ''} (${badge.text})`;
+    const meta = { canonical_id: rec.canonical_id, category: (rec.dna?.category as string) ?? null, source };
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: loc === 'ar' ? 'توصية وفّر' : 'Waffar recommendation', text, url });
+        track('advisor_share', { ...meta, meta: { method: 'native_share' } });
+        return;
+      } catch {
+        /* user cancelled the native share sheet — a cancellation is a deliberate no-op, not
+           a failure to recover from, and is NOT tracked as a share (nothing was shared) */
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      track('advisor_share', { ...meta, meta: { method: 'clipboard' } });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable (e.g. insecure context) — no further fallback; the button
+         simply does nothing rather than throwing, consistent with this being a convenience
+         action, never a required one. Not tracked — nothing was actually shared. */
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:border-[var(--brand-green)] hover:text-[var(--brand-green-dark)]"
+    >
+      <Share2 className="h-3.5 w-3.5" aria-hidden />
+      {copied ? t('agent.shareCopied') : t('agent.shareDecision')}
+    </button>
+  );
+}
+
+/**
  * The trust experience (Founder Directive Part 2): show the customer, in clear Arabic,
  * exactly what a recommendation is built on — and let them DISTINGUISH a verified fact
  * from an inference, an unknown, and insufficient evidence. Every line is the engine's
@@ -589,6 +647,11 @@ export function AdvisorAnswer({
 
       {/* Smart Pick */}
       {smart && <SmartPick rec={smart} loc={loc} t={t} Arrow={Arrow} source={source} />}
+      {smart && (
+        <div className="mt-2 flex justify-end">
+          <ShareDecisionButton rec={smart} loc={loc} t={t} source={source} />
+        </div>
+      )}
 
       {/* More options */}
       {rest.length > 0 && (

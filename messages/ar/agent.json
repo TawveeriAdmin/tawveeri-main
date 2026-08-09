@@ -47,5 +47,7 @@
   "trustSingleSource": "رصدناه في متجر واحد",
   "estimateLabel": "تقديري",
   "showAllReasons": "لماذا هذا الترشيح؟",
-  "hideAllReasons": "إخفاء التفاصيل"
+  "hideAllReasons": "إخفاء التفاصيل",
+  "shareDecision": "شارك القرار",
+  "shareCopied": "تم النسخ ✓"
 }

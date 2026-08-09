@@ -31,6 +31,20 @@ export function computeNextRunAt(cronExpression: string, from: Date = new Date()
   }
 }
 
+// MEASURED (2026-08-09, read-only production inspection): production's `scraping_schedules`
+// only has [id, store_id, job_type, is_active, last_run_at, last_success_at, created_at] —
+// none of max_pages/max_products/older_than_hours/categories/cron_expression/next_run_at/
+// is_enabled/coverage_mode/target_refresh_hours/chunk_size exist there. Migration
+// scripts/database/16-scraping-jobs.sql defines them but was never applied to production, so
+// every dispatch tick (every minute) failed this query and logged an error — pure log noise,
+// since ADR-062 already established this dispatcher path is idle/externally-driven (ingestion
+// does not depend on it). Applying the migration is a schema WRITE and needs founder sign-off
+// (see CLAUDE.md verification methodology) — NOT done here. This only stops the per-minute
+// error spam: log the schema-drift condition ONCE per process lifetime, not on every tick,
+// and keep returning "no due schedules" (already-correct, already-safe behavior) rather than
+// inventing values for columns that do not exist.
+let loggedSchemaDriftOnce = false;
+
 /**
  * Read enabled schedules whose next_run_at has passed (or is null).
  * Returns up to `limit` rows.
@@ -52,7 +66,17 @@ export async function fetchDueSchedules(limit = 20): Promise<DueSchedule[]> {
     .limit(limit);
 
   if (error || !data) {
-    if (error) console.error('[dispatcher] fetchDueSchedules error:', error.message);
+    if (error) {
+      const isKnownSchemaDrift = /column .*scraping_schedules\..* does not exist/i.test(error.message);
+      if (isKnownSchemaDrift) {
+        if (!loggedSchemaDriftOnce) {
+          loggedSchemaDriftOnce = true;
+          console.warn(`[dispatcher] scraping_schedules schema drift (migration 16 not applied to production — needs founder-approved migration): ${error.message}. Further occurrences this process are suppressed.`);
+        }
+      } else {
+        console.error('[dispatcher] fetchDueSchedules error:', error.message);
+      }
+    }
     return [];
   }
 
