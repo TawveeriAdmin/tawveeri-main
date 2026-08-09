@@ -178,25 +178,37 @@ function formatDealsForAI(deals: Awaited<ReturnType<typeof getDeals>>): string {
 }
 
 /**
- * MEASURED LIVE 2026-08-09 (founder Unified Intelligence audit) — this comment previously
- * said "DISABLED BY DEFAULT" and described the flag as off. It is NOT off: a direct
- * unauthenticated POST to this route in production returned 200 with a live LLM-generated
- * reply, meaning `AI_ASSISTANT_ENABLED=1` is currently set in the production environment.
- * Nobody updated this comment when that changed, or documented why.
+ * DISABLED (Railway `AI_ASSISTANT_ENABLED=0`, 2026-08-09 — Unified Intelligence mission,
+ * "one brain, not two"). Full timeline, reconstructed from git history + docs/DECISIONS.md
+ * before acting, per explicit founder instruction not to disable this blindly:
  *
- * The code below DOES now wire up F7 enforcement (`validateGeneratedAnswer` /
- * `recordValidationEvent`, see the POST handler) — a real answer-suppression gate that did
- * not exist when this comment was first written — so the specific "no repository search
- * catches what the assistant says" risk this comment originally raised is at least
- * partially addressed. What is UNCHANGED: this endpoint is still referenced by NOTHING —
- * zero matches across the web app and the mobile app (re-verified 2026-08-09) — so it is a
- * live, anonymously-callable, billable (Anthropic API on the founder's key) surface with NO
- * product entry point routing any real customer to it. Deliberately NOT deleted or modified
- * further here: `WAFFAR_SYSTEM_PROMPT` above is cache-protected (standing directive — never
- * edit in place without explicit founder approval), and whether this endpoint should be
- * (a) turned back off, (b) given a real product surface now that F7 exists, or (c) left as
- * an internal-only prototype behind a stronger gate than an env flag, is a product decision
- * this session did not make unilaterally. Flagged prominently in the mission's final report.
+ *   2026-07-31  P2-1 (commit 78b0763) closed it — "open, billable and orphaned" — verified
+ *               live at the time (404).
+ *   2026-08-03  ADR-188 found it OPEN again ("returns 200 by founder decision") and fixed
+ *               `tps:validator-verify` to correctly grade EITHER state, plus added the F7
+ *               enforcement this route now has (`validateGeneratedAnswer` /
+ *               `recordValidationEvent` below) and an adversarial test pass. No ADR records
+ *               *why* it was reopened, or any active use it was reopened for.
+ *   2026-08-06  docs/BLACKBOX-RETAILER-ONBOARDING.md independently claimed it was "DISABLED
+ *               BY DEFAULT... see its own code comment" — citing this file's OWN (already
+ *               stale) comment instead of a live check. Wrong at the time it was written.
+ *   2026-08-09  Re-audited: zero references anywhere in web or mobile (unchanged since
+ *               2026-07-31); the `/assistant` page is a bare redirect to `/search` (ADR-122,
+ *               2026-07-26 — the frontend consolidation to Waffar was already complete);
+ *               `waffar_conversations` holds 0 rows — never used by a real customer, ever;
+ *               zero `[AI]`-prefixed log lines in the most recent 500 production log lines —
+ *               no recent traffic, automated or otherwise. Live-verified 200 immediately
+ *               before this change, live-verified 404 immediately after.
+ *
+ * Conclusion: no active consumer journey, internal tool, or external integration depends on
+ * this endpoint. It was a live, anonymously-callable, billable (Anthropic API on the
+ * founder's key) surface with zero product entry point routing any real customer to it —
+ * exactly the "second brain that can contradict the shared evidence path" condition the
+ * mission's architectural clarification named. Disabled via the SAME env-flag mechanism the
+ * code was already built to respect (no code-path change, no data loss) — instantly
+ * reversible with `AI_ASSISTANT_ENABLED=1` on Railway if a future product decision wires this
+ * into a real, governed surface. `WAFFAR_SYSTEM_PROMPT` below is untouched (cache-protected,
+ * standing directive) — this change only gates the route in front of it.
  *
  * 404 rather than 403 when disabled: a disabled surface should not advertise that it exists.
  */

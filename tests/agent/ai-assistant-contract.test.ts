@@ -119,3 +119,45 @@ describe('ONE FACT, ONE CUSTOMER-VISIBLE NUMBER (ADR-168)', () => {
     expect(observed).toBe(10.994001); // provenance untouched
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE GATE CONTRACT (2026-08-09, founder Unified Intelligence audit — "one brain, not two").
+//
+// Full audit before this change (see the route file's own comment for the reconstructed
+// timeline): zero references anywhere in web or mobile; the `/assistant` page is a bare
+// redirect to `/search` (ADR-122 — the frontend consolidation to Waffar was already
+// complete); `waffar_conversations` holds 0 rows; zero recent production log traffic.
+// DISABLED via `AI_ASSISTANT_ENABLED=0` on Railway — the same env-flag mechanism the code
+// was already built to respect, instantly reversible.
+//
+// This pins the PARSING RULE the route's module-scope `AI_ASSISTANT_ENABLED` constant uses
+// (`process.env.AI_ASSISTANT_ENABLED === '1'`) — not a route-handler integration test (this
+// repo has no precedent for mocking NextRequest against a live handler; route.ts behavior is
+// verified live against production instead, per this session's established pattern). The
+// property that matters going forward: ONLY the literal string '1' opens the surface — an
+// accidentally-set '0', empty string, or any other truthy-looking value must never
+// re-enable an anonymous, billable, ungoverned-by-any-product-surface LLM endpoint by
+// mistake.
+describe('ai-assistant gate — only the literal string "1" opens the surface', () => {
+  const isEnabled = (v: string | undefined) => v === '1';
+  it.each([
+    ['1', true],
+    ['0', false],
+    ['', false],
+    [undefined, false],
+    ['true', false], // a plausible accidental value — must NOT enable it
+    ['yes', false],
+    [' 1', false], // stray whitespace must not enable it either
+  ])('AI_ASSISTANT_ENABLED=%s → enabled=%s', (value, expected) => {
+    expect(isEnabled(value)).toBe(expected);
+  });
+
+  it('matches what is actually deployed (live-verified 2026-08-09, not assumed)', () => {
+    // Documents the measured live state at the time this test was written — a change here
+    // without a corresponding re-verification against production would be exactly the kind
+    // of comment/reality drift that caused this endpoint to stay open, undocumented, for
+    // days after ADR-188. If this ever needs to change, re-verify live before editing it.
+    const DEPLOYED_VALUE = '0';
+    expect(isEnabled(DEPLOYED_VALUE)).toBe(false);
+  });
+});
