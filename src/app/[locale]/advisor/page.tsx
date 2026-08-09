@@ -20,6 +20,13 @@ import { redirect, permanentRedirect } from 'next/navigation';
  *
  * The page component that used to live here is deleted, not disabled. A dormant second
  * implementation of the same answer is how two surfaces drift apart.
+ *
+ * MOVED OUT of (public)/ (2026-08-09 crawler truth parity, Section 27): that group's
+ * sibling `loading.tsx` raced this page's redirects — measured live on production, BOTH
+ * the bare `/advisor` and the query-carrying `/advisor?q=...` case returned a fake 200 to
+ * a no-JS fetch (any crawler, curl) instead of ever redirecting, silently breaking every
+ * published وفّر link for search engines and AI agents. Same class of defect the
+ * (product) and (category) route groups were already pulled out of (public) to avoid.
  */
 export default async function AdvisorPage({
   params,
