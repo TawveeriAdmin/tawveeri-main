@@ -24,6 +24,20 @@ describe('Arabic search normalization — semantic regression (#1 zero-result)',
     expect(normalizeArabic('أيفون')).toBe(normalizeArabic('ايفون'));
   });
 
+  // MEASURED FAILURE (Gate 3 sweep, 2026-08-09): «لابتوب تحت5000» (no space before the
+  // digits) still collapsed to categoryEnforcedZero even with «تحت» in BUDGET_WRAPPER,
+  // because the route's tokenizer splits on whitespace only — the glued token «تحت5000»
+  // matched neither the wrapper word nor the parsed budget number. Applied identically to
+  // query AND catalogue text (this function's contract), so glued product titles still align.
+  it('splits a digit glued directly onto an Arabic word so wrapper/number matching still works', () => {
+    expect(normalizeArabic('تحت5000')).toBe('تحت 5000');
+    expect(normalizeArabic('لابتوب تحت5000')).toBe('لابتوب تحت 5000');
+    expect(normalizeArabic('5000ريال')).toBe('5000 ريال');
+    // Already-spaced input is a no-op — this must never insert a second space or otherwise
+    // disturb a normally-formed query.
+    expect(normalizeArabic('لابتوب تحت 5000')).toBe('لابتوب تحت 5000');
+  });
+
   // Documents the honesty invariant enforced in the search route (verified live):
   // a "قارن الأسعار" compare CTA / tps_compare_url is emitted ONLY when store_count >= 2.
   it('compare-CTA gating rule: only >=2 distinct stores qualifies as a comparison', () => {

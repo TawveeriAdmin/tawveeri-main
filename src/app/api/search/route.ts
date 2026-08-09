@@ -396,13 +396,19 @@ const BUDGET_WRAPPER = new Set<string>([
 // relevanceGroups. Kept in sync with parsePriorities' own trigger vocabulary.
 const PREFERENCE_WRAPPER = new Set<string>([
   'هادي', 'هادئ', 'هادى', 'هادئه', 'هادية', 'هدوء', 'صامت', 'صامته', 'quiet', 'silent',
-  'موفر', 'توفير', 'كهرباء', 'فاتوره', 'اقتصادي', 'تدفئه', 'دفء',
+  // «موفره» (feminine of موفر — MEASURED 2026-08-09: «ثلاجة كبيرة موفرة تحت 4000» → 0)
+  // and «قوي/قويه» (MEASURED: «جوال قوية تحت 2000» → 0) added; PREFERENCE_WRAPPER only ever
+  // had the masculine/base form of each adjective, not its feminine agreement — Arabic
+  // adjectives inflect for the noun's gender (ثلاجة is feminine), so a feminine sentence hit
+  // an unstripped word every time. Same defect class as the هادي/هادئ gap, different word.
+  'موفر', 'موفره', 'توفير', 'كهرباء', 'فاتوره', 'اقتصادي', 'تدفئه', 'دفء',
+  'قوي', 'قويه',
   'العاب', 'قيمنق', 'افلام', 'سينما', 'رياضه', 'كره', 'مباريات', 'مضيئه',
   'اضاءه', 'انتاجيه', 'عمل', 'قراءه', 'كتب',
   'بطاريه', 'احدث', 'خفيف', 'محمول', 'للسفر', 'كبير', 'كبيره', 'عائله', 'عائليه',
   'gaming', 'games', 'movies', 'cinema', 'netflix', 'sports', 'football',
   'productivity', 'work', 'office', 'reading', 'books', 'battery', 'latest', 'newest',
-  'portable', 'lightweight', 'travel', 'large', 'family', 'big',
+  'portable', 'lightweight', 'travel', 'large', 'family', 'big', 'powerful', 'strong',
 ]);
 
 const STOPWORDS = new Set<string>([
@@ -429,13 +435,19 @@ const STOPWORDS = new Set<string>([
 // PREFERENCE_WRAPPER (never the general STOPWORDS/product vocabulary), so a real product
 // word that happens to start with و (واتش "watch", واي-فاي "wifi") is untouched — its
 // remainder ("اتش"/"اي") is not itself a wrapper word.
+// MEASURED FAILURE (2026-08-09, Gate 3 sweep): «غسالة للعائلة تحت 3000» → 0 — «للعائلة»
+// («لـ» "for" + assimilated «الـ» "the" + «عائلة») is the SAME class as the و-prefix gap
+// above, just a different (and in Arabic, arguably even more common) proclitic. «لل» is
+// stripped as a 2-char unit (لـ + assimilated الـ elides the ا), and bare «ل» as 1 char
+// (e.g. «لصالتي»-style "for my living room" phrasing), each only accepted when the
+// remainder is a KNOWN wrapper word — never a blind strip.
 function isWrapperWord(rawWord: string): boolean {
   const w = rawWord.toLowerCase();
   if (STOPWORDS.has(w)) return true;
-  if (w.length > 2 && w[0] === 'و') {
-    const rest = w.slice(1);
-    if (BUDGET_WRAPPER.has(rest) || PREFERENCE_WRAPPER.has(rest)) return true;
-  }
+  const isKnownWrapper = (s: string) => BUDGET_WRAPPER.has(s) || PREFERENCE_WRAPPER.has(s);
+  if (w.length > 2 && w[0] === 'و' && isKnownWrapper(w.slice(1))) return true;
+  if (w.length > 4 && w.startsWith('لل') && isKnownWrapper(w.slice(2))) return true;
+  if (w.length > 2 && w[0] === 'ل' && isKnownWrapper(w.slice(1))) return true;
   return false;
 }
 

@@ -13,5 +13,13 @@ export function normalizeArabic(text: string): string {
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
     .replace(/ـ/g, '')
+    // MEASURED FAILURE (2026-08-09): «لابتوب تحت5000» (no space before the digits) still
+    // collapsed to categoryEnforcedZero even after تحت was added to BUDGET_WRAPPER — the
+    // route's tokenizer splits on whitespace only, so the glued token «تحت5000» matched
+    // neither «تحت» nor the parsed budget number and survived as its own unmatched required
+    // relevance group. Applied identically to query AND catalogue text (this function's own
+    // contract, see file docstring), so a title glued the same way still lines up.
+    .replace(/([؀-ۿ])(\d)/g, '$1 $2')
+    .replace(/(\d)([؀-ۿ])/g, '$1 $2')
     .trim();
 }
