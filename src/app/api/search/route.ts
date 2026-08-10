@@ -204,6 +204,27 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
 const ARABIC_TO_ENGLISH_NORM: Record<string, string[]> = Object.fromEntries(
   Object.entries(ARABIC_TO_ENGLISH).map(([k, v]) => [normalizeArabic(k), v]),
 );
+// MEASURED DEFECT (2026-08-10, D→E mission Part F — re-verification sweep): sorting "مكيف"
+// lowest-price-first put AIR FRYERS (383–1110 SAR) and even a "تابلت Air Tab" tablet ABOVE
+// every genuine air conditioner (which start at 1065 SAR) — worse than an accessory leaking
+// in, since these products share NO real relationship to an AC at all. Root cause traced to
+// `ARABIC_TO_ENGLISH['مكيف'] = ['split ac', 'air conditioner', 'ac']`: each phrase is split
+// into INDIVIDUAL words and added to Algolia as OPTIONAL terms (any single-word match
+// returns the record) — so "air conditioner" silently injects bare "air" as its own optional
+// word, and "air" alone is one of the most generic tokens in English product titles (Air
+// Fryer, Air Tab, AirPods, Nike Air, …). `compareBySort`'s price-sort branch does not consult
+// relevance scoring AT ALL (only the accessory-hint tiebreak, which "air fryer" never
+// matches) — so once "air" pulls an unrelated product into the candidate set, sorting by
+// price lets it rise straight to the top unchecked. This is the SAME "price must never make
+// an ineligible product eligible" invariant Part B's `excludeIneligibleCandidates` already
+// enforces for accessories — but that filter's two signals (accessory-hint keywords,
+// statistical price floor) cannot catch a wrong-category product that is neither accessory-
+// shaped nor abnormally cheap relative to the (already-contaminated) candidate set's own
+// median. The fix belongs upstream, at the point where a phrase becomes optional SEARCH
+// terms: a token proven too generic to signal product identity on its own must never be
+// injected as a standalone optional word, regardless of which phrase it came from.
+export const GENERIC_EXPANSION_STOPWORDS = new Set(['air']);
+
 function lookupArToEn(word: string): string[] | undefined {
   // `.toLowerCase()` matters for the LATIN keys (conditioner/conditioners): a typed
   // "Conditioners" otherwise misses its expansion — the same case trap that let an
@@ -1336,7 +1357,7 @@ export async function POST(request: NextRequest) {
       // English-named appliances (292 refrigerators, 246 washers…) for Arabic queries like ثلاجة/غسالة.
       // The expansion tokens are OPTIONAL words: a record matching any one (e.g. "refrigerator") returns.
       const aqWords = normalizeArabic(rawQuery).split(/\s+/).filter((w) => w && !isWrapperWord(w) && !constraintNumbers.has(w));
-      const englishExp = [...new Set(aqWords.flatMap((w) => lookupArToEn(w) || []).flatMap((m) => m.split(/\s+/)).filter((t) => t.length >= 2))];
+      const englishExp = [...new Set(aqWords.flatMap((w) => lookupArToEn(w) || []).flatMap((m) => m.split(/\s+/)).filter((t) => t.length >= 2 && !GENERIC_EXPANSION_STOPWORDS.has(t)))];
       // Use the NORMALIZED (ة→ه folded) query so every query token matches an optionalWords entry —
       // otherwise the unfolded "ثلاجة" is treated as REQUIRED, matches nothing, and returns 0/junk
       // even though the index holds 260 refrigerators. (Verified against the live index.)

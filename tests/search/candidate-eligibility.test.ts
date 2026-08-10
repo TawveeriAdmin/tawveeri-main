@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -138,5 +138,26 @@ describe("excludeIneligibleCandidates — MEASURED LIVE (production, 2026-08-10)
     // value = 2299 → floor = 344.85; 475 clears it easily.
     const result = excludeIneligibleCandidates([clearance, ...real]);
     expect(result.map((r) => r.name_ar)).toContain(clearance.name_ar);
+  });
+});
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F re-verification sweep): sorting
+ * "مكيف" lowest-price-first put air fryers (383-1110 SAR) and a "تابلت Air Tab" tablet ABOVE
+ * every genuine air conditioner (which start at 1065 SAR) — a wrong-category leak neither of
+ * `excludeIneligibleCandidates`'s two signals (accessory hint, statistical price floor) can
+ * catch, since these products are neither accessory-shaped nor abnormally cheap. Traced to
+ * `ARABIC_TO_ENGLISH['مكيف']` including the phrase "air conditioner", which gets split into
+ * individual OPTIONAL Algolia search words — silently injecting bare "air", one of the most
+ * generic tokens in English product titles, as its own standalone optional match.
+ */
+describe("GENERIC_EXPANSION_STOPWORDS — proven-generic tokens never become standalone optional search words", () => {
+  it('contains "air" — the measured contamination vector for "مكيف" → air fryers/tablets', () => {
+    expect(GENERIC_EXPANSION_STOPWORDS.has("air")).toBe(true);
+  });
+  it("does not remove genuinely distinctive category words (would zero out real expansions)", () => {
+    for (const legit of ["ac", "split", "conditioner", "refrigerator", "washer", "laptop", "tv"]) {
+      expect(GENERIC_EXPANSION_STOPWORDS.has(legit)).toBe(false);
+    }
   });
 });
