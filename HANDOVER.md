@@ -30,8 +30,18 @@ reading the URL directly instead of a state value that can lag behind it on firs
 All four founder cases + adversarial paraphrases re-tested live on the deployed fix (not just
 unit tests). `/api/search` for the founder's exact phrase: 5 genuine laptops, zero accessories
 (was: 1 result, a backpack). 14 new regression tests, all pinning root causes with paraphrases.
-1744/1744 total tests passing. Three commits, each independently built/deployed/live-verified:
-`ca3d340`, `d742bda`, `370ec94`.
+1744/1744 total tests passing. Code commits, each independently built/deployed/live-verified:
+`ca3d340`, `d742bda`, `370ec94`. Docs-only follow-up: `8911780` (this checkpoint + ADR-238).
+
+### Exact state as of this checkpoint (2026-08-10, late)
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`8911780`**
+- `git status`: clean — no uncommitted, no untracked, no stashed changes.
+- Railway production deployment: **`da4b508c-6545-4d17-b35c-8a220af41aed`** — status Online,
+  fully settled (not mid-build), confirmed via a fresh read-only production request that
+  `/api/search` for "ابي لاب توب للجامعه" returns real laptops (top result: "لابتوب كروم بوك
+  100E..."), not the backpack.
+- Nothing about this state depends on any local machine, terminal, or Claude session staying
+  alive — the deployment is server-side and already complete.
 
 ### Known, disclosed, NOT launch-blocking gap (found via my OWN adversarial testing, not the
 founder's report): "حاسوب محمول" (formal "portable computer") still surfaces the backpack via
@@ -39,7 +49,28 @@ founder's report): "حاسوب محمول" (formal "portable computer") still su
 retrieval path (triggered when the strict primary query returns too few hits) does not appear
 to inherit the same optional-words treatment. Colloquial "لاب توب"/"لابتوب" — what real Saudi
 shoppers actually type — is confirmed fixed. Left disclosed rather than chased, per the
-founder's own "minimum necessary scope" instruction.
+founder's own "minimum necessary scope" instruction. **Do not fix this speculatively — wait for
+evidence it actually matters to a real shopper before touching it.**
+
+### ENGINEERING VERIFICATION vs FOUNDER ACCEPTANCE — do not conflate these
+**ENGINEERING VERIFICATION: complete**, based on all evidence above (automated tests + Claude-
+side live production checks via direct API calls).
+**FOUNDER ACCEPTANCE: PENDING.** The founder has already demonstrated once tonight that real
+iPhone testing can expose defects automated/API-level verification missed (that is WHY this
+checkpoint exists). Tomorrow the founder will start FRESH searches from a real iPhone (each a
+new mission, so no stale DecisionState/previous search state can contaminate results) and test
+at minimum:
+1. `ابي لاب توب للجامعه`
+2. `ابي لاب توب للتصميم`
+3. `ابي لاب توب للدراسه`
+4. `ابي حاسوب محمول للجامعه`
+
+Checking: is intent/category understood; does clarification appear only when genuinely useful;
+is primary-product eligibility preserved (laptops, not backpacks/accessories); do
+recommendations match the stated need; does a fresh search correctly clear the previous
+mission; does the real mobile UX behave consistently. **If tomorrow's real production evidence
+contradicts this checkpoint, production evidence overrides it — reopen only the specific layer
+demonstrated to be failing, not the whole architecture, unless the evidence actually calls for that.**
 
 ---
 
