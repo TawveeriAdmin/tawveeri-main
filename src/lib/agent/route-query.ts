@@ -64,6 +64,19 @@ function needSignals(task: ParsedTask): string[] {
   // at all. Advisory mode still requires a real category (checked above); this only makes an
   // otherwise-bare cheapest request count as a describable need once a category is known.
   if (task.wants_cheapest) signals.push('cheapest');
+  // NEED-DISCOVERY (2026-08-10, founder's own production gap): «وش أفضل لابتوب لاحتياجي
+  // وميزانيتي؟» parsed to ZERO signals above — "أفضل"/"احتياجي"/"ميزانيتي" carry no
+  // extractable VALUE, only a REFERENCE, so it fell through to rule 5 below ("category only
+  // — a browse") exactly like a bare "لابتوب" would, and surfaced 83 unfiltered results
+  // instead of asking what the shopper actually needs. The distinction that matters: a bare
+  // category name is silence (nothing to react to); "أفضل"/"احتياجي"/"ميزانيتي" are the
+  // shopper EXPLICITLY asking to be helped to a decision. Routing this to advisory does not
+  // by itself produce a question — `shouldAsk()` (clarify.ts) still decides that, against
+  // real candidate rows, using the exact same "does the answer change the outcome" test
+  // already proven for room size/storage/RAM. This only earns the query a seat at that table.
+  if (task.wants_recommendation) signals.push('wants_recommendation');
+  if (task.budget_referenced) signals.push('budget_referenced');
+  if (task.use_case_referenced) signals.push('use_case_referenced');
   return signals;
 }
 

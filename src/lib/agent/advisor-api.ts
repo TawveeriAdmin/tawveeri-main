@@ -225,6 +225,11 @@ export interface AdvisorParsed {
   deprioritized_priorities?: string[];
   /** Section 7: actively rejected ("ما أبي X", "بدون X") — stronger than de-prioritized. */
   excluded_priorities?: string[];
+  /** P3/need-discovery clarify fields (2026-08-10) — were runtime-only until now (sent/read
+   *  via untyped JSON), never part of this contract, so a clarify answer for these two fields
+   *  could not survive into `DecisionState` the way room_size_m2/budget_total always could. */
+  storage_min?: number;
+  ram_min?: number;
 }
 
 /** Multi-unit acknowledgement (quantity · total budget · per-unit ceiling · unknowns).
@@ -272,7 +277,9 @@ export interface AdvisorResponse {
       field: string;
       question_ar: string;
       question_en: string;
-      options: Array<{ value: number; label_ar: string; label_en: string }>;
+      /** `value` is a number for room_size_m2/storage_min/ram_min/budget_total, or a
+       *  priorities array for the categorical "use case" question (2026-08-10). */
+      options: Array<{ value: number | string[]; label_ar: string; label_en: string }>;
     };
     reason: string;
   } | null;
@@ -411,7 +418,7 @@ export async function askAdvisor(
   // `room_size_m2` doubles as the clarification answer: the surface re-asks the SAME text
   // with the field filled in, so an answered question takes the identical path a shopper
   // who had typed it themselves would have taken. No separate "clarified" code path.
-  body: { text?: string } & Partial<{ category: string; room_size_m2: number; city: string; priorities: string[]; budget_total: number }>,
+  body: { text?: string } & Partial<{ category: string; room_size_m2: number; city: string; priorities: string[]; budget_total: number; storage_min: number; ram_min: number }>,
   opts?: { signal?: AbortSignal; limit?: number }
 ): Promise<AdvisorResponse> {
   const url = `/api/v1/agent/decide${opts?.limit ? `?limit=${opts.limit}` : ""}`;

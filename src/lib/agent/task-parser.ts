@@ -105,6 +105,36 @@ function parseBudget(x: string): number | null | undefined {
 }
 
 /**
+ * NEED-DISCOVERY SIGNALS (2026-08-10, founder's own production gap: «وش أفضل لابتوب
+ * لاحتياجي وميزانيتي؟» fell through to a plain 83-result browse instead of asking what
+ * "احتياجي"/"ميزانيتي" actually mean). The founder's own framing, verbatim: a possessive
+ * REFERENCE to budget/need is not the same as a VALUE — «ميزانيتي» alone means
+ * budget_requested=true, budget_value=unknown, never a completed constraint. These three
+ * detectors capture exactly that distinction, independent of whether `parseBudget`/
+ * `parsePriorities` above found an actual value.
+ *
+ * `wants_recommendation`: the shopper is explicitly asking US to decide/pick FOR them
+ * («أفضل», «انصحني», «وش تنصحني», "recommend", "what should I get") — as opposed to
+ * naming a product or browsing a category. This is the marker that turns "category with
+ * nothing else" from an honest browse (rule 5 in route-query.ts) into a real
+ * recommendation request worth clarifying, without hardcoding any specific product/category
+ * example — it fires identically for "أفضل لابتوب"/"أفضل جوال"/"أفضل مكيف".
+ */
+const RECOMMENDATION_MARKERS = /الافضل|الأفضل|افضل لي|أفضل لي|وش افضل|وش أفضل|ايش افضل|ايش أفضل|انصحني|أنصحني|تنصحني|توصيتك|توصيك|نصيحتك|اقترح لي|إقترح لي|الانسب لي|الأنسب لي|وش تنصح|ايش تنصح|وش الافضل|وش الأفضل|recommend|suggest.{0,20}me|what should i (get|buy|choose|pick)|which (one )?(is|to) (best|choose|get|buy)|help me choose|help me pick|best.{0,20}for me/;
+
+/** «ميزانيتي»/«على قد ميزانيتي»/"my budget" WITHOUT a number attached anywhere in the
+ *  sentence — the reference exists, the value does not. */
+const BUDGET_REFERENCE = /ميزاني|على قد|my budget/;
+
+/** «احتياجي»/«استخدامي»/«يناسبني» — the shopper is pointing at "my situation" without
+ *  stating what it is. Symmetric to BUDGET_REFERENCE for the exact same reason. */
+const USE_CASE_REFERENCE = /احتياجي|احتياجك|استخدامي|يناسبني|يناسب احتياجي|my (needs|use ?case)/;
+
+function hasBudgetReference(x: string): boolean { return BUDGET_REFERENCE.test(x); }
+function hasUseCaseReference(x: string): boolean { return USE_CASE_REFERENCE.test(x); }
+function wantsRecommendation(x: string): boolean { return RECOMMENDATION_MARKERS.test(x); }
+
+/**
  * Quantity: a small count directly before the category noun («ابي 3 مكيفات»,
  * "3 air conditioners"). Deliberately narrow — a number is a quantity ONLY when the very
  * next word(s) classify as the query's own category, so «مكيف 24000» (BTU), «شاشة 65»
@@ -185,8 +215,22 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «دراسة»/«برمجة» (study/programming) added 2026-08-09 — measured on «لابتوب للدراسة
   // والبرمجة»: neither use-case was recognized at all, so a laptop request for exactly the
   // RAM/CPU-focused fit this priority already scores for produced no priority signal.
-  ["productivity", /إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|productivity|work|office|study|studying|programming|coding/],
-  ["reading", /قراءة|reading|كتب|books/],
+  // «جامعة»/«الجامعة»/«دوام»/«وظيفة» (2026-08-10, need-discovery mission): MEASURED — none
+  // of these matched anything before this fix, so "لابتوب للجامعة" carried zero priority
+  // signal despite genuinely implying the same RAM/CPU-focused fit "دراسة" already scores
+  // for. Arabic work vocabulary was also missing — only the English literals "work"/"office"
+  // existed. Deliberately NOT adding bare «مكتب» ("office"): it is a substring of «مكتبي»
+  // ("my office"), which is ALSO a substring collision with the unrelated "reading" group's
+  // «كتب» ("books") check — "لمكتبي" would silently gain a fabricated reading priority. Not
+  // worth the ambiguity for one word when «دوام»/«وظيفة»/«جامعة» already cover the common
+  // Saudi phrasings without it.
+  ["productivity", /إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|جامعة|الجامعة|دوام|وظيفة|وظيفتي|productivity|work|office|university|college|studying|study|programming|coding/],
+  // MEASURED DEFECT (2026-08-10, need-discovery mission — found while testing an unrelated
+  // "مكتب" addition, fixed on discovery since it fabricates a priority): bare «كتب» matched
+  // inside «مكتب»/«مكتبي» ("office"/"my office"), so "لابتوب لمكتبي" silently gained a
+  // fabricated reading priority. A negative lookbehind excludes "كتب" preceded by "م" while
+  // still matching a standalone "كتب"/"الكتب".
+  ["reading", /قراءة|reading|(?<!م)كتب|books/],
   ["camera", /كاميرا|تصوير|صور|camera|photo/],
   // «بطاريته»/«بطاريتها» (possessive "its/his battery") added 2026-08-09 — measured on «جوال
   // …وبطاريته قوية…»: the bare «بطارية» pattern does not match, because Arabic shifts the
@@ -268,6 +312,11 @@ export interface ParsedTask extends ShoppingTask {
   deprioritized_priorities?: string[];
   /** Section 7: actively rejected ("ما أبي X", "بدون X") — stronger than de-prioritized. */
   excluded_priorities?: string[];
+  /** Need-discovery signals (2026-08-10) — a REFERENCE to budget/need/a recommendation ask,
+   *  distinct from an actual VALUE. See the detectors' own doc comment above. */
+  wants_recommendation?: boolean;
+  budget_referenced?: boolean;
+  use_case_referenced?: boolean;
 }
 
 /** Parse free-text into a ShoppingTask. Returns null category if undetectable. */
@@ -283,6 +332,11 @@ export function parseShoppingTask(text: string): ParsedTask {
   const city = parseCity(x);
   const storage_min = parseStorageMin(x);
   const wants_cheapest = CHEAPEST_MARKER.test(x);
+  // Referenced-but-unvalued (2026-08-10): only a real gap if the value itself never
+  // resolved — a sentence that both references AND states its budget («ميزانيتي 3000»)
+  // is fully answered already; this must not re-flag it as still-missing.
+  const budget_referenced = hasBudgetReference(x) && budget_total == null;
+  const use_case_referenced = hasUseCaseReference(x) && priorities.length === 0;
 
   const unresolved: string[] = [];
   if (!category) unresolved.push("category");
@@ -294,6 +348,9 @@ export function parseShoppingTask(text: string): ParsedTask {
     budget_total: budget_total ?? undefined,
     quantity,
     wants_cheapest: wants_cheapest || undefined,
+    wants_recommendation: wantsRecommendation(x) || undefined,
+    budget_referenced: budget_referenced || undefined,
+    use_case_referenced: use_case_referenced || undefined,
     parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,
     deprioritized_priorities: priorityParse.deprioritized.length ? priorityParse.deprioritized : undefined,
     excluded_priorities: priorityParse.excluded.length ? priorityParse.excluded : undefined,

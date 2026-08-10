@@ -15,7 +15,11 @@ import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
-import { readDecisionState, clearDecisionState } from '@/lib/agent/decision-state';
+import {
+  readDecisionState, clearDecisionState, createDecisionState, applyParsedTask,
+  applyDecisionResult, saveDecisionState, decisionStateToAdvisorBody, removeConstraint,
+  type DecisionState,
+} from '@/lib/agent/decision-state';
 import { handleMutationTurn } from '@/lib/agent/mutation-turn';
 import type { CounterfactualComparison } from '@/lib/agent/counterfactual';
 import { CounterfactualCard } from '@/components/agent/counterfactual-card';
@@ -1881,48 +1885,69 @@ export default function SearchClient() {
                       );
                     })()}
                     onClarify={(field, value) => {
-                      // Re-ask the SAME text with the answered field filled in, so an
-                      // answered question follows the identical path a shopper who had
-                      // typed it themselves would take — there is no separate "clarified"
-                      // branch to keep in step. The results below are untouched; only the
-                      // reasoning refines.
                       const text = advisorQueryRef.current;
                       if (!text) return;
                       advisorAbortRef.current?.abort();
                       const ctrl = new AbortController();
                       advisorAbortRef.current = ctrl;
                       track('advisor_clarified', { query_text: text, source: 'search', meta: { field, value } });
-                      askAdvisor({ text, [field]: value }, { signal: ctrl.signal, limit: 4 })
+
+                      // DURABLE STATE (2026-08-10, need-discovery mission — MEASURED GAP: a
+                      // clarify answer previously lived only inside this one request/response
+                      // pair. `DecisionState` was never touched, so the instant the shopper's
+                      // NEXT turn was a follow-up mutation ("لو رفعت الميزانية 500"), the
+                      // clarify answer vanished — unlike a budget stated in plain text, which
+                      // already survived via `applyParsedTask`. Bootstrap state from what THIS
+                      // turn's advisor answer already established if none exists yet (the
+                      // common case: clarify usually fires on the very first advisory turn),
+                      // then fold the answer through the EXACT SAME accumulation path every
+                      // other mutation turn uses (`mutation-turn.ts`), so it now survives
+                      // identically to a stated budget/room size/priority.
+                      const category = advisorResult?.parsed?.category || advisorResult?.task?.category;
+                      const existing = readDecisionState();
+                      const base: DecisionState = existing ?? applyParsedTask(
+                        createDecisionState(),
+                        { category, ...advisorResult?.parsed },
+                        'NEEDS_DISCOVERY',
+                      );
+                      const answer: Record<string, unknown> = { category: base.category || category, [field]: value };
+                      const nextState = applyParsedTask(base, answer as Parameters<typeof applyParsedTask>[1], 'NEEDS_DISCOVERY');
+                      const body = decisionStateToAdvisorBody(nextState) ?? answer;
+
+                      askAdvisor(body as Parameters<typeof askAdvisor>[0], { signal: ctrl.signal, limit: 4 })
                         .then((res) => {
                           if (ctrl.signal.aborted || res.error || res.count === 0) return;
                           setAdvisorResult(res);
+                          saveDecisionState(applyDecisionResult(nextState, {
+                            recommendations: res.recommendations, smart_pick: res.smart_pick, budget_satisfied: res.budget_satisfied,
+                          }));
                         })
                         .catch(() => { /* the answer already on screen stands */ });
                     }}
                     onRemoveConstraint={(field) => {
-                      // Constraint Ledger (Section 7) — re-ask as a STRUCTURED task built
-                      // from what was last understood, minus the removed field, rather than
-                      // the raw text: re-parsing the same sentence would just re-extract the
-                      // same field right back (the phrase is still there). No separate
-                      // "narrowed" branch to keep in step with `onClarify` above — same
-                      // abort/track/set pattern, opposite direction (removes, not fills).
+                      // Constraint Ledger (Section 7) — same durability fix as `onClarify`
+                      // above (2026-08-10): routes through DecisionState's own `removeConstraint`
+                      // instead of manually rebuilding a one-off body, so a removed constraint
+                      // stays removed across a later follow-up turn too, not just this response.
                       const parsed = advisorResult?.parsed;
                       if (!parsed?.category) return;
-                      const body: Record<string, unknown> = { category: parsed.category };
-                      if (field !== 'room_size_m2' && parsed.room_size_m2) body.room_size_m2 = parsed.room_size_m2;
-                      if (field !== 'budget_total' && parsed.budget_total) body.budget_total = parsed.budget_total;
-                      if (field !== 'city' && parsed.city) body.city = parsed.city;
-                      if (field !== 'quantity' && parsed.quantity) body.quantity = parsed.quantity;
-                      const priorities = (parsed.priorities ?? []).filter((p) => field !== `priority:${p}`);
-                      if (priorities.length) body.priorities = priorities;
                       advisorAbortRef.current?.abort();
                       const ctrl = new AbortController();
                       advisorAbortRef.current = ctrl;
-                      askAdvisor(body, { signal: ctrl.signal, limit: 4 })
+                      const bareField = field.startsWith('priority:') ? field.slice('priority:'.length) : field;
+                      const existing = readDecisionState();
+                      const base: DecisionState = existing ?? applyParsedTask(createDecisionState(), parsed, 'NEEDS_DISCOVERY');
+                      const nextState = removeConstraint(base, bareField);
+                      const body = decisionStateToAdvisorBody(nextState);
+                      if (!body) return;
+                      askAdvisor(body as Parameters<typeof askAdvisor>[0], { signal: ctrl.signal, limit: 4 })
                         .then((res) => {
                           if (ctrl.signal.aborted || res.error) return;
                           setAdvisorResult(res);
                           saveJourneyTask(res.parsed);
+                          saveDecisionState(applyDecisionResult(nextState, {
+                            recommendations: res.recommendations, smart_pick: res.smart_pick, budget_satisfied: res.budget_satisfied,
+                          }));
                         })
                         .catch(() => { /* the answer already on screen stands */ });
                     }}

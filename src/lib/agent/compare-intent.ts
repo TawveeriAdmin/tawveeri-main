@@ -63,6 +63,19 @@ const strip = (s: string) =>
     .trim();
 
 /**
+ * MEASURED DEFECT (2026-08-10, need-discovery mission): «وش أفضل لابتوب لاحتياجي
+ * وميزانيتي؟» matched the "وش افضل" PAIR_MARKER, found no actual second subject, and fell
+ * into the single-product fallback below — treating the ENTIRE vague-need phrase "لابتوب
+ * لاحتياجي وميزانيتي" as if it were a product NAME to price-compare. That fallback's own
+ * purpose (its doc comment's own example: «وش الفرق في آيفون ١٦؟») is a single NAMED
+ * PRODUCT — a possessive reference to "my need"/"my budget" with no stated value is the
+ * opposite of that: it is a recommendation request, not a product mention. No existing test
+ * exercised this fallback with this shape of input, so tightening it here regresses nothing
+ * already proven.
+ */
+const NOT_A_PRODUCT_NAME = /احتياجي|احتياجك|استخدامي|يناسبني|ميزانيتي|my (needs|budget|use ?case)/;
+
+/**
  * Split a phrase into exactly two subjects, or return null.
  *
  * The Arabic conjunction «و» is written ATTACHED to the word it joins («وسامسونج»), so a
@@ -105,7 +118,7 @@ export function detectCompareIntent(text: string): CompareIntent {
     // A pair marker with only one nameable subject — «وش الفرق في آيفون ١٦؟». The shopper
     // is asking about ONE product, so treat it as a single-product comparison rather than
     // inventing a second side.
-    if (rest.length >= 3) return { kind: 'single', subject: rest, marker: m };
+    if (rest.length >= 3 && !NOT_A_PRODUCT_NAME.test(rest)) return { kind: 'single', subject: rest, marker: m };
     return { kind: 'none', reason: `pair marker "${m}" with no nameable subject` };
   }
 
@@ -117,7 +130,7 @@ export function detectCompareIntent(text: string): CompareIntent {
     // «قارن آيفون ١٦ و جالكسي S24».
     const pair = splitPair(rest);
     if (pair) return { kind: 'pair', subjects: pair, marker: m };
-    if (rest.length >= 3) return { kind: 'single', subject: rest, marker: m };
+    if (rest.length >= 3 && !NOT_A_PRODUCT_NAME.test(rest)) return { kind: 'single', subject: rest, marker: m };
     return { kind: 'none', reason: `marker "${m}" with no nameable subject` };
   }
 

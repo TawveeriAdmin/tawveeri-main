@@ -81,11 +81,20 @@ function ClarifyPrompt({
 }: {
   clarify: NonNullable<AdvisorResponse['clarify']>;
   loc: Locale;
-  onAnswer: (field: string, value: number) => void;
+  /** `value` is a number for room_size_m2/storage_min/ram_min/budget_total, or a priorities
+   *  array for the categorical "use case" question (2026-08-10, need-discovery mission). */
+  onAnswer: (field: string, value: number | string[]) => void;
   onSkip: () => void;
 }) {
   const ar = loc === 'ar';
   const q = clarify.question;
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+  // Only numeric fields take a free-text fallback — a "شيء ثاني/عام" chip already covers
+  // the "none of these fit" case for the categorical use-case question, and a typed number
+  // has no meaning there. "No dead ends" (need-discovery research): if none of the offered
+  // ranges match, the shopper can still answer instead of the flow going nowhere.
+  const allowsCustom = q.field !== 'priorities';
   return (
     <div
       data-testid="clarify-prompt"
@@ -96,7 +105,7 @@ function ClarifyPrompt({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {q.options.map((o) => (
           <button
-            key={o.value}
+            key={Array.isArray(o.value) ? o.value.join('+') || 'none' : o.value}
             type="button"
             onClick={() => onAnswer(q.field, o.value)}
             className="inline-flex h-9 items-center rounded-full border border-primary-300 bg-[color:var(--color-surface)] px-4 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-700 dark:bg-[color:var(--color-surface-container-low)] dark:text-primary-300 dark:hover:bg-primary-950/60"
@@ -104,6 +113,16 @@ function ClarifyPrompt({
             {ar ? o.label_ar : o.label_en}
           </button>
         ))}
+        {allowsCustom && !customOpen && (
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            data-testid="clarify-custom-toggle"
+            className="inline-flex h-9 items-center rounded-full border border-dashed border-primary-300 px-4 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-700 dark:text-primary-300 dark:hover:bg-primary-950/60"
+          >
+            {ar ? '✏️ أحدد رقمًا' : '✏️ I’ll specify'}
+          </button>
+        )}
         <button
           type="button"
           onClick={onSkip}
@@ -113,6 +132,33 @@ function ClarifyPrompt({
           {ar ? 'تخطَّ — اعرض الترشيح الحالي' : 'Skip — show the current recommendation'}
         </button>
       </div>
+      {allowsCustom && customOpen && (
+        <form
+          className="mt-3 flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const n = Number(customValue.replace(/[^\d.]/g, ''));
+            if (Number.isFinite(n) && n > 0) onAnswer(q.field, n);
+          }}
+        >
+          <input
+            type="text"
+            inputMode="numeric"
+            autoFocus
+            value={customValue}
+            onChange={(e) => setCustomValue(e.target.value)}
+            placeholder={ar ? 'اكتب رقمًا...' : 'Type a number...'}
+            data-testid="clarify-custom-input"
+            className="h-9 w-32 rounded-full border border-primary-300 bg-[color:var(--color-surface)] px-3 text-xs text-on-surface outline-none focus:border-primary-500 dark:border-primary-700"
+          />
+          <button
+            type="submit"
+            className="inline-flex h-9 items-center rounded-full bg-primary-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-primary-700"
+          >
+            {ar ? 'تم' : 'Done'}
+          </button>
+        </form>
+      )}
       <p className="mt-2 text-[11px] text-on-surface-variant">
         {ar
           ? 'نسأل فقط حين تُغيّر الإجابة الترشيح فعلًا — والنتيجة أدناه معروضة على أي حال.'
@@ -564,8 +610,9 @@ export function AdvisorAnswer({
   locale: string;
   source?: string;
   className?: string;
-  /** Re-runs the same query with the answered field filled in. Omit and no question shows. */
-  onClarify?: (field: string, value: number) => void;
+  /** Re-runs the same query with the answered field filled in. `value` is a priorities array
+   *  for the categorical use-case question, a number otherwise. Omit and no question shows. */
+  onClarify?: (field: string, value: number | string[]) => void;
   /** Constraint Ledger (Section 7) — removes one understood constraint and re-runs the
    *  request without it. Omit and the ledger renders read-only (no × buttons). */
   onRemoveConstraint?: (field: string) => void;

@@ -108,7 +108,12 @@ export function createDecisionState(): DecisionState {
   };
 }
 
-const HARD_CONSTRAINT_FIELDS: (keyof AdvisorParsed)[] = ['room_size_m2', 'budget_total', 'city'];
+// storage_min/ram_min added 2026-08-10 (need-discovery mission): a clarify answer for
+// either field previously vanished the instant the shopper's NEXT turn was a follow-up
+// mutation, since `applyParsedTask` never folded them into `hard_constraints` — the doc
+// comment on `hard_constraints` above already listed them as example keys, this just wires
+// that promise up. budget_total/room_size_m2/city were already correct.
+const HARD_CONSTRAINT_FIELDS: (keyof AdvisorParsed)[] = ['room_size_m2', 'budget_total', 'city', 'storage_min', 'ram_min'];
 
 /**
  * True when `task` names a category that genuinely SWITCHES away from an already-established
@@ -264,6 +269,8 @@ export function decisionStateToAdvisorBody(
   if (typeof state.hard_constraints.room_size_m2 === 'number') body.room_size_m2 = state.hard_constraints.room_size_m2;
   if (typeof state.hard_constraints.budget_total === 'number') body.budget_total = state.hard_constraints.budget_total;
   if (typeof state.hard_constraints.city === 'string') body.city = state.hard_constraints.city;
+  if (typeof state.hard_constraints.storage_min === 'number') body.storage_min = state.hard_constraints.storage_min;
+  if (typeof state.hard_constraints.ram_min === 'number') body.ram_min = state.hard_constraints.ram_min;
   if (state.soft_preferences.length) body.priorities = state.soft_preferences;
   return body;
 }
