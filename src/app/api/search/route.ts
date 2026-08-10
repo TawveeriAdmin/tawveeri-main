@@ -681,8 +681,15 @@ const DISHWASHER_SAFE_CLAIM = /امن[ةه]?\s*(?:للغسل\s*)?(?:في\s*)?غ�
 export function hasStrongDishwasherSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr || '');
   const en = (nameEn || '').toLowerCase();
+  // MEASURED BUG (2026-08-10, same fix, caught live post-deploy): "مدمج" ("integrated/
+  // built-in") is too generic — the air fryer's OWN title says "قلاية وشواية مدمجة"
+  // (integrated air-fryer-and-grill combo), wrongly satisfying an earlier version of this
+  // check. Also "built in" must be checked against the COMBINED ar+en text, not `en` alone —
+  // at least one genuine dishwasher ("kumtel built in") carries the literal English phrase
+  // "built in" embedded WITHIN its Arabic-field title, with `name_en` null.
   if (DISHWASHER_SAFE_CLAIM.test(ar)) {
-    return /\d+\s*مكان/.test(ar) || /مدمج/.test(ar) || /built\s*in/.test(en) || /\bdishwasher\b/.test(en);
+    const hay = `${ar} ${en}`;
+    return /\d+\s*مكان/.test(ar) || /built\s*in/.test(hay) || /\bdishwasher\b/.test(hay);
   }
   return /غسال[ةه]\s*صحون|جلاي[ةه]/.test(ar) || /\bdishwasher\b/.test(en);
 }

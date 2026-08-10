@@ -490,12 +490,17 @@ describe("excludeIneligibleCandidates — accessory-hint gap: blender shaker bot
  */
 describe("hasStrongDishwasherSignal — a \"dishwasher-safe\" feature claim is not a dishwasher", () => {
   it("rejects the exact measured air-fryer titles", () => {
+    // MEASURED BUG (2026-08-10, caught live POST-deploy — an earlier, truncated version of
+    // this test string omitted "قلاية وشواية مدمجة", the exact phrase that made the first
+    // shipped fix wrongly accept this item: "مدمج" ("integrated/built-in") is too generic —
+    // this air fryer uses it to describe ITS OWN combo feature, not a dishwasher identity.
+    // The full, untruncated title is required here so this test can catch that regression.
     expect(hasStrongDishwasherSignal(
-      "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، أجزاء آمنة في غسالة الصحون",
+      "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، قلاية وشواية مدمجة لتحضير وجبات عائلية كاملة، موفرة للطاقة، 8 برامج طهي مسبقة، أجزاء آمنة في غسالة الصحون، وصفات لا حصر لها، تطبيق مخصص",
       "",
     )).toBe(false);
     expect(hasStrongDishwasherSignal(
-      "قلاية زيت أوليوكلين برو العميقة أجزاء آمنة للغسل في غسالة الصحون",
+      "قلاية زيت أوليوكلين برو العميقة / تصل إلى 1.2 كجم من الطعام سهلة التخزين مع صندوق الزيت مؤقت رقمي تحكم ترموستات 50-60 هرتز 1930-2300 واط أجزاء آمنة للغسل في غسالة الصحون",
       "",
     )).toBe(false);
   });
@@ -513,7 +518,7 @@ describe("excludeIneligibleCandidates — isDishwasherQuery gate removes dishwas
     { name_ar: "غسالة صحون beko 15 مكان", name_en: null, best_price: 780 },
   ];
   const falsePositive = {
-    name_ar: "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر أجزاء آمنة في غسالة الصحون",
+    name_ar: "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، قلاية وشواية مدمجة لتحضير وجبات عائلية كاملة، موفرة للطاقة، 8 برامج طهي مسبقة، أجزاء آمنة في غسالة الصحون، وصفات لا حصر لها، تطبيق مخصص",
     name_en: null,
     best_price: 669,
   };
