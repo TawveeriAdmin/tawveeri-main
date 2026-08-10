@@ -484,6 +484,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   products: T[],
   isAcQuery = false,
   isMonitorQuery = false,
+  isWatchQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -523,6 +524,15 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isMonitorQuery) {
     const monitorFiltered = result.filter((p) => hasStrongMonitorSignal(p.name_ar || '', p.name_en || ''));
     if (monitorFiltered.length > 0) result = monitorFiltered;
+  }
+
+  // MEASURED DEFECT (2026-08-10, same session, founder follow-up "check other categories for
+  // the same leak"): Arabic "ساعة" means both "watch" and "hour" — sorting "ساعة"
+  // lowest-price-first surfaced power banks via "مللي أمبير/ساعة" (mAh). See
+  // `hasStrongWatchSignal`'s own comment for the measured evidence.
+  if (isWatchQuery) {
+    const watchFiltered = result.filter((p) => hasStrongWatchSignal(p.name_ar || '', p.name_en || ''));
+    if (watchFiltered.length > 0) result = watchFiltered;
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -600,6 +610,25 @@ export function hasStrongMonitorSignal(nameAr: string, nameEn: string): boolean 
     return strongComputerMonitorPhrase();
   }
   return /\bmonitor\b/.test(en);
+}
+
+// MEASURED LIVE (production, 2026-08-10, D→E mission Part F, founder follow-up "check other
+// categories for the same leak"): Arabic "ساعة" is a genuine homonym — "watch/clock" AND
+// "hour", the time unit in battery-capacity specs ("10,000 مللي أمبير/ساعة" = 10,000 mAh,
+// "20 ألف مللي أمبير في الساعة"). Sorting "ساعة" lowest-price-first surfaced 4 power banks
+// via this exact pattern, none of them accessory-shaped or abnormally cheap. A title using
+// "ساعة" only as the hour unit next to "أمبير"/"واط" is not a watch, no matter how correctly
+// the spec line uses the word — require genuine watch vocabulary in that case.
+const HOUR_UNIT_SIGNAL = /أمبير[\s/]*(?:في\s*)?(?:ال)?ساعه|واط[\s/]*(?:في\s*)?(?:ال)?ساعه/;
+
+export function hasStrongWatchSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  const genuineWatchSignal = () =>
+    /ساعه\s*ذكيه|ساعات\s*ذكيه|سوار\s*ذكي|سوار\s*رياضي/.test(ar)
+    || /smart\s*watch|smartwatch|apple\s*watch|galaxy\s*watch|huawei\s*watch|garmin|fitbit|wrist\s*watch|watch\s*band/.test(en);
+  if (HOUR_UNIT_SIGNAL.test(ar)) return genuineWatchSignal();
+  return /(^|\s)ساعه|ساعات/.test(ar) || /\bwatch\b|smartwatch/.test(en);
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
@@ -1639,6 +1668,7 @@ export async function POST(request: NextRequest) {
     : [];
   const isAcQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('air_conditioner');
   const isMonitorQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('monitor');
+  const isWatchQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('smartwatch');
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
@@ -1706,7 +1736,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }

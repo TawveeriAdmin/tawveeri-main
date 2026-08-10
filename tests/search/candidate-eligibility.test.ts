@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -317,5 +317,46 @@ describe("excludeIneligibleCandidates — isMonitorQuery gate removes health-con
   it("does NOT apply the monitor-signal filter for a non-monitor query (default isMonitorQuery=false)", () => {
     const result = excludeIneligibleCandidates([falsePositive, ...genuineMonitors]);
     expect(result).toHaveLength(genuineMonitors.length + 1);
+  });
+});
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, founder follow-up "check other
+ * categories for the same leak"): Arabic "ساعة" is a genuine homonym — "watch/clock" AND
+ * "hour", the time unit in battery-capacity specs ("10,000 مللي أمبير/ساعة" = 10,000 mAh).
+ * Sorting "ساعة" lowest-price-first surfaced 4 power banks via this exact pattern.
+ */
+describe("hasStrongWatchSignal — bare \"ساعة\" as the HOUR unit is not a watch", () => {
+  it("rejects the exact measured power-bank titles", () => {
+    expect(hasStrongWatchSignal("قوي , بطارية متنقلة كيجو بسعة 10,000 مللي أمبير في الساعة,أسود", "")).toBe(false);
+    expect(hasStrongWatchSignal("باور بانك شاومي 20 ألف مللي أمبير/ساعة 33 واط BHR8851GL بيج", "")).toBe(false);
+    expect(hasStrongWatchSignal("باور بانك أورايمو 27 ألف مللي أمبير/ساعة 22.5 واط OPB-7270Q", "")).toBe(false);
+  });
+  it("accepts genuine watch titles, including bare 'ساعة' with no other qualifier", () => {
+    expect(hasStrongWatchSignal("ساعة أورايمو الذكية 5 لايت OSW-804-BK سوداء", "")).toBe(true);
+    expect(hasStrongWatchSignal("كيسليكت كيه اس ساعة ذكية لون أسود", "")).toBe(true);
+    expect(hasStrongWatchSignal("", "PEJE Smart Watch For Men,1.28\" Display,Arabic Support,Bluetooth")).toBe(true);
+    expect(hasStrongWatchSignal("", "HUAWEI Band 9 Smartwatch, Comfortable All-Day Wearing")).toBe(true);
+  });
+});
+
+describe("excludeIneligibleCandidates — isWatchQuery gate removes the hour-unit homonym false positives", () => {
+  const genuineWatches = [
+    { name_ar: "ساعة أورايمو الذكية 5 لايت OSW-804-BK سوداء", name_en: null, best_price: 149 },
+    { name_ar: "كيسليكت كيه اس ساعة ذكية لون أسود", name_en: null, best_price: 179 },
+    { name_ar: null, name_en: "HUAWEI Band 9 Smartwatch, Comfortable All-Day Wearing", best_price: 199 },
+  ];
+  const falsePositive = { name_ar: "باور بانك شاومي 20 ألف مللي أمبير/ساعة 33 واط BHR8851GL بيج", name_en: null, best_price: 89 };
+
+  it("removes the power bank when isWatchQuery is true", () => {
+    const result = excludeIneligibleCandidates([falsePositive, ...genuineWatches], false, false, true);
+    const names = result.map((r) => r.name_ar ?? r.name_en);
+    expect(names).not.toContain(falsePositive.name_ar);
+    for (const g of genuineWatches) expect(names).toContain(g.name_ar ?? g.name_en);
+  });
+
+  it("does NOT apply the watch-signal filter for a non-watch query (default isWatchQuery=false)", () => {
+    const result = excludeIneligibleCandidates([falsePositive, ...genuineWatches]);
+    expect(result).toHaveLength(genuineWatches.length + 1);
   });
 });
