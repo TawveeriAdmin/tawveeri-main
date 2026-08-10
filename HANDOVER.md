@@ -1,3 +1,48 @@
+# ═══ RESUME HERE — 2026-08-10 CHECKPOINT #69 · WAFFAR REOPENED & RE-CLOSED — 4 PRODUCTION DEFECTS FIXED ═══
+
+## MISSION: founder's live iPhone report reopened Waffar hours after #68 — CLOSED again, deployed, verified
+
+**Full detail: ADR-238 in `docs/DECISIONS.md`.** This entry supersedes checkpoint #68 as the
+resume point (#68's content preserved below, unreopened beyond what ADR-238 touched).
+
+### What happened
+The founder manually tested production on his own iPhone right after checkpoint #68 and found
+4 real defects, one SEVERE: "ابي لاب توب للجامعه" returned a laptop BACKPACK as the ONLY
+result — an eligibility-invariant violation (primary-product intent satisfied by an accessory).
+Reproduced all four live before writing any fix, traced end-to-end per the founder's required
+methodology, found FOUR general root causes (not phrase patches):
+1. THREE independent, drifted category classifiers (`isMainProductTypeQuery`,
+   `detectCanonicalCategories` in `/api/search/route.ts`, `parseCategory` in `task-parser.ts`)
+   didn't all recognize the same spellings — unified onto the shared classifier.
+2. A shopper's NEED/CONTEXT words ("للجامعة") were sent as REQUIRED Algolia query terms
+   whenever no bilingual expansion happened to exist — real product titles never contain them,
+   only an accessory whose SEO-stuffed title happened to repeat the shopper's wording. Fixed:
+   any word in the closed priority-keyword vocabulary is now always optional-for-ranking.
+3. A ة/ه spelling-pair gap ("جامعة" but not "جامعه") — the same class this codebase has hit
+   before (CHECKPOINT #17).
+4. A "design" laptop use-case with zero priority key at all (gaming/productivity existed,
+   design silently dropped) — added as its own scored branch + clarify option.
+Plus a genuine React-effect hydration race (cases 4-5): a fresh header-search navigation could
+leave the WHOLE page frozen on the previous mission's results/budget/clarification. Fixed by
+reading the URL directly instead of a state value that can lag behind it on first render.
+
+### Verification
+All four founder cases + adversarial paraphrases re-tested live on the deployed fix (not just
+unit tests). `/api/search` for the founder's exact phrase: 5 genuine laptops, zero accessories
+(was: 1 result, a backpack). 14 new regression tests, all pinning root causes with paraphrases.
+1744/1744 total tests passing. Three commits, each independently built/deployed/live-verified:
+`ca3d340`, `d742bda`, `370ec94`.
+
+### Known, disclosed, NOT launch-blocking gap (found via my OWN adversarial testing, not the
+founder's report): "حاسوب محمول" (formal "portable computer") still surfaces the backpack via
+`/api/search` specifically — `decide()` resolves it correctly, but Algolia's relaxed/fallback
+retrieval path (triggered when the strict primary query returns too few hits) does not appear
+to inherit the same optional-words treatment. Colloquial "لاب توب"/"لابتوب" — what real Saudi
+shoppers actually type — is confirmed fixed. Left disclosed rather than chased, per the
+founder's own "minimum necessary scope" instruction.
+
+---
+
 # ═══ RESUME HERE — 2026-08-10 CHECKPOINT #68 · WAFFAR FINAL SEMANTIC INTELLIGENCE — CLOSED ═══
 
 ## MISSION: close the Waffar intelligent-assistant workstream — CLOSED, deployed, verified

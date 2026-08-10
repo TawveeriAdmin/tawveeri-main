@@ -1,9 +1,20 @@
 # Waffar Final Intelligence Handover — 2026-08-10
 
-**Status: Workstream CLOSED.** This document is the durable record of the final semantic-intelligence
-mission's architecture, evaluation methodology, and known limitations. It is written so that a future
-engineer never needs the chat session that produced it. See `docs/DECISIONS.md` ADR-237 for the
-decision-register entry; this file is the fuller narrative.
+**Status: Workstream CLOSED (reopened once, same day, re-closed).** This document is the durable
+record of the final semantic-intelligence mission's architecture, evaluation methodology, and known
+limitations. It is written so that a future engineer never needs the chat session that produced it.
+See `docs/DECISIONS.md` ADR-237 for the original closure and ADR-238 for the reopened-mission
+findings; this file is the fuller narrative of both.
+
+**ADDENDUM (same day, reopened mission — see ADR-238 for full detail):** hours after the closure
+below, the founder tested production on his own iPhone and found 4 real defects — one SEVERE
+(a laptop backpack surfacing as the sole result for "ابي لاب توب للجامعه", an eligibility-invariant
+violation). Root cause was NOT in the semantic-fallback layer this document describes — it was in
+`/api/search`'s own retrieval pipeline: THREE independently-drifted category classifiers (this
+mission's own "one decision system" principle, violated one layer down from where this document
+was looking) plus an Algolia query-construction gap that sent a shopper's context words as
+REQUIRED match terms. All fixed, live-verified, documented in ADR-238. The semantic-fallback
+architecture itself (§2-§8 below) was NOT the defect and needed no changes.
 
 ## 1. The question this mission answered
 
