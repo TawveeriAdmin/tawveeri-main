@@ -107,6 +107,12 @@ Added `hasStrongWatchSignal`: when "ساعة" sits adjacent to أمبير/واط
 
 Verified live: all 4 power banks gone from "ساعة" results (total 121, down from the contaminated set), top 10 all genuine watches or legitimate watch-strap accessories. Full test suite 1655→1659, zero regressions.
 
+**Ninth addendum (2026-08-10, same session) — one more "check other categories" pass, one more genuine but DIFFERENT-mechanism leak.** Sweeping نشافة (clean — only genuine washer/dryer combo units), جوال and لابتوب (both clean, re-verified after this session's other fixes) found one hit: sorting "فرن" (oven) lowest-price-first put an oven baking TRAY (75.95 SAR) and an oven THERMOMETER (201.45 SAR) above every genuine oven (starting at 220 SAR).
+
+Unlike every other fix in this ADR (homonyms, generic Algolia expansion tokens, DB miscategorization, device-description overlaps), this was simply a gap in the ORIGINAL, pre-existing `ACCESSORY_HINTS_AR` list — "صينية" (tray) and "مقياس حرارة" (thermometer) were never in it. Added both directly; `hasAccessoryHint` already normalizes each hint word before comparing, so no CHECKPOINT #17-class folding risk. Verified live: both accessory items gone, top 5 "فرن" results all genuine ovens starting at 220 SAR. Full test suite 1659→1660, zero regressions.
+
+**Cumulative cross-category sweep result, this session:** مكيف/شاشة/راوتر/مكنسة/غسالة/ساعة/فرن — 7 categories with real, distinct leaks found and fixed, spanning 4 different root-cause mechanisms (generic Algolia expansion tokens, DB miscategorization, device-description overlap, dictionary homonym, accessory-hint-list gap). تلفزيون/ثلاجة/تابلت/كاميرا/سماعة/جوال/لابتوب/نشافة — 8 categories checked and confirmed clean.
+
 ---
 
 ### ADR-235 — Both Section 44 gaps closed; D genuinely reached, end-to-end, verified live · Accepted (2026-08-09)
