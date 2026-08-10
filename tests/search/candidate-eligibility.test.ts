@@ -267,6 +267,21 @@ describe("hasStrongMonitorSignal — a health-context \"___ monitor\" phrase is 
     expect(hasStrongMonitorSignal("", "Blood Pressure Monitor Digital Arm Cuff")).toBe(false);
     expect(hasStrongMonitorSignal("", "Baby Monitor with Night Vision Camera")).toBe(false);
   });
+
+  // MEASURED LIVE (production, 2026-08-10, same session): after the health-context fix
+  // shipped, "شاشة" dropped from 398→166 results but STILL surfaced Huawei Band smartwatches
+  // — "شاشة 1.62 بوصة" (a 1.62-inch screen) is a genuine, true spec line on watch listings,
+  // not a claim to be a monitor. A title that independently signals smartwatch/band/tracker
+  // must be rejected even though it legitimately contains "شاشة".
+  it("rejects a smartwatch that genuinely describes its own screen size (شاشة X بوصة)", () => {
+    expect(hasStrongMonitorSignal("ساعة هواوي باند 11 الذكية، شاشة 1.62 بوصة، اسود", "")).toBe(false);
+    expect(hasStrongMonitorSignal("", "Smart Watch for Women Men, iPhone & Android Bluetooth, 1.83\" Screen")).toBe(false);
+    expect(hasStrongMonitorSignal("", "Huawei Watch Fit 4, 1.82in AMOLED Screen, Fitness Tracker")).toBe(false);
+  });
+  it("a computer monitor is still accepted even in the presence of watch-shaped vocabulary edge cases", () => {
+    // Sanity: SMARTWATCH_OVERRIDE must not fire on ordinary monitor titles with no watch words.
+    expect(hasStrongMonitorSignal("", "LG UltraGear Gaming Monitor 27-inch QHD 165Hz")).toBe(true);
+  });
 });
 
 describe("excludeIneligibleCandidates — isMonitorQuery gate removes health-context \"monitor\" false positives", () => {

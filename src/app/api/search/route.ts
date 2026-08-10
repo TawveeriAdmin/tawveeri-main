@@ -563,9 +563,24 @@ export function hasStrongACSignal(nameAr: string, nameEn: string): boolean {
 // on bare "monitor" alone, so genuine recall is untouched.
 const HEALTH_MONITOR_PHRASES = /heart\s*rate\s*monitor|sleep\s*monitor|blood\s*pressure\s*monitor|glucose\s*monitor|baby\s*monitor|fitness\s*monitor|health\s*monitor(?:ing)?|activity\s*monitor|spo2\s*monitor/i;
 
+// MEASURED LIVE (production, 2026-08-10, same session): after HEALTH_MONITOR_PHRASES shipped,
+// "شاشة" results dropped from 398→166 but STILL surfaced Huawei Band smartwatches — a
+// DIFFERENT, related gap: "شاشة X بوصة" (an X-inch screen) is a genuine, true, extremely
+// common spec LINE on smartwatch listings, not a claim to be a monitor — the exact word, used
+// honestly to describe a real feature, just on the wrong device. A title that independently
+// signals "this is a smartwatch/band/tracker" must never pass on "شاشة" alone, no matter how
+// legitimately that word describes the watch's own screen.
+const SMARTWATCH_OVERRIDE = /ساعة\s*ذكية|ساعات\s*ذكية|سوار\s*ذكي|سوار\s*رياضي|هواوي\s*باند|smart\s*watch|smartwatch|fitness\s*tracker|apple\s*watch|galaxy\s*watch|huawei\s*watch|huawei\s*band|xiaomi\s*watch|xiaomi\s*band|\bgarmin\b|\bfitbit\b/i;
+
 export function hasStrongMonitorSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr || '');
   const en = (nameEn || '').toLowerCase();
+  // CHECKPOINT #17 class check: `ar` is already ة→ه folded (normalizeArabic), so this pattern
+  // must match the FOLDED form ("شاشه", not "شاشة") or it can never match at all.
+  const strongComputerMonitorPhrase = () =>
+    /\b(?:computer|gaming|curved|ultrawide|4k|8k|ips|led|oled|qled|portable|external|desktop|touch)\s*monitor\b/.test(en)
+    || /شاشه\s*كمبيوتر|شاشه\s*حاسوب/.test(ar);
+  if (SMARTWATCH_OVERRIDE.test(`${ar} ${en}`)) return strongComputerMonitorPhrase();
   // Arabic has no equivalent of the English "monitor" homograph (screen vs. health-tracking
   // device) — "شاشة" never describes a heart-rate/sleep monitor, so bare "شاشة"/"شاشات"
   // (normalized "شاشه"/"شاشات") is a sufficient positive signal on its own. Genuine Arabic
@@ -573,7 +588,7 @@ export function hasStrongMonitorSignal(nameAr: string, nameEn: string): boolean 
   // never say "شاشة كمبيوتر" — requiring that compound phrase would wrongly exclude them.
   if (/(^|\s)شاشه|شاشات|مونيتور/.test(ar)) return true;
   if (HEALTH_MONITOR_PHRASES.test(en)) {
-    return /\b(?:computer|gaming|curved|ultrawide|4k|8k|ips|led|oled|qled|portable|external|desktop|touch)\s*monitor\b/.test(en);
+    return strongComputerMonitorPhrase();
   }
   return /\bmonitor\b/.test(en);
 }
