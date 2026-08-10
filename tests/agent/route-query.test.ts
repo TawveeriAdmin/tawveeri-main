@@ -166,6 +166,19 @@ describe('namesASpecificModel', () => {
     // A genuine model code must still be detected even when a spec token sits right next to it.
     expect(namesASpecificModel('galaxy s24 with 256gb storage')).toBe(true);
   });
+
+  // MEASURED DEFECT (2026-08-10, same session, re-verification sweep): the SAME failure class
+  // reproduced live with a unit missing from the original fix's list — "400l" (liters, common
+  // for refrigerator/washer capacity). Broadened the unit list rather than special-casing one
+  // more token; these appliance-spec units recur across categories this mission touches.
+  it('other appliance spec units (liters, kg, rpm, dB, mAh, W) are never treated as models', () => {
+    expect(namesASpecificModel('refrigerator 400l under 3000')).toBe(false);
+    expect(routeQuery('refrigerator 400l under 3000').mode).toBe('advisory');
+    expect(namesASpecificModel('washing machine 8kg under 1500')).toBe(false);
+    expect(namesASpecificModel('quiet ac under 40db')).toBe(false);
+    expect(namesASpecificModel('phone with 5000mah battery')).toBe(false);
+    expect(namesASpecificModel('microwave 900w under 500')).toBe(false);
+  });
 });
 
 // Regression (2026-08-04, docs/baselines/2026-08-04-ac-basket-query): the exact failing

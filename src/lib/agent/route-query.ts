@@ -92,7 +92,13 @@ const NAMED_SERIES = /iphone|galaxy|macbook|ipad|pixel|redmi|poco|vivobook|think
  * query ("16gb ram", "128gb storage", "6000mah battery", "4k tv", …), which is common
  * phrasing, not an edge case.
  */
-const SPEC_UNIT_TOKEN = /^\d+(?:gb|tb|mb|mah|hz|ghz|mhz|w|kg|g|mm|cm|inch|in|mp|nit|nits|k|kwh|btu)$/i;
+// MEASURED DEFECT (2026-08-10, same session, re-verification sweep): "refrigerator 400l
+// under 3000" reproduced the identical class of failure with a unit missing from the list
+// above ("l" for liters, common for refrigerator/washer capacity) — confirmed the same way
+// (decide() answers it directly with count 4; the client never called it). This list is
+// inherently open-ended across appliance categories (capacity, weight, power, battery,
+// resolution, …), so it is kept broad rather than re-patched one missed unit at a time.
+const SPEC_UNIT_TOKEN = /^\d+(?:gb|tb|mb|mah|wh|kwh|hz|ghz|mhz|w|kw|v|a|kg|g|lb|lbs|oz|l|ml|mm|cm|inch|in|ft|mp|nit|nits|k|btu|rpm|db|fps)$/i;
 
 export function namesASpecificModel(text: string): boolean {
   const t = (text || '').trim();
