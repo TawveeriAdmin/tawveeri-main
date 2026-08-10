@@ -679,7 +679,10 @@ export function hasStrongWatchSignal(nameAr: string, nameEn: string): boolean {
 const DISHWASHER_SAFE_CLAIM = /امن[ةه]?\s*(?:للغسل\s*)?(?:في\s*)?غسال[ةه]\s*ال?صحون/;
 
 export function hasStrongDishwasherSignal(nameAr: string, nameEn: string): boolean {
-  const ar = normalizeArabic(nameAr || '');
+  // .toLowerCase() is a no-op on Arabic script, so this stays safe for the Arabic-only
+  // regexes below while fixing ASCII "Dishwasher"/"Built In" case sensitivity when that text
+  // lives in the name_ar column (see MEASURED BUG #3 below).
+  const ar = normalizeArabic(nameAr || '').toLowerCase();
   const en = (nameEn || '').toLowerCase();
   // MEASURED BUG (2026-08-10, same fix, caught live post-deploy): "مدمج" ("integrated/
   // built-in") is too generic — the air fryer's OWN title says "قلاية وشواية مدمجة"
@@ -687,11 +690,29 @@ export function hasStrongDishwasherSignal(nameAr: string, nameEn: string): boole
   // check. Also "built in" must be checked against the COMBINED ar+en text, not `en` alone —
   // at least one genuine dishwasher ("kumtel built in") carries the literal English phrase
   // "built in" embedded WITHIN its Arabic-field title, with `name_en` null.
+  //
+  // MEASURED BUG #2 (2026-08-10, SAME fix, caught live AGAIN post-deploy): `/\bdishwasher\b/`
+  // matched the fryers' own `name_en` — "Dishwasher-Safe Parts" / "Dishwasher safe Parts" —
+  // because `\b` sits between "dishwasher" and the hyphen/space before "safe", not just at a
+  // genuine product-identity boundary. Both TEFAL fryers ship "Dishwasher-Safe Parts" as an
+  // English spec line, re-triggering the exact same false positive the Arabic branch was
+  // built to catch. A trailing "-safe"/" safe" turns "dishwasher" back into a feature claim,
+  // never a product identity — excluded via negative lookahead.
+  //
+  // MEASURED BUG #3 (2026-08-10, same fix, found while re-verifying #2 with a standalone
+  // repro before deploy — never shipped): some stores put plain English text straight into
+  // the `name_ar` column ("Classpro Dishwasher 12 place settings..."). `normalizeArabic`
+  // does not lowercase, so "Dishwasher" (capital D) failed `DISHWASHER_WORD` when it only
+  // ever tested lowercased `en`. `ar` is now lowercased above too — a no-op on Arabic script.
+  const DISHWASHER_WORD = /\bdishwasher\b(?!\s*-?\s*safe)/;
+  // hay = combined ar+en, since a store's own "name_ar" column sometimes carries plain
+  // English text (e.g. "Classpro Dishwasher 12 place settings...") — the same field-mixing
+  // this function already had to account for once above ("kumtel built in").
+  const hay = `${ar} ${en}`;
   if (DISHWASHER_SAFE_CLAIM.test(ar)) {
-    const hay = `${ar} ${en}`;
-    return /\d+\s*مكان/.test(ar) || /built\s*in/.test(hay) || /\bdishwasher\b/.test(hay);
+    return /\d+\s*مكان/.test(ar) || /built\s*in/.test(hay) || DISHWASHER_WORD.test(hay);
   }
-  return /غسال[ةه]\s*صحون|جلاي[ةه]/.test(ar) || /\bdishwasher\b/.test(en);
+  return /غسال[ةه]\s*صحون|جلاي[ةه]/.test(ar) || DISHWASHER_WORD.test(hay);
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against

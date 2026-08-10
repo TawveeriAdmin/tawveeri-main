@@ -487,9 +487,18 @@ describe("excludeIneligibleCandidates — accessory-hint gap: blender shaker bot
  * follow-up): sorting "غسالة صحون" (dishwasher) lowest-price-first surfaced air fryers whose
  * OWN titles genuinely claim "أجزاء آمنة في غسالة الصحون" (dishwasher-safe parts) — a real,
  * common kitchen-appliance feature claim, the same class of gap as شاشة/ساعة.
+ *
+ * MEASURED BUG #2 (2026-08-10, same fix, caught live A SECOND TIME post-deploy): the first
+ * corrected version of this test passed `name_en: ""` for the fryers — but their REAL
+ * `name_en` is "...Dishwasher-Safe Parts..." / "...Dishwasher safe Parts...", and
+ * `/\bdishwasher\b/` matched that English spec line too (a `\b` boundary sits between
+ * "dishwasher" and the following hyphen/space, not just at a genuine identity boundary).
+ * With an empty `name_en` in the test fixture, this path was never exercised — so the test
+ * suite stayed green while production kept leaking. All fixtures below now carry the REAL,
+ * measured `name_en` for exactly this reason.
  */
 describe("hasStrongDishwasherSignal — a \"dishwasher-safe\" feature claim is not a dishwasher", () => {
-  it("rejects the exact measured air-fryer titles", () => {
+  it("rejects the exact measured air-fryer titles, including their real name_en spec line", () => {
     // MEASURED BUG (2026-08-10, caught live POST-deploy — an earlier, truncated version of
     // this test string omitted "قلاية وشواية مدمجة", the exact phrase that made the first
     // shipped fix wrongly accept this item: "مدمج" ("integrated/built-in") is too generic —
@@ -497,10 +506,14 @@ describe("hasStrongDishwasherSignal — a \"dishwasher-safe\" feature claim is n
     // The full, untruncated title is required here so this test can catch that regression.
     expect(hasStrongDishwasherSignal(
       "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، قلاية وشواية مدمجة لتحضير وجبات عائلية كاملة، موفرة للطاقة، 8 برامج طهي مسبقة، أجزاء آمنة في غسالة الصحون، وصفات لا حصر لها، تطبيق مخصص",
-      "",
+      "TEFAL Dual Easy Fry & Grill | 8.3 L / 2.2kg Capacity | Dual Drawers | Combination Air fryer & Grill | Complete Family Meal | Energy Saving | 8 Pre-Set Cooking Programs | Dishwasher-Safe Parts | Endless Recipes | Dedicated App | EY905D40 8.3 L 2700 W EY905D40 Graphite Grey",
     )).toBe(false);
     expect(hasStrongDishwasherSignal(
       "قلاية زيت أوليوكلين برو العميقة / تصل إلى 1.2 كجم من الطعام سهلة التخزين مع صندوق الزيت مؤقت رقمي تحكم ترموستات 50-60 هرتز 1930-2300 واط أجزاء آمنة للغسل في غسالة الصحون",
+      "TEFAL OLEOCLEAN PRO Deep Fryer | 3.5 L of oil / Up to 1.2 kg food | Easy to store with the oil box | Digital timer | Thermostat Control | 50-60Hz | 1930-2300 W | Dishwasher safe Parts | Stainless steel | FR804040 3.5 L 2300 W FR804040 Stainless steel",
+    )).toBe(false);
+    expect(hasStrongDishwasherSignal(
+      "قلاية هوائية راسل هوبس XL سعة 5.5 لتر [قلاية هوائية/شواية/طباخ متعدد] هواء سريع (آمنة للغسل في غسالة الصحون، حرارة من الأعلى والأسفل، لا حاجة للاهتزاز، طباخ بطيء، خبز، بيتزا مجمدة Ø 30 سم) ساتيس فراي 26520",
       "",
     )).toBe(false);
   });
@@ -508,6 +521,8 @@ describe("hasStrongDishwasherSignal — a \"dishwasher-safe\" feature claim is n
     expect(hasStrongDishwasherSignal("غسالة صحون kumtel built in", "")).toBe(true);
     expect(hasStrongDishwasherSignal("غسالة صحون classpro 13 مكان", "")).toBe(true);
     expect(hasStrongDishwasherSignal("غسالة صحون beko 15 مكان", "")).toBe(true);
+    expect(hasStrongDishwasherSignal("Classpro Dishwasher 12 place settings 5 programs White", "")).toBe(true);
+    expect(hasStrongDishwasherSignal("Beko Dishwasher 5 Program 14 Place Setting White", "")).toBe(true);
   });
 });
 
@@ -517,21 +532,28 @@ describe("excludeIneligibleCandidates — isDishwasherQuery gate removes dishwas
     { name_ar: "غسالة صحون classpro 13 مكان", name_en: null, best_price: 660 },
     { name_ar: "غسالة صحون beko 15 مكان", name_en: null, best_price: 780 },
   ];
-  const falsePositive = {
-    name_ar: "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، قلاية وشواية مدمجة لتحضير وجبات عائلية كاملة، موفرة للطاقة، 8 برامج طهي مسبقة، أجزاء آمنة في غسالة الصحون، وصفات لا حصر لها، تطبيق مخصص",
-    name_en: null,
-    best_price: 669,
-  };
+  const falsePositives = [
+    {
+      name_ar: "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، قلاية وشواية مدمجة لتحضير وجبات عائلية كاملة، موفرة للطاقة، 8 برامج طهي مسبقة، أجزاء آمنة في غسالة الصحون، وصفات لا حصر لها، تطبيق مخصص",
+      name_en: "TEFAL Dual Easy Fry & Grill | 8.3 L / 2.2kg Capacity | Dual Drawers | Combination Air fryer & Grill | Complete Family Meal | Energy Saving | 8 Pre-Set Cooking Programs | Dishwasher-Safe Parts | Endless Recipes | Dedicated App | EY905D40 8.3 L 2700 W EY905D40 Graphite Grey",
+      best_price: 669,
+    },
+    {
+      name_ar: "قلاية زيت أوليوكلين برو العميقة / تصل إلى 1.2 كجم من الطعام سهلة التخزين مع صندوق الزيت مؤقت رقمي تحكم ترموستات 50-60 هرتز 1930-2300 واط أجزاء آمنة للغسل في غسالة الصحون",
+      name_en: "TEFAL OLEOCLEAN PRO Deep Fryer | 3.5 L of oil / Up to 1.2 kg food | Easy to store with the oil box | Digital timer | Thermostat Control | 50-60Hz | 1930-2300 W | Dishwasher safe Parts | Stainless steel | FR804040 3.5 L 2300 W FR804040 Stainless steel",
+      best_price: 799,
+    },
+  ];
 
-  it("removes the air fryer when isDishwasherQuery is true", () => {
-    const result = excludeIneligibleCandidates([falsePositive, ...genuineDishwashers], false, false, false, true);
+  it("removes both air fryers when isDishwasherQuery is true", () => {
+    const result = excludeIneligibleCandidates([...falsePositives, ...genuineDishwashers], false, false, false, true);
     const names = result.map((r) => r.name_ar);
-    expect(names).not.toContain(falsePositive.name_ar);
+    for (const fp of falsePositives) expect(names).not.toContain(fp.name_ar);
     for (const g of genuineDishwashers) expect(names).toContain(g.name_ar);
   });
 
   it("does NOT apply the dishwasher-signal filter for a non-dishwasher query (default isDishwasherQuery=false)", () => {
-    const result = excludeIneligibleCandidates([falsePositive, ...genuineDishwashers]);
-    expect(result).toHaveLength(genuineDishwashers.length + 1);
+    const result = excludeIneligibleCandidates([...falsePositives, ...genuineDishwashers]);
+    expect(result).toHaveLength(genuineDishwashers.length + falsePositives.length);
   });
 });
