@@ -483,6 +483,7 @@ export function isAccessoryShapedQuery(raw: string): boolean {
 export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number }>(
   products: T[],
   isAcQuery = false,
+  isMonitorQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -505,6 +506,23 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isAcQuery) {
     const acFiltered = result.filter((p) => hasStrongACSignal(p.name_ar || '', p.name_en || ''));
     if (acFiltered.length > 0) result = acFiltered;
+  }
+
+  // MEASURED DEFECT (2026-08-10, same session, founder follow-up "fix the شاشة
+  // miscategorization too"): fixing the DB category (a smartwatch had been mistagged
+  // `monitor` — see the CATEGORY_DETECTION_ORDER fix in category-utils.ts) did NOT fully
+  // remove it from "شاشة" results, because it is ALSO reachable via a second, independent
+  // path: bare "monitor" is a live Algolia optional word (kept — many genuine listings are
+  // literally titled "Essential Monitor" with no other qualifier), and the smartwatch's own
+  // title contains "Heart Rate/Sleep Monitor", matching it directly regardless of its DB
+  // category field. `hasStrongMonitorSignal` requires a health-context "___ monitor" phrase
+  // (heart rate/sleep/blood pressure/glucose/baby/fitness monitor) to be paired with an
+  // actual DISPLAY-specific compound phrase (computer/gaming/curved/4k/ips/led/oled monitor)
+  // before it counts — bare "monitor" with no health-context phrase still passes untouched,
+  // so a genuine "Essential Monitor" listing loses nothing.
+  if (isMonitorQuery) {
+    const monitorFiltered = result.filter((p) => hasStrongMonitorSignal(p.name_ar || '', p.name_en || ''));
+    if (monitorFiltered.length > 0) result = monitorFiltered;
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -536,6 +554,28 @@ export function hasStrongACSignal(nameAr: string, nameEn: string): boolean {
   const arHit = /(^|\s)مكيف|مكيفات|تكييف|سبليت|شباك|كاسيت|دولابي/.test(ar);
   const enHit = /\bsplit\s*a\/?c\b|\bwindow\s*a\/?c\b|air\s*condition|\binverter\b|\bbtu\b|cool\s*only|hot\s*&?\s*cool/.test(en);
   return arHit || enHit;
+}
+
+// A health-context "___ monitor" phrase (fitness trackers/smartwatches routinely describe a
+// "Heart Rate Monitor"/"Sleep Monitor") is not a display — see excludeIneligibleCandidates'
+// own comment above for the measured evidence. Only titles carrying one of these phrases are
+// held to the stricter check; a plain "Essential Monitor" with no health context still passes
+// on bare "monitor" alone, so genuine recall is untouched.
+const HEALTH_MONITOR_PHRASES = /heart\s*rate\s*monitor|sleep\s*monitor|blood\s*pressure\s*monitor|glucose\s*monitor|baby\s*monitor|fitness\s*monitor|health\s*monitor(?:ing)?|activity\s*monitor|spo2\s*monitor/i;
+
+export function hasStrongMonitorSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  // Arabic has no equivalent of the English "monitor" homograph (screen vs. health-tracking
+  // device) — "شاشة" never describes a heart-rate/sleep monitor, so bare "شاشة"/"شاشات"
+  // (normalized "شاشه"/"شاشات") is a sufficient positive signal on its own. Genuine Arabic
+  // monitor titles observed live ("شاشة gameon 24 بوصة...", "شاشة viewsonic 24 بوصة...")
+  // never say "شاشة كمبيوتر" — requiring that compound phrase would wrongly exclude them.
+  if (/(^|\s)شاشه|شاشات|مونيتور/.test(ar)) return true;
+  if (HEALTH_MONITOR_PHRASES.test(en)) {
+    return /\b(?:computer|gaming|curved|ultrawide|4k|8k|ips|led|oled|qled|portable|external|desktop|touch)\s*monitor\b/.test(en);
+  }
+  return /\bmonitor\b/.test(en);
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
@@ -1574,6 +1614,7 @@ export async function POST(request: NextRequest) {
         .filter((g) => g.length > 0 && !g.every((t) => GENERIC.has(t)))
     : [];
   const isAcQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('air_conditioner');
+  const isMonitorQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('monitor');
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
@@ -1641,7 +1682,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }

@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -240,5 +240,58 @@ describe("excludeIneligibleCandidates — isAcQuery gate removes bare-\"ac\" fal
 
   it("never wipes the page: if every candidate lacks a strong AC signal, keeps them rather than returning zero", () => {
     expect(excludeIneligibleCandidates(falsePositives, true)).toHaveLength(falsePositives.length);
+  });
+});
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, founder follow-up "fix the شاشة
+ * miscategorization too"): fixing the smartwatch's DB category (see category-utils.ts's
+ * CATEGORY_DETECTION_ORDER fix) did not fully remove it from "شاشة" results — it is ALSO
+ * reachable via a second, independent path: bare "monitor" is a live (deliberately kept)
+ * Algolia optional word, and the smartwatch's own title contains "Heart Rate/Sleep Monitor",
+ * matching it directly regardless of its DB category field.
+ */
+describe("hasStrongMonitorSignal — a health-context \"___ monitor\" phrase is not a display", () => {
+  it("rejects the exact measured smartwatch title", () => {
+    expect(hasStrongMonitorSignal(
+      "",
+      "7 Interchangeable Bands Smart Watches for Women Men,1.83\" HD Smart Watch with Heart Rate/Sleep Monitor,Fitness Watch with Bluetooth Call,120+ Sport Modes Activity Tracker Bands Gift Set",
+    )).toBe(false);
+  });
+  it("accepts genuine monitor titles, including bare 'Monitor' with no other qualifier", () => {
+    expect(hasStrongMonitorSignal("", "Samsung 24\" Essential Monitor S3 S33GF FHD 100Hz")).toBe(true);
+    expect(hasStrongMonitorSignal("", "ViewSonic 24 Inch Gaming Monitor VX2425-HD-PRO, FHD IPS Display")).toBe(true);
+    expect(hasStrongMonitorSignal("شاشة lg 21.5 بوصة FHD 75Hz", "")).toBe(true);
+  });
+  it("rejects other health-context monitor phrases (blood pressure, baby, fitness)", () => {
+    expect(hasStrongMonitorSignal("", "Blood Pressure Monitor Digital Arm Cuff")).toBe(false);
+    expect(hasStrongMonitorSignal("", "Baby Monitor with Night Vision Camera")).toBe(false);
+  });
+});
+
+describe("excludeIneligibleCandidates — isMonitorQuery gate removes health-context \"monitor\" false positives", () => {
+  const genuineMonitors = [
+    { name_ar: "شاشة gameon 24 بوصة FHD 100Hz VA", name_en: null, best_price: 279 },
+    { name_ar: null, name_en: "Samsung 24\" Essential Monitor S3 S33GF FHD 100Hz", best_price: 299 },
+    { name_ar: null, name_en: "Majesty 22\" FHD Gaming Monitor | IPS | 120Hz", best_price: 309 },
+    { name_ar: null, name_en: "ViewSonic VA24E1-H 24-inch Full HD (1080p) monitor, 120Hz", best_price: 319 },
+    { name_ar: "شاشة viewsonic 24 بوصة FHD 120Hz IPS", name_en: null, best_price: 319 },
+  ];
+  const falsePositive = {
+    name_ar: null,
+    name_en: "7 Interchangeable Bands Smart Watches for Women Men,1.83\" HD Smart Watch with Heart Rate/Sleep Monitor,Fitness Watch with Bluetooth Call",
+    best_price: 299.99,
+  };
+
+  it("removes the smartwatch when isMonitorQuery is true", () => {
+    const result = excludeIneligibleCandidates([falsePositive, ...genuineMonitors], false, true);
+    const names = result.map((r) => r.name_ar ?? r.name_en);
+    expect(names).not.toContain(falsePositive.name_en);
+    for (const g of genuineMonitors) expect(names).toContain(g.name_ar ?? g.name_en);
+  });
+
+  it("does NOT apply the monitor-signal filter for a non-monitor query (default isMonitorQuery=false)", () => {
+    const result = excludeIneligibleCandidates([falsePositive, ...genuineMonitors]);
+    expect(result).toHaveLength(genuineMonitors.length + 1);
   });
 });
