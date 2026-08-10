@@ -503,10 +503,27 @@ export function isAccessoryShapedQuery(raw: string): boolean {
  * Gated by the CALLER on `queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)` — a
  * shopper explicitly searching for an accessory («شاحن لابتوب») must still see genuine
  * accessories; this exists to protect a DEVICE search from accessory junk, not to hide
- * accessories from someone who wants one. Never wipes the page: each stage only applies its
- * filter when the result is non-empty, so an unrelated/degenerate case falls back to the
- * unfiltered set rather than a confident (and possibly wrong) zero — `categoryEnforcedZero`
- * elsewhere already owns that decision for a genuinely unmatched query.
+ * accessories from someone who wants one. Never wipes the page BY DEFAULT: each stage only
+ * applies its filter when the result is non-empty, so an unrelated/degenerate case falls
+ * back to the unfiltered set rather than a confident (and possibly wrong) zero.
+ *
+ * MEASURED DEFECT in that "never wipe" fallback (P2, ONE BRAIN mandate, 2026-08-10, founder's
+ * own production audit): "مكيف تحت 200 ريال" leaked 4 completely unrelated products (an
+ * "AC Switch" electrical switch, a wall fan, a power strip) with NO disclosure — every one
+ * correctly FAILED `hasStrongACSignal` (0 survivors), but the old fallback then silently kept
+ * the 100%-junk unfiltered set instead of a zero, because `categoryEnforcedZero` (elsewhere in
+ * this file) had already passed this exact query through — its own gate only catches ZERO
+ * retrieval, not "retrieval found something, but every candidate is ineligible". Nothing
+ * upstream actually owned that decision, so the "assumption" this fallback was built on
+ * (comment above) was false for exactly this shape of query.
+ *
+ * `needShapedWithCategory` closes it WITHOUT touching recall for anything else: when the
+ * caller already knows this is an explicit-category query with a real constraint (the exact
+ * same flag `categoryEnforcedZero` itself is gated on elsewhere), a strong-signal filter that
+ * rejects EVERY candidate is trusted — the fallback is skipped, `result` becomes genuinely
+ * empty, and the caller sets `categoryEnforcedZero` from that, same as a zero-retrieval query.
+ * For any other query shape (bare category browse, named-model query), the OLD forgiving
+ * fallback is unchanged — this only tightens the one case where confidence is already high.
  */
 export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number }>(
   products: T[],
@@ -514,6 +531,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   isMonitorQuery = false,
   isWatchQuery = false,
   isDishwasherQuery = false,
+  needShapedWithCategory = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -535,7 +553,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   // while "AC/DC" and "802.11...ac..." satisfy none.
   if (isAcQuery) {
     const acFiltered = result.filter((p) => hasStrongACSignal(p.name_ar || '', p.name_en || ''));
-    if (acFiltered.length > 0) result = acFiltered;
+    result = acFiltered.length > 0 ? acFiltered : (needShapedWithCategory ? [] : result);
   }
 
   // MEASURED DEFECT (2026-08-10, same session, founder follow-up "fix the شاشة
@@ -552,7 +570,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   // so a genuine "Essential Monitor" listing loses nothing.
   if (isMonitorQuery) {
     const monitorFiltered = result.filter((p) => hasStrongMonitorSignal(p.name_ar || '', p.name_en || ''));
-    if (monitorFiltered.length > 0) result = monitorFiltered;
+    result = monitorFiltered.length > 0 ? monitorFiltered : (needShapedWithCategory ? [] : result);
   }
 
   // MEASURED DEFECT (2026-08-10, same session, founder follow-up "check other categories for
@@ -561,7 +579,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   // `hasStrongWatchSignal`'s own comment for the measured evidence.
   if (isWatchQuery) {
     const watchFiltered = result.filter((p) => hasStrongWatchSignal(p.name_ar || '', p.name_en || ''));
-    if (watchFiltered.length > 0) result = watchFiltered;
+    result = watchFiltered.length > 0 ? watchFiltered : (needShapedWithCategory ? [] : result);
   }
 
   // MEASURED DEFECT (2026-08-10, same session, sixth "check other categories" follow-up):
@@ -569,7 +587,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   // claiming "dishwasher-safe parts". See `hasStrongDishwasherSignal`'s own comment.
   if (isDishwasherQuery) {
     const dishwasherFiltered = result.filter((p) => hasStrongDishwasherSignal(p.name_ar || '', p.name_en || ''));
-    if (dishwasherFiltered.length > 0) result = dishwasherFiltered;
+    result = dishwasherFiltered.length > 0 ? dishwasherFiltered : (needShapedWithCategory ? [] : result);
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -1539,6 +1557,16 @@ export async function POST(request: NextRequest) {
       : null;
   if (inferredMaxPrice !== null) body.max_price = inferredMaxPrice;
 
+  // P1 (ONE BRAIN mandate, 2026-08-10): "أرخص لابتوب" as a bare first message previously
+  // behaved IDENTICALLY to "لابتوب" here — "أرخص" was only ever a STOPWORD (pure noise
+  // stripped from relevance matching, never a sort trigger). Read from the SAME parse as
+  // `inferredMaxPrice` above (`constraintTask`, built by the same `parseShoppingTask` the
+  // decision engine consumes) so a cheapest request behaves the same whether it lands in
+  // the plain search path (here — e.g. audio/camera, which the decision engine does not
+  // advise on) or the decision path (`route-query.ts`'s `needSignals`). Never overrides an
+  // EXPLICIT client sort choice (the sort dropdown) — only fills in when nothing was chosen.
+  const wantsCheapest = !!constraintTask?.wants_cheapest;
+
   const supabase = createServerClient();
 
   // `slug` is REQUIRED here: the card links to /products/<product_slug>, and the product page
@@ -1821,9 +1849,19 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
+    }
+    // P2 (ONE BRAIN mandate, 2026-08-10): `needShapedWithCategory` let the strong-signal
+    // filters above reject to a genuine, confident zero instead of falling back to a 100%-
+    // junk unfiltered set (the "مكيف تحت 200 ريال" defect — see the function's own comment).
+    // Propagate that here exactly like every other honest-zero path in this file: never a
+    // silent empty grid, always the same disclosed `categoryEnforcedZero` signal the client
+    // already renders a real "ما لقينا" message for.
+    if (beforeCount > 0 && products.length === 0 && needShapedWithCategory) {
+      categoryEnforcedZero = true;
+      console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — every candidate failed the category's strong-signal check; returning honest zero instead of unrelated results`);
     }
   }
 
@@ -1833,6 +1871,10 @@ export async function POST(request: NextRequest) {
     const pMax = prices.length ? Math.max(...prices) : 0;
     const requestedSort = body.sort && body.sort !== 'relevance';
     if (requestedSort) products.sort(compareBySort(body.sort!));
+    // Runs AFTER `excludeIneligibleCandidates()` above (line ~1824) — this can only ever
+    // REORDER the already-eligible `products` array, never resurface an accessory/wrong-
+    // category item the eligibility gate just removed. Eligibility before price, always.
+    else if (wantsCheapest) products.sort(compareBySort('price_low'));
     else products.sort((a, b) => scoreProduct(b, pMin, pMax, queryIsMainProduct, relevanceGroups, isAcQuery) - scoreProduct(a, pMin, pMax, queryIsMainProduct, relevanceGroups, isAcQuery));
   } else {
     products.sort(compareBySort(body.sort || 'relevance'));
@@ -1872,6 +1914,7 @@ export async function POST(request: NextRequest) {
     relaxed: boolean;
     categoryEnforcedZero: boolean;
     inferredMaxPrice: number | null;
+    cheapestIntentApplied: boolean;
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
@@ -1884,6 +1927,10 @@ export async function POST(request: NextRequest) {
     // filter sidebar, that is now acting as a real retrieval ceiling. The client must
     // disclose this ("طبّقنا ميزانيتك ≤ N ريال"), never apply it invisibly.
     inferredMaxPrice,
+    // Never silent, same discipline as `inferredMaxPrice`: true only when "أرخص/cheapest"
+    // was parsed from the sentence itself (not the sort dropdown) and actually drove the
+    // ordering — the client can disclose "رتّبنا حسب الأرخص" instead of leaving it implicit.
+    cheapestIntentApplied: wantsCheapest && !(body.sort && body.sort !== 'relevance'),
     page:              currentPage,
     pageSize:          currentPageSize,
     query:             typedQuery,

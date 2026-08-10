@@ -13,6 +13,7 @@
 // module only diffs and phrases, exactly the "engines decide, this only compares" discipline
 // the rest of `src/lib/agent/` follows. Deterministic and LLM-free (ADR-002).
 import type { AdvisorResponse, AdvisorRecommendation } from './advisor-api';
+import { CHEAPEST_MARKER } from './task-parser';
 
 /**
  * MEASURED PRODUCTION FAILURE (2026-08-09, founder's own journey): «لو رفعت ميزانيتي إلى
@@ -69,7 +70,12 @@ export function parseCounterfactualDelta(text: string): CounterfactualDelta | nu
 
   // "cheapest", checked ONLY after every number-bearing form fails to match — a sentence
   // that names an actual amount always means that amount, never a vague "cheaper" fallback.
-  if (/ارخص|أرخص|اوفر|أوفر|cheaper|cheapest/.test(x)) return { kind: 'cheapest' };
+  // P1 (ONE BRAIN mandate, 2026-08-10): reuses `task-parser.ts`'s shared `CHEAPEST_MARKER`
+  // instead of its own near-duplicate regex, so the follow-up path ("طيب أرخص؟") and the
+  // first-turn path (`route-query.ts`'s `needSignals`) can never silently drift apart on
+  // what counts as a cheapest request. Also picks up "أقل سعر"/"الأقل سعر" phrasing this
+  // follow-up path previously missed.
+  if (CHEAPEST_MARKER.test(x)) return { kind: 'cheapest' };
 
   return null;
 }

@@ -58,6 +58,12 @@ function needSignals(task: ParsedTask): string[] {
   if (task.priorities?.length) signals.push(`priorities:${task.priorities.join('+')}`);
   if (typeof task.storage_min === 'number') signals.push('storage_min');
   if (typeof task.ram_min === 'number') signals.push('ram_min');
+  // P1 (ONE BRAIN mandate, 2026-08-10): "أرخص لابتوب" as a FIRST message previously parsed
+  // to zero signals — "cheapest" was never in this list — so it fell through to a bare
+  // 'retrieval' browse (rule 5 below) and never reached the eligibility-safe decision engine
+  // at all. Advisory mode still requires a real category (checked above); this only makes an
+  // otherwise-bare cheapest request count as a describable need once a category is known.
+  if (task.wants_cheapest) signals.push('cheapest');
   return signals;
 }
 

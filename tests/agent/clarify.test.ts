@@ -127,8 +127,118 @@ describe('ask only when the answer changes the recommendation', () => {
   });
 
   it('never asks for a category with no question defined', () => {
-    const laptop = parseShoppingTask('لابتوب للألعاب تحت 5000');
-    expect(shouldAsk(laptop, [row('a', 12000, 1200)]).ask).toBe(false);
+    // P3 (2026-08-10): laptop now HAS a question (ram_min) — see below — so this must use a
+    // category that genuinely has none. washing_machine was deliberately left unquestioned
+    // (its "large household" signal is a regex over free text, not a structured field the
+    // probe mechanism can test — see clarify.ts's own P3 doc comment).
+    const washer = parseShoppingTask('غسالة للعائلة تحت 3000');
+    expect(washer.category).toBe('washing_machine');
+    expect(CLARIFY_BY_CATEGORY['washing_machine']).toBeUndefined();
+    expect(shouldAsk(washer, [row('a', 12000, 1200)]).ask).toBe(false);
+  });
+});
+
+/**
+ * P3 (ONE BRAIN mandate, 2026-08-10) — generalizing the clarify pattern beyond AC. The bar is
+ * identical to AC's own: a question is only real if `decide()` itself, run at both probe
+ * extremes against REALISTIC candidate rows, actually picks a different product. Anything
+ * less would be exactly the "decorative question" this file's docstring forbids.
+ */
+const mobileRow = (id: string, storage: number, price: number): CanonicalRow => ({
+  canonical_id: id, tps_identity_key: `test|${id}`,
+  display_name_ar: `جوال ${storage}GB`, display_name_en: `Phone ${storage}GB`,
+  brand: 'test', category: 'mobile', image_url: null,
+  lowest_price: price, store_count: 2, has_comparison: true, identity_confidence: 0.9,
+  attributes: { storage, family: 'Galaxy A', generation: 1, variant: 'Standard' },
+} as unknown as CanonicalRow);
+
+const laptopRow = (id: string, ram: number, price: number): CanonicalRow => ({
+  canonical_id: id, tps_identity_key: `test|${id}`,
+  display_name_ar: `لابتوب ${ram}GB RAM`, display_name_en: `Laptop ${ram}GB RAM`,
+  brand: 'test', category: 'laptop', image_url: null,
+  lowest_price: price, store_count: 2, has_comparison: true, identity_confidence: 0.9,
+  attributes: { ram, cpu: 'i5', screen: 15 },
+} as unknown as CanonicalRow);
+
+const tabletRow = (id: string, storage: number, price: number): CanonicalRow => ({
+  canonical_id: id, tps_identity_key: `test|${id}`,
+  display_name_ar: `تابلت ${storage}GB`, display_name_en: `Tablet ${storage}GB`,
+  brand: 'test', category: 'tablet', image_url: null,
+  lowest_price: price, store_count: 2, has_comparison: true, identity_confidence: 0.9,
+  attributes: { storage },
+} as unknown as CanonicalRow);
+
+describe('mobile — storage_min clarify question, verified against decideMobile itself', () => {
+  const ambiguous = parseShoppingTask('ابي جوال');
+
+  it('the parser leaves storage_min unresolved for a bare "ابي جوال"', () => {
+    expect(ambiguous.category).toBe('mobile');
+    expect(ambiguous.storage_min).toBeUndefined();
+  });
+
+  it('ASKS when a low-storage and a high-storage phone pick different top picks', () => {
+    const d = shouldAsk(ambiguous, [mobileRow('small', 64, 900), mobileRow('big', 256, 1400)]);
+    expect(d.ask).toBe(true);
+    expect(d.question?.field).toBe('storage_min');
+  });
+
+  it('does NOT ask when every candidate has the same storage', () => {
+    const d = shouldAsk(ambiguous, [mobileRow('a', 128, 900), mobileRow('b', 128, 1400)]);
+    expect(d.ask).toBe(false);
+  });
+
+  it('never asks storage again once the shopper already stated it', () => {
+    const task = parseShoppingTask('ابي جوال 256 جيجا');
+    expect(task.storage_min).toBe(256);
+    const d = shouldAsk(task, [mobileRow('small', 64, 900), mobileRow('big', 256, 1400)]);
+    expect(d.ask).toBe(false);
+    expect(d.reason).toMatch(/already supplied/);
+  });
+});
+
+describe('tablet — storage_min clarify question, verified against decideTablet itself', () => {
+  it('ASKS when a low-storage and a high-storage tablet pick different top picks', () => {
+    const ambiguous = parseShoppingTask('ابي تابلت');
+    expect(ambiguous.category).toBe('tablet');
+    const d = shouldAsk(ambiguous, [tabletRow('small', 64, 700), tabletRow('big', 256, 1300)]);
+    expect(d.ask).toBe(true);
+    expect(d.question?.field).toBe('storage_min');
+  });
+});
+
+describe('laptop — ram_min clarify question, verified against decideLaptop itself', () => {
+  const ambiguous = parseShoppingTask('ابي لابتوب');
+
+  it('the parser leaves ram_min unresolved for a bare "ابي لابتوب"', () => {
+    expect(ambiguous.category).toBe('laptop');
+    expect(ambiguous.ram_min).toBeUndefined();
+  });
+
+  it('ASKS when a low-RAM and a high-RAM laptop pick different top picks', () => {
+    const d = shouldAsk(ambiguous, [laptopRow('small', 8, 1500), laptopRow('big', 32, 2600)]);
+    expect(d.ask).toBe(true);
+    expect(d.question?.field).toBe('ram_min');
+  });
+
+  it('does NOT ask when every candidate has the same RAM', () => {
+    const d = shouldAsk(ambiguous, [laptopRow('a', 16, 1500), laptopRow('b', 16, 2600)]);
+    expect(d.ask).toBe(false);
+  });
+
+  it('never asks RAM again once the shopper already stated it ("ابيه 16 رام")', () => {
+    const task = parseShoppingTask('ابيه لابتوب 16 رام');
+    expect(task.ram_min).toBe(16);
+    const d = shouldAsk(task, [laptopRow('small', 8, 1500), laptopRow('big', 32, 2600)]);
+    expect(d.ask).toBe(false);
+    expect(d.reason).toMatch(/already supplied/);
+  });
+});
+
+describe('P3 — categories deliberately left WITHOUT a clarify question (no structured field to probe)', () => {
+  it('tv/washing_machine/refrigerator have no entry — asking would require new scoring logic first', () => {
+    expect(CLARIFY_BY_CATEGORY['tv']).toBeUndefined();
+    expect(CLARIFY_BY_CATEGORY['washing_machine']).toBeUndefined();
+    expect(CLARIFY_BY_CATEGORY['refrigerator']).toBeUndefined();
   });
 });
 

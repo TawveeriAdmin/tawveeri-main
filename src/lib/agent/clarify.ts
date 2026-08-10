@@ -25,14 +25,14 @@ export interface ClarifyOption {
 
 export interface ClarifyQuestion {
   /** The task field this question fills. */
-  field: 'room_size_m2';
+  field: 'room_size_m2' | 'storage_min' | 'ram_min';
   question_ar: string;
   question_en: string;
   options: ClarifyOption[];
   /**
    * The two values used to test whether the answer can change anything. Deliberately the
-   * extremes of the offered range: if the recommendation is identical at both ends, no
-   * answer in between can move it either.
+   * extremes of the OFFERED range (min/max of `options`, not arbitrary numbers): if the
+   * recommendation is identical at both ends, no answer in between can move it either.
    */
   probes: [number, number];
 }
@@ -40,14 +40,28 @@ export interface ClarifyQuestion {
 /**
  * One question per category, for the ONE field whose absence actually changes the answer.
  *
- * Only `air_conditioner` is here, and that is a measurement, not an oversight: room area is
- * the only unresolved field the parser reports (`task-parser.ts` pushes `room_size_m2` to
- * `unresolved`, nothing else) and the only one the engine converts into a hard requirement —
- * capacity in BTU. For every other category a missing field degrades ranking gracefully
- * rather than making the recommendation wrong, so asking would be friction.
+ * Only `air_conditioner` was here originally, and that was a measurement, not an oversight:
+ * room area was the only unresolved field the parser reported and the only one the engine
+ * converted into a hard requirement (capacity in BTU). For every other category a missing
+ * field degrades ranking gracefully rather than making the recommendation wrong, so asking
+ * would be friction — the Constitution's bar ("every question must change the recommendation")
+ * still applies to every entry below; `shouldAsk` enforces it live, this table only OFFERS a
+ * candidate question, it never decides whether to actually ask it.
  *
- * Adding a category here means proving the same two things first: the field is missing often,
- * and two different answers produce different recommendations.
+ * P3 (ONE BRAIN mandate, 2026-08-10 — generalize smart questions beyond AC). Assessed all of
+ * mobile/laptop/tablet/tv/washing_machine/refrigerator against the SAME bar before adding
+ * anything: does a real, STRUCTURED field exist on `ShoppingTask` that the category's decider
+ * already scores as a numeric threshold (the only shape `shouldAsk`'s probe mechanism
+ * supports today)? mobile/tablet (`storage_min`) and laptop (`ram_min`) qualified — both are
+ * already `'verified'` attributes in `category-contracts.ts`, and both are directly gated in
+ * their deciders (`decideMobile`/`decideTablet`: storage caution + score penalty when below
+ * the stated minimum; `decideLaptop`: same for RAM). tv/washing_machine/refrigerator did NOT
+ * qualify and were deliberately left alone rather than forced: TV's priorities are categorical
+ * (gaming/movies/sports), not numeric, so they do not fit this probe mechanism without a
+ * redesign; washing_machine's and refrigerator's "large household" signal is a regex over raw
+ * free text (`wantLarge`), not a structured field on the task at all. Manufacturing a
+ * numeric-shaped question for those would mean building new scoring logic to justify asking
+ * it — decorative, exactly what this file's own docstring forbids.
  */
 export const CLARIFY_BY_CATEGORY: Record<string, ClarifyQuestion> = {
   air_conditioner: {
@@ -60,6 +74,39 @@ export const CLARIFY_BY_CATEGORY: Record<string, ClarifyQuestion> = {
       { value: 40, label_ar: 'كبيرة (~40 م²)', label_en: 'Large (~40 m²)' },
     ],
     probes: [15, 40],
+  },
+  mobile: {
+    field: 'storage_min',
+    question_ar: 'كم مساحة التخزين التي تحتاجها؟ يؤثر ذلك على السعر والخيار الأنسب.',
+    question_en: 'How much storage do you need? It affects price and which option fits best.',
+    options: [
+      { value: 64, label_ar: '64 جيجا', label_en: '64 GB' },
+      { value: 128, label_ar: '128 جيجا', label_en: '128 GB' },
+      { value: 256, label_ar: '256 جيجا فأكثر', label_en: '256 GB or more' },
+    ],
+    probes: [64, 256],
+  },
+  tablet: {
+    field: 'storage_min',
+    question_ar: 'كم مساحة التخزين التي تحتاجها؟ يؤثر ذلك على السعر والخيار الأنسب.',
+    question_en: 'How much storage do you need? It affects price and which option fits best.',
+    options: [
+      { value: 64, label_ar: '64 جيجا', label_en: '64 GB' },
+      { value: 128, label_ar: '128 جيجا', label_en: '128 GB' },
+      { value: 256, label_ar: '256 جيجا فأكثر', label_en: '256 GB or more' },
+    ],
+    probes: [64, 256],
+  },
+  laptop: {
+    field: 'ram_min',
+    question_ar: 'كم رام (ذاكرة) تحتاج تقريبًا؟ يحدد ذلك مدى مناسبة الجهاز لاستخدامك.',
+    question_en: 'Roughly how much RAM do you need? It decides how well the laptop fits your use.',
+    options: [
+      { value: 8, label_ar: '8 جيجا', label_en: '8 GB' },
+      { value: 16, label_ar: '16 جيجا', label_en: '16 GB' },
+      { value: 32, label_ar: '32 جيجا فأكثر', label_en: '32 GB or more' },
+    ],
+    probes: [8, 32],
   },
 };
 

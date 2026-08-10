@@ -240,6 +240,22 @@ function parseStorageMin(x: string): number | undefined {
   return undefined;
 }
 
+/**
+ * CHEAPEST intent (P1, founder's "ONE BRAIN / consolidation" mandate — 2026-08-10). MEASURED
+ * GAP: «أرخص لابتوب» as a standalone first message previously behaved identically to
+ * «لابتوب» — "أرخص" sat only in `route.ts`'s STOPWORDS list (pure noise-stripping) and
+ * `counterfactual.ts`'s follow-up-only marker (gated behind an active DecisionState), so a
+ * bare cheapest request on the FIRST turn was silently dropped in both the search path and
+ * the decision path. This is the single shared source of truth both paths now read — one
+ * regex, not two independently-maintained near-duplicates. Hamza forms («أرخص» vs «ارخص»)
+ * are both listed explicitly because this parser's `norm()` (unlike the search route's
+ * `normalizeArabic`) does not fold hamza, by design — see the file's own docstring.
+ * Deliberately NOT triggered by bare «رخيص» ("cheap/affordable") alone — that is a quality
+ * preference ("عادي بس رخيص وكويس"), not an instruction to sort/pick the single cheapest
+ * item, and conflating the two would make an affordability preference silently override fit.
+ */
+export const CHEAPEST_MARKER = /ارخص|أرخص|اقل سعر|أقل سعر|اوفر|أوفر|cheapest|cheaper|lowest[- ]?price/;
+
 export interface ParsedTask extends ShoppingTask {
   use?: string[];
   connectivity_needed?: string;
@@ -266,6 +282,7 @@ export function parseShoppingTask(text: string): ParsedTask {
   const connectivity = parseConnectivity(x);
   const city = parseCity(x);
   const storage_min = parseStorageMin(x);
+  const wants_cheapest = CHEAPEST_MARKER.test(x);
 
   const unresolved: string[] = [];
   if (!category) unresolved.push("category");
@@ -276,6 +293,7 @@ export function parseShoppingTask(text: string): ParsedTask {
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
     quantity,
+    wants_cheapest: wants_cheapest || undefined,
     parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,
     deprioritized_priorities: priorityParse.deprioritized.length ? priorityParse.deprioritized : undefined,
     excluded_priorities: priorityParse.excluded.length ? priorityParse.excluded : undefined,

@@ -557,3 +557,44 @@ describe("excludeIneligibleCandidates — isDishwasherQuery gate removes dishwas
     expect(result).toHaveLength(genuineDishwashers.length + falsePositives.length);
   });
 });
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, P2 "ONE BRAIN" mandate — founder's own audit of the
+ * previous session's report): "مكيف تحت 200 ريال" leaked 4 completely unrelated products —
+ * "SPECTRA 1G AC Switch 45A" (20 SAR), "SPECTRA AC Switch 45A" (30 SAR), a wall fan (129 SAR),
+ * a 6-port power strip (139 SAR) — with `categoryEnforcedZero: false` and no disclosure. Every
+ * one correctly FAILED `hasStrongACSignal` (0 survivors), but the OLD "never wipe the page"
+ * fallback then silently kept the pre-filter 100%-junk set instead of an honest zero, because
+ * this exact query shape had already passed the (unrelated) `categoryEnforcedZero` gate
+ * upstream — nothing else was watching for "retrieval found something, but every single
+ * candidate is ineligible". The new `needShapedWithCategory` parameter closes exactly this:
+ * when the caller already knows this is an explicit-category, constraint-bearing query, a
+ * strong-signal filter that rejects EVERY candidate is trusted instead of second-guessed.
+ */
+describe("excludeIneligibleCandidates — needShapedWithCategory turns a 100%-junk fallback into an honest zero", () => {
+  const junkAcSwitches = [
+    { name_ar: "SPECTRA 1G AC Switch 45A 7X7 CM White", name_en: null, best_price: 20 },
+    { name_ar: "SPECTRA AC Switch 45A 7X14 CM White", name_en: null, best_price: 30 },
+    { name_ar: "مروحة جداري تات FW3515", name_en: null, best_price: 128.995501 },
+    { name_ar: "راف باور، وصلة 6 منافذ تيار متردد - 3150", name_en: null, best_price: 139.000501 },
+  ];
+
+  it("returns a genuine, confident ZERO for a need-shaped AC query when every candidate fails the strong-signal check", () => {
+    // 6th arg (needShapedWithCategory) = true, matching route.ts's own call site for exactly
+    // this query shape (explicit category + a parsed budget constraint).
+    const result = excludeIneligibleCandidates(junkAcSwitches, true, false, false, false, true);
+    expect(result).toHaveLength(0);
+  });
+
+  it("without needShapedWithCategory, the OLD forgiving fallback is unchanged (no regression for ambiguous queries)", () => {
+    const result = excludeIneligibleCandidates(junkAcSwitches, true, false, false, false, false);
+    expect(result).toHaveLength(junkAcSwitches.length);
+  });
+
+  it("a genuine AC among the candidates is never dropped by needShapedWithCategory — only a 100%-junk set zeroes", () => {
+    const withOneRealAc = [...junkAcSwitches, { name_ar: "مكيف زاميل سبليت 18000 وحدة بارد فقط", name_en: null, best_price: 630 }];
+    const result = excludeIneligibleCandidates(withOneRealAc, true, false, false, false, true);
+    expect(result).toHaveLength(1);
+    expect(result[0].name_ar).toContain("مكيف زاميل");
+  });
+});

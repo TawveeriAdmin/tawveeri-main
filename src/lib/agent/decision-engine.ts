@@ -18,6 +18,11 @@ export interface ShoppingTask {
   /** Units requested («ابي 3 مكيفات»). ≥2 only; absent means one. The engine prices ONE
    *  unit — callers divide the total budget before handing it in (see decide route). */
   quantity?: number | null;
+  /** P1 (ONE BRAIN mandate, 2026-08-10): the shopper asked for the cheapest option, not
+   *  just "a" good fit. Parsed by `task-parser.ts`'s `CHEAPEST_MARKER` — the single shared
+   *  detector both the search path and this engine read, so "أرخص X" behaves identically
+   *  regardless of entry point. See `applyCheapestGate` below for what this actually does. */
+  wants_cheapest?: boolean;
 }
 
 export interface CanonicalRow {
@@ -683,6 +688,35 @@ function applyBudgetGate(
   return { recommendations: recomputed, anyWithinBudget };
 }
 
+/**
+ * CHEAPEST intent (P1, ONE BRAIN mandate, 2026-08-10). PRICE MAY RANK ELIGIBLE CANDIDATES;
+ * PRICE MUST NEVER MAKE AN INELIGIBLE CANDIDATE ELIGIBLE. This function only ever REORDERS
+ * the `recommendations` the category decider already produced — every entry already survived
+ * that decider's own eligibility scoring against `rows`. It never reaches back into raw rows,
+ * so it can never resurface a candidate the decider itself rejected.
+ *
+ * Composes safely with the budget gate ahead of it in `decide()`: every within-budget item's
+ * `unit_price` is <= the stated budget by definition, and every over-budget item's is > it —
+ * so an ascending price sort places all within-budget items first automatically. No
+ * special-casing needed, and no risk of "cheapest" silently defeating a stated budget ceiling.
+ *
+ * Leads the new #1 pick with an honest reason (P6: if the reason IS "cheapest eligible",
+ * SAY that — never let a price-driven pick masquerade as a fit-driven one).
+ */
+function applyCheapestGate(recommendations: Recommendation[]): Recommendation[] {
+  if (recommendations.length === 0) return recommendations;
+  const priced = recommendations.filter((r) => r.unit_price != null);
+  const unpriced = recommendations.filter((r) => r.unit_price == null);
+  priced.sort((a, b) => (a.unit_price as number) - (b.unit_price as number));
+  const ordered = [...priced, ...unpriced];
+  return ordered.map((r, i) => {
+    if (i !== 0) return { ...r, is_smart_pick: false };
+    const reason_kinds: ReasonKind[] = ["fit", ...r.reason_kinds];
+    const reasons_ar = [`أرخص خيار مؤهل ضمن النتائج (${r.unit_price} ريال)`, ...r.reasons_ar];
+    return { ...r, is_smart_pick: true, reasons_ar, reason_kinds, headline_reasons: pickHeadlineReasons(reason_kinds) };
+  });
+}
+
 // ── Category dispatcher. Deterministic per-category deciders; neutral trust+price
 //    fallback for categories without a bespoke decider yet (no fabrication). ──
 export function decide(
@@ -711,5 +745,6 @@ export function decide(
     }
   })();
   const gated = applyBudgetGate(task, base.recommendations);
-  return { supported: base.supported, recommendations: gated.recommendations, anyWithinBudget: gated.anyWithinBudget };
+  const recommendations = task.wants_cheapest ? applyCheapestGate(gated.recommendations) : gated.recommendations;
+  return { supported: base.supported, recommendations, anyWithinBudget: gated.anyWithinBudget };
 }
