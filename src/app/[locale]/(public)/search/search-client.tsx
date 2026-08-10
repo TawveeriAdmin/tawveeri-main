@@ -710,15 +710,17 @@ export default function SearchClient() {
         setAdvisorPending(false);
         switch (outcome.kind) {
           case 'noop': {
-            track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: 'follow_up_reasoning_noop' } });
-            // MEASURED DEFECT (2026-08-10, D→E mission Part C live verification): a "why"
-            // question is architecturally a no-op — the reasoning is already on screen — but
-            // that used to mean literally ZERO visible reaction to a prominent, tappable
-            // suggestion chip. A shopper tapping "ليش هذا أفضل؟" and seeing nothing happen
-            // reads as broken, not "already answered". Scroll to and briefly highlight the
-            // reasoning that answers it, rather than fabricating new text for a question the
-            // page already answers.
-            const target = document.getElementById('advisor-why-reasons')
+            // MEASURED DEFECT (2026-08-10, D→E mission Part C, extended in the follow-up-
+            // continuation mission to «وين أشتريه؟» too): a "why"/"where" question is
+            // architecturally a no-op — the answer is already on screen — but that used to
+            // mean literally ZERO visible reaction to a prominent, tappable suggestion chip.
+            // A shopper tapping it and seeing nothing happen reads as broken, not "already
+            // answered". Scroll to and briefly highlight the existing content that answers it,
+            // rather than fabricating new text (or, for "where", firing a redundant re-fetch
+            // that returns the identical recommendation).
+            track('advisor_query', { query_text: query.trim(), source: 'search', meta: { reason: `${outcome.reason}_noop` } });
+            const targetId = outcome.reason === 'where' ? 'advisor-exit-buttons' : 'advisor-why-reasons';
+            const target = document.getElementById(targetId)
               ?? document.querySelector('[data-testid="advisor-answer"]');
             if (target) {
               target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1871,7 +1873,22 @@ export default function SearchClient() {
                         <FollowUpSuggestions
                           state={activeState}
                           locale={locale}
-                          onSelect={(text) => setSearchQuery(text)}
+                          // ROOT CAUSE (2026-08-10, founder's own iPhone Production journey):
+                          // `setSearchQuery` alone only fills the VISIBLE text box — it never
+                          // touches `debouncedQuery`, which is the one state value the search-
+                          // triggering effect actually watches. So every follow-up chip
+                          // ("لو رفعت الميزانية 500؟"/"طيب أرخص؟"/"ليش هذا أفضل؟"/"وين أشتريه؟")
+                          // silently pre-filled an input box that, on a real device, sits far
+                          // out of the shopper's current scroll position — zero visible
+                          // reaction, zero network call, indistinguishable from "broken".
+                          // `handleSearch` is the SAME immediate-submit helper this file
+                          // already uses elsewhere for exactly this "tap something → search
+                          // NOW" pattern (`handleQuickCategory`/`handleHistorySelect`) — it
+                          // sets `debouncedQuery` too, which is what actually reaches
+                          // `handleMutationTurn` and the already-correct contracts built for
+                          // each of these four follow-ups (counterfactual budget/cheaper
+                          // deltas, and the scroll-to-existing-answer "noop" for why/where).
+                          onSelect={(text) => handleSearch(text)}
                           onStartNew={() => {
                             clearDecisionState();
                             setAdvisorResult(null);

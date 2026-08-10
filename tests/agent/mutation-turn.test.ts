@@ -49,7 +49,9 @@ describe("handleMutationTurn — synchronous gating (no network call reached)", 
     const fakeResult = { smart_pick: null, recommendations: [] } as unknown as AdvisorResponse;
     const { intent, outcome } = await handleMutationTurn("طيب ليش هذا أفضل؟", fakeResult);
     expect(intent.intent).toBe("FOLLOW_UP_REASONING");
-    expect(outcome).toEqual({ kind: "noop" });
+    // `reason` added 2026-08-10 (follow-up-continuation mission) — tells the caller WHICH
+    // existing content to scroll to/highlight, distinct from MERCHANT_SELECTION's "where".
+    expect(outcome).toEqual({ kind: "noop", reason: "why" });
   });
 
   it("FOLLOW_UP_REASONING with NOTHING on screen falls through — nothing to preserve", async () => {
@@ -67,6 +69,18 @@ describe("handleMutationTurn — synchronous gating (no network call reached)", 
     const { intent, outcome } = await handleMutationTurn("وين أشتريه؟", null);
     expect(intent.intent).toBe("MERCHANT_SELECTION");
     expect(outcome).toEqual({ kind: "no_context" });
+  });
+
+  it("MERCHANT_SELECTION with an active state AND an answer already on screen is a noop — never a redundant re-fetch", async () => {
+    // MEASURED (2026-08-10, follow-up-continuation mission): «وين أشتريه؟» parses to no new
+    // fields at all, so the OLD path (generic merge-and-reask) fired a real network call that
+    // returned the IDENTICAL recommendation — a "successful" mutation with zero visible change,
+    // the same class of dead-feeling control this whole mission fixes for the other three chips.
+    saveDecisionState(applyParsedTask(createDecisionState(), { category: "laptop", budget_total: 4000 }, "NEEDS_DISCOVERY"));
+    const fakeResult = { smart_pick: { canonical_id: "x" }, recommendations: [] } as unknown as AdvisorResponse;
+    const { intent, outcome } = await handleMutationTurn("وين أشتريه؟", fakeResult);
+    expect(intent.intent).toBe("MERCHANT_SELECTION");
+    expect(outcome).toEqual({ kind: "noop", reason: "where" });
   });
 
   it("COUNTERFACTUAL with no parseable delta returns no_context even with active state", async () => {

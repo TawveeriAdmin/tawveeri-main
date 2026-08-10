@@ -42,7 +42,12 @@ export function isMutationIntent(intent: DecisionIntent): boolean {
 }
 
 export type MutationOutcome =
-  | { kind: 'noop' } // FOLLOW_UP_REASONING with an answer already on screen — leave it alone
+  // FOLLOW_UP_REASONING/MERCHANT_SELECTION with an answer already on screen — the question is
+  // already answered by content that exists right now; `reason` tells the caller WHICH part of
+  // the existing answer to scroll to and highlight, rather than firing a redundant re-fetch
+  // that (for MERCHANT_SELECTION especially — it parses to no new fields) would return the
+  // identical recommendation and look like nothing happened.
+  | { kind: 'noop'; reason: 'why' | 'where' }
   | { kind: 'external_reference_notice' } // a pasted URL — honest "can't verify yet"
   | { kind: 'counterfactual'; comparison: CounterfactualComparison; newState: DecisionState }
   | { kind: 'mutation'; advisorResult: AdvisorResponse; newState: DecisionState }
@@ -67,7 +72,7 @@ export async function handleMutationTurn(
   if (intent === 'FOLLOW_UP_REASONING') {
     // The answer already on screen (the smart pick's own "chosen over X because…") already
     // answers a "why" question — a genuine no-op, not "nothing happened by accident".
-    return { intent: decisionIntent, outcome: currentAdvisorResult ? { kind: 'noop' } : { kind: 'not_a_mutation' } };
+    return { intent: decisionIntent, outcome: currentAdvisorResult ? { kind: 'noop', reason: 'why' } : { kind: 'not_a_mutation' } };
   }
   if (intent === 'EXTERNAL_PRODUCT_REFERENCE') {
     return { intent: decisionIntent, outcome: { kind: 'external_reference_notice' } };
@@ -79,6 +84,18 @@ export async function handleMutationTurn(
     // A mutation-shaped sentence with nothing established yet to mutate — honest "nothing to
     // act on" rather than guessing a category/budget that was never stated.
     return { intent: decisionIntent, outcome: { kind: 'no_context' } };
+  }
+  if (intent === 'MERCHANT_SELECTION' && currentAdvisorResult) {
+    // MEASURED (2026-08-10, follow-up-continuation mission): «وين أشتريه؟» was falling into
+    // the generic merge-and-reask path below, which — per that path's OWN comment — "parses to
+    // no new fields at all", so the re-fetch returns the IDENTICAL recommendation. A real
+    // network round-trip that changes nothing on screen looks exactly like a dead control, the
+    // same complaint this whole fix addresses for the OTHER chips. The store/price/CTA info is
+    // already rendered; scroll to and highlight it instead of re-asking a question the page
+    // already answered. Guarded on `currentAdvisorResult` (not just `state`) so the pinned
+    // "no prior context" test below (state=null too) is unaffected — falls through to it
+    // exactly as before when there's nothing on screen to point to.
+    return { intent: decisionIntent, outcome: { kind: 'noop', reason: 'where' } };
   }
 
   if (intent === 'COUNTERFACTUAL') {

@@ -34,27 +34,36 @@ export function FollowUpSuggestions({
   if (!suggestions.length) return null;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-1.5" data-testid="follow-up-suggestions">
-      <MessageCircleQuestion className="h-3.5 w-3.5 shrink-0 text-on-surface-variant" aria-hidden />
-      {suggestions.map((s) => (
+    <div className="mb-4">
+      {/* MEASURED (2026-08-10, follow-up-continuation mission — founder's own iPhone
+          Production observation): this whole area sat directly under a "شارك القرار" (share
+          the decision) button, so it read as an extension of sharing rather than what it
+          actually is — continuing the SAME decision. A short, distinct label, in the
+          founder's own words for this capability ("كمّل مع وفّر"), separates the two
+          controls without adding a heavier UI. */}
+      <p className="mb-1.5 text-xs font-semibold text-on-surface-variant">{t('agent.continueLabel')}</p>
+      <div className="flex flex-wrap items-center gap-1.5" data-testid="follow-up-suggestions">
+        <MessageCircleQuestion className="h-3.5 w-3.5 shrink-0 text-on-surface-variant" aria-hidden />
+        {suggestions.map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => onSelect(loc === 'ar' ? s.prefill_ar : s.prefill_en)}
+            className="inline-flex h-8 items-center rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-medium text-on-surface-variant transition-colors hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-700 dark:hover:text-primary-300"
+          >
+            {loc === 'ar' ? s.label_ar : s.label_en}
+          </button>
+        ))}
         <button
-          key={s.key}
           type="button"
-          onClick={() => onSelect(loc === 'ar' ? s.prefill_ar : s.prefill_en)}
-          className="inline-flex h-8 items-center rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-medium text-on-surface-variant transition-colors hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-700 dark:hover:text-primary-300"
+          onClick={onStartNew}
+          data-testid="start-new-mission"
+          className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-medium text-on-surface-variant underline underline-offset-4 transition-colors hover:text-on-surface"
         >
-          {loc === 'ar' ? s.label_ar : s.label_en}
+          <RotateCcw className="h-3 w-3" aria-hidden />
+          {t('agent.startNewSearch')}
         </button>
-      ))}
-      <button
-        type="button"
-        onClick={onStartNew}
-        data-testid="start-new-mission"
-        className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-medium text-on-surface-variant underline underline-offset-4 transition-colors hover:text-on-surface"
-      >
-        <RotateCcw className="h-3 w-3" aria-hidden />
-        {t('agent.startNewSearch')}
-      </button>
+      </div>
     </div>
   );
 }

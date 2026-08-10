@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, ShieldCheck, Check, Store, ArrowLeft, ArrowRight, CircleAlert,
@@ -353,11 +353,11 @@ function CostBlock({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t
   );
 }
 
-function ExitButtons({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string }) {
+function ExitButtons({ rec, loc, t, Arrow, source, id }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string; id?: string }) {
   const href = exitHref(rec, loc);
   const external = !!rec.go_url;
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
+    <div id={id} className={id ? 'mt-4 flex flex-wrap items-center gap-2 scroll-mt-24' : 'mt-4 flex flex-wrap items-center gap-2'}>
       <a
         href={href}
         target={external ? '_blank' : undefined}
@@ -557,7 +557,11 @@ function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation;
         <div className="shrink-0"><CostBlock rec={rec} loc={loc} t={t} /></div>
       </div>
       <EvidencePanel rec={rec} loc={loc} t={t} />
-      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} source={source} />
+      {/* id + scroll-mt: target for the "وين أشتريه؟" follow-up chip (search-client.tsx's
+          MutationOutcome 'noop' handler, reason:'where') — the store/CTA info is already
+          right here, so the chip scrolls to and highlights it instead of firing a redundant
+          re-fetch that would return the identical recommendation. */}
+      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} source={source} id="advisor-exit-buttons" />
     </div>
   );
 }
@@ -635,6 +639,23 @@ export function AdvisorAnswer({
   const isRTL = loc === 'ar';
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const [skippedClarify, setSkippedClarify] = useState(false);
+  // MEASURED DEFECT (2026-08-10, follow-up-continuation mission — found while reproducing the
+  // founder's iPhone journey, not the bug he reported but directly blocking the same
+  // "continue the decision" promise): `skippedClarify` never reset once true, so answering or
+  // skipping the FIRST clarify question (e.g. budget) permanently suppressed every LATER,
+  // genuinely different question (e.g. use-case) for the rest of the session — the multi-
+  // question need-discovery flow silently degraded to "at most one question ever, per page
+  // load" instead of "one question per turn, as many turns as still needed". Reset only when
+  // the question's FIELD actually changes to something new — re-showing the SAME
+  // already-answered question would be the opposite bug.
+  const lastClarifyFieldRef = useRef<string | null>(null);
+  useEffect(() => {
+    const field = result.clarify?.question.field ?? null;
+    if (field !== lastClarifyFieldRef.current) {
+      lastClarifyFieldRef.current = field;
+      setSkippedClarify(false);
+    }
+  }, [result.clarify?.question.field]);
 
   const smart = result?.smart_pick ?? null;
   const rest = (result?.recommendations ?? []).filter((r) => !r.is_smart_pick);
