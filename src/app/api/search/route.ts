@@ -223,7 +223,27 @@ const ARABIC_TO_ENGLISH_NORM: Record<string, string[]> = Object.fromEntries(
 // median. The fix belongs upstream, at the point where a phrase becomes optional SEARCH
 // terms: a token proven too generic to signal product identity on its own must never be
 // injected as a standalone optional word, regardless of which phrase it came from.
-export const GENERIC_EXPANSION_STOPWORDS = new Set(['air']);
+// MEASURED DEFECT, five more (2026-08-10, same session, founder follow-up "check other
+// categories for the same bare-token leak"): the same mechanism recurred wherever a category
+// mapped to a generic English word describing a FEATURE rather than the product itself —
+// confirmed live, not guessed:
+//   - "شاشة"/"شاشات" → 'display' put a SMARTWATCH (its spec sheet says "1.83in HD Display")
+//     into monitor/TV results.
+//   - "راوتر" → 'wifi'/'network' severely polluted router results with WiFi security
+//     cameras, a smart plug, and mini projectors — every smart-home device advertises WiFi.
+//   - "مكنسة" → 'cleaner' pulled in a phone-cleaning-kit accessory (a "cleaner" for phones,
+//     not a vacuum cleaner).
+//   - "غسالة" → 'washer' put a "Karcher Pressure Washer" at position #1 (the CHEAPEST
+//     result) of an otherwise all-genuine washing-machine list. Same query's 'washing
+//     machine' phrase also injects bare 'machine' — independently confirmed earlier this
+//     session pulling coffee machines/ice makers/game consoles into washing-machine results
+//     (at the time mischaracterized as "a different mechanism, out of scope"; it is not —
+//     same root cause as every entry here, corrected once the mechanism was fully traced).
+// In every case the GENUINE results for that category were already Arabic-titled and matched
+// natively without needing the stoplisted word at all (verified against the live candidate
+// set before stoplisting each one) — so removing these costs no real recall, unlike "ac"
+// (kept; see `hasStrongACSignal` for why that one needed a different fix).
+export const GENERIC_EXPANSION_STOPWORDS = new Set(['air', 'display', 'wifi', 'network', 'cleaner', 'washer', 'machine']);
 
 function lookupArToEn(word: string): string[] | undefined {
   // `.toLowerCase()` matters for the LATIN keys (conditioner/conditioners): a typed

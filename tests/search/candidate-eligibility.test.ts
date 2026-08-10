@@ -156,8 +156,24 @@ describe("GENERIC_EXPANSION_STOPWORDS — proven-generic tokens never become sta
     expect(GENERIC_EXPANSION_STOPWORDS.has("air")).toBe(true);
   });
   it("does not remove genuinely distinctive category words (would zero out real expansions)", () => {
-    for (const legit of ["ac", "split", "conditioner", "refrigerator", "washer", "laptop", "tv"]) {
+    for (const legit of ["ac", "split", "conditioner", "refrigerator", "laptop", "tv", "monitor", "screen", "router", "vacuum"]) {
       expect(GENERIC_EXPANSION_STOPWORDS.has(legit)).toBe(false);
+    }
+  });
+
+  // MEASURED LIVE (production, 2026-08-10, same session, founder follow-up "check other
+  // categories for the same bare-token leak"): the identical mechanism recurred wherever a
+  // category mapped to a generic English word describing a FEATURE rather than the product —
+  // "شاشة"/"شاشات"→'display' put a smartwatch (spec sheet: "1.83in HD Display") into monitor
+  // results; "راوتر"→'wifi'/'network' severely polluted router results with WiFi cameras, a
+  // smart plug, and mini projectors; "مكنسة"→'cleaner' pulled in a phone-cleaning-kit
+  // accessory; "غسالة"→'washer' put a "Karcher Pressure Washer" at position #1 (cheapest) of
+  // an otherwise all-genuine washing-machine list, and its sibling phrase "washing machine"
+  // independently injects bare 'machine' (confirmed earlier this session pulling coffee
+  // machines/ice makers/game consoles into washing-machine results).
+  it('contains every measured contamination vector found in the cross-category sweep', () => {
+    for (const w of ['display', 'wifi', 'network', 'cleaner', 'washer', 'machine']) {
+      expect(GENERIC_EXPANSION_STOPWORDS.has(w)).toBe(true);
     }
   });
 });
