@@ -462,10 +462,30 @@ export function isAccessoryShapedQuery(raw: string): boolean {
  */
 export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number }>(
   products: T[],
+  isAcQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
   if (keywordFiltered.length > 0) result = keywordFiltered;
+
+  // MEASURED DEFECT (2026-08-10, D→E mission Part F — founder follow-up "fix the ac token
+  // leak"): GENERIC_EXPANSION_STOPWORDS stops "air" from being injected as an Algolia
+  // optional word, but "ac" itself was deliberately KEPT (removing it would hurt genuine AC
+  // search recall — many real listings are literally titled "Split AC"/"Window AC"). Bare
+  // "ac"/"a/c" is still too weak a signal on its own, though: it also matches "AC/DC-12V"
+  // power specs on unrelated TVs and "802.11...ac..." Wi-Fi standard mentions on routers —
+  // neither of which is an accessory (`hasAccessoryHint` correctly does not flag them) nor
+  // abnormally cheap (865-1149 SAR, well inside the genuine AC price range), so neither of
+  // this function's existing two signals could catch them. `hasStrongACSignal` requires a
+  // COMPOUND AC-specific phrase (Arabic مكيف/سبليت/شباك/تكييف, or English "split ac"/
+  // "window ac"/"air condition"/BTU/inverter/"cool only"/"hot & cool") rather than bare
+  // "ac"/"a/c" alone — every genuine AC title observed in this mission's live testing
+  // trivially satisfies at least one of these (BTU is near-universal AC listing vocabulary),
+  // while "AC/DC" and "802.11...ac..." satisfy none.
+  if (isAcQuery) {
+    const acFiltered = result.filter((p) => hasStrongACSignal(p.name_ar || '', p.name_en || ''));
+    if (acFiltered.length > 0) result = acFiltered;
+  }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
   if (positivePrices.length >= 4) {
@@ -482,6 +502,19 @@ function hasACSignal(nameAr: string, nameEn: string): boolean {
   const en = (nameEn || '').toLowerCase();
   const arHit = /(^|\s)مكيف|سبليت|شباك/.test(ar);
   const enHit = /\bsplit\b/.test(en) || /\bair\s*condition/.test(en) || /\ba\/?c\b/.test(en);
+  return arHit || enHit;
+}
+
+// See excludeIneligibleCandidates' own comment above for why this exists distinct from
+// hasACSignal: that function's bare "ac"/"a/c" alternative is fine for a +10 SCORE boost
+// (worst case, an unrelated item gets a small undeserved nudge among many other factors) but
+// is not precise enough for a HARD EXCLUSION gate, where the same bare match would wrongly
+// keep "AC/DC" TVs and "802.11ac" routers on an air-conditioner search.
+export function hasStrongACSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  const arHit = /(^|\s)مكيف|مكيفات|تكييف|سبليت|شباك|كاسيت|دولابي/.test(ar);
+  const enHit = /\bsplit\s*a\/?c\b|\bwindow\s*a\/?c\b|air\s*condition|\binverter\b|\bbtu\b|cool\s*only|hot\s*&?\s*cool/.test(en);
   return arHit || enHit;
 }
 
@@ -1588,7 +1621,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products);
+    products = excludeIneligibleCandidates(products, isAcQuery);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }

@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -159,5 +159,70 @@ describe("GENERIC_EXPANSION_STOPWORDS — proven-generic tokens never become sta
     for (const legit of ["ac", "split", "conditioner", "refrigerator", "washer", "laptop", "tv"]) {
       expect(GENERIC_EXPANSION_STOPWORDS.has(legit)).toBe(false);
     }
+  });
+});
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, founder follow-up "fix the ac
+ * token leak"): even after GENERIC_EXPANSION_STOPWORDS removed "air", three items still
+ * survived on the "مكيف" lowest-price sort — two ZOSHING TVs mentioning "AC/DC-12V" power
+ * (865/957 SAR) and a Brovi router mentioning Wi-Fi standard "802.11...ac..." (1149 SAR) —
+ * because "ac" itself was deliberately kept as an Algolia optional word (removing it would
+ * hurt genuine AC search recall: real listings are literally titled "Split AC"/"Window AC").
+ * `hasStrongACSignal` requires a COMPOUND AC-specific phrase rather than bare "ac"/"a/c"
+ * alone, used only when `isAcQuery` is true (an AC-category query), never as a global rule.
+ */
+describe("hasStrongACSignal — bare \"ac\"/\"a/c\" alone is not enough for a HARD exclusion gate", () => {
+  it("rejects the exact three measured false positives", () => {
+    expect(hasStrongACSignal(
+      "تلفزيون ZOSHING بشاشة 14 بوصة بدقة 1080P، تلفزيون صغير مع استقبال فريفيو وهوائي، طاقة مزدوجة AC/DC-12V، منافذ إدخال HDMI-USB-VGA للاستخدام في الكرفانات/الشاشات/المطابخ",
+      "",
+    )).toBe(false);
+    expect(hasStrongACSignal(
+      "",
+      "Brovi H165-383 5G CPE Router, up to 11.7 Gbps, up to 128 Devices, Dual-Band (2.4GHz/5GHz Wi-Fi 7/HarmonyOS Mesh+), Wi-Fi 7 (802.11a/b/g/n/ac/ax/be), Single Port (LAN), White",
+    )).toBe(false);
+  });
+  it("accepts every genuine AC title measured live this session", () => {
+    const genuine: [string, string][] = [
+      ["", "Zamil Winow AC Cool only 17 600 BTU Rotary Comperssor"],
+      ["", "White Westinghouse Split AC 18 400 BTU Cold WiFi"],
+      ["", "Basic Window Air Conditioner Cold 18 000 BTU Rotary"],
+      ["", "Midea Olympus Split A/C 22 000 BTU Cool Only"],
+      ["مكيف متنقل، 5100 وحدة، بارد فقط", ""],
+      ["مكيف شباك فيشر، 18000 وحدة ، تبريد فقط، راوتري، أبيض - FWAC-T18CF", ""],
+      ["", "General Split AC 18 000 BTU Cold Only R32 Eco Inverter Compressor"],
+    ];
+    for (const [ar, en] of genuine) expect(hasStrongACSignal(ar, en)).toBe(true);
+  });
+});
+
+describe("excludeIneligibleCandidates — isAcQuery gate removes bare-\"ac\" false positives", () => {
+  const genuineACs = [
+    { name_ar: "مكيف سبليت جري، 18000 وحدة، انفرتر، حار وبارد", name_en: null, best_price: 1449 },
+    { name_ar: null, name_en: "White Westinghouse Split AC 18 400 BTU Cold WiFi", best_price: 1065 },
+    { name_ar: null, name_en: "Midea Olympus Split A/C 22 000 BTU Cool Only", best_price: 1110 },
+    { name_ar: null, name_en: "Basic Window Air Conditioner Cold 18 000 BTU Rotary", best_price: 1149 },
+    { name_ar: "مكيف شباك تي سي إل، 18000 وحدة، بارد فقط", name_en: null, best_price: 1199 },
+  ];
+  const falsePositives = [
+    { name_ar: "تلفزيون ZOSHING بشاشة 14 بوصة بدقة 1080P، طاقة مزدوجة AC/DC-12V", name_en: null, best_price: 865 },
+    { name_ar: null, name_en: "Brovi H165-383 5G CPE Router, Wi-Fi 7 (802.11a/b/g/n/ac/ax/be)", best_price: 1149 },
+  ];
+
+  it("removes the false positives when isAcQuery is true", () => {
+    const result = excludeIneligibleCandidates([...falsePositives, ...genuineACs], true);
+    const names = result.map((r) => r.name_ar ?? r.name_en);
+    for (const fp of falsePositives) expect(names).not.toContain(fp.name_ar ?? fp.name_en);
+    for (const g of genuineACs) expect(names).toContain(g.name_ar ?? g.name_en);
+  });
+
+  it("does NOT apply the AC-signal filter for a non-AC query (default isAcQuery=false)", () => {
+    const result = excludeIneligibleCandidates([...falsePositives, ...genuineACs]);
+    expect(result).toHaveLength(falsePositives.length + genuineACs.length);
+  });
+
+  it("never wipes the page: if every candidate lacks a strong AC signal, keeps them rather than returning zero", () => {
+    expect(excludeIneligibleCandidates(falsePositives, true)).toHaveLength(falsePositives.length);
   });
 });
