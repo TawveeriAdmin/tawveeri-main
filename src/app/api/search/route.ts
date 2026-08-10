@@ -1614,9 +1614,17 @@ export async function POST(request: NextRequest) {
     ? products.length
     : totalCount;
 
-  const pageProducts = hasPostFilters
-    ? products.slice(offsetStart, offsetEnd + 1)
-    : products.slice(0, currentPageSize);
+  // MEASURED DEFECT (2026-08-10, D→E mission Part F — founder follow-up on the "مكيف"
+  // pagination check): `products.slice(0, currentPageSize)` ignored `offsetStart` whenever
+  // `hasPostFilters` was false (i.e. no discount/specs sidebar filter applied) — the common
+  // case for almost every search. `offsetStart`/`offsetEnd` are ALREADY correctly computed
+  // from `body.page` above regardless of `hasPostFilters` (lines 1334-1345: they default to
+  // 0/currentPageSize-1 when no page is requested, identical to the old unconditional slice
+  // for page 1), so using them unconditionally fixes every page > 1 request without changing
+  // page-1/no-page behavior at all. Confirmed live: requesting page 2/3 of a plain "مكيف"
+  // search returned the EXACT SAME first-25 items as page 1, verified via direct API calls
+  // with different `page` values returning byte-identical product lists.
+  const pageProducts = products.slice(offsetStart, offsetEnd + 1);
 
   // TPS Enrichment
   const enrichedProducts = await enrichWithTPS(pageProducts, supabase);
