@@ -83,6 +83,12 @@ Fixed by using `offsetStart`/`offsetEnd` unconditionally for the final slice —
 
 **Also corrected in this addendum:** the fourth addendum's own claim that the residual "ac" false positives rank "above every genuine AC" was itself imprecise and has been corrected in place (see that addendum's residual-leak paragraph) — a genuine 630 SAR AC (Zamil, a real Saudi brand) already wins position #1 overall; the false positives are interspersed among an otherwise-genuine top set, not dominating it.
 
+**Sixth addendum (2026-08-10, same session) — the residual "ac" leak, fixed after all.** Founder follow-up: full-catalog verification first (pages 4–17 of the "مكيف" set scanned via direct API for anything lacking an AC-identifying term — zero found, confirming the leak was confined to the 3 items already logged on page 1), then an explicit instruction to fix it.
+
+The earlier decision to leave bare "ac" in the Algolia optional-word set stands (removing it would cost genuine recall — real listings are literally titled "Split AC"/"Window AC"), but the two ZOSHING TVs and the Brovi router were never accessory-shaped nor abnormally cheap, so neither of `excludeIneligibleCandidates`'s existing signals could catch them, and `hasACSignal` (pre-existing, used only for a soft +10 score boost — the SAME "soft penalty, not hard exclusion" pattern Part B already fixed once for accessories) has its own bare "ac"/"a/c" alternative, too permissive to double as an exclusion gate: it would still have kept the router (matches "ac" inside "802.11...ac..."). Added `hasStrongACSignal`, requiring a COMPOUND AC-specific phrase (Arabic مكيف/سبليت/شباك/تكييف, or English "split ac"/"window ac"/"air condition"/BTU/inverter/"cool only"/"hot & cool") rather than bare "ac" alone, wired into `excludeIneligibleCandidates` as a new `isAcQuery`-gated stage — applied only for AC-category queries, never globally.
+
+Verified live via the same direct-API method used to find the original bug: the two TVs and the router are completely gone from the "مكيف" candidate set (total 403→400, exactly the 3 removed, no more, confirming no over-exclusion of genuine ACs); the top 8 lowest-priced results are now all genuine air conditioners in correct ascending order (630→1065→1099→1110→1149→1195→1199→1239 SAR). This closes the residual gap the fourth addendum had left open by design.
+
 ---
 
 ### ADR-235 — Both Section 44 gaps closed; D genuinely reached, end-to-end, verified live · Accepted (2026-08-09)
