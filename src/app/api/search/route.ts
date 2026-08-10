@@ -260,7 +260,11 @@ function lookupArToEn(word: string): string[] | undefined {
 const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'كفر', 'ملحق', 'ملحقات', 'حافظة', 'واقي', 'شاحن', 'كيبل', 'سلك', 'لاصقة', 'حماية', 'استاند', 'عدسة', 'ماجسيف', 'جراب', 'سماعه اذن',
   // A bag for a laptop is not a laptop (measured 2026-07-29: "Lenovo Laptop Bag T210" was
   // the Smart Pick for the query `laptop`, in both locales).
-  'حقيبة', 'حقائب', 'شنطة'];
+  'حقيبة', 'حقائب', 'شنطة',
+  // MEASURED (2026-08-10, D→E mission Part F cross-category sweep): sorting "فرن" (oven)
+  // lowest-price-first put an oven baking TRAY and an oven THERMOMETER — accessories FOR an
+  // oven, not ovens — above every genuine oven (which start at 220 SAR).
+  'صينية', 'مقياس حرارة'];
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered',
   // compatible peripherals that keyword-match a device but are NOT the device itself
   'mouse', 'keyboard', 'stylus',

@@ -360,3 +360,29 @@ describe("excludeIneligibleCandidates — isWatchQuery gate removes the hour-uni
     expect(result).toHaveLength(genuineWatches.length + 1);
   });
 });
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, founder follow-up "check other
+ * categories for the same leak"): sorting "فرن" (oven) lowest-price-first put an oven baking
+ * TRAY (75.95 SAR) and an oven THERMOMETER (201.45 SAR) — accessories FOR an oven, not ovens
+ * — above every genuine oven (which start at 220 SAR). Simple gap in the existing
+ * ACCESSORY_HINTS_AR list (no "صينية"/"مقياس حرارة"), not a new mechanism.
+ */
+describe("excludeIneligibleCandidates — accessory-hint gap: oven tray/thermometer", () => {
+  it("excludes the measured oven tray and thermometer, keeping genuine ovens", () => {
+    const junk = [
+      { name_ar: "صينية فرن مستطيلة فضي", name_en: null, best_price: 75.95 },
+      { name_ar: "مقياس حرارة الفرن القابل للتعديل من كيتشن إيد", name_en: null, best_price: 201.45 },
+    ];
+    const real = [
+      { name_ar: "فرن كهربائي 1500 واط 35 لتر", name_en: null, best_price: 220 },
+      { name_ar: "فرن Olsenmark 25 لتر OMO2277G", name_en: null, best_price: 224 },
+      { name_ar: "فرن نيكاي 46 لتر NT655N2", name_en: null, best_price: 229 },
+      { name_ar: "فرن HAAM 45 لتر HMTO45L-19", name_en: null, best_price: 249 },
+    ];
+    const result = excludeIneligibleCandidates([...junk, ...real]);
+    const names = result.map((r) => r.name_ar);
+    for (const j of junk) expect(names).not.toContain(j.name_ar);
+    for (const r of real) expect(names).toContain(r.name_ar);
+  });
+});
