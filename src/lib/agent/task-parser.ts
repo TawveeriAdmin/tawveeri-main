@@ -259,7 +259,26 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «كتب» ("books") check — "لمكتبي" would silently gain a fabricated reading priority. Not
   // worth the ambiguity for one word when «دوام»/«وظيفة»/«جامعة» already cover the common
   // Saudi phrasings without it.
-  ["productivity", /إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|جامعة|الجامعة|دوام|وظيفة|وظيفتي|productivity|work|office|university|college|studying|study|programming|coding/],
+  // MEASURED SEVERE DEFECT (2026-08-10, founder's own production report — reopened mission):
+  // «جامعة»/«الجامعة» were listed with ONLY the formal ة-ending spelling — «للجامعه» (the
+  // everyday ه-ending typed form, extremely common on mobile keyboards) matched nothing, so
+  // "ابي لاب توب للجامعه" carried NO priority signal, fell through to a bare category browse
+  // (`routeQuery`'s "category only" rule) instead of Waffar's advisory clarification, and the
+  // unprotected plain-search path is what let a laptop backpack surface as the sole result.
+  // The SAME ة/ه spelling-pair gap this codebase has already paid for elsewhere (CHECKPOINT
+  // #17) — «دراسة»/«دراسه» two lines above already lists BOTH spellings; «جامعة» simply never
+  // got its own ه counterpart added. Fixed here, not as a one-word patch: every ة-ending
+  // keyword in this array should carry its ه counterpart, the same discipline already applied
+  // to «دراسة»/«برمجة» — see «عائلة» in the "large" group below for the second instance found
+  // and fixed in this same pass.
+  ["productivity", /إنتاجية|انتاجية|عمل|دراسة|دراسه|برمجة|برمجه|جامعة|جامعه|الجامعة|الجامعه|دوام|وظيفة|وظيفه|وظيفتي|productivity|work|office|university|college|studying|study|programming|coding/],
+  // MEASURED GAP (2026-08-10, founder's own production report — reopened mission, case 2):
+  // «ابي لاب توب للتصميم» resolved category=laptop but NO priority at all — no "design" key
+  // existed anywhere in this list, unlike "gaming"/"productivity" which are both scored. Design
+  // work (graphics/video/3D) has genuinely different laptop needs than plain productivity
+  // (discrete GPU matters, not just RAM/CPU) — wired into `decideLaptop` alongside gaming/
+  // productivity, not left as a silently-dropped signal.
+  ["design", /تصميم|مونتاج|جرافيك|رندر|design|graphic design|video editing|3d modeling|rendering/],
   // MEASURED DEFECT (2026-08-10, need-discovery mission — found while testing an unrelated
   // "مكتب" addition, fixed on discovery since it fabricates a priority): bare «كتب» matched
   // inside «مكتب»/«مكتبي» ("office"/"my office"), so "لابتوب لمكتبي" silently gained a
@@ -279,7 +298,9 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // weight doesn't matter to me") named a word this group never matched at all, positive or
   // negative — a shopper mentioning weight either way was previously invisible to the parser.
   ["portability", /خفيف|محمول|portable|lightweight|light ?weight|للسفر|travel|وزن/],
-  ["large", /كبير|كبيرة|عائلة|عائلية|large|family|big/],
+  // «عائلة» had the same ة-only gap «جامعة» did above (found in the same audit pass) — «عائله»
+  // is the equally common ه-ending typed form.
+  ["large", /كبير|كبيرة|عائلة|عائله|عائلية|عائليه|large|family|big/],
 ];
 
 interface PriorityParse {

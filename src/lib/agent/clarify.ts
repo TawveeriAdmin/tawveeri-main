@@ -125,6 +125,10 @@ const LAPTOP_USE_CASE_Q: ClarifyQuestion = {
   options: [
     { value: ['gaming'], label_ar: '🎮 ألعاب', label_en: '🎮 Gaming' },
     { value: ['productivity'], label_ar: '💼 دراسة وعمل وبرمجة', label_en: '💼 Study / work / coding' },
+    // "design" added 2026-08-10 (reopened mission, case 2) — maps to `decideLaptop`'s own new
+    // design branch (decision-engine.ts), the same "verified against a real scoring branch,
+    // never invented" discipline every other option here already follows.
+    { value: ['design'], label_ar: '🎨 تصميم ومونتاج', label_en: '🎨 Design / video editing' },
     { value: ['portability'], label_ar: '🎒 أخف للتنقل', label_en: '🎒 Light for travel' },
     { value: [], label_ar: 'شيء ثاني / عام', label_en: 'Something else / general' },
   ],

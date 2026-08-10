@@ -364,10 +364,27 @@ export function looksLikeSentenceNotProductQuery(raw: string): boolean {
   return /[؟?]| وش | ليش | كيف | هل | متى | وين /.test(` ${words.join(' ')} `);
 }
 
-function isMainProductTypeQuery(raw: string): boolean {
+export function isMainProductTypeQuery(raw: string): boolean {
   const norm = normalizeArabic(raw).toLowerCase();
   const words = norm.split(/\s+/).filter(Boolean);
-  return words.some((w) => MAIN_PRODUCT_TYPES.has(w));
+  if (words.some((w) => MAIN_PRODUCT_TYPES.has(w))) return true;
+  // MEASURED SEVERE DEFECT (2026-08-10, founder's own production report — reopened mission):
+  // «ابي لاب توب للجامعه» — a laptop request spelled with the extremely common two-TOKEN
+  // colloquial form «لاب توب» — matched NEITHER word against this word-by-word Set (neither
+  // «لاب» nor «توب» alone is a listed product type), so `isMainProductTypeQuery` returned
+  // false, the relevance/eligibility gate below was skipped entirely, and an UNFILTERED fuzzy
+  // match served a laptop BACKPACK ("شنطة ظهر للابتوب... للجامعة والمدرسة") as the query's
+  // ONE AND ONLY result — a primary-product request satisfied by its own accessory, the exact
+  // invariant this file's eligibility logic exists to prevent. Root cause: this Set is a
+  // SECOND, INDEPENDENT product-type classifier, drifted from `task-parser.ts`'s `parseCategory`
+  // (the one Waffar/the decision engine already use), which recognizes «لاب توب» correctly via
+  // substring matching, not a word-Set. Two classifiers deciding the same question, silently
+  // out of sync, is exactly the "phrasing-dependent experience" architecture the founder's own
+  // invariant forbids ("Search, Waffar, clarification and recommendation must remain ONE
+  // decision system"). Fixed generically, not by special-casing "لاب توب": trust the SAME
+  // shared classifier as a second signal here, so any spelling/spacing variant it already
+  // handles (present or future) is recognized identically in both places.
+  return !!parseShoppingTask(raw).category;
 }
 
 // Determine the SINGLE canonical category to search for a query, so we never

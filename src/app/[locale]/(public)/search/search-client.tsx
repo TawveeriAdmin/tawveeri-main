@@ -1046,11 +1046,26 @@ export default function SearchClient() {
     // cache doesn't remember filter state. If the user had filters set
     // before navigating away, the URL will carry them and the effect will
     // re-fire with non-default deps on the next render, fetching fresh.
+    //
+    // MEASURED DEFECT (2026-08-10, founder's own production report — reopened mission):
+    // «ابي لاب توب...» then, moments later, «ابي مكيف بسعر رخيص وجودته عاليه» via the header
+    // search box (a fresh navigation to a NEW `/search?q=...` URL) left the ENTIRE page frozen
+    // on the laptop mission — stale budget banner, stale Waffar clarification question, stale
+    // results — while the address bar and search box both showed the new AC query. Root cause:
+    // this branch decided "is there a real current query" from `debouncedQuery` (React state,
+    // initialized from `useSearchParams()`), which can still read empty on the FIRST render of
+    // a fresh navigation before Next.js finishes reconciling search params — a genuine
+    // hydration-timing race, not a phrasing issue. When that race hit, `!q && cached.query`
+    // fired and silently overwrote the real new query with the PREVIOUS session's cached one.
+    // The fix reads the URL directly (`searchParams.get('q')`, the same ground truth the
+    // sibling sync effect above uses) instead of the React state value that can lag behind it —
+    // this restore path now only ever fires for a genuine empty-query back-navigation, never a
+    // race against a real new query that just hasn't hydrated into state yet.
     if (!mountedRef.current) {
       mountedRef.current = true;
       const cached = getSearchCache();
       if (cached && cached.products.length > 0) {
-        const q = debouncedQuery;
+        const q = searchParams.get('q') || '';
         if (q && cached.query === q && cached.category === selectedCategory) {
           setRawProducts(cached.products);
           setServerTotal(cached.total);

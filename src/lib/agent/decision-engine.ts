@@ -409,7 +409,7 @@ export function deriveLaptopDna(row: CanonicalRow): Record<string, unknown> {
 export function decideLaptop(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const t = task as ShoppingTask & { storage_min?: number; ram_min?: number };
   const pr = task.priorities ?? [];
-  const wantGaming = pr.includes("gaming"), wantProductivity = pr.includes("productivity"), wantPortability = pr.includes("portability");
+  const wantGaming = pr.includes("gaming"), wantProductivity = pr.includes("productivity"), wantPortability = pr.includes("portability"), wantDesign = pr.includes("design");
   const scored = rows.map((row) => {
     const a = row.attributes ?? {}; const dna = deriveLaptopDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
@@ -417,6 +417,14 @@ export function decideLaptop(task: ShoppingTask, rows: CanonicalRow[]): Recommen
     const screen = a.screen != null ? Number(a.screen) : null; const gpu = (a.gpu as string) ?? null; const discrete = gpu ? gpu !== "igpu" : false;
     if (wantGaming) { if (discrete) { score += 0.15; reasons.fit(`كرت شاشة منفصل (${gpu?.toUpperCase()}) — مناسب للألعاب`); } else { score -= 0.08; reasons.caution("كرت مدمج — ضعيف للألعاب"); } if (ram && ram >= 16) { score += 0.06; reasons.spec(`رام ${ram}GB`); } }
     if (wantProductivity) { if (ram && ram >= 16) { score += 0.1; reasons.fit(`رام ${ram}GB — مناسب للإنتاجية`); } else if (ram) reasons.caution(`رام ${ram}GB — متوسط للإنتاجية`); if (a.cpu) reasons.spec(`معالج ${String(a.cpu).toUpperCase()}`); }
+    // DESIGN (2026-08-10, reopened mission, case 2): graphics/video/3D work is GPU-sensitive
+    // like gaming AND RAM-sensitive like productivity — neither alone captures it, so it is
+    // scored as its own branch rather than silently reusing one of the other two.
+    if (wantDesign) {
+      if (discrete) { score += 0.13; reasons.fit(`كرت شاشة منفصل (${gpu?.toUpperCase()}) — مناسب للتصميم والمونتاج`); }
+      else { score -= 0.06; reasons.caution("كرت مدمج — محدود لأعمال التصميم/المونتاج الثقيلة"); }
+      if (ram && ram >= 16) { score += 0.08; reasons.fit(`رام ${ram}GB — مناسب للتصميم`); } else if (ram) reasons.caution(`رام ${ram}GB — قد لا يكفي لملفات التصميم الكبيرة`);
+    }
     // PORTABILITY (Category Decision Contract, Section 9's own worked example): no laptop
     // weight is extracted anywhere in the pipeline (see category-contracts.ts's `laptop`
     // contract — `weight` is 'unknown'). Screen size is a REAL attribute and a genuine,
