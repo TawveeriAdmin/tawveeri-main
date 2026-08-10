@@ -278,6 +278,19 @@ export default function SearchClient() {
   // Persist test/real opt-in (?test=1) so storefront funnel events separate testers from real users.
   useEffect(() => { initTestModeFromUrl(); initCampaignFromUrl(); }, []);
 
+  // MEASURED (2026-08-10, follow-up-continuation mission): re-clicking a follow-up chip whose
+  // resulting query URL was already visited earlier in the session (e.g. tapping the same
+  // suggestion twice) silently undid the `scrollIntoView` + highlight below — the browser's
+  // native scroll-position memory for that history entry snapped the page back right after our
+  // own scroll ran. `history.scrollRestoration = 'manual'` is the standard SPA fix: this page
+  // fully owns its own scroll behavior via `router.replace(..., { scroll: false })` and the
+  // explicit scrollIntoView calls, so the browser's automatic restoration must never compete.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
   useEffect(() => {
     const sync = () => {
       try {
