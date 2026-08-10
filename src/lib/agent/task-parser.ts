@@ -39,7 +39,12 @@ function parseCategory(x: string): string | null {
   if (/لابتوب|لاب توب|laptop|notebook|macbook/.test(x)) return "laptop";
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
   if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
-  if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s/.test(x)) return "mobile";
+  // MEASURED DEFECT (2026-08-10, D→E mission Part F — re-verification sweep after the
+  // English routing fix): bare "phone" was never recognized at all — only "smartphone",
+  // "iphone", and "galaxy s" — even though "phone" is at least as common in English shopping
+  // queries. `\bphone\b` is boundary-safe: it does not fire inside "headphone"/"earphone"/
+  // "microphone" (no boundary between the preceding letter and "phone" in those words).
+  if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s|\bphone\b/.test(x)) return "mobile";
   // Appliances — ORDER MATTERS: dishwasher (غسالة صحون) before washing_machine (غسالة);
   // air_fryer (قلاية) and coffee_maker (specific) before generic checks.
   if (/غسال[ةه] صحون|غسالات صحون|غسالة أطباق|dishwasher|dish washer/.test(x)) return "dishwasher";

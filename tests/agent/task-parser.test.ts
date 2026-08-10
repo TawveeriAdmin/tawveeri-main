@@ -212,6 +212,20 @@ describe("Task parser — 10-journey acceptance sweep (2026-08-09)", () => {
     expect(t.budget_total).toBe(2500);
     expect(t.priorities).toEqual(expect.arrayContaining(["camera", "battery"]));
   });
+
+  // MEASURED DEFECT (2026-08-10, D→E mission Part F — re-verification sweep after the
+  // English routing fix): bare "phone" was never recognized as the mobile category at all —
+  // only "smartphone"/"iphone"/"galaxy s" — even though it is at least as common in English
+  // shopping queries ("phone with 128gb storage under 1500" returned zero results in
+  // production because category never resolved, not because of the routing bug fixed
+  // earlier this session).
+  it('recognizes bare "phone" as mobile, without false-firing inside headphone', () => {
+    expect(parseShoppingTask("phone with 128gb storage under 1500").category).toBe("mobile");
+    expect(parseShoppingTask("best phone under 2000").category).toBe("mobile");
+    // "headphone" is caught by the (earlier-checked) audio category regex before mobile's
+    // \bphone\b ever runs — but confirm the end result is still never "mobile".
+    expect(parseShoppingTask("wireless headphones under 500").category).not.toBe("mobile");
+  });
   it("household size («لعائلة 6 أشخاص») is a soft «large» preference, never an invented exact capacity", () => {
     // Governing rule (founder direction): household size is USE CONTEXT, not a fabricated
     // liters/kg requirement — the parser must not invent a numeric capacity target from it.
