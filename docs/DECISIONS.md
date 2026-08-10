@@ -113,6 +113,10 @@ Unlike every other fix in this ADR (homonyms, generic Algolia expansion tokens, 
 
 **Cumulative cross-category sweep result, this session:** مكيف/شاشة/راوتر/مكنسة/غسالة/ساعة/فرن — 7 categories with real, distinct leaks found and fixed, spanning 4 different root-cause mechanisms (generic Algolia expansion tokens, DB miscategorization, device-description overlap, dictionary homonym, accessory-hint-list gap). تلفزيون/ثلاجة/تابلت/كاميرا/سماعة/جوال/لابتوب/نشافة — 8 categories checked and confirmed clean.
 
+**Tenth addendum (2026-08-10, same session) — the worst leak found this entire mission: 0% correct, not merely contaminated.** A third "check other categories" pass found "مكواة" (clothes iron): sorting lowest-price-first returned ZERO genuine irons across its top 15 results — every single one was an unrelated cooking appliance (electric pots, food steamers, pressure cookers, waffle/sandwich makers, grills). Every other leak this session left the majority of results genuine (from 3-item leaks up to the AC air-fryer case's 12+ items amid hundreds of genuine ACs) — this was the first case where the ENTIRE visible result set was wrong.
+
+Root cause: `ARABIC_TO_ENGLISH['مكواة'] = ['iron', 'steamer']` injects both as bare optional Algolia words — "steamer" matches FOOD steamers (a different kitchen appliance category entirely) and "iron" matches "waffle iron"/"cast iron" cookware descriptions. Confirmed the catalog DOES carry genuine irons (several Black & Decker steam/dry irons, found via the more specific "مكواة بخار" query) — they were simply outnumbered and buried once the full candidate set was ranked by price alone. Both words are used by no other dictionary entry, so stoplisting them costs nothing elsewhere. Verified live: all 10 top "مكواة" results are now genuine Black & Decker irons (steam and dry), zero cooking-appliance contamination. Full test suite 1660→1661, zero regressions.
+
 ---
 
 ### ADR-235 — Both Section 44 gaps closed; D genuinely reached, end-to-end, verified live · Accepted (2026-08-09)
