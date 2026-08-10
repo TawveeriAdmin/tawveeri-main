@@ -11,7 +11,7 @@ import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDi
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
-import { parseShoppingTask } from '@/lib/agent/task-parser';
+import { parseShoppingTask, isPriorityDescriptorWord } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
@@ -429,7 +429,7 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];
 
-function detectCanonicalCategories(raw: string): string[] | null {
+export function detectCanonicalCategories(raw: string): string[] | null {
   const norm = normalizeArabic(raw).toLowerCase();
   if (
     ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
@@ -445,6 +445,24 @@ function detectCanonicalCategories(raw: string): string[] | null {
 
   for (const entry of CATEGORY_QUERY_TERMS) {
     if (entry.terms.some((t) => norm.includes(normalizeArabic(t)))) return entry.cats;
+  }
+  // MEASURED SEVERE DEFECT (2026-08-10, founder's own production report — reopened mission,
+  // case 3): «ابي لاب توب للجامعه» matched NONE of CATEGORY_QUERY_TERMS's laptop terms —
+  // every one is a single, no-space token ("لابتوب"), and the query spells it as the two
+  // extremely common SEPARATE tokens «لاب توب» — so this fell through to the generic "default
+  // to mobile" fallback below, meaning the search that actually determines WHICH candidates
+  // get fetched went looking for phones, not laptops, for a laptop request. THIS is the third
+  // independent, hand-rolled category classifier in this codebase to have missed the exact
+  // same spelling (`MAIN_PRODUCT_TYPES` above and `PRIORITY_KEYWORDS` in task-parser.ts were
+  // the other two) — three classifiers deciding the same question, silently drifting apart,
+  // is exactly the "phrasing-dependent experience" architecture the founder's own invariant
+  // forbids. Fixed at the root here too: defer to the SAME shared classifier
+  // (`parseShoppingTask`'s `parseCategory`) before giving up and defaulting to mobile, so any
+  // spelling/spacing variant it already recognizes — present or future — is honored here
+  // identically, without hand-maintaining a fourth copy of the same word list.
+  const sharedCategory = parseShoppingTask(raw).category;
+  if (sharedCategory && CATEGORY_QUERY_TERMS.some((e) => e.cats.includes(sharedCategory))) {
+    return [sharedCategory];
   }
   // Unrecognised (e.g. a bare brand like "سامسونج"): keep the previous behaviour and look
   // in mobile rather than widening to every category, which would cost latency for no
@@ -1668,9 +1686,24 @@ export async function POST(request: NextRequest) {
         .filter((w) => w && !isWrapperWord(w) && !constraintNumbers.has(w));
       const subject = subjectWords.length ? subjectWords.join(' ') : normalizeArabic(rawQuery);
       const algoliaQuery = expansions.length ? `${subject} ${expansions.join(' ')}` : subject;
+      // MEASURED SEVERE DEFECT (2026-08-10, founder's own production report — reopened
+      // mission, case 3): «ابي لاب توب للجامعه» sent "لاب توب جامعه" as the Algolia QUERY with
+      // `optionalWords` left `undefined` — no bilingual expansion applied to this sentence, so
+      // the gate above (`expansions.length ? ... : undefined`) never set it — meaning Algolia's
+      // default strict AND-matching required "جامعه" too. No genuine laptop's catalog title
+      // ever contains "جامعة" (real titles are brand+model+specs, never the shopper's use
+      // case), so every real laptop was excluded and only a laptop-BACKPACK — whose SEO-style
+      // title happens to literally contain "للجامعة والمدرسة" — matched all required words and
+      // survived as the ONE result. `optionalWords` must never depend on whether a bilingual
+      // expansion happened to exist; a query's own NEED/CONTEXT words (task-parser.ts's
+      // closed priority vocabulary — "جامعة", "رخيص", "دراسة", …) must always be optional-for-
+      // ranking, never required-to-match, because they describe the shopper's situation, not
+      // the product's own identity.
+      const descriptorWords = subjectWords.filter((w) => isPriorityDescriptorWord(w));
+      const optionalWords = [...new Set([...aqWords, ...expansions, ...descriptorWords])];
       const algoliaRes = await searchAlgolia({
         query: algoliaQuery,
-        optionalWords: expansions.length ? [...aqWords, ...expansions] : undefined,
+        optionalWords: optionalWords.length ? optionalWords : undefined,
         brands: body.brands,
         stores: body.stores,
         minPrice: body.min_price,

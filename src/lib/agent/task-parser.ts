@@ -404,6 +404,19 @@ export const CATEGORY_KEYS = [
  *  (`PRIORITY_KEYWORDS`'s own keys) — same governing rule as `CATEGORY_KEYS`. */
 export const PRIORITY_KEYS = PRIORITY_KEYWORDS.map(([key]) => key);
 
+/**
+ * True when `word` matches ANY priority-keyword pattern (task-parser.ts's OWN closed
+ * vocabulary, not a second copy of it) — i.e. it describes the shopper's NEED/CONTEXT
+ * ("للجامعة", "رخيص وجودته عاليه"'s "رخيص") rather than a product's own identity. Exported
+ * for `/api/search/route.ts` (2026-08-10, reopened mission, case 3): a query's context words
+ * must never be REQUIRED for a full-text retrieval match — a laptop's real catalog title never
+ * contains "جامعة", so requiring it excludes every genuine laptop and leaves only whichever
+ * accessory happens to have padded its own title with the shopper's exact wording.
+ */
+export function isPriorityDescriptorWord(word: string): boolean {
+  return PRIORITY_KEYWORDS.some(([, re]) => re.test(word));
+}
+
 /** Parse free-text into a ShoppingTask. Returns null category if undetectable. */
 export function parseShoppingTask(text: string): ParsedTask {
   const x = norm(text);

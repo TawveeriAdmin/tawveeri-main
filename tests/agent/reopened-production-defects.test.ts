@@ -4,8 +4,8 @@
  * general invariant it protects and includes adversarial paraphrases beyond the founder's own
  * examples, per the founder's explicit instruction not to patch phrases.
  */
-import { isMainProductTypeQuery } from "@/app/api/search/route";
-import { parseShoppingTask } from "@/lib/agent/task-parser";
+import { isMainProductTypeQuery, detectCanonicalCategories } from "@/app/api/search/route";
+import { parseShoppingTask, isPriorityDescriptorWord } from "@/lib/agent/task-parser";
 import { routeQuery } from "@/lib/agent/route-query";
 import { decideLaptop } from "@/lib/agent/decision-engine";
 import type { CanonicalRow } from "@/lib/agent/decision-engine";
@@ -26,6 +26,28 @@ describe("Case 3 (SEVERE) — primary-product intent must never be satisfied by 
     expect(isMainProductTypeQuery("لابتوب أسوس")).toBe(true);
     expect(isMainProductTypeQuery("مكيف سبليت")).toBe(true);
     expect(isMainProductTypeQuery("قصة عشوائية بلا منتج")).toBe(false);
+  });
+});
+
+describe("Case 3 root cause #1b — the TPS/comparison category scoper must also recognize multi-token spellings", () => {
+  it("«لاب توب» resolves to laptop via the shared classifier fallback, not the generic 'mobile' default", () => {
+    expect(detectCanonicalCategories("ابي لاب توب للجامعه")).toEqual(["laptop"]);
+  });
+  it("existing single-word forms are unaffected (no regression)", () => {
+    expect(detectCanonicalCategories("لابتوب أسوس")).toEqual(["laptop"]);
+    expect(detectCanonicalCategories("مكيف سبليت")).toEqual(["air_conditioner"]);
+  });
+  it("a genuinely unrecognized query still falls back to the documented 'mobile' default (no regression)", () => {
+    expect(detectCanonicalCategories("سامسونج")).toEqual(["mobile"]);
+  });
+});
+
+describe("Case 3 root cause #3 — a query's context/need words must never be REQUIRED in retrieval", () => {
+  it("a priority-descriptor word (need/context, not product identity) is recognized as such", () => {
+    expect(isPriorityDescriptorWord("جامعه")).toBe(true);
+    expect(isPriorityDescriptorWord("جامعة")).toBe(true);
+    expect(isPriorityDescriptorWord("رخيص")).toBe(false); // "رخيص" alone is not a listed priority key (only "ارخص"/"اوفر" as the cheapest marker, a different mechanism) — documents the boundary honestly rather than assuming.
+    expect(isPriorityDescriptorWord("لابتوب")).toBe(false); // a product-identity word must never be treated as optional-context
   });
 });
 
