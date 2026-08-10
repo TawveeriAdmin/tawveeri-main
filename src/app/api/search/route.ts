@@ -273,7 +273,12 @@ const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'ك�
   // MEASURED (2026-08-10, D→E mission Part F cross-category sweep): sorting "فرن" (oven)
   // lowest-price-first put an oven baking TRAY and an oven THERMOMETER — accessories FOR an
   // oven, not ovens — above every genuine oven (which start at 220 SAR).
-  'صينية', 'مقياس حرارة'];
+  'صينية', 'صواني', 'مقياس حرارة',
+  // MEASURED (2026-08-10, same sweep, continued): "مايكروويف" put a microwave SHELF/rack
+  // (79 SAR) and a microwave timer SWITCH/knob (109.7 SAR) above every genuine microwave
+  // (starting at 189 SAR) — "shelf" was already in ACCESSORY_HINTS_EN but missing from the
+  // Arabic list. "قلاية" put silicone egg-mold TRAY inserts FOR an air fryer at position #1.
+  'رف', 'مفتاح', 'قوالب'];
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered',
   // compatible peripherals that keyword-match a device but are NOT the device itself
   'mouse', 'keyboard', 'stylus',

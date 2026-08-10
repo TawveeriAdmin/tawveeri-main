@@ -399,3 +399,43 @@ describe("excludeIneligibleCandidates — accessory-hint gap: oven tray/thermome
     for (const r of real) expect(names).toContain(r.name_ar);
   });
 });
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, fourth "check other categories"
+ * follow-up): "مايكروويف" (microwave) put a microwave SHELF/rack (79 SAR) and a timer
+ * SWITCH/knob (109.7 SAR) above every genuine microwave (starting at 189 SAR) — "shelf" was
+ * already in ACCESSORY_HINTS_EN but missing from the Arabic list. "قلاية" (air fryer) put
+ * silicone egg-mold TRAY inserts at position #1.
+ */
+describe("excludeIneligibleCandidates — accessory-hint gap: microwave shelf/switch, air-fryer molds", () => {
+  it("excludes the measured microwave shelf and timer switch, keeping genuine microwaves", () => {
+    const junk = [
+      { name_ar: "رف ميكرويف قابل لتعديل المقاس أبيض", name_en: null, best_price: 79 },
+      { name_ar: "مفتاح توقيت فرن الميكروويف الإلكتروني 60 دقيقة", name_en: null, best_price: 109.7 },
+    ];
+    const real = [
+      { name_ar: "مايكرويف nikai 20 لتر", name_en: null, best_price: 189 },
+      { name_ar: "مايكرويف haam 20 لتر", name_en: null, best_price: 215 },
+      { name_ar: "ميكروويف Galanz 23 لتر P90D23L-A9", name_en: null, best_price: 218.98 },
+      { name_ar: "مايكرويف midea 20 لتر", name_en: null, best_price: 219 },
+    ];
+    const result = excludeIneligibleCandidates([...junk, ...real]);
+    const names = result.map((r) => r.name_ar);
+    for (const j of junk) expect(names).not.toContain(j.name_ar);
+    for (const r of real) expect(names).toContain(r.name_ar);
+  });
+
+  it("excludes the measured air-fryer silicone mold tray inserts", () => {
+    const junk = { name_ar: "قوالب بيض سيليكون للمقلاة الهوائية من يلا جوي، صواني", name_en: null, best_price: 39 };
+    const real = [
+      { name_ar: "قلاية هوائية سوداء خالية من الزيت، سعة 4.2 لتر", name_en: null, best_price: 129 },
+      { name_ar: "مقلاة هوائية 2 لتر 1000 وات NAF2001M أسود", name_en: null, best_price: 149 },
+      { name_ar: "قلاية كهربائية عميقة", name_en: null, best_price: 159 },
+      { name_ar: "مقلاة هوائية ذكية - سعة كبيرة 4.5 لتر", name_en: null, best_price: 189 },
+    ];
+    const result = excludeIneligibleCandidates([junk, ...real]);
+    const names = result.map((r) => r.name_ar);
+    expect(names).not.toContain(junk.name_ar);
+    for (const r of real) expect(names).toContain(r.name_ar);
+  });
+});
