@@ -278,7 +278,17 @@ const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'ك�
   // (79 SAR) and a microwave timer SWITCH/knob (109.7 SAR) above every genuine microwave
   // (starting at 189 SAR) — "shelf" was already in ACCESSORY_HINTS_EN but missing from the
   // Arabic list. "قلاية" put silicone egg-mold TRAY inserts FOR an air fryer at position #1.
-  'رف', 'مفتاح', 'قوالب'];
+  'رف', 'مفتاح', 'قوالب',
+  // MEASURED (2026-08-10, D→E mission Part F, fifth "check other categories" follow-up):
+  // "خلاط" (blender) surfaced a "Blender Bottle"-brand protein SHAKER (78.2 SAR — its own
+  // title says "زجاجة شيكر... من بليندر بوتل", a shaker bottle, not a blender at all) and a
+  // Kenwood TRAVEL CUP accessory "for" specific blender models (96.25 SAR, "كوب سفر للخلاط").
+  // Neither is a brand-name-matching problem needing new logic — both are the SAME
+  // accessory-hint-list gap as the oven/microwave/air-fryer fixes above, just missing
+  // keywords. A genuinely different item in the same result set ("زجاجة خلط البروتين
+  // الكهربائية...خلاط محمول" — explicitly self-described as a PORTABLE ELECTRIC blender) was
+  // deliberately left untouched: no evidence it is anything other than what it says.
+  'شيكر', 'كوب سفر'];
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered',
   // compatible peripherals that keyword-match a device but are NOT the device itself
   'mouse', 'keyboard', 'stylus',

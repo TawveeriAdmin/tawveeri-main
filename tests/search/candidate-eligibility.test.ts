@@ -439,3 +439,45 @@ describe("excludeIneligibleCandidates — accessory-hint gap: microwave shelf/sw
     for (const r of real) expect(names).toContain(r.name_ar);
   });
 });
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, fifth "check other categories"
+ * follow-up): "خلاط" (blender) surfaced a "Blender Bottle"-brand protein SHAKER (78.2 SAR)
+ * and a Kenwood TRAVEL CUP accessory "for" specific blender models (96.25 SAR). Same
+ * accessory-hint-list gap mechanism as oven/microwave/air-fryer, not a new brand-collision
+ * class of bug — both titles contain a plain, safe accessory keyword ("شيكر"/shaker,
+ * "كوب سفر"/travel cup) once you look past the brand name.
+ */
+describe("excludeIneligibleCandidates — accessory-hint gap: blender shaker bottle and travel cup", () => {
+  it("excludes the measured shaker bottle and travel-cup accessory, keeps genuine blenders", () => {
+    const junk = [
+      {
+        name_ar: "زجاجة شيكر ستانلس ستيل معزولة من بليندر بوتل، من زجاجة خلاط، زهري | مانعة للتسرب | تقنية مضرب بليندربول",
+        name_en: null,
+        best_price: 78.2,
+      },
+      { name_ar: "كينوود كوب سفر للخلاط وصانع السموذي لـ: BL030، SB055 الخ.", name_en: null, best_price: 96.25 },
+    ];
+    const real = [
+      { name_ar: "خلاط معجنات برادشو انترناشونال 21995 WD/STL", name_en: null, best_price: 43.75 },
+      { name_ar: "خلاط ومطحنة 350 واط مع برطمان سعة 1.5 لتر من نيكاي", name_en: null, best_price: 72 },
+      { name_ar: "خلاط يدوي كهربائي 5 سرعات - محرك نحاسي", name_en: null, best_price: 74 },
+      { name_ar: "بلاك اند ديكر خلاط يدوي – 5 سرعات مع تربو – 300 واط", name_en: null, best_price: 106 },
+    ];
+    const result = excludeIneligibleCandidates([...junk, ...real]);
+    const names = result.map((r) => r.name_ar);
+    for (const j of junk) expect(names).not.toContain(j.name_ar);
+    for (const r of real) expect(names).toContain(r.name_ar);
+  });
+
+  it("does NOT exclude a portable electric blender that happens to be shaped like a bottle", () => {
+    // "خلاط محمول" (portable blender) is an explicit, self-described product claim — no
+    // evidence it is anything other than what it says, so it must survive untouched.
+    const portableBlender = {
+      name_ar: "زجاجة خلط البروتين الكهربائية، زجاجة خلاط سعة 650 مل مع كوب للمسحوق، خلاط محمول",
+      name_en: null,
+      best_price: 78.99,
+    };
+    expect(excludeIneligibleCandidates([portableBlender]).map((r) => r.name_ar)).toContain(portableBlender.name_ar);
+  });
+});
