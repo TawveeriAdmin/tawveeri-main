@@ -155,19 +155,31 @@ export function applyParsedTask(state: DecisionState, task: AdvisorParsed, inten
   const newPositive = new Set(task.priorities ?? []);
   const newDeprioritized = new Set(task.deprioritized_priorities ?? []);
   const newExcluded = new Set(task.excluded_priorities ?? []);
+  // FINAL SEMANTIC INTELLIGENCE mission (2026-08-10): priorities the semantic fallback
+  // INFERRED (never typed explicitly by the shopper) — kept OUT of `newPositive` above so
+  // they never enter `explicit_preferences`, but still added to `soft_preferences` (the same
+  // ranking input explicit priorities feed) and, separately, to `inferred_preferences`. A
+  // weak inference must rank alongside explicit signals — that is the whole point of
+  // extracting it — but must never be DISPLAYED or TRUSTED as if the shopper said it
+  // themselves (mission brief §10).
+  const newInferred = new Set((task.inferred_priorities ?? []).filter((p) => !newPositive.has(p)));
 
-  const soft_preferences = newPositive.size
-    ? [...new Set([...base.soft_preferences, ...newPositive])]
+  const soft_preferences = (newPositive.size || newInferred.size)
+    ? [...new Set([...base.soft_preferences, ...newPositive, ...newInferred])]
     : base.soft_preferences;
   const explicit_preferences = newPositive.size
     ? [...new Set([...base.explicit_preferences, ...newPositive])]
     : base.explicit_preferences;
+  const inferred_preferences = newInferred.size
+    ? [...new Set([...base.inferred_preferences, ...newInferred])].filter((k) => !newPositive.has(k) && !newDeprioritized.has(k) && !newExcluded.has(k))
+    : base.inferred_preferences;
   const deprioritized_preferences = [...new Set([...base.deprioritized_preferences, ...newDeprioritized])]
     .filter((k) => !newPositive.has(k) && !newExcluded.has(k));
   const excluded_preferences = [...new Set([...base.excluded_preferences, ...newExcluded])]
     .filter((k) => !newPositive.has(k));
   const soft_preferences_final = soft_preferences.filter((k) => !newDeprioritized.has(k) && !newExcluded.has(k));
   const explicit_preferences_final = explicit_preferences.filter((k) => !newDeprioritized.has(k) && !newExcluded.has(k));
+  const inferred_preferences_final = inferred_preferences.filter((k) => !newDeprioritized.has(k) && !newExcluded.has(k));
 
   return {
     ...base,
@@ -182,6 +194,7 @@ export function applyParsedTask(state: DecisionState, task: AdvisorParsed, inten
     hard_constraints,
     soft_preferences: soft_preferences_final,
     explicit_preferences: explicit_preferences_final,
+    inferred_preferences: inferred_preferences_final,
     deprioritized_preferences,
     excluded_preferences,
     unresolved_questions: task.unresolved?.length ? [...new Set(task.unresolved)] : base.unresolved_questions,

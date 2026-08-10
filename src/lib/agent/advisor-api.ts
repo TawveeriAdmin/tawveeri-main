@@ -230,6 +230,14 @@ export interface AdvisorParsed {
    *  could not survive into `DecisionState` the way room_size_m2/budget_total always could. */
   storage_min?: number;
   ram_min?: number;
+  /** FINAL SEMANTIC INTELLIGENCE mission (2026-08-10) — priorities the semantic fallback
+   *  INFERRED from free text the deterministic parser could not classify. Deliberately
+   *  separate from `priorities` (which feeds `explicit_preferences` in decision-state.ts) —
+   *  see task-parser.ts's `ParsedTask.inferred_priorities` for the full contract. */
+  inferred_priorities?: string[];
+  /** The semantic fallback's own self-reported confidence in its category call (0–1). Absent
+   *  when no semantic fallback ran this turn. */
+  semantic_confidence?: number;
 }
 
 /** Multi-unit acknowledgement (quantity · total budget · per-unit ceiling · unknowns).

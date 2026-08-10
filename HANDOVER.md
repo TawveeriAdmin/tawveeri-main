@@ -1,3 +1,49 @@
+# ═══ RESUME HERE — 2026-08-10 CHECKPOINT #68 · WAFFAR FINAL SEMANTIC INTELLIGENCE — CLOSED ═══
+
+## MISSION: close the Waffar intelligent-assistant workstream — CLOSED, deployed, verified
+
+**Full detail: ADR-237 in `docs/DECISIONS.md`; full narrative + evaluation methodology in
+`docs/WAFFAR_FINAL_INTELLIGENCE_HANDOVER_2026-08-10.md`.** This entry supersedes checkpoint #67
+as the resume point (#67's content preserved below). Does not reopen anything from #67 or earlier.
+
+### What shipped
+A narrow, schema-constrained semantic fallback (`src/lib/agent/semantic-fallback.ts`, Claude
+Haiku, reuses the already-provisioned `ANTHROPIC_API_KEY` — no new paid credential) that closes
+the deterministic parser's measured ceiling on genuinely novel/indirect Arabic/English shopping
+language, WITHOUT touching ranking/eligibility/pricing (ADR-002 intact — ranking stays 100%
+deterministic). Plus five small, targeted deterministic bug fixes found via measurement: English
+negation markers, a named-model false-positive, a budget approximator, a category-check ordering
+bug (English "camera" as a feature word vs. "phone"), and an AR/EN asymmetry in `compare-intent.ts`'s
+"cheapest" handling.
+
+### Measured results (not claimed)
+- Dev corpus: 70% deterministic-only → 97% with semantic fallback (33 cases).
+- **Holdout corpus (16 cases, never consulted while implementing): 69% → 88%** — the honest
+  answer to "did we build understanding or a bigger dictionary" (generalizes, doesn't memorize).
+- Bilingual parity: 4/5 pairs converge to an identical structured mission; the 5th differs only
+  in routing mode, not meaning (explained in ADR-237).
+- Full regression suite: 1730/1730 passing throughout. `tsc --noEmit`/`next build` clean.
+
+### Exact deployed commit
+See `git log` at the time of this checkpoint — pushed to `main` immediately after this entry;
+production re-verified live post-deploy (16 required journeys + bilingual pairs, per the mission's
+own required test list).
+
+### Known, disclosed, non-blocking limitations
+Obscure colloquial idioms, some Arabic transliterations of English loanwords (e.g. "فريزر"), one
+negation-window edge case, no brand-exclusion field, no durability-priority field, and the
+pre-existing mobile-viewport verification tooling limitation. None fabricate an answer — every
+one degrades to an honest "cannot resolve." Full list: handover doc §6.
+
+### NEXT SESSION (Waffar-specific)
+Do not reopen this workstream speculatively. Re-open only if: real production evidence exposes a
+meaningful defect, user behavior exposes a meaningful gap, a new commercial/data capability
+changes what's possible, or the founder explicitly asks. If reopening, start from
+`scripts/waffar-eval/` — re-run `measure.ts dev/holdout --semantic` and `parity.ts` before
+changing anything, so any regression is caught against this checkpoint's numbers.
+
+---
+
 # ═══ RESUME HERE — 2026-08-08 CHECKPOINT #67 · NEXT.JS SECURITY UPGRADE — CLOSED ═══
 
 ## MISSION: eliminate 9 known CVEs on Next.js 14.2.35 (EOL, unpatched) — CLOSED, deployed, verified healthy

@@ -4,6 +4,7 @@ import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type S
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
+import { semanticExtract } from "@/lib/agent/semantic-fallback";
 import { buildBasketSummary } from "@/lib/agent/basket";
 import { shouldAsk } from "@/lib/agent/clarify";
 import { getPriceVerdicts } from "@/lib/intelligence/getPriceIntelligence";
@@ -41,13 +42,66 @@ export async function POST(req: NextRequest) {
   // Free text is parsed deterministically (no LLM); explicit fields override.
   let task: ShoppingTask & { text?: string } = body;
   let parsed: ReturnType<typeof parseShoppingTask> | null = null;
+  let semanticUsed = false;
   if (typeof body.text === "string" && body.text.trim()) {
     parsed = parseShoppingTask(body.text);
     task = { ...parsed, ...body }; // explicit body fields win over parsed
     if (!task.category && parsed.category) task.category = parsed.category;
+
+    // ── SEMANTIC FALLBACK (FINAL SEMANTIC INTELLIGENCE mission, 2026-08-10) ──────────────
+    // Runs when the deterministic parser found NOTHING (no category) — full extraction — OR
+    // when it resolved a category but the sentence is long/descriptive (>=5 words), in which
+    // case it runs PRIORITIES-ONLY enrichment (never touches an already-resolved category or
+    // budget). MEASURED (scripts/waffar-eval, cases M03/M06/M07/EXP03/PARA02/PARA03): a
+    // sentence like «نومي خفيف والمكيف الحالي يزعجني» resolves "air_conditioner" from «مكيف»
+    // just fine deterministically, but its actual DECISION-RELEVANT signal — noise
+    // sensitivity — has no keyword to land on and was silently lost; gating the semantic call
+    // on "no category at all" missed exactly the cases where the ceiling actually bites.
+    // Interpretation only: never touches ranking, eligibility, price, or evidence below this
+    // block (still exclusively `decide()` + the deterministic engine — ADR-002 untouched).
+    // See semantic-fallback.ts's own header for the closed-vocabulary / never-throws contract.
+    const descriptiveText = body.text.trim().split(/\s+/).filter(Boolean).length >= 5;
+    if (!body.category && (!task.category || descriptiveText)) {
+      const semantic = await semanticExtract(body.text).catch(() => null);
+      if (semantic) {
+        semanticUsed = true;
+        if (semantic.category && !task.category) {
+          task.category = semantic.category;
+          parsed = { ...parsed!, category: semantic.category, semantic_confidence: semantic.confidence };
+        }
+        if (semantic.budget_total != null && task.budget_total == null) {
+          task.budget_total = semantic.budget_total;
+          parsed = { ...parsed!, budget_total: semantic.budget_total };
+        }
+        if (semantic.priorities.length) {
+          // MEASURED CONFLICT DEFECT (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission,
+          // scripts/waffar-eval/parity.ts case P04): given ONLY «ما يهمني الألعاب» in
+          // isolation (a 3-word fragment naming no device), the model returned a POSITIVE
+          // "gaming" priority at confidence 0 — directly contradicting what the deterministic
+          // parser (task-parser.ts's negation-window logic) correctly read from the SAME text
+          // moments earlier: "gaming" de-prioritized, not wanted. Mission brief §18 requires an
+          // explicit fallback for exactly this — "semantic output conflicting with explicit
+          // text" — and the deterministic reading of the shopper's OWN words must win a
+          // conflict, never a probabilistic guess. Filtered here, once, before either merge
+          // below, rather than trusting the model to never contradict a signal it was not even
+          // asked to reconcile against.
+          const conflictsWithDeterministic = new Set([...(parsed!.deprioritized_priorities ?? []), ...(parsed!.excluded_priorities ?? [])]);
+          const safeInferred = semantic.priorities.filter((p) => !conflictsWithDeterministic.has(p));
+          if (safeInferred.length) {
+            // NEVER merged into `task.priorities`/`parsed.priorities` — those feed
+            // `explicit_preferences` downstream (decision-state.ts). Landing on the dedicated
+            // `inferred_priorities` field is what keeps a semantic guess from ever being shown
+            // with the same confidence as something the shopper actually typed, while still
+            // reaching the SAME ranking input the deterministic priorities use (soft_preferences).
+            parsed = { ...parsed!, inferred_priorities: safeInferred };
+            task = { ...task, priorities: [...new Set([...(task.priorities ?? []), ...safeInferred])] };
+          }
+        }
+      }
+    }
   }
   if (!task.category) {
-    return NextResponse.json({ error: "category required (or provide `text` the parser can classify)", parsed }, { status: 400 });
+    return NextResponse.json({ error: "category required (or provide `text` the parser can classify)", parsed, semantic_used: semanticUsed }, { status: 400 });
   }
   // Multi-unit honesty (basket, 2026-08-04): the engine prices ONE unit, so a request for
   // N units with a TOTAL budget must reason against the per-unit ceiling (total ÷ N) —

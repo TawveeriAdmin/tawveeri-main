@@ -38,13 +38,24 @@ function parseCategory(x: string): string | null {
   if (/تابلت|ايباد|آيباد|ipad|tablet|جالكسي تاب|galaxy tab|matepad/.test(x)) return "tablet";
   if (/لابتوب|لاب توب|laptop|notebook|macbook/.test(x)) return "laptop";
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
-  if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
   // MEASURED DEFECT (2026-08-10, D→E mission Part F — re-verification sweep after the
   // English routing fix): bare "phone" was never recognized at all — only "smartphone",
   // "iphone", and "galaxy s" — even though "phone" is at least as common in English shopping
   // queries. `\bphone\b` is boundary-safe: it does not fire inside "headphone"/"earphone"/
   // "microphone" (no boundary between the preceding letter and "phone" in those words).
+  //
+  // CHECKED BEFORE "camera" (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission, MEASURED
+  // bilingual-parity defect — scripts/waffar-eval/parity.ts case P02): "I need a phone with
+  // strong camera and battery under SAR 3,000" resolved to category="camera" instead of
+  // "mobile", because the (then-earlier) camera check matched the FEATURE word "camera"
+  // before this device-noun check ever ran — a phone-shopping sentence that happens to
+  // mention its own camera as a feature is far more common than a bare "camera" standalone
+  // shopping request, and a device noun (جوال/هاتف/phone) is a stronger, more specific signal
+  // than a feature adjective. The Arabic side never had this collision ("تصويره" — its
+  // camera/photography, possessive form — never matches the "كاميرا" category regex at all),
+  // which is exactly what made this an ENGLISH-ONLY bilingual-parity bug, not a general one.
   if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s|\bphone\b/.test(x)) return "mobile";
+  if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
   // Appliances — ORDER MATTERS: dishwasher (غسالة صحون) before washing_machine (غسالة);
   // air_fryer (قلاية) and coffee_maker (specific) before generic checks.
   if (/غسال[ةه] صحون|غسالات صحون|غسالة أطباق|dishwasher|dish washer/.test(x)) return "dishwasher";
@@ -98,7 +109,12 @@ function parseBudget(x: string): number | null | undefined {
   // `counterfactual.ts`'s `parseCounterfactualDelta`, propagated here so CONSTRAINT_CHANGE
   // (and every other mutation intent sharing this parser) recognizes it too — a fix that
   // exists in one budget parser and not this one is still the same bug from the caller's view.
-  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|حدود|يتعدى|under|below|budget|max)\s*(?:الى|إلى|to)?\s*([\d,]{3,7})/) ||
+  // MEASURED DEFECT (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission, case CS05 in
+  // scripts/waffar-eval): «budget حول 4000» ("budget AROUND 4000") failed — the optional
+  // «(?:الى|إلى|to)?» bridge only handled an absolute-target phrasing («ميزانية إلى 4000»),
+  // not an approximator between the marker and the number. «حول»/«تقريبا»/"around"/"about"
+  // is the same class of gap, added as a second optional bridge word.
+  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|حدود|يتعدى|under|below|budget|max)\s*(?:الى|إلى|to|حول|تقريبا|تقريباً|around|about)?\s*([\d,]{3,7})/) ||
             x.match(/([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)/);
   if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
   return undefined;
@@ -188,14 +204,33 @@ const DEPRIORITIZE_MARKERS = /ما ?يهمني|مو ?مهم|مب ?مهم|غير 
 const EXCLUDE_MARKERS = /ما ?(?:ابي|أبي|اريد|أريد|احتاج|أحتاج)|بدون|ممنوع|مو ?(?:ابي|أبي)|مب ?(?:ابي|أبي)/;
 const NEGATION_WINDOW_CHARS = 12;
 
+/**
+ * ENGLISH NEGATION POLARITY (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission — measured via
+ * `scripts/waffar-eval`, case NEG03): the Arabic negation markers above only ever check the
+ * text BEFORE a keyword match, matching Arabic's pre-negation word order («ما يهمني الألعاب»).
+ * English negation of a shopping priority is overwhelmingly POST-positioned instead ("gaming
+ * doesn't matter to me"), so the same before-window check silently let "gaming" through as a
+ * POSITIVE priority — the exact inversion bug Section 7's Arabic fix (DEPRIORITIZE_MARKERS
+ * above) already exists to prevent, just never ported to English. A narrow, closed set,
+ * checked in an AFTER-window the same fixed size as the existing BEFORE-window, so an
+ * unrelated later clause cannot bleed backward into an earlier keyword either.
+ */
+const EN_DEPRIORITIZE_BEFORE = /don'?t care about|do not care about|not interested in/i;
+const EN_DEPRIORITIZE_AFTER = /doesn'?t matter|does not matter|isn'?t important|is not important|isn'?t a priority|is not a priority/i;
+const EN_EXCLUDE_BEFORE = /don'?t want|do not want|don'?t need|do not need|without/i;
+
 type Polarity = "positive" | "deprioritized" | "excluded";
 
 function polarityBeforeMatch(x: string, re: RegExp): Polarity | null {
   const m = re.exec(x);
   if (!m) return null;
-  const window = x.slice(Math.max(0, m.index - NEGATION_WINDOW_CHARS), m.index);
-  if (EXCLUDE_MARKERS.test(window)) return "excluded";
-  if (DEPRIORITIZE_MARKERS.test(window)) return "deprioritized";
+  const before = x.slice(Math.max(0, m.index - NEGATION_WINDOW_CHARS), m.index);
+  // Wider than the before-window: "gaming doesn't matter" needs 16+ chars after "gaming" to
+  // fit " doesn't matter" in full — a narrower window silently truncated the phrase and never
+  // matched, letting the priority through as positive despite the negation being present.
+  const after = x.slice(m.index + m[0].length, m.index + m[0].length + 20);
+  if (EXCLUDE_MARKERS.test(before) || EN_EXCLUDE_BEFORE.test(before)) return "excluded";
+  if (DEPRIORITIZE_MARKERS.test(before) || EN_DEPRIORITIZE_BEFORE.test(before) || EN_DEPRIORITIZE_AFTER.test(after)) return "deprioritized";
   return "positive";
 }
 
@@ -317,7 +352,36 @@ export interface ParsedTask extends ShoppingTask {
   wants_recommendation?: boolean;
   budget_referenced?: boolean;
   use_case_referenced?: boolean;
+  /**
+   * FINAL SEMANTIC INTELLIGENCE mission (2026-08-10) — NEVER set by `parseShoppingTask`
+   * itself (this function stays pure keyword/number extraction, unchanged). Populated only by
+   * the semantic-fallback orchestration in `/api/v1/agent/decide` when the deterministic parse
+   * above found nothing to act on. Kept on a SEPARATE field from `priorities` — never merged
+   * into it — so a downstream consumer (`applyParsedTask`, decision-state.ts) can route these
+   * into `inferred_preferences`, never `explicit_preferences`: the explicit/inferred boundary
+   * Section 10 requires, made structural rather than a convention someone has to remember.
+   */
+  inferred_priorities?: string[];
+  /** Set alongside `inferred_priorities`/a semantic `category` — the model's own self-reported
+   *  confidence (0–1), carried so a low-confidence guess is never treated as equal to a
+   *  keyword match. Absent when no semantic fallback ran. */
+  semantic_confidence?: number;
 }
+
+/** The CLOSED category vocabulary `parseCategory` can produce — exported so the semantic
+ *  fallback (semantic-fallback.ts) can constrain its own output to the SAME set rather than
+ *  maintaining a second, driftable list. A category not in this set is never accepted from
+ *  any source, deterministic or semantic (Section 9: semantic intelligence may interpret
+ *  MEANING, never invent a product category Tawveeri has no data for). */
+export const CATEGORY_KEYS = [
+  'air_conditioner', 'tv', 'tablet', 'laptop', 'audio', 'camera', 'mobile',
+  'dishwasher', 'microwave', 'air_fryer', 'air_purifier', 'vacuum', 'coffee_maker',
+  'kettle', 'toaster', 'blender', 'oven', 'refrigerator', 'washing_machine',
+] as const;
+
+/** The CLOSED priority vocabulary the decision engine actually scores against
+ *  (`PRIORITY_KEYWORDS`'s own keys) — same governing rule as `CATEGORY_KEYS`. */
+export const PRIORITY_KEYS = PRIORITY_KEYWORDS.map(([key]) => key);
 
 /** Parse free-text into a ShoppingTask. Returns null category if undetectable. */
 export function parseShoppingTask(text: string): ParsedTask {

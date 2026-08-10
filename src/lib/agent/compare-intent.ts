@@ -38,8 +38,26 @@ const SINGLE_MARKERS = [
   'قارن اسعار', 'قارن سعر', 'مقارنه اسعار', 'قارن', 'مقارنه',
   'وين ارخص', 'وين اقل سعر', 'ارخص سعر', 'افضل سعر', 'اقل سعر', 'وين الاوفر', 'بكم يجي',
   'compare prices', 'compare price', 'price comparison', 'compare',
-  'cheapest', 'best price', 'lowest price', 'where is the cheapest',
+  'best price', 'lowest price', 'where is the cheapest', 'cheapest',
 ];
+
+/**
+ * MEASURED BILINGUAL-PARITY DEFECT (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission,
+ * scripts/waffar-eval/parity.ts case P03): a bare "cheapest" unconditionally meant
+ * PRODUCT_COMPARISON, so "Cheapest laptop." (a bare CATEGORY) diverged from its Arabic
+ * equivalent "أرخص لابتوب" (which correctly routes through the eligibility-safe decision
+ * engine — task-parser.ts's own CHEAPEST_MARKER/`wants_cheapest`, no bare "ارخص" ever listed
+ * here for the same reason) — while "cheapest iphone 16" (a NAMED MODEL) is a genuine
+ * price-lookup comparison request either language (tests/agent/compare-intent.test.ts's own
+ * SINGLES fixture). The two are NOT the same request: a category wants ranked, eligible
+ * recommendations; a named model wants its best price across stores. A model NAME carries a
+ * digit (a version/generation number); a bare category name does not — the same structural
+ * signal route-query.ts's own `namesASpecificModel` already uses, applied locally here (this
+ * file cannot import that one without a circular dependency: route-query.ts imports FROM
+ * compare-intent.ts). Scoped to "cheapest" only — every other marker above already reads as
+ * an explicit comparison request regardless of what follows it, and is unchanged.
+ */
+const CHEAPEST_REQUIRES_MODEL_DIGIT = /\d/;
 
 /** Infix separators that split a pair when no "between" marker framed it.
  *
@@ -126,6 +144,12 @@ export function detectCompareIntent(text: string): CompareIntent {
     const i = x.indexOf(m);
     if (i < 0) continue;
     const rest = strip(x.slice(i + m.length)) || strip(x.slice(0, i));
+    if (m === 'cheapest' && !CHEAPEST_REQUIRES_MODEL_DIGIT.test(rest)) {
+      // A bare category ("cheapest laptop") is a NEEDS-DISCOVERY request, not a comparison —
+      // fall through to the next marker rather than claiming this one (see this constant's
+      // own doc comment above).
+      continue;
+    }
     // A separator inside a single-marker phrase still means two things:
     // «قارن آيفون ١٦ و جالكسي S24».
     const pair = splitPair(rest);

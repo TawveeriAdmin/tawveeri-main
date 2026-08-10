@@ -122,8 +122,19 @@ const SPEC_UNIT_TOKEN = /^\d+(?:gb|tb|mb|mah|wh|kwh|hz|ghz|mhz|w|kw|v|a|kg|g|lb|
 export function namesASpecificModel(text: string): boolean {
   const t = (text || '').trim();
   if (!t) return false;
-  // "iphone 15", "galaxy s24" — a known series followed by any number is a model.
-  if (NAMED_SERIES.test(t) && /\d/.test(t)) return true;
+  // "iphone 15", "galaxy s24" — a known series IMMEDIATELY followed by a number/letter+number
+  // is a model. MEASURED DEFECT (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission, case CS02
+  // in scripts/waffar-eval): the previous check was `NAMED_SERIES.test(t) && /\d/.test(t)` —
+  // ANY digit anywhere in the sentence, not just one attached to the series name. "أبي iPhone
+  // بطارية قوية under 3000" has "iphone" AND a digit (the budget "3000"), so a need description
+  // with a named category word plus an unrelated budget figure was misrouted to retrieval as if
+  // "iPhone 3000" were a real model — the exact "budget vs model digit" ambiguity route-query's
+  // own SPEC_UNIT_TOKEN logic already exists to avoid elsewhere in this file.
+  // Allows ONE short qualifier word ("pro"/"air"/"max"/"s"/"ultra") between the series name
+  // and its number — "MacBook Pro 16" — while still requiring the digit to be near the series
+  // name, not merely present anywhere in the sentence (regression guard: tests/agent/
+  // need-discovery.test.ts's «لابتوب MacBook Pro 16» case).
+  if (/(?:iphone|galaxy|macbook|ipad|pixel|redmi|poco|vivobook|thinkpad|elitebook|inspiron|latitude|omen|nitro|rog|zenbook|ideapad|بيسبوك|ايفون|آيفون|جالكسي)\s*(?:[a-z]{1,5}\s*)?\d/i.test(t)) return true;
   const matches = t.match(MODEL_TOKEN) ?? [];
   // A token is a model candidate unless it is ENTIRELY a number+unit spec ("8gb", "6000mah",
   // "4k") — those describe a need, not a product identity, no matter how model-shaped they
@@ -148,6 +159,24 @@ export function namesASpecificModel(text: string): boolean {
  *   4. At least one need signal       → advisory. There is something to reason about.
  *   5. Otherwise                      → retrieval. A bare category is a browse, not a need.
  */
+/**
+ * FINAL SEMANTIC INTELLIGENCE mission (2026-08-10) — MEASURED via `scripts/waffar-eval`
+ * (10 of 33 dev-corpus cases): a genuine free-form need description with no product-noun
+ * keyword at all ("I need something light for university but I occasionally code",
+ * "أبي جهاز يكرف معي بالدوام") previously fell straight to plain retrieval — the customer's
+ * own words never reached the decision engine's semantic fallback (`/api/v1/agent/decide`)
+ * because `routeQuery` gave up the instant no category regex matched. A short browse term
+ * ("لابتوب", "iphone") is exactly as category-less-until-typed but is NOT a description —
+ * word count is the cheap, honest signal that separates the two: a real sentence is long
+ * enough to describe a situation, a browse term is not. False positives (a long query that
+ * still resolves to nothing, semantically or otherwise) cost one extra, capped server round
+ * trip and degrade to the SAME honest "tell me more" outcome retrieval already gives —
+ * never worse than today, only sometimes better.
+ */
+function looksDescriptive(raw: string): boolean {
+  return raw.trim().split(/\s+/).filter(Boolean).length >= 5;
+}
+
 export function routeQuery(text: string): QueryRoute {
   const raw = (text || '').trim();
   if (!raw) return { mode: 'retrieval', reason: 'empty query', task: null };
@@ -160,6 +189,9 @@ export function routeQuery(text: string): QueryRoute {
   }
 
   if (!task.category) {
+    if (looksDescriptive(raw)) {
+      return { mode: 'advisory', reason: 'no category classified, but text describes a need (>=5 words) — defer category resolution to the decision engine', task };
+    }
     return { mode: 'retrieval', reason: 'no category could be classified', task };
   }
   if (!ADVISABLE_CATEGORIES.has(task.category)) {
@@ -171,6 +203,18 @@ export function routeQuery(text: string): QueryRoute {
 
   const signals = needSignals(task);
   if (signals.length === 0) {
+    // MEASURED (2026-08-10, FINAL SEMANTIC INTELLIGENCE mission, cases M07/PARA02/PARA03 in
+    // scripts/waffar-eval): a category resolves deterministically ("غسالة" -> washing_machine)
+    // but the sentence's actual decision-relevant signal ("عيالي كثير" -> large capacity) has
+    // no keyword to land needSignals on — a short "لابتوب" browse and a rich, indirect need
+    // description both hit this exact branch today, and only word count tells them apart. A
+    // bare category term stays a browse (below the threshold); a real descriptive sentence
+    // now still reaches the decision engine, where the semantic fallback gets one attempt at
+    // the priority signal a keyword scan cannot see — never worse than a bare browse if that
+    // attempt finds nothing either.
+    if (looksDescriptive(raw)) {
+      return { mode: 'advisory', reason: 'category resolved but no deterministic need signal — text is descriptive (>=5 words), defer priority extraction to the decision engine', task };
+    }
     return { mode: 'retrieval', reason: 'category only — a browse, not a described need', task };
   }
 
