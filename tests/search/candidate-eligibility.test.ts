@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -479,5 +479,54 @@ describe("excludeIneligibleCandidates — accessory-hint gap: blender shaker bot
       best_price: 78.99,
     };
     expect(excludeIneligibleCandidates([portableBlender]).map((r) => r.name_ar)).toContain(portableBlender.name_ar);
+  });
+});
+
+/**
+ * MEASURED LIVE (production, 2026-08-10, D→E mission Part F, sixth "check other categories"
+ * follow-up): sorting "غسالة صحون" (dishwasher) lowest-price-first surfaced air fryers whose
+ * OWN titles genuinely claim "أجزاء آمنة في غسالة الصحون" (dishwasher-safe parts) — a real,
+ * common kitchen-appliance feature claim, the same class of gap as شاشة/ساعة.
+ */
+describe("hasStrongDishwasherSignal — a \"dishwasher-safe\" feature claim is not a dishwasher", () => {
+  it("rejects the exact measured air-fryer titles", () => {
+    expect(hasStrongDishwasherSignal(
+      "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر / 2.2 كجم مع أدراج مزدوجة، أجزاء آمنة في غسالة الصحون",
+      "",
+    )).toBe(false);
+    expect(hasStrongDishwasherSignal(
+      "قلاية زيت أوليوكلين برو العميقة أجزاء آمنة للغسل في غسالة الصحون",
+      "",
+    )).toBe(false);
+  });
+  it("accepts genuine dishwasher titles, including bare 'غسالة صحون' with no safe-claim phrase", () => {
+    expect(hasStrongDishwasherSignal("غسالة صحون kumtel built in", "")).toBe(true);
+    expect(hasStrongDishwasherSignal("غسالة صحون classpro 13 مكان", "")).toBe(true);
+    expect(hasStrongDishwasherSignal("غسالة صحون beko 15 مكان", "")).toBe(true);
+  });
+});
+
+describe("excludeIneligibleCandidates — isDishwasherQuery gate removes dishwasher-safe-claim false positives", () => {
+  const genuineDishwashers = [
+    { name_ar: "غسالة صحون kumtel built in", name_en: null, best_price: 473 },
+    { name_ar: "غسالة صحون classpro 13 مكان", name_en: null, best_price: 660 },
+    { name_ar: "غسالة صحون beko 15 مكان", name_en: null, best_price: 780 },
+  ];
+  const falsePositive = {
+    name_ar: "قلاية هوائية وشواية مزدوجة سعة 8.3 لتر أجزاء آمنة في غسالة الصحون",
+    name_en: null,
+    best_price: 669,
+  };
+
+  it("removes the air fryer when isDishwasherQuery is true", () => {
+    const result = excludeIneligibleCandidates([falsePositive, ...genuineDishwashers], false, false, false, true);
+    const names = result.map((r) => r.name_ar);
+    expect(names).not.toContain(falsePositive.name_ar);
+    for (const g of genuineDishwashers) expect(names).toContain(g.name_ar);
+  });
+
+  it("does NOT apply the dishwasher-signal filter for a non-dishwasher query (default isDishwasherQuery=false)", () => {
+    const result = excludeIneligibleCandidates([falsePositive, ...genuineDishwashers]);
+    expect(result).toHaveLength(genuineDishwashers.length + 1);
   });
 });

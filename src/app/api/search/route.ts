@@ -513,6 +513,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   isAcQuery = false,
   isMonitorQuery = false,
   isWatchQuery = false,
+  isDishwasherQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -561,6 +562,14 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isWatchQuery) {
     const watchFiltered = result.filter((p) => hasStrongWatchSignal(p.name_ar || '', p.name_en || ''));
     if (watchFiltered.length > 0) result = watchFiltered;
+  }
+
+  // MEASURED DEFECT (2026-08-10, same session, sixth "check other categories" follow-up):
+  // sorting "غسالة صحون" (dishwasher) lowest-price-first surfaced air fryers genuinely
+  // claiming "dishwasher-safe parts". See `hasStrongDishwasherSignal`'s own comment.
+  if (isDishwasherQuery) {
+    const dishwasherFiltered = result.filter((p) => hasStrongDishwasherSignal(p.name_ar || '', p.name_en || ''));
+    if (dishwasherFiltered.length > 0) result = dishwasherFiltered;
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -657,6 +666,25 @@ export function hasStrongWatchSignal(nameAr: string, nameEn: string): boolean {
     || /smart\s*watch|smartwatch|apple\s*watch|galaxy\s*watch|huawei\s*watch|garmin|fitbit|wrist\s*watch|watch\s*band/.test(en);
   if (HOUR_UNIT_SIGNAL.test(ar)) return genuineWatchSignal();
   return /(^|\s)ساعه|ساعات/.test(ar) || /\bwatch\b|smartwatch/.test(en);
+}
+
+// MEASURED LIVE (production, 2026-08-10, D→E mission Part F, sixth "check other categories"
+// follow-up): sorting "غسالة صحون" (dishwasher) lowest-price-first surfaced air fryers whose
+// OWN titles genuinely, truthfully claim "أجزاء آمنة في غسالة الصحون" / "آمنة للغسل في غسالة
+// الصحون" (parts are dishwasher-safe) — a real, common kitchen-appliance FEATURE claim, not a
+// product identity claim, the same class of gap as شاشة/ساعة. A title carrying this specific
+// "dishwasher-safe" claim phrase must show genuine dishwasher-identifying vocabulary (a
+// place-setting count, "built in") before it counts; bare "غسالة صحون"/"جلاية" with no
+// dishwasher-safe claim phrase still passes untouched.
+const DISHWASHER_SAFE_CLAIM = /امن[ةه]?\s*(?:للغسل\s*)?(?:في\s*)?غسال[ةه]\s*ال?صحون/;
+
+export function hasStrongDishwasherSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  if (DISHWASHER_SAFE_CLAIM.test(ar)) {
+    return /\d+\s*مكان/.test(ar) || /مدمج/.test(ar) || /built\s*in/.test(en) || /\bdishwasher\b/.test(en);
+  }
+  return /غسال[ةه]\s*صحون|جلاي[ةه]/.test(ar) || /\bdishwasher\b/.test(en);
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
@@ -1697,6 +1725,7 @@ export async function POST(request: NextRequest) {
   const isAcQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('air_conditioner');
   const isMonitorQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('monitor');
   const isWatchQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('smartwatch');
+  const isDishwasherQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('dishwasher');
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
@@ -1764,7 +1793,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }
