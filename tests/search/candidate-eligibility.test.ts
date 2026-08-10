@@ -172,8 +172,21 @@ describe("GENERIC_EXPANSION_STOPWORDS — proven-generic tokens never become sta
   // independently injects bare 'machine' (confirmed earlier this session pulling coffee
   // machines/ice makers/game consoles into washing-machine results).
   it('contains every measured contamination vector found in the cross-category sweep', () => {
-    for (const w of ['display', 'wifi', 'network', 'cleaner', 'washer', 'machine']) {
+    for (const w of ['display', 'wifi', 'network', 'cleaner', 'washer', 'machine', 'iron', 'steamer']) {
       expect(GENERIC_EXPANSION_STOPWORDS.has(w)).toBe(true);
+    }
+  });
+
+  // MEASURED LIVE (production, 2026-08-10, same session, second "check other categories"
+  // follow-up): "مكواة" (clothes iron) returned ZERO genuine irons in its top 15 — every
+  // result was an unrelated cooking appliance (electric pots, food steamers, pressure
+  // cookers, waffle/sandwich makers). ARABIC_TO_ENGLISH['مكواة'] = ['iron', 'steamer']
+  // injects both as bare optional words; "steamer" matches food steamers, "iron" matches
+  // "waffle iron"/"cast iron" cookware. Genuine irons DO exist in the catalog (Black &
+  // Decker steam irons, confirmed via a more specific query) — buried under contamination.
+  it('does not remove distinctive category words used elsewhere (sanity)', () => {
+    for (const legit of ['refrigerator', 'oven', 'blender', 'router', 'ac']) {
+      expect(GENERIC_EXPANSION_STOPWORDS.has(legit)).toBe(false);
     }
   });
 });

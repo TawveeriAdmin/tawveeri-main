@@ -243,7 +243,16 @@ const ARABIC_TO_ENGLISH_NORM: Record<string, string[]> = Object.fromEntries(
 // natively without needing the stoplisted word at all (verified against the live candidate
 // set before stoplisting each one) — so removing these costs no real recall, unlike "ac"
 // (kept; see `hasStrongACSignal` for why that one needed a different fix).
-export const GENERIC_EXPANSION_STOPWORDS = new Set(['air', 'display', 'wifi', 'network', 'cleaner', 'washer', 'machine']);
+// MEASURED DEFECT (2026-08-10, D→E mission Part F, founder follow-up "check other categories
+// for the same leak"): sorting "مكواة" (clothes iron) lowest-price-first returned ZERO
+// genuine irons in its top 15 — every result was an unrelated cooking appliance (electric
+// pots, food steamers, pressure cookers, waffle/sandwich makers, grills). `ARABIC_TO_ENGLISH['مكواة']
+// = ['iron', 'steamer']` injects both as bare optional words: "steamer" matches FOOD
+// steamers (a completely different kitchen category) and "iron" matches "waffle iron"/
+// "cast iron" cookware. The catalog DOES have genuine irons (several Black & Decker steam
+// irons, confirmed via a more specific query) — they were simply buried under far more
+// cooking-appliance contamination once ranked by price alone.
+export const GENERIC_EXPANSION_STOPWORDS = new Set(['air', 'display', 'wifi', 'network', 'cleaner', 'washer', 'machine', 'iron', 'steamer']);
 
 function lookupArToEn(word: string): string[] | undefined {
   // `.toLowerCase()` matters for the LATIN keys (conditioner/conditioners): a typed
