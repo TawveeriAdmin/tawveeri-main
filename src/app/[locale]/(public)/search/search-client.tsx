@@ -736,7 +736,13 @@ export default function SearchClient() {
             const target = document.getElementById(targetId)
               ?? document.querySelector('[data-testid="advisor-answer"]');
             if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // MEASURED (2026-08-10, follow-up-continuation mission, production verification):
+              // `behavior: 'smooth'` scrollIntoView is a rAF-driven animation that can silently
+              // fail to complete depending on the tab's paint/compositor scheduling — an instant
+              // jump is the only version of "the user SEES the response" that has no dependency
+              // on an animation finishing. The ring highlight's own `transition-shadow
+              // duration-700` still gives the moment a soft, non-jarring feel.
+              target.scrollIntoView({ behavior: 'auto', block: 'center' });
               const highlightClasses = ['ring-2', 'ring-primary-300', 'rounded-xl', 'transition-shadow', 'duration-700'];
               target.classList.add(...highlightClasses);
               window.setTimeout(() => target.classList.remove(...highlightClasses), 1800);
