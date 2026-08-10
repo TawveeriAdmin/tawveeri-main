@@ -16,10 +16,10 @@ describe("Case 3 (SEVERE) — primary-product intent must never be satisfied by 
     expect(isMainProductTypeQuery("لاب توب رخيص")).toBe(true);
   });
 
-  it("adversarial: other common two-token/spacing variants for other categories also resolve", () => {
-    // «حاسوب محمول» (formal "portable computer") is a laptop synonym already in parseCategory
-    // via «حاسوب»; confirms the shared-classifier fallback generalizes beyond one category.
+  it("adversarial: «حاسوب محمول» (formal 'portable computer' synonym) also resolves as laptop", () => {
     expect(isMainProductTypeQuery("ابي حاسوب محمول للعمل")).toBe(true);
+    expect(parseShoppingTask("ودي حاسوب محمول للجامعة").category).toBe("laptop");
+    expect(detectCanonicalCategories("ودي حاسوب محمول للجامعة")).toEqual(["laptop"]);
   });
 
   it("the shared classifier and the word-Set agree on already-working single-word forms (no regression)", () => {

@@ -36,7 +36,13 @@ function parseCategory(x: string): string | null {
   // as NO category, so plural browse queries lost routing while their singulars worked.
   if (/تلفزيون|تليفزيون|شاش[ةه]|شاشات|television|\btv\b|smart tv/.test(x)) return "tv";
   if (/تابلت|ايباد|آيباد|ipad|tablet|جالكسي تاب|galaxy tab|matepad/.test(x)) return "tablet";
-  if (/لابتوب|لاب توب|laptop|notebook|macbook/.test(x)) return "laptop";
+  // «حاسوب»/«حاسوب محمول» (formal "computer"/"portable computer") and «كمبيوتر» added
+  // 2026-08-10 (reopened mission, found via my own adversarial follow-up to case 3): these
+  // were already listed as laptop synonyms in /api/search/route.ts's OWN category list
+  // (CATEGORY_QUERY_TERMS) but never here — this file's classifier not knowing what a SIBLING
+  // classifier already knows is the exact same "silently drifted, independent classifiers"
+  // defect this whole reopened mission is about, just one synonym further.
+  if (/لابتوب|لاب توب|حاسوب|كمبيوتر|laptop|notebook|macbook/.test(x)) return "laptop";
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
   // MEASURED DEFECT (2026-08-10, D→E mission Part F — re-verification sweep after the
   // English routing fix): bare "phone" was never recognized at all — only "smartphone",
