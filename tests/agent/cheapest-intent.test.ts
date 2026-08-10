@@ -128,4 +128,44 @@ describe('decide() — cheapest gate reorders by price; only a HARD gate (budget
     // suite is not accidentally always sorting by price when wants_cheapest is absent.
     expect(result.recommendations.find((r) => r.is_smart_pick)?.canonical_id).toBe('a');
   });
+
+  /**
+   * MEASURED DEFECT (caught live post-deploy, same session): "أرخص لابتوب" on production
+   * surfaced 6 "laptops" priced 4-220 SAR — laptop accessories/parts miscategorized under
+   * `category='laptop'` in the TPS canonical graph, none of them an actual computer. Root
+   * cause: `decide()`'s `rows` is EVERY canonical_products row tagged this category (up to
+   * 500), unfiltered by any hard eligibility gate — best-fit mode never surfaced this because
+   * genuine spec matches outscore an attribute-less accessory's flat baseline BY LUCK, not
+   * design; pure price-ascending sort defeats that luck immediately. This reproduces the
+   * shape (many genuine laptops, a handful of near-zero-priced junk) against the real
+   * decideLaptop scoring path, not a synthetic 2-3 row set.
+   */
+  it('a realistic contaminated pool (many genuine laptops + a few near-zero junk rows) filters the junk before sorting by price', () => {
+    const genuine = [
+      row('acer', 2199, 16), row('hp', 2849, 16), row('lenovo', 3199, 16),
+      row('msi', 3549, 16), row('asus', 5739, 16), row('msi-katana', 6499, 16),
+    ];
+    const junk = [row('switch-4', 4, 0), row('cooling-pad-21', 21, 0), row('stand-24', 24, 0)];
+    const result = decide({ category: 'laptop', wants_cheapest: true } as never, [...genuine, ...junk]);
+    const pick = result.recommendations.find((r) => r.is_smart_pick)!;
+    // The floor is 15% of the FULL set's median (genuine-dominated, since junk is a small
+    // minority here — exactly the measured production shape) — every junk row falls below
+    // it, so the cheapest GENUINE laptop wins, not the 4 SAR accessory.
+    expect(pick.canonical_id).toBe('acer');
+    expect(pick.unit_price).toBe(2199);
+  });
+
+  it('never wipes the set: if EVERY candidate is implausibly cheap relative to the group, the floor is skipped rather than returning nothing', () => {
+    const rows = [row('a', 10, 16), row('b', 12, 16), row('c', 15, 16), row('d', 18, 16)];
+    const result = decide({ category: 'laptop', wants_cheapest: true } as never, rows);
+    expect(result.recommendations).toHaveLength(4);
+    expect(result.recommendations.find((r) => r.is_smart_pick)?.canonical_id).toBe('a');
+  });
+
+  it('the floor only engages with >=4 priced candidates — a small realistic set is untouched', () => {
+    const rows = [row('a', 999, 16), row('b', 5000, 16)]; // huge spread, only 2 candidates
+    const result = decide({ category: 'laptop', wants_cheapest: true } as never, rows);
+    expect(result.recommendations).toHaveLength(2);
+    expect(result.recommendations.find((r) => r.is_smart_pick)?.canonical_id).toBe('a');
+  });
 });

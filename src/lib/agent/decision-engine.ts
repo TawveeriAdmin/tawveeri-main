@@ -690,10 +690,33 @@ function applyBudgetGate(
 
 /**
  * CHEAPEST intent (P1, ONE BRAIN mandate, 2026-08-10). PRICE MAY RANK ELIGIBLE CANDIDATES;
- * PRICE MUST NEVER MAKE AN INELIGIBLE CANDIDATE ELIGIBLE. This function only ever REORDERS
- * the `recommendations` the category decider already produced — every entry already survived
- * that decider's own eligibility scoring against `rows`. It never reaches back into raw rows,
- * so it can never resurface a candidate the decider itself rejected.
+ * PRICE MUST NEVER MAKE AN INELIGIBLE CANDIDATE ELIGIBLE.
+ *
+ * MEASURED DEFECT (caught live post-deploy, same session — not assumed fixed, verified):
+ * the first shipped version of this function reordered `recommendations` by raw
+ * `unit_price` with no floor, on the assumption every row "already survived the decider's
+ * own eligibility scoring." That assumption was FALSE: `decide()`'s per-category deciders
+ * apply only SOFT scoring (fit bonuses/cautions) to whatever rows the TPS canonical graph
+ * query returns for that category — there is no hard category-purity filter here at all
+ * (that only exists upstream, in `route.ts`'s `excludeIneligibleCandidates`, for the
+ * unrelated plain-search candidate pool `decide()` never touches). Live-verified on
+ * production: "أرخص لابتوب" surfaced 6 "laptops" priced 4-220 SAR — laptop accessories/parts
+ * miscategorized in the canonical graph under `laptop`, none of them an actual computer.
+ * Best-fit mode never surfaced this because a genuine laptop's positive spec matches
+ * outscore an attribute-less accessory's flat baseline score by luck, not by design — pure
+ * price-ascending sort defeats that luck immediately, which is exactly the "price makes an
+ * ineligible candidate eligible" failure this mandate forbids.
+ *
+ * FIX: the SAME statistical price-floor principle already proven in `route.ts`'s
+ * `excludeIneligibleCandidates` (15% of the set's own median, only when there are enough
+ * points — >=4 — for a median to mean anything) applied here too. A genuine device never
+ * sells for a small fraction of what every other candidate in the SAME category costs;
+ * this is computed from the candidate set itself, never a guessed category price, so it
+ * costs nothing for a genuinely cheap-but-real clearance item (routinely 30-60% of median).
+ *
+ * This function only ever REORDERS (and, now, filters) the `recommendations` the category
+ * decider already produced — it never reaches back into raw rows, so it can never resurface
+ * anything decide() did not already return.
  *
  * Composes safely with the budget gate ahead of it in `decide()`: every within-budget item's
  * `unit_price` is <= the stated budget by definition, and every over-budget item's is > it —
@@ -705,8 +728,19 @@ function applyBudgetGate(
  */
 function applyCheapestGate(recommendations: Recommendation[]): Recommendation[] {
   if (recommendations.length === 0) return recommendations;
-  const priced = recommendations.filter((r) => r.unit_price != null);
-  const unpriced = recommendations.filter((r) => r.unit_price == null);
+  let candidates = recommendations;
+  const positivePrices = candidates.map((r) => r.unit_price).filter((n): n is number => n != null && n > 0).sort((a, b) => a - b);
+  if (positivePrices.length >= 4) {
+    const median = positivePrices[Math.floor(positivePrices.length / 2)];
+    const floor = median * 0.15;
+    const floored = candidates.filter((r) => r.unit_price == null || r.unit_price <= 0 || r.unit_price >= floor);
+    // Never wipe the set — an implausible-looking floor on a genuinely narrow/uniform-price
+    // category (e.g. every candidate is a clearance batch) falls back to the unfiltered set
+    // rather than a confident empty result; `decide()`'s caller owns the honest-zero decision.
+    if (floored.length > 0) candidates = floored;
+  }
+  const priced = candidates.filter((r) => r.unit_price != null);
+  const unpriced = candidates.filter((r) => r.unit_price == null);
   priced.sort((a, b) => (a.unit_price as number) - (b.unit_price as number));
   const ordered = [...priced, ...unpriced];
   return ordered.map((r, i) => {
