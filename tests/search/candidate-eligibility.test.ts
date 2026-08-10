@@ -282,6 +282,15 @@ describe("hasStrongMonitorSignal — a health-context \"___ monitor\" phrase is 
     // Sanity: SMARTWATCH_OVERRIDE must not fire on ordinary monitor titles with no watch words.
     expect(hasStrongMonitorSignal("", "LG UltraGear Gaming Monitor 27-inch QHD 165Hz")).toBe(true);
   });
+
+  // MEASURED LIVE (production, 2026-08-10, same session): a power bank ("...45 واط، شاشة
+  // رقمية...") also survived the smartwatch fix — "شاشة رقمية" (digital display) is a
+  // genuine spec line on power banks with a charge-percentage readout, a different device
+  // type hit by the same class of gap.
+  it("rejects a power bank that genuinely describes its own digital display (شاشة رقمية)", () => {
+    expect(hasStrongMonitorSignal("باور بانك، بيسيوس، PicoGo سعة 10,000 مللي أمبير، 45 واط، شاشة رقمية، أسود", "")).toBe(false);
+    expect(hasStrongMonitorSignal("", "Baseus PicoGo Power Bank 10,000mAh, 45W, Digital Display, Black")).toBe(false);
+  });
 });
 
 describe("excludeIneligibleCandidates — isMonitorQuery gate removes health-context \"monitor\" false positives", () => {

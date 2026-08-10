@@ -572,6 +572,15 @@ const HEALTH_MONITOR_PHRASES = /heart\s*rate\s*monitor|sleep\s*monitor|blood\s*p
 // legitimately that word describes the watch's own screen.
 const SMARTWATCH_OVERRIDE = /ساعة\s*ذكية|ساعات\s*ذكية|سوار\s*ذكي|سوار\s*رياضي|هواوي\s*باند|smart\s*watch|smartwatch|fitness\s*tracker|apple\s*watch|galaxy\s*watch|huawei\s*watch|huawei\s*band|xiaomi\s*watch|xiaomi\s*band|\bgarmin\b|\bfitbit\b/i;
 
+// MEASURED LIVE (production, 2026-08-10, same session): a power bank ("...45 واط، شاشة
+// رقمية...") also survived both overrides — "شاشة رقمية" (digital display) is a genuine,
+// true spec line on power banks with a charge-percentage readout, same class of gap as
+// SMARTWATCH_OVERRIDE but a different device type. This is inherently a per-device-type
+// pattern (any gadget with a digital readout can, in principle, describe it this way); this
+// override closes the one measured instance rather than claiming to be exhaustive against
+// every possible display-bearing accessory.
+const POWER_BANK_OVERRIDE = /باور\s*بانك|power\s*bank|powerbank|بطارية\s*متنقلة|شاحن\s*متنقل|power\s*station/i;
+
 export function hasStrongMonitorSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr || '');
   const en = (nameEn || '').toLowerCase();
@@ -580,7 +589,7 @@ export function hasStrongMonitorSignal(nameAr: string, nameEn: string): boolean 
   const strongComputerMonitorPhrase = () =>
     /\b(?:computer|gaming|curved|ultrawide|4k|8k|ips|led|oled|qled|portable|external|desktop|touch)\s*monitor\b/.test(en)
     || /شاشه\s*كمبيوتر|شاشه\s*حاسوب/.test(ar);
-  if (SMARTWATCH_OVERRIDE.test(`${ar} ${en}`)) return strongComputerMonitorPhrase();
+  if (SMARTWATCH_OVERRIDE.test(`${ar} ${en}`) || POWER_BANK_OVERRIDE.test(`${ar} ${en}`)) return strongComputerMonitorPhrase();
   // Arabic has no equivalent of the English "monitor" homograph (screen vs. health-tracking
   // device) — "شاشة" never describes a heart-rate/sleep monitor, so bare "شاشة"/"شاشات"
   // (normalized "شاشه"/"شاشات") is a sufficient positive signal on its own. Genuine Arabic
