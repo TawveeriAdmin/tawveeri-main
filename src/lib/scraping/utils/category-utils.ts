@@ -97,15 +97,27 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
 };
 
 // الترتيب: الأكثر تحديداً أولاً
+//
+// MEASURED DEFECT (2026-08-10, D→E mission Part F — founder follow-up "fix the شاشة
+// miscategorization"): a smartwatch titled "...Smart Watch with Heart Rate/Sleep Monitor,
+// Fitness Watch with Bluetooth Call..." was categorized `monitor`, not `smartwatch` — it
+// then leaked into "شاشة" (screen/monitor) search results. `monitor`'s bare keyword
+// ('monitor', no qualifier) matched the health-tracking phrase "Sleep Monitor" BEFORE
+// `smartwatch`'s own — far more specific — keywords ("smart watch", "fitness tracker",
+// "heart rate"...) ever got checked, since detection returns on the FIRST category match in
+// this order. `smartwatch` moved ahead of `monitor` (a genuine computer-monitor listing
+// never contains "smart watch"/"fitness tracker"/"apple watch"/"galaxy watch"/"garmin"/
+// "fitbit", so this has no way to cost a real monitor a correct classification).
 const CATEGORY_DETECTION_ORDER: string[] = [
   'laptop',
   'tablet',
+  'smartwatch',      // قبل monitor لأن "Heart Rate/Sleep Monitor" يظهر في وصف الساعات الذكية
+                      // قبل smartphone لأن galaxy watch يحتوي galaxy
   'monitor',
   'tv',
   'audio',
   'camera',
   'gaming',
-  'smartwatch',      // قبل smartphone لأن galaxy watch يحتوي galaxy
   'air_conditioner',
   'kitchen',         // kitchen countertop appliances before large appliances (microwave→kitchen)
   'appliance',       // large home appliances (fridge/washer/…) before the accessories default
