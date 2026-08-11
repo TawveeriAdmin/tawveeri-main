@@ -1,3 +1,143 @@
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — 3 FOUNDER ACTIONS PENDING ═══
+
+## MISSION: independent mission (NOT the closed workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, found the #1 lever is outside the repository
+
+**WORKSTREAM STATUS: all repository-side work complete, deployed, live-verified. NOT fully
+closeable yet — three founder actions are outstanding (see below), one of them (a Cloudflare
+dashboard setting) is the single highest-value lever this mission found and cannot be done from
+code at all.** Full detail: ADR-240 in `docs/DECISIONS.md`; full research/methodology/eligibility
+matrix in `docs/GLOBAL_SHOPPING_DISCOVERABILITY_2026-08-11.md`. This entry supersedes checkpoint
+#71 as the resume point — #71's content (Saudi Shopper Language & Demand Discovery, closed,
+founder-accepted) is preserved below, **unreopened**.
+
+### What we discovered
+Proved, from CURRENT primary Google/OpenAI/Perplexity sources (not assumption, not third-party
+SEO blogs) that Tawveeri — a comparison platform with no checkout, sending shoppers to retailers
+— is **structurally ineligible for Google Merchant Center/free listings/Shopping ads** (Google's
+own checkout-requirements docs require a cart/checkout Tawveeri deliberately doesn't have) and
+**Google CSS is not available for Saudi Arabia at all** (an EU/EEA/UK-only program, confirmed via
+two primary CSS-policy documents — even if it were, CSS's own ≥50-merchant threshold would exceed
+Tawveeri's ~7-11 approved retailers). Conversely, `AggregateOffer` on comparison pages — already
+shipped — is explicitly the Google-endorsed shape for exactly Tawveeri's model. ChatGPT Shopping
+Research and Perplexity's organic citation require **zero registration** (crawl-based, not
+submitted-feed programs) — but both depend entirely on the relevant crawler being able to fetch
+Tawveeri's pages at all.
+
+### What was wrong or missing
+1. **THE decisive finding: Google-Extended (Gemini/AI-Overviews) and ClaudeBot are BLOCKED at the
+   Cloudflare edge** — a "Managed content" block injected into the live `robots.txt`, invisible to
+   a repo-only read (a prior mission's "no AI-bot-specific rules" finding was based on reading only
+   `src/app/robots.ts`, not the live edge-served file — corrected here). GPTBot (training-only, a
+   different purpose from citation) is also blocked; OAI-SearchBot (the actual ChatGPT-citation
+   bot), PerplexityBot, and Bingbot are NOT blocked.
+2. Every category-page product card linked to a **double-locale 404** compare URL
+   (`/ar/ar/compare/...`, `/en/ar/compare/...`, confirmed live in BOTH locales) — breaking crawl
+   budget and real user clicks on the exact page type this mission cares about most.
+3. The compare page's own declared **canonical URL was invalid** — raw, un-percent-encoded `|`
+   characters, never matching the actually-fetched URL.
+4. `x-default` hreflang absent; no Search Console/Bing Webmaster verification hook existed at all.
+
+### What we actually changed (repository-side, deployed)
+- `normalizeCompareUrl()` (new, unit-tested) in `src/lib/catalog/getCategoryOverview.ts` — fixes
+  the double-locale 404.
+- `encodeURIComponent(key)` in the compare page's `generateMetadata` — fixes the malformed
+  canonical.
+- `x-default` hreflang added once to the shared `buildAlternates()` helper (`src/lib/seo/metadata.ts`)
+  — benefits every page using it.
+- Zero-risk, env-var-driven Search Console/Bing verification hook in `src/app/layout.tsx` — true
+  no-op today, activates the moment the founder supplies his own code.
+
+### What we deliberately did NOT change, and why
+- **No Google Merchant Center registration** — would misrepresent Tawveeri as a transacting
+  merchant; structurally false and against this project's own non-negotiable honesty rules.
+- **No Perplexity Merchant Program application** — same reason (checkout-capable seller program).
+- **No OpenAI ACP application** — no confirmed open, non-merchant application path exists today;
+  MONITOR, not chased.
+- **No `llms.txt`** — already researched and rejected (ADR-189: 408 of 500M AI-bot visits fetch
+  it); no new evidence overturns it.
+- **No MCP/UCP Saudi truth-server** — already correctly scoped-not-built pending identity/GTIN
+  quality (`AGENTIC_COMMERCE.md`); not re-opened, no new evidence changes that call.
+- **No visible per-product price-history chart** — a real, competitively-evidenced gap (Idealo's
+  signature trust mechanism) Tawveeri has the underlying data for but not the UI — sized as its
+  own NEXT-tier feature, correctly out of scope for this pass's discoverability-metadata focus.
+- **No ProductGroup schema** — applicability unconfirmed (needs a DB-level variant-family check
+  this session's tooling could not run); not implemented on an unconfirmed premise.
+
+### What is now live
+Deployment `136d5a12-1fae-49b2-a937-d2fb3233739c`. Category-page compare links resolve **200** in
+both locales (were 404); compare-page canonicals contain `%7C` not raw `|`; `x-default` hreflang
+present on every alternates-using page; verification meta tags confirmed absent (true no-op, no
+env var set). Closed-workstream (checkpoint #71) acceptance list re-verified with zero regression.
+
+### How this increases the probability of being found during Saudi purchase intent
+Every category-page product card that used to dead-end at a 404 now reaches a real, indexable
+comparison page — both for a human clicking and for a crawler walking internal links (crawl
+budget was being wasted on broken URLs). The canonical fix means Google's indexing of compare
+pages no longer risks folding signals onto a URL that never actually resolves. `x-default`
+completes the hreflang signal Google's own guidance recommends. None of this creates new
+eligibility for a paid/merchant program (correctly rejected, see above) — it makes what Tawveeri
+is *already structurally eligible for* (organic Google indexing, ChatGPT/Perplexity organic
+citation) actually reachable.
+
+### What Google can understand now that it could not before
+That `/compare/[key]` pages are the canonical location for a given product comparison (previously,
+a category page's own internal links pointed crawlers at a dead end instead); that the comparison
+page's declared canonical URL is the same URL that actually resolves; that Tawveeri has an
+explicit `x-default` language preference.
+
+### What AI systems can understand now that they could not before
+Nothing new from THIS commit's code changes specifically (OAI-SearchBot/PerplexityBot were already
+unblocked) — the real, larger unlock (Gemini/Claude actually being able to fetch any Tawveeri page
+at all) is blocked at the Cloudflare edge and requires founder action (below), not a code change.
+
+### Is Google Merchant Center actually appropriate for Tawveeri?
+**No.** Proven structurally inapplicable — Tawveeri has no checkout, and Merchant Center's own
+policy requires one. Do not register.
+
+### Is Google CSS relevant to Saudi Arabia?
+**No.** Proven not available — an EU/EEA/UK-only program per two primary Google sources, no
+Middle East country in the list, no signal it is expanding there.
+
+### What is the real OpenAI/ChatGPT opportunity for Tawveeri today?
+Organic citation via ChatGPT Shopping Research, powered by OAI-SearchBot crawling — zero
+registration required, purely a function of crawlability and content quality. ACP/Instant
+Checkout is not currently an open path for a non-merchant.
+
+### The 3 highest-value next opportunities (this mission's own ranking)
+1. **Cloudflare AI-Bots dashboard fix** (founder action, see below) — unblocks Gemini/Claude
+   entirely; nothing else in this mission comes close to this lever's size.
+2. **Visible per-product price-history chart** — the strongest evidenced competitive
+   differentiator found (Idealo's signature trust mechanism), data already exists.
+3. **Google Search Console + Bing Webmaster verification** (founder action, below) — unlocks real
+   measurement, the prerequisite for ever proving any of this mission's other claims with
+   impressions/clicks data instead of structural evidence alone.
+
+### What remains outside our control
+Whether Google/OpenAI/Perplexity actually choose to surface/cite Tawveeri once crawlable — no
+claim of that outcome is made or should be made; SEO surfaces process, not guarantees ranking or
+citation.
+
+### EXACT founder actions needed next (smallest possible list — full steps in the mission doc §4)
+1. **Cloudflare dashboard** (`tawveeri.com` zone → AI Bots / Managed robots.txt) — allow at least
+   `Google-Extended` and `ClaudeBot`. Free. Cannot be done from this repository at all.
+2. **Google Search Console** (`search.google.com/search-console` → Add property, URL-prefix
+   `https://tawveeri.com` → HTML tag method) — paste the code into
+   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` on Railway.
+3. **Bing Webmaster Tools** (`bing.com/webmasters`, same pattern) — paste into
+   `NEXT_PUBLIC_BING_SITE_VERIFICATION`. Lower priority than #1/#2.
+
+### Exact state as of this checkpoint (2026-08-11)
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`69ea3e3`**
+- `git status`: clean at time of writing — confirm again before relying on this.
+- Railway production deployment: **`136d5a12-1fae-49b2-a937-d2fb3233739c`** — Online, settled,
+  confirmed via direct read-only HTTP checks against `https://tawveeri.com` post-settle.
+
+If real production evidence contradicts this checkpoint, production evidence overrides it —
+reopen only the specific layer demonstrated to be failing, per this project's own repeatedly-
+proven rule.
+
+---
+
 # ═══ RESUME HERE — 2026-08-11 CHECKPOINT #71 · SAUDI SHOPPER LANGUAGE & DEMAND DISCOVERY — CLOSED — FOUNDER REAL-IPHONE ACCEPTANCE: PASSED ═══
 
 ## MISSION: independent mission (NOT the closed Waffar workstream below) — value/deal-seeking shopper intent recognized; site-entity + FAQPage + category buying-guide discoverability shipped — CLOSED, founder-accepted
