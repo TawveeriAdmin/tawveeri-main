@@ -12,6 +12,7 @@
 // client-only expand).
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import Link from 'next/link';
+import { JsonLd } from '@/lib/seo/json-ld';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -25,7 +26,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-type QA = { id?: string; q: string; a: React.ReactNode };
+// `aText` is the plain-text equivalent of `a` — required only where `a` is JSX (a Link is
+// embedded), since schema.org's FAQPage `text` field must be a plain string, never markup.
+type QA = { id?: string; q: string; a: React.ReactNode; aText?: string };
 
 export default async function FaqPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -77,6 +80,7 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
               .
             </>
           ),
+          aText: 'المتجر الذي اشتريت منه — وليس توفيري. أي مشكلة تخص طلبك بعد الشراء يجب التواصل بشأنها مع المتجر مباشرة. لمشاكل تخص ما تعرضه توفيري نفسها (سعر خاطئ، رابط معطّل، مطابقة خاطئة)، تواصل معنا عبر صفحة التواصل.',
         },
         {
           q: 'ماذا أفعل إذا وجدت سعرًا خاطئًا أو رابطًا معطلاً أو مطابقة خاطئة؟',
@@ -89,6 +93,7 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
               . نراجع كل بلاغ لأن دقة ما نعرضه هي أساس الثقة في توفيري.
             </>
           ),
+          aText: 'أخبرنا عبر صفحة التواصل. نراجع كل بلاغ لأن دقة ما نعرضه هي أساس الثقة في توفيري.',
         },
         {
           q: 'لماذا يظهر منتج في متجر واحد فقط؟',
@@ -144,6 +149,7 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
               .
             </>
           ),
+          aText: 'The store you bought from — not Tawveeri. Any issue with your order after purchase should go to that retailer directly. For issues with what Tawveeri itself shows (a wrong price, a broken link, a wrong match), contact us via the contact page.',
         },
         {
           q: 'What should I do if I find a wrong price, a broken link, or a wrong match?',
@@ -156,6 +162,7 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
               . We review every report — the accuracy of what we show is the whole basis of trusting Tawveeri.
             </>
           ),
+          aText: 'Tell us via the contact page. We review every report — the accuracy of what we show is the whole basis of trusting Tawveeri.',
         },
         {
           q: 'Why might a product appear at only one store?',
@@ -167,8 +174,23 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
         },
       ];
 
+  // FAQPage schema (2026-08-11, AI-assistant/Google discoverability phase) — every answer
+  // here already comes verbatim from CAN SAY lines/Founder Directives (see this file's own
+  // header comment); the plain-text `aText` field (added alongside the JSX `a` where a Link
+  // is embedded) is what schema.org's `text` field requires, never markup.
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.aText ?? (typeof item.a === 'string' ? item.a : item.q) },
+    })),
+  };
+
   return (
     <PublicPageShell locale={locale}>
+      <JsonLd data={faqJsonLd} />
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '10px 0 48px', textAlign: isAr ? 'right' : 'left' }}>
         <h1 style={{ fontSize: 'clamp(22px, 4.5vw, 30px)', fontWeight: 900, color: 'var(--color-on-surface)', margin: '6px 0 10px' }}>
           {isAr ? 'الأسئلة الشائعة' : 'Frequently asked questions'}

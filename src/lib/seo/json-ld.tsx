@@ -34,6 +34,35 @@ export function buildWebSiteJsonLd(locale: string) {
   };
 }
 
+/**
+ * Site-level entity identity (2026-08-11, Saudi Shopper Language & Demand Discovery mission —
+ * "AI-assistant discovery" phase). MEASURED gap via repo audit: `buildWebSiteJsonLd` existed
+ * but was never rendered anywhere (dead code), and no `Organization` schema existed at all —
+ * so nothing on the site answered "who is Tawveeri, what does it do, where" at the entity
+ * level Google's Knowledge Graph and AI assistants ground brand identity on. Only facts already
+ * established elsewhere in the codebase (LAUNCH_VOCABULARY's "compare, don't sell" positioning,
+ * the FAQ page's own "does not sell/ship/stock" answer) — no fabricated address, phone, or
+ * registration number (CLAUDE.md: "never fabricate... unknown beats incorrect"; the FAQ page's
+ * own header comment already documents that no CR/VAT/registered-address exists to publish).
+ */
+export function buildOrganizationJsonLd(locale: string) {
+  const baseUrl = getBaseUrl();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Tawveeri',
+    alternateName: 'توفيري',
+    url: baseUrl,
+    logo: `${baseUrl}/logos/Tawveeri.png`,
+    description:
+      locale === 'ar'
+        ? 'توفيري منصة سعودية لمقارنة أسعار الإلكترونيات والأجهزة المنزلية بين متاجر سعودية. لا تبيع أو تشحن أو تخزّن أي منتج — تقارن الأسعار المرصودة فقط.'
+        : 'Tawveeri is a Saudi platform comparing electronics and home-appliance prices across Saudi retailers. It does not sell, ship, or stock any product — it compares observed prices only.',
+    areaServed: { '@type': 'Country', name: 'Saudi Arabia' },
+    knowsLanguage: ['ar', 'en'],
+  };
+}
+
 export function buildProductJsonLd(product: {
   name_ar: string;
   name_en: string;

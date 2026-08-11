@@ -35,6 +35,7 @@ import { Price } from '@/components/ui/price';
 import { findNavigableCategory } from '@/lib/intelligence/navigable-categories';
 import { getCategoryOverview } from '@/lib/catalog/getCategoryOverview';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
+import { getCategoryGuide } from '@/lib/seo/category-guide';
 
 // Rendered on demand, NOT prerendered: `redirect()`/`notFound()` throw their control-flow
 // signal at render time, which fails during static generation — this is the exact defect
@@ -170,11 +171,32 @@ export default async function CategorySlugPage({
     },
   };
 
+  // Category buying-guide content (2026-08-11, Saudi Shopper Language & Demand Discovery
+  // mission, search/AI-discovery phase) — every point is grounded in a real priority the
+  // decision engine already scores for this category (see category-guide.ts's own header).
+  // FAQPage schema is a SEPARATE JSON-LD block from the CollectionPage/ItemList one above —
+  // multiple JSON-LD scripts per page is valid schema.org practice, keeping each type's own
+  // shape clean rather than overloading one mainEntity.
+  const guide = getCategoryGuide(cat.key, locale);
+  const guideJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: guide.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
+
   return (
     <PublicPageShell locale={locale}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(guideJsonLd) }}
       />
       <div className="max-w-5xl mx-auto space-y-6">
 
@@ -270,6 +292,31 @@ export default async function CategorySlugPage({
             {isAr ? `تصفّح نتائج بحث أوسع لـ ${name}` : `Browse broader search results for ${name}`}
           </Link>
         </div>
+
+        {/* ── Buying guide (2026-08-11) — native <details>, zero client JS, fully indexable,
+             same accessible-accordion pattern already used on the site FAQ page. ── */}
+        {guide.length > 0 && (
+          <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5 md:p-6">
+            <h2 className="text-base md:text-lg font-bold text-on-surface mb-3">
+              {isAr ? `كيف تختار ${name}؟` : `How to choose ${name.toLowerCase()}`}
+            </h2>
+            <div className="flex flex-col gap-2.5">
+              {guide.map((item) => (
+                <details
+                  key={item.q}
+                  className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] p-3.5"
+                >
+                  <summary className="cursor-pointer text-sm font-semibold text-on-surface list-none">
+                    {item.q}
+                  </summary>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-on-surface-variant">
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-center gap-2 py-2 text-xs text-on-surface-variant">
           <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />

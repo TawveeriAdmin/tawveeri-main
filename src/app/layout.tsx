@@ -37,6 +37,7 @@ import { MultiStoreCartProvider } from '@/lib/cart/cart-context';
 import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
 import { NavigableCategoriesProvider } from '@/lib/intelligence/navigable-categories-context';
 import { loadMessages } from '@/lib/i18n/load-messages';
+import { JsonLd, buildWebSiteJsonLd, buildOrganizationJsonLd } from '@/lib/seo/json-ld';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
 
@@ -101,6 +102,10 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Site-entity identity (2026-08-11, AI-assistant/Google discoverability phase) —
+            was defined but never rendered anywhere; see json-ld.tsx's own header comment. */}
+        <JsonLd data={buildWebSiteJsonLd(locale)} />
+        <JsonLd data={buildOrganizationJsonLd(locale)} />
         <script
           dangerouslySetInnerHTML={{
             __html: `
