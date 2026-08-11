@@ -1,6 +1,13 @@
-# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #70 · WAFFAR REOPENED AGAIN — "حاسوب محمول" ROOT-CAUSED, NOT YET FOUNDER-ACCEPTED ═══
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #70 · WAFFAR WORKSTREAM CLOSED — FOUNDER REAL-IPHONE ACCEPTANCE: PASSED ═══
 
-## MISSION: founder's real-iPhone RETEST reproduced checkpoint #69's own disclosed gap — fixed, NOT re-closed
+## MISSION: founder's real-iPhone RETEST reproduced checkpoint #69's own disclosed gap — fixed, deployed, RE-VERIFIED AND ACCEPTED BY THE FOUNDER ON HIS REAL IPHONE
+
+**WORKSTREAM STATUS: CLOSED.** Do not reopen this workstream (Search retrieval, Waffar, DecisionState,
+or the surrounding UX) without new production evidence demonstrating a genuine defect. Prior
+closures in this same workstream (#68, #69) were each reopened only after the founder personally
+reproduced a real defect on his own iPhone — that is the bar for reopening, not speculative
+improvement, refactor, or extension. If reopened, reopen ONLY the specific layer the new evidence
+implicates, per the founder's own repeatedly-stated "minimum necessary scope" rule.
 
 **Full detail: ADR-238's "SECOND REOPENING" addendum in `docs/DECISIONS.md`.** This entry
 supersedes checkpoint #69 as the resume point (#69's content preserved below, unreopened beyond
@@ -78,19 +85,31 @@ tests passing, `tsc --noEmit`/`next build` clean throughout.
   code was ever deployed at any point — both deployments served exactly what was already on
   `origin/main`.
 
-### ENGINEERING VERIFICATION vs FOUNDER ACCEPTANCE — do not conflate these
-**ENGINEERING VERIFICATION: complete**, based on all evidence above (automated tests + direct
-live production API checks against all three of the founder's exact lists).
-**FOUNDER ACCEPTANCE: PENDING REAL IPHONE RETEST.** Do not mark this workstream CLOSED until the
-founder confirms live on his own device — his own standing rule is that real-iPhone production
-evidence overrides any engineering-side report, and this exact gap was already missed once by
-API-level checks alone (checkpoint #69 disclosed it as "not launch-blocking" before the founder's
-iPhone proved otherwise). Exact phrases for the founder to retest:
-`ابي حاسوب محمول للجامعه`, `ابي كمبيوتر محمول للجامعه`, `ابغى حاسب محمول للدراسه`,
-`احتاج حاسوب محمول للتصميم`, `وش افضل حاسوب محمول للجامعه` — plus the original preserve list
-(`ابي لاب توب للجامعه`, `ابي لابتوب للجامعه`, `ابي لاب توب للدراسه`, `ابي لاب توب للتصميم`) as a
-no-regression check. If real production evidence contradicts this checkpoint, production evidence
-overrides it — reopen only the specific layer demonstrated to be failing.
+### ENGINEERING VERIFICATION AND FOUNDER ACCEPTANCE — both complete
+**ENGINEERING VERIFICATION: complete**, based on automated tests + direct live production API
+checks against all three of the founder's exact lists (adversarial, preserve, accessory-probe).
+
+**FOUNDER ACCEPTANCE: PASSED — REAL IPHONE PRODUCTION VERIFIED (2026-08-11, after this
+checkpoint's engineering verification).** The founder personally retested on his real iPhone and
+confirmed the previously failing natural-language variants — `ابي لابتوب للجامعه`,
+`ابي لاب توب للتصميم`, `ابي كمبيوتر محمول للجامعه`, `احتاج حاسوب محمول للتصميم` — now return
+genuine laptops in the real consumer journey. He additionally verified the experience is not
+merely category-correct: the live journey shows genuine laptop recommendations together with
+decision evidence, suitability reasoning, price/comparison signals, and warnings where
+appropriate, with no contamination from backpacks, earphones, or unrelated accessories. Per his
+own standing rule, this real-device production evidence is the acceptance bar and overrides the
+prior PENDING status.
+
+**WORKSTREAM STATUS: CLOSED.** This closure must NOT be reopened without new production evidence
+of a genuine, real defect — not speculative improvement, refactor, redesign, or scope extension.
+
+**Known remaining limitation (disclosed, explicitly NOT reopened, NOT to be fixed speculatively):**
+none newly found this checkpoint beyond what ADR-238's addendum already covers. The formal-register
+gap this checkpoint fixed ("حاسوب محمول" et al.) is now closed and founder-verified. No other
+disclosed gap from checkpoint #69 (obscure colloquial idioms, rare transliterations, the
+negation-window/merge-subtraction edge case, no brand-exclusion field, no durability-priority
+field — see `docs/WAFFAR_FINAL_INTELLIGENCE_HANDOVER_2026-08-10.md` §6) has any new evidence
+against it; none of them are reopened by this closure.
 
 ---
 
