@@ -1,9 +1,10 @@
-# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #71 · SAUDI SHOPPER LANGUAGE & DEMAND DISCOVERY — DEPLOYED, ENGINEERING-VERIFIED, FOUNDER ACCEPTANCE PENDING ═══
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #71 · SAUDI SHOPPER LANGUAGE & DEMAND DISCOVERY — CLOSED — FOUNDER REAL-IPHONE ACCEPTANCE: PASSED ═══
 
-## MISSION: independent mission (NOT the closed Waffar workstream below) — value/deal-seeking shopper intent recognized; site-entity + FAQPage + category buying-guide discoverability shipped
+## MISSION: independent mission (NOT the closed Waffar workstream below) — value/deal-seeking shopper intent recognized; site-entity + FAQPage + category buying-guide discoverability shipped — CLOSED, founder-accepted
 
-**WORKSTREAM STATUS: deployed and engineering-verified; NOT yet founder-accepted.** Two parts,
-one mission: (A) how Saudi shoppers actually phrase purchase intent — closed measured gaps in
+**WORKSTREAM STATUS: CLOSED.** Do not reopen or extend this workstream speculatively — only on
+new production evidence of a genuine defect, per this project's own standing rule. Two parts, one
+mission: (A) how Saudi shoppers actually phrase purchase intent — closed measured gaps in
 `task-parser.ts`/`decision-engine.ts`; (B) a mid-mission founder correction widened the objective
 to Tawveeri becoming "a Saudi shopping reference at the moment of need" (Tameeni analogy) —
 Google/AI-assistant discoverability, not just internal query understanding. **Full detail: ADR-239
@@ -12,6 +13,10 @@ in `docs/DECISIONS.md`; full research/methodology narrative in
 resume point — #70's content (Waffar workstream, closed, founder-accepted) is preserved below,
 **unreopened**: no accessory-eligibility, category-classifier, or DecisionState logic from that
 workstream was touched by this mission.
+
+**Next mission (founder-announced, not started under this checkpoint):** Google Merchant
+Center / Google Shopping / Google AI discoverability eligibility investigation — a separate,
+new mission, to begin after this closure.
 
 ### What shipped
 **Part A (consumer language):** new `"value"` priority key (رخيص/سعره مناسب/معقول/كويس — present
@@ -50,15 +55,18 @@ verified live via `/api/v1/agent/decide`, including the founder's own "ابي ا
 - Railway production deployment: **`2513ce11-e147-41fc-ba95-87174a40b75e`** — Online, settled,
   confirmed via direct read-only HTML/API checks against `https://tawveeri.com` post-settle.
 
-### ENGINEERING VERIFICATION vs FOUNDER ACCEPTANCE — do not conflate these
+### ENGINEERING VERIFICATION AND FOUNDER ACCEPTANCE — both complete
 **ENGINEERING VERIFICATION: complete**, per the evidence above.
-**FOUNDER ACCEPTANCE: PENDING.** Per this project's own standing rule, real-device production
-evidence is the acceptance bar, not an engineering report. Below is a SMALL, high-information
-acceptance set — deliberately fresh phrasing not identical to anything in the dev/holdout corpus
-or this checkpoint's own examples, so it genuinely tests whether the mechanism generalized rather
-than confirming a known-good sentence.
+**FOUNDER ACCEPTANCE: PASSED — REAL IPHONE PRODUCTION VERIFIED (2026-08-11).** The founder
+personally ran all 6 consumer-language acceptance phrases below on his real iPhone against live
+Tawveeri production and confirmed: ALL 6 PASSED — the live consumer journey correctly understood
+the intended category and shopping preference/intent in every case, with recommendations/
+reasoning reflecting those intents appropriately. Per this project's own standing rule that
+real-device production evidence is the acceptance bar, this closes the workstream. The test list
+below (deliberately fresh phrasing not identical to anything in the dev/holdout corpus) is
+preserved for the record, not because it remains outstanding.
 
-**Consumer-language test (open Tawveeri, type each as a fresh search, on a real iPhone):**
+**Consumer-language test (open Tawveeri, type each as a fresh search, on a real iPhone) — ALL 6 PASSED:**
 1. `ودي مكيف مب غالي وهادي` — AC, value + quiet, phrased differently from anything tested.
 2. `ابغى جوال فيه عرض الحين` — mobile, deal-seeking.
 3. `احتاج لابتوب للشغل وسعره حلو` — laptop, value.
@@ -72,7 +80,11 @@ via clarification, recommendation reasoning, or an honest "no verified deal righ
 for the deal-seeking ones — rather than a plain unfiltered browse that ignores what was said.
 
 **Discoverability spot-check (visual only — Google/AI indexing effects are not same-day
-testable, this just confirms the shipped content itself is real and useful):**
+testable, this just confirms the shipped content itself is real and useful). NOTE: the founder's
+acceptance report covered the 6 consumer-language phrases above; items 7-8 below were NOT
+explicitly confirmed by him and are not claimed as verified — they are engineering-side-verified
+only (see the mission doc §5) and remain optional for the founder to glance at, not a condition
+of this closure:**
 7. Open `/ar/categories/air-conditioners` (or any category) on mobile — scroll to "كيف تختار"
    near the bottom, confirm it shows real, readable buying-guide questions and answers, not
    empty or broken.
