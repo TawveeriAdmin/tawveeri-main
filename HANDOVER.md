@@ -1,3 +1,96 @@
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #70 · WAFFAR REOPENED AGAIN — "حاسوب محمول" ROOT-CAUSED, NOT YET FOUNDER-ACCEPTED ═══
+
+## MISSION: founder's real-iPhone RETEST reproduced checkpoint #69's own disclosed gap — fixed, NOT re-closed
+
+**Full detail: ADR-238's "SECOND REOPENING" addendum in `docs/DECISIONS.md`.** This entry
+supersedes checkpoint #69 as the resume point (#69's content preserved below, unreopened beyond
+what this addendum touched — the four original founder cases and their fixes stand unchanged).
+
+### What happened
+Checkpoint #69 shipped with an explicitly disclosed, not-launch-blocking gap: "حاسوب محمول"
+(formal "portable computer") could still surface the backpack via `/api/search`, left unfixed
+per "minimum necessary scope." The founder then reproduced this on his own real iPhone —
+production returned an Anker P20i wireless earphone (and, on repeat requests, a laptop backpack)
+as the sole/primary result for "ابي حاسوب محمول للجامعه." Per his own standing rule, production
+evidence overrides any prior closure; he reopened ONLY this layer, explicitly not asking for a
+search/Waffar/DecisionState/UX/architecture redesign.
+
+### Root cause (traced via a diagnostic `[Algolia] query:...optionalWords:...` log line
+deployed specifically to observe the real request, not guessed)
+"حاسوب"/"كمبيوتر"/"حاسب" are legitimate Arabic synonyms for laptop, but **no real catalog
+product title uses them** — every genuine laptop title says "لابتوب." TWO separate code sites in
+`/api/search/route.ts` both independently required the shopper's own chosen words to literally
+appear in a matching title, so a synonym the catalog never uses starved both:
+1. **Algolia's own query construction** — the subject words (still "حاسوب"/"كمبيوتر", never
+   "لابتوب") were the literal query; even with checkpoint #69's `optionalWords` widening, Algolia
+   had no REQUIRED term any genuine laptop title satisfies, so ITS OWN relevance ranking favored
+   SEO-keyword-stuffed accessory titles over terse real product titles.
+2. **`relevanceGroups`** — a SEPARATE, later post-retrieval filter that re-derives its own
+   required match-word-groups straight from `rawQuery`, independent of the Algolia query above.
+   It required "للجامعة" as a group; no real laptop title contains it, but the one product whose
+   SEO-stuffed title happened to repeat both "للجامعة" and a "كمبيوتر" synonym of "حاسوب" (a
+   laptop backpack) passed. This is why the diagnostic log showed Algolia ITSELF returning
+   ~99-100 raw candidates (genuine laptops confirmed among them) while the customer-visible
+   result was still the one accessory — checkpoint #69's fix had already widened Algolia's own
+   return set; a second, independent gate downstream was still collapsing it back down. Confirmed
+   deterministic (not Algolia non-determinism) by 5x-repeating both failing queries with identical
+   wrong results every time.
+
+### Fix — anchors to the CATALOG's own vocabulary, not the shopper's (principled, not phrase-specific)
+New `anchorSubjectToCategory(subject, category)` (`route.ts`): once category is confidently
+resolved by the shared classifier, injects the catalog's own canonical term for that category
+(`CANONICAL_CATEGORY_TERM`, derived from the SAME `CATEGORY_QUERY_TERMS` list
+`detectCanonicalCategories` already uses) as an additional required Algolia word if not already
+present. Works for any category (regression test covers `air_conditioner` too); true no-op when
+the shopper's own words already contain the canonical term. `relevanceGroups` gained the same
+`isPriorityDescriptorWord()` exclusion checkpoint #69 already applied to Algolia's
+`optionalWords` — applied at BOTH gates now, not just one. Also found and fixed in the same pass:
+`parseCategory` did not recognize "حاسب" at all (one of the founder's own adversarial phrases) —
+added with a `(?!ة)` negative lookahead so "حاسبة" (calculator, a real distinct device) is not
+misclassified.
+
+### Verification — live production, not unit tests alone
+All 5 of the founder's exact adversarial retest phrases now return genuine laptops, zero
+accessories in the top 5, live on deploy `e041a26b` (commit `dda3787`, following `bccca9f` and
+diagnostic-logging commit `a50180b`): "ابي حاسوب محمول للجامعه", "ابي كمبيوتر محمول للجامعه",
+"ابغى حاسب محمول للدراسه", "احتاج حاسوب محمول للتصميم", "وش افضل حاسوب محمول للجامعه". The
+checkpoint #69 preserve list re-verified with zero regression: "ابي لاب توب للجامعه", "ابي
+لابتوب للجامعه", "ابي لاب توب للدراسه", "ابي لاب توب للتصميم". Accessory-intent queries (شنطة
+لابتوب، حقيبة لابتوب، شاحن لابتوب، ماوس لابتوب، كيبورد لابتوب، سماعات، ستاند لابتوب، كيبل
+لابتوب، غطاء لابتوب، adapter لابتوب) correctly continue returning accessories — the invariant is
+that a LAPTOP-intent query is never satisfied by an accessory, not that accessories can't be
+found when actually requested. 7 new regression tests added
+(`tests/agent/reopened-production-defects.test.ts`, "Second reopening" block); 1751/1751 total
+tests passing, `tsc --noEmit`/`next build` clean throughout.
+
+### Exact state as of this checkpoint (2026-08-11)
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`dda3787`**
+- `git status`: clean — no uncommitted, no untracked, no stashed changes.
+- Railway production deployment: **`e041a26b-6d28-4ebf-8632-7ae4c09705b2`** — status Online,
+  fully settled, confirmed via direct read-only `/api/search` POST requests against
+  `https://tawveeri.com` for all three test lists above (adversarial, preserve, accessory-probe).
+  Note: Railway's GitHub auto-deploy did not fire on push this time (~15 min with no new
+  deployment ID despite `origin/main` confirmed at `dda3787`) — triggered manually via
+  `railway up --service tawveeri-main --detach` from the already-clean, already-pushed working
+  tree. No uncommitted/local-only code was deployed; the manual trigger uploaded the identical
+  committed state already on `origin/main`.
+
+### ENGINEERING VERIFICATION vs FOUNDER ACCEPTANCE — do not conflate these
+**ENGINEERING VERIFICATION: complete**, based on all evidence above (automated tests + direct
+live production API checks against all three of the founder's exact lists).
+**FOUNDER ACCEPTANCE: PENDING REAL IPHONE RETEST.** Do not mark this workstream CLOSED until the
+founder confirms live on his own device — his own standing rule is that real-iPhone production
+evidence overrides any engineering-side report, and this exact gap was already missed once by
+API-level checks alone (checkpoint #69 disclosed it as "not launch-blocking" before the founder's
+iPhone proved otherwise). Exact phrases for the founder to retest:
+`ابي حاسوب محمول للجامعه`, `ابي كمبيوتر محمول للجامعه`, `ابغى حاسب محمول للدراسه`,
+`احتاج حاسوب محمول للتصميم`, `وش افضل حاسوب محمول للجامعه` — plus the original preserve list
+(`ابي لاب توب للجامعه`, `ابي لابتوب للجامعه`, `ابي لاب توب للدراسه`, `ابي لاب توب للتصميم`) as a
+no-regression check. If real production evidence contradicts this checkpoint, production evidence
+overrides it — reopen only the specific layer demonstrated to be failing.
+
+---
+
 # ═══ RESUME HERE — 2026-08-10 CHECKPOINT #69 · WAFFAR REOPENED & RE-CLOSED — 4 PRODUCTION DEFECTS FIXED ═══
 
 ## MISSION: founder's live iPhone report reopened Waffar hours after #68 — CLOSED again, deployed, verified
