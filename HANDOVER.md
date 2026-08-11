@@ -1,3 +1,91 @@
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #71 · SAUDI SHOPPER LANGUAGE & DEMAND DISCOVERY — DEPLOYED, ENGINEERING-VERIFIED, FOUNDER ACCEPTANCE PENDING ═══
+
+## MISSION: independent mission (NOT the closed Waffar workstream below) — value/deal-seeking shopper intent recognized; site-entity + FAQPage + category buying-guide discoverability shipped
+
+**WORKSTREAM STATUS: deployed and engineering-verified; NOT yet founder-accepted.** Two parts,
+one mission: (A) how Saudi shoppers actually phrase purchase intent — closed measured gaps in
+`task-parser.ts`/`decision-engine.ts`; (B) a mid-mission founder correction widened the objective
+to Tawveeri becoming "a Saudi shopping reference at the moment of need" (Tameeni analogy) —
+Google/AI-assistant discoverability, not just internal query understanding. **Full detail: ADR-239
+in `docs/DECISIONS.md`; full research/methodology narrative in
+`docs/SAUDI_SHOPPER_DEMAND_DISCOVERY_2026-08-11.md`.** This entry supersedes checkpoint #70 as the
+resume point — #70's content (Waffar workstream, closed, founder-accepted) is preserved below,
+**unreopened**: no accessory-eligibility, category-classifier, or DecisionState logic from that
+workstream was touched by this mission.
+
+### What shipped
+**Part A (consumer language):** new `"value"` priority key (رخيص/سعره مناسب/معقول/كويس — present
+in a majority of the founder's own illustrative examples, previously unrecognized anywhere); new
+`wants_discount` field (عليه عرض/عليه تخفيض) wired into `/api/v1/agent/decide` as an honest
+`deal_note` built from ALREADY-fetched, evidence-cited Discount Integrity data — never fabricates
+a deal, never re-sorts (ranking stays single-authority); new `"dryer_combo"` priority key
+replacing an ad hoc regex that bypassed the negation system. Plus smaller cross-category spelling
+fixes (possessive "كاميرته", colloquial "كهرب", "حديث", bare-superlative "افضل X"). Measured:
+baseline 29%/13% (dev/holdout) → 100%/88% after implementation, on a new bounded evaluation
+corpus (`scripts/shopper-demand-eval/`) spanning all 8 mission categories.
+
+**Part B (discoverability):** `Organization` (new) + `WebSite` (existing, previously dead code)
+JSON-LD wired into the root layout; `FAQPage` schema added to `/faq`; new bilingual category
+"how to choose" buying-guide content (`src/lib/seo/category-guide.ts`, 11 categories, every point
+grounded in a real decision-engine priority) with its own `FAQPage` JSON-LD on every category
+page. Research corrected a stale internal GEO citation-rate figure (downgraded to "unverified
+vendor claim" — see ADR-239) and confirmed `llms.txt`/an MCP server remain correctly NOT built
+(prior ADR-189 measurement stands; MCP is not yet a consumer channel). A free Google Merchant
+Center account registration is flagged as a founder action item (his own account/business
+identity required), not executed here.
+
+### Verification
+1773/1773 tests passing (1751 baseline + 22 new), `tsc`/`next build` clean. Live production
+(deployment `2513ce11-e147-41fc-ba95-87174a40b75e`): WebSite+Organization JSON-LD confirmed on
+both locale homepages; FAQPage confirmed on `/faq` and two sampled category pages with real
+content; the closed workstream's own checkpoint #70 acceptance list (5 adversarial + 4 preserve
+laptop phrases, 10 accessory probes) re-verified with zero regression; `wants_discount`/`value`
+verified live via `/api/v1/agent/decide`, including the founder's own "ابي ايباد جديد وعليه
+تخفيض" example, returning an honest (non-fabricated) deal disclosure.
+
+### Exact state as of this checkpoint (2026-08-11)
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`ca7e442`**
+  (`8721040` = Part A code, `ca7e442` = Part B code; docs commit follows this checkpoint entry)
+- `git status`: clean at time of writing — confirm again before relying on this.
+- Railway production deployment: **`2513ce11-e147-41fc-ba95-87174a40b75e`** — Online, settled,
+  confirmed via direct read-only HTML/API checks against `https://tawveeri.com` post-settle.
+
+### ENGINEERING VERIFICATION vs FOUNDER ACCEPTANCE — do not conflate these
+**ENGINEERING VERIFICATION: complete**, per the evidence above.
+**FOUNDER ACCEPTANCE: PENDING.** Per this project's own standing rule, real-device production
+evidence is the acceptance bar, not an engineering report. Below is a SMALL, high-information
+acceptance set — deliberately fresh phrasing not identical to anything in the dev/holdout corpus
+or this checkpoint's own examples, so it genuinely tests whether the mechanism generalized rather
+than confirming a known-good sentence.
+
+**Consumer-language test (open Tawveeri, type each as a fresh search, on a real iPhone):**
+1. `ودي مكيف مب غالي وهادي` — AC, value + quiet, phrased differently from anything tested.
+2. `ابغى جوال فيه عرض الحين` — mobile, deal-seeking.
+3. `احتاج لابتوب للشغل وسعره حلو` — laptop, value.
+4. `ثلاجة كبيرة ومو غالية علي` — refrigerator, large + value.
+5. `غسالة تسوي غسيل ونشافة` — washing machine, combo-dryer want, genuinely different wording
+   from anything in the corpus ("تسوي" = "does/performs", not "فيها"/"بخاصية").
+6. `تابلت للقراءة وسعره حلو` — tablet, use-case (reading) + value, fresh wording.
+
+Checking: does the response show it understood the stated preference (value/quiet/large/deal) —
+via clarification, recommendation reasoning, or an honest "no verified deal right now" disclosure
+for the deal-seeking ones — rather than a plain unfiltered browse that ignores what was said.
+
+**Discoverability spot-check (visual only — Google/AI indexing effects are not same-day
+testable, this just confirms the shipped content itself is real and useful):**
+7. Open `/ar/categories/air-conditioners` (or any category) on mobile — scroll to "كيف تختار"
+   near the bottom, confirm it shows real, readable buying-guide questions and answers, not
+   empty or broken.
+8. Open `/ar/faq` — confirm it still renders normally (no visible change expected; the change is
+   structured data invisible to a human, i.e. `<script type="application/ld+json">`, present in
+   page source only).
+
+If real production evidence contradicts this checkpoint, production evidence overrides it —
+reopen only the specific layer demonstrated to be failing, per this project's own repeatedly-
+proven rule.
+
+---
+
 # ═══ RESUME HERE — 2026-08-11 CHECKPOINT #70 · WAFFAR WORKSTREAM CLOSED — FOUNDER REAL-IPHONE ACCEPTANCE: PASSED ═══
 
 ## MISSION: founder's real-iPhone RETEST reproduced checkpoint #69's own disclosed gap — fixed, deployed, RE-VERIFIED AND ACCEPTED BY THE FOUNDER ON HIS REAL IPHONE
