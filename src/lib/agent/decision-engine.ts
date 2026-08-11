@@ -23,6 +23,14 @@ export interface ShoppingTask {
    *  detector both the search path and this engine read, so "أرخص X" behaves identically
    *  regardless of entry point. See `applyCheapestGate` below for what this actually does. */
   wants_cheapest?: boolean;
+  /** Saudi Shopper Language & Demand Discovery mission (2026-08-11): the shopper asked for
+   *  something CURRENTLY on offer/discounted ("عليه عرض"/"عليه تخفيض"), parsed by
+   *  `task-parser.ts`'s `DISCOUNT_MARKERS`. Read only by the decide route to compose an
+   *  honest disclosure from the ALREADY-fetched Discount Integrity evidence (verified_drop vs.
+   *  no verified discount) — never used to re-sort or re-score candidates, so ranking stays
+   *  single-authority (suitability + trust + cost) and this can never make an ineligible
+   *  product eligible or promote an unverified claim to the same status as a verified one. */
+  wants_discount?: boolean;
 }
 
 export interface CanonicalRow {
@@ -497,7 +505,16 @@ export function deriveWashingMachineDna(row: CanonicalRow): Record<string, unkno
 export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const pr = task.priorities ?? []; const text = (task as { parsed_from_text?: string }).parsed_from_text ?? "";
   const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
-  const wantLarge = /كبير|عائلة|large|family/.test(text), wantDryer = /نشاف|نشافة|dryer|تجفيف/.test(text);
+  // MEASURED STRUCTURAL GAP (2026-08-11, Saudi Shopper Language & Demand Discovery mission):
+  // both wants previously read ONLY the raw-text regex, bypassing `priorities[]` entirely — so
+  // neither was reachable through the negation/deprioritize/exclude polarity system every other
+  // category's priorities already get (e.g. "ما ابي نشافة" had no keyword to negate). "large" is
+  // a real PRIORITY_KEYWORDS key already (matches `decideRefrigerator`'s own `pr.includes`-first
+  // pattern below); "dryer_combo" is a new key added this mission for the same reason. The regex
+  // stays as a fallback for the rare case priorities[] didn't capture it (safety net, not the
+  // primary path anymore).
+  const wantLarge = pr.includes("large") || /كبير|عائلة|large|family/.test(text);
+  const wantDryer = pr.includes("dryer_combo") || /نشاف|نشافة|dryer|تجفيف/.test(text);
   const scored = rows.map((row) => {
     const a = row.attributes ?? {}; const dna = deriveWashingMachineDna(row); const reasons = new ReasonLedger();
     let score = 0.5;

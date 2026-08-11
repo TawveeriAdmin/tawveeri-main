@@ -149,7 +149,43 @@ function parseBudget(x: string): number | null | undefined {
  * recommendation request worth clarifying, without hardcoding any specific product/category
  * example — it fires identically for "أفضل لابتوب"/"أفضل جوال"/"أفضل مكيف".
  */
-const RECOMMENDATION_MARKERS = /الافضل|الأفضل|افضل لي|أفضل لي|وش افضل|وش أفضل|ايش افضل|ايش أفضل|انصحني|أنصحني|تنصحني|توصيتك|توصيك|نصيحتك|اقترح لي|إقترح لي|الانسب لي|الأنسب لي|وش تنصح|ايش تنصح|وش الافضل|وش الأفضل|recommend|suggest.{0,20}me|what should i (get|buy|choose|pick)|which (one )?(is|to) (best|choose|get|buy)|help me choose|help me pick|best.{0,20}for me/;
+// MEASURED GAP (2026-08-11, Saudi Shopper Language mission — measured on «افضل ثلاجه كبيره
+// للعائله وسعرها كويس»): a BARE superlative ("افضل X" / "أبي أفضل X", no «وش» prefix and no
+// trailing «لي»/"for me") matched none of the existing markers below — only "وش
+// افضل"/"الافضل"/"افضل لي" did. Bare «افضل»/«أفضل» is safe to add unqualified: it never
+// collides with `compare-intent.ts`'s own "وش أفضل" comparison-marker detection (a different
+// file, a different classifier, unaffected by this list) — a query that DOES start with «وش»
+// is claimed by that classifier before `routeQuery` ever consults this one, so this only closes
+// the genuinely uncovered bare-superlative case.
+// English "what is a good/best X" / "is there a good/best X" (2026-08-11, same mission —
+// measured on two independent holdout cases, "what is a good fridge..." and "is there a good
+// offer..."): the existing English markers required either an explicit "recommend"/"suggest me"
+// verb or the narrow "best...for me" shape; a QUESTION framed around "a good/best X" is at
+// least as common and had nothing to match it. Narrow and question-shaped by design (requires
+// "what is"/"is there" + "a/the/any" + good/best/great) rather than a bare "best"/"good"
+// anywhere in the sentence, which would be far too broad and risk misfiring on ordinary prose.
+const RECOMMENDATION_MARKERS = /افضل|أفضل|انصحني|أنصحني|تنصحني|توصيتك|توصيك|نصيحتك|اقترح لي|إقترح لي|الانسب لي|الأنسب لي|وش تنصح|ايش تنصح|recommend|suggest.{0,20}me|what should i (get|buy|choose|pick)|which (one )?(is|to) (best|choose|get|buy)|help me choose|help me pick|best.{0,20}for me|(?:what(?:'s| is)|is there) (?:a |the |any )?(?:good|best|great)\b/;
+
+/**
+ * DEAL/DISCOUNT-SEEKING SIGNAL (2026-08-11, Saudi Shopper Language & Demand Discovery mission
+ * — measured gap: this exact structure appeared in the founder's own illustrative examples
+ * «ابي ايباد جديد وعليه تخفيض» and had NO field to land in anywhere in the FIRST-turn parse).
+ * Distinct from `decision-intent.ts`'s `DEAL_EVALUATION` markers, which classify a FOLLOW-UP
+ * question about an ALREADY-SELECTED product ("هل هذا العرض جيد؟" — is THIS deal good) and are
+ * gated behind an active `DecisionState`. This detector fires on a first-turn statement that
+ * the shopper wants something CURRENTLY on offer — a search-time preference, not a question
+ * about one candidate. Kept as its own boolean field (like `wants_recommendation`), not folded
+ * into `PRIORITY_KEYWORDS`: a discount is a claim about a SPECIFIC listing's price history
+ * (verified vs. inflated_reference, per Discount Integrity/ADR-091), not a soft ranking
+ * preference like "quiet" or "value" — conflating the two would let an unverified "خصم" claim
+ * be silently promoted to the same status as a genuine spec preference. The decide route
+ * answers it using the SAME evidence-cited Discount Integrity data it already computes for
+ * every candidate (never a new/separate claim, never fabricated when no verified discount
+ * exists — CLAUDE.md: "Unknown beats incorrect").
+ */
+const DISCOUNT_MARKERS = /عليه عرض|عليها عرض|فيه عرض|فيها عرض|في عرض|عليه تخفيض|عليها تخفيض|فيه تخفيض|فيها تخفيض|عليه خصم|عليها خصم|فيه خصم|فيها خصم|مخفض|مخفضة|نازل السعر|نازلة السعر|السعر نازل|مخفض السعر|\bdeals?\b|\boffers?\b|on sale|\bdiscount(?:ed|s)?\b|\bpromo(?:tion)?\b/;
+
+function wantsDiscount(x: string): boolean { return DISCOUNT_MARKERS.test(x); }
 
 /** «ميزانيتي»/«على قد ميزانيتي»/"my budget" WITHOUT a number attached anywhere in the
  *  sentence — the reference exists, the value does not. */
@@ -254,7 +290,11 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // named example follow-ups «أبيه أهدأ») was missing: none of the base-form spellings match
   // the comparative, so «طيب أبيه أهدأ» parsed NO priority at all before this fix.
   ["quiet", /هادئ|هادي|هادى|أهدأ|اهدا|هدوء|صامت|quiet|quieter|silent|low ?noise/],
-  ["low_electricity", /موفر|توفير|كهرباء|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/],
+  // «كهرب» (2026-08-11, Saudi Shopper Language & Demand Discovery mission — measured on
+  // «ما يصرف كهرب كثير»): the everyday colloquial short form (dropping the formal «-اء»
+  // ending) matched nothing — only the full «كهرباء» did. Same ة/ه-class spelling-register
+  // gap this codebase keeps finding one word at a time (CHECKPOINT #17, «جامعة»/«جامعه»).
+  ["low_electricity", /موفر|توفير|كهرباء|كهرب|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/],
   ["heating", /تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/],
   ["gaming", /ألعاب|العاب|قيمنق|gaming|games/],
   ["movies", /أفلام|افلام|سينما|movies|cinema|netflix/],
@@ -298,7 +338,12 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // fabricated reading priority. A negative lookbehind excludes "كتب" preceded by "م" while
   // still matching a standalone "كتب"/"الكتب".
   ["reading", /قراءة|reading|(?<!م)كتب|books/],
-  ["camera", /كاميرا|تصوير|صور|camera|photo/],
+  // «كاميرته»/«كاميرتها» (possessive "its camera") added 2026-08-11 (Saudi Shopper Language
+  // mission — measured on «كاميرته زينه»): the SAME possessive morpheme shift battery already
+  // has a fix for (ة→ت before a pronoun suffix) also applies to «كاميرة» → «كاميرته», and the
+  // bare «كاميرا» pattern never matches it. «كاميرت» is the shared root of every possessive
+  // form, same technique as «بطاريت» below.
+  ["camera", /كاميرا|كاميرت|تصوير|صور|camera|photo/],
   // «بطاريته»/«بطاريتها» (possessive "its/his battery") added 2026-08-09 — measured on «جوال
   // …وبطاريته قوية…»: the bare «بطارية» pattern does not match, because Arabic shifts the
   // final ة to ت before a possessive pronoun attaches (بطارية → بطاريته), so the substring
@@ -306,7 +351,9 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // possessive-suffixed form (ـه/ـها/ـهم/ـك/ـي), so matching on it covers all of them without
   // enumerating each pronoun.
   ["battery", /بطارية|بطاريت|battery/],
-  ["latest", /أحدث|احدث|جديد|latest|newest/],
+  // «حديث»/«حديث الإصدار» (2026-08-11, Saudi Shopper Language mission — measured on «آيباد
+  // حديث الإصدار»): a distinct, common MSA word for "recent/modern" alongside «جديد» ("new").
+  ["latest", /أحدث|احدث|جديد|حديث|latest|newest/],
   // «وزن» (weight) added 2026-08-09 — Section 7's own worked example «ما يهمني الوزن» ("the
   // weight doesn't matter to me") named a word this group never matched at all, positive or
   // negative — a shopper mentioning weight either way was previously invisible to the parser.
@@ -314,6 +361,26 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «عائلة» had the same ة-only gap «جامعة» did above (found in the same audit pass) — «عائله»
   // is the equally common ه-ending typed form.
   ["large", /كبير|كبيرة|عائلة|عائله|عائلية|عائليه|large|family|big/],
+  // MEASURED STRUCTURAL GAP (2026-08-11, Saudi Shopper Language & Demand Discovery mission —
+  // repo audit + a new evaluation corpus, scripts/shopper-demand-eval/): "quality/reasonable
+  // price" ("رخيص وجودته عاليه", "سعره كويس/مناسب") appeared in a majority of the founder's
+  // OWN illustrative examples across categories (AC, mobile, tablet, refrigerator) and had NO
+  // landing spot anywhere in this parser — not a priority, not the budget parser (no digit),
+  // not `CHEAPEST_MARKER` (which this file's own comment already says «رخيص» deliberately does
+  // NOT trigger — it means "sort to the single cheapest item", a different instruction from a
+  // soft quality-price preference). Distinct field, closes exactly the gap that comment already
+  // anticipated. Deliberately excludes «أرخص»/«ارخص» (no shared substring with «رخيص» — the
+  // extra ي makes them non-overlapping) so this never fires alongside/instead of the cheapest
+  // marker.
+  ["value", /رخيص|سعر(?:ه|ها)? (?:مناسب|معقول|كويس|زين|حلو)|بسعر (?:مناسب|معقول|كويس|زين|حلو)|جودة عالية|جودت(?:ه|ها) عالية|قيمة مقابل السعر|مو غالي|ما يكون غالي|مب غالي|reasonable price|good value|great value|worth (?:the |its )?(?:money|price)|affordable|budget[- ]friendly|not overpriced/],
+  // MEASURED STRUCTURAL GAP (2026-08-11, same mission): washing-machine "combo dryer" wants
+  // ("فيها نشافة"/"غسالة ونشافة") were ONLY ever read by an ad hoc regex directly on
+  // `parsed_from_text` inside `decideWashingMachine` — never through `PRIORITY_KEYWORDS`, so
+  // the want was invisible to the negation/deprioritize/exclude polarity system every other
+  // category's priorities already get ("ما ابي نشافة" had no keyword to negate). Promoted to a
+  // real priority key; `decideWashingMachine` now reads it the same way `decideRefrigerator`
+  // already reads "large" — via `priorities[]` first.
+  ["dryer_combo", /نشاف[ةه]?|تجفيف|\bdryer\b|washer[- ]dryer/],
 ];
 
 interface PriorityParse {
@@ -460,6 +527,7 @@ export function parseShoppingTask(text: string): ParsedTask {
     quantity,
     wants_cheapest: wants_cheapest || undefined,
     wants_recommendation: wantsRecommendation(x) || undefined,
+    wants_discount: wantsDiscount(x) || undefined,
     budget_referenced: budget_referenced || undefined,
     use_case_referenced: use_case_referenced || undefined,
     parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,

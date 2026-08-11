@@ -46,7 +46,15 @@ describe("Case 3 root cause #3 — a query's context/need words must never be RE
   it("a priority-descriptor word (need/context, not product identity) is recognized as such", () => {
     expect(isPriorityDescriptorWord("جامعه")).toBe(true);
     expect(isPriorityDescriptorWord("جامعة")).toBe(true);
-    expect(isPriorityDescriptorWord("رخيص")).toBe(false); // "رخيص" alone is not a listed priority key (only "ارخص"/"اوفر" as the cheapest marker, a different mechanism) — documents the boundary honestly rather than assuming.
+    // UPDATED 2026-08-11 (Saudi Shopper Language & Demand Discovery mission): «رخيص» is now a
+    // real "value" priority key (task-parser.ts) — this correctly flips to true, and is a
+    // DESIRABLE side effect, not a regression: it means Algolia retrieval now treats "رخيص" the
+    // same way it already treats "للجامعة" — a ranking-only preference, never a required title
+    // match — so a genuinely cheap real laptop is never excluded just because its own title
+    // does not contain the literal word "رخيص". Reinforces this describe block's own invariant
+    // rather than weakening it. «أرخص»/«اوفر» (the CHEAPEST_MARKER sort-to-lowest instruction)
+    // remain a completely separate mechanism, untouched.
+    expect(isPriorityDescriptorWord("رخيص")).toBe(true);
     expect(isPriorityDescriptorWord("لابتوب")).toBe(false); // a product-identity word must never be treated as optional-context
   });
 });

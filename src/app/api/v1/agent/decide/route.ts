@@ -267,6 +267,26 @@ export async function POST(req: NextRequest) {
     };
   })();
 
+  // Saudi Shopper Language & Demand Discovery mission (2026-08-11): a shopper who asked for
+  // something "عليه عرض"/"on sale" gets an HONEST answer built from the Discount Integrity
+  // evidence already computed above for every candidate (`discount_intel`, ADR-091) — never a
+  // new claim, never a re-sort (ranking stays single-authority: suitability + trust + cost).
+  // If no candidate carries a `verified_drop`, say so plainly rather than silently ignoring the
+  // request or reusing an `inflated_reference`/unverified "خصم" claim just to answer "yes".
+  const dealNote = (() => {
+    if (!engineTask.wants_discount) return null;
+    const verified = out.find((r) => r.discount_intel?.verdict === "verified_drop");
+    if (verified && verified.discount_intel) {
+      const title = verified.title_ar ?? verified.title_en;
+      return { ar: `وجدت خصمًا موثقًا على "${title}": ${verified.discount_intel.text.ar}`.trim(),
+        en: `Found a verified discount on "${verified.title_en ?? verified.title_ar}": ${verified.discount_intel.text.en}`.trim() };
+    }
+    return {
+      ar: "لا نملك حاليًا خصمًا موثّقًا على أي من هذه الترشيحات — الترشيح أدناه مبني على الملاءمة والسعر، وليس على عرض غير مؤكد.",
+      en: "We don't currently have a verified discount on any of these picks — the recommendation below is based on fit and price, not an unverified offer.",
+    };
+  })();
+
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
   const smartIdx = out.findIndex((r) => r.is_smart_pick);
   const smart = smartIdx >= 0 ? out[smartIdx] : null;
@@ -341,6 +361,9 @@ export async function POST(req: NextRequest) {
     // `budget_note` below). Absent/true when no budget was stated at all.
     budget_satisfied: anyWithinBudget,
     budget_note: budgetNote,
+    // Present ONLY when the shopper's own text asked for something on offer/discounted —
+    // never fabricated, never silent (see `dealNote` above).
+    deal_note: dealNote,
     // AC-only, present ONLY when the Smart Pick itself under/over-sizes beyond the same
     // tolerance its own reason text uses — never silent about a partial capacity match.
     capacity_note: capacityNote,
