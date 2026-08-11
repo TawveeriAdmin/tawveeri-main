@@ -429,6 +429,43 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];
 
+/**
+ * category → the ONE term real catalog titles actually use (2026-08-10, founder's own real-
+ * iPhone REtest — reopened a second time). MEASURED: «ابي حاسوب محمول للجامعه» — a fully valid,
+ * formal way to refer to a laptop that `parseCategory`/`decide()` both correctly resolve to
+ * category=laptop — still surfaced a non-laptop product (a wireless earphone on the founder's
+ * device, a laptop backpack on a repeat request) as the PRIMARY result. Root cause: "حاسوب"
+ * and "محمول" are themselves the REQUIRED Algolia match terms (product-IDENTITY words, not the
+ * priority-descriptor class ADR-238's earlier fix made optional) — and NO real laptop's catalog
+ * title contains either word (real titles say "لابتوب [brand] [model]..."). With almost nothing
+ * to match, Algolia's own relevance/typo-tolerance scoring effectively arbitrates among
+ * near-misses, and which near-miss "wins" is unstable (a different wrong product on each
+ * request, confirmed by the founder's earphone vs this session's backpack for the identical
+ * query text) — the exact failure mode the founder's invariant forbids: fallback/relaxed
+ * retrieval changing the requested PRODUCT CLASS, not just broadening within it.
+ *
+ * The fix is not a synonym hack for "حاسوب محمول" specifically — it is structural: once
+ * `constraintTask.category` is confidently resolved (the SAME shared classifier every other
+ * layer already defers to), the retrieval query is anchored to the one term the catalog itself
+ * actually uses, so genuine candidates are always reachable regardless of which valid synonym
+ * the shopper typed. Deliberately a single canonical term per category, not the full synonym
+ * list in `CATEGORY_QUERY_TERMS` above — anchoring is a REQUIRED addition to the query (it must
+ * narrow toward the real category, not just optionally rank toward it), so adding every synonym
+ * would only reproduce this same "words the catalog doesn't use" problem one level up.
+ */
+const CANONICAL_CATEGORY_TERM: Record<string, string> = Object.fromEntries(
+  CATEGORY_QUERY_TERMS.flatMap((e) => e.cats.map((c) => [c, e.terms[0]] as const)),
+);
+
+/** Extracted for direct testing — see `CANONICAL_CATEGORY_TERM`'s own doc comment for the full
+ *  measured evidence and reasoning this implements. */
+export function anchorSubjectToCategory(subject: string, category: string | null): string {
+  const canonicalTerm = category ? CANONICAL_CATEGORY_TERM[category] : null;
+  if (!canonicalTerm) return subject;
+  const normalizedTerm = normalizeArabic(canonicalTerm);
+  return subject.includes(normalizedTerm) ? subject : `${subject} ${normalizedTerm}`;
+}
+
 export function detectCanonicalCategories(raw: string): string[] | null {
   const norm = normalizeArabic(raw).toLowerCase();
   if (
@@ -1685,7 +1722,16 @@ export async function POST(request: NextRequest) {
       const subjectWords = normalizeArabic(rawQuery).split(/\s+/)
         .filter((w) => w && !isWrapperWord(w) && !constraintNumbers.has(w));
       const subject = subjectWords.length ? subjectWords.join(' ') : normalizeArabic(rawQuery);
-      const algoliaQuery = expansions.length ? `${subject} ${expansions.join(' ')}` : subject;
+      // CATEGORY ANCHOR (2026-08-10, founder's real-iPhone RE-test — see
+      // CANONICAL_CATEGORY_TERM's own doc comment above for the full measured evidence):
+      // when the category is already confidently resolved but the query's OWN words are not
+      // ones the catalog's real titles use ("حاسوب محمول" vs real titles' "لابتوب"), inject the
+      // catalog's own term as an ADDITIONAL REQUIRED word — never REPLACING the shopper's
+      // words (still ranked/required same as before), only guaranteeing genuine category
+      // candidates are reachable at all. A no-op whenever the canonical term is already present
+      // (e.g. "لابتوب للجامعة" — "لابتوب" already in `subject`, `includes` is true, nothing added).
+      const anchoredSubject = anchorSubjectToCategory(subject, constraintTask?.category || null);
+      const algoliaQuery = expansions.length ? `${anchoredSubject} ${expansions.join(' ')}` : anchoredSubject;
       // MEASURED SEVERE DEFECT (2026-08-10, founder's own production report — reopened
       // mission, case 3): «ابي لاب توب للجامعه» sent "لاب توب جامعه" as the Algolia QUERY with
       // `optionalWords` left `undefined` — no bilingual expansion applied to this sentence, so

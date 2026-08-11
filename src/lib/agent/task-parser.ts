@@ -42,7 +42,14 @@ function parseCategory(x: string): string | null {
   // (CATEGORY_QUERY_TERMS) but never here — this file's classifier not knowing what a SIBLING
   // classifier already knows is the exact same "silently drifted, independent classifiers"
   // defect this whole reopened mission is about, just one synonym further.
-  if (/لابتوب|لاب توب|حاسوب|كمبيوتر|laptop|notebook|macbook/.test(x)) return "laptop";
+  //
+  // «حاسب» (2026-08-10, founder's own real-iPhone RETEST, second reopening — his own explicit
+  // adversarial phrase «ابغى حاسب محمول للدراسه»): a genuinely distinct, common Arabic word for
+  // "computer" (classical root, vs. «حاسوب»'s more modern coined form) — MEASURED to not match
+  // any of the three synonym lists this codebase already had. Negative lookahead `(?!ة)`
+  // excludes «حاسبة» ("calculator", a real but unrelated device sharing the same root) so a
+  // calculator search is never silently reclassified as a laptop request.
+  if (/لابتوب|لاب توب|حاسوب|حاسب(?!ة)|كمبيوتر|laptop|notebook|macbook/.test(x)) return "laptop";
   if (/سماعة|سماعات|headphone|earbuds|airpods|speaker|مكبر صوت/.test(x)) return "audio";
   // MEASURED DEFECT (2026-08-10, D→E mission Part F — re-verification sweep after the
   // English routing fix): bare "phone" was never recognized at all — only "smartphone",

@@ -4,7 +4,7 @@
  * general invariant it protects and includes adversarial paraphrases beyond the founder's own
  * examples, per the founder's explicit instruction not to patch phrases.
  */
-import { isMainProductTypeQuery, detectCanonicalCategories } from "@/app/api/search/route";
+import { isMainProductTypeQuery, detectCanonicalCategories, anchorSubjectToCategory } from "@/app/api/search/route";
 import { parseShoppingTask, isPriorityDescriptorWord } from "@/lib/agent/task-parser";
 import { routeQuery } from "@/lib/agent/route-query";
 import { decideLaptop } from "@/lib/agent/decision-engine";
@@ -106,5 +106,63 @@ describe("Case 4/5 — a fresh mission's own results must never be masked by a p
     expect(laptop.task?.category).toBe("laptop");
     expect(ac.task?.category).toBe("air_conditioner");
     expect(laptop.task?.category).not.toBe(ac.task?.category);
+  });
+});
+
+/**
+ * SECOND REOPENING (2026-08-11) — founder's own real-iPhone RE-test found the mission's fix
+ * was incomplete: "ابي حاسوب محمول للجامعه" returned a non-laptop product (an earphone on the
+ * founder's device; a backpack on repeat requests — the instability itself is evidence the
+ * underlying Algolia match set was nearly empty). Root cause: "حاسوب"/"محمول" are themselves
+ * REQUIRED match words no real laptop title contains. Fix: `anchorSubjectToCategory` — once
+ * category is confidently resolved, the catalog's OWN canonical term for it is added as an
+ * additional required word, guaranteeing genuine candidates are always reachable regardless of
+ * which valid synonym the shopper used. NON-NEGOTIABLE INVARIANT under test: retrieval/fallback
+ * must never change the requested PRODUCT CLASS — it may broaden or rank WITHIN it.
+ */
+describe("Second reopening — retrieval must anchor to the catalog's own vocabulary once category is confident", () => {
+  it("«حاسوب»/«كمبيوتر» phrasings get the catalog's own «لابتوب» term injected", () => {
+    expect(anchorSubjectToCategory("حاسوب محمول جامعه", "laptop")).toBe("حاسوب محمول جامعه لابتوب");
+    expect(anchorSubjectToCategory("كمبيوتر محمول جامعه", "laptop")).toBe("كمبيوتر محمول جامعه لابتوب");
+  });
+
+  it("adversarial: the founder's full retest list all resolve category=laptop (pre-condition for anchoring to even engage)", () => {
+    const phrases = [
+      "ابي حاسوب محمول للجامعه",
+      "ابي كمبيوتر محمول للجامعه",
+      "ابغى حاسب محمول للدراسه",
+      "احتاج حاسوب محمول للتصميم",
+      "وش افضل حاسوب محمول للجامعه",
+    ];
+    for (const p of phrases) {
+      expect(parseShoppingTask(p).category).toBe("laptop");
+    }
+  });
+
+  it("already-correct colloquial phrasing is a no-op (canonical term already present, nothing duplicated)", () => {
+    expect(anchorSubjectToCategory("لاب توب جامعه", "laptop")).toBe("لاب توب جامعه لابتوب");
+    expect(anchorSubjectToCategory("لابتوب جامعه", "laptop")).toBe("لابتوب جامعه"); // already contains لابتوب — true no-op
+  });
+
+  it("preserves the already-working colloquial acceptance list from the founder's first retest", () => {
+    const phrases = ["ابي لاب توب للجامعه", "ابي لابتوب للجامعه", "ابي لاب توب للدراسه", "ابي لاب توب للتصميم"];
+    for (const p of phrases) {
+      expect(parseShoppingTask(p).category).toBe("laptop");
+      expect(isMainProductTypeQuery(p)).toBe(true);
+    }
+  });
+
+  it("no category resolved -> anchor is a true no-op (never invents a category)", () => {
+    expect(anchorSubjectToCategory("شي عشوائي", null)).toBe("شي عشوائي");
+  });
+
+  it("other categories anchor too (not a laptop-only special case) — the same mechanism for air_conditioner", () => {
+    expect(anchorSubjectToCategory("جهاز تبريد رخيص", "air_conditioner")).toBe("جهاز تبريد رخيص مكيف");
+  });
+
+  it("accessory-only vocabulary (no device noun) never resolves a laptop category — anchoring cannot fabricate a laptop mission for a plain accessory search", () => {
+    for (const q of ["ماوس", "كيبورد", "سماعات", "كيبل شحن"]) {
+      expect(parseShoppingTask(q).category).not.toBe("laptop");
+    }
   });
 });
