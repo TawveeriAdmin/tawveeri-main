@@ -1747,6 +1747,7 @@ export async function POST(request: NextRequest) {
       // the product's own identity.
       const descriptorWords = subjectWords.filter((w) => isPriorityDescriptorWord(w));
       const optionalWords = [...new Set([...aqWords, ...expansions, ...descriptorWords])];
+      console.log('[Algolia] query:', JSON.stringify(algoliaQuery), '| optionalWords:', JSON.stringify(optionalWords), '| category:', constraintTask?.category);
       const algoliaRes = await searchAlgolia({
         query: algoliaQuery,
         optionalWords: optionalWords.length ? optionalWords : undefined,
