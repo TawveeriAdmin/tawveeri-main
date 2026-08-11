@@ -64,16 +64,19 @@ found when actually requested. 7 new regression tests added
 tests passing, `tsc --noEmit`/`next build` clean throughout.
 
 ### Exact state as of this checkpoint (2026-08-11)
-- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`dda3787`**
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`e77748f`** (docs-only,
+  this checkpoint + ADR-238 addendum; the code fix itself is `dda3787`)
 - `git status`: clean — no uncommitted, no untracked, no stashed changes.
-- Railway production deployment: **`e041a26b-6d28-4ebf-8632-7ae4c09705b2`** — status Online,
-  fully settled, confirmed via direct read-only `/api/search` POST requests against
-  `https://tawveeri.com` for all three test lists above (adversarial, preserve, accessory-probe).
-  Note: Railway's GitHub auto-deploy did not fire on push this time (~15 min with no new
-  deployment ID despite `origin/main` confirmed at `dda3787`) — triggered manually via
-  `railway up --service tawveeri-main --detach` from the already-clean, already-pushed working
-  tree. No uncommitted/local-only code was deployed; the manual trigger uploaded the identical
-  committed state already on `origin/main`.
+- Railway production deployment: **`c32e0dcc-6760-490e-8579-aeebee76097a`** — status Online,
+  fully settled (not mid-build), re-confirmed via a second round of direct read-only `/api/search`
+  POST requests against `https://tawveeri.com` for all three test lists above (adversarial,
+  preserve, accessory-probe) AFTER this exact deployment settled. Note: Railway's GitHub
+  auto-deploy did not fire on the code-fix push (`dda3787`) for ~15 minutes despite `origin/main`
+  confirmed at that SHA — triggered manually via `railway up --service tawveeri-main --detach`
+  from the already-clean, already-pushed working tree (deployment `e041a26b`, superseded by
+  `c32e0dcc` once the docs-only follow-up commit auto-deployed normally). No uncommitted/local-only
+  code was ever deployed at any point — both deployments served exactly what was already on
+  `origin/main`.
 
 ### ENGINEERING VERIFICATION vs FOUNDER ACCEPTANCE — do not conflate these
 **ENGINEERING VERIFICATION: complete**, based on all evidence above (automated tests + direct
