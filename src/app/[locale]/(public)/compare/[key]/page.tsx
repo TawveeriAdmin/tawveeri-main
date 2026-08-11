@@ -99,7 +99,13 @@ export async function generateMetadata({
   // Decode exactly as the page body does. These two must not drift again.
   const decodedKey = decodeURIComponent(key);
   const isAr = locale !== 'en';
-  const alternates = buildAlternates(`/compare/${key}`, locale);
+  // MEASURED DEFECT (2026-08-11, Global Shopping Discoverability & AI Commerce mission):
+  // Next.js decodes dynamic route segments before handing them to this function, so `key`
+  // here already contains real `|` characters (e.g. "samsung|front_load|25|washer") — embedding
+  // it directly produced a canonical URL with raw, un-percent-encoded `|` (invalid per RFC 3986;
+  // Google explicitly requires a canonical to be a valid, exact URL). The actual page the
+  // crawler fetches uses `%7C`, so the declared canonical never matched the fetched URL.
+  const alternates = buildAlternates(`/compare/${encodeURIComponent(key)}`, locale);
   const data = await fetchCompare(decodedKey);
   if (!data) {
     return {

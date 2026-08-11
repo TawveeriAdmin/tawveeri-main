@@ -68,6 +68,22 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Search-engine site-ownership verification (2026-08-11, Global Shopping Discoverability
+  // & AI Commerce mission). Verifying Search Console/Bing Webmaster Tools requires the
+  // FOUNDER's own Google/Microsoft account — not something this repository can create on his
+  // behalf. This hook is a zero-risk, ready-to-activate no-op today: with no env var set it
+  // renders nothing (Next.js omits an empty `verification` object), and once the founder
+  // completes the account-side registration and pastes the one verification code Google/Bing
+  // gives him into Railway's env vars, it goes live with no further code change or deploy
+  // approval needed — see the mission doc's "founder action items" for the exact steps.
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
+      : {}),
+  },
 };
 
 // Brand font — single family for both Arabic & English per brand guidelines

@@ -58,6 +58,13 @@ export function buildAlternates(path: string, locale: string) {
     languages: {
       ar: `${baseUrl}/ar${cleanPath}`,
       en: `${baseUrl}/en${cleanPath}`,
+      // `x-default` (2026-08-11, Global Shopping Discoverability & AI Commerce mission) —
+      // Google's own hreflang guidance recommends an explicit default for visitors/crawlers
+      // whose language doesn't match any listed alternate. Confirmed absent by a technical audit
+      // (present-but-optional, not a defect on its own, but a real, free, one-line completeness
+      // gain applied here once for every page that already calls this shared builder). Points at
+      // Arabic — the app's own documented, already-served default locale.
+      'x-default': `${baseUrl}/ar${cleanPath}`,
     },
   };
 }

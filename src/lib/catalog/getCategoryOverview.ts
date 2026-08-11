@@ -30,6 +30,22 @@ export interface CategoryProductSummary {
   lastObservedAt: string | null;
 }
 
+/**
+ * MEASURED DEFECT (2026-08-11, Global Shopping Discoverability & AI Commerce mission):
+ * `tps_product_projection.compare_url` is stored WITH a hardcoded `/ar/` locale prefix (e.g.
+ * `/ar/compare/...`), violating this module's own documented `compareUrl` contract
+ * (`CategoryProductSummary.compareUrl`'s own doc comment: "Locale-less path... Prefix with
+ * `/${locale}` to link"). Every consumer honours that contract and prepends its own locale —
+ * so every category-page product card linked to `/ar/ar/compare/...` (Arabic) or
+ * `/en/ar/compare/...` (English), a 404 in BOTH locales, confirmed live. Exported as a pure
+ * function (not left inline in the `.map()` below) so it is directly unit-testable without a
+ * database round-trip.
+ */
+export function normalizeCompareUrl(raw: string | null, identityKey: string): string {
+  const url = raw || `/compare/${encodeURIComponent(identityKey)}`;
+  return url.replace(/^\/(ar|en)(?=\/)/, '');
+}
+
 export interface CategoryOverview {
   comparableCount: number;
   priceRange: { min: number; max: number } | null;
@@ -123,7 +139,7 @@ export const getCategoryOverview = cache(async (categoryKey: string): Promise<Ca
       lowestPrice: r.lowest_price,
       highestPrice: r.highest_price,
       storeCount: r.store_count ?? 0,
-      compareUrl: r.compare_url || `/compare/${encodeURIComponent(r.tps_identity_key)}`,
+      compareUrl: normalizeCompareUrl(r.compare_url, r.tps_identity_key),
       lastObservedAt: r.last_observed_at,
     }));
 
