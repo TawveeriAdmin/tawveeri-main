@@ -1869,9 +1869,20 @@ export async function POST(request: NextRequest) {
   // script contributes no group at all. A word that does carry one keeps every spelling
   // it can be written in, so Arabic and Latin catalogue names stay reachable from either
   // language. This is the same class of bug as the ة/ى folding one above.
+  // MEASURED SEVERE DEFECT, SECOND LOCATION (2026-08-11, founder's real-iPhone RETEST — same
+  // root cause as the Algolia `optionalWords` fix above, in a SEPARATE post-retrieval filter
+  // this file also owns): this gate requires EVERY query word's group to match a product's
+  // title — INCLUDING "للجامعة", a NEED/CONTEXT word no real laptop title ever contains. Fixing
+  // `optionalWords` alone widened what Algolia RETURNS (confirmed: 99-100 raw candidates,
+  // genuine laptops among them) but this SEPARATE gate then filtered those candidates back down
+  // to almost nothing, because it independently re-derives its own word list from `rawQuery`
+  // without the same priority-descriptor exclusion — the backpack survived specifically because
+  // its own SEO-stuffed title is the one product matching BOTH the product-identity group AND
+  // the context-word group. Same fix, same governing rule, applied at this second site: a
+  // priority-descriptor word never forms a REQUIRED relevance group.
   const relevanceGroups: string[][] = queryIsMainProduct
     ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean)
-        .filter((w) => !isWrapperWord(w) && !constraintNumbers.has(w))
+        .filter((w) => !isWrapperWord(w) && !constraintNumbers.has(w) && !isPriorityDescriptorWord(w))
         .map((w) => expandWordTerms(w).filter((t) => t.length >= 2))
         .filter((g) => g.length > 0 && !g.every((t) => GENERIC.has(t)))
     : [];
