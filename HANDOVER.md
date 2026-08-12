@@ -1,4 +1,4 @@
-# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — 3 FOUNDER ACTIONS PENDING ═══
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — CLOUDFLARE DONE, BING CODE LIVE (awaiting founder's Verify click), GSC STILL PENDING ═══
 
 ## MISSION: independent mission (NOT the closed workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, found the #1 lever is outside the repository
 
@@ -120,17 +120,34 @@ citation.
 ### EXACT founder actions needed next (smallest possible list — full steps in the mission doc §4)
 1. **Cloudflare dashboard** (`tawveeri.com` zone → AI Bots / Managed robots.txt) — allow at least
    `Google-Extended` and `ClaudeBot`. Free. Cannot be done from this repository at all.
+   **DONE (2026-08-11) — founder completed this directly.** Managed robots.txt disabled,
+   mixed-purpose crawlers left allowed, the important search/AI crawlers reviewed. Not
+   independently re-crawled/re-verified by this session (no code-side signal changed by this
+   action) — the founder's own report is the evidence of record here, same as any other
+   external-account action this project cannot observe directly.
 2. **Google Search Console** (`search.google.com/search-console` → Add property, URL-prefix
    `https://tawveeri.com` → HTML tag method) — paste the code into
-   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` on Railway.
+   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` on Railway. **STILL PENDING.**
 3. **Bing Webmaster Tools** (`bing.com/webmasters`, same pattern) — paste into
-   `NEXT_PUBLIC_BING_SITE_VERIFICATION`. Lower priority than #1/#2.
+   `NEXT_PUBLIC_BING_SITE_VERIFICATION`. **CODE LIVE, AWAITING FOUNDER'S "VERIFY" CLICK.**
+   Founder supplied the exact meta-tag value directly (`msvalidate.01` =
+   `B8065751DA305304BAA66E68339B8822`) rather than a screenshot, so no guessing was needed. Set
+   as the `NEXT_PUBLIC_BING_SITE_VERIFICATION` Railway env var (not hardcoded in source, per this
+   repo's existing environment-authority discipline) → triggered an automatic rebuild → live-
+   verified directly in production HTML on BOTH `/ar` and `/en`:
+   `<meta name="msvalidate.01" content="B8065751DA305304BAA66E68339B8822"/>`, exact value match.
+   **The founder may press "Verify" in Bing Webmaster Tools now** — the tag is confirmed live on
+   the exact URL being verified (`https://tawveeri.com/`).
 
 ### Exact state as of this checkpoint (2026-08-11)
-- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`69ea3e3`**
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`285e33a`** (no code change
+  this round — only a Railway env var was set; the deploy it triggered rebuilds the SAME
+  committed code with the new env var inlined)
 - `git status`: clean at time of writing — confirm again before relying on this.
-- Railway production deployment: **`136d5a12-1fae-49b2-a937-d2fb3233739c`** — Online, settled,
-  confirmed via direct read-only HTTP checks against `https://tawveeri.com` post-settle.
+- Railway production deployment: **`65f4fd18-a9c1-4f88-8266-c27700997d41`** — Online, settled,
+  confirmed via direct read-only HTTP checks against `https://tawveeri.com` post-settle (both
+  the Bing meta tag and the checkpoint #72 compare-link/canonical fixes re-verified live on this
+  exact deployment).
 
 If real production evidence contradicts this checkpoint, production evidence overrides it —
 reopen only the specific layer demonstrated to be failing, per this project's own repeatedly-
