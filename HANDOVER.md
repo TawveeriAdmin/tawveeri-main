@@ -1,4 +1,4 @@
-# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — CLOUDFLARE DONE, BING VERIFIED, GSC IN PROGRESS ═══
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — CLOUDFLARE DONE, BING VERIFIED, GSC WAS ALREADY VERIFIED (correction) — NEXT: check sitemap submission ═══
 
 ## MISSION: independent mission (NOT the closed workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, found the #1 lever is outside the repository
 
@@ -125,9 +125,35 @@ citation.
    independently re-crawled/re-verified by this session (no code-side signal changed by this
    action) — the founder's own report is the evidence of record here, same as any other
    external-account action this project cannot observe directly.
-2. **Google Search Console** (`search.google.com/search-console` → Add property, URL-prefix
-   `https://tawveeri.com` → HTML tag method) — paste the code into
-   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` on Railway. **STILL PENDING.**
+2. **Google Search Console** — **CORRECTED (2026-08-11): was already verified and active BEFORE
+   this mission.** This checkpoint originally listed GSC as a founder action item — that was an
+   inference error, not a founder-confirmed fact: the mission's audit only checked for
+   REPOSITORY-side verification signals (no `google-site-verification` meta tag, no GA/GTM
+   reference in `src/app`), which is real but incomplete evidence — GSC ownership can also be
+   established via DNS TXT record, domain-registrar linkage, or a different Google account/method
+   entirely, none of which a repo-only read can see. The founder has direct GSC account access
+   showing the `tawveeri.com` property already verified with real Search performance data — that
+   is decisive, first-hand evidence and overrides the repo-side inference (per this project's own
+   standing rule: production/account evidence beats a structural absence-of-signal). **No action
+   taken, none needed** — do NOT create a duplicate URL-prefix property or add a redundant HTML-
+   tag verification method; the existing property already carries the account's history. The
+   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` code hook (`src/app/layout.tsx`) is left in place,
+   harmless, and simply unused — a true no-op with no env var set, exactly as designed for the
+   case where verification is unnecessary.
+
+   **The one genuinely useful remaining GSC action, now that ownership is confirmed:** check
+   whether `https://tawveeri.com/sitemap.xml` is registered under Search Console's own
+   **Sitemaps** section (left sidebar, under "Indexing"). This is unrelated to ownership
+   verification — a property can be fully verified with real performance data and still never
+   have had its sitemap explicitly submitted, which affects how systematically Google re-crawls
+   and reports on indexing for the whole URL set (2,104 compare pages + 16,346 product pages +
+   42 static pages, confirmed live this mission). This matters concretely right now because this
+   mission just fixed two real defects (the double-locale compare-link 404s and the malformed
+   compare-page canonical, ADR-240) — if the sitemap was already submitted before those fixes,
+   Google may have logged crawl errors against the broken URLs that are worth checking (Coverage/
+   Pages report, filtered to `/compare/`) as a genuine before/after signal for this mission's own
+   required baseline; if the sitemap was never submitted, submitting it now is the single most
+   useful GSC action available, since it is the fastest path to Google noticing the fixes.
 3. **Bing Webmaster Tools** (`bing.com/webmasters`, same pattern) — paste into
    `NEXT_PUBLIC_BING_SITE_VERIFICATION`. **DONE (2026-08-11) — VERIFIED.**
    Founder supplied the exact meta-tag value directly (`msvalidate.01` =

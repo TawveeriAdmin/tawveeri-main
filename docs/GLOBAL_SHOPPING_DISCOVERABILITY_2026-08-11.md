@@ -1,10 +1,23 @@
 # Tawveeri Global Shopping Discoverability & AI Commerce — 2026-08-11
 
-**Status: Implemented, deployed, live-verified (repository-side work). Founder actions pending.**
-Independent mission from the closed Saudi Shopper Language & Demand Discovery workstream
-(checkpoint #71) — no Waffar/Search/DecisionState/accepted UX logic touched. See
-`docs/DECISIONS.md` ADR-240 for the decision record; this file is the fuller research,
-methodology, and evidence.
+**Status: Implemented, deployed, live-verified (repository-side work). Cloudflare AI-Bots and
+Bing Webmaster Tools founder actions both completed and verified. Google Search Console: see
+correction below.** Independent mission from the closed Saudi Shopper Language & Demand
+Discovery workstream (checkpoint #71) — no Waffar/Search/DecisionState/accepted UX logic
+touched. See `docs/DECISIONS.md` ADR-240 for the decision record; this file is the fuller
+research, methodology, and evidence.
+
+**CORRECTION (2026-08-11, same day):** §1's eligibility-matrix row and §4 item 2 below both
+state Google Search Console was "Not yet verified," based on a REPO-only audit (no
+`google-site-verification` meta tag, no GA/GTM reference found in `src/app`). That was real but
+incomplete evidence — GSC ownership can be established by methods a repository read cannot see
+(DNS TXT record, domain-registrar linkage, a different Google account). The founder has direct
+GSC account access confirming `tawveeri.com` was **already verified and active, with real Search
+performance data, before this mission started.** No duplicate property or redundant verification
+was added. The original rows are left below unedited (history is never rewritten in this
+project's docs) — this note is the correction of record. The `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
+code hook remains in place, unused, a harmless no-op. See HANDOVER.md checkpoint #72 for the full
+correction and the one genuinely useful remaining GSC action (checking sitemap submission).
 
 ## 0. Tawveeri's actual business model (checked before classifying anything)
 
