@@ -161,6 +161,13 @@ const STEPS: Step[] = [
 
   const bad = results.filter((r) => !r.ok);
   console.log(`\n  ${results.length - bad.length}/${results.length} steps succeeded in ${(results.reduce((a, r) => a + r.ms, 0) / 1000).toFixed(1)}s`);
+  // Re-print every failure AT THE END. The scheduler keeps only the last ~1500
+  // chars of this output and filters for FAIL/SKIP — an early step's FAIL line
+  // (and, worse, its ↳ detail) scrolls out of that window, which is exactly how
+  // a chain-root failure ran in production with no visible cause (2026-08-12:
+  // hourly status fail(1), only the downstream SKIPs visible). The summary here
+  // is the last thing printed, so it always survives the tail.
+  for (const r of bad) console.error(`  CHAIN-FAIL ${r.key}: ${r.detail}`);
   console.log(`  Verify propagation with: npm run tps:health\n`);
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error("FATAL", e instanceof Error ? e.message : e); process.exit(2); });
