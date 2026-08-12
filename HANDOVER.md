@@ -45,6 +45,19 @@ production: pilot product `product-1d9a0c5f-…` renders a real dated price-hist
 (was impossible before); Waffar-protected phrase returns 48 genuine laptops; compare +
 unlinked product pages unaffected. Chain step verified via `--only storefront-link`.
 
+### BONUS FIX the final verification forced (commit `6c589b6`) — the hourly chain was
+### already broken in production, before this mission
+Post-deploy heartbeat read `fail(1)` — and so did the PRE-deploy 11:43 run. Reproduced
+locally: `write-resolved-single` FATALed on `canonical_products_brand_model_number_idx`
+(junk `DDR5/512GB`-class model numbers repeating across one brand's laptops), SKIPping
+projection/presentation/search/edges (and storefront-link) on EVERY hourly Railway run —
+masked by manual local refreshes. Fixed defer-never-force (pre-filter taken brand+model
+pairs, count reported), pooler-routed the step's pg connection, and `refresh-intelligence`
+now re-prints `CHAIN-FAIL <step>: <detail>` at the END of its output so the scheduler's
+1,500-char tail always shows the root cause. **Production: the repaired deploy's first
+full chain completed `ok` in 6.1m (heartbeat 12:57:44Z) — the first verified fully-green
+hourly chain, storefront-link included.**
+
 ### Known, disclosed, deliberately NOT done
 1. The 1,461 legacy links still point at legacy canonicals (R3) — ~1,700 legacy-linked
    products also carry clean TPS evidence; re-pointing is a future, separately-audited
