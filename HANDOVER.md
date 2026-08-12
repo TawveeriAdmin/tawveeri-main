@@ -1,4 +1,49 @@
-# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #74 · CANONICAL IDENTITY CONVERGENCE — SHIPPED, CONTINUOUS, CLOSED ═══
+# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #75 · LEGACY LINK RE-POINTING — CLOSED ═══
+
+## MISSION: re-point the June legacy links to TPS canonicals under the convergence contract — CLOSED
+
+**Full detail: ADR-243 in `docs/DECISIONS.md`.** Founder-authorized same-day follow-up to
+checkpoint #74. Commit `e68c757`; migration 027 applied. This entry supersedes #74 as the
+resume point (#74 preserved below, unreopened).
+
+### What shipped
+`--repoint-legacy` mode in the same projection script (R3 stays the standing rule — the
+hourly chain never passes the flag). Reversibility first: ledger gained
+`prior_canonical_product_id`; rollback restores the PRIOR value; writes are CAS on the
+exact prior. Chart continuity measured per candidate BEFORE writing (loss-to-zero = 0).
+
+### Measured
+Of 1,461 legacy-linked products: 243 clean listing-equality candidates → **47 valid-tier
+re-pointed (42 Almanea, 6 Extra), all 47 hand-audited individually first**, 47/47
+ledger-consistent; 195 low-confidence reserved; **1,414 remain honestly legacy-linked**
+(no clean evidence). Live-verified: re-pointed HP LaserJet M141W page renders its chart
+from TPS-keyed data (−21.3%, dated points).
+
+### New guard + retroactive catch
+R17 accessory-title contradiction (head-anchored on the platform's own vocabulary; new
+`isAccessoryTitleHead` export) — pinned to a real catch: an AirPods CASE listing
+(«بايكرون كفرايربودز برو») keyed by TPS to `apple|airpods pro 2`. Full-scan version
+false-flagged 56 verified-correct "with case/stand" titles — head-anchoring fixed that
+(measured, tested). Retroactive audit over all active links found exactly ONE genuine
+false link in the original 2,065 (Araree earbuds case → FreeBuds canonical) — corrected
+(products NULL restored, ledger rolled_back with note). Precision of the original batch:
+2,064/2,065 = 99.95% measured.
+
+### Gates
+1,817/1,817 tests (5 new), tsc baseline unchanged, next build clean. 15 `evidence_gone`
+flags on the drift check = URLs that became R2-plural as the now-green hourly chain writes
+new canonicals — monitoring working as designed, links intact.
+
+### Deliberately NOT done
+1,414 legacy links without clean evidence stay as-is; 195 low-confidence reserved; the
+two audio-revision folds (Q20i→q20, Quantum 100M2→quantum 100) are TPS audio-plugin
+normalization for those exact listings — recorded, not chased.
+
+If real production evidence contradicts this checkpoint, production evidence overrides it.
+
+---
+
+# ═══ 2026-08-12 CHECKPOINT #74 · CANONICAL IDENTITY CONVERGENCE — SHIPPED, CONTINUOUS, CLOSED ═══
 
 ## MISSION: solve the products.canonical_product_id convergence gap permanently — CLOSED
 
