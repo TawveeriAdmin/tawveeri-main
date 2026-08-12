@@ -1106,28 +1106,19 @@ export default function ProductDetailClient() {
  </section>
  )}
 
- {/* 90-day price history — single large chart for the best-price store */}
+ {/* Price history — single large chart for the best-price store. PriceHistoryChart owns its
+ own heading/card and renders nothing at all when there is no data for this product+store,
+ so this never shows an empty "Price history" section. */}
  {bestPriceStore && (
- <section className="mb-10 rounded-[1.75rem] border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] p-5 shadow-[var(--elevation-1)]">
- <div className="mb-4">
- <h2 className="t-h2 text-on-surface">
- {locale === 'ar' ? 'سجل الأسعار' : 'Price history'}
- </h2>
- <p className="t-small text-on-surface-variant mt-1">
- {locale === 'ar'
- ? `آخر 90 يوم في ${locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}`
- : `Last 90 days at ${locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}`}
- </p>
- </div>
  <PriceHistoryChart
  canonicalProductId={(product as { canonical_product_id?: string | null }).canonical_product_id ?? null}
- storeSlug={bestPriceStore.stores.slug}
+ storeId={bestPriceStore.stores.id}
  productName={productName}
  storeName={locale === 'ar' ? bestPriceStore.stores.name_ar : bestPriceStore.stores.name_en}
  locale={locale}
  height={320}
+ className="mb-10"
  />
- </section>
  )}
 
  {/* Available Coupons */}

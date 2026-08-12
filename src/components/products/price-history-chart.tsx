@@ -13,11 +13,12 @@ import { SARSymbol } from '@/components/ui/price';
 interface PriceHistoryChartProps {
   productStoreId?: string;
   canonicalProductId?: string | null;
-  storeSlug?: string | null;
+  storeId?: number | string | null;
   productName: string;
   storeName: string;
   locale?: string;
   height?: number;
+  className?: string;
 }
 
 interface PricePoint {
@@ -29,11 +30,12 @@ type TimeRange = '30' | '90' | '365';
 
 export function PriceHistoryChart({
   canonicalProductId,
-  storeSlug,
+  storeId,
   productName,
   storeName,
   locale: propLocale,
   height = 300,
+  className,
 }: PriceHistoryChartProps) {
   const t = useTranslations();
   const params = useParams();
@@ -51,10 +53,14 @@ export function PriceHistoryChart({
       setLoading(true);
       setError(null);
 
-      // Production System A keys price_history by canonical_product_id + store_name (a slug) +
-      // observed_at — there is no product_store_id. Without both keys there's nothing to query, so
-      // render nothing (the chart hides on empty) rather than firing a failing request.
-      if (!canonicalProductId || !storeSlug) { setPriceHistory([]); setLoading(false); return; }
+      // price_history.store_name is written inconsistently (store slug on some rows, an Arabic
+      // display name on others, and the exact Arabic spelling drifts between ingestion runs) so it
+      // cannot be trusted as a join key. price_history.store_id is the reliable integer FK into
+      // stores.id — confirmed against production data to recover 100% of the canonical-linked
+      // (product, store) pairs that a store_name match recovers 0% of. Without both keys there's
+      // nothing to query, so render nothing (the chart hides on empty) rather than firing a
+      // failing request.
+      if (!canonicalProductId || !storeId) { setPriceHistory([]); setLoading(false); return; }
 
       try {
         const days = parseInt(timeRange);
@@ -65,7 +71,7 @@ export function PriceHistoryChart({
           .from('price_history')
           .select('price, observed_at')
           .eq('canonical_product_id', canonicalProductId)
-          .eq('store_name', storeSlug)
+          .eq('store_id', storeId)
           .gte('observed_at', startDate.toISOString())
           .order('observed_at', { ascending: true });
 
@@ -82,7 +88,7 @@ export function PriceHistoryChart({
     }
 
     fetchPriceHistory();
-  }, [canonicalProductId, storeSlug, timeRange, locale]);
+  }, [canonicalProductId, storeId, timeRange, locale]);
 
   // Calculate price trend
   const priceTrend = (() => {
@@ -102,10 +108,15 @@ export function PriceHistoryChart({
   if (!loading && priceHistory.length === 0) return null;
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{t('products.priceHistory.title')}</CardTitle>
+          <div>
+            <CardTitle>{t('products.priceHistory.title')}</CardTitle>
+            {storeName && (
+              <p className="t-small text-on-surface-variant mt-0.5">{storeName}</p>
+            )}
+          </div>
           <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
             <SelectTrigger className="w-[120px]">
               <SelectValue />
