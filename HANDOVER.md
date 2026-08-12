@@ -1,4 +1,66 @@
-# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #73 · PRICE HISTORY CHART — PRODUCTION DEFECT FIXED — CLOSED ═══
+# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #74 · CANONICAL IDENTITY CONVERGENCE — SHIPPED, CONTINUOUS, CLOSED ═══
+
+## MISSION: solve the products.canonical_product_id convergence gap permanently — CLOSED
+
+**Full detail: ADR-242 in `docs/DECISIONS.md`; complete mission record (research, contract,
+phase evidence) in `docs/CANONICAL_IDENTITY_CONVERGENCE_2026-08-12.md`.** This entry
+supersedes checkpoint #73 as the resume point (#73 preserved below, unreopened).
+
+### What was wrong
+`products.canonical_product_id` was populated exactly once (005_link_products, 2026-06-26,
+name_ar+brand text matching) and never again: 14.1% linked, 22 of 24 stores at 0%, and ALL
+1,461 existing links target legacy key-less canonicals disjoint from the live TPS graph.
+Separately, TPS-written price_history rows carried no store_id (write_ac_batch never
+stamped it), so TPS prices were invisible to the customer chart.
+
+### What shipped (commit `436b9d3`; migrations 025+026 applied with rollback snapshots)
+**Identity inheritance by deterministic listing equality** — a storefront offer and a
+TPS-identified observation naming the SAME retailer listing (same store + same normalized
+URL, or same ASIN for Amazon) inherit that listing's identity. Never re-matched by name,
+never merged (ADR-176 untouched), one identity brain. Hourly chain step `storefront-link`
+(≤500/run, idempotent, race-safe, dry-by-default manually) makes it CONTINUOUS — new
+products converge next tick, no future manual migration. Contract convergence-v1: R1
+unanimity, R2 plural-history ambiguity exclusion, R3 never-reassign (legacy links
+untouched), R5 valid-tier gate, R6 full provenance in `storefront_identity_links` (RLS,
+service-role only) + `--rollback`, R8 drift flagged never rewritten, and SIX deterministic
+negative-evidence guards (storage, Jarir childSku params, 14T≠14 suffixes, device-class,
+nova-14≠13 generations, known-brand) — each pinned in
+`tests/identity/storefront-projection-guards.test.ts` to a REAL false pair the shadow run
+caught. write_ac_batch now stamps price_history.store_id; the 006 backfill re-ran
+(12,307 NULL → 0).
+
+### Measured (before → after)
+Linkage **14.1% → 33.9%** (1,461 → 3,526 of 10,387). Noon 0→26.3% · Amazon 0→11.9% ·
+Jarir 0→20.8% · Extra 22.7→49.7% · Sharaf DG 0→45.8% · Samsung KSA 0→73.8% · Shaker
+0→20.8% · LuLu 0→22.5%. 2,065 new links, 100% valid-tier, 100% provenance-recorded.
+Shadow: 8,924 evaluated → 2,580 clean → 98 vetoed → 2,065 written; R1 conflicts 10;
+ambiguous keys 281; low-confidence tier 417 RESERVED (not written). Pilot: Extra 60/60
+hand-verified before expansion; drift=0 on every re-derivation; an interrupted batch
+proved the race guard (100 skips, 0 double-writes).
+
+### Verification
+1,812/1,812 tests (25 new), tsc baseline unchanged, next build clean, tps:health
+unchanged (pre-existing swsg staleness FAIL only — unrelated, left alone). Live
+production: pilot product `product-1d9a0c5f-…` renders a real dated price-history chart
+(was impossible before); Waffar-protected phrase returns 48 genuine laptops; compare +
+unlinked product pages unaffected. Chain step verified via `--only storefront-link`.
+
+### Known, disclosed, deliberately NOT done
+1. The 1,461 legacy links still point at legacy canonicals (R3) — ~1,700 legacy-linked
+   products also carry clean TPS evidence; re-pointing is a future, separately-audited
+   mission (legacy price rows + the firecrawl writer must move together).
+2. TPS-graph junk canonicals (apple|MODEL:1.07BILLION class; sharafdg store-internal
+   numbers in MODEL keys — NEW ADR-058-class evidence) — graph cleanup, not projection.
+3. `ensureCanonicalProduct` (firecrawl) still creates key-less canonicals hourly — the
+   pre-existing TPS.md:102 violation, still open.
+4. Amazon 11.9% is an ingestion-coverage ceiling (few /dp/ URLs in TPS observations).
+5. Low-confidence tier (417) awaits its own audit before any activation.
+
+If real production evidence contradicts this checkpoint, production evidence overrides it.
+
+---
+
+# ═══ 2026-08-12 CHECKPOINT #73 · PRICE HISTORY CHART — PRODUCTION DEFECT FIXED — CLOSED ═══
 
 ## MISSION: independent mission — diagnosed and fixed why the (already-built, already-deployed) per-product price-history chart rendered empty in production — CLOSED
 
