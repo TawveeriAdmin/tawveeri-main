@@ -1,14 +1,45 @@
-# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — ALL 3 FOUNDER ACTIONS RESOLVED (Cloudflare done, Bing verified, GSC was already verified + sitemap already registered) ═══
+# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — CLOSED — ALL REPOSITORY WORK + ALL 3 FOUNDER ACTIONS COMPLETE ═══
 
-## MISSION: independent mission (NOT the closed workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, found the #1 lever is outside the repository
+## MISSION: independent mission (NOT the workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, unblocked AI crawlers, verified all external accounts — CLOSED
 
-**WORKSTREAM STATUS: all repository-side work complete, deployed, live-verified. NOT fully
-closeable yet — three founder actions are outstanding (see below), one of them (a Cloudflare
-dashboard setting) is the single highest-value lever this mission found and cannot be done from
-code at all.** Full detail: ADR-240 in `docs/DECISIONS.md`; full research/methodology/eligibility
-matrix in `docs/GLOBAL_SHOPPING_DISCOVERABILITY_2026-08-11.md`. This entry supersedes checkpoint
-#71 as the resume point — #71's content (Saudi Shopper Language & Demand Discovery, closed,
-founder-accepted) is preserved below, **unreopened**.
+**WORKSTREAM STATUS: CLOSED.** Both halves are done: all repository-side work is implemented,
+tested, deployed, and live-verified; all three founder-only external actions (Cloudflare, Bing,
+Google Search Console) are confirmed complete. **Do not reopen this workstream, and do not ask
+the founder for further Cloudflare, Bing, Search Console, or sitemap action as part of it** —
+reopen only the specific layer a NEW piece of production evidence demonstrates is actually
+failing, per this project's own repeatedly-proven rule. Full detail: ADR-240 in
+`docs/DECISIONS.md` (plus its same-day founder-action-progress addendum); full research/
+methodology/eligibility matrix in `docs/GLOBAL_SHOPPING_DISCOVERABILITY_2026-08-11.md` (plus its
+same-day GSC correction note). This entry supersedes checkpoint #71 as the resume point — #71's
+content (Saudi Shopper Language & Demand Discovery, closed, founder-accepted) is preserved below,
+**unreopened**.
+
+### Founder-action closure — final status (2026-08-12)
+- **Cloudflare AI-Bots dashboard: COMPLETE.** Founder confirmed directly: mixed-purpose crawlers
+  configured to continue being allowed, Managed robots.txt disabled, the important search/AI
+  crawlers reviewed. This is the single highest-value lever this mission found (it is what
+  determines whether Gemini/Claude can fetch Tawveeri's pages AT ALL) and it could not be done
+  from code — only from the Cloudflare account. **Do not reopen unless new production evidence
+  (e.g. a live re-fetch of `robots.txt` showing the block re-applied) shows a real problem.**
+- **Bing Webmaster Tools: COMPLETE AND VERIFIED.** `tawveeri.com` successfully verified. The
+  `msvalidate.01` tag was deployed via the `NEXT_PUBLIC_BING_SITE_VERIFICATION` env-var hook,
+  confirmed live in production HTML on both locales, and the founder's own "Verify" click in
+  Bing Webmaster Tools succeeded. Commit recording this: **`55b9933`**.
+- **Google Search Console: COMPLETE / NO ADDITIONAL VERIFICATION REQUIRED.** `tawveeri.com` was
+  already verified with real Search performance data BEFORE this mission started — this
+  mission's own initial repo-only audit incorrectly implied GSC needed setup (a real but
+  incomplete-evidence inference, corrected same-day once the founder supplied first-hand account
+  evidence). No duplicate property or redundant verification method was added or should be.
+- **Google sitemap: HEALTHY AND ALREADY REGISTERED, NO ACTION TAKEN OR NEEDED.**
+  `https://tawveeri.com/sitemap.xml` — status **Success**, submitted 2026-07-04 (predates this
+  mission), last read **2026-08-12**, discovered pages **18,492** (an exact match to this
+  mission's own `tps:sitemap-verify` baseline: 2,104 compare + 16,346 product + 42 static),
+  discovered videos 0. No duplicate/new submission was made because none was required.
+- **Optional, non-blocking, not a closure gate:** a Search Console Coverage/Pages-report check
+  filtered to `/compare/` URLs could show historical crawl-error counts from before the
+  double-locale-link fix, as additional before/after evidence. This was intentionally NOT done
+  as part of closing this workstream and must not be treated as required to consider it closed —
+  it may be picked up later, standalone, if useful.
 
 ### What we discovered
 Proved, from CURRENT primary Google/OpenAI/Perplexity sources (not assumption, not third-party
@@ -103,79 +134,74 @@ Organic citation via ChatGPT Shopping Research, powered by OAI-SearchBot crawlin
 registration required, purely a function of crawlability and content quality. ACP/Instant
 Checkout is not currently an open path for a non-merchant.
 
-### The 3 highest-value next opportunities (this mission's own ranking)
-1. **Cloudflare AI-Bots dashboard fix** (founder action, see below) — unblocks Gemini/Claude
-   entirely; nothing else in this mission comes close to this lever's size.
-2. **Visible per-product price-history chart** — the strongest evidenced competitive
-   differentiator found (Idealo's signature trust mechanism), data already exists.
-3. **Google Search Console + Bing Webmaster verification** (founder action, below) — unlocks real
-   measurement, the prerequisite for ever proving any of this mission's other claims with
-   impressions/clicks data instead of structural evidence alone.
+### The genuinely remaining opportunities (this mission's own ranking — NOT founder actions, no external account needed)
+1. **Visible per-product price-history chart** — the strongest evidenced competitive
+   differentiator found (Idealo's signature trust mechanism); Tawveeri already has the underlying
+   `price_history` data, just not this UI. Sized as its own dedicated feature, not started.
+2. **ProductGroup schema for real variant families** — applicability unconfirmed; needs a DB-level
+   check (this session's tooling could not run one) for genuine storage/color variant families
+   before it's worth building.
+3. Optional (not required, not a closure gate): the Search Console Coverage/Pages `/compare/`
+   check noted above, as extra before/after evidence if ever useful.
 
 ### What remains outside our control
-Whether Google/OpenAI/Perplexity actually choose to surface/cite Tawveeri once crawlable — no
-claim of that outcome is made or should be made; SEO surfaces process, not guarantees ranking or
-citation.
+Whether Google/OpenAI/Perplexity actually choose to surface/cite Tawveeri now that the known
+crawlability blockers are cleared — no claim of that outcome is made or should be made; this
+mission fixed what was structurally broken, it did not and cannot guarantee ranking or citation.
 
-### EXACT founder actions needed next (smallest possible list — full steps in the mission doc §4)
-1. **Cloudflare dashboard** (`tawveeri.com` zone → AI Bots / Managed robots.txt) — allow at least
-   `Google-Extended` and `ClaudeBot`. Free. Cannot be done from this repository at all.
-   **DONE (2026-08-11) — founder completed this directly.** Managed robots.txt disabled,
-   mixed-purpose crawlers left allowed, the important search/AI crawlers reviewed. Not
-   independently re-crawled/re-verified by this session (no code-side signal changed by this
-   action) — the founder's own report is the evidence of record here, same as any other
-   external-account action this project cannot observe directly.
-2. **Google Search Console** — **CORRECTED (2026-08-11): was already verified and active BEFORE
-   this mission.** This checkpoint originally listed GSC as a founder action item — that was an
-   inference error, not a founder-confirmed fact: the mission's audit only checked for
-   REPOSITORY-side verification signals (no `google-site-verification` meta tag, no GA/GTM
-   reference in `src/app`), which is real but incomplete evidence — GSC ownership can also be
-   established via DNS TXT record, domain-registrar linkage, or a different Google account/method
-   entirely, none of which a repo-only read can see. The founder has direct GSC account access
-   showing the `tawveeri.com` property already verified with real Search performance data — that
-   is decisive, first-hand evidence and overrides the repo-side inference (per this project's own
-   standing rule: production/account evidence beats a structural absence-of-signal). **No action
-   taken, none needed** — do NOT create a duplicate URL-prefix property or add a redundant HTML-
-   tag verification method; the existing property already carries the account's history. The
-   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` code hook (`src/app/layout.tsx`) is left in place,
-   harmless, and simply unused — a true no-op with no env var set, exactly as designed for the
-   case where verification is unnecessary.
+### Founder-action evidence detail (all CLOSED — see the closure summary at the top of this
+checkpoint for the authoritative status; this section is the supporting detail trail only)
+- **Cloudflare** — founder completed directly: Managed robots.txt disabled, mixed-purpose
+  crawlers left allowed, the important search/AI crawlers reviewed. Not independently
+  re-crawled/re-verified by this session (no code-side signal changes from this action) — the
+  founder's own report is the evidence of record, same as any other external-account action this
+  project cannot observe directly.
+- **Google Search Console** — this checkpoint originally (2026-08-11) listed GSC as a founder
+  action item; that was an inference error, not a founder-confirmed fact — the mission's audit
+  only checked REPOSITORY-side verification signals (no `google-site-verification` meta tag, no
+  GA/GTM reference in `src/app`), which is real but incomplete evidence, since GSC ownership can
+  also be established via DNS TXT record or a different Google account, neither visible to a
+  repo-only read. The founder's own direct GSC account access showing `tawveeri.com` already
+  verified with real Search performance data is decisive, first-hand evidence that overrides the
+  repo-side inference (2026-08-11 correction, same day). No duplicate property or redundant
+  verification method was added. The `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` code hook
+  (`src/app/layout.tsx`) is left in place, harmless, and simply unused.
+- **Sitemap** — founder checked Search Console → Indexing → Sitemaps directly (2026-08-12):
+  `sitemap.xml` status **Success**, submitted 2026-07-04 (predates this mission), last read
+  **2026-08-12**, discovered pages **18,492** (exact match to this mission's own
+  `tps:sitemap-verify` baseline: 2,104 compare + 16,346 product + 42 static). No new submission
+  made or needed.
+- **Bing Webmaster Tools** — founder supplied the exact meta-tag value directly (`msvalidate.01`
+  = `B8065751DA305304BAA66E68339B8822`), no screenshot-guessing needed. Set as the
+  `NEXT_PUBLIC_BING_SITE_VERIFICATION` Railway env var (never hardcoded), deployed, live-verified
+  in production HTML on both `/ar` and `/en`, then the founder's own "Verify" click succeeded.
+  Commit: **`55b9933`**.
 
-   **Sitemap registration check: DONE (2026-08-12), CONFIRMED ALREADY REGISTERED, NO ACTION
-   NEEDED.** Founder checked Search Console → Indexing → Sitemaps directly: `sitemap.xml` shows
-   status **Success**, submitted 2026-07-04 (predates this mission), **last read 2026-08-12**
-   (today — Google is actively, recently re-crawling it), **discovered pages: 18,492** — an exact
-   match to this mission's own `tps:sitemap-verify` baseline (2,104 compare + 16,346 product + 42
-   static = 18,492). No new submission was made or needed. Because the last read is TODAY,
-   Google's crawler has had the opportunity to pick up the double-locale-link and canonical fixes
-   (ADR-240, deployed 2026-08-11) on its most recent pass — real Coverage/Pages-report data over
-   the coming days (not checked today, no action needed today) would be the eventual confirming
-   signal, but is not itself a blocking or required founder action.
-3. **Bing Webmaster Tools** (`bing.com/webmasters`, same pattern) — paste into
-   `NEXT_PUBLIC_BING_SITE_VERIFICATION`. **DONE (2026-08-11) — VERIFIED.**
-   Founder supplied the exact meta-tag value directly (`msvalidate.01` =
-   `B8065751DA305304BAA66E68339B8822`) rather than a screenshot, so no guessing was needed. Set
-   as the `NEXT_PUBLIC_BING_SITE_VERIFICATION` Railway env var (not hardcoded in source, per this
-   repo's existing environment-authority discipline) → triggered an automatic rebuild → live-
-   verified directly in production HTML on BOTH `/ar` and `/en`:
-   `<meta name="msvalidate.01" content="B8065751DA305304BAA66E68339B8822"/>` → founder pressed
-   "Verify" in Bing Webmaster Tools → **succeeded**. `tawveeri.com` is now a verified property in
-   Bing Webmaster Tools. All 3 founder action items from this checkpoint are now either done or
-   in progress: Cloudflare done, Bing done, Google Search Console next (see current step below).
-
-### Exact state as of this checkpoint (2026-08-11)
-- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`285e33a`** (no code change
-  this round — only a Railway env var was set; the deploy it triggered rebuilds the SAME
-  committed code with the new env var inlined)
-- `git status`: clean at time of writing — confirm again before relying on this.
-- Railway production deployment: **`65f4fd18-a9c1-4f88-8266-c27700997d41`** — Online, settled,
-  confirmed via direct read-only HTTP checks against `https://tawveeri.com` post-settle (both
-  the Bing meta tag and the checkpoint #72 compare-link/canonical fixes re-verified live on this
-  exact deployment).
+### Exact state as of this checkpoint (2026-08-12, final closeout)
+- Latest commit on `main` (local HEAD confirmed == `origin/main` at closeout time): **`0391d6f`**.
+  The last CODE commit was `69ea3e3` (the compare-link/canonical/hreflang/verification-hook fix);
+  every commit after it through `0391d6f` is documentation-only (checkpoint updates, the Bing
+  success record, the GSC correction, the sitemap confirmation) — each one re-verified live
+  against production before being written, never assumed.
+- Commit trail for this mission, oldest to newest: `69ea3e3` (code) → `285e33a` → `d7ce2fc` →
+  `55b9933` (Bing verified) → `cf7c6b9` (GSC correction) → `0391d6f` (sitemap confirmed) → this
+  closeout commit.
+- `git status`: clean at time of writing (only an untracked local `.claude/` directory present,
+  session/tool config never committed to this repo — not part of this mission's state) — confirm
+  again before relying on this.
+- Railway production deployment: **`af732923-769b-4d05-9109-a08bce072c1b`** — Online, settled.
+  Re-confirmed at closeout time via direct read-only HTTP checks against `https://tawveeri.com`:
+  category-page compare links resolve 200 in both locales (`/ar/compare/...`, `/en/compare/...`),
+  the Bing `msvalidate.01` tag is present, `x-default` hreflang is present on
+  `buildAlternates()`-using pages (verified on a category page). Google verification meta tag
+  confirmed absent (correct — no env var set, matches the "already verified via another method"
+  finding above).
 
 If real production evidence contradicts this checkpoint, production evidence overrides it —
 reopen only the specific layer demonstrated to be failing, per this project's own repeatedly-
-proven rule.
+proven rule. **This workstream is CLOSED — the next session's first action on discoverability
+should be picking one of the "genuinely remaining opportunities" above (or a founder-directed new
+mission), not re-verifying Cloudflare/Bing/GSC/sitemap, which are done.**
 
 ---
 

@@ -1,11 +1,12 @@
 # Tawveeri Global Shopping Discoverability & AI Commerce — 2026-08-11
 
-**Status: Implemented, deployed, live-verified (repository-side work). Cloudflare AI-Bots and
-Bing Webmaster Tools founder actions both completed and verified. Google Search Console: see
-correction below.** Independent mission from the closed Saudi Shopper Language & Demand
-Discovery workstream (checkpoint #71) — no Waffar/Search/DecisionState/accepted UX logic
-touched. See `docs/DECISIONS.md` ADR-240 for the decision record; this file is the fuller
-research, methodology, and evidence.
+**Status: CLOSED (2026-08-12).** Repository-side work implemented, deployed, live-verified. All
+three founder actions (Cloudflare AI-Bots, Bing Webmaster Tools, Google Search Console/sitemap)
+confirmed complete — see the correction and closure notes immediately below, and
+`HANDOVER.md` checkpoint #72 for the authoritative final status. Independent mission from the
+closed Saudi Shopper Language & Demand Discovery workstream (checkpoint #71) — no Waffar/Search/
+DecisionState/accepted UX logic touched. See `docs/DECISIONS.md` ADR-240 for the decision
+record; this file is the fuller research, methodology, and evidence.
 
 **CORRECTION (2026-08-11, same day):** §1's eligibility-matrix row and §4 item 2 below both
 state Google Search Console was "Not yet verified," based on a REPO-only audit (no
@@ -16,8 +17,15 @@ GSC account access confirming `tawveeri.com` was **already verified and active, 
 performance data, before this mission started.** No duplicate property or redundant verification
 was added. The original rows are left below unedited (history is never rewritten in this
 project's docs) — this note is the correction of record. The `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
-code hook remains in place, unused, a harmless no-op. See HANDOVER.md checkpoint #72 for the full
-correction and the one genuinely useful remaining GSC action (checking sitemap submission).
+code hook remains in place, unused, a harmless no-op.
+
+**CLOSURE (2026-08-12):** the founder subsequently checked Search Console's own Sitemaps section
+directly: `sitemap.xml` already registered, status Success, submitted 2026-07-04, last read
+2026-08-12, 18,492 discovered pages (exact match to this mission's own `tps:sitemap-verify`
+baseline). No new submission needed. **All three founder actions are now confirmed complete and
+this mission is CLOSED** — see `HANDOVER.md` checkpoint #72 for the authoritative final status.
+Do not reopen this workstream or re-request Cloudflare/Bing/Search-Console/sitemap action as
+part of it.
 
 ## 0. Tawveeri's actual business model (checked before classifying anything)
 
