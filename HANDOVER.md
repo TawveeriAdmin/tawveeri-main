@@ -1,4 +1,4 @@
-# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — CLOUDFLARE DONE, BING CODE LIVE (awaiting founder's Verify click), GSC STILL PENDING ═══
+# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — CLOUDFLARE DONE, BING VERIFIED, GSC IN PROGRESS ═══
 
 ## MISSION: independent mission (NOT the closed workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, found the #1 lever is outside the repository
 
@@ -129,15 +129,16 @@ citation.
    `https://tawveeri.com` → HTML tag method) — paste the code into
    `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` on Railway. **STILL PENDING.**
 3. **Bing Webmaster Tools** (`bing.com/webmasters`, same pattern) — paste into
-   `NEXT_PUBLIC_BING_SITE_VERIFICATION`. **CODE LIVE, AWAITING FOUNDER'S "VERIFY" CLICK.**
+   `NEXT_PUBLIC_BING_SITE_VERIFICATION`. **DONE (2026-08-11) — VERIFIED.**
    Founder supplied the exact meta-tag value directly (`msvalidate.01` =
    `B8065751DA305304BAA66E68339B8822`) rather than a screenshot, so no guessing was needed. Set
    as the `NEXT_PUBLIC_BING_SITE_VERIFICATION` Railway env var (not hardcoded in source, per this
    repo's existing environment-authority discipline) → triggered an automatic rebuild → live-
    verified directly in production HTML on BOTH `/ar` and `/en`:
-   `<meta name="msvalidate.01" content="B8065751DA305304BAA66E68339B8822"/>`, exact value match.
-   **The founder may press "Verify" in Bing Webmaster Tools now** — the tag is confirmed live on
-   the exact URL being verified (`https://tawveeri.com/`).
+   `<meta name="msvalidate.01" content="B8065751DA305304BAA66E68339B8822"/>` → founder pressed
+   "Verify" in Bing Webmaster Tools → **succeeded**. `tawveeri.com` is now a verified property in
+   Bing Webmaster Tools. All 3 founder action items from this checkpoint are now either done or
+   in progress: Cloudflare done, Bing done, Google Search Console next (see current step below).
 
 ### Exact state as of this checkpoint (2026-08-11)
 - Latest commit on `main` (local HEAD confirmed == `origin/main`): **`285e33a`** (no code change
