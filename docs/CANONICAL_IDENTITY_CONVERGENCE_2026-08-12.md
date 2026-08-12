@@ -147,10 +147,15 @@ vetoes; 417 low-confidence reserved). New products converge on the next hourly t
 
 ## 7. Disclosed limitations and residual findings
 
-1. **The 1,461 legacy links still point at legacy canonicals** (R3 protected). ~1,700
-   of them also have clean TPS listing-equality evidence — a future, separately
-   audited re-pointing mission (dual-key transition: the legacy price rows and the
-   firecrawl writer must move together).
+1. **The 1,461 legacy links** — RESOLVED same day by the founder-authorized follow-up
+   (ADR-243, closed and founder-accepted): the honest evidence-bearing cohort measured
+   **243** (the "~1,700" first estimated here was join-multiplicity inflation); **47
+   valid-tier were re-pointed** (41 almanea + 6 extra, each hand-audited, prior value
+   recorded for rollback via migration 027), and **1,414 remain legacy-linked by
+   deliberate refusal** — no clean listing-equality evidence exists for them. ADR-243
+   also added guard R17 (head-anchored accessory-title contradiction) and a retroactive
+   audit that found and corrected exactly one false link in the original 2,065
+   (measured precision 99.95%).
 2. **Junk-keyed canonicals exist in the TPS graph** and faithful links inherit them
    (e.g. `apple|MODEL:1.07BILLION` from a CHIQ TV's "1.07 billion colors";
    `acer|MODEL:PROCESSOR/192GB`; sharafdg keys carrying store-internal numbers —

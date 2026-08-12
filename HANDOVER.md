@@ -1,10 +1,26 @@
-# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #75 · LEGACY LINK RE-POINTING — CLOSED ═══
+# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #75 · LEGACY LINK RE-POINTING — CLOSED, FOUNDER-ACCEPTED ═══
 
 ## MISSION: re-point the June legacy links to TPS canonicals under the convergence contract — CLOSED
 
-**Full detail: ADR-243 in `docs/DECISIONS.md`.** Founder-authorized same-day follow-up to
-checkpoint #74. Commit `e68c757`; migration 027 applied. This entry supersedes #74 as the
-resume point (#74 preserved below, unreopened).
+**WORKSTREAM STATUS: CLOSED — FOUNDER-ACCEPTED (2026-08-12).** Do not reopen without new
+production evidence of a genuine defect. Full detail: ADR-243 (including its closure
+addendum) in `docs/DECISIONS.md`. Founder-authorized same-day follow-up to checkpoint #74.
+Commits `e68c757` (code) → `567ec85` (docs) → closure docs; migration 027 applied. This
+entry supersedes #74 as the resume point (#74 preserved below, unreopened).
+
+### Final closure evidence (all DB/production-verified at closure time)
+- Re-pointed: **47** (41 almanea + 6 extra — DB-verified; an earlier "42 almanea" figure
+  was the pre-veto count, corrected here and in ADR-243), 47/47 ledger-active with
+  `prior_canonical_product_id` recorded.
+- Intentionally unchanged: **1,414** legacy links (no clean evidence) + **195**
+  low-confidence candidates (reserved).
+- The convergence system is running autonomously: between the repoint write and closure,
+  the hourly chain added **36 new links on its own** (convergence-v1 active 2,065→2,100)
+  and drift-flagged 11 (products rows intact, by design). Total linked products: 3,572.
+- Production chain green on the final code state: full chain **ok in 11.9m**, heartbeat
+  2026-08-12T13:42:11Z.
+- Retro-audit precision of the original convergence batch: 2,064/2,065 = **99.95%**
+  (the 1 false link corrected, ledger `rolled_back` with note).
 
 ### What shipped
 `--repoint-legacy` mode in the same projection script (R3 stays the standing rule — the
@@ -14,7 +30,7 @@ exact prior. Chart continuity measured per candidate BEFORE writing (loss-to-zer
 
 ### Measured
 Of 1,461 legacy-linked products: 243 clean listing-equality candidates → **47 valid-tier
-re-pointed (42 Almanea, 6 Extra), all 47 hand-audited individually first**, 47/47
+re-pointed (41 Almanea, 6 Extra), all 47 hand-audited individually first**, 47/47
 ledger-consistent; 195 low-confidence reserved; **1,414 remain honestly legacy-linked**
 (no clean evidence). Live-verified: re-pointed HP LaserJet M141W page renders its chart
 from TPS-keyed data (−21.3%, dated points).
