@@ -1,3 +1,90 @@
+# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #73 · PRICE HISTORY CHART — PRODUCTION DEFECT FIXED — CLOSED ═══
+
+## MISSION: independent mission — diagnosed and fixed why the (already-built, already-deployed) per-product price-history chart rendered empty in production — CLOSED
+
+**WORKSTREAM STATUS: CLOSED.** Scoped strictly to price history per founder instruction — did not
+reopen checkpoint #72 (Global Shopping Discoverability, still closed, untouched), ProductGroup,
+or Search/Waffar. Full detail: ADR-241 in `docs/DECISIONS.md`.
+
+### The correction that started this
+Checkpoint #72 listed "a visible per-product price-history chart" as a NOT-STARTED remaining
+opportunity. That was stale. `src/components/products/price-history-chart.tsx` already existed
+and was already wired into the product page (`fde8a2b`, predates that mission). Live spot-checks
+on real production products showed why it looked unbuilt: the section rendered its "Price
+history" heading with **no chart underneath** — an empty, labelled box, not a missing feature.
+Per this project's own standing rule, current production evidence overrides the prior
+characterization.
+
+### Root cause — proven with direct read-only SQL against production (`vyceqrzttspyycdpojtn`)
+`price_history.store_name` (text) is written inconsistently across ingestion runs — a store slug
+on some rows, an Arabic name on others, with the Arabic spelling itself drifting between runs
+(Extra: `price_history.store_name` = "اكسترا" vs `stores.name_ar` = "إكسترا" — different Unicode
+codepoints for the same retailer). The chart queried `.eq('store_name', stores.slug)`, which
+matched **0 of the 1,461** storefront (product, store) pairs that have any canonical linkage at
+all. `price_history.store_id` — an integer FK into `stores.id`, populated on ~90% of rows and
+confirmed correct for every store checked — recovers **1,461/1,461 (100%)**, of which 1,210 pairs
+(83%) carry ≥2 price points within 90 days. This is "history exists but the page couldn't reach
+it," proven, not assumed, by sampling across 2 stores and 5 categories before concluding it
+generalizes.
+
+### A second, larger, separate finding — found but NOT fixed (explicitly out of scope)
+`products.canonical_product_id` is populated for only **1,461 of 10,385 storefront products
+(14%)**, and all of it sits in exactly 2 of 24 stores — Almanea (1,260) and Extra (201). Amazon,
+Noon, Jarir, and the other 20 stores have **zero** canonical linkage today, so their product pages
+will show no chart regardless of query correctness — confirmed live (Amazon iPhone 17 Pro Max,
+Noon Hisense TV: both correctly show no section post-fix because `canonical_product_id` is null,
+not because of a query bug). This is the storefront↔TPS-knowledge-layer convergence gap already
+on record in CLAUDE.md ("two databases mid-convergence") and the "Identity key integrity defects"
+memory — a separate, much larger investigation. Per the founder's explicit scope instruction, this
+was not touched.
+
+### What shipped
+1. **Query fix** — `price-history-chart.tsx` now queries `price_history` by `store_id` (the
+   reliable integer FK) instead of `store_name` (the unreliable text field); `product-detail-client.tsx`
+   passes `stores.id` instead of `stores.slug`.
+2. **Presentation fix** — the product page rendered a static "Price history" heading whenever a
+   best-price store existed, independent of whether the chart had data. Removed the duplicate
+   outer heading/wrapper; `PriceHistoryChart`'s own self-gating `<Card>` (already returns `null`
+   on empty) now owns its own heading, with the previously-accepted-but-never-rendered `storeName`
+   prop shown as a subtitle. One render path, fully self-gating — can no longer show empty.
+3. **Regression tests** — `tests/products/price-history-chart.test.tsx` (5 new), pinning the
+   `store_id` query (asserts `store_name` is never used) and the never-render-empty behavior.
+   Sanity-checked: reverting to the old `store_name` query makes the pinning test fail.
+   Also installed the previously-missing `@testing-library/dom` peer dependency — `jest.setup.js`
+   already wired up `@testing-library/jest-dom` but no test had ever actually rendered a
+   component, so this repo's first real RTL component test surfaced the gap.
+
+### Verification
+Full suite 1787/1787 passing (1782 baseline + 5 new). `tsc --noEmit` diffed against the
+pre-change baseline: zero new errors (pre-existing 552-error baseline untouched). `next build`
+clean. Deployed: commit `6059f9f`, Railway deployment `bf7f39ef` — Online, settled. Live-verified
+post-deploy on 3 real production products: an Almanea iPhone 17 Pro Max (smartphone, EN locale) —
+chart renders with real dates/prices and a computed trend; an Extra split-AC unit (AC category, AR
+locale) — same; an Amazon iPhone 17 Pro Max (no canonical linkage) — section is now fully absent,
+no heading, no empty box, matching the pre-fix live check that first surfaced this defect.
+
+### Exact state as of this checkpoint (2026-08-12)
+- Latest commit on `main` (local HEAD confirmed == `origin/main`): **`6059f9f`** (code + tests;
+  this checkpoint/ADR docs commit follows).
+- `git status`: clean at time of writing — confirm again before relying on this.
+- Railway production deployment: **`bf7f39ef-1a75-46e8-8cf9-0071a8e66505`** — Online, settled,
+  confirmed via direct browser checks against `https://tawveeri.com` post-settle (see Verification
+  above).
+
+### What remains, deliberately not started here
+The `products.canonical_product_id` linkage gap (86% of storefront products unlinked; Amazon/
+Noon/Jarir/18 other stores at 0%) is the reason the chart still shows nothing for most product
+pages even after this fix. It is a storefront/TPS-knowledge-layer identity-convergence problem,
+not a price-history defect — a real, separate, larger piece of future work, not attempted here.
+The other checkpoint #72 opportunity (a DB-level check for real ProductGroup-eligible variant
+families) is also untouched, per the founder's explicit scope instruction for this mission.
+
+If real production evidence contradicts this checkpoint, production evidence overrides it —
+reopen only the specific layer demonstrated to be failing, per this project's own repeatedly-
+proven rule.
+
+---
+
 # ═══ RESUME HERE — 2026-08-12 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — CLOSED — ALL REPOSITORY WORK + ALL 3 FOUNDER ACTIONS COMPLETE ═══
 
 ## MISSION: independent mission (NOT the workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, unblocked AI crawlers, verified all external accounts — CLOSED
