@@ -52,6 +52,7 @@
     "tps:projection": "tsx scripts/build-tps-projection.ts",
     "tps:comparison-value": "tsx scripts/tps-analysis/comparison-value.ts",
     "tps:normalize": "tsx scripts/tps-core/normalize-incremental.ts",
+    "tps:storefront-link": "tsx scripts/tps-core/project-storefront-identity.ts",
     "tps:ingest-provider": "tsx scripts/tps-core/ingest-via-provider.ts",
     "tps:feed-probe": "tsx scripts/tps-analysis/feed-overlap-probe.ts",
     "tps:gate-audit": "tsx scripts/tps-analysis/e15-5-gate-audit.ts",

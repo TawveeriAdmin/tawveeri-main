@@ -337,7 +337,10 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       //
       // Falls back to `now` only if the staging row predates this change and has no
       // timestamp; a NULL must never silently become "just now".
-      if (priced.length) priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), price: r.price, tps_observation_id: normById.get(r.raw_obs_id), observed_at: r.observed_at ?? now });
+      // store_id travels with the price event (ADR-004 / migration 026): the
+      // customer chart joins price_history on (canonical_product_id, store_id),
+      // and rows stamped with only the display name were invisible to it.
+      if (priced.length) priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), store_id: sid, price: r.price, tps_observation_id: normById.get(r.raw_obs_id), observed_at: r.observed_at ?? now });
     }
   }
   R.normalized = normalizedRows.length; R.matches = matchRows.length;

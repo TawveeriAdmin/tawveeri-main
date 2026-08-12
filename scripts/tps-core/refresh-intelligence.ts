@@ -71,6 +71,24 @@ const STEPS: Step[] = [
     run: () => runScript("scripts/tps-matcher/write-resolved-single.ts"),
   },
   {
+    // ADR-242 — storefront identity convergence. products.canonical_product_id was
+    // populated exactly once (005_link_products, 2026-06-26, name+brand text
+    // matching) and never again: every product ingested since stayed unlinked, and
+    // the June links point at legacy key-less canonicals. This step continuously
+    // projects PROVEN identity instead: a storefront offer and a TPS-identified
+    // observation naming the SAME retailer listing (same store + same listing URL,
+    // or same ASIN for Amazon) inherit that listing's identity — deterministic
+    // listing equality, never name matching. Six negative-evidence guards veto
+    // contradictions (storage, childSku params, 14T≠14 suffixes, nova-14≠13
+    // generations, device class, brand); conflicts and ambiguity stay UNLINKED.
+    // Every write is recorded in storefront_identity_links (evidence, npo id, key,
+    // tier, rule version) and is reversible via --rollback. Bounded ≤500/run,
+    // idempotent, race-safe; drift is re-checked every run and flagged, never
+    // silently rewritten.
+    key: "storefront-link", label: "storefront products ← proven canonical identity", needs: ["resolved-single"],
+    run: () => runScript("scripts/tps-core/project-storefront-identity.ts", ["--go", "--limit", "500"]),
+  },
+  {
     key: "projection", label: "serving projection (canonicals → comparison rows)", needs: ["resolved-single"], slow: true,
     run: () => runScript("scripts/build-tps-projection.ts"),
   },
