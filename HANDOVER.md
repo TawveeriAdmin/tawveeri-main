@@ -1,4 +1,4 @@
-# ═══ RESUME HERE — 2026-08-11 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — CLOUDFLARE DONE, BING VERIFIED, GSC WAS ALREADY VERIFIED (correction) — NEXT: check sitemap submission ═══
+# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #72 · GLOBAL SHOPPING DISCOVERABILITY & AI COMMERCE — REPOSITORY WORK DONE + DEPLOYED + LIVE-VERIFIED — ALL 3 FOUNDER ACTIONS RESOLVED (Cloudflare done, Bing verified, GSC was already verified + sitemap already registered) ═══
 
 ## MISSION: independent mission (NOT the closed workstreams below) — proved Tawveeri's real ecosystem eligibility, fixed two severe live discoverability bugs, found the #1 lever is outside the repository
 
@@ -141,19 +141,16 @@ citation.
    harmless, and simply unused — a true no-op with no env var set, exactly as designed for the
    case where verification is unnecessary.
 
-   **The one genuinely useful remaining GSC action, now that ownership is confirmed:** check
-   whether `https://tawveeri.com/sitemap.xml` is registered under Search Console's own
-   **Sitemaps** section (left sidebar, under "Indexing"). This is unrelated to ownership
-   verification — a property can be fully verified with real performance data and still never
-   have had its sitemap explicitly submitted, which affects how systematically Google re-crawls
-   and reports on indexing for the whole URL set (2,104 compare pages + 16,346 product pages +
-   42 static pages, confirmed live this mission). This matters concretely right now because this
-   mission just fixed two real defects (the double-locale compare-link 404s and the malformed
-   compare-page canonical, ADR-240) — if the sitemap was already submitted before those fixes,
-   Google may have logged crawl errors against the broken URLs that are worth checking (Coverage/
-   Pages report, filtered to `/compare/`) as a genuine before/after signal for this mission's own
-   required baseline; if the sitemap was never submitted, submitting it now is the single most
-   useful GSC action available, since it is the fastest path to Google noticing the fixes.
+   **Sitemap registration check: DONE (2026-08-12), CONFIRMED ALREADY REGISTERED, NO ACTION
+   NEEDED.** Founder checked Search Console → Indexing → Sitemaps directly: `sitemap.xml` shows
+   status **Success**, submitted 2026-07-04 (predates this mission), **last read 2026-08-12**
+   (today — Google is actively, recently re-crawling it), **discovered pages: 18,492** — an exact
+   match to this mission's own `tps:sitemap-verify` baseline (2,104 compare + 16,346 product + 42
+   static = 18,492). No new submission was made or needed. Because the last read is TODAY,
+   Google's crawler has had the opportunity to pick up the double-locale-link and canonical fixes
+   (ADR-240, deployed 2026-08-11) on its most recent pass — real Coverage/Pages-report data over
+   the coming days (not checked today, no action needed today) would be the eventual confirming
+   signal, but is not itself a blocking or required founder action.
 3. **Bing Webmaster Tools** (`bing.com/webmasters`, same pattern) — paste into
    `NEXT_PUBLIC_BING_SITE_VERIFICATION`. **DONE (2026-08-11) — VERIFIED.**
    Founder supplied the exact meta-tag value directly (`msvalidate.01` =
