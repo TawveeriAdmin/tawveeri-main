@@ -16,7 +16,9 @@ import {
   sharedWordNumeralContradiction,
   deviceClassContradiction,
   brandContradiction,
+  accessoryTitleContradiction,
 } from "../../scripts/tps-core/identity-projection-guards";
+import { isAccessoryTitle, isAccessoryTitleHead } from "../../src/lib/scraping/utils/category-utils";
 
 describe("R11 — storage-token contradiction", () => {
   it("extracts labeled GB/TB tokens, TB normalized to GB", () => {
@@ -141,6 +143,39 @@ describe("R14 — device-class contradiction", () => {
     expect(deviceClassContradiction(null, "mobile")).toBe(false);
     expect(deviceClassContradiction("gaming", "tv")).toBe(false);
     expect(deviceClassContradiction("smartphone", "accessories")).toBe(false);
+  });
+});
+
+describe("R17 — accessory-title contradiction (head-anchored)", () => {
+  it("vetoes the production AirPods-case trap («كفر ايربودز برو» → apple|airpods pro 2)", () => {
+    const title = "بايكرون,  كفرايربودز برو الجيل الثاني  , أسود";
+    // the Arabic accessory word كفر is in the platform's own indicator list,
+    // fused to the product word — an accessory listing names itself in the head
+    expect(isAccessoryTitleHead(title)).toBe(true);
+    expect(accessoryTitleContradiction(isAccessoryTitleHead(title), "audio")).toBe(true);
+  });
+
+  it("a genuine device title never trips it", () => {
+    expect(isAccessoryTitleHead("Samsung Galaxy Buds 4, TWS, Black")).toBe(false);
+    expect(accessoryTitleContradiction(false, "audio")).toBe(false);
+  });
+
+  it("Latin indicators respect word boundaries — 'Floor Standing AC' is not a stand (measured false veto)", () => {
+    expect(isAccessoryTitleHead("Hisense Floor Standing AC, DC inverter, 48,000 BTU")).toBe(false);
+    expect(isAccessoryTitleHead("Universal TV stand for 55-inch screens")).toBe(true);
+  });
+
+  it("main products that merely MENTION an accessory never trip it (56/2,102 measured false-flag class)", () => {
+    expect(isAccessoryTitleHead("New Apple Watch Ultra (GPS + Cellular, 49mm) - Titanium Case with Black Band")).toBe(false);
+    expect(isAccessoryTitleHead("Honor Pad X7 Tablet - Wi-Fi with Case Cover 2025, 8.7\", 128 GB")).toBe(false);
+    expect(isAccessoryTitleHead("Q27G3Z Gaming Monitor 27-inch 2K QHD, height-adjustable stand included")).toBe(false);
+    // the unbounded scanner still sees them — it is the guard that must not
+    expect(isAccessoryTitle("Honor Pad X7 Tablet - Wi-Fi with Case Cover 2025")).toBe(true);
+  });
+
+  it("an accessory linking an accessories-category canonical is fine", () => {
+    expect(accessoryTitleContradiction(true, "accessories")).toBe(false);
+    expect(accessoryTitleContradiction(true, null)).toBe(false);
   });
 });
 

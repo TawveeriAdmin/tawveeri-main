@@ -150,6 +150,46 @@ function looksLikeAccessory(text: string): boolean {
   return ACCESSORY_INDICATORS.some((kw) => text.includes(kw));
 }
 
+/**
+ * Exported accessory detector (ADR-243): true when the title carries an explicit
+ * accessory word (case/cover/charger/strap/…, Arabic included). Same vocabulary
+ * `classifyFromTitle` consults — one list, two callers — but with one stricter
+ * rule for THIS caller: a Latin indicator must end at a word boundary, so
+ * " stand" never matches "Floor Standing AC" (measured false veto). Arabic
+ * indicators keep substring matching because Arabic compounds attach — the real
+ * production catch was «كفرايربودز», with كفر fused to the product word.
+ * classifyFromTitle's own behavior is deliberately unchanged.
+ */
+export function isAccessoryTitle(title: string | null | undefined, headLen = Infinity): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  return ACCESSORY_INDICATORS.some((kw) => {
+    let from = 0;
+    while (true) {
+      const i = t.indexOf(kw, from);
+      if (i === -1 || i > headLen) return false;
+      const next = t[i + kw.length];
+      const latinEnding = /[a-z]$/.test(kw);
+      if (!latinEnding || next === undefined || !/[a-z]/.test(next)) return true;
+      from = i + 1;
+    }
+  });
+}
+
+/**
+ * Head-anchored accessory detector for the identity-projection guard (ADR-243):
+ * an ACCESSORY LISTING names itself in the title head («كفرايربودز برو» at
+ * position ~11; "Universal TV stand…" at 13), while a MAIN product merely
+ * mentions accessories later ("Apple Watch Ultra … Titanium Case", "Monitor …
+ * with stand", "Tablet … with Case Cover" — measured 2026-08-12: a full-title
+ * scan flagged 56 of 2,102 verified-correct links, nearly all this bundled/
+ * descriptor class). Head-only keeps the veto for real accessory listings and
+ * silent for products that ship WITH one.
+ */
+export function isAccessoryTitleHead(title: string | null | undefined): boolean {
+  return isAccessoryTitle(title, 30);
+}
+
 function containsKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
 }

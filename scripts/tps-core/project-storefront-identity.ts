@@ -47,8 +47,8 @@ import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { assertFingerprint } from "./tps-batch";
-import { storageContradiction, identityParamsDisagree, suffixedNumeralContradiction, deviceClassContradiction, sharedWordNumeralContradiction, brandContradiction } from "./identity-projection-guards";
-import { classifyFromTitle } from "../../src/lib/scraping/utils/category-utils";
+import { storageContradiction, identityParamsDisagree, suffixedNumeralContradiction, deviceClassContradiction, sharedWordNumeralContradiction, brandContradiction, accessoryTitleContradiction } from "./identity-projection-guards";
+import { classifyFromTitle, isAccessoryTitleHead } from "../../src/lib/scraping/utils/category-utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { toPoolerDbUrl } = require("./pooler-url.js") as { toPoolerDbUrl: (raw: string) => string };
 
@@ -65,6 +65,13 @@ const argNum = (name: string, dflt: number) => {
   const go = process.argv.includes("--go");
   const rollback = process.argv.includes("--rollback");
   const includeLowConfidence = process.argv.includes("--include-low-confidence");
+  // --repoint-legacy (ADR-243, founder-authorized): operate on the FINITE cohort of
+  // products whose current canonical_product_id targets a LEGACY key-less canonical
+  // (the 2026-06-26 005_link_products output). Same evidence, same guards; the ledger
+  // row records prior_canonical_product_id so rollback restores the OLD value, never
+  // NULL. The hourly chain never passes this flag — R3 (never reassign) still governs
+  // continuous operation; this is a bounded, audited, one-cohort amendment.
+  const repointLegacy = process.argv.includes("--repoint-legacy");
   const limit = Math.min(2000, argNum("limit", 500));
   const si = process.argv.indexOf("--stores");
   const onlyStores = si >= 0
@@ -191,16 +198,24 @@ const argNum = (name: string, dflt: number) => {
       product_name_en: string | null; product_name_ar: string | null;
       canon_name_en: string | null; canon_name_ar: string | null; store_slug: string;
       product_brand: string | null; canon_brand: string | null;
+      prior_cid: string | null;
     };
+    // Chain mode targets UNLINKED products; repoint mode targets products whose
+    // CURRENT link is a legacy key-less canonical (and only those — a product
+    // already pointing at a TPS canonical is never touched by either mode).
+    const targetJoin = repointLegacy
+      ? `join products pr on pr.id = p.product_id and pr.canonical_product_id is not null and pr.canonical_product_id <> p.cid
+         join canonical_products legacy on legacy.id = pr.canonical_product_id and legacy.tps_identity_key is null`
+      : `join products pr on pr.id = p.product_id and pr.canonical_product_id is null`;
     const picked = (await all(`
       select p.product_id, p.cid, p.store_id, p.lane, p.matched_value, p.product_url,
              p.tps_raw_url, p.npo_id, p.identity_key, p.identity_key_status, p.sf_category, p.canon_category,
              pr.name_en as product_name_en, pr.name_ar as product_name_ar,
              pr.brand as product_brand, cp.brand as canon_brand,
              cp.name_en as canon_name_en, cp.name_ar as canon_name_ar,
-             s.slug as store_slug
+             s.slug as store_slug, pr.canonical_product_id as prior_cid
       from _pick p
-      join products pr on pr.id = p.product_id and pr.canonical_product_id is null
+      ${targetJoin}
       join canonical_products cp on cp.id = p.cid
       join stores s on s.id = p.store_id
       where true ${storeFilter}`)) as Picked[];
@@ -211,7 +226,7 @@ const argNum = (name: string, dflt: number) => {
     // suffixed-numeral contradiction (14T≠14, 13C≠13, nova 14i≠14), R14
     // device-class contradiction (an air fryer never links to a mobile
     // canonical, whatever the TPS graph mis-parsed).
-    const vetoCounts: Record<string, number> = { R11_storage: 0, R12_params: 0, R13_suffix: 0, R14_device: 0, R15_wordnum: 0, R16_brand: 0 };
+    const vetoCounts: Record<string, number> = { R11_storage: 0, R12_params: 0, R13_suffix: 0, R14_device: 0, R15_wordnum: 0, R16_brand: 0, R17_accessory: 0 };
     const vetoSamples: string[] = [];
     const surviving: Picked[] = [];
     for (const r of picked) {
@@ -224,6 +239,7 @@ const argNum = (name: string, dflt: number) => {
       else if (suffixedNumeralContradiction(productText, canonNames)) veto = "R13_suffix";
       else if (sharedWordNumeralContradiction(productText, canonNames)) veto = "R15_wordnum";
       else if (brandContradiction(r.product_brand, r.canon_brand)) veto = "R16_brand";
+      else if (accessoryTitleContradiction(isAccessoryTitleHead(productText), r.canon_category)) veto = "R17_accessory";
       else if (deviceClassContradiction(classifyFromTitle(productText), r.canon_category)) veto = "R14_device";
       if (veto) {
         vetoCounts[veto]++;
@@ -245,14 +261,23 @@ const argNum = (name: string, dflt: number) => {
       return [...m.entries()].sort((a, b) => b[1] - a[1]);
     };
 
-    console.log(`\n═══ STOREFRONT IDENTITY PROJECTION — ${go ? "WRITE RUN" : "DRY RUN (nothing written)"} · ${RULE_VERSION} ═══`);
-    console.log(`  unlinked storefront products                      ${base.unlinked_products}`);
-    console.log(`  … of which have at least one offer URL            ${base.unlinked_with_url}`);
+    const modeRule = repointLegacy ? "legacy-repoint-v1" : RULE_VERSION;
+    console.log(`\n═══ STOREFRONT IDENTITY ${repointLegacy ? "LEGACY RE-POINT" : "PROJECTION"} — ${go ? "WRITE RUN" : "DRY RUN (nothing written)"} · ${modeRule} ═══`);
+    if (repointLegacy) {
+      const legacyBase = await one(`
+        select count(*) as legacy_linked
+        from products pr join canonical_products lc on lc.id = pr.canonical_product_id
+        where lc.tps_identity_key is null`);
+      console.log(`  products currently linked to LEGACY canonicals    ${legacyBase.legacy_linked}`);
+    } else {
+      console.log(`  unlinked storefront products                      ${base.unlinked_products}`);
+      console.log(`  … of which have at least one offer URL            ${base.unlinked_with_url}`);
+    }
     console.log(`  R2 ambiguous URLs excluded (multi-canonical)      ${base.ambiguous_urls}`);
     console.log(`  R2 ambiguous ASINs excluded                       ${base.ambiguous_asins}`);
-    console.log(`  evidence-bearing unlinked products: clean=${cand.clean} conflict(R1)=${cand.conflicting}`);
+    if (!repointLegacy) console.log(`  evidence-bearing unlinked products: clean=${cand.clean} conflict(R1)=${cand.conflicting}`);
     console.log(`  clean candidates fetched${onlyStores ? ` [stores ${onlyStores.join(",")}]` : ""}      ${picked.length}`);
-    console.log(`  negative-evidence vetoes                          ${vetoTotal}  (R11 storage=${vetoCounts.R11_storage} · R12 params=${vetoCounts.R12_params} · R13 suffix=${vetoCounts.R13_suffix} · R14 device=${vetoCounts.R14_device} · R15 wordnum=${vetoCounts.R15_wordnum} · R16 brand=${vetoCounts.R16_brand})`);
+    console.log(`  negative-evidence vetoes                          ${vetoTotal}  (R11 storage=${vetoCounts.R11_storage} · R12 params=${vetoCounts.R12_params} · R13 suffix=${vetoCounts.R13_suffix} · R14 device=${vetoCounts.R14_device} · R15 wordnum=${vetoCounts.R15_wordnum} · R16 brand=${vetoCounts.R16_brand} · R17 accessory=${vetoCounts.R17_accessory})`);
     for (const v of vetoSamples) console.log(`    VETO ${v}`);
     console.log(`  tier split of surviving candidates:`);
     for (const [k, n] of countBy(surviving, (r) => r.identity_key_status)) console.log(`    ${k.padEnd(26)} ${n}`);
@@ -261,6 +286,33 @@ const argNum = (name: string, dflt: number) => {
     for (const [k, n] of countBy(eligibleRows, (r) => `${r.store_slug.padEnd(14)} ${r.lane}`)) console.log(`    ${k.padEnd(26)} ${n}`);
     console.log(`  category agreement (storefront → canonical):`);
     for (const [k, n] of countBy(eligibleRows, (r) => `${String(r.sf_category).padEnd(16)} → ${r.canon_category}`)) console.log(`    ${k.padEnd(40)} ${n}`);
+
+    // Repoint-only: chart-continuity delta. The legacy canonicals receive fresh
+    // firecrawl-keyed price rows, so re-pointing swaps the customer chart's data
+    // source — measure per candidate what the chart HAS under the prior cid vs
+    // what it WOULD have under the TPS cid (same store, 90d), before writing.
+    if (repointLegacy && eligibleRows.length) {
+      const buckets = { gain: 0, equal: 0, partial_loss: 0, loss_to_zero: 0, none_before_none_after: 0 };
+      for (let i = 0; i < eligibleRows.length; i += 300) {
+        const chunk = eligibleRows.slice(i, i + 300);
+        const values = chunk.map((_, k) => `($${k * 4 + 1}::uuid,$${k * 4 + 2}::int,$${k * 4 + 3}::uuid,$${k * 4 + 4}::uuid)`).join(",");
+        const params = chunk.flatMap((r) => [r.product_id, r.store_id, r.prior_cid, r.cid]);
+        const rows = (await pg.query(`
+          select v.pid,
+            (select count(*) from price_history ph where ph.canonical_product_id = v.prior and ph.store_id = v.sid and ph.observed_at >= now() - interval '90 days') as prior_pts,
+            (select count(*) from price_history ph where ph.canonical_product_id = v.newc and ph.store_id = v.sid and ph.observed_at >= now() - interval '90 days') as new_pts
+          from (values ${values}) as v(pid, sid, prior, newc)`, params)).rows as { prior_pts: string; new_pts: string }[];
+        for (const r of rows) {
+          const a = Number(r.prior_pts), b = Number(r.new_pts);
+          if (a === 0 && b === 0) buckets.none_before_none_after++;
+          else if (b > a) buckets.gain++;
+          else if (b === a) buckets.equal++;
+          else if (b > 0) buckets.partial_loss++;
+          else buckets.loss_to_zero++;
+        }
+      }
+      console.log(`  chart continuity (same-store 90d points, prior→new): gain=${buckets.gain} equal=${buckets.equal} partial_loss=${buckets.partial_loss} LOSS_TO_ZERO=${buckets.loss_to_zero} none_either=${buckets.none_before_none_after}`);
+    }
 
     // ── R8 drift pass over previously-written links ─────────────────────────────
     // Tolerates the ledger not existing yet, so a pure-shadow run needs no DDL.
@@ -327,20 +379,27 @@ const argNum = (name: string, dflt: number) => {
       await pg.query("begin");
       try {
         for (const r of chunk) {
-          // The IS NULL guard makes the write race-safe and idempotent: a product
-          // linked by anything else since the evidence build is skipped, and its
-          // provenance row is then not written either.
-          const upd = await pg.query(
-            `update products set canonical_product_id = $1
-             where id = $2 and canonical_product_id is null`, [r.cid, r.product_id]);
+          // Race-safe, idempotent compare-and-set: chain mode requires the column
+          // to still be NULL; repoint mode requires it to still be the exact
+          // legacy value the evidence was computed against. Any concurrent change
+          // skips the product, and its provenance row is then not written either.
+          const upd = repointLegacy
+            ? await pg.query(
+                `update products set canonical_product_id = $1
+                 where id = $2 and canonical_product_id = $3`, [r.cid, r.product_id, r.prior_cid])
+            : await pg.query(
+                `update products set canonical_product_id = $1
+                 where id = $2 and canonical_product_id is null`, [r.cid, r.product_id]);
           if (upd.rowCount !== 1) { skipped++; continue; }
           await pg.query(
             `insert into storefront_identity_links
                (product_id, canonical_product_id, store_id, evidence_class, matched_value,
-                storefront_url, tps_npo_id, tps_identity_key, identity_key_status, rule_version)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+                storefront_url, tps_npo_id, tps_identity_key, identity_key_status, rule_version,
+                prior_canonical_product_id)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
             [r.product_id, r.cid, r.store_id, r.lane, r.matched_value,
-             r.product_url, r.npo_id, r.identity_key, r.identity_key_status, RULE_VERSION]);
+             r.product_url, r.npo_id, r.identity_key, r.identity_key_status, modeRule,
+             repointLegacy ? r.prior_cid : null]);
           linked++;
         }
         await pg.query("commit");
@@ -356,10 +415,12 @@ const argNum = (name: string, dflt: number) => {
   }
 })().catch((e) => { console.error("FATAL", e instanceof Error ? (e.stack || e.message) : JSON.stringify(e)); process.exit(1); });
 
-// ── Rollback: restore NULL for exactly what this job wrote, nothing else. ──────
+// ── Rollback: restore the PRE-LINK value for exactly what this job wrote. ──────
+// convergence-v1 rows restore NULL (the column was empty before); legacy-repoint
+// rows restore prior_canonical_product_id (the legacy canonical they replaced).
 async function runRollback(pg: Client, go: boolean, limit: number) {
   const { rows } = await pg.query(`
-    select l.id, l.product_id, l.canonical_product_id,
+    select l.id, l.product_id, l.canonical_product_id, l.prior_canonical_product_id,
            (pr.canonical_product_id = l.canonical_product_id) as still_ours
     from storefront_identity_links l
     join products pr on pr.id = l.product_id
@@ -377,8 +438,9 @@ async function runRollback(pg: Client, go: boolean, limit: number) {
     try {
       for (const r of chunk) {
         await pg.query(
-          `update products set canonical_product_id = null
-           where id = $1 and canonical_product_id = $2`, [r.product_id, r.canonical_product_id]);
+          `update products set canonical_product_id = $3
+           where id = $1 and canonical_product_id = $2`,
+          [r.product_id, r.canonical_product_id, r.prior_canonical_product_id ?? null]);
         await pg.query(
           `update storefront_identity_links set status='rolled_back',
              note = coalesce(note,'') || ' rolled back ' || now()::text

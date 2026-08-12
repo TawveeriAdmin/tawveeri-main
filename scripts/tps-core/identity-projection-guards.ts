@@ -194,3 +194,14 @@ export function deviceClassContradiction(sfTitleClass: string | null, canonCateg
   if (!sfDev && (sfTitleClass === "kitchen" || sfTitleClass === "appliance") && canonIsDevice) return true;
   return false;                                                    // anything uninformative never vetoes
 }
+
+// ── R17 — accessory-title contradiction ────────────────────────────────────────
+// A listing whose title explicitly says it is an ACCESSORY (case/cover/charger/
+// strap — «كفر ايربودز برو» was the production catch: a third-party AirPods CASE
+// whose TPS observation was keyed to the apple|airpods pro 2 canonical) must
+// never inherit a MAIN-PRODUCT canonical. The accessory vocabulary is the
+// platform's own (category-utils.isAccessoryTitle) — one list, one brain.
+export function accessoryTitleContradiction(isAccessory: boolean, canonCategory: string | null | undefined): boolean {
+  if (!isAccessory || !canonCategory) return false;
+  return CANON_DEVICE.has(canonCategory) || CANON_APPLIANCE.has(canonCategory);
+}
