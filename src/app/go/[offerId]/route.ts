@@ -76,16 +76,18 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   let resolved: { offerId: string | null; productStoreId: string | null; storeId: number | string; canonicalId: string | null; rawUrl: string } | null = null;
   if (offerId?.startsWith("ps_") && UUID_RE.test(offerId.slice(3))) {
     const psId = offerId.slice(3);
+    // NOTE: System A's product_stores has NO affiliate_url column (that was a System-B
+    // shape — ARCHITECTURE-RECONCILIATION §4). product_url is the offer URL; affiliate
+    // params are applied by the provider framework below, never read from the row.
     const { data: ps } = await supabase
       .from("product_stores")
-      .select("id, store_id, product_url, affiliate_url, products(canonical_product_id)")
+      .select("id, store_id, product_url, products(canonical_product_id)")
       .eq("id", psId)
       .maybeSingle();
     const productRec = Array.isArray((ps as Record<string, unknown> | null)?.products)
       ? (ps as { products: { canonical_product_id: string | null }[] }).products[0]
       : (ps as { products?: { canonical_product_id: string | null } } | null)?.products;
-    const url = (ps as { affiliate_url?: string | null; product_url?: string | null } | null)?.affiliate_url
-      || (ps as { product_url?: string | null } | null)?.product_url;
+    const url = (ps as { product_url?: string | null } | null)?.product_url;
     if (ps && url) {
       resolved = {
         offerId: null,
