@@ -1,4 +1,59 @@
-# ═══ RESUME HERE — 2026-08-12 CHECKPOINT #75 · LEGACY LINK RE-POINTING — CLOSED, FOUNDER-ACCEPTED ═══
+# ═══ RESUME HERE — 2026-08-13 CHECKPOINT #76 · GROWTH ENGINE STAGE ONE — SHIPPED, AWAITING FOUNDER REVIEW OF THE FIRST CREATIVE ═══
+
+## MISSION: Evidence-Led Distribution & Growth Engine v3 (founder execution mission) — STAGE ONE COMPLETE
+
+**Full detail: ADR-244 in `docs/DECISIONS.md`; growth constitution AMENDMENT 2 in
+`docs/TAWVEERI_SOCIAL_GROWTH_SYSTEM.md`.** Commits: `49bddfe` (Gate A measurement truth) →
+`536b6b2` (ps_ exit fix from live T5/F5 verification) → `d998f0f` (growth surface + first
+creative) → docs. Migration 31 applied (outbound campaign/product_store_id + growth_content).
+
+### The three headline findings (all production/live-inspection evidence)
+1. **Exit measurement was split-brained**: 282 REAL retailer exits since the commercial
+   baseline vs ONE go_click client event — the founder dashboard said "qualified = 1" while
+   282 real exits happened. FIXED: /go stamps session+campaign onto the ledger; storefront
+   exits unified through /go/ps_; funnel step 6 reads the ledger; 3 silently-dropped event
+   types restored via ONE shared event contract + drift regression test.
+2. **The founder already proved distribution works**: TikTok @tawveeri's single video
+   (2026-08-06) hit ~2,250 views and REAL sessions spiked 10/day → 65-75/day (Aug 8-10) —
+   completely unattributed (no UTM existed anywhere). X @Tawveeri (verified, 31 posts)
+   reaches ~26 views/post. **Reach is the bottleneck, not the product.**
+3. **Wave-1 channel: TikTok primary** (Saudi's most-penetrated market, follower-independent
+   FYP officially confirmed, $0 Arabic Keyword Planner, free MENA Symphony tools); X manual
+   secondary (API now $0.20/link-post — not bought).
+
+### What the founder can DO now
+- Open **`/ar/admin/growth`** (also in the admin sidebar: النمو): current REAL measurement,
+  the distribution diagnosis, the social truth board — and **watch `cdv-ac-001`**, the first
+  creative: a real captured production journey («أبي مكيف هادي بسعر زين» → 29 live AC
+  results) as a 19.7s TikTok-native vertical with Saudi hook captions. Actions: اعتماد /
+  طلب تعديل / رفض. **Approval ≠ publication — publishing stays a manual founder act.**
+- Its tracking link (in the review card) carries `utm_content=cdv-ac-001` and is measurable
+  through session → search → journey → retailer exit (CONFIRMED at the ledger).
+- The daily email now leads with «محتوى جديد جاهز للمراجعة» while review items exist.
+- Prepared next (drafts, not generated): mobile (top unmet demand), laptop (the protected
+  acceptance journey), washer (deepest comparisons).
+
+### The ONE next founder action
+Review `cdv-ac-001` at `/ar/admin/growth`. On اعتماد: post it to TikTok @tawveeri manually
+(30 seconds in the app) with the tracking link in the bio/comment — the measurement pipe is
+live end-to-end. For the human-story upgrade (wife/husband version): Google Veo/Flow
+(~$20/mo, native Arabic dialogue) or TikTok Symphony (free, needs the Business login) —
+each is one account/payment decision away, prepared to the boundary.
+
+### Explicitly NOT built (mission's own anti-overengineering rules)
+No scheduler/CMS, no listening automation, no paid anything, no TikTok/X API integration,
+no retention systems, no extra dashboards. `/api/transactions/conversion` internalized
+(was an unauthenticated write path into `transactions`; zero legitimate callers).
+
+### Gates
+1,820/1,820 tests (3 new event-contract regressions), tsc baseline unchanged, build clean,
+T5/F5 live-verified post-deploy (Amazon exit tagged, ledger row carried session + campaign).
+
+If real production evidence contradicts this checkpoint, production evidence overrides it.
+
+---
+
+# ═══ 2026-08-12 CHECKPOINT #75 · LEGACY LINK RE-POINTING — CLOSED, FOUNDER-ACCEPTED ═══
 
 ## MISSION: re-point the June legacy links to TPS canonicals under the convergence contract — CLOSED
 

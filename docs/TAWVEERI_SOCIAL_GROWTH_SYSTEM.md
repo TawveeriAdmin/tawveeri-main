@@ -907,3 +907,51 @@ Master Book, Vocabulary, or Protected Trust Policies, which have their own amend
 
 **Net effect of this research pass: the plan is confirmed as designed. One thing to watch
 after Wave 1 (Instagram's growing weight), nothing urgent enough to change before Wave 1 ships.**
+
+---
+
+## AMENDMENT 2 — 2026-08-13 · Execution reality, measurement truth, and the Wave-1 operating model (ADR-244)
+
+Per §29 (evidence changes the document, the document never overrides evidence), this
+amendment records what production and direct inspection proved, and what changed:
+
+1. **Execution already began outside the wave protocol — and its evidence is the most
+   valuable data this document has ever received.** Direct inspection (2026-08-13):
+   TikTok **@tawveeri exists** with ONE published video (2026-08-06, screen+character
+   style, generic brand caption, no UTM) at **~2,250 views / ~664 account likes with 1
+   follower** — and REAL production sessions spiked **10/day → 65-75/day (Aug 8-10)**,
+   decaying with the video. X **@Tawveeri is verified (Premium), 31 posts**, latest at
+   ~26 views. Conclusions adopted: distribution works and IS the bottleneck; the
+   channel order in §5 is CONFIRMED by first-party evidence (TikTok reaches, X does
+   not); the entire spike was UNATTRIBUTABLE because no link carried UTM — the exact
+   failure §23 exists to prevent. No blame recorded; the founder's own test produced
+   the decisive evidence.
+2. **The attribution contract (§23) is now implemented deeper than written**: the
+   exit LEDGER itself (`outbound_clicks`) carries `session_id` + `campaign`, stamped
+   server-side by `/go` from cookie mirrors — CONFIRMED attribution at the revenue
+   edge, not an event-side estimate. Storefront exits (product page, checkout) now
+   route through `/go/ps_<id>`; the funnel's Outbound step reads the ledger. Full
+   detail: ADR-244.
+3. **§28's `marketing/SOCIAL_IMPLEMENTATION_ROADMAP.md` reference is struck.** The
+   file never existed (recorded in checkpoint #45); execution state now lives in the
+   `growth_content` table (review states, lineage) + `/admin/growth` + HANDOVER
+   checkpoints. A file that would duplicate live state is not created.
+4. **AI-creative reality (researched 2026-08-13, primary sources):** TikTok Symphony
+   is free with a Business login and MENA-available (Arabic dub quality untested);
+   Google Veo 3.1/Flow is the only verified natively-Arabic-dialogue engine (KSA-
+   available, ~$20/mo path) — the ONE paid tool worth founder money when authorized.
+   Zero-spend proof creatives are produced by the repo's own pipeline
+   (`scripts/growth/render-journey-video.js`): REAL production journeys captured on a
+   mobile viewport, composed TikTok-native with Saudi-Arabic captions. First output:
+   `cdv-ac-001` (AC, hook family time_hassle), in founder review.
+5. **Wave-1 operating model:** opportunities → `growth_content` rows with evidence
+   class (§7 hierarchy) → creative pipeline → founder reviews AT `/admin/growth`
+   (watch, اعتماد/طلب تعديل/رفض) → **publication remains a manual founder act** on
+   the platform (TikTok Content Posting API draft-mode is the future hands-off path;
+   X API posting is pay-per-post and not bought). Every landing link carries
+   `utm_campaign=cdv_wave1` + `utm_content=<content_id>` and is measurable through
+   to the retailer exit.
+6. **Stale-figure hygiene:** the funnel/readiness figures quoted in §1.1-era artifacts
+   (25 real sessions/30d) are superseded by the post-baseline reality above; per the
+   standing rule, always re-measure at `/admin/growth` or `tps:usage`, never quote a
+   document.

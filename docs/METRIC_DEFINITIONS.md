@@ -22,20 +22,22 @@ Every metric below is computed **REAL-only** (`is_test = false`) unless stated o
 | **"Real visitors"** | We deliberately do **not** publish this label. There is no cookie/identity layer that survives across sessions for anonymous users, so "unique person" cannot be asserted. Dashboards say **Sessions**, never "visitors," until a durable anonymous ID exists. | — | — | UNAVAILABLE (by design, not a bug) |
 | **New vs. returning session** | A session's `session_id` is "returning" if the same id has events on ≥2 distinct calendar days (matches the retention definition already used in `tps:usage`). | `usage_events`, grouped by `session_id`, `count(distinct created_at::date)` | Selected period | ESTIMATED |
 | **Source / campaign / content (at capture)** | `usage_events.meta->>'utm_source'` etc., captured at landing per ADR-207. | `usage_events.meta` | Selected period | CONFIRMED |
-| **Campaign → outbound attribution** | Session-level join (ADR-214) between a `go_click` event's captured UTM and the matching `outbound_clicks` row (same `canonical_product_id`, same `is_test`, nearest `clicked_at` within 10s). No captured UTM resolves to **UNKNOWN**, never "direct", never zero. Never a person-level claim — see `computeCampaignAttribution()` in `src/lib/admin/command-center-queries.ts`. | `usage_events` ⋈ `outbound_clicks` | Selected period | ESTIMATED |
+| **Campaign → outbound attribution** | **Primary (ADR-244): read directly from `outbound_clicks.session_id` + `outbound_clicks.campaign`**, stamped server-side by `/go` from the `tw_sid`/`tw_campaign` cookie mirrors at the moment of the real exit — CONFIRMED. Rows written before the 2026-08-13 cutover have no stamp and fall back to the ADR-214 session-level window-join (ESTIMATED). No captured UTM resolves to **UNKNOWN**, never "direct", never zero. Never a person-level claim. | `outbound_clicks` (+ legacy `usage_events` ⋈) | Selected period | CONFIRMED (post-cutover) / ESTIMATED (legacy) |
 
 ## Product journey (funnel)
 
 Six-step funnel, action-deduped per ADR-214 (see below) — SQL lives once in `src/lib/admin/command-center-queries.ts` (`buildFunnel`), imported by both `/admin/command-center` and `scripts/tps-analysis/usage-report.ts` so the two can't silently diverge:
 
-| Step | `event_type` | Numerator | Denominator (conversion shown) |
+| Step | Source | Numerator | Denominator (conversion shown) |
 |---|---|---|---|
-| 1 Search | `search`, `advisor_query` | deduped action count | — |
-| 2 Results (valid result returned) | `results`, `advisor_result` | deduped action count | Step 1 |
-| 3 Product opened | `product_view` | raw count | Step 2 |
-| 4 Comparison opened | `comparison_view` | raw count | Step 3 |
-| 5 Evidence viewed | `evidence_view` | raw count | Step 4 |
-| 6 Outbound (retailer exit) | `go_click` | raw count | Step 4 (Comparison→Exit CTR) |
+| 1 Search | `search`, `advisor_query` events | deduped action count | — |
+| 2 Results (valid result returned) | `results`, `advisor_result` events | deduped action count | Step 1 |
+| 3 Product opened | `product_view` event | raw count | Step 2 |
+| 4 Comparison opened | `comparison_view` event | raw count | Step 3 |
+| 5 Evidence viewed | `evidence_view` event | raw count | Step 4 |
+| 6 Outbound (retailer exit) | **`outbound_clicks` ledger rows** (ADR-244; was `go_click` events) | raw count, REAL/TEST split | Step 4 (Comparison→Exit CTR) |
+
+**ADR-244 cutover note (2026-08-13):** step 6 previously counted `go_click` client events, which measured **1** while the exit ledger recorded **282** REAL exits in the same window (most exits are plain navigations from surfaces that never fired the event; ad-blockers and dropped keepalive fetches lose the rest). The ledger row is written server-side on every `/go` redirect and is the truth. The remaining client-only exits (scraped search-result cards with no `product_stores` row) still fire `go_click` with `meta.measured=false` and are visible in the divergence signal, not in step 6.
 
 **Dedup rule (ADR-214):** the unified `/search` page can fire both a storefront event (`search`/`results`/`no_answer`) AND an advisor event (`advisor_query`/`advisor_result`/`no_answer`/`error`) for the SAME user action, when the query routes to the advisor. Events sharing `(session_id, query_text)` within a 3-second window are counted as **one action**, not one per event row. Verified in production: this affected 147/314 `search` events and 30/161 `results` events (46.8% and 18.6% of raw counts respectively) — a real measurement bug, corrected, not a design choice being introduced fresh. `product_view`/`comparison_view`/`evidence_view`/`go_click` are NOT deduped — no evidence of the same duplication pattern on those steps.
 
