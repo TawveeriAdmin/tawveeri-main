@@ -49,6 +49,20 @@ no retention systems, no extra dashboards. `/api/transactions/conversion` intern
 1,820/1,820 tests (3 new event-contract regressions), tsc baseline unchanged, build clean,
 T5/F5 live-verified post-deploy (Amazon exit tagged, ledger row carried session + campaign).
 
+### Final production verification addendum (2026-08-13, post-deploy of `d998f0f` + `0845b64`)
+Live sweep on tawveeri.com, all PASS: `/ar` + `/en` 200; `/ar/admin/growth` and review PATCH
+correctly admin-gated (307/403 anon); `/go/ps_<id>` 302 → Amazon with `tag=tawveeri0f-21` +
+`ascsubtag`, ledger row landed with `session_id`, `campaign` jsonb, `product_store_id`, and
+`is_test=true` isolation honored; `growth_content` queue = cdv-ac-001 ready_for_review + 3
+drafts. One extra REAL defect found and fixed during verification (`0845b64`): the middleware
+matcher only excluded image extensions, so **every root static file outside that list was
+locale-307'd and 404'd — including `/sw.js`, meaning web-push service-worker registration
+had been silently broken in production**, and the growth creative mp4 was unreachable. Matcher
+now excludes `sw.js` + `mp4|webm|mp3`; verified live: `/sw.js` 200 `application/javascript`,
+`/growth/cdv-ac-001.mp4` 200 `video/mp4` (382,783 bytes), sitemap/robots/admin gating/API
+health all unchanged. Note: `outbound_clicks`' timestamp column is `clicked_at`, not
+`created_at` — a verification query tripped on this; the shipped code was always correct.
+
 If real production evidence contradicts this checkpoint, production evidence overrides it.
 
 ---
