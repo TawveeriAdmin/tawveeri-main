@@ -50,8 +50,6 @@ import { readJourneyTask, saveJourneyTask } from '@/lib/agent/journey-context';
 import { readDecisionState, decisionStateToAdvisorBody } from '@/lib/agent/decision-state';
 import { useMultiStoreCart } from '@/lib/cart/cart-context';
 import { createCartItemFromProduct } from '@/lib/cart/multi-store-cart';
-import { generateAffiliateUrl } from '@/lib/transactions/tracking';
-import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 import { incrementSaveCount } from '@/lib/wishlist/utils';
 import { PageBreadcrumbs } from '@/components/ui/page-breadcrumbs';
 
@@ -704,33 +702,21 @@ export default function ProductDetailClient() {
  };
 
  const handleViewAtStore = (productStore: ProductStore) => {
- // Funnel step 6 — Outbound Click. The storefront exits via generateAffiliateUrl+window.open (NOT /go),
- // so this event is the ONLY measurement of storefront exits. Fired first (keepalive) so a slow/failed
- // affiliate-URL call never loses the exit signal.
+ // Funnel step 6 — Outbound Click. ADR-244: the storefront now exits through /go/ps_<id>
+ // like every other surface — one exit truth. The server writes the outbound_clicks row
+ // (sub_id, affiliate params via the provider framework, session + campaign from cookies);
+ // this client event remains as the funnel-step signal and carries the same campaign meta.
  track('go_click', {
  canonical_id: product?.id ?? null,
  store: productStore.stores?.slug ?? productStore.stores?.name_en ?? null,
  category: product?.category ?? null,
  source: 'product_page',
- meta: { price: productStore.current_price ?? null, availability: productStore.availability ?? null, measured: false },
+ meta: { price: productStore.current_price ?? null, availability: productStore.availability ?? null, measured: true },
  });
- // Mobile Safari blocks window.open() called AFTER an await (the user-gesture is lost), which made
- // the buy button "do nothing" on iPhone. Open SYNCHRONOUSLY within the click: affiliate tagging is a
- // pure sync string op; the DB click record is written in the background and never gates the open.
- const rawUrl = productStore.affiliate_url || productStore.product_url;
- if (!rawUrl) return;
- const url = applyAffiliateTag(rawUrl, productStore.stores?.slug ?? null) ?? rawUrl;
- window.open(url, '_blank', 'noopener,noreferrer');
- void generateAffiliateUrl(productStore.id, user?.id)
- .then(({ data: trackingUrl }) => {
- if (trackingUrl) {
- try {
- const clickId = new URL(trackingUrl).searchParams.get('click_id');
- if (clickId) sessionStorage.setItem(`click_${productStore.id}`, clickId);
- } catch { /* noop */ }
- }
- })
- .catch(() => { /* tracking is best-effort; the tab already opened */ });
+ // Mobile Safari blocks window.open() called AFTER an await (the user-gesture is lost).
+ // /go is a same-origin GET that 302s to the retailer — synchronous open, no await.
+ if (!productStore.product_url && !productStore.affiliate_url) return;
+ window.open(`/go/ps_${productStore.id}?source=product_page`, '_blank', 'noopener,noreferrer');
  };
 
  const handleAddRelatedToCart = (relatedProduct: ProductCardProduct) => {

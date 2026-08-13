@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { cn } from '@/lib/utils';
+import { track } from '@/lib/analytics/track';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
 
@@ -136,7 +137,19 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
                     href={storeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // ADR-244: this exit was completely unmeasured — no event, no
+                      // ledger row. Scraped results have no product_stores row to route
+                      // through /go, so the affiliate-tagged direct link stays; the
+                      // funnel event is the measurement (meta.measured=false marks it
+                      // as a non-ledger exit).
+                      track('go_click', {
+                        store: String(storeSlug ?? ''),
+                        source: 'search_panel',
+                        meta: { measured: false },
+                      });
+                    }}
                   >
                     <Button
                       variant="outline"

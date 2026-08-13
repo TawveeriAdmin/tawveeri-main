@@ -38,6 +38,7 @@ import { getNavigableCategories } from '@/lib/intelligence/navigable-categories'
 import { NavigableCategoriesProvider } from '@/lib/intelligence/navigable-categories-context';
 import { loadMessages } from '@/lib/i18n/load-messages';
 import { JsonLd, buildWebSiteJsonLd, buildOrganizationJsonLd } from '@/lib/seo/json-ld';
+import { CampaignCapture } from '@/components/analytics/campaign-capture';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
 
@@ -150,6 +151,9 @@ export default async function RootLayout({
             <MultiStoreCartProvider>
               <AuthProvider>
                 <NavigableCategoriesProvider categories={navigableCategories}>
+                  {/* ADR-244: universal test-mode + campaign capture — every landing
+                      page, not just the three that used to mount it. Renders nothing. */}
+                  <CampaignCapture />
                   {children}
                 </NavigableCategoriesProvider>
                 <Toaster />

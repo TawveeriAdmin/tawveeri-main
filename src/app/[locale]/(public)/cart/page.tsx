@@ -37,7 +37,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import Image from 'next/image';
 import type { CartItem } from '@/lib/cart/multi-store-cart';
-import { generateAffiliateUrl } from '@/lib/transactions/tracking';
+
 
 export default function CartPage() {
  const params = useParams();

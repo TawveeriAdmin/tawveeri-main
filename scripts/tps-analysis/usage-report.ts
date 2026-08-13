@@ -17,7 +17,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { writeFileSync } from "fs";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
-import { buildFunnel as buildFunnelShared, type UsageEventRow } from "../../src/lib/admin/command-center-queries";
+import { buildFunnel as buildFunnelShared, type UsageEventRow, type OutboundClickRow } from "../../src/lib/admin/command-center-queries";
 
 // ── Launch-readiness KPI thresholds (transparent + editable). A "public-launch signal"
 //    requires a minimum real sample AND every quality KPI to pass. ─────────────────────
@@ -58,8 +58,18 @@ type Funnel = {
     `select event_type, session_id, is_test, source, category, query_text, canonical_id, created_at, meta
      from usage_events`
   )).rows as UsageEventRow[];
+  // ADR-244: funnel step 6 (Outbound) reads the exit LEDGER (outbound_clicks), not the
+  // go_click client event — measured 1 event vs 282 real ledger exits when this changed.
+  // Same shared buildFunnel as the live dashboard, same inputs, so they cannot diverge.
+  const rawOutboundRows = (await c.query(
+    `select is_test, canonical_product_id, affiliate_program, store_name, clicked_at, session_id, campaign, source
+     from outbound_clicks`
+  )).rows as unknown as OutboundClickRow[];
   const grab = (test: boolean): Funnel => {
-    const f = buildFunnelShared(rawEventRows.filter((r) => Boolean(r.is_test) === test));
+    const f = buildFunnelShared(
+      rawEventRows.filter((r) => Boolean(r.is_test) === test),
+      rawOutboundRows.filter((r) => Boolean(r.is_test) === test),
+    );
     return { search: f.search, results: f.results, product_view: f.productView,
       comparison_view: f.comparisonView, evidence_view: f.evidenceView, outbound: f.outbound,
       no_answer: f.noAnswer, errors: f.errors, sessions: f.sessions };

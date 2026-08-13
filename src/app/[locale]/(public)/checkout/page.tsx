@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalLink, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getSupabaseBrowserClient } from '@/lib/database';
-import { generateAffiliateUrl } from '@/lib/transactions/tracking';
+import { track } from '@/lib/analytics/track';
 import Image from 'next/image';
 
 export default function CheckoutPage() {
@@ -86,29 +86,15 @@ export default function CheckoutPage() {
  return;
  }
 
- // Generate tracking URLs for all items
- const trackingUrls = await Promise.all(
- store.items.map(async (item) => {
- const productStore = productStores.find((ps) => ps.product_id === item.productId);
- if (!productStore) return null;
-
- const result = await generateAffiliateUrl(productStore.id, user?.id);
- return result.data;
- })
- );
-
- // For now, redirect to the first item's tracking URL
- // In future, this could redirect to a combined checkout or store's cart
- const firstUrl = trackingUrls.find((url) => url) || productStores[0]?.affiliate_url || productStores[0]?.product_url;
- 
- if (firstUrl) {
- // Track checkout initiation
- if (user) {
- // Could track this in analytics/transactions
- }
-
- window.open(firstUrl, '_blank', 'noopener,noreferrer');
- 
+ // ADR-244: exit through the canonical /go route (one exit truth — sub_id,
+ // affiliate params via the provider framework, session/campaign attribution).
+ // The old path here opened a generateAffiliateUrl() URL, which appended
+ // click_id/user_id params to the RETAILER's URL — attribution pollution the
+ // retailer never asked for, on a path no affiliate report could reconcile.
+ const first = productStores.find((ps) => store.items.some((item) => item.productId === ps.product_id)) || productStores[0];
+ if (first?.id) {
+ track('go_click', { source: 'checkout', store: storeId, meta: { measured: true } });
+ window.open(`/go/ps_${first.id}?source=checkout`, '_blank', 'noopener,noreferrer');
  toast({
  title: t('common.redirected'),
  description: t('checkout.redirectedDesc'),

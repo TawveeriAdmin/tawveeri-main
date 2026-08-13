@@ -75,7 +75,7 @@ public/controlled social traffic. This is read-only and re-runnable: \`npx tsx s
 | 4 | AR/EN mobile journey (search→card→compare→outbound), 390×844 | **6/6 pass** (iphone, مكيف سبليت, macbook — ar+en each) | \`node scripts/tps-analysis/ui-journey.js --query <q> --width 390 --height 844 --json\` (this run) |
 | 5 | Funnel, real traffic, 30d | search ${funnel.search} → results ${funnel.results} → product ${funnel.product_view} → comparison ${funnel.comparison_view} → outbound ${funnel.outbound} (${funnel.real_sessions} real sessions, ${funnel.test_sessions} test) | \`usage_events\` |
 | 6 | Affiliate attribution, real clicks | see table below | \`outbound_clicks\` |
-| 7 | Social source/campaign/content attributable through journey | **NOT READY — no UTM capture exists** (\`usage_events.meta\` jsonb is free-form but nothing populates \`utm_*\`; \`outbound_clicks\` has no campaign column) | grep \`src/lib/analytics/track.ts\`, \`src/app/api/events/route.ts\`, \`src/app/go/[offerId]/route.ts\` — confirmed absent, this run |
+| 7 | Social source/campaign/content attributable through journey | **READY** — UTM captured universally at landing (root-layout CampaignCapture → sessionStorage + cookie, ADR-207/244), merged into every \`usage_events.meta\`, and stamped server-side onto \`outbound_clicks.campaign\` + \`session_id\` by \`/go\` (ADR-244) | \`src/lib/analytics/campaign.ts\`, \`src/components/analytics/campaign-capture.tsx\`, \`src/app/go/[offerId]/route.ts\` |
 | 8 | Open defects (scraping chain, 48h) | ${runs.ok}/${runs.total} runs ok, ${runs.failed} failed | \`scraping_runs\` |
 
 ### Affiliate attribution detail (real clicks only)

@@ -26,6 +26,28 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_P
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Session + campaign identity carried by cookies (ADR-244). The tw_sid cookie is the
+ *  same anonymous id track.ts keeps in localStorage; tw_campaign is the same utm set
+ *  campaign.ts keeps in sessionStorage. Reading them here lets the exit ledger itself
+ *  answer "which session/content produced this exit" — CONFIRMED, not estimated. */
+function readAttribution(req: NextRequest): { sessionId: string | null; campaign: Record<string, string> | null } {
+  const sessionId = req.cookies.get("tw_sid")?.value?.slice(0, 64) || null;
+  let campaign: Record<string, string> | null = null;
+  try {
+    const raw = req.cookies.get("tw_campaign")?.value;
+    if (raw) {
+      const parsed = JSON.parse(decodeURIComponent(raw)) as Record<string, unknown>;
+      const pick = (k: string, n: number) => (typeof parsed[k] === "string" ? (parsed[k] as string).slice(0, n) : undefined);
+      const c = {
+        utm_source: pick("utm_source", 32), utm_medium: pick("utm_medium", 32),
+        utm_campaign: pick("utm_campaign", 64), utm_content: pick("utm_content", 64),
+      };
+      if (c.utm_source) campaign = Object.fromEntries(Object.entries(c).filter(([, v]) => v)) as Record<string, string>;
+    }
+  } catch { /* malformed cookie → no campaign, never an error */ }
+  return { sessionId, campaign };
+}
+
 export async function GET(req: NextRequest, props: { params: Promise<{ offerId: string }> }) {
   const params = await props.params;
   const { offerId } = params;
@@ -44,18 +66,47 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   // req.url, which is only correct when the process is addressed directly.
   const home = () => NextResponse.redirect(new URL("/", getBaseUrl()), 302);
 
-  if (!offerId || !UUID_RE.test(offerId)) return home();
-
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-  const { data: offer, error } = await supabase
-    .from("normalized_product_observations")
-    .select("id, store_id, canonical_product_id, normalized_payload")
-    .eq("id", offerId)
-    .maybeSingle();
-
-  const rawUrl = (offer?.normalized_payload as Record<string, unknown> | undefined)?._url as string | undefined;
-  if (error || !offer || !rawUrl) return home();
+  // ADR-244 — STOREFRONT exits: /go/ps_<product_store_id>. Before this, the storefront
+  // product page (and checkout) exited via a client-side legacy path that bypassed this
+  // route entirely: no outbound_clicks row, no sub_id, no affiliate reconciliation hook,
+  // and a background writer polluting retailer URLs with click_id/user_id params. Same
+  // provider framework, same ledger, one exit truth.
+  let resolved: { offerId: string | null; productStoreId: string | null; storeId: number | string; canonicalId: string | null; rawUrl: string } | null = null;
+  if (offerId?.startsWith("ps_") && UUID_RE.test(offerId.slice(3))) {
+    const psId = offerId.slice(3);
+    const { data: ps } = await supabase
+      .from("product_stores")
+      .select("id, store_id, product_url, affiliate_url, products(canonical_product_id)")
+      .eq("id", psId)
+      .maybeSingle();
+    const productRec = Array.isArray((ps as Record<string, unknown> | null)?.products)
+      ? (ps as { products: { canonical_product_id: string | null }[] }).products[0]
+      : (ps as { products?: { canonical_product_id: string | null } } | null)?.products;
+    const url = (ps as { affiliate_url?: string | null; product_url?: string | null } | null)?.affiliate_url
+      || (ps as { product_url?: string | null } | null)?.product_url;
+    if (ps && url) {
+      resolved = {
+        offerId: null,
+        productStoreId: (ps as { id: string }).id,
+        storeId: (ps as { store_id: number }).store_id,
+        canonicalId: productRec?.canonical_product_id ?? null,
+        rawUrl: url,
+      };
+    }
+  } else if (offerId && UUID_RE.test(offerId)) {
+    const { data: offer, error } = await supabase
+      .from("normalized_product_observations")
+      .select("id, store_id, canonical_product_id, normalized_payload")
+      .eq("id", offerId)
+      .maybeSingle();
+    const rawUrl = (offer?.normalized_payload as Record<string, unknown> | undefined)?._url as string | undefined;
+    if (!error && offer && rawUrl) {
+      resolved = { offerId: offer.id, productStoreId: null, storeId: offer.store_id, canonicalId: offer.canonical_product_id, rawUrl };
+    }
+  }
+  if (!resolved) return home();
 
   // Pre-generate an opaque per-click sub-id so the redirect stays await-free while
   // still tying this click to a future network-reported conversion (ascsubtag etc.).
@@ -65,8 +116,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   const rawSource = req.nextUrl.searchParams.get("source") || "product_page";
   const source = /^[a-z_]{1,32}$/.test(rawSource) ? rawSource : "product_page";
 
-  const provider = getProviderByStoreId(offer.store_id);
-  const link = buildOfferExitLink(provider, rawUrl, offer.store_id ?? "", { clickId: subId, source });
+  const provider = getProviderByStoreId(resolved.storeId);
+  const link = buildOfferExitLink(provider, resolved.rawUrl, String(resolved.storeId ?? ""), { clickId: subId, source });
 
   // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
   if (!/^https?:\/\//i.test(link.url)) return home();
@@ -80,18 +131,25 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
     req.nextUrl.searchParams.get("tw_test") === "1" ||
     /bot|crawl|spider|slurp|headless|puppeteer|playwright|lighthouse|python-requests|curl|wget/i.test(ua);
 
+  // Session + campaign identity (ADR-244) — the ledger itself now answers
+  // "which session and which piece of content produced this exit."
+  const { sessionId, campaign } = readAttribution(req);
+
   // Fire-and-forget click record — never block or fail the exit on the write.
   supabase
     .from("outbound_clicks")
     .insert({
-      offer_id: offer.id,
-      canonical_product_id: offer.canonical_product_id,
-      store_name: offer.store_id,
+      offer_id: resolved.offerId,
+      product_store_id: resolved.productStoreId,
+      canonical_product_id: resolved.canonicalId,
+      store_name: String(resolved.storeId ?? ""),
       destination_url: link.url,
       affiliate_program: link.program,
       affiliate_tag: link.tag ?? null,
       sub_id: subId,
       source,
+      session_id: sessionId,
+      campaign,
       is_test: isTest,
       user_agent: ua || null,
       referrer: req.headers.get("referer") ?? null,

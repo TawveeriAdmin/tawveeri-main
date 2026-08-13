@@ -24,7 +24,13 @@ export type Campaign = {
 
 /** Capture utm_* from the current URL into sessionStorage (call once on mount, alongside
  *  initTestModeFromUrl()). Overwrites only when utm_source is present in THIS URL — a
- *  plain internal navigation never clears an already-captured campaign mid-session. */
+ *  plain internal navigation never clears an already-captured campaign mid-session.
+ *
+ *  ADR-244: also mirrored into a SESSION cookie (no max-age — dies with the browser
+ *  session, same lifetime semantics as the sessionStorage copy) so the `/go` exit
+ *  route can stamp the campaign onto `outbound_clicks` server-side. That closes the
+ *  split-brain this file's older comment described: the ledger that records the real
+ *  exits could never see which content produced them. */
 export function initCampaignFromUrl(): void {
   if (typeof window === "undefined") return;
   try {
@@ -38,6 +44,7 @@ export function initCampaignFromUrl(): void {
       utm_content: p.get("utm_content")?.slice(0, 64) || undefined,
     };
     sessionStorage.setItem(KEY, JSON.stringify(c));
+    try { document.cookie = `tw_campaign=${encodeURIComponent(JSON.stringify(c))}; path=/; samesite=lax`; } catch { /* noop */ }
   } catch { /* best-effort */ }
 }
 

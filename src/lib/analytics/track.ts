@@ -9,6 +9,7 @@
 
 import { getEntryVariant } from "./variant";
 import { getCampaign } from "./campaign";
+import type { UsageEventType } from "./events";
 
 const SID_KEY = "tw_sid";
 const TEST_KEY = "tw_test";
@@ -18,12 +19,17 @@ function uuid(): string {
   return "s-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-/** Anonymous, stable per-browser session id (NOT a user id). */
+/** Anonymous, stable per-browser session id (NOT a user id). Mirrored into a
+ *  cookie (ADR-244) so plain-navigation exits through `/go` can carry the same
+ *  session identity server-side — this is what joins a retailer exit back to
+ *  the session/campaign that produced it, CONFIRMED instead of a 10s-window
+ *  estimate. Same pattern the tw_test cookie already uses. */
 export function sessionId(): string {
   if (typeof window === "undefined") return "";
   try {
     let s = localStorage.getItem(SID_KEY);
     if (!s) { s = uuid(); localStorage.setItem(SID_KEY, s); }
+    try { document.cookie = `tw_sid=${encodeURIComponent(s)}; path=/; max-age=31536000; samesite=lax`; } catch { /* noop */ }
     return s;
   } catch { return ""; }
 }
@@ -53,29 +59,12 @@ export function isTestMode(): boolean {
 // step in the funnel report: Search (search|advisor_query) → Results (results|advisor_result)
 // → Product View (product_view) → Comparison (comparison_view) → Evidence (evidence_view)
 // → Outbound Click (go_click). `no_answer`/`error` are off-funnel signals.
-export type EventType =
-  | "landing_view"                       // Landing engagement: which entry arm was shown
-  | "advisor_query" | "advisor_result"   // advisor surface: Search / Results
-  // P2-8: the shopper answered the ONE clarification question. Off-funnel, but it is the
-  // only way to learn whether a question we proved *could* change the recommendation is one
-  // shoppers actually want to answer — asked-vs-answered is the measure that decides
-  // whether the question set grows or shrinks.
-  | "advisor_clarified"
-  // Decision Receipt (2026-08-09, scoped share MVP) — a shopper shared/copied Waffar's
-  // answer. Off-funnel (does not gate the search→...→go_click chain), tracked separately
-  // as a growth-loop signal per the founder's Gate 10 direction.
-  | "advisor_share"
-  // Constraint Ledger (2026-08-09, Unified Intelligence mission, Section 7) — a shopper
-  // tapped to remove a constraint ("فهمنا منك") the parser understood. Off-funnel; measures
-  // how often the parser understood something the shopper did NOT mean, which is the signal
-  // that should drive parser precision work, not guesswork.
-  | "advisor_constraint_removed"
-  | "search" | "results"                 // storefront surface: Search / Results
-  | "product_view"                       // Product View (both surfaces)
-  | "comparison_view"                    // Comparison seen (≥2 stores)
-  | "evidence_view"                      // Evidence / trust engaged
-  | "go_click"                           // Outbound Click (measured exit)
-  | "no_answer" | "error";               // off-funnel signals
+//
+// ADR-244: the list itself lives in ./events.ts — ONE contract shared with the
+// ingestion API, so an event added here can never again be silently dropped there.
+// Per-event semantics (asked-vs-answered, Decision Receipt, Constraint Ledger)
+// are documented on the contract entries.
+export type EventType = UsageEventType;
 
 /** Fire-and-forget an event. Safe to call anywhere on the client. Every event carries the
  *  visitor's entry-experiment arm (in meta.variant) so the whole funnel can be compared

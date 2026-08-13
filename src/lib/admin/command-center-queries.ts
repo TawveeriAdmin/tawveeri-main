@@ -74,13 +74,20 @@ export interface OutboundClickRow {
   affiliate_program: string | null;
   store_name: string | null;
   clicked_at: string;
+  // ADR-244: /go now stamps session + campaign (tw_sid / tw_campaign cookies) and the
+  // storefront-offer linkage directly onto the ledger row. NULL on rows written before
+  // the cutover — historical rows stay UNKNOWN, never backfilled or guessed. Optional
+  // because pre-cutover fixtures/rows legitimately lack them.
+  session_id?: string | null;
+  campaign?: Record<string, unknown> | null;
+  source?: string | null;
 }
 
 const EVENT_COLUMNS = 'event_type, session_id, is_test, source, category, query_text, canonical_id, created_at, meta';
 // outbound_clicks predates the numbered-migration schema files and isn't declared anywhere in the
 // repo — confirmed via read-only information_schema introspection: its timestamp column is
 // `clicked_at`, not `created_at`. Verify against production before assuming a column name here.
-const OUTBOUND_COLUMNS = 'is_test, canonical_product_id, affiliate_program, store_name, clicked_at';
+const OUTBOUND_COLUMNS = 'is_test, canonical_product_id, affiliate_program, store_name, clicked_at, session_id, campaign, source';
 
 // Bounded: current REAL+TEST volume is a few thousand rows/month. If this ever needs to scale past
 // the row cap, aggregate server-side via a SQL view instead of raising the limit — see ADR-213.
@@ -174,16 +181,24 @@ function dedupeFunnelActions(events: UsageEventRow[]): DedupedCounts {
   return { search, results, noAnswer, errors };
 }
 
-export function buildFunnel(events: UsageEventRow[]): Funnel {
+// ADR-244: funnel step 6 (Outbound) reads the EXIT LEDGER when its rows are provided —
+// measured 2026-08-13: 282 REAL /go exits since the commercial baseline against ONE
+// go_click client event, because most exits are plain <a> navigations from surfaces
+// that never fired the client event. The ledger row is written server-side on every
+// /go redirect and cannot be lost to an ad-blocker or a dropped keepalive fetch.
+// Without outbound rows (legacy caller), the old go_click count is used and labeled
+// accordingly by the metric dictionary.
+export function buildFunnel(events: UsageEventRow[], outboundRows?: OutboundClickRow[]): Funnel {
   const sessions = new Set<string>();
-  let productView = 0, comparisonView = 0, evidenceView = 0, outbound = 0;
+  let productView = 0, comparisonView = 0, evidenceView = 0, goClicks = 0;
   for (const e of events) {
     if (e.session_id) sessions.add(e.session_id);
     if (e.event_type === 'product_view') productView++;
     else if (e.event_type === 'comparison_view') comparisonView++;
     else if (e.event_type === 'evidence_view') evidenceView++;
-    else if (e.event_type === 'go_click') outbound++;
+    else if (e.event_type === 'go_click') goClicks++;
   }
+  const outbound = outboundRows ? outboundRows.length : goClicks;
   const { search, results, noAnswer, errors } = dedupeFunnelActions(events);
   return { search, results, productView, comparisonView, evidenceView, outbound, noAnswer, errors, sessions: sessions.size };
 }
@@ -245,17 +260,42 @@ export function computeCampaignAttribution(
   goClickEvents: UsageEventRow[],
   outboundRows: OutboundClickRow[]
 ): CampaignAttributionSummary {
-  const rows: CampaignAttributionRow[] = goClickEvents.map((e) => {
+  // ADR-244 — primary path: ledger rows that carry their own campaign (stamped by /go
+  // from the tw_campaign cookie). CONFIRMED attribution, no window-join needed.
+  const directRows: CampaignAttributionRow[] = outboundRows
+    .filter((o) => o.session_id || o.campaign)
+    .map((o) => {
+      const c = (o.campaign ?? {}) as Record<string, unknown>;
+      const pick = (k: string) => (typeof c[k] === 'string' ? (c[k] as string) : null);
+      return {
+        sessionId: o.session_id || '',
+        clickedAt: o.clicked_at,
+        utmSource: pick('utm_source'),
+        utmMedium: pick('utm_medium'),
+        utmCampaign: pick('utm_campaign'),
+        utmContent: pick('utm_content'),
+        matchedOutboundClick: true,
+        storeName: o.store_name,
+        affiliateProgram: o.affiliate_program,
+        isTest: o.is_test,
+      };
+    });
+  const directCovered = new Set(directRows.map((r) => `${r.sessionId}|${r.clickedAt}`));
+
+  // Legacy fallback for pre-cutover rows and client-only exits: the ADR-214
+  // nearest-timestamp join between go_click events and un-stamped ledger rows.
+  const unstampedOutbound = outboundRows.filter((o) => !o.session_id && !o.campaign);
+  const legacyRows: CampaignAttributionRow[] = goClickEvents.map((e) => {
     const meta = e.meta ?? {};
     const utmSource = typeof meta.utm_source === 'string' ? meta.utm_source : null;
     const clickTs = new Date(e.created_at).getTime();
 
-    // Nearest-timestamp match on canonical_product_id, same is_test state, within the window —
-    // session_id can't be used (outbound_clicks.session_id is unpopulated, ADR-207) so this is
-    // the safest available join key without touching the write path.
+    // Nearest-timestamp match on canonical_product_id, same is_test state, within the
+    // window — against UN-STAMPED ledger rows only (stamped ones are already covered by
+    // the direct path above).
     let best: OutboundClickRow | null = null;
     let bestDelta = Infinity;
-    for (const o of outboundRows) {
+    for (const o of unstampedOutbound) {
       if (o.is_test !== e.is_test) continue;
       if (!e.canonical_id || o.canonical_product_id !== e.canonical_id) continue;
       const delta = Math.abs(new Date(o.clicked_at).getTime() - clickTs);
@@ -275,6 +315,8 @@ export function computeCampaignAttribution(
       isTest: e.is_test,
     };
   });
+
+  const rows = [...directRows, ...legacyRows.filter((r) => !directCovered.has(`${r.sessionId}|${r.clickedAt}`))];
 
   const bySourceMap = new Map<string, number>();
   let withKnownCampaign = 0, matchedToOutboundClicks = 0;
@@ -401,8 +443,8 @@ const METRIC_CONFIDENCE: Record<string, MetricConfidence> = {
   sessions: { state: 'CONFIRMED', note: 'Exact distinct session_id count from usage_events.' },
   search: { state: 'ESTIMATED', note: 'Deduped: the unified search page can fire both a storefront and an advisor event for one action (ADR-214) — collapsed to one action per query within a 3s window.' },
   results: { state: 'ESTIMATED', note: 'Same dedup as Search — see ADR-214.' },
-  outbound: { state: 'CONFIRMED', note: 'Exact go_click event count from usage_events.' },
-  qualifiedVisitsReferred: { state: 'CONFIRMED', note: 'Distinct REAL session_id values with at least one confirmed retailer redirect (go_click) — session-level, not a person count.' },
+  outbound: { state: 'CONFIRMED', note: 'Exit-ledger rows (outbound_clicks) in period — server-recorded on every /go redirect (ADR-244). Client-only exits from scraped search results are additionally visible as go_click events but are not in this count.' },
+  qualifiedVisitsReferred: { state: 'CONFIRMED', note: 'Distinct REAL sessions with ≥1 measured retailer exit — union of ledger rows carrying session_id (stamped by /go since ADR-244) and go_click events. Ledger rows from before the cutover have no session identity and are honestly excluded.' },
   comparisonView: { state: 'CONFIRMED', note: 'Exact comparison_view event count from usage_events — no proven duplication on this step.' },
   answerRate: { state: 'ESTIMATED', note: 'Derived from deduped Search/Results — precision depends on sample size; below 100 real sessions this is a directional signal, not a verdict.' },
   campaignAttribution: { state: 'ESTIMATED', note: 'Session-level join between usage_events UTM capture and outbound_clicks by nearest timestamp — not a guaranteed exact per-click match. See docs/AFFILIATE_RECONCILIATION_CONTRACT.md and ADR-214.' },
@@ -423,8 +465,16 @@ export function summarizeOutbound(rows: OutboundClickRow[], isTest: boolean) {
 // anonymous session is never called a customer, a click attempt is never called a confirmed
 // arrival. "Qualified visit" = a REAL session that reached at least one confirmed retailer
 // redirect (go_click) — session-level, not person-level.
-export function qualifiedReferredSessions(events: UsageEventRow[]): number {
-  return new Set(events.filter((e) => e.event_type === 'go_click' && e.session_id).map((e) => e.session_id)).size;
+export function qualifiedReferredSessions(events: UsageEventRow[], outboundRows?: OutboundClickRow[]): number {
+  // ADR-244: a qualified referred session = a REAL session with at least one MEASURED
+  // retailer exit. The exit ledger (outbound_clicks.session_id, stamped by /go from the
+  // tw_sid cookie) is the primary source; go_click events are unioned in so client-only
+  // exits (scraped search results with no ledger row) still count. Ledger rows written
+  // before the ADR-244 cutover have NULL session_id and correctly contribute nothing —
+  // historical undercount is disclosed in METRIC_DEFINITIONS, never guessed.
+  const s = new Set(events.filter((e) => e.event_type === 'go_click' && e.session_id).map((e) => e.session_id));
+  for (const o of outboundRows ?? []) if (o.session_id) s.add(o.session_id);
+  return s.size;
 }
 
 // outbound_clicks carries no category — join canonical_product_id -> canonical_products.category.
@@ -593,9 +643,12 @@ export async function getCommandCenterData(
   const testEvents = events.filter((e) => e.is_test);
   const prevRealEvents = prevEvents.filter((e) => !e.is_test);
 
-  const real = buildFunnel(realEvents);
-  const test = buildFunnel(testEvents);
-  const prevReal = buildFunnel(prevRealEvents);
+  // ADR-244: step 6 (Outbound) is now the exit LEDGER, split REAL/TEST like the events.
+  // The previous-period funnel needs its own ledger fetch for a like-for-like Δ.
+  const prevOutboundRows = await fetchOutboundClicks(fetchPrev.start, fetchPrev.end);
+  const real = buildFunnel(realEvents, outboundRows.filter((r) => !r.is_test));
+  const test = buildFunnel(testEvents, outboundRows.filter((r) => r.is_test));
+  const prevReal = buildFunnel(prevRealEvents, prevOutboundRows.filter((r) => !r.is_test));
 
   const kpis = {
     answerRate: pct(real.results, real.search),
@@ -611,8 +664,13 @@ export async function getCommandCenterData(
 
   const lastEventAt = (lastEvent.data as { created_at: string } | null)?.created_at ?? null;
   const trackingStopped = lastEventAt ? Date.now() - new Date(lastEventAt).getTime() > 6 * 60 * 60 * 1000 : true;
-  const goClickDivergencePct = real.outbound > 0
-    ? Math.abs(real.outbound - outboundReal.clicks) / real.outbound
+  // ADR-244: funnel step 6 now IS the ledger, so the divergence signal compares the
+  // client go_click EVENT count against ledger rows — it measures how much of the exit
+  // volume the client-side pipe misses (ad-blockers, dropped keepalive, un-instrumented
+  // surfaces). Measured 2026-08-13 at the fix: 1 event vs 282 ledger rows (99.6% miss).
+  const goClickEventCountReal = realEvents.filter((e) => e.event_type === 'go_click').length;
+  const goClickDivergencePct = outboundReal.clicks > 0
+    ? Math.abs(goClickEventCountReal - outboundReal.clicks) / outboundReal.clicks
     : null;
   // Authoritative source is code, not the `stores` table — `stores.affiliate_config` (migration 20)
   // was never applied to production (ADR-212) and isn't read by the actual exit path either way.
@@ -654,7 +712,7 @@ export async function getCommandCenterData(
     campaignAttribution,
     confidence: METRIC_CONFIDENCE,
     commercial: {
-      qualifiedVisitsReferred: qualifiedReferredSessions(realEvents),
+      qualifiedVisitsReferred: qualifiedReferredSessions(realEvents, outboundRows.filter((r) => !r.is_test)),
       confirmedRetailerRedirects: outboundReal.clicks,
       referredProductInterest: outboundReal.distinctProducts,
       referredCategoryDemand: categoryDemand,

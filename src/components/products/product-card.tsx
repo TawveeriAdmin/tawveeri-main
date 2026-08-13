@@ -17,6 +17,7 @@ import { useParams } from 'next/navigation';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
+import { track } from '@/lib/analytics/track';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 
 interface ProductStore {
@@ -159,7 +160,12 @@ export function ProductCard({
     if (navigating) return;
     // TPS أو المتجر مباشرة — لا نمر بمسار ensure القديم إلا اضطراراً
     if (product.tps_compare_url) { router.push(product.tps_compare_url); return; }
-    if (externalProductUrl) { window.open(externalProductUrl, '_blank', 'noopener'); return; }
+    if (externalProductUrl) {
+      // ADR-244: this retailer exit was unmeasured (no event, no ledger row).
+      track('go_click', { store: String(primaryStoreSlug ?? ''), source: 'search_card', meta: { measured: false } });
+      window.open(externalProductUrl, '_blank', 'noopener');
+      return;
+    }
     setNavigating(true);
     try {
       const res = await fetch('/api/products/ensure', {
@@ -228,7 +234,18 @@ export function ProductCard({
       </button>
     ) : isDbProduct ? (
       productLink.startsWith('http') ? (
-        <a href={productLink} target="_blank" rel="noopener noreferrer" className="flex flex-col h-full">
+        <a
+          href={productLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col h-full"
+          onClick={() => {
+            // ADR-244: previously a completely unmeasured retailer exit. No
+            // product_stores ledger row exists for scraped externals, so the
+            // affiliate-tagged direct link stays; the event is the measurement.
+            track('go_click', { store: String(primaryStoreSlug ?? ''), source: 'search_card', meta: { measured: false } });
+          }}
+        >
           {children}
         </a>
       ) : (

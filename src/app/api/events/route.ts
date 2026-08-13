@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
+import { USAGE_EVENT_SET } from "@/lib/analytics/events";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,9 @@ export const dynamic = "force-dynamic";
  *     TEST traffic — this only affects FUTURE events, historical rows are untouched.
  * No auth, no PII: session_id is an anonymous client uuid, query_text is truncated.
  */
-const ALLOWED = new Set(["landing_view", "advisor_query", "advisor_result", "search", "results", "product_view", "comparison_view", "evidence_view", "go_click", "no_answer", "error"]);
+// ADR-244: derived from the shared contract, never hand-maintained here again —
+// a hand-copied list silently dropped 3 emitted event types for months.
+const ALLOWED = USAGE_EVENT_SET;
 const BOT_UA = /bot|crawl|spider|slurp|bingpreview|headless|puppeteer|playwright|lighthouse|python-requests|curl|wget|axios|node-fetch/i;
 
 export async function POST(req: NextRequest) {
