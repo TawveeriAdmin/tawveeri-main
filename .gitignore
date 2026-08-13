@@ -74,3 +74,6 @@ scripts/tps-er/er-review-queue.json
 
 # local diagnostic probes
 scratchpad/
+
+# growth creative render workspace (intermediate frames/captures)
+.growth-render/
