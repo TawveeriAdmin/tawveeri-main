@@ -1,0 +1,30 @@
+{
+  "content_id": "tw-ep1-ac",
+  "series": "مسلسل توفيري",
+  "episode_label": "الحلقة ١ · المكيف",
+  "base_url": "https://tawveeri.com",
+  "query": "أبي مكيف هادي بسعر زين",
+  "scroll_steps": 2,
+  "characters": {
+    "husband": { "name": "أبو فهد", "avatar_bg": "#3b4d63", "role": "incoming" },
+    "wife": { "name": "أم فهد", "avatar_bg": "#1f6f59", "role": "outgoing" }
+  },
+  "chat_open": [
+    { "who": "wife", "text": "المكيف صار يسوّي صوت أكثر ما يبرّد 😤", "hold": 2.0 },
+    { "who": "husband", "text": "توني واصل من الدوام.. لا تقولين نلف المحلات 🥵", "hold": 2.3, "typing": 1.1 },
+    { "who": "wife", "text": "لا محلات ولا لفّة.. أعطني دقيقة وحدة", "hold": 1.9 },
+    { "who": "wife", "text": "شوف وش لقيت 👇", "hold": 1.5 }
+  ],
+  "chat_close": [
+    { "who": "husband", "text": "قارنتي واخترتي وأنتي على الكنب؟ 😅", "hold": 2.2, "typing": 0.9 },
+    { "who": "wife", "text": "اسمه توفيري.. خلّه عندك 😌", "hold": 2.0 }
+  ],
+  "subs": {
+    "typing": "بكلامها العادي.. مو بكلام المتاجر",
+    "results": "نتائج حقيقية بأسعار رصدناها",
+    "results2": "تقارن وتختار وهي مرتاحة"
+  },
+  "cta": "قارن قبل ما تشتري",
+  "cta_seconds": 2.6,
+  "landing_url": "https://tawveeri.com/ar?utm_source=tiktok&utm_medium=organic&utm_campaign=cdv_wave1&utm_content=tw-ep1-ac"
+}
