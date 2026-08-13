@@ -17,6 +17,7 @@ import {
   Bot,
   Activity,
   Gauge,
+  Rocket,
   FileBarChart,
   PanelLeftClose,
   PanelLeftOpen,
@@ -40,6 +41,7 @@ const STORAGE_KEY = 'tawveeri-admin-sidebar-collapsed';
 
 const navItems = [
   { href: '/admin/command-center', icon: Gauge, key: 'commandCenter' },
+  { href: '/admin/growth', icon: Rocket, key: 'growth' },
   { href: '/admin/retailer-report', icon: FileBarChart, key: 'retailerReport' },
   { href: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
   { href: '/admin/profile', icon: User, key: 'profile' },

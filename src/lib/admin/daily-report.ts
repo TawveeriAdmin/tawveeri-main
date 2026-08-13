@@ -7,6 +7,7 @@
 // never shown as zero or invented as a strong claim.
 import { getCommandCenterData } from './command-center-queries';
 import { computeOpportunities } from './opportunities';
+import { fetchGrowthContent } from './growth-queries';
 import { getProviderByStoreId } from '@/lib/providers/registry';
 
 export interface DailyReportResult {
@@ -21,6 +22,19 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
   const data = await getCommandCenterData('yesterday');
   const { real, prevReal, commercial, baseline, quality } = data;
   const opportunities = computeOpportunities(data);
+
+  // ADR-244 Gate E: content awaiting founder review is a real, actionable signal —
+  // never fabricated activity; shown only when ready_for_review rows actually exist.
+  const readyContent = await fetchGrowthContent()
+    .then((rows) => rows.filter((r) => r.status === 'ready_for_review'))
+    .catch(() => []);
+  const reviewBlock = readyContent.length
+    ? `<div style="background:#eafaf3;border:1px solid #b9e7d4;border-radius:12px;padding:14px;margin:0 0 20px">
+         <b style="color:#126b4f">محتوى جديد جاهز للمراجعة (${readyContent.length}):</b>
+         ${readyContent.map((r) => `<div style="margin-top:6px">• ${r.title ?? r.content_id} — ${r.why_now ? r.why_now.slice(0, 120) + '…' : ''}</div>`).join('')}
+         <div style="margin-top:8px"><a href="https://tawveeri.com/ar/admin/growth" style="color:#0d5c46;font-weight:bold">راجع واعتمد أو اطلب تعديل ←</a></div>
+       </div>`
+    : '';
 
   const dateStr = new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleDateString('ar-SA', { timeZone: 'Asia/Riyadh' });
   const hasActivity = real.sessions > 0 || commercial.confirmedRetailerRedirects > 0;
@@ -38,9 +52,11 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
 
   if (!hasActivity) {
     return {
-      subjectAr: `توفيري — ملخص يوم ${dateStr}: لا نشاط`,
-      hasActivity: false,
-      html: wrap(`<p style="font-size:16px">لم يتم تسجيل أي نشاط إنتاجي مؤهل يوم أمس.</p>`),
+      subjectAr: readyContent.length
+        ? `توفيري — محتوى جاهز للمراجعة (${readyContent.length})`
+        : `توفيري — ملخص يوم ${dateStr}: لا نشاط`,
+      hasActivity: readyContent.length > 0,
+      html: wrap(`${reviewBlock}<p style="font-size:16px">لم يتم تسجيل أي نشاط إنتاجي مؤهل يوم أمس.</p>`),
     };
   }
 
@@ -80,6 +96,7 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
   const html = wrap(`
     <h2 style="margin:0 0 4px;font-size:20px">ملخص يوم ${dateStr}</h2>
     <p style="color:#5b6b63;margin:0 0 20px">توفيري — مركز قيادة المؤسس</p>
+    ${reviewBlock}
 
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px" role="presentation">
       ${statRow('الجلسات الحقيقية', String(real.sessions), sessionsDelta !== null ? `${sessionsDelta >= 0 ? '▲' : '▼'} ${Math.abs(sessionsDelta)}%` : 'جديد')}

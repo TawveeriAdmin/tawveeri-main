@@ -1,0 +1,23 @@
+{
+  "content_id": "cdv-ac-001",
+  "experiment_id": "cdv-wave1-ac",
+  "channel": "tiktok",
+  "hook_family": "time_hassle",
+  "base_url": "https://tawveeri.com",
+  "query": "أبي مكيف هادي بسعر زين",
+  "scroll_steps": 3,
+  "timeline": {
+    "hooks": [
+      { "text": "المكيف صار قديم\nوالجو حرّ 🥵", "seconds": 2.4 },
+      { "text": "وما عندي وقت\nألفّ المحلات والمواقع 😩", "seconds": 2.6 },
+      { "text": "لقيت طريقة أسهل 👇", "seconds": 1.8 }
+    ],
+    "sub_home": "افتح توفيري",
+    "sub_typing": "اكتب اللي تبيه… بكلامك العادي",
+    "sub_results": "يفهم طلبك ويقارن الأسعار المتاحة",
+    "sub_results2": "تشوف السعر ومن أي متجر",
+    "cta": "قبل تشتري،\nشوف فرق السعر",
+    "cta_seconds": 3.2
+  },
+  "landing_url": "https://tawveeri.com/ar/search?q=%D8%A3%D8%A8%D9%8A%20%D9%85%D9%83%D9%8A%D9%81%20%D9%87%D8%A7%D8%AF%D9%8A%20%D8%A8%D8%B3%D8%B9%D8%B1%20%D8%B2%D9%8A%D9%86&utm_source=tiktok&utm_medium=organic_social&utm_campaign=cdv_wave1&utm_content=cdv-ac-001"
+}
