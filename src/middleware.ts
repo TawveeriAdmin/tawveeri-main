@@ -367,9 +367,12 @@ export const config = {
      * - sitemap.xml / robots.txt (SEO files — locale-independent)
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
+     * - favicon.ico / sw.js (root static files — sw.js must serve at origin root
+     *   or service-worker registration fails; a locale redirect here silently
+     *   broke web push for every browser)
+     * - public folder static assets by extension (video/audio included — the
+     *   growth creatives under /growth/*.mp4 are served from public/)
      */
-    '/((?!go/|sitemap.xml|robots.txt|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!go/|sitemap.xml|robots.txt|_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|mp3)$).*)',
   ],
 };
