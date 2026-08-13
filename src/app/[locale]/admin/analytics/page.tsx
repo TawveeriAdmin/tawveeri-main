@@ -7,7 +7,7 @@ import {
 } from '@/lib/admin/dashboard-queries';
 import { createClient } from '@/lib/auth/server';
 import { getServerTranslations } from '@/lib/translations-server';
-import { DashboardKPICards } from '../dashboard/dashboard-kpis';
+import { DashboardKPICards } from './analytics-kpis';
 
 const AnalyticsCharts = dynamic(
   () => import('./analytics-charts').then((m) => ({ default: m.AnalyticsCharts }))

@@ -1,4 +1,40 @@
-# ═══ RESUME HERE — 2026-08-13 CHECKPOINT #76 · GROWTH ENGINE STAGE ONE — SHIPPED, AWAITING FOUNDER REVIEW OF THE FIRST CREATIVE ═══
+# ═══ RESUME HERE — 2026-08-13 CHECKPOINT #77 · FOUNDER CONTROL CENTER TRUTH PASS — ADR-245 ═══
+
+## MISSION: Truth, Operability & Decision-Quality for the Founder Dashboard — COMPLETE
+
+**Full detail: ADR-245.** The legacy admin surfaces (`/admin/dashboard`, `/admin/stores`,
+`/admin/transactions`, `/admin/scraping/health`) were rendering failed queries as zeros,
+fabricating data, and crashing in production. All rebuilt on governed sources.
+
+### The headline production truths (verify against DB, never against the old UI)
+- **"24 stores" = registry rows** (most retired). The real taxonomy: **11 ingestion-approved
+  → 11 customer-displayable → 2 affiliate-enabled**; 9 have storefront listings. The old
+  Active/Pending/Suspended/Inactive cards queried `stores.status` — **a column production
+  does not have** — and rendered the 42703 error as four zeros.
+- **Scraper health crash (Sentry `v.total_products.toLocaleString`)**: page rendered the
+  retired `v_scraping_coverage` API shape; the rebuilt API returns freshness/runs/alerts.
+  Fixed with a tested normalization boundary (`src/lib/admin/scraping-health-contract.ts`,
+  null=UNKNOWN≠0) + full LOADING/ERROR/EMPTY state separation. The Safari "string did not
+  match the expected pattern" was `res.json()` on non-JSON error bodies (no `res.ok` check).
+- **`transactions` = 0 rows, no writer** — Tawveeri never observes merchant checkout. The
+  page is now **Commercial signals**: ledger exits → tagged exits → network conversions
+  (honestly "no report imported yet") → confirmed commission (unavailable until import).
+- Dashboard home had hardcoded "stable"/"30 days", a transactions÷alerts "activity rate",
+  and **Math.random() sparklines** — replaced by the derived operating picture
+  (`src/lib/admin/founder-home-queries.ts`): SYSTEM / ATTENTION / RETAILERS / CATALOG /
+  CONSUMER (7d REAL) / COMMERCIAL / ACCOUNTS, with "—" for UNKNOWN, never 0.
+- "العروض النشطة 1,515" was all-time `is_deal` listings of 18,181 total — relabeled.
+- Login/signup "duplicates" are legitimate (`user_login` + `new_device_login` per login).
+
+### Remaining known debt (deliberately not done)
+`/admin/analytics` still runs legacy queries (`stores.status`, transaction charts) —
+secondary surface. `/admin/products`, `/admin/users`, `/admin/logs` untouched. The
+`notifications` badge shows per-user welcome/new-device rows (10), not founder alerts —
+founder alerts live in the dashboard ATTENTION section.
+
+---
+
+# ═══ 2026-08-13 CHECKPOINT #76 · GROWTH ENGINE STAGE ONE — SHIPPED, AWAITING FOUNDER REVIEW OF THE FIRST CREATIVE ═══
 
 ## MISSION: Evidence-Led Distribution & Growth Engine v3 (founder execution mission) — STAGE ONE COMPLETE
 

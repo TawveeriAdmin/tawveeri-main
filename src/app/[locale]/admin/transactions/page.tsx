@@ -1,834 +1,222 @@
-'use client';
+// Commercial signals (rebuilt, founder mission 2026-08-13).
+//
+// The previous page was a "Transactions" dashboard (total/completed/pending/
+// failed/refunded) over the `transactions` table — which has 0 rows and no
+// writer (its only ingress was internalized behind CRON_SECRET in ADR-244
+// after zero legitimate callers were confirmed). Tawveeri never processes the
+// merchant checkout, so a transactions ledger it cannot observe is a
+// fabricated certainty. This page is restructured around the events Tawveeri
+// CAN observe, in the order of the commercial chain:
+//   confirmed retailer exits (ledger) → attributed exits → affiliate
+//   conversions (network reports only) → confirmed commission (same).
+// Sources are governed by docs/METRIC_DEFINITIONS.md.
 
-import { useState, useEffect, useCallback, useMemo, use } from 'react';
-import { useTranslations } from '@/lib/simple-intl-provider';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ProductIdentity } from '@/components/products/shared-product-card';
-import { getSupabaseBrowserClient } from '@/lib/database';
-import { useToast } from '@/components/ui/use-toast';
-import { Price } from '@/components/ui/price';
-import {
-  ArrowRightLeft,
-  CheckCircle,
-  Clock,
-  XCircle,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  SlidersHorizontal,
-  Columns3,
-  Download,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatDate, formatNumber } from '@/lib/formatting';
-import type { TransactionStatus } from '@/lib/database/types';
+import Link from 'next/link';
+import { createServerClient } from '@/lib/database';
+import { resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { ArrowUpRight, Wallet } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────
-interface Transaction {
-  id: string;
-  amount: number;
-  commission_amount: number | null;
-  commission_rate: number | null;
-  status: TransactionStatus;
-  clicked_at: string | null;
-  converted_at: string | null;
-  created_at: string;
-  product_stores?: {
-    id: string;
-    current_price: number;
-    products?: {
-      id: string;
-      name_ar: string;
-      name_en: string;
-    };
-    stores?: {
-      id: string;
-      name_ar: string;
-      name_en: string;
-    };
-  };
-  users?: {
-    id: string;
-    email: string | null;
-    full_name: string | null;
-  };
+const BASELINE_ISO = '2026-08-06T00:00:00Z';
+
+interface ExitRow {
+  clicked_at: string;
+  store_name: string | null;
+  source: string | null;
+  affiliate_program: string | null;
+  session_id: string | null;
+  campaign: Record<string, string> | null;
 }
 
-interface TransactionStats {
-  total: number;
-  completed: number;
-  pending: number;
-  failed: number;
-  refunded: number;
-}
-
-type SortField = 'amount' | 'commission_amount' | 'status' | 'created_at';
-type SortDir = 'asc' | 'desc';
-type ColumnKey = 'product' | 'store' | 'user' | 'amount' | 'commission' | 'commissionRate' | 'status' | 'date' | 'actions';
-
-// ─── Sub-components ───────────────────────────────────────
-
-function StatsCard({
-  title,
-  value,
-  icon,
-  active,
-  onClick,
+export default async function CommercialSignalsPage({
+  params,
 }: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  active?: boolean;
-  onClick?: () => void;
+  params: Promise<{ locale: string }>;
 }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-3 rounded-xl border p-4 text-start transition-all',
-        active
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-          : 'border-outline-variant bg-surface-container-lowest hover:border-primary/40'
-      )}
-    >
-      <div
-        className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-          active ? 'bg-primary/15 text-primary' : 'bg-primary/10 text-primary'
-        )}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="tabular-nums text-xl font-bold text-on-surface">
-          {value}
-        </p>
-        <p className="truncate text-xs text-on-surface-variant">{title}</p>
-      </div>
-    </button>
-  );
-}
+  const { locale } = await params;
+  const isAr = locale === 'ar';
+  const t = (ar: string, en: string) => (isAr ? ar : en);
+  const sb = createServerClient() as any;
 
-function TransactionStatusBadge({ status, t }: { status: TransactionStatus; t: (k: string) => string }) {
-  const cfg: Record<TransactionStatus, string> = {
-    completed: 'bg-success/10 text-success',
-    pending: 'bg-warning/10 text-warning',
-    failed: 'bg-error/10 text-error',
-    refunded: 'bg-on-surface/10 text-on-surface-variant',
-  };
-  const dotCfg: Record<TransactionStatus, string> = {
-    completed: 'bg-success',
-    pending: 'bg-warning',
-    failed: 'bg-error',
-    refunded: 'bg-on-surface-variant',
-  };
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-        cfg[status]
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', dotCfg[status])} />
-      {t(`admin.transactions.${status}`)}
-    </span>
-  );
-}
+  const iso7d = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
 
-function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
-  if (sortField !== field)
-    return <ArrowUpDown className="ms-1 inline h-3.5 w-3.5 text-on-surface-variant/50" />;
-  return sortDir === 'asc' ? (
-    <ArrowUp className="ms-1 inline h-3.5 w-3.5 text-primary" />
-  ) : (
-    <ArrowDown className="ms-1 inline h-3.5 w-3.5 text-primary" />
-  );
-}
+  const [exits7d, exitsBaseline, attributed, tagged, conversions, recent, byStore] =
+    await Promise.all([
+      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+        .eq('is_test', false).gte('clicked_at', iso7d),
+      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+        .eq('is_test', false).gte('clicked_at', BASELINE_ISO),
+      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+        .eq('is_test', false).not('session_id', 'is', null).gte('clicked_at', BASELINE_ISO),
+      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+        .eq('is_test', false).neq('affiliate_program', 'direct').gte('clicked_at', BASELINE_ISO),
+      sb.from('affiliate_conversions').select('id', { count: 'exact', head: true }),
+      sb.from('outbound_clicks')
+        .select('clicked_at, store_name, source, affiliate_program, session_id, campaign')
+        .eq('is_test', false)
+        .order('clicked_at', { ascending: false })
+        .limit(25),
+      sb.from('outbound_clicks')
+        .select('store_name')
+        .eq('is_test', false)
+        .gte('clicked_at', BASELINE_ISO)
+        .limit(10000),
+    ]);
 
-// ─── Page ─────────────────────────────────────────────────
+  const cnt = (r: { count: number | null; error: { message: string } | null }) =>
+    r.error ? null : (r.count ?? 0);
 
-export default function AdminTransactionsPage(
-  props: {
-    params: Promise<{ locale: string }>;
+  const storeCounts = new Map<string, number>();
+  if (!byStore.error) {
+    for (const row of (byStore.data ?? []) as Array<{ store_name: string | null }>) {
+      const slug = resolveApprovedSlug(row.store_name);
+      const label =
+        (slug && retailerDisplayName(slug, isAr ? 'ar' : 'en')) || row.store_name || '—';
+      storeCounts.set(label, (storeCounts.get(label) ?? 0) + 1);
+    }
   }
-) {
-  const params = use(props.params);
-  const [locale, setLocale] = useState('en');
-  const t = useTranslations();
-  const { toast } = useToast();
-  const isRTL = locale === 'ar';
+  const topStores = [...storeCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-  // Data
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<TransactionStats>({
-    total: 0, completed: 0, pending: 0, failed: 0, refunded: 0,
-  });
+  const fmt = (v: number | null) => (v === null ? '—' : v.toLocaleString());
+  const recentRows: ExitRow[] = recent.error ? [] : ((recent.data ?? []) as ExitRow[]);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-
-  // Sort
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  // Pagination
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  // Column visibility
-  const [visibleCols, setVisibleCols] = useState<Record<ColumnKey, boolean>>({
-    product: true,
-    store: true,
-    user: true,
-    amount: true,
-    commission: true,
-    commissionRate: true,
-    status: true,
-    date: true,
-    actions: false,
-  });
-
-  // Selection
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  // Export
-  const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    setLocale(params.locale);
-  }, [params]);
-
-  // ─── Data loading ───────────────────────────────────────
-  const loadStats = useCallback(async () => {
-    try {
-      const sb = getSupabaseBrowserClient();
-      const [tot, comp, pen, fail, ref] = await Promise.all([
-        sb.from('transactions').select('id', { count: 'exact', head: true }),
-        sb.from('transactions').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
-        sb.from('transactions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        sb.from('transactions').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
-        sb.from('transactions').select('id', { count: 'exact', head: true }).eq('status', 'refunded'),
-      ]);
-      setStats({
-        total: tot.count || 0,
-        completed: comp.count || 0,
-        pending: pen.count || 0,
-        failed: fail.count || 0,
-        refunded: ref.count || 0,
-      });
-    } catch (e) {
-      console.error('Error loading stats:', e);
-    }
-  }, []);
-
-  const loadTransactions = useCallback(async () => {
-    try {
-      setLoading(true);
-      const sb = getSupabaseBrowserClient();
-
-      let q = sb
-        .from('transactions')
-        .select(
-          `
-          *,
-          product_stores (
-            id,
-            current_price,
-            products (
-              id,
-              name_ar,
-              name_en
-            ),
-            stores (
-              id,
-              name_ar,
-              name_en
-            )
-          ),
-          users (
-            id,
-            email,
-            full_name
-          )
-        `,
-          { count: 'exact' }
-        );
-
-      if (statusFilter !== 'all') q = q.eq('status', statusFilter as TransactionStatus);
-
-      const { data, error, count } = await q
-        .order(sortField, { ascending: sortDir === 'asc' })
-        .range((page - 1) * rowsPerPage, page * rowsPerPage - 1);
-
-      if (error) throw error;
-      setTransactions((data as unknown as Transaction[]) || []);
-      setTotal(count || 0);
-    } catch (e) {
-      console.error('Error loading transactions:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, rowsPerPage, statusFilter, sortField, sortDir]);
-
-  useEffect(() => { loadStats(); }, [loadStats]);
-  useEffect(() => { loadTransactions(); }, [loadTransactions]);
-  useEffect(() => { setPage(1); }, [statusFilter, searchQuery, rowsPerPage]);
-
-  // ─── Client-side search filter on loaded data ───────────
-  const filteredTransactions = useMemo(() => {
-    if (!searchQuery.trim()) return transactions;
-    const q = searchQuery.toLowerCase();
-    return transactions.filter(
-      (tx) =>
-        tx.id.toLowerCase().includes(q) ||
-        tx.product_stores?.products?.name_en?.toLowerCase().includes(q) ||
-        tx.product_stores?.products?.name_ar?.toLowerCase().includes(q) ||
-        tx.product_stores?.stores?.name_en?.toLowerCase().includes(q) ||
-        tx.product_stores?.stores?.name_ar?.toLowerCase().includes(q) ||
-        tx.users?.email?.toLowerCase().includes(q) ||
-        tx.users?.full_name?.toLowerCase().includes(q)
-    );
-  }, [transactions, searchQuery]);
-
-  // ─── Handlers ───────────────────────────────────────────
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
-  };
-
-  const handleStatsClick = (filter: string) => {
-    setStatusFilter((p) => (p === filter ? 'all' : filter));
-  };
-
-  const handleExport = async () => {
-    try {
-      setExporting(true);
-      const exportParams = new URLSearchParams();
-      if (statusFilter && statusFilter !== 'all') {
-        exportParams.append('status', statusFilter);
-      }
-
-      const response = await fetch(`/api/admin/transactions/export?${exportParams.toString()}`);
-
-      if (!response.ok) {
-        if (response.status === 403) throw new Error(t('admin.transactions.unauthorized'));
-        if (response.status === 404) throw new Error(t('admin.transactions.noTransactions'));
-        throw new Error(t('admin.transactions.exportFailed'));
-      }
-
-      const csvContent = await response.text();
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'transactions_export.csv';
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch) filename = filenameMatch[1];
-      }
-
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({
-        title: t('admin.transactions.exportSuccess'),
-        description: t('admin.transactions.exportSuccessDesc'),
-      });
-    } catch (error) {
-      console.error('Error exporting transactions:', error);
-      toast({
-        title: t('admin.transactions.exportError'),
-        description: error instanceof Error ? error.message : t('admin.transactions.exportErrorDesc'),
-        variant: 'destructive',
-      });
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (selected.size === filteredTransactions.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filteredTransactions.map((tx) => tx.id)));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
-  const showFrom = total === 0 ? 0 : (page - 1) * rowsPerPage + 1;
-  const showTo = Math.min(page * rowsPerPage, total);
-
-  const colLabels: Record<ColumnKey, string> = useMemo(
-    () => ({
-      product: t('admin.transactions.product'),
-      store: t('admin.transactions.store'),
-      user: t('admin.transactions.user'),
-      amount: t('admin.transactions.amount'),
-      commission: t('admin.transactions.commission'),
-      commissionRate: t('admin.transactions.commissionRate'),
-      status: t('admin.transactions.status'),
-      date: t('admin.transactions.date'),
-      actions: t('admin.transactions.actions'),
-    }),
-    [t]
-  );
-
-  const hasActiveFilter = statusFilter !== 'all' || searchQuery.trim() !== '';
-
-  // ─── Render ─────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatsCard
-          title={t('admin.transactions.totalTransactions')}
-          value={formatNumber(stats.total, locale)}
-          icon={<ArrowRightLeft className="h-5 w-5" />}
-          active={statusFilter === 'all'}
-          onClick={() => setStatusFilter('all')}
+    <div className="w-full space-y-5">
+      <div>
+        <h1 className="flex items-center gap-2 text-xl md:text-2xl font-semibold">
+          <Wallet size={20} /> {t('الإشارات التجارية', 'Commercial signals')}
+        </h1>
+        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+          {t(
+            'توفيري لا يعالج الشراء لدى المتاجر، لذلك لا توجد «معاملات» يمكنه رصدها مباشرة. هذه الصفحة تعرض السلسلة التجارية القابلة للقياس فعلاً: خروج مؤكد → خروج منسوب → تحويلات الشبكات → عمولة مؤكدة.',
+            'Tawveeri does not process merchant checkout, so there are no directly observable "transactions." This page shows the commercial chain that IS measurable: confirmed exits → attributed exits → network conversions → confirmed commission.'
+          )}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card
+          label={t('خروج مؤكد (7 أيام)', 'Confirmed exits (7d)')}
+          value={fmt(cnt(exits7d))}
+          hint={t('سجل /go — حقيقي فقط', '/go ledger — REAL only')}
         />
-        <StatsCard
-          title={t('admin.transactions.completed')}
-          value={formatNumber(stats.completed, locale)}
-          icon={<CheckCircle className="h-5 w-5" />}
-          active={statusFilter === 'completed'}
-          onClick={() => handleStatsClick('completed')}
+        <Card
+          label={t('خروج مؤكد منذ الأساس', 'Exits since baseline')}
+          value={fmt(cnt(exitsBaseline))}
+          hint={t('منذ 2026-08-06', 'since 2026-08-06')}
         />
-        <StatsCard
-          title={t('admin.transactions.pending')}
-          value={formatNumber(stats.pending, locale)}
-          icon={<Clock className="h-5 w-5" />}
-          active={statusFilter === 'pending'}
-          onClick={() => handleStatsClick('pending')}
+        <Card
+          label={t('موسوم بالعمولة', 'Affiliate-tagged')}
+          value={fmt(cnt(tagged))}
+          hint={t('أمازون + نون', 'Amazon + Noon')}
         />
-        <StatsCard
-          title={t('admin.transactions.failed')}
-          value={formatNumber(stats.failed, locale)}
-          icon={<XCircle className="h-5 w-5" />}
-          active={statusFilter === 'failed'}
-          onClick={() => handleStatsClick('failed')}
-        />
-        <StatsCard
-          title={t('admin.transactions.refunded')}
-          value={formatNumber(stats.refunded, locale)}
-          icon={<RotateCcw className="h-5 w-5" />}
-          active={statusFilter === 'refunded'}
-          onClick={() => handleStatsClick('refunded')}
+        <Card
+          label={t('تحويلات مؤكدة من الشبكات', 'Network-confirmed conversions')}
+          value={fmt(cnt(conversions))}
+          hint={
+            (cnt(conversions) ?? 0) === 0
+              ? t('لم يُستورد أي تقرير بعد', 'no report imported yet')
+              : undefined
+          }
         />
       </div>
 
-      {/* ── DataTable Card ── */}
-      <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
+      <p className="text-xs text-muted-foreground">
+        {t(
+          `الخروج المنسوب لجلسة (بعد تحديث 2026-08-13): ${fmt(cnt(attributed))} — الصفوف الأقدم كتبت قبل ختم الجلسة وتبقى غير منسوبة بأمانة. العمولة المؤكدة تظهر فقط بعد استيراد تقرير شبكة العمولة من صفحة العمولات.`,
+          `Session-attributed exits (post 2026-08-13 cutover): ${fmt(cnt(attributed))} — older rows predate session stamping and honestly stay unattributed. Confirmed commission appears only after an affiliate-network report import on the Affiliate page.`
+        )}
+      </p>
 
-        {/* ── Toolbar ── */}
-        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Search */}
-          <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-            <Input
-              placeholder={t('admin.transactions.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="ps-9"
-            />
-          </div>
-
-          {/* Toolbar actions */}
-          <div className="flex items-center gap-2">
-            {/* Filters dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={cn('gap-1.5', hasActiveFilter && 'border-primary text-primary')}>
-                  <SlidersHorizontal className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('admin.transactions.status')}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>{t('admin.transactions.status')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {(['all', 'completed', 'pending', 'failed', 'refunded'] as const).map((s) => (
-                  <DropdownMenuCheckboxItem
-                    key={s}
-                    checked={statusFilter === s}
-                    onCheckedChange={() => setStatusFilter(s)}
-                  >
-                    {s === 'all' ? t('admin.transactions.allStatuses') : t(`admin.transactions.${s}`)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Columns dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <Columns3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('admin.transactions.columns')}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {(Object.keys(visibleCols) as ColumnKey[]).filter((c) => c !== 'actions').map((col) => (
-                  <DropdownMenuCheckboxItem
-                    key={col}
-                    checked={visibleCols[col]}
-                    onCheckedChange={(checked) =>
-                      setVisibleCols((prev) => ({ ...prev, [col]: !!checked }))
-                    }
-                  >
-                    {colLabels[col]}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Export button */}
-            <Button
-              onClick={handleExport}
-              disabled={exporting || total === 0}
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {exporting ? t('admin.transactions.exporting') : t('admin.transactions.export')}
-              </span>
-            </Button>
-          </div>
-        </div>
-
-        {/* ── Table ── */}
-        {loading ? (
-          <div className="space-y-px">
-            <div className="h-11 bg-surface-container-low" />
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 border-t border-outline-variant px-4 py-3">
-                <Skeleton className="h-5 w-5 rounded" />
-                <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-4 w-36" />
+      {topStores.length > 0 && (
+        <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
+          <h2 className="mb-3 font-bold">
+            {t('الخروج حسب المتجر (منذ الأساس)', 'Exits by retailer (since baseline)')}
+          </h2>
+          <div className="space-y-1.5">
+            {topStores.map(([name, count]) => (
+              <div key={name} className="flex items-center gap-3 text-sm">
+                <span className="w-40 truncate font-medium">{name}</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container-low">
+                  <div
+                    className="h-full rounded-full bg-primary-500"
+                    style={{ width: `${Math.round((count / topStores[0][1]) * 100)}%` }}
+                  />
                 </div>
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="hidden h-4 w-16 lg:block" />
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="hidden h-4 w-24 xl:block" />
+                <span className="w-12 text-end tabular-nums">{count}</span>
               </div>
             ))}
           </div>
-        ) : (
-          <>
-            {/* Desktop */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={filteredTransactions.length > 0 && selected.size === filteredTransactions.length}
-                        onCheckedChange={toggleSelectAll}
-                        aria-label="Select all"
-                      />
-                    </TableHead>
-                    {visibleCols.product && (
-                      <TableHead>{colLabels.product}</TableHead>
-                    )}
-                    {visibleCols.store && (
-                      <TableHead className="hidden lg:table-cell">{colLabels.store}</TableHead>
-                    )}
-                    {visibleCols.user && (
-                      <TableHead className="hidden lg:table-cell">{colLabels.user}</TableHead>
-                    )}
-                    {visibleCols.amount && (
-                      <TableHead>
-                        <button onClick={() => toggleSort('amount')} className="inline-flex items-center gap-1 hover:text-on-surface">
-                          {colLabels.amount}
-                          <SortIcon field="amount" sortField={sortField} sortDir={sortDir} />
-                        </button>
-                      </TableHead>
-                    )}
-                    {visibleCols.commission && (
-                      <TableHead className="hidden xl:table-cell">
-                        <button onClick={() => toggleSort('commission_amount')} className="inline-flex items-center gap-1 hover:text-on-surface">
-                          {colLabels.commission}
-                          <SortIcon field="commission_amount" sortField={sortField} sortDir={sortDir} />
-                        </button>
-                      </TableHead>
-                    )}
-                    {visibleCols.commissionRate && (
-                      <TableHead className="hidden xl:table-cell">
-                        {colLabels.commissionRate}
-                      </TableHead>
-                    )}
-                    {visibleCols.status && (
-                      <TableHead>
-                        <button onClick={() => toggleSort('status')} className="inline-flex items-center gap-1 hover:text-on-surface">
-                          {colLabels.status}
-                          <SortIcon field="status" sortField={sortField} sortDir={sortDir} />
-                        </button>
-                      </TableHead>
-                    )}
-                    {visibleCols.date && (
-                      <TableHead className="hidden xl:table-cell">
-                        <button onClick={() => toggleSort('created_at')} className="inline-flex items-center gap-1 hover:text-on-surface">
-                          {colLabels.date}
-                          <SortIcon field="created_at" sortField={sortField} sortDir={sortDir} />
-                        </button>
-                      </TableHead>
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={Object.values(visibleCols).filter(Boolean).length + 1}
-                        className="py-20 text-center text-on-surface-variant"
-                      >
-                        {t('admin.dashboard.noData')}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredTransactions.map((tx) => {
-                      const product = tx.product_stores?.products;
-                      const store = tx.product_stores?.stores;
-                      const user = tx.users;
-                      return (
-                        <TableRow
-                          key={tx.id}
-                          data-state={selected.has(tx.id) ? 'selected' : undefined}
-                        >
-                          <TableCell className="w-12">
-                            <Checkbox
-                              checked={selected.has(tx.id)}
-                              onCheckedChange={() => toggleSelect(tx.id)}
-                              aria-label={`Select transaction`}
-                            />
-                          </TableCell>
-                          {visibleCols.product && (
-                            <TableCell>
-                              <ProductIdentity
-                                product={product}
-                                locale={locale}
-                                imageSizeClassName="h-9 w-9"
-                              />
-                            </TableCell>
-                          )}
-                          {visibleCols.store && (
-                            <TableCell className="hidden text-sm text-on-surface-variant lg:table-cell">
-                              {store ? (isRTL ? store.name_ar : store.name_en) : '-'}
-                            </TableCell>
-                          )}
-                          {visibleCols.user && (
-                            <TableCell className="hidden text-sm text-on-surface-variant lg:table-cell">
-                              {user?.full_name || user?.email || '-'}
-                            </TableCell>
-                          )}
-                          {visibleCols.amount && (
-                            <TableCell>
-                              <Price amount={tx.amount} className="text-sm font-medium tabular-nums text-on-surface" />
-                            </TableCell>
-                          )}
-                          {visibleCols.commission && (
-                            <TableCell className="hidden xl:table-cell">
-                              <Price amount={tx.commission_amount || 0} className="text-sm tabular-nums text-on-surface-variant" />
-                            </TableCell>
-                          )}
-                          {visibleCols.commissionRate && (
-                            <TableCell className="hidden text-sm tabular-nums text-on-surface-variant xl:table-cell">
-                              {tx.commission_rate || 0}%
-                            </TableCell>
-                          )}
-                          {visibleCols.status && (
-                            <TableCell>
-                              <TransactionStatusBadge status={tx.status} t={t} />
-                            </TableCell>
-                          )}
-                          {visibleCols.date && (
-                            <TableCell className="hidden text-sm text-on-surface-variant xl:table-cell">
-                              {formatDate(tx.created_at, locale, 'datetime')}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+        </section>
+      )}
 
-            {/* Mobile cards */}
-            <div className="divide-y divide-outline-variant md:hidden">
-              {filteredTransactions.length === 0 ? (
-                <div className="py-20 text-center text-on-surface-variant">
-                  {t('admin.dashboard.noData')}
-                </div>
-              ) : (
-                filteredTransactions.map((tx) => {
-                  const product = tx.product_stores?.products;
-                  const store = tx.product_stores?.stores;
-                  const user = tx.users;
-                  return (
-                    <div key={tx.id} className="space-y-2 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <ProductIdentity
-                            product={product}
-                            locale={locale}
-                            imageSizeClassName="h-10 w-10"
-                          />
-                          <p className="truncate text-xs text-on-surface-variant">
-                            {store ? (isRTL ? store.name_ar : store.name_en) : '-'}
-                          </p>
-                        </div>
-                        <TransactionStatusBadge status={tx.status} t={t} />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <Price amount={tx.amount} className="text-sm font-medium tabular-nums text-on-surface" />
-                        {tx.commission_amount ? (
-                          <span className="text-xs text-on-surface-variant">
-                            {t('admin.transactions.commission')}: <Price amount={tx.commission_amount} className="inline text-xs tabular-nums" />
-                          </span>
-                        ) : null}
-                        <span className="text-xs text-on-surface-variant">
-                          {user?.full_name || user?.email || '-'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-on-surface-variant">
-                        {formatDate(tx.created_at, locale, 'datetime')}
-                      </p>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ── Footer: Rows per page + Pagination ── */}
-        <div className="flex flex-col gap-3 border-t border-outline-variant px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Rows per page */}
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <span>{t('admin.transactions.rowsPerPage')}</span>
-            <Select value={String(rowsPerPage)} onValueChange={(v) => setRowsPerPage(Number(v))}>
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 50, 100].map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Info + controls */}
-          <div className="flex items-center gap-4">
-            <span className="text-sm tabular-nums text-on-surface-variant">
-              {total === 0
-                ? t('admin.dashboard.noData')
-                : `${showFrom}-${showTo} / ${total}`}
-            </span>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(1)}
-                disabled={page <= 1}
-                className="h-8 w-8 p-0"
-                title="First"
-              >
-                <ChevronsLeft className="h-4 w-4 rtl:rotate-180" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-              </Button>
-              <span className="min-w-[4rem] text-center text-sm tabular-nums text-on-surface-variant">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(totalPages)}
-                disabled={page >= totalPages}
-                className="h-8 w-8 p-0"
-                title="Last"
-              >
-                <ChevronsRight className="h-4 w-4 rtl:rotate-180" />
-              </Button>
-            </div>
-          </div>
+      <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-bold">{t('آخر عمليات الخروج', 'Latest exits')}</h2>
+          <Link
+            href={`/${locale}/admin/affiliate`}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:underline"
+          >
+            {t('إدارة العمولات', 'Affiliate management')} <ArrowUpRight size={12} />
+          </Link>
         </div>
-      </div>
+        {recentRows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {recent.error
+              ? t('تعذر تحميل السجل.', 'Could not load the ledger.')
+              : t('لا عمليات خروج حقيقية بعد.', 'No real exits yet.')}
+          </p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {recentRows.map((r, i) => {
+              const slug = resolveApprovedSlug(r.store_name);
+              const store =
+                (slug && retailerDisplayName(slug, isAr ? 'ar' : 'en')) || r.store_name || '—';
+              const utm = r.campaign?.utm_source
+                ? `${r.campaign.utm_source}${r.campaign.utm_content ? ` / ${r.campaign.utm_content}` : ''}`
+                : null;
+              return (
+                <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 text-sm">
+                  <span className="w-32 shrink-0 text-xs text-muted-foreground" dir="ltr">
+                    {new Date(r.clicked_at).toLocaleString(isAr ? 'ar-SA' : 'en-GB', {
+                      timeZone: 'Asia/Riyadh',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <span className="font-medium">{store}</span>
+                  {r.affiliate_program && r.affiliate_program !== 'direct' && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                      {r.affiliate_program}
+                    </span>
+                  )}
+                  {r.source && (
+                    <span className="text-xs text-muted-foreground">
+                      <bdi dir="ltr">{r.source}</bdi>
+                    </span>
+                  )}
+                  {utm && (
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                      <bdi dir="ltr">{utm}</bdi>
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Card({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
+      {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
 }

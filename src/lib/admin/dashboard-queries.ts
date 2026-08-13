@@ -99,17 +99,11 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     ? Math.round(((currentRevenue - previousRevenue) / previousRevenue) * 100)
     : currentRevenue > 0 ? 100 : 0;
 
-  // Generate sparkline data (last 7 days)
-  const revenueSparkline = generateSparklineFromTransactions(
-    currentPeriodRevenueResult.data || [],
-    7
-  );
-  const usersSparkline = Array(7).fill(0).map((_, i) => {
-    const dayStart = new Date(now);
-    dayStart.setDate(dayStart.getDate() - (6 - i));
-    dayStart.setHours(0, 0, 0, 0);
-    return Math.max(0, Math.floor(currentUsers / 30 + Math.random() * 2));
-  });
+  // Sparklines were previously synthesized with Math.random() — fabricated data
+  // on a founder surface. Empty arrays render as "no sparkline"; a real one can
+  // only come from a real per-day query.
+  const revenueSparkline: number[] = [];
+  const usersSparkline: number[] = [];
 
   return {
     totalUsers: usersResult.count || 0,
@@ -124,15 +118,6 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     revenueSparkline,
     usersSparkline,
   };
-}
-
-function generateSparklineFromTransactions(
-  transactions: { amount: number }[],
-  days: number
-): number[] {
-  const total = transactions.reduce((s, t) => s + (t.amount || 0), 0);
-  const avg = total / days;
-  return Array(days).fill(0).map(() => Math.max(0, avg + (Math.random() - 0.5) * avg * 0.5));
 }
 
 export interface RevenueDataPoint {
@@ -270,18 +255,10 @@ export async function getStorePerformanceRanking(locale: string): Promise<StoreP
     .eq('status', 'completed');
 
   if (!transactions || transactions.length === 0) {
-    // Fallback: return stores with product count as proxy
-    const { data: stores } = await supabase
-      .from('stores')
-      .select(`${nameField}, total_products`)
-      .order('total_products', { ascending: false })
-      .limit(7);
-
-    return (stores || []).map((s: any) => ({
-      name: s[nameField] || 'Unknown',
-      revenue: 0,
-      transactions: s.total_products || 0,
-    }));
+    // No transactions → say so. The old fallback relabeled a product count as
+    // "transactions" (and queried stores.total_products, which does not exist
+    // in production) — a fabricated chart on a founder surface.
+    return [];
   }
 
   const grouped: Record<string, { name: string; revenue: number; transactions: number }> = {};
