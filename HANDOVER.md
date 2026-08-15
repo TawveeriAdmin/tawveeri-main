@@ -1,11 +1,27 @@
 # ═══ RESUME HERE — 2026-08-15 CHECKPOINT #78 · DEMAND RADAR (ADR-247) + BRAND MENTION WATCH (ADR-248) · **CLOSED, FOUNDER-ACCEPTED (2026-08-15)** ═══
 
-**WORKSTREAM STATUS: CLOSED — FOUNDER-ACCEPTED ("الرادار ومرصد الذكر معتمدان
-نهائيًا"). LIVE in production on X pay-per-use credits ($5 loaded), polling every
-10 min with the freshness alert gate (≤30m eligible / 30-60m corroborated /
->60m+unknown dashboard-only), own-post + generic-توفيري guards, and full
-TEST/REAL isolation. Do not reopen without new production evidence of a defect.
-Final commits: `d693f42 → 8227cfa → c06f960 → 9862ab2 → 43a46a2 → 48380f9`.**
+**WORKSTREAM STATUS: CLOSED — FOUNDER-ACCEPTED — 2026-08-15 (formal acceptance).**
+
+**Founder Acceptance record (verbatim scope):** the founder finally accepts
+(1) Demand Radar and (2) Brand Mention Watch in their production-proven state
+as per the final closure report. Recorded terms:
+- **Last accepted production CODE commit: `48380f9`** (docs closure: `b9c79c3`).
+- Demand Radar and Brand Mention Watch are **LIVE** (X pay-per-use, 10-min tick,
+  both cycles `ok` on the accepted build).
+- **TEST/REAL isolation is proven** (mock rows `is_test=true`; REAL metrics
+  never blend; verification traffic isolated end-to-end).
+- **All external replies/publishing remain Human-in-the-loop only** — nothing
+  auto-posts, approval ≠ publication.
+- **Freshness alert gate accepted** (≤30m eligible / 30-60m only with confirmed
+  KSA or explicit budget / >60m + unknown age = dashboard-only, computed from
+  `source_posted_at`) and **@Tawveeri self-post exclusion accepted** (query
+  operator + deterministic post-retrieval veto).
+- **Brand Mentions are fully separate from Purchase Opportunities** (separate
+  table, cursor, counters, alerts, UI section).
+- **No remaining blockers.**
+Do not reopen without new production evidence of a defect. Source Two (YouTube)
+only per the condition in docs/DEMAND-RADAR-RUNBOOK.md.
+Commit chain: `d693f42 → 8227cfa → c06f960 → 9862ab2 → 43a46a2 → 48380f9`.
 
 ## MISSION: Real-Time Consumer Demand Radar — COMPLETE TO THE EXTERNAL BOUNDARY
 
