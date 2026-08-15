@@ -94,7 +94,7 @@ function sanitizeMission(m: unknown): HomeMissionParse | null {
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => ({}))) as { text?: string; mission?: unknown; excluded_ids?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { text?: string; mission?: unknown; excluded_ids?: unknown; pinned_ids?: unknown };
   const structured = sanitizeMission(body.mission);
   const parse: HomeMissionParse | null = structured
     ?? (typeof body.text === "string" && body.text.trim() ? parseHomeMission(body.text) : null);
@@ -104,6 +104,15 @@ export async function POST(req: NextRequest) {
   const excludedIds = new Set(
     Array.isArray(body.excluded_ids) ? body.excluded_ids.filter((x): x is string => typeof x === "string").slice(0, 40) : [],
   );
+  // «اختر هذا بدلًا» — a user-chosen candidate per leg. Deterministic and honest: a pin
+  // must exist in the leg's OWN eligible ranked list (hard eligibility cannot be bypassed
+  // by pinning), and allocation treats a pinned leg as a FIXED cost (no upgrades on it).
+  const pinnedIds: Record<string, string> = {};
+  if (body.pinned_ids && typeof body.pinned_ids === "object") {
+    for (const [k, v] of Object.entries(body.pinned_ids as Record<string, unknown>).slice(0, 12)) {
+      if (typeof v === "string" && v.length <= 64) pinnedIds[k] = v;
+    }
+  }
 
   const legs = buildLegs(parse);
   if (!legs.length) {
@@ -165,12 +174,26 @@ export async function POST(req: NextRequest) {
     return { leg, state: "ok", recs: recommendations.slice(0, 8), dropped: elig.dropped, ageOf, projOf, modelOf };
   });
 
-  // Shared-budget allocation over the engine's own ranked candidates.
+  // Shared-budget allocation over the engine's own ranked candidates. A valid pin
+  // narrows that leg's allocation input to the pinned candidate alone (fixed cost).
+  const pinnedRec = new Map<string, Recommendation>();
+  for (const r of runs) {
+    const pin = pinnedIds[r.leg.id];
+    if (!pin) continue;
+    const rec = r.recs.find((x) => x.canonical_id === pin);
+    if (rec) pinnedRec.set(r.leg.id, rec);
+  }
   const allocation = allocateBudget(
-    runs.filter((r) => r.state === "ok").map((r) => ({
-      leg: r.leg,
-      candidates: r.recs.map((rec, i) => ({ canonical_id: rec.canonical_id, price: rec.unit_price, rank: i })),
-    })),
+    runs.filter((r) => r.state === "ok").map((r) => {
+      const pin = pinnedRec.get(r.leg.id);
+      return {
+        leg: r.leg,
+        candidates: (pin ? [pin] : r.recs).map((rec) => ({
+          canonical_id: rec.canonical_id, price: rec.unit_price,
+          rank: r.recs.findIndex((x) => x.canonical_id === rec.canonical_id),
+        })),
+      };
+    }),
     parse.budget_total,
   );
   const allocByLeg = new Map(allocation.allocations.map((a) => [a.leg_id, a]));
@@ -181,10 +204,10 @@ export async function POST(req: NextRequest) {
   const shownIds = new Set<string>();
   for (const r of runs) {
     const a = allocByLeg.get(r.leg.id);
-    const picked = a?.picked ?? r.recs[0]?.canonical_id ?? null;
+    const picked = pinnedRec.get(r.leg.id)?.canonical_id ?? a?.picked ?? r.recs[0]?.canonical_id ?? null;
     if (picked) shownIds.add(picked);
-    const alt = r.recs.find((x) => x.canonical_id !== picked);
-    if (alt) shownIds.add(alt.canonical_id);
+    // The alternatives sheet shows up to 3 non-picked candidates — enrich them all.
+    for (const rec of r.recs.slice(0, 5)) shownIds.add(rec.canonical_id);
     if (a?.next_upgrade) shownIds.add(a.next_upgrade.canonical_id);
   }
   const goByCanon = new Map<string, string>();
@@ -222,6 +245,27 @@ export async function POST(req: NextRequest) {
     return { ar: "متاح لدينا حاليًا من متجر واحد", en: "Currently evidenced from one store only" };
   };
 
+  // §18 energy-wording guard (Mobile Experience Pass): the shared engine's inverter reasons
+  // («كفاءة أعلى» / «أوفر في الكهرباء» / «أهدأ وأوفر») claim efficiency/quietness the Home
+  // contract has ZERO label evidence for (AUDIT_REPORT_HOME §11: no SASO fields; noise
+  // unknown). HOME WITHHOLDS those sentences — never rewrites them (the F7 rule) — and the
+  // UI shows the neutral «إنفرتر» technology chip from DNA instead. Waffar's own surface is
+  // out of this mission's scope and unchanged.
+  const EFFICIENCY_CLAIM = /كفاءة أعلى|أوفر في الكهرباء|أهدأ وأوفر|أوفر ماءً/;
+  const withholdEfficiencyClaims = (rec: Recommendation) => {
+    const keep: number[] = [];
+    rec.reasons_ar.forEach((t, i) => { if (!EFFICIENCY_CLAIM.test(t)) keep.push(i); });
+    if (keep.length === rec.reasons_ar.length) {
+      return { reasons_ar: rec.reasons_ar, reason_kinds: rec.reason_kinds, headline_reasons: rec.headline_reasons };
+    }
+    const indexMap = new Map(keep.map((oldI, newI) => [oldI, newI]));
+    return {
+      reasons_ar: keep.map((i) => rec.reasons_ar[i]),
+      reason_kinds: keep.map((i) => rec.reason_kinds[i]),
+      headline_reasons: rec.headline_reasons.filter((i) => indexMap.has(i)).map((i) => indexMap.get(i)!),
+    };
+  };
+
   const recOut = (r: LegRun, rec: Recommendation) => {
     const stores = storeNames(rec.canonical_id);
     const age = r.ageOf(rec.canonical_id);
@@ -230,6 +274,7 @@ export async function POST(req: NextRequest) {
       store_names: stores, data_age_hours: age,
       tps_identity_key: rec.tps_identity_key, model_number: r.modelOf(rec.canonical_id),
     });
+    const prose = withholdEfficiencyClaims(rec);
     return {
       canonical_id: rec.canonical_id,
       title_ar: rec.title_ar, title_en: rec.title_en, brand: rec.brand,
@@ -238,7 +283,7 @@ export async function POST(req: NextRequest) {
       store_count: stores.length, stores,
       data_age_hours: age,
       claim_kind: claim, claim_ar: claimLine(claim, stores).ar, claim_en: claimLine(claim, stores).en,
-      reasons_ar: rec.reasons_ar, reason_kinds: rec.reason_kinds, headline_reasons: rec.headline_reasons,
+      reasons_ar: prose.reasons_ar, reason_kinds: prose.reason_kinds, headline_reasons: prose.headline_reasons,
       trust: rec.trust, suitability_score: rec.suitability_score,
       dna: rec.dna,
       go_url: goByCanon.get(rec.canonical_id) ?? null,
@@ -273,22 +318,43 @@ export async function POST(req: NextRequest) {
     // the `min_total` the shortfall sentence cites (top picks here would contradict it).
     const cheapestRec = [...r.recs].filter((x) => x.unit_price != null).sort((x, y) => x.unit_price! - y.unit_price!)[0];
     const fallbackRec = allocation.feasible ? r.recs[0] : (cheapestRec ?? r.recs[0]);
-    const pickedId = a?.picked ?? fallbackRec.canonical_id;
+    const pin = pinnedRec.get(r.leg.id);
+    const pickedId = pin?.canonical_id ?? a?.picked ?? fallbackRec.canonical_id;
     const picked = r.recs.find((x) => x.canonical_id === pickedId) ?? fallbackRec;
     const alternative = r.recs.find((x) => x.canonical_id !== picked.canonical_id) ?? null;
-    const upgradeRec = a?.next_upgrade ? r.recs.find((x) => x.canonical_id === a.next_upgrade!.canonical_id) ?? null : null;
+    let upgradeRec = a?.next_upgrade ? r.recs.find((x) => x.canonical_id === a.next_upgrade!.canonical_id) ?? null : null;
+    let nextUpgrade = a?.next_upgrade ?? null;
+    let downgradeSaving = a?.downgrade_saving ?? null;
+    if (pin) {
+      // A pinned leg's allocation input was just the pin, so recompute the INFORMATIONAL
+      // trade figures against the leg's full eligible ranked list (display-only arithmetic).
+      const pinRank = r.recs.findIndex((x) => x.canonical_id === pin.canonical_id);
+      const priced = r.recs.filter((x) => x.unit_price != null);
+      const cheapest = [...priced].sort((x, y) => x.unit_price! - y.unit_price!)[0];
+      downgradeSaving = pin.unit_price != null && cheapest && cheapest.canonical_id !== pin.canonical_id && pin.unit_price > cheapest.unit_price!
+        ? Math.round(pin.unit_price - cheapest.unit_price!) : null;
+      const better = priced.find((x, i) => i < pinRank && x.unit_price! > (pin.unit_price ?? 0));
+      upgradeRec = better ?? null;
+      nextUpgrade = better ? { canonical_id: better.canonical_id, extra_cost: Math.round(better.unit_price! - (pin.unit_price ?? 0)) } : null;
+    }
     return {
       leg_id: r.leg.id, category: r.leg.category, label_ar: r.leg.label_ar, label_en: r.leg.label_en,
       emphasis: r.leg.emphasis, state: "ok" as const,
       space: r.leg.space,
       btu_required: r.leg.btu_required, liters_band: r.leg.liters_band, kg_band: r.leg.kg_band,
       picked: recOut(r, picked),
+      pinned: Boolean(pin),
       alternative: alternative ? recOut(r, alternative) : null,
+      alternatives: r.recs
+        .filter((x) => x.canonical_id !== picked.canonical_id)
+        .slice(0, 3)
+        .map((x) => recOut(r, x)),
       trade: {
-        next_upgrade: a?.next_upgrade && upgradeRec
-          ? { extra_cost: a.next_upgrade.extra_cost, title_ar: upgradeRec.title_ar, title_en: upgradeRec.title_en, canonical_id: upgradeRec.canonical_id }
+        next_upgrade: nextUpgrade && upgradeRec
+          ? { extra_cost: nextUpgrade.extra_cost, title_ar: upgradeRec.title_ar, title_en: upgradeRec.title_en, canonical_id: upgradeRec.canonical_id }
           : null,
-        downgrade_saving: a?.downgrade_saving ?? null,
+        downgrade_saving: downgradeSaving,
+        cheapest_id: [...r.recs].filter((x) => x.unit_price != null).sort((x, y) => x.unit_price! - y.unit_price!)[0]?.canonical_id ?? null,
       },
       dropped: r.dropped ?? null,
     };
@@ -325,7 +391,11 @@ export async function POST(req: NextRequest) {
         : null;
 
   // Evidence + F7 guard over every prose sentence the mission renders.
-  const allRecsOut = legsOut.flatMap((l) => (l.state === "ok" ? [l.picked, ...(l.alternative ? [l.alternative] : [])] : []));
+  const allRecsOut = legsOut.flatMap((l) => {
+    if (l.state !== "ok") return [];
+    const ok = l as { picked: unknown; alternatives?: unknown[] };
+    return [ok.picked, ...(ok.alternatives ?? [])];
+  });
   const evidence = buildPublishedEvidence({ recommendations: allRecsOut as unknown as Record<string, unknown>[] });
   for (const [label, value] of [
     ["mission.total_allocated", allocation.total_allocated],

@@ -65,6 +65,23 @@ const CASES = [
     } },
   { id: "english_basic", body: { text: "We moved to a new apartment, family of 4, bedroom 16m2, living room 28m2, budget 15000 SAR, need ACs, fridge, washer and a TV." },
     check: (d) => d.state === "ok" && d.understood.budget_total === 15000 && d.legs.filter((l) => l.state === "ok").length >= 3 },
+  { id: "mutation_pin_alternative", pre: { text: A_TEXT },
+    mutate: (d) => {
+      const tv = d.legs.find((l) => l.leg_id === "tv");
+      const alt = tv?.alternatives?.[0];
+      return { mission: d.understood, excluded_ids: [], pinned_ids: alt ? { tv: alt.canonical_id } : {} };
+    },
+    check: (d, ctx) => {
+      const prevTv = ctx.pre.legs.find((l) => l.leg_id === "tv");
+      const alt = prevTv?.alternatives?.[0];
+      if (!alt) return true; // nothing to pin — vacuously fine
+      const tv = d.legs.find((l) => l.leg_id === "tv");
+      return tv?.state === "ok" && tv.pinned === true && tv.picked.canonical_id === alt.canonical_id;
+    } },
+  { id: "efficiency_claims_withheld", body: { text: A_TEXT },
+    check: (d) => !d.legs.some((l) => l.state === "ok"
+      && [...l.picked.reasons_ar, ...(l.alternatives ?? []).flatMap((a) => a.reasons_ar)]
+        .some((s) => /كفاءة أعلى|أوفر في الكهرباء|أهدأ وأوفر|أوفر ماءً/.test(s))) },
 ];
 
 let pass = 0, fail = 0;

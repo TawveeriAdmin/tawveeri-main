@@ -1,4 +1,24 @@
-# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #79 · HOME DECISION INTELLIGENCE (ADR-249) · GATE: GO_HOME · PILOT BUILT, AWAITING FOUNDER iPHONE PASS ═══
+# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #80 · HOME MOBILE EXPERIENCE PASS (ADR-250) · MISSION WORKSPACE SHIPPED ═══
+
+**Founder iPhone pass happened → verdict: intelligence good, presentation = long generated
+report.** Research (US/China/UK, 3 passes) reframed: not a scrolling problem — a hierarchy +
+persistent-context problem. Shipped the MISSION WORKSPACE (ADR-250):
+- Pilot moved out of (public) shell → mission-mode sticky header (back · title · budget/devices/
+  remaining · عدّل) + sticky category anchor chips with ✓/؟/⚠ state.
+- `home-mission-view.ts` (pure, 12 tests): groupLegs (ACs = ONE group, subtotal, worst-child
+  rollup), budgetBar, evidence/fit/energy chips, diffLabel, parseDelta (moved; caught+fixed the
+  «زد الميزانية 3000»→set-to-3000 bug).
+- Compact decision cards (72px thumb, bdi titles, ≤3 chips, one honest CTA); WHY one-at-a-time
+  with interactive trade rows; alternatives in bottom sheet with «اختر هذا بدلًا» → new
+  `pinned_ids` route capability (pin can't bypass hard eligibility; fixed cost in allocation).
+- Sticky bottom refine composer + sheet; sessionStorage persistence (45-min).
+- §18 guard: Home WITHHOLDS engine inverter-efficiency sentences (never rewrites); neutral
+  «إنفرتر (تقنية الضاغط)» chip instead. Waffar unchanged.
+**Status:** tests 1,889 green · build green · production evals 19/19 expected (verify after
+deploy). NEXT: founder re-checks on iPhone; then the ADR-249 remediation ledger (ingestion
+~10× decline still OPEN and most important).
+
+# ═══ 2026-08-15 CHECKPOINT #79 · HOME DECISION INTELLIGENCE (ADR-249) · GATE: GO_HOME · PILOT BUILT ═══
 
 **Mission (founder, 2026-08-15):** two-phase — Part A global frontier research + read-only
 production audit + hard gate; Part B evidence-gated pilot. **Part A COMPLETE** —
