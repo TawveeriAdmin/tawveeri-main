@@ -1,4 +1,11 @@
-# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #78 · DEMAND RADAR (ADR-247) — BUILT + VERIFIED, AWAITING X TOKEN ═══
+# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #78 · DEMAND RADAR (ADR-247) + BRAND MENTION WATCH (ADR-248) · **CLOSED, FOUNDER-ACCEPTED (2026-08-15)** ═══
+
+**WORKSTREAM STATUS: CLOSED — FOUNDER-ACCEPTED ("الرادار ومرصد الذكر معتمدان
+نهائيًا"). LIVE in production on X pay-per-use credits ($5 loaded), polling every
+10 min with the freshness alert gate (≤30m eligible / 30-60m corroborated /
+>60m+unknown dashboard-only), own-post + generic-توفيري guards, and full
+TEST/REAL isolation. Do not reopen without new production evidence of a defect.
+Final commits: `d693f42 → 8227cfa → c06f960 → 9862ab2 → 43a46a2 → 48380f9`.**
 
 ## MISSION: Real-Time Consumer Demand Radar — COMPLETE TO THE EXTERNAL BOUNDARY
 
