@@ -182,5 +182,16 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
     .lt('created_at', new Date(Date.now() - 48 * 3600_000).toISOString());
 
   await writeState('ok', result.polled);
+
+  // Brand Mention Watch (ADR-248): one extra query per cycle, fully separate
+  // storage/classification. A mention-watch failure never fails the radar run.
+  if (opts.source === 'x') {
+    try {
+      const { runBrandMentionWatch } = await import('./brand-mentions');
+      await runBrandMentionWatch({ isTest });
+    } catch {
+      /* observable via demand_radar_state('x-brand'), never fatal here */
+    }
+  }
   return result;
 }

@@ -157,3 +157,15 @@ describe('self-mention veto (live-poll lesson 2026-08-15)', () => {
     expect(r.tier).toBe('ignore');
   });
 });
+
+describe('brand mention watch (ADR-248) — separation + heuristic classes', () => {
+  it('heuristic fallback classes are conservative', async () => {
+    const { heuristicMentionClass, MENTION_CLASSES, BRAND_QUERY } = await import('@/lib/growth/demand-radar/brand-mentions');
+    expect(heuristicMentionClass('@Tawveeri وش هذا الموقع؟', true)).toBe('needs_reply');
+    expect(heuristicMentionClass('توفيري شكله مفيد؟', false)).toBe('question');
+    expect(heuristicMentionClass('جربت توفيري اليوم', false)).toBe('neutral');
+    // the brand query never enters the purchase lexicon and excludes our own posts
+    expect(BRAND_QUERY).toContain('-from:Tawveeri');
+    expect(MENTION_CLASSES).toContain('complaint');
+  });
+});

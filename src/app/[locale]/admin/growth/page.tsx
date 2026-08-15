@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { getCommandCenterData } from '@/lib/admin/command-center-queries';
 import { fetchGrowthContent, GROWTH_STATUS_LABEL_AR, SOCIAL_STATUS } from '@/lib/admin/growth-queries';
 import { GrowthReviewActions } from '@/components/admin/growth-review-actions';
-import { fetchRadarSurface, OPPORTUNITY_STATUS_LABEL_AR } from '@/lib/admin/demand-radar-queries';
-import { RadarOpportunityActions } from '@/components/admin/radar-opportunity-actions';
+import { fetchRadarSurface, OPPORTUNITY_STATUS_LABEL_AR, MENTION_CLASS_LABEL_AR } from '@/lib/admin/demand-radar-queries';
+import { RadarOpportunityActions, MentionActions } from '@/components/admin/radar-opportunity-actions';
 import { categoryNameAr } from '@/lib/growth/demand-radar/saudi-lexicon';
 
 // Founder Growth surface (ADR-244 Gates D/E/F). The smallest useful review
@@ -213,6 +213,45 @@ export default async function GrowthPage() {
             <p className="mt-3 text-xs text-gray-500">
               الاعتماد إجراء داخلي — لا يُنشر أي رد تلقائيًا؛ الرد يظل فعلًا يدويًا منك، والرابط القصير أعلاه يقيس أثره حتى الخروج للمتاجر.
             </p>
+
+            {/* Brand Mention Watch (ADR-248) — fully separate from purchase opportunities */}
+            {radar.mentions.length > 0 && (
+              <div className="mt-6 border-t border-gray-200 pt-4 dark:border-gray-800">
+                <h3 className="mb-3 font-bold">ذكر العلامة</h3>
+                <div className="space-y-3">
+                  {radar.mentions.map((m) => (
+                    <div key={m.id} id={`mention-${m.id}`} className="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className={`rounded-full px-2.5 py-1 font-bold ${
+                          m.mention_class === 'complaint' || m.mention_class === 'negative'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+                            : m.mention_class === 'needs_reply'
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
+                              : m.mention_class === 'positive'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                                : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300'
+                        }`}>
+                          {MENTION_CLASS_LABEL_AR[m.mention_class] ?? m.mention_class}
+                        </span>
+                        {m.author_handle && <span className="text-gray-500" dir="ltr">@{m.author_handle}</span>}
+                        <span className="text-gray-500">{relAgo(m.source_posted_at ?? m.first_seen_at)}</span>
+                        {m.is_test && <span className="rounded-full bg-blue-100 px-2 py-0.5 font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">TEST</span>}
+                      </div>
+                      <p className="mt-2 text-sm leading-7">{m.post_text}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <a href={m.source_url} target="_blank" rel="noopener noreferrer" className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-black dark:bg-white dark:text-gray-900">
+                          فتح المنشور ↗
+                        </a>
+                        <MentionActions id={m.id} status={m.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  ذكر العلامة منفصل تمامًا عن فرص الشراء — الشكاوى وما يحتاج ردًا فقط تصلك بالبريد.
+                </p>
+              </div>
+            )}
           </>
         )}
       </Card>

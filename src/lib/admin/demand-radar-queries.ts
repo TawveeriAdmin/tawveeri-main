@@ -56,15 +56,39 @@ export const OPPORTUNITY_STATUS_LABEL_AR: Record<string, string> = {
   expired: 'منتهية',
 };
 
+export interface MentionRow {
+  id: string;
+  source: string;
+  source_url: string;
+  author_handle: string | null;
+  post_text: string;
+  source_posted_at: string | null;
+  first_seen_at: string;
+  mention_class: string;
+  status: string;
+  is_test: boolean;
+}
+
+export const MENTION_CLASS_LABEL_AR: Record<string, string> = {
+  positive: 'إيجابي',
+  negative: 'سلبي',
+  question: 'سؤال',
+  complaint: 'شكوى',
+  suggestion: 'اقتراح',
+  needs_reply: 'يحتاج ردًا',
+  neutral: 'محايد',
+};
+
 export async function fetchRadarSurface(): Promise<{
   open: OpportunityRow[];
   recentClosed: OpportunityRow[];
   states: RadarState[];
   categoryStats: CategoryRadarStats[];
   testCount: number;
+  mentions: MentionRow[];
 }> {
   const sb = createServerClient() as any;
-  const [openRes, closedRes, stateRes, allRes, testRes] = await Promise.all([
+  const [openRes, closedRes, stateRes, allRes, testRes, mentionsRes] = await Promise.all([
     sb.from('demand_opportunities')
       .select('*')
       .in('status', ['new', 'ready_for_review', 'approved', 'changes_requested'])
@@ -82,6 +106,11 @@ export async function fetchRadarSurface(): Promise<{
       .eq('is_test', false)
       .limit(5000),
     sb.from('demand_opportunities').select('id', { count: 'exact', head: true }).eq('is_test', true),
+    sb.from('brand_mentions')
+      .select('id, source, source_url, author_handle, post_text, source_posted_at, first_seen_at, mention_class, status, is_test')
+      .eq('status', 'new')
+      .order('created_at', { ascending: false })
+      .limit(20),
   ]);
 
   const tierOrder = (t: string) => (t === 'high' ? 0 : t === 'medium' ? 1 : 2);
@@ -108,5 +137,6 @@ export async function fetchRadarSurface(): Promise<{
     states: (stateRes.data ?? []) as RadarState[],
     categoryStats: [...stats.values()].sort((a, b) => b.candidates - a.candidates),
     testCount: testRes.count ?? 0,
+    mentions: (mentionsRes.data ?? []) as MentionRow[],
   };
 }

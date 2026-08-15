@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRequestAdmin } from '@/lib/auth/api-auth';
 import { createServerClient } from '@/lib/database';
 
-const ACTIONS = new Set(['approved', 'changes_requested', 'dismissed', 'replied_manually']);
+const OPPORTUNITY_ACTIONS = new Set(['approved', 'changes_requested', 'dismissed', 'replied_manually']);
+const MENTION_ACTIONS = new Set(['handled', 'dismissed']);
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -14,18 +15,20 @@ export async function PATCH(request: NextRequest) {
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 403 });
   }
-  let body: { id?: string; action?: string; note?: string };
+  let body: { id?: string; action?: string; note?: string; kind?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'invalid body' }, { status: 400 });
   }
-  if (!body.id || !body.action || !ACTIONS.has(body.action)) {
+  const isMention = body.kind === 'mention';
+  const valid = isMention ? MENTION_ACTIONS : OPPORTUNITY_ACTIONS;
+  if (!body.id || !body.action || !valid.has(body.action)) {
     return NextResponse.json({ error: 'id and a valid action are required' }, { status: 400 });
   }
   const sb = createServerClient() as any;
   const { data, error } = await sb
-    .from('demand_opportunities')
+    .from(isMention ? 'brand_mentions' : 'demand_opportunities')
     .update({
       status: body.action,
       founder_note: body.note ?? null,
@@ -35,5 +38,5 @@ export async function PATCH(request: NextRequest) {
     .select('id, status')
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, opportunity: data });
+  return NextResponse.json({ ok: true, row: data });
 }

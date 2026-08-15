@@ -14,6 +14,41 @@ const ACTIONS: Array<{ action: string; label: string; cls: string }> = [
   { action: 'dismissed', label: 'تجاهل', cls: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300' },
 ];
 
+export function MentionActions({ id, status }: { id: string; status: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState<string | null>(null);
+  const act = async (action: string) => {
+    setBusy(action);
+    try {
+      await fetch('/api/admin/growth/opportunities', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id, action, kind: 'mention' }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="flex gap-2">
+      {[
+        { action: 'handled', label: 'تم التعامل', cls: 'bg-emerald-600 text-white hover:bg-emerald-700' },
+        { action: 'dismissed', label: 'تجاهل', cls: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300' },
+      ].map((a) => (
+        <button
+          key={a.action}
+          onClick={() => act(a.action)}
+          disabled={busy !== null || status === a.action}
+          className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${a.cls}`}
+        >
+          {busy === a.action ? '…' : a.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function RadarOpportunityActions({ id, status }: { id: string; status: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
