@@ -1,4 +1,34 @@
-# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #81 · INGESTION COLLAPSE ROOT-CAUSED + FIXED (ADR-251) ═══
+# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #82 · SEV-1 (DISK IO EXHAUSTION) + DATA RELIABILITY RESET (ADR-252) ═══
+
+**NEVER FORGET THIS FAILURE MODE:** ADR-251's first self-heal run exhausted the Supabase
+Disk IO Budget (official warning email) → instance unresponsive (pooler timeout, 522,
+PGRST wedge) → consumer surface DOWN ~1.5–2h while /api/health + UptimeRobot stayed GREEN.
+Liveness ≠ product health. Background history reads/writes ≠ free. Per-pass budgets that
+multiply across categories×sweeps ≠ budgets.
+
+**Remediation shipped (`95c88b4`, migration 028 applied to prod):** forward-only
+corroboration over `tps_current_offers` (HOT, keys×stores-bounded — the hot path NEVER
+reads staging/price_history again); touch-triggered self-heal REMOVED (replaced by
+explicit, paced, resumable `seed-current-offers.ts` — human launch only); scheduler
+governor (10-min boot cooldown, fail-closed pressure probe before every background run,
+`tps_job_state` due-gated boot kicks — deploys can no longer create work); product-truth
+`/api/health/deep` (stores+projection+freshness+latency, 60s cache) — POINT UPTIMEROBOT
+AT IT.
+
+**Recovery state:** surface verified healthy post-restart (stores real data · Arabic
+search real corroborated products + /go · Home mission 200). Smart-pick badges honestly
+withheld where evidence >168h (ADR-193) — freshness rebuilds as governed ingestion
+resumes. Kill switch `DISABLE_INPROCESS_SCHEDULER` on Railway `tawveeri-main` is the
+master brake — currently the re-enable is the live step (see final report / phased plan).
+
+**FOUNDER DECISIONS OPEN:** (1) `tps_identity_staging` retention (COLD audit, 719k rows,
+grows ~30k/day; paced deletes or table-swap; partitioning rejected at this scale);
+(2) Supabase compute tier — measure normal governed workload first, then decide (Small
+baseline ≈ 22 MB/s / 1,000 IOPS; upgrade is the only sustained-IO lever); (3) running
+seed-current-offers for historical corroboration counts (optional — counts rebuild
+organically as offers re-observe within ~6–24h).
+
+# ═══ 2026-08-15 CHECKPOINT #81 · INGESTION COLLAPSE ROOT-CAUSED + FIXED (ADR-251) ═══
 
 **The ADR-249 "10× ingestion decline" is root-caused and fixed.** NOT a scraper/scheduler/
 retailer failure — raw ingestion was healthy (the raw-side change was mostly deploy-kicked
