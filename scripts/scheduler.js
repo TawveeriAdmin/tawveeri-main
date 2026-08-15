@@ -97,6 +97,82 @@ process.on('unhandledRejection', (e) => {
 // liveness is confirmable even if a later step fails.
 heartbeat('boot');
 
+// ── ADR-252 runtime guards (SEV-1 2026-08-15 remediation) ───────────────────
+// 1. POST-BOOT COOLDOWN: no background work in the first minutes after boot — the DB is
+//    serving cold caches and the deploy's own traffic; background has no claim on that
+//    window, and it is exactly when restart-triggered bursts used to fire.
+// 2. PRESSURE GATE: a cheap timed `SELECT 1` before every background run. Slow or failing
+//    probe = the DB is under pressure (IO budget, connections, anything) → the run is
+//    SKIPPED. Fail-CLOSED by design: if we cannot prove the DB is comfortable, background
+//    work does not start. Consumer traffic never consults this gate.
+// 3. PERSISTED JOB STATE (tps_job_state): boot kicks consult last_success_at and are
+//    SKIPPED when the last success is fresher than the loop interval — a deploy/restart
+//    can no longer create work (measured: deploy-kicked passes ran feed ingestion 9–12×/day
+//    vs the designed 4×). Interval timers still run; fail-CLOSED on unknown state.
+const BOOT_AT = Date.now();
+const BOOT_COOLDOWN_MS = parseInt(process.env.BACKGROUND_BOOT_COOLDOWN_MS || String(10 * 60 * 1000), 10);
+const PRESSURE_PROBE_MS = parseInt(process.env.PRESSURE_PROBE_SLOW_MS || '1500', 10);
+
+async function pressureOk(kind) {
+  if (Date.now() - BOOT_AT < BOOT_COOLDOWN_MS) {
+    console.log(`[governor] ${kind} deferred — post-boot cooldown (${Math.round((BOOT_COOLDOWN_MS - (Date.now() - BOOT_AT)) / 60000)}m left)`);
+    return false;
+  }
+  try {
+    if (!process.env.SUPABASE_DB_URL) return true;
+    const { Client } = require('pg');
+    const c = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+    const t0 = Date.now();
+    await c.connect();
+    await c.query('select 1');
+    const ms = Date.now() - t0;
+    try { await c.end(); } catch (_) { /* ignore */ }
+    if (ms > PRESSURE_PROBE_MS) {
+      console.log(`[governor] ${kind} deferred — DB probe ${ms}ms > ${PRESSURE_PROBE_MS}ms (pressure)`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.log(`[governor] ${kind} deferred — DB probe failed (${(e && e.message) || e})`);
+    return false; // fail CLOSED: unprovable comfort = no background work
+  }
+}
+
+/** true if the job's last success is OLDER than intervalMs (i.e., a boot kick is justified).
+ *  Unknown state (no row / DB unreachable) = NOT due — a restart must never create work. */
+async function jobDue(job, intervalMs) {
+  try {
+    if (!process.env.SUPABASE_DB_URL) return false;
+    const { Client } = require('pg');
+    const c = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+    await c.connect();
+    await c.query(`create table if not exists tps_job_state (
+      job text primary key, last_success_at timestamptz, last_note text, updated_at timestamptz not null default now())`);
+    const { rows } = await c.query('select last_success_at from tps_job_state where job=$1', [job]);
+    try { await c.end(); } catch (_) { /* ignore */ }
+    const last = rows[0] && rows[0].last_success_at ? new Date(rows[0].last_success_at).getTime() : null;
+    if (last == null) return true; // never succeeded → genuinely due
+    return Date.now() - last >= intervalMs * 0.8;
+  } catch (e) {
+    console.log(`[governor] jobDue(${job}) unknown (${(e && e.message) || e}) — treating as NOT due`);
+    return false;
+  }
+}
+
+async function jobDone(job, note) {
+  try {
+    if (!process.env.SUPABASE_DB_URL) return;
+    const { Client } = require('pg');
+    const c = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+    await c.connect();
+    await c.query(`insert into tps_job_state (job, last_success_at, last_note, updated_at) values ($1, now(), $2, now())
+                   on conflict (job) do update set last_success_at=now(), last_note=$2, updated_at=now()`, [job, (note || '').slice(0, 200)]);
+    try { await c.end(); } catch (_) { /* ignore */ }
+  } catch (_) { /* best-effort */ }
+}
+
+const jitterMs = (maxMin) => Math.floor(Math.random() * maxMin * 60 * 1000);
+
 // ── Intelligence refresh loop ───────────────────────────────────────────────
 let refreshRunning = false;
 
@@ -106,7 +182,8 @@ let refreshRunning = false;
  * same derived tables, and skipping a tick is harmless because the next one
  * recomputes from the same evidence (every step is idempotent).
  */
-function runRefresh(full) {
+async function runRefresh(full) {
+  if (!(await pressureOk('refresh'))) return;
   if (refreshRunning) {
     console.log('[refresh] previous run still in progress — skipping this tick');
     return;
@@ -129,6 +206,7 @@ function runRefresh(full) {
     const mins = ((Date.now() - started) / 60000).toFixed(1);
     heartbeat({ status: code === 0 ? 'ok' : `fail(${code})` });
     if (code === 0) {
+      jobDone('refresh', `ok ${mins}m`);
       console.log(`[refresh] ${full ? 'full' : 'fast'} chain OK in ${mins}m`);
     } else {
       console.error(`[refresh] ${full ? 'full' : 'fast'} chain FAILED (exit ${code}) after ${mins}m`);
@@ -192,7 +270,7 @@ setInterval(tick, INTERVAL_MS);
 // end-to-end right after release. Idempotent + the refreshRunning guard means a
 // restart can never stack overlapping rebuilds.
 const FIRST_REFRESH_DELAY_MS = parseInt(process.env.FIRST_REFRESH_DELAY_MS || '120000', 10);
-setTimeout(() => runRefresh(true), FIRST_REFRESH_DELAY_MS);
+setTimeout(async () => { if (await jobDue('refresh', REFRESH_INTERVAL_MS)) runRefresh(true); else console.log('[governor] boot refresh kick skipped — last success is fresh'); }, FIRST_REFRESH_DELAY_MS + jitterMs(3));
 setInterval(() => runRefresh(true), REFRESH_INTERVAL_MS);
 if (FULL_REFRESH_INTERVAL_MS > 0) setInterval(() => runRefresh(true), FULL_REFRESH_INTERVAL_MS);
 
@@ -364,6 +442,7 @@ const STAGGER_MS = parseInt(process.env.INGEST_STAGGER_MS || '20000', 10); // 20
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let ingestRunning = false;
 async function runDiscovery() {
+  if (!(await pressureOk('discovery'))) return;
   if (ingestRunning) { console.log('[ingest] discovery still running — skipping'); return; }
   if (feedIngestRunning || refreshRunning) { console.log('[ingest] refresh/feed active — deferring discovery'); return; }
   if (!(await admit('discovery'))) return;   // ADR-148 backpressure
@@ -376,9 +455,11 @@ async function runDiscovery() {
         await sleep(STAGGER_MS);
       }
     }
+    jobDone('discovery', 'ok');
   } finally { ingestRunning = false; }
 }
 async function runPriceUpdate() {
+  if (!(await pressureOk('price_update'))) return;
   if (ingestRunning || feedIngestRunning || refreshRunning) { console.log('[ingest] busy — deferring price-update'); return; }
   // NOT gated by backpressure — price freshness is the customer-visible promise, and this
   // loop is bounded by max_products per store per cycle, so it cannot outrun normalization.
@@ -393,11 +474,12 @@ async function runPriceUpdate() {
     if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
     await sleep(STAGGER_MS);
   }
+  jobDone('price_update', 'ok');
 }
 
 if (DISPATCH_ENABLED && INGEST_STORES.length) {
   console.log(`[ingest] merchant ingestion enabled for [${INGEST_STORES.join(', ')}] — discovery every ${(INGEST_DISCOVERY_MS / 3600000).toFixed(0)}h, prices every ${(INGEST_PRICE_MS / 3600000).toFixed(0)}h`);
-  setTimeout(runDiscovery, INGEST_FIRST_DELAY_MS);
+  setTimeout(async () => { if (await jobDue('discovery', INGEST_DISCOVERY_MS)) runDiscovery(); else console.log('[governor] boot discovery kick skipped'); }, INGEST_FIRST_DELAY_MS + jitterMs(5));
   setInterval(runDiscovery, INGEST_DISCOVERY_MS);
   // ADR-148 — PRICE REFRESH HAD NEVER RUN ON THE SCHEDULED PATH.
   // This line used to be `setInterval` ONLY, with no initial timer, while discovery and
@@ -409,7 +491,7 @@ if (DISPATCH_ENABLED && INGEST_STORES.length) {
   // same table — so this was not an attribution artifact. Railway restarted 4+ times that
   // day alone. Price freshness is the customer-visible promise of this platform, and the
   // loop meant to deliver it was dead on arrival after every deploy.
-  setTimeout(runPriceUpdate, INGEST_FIRST_DELAY_MS + 2 * 60 * 1000);
+  setTimeout(async () => { if (await jobDue('price_update', INGEST_PRICE_MS)) runPriceUpdate(); else console.log('[governor] boot price-update kick skipped'); }, INGEST_FIRST_DELAY_MS + 2 * 60 * 1000 + jitterMs(5));
   setInterval(runPriceUpdate, INGEST_PRICE_MS);
 }
 
@@ -424,6 +506,7 @@ if (DISPATCH_ENABLED && INGEST_STORES.length) {
 const INGEST_FEED_MS = parseInt(process.env.INGEST_FEED_MS || String(6 * 60 * 60 * 1000), 10); // 6h
 let feedIngestRunning = false;
 async function runFeedIngest() {
+  if (!(await pressureOk('feed_ingest'))) return;
   if (feedIngestRunning) { console.log('[feed-ingest] previous run still in progress — skipping'); return; }
   if (!INGEST_FEED_STORES.length) return;
   // The feed loop is almanea's ingestion path and the single largest backlog producer
@@ -433,7 +516,7 @@ async function runFeedIngest() {
   const slugs = [...INGEST_FEED_STORES];
   // One store at a time in a single child chain — bounds resource use on the host.
   const runOne = (i) => {
-    if (i >= slugs.length) { feedIngestRunning = false; return; }
+    if (i >= slugs.length) { feedIngestRunning = false; jobDone('feed_ingest', 'ok'); return; }
     const slug = slugs[i];
     const child = spawn('npx', ['tsx', 'scripts/tps-core/ingest-via-provider.ts', slug], { cwd: process.cwd(), shell: true, env: process.env });
     let tail = '';
@@ -452,7 +535,7 @@ async function runFeedIngest() {
 if (INGEST_FEED_STORES.length) {
   console.log(`[feed-ingest] feed ingestion enabled for [${INGEST_FEED_STORES.join(', ')}] — every ${(INGEST_FEED_MS / 3600000).toFixed(0)}h`);
   // Stagger after the scraper discovery kick so the two ingestion paths don't spike together.
-  setTimeout(runFeedIngest, INGEST_FIRST_DELAY_MS + 90 * 1000);
+  setTimeout(async () => { if (await jobDue('feed_ingest', INGEST_FEED_MS)) runFeedIngest(); else console.log('[governor] boot feed kick skipped'); }, INGEST_FIRST_DELAY_MS + 90 * 1000 + jitterMs(5));
   setInterval(runFeedIngest, INGEST_FEED_MS);
 }
 
@@ -468,8 +551,9 @@ if (INGEST_FEED_STORES.length) {
 const REOBSERVE_MS = parseInt(process.env.REOBSERVE_MS || String(6 * 60 * 60 * 1000), 10); // 6h
 const REOBSERVE_LIMIT = parseInt(process.env.REOBSERVE_LIMIT || '60', 10);
 let reobserveRunning = false;
-function runReobserve() {
+async function runReobserve() {
   if (REOBSERVE_LIMIT <= 0) return;
+  if (!(await pressureOk('reobserve'))) return;
   if (reobserveRunning) { console.log('[reobserve] previous run still in progress — skipping'); return; }
   if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[reobserve] busy — deferring'); return; }
   reobserveRunning = true;
@@ -480,6 +564,7 @@ function runReobserve() {
   child.stderr.on('data', cap);
   child.on('close', (code) => {
     reobserveRunning = false;
+    if (code === 0) jobDone('reobserve', 'ok');
     const last = tail.split('\n').map((l) => l.trim()).filter((l) => l && !l.includes('injected env')).slice(-1)[0] || '';
     console.log(`[reobserve] exit ${code}: ${last}`);
   });
@@ -488,7 +573,7 @@ function runReobserve() {
 if (REOBSERVE_LIMIT > 0) {
   console.log(`[reobserve] comparable re-observation enabled — every ${(REOBSERVE_MS / 3600000).toFixed(0)}h, limit ${REOBSERVE_LIMIT}/run`);
   // After the ingest kicks, offset from the feed loop's start so the paths don't spike together.
-  setTimeout(runReobserve, INGEST_FIRST_DELAY_MS + 5 * 60 * 1000);
+  setTimeout(async () => { if (await jobDue('reobserve', REOBSERVE_MS)) runReobserve(); else console.log('[governor] boot reobserve kick skipped'); }, INGEST_FIRST_DELAY_MS + 5 * 60 * 1000 + jitterMs(5));
   setInterval(runReobserve, REOBSERVE_MS);
 }
 

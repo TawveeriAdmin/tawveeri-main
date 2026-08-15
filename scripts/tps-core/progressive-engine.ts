@@ -181,9 +181,11 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
       if (ce) throw new Error(`cursor upsert store ${s.id}: ${ce.message}`);
     }
   }
-  if (dry) {
-    m.pendingStaging = stagingRows;
-  } else {
+  // ADR-252: the sweep's rows are ALWAYS carried in memory to the corroborate pass
+  // (forward-only processing consumes them directly — no history re-read). Real runs
+  // still persist staging as the append-only COLD audit trail.
+  m.pendingStaging = stagingRows;
+  if (!dry) {
     for (let i = 0; i < stagingRows.length; i += 500) {
       const { error } = await sb.from("tps_identity_staging").upsert(stagingRows.slice(i, i + 500), { onConflict: "category,raw_obs_id" });
       if (error) throw new Error(`staging upsert: ${error.message}`);
@@ -200,11 +202,10 @@ export interface CorroborateOpts {
   singleStore?: boolean; // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
   /** Compute everything, call write_ac_batch NEVER. Metrics still report what WOULD be written. */
   dry?: boolean;
-  /** DRY-RUN ONLY. Staging rows computed in-memory by this run's sweep, merged with persisted
-   *  staging so the dry pass sees its own work. Deduped by (category, raw_obs_id) — the same
-   *  key the real staging upsert uses — so an observation already persisted is never counted
-   *  twice. */
-  extraStaging?: Record<string, unknown>[];
+  /** THIS SWEEP'S freshly-staged rows (in memory, real and dry runs alike). Forward-only
+   *  processing (ADR-252): the pass consumes ONLY these new rows plus the small
+   *  `tps_current_offers` current state — it never re-reads staging history. */
+  sweepRows?: Record<string, unknown>[];
 }
 
 // ── Corroboration pass: for the touched keys, group ALL accumulated staging by
@@ -217,93 +218,76 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   if (!touchedKeys.length) return R;
   const single = !!opts.singleStore;
 
-  // Load all staging rows for the touched keys (across all slices ever normalized).
+  // ── FORWARD-ONLY INPUT (ADR-252, SEV-1 remediation) ────────────────────────────────
+  // The 2026-08-15 SEV-1 proved the structural rule this pass now enforces:
+  // PROCESSING A NEW OBSERVATION MUST NEVER REQUIRE RE-READING A KEY'S OBSERVATION
+  // HISTORY. The previous design loaded every touched key's ENTIRE append-only staging
+  // history (719k rows, avg 177 rows/key) — first silently truncated by PostgREST's
+  // 1,000-row cap (ADR-251: the 10× npo collapse), then, once paginated, so IO-heavy
+  // that its first full run exhausted the Supabase Disk IO Budget and took the consumer
+  // surface down.
   //
-  // ROOT CAUSE OF THE 10× INGESTION COLLAPSE (2026-08-15, ADR-251). This load was a single
-  // un-paginated PostgREST request per 100-key chunk. PostgREST silently caps a response at
-  // db-max-rows (1,000), and `tps_identity_staging` is APPEND-ONLY per observation — measured
-  // 719,677 rows, washing_machine averaging 177 rows/key with one key alone at 1,314. A
-  // 100-key chunk of mature keys asks for ~48,590 rows and silently receives the FIRST 1,000
-  // in physical (oldest-first) order — so exactly the NEWEST observations fell off the end,
-  // and `normalized_product_observations` / `price_history` were never written for them.
-  // The loss grew smoothly as staging accumulated (~30k valid rows/day): staged→normalized
-  // conversion decayed 39% (08-01) → 7.9% (08-14), while cursors/backlog looked perfectly
-  // healthy — the sweep HAD processed the rows; the corroborate pass just could not see them.
-  // Categories with the largest histories collapsed hardest (air_conditioner 90k rows → 0%
-  // conversion on 08-14; audio 95k → 3%) while small ones still converted 27–39% — the
-  // falsification test that proved truncation rather than detection/scheduling.
-  //
-  // FIX: page through every chunk with .range() until a short page, with a deterministic
-  // order so pagination cannot skip or double-read. Because every downstream id is a stable
-  // UUID of the raw id, the previously-lost history SELF-HEALS the next time each key is
-  // touched — no manual backfill for actively-observed keys.
+  // The pass now consumes exactly two inputs, both bounded:
+  //   (a) THIS sweep's freshly-staged rows — already in memory, zero table reads;
+  //   (b) `tps_current_offers` — the small HOT current state, ≤ one row per
+  //       (key × store), independent of history depth. 10× the observations = the
+  //       same cost.
+  // `tps_identity_staging` remains an append-only COLD audit trail that the hot path
+  // never reads. The old touch-triggered self-heal is REMOVED (it was structurally
+  // unsafe); historical recovery, if ever wanted, is a separate explicitly-launched,
+  // governor-paced job (seed-current-offers.ts).
   const PG_PAGE = 1000;
-  // SELF-HEAL LOAD BUDGET (ADR-251 incident follow-up, same day). The first post-fix chain
-  // run unleashed TWO WEEKS of accumulated heal in one pass (~34k rows per sweep unit) and
-  // saturated the DB/PostgREST — the customer surface timed out (the exact ADR-099 failure
-  // shape this platform has been burned by before). The budget bounds how much staging one
-  // corroborate pass may LOAD (and therefore write): whole 100-key chunks beyond it are
-  // DEFERRED, never partially loaded — a key processed with partial history would recreate
-  // the truncation bug this fix removed. Deferred keys keep their staging rows and heal on
-  // their next touch (feed passes re-touch active keys every ~6h), so the same total heal
-  // happens, spread across hours instead of one thundering run. Reversible/tunable:
-  // CORROBORATE_ROW_BUDGET (0 disables the budget).
-  const HEAL_ROW_BUDGET = parseInt(process.env.CORROBORATE_ROW_BUDGET || "12000", 10);
   type Stg = { raw_obs_id: number; store_id: number | null; identity_key: string; status: string; price: number | null; url: string | null; name: string; confidence: number; payload: Record<string, unknown>; observed_at?: string | null };
-  const byKey = new Map<string, Stg[]>();
-  let maxPagesSeen = 0;
-  let loadedRows = 0;
-  let deferredKeys = 0;
+
+  // (a) newest new row per (key, store). Cursor monotonicity makes later sweeps strictly
+  // newer, so plain upserts into the current state stay correct.
+  const touchedSet = new Set(touchedKeys);
+  const newByKeyStore = new Map<string, Stg>();
+  for (const rawRow of (opts.sweepRows ?? []) as (Stg & { category?: string })[]) {
+    if (rawRow.category && rawRow.category !== def.category) continue;
+    if (!touchedSet.has(rawRow.identity_key)) continue;
+    if (def.requireValidTier && rawRow.status !== "valid") continue;
+    if (rawRow.store_id == null) continue;
+    const k = `${rawRow.identity_key}|${rawRow.store_id}`;
+    const prev = newByKeyStore.get(k);
+    if (!prev || rawRow.raw_obs_id > prev.raw_obs_id) newByKeyStore.set(k, rawRow);
+  }
+
+  // (b) previous current state for the touched keys (small; paginated defensively —
+  // ≤ keys × stores rows, i.e. a 100-key chunk tops out around a dozen hundred rows).
+  const prevByKeyStore = new Map<string, Stg>();
   for (let i = 0; i < touchedKeys.length; i += 100) {
-    if (HEAL_ROW_BUDGET > 0 && loadedRows >= HEAL_ROW_BUDGET) { deferredKeys += touchedKeys.length - i; break; }
     const chunk = touchedKeys.slice(i, i + 100);
-    let from = 0, pages = 0;
+    let from = 0;
     for (;;) {
-      const { data, error } = await sb.from("tps_identity_staging")
+      const { data, error } = await sb.from("tps_current_offers")
         .select("raw_obs_id, store_id, identity_key, status, price, url, name, confidence, payload, observed_at")
         .eq("category", def.category).in("identity_key", chunk)
         .order("raw_obs_id", { ascending: true })
         .range(from, from + PG_PAGE - 1);
-      if (error) throw new Error(`staging load: ${error.message}`);
+      if (error) throw new Error(`current-offers load: ${error.message}`);
       const rows = (data ?? []) as Stg[];
-      pages++;
-      loadedRows += rows.length;
       for (const r of rows) {
         if (def.requireValidTier && r.status !== "valid") continue;
-        if (!byKey.has(r.identity_key)) byKey.set(r.identity_key, []);
-        byKey.get(r.identity_key)!.push(r);
+        if (r.store_id == null) continue;
+        prevByKeyStore.set(`${r.identity_key}|${r.store_id}`, r);
       }
       if (rows.length < PG_PAGE) break;
       from += PG_PAGE;
     }
-    maxPagesSeen = Math.max(maxPagesSeen, pages);
-  }
-  if (deferredKeys) {
-    console.warn(`[corroborate:${def.category}] row budget ${HEAL_ROW_BUDGET} reached (${loadedRows} loaded) — deferred ${deferredKeys} touched key(s) to later passes; they heal on next touch.`);
-  }
-  // GUARDRAIL (ADR-251): staging accumulation is unbounded, so pagination depth is the
-  // early-warning signal for the next capacity conversation. Visible in scheduler logs.
-  if (maxPagesSeen >= 25) {
-    console.warn(`[corroborate:${def.category}] staging load needed ${maxPagesSeen} pages for one 100-key chunk — tps_identity_staging accumulation is getting heavy; consider a retention policy before this slows the hourly chain.`);
   }
 
-  // DRY-RUN: fold in the staging this run computed but did not persist. Deduped on
-  // (category, raw_obs_id) — the real upsert's conflict target — so a row that is already in
-  // the table is not double-counted, and the dry metrics match what a real run would produce.
-  if (opts.extraStaging?.length) {
-    const seen = new Set<number>();
-    for (const list of byKey.values()) for (const r of list) seen.add(r.raw_obs_id);
-    const touched = new Set(touchedKeys);
-    for (const raw of opts.extraStaging as unknown as (Stg & { category?: string })[]) {
-      if (raw.category && raw.category !== def.category) continue;
-      if (!touched.has(raw.identity_key)) continue;
-      if (seen.has(raw.raw_obs_id)) continue;
-      if (def.requireValidTier && raw.status !== "valid") continue;
-      seen.add(raw.raw_obs_id);
-      if (!byKey.has(raw.identity_key)) byKey.set(raw.identity_key, []);
-      byKey.get(raw.identity_key)!.push(raw);
-    }
+  // Merge: current state = previous, overridden by this sweep's newer rows.
+  const mergedByKeyStore = new Map<string, Stg>(prevByKeyStore);
+  for (const [k, r] of newByKeyStore) mergedByKeyStore.set(k, r);
+  const byKey = new Map<string, Stg[]>();
+  for (const r of mergedByKeyStore.values()) {
+    if (!byKey.has(r.identity_key)) byKey.set(r.identity_key, []);
+    byKey.get(r.identity_key)!.push(r);
   }
+  // Newest-first within each key so `offers[0]` (the representative payload for
+  // names/attrs/image) is the freshest evidence, never the oldest.
+  for (const list of byKey.values()) list.sort((a, b) => b.raw_obs_id - a.raw_obs_id);
 
   // ADR-096: reuse the EXISTING canonical id for any tps_identity_key already in the
   // graph. The canonical id is a hash of canonSeed(key), but the same key can already
@@ -357,7 +341,11 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       identity_confidence: groupConf, data_quality_score: Math.max(50, groupConf - 10), created_at: now, data_updated_at: now,
     });
     const normById = new Map<number, string>();
-    for (const o of offers) {
+    // FORWARD-ONLY (ADR-252): normalized observations, matches and price events are written
+    // ONLY for THIS sweep's new rows. Prior stores' rows already got theirs in their own
+    // sweeps — rewriting them every touch was the write amplification of the old design.
+    const newOffers = offers.filter((o) => newByKeyStore.get(`${key}|${o.store_id}`)?.raw_obs_id === o.raw_obs_id);
+    for (const o of newOffers) {
       const normId = stableUuid(def.normSeed(o.raw_obs_id)); normById.set(o.raw_obs_id, normId);
       normalizedRows.push({
         id: normId, source_table: "raw_observations", source_record_id: stableUuid(`raw_observations:${o.raw_obs_id}`),
@@ -372,66 +360,65 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
         normalizer_version: def.version, tps_version: def.version, observed_at: o.observed_at ?? now, plugin_version: def.version,
       });
     }
-    for (const sid of storeIds) {
-      const so = offers.filter((o) => o.store_id === sid);
-      const priced = so.filter((o) => o.price !== null);
-      // See selectCurrentOffer's doc comment — P0 price-truth incident, 2026-08-07.
-      const r = selectCurrentOffer(priced, so[0]);
-      matchRows.push({ raw_observation_id: normById.get(r.raw_obs_id), canonical_product_id: canonicalId, match_method: "tps_identity_key", confidence: groupConf, is_verified: false, matched_at: now, identity_resolution_event_id: null });
-      // THE PRICE EVENT CARRIES WHEN WE OBSERVED IT, not when we processed it.
+    for (const o of newOffers) {
+      const sid = o.store_id as number;
+      matchRows.push({ raw_observation_id: normById.get(o.raw_obs_id), canonical_product_id: canonicalId, match_method: "tps_identity_key", confidence: groupConf, is_verified: false, matched_at: now, identity_resolution_event_id: null });
+      // THE PRICE EVENT CARRIES WHEN WE OBSERVED IT, not when we processed it (measured
+      // 2026-07-31: staging averaged 6.4 days behind the scrape; stamping processing time
+      // made old prices render as "observed today"). store_id travels with the event
+      // (ADR-004 / migration 026) — the customer chart joins on (canonical, store_id).
       //
-      // This was `observed_at: now`. `price_history.observed_at` is the column the customer
-      // reads — the compare page renders «رصدناه قبل X يومًا» from it
-      // (get-comparison.ts:131,151) and the Trust Engine's freshness signal is its max
-      // (build-tps-projection.ts:167). Stamping processing time made a price we saw days ago
-      // render as "observed today".
-      //
-      // Not hypothetical: measured 2026-07-31, staging runs on average 6.4 DAYS behind the
-      // scrape (296,339 rows; 71.9% >24h; max 43.3 days). Published freshness has therefore
-      // been UNDERSTATING true staleness by about that much — for the healthy scraper path,
-      // not only for the discovery backlog.
-      //
-      // Falls back to `now` only if the staging row predates this change and has no
-      // timestamp; a NULL must never silently become "just now".
-      // store_id travels with the price event (ADR-004 / migration 026): the
-      // customer chart joins price_history on (canonical_product_id, store_id),
-      // and rows stamped with only the display name were invisible to it.
-      if (priced.length) priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), store_id: sid, price: r.price, tps_observation_id: normById.get(r.raw_obs_id), observed_at: r.observed_at ?? now });
+      // CHANGE-ONLY, AGAINST CURRENT STATE (ADR-252): the previous price for this
+      // (key, store) comes from `tps_current_offers` — NOT from scanning price_history
+      // (the old paginated last-price load is gone; that scan was part of the IO bill).
+      // A (key, store) never seen in the current state appends its first event once;
+      // change-only from then on. This sweep's row IS the store's current offer, so
+      // selectCurrentOffer over history is no longer needed here.
+      const prevPrice = prevByKeyStore.get(`${key}|${sid}`)?.price ?? null;
+      const changed = o.price != null && !(prevPrice != null && Number(prevPrice) === Number(o.price));
+      if (changed) {
+        priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), store_id: sid, price: o.price, tps_observation_id: normById.get(o.raw_obs_id), observed_at: o.observed_at ?? now });
+      }
     }
   }
   R.normalized = normalizedRows.length; R.matches = matchRows.length;
-  if (!canonicalRows.length) return R;
-
-  // Append-only price history: only changed prices. PAGINATED (ADR-251): the same
-  // PostgREST 1,000-row response cap truncated this load too — with >1,000 history rows
-  // across the batch's canonicals, older (canonical, store) pairs never reached
-  // `lastPrice`, so their unchanged prices were misread as "changed" and re-appended
-  // (history bloat), and a genuine change could be compared against the wrong prior.
-  // Ordered DESC so first-seen per (canonical, store) is still the latest price on every
-  // page boundary.
-  const lastPrice = new Map<string, number>();
-  for (let i = 0; i < canonicalIds.length; i += 100) {
-    const ids = canonicalIds.slice(i, i + 100);
-    let from = 0;
-    for (;;) {
-      const { data: hist, error: he } = await sb.from("price_history")
-        .select("canonical_product_id, store_name, price, observed_at")
-        .in("canonical_product_id", ids)
-        .order("observed_at", { ascending: false })
-        .range(from, from + PG_PAGE - 1);
-      if (he) throw new Error(`price_history load: ${he.message}`);
-      const rows = hist ?? [];
-      for (const h of rows) { const k = `${h.canonical_product_id}|${h.store_name}`; if (!lastPrice.has(k)) lastPrice.set(k, Number(h.price)); }
-      if (rows.length < PG_PAGE) break;
-      from += PG_PAGE;
+  if (!opts.dry) {
+    // Persist the new HOT current state FIRST — BEFORE any layer-qualification early
+    // return. A key that does not qualify for THIS pass's layer (single-store key in the
+    // multi pass, or vice versa) must still have its current offers recorded, or the state
+    // silently rots (caught by the ADR-252 test suite). Real runs only; idempotent. — this sweep's rows only, upsert guarded so an
+    // unchanged offer re-observed within the hour does not rewrite the row (unguarded
+    // ON CONFLICT DO UPDATE rewrites identical rows: dead tuples + WAL for nothing).
+    const samePrice2 = (a: unknown, b: unknown) => (a == null && b == null) || (a != null && b != null && Number(a) === Number(b));
+    const upserts: Record<string, unknown>[] = [];
+    for (const [k, o] of newByKeyStore) {
+      const prev = prevByKeyStore.get(k);
+      if (prev && samePrice2(prev.price, o.price) && prev.status === o.status && prev.url === o.url
+          && prev.observed_at && o.observed_at
+          && new Date(o.observed_at).getTime() - new Date(prev.observed_at).getTime() < 3600_000) continue;
+      upserts.push({
+        category: def.category, identity_key: o.identity_key, store_id: o.store_id,
+        raw_obs_id: o.raw_obs_id, status: o.status, price: o.price, url: o.url, name: o.name,
+        confidence: o.confidence, payload: o.payload ?? {}, observed_at: o.observed_at ?? null,
+        updated_at: now,
+      });
+    }
+    for (let i = 0; i < upserts.length; i += 500) {
+      const { error } = await sb.from("tps_current_offers").upsert(upserts.slice(i, i + 500), { onConflict: "category,identity_key,store_id" });
+      if (error) throw new Error(`current-offers upsert: ${error.message}`);
     }
   }
-  const changedPrices = priceRows.filter((pr) => { const l = lastPrice.get(`${pr.canonical_product_id}|${pr.store_name}`); return l === undefined || l !== Number(pr.price); });
+  if (!canonicalRows.length) return R;
+
+  // Price events are already change-only, computed against the current state above —
+  // no price_history scan of any size exists in this pass anymore (ADR-252).
+  const changedPrices = priceRows;
   R.prices = changedPrices.length;
 
   // DRY: report what WOULD be written, mutate nothing. canonicalsWritten is the intended count
   // rather than a returned one, and is labelled as such by the caller.
   if (opts.dry) { R.canonicalsWritten = canonicalRows.length; return R; }
+
 
   // WRITE IN BOUNDED SLICES (ADR-251). Pre-fix, the staging truncation accidentally kept
   // every write_ac_batch payload under ~1,000 normalized rows. Post-fix, a touched key
@@ -480,7 +467,23 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
   const corr: Record<string, CorroborateMetrics> = {};
   for (const def of defs) {
     const touched = [...n.byCategory[def.category].touched];
-    if (touched.length) corr[def.category] = await corroboratePass(sb, def, touched, { dry, extraStaging: dry ? n.pendingStaging : undefined });
+    if (touched.length) {
+      // ADR-252: BOTH layers run here with the same sweep rows, so every new observation
+      // gets its normalized row / price event in the hourly chain regardless of whether
+      // its key is currently single-store (Layer 2) or comparable (Layer 1). The two
+      // passes write disjoint key sets by construction (the layer split).
+      const multi = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging });
+      const singles = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, singleStore: true });
+      corr[def.category] = {
+        keysConsidered: multi.keysConsidered,
+        corroborated: multi.corroborated,
+        singleStore: singles.singleStore,
+        canonicalsWritten: multi.canonicalsWritten + singles.canonicalsWritten,
+        normalized: multi.normalized + singles.normalized,
+        matches: multi.matches + singles.matches,
+        prices: multi.prices + singles.prices,
+      };
+    }
   }
   return { normalize: n, corroborate: corr };
 }

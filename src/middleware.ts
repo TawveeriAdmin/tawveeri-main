@@ -60,6 +60,10 @@ function bucketOf(pathname: string): 'telemetry' | 'scrape' | 'search' | 'agent'
 function getRateLimit(pathname: string): number | null {
   if (pathname.startsWith('/api/cron/')) return null; // authenticated by CRON_SECRET
   if (pathname === '/api/health') return null;
+  // Deep (product-truth) health — same exemption. The rate limiter once 429'd our own
+  // probes (ADR "our own rate limiter"); an external monitor polling every minute must
+  // never be throttled into a false DOWN. The endpoint self-protects with a 60s cache.
+  if (pathname === '/api/health/deep') return null;
   // Per-instance limits; PM2 runs 2 cluster instances with independent in-process
   // counters, so an IP's effective ceiling is up to 2x these numbers.
   switch (bucketOf(pathname)) {
