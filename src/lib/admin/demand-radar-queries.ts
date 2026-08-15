@@ -65,6 +65,7 @@ export interface MentionRow {
   source_posted_at: string | null;
   first_seen_at: string;
   mention_class: string;
+  suggested_reply: string | null;
   status: string;
   is_test: boolean;
 }
@@ -107,7 +108,7 @@ export async function fetchRadarSurface(): Promise<{
       .limit(5000),
     sb.from('demand_opportunities').select('id', { count: 'exact', head: true }).eq('is_test', true),
     sb.from('brand_mentions')
-      .select('id, source, source_url, author_handle, post_text, source_posted_at, first_seen_at, mention_class, status, is_test')
+      .select('id, source, source_url, author_handle, post_text, source_posted_at, first_seen_at, mention_class, suggested_reply, status, is_test')
       .eq('status', 'new')
       .order('created_at', { ascending: false })
       .limit(20),

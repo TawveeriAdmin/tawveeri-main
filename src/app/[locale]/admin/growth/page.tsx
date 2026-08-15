@@ -217,7 +217,7 @@ export default async function GrowthPage() {
             {/* Brand Mention Watch (ADR-248) — fully separate from purchase opportunities */}
             {radar.mentions.length > 0 && (
               <div className="mt-6 border-t border-gray-200 pt-4 dark:border-gray-800">
-                <h3 className="mb-3 font-bold">ذكر العلامة</h3>
+                <h3 className="mb-3 font-bold">ذكر توفيري</h3>
                 <div className="space-y-3">
                   {radar.mentions.map((m) => (
                     <div key={m.id} id={`mention-${m.id}`} className="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
@@ -238,6 +238,12 @@ export default async function GrowthPage() {
                         {m.is_test && <span className="rounded-full bg-blue-100 px-2 py-0.5 font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">TEST</span>}
                       </div>
                       <p className="mt-2 text-sm leading-7">{m.post_text}</p>
+                      {m.suggested_reply && (
+                        <div className="mt-2 rounded-lg bg-emerald-50 p-3 text-sm leading-7 dark:bg-emerald-500/10">
+                          <b className="text-xs text-emerald-700 dark:text-emerald-300">الرد المقترح من توفيري:</b>
+                          <p className="mt-1 whitespace-pre-wrap">{m.suggested_reply}</p>
+                        </div>
+                      )}
                       <div className="mt-2 flex flex-wrap items-center gap-3">
                         <a href={m.source_url} target="_blank" rel="noopener noreferrer" className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-black dark:bg-white dark:text-gray-900">
                           فتح المنشور ↗

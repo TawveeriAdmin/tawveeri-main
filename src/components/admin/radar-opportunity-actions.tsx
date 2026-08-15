@@ -33,7 +33,8 @@ export function MentionActions({ id, status }: { id: string; status: string }) {
   return (
     <div className="flex gap-2">
       {[
-        { action: 'handled', label: 'تم التعامل', cls: 'bg-emerald-600 text-white hover:bg-emerald-700' },
+        { action: 'replied_manually', label: 'تم الرد يدويًا', cls: 'bg-blue-600 text-white hover:bg-blue-700' },
+        { action: 'reviewed', label: 'تمت المراجعة', cls: 'bg-emerald-600 text-white hover:bg-emerald-700' },
         { action: 'dismissed', label: 'تجاهل', cls: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300' },
       ].map((a) => (
         <button

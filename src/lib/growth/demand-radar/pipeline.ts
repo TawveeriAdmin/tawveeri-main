@@ -15,6 +15,7 @@ import { assessAnswerability } from './answerability';
 import { rankOpportunity } from './rank';
 import { draftReply } from './draft';
 import { sendHighOpportunityAlert } from './alert';
+import { opportunityAlertEligible } from './freshness';
 import type { RadarCandidate } from './types';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
@@ -153,8 +154,15 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
     if (rank.tier === 'high') result.high++;
     if (rank.tier === 'medium') result.medium++;
 
-    // HIGH → rapid founder email, with alert-fatigue cooldown (§24-25).
-    if (rank.tier === 'high') {
+    // HIGH → rapid founder email — ONLY while the conversation is still live.
+    // Backfill/stale posts stay dashboard-only (founder correction: a 40h-old
+    // post must never arrive as an urgent email). Cooldown still applies.
+    const alertGate = opportunityAlertEligible({
+      sourcePostedAt: c.postedAt,
+      ksaRelevance: cls.ksaRelevance,
+      budgetSar: cls.budgetSar,
+    });
+    if (rank.tier === 'high' && alertGate.eligible) {
       const { count } = await sb
         .from('demand_opportunities')
         .select('id', { count: 'exact', head: true })

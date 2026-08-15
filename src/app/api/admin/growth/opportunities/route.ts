@@ -7,7 +7,7 @@ import { requireRequestAdmin } from '@/lib/auth/api-auth';
 import { createServerClient } from '@/lib/database';
 
 const OPPORTUNITY_ACTIONS = new Set(['approved', 'changes_requested', 'dismissed', 'replied_manually']);
-const MENTION_ACTIONS = new Set(['handled', 'dismissed']);
+const MENTION_ACTIONS = new Set(['reviewed', 'replied_manually', 'dismissed']);
 
 export async function PATCH(request: NextRequest) {
   try {

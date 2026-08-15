@@ -169,3 +169,52 @@ describe('brand mention watch (ADR-248) — separation + heuristic classes', () 
     expect(MENTION_CLASSES).toContain('complaint');
   });
 });
+
+describe('freshness gate (founder correction: 40h-old post must never urgent-email)', () => {
+  const ago = (mins: number) => new Date(Date.now() - mins * 60000).toISOString();
+
+  it('boundary conditions: 29m/30m/45m/60m/61m/24h/40h', async () => {
+    const { assessFreshness, opportunityAlertEligible, mentionAlertEligible } = await import('@/lib/growth/demand-radar/freshness');
+    expect(assessFreshness(ago(29))).toBe('fresh');
+    expect(assessFreshness(ago(30))).toBe('fresh');
+    expect(assessFreshness(ago(45))).toBe('window');
+    expect(assessFreshness(ago(60))).toBe('window');
+    expect(assessFreshness(ago(61))).toBe('stale');
+    expect(assessFreshness(ago(24 * 60))).toBe('stale');
+    expect(assessFreshness(ago(40 * 60))).toBe('stale');
+    expect(assessFreshness(null)).toBe('unknown');
+    // 2408 minutes — the exact founder-reported failure — must never email
+    expect(opportunityAlertEligible({ sourcePostedAt: ago(2408), ksaRelevance: 'confirmed', budgetSar: 3000 }).eligible).toBe(false);
+    expect(mentionAlertEligible(ago(2408))).toBe(false);
+  });
+
+  it('fresh purchase post may email; 30-60m window needs strong corroboration', async () => {
+    const { opportunityAlertEligible } = await import('@/lib/growth/demand-radar/freshness');
+    expect(opportunityAlertEligible({ sourcePostedAt: ago(10), ksaRelevance: 'likely', budgetSar: null }).eligible).toBe(true);
+    expect(opportunityAlertEligible({ sourcePostedAt: ago(45), ksaRelevance: 'confirmed', budgetSar: null }).eligible).toBe(true);
+    expect(opportunityAlertEligible({ sourcePostedAt: ago(45), ksaRelevance: 'likely', budgetSar: 3000 }).eligible).toBe(true);
+    expect(opportunityAlertEligible({ sourcePostedAt: ago(45), ksaRelevance: 'likely', budgetSar: null }).eligible).toBe(false);
+    // unknown age is NEVER an urgent alert
+    expect(opportunityAlertEligible({ sourcePostedAt: null, ksaRelevance: 'confirmed', budgetSar: 3000 }).eligible).toBe(false);
+  });
+
+  it('old brand mention must not urgent-email; fresh complaint may', async () => {
+    const { mentionAlertEligible } = await import('@/lib/growth/demand-radar/freshness');
+    expect(mentionAlertEligible(ago(15))).toBe(true);
+    expect(mentionAlertEligible(ago(55))).toBe(true);
+    expect(mentionAlertEligible(ago(90))).toBe(false);
+    expect(mentionAlertEligible(null)).toBe(false);
+  });
+});
+
+describe('generic توفيري usage guard (live-cycle lesson: coupon spam is not the brand)', () => {
+  it('coupon/promo adjective usage is filtered; brand forms and Latin pass', async () => {
+    const { isGenericTawfeeriUsage, BRAND_QUERY } = await import('@/lib/growth/demand-radar/brand-mentions');
+    expect(isGenericTawfeeriUsage('طلبية الصيف من شي ان ومع خصم توفيري رهيب للعميل الجديد')).toBe(true);
+    expect(isGenericTawfeeriUsage('عرض توفيري بطل عسل طبيعي 10 كيلو نزل سعره')).toBe(true);
+    expect(isGenericTawfeeriUsage('جربت موقع توفيري وما لقيت الغسالة اللي ابيها')).toBe(false);
+    expect(isGenericTawfeeriUsage('جربت tawveeri اليوم وعجبني')).toBe(false);
+    expect(isGenericTawfeeriUsage('@Tawveeri وش طريقة البحث عندكم؟'.replace('@Tawveeri','tawveeri'))).toBe(false);
+    expect(BRAND_QUERY).not.toContain('"توفيري" OR'); // bare generic form removed
+  });
+});
