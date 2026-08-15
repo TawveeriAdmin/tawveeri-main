@@ -21,10 +21,16 @@ positive (accessory question ranked HIGH → deterministic veto), 75% category
 accuracy, 50% recall — precision rules V1. 19 deterministic tests (injection
 containment included). Migration 32 applied.
 
-### THE ONE FOUNDER ACTION
-console.x.com → sign in with @Tawveeri → create Project/App → copy the App-Only
-Bearer Token → load small prepaid credits (set a hard limit) → set Railway env
-`X_RADAR_BEARER_TOKEN` → redeploy. Polling starts itself (10-min interval).
+### LIVE STATUS (updated 2026-08-15, post-activation)
+Token provisioned + $5 credits loaded by the founder. First LIVE poll: **152 real
+candidates → 19 REAL opportunities** (contextual Saudi drafts, evidence-based KSA
+relevance), 1 real HIGH email delivered. Live lessons fixed same-day: (a) the top
+HIGH was @Tawveeri's OWN post → `-from:Tawveeri` + deterministic veto (`c06f960`);
+(b) first poll backfills 7 days → huge apparent latencies + possible proxy timeout
+on the HTTP response while the server-side run completes — check
+`demand_radar_state` before re-triggering. X 402 body is precise ("credits
+depleted"). **ADR-248**: Brand Mention Watch added on the same tick — separate
+`brand_mentions` table/classes/«ذكر العلامة» section; complaint/needs_reply email.
 
 ---
 

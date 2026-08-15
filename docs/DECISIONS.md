@@ -6,6 +6,13 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-248 — Brand Mention Watch: one extra query on the radar cycle, fully separate from purchase opportunities · Accepted (2026-08-15)
+**Context.** Founder-approved smallest addition after the radar went LIVE (first real poll: 152 candidates, 19 REAL opportunities; the top HIGH was @Tawveeri's own post — fixed with `-from:Tawveeri` + a deterministic rank veto, `c06f960`). Watch mentions of توفيري/tawveeri/@Tawveeri/tawveeri.com and classify them.
+
+**Decision.** `runBrandMentionWatch` (`src/lib/growth/demand-radar/brand-mentions.ts`) runs INSIDE the existing radar tick — one extra X recent-search query per cycle (no lang filter, own posts excluded), its own cursor row (`demand_radar_state.source='x-brand'`), and a SEPARATE `brand_mentions` table (migration 33) — a mention never enters `demand_opportunities` and vice versa; a post can appear in both via two independent decisions. Classification: closed vocabulary (positive|negative|question|complaint|suggestion|needs_reply|neutral) with the same `<post_data>` containment and a conservative heuristic fallback. Founder surface: «ذكر العلامة» inside مرصد الطلب with تم التعامل/تجاهل; email alerts ONLY for complaint/needs_reply (same 3-per-4h cooldown; [TEST] labeling and REAL/TEST isolation identical to the radar). A mention-watch failure never fails the radar run. Cost: ~one query/cycle — negligible.
+
+---
+
 ### ADR-247 — Real-Time Consumer Demand Radar: X as Source One (pay-per-use), category-balanced Saudi intent discovery, human-in-the-loop only · Accepted (2026-08-15)
 **Context.** Founder mission: when a Saudi consumer publicly expresses genuine purchase uncertainty in any currently-supported category, Tawveeri should discover → understand → classify → evaluate → draft → alert within <30 minutes, and the founder replies manually. NOT an autonomous bot, NOT a keyword alerter, NOT a social-listening company. Strategic isolation: no consumer-surface, ingestion, affiliate, or closed-mission work reopened.
 
