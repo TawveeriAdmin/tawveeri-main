@@ -5,9 +5,42 @@ export async function register() {
     (globalThis as Record<string, unknown>).__tawveeriInstrumentationRan = new Date().toISOString();
     await import('../sentry.server.config');
     startIntelligenceScheduler();
+    startDemandRadarTick();
   }
   if (process.env.NEXT_RUNTIME === 'edge') {
     await import('../sentry.edge.config');
+  }
+}
+
+/**
+ * Demand Radar polling tick (ADR-247). Self-gating: does NOTHING unless
+ * X_RADAR_BEARER_TOKEN is provisioned — activating the radar is exactly one
+ * founder action (set the token). Fail-safe by construction: fully wrapped,
+ * dynamic import, one interval per process, every run's errors swallowed into
+ * a global for the debug endpoint. Worst case is "the radar did not poll" —
+ * never a degraded web server (same discipline as the scheduler above).
+ */
+function startDemandRadarTick() {
+  try {
+    const g = globalThis as Record<string, unknown>;
+    if (g.__tawveeriRadarStarted) return;
+    if (!process.env.X_RADAR_BEARER_TOKEN) return; // unconfigured — explicit non-start
+    if (process.env.DISABLE_DEMAND_RADAR === '1') return;
+    g.__tawveeriRadarStarted = true;
+    const intervalMin = Math.max(5, Number(process.env.DEMAND_RADAR_INTERVAL_MIN) || 10);
+    const tick = async () => {
+      try {
+        const { runDemandRadar } = await import('./lib/growth/demand-radar/pipeline');
+        const r = await runDemandRadar({ source: 'x' });
+        g.__tawveeriRadarLastRun = { at: new Date().toISOString(), ...r };
+      } catch (e) {
+        g.__tawveeriRadarLastRun = { at: new Date().toISOString(), status: 'error', detail: e instanceof Error ? e.message : String(e) };
+      }
+    };
+    setTimeout(tick, 45_000); // first run after boot settles
+    setInterval(tick, intervalMin * 60_000);
+  } catch {
+    /* never let radar setup touch the web server */
   }
 }
 

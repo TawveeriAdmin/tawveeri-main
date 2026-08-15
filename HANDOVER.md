@@ -1,4 +1,34 @@
-# ═══ RESUME HERE — 2026-08-13 CHECKPOINT #77 · FOUNDER CONTROL CENTER TRUTH PASS — ADR-245 · **CLOSED, FOUNDER-ACCEPTED (2026-08-13)** ═══
+# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #78 · DEMAND RADAR (ADR-247) — BUILT + VERIFIED, AWAITING X TOKEN ═══
+
+## MISSION: Real-Time Consumer Demand Radar — COMPLETE TO THE EXTERNAL BOUNDARY
+
+**Full detail: ADR-247 + docs/DEMAND-RADAR-RUNBOOK.md.** One loop: discover Saudi
+purchase questions on X → classify (LLM, contained) → answerability from PRODUCTION
+truth → explainable HIGH/MEDIUM/IGNORE → help-first Saudi draft → «مرصد الطلب» in
+/ar/admin/growth → HIGH email (cooldown) → founder replies MANUALLY → `/r/<short>`
+clean tracking into the existing attribution. NOTHING auto-publishes.
+
+### The research that changed the plan (2026-08-15, primary sources)
+X API is now PAY-PER-USE (Feb 2026): $0.005/post read, no $200 tier — radar cost
+**$25-75/mo**, <30min latency via 10-min polling. TikTok listening legitimately
+unavailable (academic-only Research API). YouTube free & viable = Source Two after
+proof. BUY rejected (enterprise listeners $10-27k/yr with worse Saudi Arabic than
+our own LLM pass). **BUILD, Source One = X.**
+
+### Eval before ship (real classifier)
+28 balanced cases: **0 tier-ceiling violations** after fixing a REAL caught false
+positive (accessory question ranked HIGH → deterministic veto), 75% category
+accuracy, 50% recall — precision rules V1. 19 deterministic tests (injection
+containment included). Migration 32 applied.
+
+### THE ONE FOUNDER ACTION
+console.x.com → sign in with @Tawveeri → create Project/App → copy the App-Only
+Bearer Token → load small prepaid credits (set a hard limit) → set Railway env
+`X_RADAR_BEARER_TOKEN` → redeploy. Polling starts itself (10-min interval).
+
+---
+
+# ═══ 2026-08-13 CHECKPOINT #77 · FOUNDER CONTROL CENTER TRUTH PASS — ADR-245 · **CLOSED, FOUNDER-ACCEPTED (2026-08-13)** ═══
 
 **WORKSTREAM STATUS: CLOSED — FOUNDER-ACCEPTED (Episode-01 finalization mission, 2026-08-13):
 "جميع التحديثات الأخيرة التي نفذتها في صفحات التحكم ممتازة ومعتمدة." Do not reopen admin/

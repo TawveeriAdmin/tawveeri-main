@@ -373,6 +373,6 @@ export const config = {
      * - public folder static assets by extension (video/audio included — the
      *   growth creatives under /growth/*.mp4 are served from public/)
      */
-    '/((?!go/|sitemap.xml|robots.txt|_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|mp3)$).*)',
+    '/((?!go/|r/|sitemap.xml|robots.txt|_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|mp3)$).*)',
   ],
 };
