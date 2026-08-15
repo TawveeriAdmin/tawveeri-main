@@ -20,6 +20,8 @@ export const USAGE_EVENT_TYPES = [
   "comparison_view",                     // Comparison seen (≥2 stores)
   "evidence_view",                       // Evidence / trust engaged
   "go_click",                            // Outbound Click (measured exit intent, client-side)
+  "home_mission",                        // «جهّز بيتك بذكاء» pilot funnel — step in meta.step
+                                         // (started | plan | partial | refined | rejected | clarified)
   "no_answer", "error",                  // off-funnel signals
 ] as const;
 

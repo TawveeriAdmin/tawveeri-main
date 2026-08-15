@@ -1,4 +1,33 @@
-# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #78 · DEMAND RADAR (ADR-247) + BRAND MENTION WATCH (ADR-248) · **CLOSED, FOUNDER-ACCEPTED (2026-08-15)** ═══
+# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #79 · HOME DECISION INTELLIGENCE (ADR-249) · GATE: GO_HOME · PILOT BUILT, AWAITING FOUNDER iPHONE PASS ═══
+
+**Mission (founder, 2026-08-15):** two-phase — Part A global frontier research + read-only
+production audit + hard gate; Part B evidence-gated pilot. **Part A COMPLETE** —
+`AUDIT_REPORT_HOME.md` (committed `b9906d7`) holds all research lessons, production truth
+with query lineage, THINGS THAT WOULD EMBARRASS US, and the gate: **GO_HOME** (AC /
+refrigerator / washing_machine / tv; oven excluded on evidence) under the §19 honesty
+contract. **Part B BUILT + verified locally against production data** (ADR-249):
+- `src/lib/agent/home-mission.ts` — deterministic parser / legs / HARD eligibility
+  (freshness ≤168h, BTU/liters/kg bands, accessory floor) / comparisonClaim gate /
+  shared-budget allocator. NO LLM in the mission path.
+- `POST /api/v1/agent/home-mission` — orchestrates the UNCHANGED `decide()` per leg,
+  F7-guarded, evidence-declared, honest disclosures (device-only totals, SASO/inverter
+  abstention, >40m² pro-sizing, unsupported فرن).
+- Pilot page `/ar/home-mission` («جهّز بيتك بذكاء») — controlled URL, noindex, not in
+  nav; editable understood-context; typed mutations; Decision Delta.
+- New `home_mission` usage event (contract-tested). Tests 1,877 green; build green.
+**NEXT (in order):** 1) founder opens `https://tawveeri.com/ar/home-mission` on iPhone and
+runs a real mission (the §75 definition-of-done item that needs the founder);
+2) pass^k eval suite over the §65 case list (unit+live-scenario level exists; transcript-
+graded missions do not yet); 3) the audit's remediation ledger — FOUNDER DECIDES, esp.
+**ingestion volume fell ~10× in the audit week (Aug 8→14: 8,509→828 obs/day)** — this is
+an OPEN operational finding that will erode every freshness number if unaddressed; also
+degraded-key merges (LG/Gree/haam), 6 Frame bezels in category='tv', Ariston brand-script
+split, TV spec structuring, SASO label acquisition.
+**Boundaries honored:** Demand Radar/Brand Mention Watch untouched; affiliate config not
+inspected; no NHC anything; read-only production during Part A (enforced
+default_transaction_read_only).
+
+# ═══ 2026-08-15 CHECKPOINT #78 · DEMAND RADAR (ADR-247) + BRAND MENTION WATCH (ADR-248) · **CLOSED, FOUNDER-ACCEPTED (2026-08-15)** ═══
 
 **WORKSTREAM STATUS: CLOSED — FOUNDER-ACCEPTED — 2026-08-15 (formal acceptance).**
 
