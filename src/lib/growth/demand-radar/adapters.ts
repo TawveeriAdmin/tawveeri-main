@@ -48,7 +48,13 @@ export class XAdapter implements SourceAdapter {
         });
         if (res.status === 429) continue; // rate-limited on one rule → skip this cycle for it
         if (!res.ok) {
-          return { status: 'source_unavailable' as const, detail: `X API ${res.status} on ${q.category}` };
+          // Capture X's own error body — 402 (credits), 403 (permissions) and
+          // friends each carry an explanatory payload; diagnose, never assume.
+          const body = (await res.text().catch(() => '')).slice(0, 300);
+          return {
+            status: 'source_unavailable' as const,
+            detail: `X API ${res.status} on ${q.category}: ${body}`,
+          };
         }
         const json = (await res.json()) as {
           data?: Array<{ id: string; text: string; created_at?: string; conversation_id?: string; author_id?: string; lang?: string }>;
