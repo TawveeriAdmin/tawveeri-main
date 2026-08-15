@@ -204,6 +204,12 @@ const arg = (name: string, dflt: number) => {
   console.log(`normalize-incremental${onlyStores ? ` [stores ${onlyStores.join(",")}]` : ""}${adaptive ? ` [adaptive batches=${effBatches}]` : ""}: backlog ${backlogBefore} → ${backlogAfter}`);
   console.log(`  observations processed=${fetched} staged=${staged}`);
   console.log(`  corroborated keys=${corroborated} canonicals written=${canonicals}`);
+  // GUARDRAIL (ADR-251): staged→normalized conversion, printed on every real run. The 10×
+  // ingestion collapse hid for a week because the sweep looked healthy (cursors advanced,
+  // staging grew) while corroborate silently lost the newest rows to PostgREST's 1,000-row
+  // response cap. This line makes that class of loss visible in the scheduler log the day
+  // it starts: staged>0 with normalized«staged is the alarm shape.
+  console.log(`  normalized observations written=${dryTotals.normalized} (staged this run=${staged})`);
 
   // DELIVERY GUARANTEE (2026-07-30): the aggregate "backlog" hides which STORE is behind,
   // and it is not a queue position — sweeps advance a cursor PER STORE, so a single lagging

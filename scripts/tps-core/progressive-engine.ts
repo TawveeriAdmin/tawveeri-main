@@ -218,17 +218,55 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   const single = !!opts.singleStore;
 
   // Load all staging rows for the touched keys (across all slices ever normalized).
+  //
+  // ROOT CAUSE OF THE 10× INGESTION COLLAPSE (2026-08-15, ADR-251). This load was a single
+  // un-paginated PostgREST request per 100-key chunk. PostgREST silently caps a response at
+  // db-max-rows (1,000), and `tps_identity_staging` is APPEND-ONLY per observation — measured
+  // 719,677 rows, washing_machine averaging 177 rows/key with one key alone at 1,314. A
+  // 100-key chunk of mature keys asks for ~48,590 rows and silently receives the FIRST 1,000
+  // in physical (oldest-first) order — so exactly the NEWEST observations fell off the end,
+  // and `normalized_product_observations` / `price_history` were never written for them.
+  // The loss grew smoothly as staging accumulated (~30k valid rows/day): staged→normalized
+  // conversion decayed 39% (08-01) → 7.9% (08-14), while cursors/backlog looked perfectly
+  // healthy — the sweep HAD processed the rows; the corroborate pass just could not see them.
+  // Categories with the largest histories collapsed hardest (air_conditioner 90k rows → 0%
+  // conversion on 08-14; audio 95k → 3%) while small ones still converted 27–39% — the
+  // falsification test that proved truncation rather than detection/scheduling.
+  //
+  // FIX: page through every chunk with .range() until a short page, with a deterministic
+  // order so pagination cannot skip or double-read. Because every downstream id is a stable
+  // UUID of the raw id, the previously-lost history SELF-HEALS the next time each key is
+  // touched — no manual backfill for actively-observed keys.
+  const PG_PAGE = 1000;
   type Stg = { raw_obs_id: number; store_id: number | null; identity_key: string; status: string; price: number | null; url: string | null; name: string; confidence: number; payload: Record<string, unknown>; observed_at?: string | null };
   const byKey = new Map<string, Stg[]>();
+  let maxPagesSeen = 0;
   for (let i = 0; i < touchedKeys.length; i += 100) {
     const chunk = touchedKeys.slice(i, i + 100);
-    const { data, error } = await sb.from("tps_identity_staging").select("raw_obs_id, store_id, identity_key, status, price, url, name, confidence, payload, observed_at").eq("category", def.category).in("identity_key", chunk);
-    if (error) throw new Error(`staging load: ${error.message}`);
-    for (const r of (data ?? []) as Stg[]) {
-      if (def.requireValidTier && r.status !== "valid") continue;
-      if (!byKey.has(r.identity_key)) byKey.set(r.identity_key, []);
-      byKey.get(r.identity_key)!.push(r);
+    let from = 0, pages = 0;
+    for (;;) {
+      const { data, error } = await sb.from("tps_identity_staging")
+        .select("raw_obs_id, store_id, identity_key, status, price, url, name, confidence, payload, observed_at")
+        .eq("category", def.category).in("identity_key", chunk)
+        .order("raw_obs_id", { ascending: true })
+        .range(from, from + PG_PAGE - 1);
+      if (error) throw new Error(`staging load: ${error.message}`);
+      const rows = (data ?? []) as Stg[];
+      pages++;
+      for (const r of rows) {
+        if (def.requireValidTier && r.status !== "valid") continue;
+        if (!byKey.has(r.identity_key)) byKey.set(r.identity_key, []);
+        byKey.get(r.identity_key)!.push(r);
+      }
+      if (rows.length < PG_PAGE) break;
+      from += PG_PAGE;
     }
+    maxPagesSeen = Math.max(maxPagesSeen, pages);
+  }
+  // GUARDRAIL (ADR-251): staging accumulation is unbounded, so pagination depth is the
+  // early-warning signal for the next capacity conversation. Visible in scheduler logs.
+  if (maxPagesSeen >= 25) {
+    console.warn(`[corroborate:${def.category}] staging load needed ${maxPagesSeen} pages for one 100-key chunk — tps_identity_staging accumulation is getting heavy; consider a retention policy before this slows the hourly chain.`);
   }
 
   // DRY-RUN: fold in the staging this run computed but did not persist. Deduped on
@@ -346,10 +384,30 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   R.normalized = normalizedRows.length; R.matches = matchRows.length;
   if (!canonicalRows.length) return R;
 
-  // Append-only price history: only changed prices.
+  // Append-only price history: only changed prices. PAGINATED (ADR-251): the same
+  // PostgREST 1,000-row response cap truncated this load too — with >1,000 history rows
+  // across the batch's canonicals, older (canonical, store) pairs never reached
+  // `lastPrice`, so their unchanged prices were misread as "changed" and re-appended
+  // (history bloat), and a genuine change could be compared against the wrong prior.
+  // Ordered DESC so first-seen per (canonical, store) is still the latest price on every
+  // page boundary.
   const lastPrice = new Map<string, number>();
-  const { data: hist } = await sb.from("price_history").select("canonical_product_id, store_name, price, observed_at").in("canonical_product_id", canonicalIds).order("observed_at", { ascending: false });
-  for (const h of hist ?? []) { const k = `${h.canonical_product_id}|${h.store_name}`; if (!lastPrice.has(k)) lastPrice.set(k, Number(h.price)); }
+  for (let i = 0; i < canonicalIds.length; i += 100) {
+    const ids = canonicalIds.slice(i, i + 100);
+    let from = 0;
+    for (;;) {
+      const { data: hist, error: he } = await sb.from("price_history")
+        .select("canonical_product_id, store_name, price, observed_at")
+        .in("canonical_product_id", ids)
+        .order("observed_at", { ascending: false })
+        .range(from, from + PG_PAGE - 1);
+      if (he) throw new Error(`price_history load: ${he.message}`);
+      const rows = hist ?? [];
+      for (const h of rows) { const k = `${h.canonical_product_id}|${h.store_name}`; if (!lastPrice.has(k)) lastPrice.set(k, Number(h.price)); }
+      if (rows.length < PG_PAGE) break;
+      from += PG_PAGE;
+    }
+  }
   const changedPrices = priceRows.filter((pr) => { const l = lastPrice.get(`${pr.canonical_product_id}|${pr.store_name}`); return l === undefined || l !== Number(pr.price); });
   R.prices = changedPrices.length;
 
@@ -357,10 +415,41 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // rather than a returned one, and is labelled as such by the caller.
   if (opts.dry) { R.canonicalsWritten = canonicalRows.length; return R; }
 
-  const { data: result, error } = await sb.rpc("write_ac_batch", { p_canonical: canonicalRows, p_normalized: normalizedRows, p_matches: matchRows, p_prices: changedPrices, p_canonical_ids: canonicalIds });
-  if (error) throw new Error(`write_ac_batch(${def.category}): ${error.message}`);
-  const w = result as { canonical: number };
-  R.canonicalsWritten = w.canonical;
+  // WRITE IN BOUNDED SLICES (ADR-251). Pre-fix, the staging truncation accidentally kept
+  // every write_ac_batch payload under ~1,000 normalized rows. Post-fix, a touched key
+  // brings its FULL staging history (the self-heal), so a single RPC could carry tens of
+  // thousands of rows and hit the role statement timeout — throwing away the whole batch.
+  // Slices align on canonical boundaries (a canonical's rows always travel together), each
+  // RPC stays far below the timeout, and every write remains the same idempotent upsert.
+  const WRITE_SLICE_ROWS = 1500;
+  const canonById = new Map(canonicalRows.map((c) => [c.id as string, c]));
+  const groupBy = (rows: Record<string, unknown>[], field: string) => {
+    const m = new Map<string, Record<string, unknown>[]>();
+    for (const r of rows) { const k = r[field] as string; const arr = m.get(k) ?? []; arr.push(r); m.set(k, arr); }
+    return m;
+  };
+  const normByCanon = groupBy(normalizedRows, "canonical_product_id");
+  const matchByCanon = groupBy(matchRows, "canonical_product_id");
+  const priceByCanon = groupBy(changedPrices, "canonical_product_id");
+
+  let sIds: string[] = [], sCanon: Record<string, unknown>[] = [], sNorm: Record<string, unknown>[] = [], sMatch: Record<string, unknown>[] = [], sPrice: Record<string, unknown>[] = [];
+  const flush = async () => {
+    if (!sIds.length) return;
+    const { data: result, error } = await sb.rpc("write_ac_batch", { p_canonical: sCanon, p_normalized: sNorm, p_matches: sMatch, p_prices: sPrice, p_canonical_ids: sIds });
+    if (error) throw new Error(`write_ac_batch(${def.category}): ${error.message}`);
+    R.canonicalsWritten += (result as { canonical: number }).canonical;
+    sIds = []; sCanon = []; sNorm = []; sMatch = []; sPrice = [];
+  };
+  for (const id of canonicalIds) {
+    const c = canonById.get(id);
+    if (!c) continue;
+    sIds.push(id); sCanon.push(c);
+    sNorm.push(...(normByCanon.get(id) ?? []));
+    sMatch.push(...(matchByCanon.get(id) ?? []));
+    sPrice.push(...(priceByCanon.get(id) ?? []));
+    if (sNorm.length >= WRITE_SLICE_ROWS) await flush();
+  }
+  await flush();
   return R;
 }
 

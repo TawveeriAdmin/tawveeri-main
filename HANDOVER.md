@@ -1,4 +1,26 @@
-# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #80 · HOME MOBILE EXPERIENCE PASS (ADR-250) · MISSION WORKSPACE SHIPPED ═══
+# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #81 · INGESTION COLLAPSE ROOT-CAUSED + FIXED (ADR-251) ═══
+
+**The ADR-249 "10× ingestion decline" is root-caused and fixed.** NOT a scraper/scheduler/
+retailer failure — raw ingestion was healthy (the raw-side change was mostly deploy-kicked
+extra feed passes inflating the old baseline; Aug 14 = the DESIGNED 4×6h cadence, full
+catalog depth every pass). The real loss: `corroboratePass` staging load was un-paginated →
+PostgREST's 1,000-row cap silently truncated it OLDEST-FIRST as append-only staging grew
+(719,677 rows; wm avg 177 rows/key) → newest observations never became npo/price rows.
+Conversion decayed 39%→7.9% while cursors/backlog looked perfect. Proof: AC (90k staging
+rows) converted 0% on Aug 14; small categories still 27–39%.
+**Fix (progressive-engine.ts):** paginated staging + last-price loads; canonical-aligned
+write_ac_batch slices (~1,500 rows/RPC — truncation had been accidentally capping payloads);
+conversion guardrail line per run + pagination-depth warning. Self-heal is automatic
+(stable UUIDs + ON CONFLICT upserts): each key's lost history writes on its next touch.
+4 regression tests (fake PostgREST enforcing the cap). Dry-run on prod: one 437-obs sweep
+would now write 33,854 npo (vs ~100-200 truncated), 52 price appends (change-only intact).
+**IMPORTANT correction to ADR-249:** npo-based freshness UNDERSTATED reality for ~2 weeks —
+re-measure Home comparison-grade counts after self-heal completes; they should improve.
+**Open (named, deliberate):** tps_identity_staging retention policy (unbounded growth —
+warning fires at ≥25 pages/chunk); the rest of the ADR-249 remediation ledger (LG merges,
+bezels, Ariston split, TV specs, SASO) unchanged.
+
+# ═══ 2026-08-15 CHECKPOINT #80 · HOME MOBILE EXPERIENCE PASS (ADR-250) · MISSION WORKSPACE SHIPPED ═══
 
 **Founder iPhone pass happened → verdict: intelligence good, presentation = long generated
 report.** Research (US/China/UK, 3 passes) reframed: not a scrolling problem — a hierarchy +
