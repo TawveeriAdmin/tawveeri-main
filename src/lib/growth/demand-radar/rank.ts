@@ -37,6 +37,10 @@ export function rankOpportunity(
   if (isStale(c.postedAt)) {
     return { tier: 'ignore', reasons: ['المنشور أقدم من نافذة الرد المفيدة (48 ساعة)'], suggestedQuery: null };
   }
+  if (c.authorHandle && c.authorHandle.toLowerCase() === 'tawveeri') {
+    // Belt-and-braces with the query-level -from: exclusion (live-poll lesson).
+    return { tier: 'ignore', reasons: ['منشور من حساب توفيري نفسه'], suggestedQuery: null };
+  }
   if (isAccessoryQuestion(c.text)) {
     // Deterministic veto proven by the eval: the LLM classified "ابي كفر وستاند
     // لجوالي" as a mobile opportunity — an accessory ask is not a device purchase.

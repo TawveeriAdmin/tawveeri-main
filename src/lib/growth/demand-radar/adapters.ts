@@ -13,9 +13,12 @@ const X_API = 'https://api.x.com/2/tweets/search/recent';
 /** One balanced query batch: every category polled every cycle — coverage
  *  balance is structural (§9); volume is whatever real demand produces. */
 export function buildXQueries(): Array<{ category: string; query: string }> {
+  // -from:Tawveeri: the first LIVE poll surfaced @Tawveeri's own reply as the
+  // top HIGH opportunity (and emailed the founder about his own post). Our own
+  // posts are never opportunities — excluded at the query AND vetoed in rank.
   return CATEGORY_LEXICONS.map((c) => ({
     category: c.category,
-    query: `${c.xQuery} lang:ar -is:retweet`,
+    query: `${c.xQuery} lang:ar -is:retweet -from:Tawveeri`,
   }));
 }
 

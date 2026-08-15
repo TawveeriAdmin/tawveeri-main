@@ -144,3 +144,16 @@ describe('prompt-injection containment (§20)', () => {
     }
   });
 });
+
+describe('self-mention veto (live-poll lesson 2026-08-15)', () => {
+  it('posts from the Tawveeri account itself are never opportunities', () => {
+    const cls = heuristicClassification(mk('عشان كذا قبل لا تشتري المكيف لا تسأل عن السعر بس، مساحة الغرفة تفرق'));
+    const r = rankOpportunity(
+      { ...mk('نص'), authorHandle: 'Tawveeri' },
+      { ...cls, category: 'air_conditioner', intentStrength: 'strong' },
+      'yes',
+      'ok'
+    );
+    expect(r.tier).toBe('ignore');
+  });
+});
