@@ -238,10 +238,24 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // UUID of the raw id, the previously-lost history SELF-HEALS the next time each key is
   // touched — no manual backfill for actively-observed keys.
   const PG_PAGE = 1000;
+  // SELF-HEAL LOAD BUDGET (ADR-251 incident follow-up, same day). The first post-fix chain
+  // run unleashed TWO WEEKS of accumulated heal in one pass (~34k rows per sweep unit) and
+  // saturated the DB/PostgREST — the customer surface timed out (the exact ADR-099 failure
+  // shape this platform has been burned by before). The budget bounds how much staging one
+  // corroborate pass may LOAD (and therefore write): whole 100-key chunks beyond it are
+  // DEFERRED, never partially loaded — a key processed with partial history would recreate
+  // the truncation bug this fix removed. Deferred keys keep their staging rows and heal on
+  // their next touch (feed passes re-touch active keys every ~6h), so the same total heal
+  // happens, spread across hours instead of one thundering run. Reversible/tunable:
+  // CORROBORATE_ROW_BUDGET (0 disables the budget).
+  const HEAL_ROW_BUDGET = parseInt(process.env.CORROBORATE_ROW_BUDGET || "12000", 10);
   type Stg = { raw_obs_id: number; store_id: number | null; identity_key: string; status: string; price: number | null; url: string | null; name: string; confidence: number; payload: Record<string, unknown>; observed_at?: string | null };
   const byKey = new Map<string, Stg[]>();
   let maxPagesSeen = 0;
+  let loadedRows = 0;
+  let deferredKeys = 0;
   for (let i = 0; i < touchedKeys.length; i += 100) {
+    if (HEAL_ROW_BUDGET > 0 && loadedRows >= HEAL_ROW_BUDGET) { deferredKeys += touchedKeys.length - i; break; }
     const chunk = touchedKeys.slice(i, i + 100);
     let from = 0, pages = 0;
     for (;;) {
@@ -253,6 +267,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       if (error) throw new Error(`staging load: ${error.message}`);
       const rows = (data ?? []) as Stg[];
       pages++;
+      loadedRows += rows.length;
       for (const r of rows) {
         if (def.requireValidTier && r.status !== "valid") continue;
         if (!byKey.has(r.identity_key)) byKey.set(r.identity_key, []);
@@ -262,6 +277,9 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       from += PG_PAGE;
     }
     maxPagesSeen = Math.max(maxPagesSeen, pages);
+  }
+  if (deferredKeys) {
+    console.warn(`[corroborate:${def.category}] row budget ${HEAL_ROW_BUDGET} reached (${loadedRows} loaded) — deferred ${deferredKeys} touched key(s) to later passes; they heal on next touch.`);
   }
   // GUARDRAIL (ADR-251): staging accumulation is unbounded, so pagination depth is the
   // early-warning signal for the next capacity conversation. Visible in scheduler logs.

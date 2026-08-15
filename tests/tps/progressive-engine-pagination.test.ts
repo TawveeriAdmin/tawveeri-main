@@ -146,3 +146,26 @@ describe("ADR-251 — corroborate staging load survives the PostgREST row cap", 
     expect(prices.length).toBe(0);
   });
 });
+
+describe("ADR-251 incident follow-up — self-heal row budget", () => {
+  it("defers whole key-chunks beyond CORROBORATE_ROW_BUDGET (never partial per-key loads)", async () => {
+    process.env.CORROBORATE_ROW_BUDGET = "1000";
+    try {
+      // 101 keys → two 100-key chunks. Chunk 1 alone exceeds the budget, so chunk 2
+      // (key "extra") must be deferred entirely — its rows never reach the write.
+      const keys = [...Array.from({ length: 100 }, (_, i) => `k${i}`), "extra"];
+      const staging = [
+        ...keys.slice(0, 100).flatMap((k, ki) => Array.from({ length: 30 }, (_, i) => stagingRow(ki * 100 + i + 1, 4, k))),
+        ...Array.from({ length: 30 }, (_, i) => stagingRow(90000 + i, 4, "extra")),
+      ];
+      const rpcCalls: Record<string, unknown>[][] = [];
+      const sb = fakeSupabase({ staging, price_history: [], canonical_products: [] }, rpcCalls) as never;
+      await corroboratePass(sb, def, keys, { singleStore: true });
+      const written = rpcCalls.flatMap((c) => ((c[0] as Record<string, unknown>).p_normalized as Record<string, unknown>[]));
+      expect(written.length).toBe(3000);                                   // chunk 1 complete
+      expect(written.some((n) => n.identity_key === "extra")).toBe(false); // chunk 2 deferred whole
+    } finally {
+      delete process.env.CORROBORATE_ROW_BUDGET;
+    }
+  });
+});
