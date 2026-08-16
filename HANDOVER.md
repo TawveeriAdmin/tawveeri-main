@@ -1,4 +1,28 @@
-# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #84 · ADR-253 STRUCTURED INTAKE LIVE · HOME = 9 CATEGORIES ═══
+# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #85 · ADR-254 COOKER REGISTERED + OVEN SPLIT · APPLIANCE BUCKET = DEAD LEGACY ═══
+
+## ADR-254 (commit `306c0ef`) — both founder authorizations executed, both premises corrected
+
+**Cooker:** needed REGISTRATION, not ingestion — 7,600+ cooker observations/30d already
+arrive (shaker/alnakheelk/najm/almanea/blackbox/swsg). `cooker-v1` registered through the
+appliance factory: identity `brand|burner-config|larger-dim-cm` (order-independent dims via
+new `dimsRegex`; mixed-fuel 4+2 is its own type; «أمان كامل» a feature flag; display names
+via new `namesOverride`; prefilter via new `filterKeywords` because the market says «فرن
+غاز» not «طباخ»). oven → v2 BUILT-IN ONLY (cooker nouns rejected; plain «فرن كهربائي»
+honestly undetected; ADR-253's "zero cookers in catalog" was wrong at the canonical level —
+some were in `oven` mislabeled by the name template; they now age out ≤168h forward-only).
+No backfill anywhere: the global per-store cursor means only NEW observations sweep.
+**Cooker canonicals materialize as feed passes land (6h cadence); measure with the ADR-249
+audit queries and flip Home (`OPTIONAL_MISSION_CATEGORIES` + labels + parser words) ONLY
+when gates pass (eligible-72h ≥ 40, spec ≥ 90%).** `decideAppliance` META already in.
+
+**Appliance bucket:** NOT hidden depth — all 439 are `tps_version='1.0'` stubs with ZERO
+observations and ZERO projection rows (ADR-253's "hidden ~60% fridge depth" corrected; real
+listings already flow into true categories). Remediation = guarded deactivation; evidence
+`docs/evidence/appliance-bucket-deactivate-2026-08-16.json` committed; **the UPDATE itself
+awaits the founder's terminal** (session write-classifier correctly required a human hand):
+dry-run verified 439 rows match the triple guard.
+
+# ═══ 2026-08-16 CHECKPOINT #84 · ADR-253 STRUCTURED INTAKE LIVE · HOME = 9 CATEGORIES ═══
 
 ## TAWVEERI HOME — STRUCTURED INTAKE (ADR-253, commit `75973a4`) — WHAT CHANGED
 
