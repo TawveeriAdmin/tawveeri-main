@@ -1,0 +1,93 @@
+{
+ "adr": "ADR-254",
+ "date": "2026-08-16",
+ "reason": "oven-v1 signals matched فرن غاز, filing freestanding cookers under oven with built-in template names; oven-v2 (deployed) stops this forward — these rows are deactivated to close the ≤168h consumer-leak window into Home فرن بلت إن. Their listings re-materialize as cooker-v1 canonicals from fresh observations.",
+ "judged_by": "latest raw observation name lacks بلت/مدمج/built-in",
+ "kept_builtin_gas": 4,
+ "rows": [
+  {
+   "id": "65f9ed7b-b42c-4268-ba6d-249546b22ba8",
+   "name_en": "امن كوم built-in oven 90 cm",
+   "name_ar": "فرن امن كوم 90 سم",
+   "cap": "90",
+   "raw": "جنرال سوبريم فرن غاز، 5 شعلات ،60*90سم، استيل، اشعال ذاتى, مصري, GS9060FNGS"
+  },
+  {
+   "id": "153a4b60-56b6-47d7-9784-8b58af6f6f47",
+   "name_en": "امن كوم built-in oven 80 cm",
+   "name_ar": "فرن امن كوم 80 سم",
+   "cap": "80",
+   "raw": "جنرال سوبريم فرن غاز، 5 شعلات ، 55*80 سم، استيل، اشعال ذاتى, مصري, GS8055FNGS"
+  },
+  {
+   "id": "f260a110-53b1-4521-853c-0e47be68c8d9",
+   "name_en": "toshiba built-in oven 90 cm",
+   "name_ar": "فرن toshiba 90 سم",
+   "cap": "90",
+   "raw": "توشيبا فرن غاز 60×90 سم، 5 شعلة ،إشعال ذاتي، أمان كامل، استيل"
+  },
+  {
+   "id": "e862dedf-741f-41d7-8946-2f5f02bfe44d",
+   "name_en": "kumtel built-in oven 90 cm",
+   "name_ar": "فرن kumtel 90 سم",
+   "cap": "90",
+   "raw": "Turkish Gas Oven - 5 Burners - 60*90 cm - Steel - LF699GG-50F"
+  },
+  {
+   "id": "e948a253-e9a3-4ce1-ad34-ffd36d75befe",
+   "name_en": "unix built-in oven 90 cm",
+   "name_ar": "فرن unix 90 سم",
+   "cap": "90",
+   "raw": "Gas oven - 5 burners - 60*90 cm - lightweight rack - stainless steel - TGM6090 TGM6090 Steel"
+  },
+  {
+   "id": "2a7f9aab-c967-412c-a13a-7f82d90c00f6",
+   "name_en": "ستار واي built-in oven 90 cm",
+   "name_ar": "فرن ستار واي 90 سم",
+   "cap": "90",
+   "raw": "فرن غاز ستاروي 60 * 90 سم 5 عيون ستيل منصب ثقيل مع مروحة تبريد للمفاتيح / تركي"
+  },
+  {
+   "id": "3636b5a4-cb48-4b6e-9af6-83711f7ed54b",
+   "name_en": "فريش built-in oven 80 cm",
+   "name_ar": "فرن فريش 80 سم",
+   "cap": "80",
+   "raw": "فريش فرن غاز 5 عيون 55×80 سم أمان كامل مع شواية FSC8055"
+  },
+  {
+   "id": "46023f61-d34d-4f3b-830e-59f54d443c1c",
+   "name_en": "ارو built-in oven 90 cm",
+   "name_ar": "فرن ارو 90 سم",
+   "cap": "90",
+   "raw": "ارو فرن غاز 5 شعلات - 60x90 سم - فضى - RO-9060GSF"
+  },
+  {
+   "id": "c370c9fd-7cee-497c-88e8-74ee68b88f9d",
+   "name_en": "basic built-in oven 90 cm",
+   "name_ar": "فرن basic 90 سم",
+   "cap": "90",
+   "raw": "Gas Oven, 5 Burners, 60*90 cm, Auto Ignition, Rotating Grill + Fan, Steel - BO-R9060"
+  },
+  {
+   "id": "d6637b9d-3015-4cdc-b129-5f6b9155f56f",
+   "name_en": "سوبر جنرال built-in oven 90 cm",
+   "name_ar": "فرن سوبر جنرال 90 سم",
+   "cap": "90",
+   "raw": "سوبر جنرال فرن غاز 60x90 سم 5 شعلات مع شواية - ستانلس ستيل - KSGC9260FSY"
+  },
+  {
+   "id": "36813b4f-c4d8-4129-8dd1-47b0c6a5fb3b",
+   "name_en": "generic built-in oven 90 cm",
+   "name_ar": "فرن generic 90 سم",
+   "cap": "90",
+   "raw": "Gas Oven, 60 * 90 Cm, Steel surface, 5 Burners, Timer, Full safety, Egyptian Made - FG9060L"
+  },
+  {
+   "id": "407474c6-8760-4b9c-afc5-3637b7e3127e",
+   "name_en": "midea built-in oven 90 cm",
+   "name_ar": "فرن midea 90 سم",
+   "cap": "90",
+   "raw": "فرن غاز ميديا، 60*90 سم، 5 شعلة، 115 لتر، شعلة بالأشعة تحت الحمراء، استيل - MFOMG36LESSK"
+  }
+ ]
+}

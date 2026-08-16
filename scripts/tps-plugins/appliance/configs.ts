@@ -125,41 +125,61 @@ export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
     // Identity: brand | burner-config | larger-dimension-cm (order-independent via
     // dimsRegex). Spec-keyed like every factory category; model codes exist in names
     // and a model tier is a possible v2 (same deferral as ADR-074's monitor note).
+    // v2 (same session, before any canonical materialized — zero churn): the founder-
+    // ordered fuel audit found FULLY-ELECTRIC freestanding cookers are material (4,689
+    // obs/30d across 13 stores: Samsung/LG/La Germania ceramic ranges), alongside gas
+    // (5,552) and mixed 4+2 (493). Fuel is now IDENTITY (a gas and an electric 5-burner
+    // of the same brand/size must never merge). Countertop mini electric ovens (دوتس
+    // «75 لتر 2800 واط») are NOT cookers: electric detection requires burner/ceramic/
+    // dimension evidence. Gas keeps the v1 labels (burners_N) so any v1-materialized
+    // row upserts identically; electric_* and mixed_fuel are additive.
     category: "cooker", version: "cooker-v1", nounAr: "طباخ غاز", nounEn: "gas cooker", metricAr: "سم", metricEn: "cm",
-    filterKeywords: ["cooker", "بوتاجاز", "طباخ", "فرن غاز"],
-    signals: "بوتاجاز|بوتجاز|طباخ|فرن\\s*(?:ال)?غاز|gas cooker|cooking range|gas range|freestanding cooker|freestanding oven",
+    filterKeywords: ["cooker", "بوتاجاز", "طباخ", "فرن غاز", "فرن كهربائي", "فرن كهرباء", "فرن سيراميك"],
+    signals: "بوتاجاز|بوتجاز|طباخ|فرن\\s*(?:ال)?غاز|gas cooker|cooking range|gas range|freestanding cooker|freestanding oven"
+      // electric freestanding: fuel word adjacent to the noun (brand names like «جليم غاز»
+      // contain غاز, so adjacency — not whole-text — is what separates fuels), PLUS
+      // burner/ceramic/dimensions evidence somewhere so mini countertop ovens never enter.
+      + "|(?=[\\s\\S]*(?:عيون|عين|شعل|سيراميك|\\d{2}\\s*[*×xX]\\s*\\d{2}))(?:(?:فرن|طباخ)\\s*(?:سيراميك\\s*)?(?:كهربائي|كهرباء)|(?:فرن|طباخ)[^.]{0,25}سيراميك)|electric\\s*(?:cooker|range)",
     rejectAccessory: "غطاء|cover only|صينية|tray only|شبك فقط|قطع غيار|replacement|spare|اسطوانة غاز|منظم غاز|regulator|وصلة غاز|hose only",
-    rejectWrong: "بلت\\s*?[إا]ن|built-?in|مدمج|microwave|مايكرويف|ميكروويف|قلاية|air ?fryer|محمصة|toaster|شفاط|hood|hob\\b|موقد سطحي|سخان|heater|دفاية|رحلات|camping|portable stove|منقل|شواية فحم",
-    brandGuess: "midea|ميديا|glem ?gas|جليم غاز|جليم جاز|la ?germania|لاجيرمانيا|thomson|تومسون|elba|إلبا|البا|starway|ستار واي|ستاروي|wellgas|ويل غاز|ويلغاز|bompani|بومباني|super ?general|سوبر جنرال|فريش|fresh|haam|هام|xper|اكسبير|basic|بيسك|hyundai|هيونداي|mastergas|ماستر غاز|simfer|سيمفر|kumtel|كومتيل|nikai|نيكاي|dlc|geepas|جيباس",
-    // Burner configuration is identity (a 5-burner and a 4+2 dual-fuel are different
-    // SKUs at different prices). Order matters: the mixed pattern contains «4 شعلة»,
-    // so it must be tested first.
-    types: [
-      ["mixed_fuel", "عين كهرباء|عيون كهرباء|شعل[ةه] كهرباء|شعلات كهرباء|\\+\\s*2\\s*(?:عين|شعل)|كهرباء\\s*\\+|gas.{0,8}electric"],
-      ["burners_5", "5\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|خمس\\s*(?:عيون|شعلات)|5 ?burner"],
-      ["burners_4", "4\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|[أا]ربع\\s*(?:عيون|شعلات)|4 ?burner"],
-      ["burners_3", "3\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|3 ?burner"],
-      ["burners_2", "2\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|عينين|شعلتين|2 ?burner"],
-    ],
+    // NOTE: no قلاية/air-fryer reject — real LG/Glem ranges advertise built-in air-fry
+    // («وقلاية هوائية»); actual air fryers can never satisfy the signals above.
+    rejectWrong: "بلت\\s*?[إا]ن|built-?in|مدمج|microwave|مايكرويف|ميكروويف|محمصة|toaster|شفاط|hood|hob\\b|موقد سطحي|سخان|heater|دفاية|رحلات|camping|portable stove|منقل|شواية فحم",
+    brandGuess: "midea|ميديا|glem ?gas|جليم غاز|جليم جاز|la ?germania|لاجيرمانيا|thomson|تومسون|elba|إلبا|البا|starway|ستار واي|ستاروي|wellgas|ويل غاز|ويلغاز|bompani|بومباني|super ?general|سوبر جنرال|فريش|fresh|haam|هام|xper|اكسبير|basic|بيسك|hyundai|هيونداي|mastergas|ماستر غاز|simfer|سيمفر|kumtel|كومتيل|nikai|نيكاي|dlc|geepas|جيباس|samsung|سامسونج|\\blg\\b|ال جي|دوتس|dots",
+    // FUEL × BURNERS is a composite identity fact — resolved in code, not ordered regexes
+    // (see typeResolve rationale in factory.ts). Labels: burners_N = gas (v1-compatible),
+    // electric_N / electric, mixed_fuel.
+    typeResolve: (t: string) => {
+      const burners = t.match(/([2-6])\s*(?:عيون|عين|شعل[ةه]?|شعلات|burners?)/)?.[1]
+        ?? (/خمس\s*(?:عيون|شعلات)/.test(t) ? "5" : /[أا]ربع\s*(?:عيون|شعلات)/.test(t) ? "4" : null);
+      const gasNoun = /فرن\s*(?:ال)?غاز|بوتاجاز|بوتجاز|طباخ\s*غاز|gas\s*(?:cooker|range)/.test(t);
+      const elecNoun = /(?:فرن|طباخ)\s*(?:سيراميك\s*)?(?:كهربائي|كهرباء)|electric\s*(?:cooker|range)|(?:فرن|طباخ)[^.]{0,25}سيراميك/.test(t);
+      const mixedMark = /(?:عين|عيون|شعل[ةه]?|شعلات)\s*(?:ال)?كهرباء|\+\s*2\s*(?:عين|شعل)|غاز\s*(?:\+|و)\s*(?:ال)?كهرباء|gas.{0,10}electric/.test(t);
+      if (gasNoun && (mixedMark || elecNoun)) return "mixed_fuel";
+      if (elecNoun) return burners ? `electric_${burners}` : "electric";
+      return burners ? `burners_${burners}` : null;
+    },
     capacity: { regex: "(\\d{2,3})\\s*(?:سم|cm)", dimsRegex: "(\\d{2,3})\\s*[*×xX٭]\\s*(\\d{2,3})", min: 45, max: 120, round: 5 },
     techFlags: [
       ["full_safety", "[أا]مان كامل|full safety|امان كامل"],
       ["self_ignition", "[إا]شعال ذاتي|اشعال ذاتي|auto ?ignition|self ?ignition"],
       ["fan", "مروحة|\\bfan\\b|turbo"],
       ["grill", "شواي[ةه]|grill"],
-      ["electric", "طباخ كهربائي|electric cooker|فرن كهربائي"],
+      ["ceramic", "سيراميك|ceramic"],
+      ["air_fry", "قلاي[ةه] هوائي[ةه]|مقلاة هوائي[ةه]|air ?fry"],
     ],
     namesOverride: (key: string) => {
       const [b, ty, cap] = key.split("|");
-      const tAr: Record<string, string> = { mixed_fuel: "غاز وكهرباء", burners_5: "5 شعلات", burners_4: "4 شعلات", burners_3: "3 شعلات", burners_2: "شعلتين" };
-      const tEn: Record<string, string> = { mixed_fuel: "dual-fuel", burners_5: "5-burner", burners_4: "4-burner", burners_3: "3-burner", burners_2: "2-burner" };
-      const a = ty !== "NA" ? tAr[ty] ?? "" : "";
-      const e = ty !== "NA" ? tEn[ty] ?? "" : "";
+      const burners = ty?.match(/_(\d)$/)?.[1] ?? null;
+      const fuel = ty === "mixed_fuel" ? "mixed" : ty?.startsWith("electric") ? "electric" : ty?.startsWith("burners") ? "gas" : null;
+      const nounAr = fuel === "electric" ? "طباخ كهربائي" : fuel === "mixed" ? "طباخ غاز وكهرباء" : "طباخ غاز";
+      const nounEn = fuel === "electric" ? "electric cooker" : fuel === "mixed" ? "dual-fuel cooker" : "gas cooker";
+      const bAr = burners ? (burners === "2" ? "شعلتين" : `${burners} شعلات`) : "";
+      const bEn = burners ? `${burners}-burner` : "";
       const cAr = cap !== "NA" ? `${cap} سم` : "";
       const cEn = cap !== "NA" ? `${cap} cm` : "";
       return {
-        nameAr: `طباخ غاز ${b} ${a} ${cAr}`.replace(/\s+/g, " ").trim(),
-        nameEn: `${b} gas cooker ${e} ${cEn}`.replace(/\s+/g, " ").trim(),
+        nameAr: `${nounAr} ${b} ${bAr} ${cAr}`.replace(/\s+/g, " ").trim(),
+        nameEn: `${b} ${nounEn} ${bEn} ${cEn}`.replace(/\s+/g, " ").trim(),
       };
     },
   },

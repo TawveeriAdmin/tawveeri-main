@@ -40,6 +40,12 @@ export interface ApplianceCfg {
   /** Customer-facing name override. The factory default renders `noun brand type capacity`
    *  which is crude for categories whose type labels are not display words (burner counts). */
   namesOverride?: (key: string) => { nameAr: string; nameEn: string };
+  /** Full-control type resolver (ADR-254 cooker fuel identity): when present it REPLACES
+   *  the `types` first-match list. Needed where the type is a COMPOSITE fact (fuel ×
+   *  burner count) that ordered regexes cannot express safely — e.g. the brand «جليم غاز»
+   *  contains غاز, so only noun-adjacent matching can tell a Glem Gas ELECTRIC cooker
+   *  from a gas one. Receives the lowercased combined name text. */
+  typeResolve?: (text: string) => string | null;
 }
 
 const rx = (s?: string) => (s ? new RegExp(s, "i") : null);
@@ -91,7 +97,8 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
     let brand = canonicalizeBrand(rawBrand);
     if (brand === "unknown" || brand === "other") { const g = t.match(brandRx); if (g) brand = canonicalizeBrand(g[0].trim()); }
     let type: string | null = null;
-    for (const [label, re] of types) if (re.test(t)) { type = label; break; }
+    if (cfg.typeResolve) type = cfg.typeResolve(t);
+    else for (const [label, re] of types) if (re.test(t)) { type = label; break; }
     const capacity = extractCapacity(full);
     const payload: Record<string, unknown> = { brand: brand === "unknown" ? null : brand, type, capacity };
     for (const [f, re] of techs) payload[f] = re.test(t);

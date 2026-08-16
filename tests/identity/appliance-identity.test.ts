@@ -94,3 +94,55 @@ describe("oven v2 (ADR-254) — built-in ONLY, cookers no longer mislabeled", ()
     expect(oven.detect("فرن كهربائي 60 سم", "")).toBe(false); // ambiguous → honestly undetected
   });
 });
+
+// ── ADR-254 fuel identity (founder audit order: gas / electric / mixed are all real
+//    in production — 5,552 / 4,689 / 493 obs per 30d). Fixtures = real raw names. ──
+describe("cooker fuel identity — gas, electric, and mixed can never merge", () => {
+  const norm = (ar: string) => cooker.normalize(ar, "", null);
+  it("ELECTRIC freestanding (ceramic ranges) is detected and fuel-typed", () => {
+    expect(cooker.detect("سامسونج فرن كهرباء سيراميك 63*76 سم، 5 عين، تايلاندي، استيل - NE63C6317SS", "")).toBe(true);
+    const r = norm("سامسونج فرن كهرباء سيراميك 63*76 سم، 5 عين، تايلاندي، استيل");
+    expect(r.payload.type).toBe("electric_5");
+    expect(r.payload.capacity).toBe(75); // max(63,76)=76 → round-5 → 75 size class
+  });
+  it("fuel-word separated from the noun by the brand still resolves electric", () => {
+    const r = norm("فرن لاجيرمانيا، سيراميك، 60×90 سم، كهرباء 5 عين، 142 لتر، شواية، استيل");
+    expect(r.payload.type).toBe("electric_5");
+  });
+  it("LG air-fry electric range is a cooker (قلاية is a feature, not a rejection)", () => {
+    expect(cooker.detect("ال جي فرن كهربائي وقلاية هوائية 5 شعلات، 65×76 سم، واي فاي، سمارت، استيل", "")).toBe(true);
+    const r = norm("ال جي فرن كهربائي وقلاية هوائية 5 شعلات، 65×76 سم، واي فاي، سمارت، استيل");
+    expect(r.payload.type).toBe("electric_5");
+    expect(r.payload.air_fry).toBe(true);
+  });
+  it("countertop mini electric ovens (لتر/واط, no burners) can NEVER enter cooker", () => {
+    expect(cooker.detect("دوتس فرن كهربائي 75 لتر، 2800 واط، باب زجاجي مزدوج، اسود - COE0755BD2", "")).toBe(false);
+    expect(cooker.detect("دوتس فرن كهربائي 100 لتر، 2800 واط، باب زجاجي مزدوج", "")).toBe(false);
+  });
+  it("brand collision: a «جليم غاز» ELECTRIC cooker types electric, not gas", () => {
+    const r = norm("جليم غاز فرن كهربائي سيراميك 60*90 سم 5 عيون");
+    expect(r.payload.type).toBe("electric_5");
+  });
+  it("mixed 4+2 stays mixed; gas-oven-with-electric-hob is mixed too", () => {
+    expect(norm("جليم غاز فرن غاز + كهرباء ,4 عيون غاز + 2 عين كهرباء , أمان كامل").payload.type).toBe("mixed_fuel");
+    expect(norm("فرن غاز ويل غاز، 90 * 60 سم، 5 شعلة كهرباء، 116 لتر برتغالي، أمان، استيل").payload.type).toBe("mixed_fuel");
+  });
+  it("pure gas keeps the v1 labels (zero churn against any materialized row)", () => {
+    expect(norm("ميديا فرن غاز 60*90سم، 5 عين غاز، شبك ثقيل، مروحة داخلية، استيل").payload.type).toBe("burners_5");
+  });
+  it("identity keys differ by fuel at the same brand/size — the anti-merge guarantee", () => {
+    const gas = norm("سامسونج فرن غاز 60*90 سم، 5 عيون، استيل");
+    const elec = norm("سامسونج فرن كهرباء سيراميك 60*90 سم، 5 عين، استيل");
+    const kGas = cooker.buildIdentityKey("samsung", gas.payload);
+    const kElec = cooker.buildIdentityKey("samsung", elec.payload);
+    expect(kGas.key).not.toBe(kElec.key);
+    expect(kGas.key).toMatch(/\|burners_5\|90$/);
+    expect(kElec.key).toMatch(/\|electric_5\|90$/);
+  });
+  it("fuel-aware customer names", () => {
+    const names = APPLIANCE_BUNDLES["cooker"].names;
+    expect(names("samsung|electric_5|75").nameAr).toBe("طباخ كهربائي samsung 5 شعلات 75 سم");
+    expect(names("glem gas|mixed_fuel|90").nameAr).toBe("طباخ غاز وكهرباء glem gas 90 سم");
+    expect(names("starway|burners_5|90").nameAr).toBe("طباخ غاز starway 5 شعلات 90 سم");
+  });
+});
