@@ -1,4 +1,56 @@
-# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #83 · PRODUCTION STABLE (24h GATE = GO) · HOME WORK MAY RESUME ═══
+# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #84 · ADR-253 STRUCTURED INTAKE LIVE · HOME = 9 CATEGORIES ═══
+
+## TAWVEERI HOME — STRUCTURED INTAKE (ADR-253, commit `75973a4`) — WHAT CHANGED
+
+**Founder directive executed end-to-end (research → audit → decide → implement → deploy →
+verify), high autonomy.** Full decision record: ADR-253. Research + audit artifacts are in
+the ADR; category readiness numbers measured read-only on production 2026-08-16.
+
+**The mission model is now quantity-first.** `quantities` per category (ZERO VALID; qty 0 ⇔
+excluded, one coherent state via `setQuantity`), room_count ≠ ac_unit_count ≠
+ac_target_spaces (invariant tested), multi-unit legs (`fridge`, `fridge_2`, …), Arabic
+dual/word-number parsing («مكيفين» «خمس مكيفات» «5 مكيفات»), `property_type`
+(context ONLY — never generates quantities), `posture` (economic/balanced/premium) that
+redistributes the SAME fixed budget (default = pre-existing greedy, unchanged).
+
+**Home now plans 9 categories.** CORE (whole-home default, unchanged): AC, fridge, washer,
+TV. OPTIONAL disclosure-tier (never auto-added; add-chips / explicit mention): vacuum,
+microwave, dishwasher, BUILT-IN oven, air fryer — admitted under transparent gates
+(coherent taxonomy + fresh eligible-72h ≥40 + key spec ≥90%; measured: vacuum 157 ·
+air_fryer 144 · oven 57 · microwave 55 · dishwasher 46; comparison-grade 4–10 each, so the
+per-item claim gate carries honesty — «قارنّا» stays model-gated).
+
+**Cooking-taxonomy verdict (never violate):** the Saudi "normal household oven" IS the
+freestanding gas cooker (GASTAT: 86.4% cook with gas) and the catalog has ZERO of them —
+`category='oven'` is 100% built-in. Bare «فرن»/«بوتاجاز»/«طباخ» → honest unsupported note
+(+ built-in add-chip); only «فرن بلت إن/مدمج» plans the oven category. **The freestanding
+cooker is the TOP named ingestion gap** (CORE Saudi need, absent). Also absent: dryers (0
+standalone), freezers (2), water dispensers (5), water heaters (no category) — all honestly
+unsupported words in the parser.
+
+**Intake architecture:** NL box → the SAME `parseHomeMission` imported by the client (pure
+module — one brain, no drift) → editable mission card (property chips · RTL steppers with
++ on the LEFT · optional add-chips · AC space rows with area chips + «طبّق على الكل» ·
+household once · budget + posture) → ONE generate gate → the ADR-250 workspace unchanged.
+Refine sheet now reuses the same card. `parseDelta` handles quantity mutations
+(«خل المكيفات 4» «شيل التلفزيون» «ابي مكنسة»).
+
+**Verified:** tests 1,920 green; eval suite 19→28 cases; build compiled; full intake→plan
+flow browser-verified locally (RTL card, NL prefill, generation, zero console errors);
+production deploy + 28/28 eval against tawveeri.com (see §status below).
+
+**Found but NOT remediated (founder decisions):** `appliance` bucket (439 active) hides 261
+fridges + 164 washers + 11 dishwashers from their true categories (~60% more fridge depth);
+window ACs sit in `other`; oven category has Ariston script-split brands + template-name
+duplicates. Recategorization = a bounded catalog-remediation mission, deliberately out of
+ADR-253 scope.
+
+**NEXT after this checkpoint:** founder iPhone pass on the NEW intake (type the example →
+«راجع المهمة» → adjust steppers → build → refine), then the pass^k transcript-graded eval
+suite (§65) — still the standing next milestone. Result-density micro-audit (§22 of the
+directive) was assessed as not blocking; revisit only on founder feedback.
+
+# ═══ 2026-08-16 CHECKPOINT #83 · PRODUCTION STABLE (24h GATE = GO) · HOME WORK MAY RESUME ═══
 
 ## A. PRODUCTION RELIABILITY — SETTLED STATE (do not re-investigate)
 
