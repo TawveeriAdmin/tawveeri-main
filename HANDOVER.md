@@ -1,4 +1,50 @@
-# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #85 · ADR-254 COOKER REGISTERED + OVEN SPLIT · APPLIANCE BUCKET = DEAD LEGACY ═══
+# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #86 (NIGHT CLOSE) · ADR-254 SETTLED · AWAIT COOKER MATERIALIZATION · HOME = iPHONE PASS ═══
+
+## TOMORROW, IN ORDER (founder instruction — do not restart research/architecture):
+1. Read this checkpoint. 2. Check whether cooker canonicals materialized naturally
+(`SELECT count(*) FROM canonical_products WHERE category='cooker' AND is_active` +
+`tps_current_offers WHERE category='cooker'`). 3. If yes: measure readiness PER FUEL TYPE
+(gas / electric / mixed) with the ADR-249 query shapes; flip Home ONLY for fuel types
+passing the ADR-253 gates (fresh eligible-72h ≥ 40, spec ≥ 90%, coherent taxonomy), with a
+غاز/كهرباء/غاز+كهرباء input covering ONLY ready types. 4. Resume Tawveeri Home from the
+iPhone-pass checkpoint (#84): founder runs the NEW structured intake on iPhone, then the
+pass^k transcript-graded eval suite.
+
+## A. ADR-254 COOKER WORK — SETTLED STATE (2026-08-16 night)
+- cooker registered + deployed (commits `306c0ef` registration, `a491bea` fuel identity).
+- Fuel is IDENTITY-SAFE: keys `brand|fuel×burners|larger-dim` — gas (`burners_N`),
+  electric (`electric_N`/`electric`), mixed (`mixed_fuel`) can NEVER merge; 60×90 ≡ 90×60
+  (max-of-two dims); mini countertop electric ovens structurally excluded; air-fry is a
+  feature, not a reject; «جليم غاز»-class brand collisions solved by noun-adjacent matching.
+  All three fuels PROVEN in production raw obs/30d: gas 5,552 (11 stores) · electric 4,689
+  (13 stores) · mixed 493 (4 stores). 23 identity tests, real-name fixtures.
+- Built-in oven stays a SEPARATE category (oven-v2); the 12 mislabeled cooker-shaped oven
+  rows were deactivated WITH EVIDENCE (`docs/evidence/oven-mislabel-deactivate-2026-08-16.json`,
+  4 genuine built-in gas 90cm kept, oven 101→89); appliance bucket 439→0
+  (`docs/evidence/appliance-bucket-deactivate-2026-08-16.json`).
+- NO historical replay, NO self-heal, NO heavy backfill was run and none is planned.
+  ADR-252 remains governing. Cooker canonicals = 0 at close; materialization comes ONLY
+  from natural governed 6h feed passes (persistent 30-min monitor armed in-session; if the
+  session is gone, just run the count query). HOME COOKER = NOT YET until per-fuel gates pass.
+
+## B. HOME STATE AT CLOSE
+Live: **https://tawveeri.com/ar/home-mission**. Structured intake (ADR-253) complete;
+production evals **28/28 PASS** (re-verified after all of today's data changes); 9
+categories + disclosure rules preserved; cooker NOT exposed; بوتاجاز/فرن keep honest
+unsupported notes. Next founder action: iPhone pass on the new intake.
+
+## C. NAMED NEXT-STAGE PRODUCT QUESTION (persist only — do NOT implement)
+**HOW SHOULD TAWVEERI HAND OFF A HOME PLAN WHEN THE OPTIMAL BASKET SPANS MULTIPLE
+RETAILERS?** Future research concepts (founder, 2026-08-16): cheapest multi-store plan ·
+simpler plan with fewer retailers · cost of fragmentation · grouped retailer handoff ·
+guided sequential purchase journey · NO checkout assumptions unless retailer/platform
+capability supports it.
+
+## D. STANDING NIGHT CONSTRAINTS
+No forced materialization, no seed/backfill, no historical recovery, no Home changes
+tonight, no unrelated work, no paid infra changes. Consumer traffic has priority.
+
+# ═══ 2026-08-16 CHECKPOINT #85 · ADR-254 COOKER REGISTERED + OVEN SPLIT · APPLIANCE BUCKET = DEAD LEGACY ═══
 
 ## ADR-254 (commit `306c0ef`) — both founder authorizations executed, both premises corrected
 
