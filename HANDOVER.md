@@ -1,4 +1,96 @@
-# ═══ RESUME HERE — 2026-08-15 CHECKPOINT #82 · SEV-1 (DISK IO EXHAUSTION) + DATA RELIABILITY RESET (ADR-252) ═══
+# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #83 · PRODUCTION STABLE (24h GATE = GO) · HOME WORK MAY RESUME ═══
+
+## A. PRODUCTION RELIABILITY — SETTLED STATE (do not re-investigate)
+
+**Incident (2026-08-15, SEV-1) — CLOSED.** Root cause: processing one new observation
+re-read the key's ENTIRE append-only staging history (`tps_identity_staging`, 719k rows,
+avg 177/key). ADR-251 fixed a PostgREST 1,000-row truncation in that load, which made the
+full-history read actually execute — releasing two weeks of deferred "self-heal" in one
+hourly chain. That exhausted the Supabase **Disk IO Budget** (Small tier ≈ 22 MB/s /
+1,000 IOPS baseline; burst refills hourly over ~24h; a project restart clears connection
+pile-up but does NOT refill the budget). The instance went unresponsive; the consumer
+surface was down ~1.5–2h while `/api/health` and UptimeRobot stayed green.
+**Why the first mitigation failed:** `CORROBORATE_ROW_BUDGET` was per-category-per-sweep,
+so it multiplied (12k × ~15 categories × N sweeps). Budgets must be per-RUN.
+
+**Structural remediation (ADR-252, commit `95c88b4`, migration 028 applied to prod):**
+- **Forward-only ingestion.** Corroborate consumes ONLY (a) the current sweep's in-memory
+  rows and (b) `tps_current_offers`. The hot path never reads staging or price_history
+  again. Price events are change-only against the current state.
+- **`tps_current_offers` = HOT current state** — one row per (category, identity_key,
+  store_id); size bounded by keys×stores, independent of history depth (survives 10× growth).
+  `tps_identity_staging` and `raw_observations` are COLD audit trails; `price_history`
+  stays WARM/append-on-change (product value, untouched).
+- **Touch-triggered self-heal REMOVED** (structurally unsafe). Historical recovery exists
+  only as `scripts/tps-core/seed-current-offers.ts`: manual launch, keyset-resumable,
+  paced, pressure-probed.
+- **Scheduler governor:** 10-min post-boot cooldown · fail-CLOSED timed `SELECT 1` probe
+  before EVERY background run · persisted `tps_job_state` due-gating so a deploy/restart
+  can never create work · jittered boot kicks.
+- **`/api/health/deep`** — product-truth health (stores + projection + freshness + latency,
+  60s cache, rate-limit exempt). Liveness 200s can no longer mask a data outage.
+- **INVARIANT (never reintroduce):** background/historical work must never starve consumer
+  traffic; no code path may re-read observation history to process new data.
+
+**Post-incident status — 24h gate = GO (verified 2026-08-16).** Zero production faults in
+the window (all monitor "reds" were the operator machine's own network — proven by control
+probes failing simultaneously and by server-side evidence). Governed cycles all succeeded
+without touching consumer latency (203–539ms throughout): discovery 04:02 · feed 09:52 ·
+price_update 10:00 · refresh 14:56. Ingestion continuous; `tps_current_offers` growing
+organically 163 → 3,003 rows. Consumer journeys verified live: `/ar` 2.4–2.9s, Stores with
+real data, Arabic search «مكيف لغرفة 30 متر هادي تحت 4000» → 6 real corroborated picks with
+`/go` exits, Home mission → 6-leg plan.
+
+**Open, non-urgent founder decisions:** (1) `tps_identity_staging` retention policy (COLD,
+~30k rows/day; paced deletes or table-swap — partitioning rejected at this scale);
+(2) Supabase compute tier after a week of governed steady-state measurement (no paid change
+without approval); (3) optional historical `seed-current-offers` run; (4) recommended:
+point UptimeRobot at `/api/health/deep`.
+
+## B. TAWVEERI HOME — EXACT RESUME POINT (do not restart from architecture/research/audit)
+
+**Accepted baseline — closed, do not reopen:** Part A gate = **GO_HOME** (ADR-249,
+`AUDIT_REPORT_HOME.md`) for four categories (air_conditioner, refrigerator,
+washing_machine, tv; oven excluded on evidence). Pilot lives at
+**https://tawveeri.com/ar/home-mission** (controlled exposure: direct URL, noindex, not in
+nav). It is an orchestration layer over the existing One Brain — `decide()` unchanged, no
+LLM in the mission path, honesty contract enforced (comparison claims gated on ≥2 fresh
+model-corroborated offers, single-store disclosure, device-only totals + install-unknown,
+no energy claims, accessory floor, 168h freshness eligibility).
+**Production eval status: 19/19 PASS** (`scripts/home-mission-eval/run.mjs`).
+
+**Mobile Experience Pass — COMPLETE (ADR-250, commit `e123cbc`).** Verdict from US/China/UK
+research + the founder's iPhone audit: vertical scrolling was never the problem — hierarchy
+and missing persistent context were. Home was transformed from a long generated report into
+a **mission workspace**: mission-mode sticky header carrying budget · devices · remaining at
+all times (global nav removed inside an active mission) · sticky category anchor chips with
+✓/؟/⚠ state · the three ACs grouped as ONE «التكييف» section with per-room children,
+subtotal and worst-child rollup · compact decision cards (72px thumb, `<bdi>` mixed-direction
+titles, ≤3 evidence/fit/technology chips, freshness line, one honest retailer CTA) ·
+one-expanded-at-a-time "ليش؟" with interactive trade rows · alternatives in a bottom sheet
+with «اختر هذا بدلًا» pinning (`pinned_ids` — a pin can never bypass hard eligibility) ·
+sticky bottom refine composer + refine sheet · Decision Delta diffing two guarded plans ·
+sessionStorage persistence (45-min) · §18 energy-wording guard (Home withholds the engine's
+inverter-efficiency sentences and shows a neutral technology chip instead).
+
+**Verified complete:** tests 1,897 green; build green; live production checks of the
+workspace, pin flow (total 14,488 → 13,138 = exactly −1,350) and efficiency-claim
+withholding (zero leaks, triple-checked).
+**Incomplete / deliberately deferred:** founder's own iPhone pass on the NEW workspace
+(the previous pass was on the old report layout); pass^k transcript-graded multi-turn eval
+suite (§65 case list) — only unit + live-scenario level exists; ADR-249 remediation ledger
+items (degraded-key merges, 6 Frame bezels in `category='tv'`, Ariston brand-script split,
+TV spec structuring, SASO labels) — all founder-decision, none blocking.
+
+**EXACT NEXT TASK after this checkpoint:** founder opens
+`https://tawveeri.com/ar/home-mission` on iPhone and runs one real mission on the NEW
+workspace (try the example → tap a category chip → open «البدائل» and pin one → type
+«خلها 16 ألف» in the bottom composer). Report findings; then, if the workspace passes,
+build the pass^k transcript-graded eval suite. Also worth re-measuring now: ADR-249's
+freshness/comparison-grade numbers were computed from npo counts that the ADR-251/252
+defects had suppressed — they understated reality and should improve.
+
+# ═══ 2026-08-15 CHECKPOINT #82 · SEV-1 (DISK IO EXHAUSTION) + DATA RELIABILITY RESET (ADR-252) ═══
 
 **NEVER FORGET THIS FAILURE MODE:** ADR-251's first self-heal run exhausted the Supabase
 Disk IO Budget (official warning email) → instance unresponsive (pooler timeout, 522,
