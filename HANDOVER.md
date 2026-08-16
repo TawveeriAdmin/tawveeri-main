@@ -86,9 +86,16 @@ TV spec structuring, SASO labels) — all founder-decision, none blocking.
 `https://tawveeri.com/ar/home-mission` on iPhone and runs one real mission on the NEW
 workspace (try the example → tap a category chip → open «البدائل» and pin one → type
 «خلها 16 ألف» in the bottom composer). Report findings; then, if the workspace passes,
-build the pass^k transcript-graded eval suite. Also worth re-measuring now: ADR-249's
-freshness/comparison-grade numbers were computed from npo counts that the ADR-251/252
-defects had suppressed — they understated reality and should improve.
+build the pass^k transcript-graded eval suite.
+
+**Re-measurement DONE (2026-08-16, read-only):** ADR-249's freshness/comparison-grade
+numbers re-measured post ADR-251/252 — full table in `AUDIT_REPORT_HOME.md` ADDENDUM.
+Headline: eligible ≤72h up 3.4–7.6× (AC 70→529, TV 88→374, fridge 73→289, washer 77→264);
+comparison-grade ≤72h up 1.5–2.7× (AC 26→69, TV 30→62, fridge 23→35, washer 37→83);
+offer freshness inverted (59–62% of latest offers ≤72h vs 10–21% before, TV 44%); the §7
+"10× ingestion decline" red flag is CLOSED (it was the ADR-251 defect; trailing-24h volume
+on Aug 16 = 10,386 npo rows). Oven still fails the bar (grade-72h = 4) — category set
+unchanged. §8 matching-defect rates were NOT re-inspected on the larger populations.
 
 # ═══ 2026-08-15 CHECKPOINT #82 · SEV-1 (DISK IO EXHAUSTION) + DATA RELIABILITY RESET (ADR-252) ═══
 

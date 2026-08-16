@@ -158,3 +158,35 @@ Public surface healthy: `/ar`, `/ar/search?q=مكيف`, `/ar/categories`, `/ar/s
 - Scenario A/C: category pools filtered by BTU (±12% band)/liters/kg/size with projection `lowest_price`, ranked ascending.
 - Destination health: 14 random fresh `normalized_payload->>'_url'` targets, curl -L with browser UA.
 - Ingestion trend: daily `count(*)` on `normalized_product_observations` (14 days) + `scraping_runs` per-day status + `tps_scheduler_heartbeat`.
+
+---
+
+## ADDENDUM — 2026-08-16 re-measurement (post ADR-251/252)
+
+The §4/§7 numbers above were measured on 2026-08-15 while the ADR-251 ingestion collapse
+(PostgREST 1,000-row truncation) was suppressing observation counts — they understated
+reality. Re-measured 2026-08-16 (read-only, same query shapes, same 11-store display gate,
+`default_transaction_read_only = on` against `vyceqrzttspyycdpojtn`):
+
+| Category | Eligible ≤72h (old→new) | Eligible ≤7d | Comparison-grade ≤72h (old→new) | Comparison-grade ≤7d (old→new) |
+|---|---|---|---|---|
+| air_conditioner | 70 → **529** | 549 | 26 → **69** | 47 → **96** |
+| tv | 88 → **374** | 402 | 30 → **62** | 66 → **80** |
+| refrigerator | 73 → **289** | 295 | 23 → **35** | 46 → **58** |
+| washing_machine | 77 → **264** | 267 | 37 → **83** | 60 → **93** |
+| oven | 6 → 57 | 57 | 2 → **4** | 5 → 6 |
+
+- **Offer-level freshness inverted.** Fresh ≤72h out of all latest offers: AC 622/1,052
+  (59%, was 10%) · TV 448/1,007 (44%, was 12%) · fridge 332/535 (62%, was 19%) · washer
+  380/625 (61%, was 21%). The §7 claim "80–90% of latest offers are >7d old" no longer
+  holds — stale-tail is now 31–50% per category.
+- **§7 operational red flag CLOSED.** The ~10× daily-volume decline was the ADR-251 defect;
+  after the fix + ADR-252 forward-only architecture, daily volume recovered (trough Aug 14
+  ≈3.5k → Aug 15 ≈9.1k; trailing 24h on Aug 16 = 10,386 rows) and ingestion is continuous.
+- **Oven exclusion stands:** decision-eligible depth jumped (6→57) but comparison-grade ≤72h
+  is still 4 — below the pilot bar. No category-set change.
+- **Consequences for Home:** the honesty contract is unchanged (disclosure machinery is
+  category-independent), but the workspace now has ~2–7× the eligible depth and ~1.2–2.7×
+  the comparison-grade depth the gate was accepted on. §8 matching-defect rates were
+  measured on the smaller comparison-grade populations and have NOT been re-inspected on
+  the larger ones — the ADR-249 remediation ledger items remain open founder decisions.
