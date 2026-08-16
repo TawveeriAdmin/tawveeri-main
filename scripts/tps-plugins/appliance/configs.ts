@@ -3,8 +3,9 @@
 // production raw_observations samples (System A vyceqrzttspyycdpojtn) before being
 // added — signals/rejects are tuned to the actual catalog noise (e.g. vacuum text
 // contaminated by "beverage refrigerator"; coffee text by قهوة-as-food; oven text
-// by فرنسية collision). Categories with n=0 or a single duplicated SKU (cooker/
-// range, water heater, range hood) are intentionally ABSENT — precision over recall.
+// by فرنسية collision). Water heater and range hood remain ABSENT (n≈0) — precision
+// over recall. Cooker was absent for the same reason until the appliance-specialist
+// stores changed the evidence (7,600+ observations/30d, ADR-254): registered below.
 import type { ApplianceCfg } from "./factory";
 
 export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
@@ -97,13 +98,69 @@ export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
     techFlags: [["cordless", "cordless|لاسلكي|rechargeable|battery"], ["digital", "digital|touch|رقمي|شاشة"], ["ice_crush", "ice crush|جرش الثلج|سحق الثلج"]],
   },
   {
-    category: "oven", version: "oven-v1", nounAr: "فرن", nounEn: "built-in oven", metricAr: "سم", metricEn: "cm",
-    signals: "built-?in oven|electric oven|gas oven|freestanding oven|فرن كهربائي|فرن غاز|فرن مدمج|فرن بلت ?ان|بلت ?ان فرن",
+    // ADR-254 tightening: oven = BUILT-IN ovens ONLY. The v1 signals also matched
+    // «فرن غاز»/"freestanding oven", which pulled Saudi freestanding gas COOKERS
+    // (بوتاجاز — a different purchase mission, now the `cooker` category below) into
+    // this category under a name template that called every one of them "built-in
+    // oven". A plain «فرن كهربائي» with no built-in phrasing is now honestly
+    // UNDETECTED rather than guessed (precision over recall). Existing mislabeled
+    // canonicals stop receiving observations and age out of eligibility ≤168h.
+    category: "oven", version: "oven-v2", nounAr: "فرن", nounEn: "built-in oven", metricAr: "سم", metricEn: "cm",
+    signals: "built-?in oven|فرن[^,،.]{0,18}(?:بلت|مدمج)|بلت ?[إا]ن[^,،.]{0,10}فرن|فرن مدمج",
     rejectAccessory: "tray only|rack only|صينية|glove|قفاز|replacement|door glass",
-    rejectWrong: "فرنسي|فرنسا|french|microwave|مايكرويف|air ?fryer|قلاية|toaster|محمصة|pizza oven portable|mini oven",
+    rejectWrong: "فرنسي|فرنسا|french|microwave|مايكرويف|air ?fryer|قلاية|toaster|محمصة|pizza oven portable|mini oven|بوتاجاز|بوتجاز|طباخ|cooking range|gas range",
     brandGuess: "ariston|اريستون|simfer|gorenje|جورنجي|bosch|بوش|samsung|سامسون|\\blg\\b|beko|بيكو|whirlpool|ويرلبول|teka|تيكا|midea|ميديا|hisense|هايسنس|white ?westinghouse|candy|كاندي|indesit",
-    types: [["built_in", "built-?in|integrated|مدمج|بلت ?ان"], ["freestanding", "free ?standing|قائم|منفصل"]],
+    types: [["built_in", "built-?in|integrated|مدمج|بلت ?[إا]ن"]],
     capacity: { regex: "(\\d{2,3})\\s*(?:cm|سم)", min: 45, max: 120, round: 5 },
     techFlags: [["gas", "gas oven|فرن غاز|\\bgas\\b|غاز"], ["steam", "steam|بخار"], ["convection", "convection|turbo|fan|مروحة|حراري"], ["digital", "digital|touch|led display|رقمي|شاشة"], ["self_clean", "self.?clean|تنظيف ذاتي|pyrolytic"]],
+  },
+  {
+    // ADR-254 — COOKER registered. The «single duplicated SKU» note in this file's
+    // header was true when written; the appliance-specialist stores onboarded since
+    // (najm 9, alnakheelk 18, shaker 7, blackbox 10, SWSG 8) supply 7,600+ cooker
+    // observations/30d with cross-store brand overlap (measured 2026-08-16). This is
+    // the CORE Saudi cooking appliance (GASTAT: 86.4% of households cook with gas):
+    // Saudi retail names it «فرن غاز» (60×90, 5 عيون, أمان كامل), which is exactly why
+    // it must be a SEPARATE category from built-in ovens.
+    // Identity: brand | burner-config | larger-dimension-cm (order-independent via
+    // dimsRegex). Spec-keyed like every factory category; model codes exist in names
+    // and a model tier is a possible v2 (same deferral as ADR-074's monitor note).
+    category: "cooker", version: "cooker-v1", nounAr: "طباخ غاز", nounEn: "gas cooker", metricAr: "سم", metricEn: "cm",
+    filterKeywords: ["cooker", "بوتاجاز", "طباخ", "فرن غاز"],
+    signals: "بوتاجاز|بوتجاز|طباخ|فرن\\s*(?:ال)?غاز|gas cooker|cooking range|gas range|freestanding cooker|freestanding oven",
+    rejectAccessory: "غطاء|cover only|صينية|tray only|شبك فقط|قطع غيار|replacement|spare|اسطوانة غاز|منظم غاز|regulator|وصلة غاز|hose only",
+    rejectWrong: "بلت\\s*?[إا]ن|built-?in|مدمج|microwave|مايكرويف|ميكروويف|قلاية|air ?fryer|محمصة|toaster|شفاط|hood|hob\\b|موقد سطحي|سخان|heater|دفاية|رحلات|camping|portable stove|منقل|شواية فحم",
+    brandGuess: "midea|ميديا|glem ?gas|جليم غاز|جليم جاز|la ?germania|لاجيرمانيا|thomson|تومسون|elba|إلبا|البا|starway|ستار واي|ستاروي|wellgas|ويل غاز|ويلغاز|bompani|بومباني|super ?general|سوبر جنرال|فريش|fresh|haam|هام|xper|اكسبير|basic|بيسك|hyundai|هيونداي|mastergas|ماستر غاز|simfer|سيمفر|kumtel|كومتيل|nikai|نيكاي|dlc|geepas|جيباس",
+    // Burner configuration is identity (a 5-burner and a 4+2 dual-fuel are different
+    // SKUs at different prices). Order matters: the mixed pattern contains «4 شعلة»,
+    // so it must be tested first.
+    types: [
+      ["mixed_fuel", "عين كهرباء|عيون كهرباء|شعل[ةه] كهرباء|شعلات كهرباء|\\+\\s*2\\s*(?:عين|شعل)|كهرباء\\s*\\+|gas.{0,8}electric"],
+      ["burners_5", "5\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|خمس\\s*(?:عيون|شعلات)|5 ?burner"],
+      ["burners_4", "4\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|[أا]ربع\\s*(?:عيون|شعلات)|4 ?burner"],
+      ["burners_3", "3\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|3 ?burner"],
+      ["burners_2", "2\\s*(?:عيون|عين|شعل[ةه]?|شعلات)|عينين|شعلتين|2 ?burner"],
+    ],
+    capacity: { regex: "(\\d{2,3})\\s*(?:سم|cm)", dimsRegex: "(\\d{2,3})\\s*[*×xX٭]\\s*(\\d{2,3})", min: 45, max: 120, round: 5 },
+    techFlags: [
+      ["full_safety", "[أا]مان كامل|full safety|امان كامل"],
+      ["self_ignition", "[إا]شعال ذاتي|اشعال ذاتي|auto ?ignition|self ?ignition"],
+      ["fan", "مروحة|\\bfan\\b|turbo"],
+      ["grill", "شواي[ةه]|grill"],
+      ["electric", "طباخ كهربائي|electric cooker|فرن كهربائي"],
+    ],
+    namesOverride: (key: string) => {
+      const [b, ty, cap] = key.split("|");
+      const tAr: Record<string, string> = { mixed_fuel: "غاز وكهرباء", burners_5: "5 شعلات", burners_4: "4 شعلات", burners_3: "3 شعلات", burners_2: "شعلتين" };
+      const tEn: Record<string, string> = { mixed_fuel: "dual-fuel", burners_5: "5-burner", burners_4: "4-burner", burners_3: "3-burner", burners_2: "2-burner" };
+      const a = ty !== "NA" ? tAr[ty] ?? "" : "";
+      const e = ty !== "NA" ? tEn[ty] ?? "" : "";
+      const cAr = cap !== "NA" ? `${cap} سم` : "";
+      const cEn = cap !== "NA" ? `${cap} cm` : "";
+      return {
+        nameAr: `طباخ غاز ${b} ${a} ${cAr}`.replace(/\s+/g, " ").trim(),
+        nameEn: `${b} gas cooker ${e} ${cEn}`.replace(/\s+/g, " ").trim(),
+      };
+    },
   },
 ];

@@ -17,6 +17,10 @@ export interface CapacitySpec {
   min: number; max: number;
   round?: number;           // round to nearest N
   cuftToLiters?: boolean;   // convert cubic feet → liters (÷ appliances quoting cu.ft)
+  /** Optional dimensions form (ADR-254, cookers: «60*90 سم» / «90×60»): a regex with TWO
+   *  numeric groups; capacity = the LARGER dimension, so 60×90 and 90×60 key identically
+   *  (order-independent — the LD141BBSIT split-defect class). Tried BEFORE `regex`. */
+  dimsRegex?: string;
 }
 export interface ApplianceCfg {
   category: string; version: string;
@@ -29,6 +33,13 @@ export interface ApplianceCfg {
   types?: [string, string][];                // [label, regexSrc] — first match wins
   capacity?: CapacitySpec;
   techFlags?: [string, string][];            // [payloadField, regexSrc] — boolean features
+  /** Registry raw_name prefilter override. The default ([nounEn first word, nounAr]) fails
+   *  when the market's own words differ from the noun (cooker: names say «فرن غاز», not
+   *  «طباخ»). ADR-254. */
+  filterKeywords?: string[];
+  /** Customer-facing name override. The factory default renders `noun brand type capacity`
+   *  which is crude for categories whose type labels are not display words (burner counts). */
+  namesOverride?: (key: string) => { nameAr: string; nameEn: string };
 }
 
 const rx = (s?: string) => (s ? new RegExp(s, "i") : null);
@@ -54,8 +65,20 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
     if (acc && acc.test(t)) return false;
     return sig.test(t);
   }
+  const dimsRx = cfg.capacity?.dimsRegex ? new RegExp(cfg.capacity.dimsRegex, "i") : null;
   function extractCapacity(full: string): number | null {
-    if (!capRx || !cfg.capacity) return null;
+    if (!cfg.capacity) return null;
+    if (dimsRx) {
+      const d = full.match(dimsRx);
+      if (d && d[1] != null && d[2] != null) {
+        let n = Math.max(parseFloat(d[1]), parseFloat(d[2]));
+        if (Number.isFinite(n)) {
+          if (cfg.capacity.round) n = Math.round(n / cfg.capacity.round) * cfg.capacity.round;
+          if (n >= cfg.capacity.min && n <= cfg.capacity.max) return n;
+        }
+      }
+    }
+    if (!capRx) return null;
     const m = full.match(capRx); if (!m || m[1] == null) return null;
     let n = parseFloat(m[1]); if (!Number.isFinite(n)) return null;
     if (cfg.capacity.cuftToLiters) n = Math.round((n * 28.3) / 10) * 10;
@@ -125,5 +148,5 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
   }
 
   const plugin: CategoryPlugin = { category: cfg.category, version: cfg.version, detect, normalize, buildIdentityKey, scoreConfidence };
-  return { plugin, names, attrs, config: cfg };
+  return { plugin, names: cfg.namesOverride ?? names, attrs, config: cfg };
 }

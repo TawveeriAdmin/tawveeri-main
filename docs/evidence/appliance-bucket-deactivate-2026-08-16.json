@@ -1,0 +1,3960 @@
+{
+ "adr": "ADR-254",
+ "date": "2026-08-16",
+ "reason": "legacy tps_version=1.0 appliance-bucket canonicals with zero observations and zero projection rows (customer-invisible); deactivated so category audits stop counting dead stubs",
+ "guard": "SELECT cp.id, cp.name_en, cp.name_ar, cp.brand, cp.category, cp.tps_version, cp.created_at\n    FROM canonical_products cp\n    WHERE cp.category = 'appliance' AND cp.is_active AND cp.tps_version = '1.0'\n      AND NOT EXISTS (SELECT 1 FROM normalized_product_observations n WHERE n.canonical_product_id = cp.id)\n      AND NOT EXISTS (SELECT 1 FROM tps_product_projection t WHERE t.canonical_id = cp.id)",
+ "count": 439,
+ "rows": [
+  {
+   "id": "1d2c0520-ab8f-4196-98a0-ecb07c685ad3",
+   "name_en": "Hisense, Refrigerator, Side by Side, 4 Doors, 13.8Cu.ft, Freezer 6.7Cu.ft, Premium Inox",
+   "name_ar": "Hisense Refrigerator Side by Side 4 Doors 13 8Cu ft Freezer 6 7Cu ft Premium Inox",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:28.110Z"
+  },
+  {
+   "id": "0ad9e41f-f8cf-48d4-b55e-c334a2e12a89",
+   "name_en": "ClassPro Single Door Refrigerator, 6.2 Cu.ft, Silver",
+   "name_ar": "ClassPro Single Door Refrigerator 6 2 Cu ft Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:43.471Z"
+  },
+  {
+   "id": "a9f2eb2b-4cd8-4b13-bb23-5f6fbf6645ae",
+   "name_en": "Bosch Series 8 Washer-Dryer 10/6 kg, i-DOS Automatic Detergent Dosing, WiFi, Graphite",
+   "name_ar": "Bosch Series 8 Washer-Dryer 10/6 kg i-DOS Automatic Detergent Dosing WiFi Graphite",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:29.662Z"
+  },
+  {
+   "id": "6165d20a-1399-4166-b300-62a569c8d308",
+   "name_en": "Fisher Twin Tub Washing Machine 10 Kg, Plastic Body, White",
+   "name_ar": "Fisher Twin Tub Washing Machine 10 Kg Plastic Body White",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:04.164Z"
+  },
+  {
+   "id": "7cc1981d-29ae-4a31-9b52-868135784768",
+   "name_en": "MIELE 60cm front-loader washing machine 15 programs with wificonn@ct - MIELE 60cm heat-pump front loading tumble dryer with steamfinish 9 kg load - MIELE guard s1 vacuum cleaner power line nordic blue",
+   "name_ar": "MIELE 60cm front-loader washing machine 15 programs with wificonn ct - MIELE 60cm heat-pump front loading tumble dryer with steamfinish 9 kg load - MIELE guard s1 vacuum cleaner power line nordic blue",
+   "brand": "مايلي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:51.251Z"
+  },
+  {
+   "id": "214c66dc-524f-4659-b96c-5d0efcdd82fd",
+   "name_en": "Classpro Side by Side Refrigerator 14.2Cu.ft, Freezer 7.8Cu.ft, Inverter, Black Inox",
+   "name_ar": "Classpro Side by Side Refrigerator 14 2Cu ft Freezer 7 8Cu ft Inverter Black Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:20.842Z"
+  },
+  {
+   "id": "a89671a7-620e-4ccc-ae1c-347cab0905a0",
+   "name_en": "HISENSE, Top Load Washer, 12KG, Titanium Grey",
+   "name_ar": "HISENSE Top Load Washer 12KG Titanium Grey",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:21.453Z"
+  },
+  {
+   "id": "9df86f54-0525-4701-9194-a436a4cdd141",
+   "name_en": "SMEG 50’s Retro Style Freestanding Refrigerator/Freezer, Red",
+   "name_ar": "SMEG 50’s Retro Style Freestanding Refrigerator/Freezer Red",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:40.446Z"
+  },
+  {
+   "id": "4229bf93-b1ca-4b92-83c9-10a46600ebd7",
+   "name_en": "ClassPro Refrigerator 12.9Cu.ft, Freezer 3.5Cu.ft, Inverter Compressor , White",
+   "name_ar": "ClassPro Refrigerator 12 9Cu ft Freezer 3 5Cu ft Inverter Compressor White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:59.362Z"
+  },
+  {
+   "id": "9d8b1429-e190-4a0f-96ec-93d498eccf5e",
+   "name_en": "Beko Refrigerator, Refrigerator 16.4Cu.ft, Freezer 5.8Cu.ft, Inverter, Silver Color",
+   "name_ar": "Beko Refrigerator Refrigerator 16 4Cu ft Freezer 5 8Cu ft Inverter Silver Color",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:40.813Z"
+  },
+  {
+   "id": "5c816bf7-0473-45ce-b334-e574dab70c52",
+   "name_en": "LG, Front Load Washer/Dryer 13kg/8Kg, 6 Motion Direct Drive, Essense Graphite",
+   "name_ar": "LG Front Load Washer/Dryer 13kg/8Kg 6 Motion Direct Drive Essense Graphite",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:43.196Z"
+  },
+  {
+   "id": "e5e5c58d-88d7-4868-bfb8-19b6cb3873b8",
+   "name_en": "Toshiba SBS French Door Refrigerator 11.9Cu.ft, Freezer 4.3Cu.ft, Inverter,Satin Grey",
+   "name_ar": "Toshiba SBS French Door Refrigerator 11 9Cu ft Freezer 4 3Cu ft Inverter Satin Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:43.973Z"
+  },
+  {
+   "id": "b8775a5e-3fb4-425b-b0bd-5fb069e53ab2",
+   "name_en": "Toshiba, Front Load washer, 10.5KG, Origin Inverter, Morandi Grey",
+   "name_ar": "Toshiba Front Load washer 10 5KG Origin Inverter Morandi Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:24.652Z"
+  },
+  {
+   "id": "dd111244-25d6-4fe7-9234-cc3a4bf36c26",
+   "name_en": "Midea twin tub washing machine,14 kg washing,white",
+   "name_ar": "Midea twin tub washing machine 14 kg washing white",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:55.561Z"
+  },
+  {
+   "id": "af1ca9b6-adda-4797-9e0f-4b43ac9121de",
+   "name_en": "Hitachi Front Load Washing Machine, 10.5 kg, Touch LED Display, Steam, Gray",
+   "name_ar": "Hitachi Front Load Washing Machine 10 5 kg Touch LED Display Steam Gray",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:06.416Z"
+  },
+  {
+   "id": "0a80a52b-6e7c-45b9-95b1-85d2fe59aeba",
+   "name_en": "Haier Refrigerator 7.7Cu.ft, Freezer 2.2Cu.ft,Twin Inverter, Flash Black",
+   "name_ar": "Haier Refrigerator 7 7Cu ft Freezer 2 2Cu ft Twin Inverter Flash Black",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:06.700Z"
+  },
+  {
+   "id": "47d847b6-c04d-466c-9f01-802e67079a6b",
+   "name_en": "Samsung, Front load Washer/Dryer, 9 / 6kg,  AI Control, 1400 rpm, Steam, Wi-Fi",
+   "name_ar": "Samsung Front load Washer/Dryer 9 / 6kg AI Control 1400 rpm Steam Wi-Fi",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:07.328Z"
+  },
+  {
+   "id": "556bc6d8-6e43-4da6-9f23-cbe54b13853f",
+   "name_en": "ClassPro, Top Load Washer, 11kg, White",
+   "name_ar": "ClassPro Top Load Washer 11kg White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:08.554Z"
+  },
+  {
+   "id": "79f2a4d5-fef7-43b9-9e05-a11b0766e1c2",
+   "name_en": "ClassPro Single Door Compact Refrigerator, 92L, D class, White",
+   "name_ar": "ClassPro Single Door Compact Refrigerator 92L D class White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:07.131Z"
+  },
+  {
+   "id": "355ad559-535e-4547-9d1f-fd591bc2df92",
+   "name_en": "Gorenje Built-In Integrated Refrigerator, 6.4Cu Ft, Freezer 2.4 Cu.ft, Inverter",
+   "name_ar": "Gorenje Built-In Integrated Refrigerator 6 4Cu Ft Freezer 2 4 Cu ft Inverter",
+   "brand": "قورينج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:51.633Z"
+  },
+  {
+   "id": "358b6c28-31d2-423a-96c9-0ee8fafe8a38",
+   "name_en": "Toshiba Top Load Washer 13kg, Origin Inverter Motor, Silver Color",
+   "name_ar": "Toshiba Top Load Washer 13kg Origin Inverter Motor Silver Color",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:14.305Z"
+  },
+  {
+   "id": "72ebe145-6b84-45c0-912a-9332936e6a47",
+   "name_en": "Haier Refrigerator 13Cu.ft, Freezer 3.9Cu.ft, Color Silver",
+   "name_ar": "Haier Refrigerator 13Cu ft Freezer 3 9Cu ft Color Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:09.935Z"
+  },
+  {
+   "id": "1e6dbd62-9d50-4e03-82a3-96ceecaca5f1",
+   "name_en": "ClassPro Single Door Fridge 355 L, Inverter, No Frost, 3 Drawers, Inox",
+   "name_ar": "ClassPro Single Door Fridge 355 L Inverter No Frost 3 Drawers Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:02.723Z"
+  },
+  {
+   "id": "26e89818-c0a4-4138-ae0e-446956fbf441",
+   "name_en": "Hisense Refrigerator Single Door Upright Fridge, 12.5 Cu.ft/355L,Color Silver",
+   "name_ar": "Hisense Refrigerator Single Door Upright Fridge 12 5 Cu ft/355L Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:12.133Z"
+  },
+  {
+   "id": "d6eb6098-a54e-4835-afef-eebefe982d7e",
+   "name_en": "ClassPro Refrigerator 9.5 Cu.ft Freezer 2.8 Cu.ft, Total No Frost System, white",
+   "name_ar": "ClassPro Refrigerator 9 5 Cu ft Freezer 2 8 Cu ft Total No Frost System white",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:14.689Z"
+  },
+  {
+   "id": "87076b80-4b7a-45b3-ad62-b5eb4642f3fb",
+   "name_en": "SMEG 50’s Retro Style Aesthetic Freestanding Refrigerator with Freezer Compartment, Union Jack",
+   "name_ar": "SMEG 50’s Retro Style Aesthetic Freestanding Refrigerator with Freezer Compartment Union Jack",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:41.505Z"
+  },
+  {
+   "id": "7b4887e4-2709-4216-a6a3-4818d87ab80d",
+   "name_en": "Gvc pro classic double door refrigerator, traditional cooling, 85l capacity, red color, compact design with top freezer",
+   "name_ar": "Gvc pro classic double door refrigerator traditional cooling 85l capacity red color compact design with top freezer",
+   "brand": "جي في سي برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:28.635Z"
+  },
+  {
+   "id": "4264f4d9-6cce-44cd-99d9-561421005d3f",
+   "name_en": "Toshiba Refrigerator 13.8Cu.ft, Freezer 5.8Cuft, Origin INVERTER, Color Silver",
+   "name_ar": "Toshiba Refrigerator 13 8Cu ft Freezer 5 8Cuft Origin INVERTER Color Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:43.994Z"
+  },
+  {
+   "id": "98d5535d-38bb-41d3-a453-df25081e8949",
+   "name_en": "Candy Twin Tub Washing Machine 7 KG",
+   "name_ar": "Candy Twin Tub Washing Machine 7 KG",
+   "brand": "كاندي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:33.963Z"
+  },
+  {
+   "id": "637e74f3-6cec-4999-b88f-deea4f60d3fe",
+   "name_en": "ClassPro Refrigerator/ Freezer Convertible 21.1Cu.ft/598L,Inverter,Dark Silver Color",
+   "name_ar": "ClassPro Refrigerator/ Freezer Convertible 21 1Cu ft/598L Inverter Dark Silver Color",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:45.270Z"
+  },
+  {
+   "id": "45a28650-a64f-4f04-a215-ec627cd8745d",
+   "name_en": "Hitachi, Refrigerator 7.2 Cu.Ft, Freezer 2 Cu.ft, Carbon Grey",
+   "name_ar": "Hitachi Refrigerator 7 2 Cu Ft Freezer 2 Cu ft Carbon Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:23.929Z"
+  },
+  {
+   "id": "a37d45c8-d9bd-42f2-a2d7-88bc2f947943",
+   "name_en": "ClassPro, High Pressure Washer, 160 Bar, 2000W",
+   "name_ar": "ClassPro High Pressure Washer 160 Bar 2000W",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:49.043Z"
+  },
+  {
+   "id": "2d4c47a8-9caf-45be-b871-bd5756251b78",
+   "name_en": "ClassPro Single Door Small Refrigerator, 3.2 Cu.ft, Black",
+   "name_ar": "ClassPro Single Door Small Refrigerator 3 2 Cu ft Black",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:05:57.592Z"
+  },
+  {
+   "id": "b659fffa-0270-4b47-8124-dcd818e4af16",
+   "name_en": "LG Refrigerator 10.8Cu.ft Freezer 3.2Cu.ft, Inverter Compressor, White",
+   "name_ar": "LG Refrigerator 10 8Cu ft Freezer 3 2Cu ft Inverter Compressor White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:37.677Z"
+  },
+  {
+   "id": "f7420046-962b-43bd-908f-e6ec3686d98c",
+   "name_en": "Samsung Refrigerator 14.2Cu.ft, Freezer 4.4Cu.ft, Digital Inverter, Wifi, Refined Inox Matt",
+   "name_ar": "Samsung Refrigerator 14 2Cu ft Freezer 4 4Cu ft Digital Inverter Wifi Refined Inox Matt",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:49.840Z"
+  },
+  {
+   "id": "6fecc3e4-001f-460f-9f39-b3c95e2c0a1c",
+   "name_en": "Hitachi Refrigerator 14.3Cu.ft, Freezer 5.1Cu.ft, Inverter, Brilliant Black",
+   "name_ar": "Hitachi Refrigerator 14 3Cu ft Freezer 5 1Cu ft Inverter Brilliant Black",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:38.678Z"
+  },
+  {
+   "id": "90f1ba2d-7267-41a1-8f23-411eeacd4d26",
+   "name_en": "Midea Single Door Refrigerator 12.4Cu.Ft, Silver",
+   "name_ar": "Midea Single Door Refrigerator 12 4Cu Ft Silver",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:15.342Z"
+  },
+  {
+   "id": "647b74fe-3477-4c72-b711-ba7b9579bdc1",
+   "name_en": "ELBA, Built-in Double Door Inverter Refrigerator, 6Cu.ft, Bottom Freezer, 2.2Cu.ft,Touch Control",
+   "name_ar": "ELBA Built-in Double Door Inverter Refrigerator 6Cu ft Bottom Freezer 2 2Cu ft Touch Control",
+   "brand": "إلبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:49.245Z"
+  },
+  {
+   "id": "816b516d-7fd5-4c3b-8c15-b97eb98f063e",
+   "name_en": "Classpro Side by Side Refrigerator 14.2Cu.ft, Freezer 7.8Cu.ft, Inverter Compressor, Black Inox",
+   "name_ar": "Classpro Side by Side Refrigerator 14 2Cu ft Freezer 7 8Cu ft Inverter Compressor Black Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:05:59.709Z"
+  },
+  {
+   "id": "865fdd45-aa53-4d8b-9010-95fe7c9370e8",
+   "name_en": "Gvc pro classic single door refrigerator, 86l capacity, efficient cooling, red color, compact and stylish design",
+   "name_ar": "Gvc pro classic single door refrigerator 86l capacity efficient cooling red color compact and stylish design",
+   "brand": "جي في سي برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:29.728Z"
+  },
+  {
+   "id": "c533b90f-5500-4911-9801-38480a619de5",
+   "name_en": "ClassPro Upright Freezer/Refrigerator, 20.9Cu.ft, 592L,Stainless Steel",
+   "name_ar": "ClassPro Upright Freezer/Refrigerator 20 9Cu ft 592L Stainless Steel",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:00.120Z"
+  },
+  {
+   "id": "c078a988-a6fe-4e6f-a28f-2afb73f0de70",
+   "name_en": "Hitachi SBS Refrigerator 13 Cu.ft, Freezer 8 Cu.ft, Glass Black",
+   "name_ar": "Hitachi SBS Refrigerator 13 Cu ft Freezer 8 Cu ft Glass Black",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:59.125Z"
+  },
+  {
+   "id": "3610e052-4639-466b-b345-0c8d6257036b",
+   "name_en": "LG SBS Door-In-Door Instaview Refrigerator 17.8Cu.ft, Freezer 8.9Cu.ft, Inverter, Matt Black",
+   "name_ar": "LG SBS Door-In-Door Instaview Refrigerator 17 8Cu ft Freezer 8 9Cu ft Inverter Matt Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:29.513Z"
+  },
+  {
+   "id": "c10c654e-edc8-495b-8ec0-50355402f960",
+   "name_en": "LG Refrigerator 18Cu.ft, Freezer 9.3Cu.ft, SidebySide, Multi Door, Inverter Linear Comp",
+   "name_ar": "LG Refrigerator 18Cu ft Freezer 9 3Cu ft SidebySide Multi Door Inverter Linear Comp",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:15.466Z"
+  },
+  {
+   "id": "45c253f9-ed76-466b-a083-22cc490ce7d3",
+   "name_en": "Midea Frontload Washer/Dryer 12kg/8kg, Inverter, WIFI, Steam, 1400 rpm, Titanium Color",
+   "name_ar": "Midea Frontload Washer/Dryer 12kg/8kg Inverter WIFI Steam 1400 rpm Titanium Color",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:24.308Z"
+  },
+  {
+   "id": "70db07df-d66f-486e-9d79-dee797fb7a58",
+   "name_en": "Ariston Built-In Refrigerator 10.4Cu.ft, Freezer bottom 3.5Cu.ft, Inverter Compressor",
+   "name_ar": "Ariston Built-In Refrigerator 10 4Cu ft Freezer bottom 3 5Cu ft Inverter Compressor",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:51.375Z"
+  },
+  {
+   "id": "e842426a-b906-482f-9d62-dca642c7afed",
+   "name_en": "Bosch Series 6 Refrigerator 16.9Cu.ft, Freezer 4.9Cu.ft, Inverter, Silver",
+   "name_ar": "Bosch Series 6 Refrigerator 16 9Cu ft Freezer 4 9Cu ft Inverter Silver",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:56.982Z"
+  },
+  {
+   "id": "657de73c-e341-4346-8bc9-20be211ca6ce",
+   "name_en": "ClassPro Upright Freezer/Refrigerator, Convertible 20.9Cu.ft, 592L, Single Door Dark Silver",
+   "name_ar": "ClassPro Upright Freezer/Refrigerator Convertible 20 9Cu ft 592L Single Door Dark Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:06.049Z"
+  },
+  {
+   "id": "5f1a7120-d1c4-43f4-a1aa-91ad25378f57",
+   "name_en": "Midea, Top Load Washer, 19 Kg, Inverter Direct Drive Motor, Titanium",
+   "name_ar": "Midea Top Load Washer 19 Kg Inverter Direct Drive Motor Titanium",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:31.464Z"
+  },
+  {
+   "id": "77bd6ad7-16fe-4b39-91cc-a65d4748e1be",
+   "name_en": "Haier, Side by Side Refrigerator, 12.1Cu.ft, Freezer 6.3 Cu.ft, Inverter, Silver",
+   "name_ar": "Haier Side by Side Refrigerator 12 1Cu ft Freezer 6 3 Cu ft Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:09:02.930Z"
+  },
+  {
+   "id": "d7b2ae83-b45a-4829-adce-71f00ec46f34",
+   "name_en": "Fisher, Top Load Washer, 19kg, Silver",
+   "name_ar": "Fisher Top Load Washer 19kg Silver",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:33.205Z"
+  },
+  {
+   "id": "ceb7ccb9-975a-4cdb-b780-4372332bdae8",
+   "name_en": "Beko Front Load Washer&Dryer, 8/5kg, Prosmart Inverter, 15prgs, 1400rpm, Gray",
+   "name_ar": "Beko Front Load Washer&Dryer 8/5kg Prosmart Inverter 15prgs 1400rpm Gray",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:30.718Z"
+  },
+  {
+   "id": "2fdb5bbf-8266-4c7e-8b45-acf777a0cf30",
+   "name_en": "Panasonic, Front Load washer, 12 KG, Inverter, Silver",
+   "name_ar": "Panasonic Front Load washer 12 KG Inverter Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:34.659Z"
+  },
+  {
+   "id": "a608ca14-3b58-4919-9cfb-63ee3644031e",
+   "name_en": "LIEBHERR 60cm Freestanding freezer with NoFrost 277 Liters, Stainless Steel",
+   "name_ar": "LIEBHERR 60cm Freestanding freezer with NoFrost 277 Liters Stainless Steel",
+   "brand": "ليبهر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:09:01.879Z"
+  },
+  {
+   "id": "2a22f54d-7c48-49bc-af26-02e4dccb7d3c",
+   "name_en": "Hitachi Refrigerator 15.7Cu.ft, Freezer 5.5Cu.ft, Inverter, Dual Fan Cooling, Brilliant Silver",
+   "name_ar": "Hitachi Refrigerator 15 7Cu ft Freezer 5 5Cu ft Inverter Dual Fan Cooling Brilliant Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:32.698Z"
+  },
+  {
+   "id": "3e9c8661-329a-4466-9c35-5c280262368a",
+   "name_en": "Samsung Refrigerator 9.4Cu.ft, Freezer 2.8Cu.ft, Digital Inverter,White",
+   "name_ar": "Samsung Refrigerator 9 4Cu ft Freezer 2 8Cu ft Digital Inverter White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:21.756Z"
+  },
+  {
+   "id": "8310111a-3ab2-47c4-b87c-a313bd2e57b0",
+   "name_en": "Haier Refrigerator 7.7Cu.ft, Freezer 2.2Cu.ft,Twin Inverter, Dazzling Silver",
+   "name_ar": "Haier Refrigerator 7 7Cu ft Freezer 2 2Cu ft Twin Inverter Dazzling Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:17.459Z"
+  },
+  {
+   "id": "27eac9e1-b318-4c01-85e4-562b1ef89957",
+   "name_en": "Fisher Twin Tub Washing Machine 18 Kg, Plastic Body, White",
+   "name_ar": "Fisher Twin Tub Washing Machine 18 Kg Plastic Body White",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:01.997Z"
+  },
+  {
+   "id": "3a93bfea-e5e1-4192-b1e8-5eef255b68ae",
+   "name_en": "LG, Side By Side Refrigerator, 14.9Cu.ft, Freezer 7.2Cu.ft, InstaView, Prime Silver",
+   "name_ar": "LG Side By Side Refrigerator 14 9Cu ft Freezer 7 2Cu ft InstaView Prime Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:54.201Z"
+  },
+  {
+   "id": "fae05fde-c23f-458b-ae40-180301131b57",
+   "name_en": "Panasonic Front Load Washer/Dryer, 12/8 Kg, Inverter, Silver",
+   "name_ar": "Panasonic Front Load Washer/Dryer 12/8 Kg Inverter Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:20.059Z"
+  },
+  {
+   "id": "f063521c-c141-4242-aff2-811f678ec919",
+   "name_en": "Toshiba Refrigerator 13.8Cuft Freezer 5.8Cuft, Inverter, Gradation Glass Door",
+   "name_ar": "Toshiba Refrigerator 13 8Cuft Freezer 5 8Cuft Inverter Gradation Glass Door",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:38.747Z"
+  },
+  {
+   "id": "329ce58f-e8da-4b1a-a37f-caef08b7a940",
+   "name_en": "Midea Frontload Washing Machine 8kg, Wi-Fi, Steam, Inverter, Titanium Color Black Door",
+   "name_ar": "Midea Frontload Washing Machine 8kg Wi-Fi Steam Inverter Titanium Color Black Door",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:37.860Z"
+  },
+  {
+   "id": "5862c5ff-2dd2-4d6d-9672-61587e6543b7",
+   "name_en": "Karcher K 3 Follow Me Pressure Washer, 120 Bars, Yellow&Black",
+   "name_ar": "Karcher K 3 Follow Me Pressure Washer 120 Bars Yellow&Black",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:57.897Z"
+  },
+  {
+   "id": "f278af81-ba27-4a4d-8aea-f3a55ecb77ea",
+   "name_en": "Hitachi Refrigerator 14.3Cu.ft, Freezer 5.1Cu.ft, Inverter, Brilliant Silver",
+   "name_ar": "Hitachi Refrigerator 14 3Cu ft Freezer 5 1Cu ft Inverter Brilliant Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:37.639Z"
+  },
+  {
+   "id": "c4f435f6-c1fd-4a3a-96c1-bb61cf6907e0",
+   "name_en": "Bosch Frontload Washer & Dryer 10kg / 6kg, AutoDry Technology, White",
+   "name_ar": "Bosch Frontload Washer & Dryer 10kg / 6kg AutoDry Technology White",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:36.171Z"
+  },
+  {
+   "id": "a1ade7d1-9943-4b43-894a-a3aefec5826d",
+   "name_en": "Midea Top Load Washing Machine, 10kg, 8 Programs, LED Display, White",
+   "name_ar": "Midea Top Load Washing Machine 10kg 8 Programs LED Display White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:38.530Z"
+  },
+  {
+   "id": "c11cd42f-3359-4e8e-a7db-254f888384f2",
+   "name_en": "Midea washer and dryer front load - 8 kg washing & 6 kg drying - 14 programs - titanum - mf200d80w1tsa",
+   "name_ar": "Midea washer and dryer front load - 8 kg washing & 6 kg drying - 14 programs - titanum - mf200d80w1tsa",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:58.797Z"
+  },
+  {
+   "id": "21e6877f-c098-49c6-be0b-b5c77e31d919",
+   "name_en": "Hitachi, Carbon Line Refrigerator 6.5Cu.ft,Freezer 2Cu.ft,Inverter, Carbon Grey",
+   "name_ar": "Hitachi Carbon Line Refrigerator 6 5Cu ft Freezer 2Cu ft Inverter Carbon Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:14.423Z"
+  },
+  {
+   "id": "58380123-dc04-47b6-84f5-ed68689ddca2",
+   "name_en": "Toshiba Refrigerator 15.7Cuft Freezer 5.8Cuft, Inverter, Gradation Glass Door",
+   "name_ar": "Toshiba Refrigerator 15 7Cuft Freezer 5 8Cuft Inverter Gradation Glass Door",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:46.324Z"
+  },
+  {
+   "id": "539a9dc9-2831-4d5d-9fa7-442d5f204506",
+   "name_en": "Midea Top Load Washing Machine, 13kg, 8 Programs, Steam, DD Inverter, White",
+   "name_ar": "Midea Top Load Washing Machine 13kg 8 Programs Steam DD Inverter White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:36.398Z"
+  },
+  {
+   "id": "f5cc8fb2-c25e-470b-979d-cd61321766ef",
+   "name_en": "Hitachi Refrigerator 9.9Cu.ft, Freezer 3.3Cu.ft, No Frost, Inverter Compressor, White",
+   "name_ar": "Hitachi Refrigerator 9 9Cu ft Freezer 3 3Cu ft No Frost Inverter Compressor White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:16.522Z"
+  },
+  {
+   "id": "d10df87c-1b2b-46e4-a92f-68c39042508f",
+   "name_en": "LG Front Load Fully Automatic Washer/Dryer 10.5/7kg with AI DD,White",
+   "name_ar": "LG Front Load Fully Automatic Washer/Dryer 10 5/7kg with AI DD White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:21.786Z"
+  },
+  {
+   "id": "ecfce12c-ec45-4dbc-b5e7-b9f0f871473f",
+   "name_en": "Midea Dish Washer, 12 Place Settings, 6  Programs, Half Load, Delay, Child Lock, Color White",
+   "name_ar": "Midea Dish Washer 12 Place Settings 6 Programs Half Load Delay Child Lock Color White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:38.910Z"
+  },
+  {
+   "id": "72dce78e-4b4b-4e8f-b851-ffe3e959ad78",
+   "name_en": "MIELE 60cm freestanding washing machine front load and wificonn@ct for smart laundry care 9kg, lotus white",
+   "name_ar": "MIELE 60cm freestanding washing machine front load and wificonn ct for smart laundry care 9kg lotus white",
+   "brand": "مايلي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:04.215Z"
+  },
+  {
+   "id": "5c41c61c-21b9-4ab6-9f02-b39d6871eafc",
+   "name_en": "LG Dishwasher, 14 Place Setting, 5 Programs, Easy Rack plus, Silver",
+   "name_ar": "LG Dishwasher 14 Place Setting 5 Programs Easy Rack plus Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:54.383Z"
+  },
+  {
+   "id": "69839bd6-448f-496b-b79e-3349de60a7aa",
+   "name_en": "Haier Top Load Washing Machine, 10 kg, 8 Program, Silver",
+   "name_ar": "Haier Top Load Washing Machine 10 kg 8 Program Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:01.066Z"
+  },
+  {
+   "id": "5d05f11f-5764-427f-b603-729046d96646",
+   "name_en": "Samsung Refrigerator 14.9Cu.ft, Freezer 5.7Cu.ft, Digital Inverter, Black-Inox",
+   "name_ar": "Samsung Refrigerator 14 9Cu ft Freezer 5 7Cu ft Digital Inverter Black-Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:11.039Z"
+  },
+  {
+   "id": "2e86d349-bc0f-4b70-b4c9-aaba83354801",
+   "name_en": "TOSHIBA, Top Load Washer, 15kg, Great Waves, Steam, SDD Inverter, Morandi Grey",
+   "name_ar": "TOSHIBA Top Load Washer 15kg Great Waves Steam SDD Inverter Morandi Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:19.648Z"
+  },
+  {
+   "id": "40635c09-dc27-4159-94b2-03413ebcc945",
+   "name_en": "Haier Top Load Washer, 14 kg, 12 Program, DMM Inverter,  Rear Control with Knob, Dark Silver",
+   "name_ar": "Haier Top Load Washer 14 kg 12 Program DMM Inverter Rear Control with Knob Dark Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:40.645Z"
+  },
+  {
+   "id": "e6a3b1fb-9a62-4068-a77c-e8216a2bb095",
+   "name_en": "Panasonic Front Load Washer & Dryer10.5/6 Kg, Hybrid Dry,Eco Navi, 3Di Inverter, Dark Grey",
+   "name_ar": "Panasonic Front Load Washer & Dryer10 5/6 Kg Hybrid Dry Eco Navi 3Di Inverter Dark Grey",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:27.522Z"
+  },
+  {
+   "id": "78ef940f-809c-4788-befb-8cb24d378f19",
+   "name_en": "ClassPro Single Door Small Refrigerator, 3.2 Cu.ft, Silver",
+   "name_ar": "ClassPro Single Door Small Refrigerator 3 2 Cu ft Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:45.247Z"
+  },
+  {
+   "id": "e8d455c8-35bf-40b9-a28e-b0295872fe4e",
+   "name_en": "Samsung Refrigerator 12.5Cu.ft, Freezer 3.8Cu.ft, Digital Inverter, Snow White",
+   "name_ar": "Samsung Refrigerator 12 5Cu ft Freezer 3 8Cu ft Digital Inverter Snow White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:24.967Z"
+  },
+  {
+   "id": "3af93416-6755-4374-81b8-a24f9224896b",
+   "name_en": "Haier, Refrigerator 17.3Cu.ft, Freezer 5.1Cu.ft, Inverter, Recessed Handle, Inox",
+   "name_ar": "Haier Refrigerator 17 3Cu ft Freezer 5 1Cu ft Inverter Recessed Handle Inox",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:09:03.983Z"
+  },
+  {
+   "id": "02700931-edd9-4ad1-9e20-aec1cc9cf04d",
+   "name_en": "Top load washing machine – 8 kg – fully automatic – 8 wash programs – stainless steel drum",
+   "name_ar": "Top load washing machine – 8 kg – fully automatic – 8 wash programs – stainless steel drum",
+   "brand": "كيون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:59.880Z"
+  },
+  {
+   "id": "c438f6e8-9e50-4959-b862-e25463a5cbeb",
+   "name_en": "LG Front Load washer, 9 kg, 6 Motion DD, Steam, ThinQ (Wi-Fi), Middle Black Color",
+   "name_ar": "LG Front Load washer 9 kg 6 Motion DD Steam ThinQ Wi-Fi Middle Black Color",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:33.588Z"
+  },
+  {
+   "id": "ab953499-fb83-413d-8afc-81f54981a2e8",
+   "name_en": "Midea, Dishwasher 14 Places, 10 Programs, Silver.",
+   "name_ar": "Midea Dishwasher 14 Places 10 Programs Silver",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:01.181Z"
+  },
+  {
+   "id": "8491a63c-4111-4523-b197-7bf8990cd4a8",
+   "name_en": "CLASS PRO, Front Load washer, 10 KG, Dark Grey",
+   "name_ar": "CLASS PRO Front Load washer 10 KG Dark Grey",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:29.993Z"
+  },
+  {
+   "id": "8441d115-3300-4d76-9883-228c944dfd5b",
+   "name_en": "Ariston, Dishwasher, 14 Place, 6 Programs, Inverter Motor, Silver",
+   "name_ar": "Ariston Dishwasher 14 Place 6 Programs Inverter Motor Silver",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:55.435Z"
+  },
+  {
+   "id": "e57bda84-6420-40f0-b96d-ed43872aed1a",
+   "name_en": "Panasonic, Front Load Washer 10.5 Kg, AI EcoNavi, Active Foam, Inverter, Silver",
+   "name_ar": "Panasonic Front Load Washer 10 5 Kg AI EcoNavi Active Foam Inverter Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:10.726Z"
+  },
+  {
+   "id": "bcfd5ead-cbff-4a25-b3ef-39c7b03a967f",
+   "name_en": "LG Refrigerator 13.4Cu.ft, Freezer 4.6Cu.ft, Multi Air Flow,Inverter, White",
+   "name_ar": "LG Refrigerator 13 4Cu ft Freezer 4 6Cu ft Multi Air Flow Inverter White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:13.265Z"
+  },
+  {
+   "id": "a870318f-594f-4a9a-87c1-753683912693",
+   "name_en": "Fisher, Twin-Tub Washing Machine, 8Kg, Spin 5kg, White",
+   "name_ar": "Fisher Twin-Tub Washing Machine 8Kg Spin 5kg White",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:08.390Z"
+  },
+  {
+   "id": "d83d5d05-8095-46bd-8b3f-0d261d63c625",
+   "name_en": "Toshiba, Refrigerator, 12.6 Cu.ft, Freezer 3.8 Cu.ft, Origin Inverter, Rikyu Grey",
+   "name_ar": "Toshiba Refrigerator 12 6 Cu ft Freezer 3 8 Cu ft Origin Inverter Rikyu Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:24.854Z"
+  },
+  {
+   "id": "52bdd94f-379a-4e4c-8d14-13a76b44b3d9",
+   "name_en": "LG Front Load Washer/Dryer Combo, 19/12kg, White",
+   "name_ar": "LG Front Load Washer/Dryer Combo 19/12kg White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:32.866Z"
+  },
+  {
+   "id": "ddcce61c-d362-4c19-8028-fe3f9cb1989b",
+   "name_en": "Ariston, Front Load Washer & Dryer, 10kg/7kg, 15 Programs, Inverter Motor, Manhattan Gray",
+   "name_ar": "Ariston Front Load Washer & Dryer 10kg/7kg 15 Programs Inverter Motor Manhattan Gray",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:59.793Z"
+  },
+  {
+   "id": "311dd88b-d7e6-4076-9f79-576a3d4d3533",
+   "name_en": "Haier Refrigerator 14.5Cu.ft, Freezer 4.1Cu.ft, Color Silver",
+   "name_ar": "Haier Refrigerator 14 5Cu ft Freezer 4 1Cu ft Color Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:19.560Z"
+  },
+  {
+   "id": "a080fbd5-c418-4c19-a38f-31dd98dbe60e",
+   "name_en": "LG Refrigerator 13.3Cu.ft, Freezer 4.6Cu.ft, ThinQ (wifi), Platinum Silver",
+   "name_ar": "LG Refrigerator 13 3Cu ft Freezer 4 6Cu ft ThinQ wifi Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:26.031Z"
+  },
+  {
+   "id": "8ebcd520-5e35-4d2d-9f10-7df03f25a44c",
+   "name_en": "Toshiba Free Standing Dishwasher 14 Place Setting 6 Programs Silver",
+   "name_ar": "Toshiba Free Standing Dishwasher 14 Place Setting 6 Programs Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:11.076Z"
+  },
+  {
+   "id": "42bb6358-7c42-4924-b00a-41dd83463b49",
+   "name_en": "Bosch Series 6 Refrigerator 14.8Cu.ft, Freezer 4.4Cu.ft, Inverter, White",
+   "name_ar": "Bosch Series 6 Refrigerator 14 8Cu ft Freezer 4 4Cu ft Inverter White",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:28.162Z"
+  },
+  {
+   "id": "39038a18-340a-40b0-a35f-a955b20d3f5a",
+   "name_en": "LG Refrigerator 11.3Cu.ft, Freezer 4.1Cu.ft, Inverter Compressor, Platinum Silver",
+   "name_ar": "LG Refrigerator 11 3Cu ft Freezer 4 1Cu ft Inverter Compressor Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:19.004Z"
+  },
+  {
+   "id": "ae0b0fa3-6cd4-4711-8f39-a7965af0c886",
+   "name_en": "Haier Side by Side Refrigerator 11.1Cu.ft, Freezer 4.2Cu.ft, 4 Doors, Twin Inverter, Gemstone Black",
+   "name_ar": "Haier Side by Side Refrigerator 11 1Cu ft Freezer 4 2Cu ft 4 Doors Twin Inverter Gemstone Black",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:14.275Z"
+  },
+  {
+   "id": "837bf712-e7d7-4a0d-828f-ad532b4f5e62",
+   "name_en": "Toshiba Twin Tub Washer, 10 kg, Rust Free Body, White/Black",
+   "name_ar": "Toshiba Twin Tub Washer 10 kg Rust Free Body White/Black",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:26.034Z"
+  },
+  {
+   "id": "b8c20dca-faf6-467d-a0e7-6ffecdebb76e",
+   "name_en": "Hitachi, Side By Side Refrigerator, 14.5Cu.ft, Freezer 8.7Cu.ft,  Mettal Inox (Sky Line)",
+   "name_ar": "Hitachi Side By Side Refrigerator 14 5Cu ft Freezer 8 7Cu ft Mettal Inox Sky Line",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:52.052Z"
+  },
+  {
+   "id": "c6ffe43b-2fb9-494d-a992-d4ecce6ea111",
+   "name_en": "LG Side By Side Refrigerator 18.4Cu.ft, Freezer 9.7Cu.ft, Inverter Linear, Wifi, Platinum Silver",
+   "name_ar": "LG Side By Side Refrigerator 18 4Cu ft Freezer 9 7Cu ft Inverter Linear Wifi Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:35.537Z"
+  },
+  {
+   "id": "2e2e30c8-e2db-429b-8a1b-96ef77c7a01b",
+   "name_en": "Bosch Series 6 Refrigerator 17.4Cu.ft, Freezer 5.2Cu.ft, VitaFresh Plus, White",
+   "name_ar": "Bosch Series 6 Refrigerator 17 4Cu ft Freezer 5 2Cu ft VitaFresh Plus White",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:29.202Z"
+  },
+  {
+   "id": "409f8423-9555-4fb1-b6be-a9eae6d24490",
+   "name_en": "Hitachi 4 Door Big French Standard Refrigerator 14Cu.ft, Freezer 5.1Cu.ft, Black",
+   "name_ar": "Hitachi 4 Door Big French Standard Refrigerator 14Cu ft Freezer 5 1Cu ft Black",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:37.001Z"
+  },
+  {
+   "id": "a7375610-a2c1-49f1-879c-02df562e72f4",
+   "name_en": "ClassPro Single Door Compact Refrigerator, 46L(1.6 Cu.ft), D class, Black Color",
+   "name_ar": "ClassPro Single Door Compact Refrigerator 46L 1 6 Cu ft D class Black Color",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:51.629Z"
+  },
+  {
+   "id": "dfe56517-1e26-4023-a4c7-0a172ae34796",
+   "name_en": "Hitachi Refrigerator 18.2Cu.ft, Freezer 6.6Cu.ft, Inverter Control, Brilliant White",
+   "name_ar": "Hitachi Refrigerator 18 2Cu ft Freezer 6 6Cu ft Inverter Control Brilliant White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:40.257Z"
+  },
+  {
+   "id": "da904e8f-8f24-40d5-8bde-7424102fefa6",
+   "name_en": "LG, Refrigerator, 11.4 Cu.ft Freezer 3.5 Cu.ft, Inverter Compressor, Platinum Silver",
+   "name_ar": "LG Refrigerator 11 4 Cu ft Freezer 3 5 Cu ft Inverter Compressor Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:27.006Z"
+  },
+  {
+   "id": "b9736f51-094f-4790-b5d8-307713baba14",
+   "name_en": "LG, Front Load Washer & Dryer 9/5Kg, 6Motion DD, Steam, Wi-Fi, Middle Black",
+   "name_ar": "LG Front Load Washer & Dryer 9/5Kg 6Motion DD Steam Wi-Fi Middle Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:16.436Z"
+  },
+  {
+   "id": "0bc6a85c-5d32-416b-b6d5-3543c46ea9e6",
+   "name_en": "LG SBS Refrigerator, 14.9Cu.ft Freezer 8.3Cu.ft, Smart Inverter, VCM Black",
+   "name_ar": "LG SBS Refrigerator 14 9Cu ft Freezer 8 3Cu ft Smart Inverter VCM Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:32.376Z"
+  },
+  {
+   "id": "520ac5ea-3b0d-4253-92c7-569a54a0d680",
+   "name_en": "LG SBS Refrigerator 14.6Cu.ft, Freezer 8.2Cu.ft, Smart Inverter Compressor,Platinum Silver",
+   "name_ar": "LG SBS Refrigerator 14 6Cu ft Freezer 8 2Cu ft Smart Inverter Compressor Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:27.306Z"
+  },
+  {
+   "id": "8951abfd-8c99-445c-b6b0-0dd0a34382ec",
+   "name_en": "Hitachi SBS 4Door French Refrigerator 14Cu.ft, Freezer 5.1Cu.ft, Dark Glass Gray",
+   "name_ar": "Hitachi SBS 4Door French Refrigerator 14Cu ft Freezer 5 1Cu ft Dark Glass Gray",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:39.761Z"
+  },
+  {
+   "id": "a0a80b63-563d-4a34-b935-fd5ce9a3afb8",
+   "name_en": "Midea Refrigerator, 13.1Cu.ft Freezer 5.2Cu.ft, Inverter Compressor, Steel",
+   "name_ar": "Midea Refrigerator 13 1Cu ft Freezer 5 2Cu ft Inverter Compressor Steel",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:40.989Z"
+  },
+  {
+   "id": "9489cb9a-6949-4141-bcb1-aa62fbbdbc5b",
+   "name_en": "Beko Dishwasher Pro Smart Inverter, 6prg, 14 Place Setting, Silver Color",
+   "name_ar": "Beko Dishwasher Pro Smart Inverter 6prg 14 Place Setting Silver Color",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:46.867Z"
+  },
+  {
+   "id": "ed32aaf0-8064-4265-b5a2-3d353f2de5b5",
+   "name_en": "SAMSUNG, Bespoke AI French Door Side by Side Refrigerator 17.3Cu.ft, Freezer 9.4Cu.ft, Silver",
+   "name_ar": "SAMSUNG Bespoke AI French Door Side by Side Refrigerator 17 3Cu ft Freezer 9 4Cu ft Silver",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:33.487Z"
+  },
+  {
+   "id": "b5488afe-9ba2-4a2d-aeb8-7306116fd456",
+   "name_en": "Hitachi Front Load Washer/Dryer, 10.5/7kg, Inverter, Touch LED, Steam, Gray",
+   "name_ar": "Hitachi Front Load Washer/Dryer 10 5/7kg Inverter Touch LED Steam Gray",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:06.275Z"
+  },
+  {
+   "id": "d4412bb6-9e7a-48ef-a2a7-a7f30954d92b",
+   "name_en": "CLASS PRO, Refrigerator 14.1Cu.ft Freezer 4.9Cu.ft, Inverter, Dark Silver",
+   "name_ar": "CLASS PRO Refrigerator 14 1Cu ft Freezer 4 9Cu ft Inverter Dark Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:03.773Z"
+  },
+  {
+   "id": "1365ed1a-e44b-4aff-ac3d-f876426339b1",
+   "name_en": "HISENSE, Top Load Washer, 10KG, Titanium Grey",
+   "name_ar": "HISENSE Top Load Washer 10KG Titanium Grey",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:20.371Z"
+  },
+  {
+   "id": "4b2d52b3-177a-4d0b-b5c9-862637176b94",
+   "name_en": "Platinum Beverage Cooler, 92 Ltrs, Mini Fridge, Glass Door, 4 Shelves, Color Gray",
+   "name_ar": "Platinum Beverage Cooler 92 Ltrs Mini Fridge Glass Door 4 Shelves Color Gray",
+   "brand": "بلاتينيوم",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:52.990Z"
+  },
+  {
+   "id": "0f86a039-c1dd-4479-8348-42afe125eee8",
+   "name_en": "Hyundai, High Pressure Washer 105 Bar 220V W/Accessories",
+   "name_ar": "Hyundai High Pressure Washer 105 Bar 220V W/Accessories",
+   "brand": "هيونداي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:10.790Z"
+  },
+  {
+   "id": "0e11f836-d725-4627-bdb0-0b1f38ecd5a5",
+   "name_en": "Fisher, Twin-Tub Washer, 14 Kg, Spin 9 kg, White",
+   "name_ar": "Fisher Twin-Tub Washer 14 Kg Spin 9 kg White",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:22.162Z"
+  },
+  {
+   "id": "0a6b75e7-e94d-41d5-8251-a8c281a4888b",
+   "name_en": "Haier SBS 4-Door Refrigerator 14.9Cu.ft, Freezer 5.7Cu.ft, Twin Inverter, Black Glass",
+   "name_ar": "Haier SBS 4-Door Refrigerator 14 9Cu ft Freezer 5 7Cu ft Twin Inverter Black Glass",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:30.576Z"
+  },
+  {
+   "id": "6105af44-43b4-47fc-8e54-4265fa02bce0",
+   "name_en": "Samsung, Refrigerator, 15 Cu.ft, Top Freezer 5.7Cu.ft, Twin Cooling, SpaceMax, Refined Inox",
+   "name_ar": "Samsung Refrigerator 15 Cu ft Top Freezer 5 7Cu ft Twin Cooling SpaceMax Refined Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:56.301Z"
+  },
+  {
+   "id": "8d2344ad-8502-4aff-92c2-4611eb792bbf",
+   "name_en": "ClassPro Single Door Compact Refrigerator, 92L (3.2 Cu.ft), D class, Silver",
+   "name_ar": "ClassPro Single Door Compact Refrigerator 92L 3 2 Cu ft D class Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:05:56.550Z"
+  },
+  {
+   "id": "fbc0984c-b59b-4fbd-909d-5f1fadaecb85",
+   "name_en": "ClassPro Refrigerator 13.6Cu.ft, Freezer 4.6Cu.ft, Inverter, Silk Inox",
+   "name_ar": "ClassPro Refrigerator 13 6Cu ft Freezer 4 6Cu ft Inverter Silk Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:22.986Z"
+  },
+  {
+   "id": "b9f0716b-8262-4f01-be6e-09af88a582af",
+   "name_en": "Panasonic Side By Side Refrigerator 13.7Cu.ft, Freezer 7.1Cu.ft, Inverter, Color Silver",
+   "name_ar": "Panasonic Side By Side Refrigerator 13 7Cu ft Freezer 7 1Cu ft Inverter Color Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:08.959Z"
+  },
+  {
+   "id": "1c1c9189-2fdb-4c0b-ace4-84ab5c43429b",
+   "name_en": "ClassPro Refrigerator 13.6Cu.ft, Freezer 4.6Cu.ft, Inverter Compressor, Total No Frost System, Inox",
+   "name_ar": "ClassPro Refrigerator 13 6Cu ft Freezer 4 6Cu ft Inverter Compressor Total No Frost System Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:10.373Z"
+  },
+  {
+   "id": "6300fcd0-665a-4d50-a87a-3c451c536c34",
+   "name_en": "LG Refrigerator 9Cu.ft Freezer 2.8Cu.ft, Inverter Compressor, Dark Graphite Steel",
+   "name_ar": "LG Refrigerator 9Cu ft Freezer 2 8Cu ft Inverter Compressor Dark Graphite Steel",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:35.548Z"
+  },
+  {
+   "id": "a38a018d-0bb2-4f7c-b144-06ae371656e2",
+   "name_en": "Bosch Frontload Washing Machine Series 4, 8kg, Silver Inox",
+   "name_ar": "Bosch Frontload Washing Machine Series 4 8kg Silver Inox",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:48.185Z"
+  },
+  {
+   "id": "3eb36a57-4b18-4534-b666-100c5a9ca27c",
+   "name_en": "Kion Washing Machine Top Loading 12kg, Full Automatic, 10 Programs",
+   "name_ar": "Kion Washing Machine Top Loading 12kg Full Automatic 10 Programs",
+   "brand": "كيون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:03.162Z"
+  },
+  {
+   "id": "34e170bc-cda8-40ca-ae36-e413999f38f9",
+   "name_en": "LG SBS Refrigerator, 14.8Cu.ft Freezer 7.3Cu.ft, Smart Inverter, Ice Maker, Prime Silver",
+   "name_ar": "LG SBS Refrigerator 14 8Cu ft Freezer 7 3Cu ft Smart Inverter Ice Maker Prime Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:33.445Z"
+  },
+  {
+   "id": "2955a9f8-5fe0-440b-a7b7-dbd42cd2ba9b",
+   "name_en": "TOSHIBA, Top Load Washer, 7kg, Silver",
+   "name_ar": "TOSHIBA Top Load Washer 7kg Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:16.110Z"
+  },
+  {
+   "id": "4706c58e-7649-48df-937d-c420b44aa316",
+   "name_en": "Admiral Twin Tub Washing Machine Semi-Automatic, 14 Kg, White",
+   "name_ar": "Admiral Twin Tub Washing Machine Semi-Automatic 14 Kg White",
+   "brand": "ادميرال",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:04.361Z"
+  },
+  {
+   "id": "cbefaf50-8349-4d1b-aa82-c08ab4290b89",
+   "name_en": "ClassPro Single Door Compact Refrigerator, 1.6 Cu.ft, White",
+   "name_ar": "ClassPro Single Door Compact Refrigerator 1 6 Cu ft White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:47.374Z"
+  },
+  {
+   "id": "95c6aaef-193a-444a-94a4-1f056aa86069",
+   "name_en": "LG, Refrigerator, 13.4 Cu.ft Freezer 4.6 Cu.ft, Door Cooling, LINEAR, Black",
+   "name_ar": "LG Refrigerator 13 4 Cu ft Freezer 4 6 Cu ft Door Cooling LINEAR Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:25.930Z"
+  },
+  {
+   "id": "8d8d5c98-9865-4d63-b0e1-6af9e06521af",
+   "name_en": "White Westinghouse Refrigerator 7.7Cu.ft, Freezer 2.8Cu.ft  2 Door, Stainless Steel.",
+   "name_ar": "White Westinghouse Refrigerator 7 7Cu ft Freezer 2 8Cu ft 2 Door Stainless Steel",
+   "brand": "وايت وستنجهاوس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:04.725Z"
+  },
+  {
+   "id": "9b84000e-16d7-4fe7-818e-a6d9b3e12fef",
+   "name_en": "Denx,mini portable 2-in-1 washing machine 4.8kg for clothes and shoes - blue and white",
+   "name_ar": "Denx mini portable 2-in-1 washing machine 4 8kg for clothes and shoes - blue and white",
+   "brand": "دينكس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:47.006Z"
+  },
+  {
+   "id": "a5c76c84-00e1-47f9-bf4f-86a1947606c3",
+   "name_en": "Beko Dishwasher Pro Smart Inverter, 6prg, 14 Place Setting, White",
+   "name_ar": "Beko Dishwasher Pro Smart Inverter 6prg 14 Place Setting White",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:36.797Z"
+  },
+  {
+   "id": "261370c4-64a4-4e8b-a899-7d613f72a790",
+   "name_en": "Hisense Front load Washing Machine, 10.5kg, Inverter, A Class, WIFI, Color Titanium Grey",
+   "name_ar": "Hisense Front load Washing Machine 10 5kg Inverter A Class WIFI Color Titanium Grey",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:42.772Z"
+  },
+  {
+   "id": "2aef64e4-7fd3-47cd-8d49-637aa026ed9a",
+   "name_en": "Midea washer front load,10 kg washer,14 programs,titanium,mf200w100w1tsa",
+   "name_ar": "Midea washer front load 10 kg washer 14 programs titanium mf200w100w1tsa",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:57.710Z"
+  },
+  {
+   "id": "af82bf2b-f4a5-4a51-b1e1-992eee9a3a11",
+   "name_en": "LG Refrigerator 9Cu.ft, Freezer 2.8Cu.ft, Inverter Compressor, Color Platinum Silver",
+   "name_ar": "LG Refrigerator 9Cu ft Freezer 2 8Cu ft Inverter Compressor Color Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:25.184Z"
+  },
+  {
+   "id": "ab9102c7-30ad-412e-bfaf-bfe5649c4f81",
+   "name_en": "LG Top Load Washing Machine, 17kg, White",
+   "name_ar": "LG Top Load Washing Machine 17kg White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:18.567Z"
+  },
+  {
+   "id": "e7a2b67a-226f-415f-9087-4f64e66d2fd1",
+   "name_en": "Classpro Refrigerator 7Cu.ft, Freezer 1.9Cu.ft, No Frost System, Color Brushed Silver",
+   "name_ar": "Classpro Refrigerator 7Cu ft Freezer 1 9Cu ft No Frost System Color Brushed Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:05.002Z"
+  },
+  {
+   "id": "a9715281-d540-4b67-98db-23d05307c58e",
+   "name_en": "Hitachi 15 kg, Twin Tub Washing Machine, Plastic body White, Blue lid",
+   "name_ar": "Hitachi 15 kg Twin Tub Washing Machine Plastic body White Blue lid",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:05.218Z"
+  },
+  {
+   "id": "36530f7e-b12a-4522-87b9-c5e54477d52d",
+   "name_en": "Haier, Front Load Washer/Dryer Combo, 12/8 kg, 1400 RPM, 14 Programs, Silver",
+   "name_ar": "Haier Front Load Washer/Dryer Combo 12/8 kg 1400 RPM 14 Programs Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:11.813Z"
+  },
+  {
+   "id": "797a72ec-13cb-48ce-b3fd-047f6331f444",
+   "name_en": "Haier Side by Side 4 Door Refrigerator, 12.3Cu.ft, Freezer 5.5Cu.ft, Inverter, Silver",
+   "name_ar": "Haier Side by Side 4 Door Refrigerator 12 3Cu ft Freezer 5 5Cu ft Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:39.175Z"
+  },
+  {
+   "id": "8cf38c56-4260-4049-98bc-c7600ccf7c5a",
+   "name_en": "Panasonic Side by Side Refrigerator 11.8Cu.ft, Freezer 6.2Cu.ft, INVERTER, Stainless Steel",
+   "name_ar": "Panasonic Side by Side Refrigerator 11 8Cu ft Freezer 6 2Cu ft INVERTER Stainless Steel",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:12.538Z"
+  },
+  {
+   "id": "9ba69b9d-6c4f-4dc9-b307-7a784ae1b845",
+   "name_en": "Haier, Refrigerator 6.9Cu.ft, Freezer 1.8Cu.ft, Inverter, Recessed Handle, Inox",
+   "name_ar": "Haier Refrigerator 6 9Cu ft Freezer 1 8Cu ft Inverter Recessed Handle Inox",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:45.723Z"
+  },
+  {
+   "id": "f126aec5-72d1-4e5b-8a44-9858f43a14bd",
+   "name_en": "Bosch Series 6 Refrigerator 17.3Cu.ft, Freezer 5.2Cu.ft, Inverter, Silver",
+   "name_ar": "Bosch Series 6 Refrigerator 17 3Cu ft Freezer 5 2Cu ft Inverter Silver",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:31.330Z"
+  },
+  {
+   "id": "5155bb79-8c78-45f4-baed-26d0c3364e4b",
+   "name_en": "Toshiba Refrigerator 15.7Cu.ft, Freezer 5.8Cuft, Origin INVERTER, Bright Steel",
+   "name_ar": "Toshiba Refrigerator 15 7Cu ft Freezer 5 8Cuft Origin INVERTER Bright Steel",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:42.950Z"
+  },
+  {
+   "id": "3d5f9790-1e0f-4a6d-864d-cfa05136809c",
+   "name_en": "HAIER, Refrigerator 13.2Cu.ft, Freezer 3.5Cu.ft, Twin Inverter, Humidity Control, Star Metal",
+   "name_ar": "HAIER Refrigerator 13 2Cu ft Freezer 3 5Cu ft Twin Inverter Humidity Control Star Metal",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:35.661Z"
+  },
+  {
+   "id": "b167eed5-57f3-4fad-a401-2a895d155574",
+   "name_en": "LG Refrigerator 14.8Cu.ft, Freezer 6.1Cu.ft, Inverter, Platinum Silver",
+   "name_ar": "LG Refrigerator 14 8Cu ft Freezer 6 1Cu ft Inverter Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:15.468Z"
+  },
+  {
+   "id": "0f6d82d5-429f-4d9c-a42e-8cb90f389cca",
+   "name_en": "Hisense, Freezer / Fridge Convertible, 2-in-1, 297L, Inverter, White",
+   "name_ar": "Hisense Freezer / Fridge Convertible 2-in-1 297L Inverter White",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:54.816Z"
+  },
+  {
+   "id": "e9ba5a81-f391-4094-9902-1520cba0695f",
+   "name_en": "LG Refrigerator 17.2Cu.ft, Freezer 6Cu.ft, Inverter Compressor, Platinum Silver",
+   "name_ar": "LG Refrigerator 17 2Cu ft Freezer 6Cu ft Inverter Compressor Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:28.435Z"
+  },
+  {
+   "id": "020e454a-c4d4-48f4-94f6-92728ad8bb48",
+   "name_en": "Ariston washer front load,10  kg washing,15 programs,gray,arwf10142dmsa",
+   "name_ar": "Ariston washer front load 10 kg washing 15 programs gray arwf10142dmsa",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:50.195Z"
+  },
+  {
+   "id": "55961dfa-01f2-4a3a-8ca9-6ee1587f6286",
+   "name_en": "Hisense Refrigerator 17.4 Cu.ft, Freezer 5 Cu.ft, Inverter, Sliver",
+   "name_ar": "Hisense Refrigerator 17 4 Cu ft Freezer 5 Cu ft Inverter Sliver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:02.587Z"
+  },
+  {
+   "id": "a64a473f-1399-4dc1-8080-b421fd3b8a41",
+   "name_en": "Hisense, Freezer / Fridge Convertible, 2-in-1, 500L, Inverter, White",
+   "name_ar": "Hisense Freezer / Fridge Convertible 2-in-1 500L Inverter White",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:57.671Z"
+  },
+  {
+   "id": "6c7203f2-c2ff-47be-ab06-d657379370f0",
+   "name_en": "Haier Refrigerator 14.5Cu.ft, Freezer 4.1Cu.ft, Inverter, Gemstone Black",
+   "name_ar": "Haier Refrigerator 14 5Cu ft Freezer 4 1Cu ft Inverter Gemstone Black",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:08.863Z"
+  },
+  {
+   "id": "667a1dba-bea0-4aff-b837-923b8f509f61",
+   "name_en": "Toshiba, Top Load Washer, 8KG, Silver",
+   "name_ar": "Toshiba Top Load Washer 8KG Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:23.565Z"
+  },
+  {
+   "id": "84a35c2d-35e1-4445-a240-83887ab469e4",
+   "name_en": "TOSHIBA, Top Load Washer, 10kg, THE GREATWAVES, Easy Dosing, Silver",
+   "name_ar": "TOSHIBA Top Load Washer 10kg THE GREATWAVES Easy Dosing Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:17.191Z"
+  },
+  {
+   "id": "b162a48a-ab42-43c9-8d95-333e6cf3f1cf",
+   "name_en": "Toshiba Refrigerator 15.7Cu.ft, Freezer 5.8Cuft, Origin INVERTER, Silver",
+   "name_ar": "Toshiba Refrigerator 15 7Cu ft Freezer 5 8Cuft Origin INVERTER Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:11.419Z"
+  },
+  {
+   "id": "8129c8ba-4bcc-4101-844b-07b562c0cef6",
+   "name_en": "Hitachi Top Load Washing Machine, 10kg, 8 Programs, LED Display, Color Gray",
+   "name_ar": "Hitachi Top Load Washing Machine 10kg 8 Programs LED Display Color Gray",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:28.165Z"
+  },
+  {
+   "id": "d07f3b67-f54d-44d8-b616-b61ad132f5bd",
+   "name_en": "ClassPro Refrigerator 12.9Cu.ft, Freezer 3.5Cu.ft, Inverter Compressor, No Frost, Fast Cool, LED",
+   "name_ar": "ClassPro Refrigerator 12 9Cu ft Freezer 3 5Cu ft Inverter Compressor No Frost Fast Cool LED",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:57.226Z"
+  },
+  {
+   "id": "6787a181-a1a7-47cb-af24-f292c1cb07b4",
+   "name_en": "Toshiba Refrigerator 13.8Cuft Freezer 5.8Cuft, Inverter, White",
+   "name_ar": "Toshiba Refrigerator 13 8Cuft Freezer 5 8Cuft Inverter White",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:39.795Z"
+  },
+  {
+   "id": "44204775-db88-4e25-9104-dfd906575d8a",
+   "name_en": "LG Refrigerator 10.8Cu.ft Freezer 3.2Cu.ft, Inverter Compressor, Dark Graphite Steel",
+   "name_ar": "LG Refrigerator 10 8Cu ft Freezer 3 2Cu ft Inverter Compressor Dark Graphite Steel",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:36.608Z"
+  },
+  {
+   "id": "46da444f-0b0a-4933-879b-2903b17540f1",
+   "name_en": "LG, Front Load Washer & Dryer 15/ 8Kg, 6 Motion DD, Essence White",
+   "name_ar": "LG Front Load Washer & Dryer 15/ 8Kg 6 Motion DD Essence White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:15.808Z"
+  },
+  {
+   "id": "e89c6c41-4fce-4f7f-8f4f-b87cf9ae41c5",
+   "name_en": "Fisher Twin Tub Washing Machine 12 Kg, Plastic Body, White",
+   "name_ar": "Fisher Twin Tub Washing Machine 12 Kg Plastic Body White",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:00.879Z"
+  },
+  {
+   "id": "eb168f05-0014-4ea7-a5b1-a2b58667e79d",
+   "name_en": "LG Front Load Fully Automatic Washer/Dryer 10.5/7kg with AI DD,Silver",
+   "name_ar": "LG Front Load Fully Automatic Washer/Dryer 10 5/7kg with AI DD Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:45.947Z"
+  },
+  {
+   "id": "1740b7a9-6009-44f5-bb57-cd5d7396ae06",
+   "name_en": "Samsung Refrigerator, 14.2Cu.ft, Freezer 4.4Cu.ft,DIT Compressor, Elegant Inox",
+   "name_ar": "Samsung Refrigerator 14 2Cu ft Freezer 4 4Cu ft DIT Compressor Elegant Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:38.102Z"
+  },
+  {
+   "id": "15749db3-30c0-4df8-b274-ee9abe750fb9",
+   "name_en": "Samsung Side by Side Refrigerator 14.4 Cu.ft, Freezer 7.1Cu.ft,, Clean Steel",
+   "name_ar": "Samsung Side by Side Refrigerator 14 4 Cu ft Freezer 7 1Cu ft Clean Steel",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:54.800Z"
+  },
+  {
+   "id": "89e58020-563a-4474-802b-1d895e322ca9",
+   "name_en": "Samsung Front Load Washer/Dryer, 8/6kg, White",
+   "name_ar": "Samsung Front Load Washer/Dryer 8/6kg White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:42.719Z"
+  },
+  {
+   "id": "0e21eec1-bac4-4ea3-9101-1169f9332e9a",
+   "name_en": "Haier Refrigerator 9.6Cu.ft, Freezer 3Cu.ft,Twin Inverter, Flash Black",
+   "name_ar": "Haier Refrigerator 9 6Cu ft Freezer 3Cu ft Twin Inverter Flash Black",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:07.773Z"
+  },
+  {
+   "id": "445ed65c-cd0c-43bd-ad3d-3a16a419fd85",
+   "name_en": "Panasonic Twin Tub Washer 14Kg Wash , 8Kg Spin, Abaya Wash, Light Gray",
+   "name_ar": "Panasonic Twin Tub Washer 14Kg Wash 8Kg Spin Abaya Wash Light Gray",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:43.834Z"
+  },
+  {
+   "id": "beda8348-88e1-4239-8952-16f638cc0ef1",
+   "name_en": "Kion Washing Machine Top Loading 10kg, Full Automatic, 8 Programs",
+   "name_ar": "Kion Washing Machine Top Loading 10kg Full Automatic 8 Programs",
+   "brand": "كيون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:01.021Z"
+  },
+  {
+   "id": "72ca3014-de44-4712-933b-4186de02d162",
+   "name_en": "Midea Refrigerator, 14.6Cu.ft Freezer 5.8Cu.ft, Inverter Compressor, Steel",
+   "name_ar": "Midea Refrigerator 14 6Cu ft Freezer 5 8Cu ft Inverter Compressor Steel",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:24.972Z"
+  },
+  {
+   "id": "c94534df-b157-4ca2-b210-0f2686d26b1f",
+   "name_en": "SMEG 50's Retro Style Freestanding Refrigerator,Right Handle , Red",
+   "name_ar": "SMEG 50's Retro Style Freestanding Refrigerator Right Handle Red",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:36.106Z"
+  },
+  {
+   "id": "2dc36fc4-f691-453b-8283-a1de5bb8ce96",
+   "name_en": "Hitachi, Side By Side Refrigerator, 14.5Cu.ft, Freezer 8.7Cu.ft, Glass Black (Sky Line)",
+   "name_ar": "Hitachi Side By Side Refrigerator 14 5Cu ft Freezer 8 7Cu ft Glass Black Sky Line",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:53.096Z"
+  },
+  {
+   "id": "abf416cf-60da-458a-b25a-8a82b2024aa9",
+   "name_en": "ClassPro Refrigerator 15.9Cu.ft, Freezer 4.6Cu.ft, Inverter Compressor, Fast Cool, White",
+   "name_ar": "ClassPro Refrigerator 15 9Cu ft Freezer 4 6Cu ft Inverter Compressor Fast Cool White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:47.683Z"
+  },
+  {
+   "id": "de14489b-53e8-47a5-bafb-f961256b683a",
+   "name_en": "Ariston, Refrigerator, 16.4 Cu.ft, Freezer 5.8 Cu.ft, Dual Cooling, Inverter, Silver",
+   "name_ar": "Ariston Refrigerator 16 4 Cu ft Freezer 5 8 Cu ft Dual Cooling Inverter Silver",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:48.911Z"
+  },
+  {
+   "id": "01772deb-a1ad-4d4b-ad42-7549d1da01fa",
+   "name_en": "LG, Front Load washer, 15 kg, Graphite",
+   "name_ar": "LG Front Load washer 15 kg Graphite",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:30.360Z"
+  },
+  {
+   "id": "fe1a6d70-b208-4a7c-acea-5ef21360ba01",
+   "name_en": "LG Refrigerator 10.1Cu.ft, Freezer 3.2Cu.ft, Inverter Compressor, White",
+   "name_ar": "LG Refrigerator 10 1Cu ft Freezer 3 2Cu ft Inverter Compressor White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:06.836Z"
+  },
+  {
+   "id": "8195f454-d978-4880-af71-fa85d8bb012f",
+   "name_en": "ClassPro Refrigerator/Freezer Convertible 21.1 Cu.ft, 598L, Stainless Steel",
+   "name_ar": "ClassPro Refrigerator/Freezer Convertible 21 1 Cu ft 598L Stainless Steel",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:58.060Z"
+  },
+  {
+   "id": "0ae9f3b6-835d-4743-82cd-d755bb9d3527",
+   "name_en": "HISENSE, Top Load Washer, 8KG, Titanium Grey",
+   "name_ar": "HISENSE Top Load Washer 8KG Titanium Grey",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:22.516Z"
+  },
+  {
+   "id": "8d559cc8-6079-4ebd-8b44-a4af34bf9407",
+   "name_en": "Midea, Twin Tub Washer, 10 Kg, Air Dry Function, Black Panel, White",
+   "name_ar": "Midea Twin Tub Washer 10 Kg Air Dry Function Black Panel White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:08.783Z"
+  },
+  {
+   "id": "20b33770-dbc5-4ac4-ad48-875ffa238dd6",
+   "name_en": "Midea Upright Freezer 9.1Cu.Ft. Convertible to Fridge, No Frost, Color Steel",
+   "name_ar": "Midea Upright Freezer 9 1Cu Ft Convertible to Fridge No Frost Color Steel",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:59.767Z"
+  },
+  {
+   "id": "0b40886c-fe1d-4378-9cee-808ce1a099a9",
+   "name_en": "Classpro Top Loading, Washing Machine, 11 kg, 10 Programs, White",
+   "name_ar": "Classpro Top Loading Washing Machine 11 kg 10 Programs White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:06.656Z"
+  },
+  {
+   "id": "3935cdfe-8c63-44b4-8b3d-25c5774e4378",
+   "name_en": "Maytag Top Load Washing Machine, 12kg, 10 Wash cycles, LED Indicators, PowerWash Agitator, White",
+   "name_ar": "Maytag Top Load Washing Machine 12kg 10 Wash cycles LED Indicators PowerWash Agitator White",
+   "brand": "مايتاج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:35.315Z"
+  },
+  {
+   "id": "3e939d21-23e6-4644-aeb7-a92b6f543543",
+   "name_en": "Toshiba Twin Tub Washer 14kg, Multi-Function Panel, Easy Kit,White",
+   "name_ar": "Toshiba Twin Tub Washer 14kg Multi-Function Panel Easy Kit White",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:24.980Z"
+  },
+  {
+   "id": "6115e5e4-5286-40ba-966f-071532f6aeb9",
+   "name_en": "Platinum Beverage Cooler, 92 Ltrs, Mini Fridge, Glass Door, 4 Shelves, Color Black",
+   "name_ar": "Platinum Beverage Cooler 92 Ltrs Mini Fridge Glass Door 4 Shelves Color Black",
+   "brand": "بلاتينيوم",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:52.690Z"
+  },
+  {
+   "id": "d82253b7-d594-44e3-9d32-f5360c514e6e",
+   "name_en": "Hisense Front Load Washer and Dryer Combo, 12kg 8kg, Inverter, Auto Dosing, WIFI, Premium Black",
+   "name_ar": "Hisense Front Load Washer and Dryer Combo 12kg 8kg Inverter Auto Dosing WIFI Premium Black",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:31.771Z"
+  },
+  {
+   "id": "e5f9f671-a505-4baa-8b09-1bab80e29c2d",
+   "name_en": "Panasonic Front Load Washing Machine, 7kg, Inverter, Hygiene Care, White",
+   "name_ar": "Panasonic Front Load Washing Machine 7kg Inverter Hygiene Care White",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:10.003Z"
+  },
+  {
+   "id": "2fd86088-db88-4214-91d7-5c4b4c7b1885",
+   "name_en": "Samsung Refrigerator 11.1Cu.ft, Freezer 3.4Cu.ft, Digital Inverter, Silver Inox",
+   "name_ar": "Samsung Refrigerator 11 1Cu ft Freezer 3 4Cu ft Digital Inverter Silver Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:23.912Z"
+  },
+  {
+   "id": "1ca8d911-acc2-42db-a65f-18b9b20963b1",
+   "name_en": "Toshiba Top Load Washer 11kg, Ultra Wash, Glass Lid, SDD Inverter Motor, Dark Silver",
+   "name_ar": "Toshiba Top Load Washer 11kg Ultra Wash Glass Lid SDD Inverter Motor Dark Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:56.834Z"
+  },
+  {
+   "id": "86ad47a5-2259-4942-85b1-ec52beaa3835",
+   "name_en": "TCL, Front Load Washer/Dryer 10/7Kg, Inverter DD, Auto Dose, Steam Wash, Dark Grey",
+   "name_ar": "TCL Front Load Washer/Dryer 10/7Kg Inverter DD Auto Dose Steam Wash Dark Grey",
+   "brand": "تي سي ال",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:15.356Z"
+  },
+  {
+   "id": "7c30e3b1-49fb-4ca8-8268-3d00f1c877c6",
+   "name_en": "Hitachi, Refrigerator, Side by Side, 13 Cu.ft, Freezer 8 Cu.ft, Glass Silver",
+   "name_ar": "Hitachi Refrigerator Side by Side 13 Cu ft Freezer 8 Cu ft Glass Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:22.870Z"
+  },
+  {
+   "id": "d06ab8f6-dea0-4ccc-a4ce-89439b1980cf",
+   "name_en": "Panasonic Refrigerator 11.8Cu.ft, Freezer 3.4Cu.ft",
+   "name_ar": "Panasonic Refrigerator 11 8Cu ft Freezer 3 4Cu ft",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:02.388Z"
+  },
+  {
+   "id": "1926173f-15f1-44e7-aacf-a692685d4b3c",
+   "name_en": "Samsung Front Load Washer 9KG, Hygiene Steam, WIFI, Black Caviar",
+   "name_ar": "Samsung Front Load Washer 9KG Hygiene Steam WIFI Black Caviar",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:45.979Z"
+  },
+  {
+   "id": "c7fa8c35-7a24-4943-bb1a-ddd838022968",
+   "name_en": "Classpro Refrigerator 5.1Cu.ft, Freezer 1.8Cu.ft, Color Grey Inox",
+   "name_ar": "Classpro Refrigerator 5 1Cu ft Freezer 1 8Cu ft Color Grey Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:03.936Z"
+  },
+  {
+   "id": "28fb27d2-a3c5-4053-9a52-87d01d014135",
+   "name_en": "PANASONIC, Frontload Washer & Dryer 8/6 Kg, All-in-One, Inverter, Hygiene Steam, White",
+   "name_ar": "PANASONIC Frontload Washer & Dryer 8/6 Kg All-in-One Inverter Hygiene Steam White",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:16.883Z"
+  },
+  {
+   "id": "4ea7f8da-ebfd-47f2-a83e-5faec1843765",
+   "name_en": "Hisense, Refrigerator 15.8Cu.ft, Freezer 4.1Cu.ft, Durable Inverter, No-Frost, Silver",
+   "name_ar": "Hisense Refrigerator 15 8Cu ft Freezer 4 1Cu ft Durable Inverter No-Frost Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:57.387Z"
+  },
+  {
+   "id": "6ffee31e-6727-4eb2-a473-f2da50dc682c",
+   "name_en": "Midea washer top load,8kg washer,8 programs,white,ma200w80wksa",
+   "name_ar": "Midea washer top load 8kg washer 8 programs white ma200w80wksa",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:53.405Z"
+  },
+  {
+   "id": "aacb5341-7d1b-42ed-bf60-c8d1a0f41810",
+   "name_en": "Samsung Refrigerator 15Cu.ft, Freezer 5.7Cu.ft, Digital Inverter, EZ Clean Steel",
+   "name_ar": "Samsung Refrigerator 15Cu ft Freezer 5 7Cu ft Digital Inverter EZ Clean Steel",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:50.565Z"
+  },
+  {
+   "id": "51e7b2a9-c904-462e-aaa0-ca5827f37bba",
+   "name_en": "Samsung Top Load Washing Machine 21kg,Inverter Motor,Black Caviar",
+   "name_ar": "Samsung Top Load Washing Machine 21kg Inverter Motor Black Caviar",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:54.707Z"
+  },
+  {
+   "id": "79e7e1a7-3bd9-4258-a3d5-0fa5877c6671",
+   "name_en": "Samsung Refrigerator 16.2Cu.ft, Freezer 5.7Cu.ft, Digital Inverter,  EZ Clean Steel",
+   "name_ar": "Samsung Refrigerator 16 2Cu ft Freezer 5 7Cu ft Digital Inverter EZ Clean Steel",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:49.508Z"
+  },
+  {
+   "id": "dfeb6b29-9b91-4794-8446-56e476ce3f3b",
+   "name_en": "ClassPro Single Door Refrigerator, 173L, Defrost System, Interior LED ,D Class, Silver",
+   "name_ar": "ClassPro Single Door Refrigerator 173L Defrost System Interior LED D Class Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:53.739Z"
+  },
+  {
+   "id": "8a657019-3405-46c8-a9d0-42cbbaa9785f",
+   "name_en": "TCL Side by Side Refrigerator, 12.9 Cu.Ft Freezer 5.2 Cu.ft, Dark Gray",
+   "name_ar": "TCL Side by Side Refrigerator 12 9 Cu Ft Freezer 5 2 Cu ft Dark Gray",
+   "brand": "تي سي ال",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:03.471Z"
+  },
+  {
+   "id": "e1e73c9b-f42b-4b58-b9eb-0949cfd0edad",
+   "name_en": "Candy Top Load Washing Machine, 14Kg, LED Display, 10 Programs, Silver",
+   "name_ar": "Candy Top Load Washing Machine 14Kg LED Display 10 Programs Silver",
+   "brand": "كاندي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:55.764Z"
+  },
+  {
+   "id": "24f36954-61ca-4f2d-b006-de39dfc65978",
+   "name_en": "Midea Built in Refrigerator 6.4Cu.ft Freezer 2.1Cu.ft, Bottom Freezer, White",
+   "name_ar": "Midea Built in Refrigerator 6 4Cu ft Freezer 2 1Cu ft Bottom Freezer White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:52.435Z"
+  },
+  {
+   "id": "a439094e-c57a-44b4-ab67-ba09b292d0f6",
+   "name_en": "SMEG 50's Retro Style Freestanding Refrigerator,Right Handle , Pastel Blue",
+   "name_ar": "SMEG 50's Retro Style Freestanding Refrigerator Right Handle Pastel Blue",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:32.925Z"
+  },
+  {
+   "id": "21115626-d9fa-4173-8789-555af376c901",
+   "name_en": "Hisense Refrigerator 13Cu.ft, Freezer 3.5Cu.ft, Inverter, Multi Air Flow, Color Silver",
+   "name_ar": "Hisense Refrigerator 13Cu ft Freezer 3 5Cu ft Inverter Multi Air Flow Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:46.529Z"
+  },
+  {
+   "id": "98013ce2-ceee-458c-8446-199e9356709d",
+   "name_en": "ClassPro Side by side Refrigerator, 12.2Cu.ft, Freezer 6.6Cu.ft, Premium Black Glass Door, Inverter",
+   "name_ar": "ClassPro Side by side Refrigerator 12 2Cu ft Freezer 6 6Cu ft Premium Black Glass Door Inverter",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:21.128Z"
+  },
+  {
+   "id": "500f99fc-e864-4ee8-a663-d51e7b06303b",
+   "name_en": "KARCHER, K4 Classic Pressure Washer, 130 Bar, Yellow",
+   "name_ar": "KARCHER K4 Classic Pressure Washer 130 Bar Yellow",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:04.338Z"
+  },
+  {
+   "id": "294110ad-ba42-4cbf-8eaf-586783fed75f",
+   "name_en": "LG , Front Load washing Machine , 21 kg Washer & 12 Kg Dryer, (Wi-Fi) ,  Silver",
+   "name_ar": "LG Front Load washing Machine 21 kg Washer & 12 Kg Dryer Wi-Fi Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:58.719Z"
+  },
+  {
+   "id": "a2608ff4-32e2-4323-9512-718fa7534087",
+   "name_en": "SMEG 50's Retro Style Freestanding Refrigerator,Right Handle , White",
+   "name_ar": "SMEG 50's Retro Style Freestanding Refrigerator Right Handle White",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:33.983Z"
+  },
+  {
+   "id": "42c8f928-bfb6-4ad8-be0e-ef79174bad45",
+   "name_en": "Toshiba Twin Tub Washer 8kg, Multi-Function Panel, Easy Kit,White",
+   "name_ar": "Toshiba Twin Tub Washer 8kg Multi-Function Panel Easy Kit White",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:44.896Z"
+  },
+  {
+   "id": "8cd5071f-0f0d-4b35-bd9e-70f8c2207d4a",
+   "name_en": "LG Front Load Washing Machine, 13kg, ThinQ(Wi-Fi), Steam, AI DD, Essence Graphite",
+   "name_ar": "LG Front Load Washing Machine 13kg ThinQ Wi-Fi Steam AI DD Essence Graphite",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:22.835Z"
+  },
+  {
+   "id": "dbd00e72-acc1-4b74-8925-d72e339c404d",
+   "name_en": "Ariston Natis ACTIVE CARE, Front Load Washing Machine, 9 kg Wash, 15 Program, 1400 rpm, Silver",
+   "name_ar": "Ariston Natis ACTIVE CARE Front Load Washing Machine 9 kg Wash 15 Program 1400 rpm Silver",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:52.567Z"
+  },
+  {
+   "id": "1e89ca5c-d6be-4064-b447-f0e716573451",
+   "name_en": "Samsung, Top Load Washer, 13KG, Bespoke AI, White",
+   "name_ar": "Samsung Top Load Washer 13KG Bespoke AI White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:25.719Z"
+  },
+  {
+   "id": "222c9310-a5b3-411e-9ea5-264ada3d8209",
+   "name_en": "Karcher, Pressure Washer K 2 Universal, 110 Bar",
+   "name_ar": "Karcher Pressure Washer K 2 Universal 110 Bar",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:08.671Z"
+  },
+  {
+   "id": "444b5a2a-d2b8-4864-b54b-bcb312e27f24",
+   "name_en": "Hitachi, Top Load Washer 12kg, Dark Grey",
+   "name_ar": "Hitachi Top Load Washer 12kg Dark Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:32.129Z"
+  },
+  {
+   "id": "d7c73f33-ff3b-4fb4-a420-725b8328d9f8",
+   "name_en": "BEKO, Front Load Washer/Dryer Combo 10kg/7Kg, 1400 rpm, Dark Gray",
+   "name_ar": "BEKO Front Load Washer/Dryer Combo 10kg/7Kg 1400 rpm Dark Gray",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:17.936Z"
+  },
+  {
+   "id": "a0534673-cbc6-4742-8500-cf4209d3fc24",
+   "name_en": "Bosch Series 6 Refrigerator 14.8Cu.ft, Freezer 4.4Cu.ft, Inverter, Silver",
+   "name_ar": "Bosch Series 6 Refrigerator 14 8Cu ft Freezer 4 4Cu ft Inverter Silver",
+   "brand": "بوش",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:32.378Z"
+  },
+  {
+   "id": "ec34e466-678c-4358-9d93-109640adc60d",
+   "name_en": "Samsung Fridge 1 Door 13.6 Cuft, 385L, Customizable.",
+   "name_ar": "Samsung Fridge 1 Door 13 6 Cuft 385L Customizable",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:17.595Z"
+  },
+  {
+   "id": "6e35d1b5-85e1-4ec6-82a1-98eacccd5354",
+   "name_en": "Midea washer and dryer front load,8 kg washing,6 kg drying,14 programs,white,mf200d80w1wsa",
+   "name_ar": "Midea washer and dryer front load 8 kg washing 6 kg drying 14 programs white mf200d80w1wsa",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:54.468Z"
+  },
+  {
+   "id": "7939fa2b-cdfa-4893-9b92-1e20fb8c5dc3",
+   "name_en": "SAMSUNG, Bespoke AI Frontload Washer, 9kg, 1400 RPM, AI Eco Bubble, Black",
+   "name_ar": "SAMSUNG Bespoke AI Frontload Washer 9kg 1400 RPM AI Eco Bubble Black",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:18.253Z"
+  },
+  {
+   "id": "84fa01fb-d9fa-48ab-a74f-03563aab4f28",
+   "name_en": "Hisense, Refrigerator, Side by Side, 12.2Cu.ft, Freezer 6.6Cu.ft, Inverter, Black Glass Panel",
+   "name_ar": "Hisense Refrigerator Side by Side 12 2Cu ft Freezer 6 6Cu ft Inverter Black Glass Panel",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:55.244Z"
+  },
+  {
+   "id": "2fadbb17-5f21-4dad-be19-a335d014e6d0",
+   "name_en": "TCL, Refrigerator, Single Door, 12.5 Cu.Ft, Total No Frost, LED Display, Silver",
+   "name_ar": "TCL Refrigerator Single Door 12 5 Cu Ft Total No Frost LED Display Silver",
+   "brand": "تي سي ال",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:29.180Z"
+  },
+  {
+   "id": "cf947abd-d6f9-4a95-a0e4-0a76b517d6aa",
+   "name_en": "Candy Refrigerator 10.9Cu.ft, Freezer 3.5Cu.ft, Silver.",
+   "name_ar": "Candy Refrigerator 10 9Cu ft Freezer 3 5Cu ft Silver",
+   "brand": "كاندي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:00.193Z"
+  },
+  {
+   "id": "3a897dcc-a51f-4aa7-9f05-e2e0390fa281",
+   "name_en": "Hisense, Freezer / Fridge Convertible, 2-in-1, 245L, Inverter, White",
+   "name_ar": "Hisense Freezer / Fridge Convertible 2-in-1 245L Inverter White",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:56.619Z"
+  },
+  {
+   "id": "4a74a09e-2109-48c2-b752-c84405e4d505",
+   "name_en": "KARCHER, K3 Horizontal Pressure Washer, 120 Bar, 1600W, Yellow",
+   "name_ar": "KARCHER K3 Horizontal Pressure Washer 120 Bar 1600W Yellow",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:03.238Z"
+  },
+  {
+   "id": "91bd1a5f-2ccc-429f-96e1-f95828dee2ef",
+   "name_en": "Samsung, Refrigerator 12.5Cu.ft, Freezer 3.8Cu.ft, Refined Inox.",
+   "name_ar": "Samsung Refrigerator 12 5Cu ft Freezer 3 8Cu ft Refined Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:03.669Z"
+  },
+  {
+   "id": "90c4ae20-eef7-4941-a810-eaae6869c6c1",
+   "name_en": "LIEBHERR 60cm fridge with EasyFresh, SuperSilent, and fingerprint-resistant finish.",
+   "name_ar": "LIEBHERR 60cm fridge with EasyFresh SuperSilent and fingerprint-resistant finish",
+   "brand": "ليبهر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:42.556Z"
+  },
+  {
+   "id": "cd2f585d-f19b-43ad-a8d6-e8a2782200c4",
+   "name_en": "Panasonic Twin Tub Washer 18Kg Wash , 13Kg Spin, Abaya Wash, Light Gray",
+   "name_ar": "Panasonic Twin Tub Washer 18Kg Wash 13Kg Spin Abaya Wash Light Gray",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:50.092Z"
+  },
+  {
+   "id": "acc0246d-7138-4356-a34f-989ba5bf0aad",
+   "name_en": "MABE, Top Load Washer, 11kg, 3 Knobs, 6 Temp Option, White",
+   "name_ar": "MABE Top Load Washer 11kg 3 Knobs 6 Temp Option White",
+   "brand": "مايبي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:15.021Z"
+  },
+  {
+   "id": "9748163c-231a-4761-a6cd-2f28ae2af23f",
+   "name_en": "Daewoo freezer upright ,9.3 cu.ft freezer,inox,dr-u3341is",
+   "name_ar": "Daewoo freezer upright 9 3 cu ft freezer inox dr-u3341is",
+   "brand": "دايو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:09:00.832Z"
+  },
+  {
+   "id": "32bae160-0438-4d7a-ad08-a13457a94cc1",
+   "name_en": "Beko, Twin Tub Washer, 12 Kg, White",
+   "name_ar": "Beko Twin Tub Washer 12 Kg White",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:12.612Z"
+  },
+  {
+   "id": "0aaab507-2023-4e13-a829-bf97ed2263ca",
+   "name_en": "Platinum Beverage Cooler, 90 Ltrs, Mini Fridge, Glass Door, 4 Shelves, Lock & Keys, Color Black",
+   "name_ar": "Platinum Beverage Cooler 90 Ltrs Mini Fridge Glass Door 4 Shelves Lock & Keys Color Black",
+   "brand": "بلاتينيوم",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:51.936Z"
+  },
+  {
+   "id": "13c78b5a-dc86-4760-b293-a8f51bad2bef",
+   "name_en": "Samsung, Top Load Washer, 16KG, Bespoke AI, White",
+   "name_ar": "Samsung Top Load Washer 16KG Bespoke AI White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:27.841Z"
+  },
+  {
+   "id": "f7d558f7-ae30-4ede-8c83-763dd9087953",
+   "name_en": "Toshiba, Refrigerator, Side by Side, 15.1Cuft, Freezer 8.8Cuft, Inverter, Starry Silver",
+   "name_ar": "Toshiba Refrigerator Side by Side 15 1Cuft Freezer 8 8Cuft Inverter Starry Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:31.319Z"
+  },
+  {
+   "id": "c7108864-66fc-4252-85db-c27683381d4e",
+   "name_en": "Midea Frontload Washing Machine, 12kg, Wi-Fi, Steam, Inverter, Titanium Color Black Door",
+   "name_ar": "Midea Frontload Washing Machine 12kg Wi-Fi Steam Inverter Titanium Color Black Door",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:32.535Z"
+  },
+  {
+   "id": "c5266a6c-eebc-4ba0-ae83-32924ecff6c3",
+   "name_en": "ClassPro High Pressure Washer 140bars  Motor power:1700W Voltage 110-220  50/60 HZ",
+   "name_ar": "ClassPro High Pressure Washer 140bars Motor power:1700W Voltage 110-220 50/60 HZ",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:09.729Z"
+  },
+  {
+   "id": "d3f19e16-e5ac-4a2e-9b09-b24bb28bbc26",
+   "name_en": "LG, Top Load Washing Machine, 24kg, TurboWash3D, AI DD, Steam,ThinQ, Essence Graphite",
+   "name_ar": "LG Top Load Washing Machine 24kg TurboWash3D AI DD Steam ThinQ Essence Graphite",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:00.018Z"
+  },
+  {
+   "id": "8d49b2db-c3ac-41e5-8752-8f72f4c11c63",
+   "name_en": "Hitachi, Refrigerator 18.2 Cu.Ft, Freezer 6.6 Cu.ft, Inverter, Silver",
+   "name_ar": "Hitachi Refrigerator 18 2 Cu Ft Freezer 6 6 Cu ft Inverter Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:39.930Z"
+  },
+  {
+   "id": "4f25b4a5-5d15-41ac-945e-14cbbaac3e47",
+   "name_en": "LG Top Load Washing Machine, 17kg, Middle Black",
+   "name_ar": "LG Top Load Washing Machine 17kg Middle Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:50.446Z"
+  },
+  {
+   "id": "e4959d3e-ac2c-4efb-9119-e4445629263a",
+   "name_en": "SAMSUNG, AI Bespoke Side by Side Refrigerator, 14.8 Cu.ft Freezer 8.1Cu.ft, AI",
+   "name_ar": "SAMSUNG AI Bespoke Side by Side Refrigerator 14 8 Cu ft Freezer 8 1Cu ft AI",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:32.414Z"
+  },
+  {
+   "id": "26a0fdcf-8e12-446d-bd90-405fd38b6495",
+   "name_en": "Samsung, Top Load Washer, 13KG, Bespoke AI, Lavender Grey",
+   "name_ar": "Samsung Top Load Washer 13KG Bespoke AI Lavender Grey",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:26.775Z"
+  },
+  {
+   "id": "e2acf393-031a-4ac3-a0ba-c72e2e63ffa8",
+   "name_en": "Midea, Refrigerator, 10.1 Cu.ft, Freezer 3.2 Cu.ft, Inverter, Crystal Silver",
+   "name_ar": "Midea Refrigerator 10 1 Cu ft Freezer 3 2 Cu ft Inverter Crystal Silver",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:44.677Z"
+  },
+  {
+   "id": "f91c80ee-a9c1-4520-b772-ec8e84e9b031",
+   "name_en": "LG Refrigerator 14.8Cu.ft, Freezer 6.1Cu.ft, ThinQ (wifi), Platinum Silver",
+   "name_ar": "LG Refrigerator 14 8Cu ft Freezer 6 1Cu ft ThinQ wifi Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:12.135Z"
+  },
+  {
+   "id": "06953026-2aa2-4533-b1c8-706112f4a601",
+   "name_en": "Classpro Side by Side Multi Door Refrigerator 14.9 Cu.ft Freezer 5.4 Cu.ft, Metal Dark Inox",
+   "name_ar": "Classpro Side by Side Multi Door Refrigerator 14 9 Cu ft Freezer 5 4 Cu ft Metal Dark Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:11.079Z"
+  },
+  {
+   "id": "9c0719ce-7519-4648-b9dd-7f6ab88ecd3e",
+   "name_en": "Hisense Refrigerator 15.8Cu.ft Freezer 4.1Cu.ft, Durable Inverter, Color Silver",
+   "name_ar": "Hisense Refrigerator 15 8Cu ft Freezer 4 1Cu ft Durable Inverter Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:04.558Z"
+  },
+  {
+   "id": "90111c08-4351-464f-983e-a176f917667f",
+   "name_en": "Hisense Refrigerator 7Cu.ft, Freezer 1.8Cu.ft, Inverter, Color Silver",
+   "name_ar": "Hisense Refrigerator 7Cu ft Freezer 1 8Cu ft Inverter Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:55.119Z"
+  },
+  {
+   "id": "6ca9a29a-59e4-4046-a43d-705cc263fe0b",
+   "name_en": "LG Side By Side Refrigerator 18.5Cu.ft, Freezer 9.7Cu.ft, Smart Inverter, Platinum Silver",
+   "name_ar": "LG Side By Side Refrigerator 18 5Cu ft Freezer 9 7Cu ft Smart Inverter Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:34.466Z"
+  },
+  {
+   "id": "94ada9c5-798f-45fc-b99f-23ad1c9e4e24",
+   "name_en": "LG Front Load Washer/Dryer, 13/7 Kg, Stone Silver",
+   "name_ar": "LG Front Load Washer/Dryer 13/7 Kg Stone Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:38.454Z"
+  },
+  {
+   "id": "c99a60c3-f480-49e2-b66d-38a69891cf58",
+   "name_en": "Hitachi, Side By Side Refrigerator, 14.5Cu.ft, Freezer 8.7Cu.ft, Mettal Black Sapphire (Sky Line)",
+   "name_ar": "Hitachi Side By Side Refrigerator 14 5Cu ft Freezer 8 7Cu ft Mettal Black Sapphire Sky Line",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:49.961Z"
+  },
+  {
+   "id": "695b764d-5263-4e00-992d-6a83f5369faf",
+   "name_en": "Hitachi, Refrigerator 18.2 Cu.Ft, Freezer 6.6 Cu.ft, Inverter, White",
+   "name_ar": "Hitachi Refrigerator 18 2 Cu Ft Freezer 6 6 Cu ft Inverter White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:15.753Z"
+  },
+  {
+   "id": "8d4508c4-0f07-459b-be1f-379d8678d75a",
+   "name_en": "BLACK+DECKER, Pressure Washer For Car, 110 bar, Orange and Black",
+   "name_ar": "BLACK+DECKER Pressure Washer For Car 110 bar Orange and Black",
+   "brand": "بلاك أند ديكر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:05.441Z"
+  },
+  {
+   "id": "05dfccb2-d900-4752-b090-32dab35cd50b",
+   "name_en": "SMEG 60cm Free standing refrigerator Color Stainless Steel",
+   "name_ar": "SMEG 60cm Free standing refrigerator Color Stainless Steel",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:37.148Z"
+  },
+  {
+   "id": "bf4798f6-bfff-4229-9bb8-7cfd5a93eedd",
+   "name_en": "LG Refrigerator 10.1Cu.ft, Freezer 3.2Cu.ft, Inverter Compressor, Platinum Silver",
+   "name_ar": "LG Refrigerator 10 1Cu ft Freezer 3 2Cu ft Inverter Compressor Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:07.914Z"
+  },
+  {
+   "id": "e7eaafc9-1226-4d11-a2ed-a55766ad6652",
+   "name_en": "Haier Front Load Washer 10kg, DMM Inverter, 525 Drum, Abaya Care, 14 Programs, Wi-Fi, Space Black",
+   "name_ar": "Haier Front Load Washer 10kg DMM Inverter 525 Drum Abaya Care 14 Programs Wi-Fi Space Black",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:34.257Z"
+  },
+  {
+   "id": "bbbf00c9-3a4d-4a99-90a8-43798515360e",
+   "name_en": "Hisense Side by Side 4Door Refrigerator 13.8Cu.ft, Freezer 6.7Cu.ft, Silver",
+   "name_ar": "Hisense Side by Side 4Door Refrigerator 13 8Cu ft Freezer 6 7Cu ft Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:14.347Z"
+  },
+  {
+   "id": "4d0e0a09-d1ec-41c6-be3d-6517bbf48435",
+   "name_en": "Classpro Front Load Washing Machine, 8kg, Inverter BLDC Motor, Steam,1400 rpm, Color gray",
+   "name_ar": "Classpro Front Load Washing Machine 8kg Inverter BLDC Motor Steam 1400 rpm Color gray",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:02.237Z"
+  },
+  {
+   "id": "1a39de85-4f30-4a9f-9b39-bcb541f35e02",
+   "name_en": "Hitachi Refrigerator 18.2Cu.ft, Freezer 6.6Cu.ft, Inverter, Dual Fan Cooling, Brilliant Silver",
+   "name_ar": "Hitachi Refrigerator 18 2Cu ft Freezer 6 6Cu ft Inverter Dual Fan Cooling Brilliant Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:31.643Z"
+  },
+  {
+   "id": "b015c1a1-1383-4186-a70c-7f4c87b8336c",
+   "name_en": "Hisense Refrigerator 13.7Cu.ft Freezer 4.1Cu.ft, Durable Inverter, Color Silver",
+   "name_ar": "Hisense Refrigerator 13 7Cu ft Freezer 4 1Cu ft Durable Inverter Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:44.204Z"
+  },
+  {
+   "id": "00b2025d-caee-4839-932f-ce3b07e8d151",
+   "name_en": "Hitachi, Refrigerator 15.7 Cu.Ft, Freezer 5.5C Cu.ft, Inverter, White",
+   "name_ar": "Hitachi Refrigerator 15 7 Cu Ft Freezer 5 5C Cu ft Inverter White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:19.708Z"
+  },
+  {
+   "id": "9ee6fdb7-88f0-4c73-8f7a-9e0396fd0552",
+   "name_en": "Rebune Cosmetic Refrigerator with LED Mirror, 6L, 18W.",
+   "name_ar": "Rebune Cosmetic Refrigerator with LED Mirror 6L 18W",
+   "brand": "ريبون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:56.943Z"
+  },
+  {
+   "id": "2a44c05a-9b44-4f0d-84e4-6a41c798e007",
+   "name_en": "Karcher Portable High Pressure Washer 120Bar ,1600W Black/Yellow",
+   "name_ar": "Karcher Portable High Pressure Washer 120Bar 1600W Black/Yellow",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:07.613Z"
+  },
+  {
+   "id": "2254ac3e-09bb-443b-951b-ac0407c2ffc0",
+   "name_en": "SMEG 50’s Retro Style Aesthetic Freestanding Refrigerator with Freezer Compartment, Black",
+   "name_ar": "SMEG 50’s Retro Style Aesthetic Freestanding Refrigerator with Freezer Compartment Black",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:38.277Z"
+  },
+  {
+   "id": "4fa26d92-ef35-4318-a24a-a6e674a7f1e4",
+   "name_en": "Panasonic Refrigerator 14.4Cu.ft Freezer 7.3Cu.ft,SidebySide,Multi Door,Dispenser",
+   "name_ar": "Panasonic Refrigerator 14 4Cu ft Freezer 7 3Cu ft SidebySide Multi Door Dispenser",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:13.357Z"
+  },
+  {
+   "id": "094f4727-84f8-4ac9-a993-cb5761ec0a75",
+   "name_en": "MABE, Top Load Washer, 11kg, 4 Knobs, 6 Temp Option, White",
+   "name_ar": "MABE Top Load Washer 11kg 4 Knobs 6 Temp Option White",
+   "brand": "مايبي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:13.943Z"
+  },
+  {
+   "id": "822d2cd9-ef68-49d6-85b5-113f18802024",
+   "name_en": "Midea, Top Load Washer, 17 Kg, Inverter Direct Drive Motor, Titanium",
+   "name_ar": "Midea Top Load Washer 17 Kg Inverter Direct Drive Motor Titanium",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:12.879Z"
+  },
+  {
+   "id": "b09182ec-87d2-4942-b629-5a6d6b6e6139",
+   "name_en": "Classpro Top Mount Refrigerator 17.3Cu.ft, Freezer 5.1Cu.ft, INVERTER, Inox",
+   "name_ar": "Classpro Top Mount Refrigerator 17 3Cu ft Freezer 5 1Cu ft INVERTER Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:01.808Z"
+  },
+  {
+   "id": "66d71c14-5c90-49c7-bb03-8e758ece1374",
+   "name_en": "Classpro Side by Side Refrigerator 12.7Cu.ft, Freezer 7.2Cu.ft, Inverter, Color Brushed Silver",
+   "name_ar": "Classpro Side by Side Refrigerator 12 7Cu ft Freezer 7 2Cu ft Inverter Color Brushed Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:09.287Z"
+  },
+  {
+   "id": "56acc257-31e3-4aba-bbb0-a3bc8cbdb03d",
+   "name_en": "LG ,Single Unit Front Load WashTower, 13 kg Washer & 10 Kg Dryer, Platinum Black Silver",
+   "name_ar": "LG Single Unit Front Load WashTower 13 kg Washer & 10 Kg Dryer Platinum Black Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:37.248Z"
+  },
+  {
+   "id": "7d66c747-6811-4802-af7e-c29a2bcaa180",
+   "name_en": "Midea Top Load Washing Machine, 15kg, 8 Programs, Steam, DD Inverter, White",
+   "name_ar": "Midea Top Load Washing Machine 15kg 8 Programs Steam DD Inverter White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:39.580Z"
+  },
+  {
+   "id": "d67d4572-a20d-439f-8658-9831e5f14e0d",
+   "name_en": "Panasonic, Top Load washer, 18 KG, Bazooka, Inverter, Dark Black",
+   "name_ar": "Panasonic Top Load washer 18 KG Bazooka Inverter Dark Black",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:09.609Z"
+  },
+  {
+   "id": "86b7daf2-f3ff-4889-b235-fe53b82d1c45",
+   "name_en": "CLASS PRO, Frontload Washer/Dryer, 12kg /7kg, BLDC Inverter, Steam, Gray",
+   "name_ar": "CLASS PRO Frontload Washer/Dryer 12kg /7kg BLDC Inverter Steam Gray",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:07.713Z"
+  },
+  {
+   "id": "125eebcd-29bb-4235-9f52-d96a03208e72",
+   "name_en": "ClassPro Side by Side Refrigerator 12.7Cu.ft, Freezer 7.2Cu.ft, Inverter, Silk Inox",
+   "name_ar": "ClassPro Side by Side Refrigerator 12 7Cu ft Freezer 7 2Cu ft Inverter Silk Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:21.917Z"
+  },
+  {
+   "id": "fa3bd568-d65e-4d3a-bf2e-1560d1f82847",
+   "name_en": "PANASONIC, Refrigerator 9.5Cu.ft, Freezer 2.8Cu.ft, Inverter, Nutri Tafreez, Ag Clean, Silver",
+   "name_ar": "PANASONIC Refrigerator 9 5Cu ft Freezer 2 8Cu ft Inverter Nutri Tafreez Ag Clean Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:09.097Z"
+  },
+  {
+   "id": "876bb843-6c2a-49ab-81f2-068a3302daa5",
+   "name_en": "LG SBS Refrigerator, 14.9Cu.ft Freezer 8.3Cu.ft, Smart Inverter, PCM Silver",
+   "name_ar": "LG SBS Refrigerator 14 9Cu ft Freezer 8 3Cu ft Smart Inverter PCM Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:31.331Z"
+  },
+  {
+   "id": "90b9b836-a2da-4d76-8cd3-d8a24a6cb8be",
+   "name_en": "LG Refrigerator 12.7Cu.ft, Freezer 3.5Cu.ft,  Smart Inverter Compressor, Silver",
+   "name_ar": "LG Refrigerator 12 7Cu ft Freezer 3 5Cu ft Smart Inverter Compressor Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:30.255Z"
+  },
+  {
+   "id": "237442a5-80f8-46ec-aef5-3336d800d2ab",
+   "name_en": "Samsung Side By Side Refrigerator 13.2Cu.ft, Freezer 7.8Cu.ft, Silver",
+   "name_ar": "Samsung Side By Side Refrigerator 13 2Cu ft Freezer 7 8Cu ft Silver",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:55.877Z"
+  },
+  {
+   "id": "fce2eeb2-71e7-4a4f-b347-fb3f0c52ee6f",
+   "name_en": "ClassPro Single Door Small Refrigerator, 3.2 Cu.ft, White",
+   "name_ar": "ClassPro Single Door Small Refrigerator 3 2 Cu ft White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:46.302Z"
+  },
+  {
+   "id": "99ac9004-1a43-4122-a4c0-59fb1ae469d0",
+   "name_en": "Hisense Refrigerator 5.4Cu.ft, Freezer 1.8Cu.ft, No-Frost, Silver",
+   "name_ar": "Hisense Refrigerator 5 4Cu ft Freezer 1 8Cu ft No-Frost Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:30.269Z"
+  },
+  {
+   "id": "8f03f43c-eb55-44ab-8ec7-a15cfb7b98ea",
+   "name_en": "Karcher, Handheld Pressure Washer, 130 Bar",
+   "name_ar": "Karcher Handheld Pressure Washer 130 Bar",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:06.517Z"
+  },
+  {
+   "id": "a20a146b-8c26-4070-aa44-718c76e4a64b",
+   "name_en": "KARCHER, K5 Classic Pressure Washer, 145 Bar, Yellow",
+   "name_ar": "KARCHER K5 Classic Pressure Washer 145 Bar Yellow",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:09:02.150Z"
+  },
+  {
+   "id": "34214e92-580a-42c9-91dd-0ba6d907345f",
+   "name_en": "Daewoo Compact Refrigerator 2.7Cu.Ft,2L Bottle Rack, Silver",
+   "name_ar": "Daewoo Compact Refrigerator 2 7Cu Ft 2L Bottle Rack Silver",
+   "brand": "دايو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:19.754Z"
+  },
+  {
+   "id": "fa518fb8-8864-40f5-bbc6-9cbdaee2019a",
+   "name_en": "LG Front Load Fully Automatic Washer,10.5 kg, TurboWash,Silver",
+   "name_ar": "LG Front Load Fully Automatic Washer 10 5 kg TurboWash Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:17.518Z"
+  },
+  {
+   "id": "3195a71c-67cd-4c6c-84d7-e90653b6737d",
+   "name_en": "LG Refrigerator 13.4Cu.ft, Freezer 4.6Cu.ft, Smart Inverter,Platinum Silver",
+   "name_ar": "LG Refrigerator 13 4Cu ft Freezer 4 6Cu ft Smart Inverter Platinum Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:27.088Z"
+  },
+  {
+   "id": "a361b54c-e354-4d19-aa88-26c5615545cc",
+   "name_en": "White Westinghouse, Upright Freezer/Refrigerator Convertible, 21Cu,ft (595L), Stainless Steel",
+   "name_ar": "White Westinghouse Upright Freezer/Refrigerator Convertible 21Cu ft 595L Stainless Steel",
+   "brand": "وايت وستنجهاوس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:54.539Z"
+  },
+  {
+   "id": "d15f266d-4525-4439-a225-a80877629cd9",
+   "name_en": "Beko Refrigerator 14.3Cu.ft, Freezer 5.4Cu.ft, Inverter, Silver",
+   "name_ar": "Beko Refrigerator 14 3Cu ft Freezer 5 4Cu ft Inverter Silver",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:36.600Z"
+  },
+  {
+   "id": "06efefec-672c-4611-83ca-c8d88138f2d1",
+   "name_en": "Toshiba Refrigerator 9Cu.ft, Freezer 3Cu.ft, Origin Inverter, Lixiu Grey",
+   "name_ar": "Toshiba Refrigerator 9Cu ft Freezer 3Cu ft Origin Inverter Lixiu Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:58.322Z"
+  },
+  {
+   "id": "c16c1ec0-347a-419e-9b8c-f75bff925e61",
+   "name_en": "Midea Top Load Washing Machine, 6kg, 8 Programs, LED Display, White",
+   "name_ar": "Midea Top Load Washing Machine 6kg 8 Programs LED Display White",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:37.465Z"
+  },
+  {
+   "id": "4343c9b5-d1a2-4856-9e1a-0fd13aeae4c5",
+   "name_en": "Haier Side by Side Refrigerator, 11.9Cu.ft, Freezer 5.9Cu.ft, Twin Inverter, Humidity Control,Grey",
+   "name_ar": "Haier Side by Side Refrigerator 11 9Cu ft Freezer 5 9Cu ft Twin Inverter Humidity Control Grey",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:48.766Z"
+  },
+  {
+   "id": "5916cb79-4f28-4e34-b24c-9c0b4b5511df",
+   "name_en": "ClassPro Single Door Compact Refrigerator, 46L(1.6 Cu.ft), D class, White",
+   "name_ar": "ClassPro Single Door Compact Refrigerator 46L 1 6 Cu ft D class White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:50.579Z"
+  },
+  {
+   "id": "83eda46d-e0e8-4502-addd-d5a761a92c37",
+   "name_en": "Haier Refrigerator 8.7Cu.ft, Freezer 3Cu.ft,Twin Inverter, Silver",
+   "name_ar": "Haier Refrigerator 8 7Cu ft Freezer 3Cu ft Twin Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:16.399Z"
+  },
+  {
+   "id": "60379e51-3a3e-41f5-8117-dffefb1299f7",
+   "name_en": "Hisense, Freezer / Fridge Convertible, 2-in-1, 420L, Inverter, White",
+   "name_ar": "Hisense Freezer / Fridge Convertible 2-in-1 420L Inverter White",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:55.885Z"
+  },
+  {
+   "id": "c20097c8-89f1-427e-ba00-7fcfd1e428e9",
+   "name_en": "Classpro, Dishwasher, 12 place settings, 5 programs, Silver",
+   "name_ar": "Classpro Dishwasher 12 place settings 5 programs Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:56.488Z"
+  },
+  {
+   "id": "e154386f-7701-4461-9216-77416fb604b8",
+   "name_en": "Samsung Front Load Washer/Dryer, 9/6kg , Inox",
+   "name_ar": "Samsung Front Load Washer/Dryer 9/6kg Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:41.659Z"
+  },
+  {
+   "id": "093c98a6-a3af-445b-bfea-c43c8f04a68e",
+   "name_en": "Hitachi, Refrigerator 8.8 Cu.Ft, Freezer 3.3C Cu.ft, Inverter, Carbon Grey",
+   "name_ar": "Hitachi Refrigerator 8 8 Cu Ft Freezer 3 3C Cu ft Inverter Carbon Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:18.656Z"
+  },
+  {
+   "id": "cbfb85a8-c6de-4045-a011-d4be1fd19722",
+   "name_en": "Hisense Refrigerator 8.9Cu.ft, Freezer 2.5Cu.ft, Inverter, Multi Air Flow, Color Silver",
+   "name_ar": "Hisense Refrigerator 8 9Cu ft Freezer 2 5Cu ft Inverter Multi Air Flow Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:56.177Z"
+  },
+  {
+   "id": "0a9218ad-a2d0-4da3-900a-f4a332c094a5",
+   "name_en": "Toshiba Refrigerator 13.8Cu.ft, Freezer 5.8Cuft, Origin INVERTER, Color Bright Steel",
+   "name_ar": "Toshiba Refrigerator 13 8Cu ft Freezer 5 8Cuft Origin INVERTER Color Bright Steel",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:41.907Z"
+  },
+  {
+   "id": "ff334723-e11e-4fca-96f1-e9ed4699d03c",
+   "name_en": "SMEG 50's retro style appliance bundle, red – freestanding mini refrigerator & stand mixer",
+   "name_ar": "SMEG 50's retro style appliance bundle red – freestanding mini refrigerator & stand mixer",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:31.868Z"
+  },
+  {
+   "id": "a9a3d580-0561-4d58-9b2d-c0504f8d3f02",
+   "name_en": "Gvc pro classic single door refrigerator, efficient cooling, red color, compact capacity ideal for offices or guest rooms",
+   "name_ar": "Gvc pro classic single door refrigerator efficient cooling red color compact capacity ideal for offices or guest rooms",
+   "brand": "جي في سي برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:27.579Z"
+  },
+  {
+   "id": "7650f9e7-ec77-4e8d-969c-e577df417134",
+   "name_en": "Classpro Refrigerator 6.9Cu.ft, Freezer 1.8Cu.ft, Inverter Compressor, Recessed Handle, Color Inox",
+   "name_ar": "Classpro Refrigerator 6 9Cu ft Freezer 1 8Cu ft Inverter Compressor Recessed Handle Color Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:13.603Z"
+  },
+  {
+   "id": "06bea8ac-1a0b-4edf-b957-6b344ae50e82",
+   "name_en": "LG SBS Refrigerator 11.8Cu.ft, Freezer 6.1Cu.ft, Smart Inverter, Dark Graphite",
+   "name_ar": "LG SBS Refrigerator 11 8Cu ft Freezer 6 1Cu ft Smart Inverter Dark Graphite",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:45.016Z"
+  },
+  {
+   "id": "8c9d4465-f034-43c1-bbc7-1af5c0c3ba1b",
+   "name_en": "Haier SBS 4-Door Refrigerator 14.9Cu.ft, Freezer 5.7Cu.ft, Twin Inverter Compressor, Platinum Inox",
+   "name_ar": "Haier SBS 4-Door Refrigerator 14 9Cu ft Freezer 5 7Cu ft Twin Inverter Compressor Platinum Inox",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:26.240Z"
+  },
+  {
+   "id": "ae624bbb-3f05-49be-b4b0-8419c8b52911",
+   "name_en": "LG, Front Load Washer/Dryer 15kg/8Kg, 6 Motion Direct Drive, Matte Black",
+   "name_ar": "LG Front Load Washer/Dryer 15kg/8Kg 6 Motion Direct Drive Matte Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:13.229Z"
+  },
+  {
+   "id": "55259f11-f39f-4fc4-bf18-959ab82d18d5",
+   "name_en": "Beko Dishwasher, 5 Program,14 Place Setting, White",
+   "name_ar": "Beko Dishwasher 5 Program 14 Place Setting White",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:12.172Z"
+  },
+  {
+   "id": "b0ab19fb-15ee-4c26-bb94-96c9cfcc65b2",
+   "name_en": "LG Side By Side Refrigerator 18.2Cu.ft, Freezer 7.3Cu.ft, InstaView,Linear Inverter, Matte Black",
+   "name_ar": "LG Side By Side Refrigerator 18 2Cu ft Freezer 7 3Cu ft InstaView Linear Inverter Matte Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:33.423Z"
+  },
+  {
+   "id": "8dc219a5-dd35-439a-8724-5236ff625050",
+   "name_en": "PANASONIC, Refrigerator 13.6Cu.ft, Freezer 4.6Cu.ft, Inverter, Ag Clean, Silver",
+   "name_ar": "PANASONIC Refrigerator 13 6Cu ft Freezer 4 6Cu ft Inverter Ag Clean Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:10.169Z"
+  },
+  {
+   "id": "09bcca2e-6c82-4ad7-b7f1-86ec3b558c56",
+   "name_en": "Ariston Built-In, Refrigerator, 6.9Cu.ft Freezer 2.2Cu.ft, Air Cooling System, White",
+   "name_ar": "Ariston Built-In Refrigerator 6 9Cu ft Freezer 2 2Cu ft Air Cooling System White",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:52.690Z"
+  },
+  {
+   "id": "06005ea0-c95c-4a94-94da-26004fc9e31d",
+   "name_en": "Midea Refrigerator 9Cu.ft, Freezer 3Cu.ft, Crystal Silver",
+   "name_ar": "Midea Refrigerator 9Cu ft Freezer 3Cu ft Crystal Silver",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:05.641Z"
+  },
+  {
+   "id": "6273a1b8-2620-49e6-ae18-7ec7be9964e1",
+   "name_en": "Haier Refrigerator 11.5Cu.ft, Freezer 3.4Cu.ft, Color Silver",
+   "name_ar": "Haier Refrigerator 11 5Cu ft Freezer 3 4Cu ft Color Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:20.655Z"
+  },
+  {
+   "id": "159a315e-c3c7-4e6f-8c9a-0e211121a1bb",
+   "name_en": "CLASS PRO, Refrigerator 11.3Cu.ft Freezer 3.6Cu.ft, Inverter, Dark Silver",
+   "name_ar": "CLASS PRO Refrigerator 11 3Cu ft Freezer 3 6Cu ft Inverter Dark Silver",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:02.879Z"
+  },
+  {
+   "id": "f6bc0471-6879-4872-a8c9-42e0473609cf",
+   "name_en": "LG Refrigerator 9Cu.ft Freezer 2.8Cu.ft, Inverter Compressor, White",
+   "name_ar": "LG Refrigerator 9Cu ft Freezer 2 8Cu ft Inverter Compressor White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:34.497Z"
+  },
+  {
+   "id": "c50a1ca8-773e-4212-9326-fbd2f0c5a51e",
+   "name_en": "Ariston washer front load,8 kg washing ,15 programs ,gray, arwf08122smsa",
+   "name_ar": "Ariston washer front load 8 kg washing 15 programs gray arwf08122smsa",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:49.133Z"
+  },
+  {
+   "id": "8bf83a29-4a97-49a6-ade3-31e1fb6ee9c6",
+   "name_en": "HISENSE, Front Load Washer/Dryer, 8/5 Kg, Inverter, Titanium Grey",
+   "name_ar": "HISENSE Front Load Washer/Dryer 8/5 Kg Inverter Titanium Grey",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:18.996Z"
+  },
+  {
+   "id": "49b92a2f-8ffd-4d12-9faa-07988d10c879",
+   "name_en": "LIEBHERR 75cm Fridge-freezer with EasyFresh and NoFrost",
+   "name_ar": "LIEBHERR 75cm Fridge-freezer with EasyFresh and NoFrost",
+   "brand": "ليبهر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:43.622Z"
+  },
+  {
+   "id": "f3254cef-5295-4eb3-84e5-58f1a8988557",
+   "name_en": "Hitachi, Refrigerator 15.7 Cu.Ft, Freezer 5.5 Cu.ft, 600L, Inverter, Silver",
+   "name_ar": "Hitachi Refrigerator 15 7 Cu Ft Freezer 5 5 Cu ft 600L Inverter Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:22.238Z"
+  },
+  {
+   "id": "cd09c588-59b3-45f6-abf5-d3169b0eabef",
+   "name_en": "Black+Decker, PW1450TD-B5 1400Watt Pressure Washer, 105 Bar, Orange & Black",
+   "name_ar": "Black+Decker PW1450TD-B5 1400Watt Pressure Washer 105 Bar Orange & Black",
+   "brand": "بلاك أند ديكر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:58.956Z"
+  },
+  {
+   "id": "a318923f-12bc-44c7-8890-4c9c2fd48334",
+   "name_en": "LG, Front Load WashTower 25kg Washer, 20kg Dryer, Central Control, Nature Beige/ Green",
+   "name_ar": "LG Front Load WashTower 25kg Washer 20kg Dryer Central Control Nature Beige/ Green",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:10.513Z"
+  },
+  {
+   "id": "86e97c54-d77a-4e5a-b01d-15ab9d332391",
+   "name_en": "ClassPro Refrigerator 12.9Cu.ft, Freezer 3.5Cu.ft, White",
+   "name_ar": "ClassPro Refrigerator 12 9Cu ft Freezer 3 5Cu ft White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:42.403Z"
+  },
+  {
+   "id": "c9ddc8a7-9562-4135-a2d9-6a73d0725c41",
+   "name_en": "Samsung Front Load Washer 24kg, Hygiene Steam, EcoBubble, WIFI, 1100 RPM, DIT Motor, Color Greige",
+   "name_ar": "Samsung Front Load Washer 24kg Hygiene Steam EcoBubble WIFI 1100 RPM DIT Motor Color Greige",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:49.239Z"
+  },
+  {
+   "id": "ff4ee739-c73c-4821-96b3-8bace61cd436",
+   "name_en": "Samsung SBS 4Door Refrigerator 13.7Cu.ft, Freezer 7.2Cu.ft, Stainless Steel",
+   "name_ar": "Samsung SBS 4Door Refrigerator 13 7Cu ft Freezer 7 2Cu ft Stainless Steel",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:42.922Z"
+  },
+  {
+   "id": "4d42c6a3-d73c-4839-8048-15fd36f88c22",
+   "name_en": "SAMSUNG, Bespoke AI Side by Side Refrigerator 14.4Cu.ft, Freezer 7.1Cu.ft, Dispenser, Silver",
+   "name_ar": "SAMSUNG Bespoke AI Side by Side Refrigerator 14 4Cu ft Freezer 7 1Cu ft Dispenser Silver",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:08.036Z"
+  },
+  {
+   "id": "951b2989-b322-469d-addd-fc473a030465",
+   "name_en": "Midea refrigerator and freezer,side by side,13.2 cu.ft fridge,6.9 cu.ft freezer,black,mdrs791myu46d",
+   "name_ar": "Midea refrigerator and freezer side by side 13 2 cu ft fridge 6 9 cu ft freezer black mdrs791myu46d",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:30.818Z"
+  },
+  {
+   "id": "78dbfa7c-9c5d-43b2-9f48-0ece6ba08052",
+   "name_en": "ClassPro Refrigerator 12.9Cu.ft, Freezer 3.5Cu.ft, No Frost, Color Silk Inox",
+   "name_ar": "ClassPro Refrigerator 12 9Cu ft Freezer 3 5Cu ft No Frost Color Silk Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:18.681Z"
+  },
+  {
+   "id": "4d044350-d60a-4824-a1ce-aae91d943272",
+   "name_en": "Hitachi Refrigerator 11.8Cu.ft, Freezer 4.1Cu.ft, No Frost, Inverter Compressor, Color Silver",
+   "name_ar": "Hitachi Refrigerator 11 8Cu ft Freezer 4 1Cu ft No Frost Inverter Compressor Color Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:29.209Z"
+  },
+  {
+   "id": "b1cb63fe-8342-4a8c-b713-3ba0e1a94bf7",
+   "name_en": "MIELE 60cm front-loader washing machine 15 programs with wificonn@ct for smart laundry care 9kg, lotus white",
+   "name_ar": "MIELE 60cm front-loader washing machine 15 programs with wificonn ct for smart laundry care 9kg lotus white",
+   "brand": "مايلي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:05.287Z"
+  },
+  {
+   "id": "e2dce965-cdb6-4d05-9560-2d922a814dce",
+   "name_en": "MIELE 60cm freestanding washing machine front load and wificonn@ct for smart laundry care 9kg +  miele 60cm heat pump front loading tumble dryer 9kg +  miele guard s1 vacuum cleaner power line nordic",
+   "name_ar": "MIELE 60cm freestanding washing machine front load and wificonn ct for smart laundry care 9kg + miele 60cm heat pump front loading tumble dryer 9kg + miele guard s1 vacuum cleaner power line nordic",
+   "brand": "مايلي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:52.325Z"
+  },
+  {
+   "id": "ab3b4b7c-64b7-4683-8961-90afeb988cf5",
+   "name_en": "SMEG 50's Retro Style Freestanding Refrigerator,Right Handle , Black",
+   "name_ar": "SMEG 50's Retro Style Freestanding Refrigerator Right Handle Black",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:35.037Z"
+  },
+  {
+   "id": "9223ee1f-cf35-4012-b74c-0ced398ae029",
+   "name_en": "Class Pro, Mini Cosmetics Refrigerator, 5 Liter, 23W",
+   "name_ar": "Class Pro Mini Cosmetics Refrigerator 5 Liter 23W",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:20.074Z"
+  },
+  {
+   "id": "3d1798a2-fd58-446b-82c5-7019b237c13c",
+   "name_en": "LG, Refrigerator 15.1Cu.ft, Freezer 6.5Cu.ft, Smart Inverter Compressor, Prime Silver",
+   "name_ar": "LG Refrigerator 15 1Cu ft Freezer 6 5Cu ft Smart Inverter Compressor Prime Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:01.664Z"
+  },
+  {
+   "id": "2131b2cc-ae08-4b37-b07a-9a6da0f82340",
+   "name_en": "Candy Chest Freezer / Fridge – Convertible , 3.5 Cu.ft, Super Freezing Tech, White",
+   "name_ar": "Candy Chest Freezer / Fridge – Convertible 3 5 Cu ft Super Freezing Tech White",
+   "brand": "كاندي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:59.058Z"
+  },
+  {
+   "id": "835724c0-e182-4223-ac90-749df3927807",
+   "name_en": "HAIER, Refrigerator 13.2Cu.ft, Freezer 3.5Cu.ft, Twin Inverter, Quantum Metal",
+   "name_ar": "HAIER Refrigerator 13 2Cu ft Freezer 3 5Cu ft Twin Inverter Quantum Metal",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:34.543Z"
+  },
+  {
+   "id": "e40b4dc6-4644-45d4-89e8-941587c2f94d",
+   "name_en": "Samsung Front Load Washer Dryer Combo 16kg/10kg, 1100 RPM, WIFI, White",
+   "name_ar": "Samsung Front Load Washer Dryer Combo 16kg/10kg 1100 RPM WIFI White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:40.589Z"
+  },
+  {
+   "id": "4433c11d-7c88-4d57-8ea8-4a9b86ce83e7",
+   "name_en": "Panasonic Side By Side Refrigerator 13.7Cu.ft, Freezer 7.1Cu.ft, Inverter, Silver",
+   "name_ar": "Panasonic Side By Side Refrigerator 13 7Cu ft Freezer 7 1Cu ft Inverter Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:10.032Z"
+  },
+  {
+   "id": "26ce2687-0da9-4ade-8257-379150ef5e14",
+   "name_en": "PANASONIC, Refrigerator 5.2Cu.ft, Freezer 1.9Cu.ft, Inverter, Nutri Tafreez, Ag Clean, Silver",
+   "name_ar": "PANASONIC Refrigerator 5 2Cu ft Freezer 1 9Cu ft Inverter Nutri Tafreez Ag Clean Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:11.226Z"
+  },
+  {
+   "id": "24f7d848-98d1-4a1d-b41e-5fc39f77172d",
+   "name_en": "Samsung Top Load Washing Machine, 16kg, Bespoke AI, Direct Drive, Deep Charcoal",
+   "name_ar": "Samsung Top Load Washing Machine 16kg Bespoke AI Direct Drive Deep Charcoal",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:28.915Z"
+  },
+  {
+   "id": "04d3f52f-99fe-4dee-9d8d-567ee5682781",
+   "name_en": "Hisense Side by Side Refrigerator 12.3 Cu.ft, Freezer 6.7 Cu.ft, Inverter, Black",
+   "name_ar": "Hisense Side by Side Refrigerator 12 3 Cu ft Freezer 6 7 Cu ft Inverter Black",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:01.544Z"
+  },
+  {
+   "id": "1795519b-cd33-481a-a8c5-914dbe334025",
+   "name_en": "LG, Twin-Tub Washer, 10.5 Kg, White",
+   "name_ar": "LG Twin-Tub Washer 10 5 Kg White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:21.113Z"
+  },
+  {
+   "id": "1126823c-b141-4123-b8df-ef97b5823c67",
+   "name_en": "Admiral Twin Tub Washing Machine Semi-Automatic, 9 Kg, White",
+   "name_ar": "Admiral Twin Tub Washing Machine Semi-Automatic 9 Kg White",
+   "brand": "ادميرال",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:03.300Z"
+  },
+  {
+   "id": "334ae7a9-2d13-489b-9215-d7fe99951f43",
+   "name_en": "Toshiba, Front Load washer, 13 kg, Great Wave, Origin Inverter, Morandi Grey",
+   "name_ar": "Toshiba Front Load washer 13 kg Great Wave Origin Inverter Morandi Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:45.796Z"
+  },
+  {
+   "id": "91ecb26d-a1bf-4aa5-ad67-00d82706c8b0",
+   "name_en": "Toshiba, Front Load Washer/Dryer, 10.5/7kg Dryer, Combo, Origin Inverter, Morandi Grey",
+   "name_ar": "Toshiba Front Load Washer/Dryer 10 5/7kg Dryer Combo Origin Inverter Morandi Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:13.671Z"
+  },
+  {
+   "id": "d5e848b5-13ae-4bdd-931b-e94c49522411",
+   "name_en": "Hisense Side by Side Refrigerator 14.7Cu.ft, Freezer 7.8Cu.ft, Inverter, Wi-Fi, Silver",
+   "name_ar": "Hisense Side by Side Refrigerator 14 7Cu ft Freezer 7 8Cu ft Inverter Wi-Fi Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:27.071Z"
+  },
+  {
+   "id": "1dc0c8a7-cb10-42d0-a638-ec6bf3a6907d",
+   "name_en": "Gree Front Load Washer/Dryer,10kg/6kg, Inverter, Anti-Vibration, Heat Pump, Golden",
+   "name_ar": "Gree Front Load Washer/Dryer 10kg/6kg Inverter Anti-Vibration Heat Pump Golden",
+   "brand": "جري",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:25.412Z"
+  },
+  {
+   "id": "0790fd38-2c07-4c4a-b02a-e2011d125908",
+   "name_en": "Classpro, Dishwasher, 12 place settings, 5 programs, White",
+   "name_ar": "Classpro Dishwasher 12 place settings 5 programs White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:57.649Z"
+  },
+  {
+   "id": "bbcb576f-1538-4bd2-aaae-8110255ba4fa",
+   "name_en": "Panasonic, SBS Refrigerator 13.7Cu.ft, Freezer 7.8Cu.ft, 4L Water Dispenser, Black",
+   "name_ar": "Panasonic SBS Refrigerator 13 7Cu ft Freezer 7 8Cu ft 4L Water Dispenser Black",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:58.457Z"
+  },
+  {
+   "id": "8ee9049e-33cd-4bad-972a-e280b6848dc4",
+   "name_en": "LG Single Unit Front Load, 21/16kg WashTower, Washer/Dryer ThinQ (W-Fi), Black Steel",
+   "name_ar": "LG Single Unit Front Load 21/16kg WashTower Washer/Dryer ThinQ W-Fi Black Steel",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:26.472Z"
+  },
+  {
+   "id": "444bf962-1948-4edd-a20f-d3ee29892d96",
+   "name_en": "Hitachi, Side By Side Refrigerator, 14.5Cu.ft, Freezer 8.7Cu.ft,  Glass Silver (Sky Line)",
+   "name_ar": "Hitachi Side By Side Refrigerator 14 5Cu ft Freezer 8 7Cu ft Glass Silver Sky Line",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:51.004Z"
+  },
+  {
+   "id": "37164442-6d8a-47f3-8aa3-5eb0ad4945bc",
+   "name_en": "Toshiba Refrigerator 10.7Cu.ft, Freezer 3.8Cu.ft, Origin Inverter, Lixiu Grey",
+   "name_ar": "Toshiba Refrigerator 10 7Cu ft Freezer 3 8Cu ft Origin Inverter Lixiu Grey",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:24.365Z"
+  },
+  {
+   "id": "0a35067e-33d0-4653-a5ec-56dd3d3820c3",
+   "name_en": "Smeg 60cm built-in fully integrated washer/dryer,7/4 kg , 1400 rpm , white",
+   "name_ar": "Smeg 60cm built-in fully integrated washer/dryer 7/4 kg 1400 rpm white",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:48.068Z"
+  },
+  {
+   "id": "670e5f80-d3c5-42c8-8223-b16939a735e0",
+   "name_en": "White Westinghouse, Upright Refrigerator/Freezer, Convertible, 21Cu.ft (595L), Stainless Steel",
+   "name_ar": "White Westinghouse Upright Refrigerator/Freezer Convertible 21Cu ft 595L Stainless Steel",
+   "brand": "وايت وستنجهاوس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:53.749Z"
+  },
+  {
+   "id": "c6f7d28b-5cb4-40c3-a6ab-c25618f13e2e",
+   "name_en": "Toshiba, Refrigerator,  4 Doors, 14.7Cuft, Freezer 7.6Cuft, Inverter, Starry Silver",
+   "name_ar": "Toshiba Refrigerator 4 Doors 14 7Cuft Freezer 7 6Cuft Inverter Starry Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:59.530Z"
+  },
+  {
+   "id": "08fc7430-14a6-45df-badc-325a4dc5b502",
+   "name_en": "Midea washer front load,12 kg washer,14 programs,white,mf200w120w1wsa",
+   "name_ar": "Midea washer front load 12 kg washer 14 programs white mf200w120w1wsa",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:56.648Z"
+  },
+  {
+   "id": "56b8cd8b-a3e3-498c-99ea-9a988aef571b",
+   "name_en": "Samsung Refrigerator 10.3Cu.ft, Freezer 3.4Cu.ft, Digital Inverter, Color Silver",
+   "name_ar": "Samsung Refrigerator 10 3Cu ft Freezer 3 4Cu ft Digital Inverter Color Silver",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:22.852Z"
+  },
+  {
+   "id": "d2194f1d-a11a-41c1-9ea5-2aa58f6986e4",
+   "name_en": "LG, Refrigerator, Side by Side, 17.9 Cu.Ft, Freezer 9.3 Cu.ft, Prime Silver",
+   "name_ar": "LG Refrigerator Side by Side 17 9 Cu Ft Freezer 9 3 Cu ft Prime Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:20.759Z"
+  },
+  {
+   "id": "fe467b9a-fa32-4739-a4ad-f01202e0edfb",
+   "name_en": "Beko Dishwasher, 5 Program, 14 Place Setting, Silver",
+   "name_ar": "Beko Dishwasher 5 Program 14 Place Setting Silver",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:42.131Z"
+  },
+  {
+   "id": "6d9e5c3f-4e3c-4ae9-9673-60687d304868",
+   "name_en": "LG, Front Load WashTower 25kg Washer, 20kg Dryer, Central Control, Black Steel",
+   "name_ar": "LG Front Load WashTower 25kg Washer 20kg Dryer Central Control Black Steel",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:11.563Z"
+  },
+  {
+   "id": "9935aefe-3023-44d6-8ee3-cca9209d0360",
+   "name_en": "LG, Front Load Washer & Dryer 9/5Kg, 6Motion DD, Steam, Wi-Fi, Essence White",
+   "name_ar": "LG Front Load Washer & Dryer 9/5Kg 6Motion DD Steam Wi-Fi Essence White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:09.453Z"
+  },
+  {
+   "id": "dfaa72de-9551-45fd-a462-9b9361d5f842",
+   "name_en": "Samsung Front Load Washer 21KG, Hygiene Steam, WIFI, 1100 rpm, Black",
+   "name_ar": "Samsung Front Load Washer 21KG Hygiene Steam WIFI 1100 rpm Black",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:53.650Z"
+  },
+  {
+   "id": "7a60015b-92d6-4114-9035-b660f059de2e",
+   "name_en": "Haier Side by S ide Refrigerator 13.2Cu.ft, Freezer 6.6Cu.ft.Inverter, Silver",
+   "name_ar": "Haier Side by S ide Refrigerator 13 2Cu ft Freezer 6 6Cu ft Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:34.876Z"
+  },
+  {
+   "id": "b08aecf5-4e14-4dca-b7be-8f831906de1f",
+   "name_en": "BEKO, Refrigerator 11.1Cu.ft, Freezer 3.3Cu.ft, Inverter Compressor, Dual Cooling, Inox",
+   "name_ar": "BEKO Refrigerator 11 1Cu ft Freezer 3 3Cu ft Inverter Compressor Dual Cooling Inox",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:05.896Z"
+  },
+  {
+   "id": "9910ba00-8512-4748-ace4-37e0584e68a8",
+   "name_en": "Haier Refrigerator 9.6Cu.ft, Freezer 3Cu.ft,Twin Inverter, Silver",
+   "name_ar": "Haier Refrigerator 9 6Cu ft Freezer 3Cu ft Twin Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:18.512Z"
+  },
+  {
+   "id": "69b579d5-c83d-47f1-b8fb-a5f90af07245",
+   "name_en": "Toshiba Side By Side Refrigerator 12.9Cu.ft, Freezer 6.5Cu.ft, Origin Inverter,Black Glass",
+   "name_ar": "Toshiba Side By Side Refrigerator 12 9Cu ft Freezer 6 5Cu ft Origin Inverter Black Glass",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:41.874Z"
+  },
+  {
+   "id": "7feb8b45-078a-4e07-bf1e-59fdcc262190",
+   "name_en": "Hisense Side by Side Refrigerator 12.2 Cu.ft, Freezer 6.6 Cu.ft, Inverter, Silver",
+   "name_ar": "Hisense Side by Side Refrigerator 12 2 Cu ft Freezer 6 6 Cu ft Inverter Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:26.026Z"
+  },
+  {
+   "id": "4f3ee7ce-bf49-4561-b126-a7ad01e44f20",
+   "name_en": "Samsung Bespoke Washing Machine 11kg, Inverter, White",
+   "name_ar": "Samsung Bespoke Washing Machine 11kg Inverter White",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:35.720Z"
+  },
+  {
+   "id": "8d7482ae-7e17-491c-b846-342caed26be9",
+   "name_en": "Haier, Front Load Washer, 13KG,  Inverter, WiFi, 1400 rpm, Grey",
+   "name_ar": "Haier Front Load Washer 13KG Inverter WiFi 1400 rpm Grey",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:07.484Z"
+  },
+  {
+   "id": "b1a77e4d-7458-4058-921e-bd903bca1278",
+   "name_en": "Hitachi Refrigerator 8.8Cu.ft, Freezer 3.3Cu.ft, No Frost, Inverter Compressor, White",
+   "name_ar": "Hitachi Refrigerator 8 8Cu ft Freezer 3 3Cu ft No Frost Inverter Compressor White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:17.576Z"
+  },
+  {
+   "id": "c69bfade-4f4f-4438-9cba-e668f84169d0",
+   "name_en": "Haier Side by Side Refrigerator, 13.7Cu.ft, Freezer 7.5Cu.ft, Gray",
+   "name_ar": "Haier Side by Side Refrigerator 13 7Cu ft Freezer 7 5Cu ft Gray",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:42.043Z"
+  },
+  {
+   "id": "b0bb5ff1-2af0-4983-8c34-366cec642292",
+   "name_en": "Samsung 1Door Fridge with Power Cool, 13.6 Cu.ft, Digital Inverter Technology,Silver",
+   "name_ar": "Samsung 1Door Fridge with Power Cool 13 6 Cu ft Digital Inverter Technology Silver",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:48.436Z"
+  },
+  {
+   "id": "6b0baa5b-5d1b-4226-982e-8ac2726cd4eb",
+   "name_en": "PANASONIC, Refrigerator 15.5Cu.ft Freezer 7.3Cu.ft, SidebySide, Multi Door, Dispenser",
+   "name_ar": "PANASONIC Refrigerator 15 5Cu ft Freezer 7 3Cu ft SidebySide Multi Door Dispenser",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:12.276Z"
+  },
+  {
+   "id": "a7c985be-0fec-4839-b0a4-3c53539a5651",
+   "name_en": "Ariston Built-in Refrigerator 6.5Cu.ft Freezer 2.4Cu.ft, Bottom Freezer, Inverter",
+   "name_ar": "Ariston Built-in Refrigerator 6 5Cu ft Freezer 2 4Cu ft Bottom Freezer Inverter",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:50.290Z"
+  },
+  {
+   "id": "ae7c97e0-b5e1-4a07-adf3-8ee7edb2f887",
+   "name_en": "Gvc pro classic single door refrigerator, 86l capacity, efficient cooling, light green color, compact and stylish design",
+   "name_ar": "Gvc pro classic single door refrigerator 86l capacity efficient cooling light green color compact and stylish design",
+   "brand": "جي في سي برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:23.296Z"
+  },
+  {
+   "id": "03b9bc46-3c0b-4535-878d-7db8192f4040",
+   "name_en": "Haier Side by Side Refrigerator 11.1Cu.ft, Freezer 4.2Cu.ft, 4 Doors, Twin Inverter Silver",
+   "name_ar": "Haier Side by Side Refrigerator 11 1Cu ft Freezer 4 2Cu ft 4 Doors Twin Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:13.225Z"
+  },
+  {
+   "id": "34c8f5ef-1361-4a88-847d-9c982609e365",
+   "name_en": "Rebune Cosmetic Refrigerator with LED Light Mirror, 10L, 55w.",
+   "name_ar": "Rebune Cosmetic Refrigerator with LED Light Mirror 10L 55w",
+   "brand": "ريبون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:16.836Z"
+  },
+  {
+   "id": "2c06c754-9ec6-4096-8585-5d9c2702ca01",
+   "name_en": "Haier Side by Side Refrigerator, 11.9Cu.ft, Freezer 5.9Cu.ft, Twin Inverter, Silver",
+   "name_ar": "Haier Side by Side Refrigerator 11 9Cu ft Freezer 5 9Cu ft Twin Inverter Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:48.455Z"
+  },
+  {
+   "id": "0d99f96f-d052-4689-a08b-2b516b8d3487",
+   "name_en": "Hitachi, Refrigerator 9.9 Cu.Ft, Freezer 3.3 Cu.ft, Carbon Grey",
+   "name_ar": "Hitachi Refrigerator 9 9 Cu Ft Freezer 3 3 Cu ft Carbon Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:21.808Z"
+  },
+  {
+   "id": "1ce9a506-5214-4bf8-97fe-fbcdc9e06f70",
+   "name_en": "Panasonic, Top Load washer, 12 KG, TD Inverter, Dark Silver",
+   "name_ar": "Panasonic Top Load washer 12 KG TD Inverter Dark Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:19.300Z"
+  },
+  {
+   "id": "118763e2-43b1-4ed0-b661-4947bf333427",
+   "name_en": "ClassPro, Top Load Washer, 11kg, Inox",
+   "name_ar": "ClassPro Top Load Washer 11kg Inox",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:29.281Z"
+  },
+  {
+   "id": "ed522eff-b0a0-44b3-8371-1286a2ed5dd5",
+   "name_en": "White Westinghouse Refrigerator 7Cu.ft, Freezer 1.9Cu.ft  2 Door, Stainless Steel.",
+   "name_ar": "White Westinghouse Refrigerator 7Cu ft Freezer 1 9Cu ft 2 Door Stainless Steel",
+   "brand": "وايت وستنجهاوس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:01.296Z"
+  },
+  {
+   "id": "700d99f6-6ea2-4623-9d14-f0c0c751d12d",
+   "name_en": "SMEG 50’s Retro Style Freestanding Refrigerator/Freezer, Pastel Blue",
+   "name_ar": "SMEG 50’s Retro Style Freestanding Refrigerator/Freezer Pastel Blue",
+   "brand": "سمج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:39.362Z"
+  },
+  {
+   "id": "c8e9a82d-bfed-44d0-90ca-e61c93102004",
+   "name_en": "ClassPro, Pressure Washer 105 Bar, 1300 Watts With Accessories",
+   "name_ar": "ClassPro Pressure Washer 105 Bar 1300 Watts With Accessories",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:51.153Z"
+  },
+  {
+   "id": "a3b6787c-8af9-4b20-b138-75b69361e927",
+   "name_en": "ClassPro Front load Washer, 7kg, 15 Programs, White",
+   "name_ar": "ClassPro Front load Washer 7kg 15 Programs White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:20.704Z"
+  },
+  {
+   "id": "f7c21eab-f20b-4579-a1d2-1f6b12c8caeb",
+   "name_en": "LG, Refrigerator 15.1Cu.ft, Freezer 6.5Cu.ft, Smart Inverter, ThinQ (Wi-Fi), Silver",
+   "name_ar": "LG Refrigerator 15 1Cu ft Freezer 6 5Cu ft Smart Inverter ThinQ Wi-Fi Silver",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:00.619Z"
+  },
+  {
+   "id": "7150a018-1351-4e0d-ae77-09d38ef99e6b",
+   "name_en": "Hisense Side by Side 4 Door Refrigerator 10. 5Cu.ft, Freezer 5.6Cu.ft, Inverter Color Silver",
+   "name_ar": "Hisense Side by Side 4 Door Refrigerator 10 5Cu ft Freezer 5 6Cu ft Inverter Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:54.076Z"
+  },
+  {
+   "id": "f095c151-e3b0-4bb4-93af-a3a7bc28b297",
+   "name_en": "Samsung SBS Refrigerator 13.10Cu.ft, Freezer 6.8Cu.ft, WiFi, DIT Compressor, Gentle Silver Matt",
+   "name_ar": "Samsung SBS Refrigerator 13 10Cu ft Freezer 6 8Cu ft WiFi DIT Compressor Gentle Silver Matt",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:49.516Z"
+  },
+  {
+   "id": "e6c11700-c9d1-4738-a3df-2106d33bfc37",
+   "name_en": "Samsung Bespoke Front Load T-Combo Smart Washer 25kg Dryer 15kg Dark Steel Color",
+   "name_ar": "Samsung Bespoke Front Load T-Combo Smart Washer 25kg Dryer 15kg Dark Steel Color",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:47.923Z"
+  },
+  {
+   "id": "13514b3e-214f-4787-a19a-5a3047dc3323",
+   "name_en": "LG, Front Load Washer & Dryer 20/ 10Kg, 6 Motion DD, Steam,ThinQ Wifi, Matte Black",
+   "name_ar": "LG Front Load Washer & Dryer 20/ 10Kg 6 Motion DD Steam ThinQ Wifi Matte Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:14.754Z"
+  },
+  {
+   "id": "b399a935-df68-4334-9c95-d48dbb78281f",
+   "name_en": "LG Refrigerator 11.3Cu.ft, Freezer 4.1Cu.ft, Inverter Compressor, White",
+   "name_ar": "LG Refrigerator 11 3Cu ft Freezer 4 1Cu ft Inverter Compressor White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:05.767Z"
+  },
+  {
+   "id": "6b688161-757c-4c41-8112-09ec3abc596a",
+   "name_en": "Samsung Front Loading Washer, 12kg Wash 8kg Dry,1400 rpm, WiFi,Inox",
+   "name_ar": "Samsung Front Loading Washer 12kg Wash 8kg Dry 1400 rpm WiFi Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:39.974Z"
+  },
+  {
+   "id": "c1c2040c-625c-4217-8f91-1885c1a8a186",
+   "name_en": "ClassPro Top Load Washing Machine, 7kg,Tempered Glass Lid, LED Display, White",
+   "name_ar": "ClassPro Top Load Washing Machine 7kg Tempered Glass Lid LED Display White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:05.454Z"
+  },
+  {
+   "id": "a88fdcc1-ef0e-4e95-a241-6395f24f0647",
+   "name_en": "Promate portable mini fridge, -20°c to 20°c ice-free cooler with 52000mah multi-port power bank, 2w led torch, 40l capacity, 36h cooling and 3-way recharging for outdoor, camping, powercooler-40",
+   "name_ar": "Promate portable mini fridge -20°c to 20°c ice-free cooler with 52000mah multi-port power bank 2w led torch 40l capacity 36h cooling and 3-way recharging for outdoor camping powercooler-40",
+   "brand": "بروميت",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:53.492Z"
+  },
+  {
+   "id": "cb32f1f5-5fc5-454b-b3df-aab8d1fa56a5",
+   "name_en": "Toshiba Side By Side Refrigerator 12.9Cu.ft, Freezer 6.9Cu.ft,  WIFI, Origin Inverter, Color Silver",
+   "name_ar": "Toshiba Side By Side Refrigerator 12 9Cu ft Freezer 6 9Cu ft WIFI Origin Inverter Color Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:17.946Z"
+  },
+  {
+   "id": "d1a3ed79-0de6-4f3f-bebb-51547047e719",
+   "name_en": "Candy Top Load Washing Machine 8 kg, Steel Grey",
+   "name_ar": "Candy Top Load Washing Machine 8 kg Steel Grey",
+   "brand": "كاندي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:51.511Z"
+  },
+  {
+   "id": "3c0d3c0e-02c8-4526-9558-ba4fb736ee04",
+   "name_en": "Panasonic Front Load Washing Machine 9kg, Hygiene Care, Abaya Wash, Silver",
+   "name_ar": "Panasonic Front Load Washing Machine 9kg Hygiene Care Abaya Wash Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:43.832Z"
+  },
+  {
+   "id": "88742b23-c764-48a5-b9da-2987234b7626",
+   "name_en": "Haier, TD Side By Side Refrigerator, 10.9Cu.ft, Freezer 4.9Cu.ft, Twin Inverter, Golden Wheat",
+   "name_ar": "Haier TD Side By Side Refrigerator 10 9Cu ft Freezer 4 9Cu ft Twin Inverter Golden Wheat",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:46.776Z"
+  },
+  {
+   "id": "64c97fd1-8074-45cc-8421-c7ce379cd0a0",
+   "name_en": "Toshiba Twin Tub Washer 12 kg, Rust Free Body, White/Black",
+   "name_ar": "Toshiba Twin Tub Washer 12 kg Rust Free Body White/Black",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:44.249Z"
+  },
+  {
+   "id": "df88b4c5-9d2b-4106-bb69-3d5838419d55",
+   "name_en": "SAMSUNG, Bespoke AI Side by Side Refrigerator 13.8Cuft, Freezer 7.1Cuft, LCD, I&W Dispenser",
+   "name_ar": "SAMSUNG Bespoke AI Side by Side Refrigerator 13 8Cuft Freezer 7 1Cuft LCD I&W Dispenser",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:06.953Z"
+  },
+  {
+   "id": "e2faa2b3-13ea-4d67-a564-3a75236234f7",
+   "name_en": "Beko Refrigerator 12.5Cu.ft, Freezer 4.3Cu.ft Inverter, Silver",
+   "name_ar": "Beko Refrigerator 12 5Cu ft Freezer 4 3Cu ft Inverter Silver",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:16.532Z"
+  },
+  {
+   "id": "5b22f42e-46c8-48a7-8eb6-918dfd9fd400",
+   "name_en": "Samsung Front Load Washer/Dryer, 21/12kg , WiFi, 1100 rpm, Ecobubble, Color Greige",
+   "name_ar": "Samsung Front Load Washer/Dryer 21/12kg WiFi 1100 rpm Ecobubble Color Greige",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:28.577Z"
+  },
+  {
+   "id": "f64a5cc2-9149-462b-8650-f2de34675a23",
+   "name_en": "Hisense Refrigerator 10.2Cu.ft, Freezer 3.1Cu.ft, Inverter, Multi Air Flow, Color Silver",
+   "name_ar": "Hisense Refrigerator 10 2Cu ft Freezer 3 1Cu ft Inverter Multi Air Flow Color Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:47.386Z"
+  },
+  {
+   "id": "331d8fdb-aaf8-4d6c-a4e1-6f1eaae479a2",
+   "name_en": "Hitachi Refrigerator 15.7Cu.ft, Freezer 5.5Cu.ft, Inverter, Brilliant White",
+   "name_ar": "Hitachi Refrigerator 15 7Cu ft Freezer 5 5Cu ft Inverter Brilliant White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:41.344Z"
+  },
+  {
+   "id": "6e683a94-9913-4b05-855d-a46272e59220",
+   "name_en": "Panasonic, SBS Refrigerator 11.2Cu.ft, Freezer 4.6Cu.ft, Cross French Door, Inverter, Black",
+   "name_ar": "Panasonic SBS Refrigerator 11 2Cu ft Freezer 4 6Cu ft Cross French Door Inverter Black",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:30.235Z"
+  },
+  {
+   "id": "ea4f93ac-1c69-4368-b940-ea7ce96b8a04",
+   "name_en": "Kion Washing Machine Top Loading 18kg, Full Automatic, 10 Programs",
+   "name_ar": "Kion Washing Machine Top Loading 18kg Full Automatic 10 Programs",
+   "brand": "كيون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:02.087Z"
+  },
+  {
+   "id": "ce6e9b97-826e-4f86-98a1-115cbced55ca",
+   "name_en": "Rebune Cosmetics Refrigerator, 4 Liter, with Cooling/Heating, 45W.",
+   "name_ar": "Rebune Cosmetics Refrigerator 4 Liter with Cooling/Heating 45W",
+   "brand": "ريبون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:58.002Z"
+  },
+  {
+   "id": "19b38922-55be-4c28-99c3-803280df13d3",
+   "name_en": "Hisense, Freezer / Fridge Convertible, 2-in-1, 702L, Inverter, White",
+   "name_ar": "Hisense Freezer / Fridge Convertible 2-in-1 702L Inverter White",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:58.718Z"
+  },
+  {
+   "id": "3fef66e7-9495-44c3-bb8f-02f89341f45f",
+   "name_en": "Panasonic Refrigerator 17.2Cu.ft, Freezer 5.7Cu.ft s, Inverter,  Silver",
+   "name_ar": "Panasonic Refrigerator 17 2Cu ft Freezer 5 7Cu ft s Inverter Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:00.439Z"
+  },
+  {
+   "id": "0fe02727-6a3a-4988-936a-3398dcd1636a",
+   "name_en": "Hitachi Refrigerator 12.9Cu.ft, Freezer 5.1Cu.ft, Inverter Compressor, Brilliant Silver",
+   "name_ar": "Hitachi Refrigerator 12 9Cu ft Freezer 5 1Cu ft Inverter Compressor Brilliant Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:40.845Z"
+  },
+  {
+   "id": "abb06ddd-f61a-4483-b362-eb6efd3bd1ea",
+   "name_en": "Panasonic Front Load Washing Machine 9kg,  Hygiene Care, Abaya Wash, White",
+   "name_ar": "Panasonic Front Load Washing Machine 9kg Hygiene Care Abaya Wash White",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:44.895Z"
+  },
+  {
+   "id": "309d8601-1e15-410a-b2ec-72d22549a149",
+   "name_en": "Ariston refrigerator and freezer double door,15 cu.ft ,4.9 cu.ft,silver,art84f1613xsa",
+   "name_ar": "Ariston refrigerator and freezer double door 15 cu ft 4 9 cu ft silver art84f1613xsa",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:25.428Z"
+  },
+  {
+   "id": "d35004d3-0ee4-41ff-ad81-b7f800c9e479",
+   "name_en": "Candy Twin Tub Washing Machine 12 KG",
+   "name_ar": "Candy Twin Tub Washing Machine 12 KG",
+   "brand": "كاندي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:35.015Z"
+  },
+  {
+   "id": "6e3ae443-49af-41c4-96f1-ddd191be288b",
+   "name_en": "ClassPro Single Door Refrigerator, 173L, Defrost System, Interior LED, D Class, White",
+   "name_ar": "ClassPro Single Door Refrigerator 173L Defrost System Interior LED D Class White",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:08.188Z"
+  },
+  {
+   "id": "74c512b3-161d-4fc1-a75b-207afea6da00",
+   "name_en": "ClassPro Single Door Compact Refrigerator, 1.6 Cu.ft, Black",
+   "name_ar": "ClassPro Single Door Compact Refrigerator 1 6 Cu ft Black",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:35.933Z"
+  },
+  {
+   "id": "bbf074e6-77a5-48c9-94db-d0e2250f77fb",
+   "name_en": "Samsung Front Load Washer Dryer Combo 18KG/11KG, Direct Drive, WIFI, Inox",
+   "name_ar": "Samsung Front Load Washer Dryer Combo 18KG/11KG Direct Drive WIFI Inox",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:39.518Z"
+  },
+  {
+   "id": "036dfdda-1397-4a30-ad85-989de4051914",
+   "name_en": "Karcher, K1 Horizontal Pressure Washer, 220-240V, Yellow",
+   "name_ar": "Karcher K1 Horizontal Pressure Washer 220-240V Yellow",
+   "brand": "كارشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:41.024Z"
+  },
+  {
+   "id": "f463b0c8-02e4-4d4c-960f-1d83ce6ec2ff",
+   "name_en": "TOSHIBA, Refrigerator 14.7 Cuft freezer 4.2 Cuft ,PBIO, Touch Panel, Inverter, Starry Silver",
+   "name_ar": "TOSHIBA Refrigerator 14 7 Cuft freezer 4 2 Cuft PBIO Touch Panel Inverter Starry Silver",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:04.845Z"
+  },
+  {
+   "id": "35fdfb45-e497-4f23-8c07-236115c45e22",
+   "name_en": "Haier Side by Side Refrigerator, 13.7Cu.ft, Freezer 7.5Cu.ft, Silver",
+   "name_ar": "Haier Side by Side Refrigerator 13 7Cu ft Freezer 7 5Cu ft Silver",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:43.135Z"
+  },
+  {
+   "id": "02b0a062-e059-4f88-bb73-b64bc9e1bf0f",
+   "name_en": "LG, Twin-Tub Washer, 12 Kg, White",
+   "name_ar": "LG Twin-Tub Washer 12 Kg White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:23.886Z"
+  },
+  {
+   "id": "c8b986f5-9901-4040-8924-4b13c249763e",
+   "name_en": "Classpro Side by Side Refrigerator 11.8Cu.ft, Freezer 6.1Cu.ft,, Inverter, Black",
+   "name_ar": "Classpro Side by Side Refrigerator 11 8Cu ft Freezer 6 1Cu ft Inverter Black",
+   "brand": "كلاس برو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:24.064Z"
+  },
+  {
+   "id": "56850b55-8d93-4188-a9d1-453b8dcf4a2b",
+   "name_en": "Hitachi Refrigerator 11.8Cu.ft, Freezer 4.1Cu.ft, Inverter Control, Silver",
+   "name_ar": "Hitachi Refrigerator 11 8Cu ft Freezer 4 1Cu ft Inverter Control Silver",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:46.063Z"
+  },
+  {
+   "id": "6cebcda6-906b-43c3-8a3a-04e5d52faac0",
+   "name_en": "Hisense, Freezer / Fridge Convertible, 2-in-1, One Door, 20.9 Cu.ft, Inverter, Inox Silver",
+   "name_ar": "Hisense Freezer / Fridge Convertible 2-in-1 One Door 20 9 Cu ft Inverter Inox Silver",
+   "brand": "هايسينس",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:55.579Z"
+  },
+  {
+   "id": "886f8b12-da77-4173-bddb-9a4583508b83",
+   "name_en": "Beko Front load Washing Machine,10kg, Prosmart Inverter,1400rpm, Gray",
+   "name_ar": "Beko Front load Washing Machine 10kg Prosmart Inverter 1400rpm Gray",
+   "brand": "بيكو",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:47.084Z"
+  },
+  {
+   "id": "eb388256-3b4c-4f8f-a59c-4bb3ee4be075",
+   "name_en": "Fisher Twin Tub Washing Machine 14 Kg, Plastic Body, White",
+   "name_ar": "Fisher Twin Tub Washing Machine 14 Kg Plastic Body White",
+   "brand": "فيشر",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:03.066Z"
+  },
+  {
+   "id": "8660dad0-c858-4f94-bda8-da0c0420925d",
+   "name_en": "Hitachi Refrigerator 11.8Cu.ft, Freezer 4.1Cu.ft, No Frost, Inverter Compressor, Color Black",
+   "name_ar": "Hitachi Refrigerator 11 8Cu ft Freezer 4 1Cu ft No Frost Inverter Compressor Color Black",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:28.147Z"
+  },
+  {
+   "id": "8d52dc60-8635-4278-9a16-73548f7ea652",
+   "name_en": "Hitachi, Top Load Washer 10.5kg, Dark Grey",
+   "name_ar": "Hitachi Top Load Washer 10 5kg Dark Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:31.075Z"
+  },
+  {
+   "id": "52e1c8f1-3790-49ce-9f79-f92fbaa73550",
+   "name_en": "Hitachi Refrigerator 11.1Cu.ft, Freezer 3.3Cu.ft, No Frost, Inverter, Carbon Grey",
+   "name_ar": "Hitachi Refrigerator 11 1Cu ft Freezer 3 3Cu ft No Frost Inverter Carbon Grey",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:38.854Z"
+  },
+  {
+   "id": "e36ac18c-2ac5-4ae0-acf8-50f1bfc5d732",
+   "name_en": "Haier, Refrigerator 5.1Cu.ft, Freezer 1.8Cu.ft, LED light, Recessed Handle, Inox",
+   "name_ar": "Haier Refrigerator 5 1Cu ft Freezer 1 8Cu ft LED light Recessed Handle Inox",
+   "brand": "هاير",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:47.822Z"
+  },
+  {
+   "id": "160773f9-0681-4b59-9196-55f7559067a9",
+   "name_en": "LG, Top Load Washing Machine, 15kg, Smart Inverter Motor, Smart Motion, Middle Black",
+   "name_ar": "LG Top Load Washing Machine 15kg Smart Inverter Motor Smart Motion Middle Black",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:27.115Z"
+  },
+  {
+   "id": "6ff12ed9-2e3e-4367-bf33-44a5b7e5565b",
+   "name_en": "Ariston refrigerator and freezer double door,12.5 cu.ft,4.3 cu.ft,inox,art70f6502xsa",
+   "name_ar": "Ariston refrigerator and freezer double door 12 5 cu ft 4 3 cu ft inox art70f6502xsa",
+   "brand": "اريستون",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:06:26.487Z"
+  },
+  {
+   "id": "706f2543-f52f-412b-a167-61afbe2031bd",
+   "name_en": "Toshiba Free Standing Dishwasher 14 Place Setting 6 Programs White",
+   "name_ar": "Toshiba Free Standing Dishwasher 14 Place Setting 6 Programs White",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:06:52.215Z"
+  },
+  {
+   "id": "a2b9eb12-87f1-4359-baf3-ea6554cd1b37",
+   "name_en": "Samsung Side By Side Refrigerator 14.8Cu.ft, Freezer 8.1Cu.ft, DIT Compressor, Silver Matt",
+   "name_ar": "Samsung Side By Side Refrigerator 14 8Cu ft Freezer 8 1Cu ft DIT Compressor Silver Matt",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:05:33.786Z"
+  },
+  {
+   "id": "632c9276-0421-4527-b206-24d08b6ea4f6",
+   "name_en": "Hitachi Refrigerator 11.1Cu.ft, Freezer 3.3Cu.ft, No Frost, Inverter Compressor, White",
+   "name_ar": "Hitachi Refrigerator 11 1Cu ft Freezer 3 3Cu ft No Frost Inverter Compressor White",
+   "brand": "هيتاشي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:37.778Z"
+  },
+  {
+   "id": "4d5c5b77-2d4c-4354-8b53-48a1ed04aa39",
+   "name_en": "LG, Built-In Refrigerator, 6Cu.ft, Bottom Freezer 2.2 Cu.Ft, Multi Air Flow, White",
+   "name_ar": "LG Built-In Refrigerator 6Cu ft Bottom Freezer 2 2 Cu Ft Multi Air Flow White",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:08:48.203Z"
+  },
+  {
+   "id": "560d1555-e6ba-46d0-9efc-5838043c074d",
+   "name_en": "Panasonic Top Load Washing Machine, 16Kg, TD inverter, Dark Silver",
+   "name_ar": "Panasonic Top Load Washing Machine 16Kg TD inverter Dark Silver",
+   "brand": "باناسونيك",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:08:41.719Z"
+  },
+  {
+   "id": "c0d613de-9afa-4c55-a03e-98f4e6496da6",
+   "name_en": "Toshiba Refrigerator 15.7Cu.ft, Freezer 5.8Cuft, Origin INVERTER, White",
+   "name_ar": "Toshiba Refrigerator 15 7Cu ft Freezer 5 8Cuft Origin INVERTER White",
+   "brand": "توشيبا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:45.048Z"
+  },
+  {
+   "id": "6a1a023f-e08f-4efc-981a-12d062f21d2c",
+   "name_en": "Midea Frontload Washer/Dryer 10kg/7kg, Inverter, WIFI, Steam, 1400 rpm, Titanium Color",
+   "name_ar": "Midea Frontload Washer/Dryer 10kg/7kg Inverter WIFI Steam 1400 rpm Titanium Color",
+   "brand": "ميديا",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:07:23.215Z"
+  },
+  {
+   "id": "7cb120ad-4073-4ac8-99cc-7d42cc382fca",
+   "name_en": "Samsung Refrigerator 14.2Cu.ft, Freezer 4.4Cu.ft, Digital Inverter, Wifi, Color Black DOI",
+   "name_ar": "Samsung Refrigerator 14 2Cu ft Freezer 4 4Cu ft Digital Inverter Wifi Color Black DOI",
+   "brand": "سامسونج",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T00:07:50.891Z"
+  },
+  {
+   "id": "e47aa6a9-a533-4f0e-9c1b-91a9e4b6de5c",
+   "name_en": "LG Refrigerator 18Cu.ft, Freezer 9.3Cu.ft, SidebySide, Multi Door,Inverter Linear Comp, Black Steel",
+   "name_ar": "LG Refrigerator 18Cu ft Freezer 9 3Cu ft SidebySide Multi Door Inverter Linear Comp Black Steel",
+   "brand": "ال جي",
+   "category": "appliance",
+   "tps_version": "1.0",
+   "created_at": "2026-06-28T06:04:36.721Z"
+  }
+ ]
+}

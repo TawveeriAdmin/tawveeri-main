@@ -257,7 +257,9 @@ for (const cat of APPLIANCE_CATEGORIES) {
   CATEGORY_DEFS[cat] = {
     category: cat, detected: cat, plugin: b.plugin,
     normalize: (a, bb, br) => b.plugin.normalize(a, bb, br),
-    filterKeywords: [b.config.nounEn.split(" ")[0], b.config.nounAr],
+    // ADR-254: a config may name its own prefilter — the derived default fails when
+    // the market's words differ from the noun (cooker listings say «فرن غاز», not «طباخ»).
+    filterKeywords: b.config.filterKeywords ?? [b.config.nounEn.split(" ")[0], b.config.nounAr],
     version: b.config.version,
     names: (k) => b.names(k),
     attrs: (k, rep) => b.attrs(k, rep),

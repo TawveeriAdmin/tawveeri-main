@@ -557,6 +557,10 @@ export const APPLIANCE_META: Record<string, ApplianceMeta> = {
   toaster: { nounAr: "محمصة", metricAr: "شريحة", largeAt: 4, features: { digital: "رقمية", defrost: "إذابة الثلج" }, featureWants: {} },
   blender: { nounAr: "خلاط", metricAr: "واط", features: { cordless: "لاسلكي", ice_crush: "جرش الثلج", digital: "رقمي" }, featureWants: {} },
   oven: { nounAr: "فرن", metricAr: "سم", features: { steam: "بخار", convection: "مروحة حرارية", self_clean: "تنظيف ذاتي", gas: "غاز", digital: "رقمي" }, featureWants: {} },
+  // ADR-254 — freestanding gas cooker (بوتاجاز): the CORE Saudi cooking appliance,
+  // a separate purchase mission from built-in ovens. «أمان كامل» (flame-failure
+  // cutoff on all burners) is the market's own differentiating attribute.
+  cooker: { nounAr: "طباخ غاز", metricAr: "سم", features: { full_safety: "أمان كامل (فصل الغاز تلقائيًا)", self_ignition: "إشعال ذاتي", fan: "مروحة توزيع الحرارة", grill: "شواية" }, featureWants: {} },
 };
 export function decideAppliance(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const meta = APPLIANCE_META[task.category];
