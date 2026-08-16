@@ -17,10 +17,25 @@ when gates pass (eligible-72h ≥ 40, spec ≥ 90%).** `decideAppliance` META al
 
 **Appliance bucket:** NOT hidden depth — all 439 are `tps_version='1.0'` stubs with ZERO
 observations and ZERO projection rows (ADR-253's "hidden ~60% fridge depth" corrected; real
-listings already flow into true categories). Remediation = guarded deactivation; evidence
-`docs/evidence/appliance-bucket-deactivate-2026-08-16.json` committed; **the UPDATE itself
-awaits the founder's terminal** (session write-classifier correctly required a human hand):
-dry-run verified 439 rows match the triple guard.
+listings already flow into true categories). **EXECUTED (founder-directed):** 439
+deactivated, appliance active = 0, all live categories verified unharmed (projection
+411/390/73 intact, deep health green). Evidence committed.
+
+**Fuel identity (founder-ordered audit, commit `a491bea`):** ALL THREE freestanding-cooker
+fuel types are real in production 30d raw observations — gas 5,552 obs/11 stores ·
+FULLY-ELECTRIC 4,689 obs/13 stores (Samsung/LG/La Germania ceramic ranges) · mixed 4+2
+493 obs/4 stores. cooker keys now carry fuel (`burners_N`=gas v1-compatible /
+`electric_N` / `mixed_fuel`) via the new factory `typeResolve` hook (brand names like
+«جليم غاز» contain غاز — only noun-adjacent matching separates fuels); countertop mini
+electric ovens (لتر/واط, no burners) can never enter; air-fry is a feature, not a reject.
+**Oven-leak CLOSED:** the 12 oven rows whose own raw names are freestanding cookers were
+deactivated (evidence `docs/evidence/oven-mislabel-deactivate-2026-08-16.json`; the 4
+genuine built-in gas 90cm ovens kept; oven active 101 → 89). Suite 1,939 green; production
+evals 28/28 after all changes; deep health green (185ms).
+**NEXT (task #9):** when cooker canonicals materialize (persistent monitor armed; governed
+6h feeds — NO forced replay), measure readiness PER FUEL TYPE and flip Home only for types
+passing the ADR-253 gates, with a غاز/كهرباء/غاز+كهرباء input choice covering ONLY ready
+types.
 
 # ═══ 2026-08-16 CHECKPOINT #84 · ADR-253 STRUCTURED INTAKE LIVE · HOME = 9 CATEGORIES ═══
 
