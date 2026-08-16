@@ -2,7 +2,7 @@
 // (Part B of the Home Decision Intelligence mission; AUDIT_REPORT_HOME §19–20.)
 import {
   parseHomeMission, buildLegs, eligibleRows, allocateBudget, comparisonClaim,
-  tvSizeOf, litersBandFor, kgBandFor, MISSION_CATEGORIES,
+  tvSizeOf, litersBandFor, kgBandFor, CORE_MISSION_CATEGORIES, effectiveQuantity,
 } from "@/lib/agent/home-mission";
 import type { CanonicalRow } from "@/lib/agent/decision-engine";
 
@@ -27,9 +27,11 @@ describe("parseHomeMission — the founder's own example", () => {
     expect(p.household_size).toBe(4);
     expect(p.budget_total).toBe(20000);
   });
-  it("whole-home signal defaults all four audited categories, AC marked high", () => {
+  it("whole-home signal defaults the four CORE categories (never the optional tier), AC marked high", () => {
     expect(p.whole_home).toBe(true);
-    for (const c of MISSION_CATEGORIES) expect(p.categories[c]).toBeDefined();
+    for (const c of CORE_MISSION_CATEGORIES) expect(p.categories[c]).toBeDefined();
+    expect(p.categories.vacuum).toBeUndefined();
+    expect(p.categories.oven).toBeUndefined();
     expect(p.categories.air_conditioner).toBe("high");
   });
 });
@@ -75,6 +77,123 @@ describe("buildLegs", () => {
   it("space with no area → needs room_area (honest input state, never a guess)", () => {
     const legs = buildLegs(parseHomeMission("ابي مكيف لغرفة النوم"));
     expect(legs[0].needs).toBe("room_area");
+  });
+});
+
+// ── ADR-253: quantity-first mission construction ──────────────────────────────────
+describe("quantities — room count ≠ device count ≠ target spaces (ADR-253)", () => {
+  it("«5 مكيفات» → 5 AC purchase units, each with its own target-space slot", () => {
+    const p = parseHomeMission("انتقلت لفيلا. أبي 5 مكيفات وثلاجة وغسالة وتلفزيون وميزانيتي 30 ألف.");
+    expect(p.quantities.air_conditioner).toBe(5);
+    expect(p.property_type).toBe("villa");
+    const legs = buildLegs(p);
+    const ac = legs.filter((l) => l.category === "air_conditioner");
+    expect(ac.length).toBe(5);
+    // no room was named → every unit honestly needs its area, none guessed
+    expect(ac.every((l) => l.needs === "room_area")).toBe(true);
+  });
+  it("named rooms attach to the first units; extra units stay unknown-area", () => {
+    const p = parseHomeMission("أبي 4 مكيفات. غرفة النوم 16 متر والصالة 28 متر.");
+    const ac = buildLegs(p).filter((l) => l.category === "air_conditioner");
+    expect(ac.length).toBe(4);
+    expect(ac[0].space?.area_m2).toBe(16);
+    expect(ac[1].space?.area_m2).toBe(28);
+    expect(ac[2].needs).toBe("room_area");
+    expect(ac[3].needs).toBe("room_area");
+  });
+  it("3 named rooms without an AC count → 3 units (rooms are the fallback, not the master)", () => {
+    const p = parseHomeMission("أبي مكيفات. غرفة 16 متر وغرفة 14 متر وصالة 28 متر.");
+    expect(buildLegs(p).filter((l) => l.category === "air_conditioner").length).toBe(3);
+  });
+  it("Arabic dual and word-number forms: «مكيفين» «ثلاجتين» «خمس مكيفات»", () => {
+    expect(parseHomeMission("أبي مكيفين وثلاجتين").quantities).toMatchObject({ air_conditioner: 2, refrigerator: 2 });
+    expect(parseHomeMission("أبي خمس مكيفات").quantities.air_conditioner).toBe(5);
+  });
+  it("quantity zero is a valid, honored purchase decision", () => {
+    const p = parseHomeMission("جهز بيتي");
+    p.quantities.tv = 0; p.categories.tv = "excluded";
+    expect(buildLegs(p).some((l) => l.category === "tv")).toBe(false);
+    expect(effectiveQuantity(p, "tv")).toBe(0);
+  });
+  it("multi-unit non-AC: «تلفزيونين» → 2 TV legs with the stable first id", () => {
+    const legs = buildLegs(parseHomeMission("أبي تلفزيونين"));
+    expect(legs.map((l) => l.id)).toEqual(["tv", "tv_2"]);
+  });
+  it("quantities are capped (AC ≤ 8) — a typo cannot demand 50 units", () => {
+    expect(parseHomeMission("أبي 50 مكيفات").quantities.air_conditioner).toBe(8);
+  });
+  it("property type is context only — a villa with no counts creates NO quantities", () => {
+    const p = parseHomeMission("عندي فيلا");
+    expect(p.property_type).toBe("villa");
+    expect(Object.keys(p.quantities).length).toBe(0);
+  });
+});
+
+describe("ADR-253 categories — disclosure tier + cooking taxonomy honesty", () => {
+  it("vacuum / microwave / dishwasher / air fryer parse into plannable legs", () => {
+    const p = parseHomeMission("أبي مكنسة وميكروويف وغسالة صحون وقلاية هوائية");
+    const cats = buildLegs(p).map((l) => l.category);
+    expect(cats).toEqual(expect.arrayContaining(["vacuum", "microwave", "dishwasher", "air_fryer"]));
+  });
+  it("«غسالة صحون» is a dishwasher, never a washing machine", () => {
+    const p = parseHomeMission("أبي غسالة صحون");
+    expect(p.categories.dishwasher).toBeDefined();
+    expect(p.categories.washing_machine).toBeUndefined();
+  });
+  it("«فرن بلت إن» plans the built-in oven category", () => {
+    const p = parseHomeMission("أبي فرن بلت إن");
+    expect(p.categories.oven).toBeDefined();
+    expect(buildLegs(p).some((l) => l.category === "oven")).toBe(true);
+  });
+  it("bare «فرن» and «بوتاجاز» are HONESTLY unsupported (Saudi default = the gas cooker we lack)", () => {
+    const p1 = parseHomeMission("جهز بيتي وأبي فرن");
+    expect(p1.categories.oven).toBeUndefined();
+    expect(p1.unsupported_mentions).toContain("فرن");
+    const p2 = parseHomeMission("أبي بوتاجاز غاز");
+    expect(p2.categories.oven).toBeUndefined();
+    expect(p2.unsupported_mentions).toContain("طباخ غاز (بوتاجاز)");
+  });
+  it("dryer, freezer, water dispenser, water heater are acknowledged, never planned", () => {
+    const p = parseHomeMission("أبي نشافة وفريزر وبرادة ماء وسخان");
+    expect(p.unsupported_mentions).toEqual(
+      expect.arrayContaining(["نشافة", "فريزر", "برادة ماء", "سخان ماء"]));
+    expect(buildLegs(p).length).toBe(0);
+  });
+});
+
+describe("posture — redistributes the SAME fixed budget, never invents money (ADR-253)", () => {
+  const legs = buildLegs(parseHomeMission("أبي مكيف لغرفة 16 متر وثلاجة وتلفزيون. أسرتنا 4."));
+  const cands = legs.map((leg) => ({
+    leg,
+    candidates: [
+      { canonical_id: `${leg.id}_best`, price: 2000, rank: 0 },
+      { canonical_id: `${leg.id}_mid`, price: 1400, rank: 1 },
+      { canonical_id: `${leg.id}_cheap`, price: 800, rank: 2 },
+    ],
+  }));
+  it("economic → cheapest eligible everywhere; surplus stays unspent", () => {
+    const r = allocateBudget(cands, 10000, "economic");
+    expect(r.allocations.every((a) => a.picked?.endsWith("_cheap"))).toBe(true);
+    expect(r.total_allocated).toBe(2400);
+    expect(r.remaining).toBe(7600);
+  });
+  it("balanced spreads a small surplus across legs instead of concentrating it", () => {
+    // min 2400, budget 4200 → slack 1800 = 3 × 600 (cheap→mid): every leg reaches mid
+    const r = allocateBudget(cands, 4200, "balanced");
+    expect(r.allocations.every((a) => a.picked?.endsWith("_mid"))).toBe(true);
+  });
+  it("premium (and null) keep the pre-ADR-253 greedy-to-best behavior", () => {
+    const g = allocateBudget(cands, 10000, "premium");
+    const n = allocateBudget(cands, 10000, null);
+    expect(g.allocations.every((a) => a.picked?.endsWith("_best"))).toBe(true);
+    expect(n.allocations.every((a) => a.picked?.endsWith("_best"))).toBe(true);
+  });
+  it("no posture ever changes feasibility or min_total", () => {
+    for (const posture of ["economic", "balanced", "premium", null] as const) {
+      const r = allocateBudget(cands, 1000, posture);
+      expect(r.feasible).toBe(false);
+      expect(r.min_total).toBe(2400);
+    }
   });
 });
 

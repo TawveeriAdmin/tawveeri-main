@@ -61,6 +61,11 @@ const GROUP_LABELS: Record<string, { ar: string; en: string }> = {
   refrigerator: { ar: "الثلاجة", en: "Refrigerator" },
   washing_machine: { ar: "الغسالة", en: "Washing machine" },
   tv: { ar: "التلفزيون", en: "TV" },
+  vacuum: { ar: "المكنسة", en: "Vacuum" },
+  microwave: { ar: "الميكروويف", en: "Microwave" },
+  dishwasher: { ar: "غسالة الصحون", en: "Dishwasher" },
+  oven: { ar: "فرن بلت إن", en: "Built-in oven" },
+  air_fryer: { ar: "القلاية الهوائية", en: "Air fryer" },
 };
 
 export function groupLegs(legs: LegOut[]): LegGroup[] {
@@ -122,6 +127,14 @@ export function fitChip(leg: LegOut, locale: "ar" | "en"): Chip | null {
   if (leg.category === "tv" && leg.picked?.tv_size != null) {
     return { text: locale === "ar" ? `${leg.picked.tv_size} بوصة` : `${leg.picked.tv_size}"`, tone: "info" };
   }
+  // ADR-253 disclosure-tier categories: decideAppliance publishes {capacity, capacity_unit,
+  // appliance_type} in dna — render the verified capacity, never anything inferred.
+  if (dna.capacity != null && Number.isFinite(Number(dna.capacity))) {
+    const unit = String(dna.capacity_unit ?? "");
+    const unitAr: Record<string, string> = { W: "واط", L: "لتر", "place-settings": "مكان", cm: "سم" };
+    const u = locale === "ar" ? (unitAr[unit] ?? unit) : unit;
+    if (u) return { text: `${dna.capacity} ${u}`, tone: "info" };
+  }
   return null;
 }
 
@@ -170,13 +183,32 @@ export interface Mission {
   spaces: SpaceOut[];
   household_size: number | null;
   budget_total: number | null;
+  posture: "economic" | "balanced" | "premium" | null;
+  property_type: "apartment" | "villa" | "partial" | null;
   categories: Partial<Record<string, Emphasis>>;
+  /** Purchase quantity per category — ZERO VALID (= excluded). ADR-253. */
+  quantities: Partial<Record<string, number>>;
   priorities: string[];
   deprioritized_priorities: string[];
   excluded_priorities: string[];
   whole_home: boolean;
   unsupported_mentions: string[];
   parsed_from_text: string;
+}
+
+/** One coherent quantity mutation: quantities and categories move together
+ *  (qty 0 ⇔ excluded), and AC target spaces stay sized to the AC quantity. */
+export function setQuantity(mission: Mission, cat: string, qty: number): Mission {
+  const q = Math.max(0, Math.min(cat === "air_conditioner" ? 8 : 4, Math.floor(qty)));
+  const categories = { ...mission.categories, [cat]: q === 0 ? ("excluded" as Emphasis) : mission.categories[cat] === "excluded" || !mission.categories[cat] ? ("normal" as Emphasis) : mission.categories[cat]! };
+  let spaces = mission.spaces;
+  if (cat === "air_conditioner") {
+    spaces = mission.spaces.slice(0, q);
+    for (let i = spaces.length; i < q; i++) {
+      spaces = [...spaces, { key: `space_${i + 1}`, label_ar: `مكيف ${i + 1}`, label_en: `AC ${i + 1}`, area_m2: null }];
+    }
+  }
+  return { ...mission, categories, quantities: { ...mission.quantities, [cat]: q }, spaces };
 }
 
 const toAsciiDigits = (t: string): string =>
@@ -206,16 +238,34 @@ export function parseDelta(raw: string, mission: Mission): { next: Mission; labe
     const v = thousands(x);
     if (v && v >= 1000 && v <= 500000) return { next: { ...mission, budget_total: v }, label: `budget→${v}` };
   }
+  // Dishwasher/oven MUST precede washer/التلفزيون-class words they overlap with.
   const cats: [string, RegExp][] = [
+    ["dishwasher", /جلاي[ةه]|غسال[ةه]\s*(?:ال)?(?:صحون|أطباق|اطباق)|dishwasher/],
+    ["oven", /فرن\s*(?:ال)?(?:بلت|مدمج)|بلت\s*[إا]ن|built.?in oven/],
+    ["vacuum", /مكنس[ةه]|vacuum/],
+    ["microwave", /مي?كرو ?وي?ف|مايكرويف|microwave/],
+    ["air_fryer", /قلاي[ةه]|air ?fryer/],
     ["tv", /تلفزيون|شاش[ةه]|tv/], ["washing_machine", /غسال[ةه]|washer/],
     ["refrigerator", /ثلاج|fridge/], ["air_conditioner", /مكيف|تكييف|ac\b/],
   ];
+  const DUAL: Record<string, RegExp> = {
+    air_conditioner: /مكيفين/, refrigerator: /ثلاجتين/, tv: /تلفزيونين|شاشتين/,
+    washing_machine: /غسالتين(?!\s*(?:ال)?(?:صحون|أطباق))/, vacuum: /مكنستين/,
+  };
   for (const [cat, re] of cats) {
     if (re.test(x)) {
-      if (/شيل|احذف|بدون|ما ابي|ما أبي|remove|drop|without/.test(x))
-        return { next: { ...mission, categories: { ...mission.categories, [cat]: "excluded" } }, label: `exclude:${cat}` };
-      if (/رجع|اضف|أضف|ضيف|add|bring back/.test(x))
-        return { next: { ...mission, categories: { ...mission.categories, [cat]: "normal" } }, label: `add:${cat}` };
+      // «خل المكيفات 4» / «ابي 3 تلفزيونات» / «مكيفين» → quantity mutation (0 handled below)
+      const qm = x.match(new RegExp(`(\\d{1,2})\\s*(?:${re.source})`)) || x.match(new RegExp(`(?:${re.source})[^0-9]{0,12}?(\\d{1,2})(?!\\d)\\s*(?:منها|وحدات|أجهزة|units)?(?:\\s|$)`));
+      const dualHit = DUAL[cat]?.test(x) ? 2 : null;
+      const wantsRemove = /شيل|احذف|بدون|ما ابي|ما أبي|remove|drop|without/.test(x);
+      const wantsAdd = /رجع|اضف|أضف|ضيف|ابي|أبي|add|bring back|خل/.test(x);
+      if (wantsRemove)
+        return { next: setQuantity(mission, cat, 0), label: `exclude:${cat}` };
+      const q = dualHit ?? (qm ? Number(qm[1] ?? qm[2]) : null);
+      if (q != null && q >= 0 && q <= 20 && (wantsAdd || q !== (mission.quantities[cat] ?? null)))
+        return { next: setQuantity(mission, cat, q), label: `qty:${cat}→${q}` };
+      if (wantsAdd)
+        return { next: setQuantity(mission, cat, Math.max(1, mission.quantities[cat] ?? 0)), label: `add:${cat}` };
     }
   }
   const hh = x.match(/(?:عدد )?(?:ال)?([أا]سر[ةه]|عائل[ةه]|household|أفراد|اشخاص|أشخاص)\D{0,8}(\d{1,2})/) || x.match(/(\d{1,2})\s*([أا]فراد|[أا]شخاص|people)/);

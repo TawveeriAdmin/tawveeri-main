@@ -35,12 +35,30 @@ const asciiDigits = (t: string) =>
   });
 const norm = (t: string) => asciiDigits((t || "").toLowerCase()).replace(/٬/g, "");
 
-/** The four audited GO_HOME categories — the ONLY categories a home mission may plan.
- *  Oven measured NOT pilot-grade (AUDIT_REPORT_HOME §4); anything else is out of scope. */
-export const MISSION_CATEGORIES = ["air_conditioner", "refrigerator", "washing_machine", "tv"] as const;
+/** Home mission categories (ADR-253 readiness gates).
+ *  CORE — the four audited GO_HOME categories (ADR-249): the whole-home default set.
+ *  OPTIONAL — READY WITH DISCLOSURE (coherent taxonomy + fresh eligible-72h ≥ 40 +
+ *  key decision-spec ≥ 90%, measured 2026-08-16): never auto-added; the shopper adds
+ *  them explicitly (quantity > 0) or names them. Their thin comparison depth is carried
+ *  by the per-item claim gate (availability/single wording), not hidden.
+ *  `oven` is BUILT-IN ovens ONLY (production audit: 101/101 built-in) — the Saudi
+ *  freestanding gas cooker (بوتاجاز/طباخ) is NOT in the catalog and must never be
+ *  silently answered with built-ins (86.4% of Saudi households cook with gas, GASTAT). */
+export const CORE_MISSION_CATEGORIES = ["air_conditioner", "refrigerator", "washing_machine", "tv"] as const;
+export const OPTIONAL_MISSION_CATEGORIES = ["vacuum", "microwave", "dishwasher", "oven", "air_fryer"] as const;
+export const MISSION_CATEGORIES = [...CORE_MISSION_CATEGORIES, ...OPTIONAL_MISSION_CATEGORIES] as const;
 export type MissionCategory = (typeof MISSION_CATEGORIES)[number];
 
 export type CategoryEmphasis = "high" | "normal" | "deprioritized" | "excluded";
+export type BudgetPosture = "economic" | "balanced" | "premium";
+
+/** Per-unit quantity caps — sanity bounds, not product policy. AC missions are plural in
+ *  KSA (the HEAC subsidy itself covers up to 6 splits/household); other categories rarely
+ *  exceed a couple of units per home. */
+export const QUANTITY_CAP: Record<MissionCategory, number> = {
+  air_conditioner: 8, refrigerator: 4, washing_machine: 4, tv: 4,
+  vacuum: 4, microwave: 4, dishwasher: 4, oven: 4, air_fryer: 4,
+};
 
 export interface HomeSpace {
   key: string;            // stable id within the mission ("space_1")
@@ -50,15 +68,26 @@ export interface HomeSpace {
 }
 
 export interface HomeMissionParse {
+  /** AC TARGET SPACES — one per AC purchase unit, NOT the home's room list.
+   *  Invariant (ADR-253): property_room_count ≠ ac_unit_count ≠ ac_target_spaces. */
   spaces: HomeSpace[];
   household_size: number | null;
   budget_total: number | null;
+  /** Allocation posture over the FIXED budget (never a price fabrication):
+   *  economic = cheapest eligible; balanced = spread upgrades; premium/null = best
+   *  affordable (the pre-ADR-253 behavior, unchanged). */
+  posture: BudgetPosture | null;
+  /** Context only — NEVER generates quantities (ADR-253). */
+  property_type: "apartment" | "villa" | "partial" | null;
   categories: Partial<Record<MissionCategory, CategoryEmphasis>>;
+  /** PURCHASE quantity per category. ZERO IS VALID (= excluded). Absent = 1 when the
+   *  category is present. AC quantity is authoritative over named-room count. */
+  quantities: Partial<Record<MissionCategory, number>>;
   priorities: string[];
   deprioritized_priorities: string[];
   excluded_priorities: string[];
-  whole_home: boolean;    // generic "جهز بيتي/انتقلت لشقة" signal → default 4 categories
-  /** Category words we recognized but honestly cannot plan (e.g. فرن — audit-excluded). */
+  whole_home: boolean;    // generic "جهز بيتي/انتقلت لشقة" signal → default CORE categories
+  /** Category words we recognized but honestly cannot plan (e.g. بوتاجاز — not in catalog). */
   unsupported_mentions: string[];
   parsed_from_text: string;
 }
@@ -127,18 +156,89 @@ function parseBudget(x: string, fallback: number | null | undefined): number | n
   return typeof fallback === "number" && Number.isFinite(fallback) ? fallback : null;
 }
 
+// ORDER MATTERS where words overlap: dishwasher (غسالة صحون/أطباق) must be tested
+// BEFORE washing_machine (غسالة), and built-in oven (فرن بلت إن) BEFORE the bare-فرن
+// cooker check. `categoriesOf` below encodes that precedence.
 const CATEGORY_WORDS: Record<MissionCategory, RegExp> = {
-  air_conditioner: /مكيف|تكييف|مكيفات|air ?condition|\bac\b/,
-  refrigerator: /ثلاج|براد|refrigerator|fridge/,
-  washing_machine: /غسال[ةه]|غسالات|washer|washing/,
-  tv: /تلفزيون|تليفزيون|شاش[ةه]|شاشات|television|\btv\b/,
+  air_conditioner: /مكيف|تكييف|مكيفات|air ?condition|\bac\b|\bacs\b/,
+  refrigerator: /ثلاج|براد(?!\s*[ةه]?\s*ما[ءي])|refrigerator|fridge/,
+  washing_machine: /غسال[ةه](?!\s*(?:ال)?(?:صحون|أطباق|اطباق))|غسالات(?!\s*(?:ال)?(?:صحون|أطباق|اطباق))|غسالتين(?!\s*(?:ال)?(?:صحون|أطباق|اطباق))|washer|washing(?!\s*up)/,
+  tv: /تلفزيون|تليفزيون|شاش[ةه]|شاشات|شاشتين|television|\btvs?\b/,
+  vacuum: /مكنس[ةه]|مكنستين|مكانس|vacuum/,
+  microwave: /مي?كرو ?وي?ف|مايكرويف|microwave/,
+  dishwasher: /جلاي[ةه]|جلايتين|غسال(?:[ةه]|تين)\s*(?:ال)?(?:صحون|أطباق|اطباق)|غسالات\s*(?:ال)?(?:صحون|أطباق|اطباق)|dishwasher/,
+  // BUILT-IN only — the bare word «فرن» is deliberately NOT here (see UNSUPPORTED_WORDS):
+  // in Saudi usage «فرن» defaults to the freestanding gas cooker we do not stock (ADR-253).
+  oven: /فرن\s*(?:ال)?(?:بلت|مدمج)|بلت\s*[إا]ن|built.?in\s*oven/,
+  air_fryer: /قلاي[ةه](?:\s*هوائي[ةه])?|قلايتين|air ?fryer/,
 };
 // Recognized-but-unplannable words → honest "not covered" note, never a fabricated leg.
-const UNSUPPORTED_WORDS: { re: RegExp; label: string }[] = [
-  { re: /فرن|[أا]فران|oven/, label: "فرن" },
-  { re: /نشاف[ةه](?!.*غسال)/, label: "نشافة" },
-  { re: /جلاي[ةه]|غسالة صحون|dishwasher/, label: "غسالة صحون" },
+// The cooker line is the important one: it is a CORE Saudi need that is an INGESTION GAP
+// (0 freestanding cookers in catalog, audit 2026-08-16) — say so, never substitute.
+const UNSUPPORTED_WORDS: { re: RegExp; label: string; builtinOvenHint?: boolean }[] = [
+  { re: /بوتاجاز|بوتجاز|طباخ|موقد|فرن\s*غاز|gas\s*(?:cooker|range|stove)|cooker/, label: "طباخ غاز (بوتاجاز)", builtinOvenHint: true },
+  // Bare «فرن» with no built-in qualifier: Saudi default meaning is the cooker above.
+  { re: /فرن(?!\s*(?:ال)?(?:بلت|مدمج|غاز))|[أا]فران(?!\s*(?:ال)?(?:بلت|مدمج))|\boven\b(?!.*built)/, label: "فرن", builtinOvenHint: true },
+  { re: /نشاف[ةه](?!.*غسال)|مجفف\s*ملابس|clothes\s*dryer/, label: "نشافة" },
+  { re: /فريزر|freezer/, label: "فريزر" },
+  { re: /براد[ةه]\s*ما[ءي]|كولر\s*ما[ءي]|موزع\s*مياه|water\s*dispenser/, label: "برادة ماء" },
+  { re: /سخان|water\s*heater/, label: "سخان ماء" },
+  { re: /منقي\s*هوا[ءي]|air\s*purifier/, label: "منقي هواء" },
 ];
+
+// ── Quantities: «5 مكيفات» «خمس مكيفات» «مكيفين» «ثلاجتين» «2 tvs». A number AFTER the
+//    noun is NEVER a quantity (that position is areas/BTU/prices — same rule as parseSpaces). ──
+const AR_NUMBER_WORDS: [RegExp, number][] = [
+  [/ثلاث[ةه]?/, 3], [/[أا]ربع[ةه]?/, 4], [/خمس[ةه]?/, 5], [/ست[ةه]?/, 6], [/سبع[ةه]?/, 7], [/ثمان(?:ي[ةه])?/, 8],
+];
+const DUAL_FORMS: Partial<Record<MissionCategory, RegExp>> = {
+  air_conditioner: /مكيفين/, refrigerator: /ثلاجتين/, washing_machine: /غسالتين(?!\s*(?:ال)?(?:صحون|أطباق|اطباق))/,
+  tv: /تلفزيونين|شاشتين/, vacuum: /مكنستين/, microwave: /مي?كرو ?وي?فين/, air_fryer: /قلايتين/,
+};
+// Count-position noun forms (plural/singular) per category, for «N <noun>».
+const COUNT_NOUNS: Record<MissionCategory, string> = {
+  air_conditioner: "مكيفات|مكيف|acs?|air ?conditioners?",
+  refrigerator: "ثلاجات|ثلاج[ةه]|fridges?|refrigerators?",
+  washing_machine: "غسالات|غسال[ةه]|washers?",
+  tv: "تلفزيونات|تلفزيون|شاشات|شاش[ةه]|tvs?",
+  vacuum: "مكانس|مكنس[ةه]|vacuums?",
+  microwave: "مي?كرو ?وي?فات|مي?كرو ?وي?ف|microwaves?",
+  dishwasher: "جلايات|جلاي[ةه]|dishwashers?",
+  oven: "[أا]فران بلت [إا]ن|فرن بلت [إا]ن",
+  air_fryer: "قلايات|قلاي[ةه]|air ?fryers?",
+};
+
+/** «5 مكيفات» / «خمس مكيفات» / «مكيفين» → quantity, capped. null = not stated. */
+function parseQuantity(x: string, cat: MissionCategory): number | null {
+  const cap = QUANTITY_CAP[cat];
+  const digit = x.match(new RegExp(`(\\d{1,2})\\s*(?:${COUNT_NOUNS[cat]})`));
+  if (digit) {
+    const n = Number(digit[1]);
+    if (n >= 0) return Math.min(cap, n); // over-cap input clamps, never rejects
+  }
+  for (const [re, n] of AR_NUMBER_WORDS) {
+    if (new RegExp(`(?:^|\\s)${re.source}\\s*(?:${COUNT_NOUNS[cat]})`).test(x)) return Math.min(cap, n);
+  }
+  const dual = DUAL_FORMS[cat];
+  if (dual && dual.test(x)) return Math.min(cap, 2);
+  return null;
+}
+
+/** Property context: شقة/فيلا/جزء. Context ONLY — never a quantity source (ADR-253). */
+function parseProperty(x: string): HomeMissionParse["property_type"] {
+  if (/فيلا|فله|فيلة|villa/.test(x)) return "villa";
+  if (/شق[ةه]|apartment|flat\b/.test(x)) return "apartment";
+  if (/جزء من البيت|غرف[ةه] واحد[ةه] فقط|part of/.test(x)) return "partial";
+  return null;
+}
+
+/** Budget posture words. Absent = null = the engine's existing best-affordable behavior. */
+function parsePosture(x: string): BudgetPosture | null {
+  if (/اقتصادي|[أا]رخص شي|بأقل تكلف[ةه]|economical|cheapest overall/.test(x)) return "economic";
+  if (/متوازن[ةه]?|balanced/.test(x)) return "balanced";
+  if (/[أا]فضل مواصفات|[أا]على مواصفات|مميز[ةه]?|premium|best specs/.test(x)) return "premium";
+  return null;
+}
 
 const WHOLE_HOME = /جهز\w*\s*(?:لي\s*)?(?:بيت|منزل|شق[ةه]|البيت|المنزل|الشق[ةه])|انتقلت|بيت جديد|شق[ةه] جديد[ةه]|منزل جديد|[أا]ثاث البيت|كل ال[أا]جهز[ةه]|equip my (?:home|house|apartment)/;
 
@@ -168,20 +268,31 @@ export function parseHomeMission(text: string): HomeMissionParse {
   const wholeHome = WHOLE_HOME.test(x);
 
   const categories: Partial<Record<MissionCategory, CategoryEmphasis>> = {};
+  const quantities: Partial<Record<MissionCategory, number>> = {};
   for (const cat of MISSION_CATEGORIES) {
     const emph = categoryEmphasis(x, CATEGORY_WORDS[cat]);
-    if (emph) categories[cat] = emph;
+    if (emph) {
+      categories[cat] = emph;
+      const q = parseQuantity(x, cat);
+      if (emph === "excluded") quantities[cat] = 0;
+      else if (q != null) quantities[cat] = q;
+      // present without a stated count → quantity defaults to 1 at leg-build time
+    }
   }
-  // Generic whole-home ask with no explicit category list → the four audited categories.
-  if (wholeHome) for (const cat of MISSION_CATEGORIES) if (!categories[cat]) categories[cat] = "normal";
+  // Generic whole-home ask → the four audited CORE categories only. OPTIONAL categories
+  // (disclosure tier) are never auto-added — the shopper names or taps them (ADR-253).
+  if (wholeHome) for (const cat of CORE_MISSION_CATEGORIES) if (!categories[cat]) categories[cat] = "normal";
 
-  const unsupported = UNSUPPORTED_WORDS.filter((u) => u.re.test(x)).map((u) => u.label);
+  const unsupported = [...new Set(UNSUPPORTED_WORDS.filter((u) => u.re.test(x)).map((u) => u.label))];
 
   return {
     spaces,
     household_size: household,
     budget_total: budget,
+    posture: parsePosture(x),
+    property_type: parseProperty(x),
     categories,
+    quantities,
     priorities: base.priorities ?? [],
     deprioritized_priorities: base.deprioritized_priorities ?? [],
     excluded_priorities: base.excluded_priorities ?? [],
@@ -223,44 +334,83 @@ export function kgBandFor(household: number | null): [number, number] | null {
   return [9, 25];
 }
 
+/** Effective purchase quantity for a present category (ADR-253):
+ *  explicit quantity wins (0 = excluded); absent → AC falls back to named target spaces,
+ *  everything else to 1. NEVER derived from rooms or property type. */
+export function effectiveQuantity(parse: HomeMissionParse, cat: MissionCategory): number {
+  const present = parse.categories[cat] && parse.categories[cat] !== "excluded";
+  const q = parse.quantities[cat];
+  if (q != null) return Math.max(0, Math.min(QUANTITY_CAP[cat], Math.floor(q)));
+  if (!present) return 0;
+  if (cat === "air_conditioner") return Math.max(1, Math.min(QUANTITY_CAP[cat], parse.spaces.filter((s) => s.label_ar !== "المطبخ" || parse.spaces.length === 1).length || 1));
+  return 1;
+}
+
+const LEG_LABELS: Record<Exclude<MissionCategory, "air_conditioner">, { ar: string; en: string }> = {
+  refrigerator: { ar: "الثلاجة", en: "Refrigerator" },
+  washing_machine: { ar: "الغسالة", en: "Washing machine" },
+  tv: { ar: "التلفزيون", en: "TV" },
+  vacuum: { ar: "المكنسة", en: "Vacuum cleaner" },
+  microwave: { ar: "الميكروويف", en: "Microwave" },
+  dishwasher: { ar: "غسالة الصحون", en: "Dishwasher" },
+  oven: { ar: "فرن بلت إن", en: "Built-in oven" },
+  air_fryer: { ar: "القلاية الهوائية", en: "Air fryer" },
+};
+const LEG_BASE_ID: Record<Exclude<MissionCategory, "air_conditioner">, string> = {
+  refrigerator: "fridge", washing_machine: "washer", tv: "tv",
+  vacuum: "vacuum", microwave: "microwave", dishwasher: "dishwasher", oven: "oven", air_fryer: "air_fryer",
+};
+
 export function buildLegs(parse: HomeMissionParse): MissionLeg[] {
   const legs: MissionLeg[] = [];
-  const emph = (c: MissionCategory): CategoryEmphasis => parse.categories[c] ?? "normal";
+  const emph = (c: MissionCategory): CategoryEmphasis => {
+    const e = parse.categories[c] ?? "normal";
+    return e === "excluded" ? "normal" : e; // excluded categories never reach leg-build
+  };
 
-  if (parse.categories.air_conditioner && parse.categories.air_conditioner !== "excluded") {
-    const spaces = parse.spaces.length ? parse.spaces : [{ key: "space_1", label_ar: "الغرفة", label_en: "Room", area_m2: null }];
-    for (const s of spaces) {
-      // Kitchens get appliances, not their own AC leg, unless they were the only space named.
-      if (s.label_ar === "المطبخ" && spaces.length > 1) continue;
+  // ── AC: quantity is authoritative; named target spaces attach per unit, extra units
+  //    become honest unknown-area spaces (needs input), never guessed areas (ADR-253). ──
+  const acQty = parse.categories.air_conditioner && parse.categories.air_conditioner !== "excluded"
+    ? effectiveQuantity(parse, "air_conditioner") : 0;
+  if (acQty > 0) {
+    // Kitchens get appliances, not their own AC leg, unless they were the only space named.
+    const named = parse.spaces.filter((s) => s.label_ar !== "المطبخ" || parse.spaces.length === 1);
+    const units: HomeSpace[] = [];
+    for (let i = 0; i < acQty; i++) {
+      units.push(named[i] ?? { key: `space_${i + 1}`, label_ar: acQty > 1 ? `مكيف ${i + 1}` : "الغرفة", label_en: acQty > 1 ? `AC ${i + 1}` : "Room", area_m2: null });
+    }
+    for (const s of units) {
       legs.push({
         id: `ac_${s.key}`, category: "air_conditioner", emphasis: emph("air_conditioner"),
-        label_ar: `مكيف ${s.label_ar}`, label_en: `AC — ${s.label_en}`, space: s,
+        label_ar: /^مكيف /.test(s.label_ar) ? s.label_ar : `مكيف ${s.label_ar}`,
+        label_en: /^AC /.test(s.label_en) ? s.label_en : `AC — ${s.label_en}`, space: s,
         btu_required: s.area_m2 != null ? requiredBtuForRoom(s.area_m2) : null,
         liters_band: null, kg_band: null,
         needs: s.area_m2 == null ? "room_area" : null,
       });
     }
   }
-  if (parse.categories.refrigerator && parse.categories.refrigerator !== "excluded") {
-    legs.push({
-      id: "fridge", category: "refrigerator", emphasis: emph("refrigerator"),
-      label_ar: "الثلاجة", label_en: "Refrigerator", space: null,
-      btu_required: null, liters_band: litersBandFor(parse.household_size), kg_band: null, needs: null,
-    });
-  }
-  if (parse.categories.washing_machine && parse.categories.washing_machine !== "excluded") {
-    legs.push({
-      id: "washer", category: "washing_machine", emphasis: emph("washing_machine"),
-      label_ar: "الغسالة", label_en: "Washing machine", space: null,
-      btu_required: null, liters_band: null, kg_band: kgBandFor(parse.household_size), needs: null,
-    });
-  }
-  if (parse.categories.tv && parse.categories.tv !== "excluded") {
-    legs.push({
-      id: "tv", category: "tv", emphasis: emph("tv"),
-      label_ar: "التلفزيون", label_en: "TV", space: null,
-      btu_required: null, liters_band: null, kg_band: null, needs: null,
-    });
+
+  // ── All other categories: one leg per purchase unit. First leg keeps the historical
+  //    stable id ("fridge", "tv", …); extra units suffix _2, _3 (client/tests rely on it). ──
+  for (const cat of MISSION_CATEGORIES) {
+    if (cat === "air_conditioner") continue;
+    if (!parse.categories[cat] || parse.categories[cat] === "excluded") continue;
+    const qty = effectiveQuantity(parse, cat);
+    const base = LEG_BASE_ID[cat];
+    const lbl = LEG_LABELS[cat];
+    for (let i = 0; i < qty; i++) {
+      legs.push({
+        id: i === 0 ? base : `${base}_${i + 1}`, category: cat, emphasis: emph(cat),
+        label_ar: qty > 1 ? `${lbl.ar} ${i + 1}` : lbl.ar,
+        label_en: qty > 1 ? `${lbl.en} ${i + 1}` : lbl.en,
+        space: null,
+        btu_required: null,
+        liters_band: cat === "refrigerator" ? litersBandFor(parse.household_size) : null,
+        kg_band: cat === "washing_machine" ? kgBandFor(parse.household_size) : null,
+        needs: null,
+      });
+    }
   }
   return legs;
 }
@@ -419,8 +569,13 @@ const EMPHASIS_ORDER: Record<CategoryEmphasis, number> = { high: 0, normal: 1, d
  * Deterministic shared-budget allocation:
  *  1) every leg gets its CHEAPEST eligible candidate (feasibility floor);
  *  2) infeasible → honest shortfall, no plan fabrication;
- *  3) upgrade passes in emphasis order: move a leg to its best-ranked candidate the
- *     remaining budget affords (engine rank IS suitability — no re-scoring here);
+ *  3) upgrade passes in emphasis order, shaped by POSTURE (ADR-253 — posture re-weights
+ *     distribution of the SAME fixed budget; it never changes the budget, the floor,
+ *     eligibility, or any price):
+ *       · "economic"       — no upgrade passes: cheapest eligible everywhere;
+ *       · "balanced"       — one-rank-step upgrades round-robin (spread the surplus);
+ *       · "premium" / null — best-ranked candidate the remaining budget affords
+ *                            (the original, pre-posture behavior — unchanged default);
  *  4) record, per leg, what the next +SAR upgrade would be and what the cheapest
  *     downgrade saves — the trade-off sentences render from these figures only.
  * No budget stated → every leg simply takes the engine's top pick (no gate to apply).
@@ -428,6 +583,7 @@ const EMPHASIS_ORDER: Record<CategoryEmphasis, number> = { high: 0, normal: 1, d
 export function allocateBudget(
   legs: { leg: MissionLeg; candidates: LegCandidate[] }[],
   budget: number | null,
+  posture: BudgetPosture | null = null,
 ): AllocationResult {
   const allocations: LegAllocation[] = [];
   const priced = (c: LegCandidate): c is LegCandidate & { price: number } => c.price != null && c.price > 0;
@@ -469,15 +625,20 @@ export function allocateBudget(
     };
   }
 
-  // 2/3) upgrade passes, emphasis order, budget-greedy on engine rank
+  // 2/3) upgrade passes, emphasis order, posture-shaped (see doc comment)
   let remaining = budget - minTotal;
   const order = [...state].sort((a, b) => EMPHASIS_ORDER[a.leg.emphasis] - EMPHASIS_ORDER[b.leg.emphasis]);
-  for (let pass = 0; pass < 3; pass++) {
+  const maxPasses = posture === "economic" ? 0 : posture === "balanced" ? 12 : 3;
+  for (let pass = 0; pass < maxPasses; pass++) {
     let changed = false;
     for (const s of order) {
       if (!s.pick) continue;
       const byRank = s.candidates.filter(priced).sort((a, b) => a.rank - b.rank);
-      const affordable = byRank.find((c) => c.price <= s.pick!.price! + remaining);
+      const affordable = posture === "balanced"
+        // one rank step at a time: the closest better-ranked candidate we can afford,
+        // so surplus spreads across legs instead of concentrating on the first leg
+        ? [...byRank].filter((c) => c.rank < s.pick!.rank && c.price <= s.pick!.price! + remaining).sort((a, b) => b.rank - a.rank)[0]
+        : byRank.find((c) => c.price <= s.pick!.price! + remaining);
       if (affordable && affordable.canonical_id !== s.pick.canonical_id && affordable.rank < s.pick.rank) {
         remaining -= affordable.price - s.pick.price!;
         s.pick = affordable;
@@ -530,3 +691,11 @@ export const AC_PRO_SIZING_AR =
   "المساحات الكبيرة (فوق ~40م²) أو المفتوحة تحتاج حساب حمل تبريد مهني — توصيتنا هنا تقديرية أولية فقط.";
 export const AC_PRO_SIZING_EN =
   "Large (>~40m²) or open-plan spaces need a professional cooling-load calculation — our guidance here is a preliminary screening estimate only.";
+
+/** ADR-253 oven-taxonomy honesty: the catalog's oven category is 100% BUILT-IN units;
+ *  the Saudi-default freestanding gas cooker (بوتاجاز) is not covered. Rendered whenever
+ *  an oven leg is planned OR a cooker/bare-فرن mention was declined. */
+export const BUILTIN_OVEN_ONLY_AR =
+  "تغطيتنا للأفران حاليًا هي أفران «البلت إن» (المدمجة) فقط — الطباخ الغازي المستقل (البوتاجاز) غير متوفر في بياناتنا بعد، فلا نرشح فيه.";
+export const BUILTIN_OVEN_ONLY_EN =
+  "Our oven coverage today is BUILT-IN ovens only — the freestanding gas cooker is not in our data yet, so we make no recommendations for it.";

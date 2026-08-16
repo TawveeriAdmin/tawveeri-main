@@ -3,8 +3,9 @@ import { createServerClient } from "@/lib/database";
 import { decide, type ShoppingTask, type CanonicalRow, type Recommendation } from "@/lib/agent/decision-engine";
 import {
   parseHomeMission, buildLegs, eligibleRows, allocateBudget, comparisonClaim,
-  tvSizeOf, MISSION_CATEGORIES, TOTAL_DISCLOSURE_AR, TOTAL_DISCLOSURE_EN,
+  tvSizeOf, MISSION_CATEGORIES, QUANTITY_CAP, TOTAL_DISCLOSURE_AR, TOTAL_DISCLOSURE_EN,
   EFFICIENCY_ABSTENTION_AR, EFFICIENCY_ABSTENTION_EN, AC_PRO_SIZING_AR, AC_PRO_SIZING_EN,
+  BUILTIN_OVEN_ONLY_AR, BUILTIN_OVEN_ONLY_EN,
   type HomeMissionParse, type MissionLeg, type MissionCategory, type ClaimKind,
 } from "@/lib/agent/home-mission";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
@@ -77,15 +78,30 @@ function sanitizeMission(m: unknown): HomeMissionParse | null {
   const household = typeof src.household_size === "number" && src.household_size >= 1 && src.household_size <= 20 ? Math.floor(src.household_size) : null;
   const budget = typeof src.budget_total === "number" && src.budget_total >= 1000 && src.budget_total <= 500_000 ? Math.round(src.budget_total) : null;
   const categories: HomeMissionParse["categories"] = {};
+  const quantities: HomeMissionParse["quantities"] = {};
   if (src.categories && typeof src.categories === "object") {
     for (const cat of MISSION_CATEGORIES) {
       const v = (src.categories as Record<string, unknown>)[cat];
       if (v === "high" || v === "normal" || v === "deprioritized" || v === "excluded") categories[cat] = v;
     }
   }
+  if (src.quantities && typeof src.quantities === "object") {
+    for (const cat of MISSION_CATEGORIES) {
+      const v = (src.quantities as Record<string, unknown>)[cat];
+      if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 20) {
+        quantities[cat] = Math.min(QUANTITY_CAP[cat], Math.floor(v));
+        // quantity 0 IS the exclusion (ADR-253) — keep the two representations coherent
+        if (quantities[cat] === 0) categories[cat] = "excluded";
+        else if (!categories[cat] || categories[cat] === "excluded") categories[cat] = "normal";
+      }
+    }
+  }
+  const posture = src.posture === "economic" || src.posture === "balanced" || src.posture === "premium" ? src.posture : null;
+  const property = src.property_type === "apartment" || src.property_type === "villa" || src.property_type === "partial" ? src.property_type : null;
   const strArr = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 12) : []);
   return {
-    spaces, household_size: household, budget_total: budget, categories,
+    spaces, household_size: household, budget_total: budget, posture, property_type: property,
+    categories, quantities,
     priorities: strArr(src.priorities), deprioritized_priorities: strArr(src.deprioritized_priorities),
     excluded_priorities: strArr(src.excluded_priorities),
     whole_home: Boolean(src.whole_home), unsupported_mentions: [],
@@ -195,6 +211,7 @@ export async function POST(req: NextRequest) {
       };
     }),
     parse.budget_total,
+    parse.posture,
   );
   const allocByLeg = new Map(allocation.allocations.map((a) => [a.leg_id, a]));
 
@@ -374,6 +391,12 @@ export async function POST(req: NextRequest) {
   if (parse.unsupported_mentions.length) {
     missionNotes.caveats_ar.push(`ذكرت: ${parse.unsupported_mentions.join("، ")} — هذه الفئات خارج نطاق التخطيط الموثوق حاليًا، فلم نضفها للخطة.`);
     missionNotes.caveats_en.push(`You mentioned: ${parse.unsupported_mentions.join(", ")} — these categories are outside our evidence bar today, so they were not added to the plan.`);
+  }
+  // ADR-253 oven-taxonomy honesty: rendered when an oven leg is planned OR a cooker/bare-فرن
+  // mention was declined (the Saudi-default «فرن» is the gas cooker we do not stock).
+  if (legs.some((l) => l.category === "oven") || parse.unsupported_mentions.some((m) => /فرن|بوتاجاز/.test(m))) {
+    missionNotes.caveats_ar.push(BUILTIN_OVEN_ONLY_AR);
+    missionNotes.caveats_en.push(BUILTIN_OVEN_ONLY_EN);
   }
   if (!allocation.feasible && allocation.shortfall != null && allocation.min_total != null) {
     missionNotes.caveats_ar.push(`ميزانيتك الحالية لا تكفي لأرخص تشكيلة موثقة تلبي القيود — أقل مجموع ممكن ${allocation.min_total} ريال، أي أعلى من ميزانيتك بـ${allocation.shortfall} ريال. يمكن رفع الميزانية أو إسقاط فئة أقل أهمية.`);

@@ -82,6 +82,51 @@ const CASES = [
     check: (d) => !d.legs.some((l) => l.state === "ok"
       && [...l.picked.reasons_ar, ...(l.alternatives ?? []).flatMap((a) => a.reasons_ar)]
         .some((s) => /كفاءة أعلى|أوفر في الكهرباء|أهدأ وأوفر|أوفر ماءً/.test(s))) },
+  // ── ADR-253: quantity-first intake, disclosure-tier categories, cooking taxonomy ──
+  { id: "five_acs_five_units", body: { text: "انتقلت لفيلا. أبي 5 مكيفات وثلاجة وغسالة وتلفزيون وميزانيتي 30 ألف." },
+    check: (d) => {
+      const ac = d.legs.filter((l) => l.category === "air_conditioner");
+      // 5 purchase units; no room was named so each honestly asks for its area (room ≠ device)
+      return d.understood.quantities?.air_conditioner === 5 && ac.length === 5
+        && ac.every((l) => l.state === "needs_area") && d.understood.property_type === "villa";
+    } },
+  { id: "quantity_zero_tv_absent", pre: { text: "انتقلت لفيلا. أبي 5 مكيفات وثلاجة وغسالة وتلفزيون وميزانيتي 30 ألف." },
+    mutate: (d) => ({ mission: { ...d.understood, quantities: { ...d.understood.quantities, tv: 0 } }, excluded_ids: [] }),
+    check: (d) => !d.legs.some((l) => l.category === "tv") },
+  { id: "five_ac_areas_five_sizings", pre: { text: "أبي 5 مكيفات وميزانيتي 20 ألف." },
+    mutate: (d) => ({ mission: { ...d.understood, spaces: [18, 18, 18, 24, 30].map((a, i) => ({ key: `space_${i + 1}`, label_ar: `مكيف ${i + 1}`, label_en: `AC ${i + 1}`, area_m2: a })) }, excluded_ids: [] }),
+    check: (d) => {
+      const ac = d.legs.filter((l) => l.category === "air_conditioner");
+      const btus = ac.map((l) => l.btu_required);
+      // five separately valid sizing decisions: 18m²→21000? (18×700=12600→std), 24→std, 30→std; distinct where areas differ
+      return ac.length === 5 && btus.every((b) => b != null) && new Set(btus).size >= 2;
+    } },
+  { id: "two_fridges_two_legs", body: { text: "أبي ثلاجتين وميزانيتي 10 آلاف. عائلة 6." },
+    check: (d) => d.legs.filter((l) => l.category === "refrigerator").length === 2 },
+  { id: "vacuum_real_offers", body: { text: "أبي مكنسة وميزانيتي 2000 ريال" },
+    check: (d) => {
+      const v = d.legs.find((l) => l.category === "vacuum");
+      // vacuum is disclosure-tier: a real evidenced pick with an honest claim line, or an honest insufficient state
+      return v != null && (v.state !== "ok" || (v.picked.unit_price != null && v.picked.claim_ar.length > 0));
+    } },
+  { id: "builtin_oven_planned_cooker_not", body: { text: "أبي فرن بلت إن وميزانيتي 5000" },
+    check: (d) => d.legs.some((l) => l.category === "oven")
+      && d.mission_notes.caveats_ar.some((c) => c.includes("البوتاجاز")) },
+  { id: "bare_oven_word_honest", body: { text: "جهز بيتي وأبي فرن. غرفة 16 متر. عائلة 4." },
+    check: (d) => !d.legs.some((l) => l.category === "oven")
+      && d.mission_notes.caveats_ar.some((c) => c.includes("فرن"))
+      && d.mission_notes.caveats_ar.some((c) => c.includes("البوتاجاز")) },
+  { id: "posture_no_fabricated_money", pre: { text: "جهز بيتي كامل. غرفة 16 متر وصالة 25 متر. عائلة 4. ميزانيتي 16 ألف." },
+    mutate: (d) => ({ mission: { ...d.understood, posture: "economic" }, excluded_ids: [] }),
+    check: (d, ctx) => {
+      // economic redistributes the SAME budget: total never exceeds the premium-default total, budget unchanged
+      const pre = ctx.pre.allocation, post = d.allocation;
+      return post.budget_total === pre.budget_total && post.feasible === pre.feasible
+        && (post.total_allocated == null || pre.total_allocated == null || post.total_allocated <= pre.total_allocated);
+    } },
+  { id: "dryer_freezer_honest_unsupported", body: { text: "أبي نشافة وفريزر وبرادة ماء. غرفة 16 متر." },
+    check: (d) => (d.state === "need_categories" || !d.legs?.some((l) => ["dryer", "freezer"].includes(l.category)))
+      && (d.unsupported_mentions ?? d.understood?.unsupported_mentions ?? []).some((m) => m.includes("نشافة")) },
 ];
 
 let pass = 0, fail = 0;

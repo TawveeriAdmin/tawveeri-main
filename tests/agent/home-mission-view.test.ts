@@ -1,5 +1,6 @@
 // Mission-workspace presentation helpers (Mobile Experience Pass, ADR-250).
 // Pure display derivation — grouping, budget bar, chips, diff framing, delta parser.
+import { setQuantity } from "@/lib/agent/home-mission-view";
 import {
   groupLegs, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
   type LegOut, type RecOut, type Mission,
@@ -91,8 +92,9 @@ describe("diffLabel — alternatives framed by the two shown prices only", () =>
 
 describe("parseDelta — typed mutations survive the move to the view lib", () => {
   const mission: Mission = {
-    spaces: [], household_size: 4, budget_total: 12000,
+    spaces: [], household_size: 4, budget_total: 12000, posture: null, property_type: null,
     categories: { tv: "normal", air_conditioner: "high" },
+    quantities: { tv: 1, air_conditioner: 2 },
     priorities: [], deprioritized_priorities: [], excluded_priorities: [],
     whole_home: true, unsupported_mentions: [], parsed_from_text: "x",
   };
@@ -102,13 +104,62 @@ describe("parseDelta — typed mutations survive the move to the view lib", () =
   it("relative budget («زد الميزانية 3000»)", () => {
     expect(parseDelta("زد الميزانية 3000", mission)!.next.budget_total).toBe(15000);
   });
-  it("category exclusion («شيل التلفزيون»)", () => {
-    expect(parseDelta("شيل التلفزيون", mission)!.next.categories.tv).toBe("excluded");
+  it("category exclusion («شيل التلفزيون») → quantity zero AND excluded (one state)", () => {
+    const r = parseDelta("شيل التلفزيون", mission)!;
+    expect(r.next.categories.tv).toBe("excluded");
+    expect(r.next.quantities.tv).toBe(0);
+  });
+  it("«رجع التلفزيون» restores quantity 1", () => {
+    const removed = parseDelta("شيل التلفزيون", mission)!.next;
+    const r = parseDelta("رجع التلفزيون", removed)!;
+    expect(r.next.quantities.tv).toBe(1);
+    expect(r.next.categories.tv).toBe("normal");
+  });
+  it("quantity mutation («خل المكيفات 4») resizes the AC target spaces too", () => {
+    const r = parseDelta("خل المكيفات 4", mission)!;
+    expect(r.next.quantities.air_conditioner).toBe(4);
+    expect(r.next.spaces.length).toBe(4);
+    expect(r.next.spaces.every((s) => s.area_m2 === null)).toBe(true);
+  });
+  it("new disclosure-tier category («ابي مكنسة»)", () => {
+    const r = parseDelta("ابي مكنسة", mission)!;
+    expect(r.next.quantities.vacuum).toBe(1);
+    expect(r.next.categories.vacuum).toBe("normal");
   });
   it("household («عدد الأسرة 6»)", () => {
     expect(parseDelta("عدد الأسرة 6", mission)!.next.household_size).toBe(6);
   });
   it("unrecognized input → null (treated as a new mission by the caller)", () => {
     expect(parseDelta("وش رايك بالجو اليوم", mission)).toBeNull();
+  });
+});
+
+describe("setQuantity — quantities, categories and AC spaces move as ONE state (ADR-253)", () => {
+  const mission: Mission = {
+    spaces: [{ key: "space_1", label_ar: "غرفة النوم", label_en: "Bedroom", area_m2: 16 }],
+    household_size: null, budget_total: null, posture: null, property_type: null,
+    categories: { air_conditioner: "normal" }, quantities: { air_conditioner: 1 },
+    priorities: [], deprioritized_priorities: [], excluded_priorities: [],
+    whole_home: false, unsupported_mentions: [], parsed_from_text: "",
+  };
+  it("raising AC quantity pads unknown-area spaces (named rooms preserved)", () => {
+    const m = setQuantity(mission, "air_conditioner", 3);
+    expect(m.spaces.length).toBe(3);
+    expect(m.spaces[0].area_m2).toBe(16);
+    expect(m.spaces[1].area_m2).toBeNull();
+  });
+  it("lowering AC quantity trims spaces from the end", () => {
+    const up = setQuantity(mission, "air_conditioner", 3);
+    const down = setQuantity(up, "air_conditioner", 1);
+    expect(down.spaces.length).toBe(1);
+    expect(down.spaces[0].area_m2).toBe(16);
+  });
+  it("zero excludes; positive re-includes", () => {
+    const z = setQuantity(mission, "air_conditioner", 0);
+    expect(z.categories.air_conditioner).toBe("excluded");
+    expect(z.spaces.length).toBe(0);
+    const back = setQuantity(z, "air_conditioner", 2);
+    expect(back.categories.air_conditioner).toBe("normal");
+    expect(back.quantities.air_conditioner).toBe(2);
   });
 });

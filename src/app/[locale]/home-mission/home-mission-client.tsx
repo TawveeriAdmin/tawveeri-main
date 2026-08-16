@@ -15,9 +15,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
 import {
-  groupLegs, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta,
+  groupLegs, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
   type LegOut, type RecOut, type Mission, type Chip, type LegGroup,
 } from "@/lib/agent/home-mission-view";
+// ONE BRAIN (ADR-253): the card prefills through the SAME pure parser the server runs —
+// the mission card and the API can never drift apart on what a sentence means.
+import { parseHomeMission, CORE_MISSION_CATEGORIES, OPTIONAL_MISSION_CATEGORIES } from "@/lib/agent/home-mission";
 
 type Locale = "ar" | "en";
 
@@ -38,6 +41,19 @@ const EXAMPLE_AR =
 const STORAGE_KEY = "tw_home_mission_v2";
 const STATE_TTL_MS = 45 * 60_000; // same TTL discipline as DecisionState
 
+const CATEGORY_LABELS: Record<string, { ar: string; en: string }> = {
+  air_conditioner: { ar: "التكييف", en: "AC" },
+  refrigerator: { ar: "الثلاجة", en: "Fridge" },
+  washing_machine: { ar: "الغسالة", en: "Washer" },
+  tv: { ar: "التلفزيون", en: "TV" },
+  vacuum: { ar: "المكنسة", en: "Vacuum" },
+  microwave: { ar: "الميكروويف", en: "Microwave" },
+  dishwasher: { ar: "غسالة الصحون", en: "Dishwasher" },
+  oven: { ar: "فرن بلت إن", en: "Built-in oven" },
+  air_fryer: { ar: "القلاية الهوائية", en: "Air fryer" },
+};
+const AREA_CHIPS = [12, 16, 20, 25, 30];
+
 const T = (locale: Locale) => ({
   title: locale === "ar" ? "جهّز بيتك بذكاء" : "Equip your home",
   back: locale === "ar" ? "توفيري" : "Tawveeri",
@@ -47,6 +63,30 @@ const T = (locale: Locale) => ({
   placeholder: locale === "ar" ? EXAMPLE_AR : "New apartment, family of 4, bedroom 16m², living 28m², budget 20k SAR…",
   tryExample: locale === "ar" ? "جرّب المثال" : "Try the example",
   build: locale === "ar" ? "ابنِ الخطة" : "Build my plan",
+  review: locale === "ar" ? "راجع المهمة" : "Review mission",
+  startByTapping: locale === "ar" ? "أو ابدأ بالاختيار مباشرة" : "or start by tapping",
+  missionCardTitle: locale === "ar" ? "مهمتك" : "Your mission",
+  missionCardSub: locale === "ar" ? "عدّل الأعداد والتفاصيل قبل بناء الخطة — الصفر يعني «ما أحتاجه»." : "Adjust counts and details before the plan — zero means \"don't need it\".",
+  property: locale === "ar" ? "وش تجهّز؟" : "What are you equipping?",
+  propertyOpts: {
+    apartment: locale === "ar" ? "شقة" : "Apartment",
+    villa: locale === "ar" ? "فيلا" : "Villa",
+    partial: locale === "ar" ? "جزء من البيت" : "Part of home",
+  } as Record<string, string>,
+  addMore: locale === "ar" ? "أجهزة أخرى" : "More appliances",
+  acSpaces: locale === "ar" ? "مساحات المكيفات" : "AC spaces",
+  acSpacesHint: locale === "ar" ? "كل مكيف له مساحة الغرفة اللي يبرّدها — منها نحسب السعة المناسبة." : "Each AC gets the area it cools — capacity is computed from it.",
+  applyAll: locale === "ar" ? "طبّق على الكل" : "Apply to all",
+  posture: locale === "ar" ? "أسلوب الصرف" : "Spending style",
+  postureOpts: {
+    economic: locale === "ar" ? "اقتصادي" : "Economic",
+    balanced: locale === "ar" ? "متوازن" : "Balanced",
+    premium: locale === "ar" ? "أفضل مواصفات" : "Best specs",
+  } as Record<string, string>,
+  postureHint: locale === "ar" ? "يغيّر توزيع نفس الميزانية — لا يغيّر الأسعار." : "Redistributes the same budget — never changes prices.",
+  cookerNote: locale === "ar"
+    ? "الطباخ الغازي (البوتاجاز) غير متوفر في بياناتنا بعد — نغطي أفران البلت إن فقط."
+    : "Freestanding gas cookers are not in our data yet — we cover built-in ovens only.",
   building: locale === "ar" ? "نبني خطتك…" : "Building your plan…",
   budget: locale === "ar" ? "الميزانية" : "Budget",
   planCost: locale === "ar" ? "الأجهزة" : "Devices",
@@ -100,10 +140,182 @@ function ChipEl({ chip }: { chip: Chip }) {
   return <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] leading-4 ${chipCls(chip.tone)}`}>{chip.text}</span>;
 }
 
+// ── Quantity stepper (module scope so typing never remounts the input / loses focus):
+//    hybrid text-field stepper, ≥44pt targets, digits LTR always. DOM order [−][value][+]
+//    → LTR renders − left / + right; RTL renders + left / − right (the localization
+//    mirroring the intake research mandates). ──
+function Stepper({ value, onChange, max }: { value: number; onChange: (v: number) => void; max: number }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <button type="button" aria-label="−" disabled={value <= 0}
+        onClick={() => onChange(value - 1)}
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-outline-variant text-lg font-bold text-on-surface disabled:opacity-30">−</button>
+      <input type="text" inputMode="numeric" dir="ltr" value={value}
+        onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")); if (Number.isFinite(n)) onChange(Math.min(max, n)); }}
+        className="h-11 w-11 rounded-lg border border-outline-variant bg-white text-center text-sm font-bold tabular-nums dark:bg-gray-900"
+        aria-label="quantity" />
+      <button type="button" aria-label="+" disabled={value >= max}
+        onClick={() => onChange(value + 1)}
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-outline-variant text-lg font-bold text-on-surface disabled:opacity-30">+</button>
+    </div>
+  );
+}
+
+// ── The mission card (ADR-253): ONE editable structured mission — used both as the
+//    pre-plan intake stage and inside the refine sheet. Purely mutates a Mission object;
+//    the single CTA is the generate gate. Module scope: its inputs must keep focus. ──
+function MissionCard({ m, onChange, onSubmit, submitLabel, t, isAr, loading }: {
+  m: Mission; onChange: (m: Mission) => void; onSubmit: () => void; submitLabel: string;
+  t: ReturnType<typeof T>; isAr: boolean; loading: boolean;
+}) {
+  const qty = (cat: string) => m.quantities[cat] ?? (m.categories[cat] && m.categories[cat] !== "excluded" ? 1 : 0);
+  const activeOptional = OPTIONAL_MISSION_CATEGORIES.filter((c) => qty(c) > 0);
+  const inactiveOptional = OPTIONAL_MISSION_CATEGORIES.filter((c) => qty(c) === 0);
+  const needsHousehold = qty("refrigerator") > 0 || qty("washing_machine") > 0 || qty("dishwasher") > 0;
+  const acQty = qty("air_conditioner");
+  const [applyAllArea, setApplyAllArea] = useState("");
+  const mentionsCooker = m.unsupported_mentions.some((u) => /فرن|بوتاجاز/.test(u));
+
+  const qtyRow = (cat: string) => (
+    <div key={cat} className="flex min-h-[52px] items-center justify-between gap-3 py-1">
+      <p className="text-sm font-semibold text-on-surface">{isAr ? CATEGORY_LABELS[cat].ar : CATEGORY_LABELS[cat].en}</p>
+      <Stepper value={qty(cat)} max={cat === "air_conditioner" ? 8 : 4} onChange={(v) => onChange(setQuantity(m, cat, v))} />
+    </div>
+  );
+
+  return (
+    <section className="mt-3 rounded-2xl border border-outline-variant bg-white p-4 dark:bg-gray-900">
+      <p className="text-sm font-bold">{t.missionCardTitle}</p>
+      <p className="mt-0.5 text-[11px] leading-5 text-on-surface-variant">{t.missionCardSub}</p>
+
+      {/* property — context only, never a quantity source */}
+      <p className="mt-3 text-xs font-semibold text-on-surface-variant">{t.property}</p>
+      <div className="mt-1 flex flex-wrap gap-2">
+        {(["apartment", "villa", "partial"] as const).map((p) => (
+          <button key={p} type="button"
+            onClick={() => onChange({ ...m, property_type: m.property_type === p ? null : p })}
+            className={`min-h-[40px] rounded-full border px-4 py-2 text-xs font-semibold ${m.property_type === p ? "border-primary-600 bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300" : "border-outline-variant text-on-surface-variant"}`}>
+            {t.propertyOpts[p]}
+          </button>
+        ))}
+      </div>
+
+      {/* core quantity rows — zero valid */}
+      <div className="mt-3 divide-y divide-outline-variant/50">
+        {CORE_MISSION_CATEGORIES.map((cat) => qtyRow(cat))}
+        {activeOptional.map((cat) => qtyRow(cat))}
+      </div>
+
+      {/* optional add-chips (disclosure-tier categories — never auto-added) */}
+      {inactiveOptional.length > 0 && (
+        <>
+          <p className="mt-2 text-xs font-semibold text-on-surface-variant">{t.addMore}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {inactiveOptional.map((cat) => (
+              <button key={cat} type="button" onClick={() => onChange(setQuantity(m, cat, 1))}
+                className="min-h-[40px] rounded-full border border-dashed border-outline-variant px-3 py-2 text-xs text-on-surface-variant">
+                + {isAr ? CATEGORY_LABELS[cat].ar : CATEGORY_LABELS[cat].en}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {mentionsCooker && (
+        <p className="mt-2 rounded-lg bg-warning-50 p-2 text-[11px] leading-5 text-warning-800 dark:bg-warning-950 dark:text-warning-200">{t.cookerNote}</p>
+      )}
+
+      {/* AC target spaces — one per purchase unit (room ≠ device) */}
+      {acQty > 0 && (
+        <div className="mt-3 rounded-xl bg-surface-container-lowest p-3">
+          <p className="text-xs font-bold text-on-surface">{t.acSpaces}</p>
+          <p className="mt-0.5 text-[11px] leading-4 text-on-surface-variant">{t.acSpacesHint}</p>
+          {acQty > 1 && (
+            <div className="mt-2 flex items-center gap-2">
+              <input type="text" inputMode="numeric" dir="ltr" value={applyAllArea} placeholder="م²"
+                onChange={(e) => setApplyAllArea(e.target.value.replace(/[^0-9]/g, ""))}
+                className="h-10 w-16 rounded-lg border border-outline-variant bg-white text-center text-sm tabular-nums dark:bg-gray-900" />
+              <button type="button" disabled={!applyAllArea}
+                onClick={() => {
+                  const a = Number(applyAllArea);
+                  if (a >= 5 && a <= 200) onChange({ ...m, spaces: m.spaces.map((s) => ({ ...s, area_m2: a })) });
+                }}
+                className="min-h-[40px] rounded-lg bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 disabled:opacity-40 dark:bg-primary-950 dark:text-primary-300">
+                {t.applyAll}
+              </button>
+            </div>
+          )}
+          <div className="mt-2 space-y-2">
+            {m.spaces.map((s, i) => (
+              <div key={s.key} className="flex items-center justify-between gap-2">
+                <p className="min-w-0 flex-1 truncate text-xs font-semibold text-on-surface">{isAr ? s.label_ar : s.label_en}</p>
+                <div className="flex items-center gap-1">
+                  {AREA_CHIPS.map((a) => (
+                    <button key={a} type="button"
+                      onClick={() => onChange({ ...m, spaces: m.spaces.map((x, j) => (j === i ? { ...x, area_m2: a } : x)) })}
+                      className={`h-9 min-w-[36px] rounded-lg border px-1 text-[11px] tabular-nums ${s.area_m2 === a ? "border-primary-600 bg-primary-50 font-bold text-primary-700 dark:bg-primary-950 dark:text-primary-300" : "border-outline-variant text-on-surface-variant"}`}>
+                      {a}
+                    </button>
+                  ))}
+                  <input type="text" inputMode="numeric" dir="ltr" aria-label={t.area}
+                    value={s.area_m2 != null && !AREA_CHIPS.includes(s.area_m2) ? s.area_m2 : ""}
+                    placeholder="م²"
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^0-9]/g, "");
+                      const a = v ? Number(v) : null;
+                      onChange({ ...m, spaces: m.spaces.map((x, j) => (j === i ? { ...x, area_m2: a != null && a >= 5 && a <= 200 ? a : a != null && a > 0 && a < 5 ? x.area_m2 : null } : x)) });
+                    }}
+                    className="h-9 w-12 rounded-lg border border-outline-variant bg-white text-center text-[11px] tabular-nums dark:bg-gray-900" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* household (asked ONCE, only when a capacity-sized category is in the mission) */}
+      {needsHousehold && (
+        <label className="mt-3 block text-xs font-semibold text-on-surface-variant">
+          {t.household}
+          <input type="text" inputMode="numeric" dir="ltr" value={m.household_size ?? ""}
+            onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); onChange({ ...m, household_size: v ? Math.min(20, Number(v)) : null }); }}
+            className="mt-1 h-11 w-24 rounded-lg border border-outline-variant bg-white px-3 text-center text-sm tabular-nums dark:bg-gray-900" />
+        </label>
+      )}
+
+      {/* budget + posture (posture redistributes the SAME budget — never invents prices) */}
+      <label className="mt-3 block text-xs font-semibold text-on-surface-variant">
+        {t.budgetSar}
+        <input type="text" inputMode="numeric" dir="ltr" value={m.budget_total ?? ""}
+          onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); onChange({ ...m, budget_total: v ? Math.min(500000, Number(v)) : null }); }}
+          className="mt-1 h-11 w-36 rounded-lg border border-outline-variant bg-white px-3 text-center text-sm tabular-nums dark:bg-gray-900" />
+      </label>
+      <p className="mt-3 text-xs font-semibold text-on-surface-variant">{t.posture}</p>
+      <div className="mt-1 flex flex-wrap gap-2">
+        {(["economic", "balanced", "premium"] as const).map((p) => (
+          <button key={p} type="button"
+            onClick={() => onChange({ ...m, posture: m.posture === p ? null : p })}
+            className={`min-h-[40px] rounded-full border px-4 py-2 text-xs font-semibold ${m.posture === p ? "border-primary-600 bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300" : "border-outline-variant text-on-surface-variant"}`}>
+            {t.postureOpts[p]}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-[10px] text-on-surface-variant">{t.postureHint}</p>
+
+      <button type="button" onClick={onSubmit} disabled={loading || Object.values(m.quantities).every((q) => !q)}
+        className="mt-4 min-h-[48px] w-full rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">
+        {loading ? t.building : submitLabel}
+      </button>
+    </section>
+  );
+}
+
+
 export function HomeMissionClient({ locale }: { locale: Locale }) {
   const t = useMemo(() => T(locale), [locale]);
   const isAr = locale === "ar";
   const [text, setText] = useState("");
+  const [draft, setDraft] = useState<Mission | null>(null); // mission card stage (pre-plan)
+  const [refineDraft, setRefineDraft] = useState<Mission | null>(null); // refine-sheet edits (applied on one CTA)
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [prevPlan, setPrevPlan] = useState<PlanResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -157,12 +369,32 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     void call({ mission: m, excluded_ids: over?.excluded ?? excludedIds, pinned_ids: over?.pinned ?? pinnedIds }, step);
   }, [call, excludedIds, pinnedIds]);
 
-  const start = useCallback(() => {
-    if (!text.trim() || loading) return;
-    if (!startedTracked.current) { track("home_mission", { meta: { step: "started" }, query_text: text.slice(0, 200) }); startedTracked.current = true; }
-    setExcludedIds([]); setPinnedIds({}); setOpenWhy(null);
-    void call({ text }, "plan");
-  }, [text, loading, call]);
+  // ── Intake (ADR-253): NL → SAME parser as the server → editable mission card →
+  //    ONE generate gate. The card is the understanding-confirmation surface. ──
+  const emptyMission = (): Mission => ({
+    spaces: [], household_size: null, budget_total: null, posture: null, property_type: null,
+    categories: {}, quantities: {}, priorities: [], deprioritized_priorities: [],
+    excluded_priorities: [], whole_home: false, unsupported_mentions: [], parsed_from_text: "",
+  });
+
+  const review = useCallback((fromText: string | null) => {
+    if (loading) return;
+    if (!startedTracked.current) { track("home_mission", { meta: { step: "started" }, query_text: (fromText ?? "").slice(0, 200) }); startedTracked.current = true; }
+    let m: Mission = fromText?.trim() ? (parseHomeMission(fromText) as unknown as Mission) : emptyMission();
+    // Present categories default to quantity 1 on the card (AC follows its named spaces).
+    for (const cat of Object.keys(m.categories)) {
+      if (m.categories[cat] === "excluded") { m = setQuantity(m, cat, 0); continue; }
+      if (m.quantities[cat] == null) m = setQuantity(m, cat, cat === "air_conditioner" ? Math.max(1, m.spaces.length || 1) : 1);
+      else m = setQuantity(m, cat, m.quantities[cat]!); // normalizes AC spaces to the quantity
+    }
+    track("home_mission", { meta: { step: "reviewed", cats: Object.keys(m.quantities).length } });
+    setDraft(m);
+  }, [loading]);
+
+  const generate = useCallback((m: Mission) => {
+    setExcludedIds([]); setPinnedIds({}); setOpenWhy(null); setDraft(null);
+    void call({ mission: m, excluded_ids: [], pinned_ids: {} }, "plan");
+  }, [call]);
 
   const applyFollowup = useCallback(() => {
     if (!mission || !followup.trim()) return;
@@ -405,24 +637,41 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
 
       <main className="mx-auto max-w-2xl px-3 pb-28 pt-3">
 
-        {/* ── COMPOSER (pre-plan first viewport is 100% mission) ── */}
-        {!plan && (
+        {/* ── COMPOSER (pre-plan first viewport is 100% mission) — ADR-253 intake:
+            NL → same-parser prefill → editable mission card → ONE generate gate ── */}
+        {!plan && !draft && (
           <section className="pt-4">
             <h1 className="text-2xl font-bold leading-9">{t.title}</h1>
             <p className="mt-1 text-sm leading-6 text-on-surface-variant">{t.sub}</p>
             <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={t.placeholder} rows={5}
               className="mt-4 w-full resize-y rounded-xl border border-outline-variant bg-white p-3 text-sm leading-6 outline-none focus:border-primary-500 dark:bg-gray-900" />
             <div className="mt-3 flex items-center gap-2">
-              <button onClick={start} disabled={loading || !text.trim()}
+              <button onClick={() => review(text)} disabled={loading || !text.trim()}
                 className="min-h-[48px] flex-1 rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">
-                {loading ? t.building : t.build}
+                {t.review}
               </button>
               <button onClick={() => setText(EXAMPLE_AR)}
                 className="min-h-[48px] rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">
                 {t.tryExample}
               </button>
             </div>
+            <button onClick={() => review(null)}
+              className="mt-2 min-h-[44px] w-full rounded-xl border border-dashed border-outline-variant px-4 py-2.5 text-xs font-semibold text-on-surface-variant">
+              {t.startByTapping}
+            </button>
             <p className="mt-4 text-[11px] leading-5 text-on-surface-variant">{t.ai}</p>
+          </section>
+        )}
+
+        {/* ── MISSION CARD (draft stage — the understanding-confirmation surface) ── */}
+        {!plan && draft && (
+          <section className="pt-2">
+            <button onClick={() => setDraft(null)} className="text-xs font-semibold text-on-surface-variant underline">
+              {isAr ? "→ عدّل الوصف" : "← Edit description"}
+            </button>
+            <MissionCard m={draft} onChange={setDraft} onSubmit={() => generate(draft)} submitLabel={t.build}
+              t={t} isAr={isAr} loading={loading} />
+            <p className="mt-3 text-[11px] leading-5 text-on-surface-variant">{t.ai}</p>
           </section>
         )}
 
@@ -581,68 +830,28 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {/* ── REFINE BOTTOM SHEET ── */}
+      {/* ── REFINE BOTTOM SHEET — the SAME mission card as intake (one brain, one UI) ── */}
       {refineOpen && mission && (
         <div role="dialog" aria-modal="true" aria-label={t.editPlan} className="fixed inset-0 z-50">
-          <button aria-label="close" onClick={() => setRefineOpen(false)} className="absolute inset-0 bg-black/40" />
+          <button aria-label="close" onClick={() => { setRefineOpen(false); setRefineDraft(null); }} className="absolute inset-0 bg-black/40" />
           <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-white p-4 dark:bg-gray-950">
             <div className="mx-auto max-w-2xl">
-              <p className="text-sm font-bold">{t.editPlan}</p>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <label className="text-xs text-on-surface-variant">
-                  {t.budgetSar}
-                  <input type="number" inputMode="numeric" min={1000} step={500} defaultValue={mission.budget_total ?? ""}
-                    onBlur={(e) => {
-                      const v = e.target.value ? Number(e.target.value) : null;
-                      if (v !== mission.budget_total) rePlan({ ...mission, budget_total: v }, "refined");
-                    }}
-                    className="mt-1 w-full rounded-lg border border-outline-variant bg-white p-2.5 text-sm tabular-nums dark:bg-gray-900" />
-                </label>
-                <label className="text-xs text-on-surface-variant">
-                  {t.household}
-                  <input type="number" inputMode="numeric" min={1} max={20} defaultValue={mission.household_size ?? ""}
-                    onBlur={(e) => {
-                      const v = e.target.value ? Number(e.target.value) : null;
-                      if (v !== mission.household_size) rePlan({ ...mission, household_size: v }, "refined");
-                    }}
-                    className="mt-1 w-full rounded-lg border border-outline-variant bg-white p-2.5 text-sm tabular-nums dark:bg-gray-900" />
-                </label>
-              </div>
-              {mission.spaces.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs font-semibold text-on-surface-variant">{isAr ? "الغرف" : "Rooms"}</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {mission.spaces.map((s) => (
-                      <label key={s.key} className="inline-flex items-center gap-1 rounded-full border border-outline-variant px-3 py-1.5 text-xs">
-                        {isAr ? s.label_ar : s.label_en}
-                        <input type="number" inputMode="numeric" min={5} max={200} defaultValue={s.area_m2 ?? ""}
-                          onBlur={(e) => {
-                            const v = e.target.value ? Number(e.target.value) : null;
-                            if (v !== s.area_m2) {
-                              rePlan({ ...mission, spaces: mission.spaces.map((x) => (x.key === s.key ? { ...x, area_m2: v } : x)) }, "refined");
-                            }
-                          }}
-                          className="w-14 rounded border border-outline-variant p-1 text-center text-xs tabular-nums" />
-                        م²
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(mission.categories).filter(([, v]) => v !== "excluded").map(([cat]) => (
-                  <button key={cat} disabled={loading}
-                    onClick={() => rePlan({ ...mission, categories: { ...mission.categories, [cat]: "excluded" } }, "refined")}
-                    className="min-h-[36px] rounded-full border border-outline-variant px-3 py-1.5 text-[11px] text-on-surface-variant">
-                    {isAr ? `شيل ${plan?.legs?.find((l) => l.category === cat)?.label_ar ?? cat}` : `Drop ${cat}`}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold">{t.editPlan}</p>
                 <button disabled={loading}
-                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setRefineOpen(false); try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
+                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
                   className="min-h-[36px] rounded-full border border-outline-variant px-3 py-1.5 text-[11px] font-semibold text-error-700 dark:text-error-300">
                   {t.newMission}
                 </button>
               </div>
+              <MissionCard m={refineDraft ?? mission} onChange={setRefineDraft}
+                onSubmit={() => {
+                  const next = refineDraft ?? mission;
+                  setRefineOpen(false); setRefineDraft(null);
+                  track("home_mission", { meta: { step: "refined", delta: "card" } });
+                  rePlan(next, "refined");
+                }}
+                submitLabel={t.send} t={t} isAr={isAr} loading={loading} />
             </div>
           </div>
         </div>
