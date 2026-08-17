@@ -979,7 +979,9 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                       <span className="ms-2 text-[11px] font-semibold text-on-surface-variant">{t.storeItems(g.legs.length)}</span>
                     </p>
                     <p className="shrink-0 text-[12px] font-semibold tabular-nums text-on-surface-variant">
-                      {g.legs.length > 1 && <span className="me-2">{t.storeDone(prog.done, prog.total)}</span>}
+                      {/* «·» separator is load-bearing: two adjacent digit runs in RTL
+                          («…من 3» + «6,808») visually merge into one wrong number. */}
+                      {g.legs.length > 1 && <>{t.storeDone(prog.done, prog.total)}{g.subtotal != null && " · "}</>}
                       {g.subtotal != null && <>{fmt(g.subtotal)} {t.sar}</>}
                     </p>
                   </div>
