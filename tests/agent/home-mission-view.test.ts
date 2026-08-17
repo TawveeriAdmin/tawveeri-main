@@ -2,7 +2,7 @@
 // Pure display derivation — grouping, budget bar, chips, diff framing, delta parser.
 import { setQuantity } from "@/lib/agent/home-mission-view";
 import {
-  groupLegs, groupByStore, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
+  groupLegs, groupByStore, storeProgress, nextExit, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
   type LegOut, type RecOut, type Mission,
 } from "@/lib/agent/home-mission-view";
 
@@ -70,6 +70,19 @@ describe("groupByStore — purchase checklist regroups the SAME picks by exit re
     expect(gs.length).toBe(1);
     expect(gs[0].legs.map((l) => l.leg_id)).toEqual(["a", "b"]); // exit-less leg excluded
     expect(gs[0].subtotal).toBeNull();                            // never invent a partial sum
+  });
+  it("storeProgress + nextExit: retailer is the completion unit; CTA targets the first unpurchased exit", () => {
+    const g = groupByStore([
+      okLeg({ leg_id: "x1", picked: rec({ stores: ["نجم"], unit_price: 100 }) }),
+      okLeg({ leg_id: "x2", picked: rec({ stores: ["نجم"], unit_price: 200 }) }),
+      okLeg({ leg_id: "x3", picked: rec({ stores: ["نجم"], unit_price: 300 }) }),
+    ])[0];
+    expect(storeProgress(g, {})).toEqual({ done: 0, total: 3, complete: false });
+    expect(nextExit(g, {})?.leg_id).toBe("x1");
+    expect(nextExit(g, { x1: true })?.leg_id).toBe("x2");         // skips purchased items
+    const all = { x1: true, x2: true, x3: true } as Record<string, true>;
+    expect(storeProgress(g, all)).toEqual({ done: 3, total: 3, complete: true });
+    expect(nextExit(g, all)).toBeNull();                          // complete retailer has no CTA
   });
 });
 

@@ -133,6 +133,19 @@ export function groupByStore(legs: LegOut[]): StoreGroup[] {
   return groups.sort((a, b) => b.legs.length - a.legs.length || a.store.localeCompare(b.store, "ar"));
 }
 
+/** Per-retailer completion over client purchase marks. The RETAILER is the UX completion
+ *  unit («خلصت نجم الأجهزة»); per-item marks stay the data truth underneath (ADR-256). */
+export function storeProgress(group: StoreGroup, purchased: Record<string, true>): { done: number; total: number; complete: boolean } {
+  const done = group.legs.filter((l) => purchased[l.leg_id]).length;
+  return { done, total: group.legs.length, complete: group.legs.length > 0 && done === group.legs.length };
+}
+
+/** The retailer CTA's destination: the first UNPURCHASED item's /go exit (never fabricates
+ *  a cart — one honest merchant handoff at a time). Null when the retailer is complete. */
+export function nextExit(group: StoreGroup, purchased: Record<string, true>): LegOut | null {
+  return group.legs.find((l) => !purchased[l.leg_id] && l.picked?.go_url) ?? null;
+}
+
 // ── Budget bar: fraction spent + tone. RTL mirroring is the layout's job (the bar
 //    fills from the inline-start automatically); numerals stay Latin (never mirrored). ──
 export function budgetBar(budget: number | null, allocated: number | null): { pct: number; tone: "ok" | "tight" | "over" } | null {

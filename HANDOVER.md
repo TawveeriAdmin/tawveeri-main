@@ -1,4 +1,37 @@
-# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #87 · FOUNDER iPHONE PASS RECORDED · ADR-255 PURCHASE CHECKLIST LIVE · COOKER GATES UNMET ═══
+# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #88 · ADR-256 PURCHASE PLAN ADOPTED (HANDOFF CLOSED) · RETAILER = COMPLETION UNIT ═══
+
+## A. FOUNDER DECISION (settled — do NOT reopen)
+Purchase Plan model ADOPTED as governed baseline. Principle (verbatim): **«ONE HOME
+MISSION, MANY MERCHANT CHECKOUTS, ONE TAWVEERI CONTINUITY LAYER.»** Tawveeri owns
+decision/plan/grouping/continuity/progress; merchants own cart/checkout/payment/
+fulfillment. Multi-retailer handoff = **CLOSED at architecture level** (ADR-256);
+remaining work is refinement/measurement. Do not reopen: Home architecture, cooker
+gates, DecisionState, checkout/payment ownership, merchant-of-record.
+
+## B. ADR-256 SHIPPED (client + pure view; server untouched)
+- Retailer = completion unit: store card = header («تم n من m» + subtotal, ✓ complete)
+  → items (secondary «شوف العرض» link + «تم» truth-marks) → ONE primary CTA
+  «أكمل الشراء من X» exiting to the first OPEN item's /go. No cart faked.
+- Return question retailer-scoped: «رجعت من X؟ هل أتممت الشراء؟» + open-item list +
+  «تمت كلها ✓» (one batched pin+re-plan) / per-item / «ليس بعد».
+- Wording research-verified vs live Saudi UIs: title «خطة مشترياتك»; «أكمل الشراء»
+  («تابع الشراء» = continue-BROWSING in Jarir's cart — rejected); progress «تم X من Y»
+  NEVER «اشتريت» (self-mark ≠ observed fact); MSA-warm prompts, no «وش تم».
+- Progress: items primary + «أنهيت N من M متاجر» secondary + per-store counts +
+  «تمت كل مشتريات الخطة ✓» terminal.
+- Pre-handoff revalidation: purchase-plan open with prices >45min → same-mission
+  re-plan (marks+pins survive) + Decision Delta (now visible in purchase mode) explains
+  changes.
+- Telemetry: resumed / purchase_plan_opened / returned_from_retailer(reload|bfcache) /
+  item_marked_purchased / item_unmarked / retailer_completed / mission_completed /
+  purchase_refresh; go_click.source card|checklist|retailer_cta. No conversion claims —
+  this ledger later decides grouping value, fewer-retailer optimizer, per-merchant
+  drop-off.
+- DEFERRED (named): «الأوفر vs الأسهل» optimizer (needs basket rules + depth + telemetry
+  evidence); any multi-item cart capability (verify + founder approval first);
+  server-persisted shareable plan URLs.
+
+# ═══ 2026-08-17 CHECKPOINT #87 · FOUNDER iPHONE PASS RECORDED · ADR-255 PURCHASE CHECKLIST LIVE · COOKER GATES UNMET ═══
 
 ## A. FOUNDER REAL-iPHONE EVIDENCE (2026-08-16/17 — settled, do NOT re-test these)
 - Mission understanding / posture change / AC-economic refinement / plan recomputation:

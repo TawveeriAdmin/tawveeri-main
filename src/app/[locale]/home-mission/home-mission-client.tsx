@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
 import {
-  groupLegs, groupByStore, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
+  groupLegs, groupByStore, storeProgress, nextExit, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
   type LegOut, type RecOut, type Mission, type Chip, type LegGroup, type StoreGroup,
 } from "@/lib/agent/home-mission-view";
 // ONE BRAIN (ADR-253): the card prefills through the SAME pure parser the server runs —
@@ -115,16 +115,26 @@ const T = (locale: Locale) => ({
   at: (store: string) => (locale === "ar" ? `عند ${store}` : `at ${store}`),
   startBuying: locale === "ar" ? "ابدأ الشراء" : "Start buying",
   backToPlan: locale === "ar" ? "رجوع للخطة" : "Back to plan",
-  buyTitle: locale === "ar" ? "قائمة الشراء — متجرًا بمتجر" : "Purchase list — store by store",
+  // ADR-256 wording (research-verified against live Saudi UIs): «أكمل الشراء» — the
+  // «إتمام» family is the ecosystem's checkout verb; «تابع الشراء» means CONTINUE
+  // BROWSING in real Saudi carts (Jarir) and is the wrong connotation. «تم» — never
+  // «اشتريت» — because a self-marked purchase is not an observed fact. MSA-warm
+  // prompts (dialect lives in marketing, not transactional trust surfaces).
+  buyTitle: locale === "ar" ? "خطة مشترياتك" : "Your purchase plan",
   buySub: locale === "ar"
-    ? "كل متجر له سلة مستقلة عنده — افتح العرض، أكمل الشراء هناك، وارجع لنا وعلّم «تم»."
-    : "Each store has its own checkout — open the offer, buy there, come back and mark done.",
+    ? "رتبنا مشترياتك حسب المتاجر. افتح العرض، أكمل شراءك عند المتجر، وارجع نكمل معك."
+    : "Your purchases, arranged by store. Open the offer, complete checkout at the store, and come back — we pick up where you left off.",
+  storeCta: (store: string) => (locale === "ar" ? `أكمل الشراء من ${store}` : `Complete your purchase at ${store}`),
   bought: locale === "ar" ? "تم" : "Done",
   boughtChip: locale === "ar" ? "تم الشراء ✓" : "Purchased ✓",
-  boughtProgress: (n: number, m: number) => (locale === "ar" ? `اشتريت ${n} من ${m}` : `bought ${n} of ${m}`),
+  boughtProgress: (n: number, m: number) => (locale === "ar" ? `تم ${n} من ${m}` : `${n} of ${m} done`),
+  storesProgress: (n: number, m: number) => (locale === "ar" ? `أنهيت ${n} من ${m} متاجر` : `${n} of ${m} stores finished`),
+  storeDone: (n: number, m: number) => (locale === "ar" ? `تم ${n} من ${m}` : `${n} of ${m} done`),
   storeItems: (n: number) => (locale === "ar" ? (n === 1 ? "جهاز واحد" : n === 2 ? "جهازان" : `${n} أجهزة`) : `${n} item${n === 1 ? "" : "s"}`),
-  welcomeBack: (store: string) => (locale === "ar" ? `رجعت من ${store} — تم الشراء؟` : `Back from ${store} — did you buy it?`),
+  welcomeBack: (store: string) => (locale === "ar" ? `رجعت من ${store}؟ هل أتممت الشراء؟` : `Back from ${store}? Did you complete the purchase?`),
+  allBought: locale === "ar" ? "تمت كلها ✓" : "All bought ✓",
   notYet: locale === "ar" ? "ليس بعد" : "Not yet",
+  missionDone: locale === "ar" ? "تمت كل مشتريات الخطة ✓" : "All plan purchases done ✓",
   refreshedNote: locale === "ar" ? "حدّثنا الأسعار — خطتك محفوظة." : "Prices refreshed — your plan is saved.",
   allEvidence: (n: number) => (locale === "ar" ? `كل الأدلة (${n})` : `All evidence (${n})`),
   saveDown: (x: number) => (locale === "ar" ? `وفّر ${fmt(x)} ر.س — الأرخص المؤهل` : `Save ${fmt(x)} SAR — cheapest eligible`),
@@ -353,11 +363,16 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const [deltaDismissed, setDeltaDismissed] = useState(false);
   // ── Purchase handoff (ADR-255) ──
   const [purchaseMode, setPurchaseMode] = useState(false);
-  const [purchased, setPurchased] = useState<Record<string, true>>({});          // leg_id → done
-  const [exitMarker, setExitMarker] = useState<{ leg_id: string; store: string; ts: number } | null>(null);
+  const [purchased, setPurchased] = useState<Record<string, true>>({});          // leg_id → done (per-item data truth)
+  // ADR-256: the RETAILER is the completion unit — the return marker is store-scoped
+  // («رجعت من نجم الأجهزة — وش تم؟» covers every open item at that store).
+  const [exitMarker, setExitMarker] = useState<{ store: string; ts: number } | null>(null);
   const [refreshedNote, setRefreshedNote] = useState(false);
+  const [planTs, setPlanTs] = useState<number>(0);                               // when current prices were fetched
   const startedTracked = useRef(false);
   const restoredRef = useRef(false);
+  const completedStoresRef = useRef<Set<string>>(new Set());
+  const missionCompleteRef = useRef(false);
 
   // ── Persistence (ADR-255): a purchase journey spans days — localStorage, 7-day TTL.
   //    A restore past the 45-min price-trust window re-asks the server with the SAME
@@ -372,13 +387,16 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       const saved = JSON.parse(raw) as {
         plan: PlanResponse; excludedIds: string[]; pinnedIds: Record<string, string>;
         purchased?: Record<string, true>; purchaseMode?: boolean;
-        exitMarker?: { leg_id: string; store: string; ts: number } | null; ts: number;
+        exitMarker?: { store: string; ts: number } | null; ts: number;
       };
       if (Date.now() - saved.ts < STATE_TTL_MS && saved.plan?.understood) {
         setPlan(saved.plan); setExcludedIds(saved.excludedIds ?? []); setPinnedIds(saved.pinnedIds ?? {});
         setPurchased(saved.purchased ?? {}); setPurchaseMode(saved.purchaseMode ?? false);
-        if (saved.exitMarker && Date.now() - saved.exitMarker.ts < RETURN_PROMPT_MS && !saved.purchased?.[saved.exitMarker.leg_id]) {
-          setExitMarker(saved.exitMarker);
+        setPlanTs(saved.ts);
+        track("home_mission", { meta: { step: "resumed", age_min: Math.round((Date.now() - saved.ts) / 60000) } });
+        if (saved.exitMarker?.store && Date.now() - saved.exitMarker.ts < RETURN_PROMPT_MS) {
+          setExitMarker({ store: saved.exitMarker.store, ts: saved.exitMarker.ts });
+          track("home_mission", { meta: { step: "returned_from_retailer", store: saved.exitMarker.store, via: "reload" } });
         }
         if (Date.now() - saved.ts > PRICE_FRESH_MS) {
           setRefreshedNote(true);
@@ -402,7 +420,13 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   useEffect(() => {
     const onShow = (e: PageTransitionEvent) => {
       if (!e.persisted) return;
-      setExitMarker((m) => (m && Date.now() - m.ts < RETURN_PROMPT_MS ? { ...m } : null));
+      setExitMarker((m) => {
+        if (m && Date.now() - m.ts < RETURN_PROMPT_MS) {
+          track("home_mission", { meta: { step: "returned_from_retailer", store: m.store, via: "bfcache" } });
+          return { ...m };
+        }
+        return null;
+      });
     };
     window.addEventListener("pageshow", onShow);
     return () => window.removeEventListener("pageshow", onShow);
@@ -410,7 +434,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
 
   const call = useCallback(async (body: Record<string, unknown>, step: string) => {
     setLoading(true); setError(false); setDeltaDismissed(false);
-    if (step !== "resume_refresh") setRefreshedNote(false);
+    if (step !== "resume_refresh" && step !== "purchase_refresh") setRefreshedNote(false);
     try {
       const res = await fetch("/api/v1/agent/home-mission", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
@@ -418,6 +442,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       if (!res.ok) throw new Error(String(res.status));
       const data = (await res.json()) as PlanResponse;
       setPlan((old) => { setPrevPlan(old); return data; });
+      setPlanTs(Date.now());
       track("home_mission", { meta: { step, state: data.state, legs: data.legs?.length ?? 0, feasible: data.allocation?.feasible ?? null } });
     } catch {
       setError(true);
@@ -456,17 +481,18 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const generate = useCallback((m: Mission) => {
     setExcludedIds([]); setPinnedIds({}); setOpenWhy(null); setDraft(null);
     setPurchased({}); setPurchaseMode(false); setExitMarker(null);
+    completedStoresRef.current = new Set(); missionCompleteRef.current = false;
     void call({ mission: m, excluded_ids: [], pinned_ids: {} }, "plan");
   }, [call]);
 
-  // ── ADR-255: marking a leg purchased PINS its exact product (existing narrow pinned_ids
-  //    capability — allocation treats it as fixed cost), so later refreshes can never
-  //    swap a device the customer already bought. Unmarking releases the pin. ──
+  // ── ADR-255/256: marking a leg purchased PINS its exact product (existing narrow
+  //    pinned_ids capability — allocation treats it as fixed cost), so later refreshes
+  //    can never swap a device the customer already bought. Unmarking releases the pin.
+  //    The retailer is the UX completion unit; these per-item marks stay the data truth. ──
   const markPurchased = useCallback((legId: string, canonicalId: string, done: boolean) => {
     if (!mission) return;
     setPurchased((p) => { const n = { ...p }; if (done) n[legId] = true; else delete n[legId]; return n; });
-    setExitMarker((m) => (m?.leg_id === legId ? null : m));
-    track("home_mission", { canonical_id: canonicalId, meta: { step: done ? "purchased" : "unpurchased", leg: legId } });
+    track("home_mission", { canonical_id: canonicalId, meta: { step: done ? "item_marked_purchased" : "item_unmarked", leg: legId } });
     if (done && pinnedIds[legId] !== canonicalId) {
       const nextPinned = { ...pinnedIds, [legId]: canonicalId };
       setPinnedIds(nextPinned);
@@ -474,8 +500,22 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     }
   }, [mission, pinnedIds, rePlan]);
 
+  /** «تمت كلها» — batch-complete a retailer: all its open items marked + pinned in ONE re-plan. */
+  const markStorePurchased = useCallback((group: StoreGroup) => {
+    if (!mission) return;
+    const open = group.legs.filter((l) => !purchased[l.leg_id] && l.picked);
+    if (!open.length) return;
+    setPurchased((p) => { const n = { ...p }; for (const l of open) n[l.leg_id] = true; return n; });
+    setExitMarker(null);
+    const nextPinned = { ...pinnedIds };
+    let changed = false;
+    for (const l of open) { if (nextPinned[l.leg_id] !== l.picked!.canonical_id) { nextPinned[l.leg_id] = l.picked!.canonical_id; changed = true; } }
+    track("home_mission", { meta: { step: "item_marked_purchased", store: group.store, batch: open.length } });
+    if (changed) { setPinnedIds(nextPinned); rePlan(mission, "purchased_pin", { pinned: nextPinned }); }
+  }, [mission, purchased, pinnedIds, rePlan]);
+
   const onGoExit = useCallback((leg: LegOut, r: RecOut, source: string) => {
-    setExitMarker({ leg_id: leg.leg_id, store: r.stores[0] ?? "—", ts: Date.now() });
+    setExitMarker({ store: r.stores[0] ?? "—", ts: Date.now() });
     track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source });
   }, []);
 
@@ -512,11 +552,36 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const groups: LegGroup[] = useMemo(() => (plan?.legs ? groupLegs(plan.legs) : []), [plan?.legs]);
   const okLegs = plan?.legs?.filter((l) => l.state === "ok") ?? [];
   const bar = budgetBar(plan?.allocation?.budget_total ?? null, plan?.allocation?.total_allocated ?? null);
-  // ADR-255 purchase checklist: the same picks regrouped by exit retailer (no new claims).
+  // ADR-255/256 purchase checklist: the same picks regrouped by exit retailer (no new claims).
   const storeGroups: StoreGroup[] = useMemo(() => (plan?.legs ? groupByStore(plan.legs) : []), [plan?.legs]);
   const buyableCount = storeGroups.reduce((n, g) => n + g.legs.length, 0);
   const boughtCount = storeGroups.reduce((n, g) => n + g.legs.filter((l) => purchased[l.leg_id]).length, 0);
-  const markerLeg = exitMarker ? plan?.legs?.find((l) => l.leg_id === exitMarker.leg_id) : null;
+  const storesDoneCount = storeGroups.filter((g) => storeProgress(g, purchased).complete).length;
+  // The return prompt covers every still-open item at the store the customer exited to.
+  const markerGroup = exitMarker ? storeGroups.find((g) => g.store === exitMarker.store) ?? null : null;
+  const markerOpenLegs = markerGroup ? markerGroup.legs.filter((l) => !purchased[l.leg_id]) : [];
+
+  // ── Completion telemetry (ADR-256): retailer_completed fires once per store per plan;
+  //    mission_completed once when every buyable item is marked. Never equates
+  //    opened-retailer with purchased — marks come only from the customer's hand. ──
+  useEffect(() => {
+    for (const g of storeGroups) {
+      if (storeProgress(g, purchased).complete && !completedStoresRef.current.has(g.store)) {
+        completedStoresRef.current.add(g.store);
+        track("home_mission", { meta: { step: "retailer_completed", store: g.store, items: g.legs.length } });
+      }
+    }
+    if (buyableCount > 0 && boughtCount === buyableCount && !missionCompleteRef.current) {
+      missionCompleteRef.current = true;
+      track("home_mission", { meta: { step: "mission_completed", items: buyableCount, stores: storeGroups.length } });
+    }
+    // A fully-answered return question dismisses itself.
+    setExitMarker((m) => {
+      if (!m) return m;
+      const g = storeGroups.find((x) => x.store === m.store);
+      return g && g.legs.every((l) => purchased[l.leg_id]) ? null : m;
+    });
+  }, [purchased, storeGroups, boughtCount, buyableCount]);
 
   // Decision Delta (client-side diff of two guarded server plans — no new claims).
   const delta = useMemo(() => {
@@ -733,16 +798,30 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
 
       <main className="mx-auto max-w-2xl px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-3">
 
-        {/* ── WELCOME BACK (ADR-255): a recent /go exit resurfaces as a QUESTION on return —
-            purchased is never assumed, and «تم» pins the exact bought product. ── */}
-        {markerLeg && markerLeg.state === "ok" && markerLeg.picked && !purchased[markerLeg.leg_id] && (
+        {/* ── WELCOME BACK (ADR-256): the RETURN QUESTION is retailer-scoped — «رجعت من
+            نجم الأجهزة؟ هل أتممت الشراء؟» covering every open item at that store.
+            «تمت كلها» / per-item marks / «ليس بعد». Purchase is never assumed. ── */}
+        {markerGroup && markerOpenLegs.length > 0 && (
           <div className="mt-2 rounded-xl border border-success-200 bg-success-50 p-3 dark:border-success-800 dark:bg-success-950">
-            <p className="text-[13px] font-bold text-success-900 dark:text-success-100">{t.welcomeBack(exitMarker!.store)}</p>
-            <p className="mt-0.5 line-clamp-1 text-[11px] text-success-800 dark:text-success-200"><bdi dir="auto">{recName(markerLeg.picked)}</bdi></p>
+            <p className="text-[13px] font-bold text-success-900 dark:text-success-100">{t.welcomeBack(markerGroup.store)}</p>
+            {markerOpenLegs.length > 1 && (
+              <div className="mt-1 space-y-1">
+                {markerOpenLegs.map((l) => (
+                  <button key={l.leg_id} onClick={() => markPurchased(l.leg_id, l.picked!.canonical_id, true)}
+                    className="flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg border border-success-200 bg-white px-3 py-1.5 text-start dark:border-success-800 dark:bg-gray-900">
+                    <span className="line-clamp-1 min-w-0 flex-1 text-[11px] text-on-surface"><bdi dir="auto">{recName(l.picked!)}</bdi></span>
+                    <span className="shrink-0 text-[11px] font-bold text-success-700 dark:text-success-300">{t.bought} ✓</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {markerOpenLegs.length === 1 && (
+              <p className="mt-0.5 line-clamp-1 text-[11px] text-success-800 dark:text-success-200"><bdi dir="auto">{recName(markerOpenLegs[0].picked!)}</bdi></p>
+            )}
             <div className="mt-2 flex gap-2">
-              <button onClick={() => markPurchased(markerLeg.leg_id, markerLeg.picked!.canonical_id, true)}
+              <button onClick={() => { markStorePurchased(markerGroup); }}
                 className="min-h-[40px] rounded-lg bg-success-600 px-4 py-2 text-xs font-bold text-white">
-                {t.bought} ✓
+                {markerOpenLegs.length > 1 ? t.allBought : `${t.bought} ✓`}
               </button>
               <button onClick={() => setExitMarker(null)}
                 className="min-h-[40px] rounded-lg border border-success-300 px-4 py-2 text-xs font-semibold text-success-800 dark:border-success-700 dark:text-success-200">
@@ -851,8 +930,9 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
           </section>
         )}
 
-        {/* ── DECISION DELTA ── */}
-        {!purchaseMode && delta && !deltaDismissed && (
+        {/* ── DECISION DELTA (also shown in purchase mode: a pre-handoff refresh must
+            EXPLAIN what changed, never silently swap figures — ADR-256 §6) ── */}
+        {delta && !deltaDismissed && (
           <div className="mt-3 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-950">
             <div className="flex items-center justify-between">
               <p className="text-[13px] font-bold text-primary-900 dark:text-primary-100">{t.delta}</p>
@@ -873,22 +953,34 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
             <div className="rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
               <p className="text-[13px] font-bold">{t.buyTitle}</p>
               <p className="mt-0.5 text-[11px] leading-5 text-on-surface-variant">{t.buySub}</p>
-              <p className="mt-1 text-[12px] font-semibold tabular-nums text-on-surface">{t.boughtProgress(boughtCount, buyableCount)}</p>
+              <p className="mt-1 text-[12px] font-semibold tabular-nums text-on-surface">
+                {t.boughtProgress(boughtCount, buyableCount)}
+                {storeGroups.length > 1 && <span className="text-on-surface-variant"> · {t.storesProgress(storesDoneCount, storeGroups.length)}</span>}
+              </p>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-container" aria-hidden>
                 <div className="h-full rounded-full bg-success-500" style={{ width: `${buyableCount ? Math.round((boughtCount / buyableCount) * 100) : 0}%` }} />
               </div>
+              {buyableCount > 0 && boughtCount === buyableCount && (
+                <p className="mt-2 rounded-lg bg-success-50 p-2 text-center text-[12px] font-bold text-success-800 dark:bg-success-950 dark:text-success-300">{t.missionDone}</p>
+              )}
             </div>
+            {/* RETAILER = the completion unit (ADR-256): one primary handoff per store —
+                «أكمل الشراء من X» exits to the first OPEN item's /go (no cart is faked);
+                per-item «شوف العرض» stays as a secondary link, per-item «تم» stays the truth. */}
             {storeGroups.map((g) => {
-              const done = g.legs.filter((l) => purchased[l.leg_id]).length;
+              const prog = storeProgress(g, purchased);
+              const next = nextExit(g, purchased);
               return (
-                <div key={g.store} className="mt-3 rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
+                <div key={g.store} className={`mt-3 rounded-2xl border bg-white p-3 dark:bg-gray-900 ${prog.complete ? "border-success-300 dark:border-success-800" : "border-outline-variant"}`}>
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="min-w-0 flex-1 truncate text-sm font-bold">
+                      {prog.complete && <span className="text-success-700 dark:text-success-300">✓ </span>}
                       {g.store}
                       <span className="ms-2 text-[11px] font-semibold text-on-surface-variant">{t.storeItems(g.legs.length)}</span>
                     </p>
                     <p className="shrink-0 text-[12px] font-semibold tabular-nums text-on-surface-variant">
-                      {done === g.legs.length ? "✓ " : ""}{g.subtotal != null && <>{fmt(g.subtotal)} {t.sar}</>}
+                      {g.legs.length > 1 && <span className="me-2">{t.storeDone(prog.done, prog.total)}</span>}
+                      {g.subtotal != null && <>{fmt(g.subtotal)} {t.sar}</>}
                     </p>
                   </div>
                   <div className="mt-2 space-y-2">
@@ -909,26 +1001,31 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                             <div className="mt-0.5 flex flex-wrap items-center gap-1">
                               <ChipEl chip={evidenceChip(r, locale)} />
                               {ageLabel(r.data_age_hours, locale) && <span className="text-[10px] text-on-surface-variant">{ageLabel(r.data_age_hours, locale)}</span>}
+                              {r.go_url && !isDone && (
+                                <a href={r.go_url} rel="noopener nofollow"
+                                  onClick={() => onGoExit(leg, r, "home_mission_checklist")}
+                                  className="text-[11px] font-semibold text-primary-700 underline dark:text-primary-300">
+                                  {t.go}
+                                </a>
+                              )}
                             </div>
                           </div>
-                          <div className="flex shrink-0 flex-col items-stretch gap-1">
-                            {r.go_url && !isDone && (
-                              <a href={r.go_url} rel="noopener nofollow"
-                                onClick={() => onGoExit(leg, r, "home_mission_checklist")}
-                                className="min-h-[40px] rounded-lg bg-primary-600 px-3 py-2 text-center text-[12px] font-bold text-white">
-                                {t.go}
-                              </a>
-                            )}
-                            <button aria-pressed={isDone}
-                              onClick={() => markPurchased(leg.leg_id, r.canonical_id, !isDone)} disabled={loading}
-                              className={`min-h-[40px] rounded-lg px-3 py-2 text-[12px] font-semibold ${isDone ? "bg-success-50 text-success-800 dark:bg-success-950 dark:text-success-300" : "border border-outline-variant text-on-surface-variant"}`}>
-                              {isDone ? t.boughtChip : `${t.bought} ✓`}
-                            </button>
-                          </div>
+                          <button aria-pressed={isDone}
+                            onClick={() => markPurchased(leg.leg_id, r.canonical_id, !isDone)} disabled={loading}
+                            className={`min-h-[40px] shrink-0 rounded-lg px-3 py-2 text-[12px] font-semibold ${isDone ? "bg-success-50 text-success-800 dark:bg-success-950 dark:text-success-300" : "border border-outline-variant text-on-surface-variant"}`}>
+                            {isDone ? t.boughtChip : `${t.bought} ✓`}
+                          </button>
                         </div>
                       );
                     })}
                   </div>
+                  {next?.picked?.go_url && (
+                    <a href={next.picked.go_url} rel="noopener nofollow"
+                      onClick={() => onGoExit(next, next.picked!, "home_mission_retailer_cta")}
+                      className="mt-2 block min-h-[44px] w-full truncate rounded-xl bg-primary-600 px-4 py-3 text-center text-[13px] font-bold text-white">
+                      {t.storeCta(g.store)}
+                    </a>
+                  )}
                 </div>
               );
             })}
@@ -982,7 +1079,17 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
               <>
                 {buyableCount > 0 && (
                   <button
-                    onClick={() => { setPurchaseMode(true); window.scrollTo({ top: 0 }); track("home_mission", { meta: { step: "purchase_mode_open", stores: storeGroups.length, items: buyableCount } }); }}
+                    onClick={() => {
+                      setPurchaseMode(true); window.scrollTo({ top: 0 });
+                      track("home_mission", { meta: { step: "purchase_plan_opened", stores: storeGroups.length, items: buyableCount } });
+                      // Price revalidation (ADR-256): never hand off on prices older than the
+                      // trust window — refresh the SAME mission (marks+pins survive; the
+                      // Decision Delta explains any change; the rest of the plan is preserved).
+                      if (mission && planTs > 0 && Date.now() - planTs > PRICE_FRESH_MS) {
+                        setRefreshedNote(true);
+                        rePlan(mission, "purchase_refresh");
+                      }
+                    }}
                     className="min-h-[44px] min-w-0 flex-1 rounded-xl bg-primary-600 px-4 text-sm font-bold text-white">
                     {t.startBuying}{boughtCount > 0 ? ` (${boughtCount}/${buyableCount})` : ""}
                   </button>
