@@ -146,6 +146,41 @@ export function nextExit(group: StoreGroup, purchased: Record<string, true>): Le
   return group.legs.find((l) => !purchased[l.leg_id] && l.picked?.go_url) ?? null;
 }
 
+// ── Feedback grouping (founder close, 2026-08-17): one submission posts one row per
+//    reacted item with the SAME name+note — the inbox shows the person once, the note
+//    once, then the item opinions. Grouping key = (name, note) within a 5-minute
+//    window, so two submissions by the same person at different times — or different
+//    people — are never merged. Pure derivation: reaction/note/association untouched. ──
+export interface FeedbackRowIn {
+  leg_id: string; reaction: string; note: string | null; reviewer_name: string | null; created_at?: string;
+}
+export interface FeedbackGroup {
+  reviewer_name: string | null;
+  note: string | null;
+  items: Array<{ leg_id: string; reaction: string }>;
+}
+const SUBMISSION_WINDOW_MS = 5 * 60_000;
+
+export function groupFeedback(rows: FeedbackRowIn[]): FeedbackGroup[] {
+  // Oldest-first so items keep submission order; groups are returned newest-first.
+  const asc = [...rows].sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")));
+  const groups: Array<FeedbackGroup & { lastTs: number }> = [];
+  for (const r of asc) {
+    const ts = r.created_at ? new Date(r.created_at).getTime() : 0;
+    const g = groups.find((x) =>
+      (x.reviewer_name ?? "") === (r.reviewer_name ?? "") &&
+      (x.note ?? "") === (r.note ?? "") &&
+      (ts === 0 || x.lastTs === 0 || ts - x.lastTs < SUBMISSION_WINDOW_MS));
+    if (g) {
+      g.items.push({ leg_id: r.leg_id, reaction: r.reaction });
+      g.lastTs = ts || g.lastTs;
+    } else {
+      groups.push({ reviewer_name: r.reviewer_name, note: r.note, items: [{ leg_id: r.leg_id, reaction: r.reaction }], lastTs: ts });
+    }
+  }
+  return groups.reverse().map(({ reviewer_name, note, items }) => ({ reviewer_name, note, items }));
+}
+
 // ── Budget bar: fraction spent + tone. RTL mirroring is the layout's job (the bar
 //    fills from the inline-start automatically); numerals stay Latin (never mirrored). ──
 export function budgetBar(budget: number | null, allocated: number | null): { pct: number; tone: "ok" | "tight" | "over" } | null {

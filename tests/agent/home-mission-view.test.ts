@@ -2,7 +2,7 @@
 // Pure display derivation — grouping, budget bar, chips, diff framing, delta parser.
 import { setQuantity } from "@/lib/agent/home-mission-view";
 import {
-  groupLegs, groupByStore, storeProgress, nextExit, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
+  groupLegs, groupByStore, storeProgress, nextExit, groupFeedback, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
   type LegOut, type RecOut, type Mission,
 } from "@/lib/agent/home-mission-view";
 
@@ -83,6 +83,35 @@ describe("groupByStore — purchase checklist regroups the SAME picks by exit re
     const all = { x1: true, x2: true, x3: true } as Record<string, true>;
     expect(storeProgress(g, all)).toEqual({ done: 3, total: 3, complete: true });
     expect(nextExit(g, all)).toBeNull();                          // complete retailer has no CTA
+  });
+});
+
+describe("groupFeedback — one submission = one group (person once, note once, items under)", () => {
+  const row = (leg: string, reaction: string, name: string | null, note: string | null, ts: string) =>
+    ({ leg_id: leg, reaction, reviewer_name: name, note, created_at: ts });
+  it("groups same-name-same-note rows within the submission window, in submission order", () => {
+    const gs = groupFeedback([
+      row("ac_1", "up", "إبراهيم", "ممتاز", "2026-08-17T17:02:17Z"),
+      row("washer", "change", "إبراهيم", "ممتاز", "2026-08-17T17:02:19Z"),
+      row("fridge", "change", "إبراهيم", "ممتاز", "2026-08-17T17:02:20Z"),
+    ]);
+    expect(gs).toHaveLength(1);
+    expect(gs[0].reviewer_name).toBe("إبراهيم");
+    expect(gs[0].note).toBe("ممتاز");
+    expect(gs[0].items.map((i) => `${i.leg_id}:${i.reaction}`)).toEqual(["ac_1:up", "washer:change", "fridge:change"]);
+  });
+  it("never merges different people, different notes, or far-apart submissions; newest group first", () => {
+    const gs = groupFeedback([
+      row("ac_1", "up", "سارة", null, "2026-08-17T15:18:08Z"),
+      row("ac_1", "up", "محمد", null, "2026-08-17T16:59:25Z"),
+      row("ac_2", "change", "محمد", null, "2026-08-17T16:59:26Z"),
+      row("fridge", "change", "محمد", null, "2026-08-17T17:30:00Z"), // same person, >5min later = new submission
+    ]);
+    expect(gs).toHaveLength(3);
+    expect(gs[0].items).toEqual([{ leg_id: "fridge", reaction: "change" }]); // newest first
+    expect(gs[1].reviewer_name).toBe("محمد");
+    expect(gs[1].items).toHaveLength(2);
+    expect(gs[2].reviewer_name).toBe("سارة");
   });
 });
 

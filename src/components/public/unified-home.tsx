@@ -116,9 +116,11 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
             <button aria-label={isAr ? 'إخفاء' : 'Dismiss'}
               onClick={() => { setHomeEntryVisible(false); try { localStorage.setItem('tw_home_entry_dismissed', '1'); } catch { /* noop */ } track('home_mission', { meta: { step: 'entry_card_dismissed' } }); }}
               style={{ position: 'absolute', top: 8, insetInlineEnd: 10, background: 'none', border: 'none', fontSize: 16, color: 'var(--color-on-surface-variant)', cursor: 'pointer', minWidth: 32, minHeight: 32 }}>×</button>
+            {/* «تجريبي» removed (founder close, 2026-08-17): the product is accepted and
+                production-verified — the consumer sees it confidently. Internal status
+                stays MEASURED PRODUCT / CONTROLLED DISTRIBUTION (governance unchanged). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--color-on-surface)' }}>{isAr ? 'جهّز بيتك بذكاء' : 'Equip your home intelligently'}</span>
-              <span style={{ fontSize: 10, fontWeight: 800, background: 'var(--brand-green)', color: '#fff', borderRadius: 8, padding: '2px 8px' }}>{isAr ? 'تجريبي' : 'Beta'}</span>
             </div>
             <p style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--color-on-surface-variant)', margin: '0 0 10px' }}>
               {isAr

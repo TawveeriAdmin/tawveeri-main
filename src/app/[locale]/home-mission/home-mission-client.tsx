@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
 import {
-  groupLegs, groupByStore, storeProgress, nextExit, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
+  groupLegs, groupByStore, storeProgress, nextExit, groupFeedback, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
   type LegOut, type RecOut, type Mission, type Chip, type LegGroup, type StoreGroup,
 } from "@/lib/agent/home-mission-view";
 // ONE BRAIN (ADR-253): the card prefills through the SAME pure parser the server runs —
@@ -1000,18 +1000,29 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         {familyFeedback.length > 0 && plan && (
           <section className="mt-2 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-950">
             <p className="text-[13px] font-bold text-primary-900 dark:text-primary-100">{t.opinions(familyFeedback.length)}</p>
-            <ul className="mt-1 space-y-1">
-              {familyFeedback.slice(0, 12).map((f, i) => {
-                const leg = plan.legs?.find((l) => l.leg_id === f.leg_id);
-                const what = leg ? (isAr ? leg.label_ar : leg.label_en) : t.wholePlan;
-                return (
-                  <li key={i} className="text-[11px] leading-5 text-primary-900 dark:text-primary-100">
-                    <b>{f.reviewer_name || t.anon}</b> · {what}: {f.reaction === "up" ? t.opinionUp : t.opinionChange}
-                    {f.note && <> — «{f.note}»</>}
-                  </li>
-                );
-              })}
-            </ul>
+            {/* One group per SUBMISSION (founder close): the person once, their note
+                once, then the item opinions — never re-stamped on every row. */}
+            <div className="mt-1.5 space-y-2.5">
+              {groupFeedback(familyFeedback).slice(0, 6).map((g, gi) => (
+                <div key={gi}>
+                  <p className="text-[12px] font-bold text-primary-900 dark:text-primary-100">{g.reviewer_name || t.anon}</p>
+                  {g.note && <p className="mt-0.5 text-[11px] leading-5 text-primary-800 dark:text-primary-200">«{g.note}»</p>}
+                  <ul className="mt-0.5 space-y-0.5">
+                    {g.items.map((it, ii) => {
+                      const leg = plan.legs?.find((l) => l.leg_id === it.leg_id);
+                      const what = leg
+                        ? `${isAr ? leg.label_ar : leg.label_en}${leg.space ? ` — ${isAr ? leg.space.label_ar : leg.space.label_en}` : ""}`
+                        : t.wholePlan;
+                      return (
+                        <li key={ii} className="text-[11px] leading-5 text-primary-900 dark:text-primary-100">
+                          • {what} — {it.reaction === "up" ? t.opinionUp : t.opinionChange}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </section>
         )}
 
