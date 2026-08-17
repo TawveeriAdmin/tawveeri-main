@@ -37,6 +37,13 @@ interface PlanResponse {
 
 const EXAMPLE_AR =
   "انتقلت لشقة جديدة. أسرتنا 4 أشخاص. غرفة النوم 16 متر، غرفة الأطفال 14 متر، الصالة 28 متر. ميزانيتي للأجهزة 20 ألف. أهم شيء المكيفات وما أبي أصرف على مواصفات ما أحتاجها.";
+// Onboarding examples (ADR-257 soft-surface research: every NL-input product that
+// shipped well shipped tappable example prompts). Three distinct Saudi missions.
+const EXAMPLES_AR: Array<{ chip: string; text: string }> = [
+  { chip: "شقة لعائلة", text: EXAMPLE_AR },
+  { chip: "عرسان يجهزون شقة", text: "تزوجت قريبًا وأجهز شقة من غرفتين. مكيفين: غرفة النوم 14 متر والصالة 22 متر. ثلاجة وغسالة وشاشة. ميزانيتي 12 ألف." },
+  { chip: "فيلا بميزانية أكبر", text: "فيلا لعائلة من 6 أشخاص. أربعة مكيفات: المجلس 30 متر، الصالة 28، وغرفتين نوم 16 و14. ثلاجة كبيرة وغسالة 10 كيلو وغسالة صحون. الميزانية 35 ألف وأبي أفضل مواصفات." },
+];
 
 // ADR-255: an appliance mission is a multi-day purchase journey. localStorage with a
 // 7-day TTL (the iOS ITP script-storage ceiling — longer would silently lie) replaces
@@ -135,6 +142,21 @@ const T = (locale: Locale) => ({
   allBought: locale === "ar" ? "تمت كلها ✓" : "All bought ✓",
   notYet: locale === "ar" ? "ليس بعد" : "Not yet",
   missionDone: locale === "ar" ? "تمت كل مشتريات الخطة ✓" : "All plan purchases done ✓",
+  // ADR-257 completed state — MSA achievement register (Saudi transactional convention),
+  // one calm moment, no gamification. Never claims savings or verified purchases.
+  completeTitle: locale === "ar" ? "اكتمل تجهيز منزلك" : "Your home is set up",
+  completeSub: locale === "ar" ? "أنجزت جميع مشتريات خطتك." : "You finished every purchase in your plan.",
+  sharePlan: locale === "ar" ? "شارك الخطة" : "Share the plan",
+  newPlan: locale === "ar" ? "ابدأ خطة جديدة" : "Start a new plan",
+  viewPlan: locale === "ar" ? "عرض الخطة" : "View the plan",
+  shareMsg: (url: string) => (locale === "ar" ? `خطة أجهزة بيتنا من توفيري — شوفها وقل رأيك:\n${url}` : `Our home appliance plan from Tawveeri — take a look and tell me what you think:\n${url}`),
+  linkCopied: locale === "ar" ? "انسخنا رابط الخطة — أرسله لمن تحب ✓" : "Plan link copied — send it to anyone ✓",
+  shareFailed: locale === "ar" ? "تعذرت المشاركة — جرّب مرة ثانية." : "Sharing failed — try again.",
+  opinions: (n: number) => (locale === "ar" ? `آراء وصلتك (${n})` : `Opinions received (${n})`),
+  opinionUp: locale === "ar" ? "مناسب 👍" : "Good 👍",
+  opinionChange: locale === "ar" ? "يقترح تغييره" : "suggests changing",
+  wholePlan: locale === "ar" ? "الخطة كاملة" : "the whole plan",
+  anon: locale === "ar" ? "بدون اسم" : "anonymous",
   refreshedNote: locale === "ar" ? "حدّثنا الأسعار — خطتك محفوظة." : "Prices refreshed — your plan is saved.",
   allEvidence: (n: number) => (locale === "ar" ? `كل الأدلة (${n})` : `All evidence (${n})`),
   saveDown: (x: number) => (locale === "ar" ? `وفّر ${fmt(x)} ر.س — الأرخص المؤهل` : `Save ${fmt(x)} SAR — cheapest eligible`),
@@ -369,6 +391,11 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const [exitMarker, setExitMarker] = useState<{ store: string; ts: number } | null>(null);
   const [refreshedNote, setRefreshedNote] = useState(false);
   const [planTs, setPlanTs] = useState<number>(0);                               // when current prices were fetched
+  // ── Sharing (ADR-257): latest share for THIS plan (token + owner_key stored only
+  //    client-side — the owner is anonymous; the key gates feedback readback). ──
+  const [myShare, setMyShare] = useState<{ token: string; owner_key: string; ts: number } | null>(null);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const [familyFeedback, setFamilyFeedback] = useState<Array<{ leg_id: string; reaction: string; note: string | null; reviewer_name: string | null }>>([]);
   const startedTracked = useRef(false);
   const restoredRef = useRef(false);
   const completedStoresRef = useRef<Set<string>>(new Set());
@@ -387,11 +414,13 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       const saved = JSON.parse(raw) as {
         plan: PlanResponse; excludedIds: string[]; pinnedIds: Record<string, string>;
         purchased?: Record<string, true>; purchaseMode?: boolean;
-        exitMarker?: { store: string; ts: number } | null; ts: number;
+        exitMarker?: { store: string; ts: number } | null;
+        myShare?: { token: string; owner_key: string; ts: number } | null; ts: number;
       };
       if (Date.now() - saved.ts < STATE_TTL_MS && saved.plan?.understood) {
         setPlan(saved.plan); setExcludedIds(saved.excludedIds ?? []); setPinnedIds(saved.pinnedIds ?? {});
         setPurchased(saved.purchased ?? {}); setPurchaseMode(saved.purchaseMode ?? false);
+        setMyShare(saved.myShare ?? null);
         setPlanTs(saved.ts);
         track("home_mission", { meta: { step: "resumed", age_min: Math.round((Date.now() - saved.ts) / 60000) } });
         if (saved.exitMarker?.store && Date.now() - saved.exitMarker.ts < RETURN_PROMPT_MS) {
@@ -409,10 +438,10 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   useEffect(() => {
     if (!restoredRef.current) return;
     try {
-      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, ts: Date.now() }));
+      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShare, ts: Date.now() }));
       else localStorage.removeItem(STORAGE_KEY);
     } catch { /* noop */ }
-  }, [plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker]);
+  }, [plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShare]);
 
   // ── Welcome-back moment: iOS restores the page via bfcache (pageshow persisted) or a
   //    cold reload (handled by the restore above). Either way, a recent /go exit that
@@ -474,13 +503,21 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       if (m.quantities[cat] == null) m = setQuantity(m, cat, cat === "air_conditioner" ? Math.max(1, m.spaces.length || 1) : 1);
       else m = setQuantity(m, cat, m.quantities[cat]!); // normalizes AC spaces to the quantity
     }
-    track("home_mission", { meta: { step: "reviewed", cats: Object.keys(m.quantities).length } });
+    // Unsupported-category DEMAND is a measurement input (ADR-257 §9): real requests
+    // for categories we honestly refuse tell us what to build next.
+    track("home_mission", {
+      meta: {
+        step: "reviewed", cats: Object.keys(m.quantities).length,
+        unsupported: m.unsupported_mentions.slice(0, 4).join("،") || null,
+      },
+    });
     setDraft(m);
   }, [loading]);
 
   const generate = useCallback((m: Mission) => {
     setExcludedIds([]); setPinnedIds({}); setOpenWhy(null); setDraft(null);
     setPurchased({}); setPurchaseMode(false); setExitMarker(null);
+    setMyShare(null); setFamilyFeedback([]);
     completedStoresRef.current = new Set(); missionCompleteRef.current = false;
     void call({ mission: m, excluded_ids: [], pinned_ids: {} }, "plan");
   }, [call]);
@@ -518,6 +555,60 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     setExitMarker({ store: r.stores[0] ?? "—", ts: Date.now() });
     track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source });
   }, []);
+
+  // ── «شارك الخطة» (ADR-257): create a server-fact snapshot, then the native share
+  //    sheet (clipboard fallback). The client sends STRUCTURE only — the server
+  //    re-derives every displayed fact, so nothing fabricated can ship. ──
+  const sharePlan = useCallback(async () => {
+    if (!plan?.legs || !mission) return;
+    const legs = plan.legs
+      .filter((l) => l.state === "ok" && l.picked)
+      .map((l) => ({
+        leg_id: l.leg_id, category: l.category, canonical_id: l.picked!.canonical_id,
+        purchased: !!purchased[l.leg_id],
+        space_label_ar: l.space?.label_ar ?? null, area_m2: l.space?.area_m2 ?? null,
+      }));
+    if (!legs.length) return;
+    try {
+      const res = await fetch("/api/v1/agent/home-mission/share", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          locale, legs,
+          budget_total: plan.allocation?.budget_total ?? mission.budget_total,
+          household_size: mission.household_size, property_type: mission.property_type,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as { token: string; owner_key: string; url: string };
+      setMyShare({ token: data.token, owner_key: data.owner_key, ts: Date.now() });
+      track("home_share", { meta: { step: "created", legs: legs.length } });
+      const msg = t.shareMsg(data.url);
+      if (typeof navigator !== "undefined" && navigator.share) {
+        try { await navigator.share({ text: msg }); return; } catch { /* user cancelled → fall through to copy */ }
+      }
+      await navigator.clipboard.writeText(msg);
+      setShareToast(t.linkCopied);
+      setTimeout(() => setShareToast(null), 4000);
+    } catch {
+      setShareToast(t.shareFailed);
+      setTimeout(() => setShareToast(null), 4000);
+    }
+  }, [plan, mission, purchased, locale, t]);
+
+  // ── Family-opinion inbox: the owner (holding owner_key) reads feedback on its own
+  //    latest share. One fetch per mount/share — no polling loop. ──
+  useEffect(() => {
+    if (!myShare || !plan) return;
+    let cancelled = false;
+    void fetch(`/api/v1/agent/home-mission/share/${myShare.token}/feedback?owner_key=${myShare.owner_key}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { feedback?: typeof familyFeedback } | null) => {
+        if (!cancelled && d?.feedback) setFamilyFeedback(d.feedback);
+      })
+      .catch(() => { /* best effort */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myShare?.token]);
 
   const applyFollowup = useCallback(() => {
     if (!mission || !followup.trim()) return;
@@ -773,10 +864,21 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
             )}
           </div>
           {plan && plan.state !== "need_categories" && (
-            <button onClick={() => setRefineOpen(true)}
-              className="min-h-[40px] rounded-lg bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-              {t.edit}
-            </button>
+            <>
+              {/* Share lives in the header (Apple HIG activity-view convention;
+                  Amazon/IKEA list pattern) — never a second pill beside the primary CTA. */}
+              <button onClick={() => void sharePlan()} aria-label={t.sharePlan} title={t.sharePlan}
+                className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" /><line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+                </svg>
+              </button>
+              <button onClick={() => setRefineOpen(true)}
+                className="min-h-[40px] rounded-lg bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                {t.edit}
+              </button>
+            </>
           )}
         </div>
         {/* ── Category anchor chips (sticky with header; hidden in purchase mode) ── */}
@@ -833,6 +935,52 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         {refreshedNote && plan && (
           <p className="mt-2 rounded-lg bg-primary-50 p-2 text-center text-[11px] text-primary-800 dark:bg-primary-950 dark:text-primary-200">{t.refreshedNote}</p>
         )}
+        {shareToast && (
+          <p role="status" className="mt-2 rounded-lg bg-primary-50 p-2 text-center text-[12px] font-semibold text-primary-800 dark:bg-primary-950 dark:text-primary-200">{shareToast}</p>
+        )}
+
+        {/* ── COMPLETED STATE (ADR-257): one calm, restrained transition out of
+            planning/buying. No savings claim, no verified-purchase claim — Tawveeri
+            only knows what the customer marked. Share becomes a visible action here
+            (the conversion CTA is gone); edit demotes to the quiet header control. ── */}
+        {plan && buyableCount > 0 && boughtCount === buyableCount && (
+          <section className="mt-2 rounded-2xl border border-success-300 bg-success-50 p-4 text-center dark:border-success-800 dark:bg-success-950">
+            <p className="text-lg font-bold text-success-900 dark:text-success-100">{t.completeTitle}</p>
+            <p className="mt-1 text-[12px] leading-5 text-success-800 dark:text-success-200">{t.completeSub}</p>
+            <div className="mt-3 flex flex-col gap-2">
+              <button onClick={() => void sharePlan()}
+                className="min-h-[44px] rounded-xl bg-success-600 px-4 py-2.5 text-sm font-bold text-white">
+                {t.sharePlan}
+              </button>
+              <button disabled={loading}
+                onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setMyShare(null); setFamilyFeedback([]); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
+                className="min-h-[44px] rounded-xl border border-success-300 px-4 py-2.5 text-sm font-semibold text-success-800 dark:border-success-700 dark:text-success-200">
+                {t.newPlan}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ── FAMILY-OPINION INBOX (ADR-257): recipients' reactions, delivered to the
+            owner only. Opinions never mutate the plan — acting on one goes through
+            the same «البدائل»/refine flow as any other decision. ── */}
+        {familyFeedback.length > 0 && plan && (
+          <section className="mt-2 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-950">
+            <p className="text-[13px] font-bold text-primary-900 dark:text-primary-100">{t.opinions(familyFeedback.length)}</p>
+            <ul className="mt-1 space-y-1">
+              {familyFeedback.slice(0, 12).map((f, i) => {
+                const leg = plan.legs?.find((l) => l.leg_id === f.leg_id);
+                const what = leg ? (isAr ? leg.label_ar : leg.label_en) : t.wholePlan;
+                return (
+                  <li key={i} className="text-[11px] leading-5 text-primary-900 dark:text-primary-100">
+                    <b>{f.reviewer_name || t.anon}</b> · {what}: {f.reaction === "up" ? t.opinionUp : t.opinionChange}
+                    {f.note && <> — «{f.note}»</>}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* ── COMPOSER (pre-plan first viewport is 100% mission) — ADR-253 intake:
             NL → same-parser prefill → editable mission card → ONE generate gate ── */}
@@ -847,10 +995,16 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                 className="min-h-[48px] flex-1 rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">
                 {t.review}
               </button>
-              <button onClick={() => setText(EXAMPLE_AR)}
-                className="min-h-[48px] rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">
-                {t.tryExample}
-              </button>
+            </div>
+            {/* Tappable example missions (ADR-257 onboarding: NL-input products ship
+                example prompts). Each fills the box; the user still reviews first. */}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {EXAMPLES_AR.map((ex) => (
+                <button key={ex.chip} type="button" onClick={() => setText(ex.text)}
+                  className="min-h-[36px] rounded-full border border-outline-variant px-3 py-1.5 text-xs text-on-surface-variant">
+                  {ex.chip}
+                </button>
+              ))}
             </div>
             <button onClick={() => review(null)}
               className="mt-2 min-h-[44px] w-full rounded-xl border border-dashed border-outline-variant px-4 py-2.5 text-xs font-semibold text-on-surface-variant">
@@ -960,9 +1114,6 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-container" aria-hidden>
                 <div className="h-full rounded-full bg-success-500" style={{ width: `${buyableCount ? Math.round((boughtCount / buyableCount) * 100) : 0}%` }} />
               </div>
-              {buyableCount > 0 && boughtCount === buyableCount && (
-                <p className="mt-2 rounded-lg bg-success-50 p-2 text-center text-[12px] font-bold text-success-800 dark:bg-success-950 dark:text-success-300">{t.missionDone}</p>
-              )}
             </div>
             {/* RETAILER = the completion unit (ADR-256): one primary handoff per store —
                 «أكمل الشراء من X» exits to the first OPEN item's /go (no cart is faked);
@@ -1077,6 +1228,19 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                   {t.backToPlan}
                 </button>
               </>
+            ) : buyableCount > 0 && boughtCount === buyableCount ? (
+              /* Completed (ADR-257): the conversion CTA is retired; share leads,
+                 edit stays quiet in the header. */
+              <>
+                <button onClick={() => void sharePlan()}
+                  className="min-h-[44px] min-w-0 flex-1 rounded-xl bg-primary-600 px-4 text-sm font-bold text-white">
+                  {t.sharePlan}
+                </button>
+                <button onClick={() => { setPurchaseMode(true); window.scrollTo({ top: 0 }); }}
+                  className="min-h-[44px] shrink-0 rounded-xl border border-outline-variant px-4 text-sm font-semibold text-on-surface">
+                  {t.buyTitle}
+                </button>
+              </>
             ) : (
               <>
                 {buyableCount > 0 && (
@@ -1154,7 +1318,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{t.editPlan}</p>
                 <button disabled={loading}
-                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
+                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setMyShare(null); setFamilyFeedback([]); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
                   className="min-h-[36px] rounded-full border border-outline-variant px-3 py-1.5 text-[11px] font-semibold text-error-700 dark:text-error-300">
                   {t.newMission}
                 </button>

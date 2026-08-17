@@ -390,7 +390,70 @@ export const LAUNCH_KPI = {
   COMPARE_TO_EXIT_MIN: 0.08,
 } as const;
 
+// ── Tawveeri Home (ADR-257 §8): the pilot is now a measured product surface. One pure
+//    builder over the SAME event rows both the live dashboard and the CLI consume —
+//    "Trust is one thing, computed one way." Semantics are explicit and never conflated:
+//    exit CLICK ≠ RETURN ≠ SELF-MARKED complete ≠ verified commercial conversion (the
+//    last does not exist in this data and is never claimed).
+export interface HomeMissionStats {
+  sessions: number;              // distinct sessions touching the Home surface
+  starts: number;                // step: started
+  plans: number;                 // step: plan (a generated plan response)
+  refines: number;               // step: refined
+  purchasePlanOpens: number;     // step: purchase_plan_opened
+  retailerExitClicks: number;    // go_click with a home_mission* source (CLICKS, not purchases)
+  returnsFromRetailer: number;   // step: returned_from_retailer
+  itemsSelfMarked: number;       // step: item_marked_purchased (SELF-marked, unverified)
+  retailersCompleted: number;    // step: retailer_completed (self-marked)
+  missionsCompleted: number;     // step: mission_completed (self-marked)
+  sharesCreated: number;         // home_share step: created
+  shareOpens: number;            // home_share step: opened (recipient sessions)
+  shareFeedback: number;         // home_share step: feedback
+  entryCardClicks: number;       // step: entry_card_click (homepage soft-surface)
+  unsupportedRequests: Array<{ term: string; count: number }>; // honest-refusal demand
+}
+
+const HOME_GO_SOURCES = new Set(['home_mission', 'home_mission_checklist', 'home_mission_retailer_cta']);
+
+export function buildHomeMissionStats(events: UsageEventRow[]): HomeMissionStats {
+  const step = (e: UsageEventRow) => String((e.meta as Record<string, unknown> | null)?.step ?? '');
+  const hm = events.filter((e) => e.event_type === 'home_mission');
+  const hs = events.filter((e) => e.event_type === 'home_share');
+  const count = (rows: UsageEventRow[], s: string) => rows.filter((e) => step(e) === s).length;
+  const sessions = new Set<string>();
+  for (const e of [...hm, ...hs]) if (e.session_id) sessions.add(e.session_id);
+  const unsupported = new Map<string, number>();
+  for (const e of hm) {
+    if (step(e) !== 'reviewed') continue;
+    const raw = String((e.meta as Record<string, unknown> | null)?.unsupported ?? '');
+    for (const term of raw.split('،').map((x) => x.trim()).filter(Boolean)) {
+      unsupported.set(term, (unsupported.get(term) ?? 0) + 1);
+    }
+  }
+  return {
+    sessions: sessions.size,
+    starts: count(hm, 'started'),
+    plans: count(hm, 'plan'),
+    refines: count(hm, 'refined'),
+    purchasePlanOpens: count(hm, 'purchase_plan_opened'),
+    retailerExitClicks: events.filter((e) => e.event_type === 'go_click' && HOME_GO_SOURCES.has(String(e.source ?? ''))).length,
+    returnsFromRetailer: count(hm, 'returned_from_retailer'),
+    itemsSelfMarked: count(hm, 'item_marked_purchased'),
+    retailersCompleted: count(hm, 'retailer_completed'),
+    missionsCompleted: count(hm, 'mission_completed'),
+    sharesCreated: count(hs, 'created'),
+    shareOpens: count(hs, 'opened'),
+    shareFeedback: count(hs, 'feedback'),
+    entryCardClicks: count(hm, 'entry_card_click'),
+    unsupportedRequests: [...unsupported.entries()]
+      .map(([term, n]) => ({ term, count: n }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8),
+  };
+}
+
 export interface CommandCenterData {
+  homeMission: HomeMissionStats;
   range: DateRange;
   real: Funnel;
   test: Funnel;
@@ -695,6 +758,7 @@ export async function getCommandCenterData(
     real,
     test,
     prevReal,
+    homeMission: buildHomeMissionStats(realEvents),
     surfaces: bySurface(realEvents),
     topDemand: topDemand(realEvents),
     unmetDemand: unmetDemand(realEvents),

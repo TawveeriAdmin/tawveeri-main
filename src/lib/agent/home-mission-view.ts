@@ -56,7 +56,7 @@ export interface LegGroup {
   worst: "ok" | "needs_input" | "insufficient" | "stale_or_single";
 }
 
-const GROUP_LABELS: Record<string, { ar: string; en: string }> = {
+export const GROUP_LABELS_PUBLIC: Record<string, { ar: string; en: string }> = {
   air_conditioner: { ar: "التكييف", en: "Cooling" },
   refrigerator: { ar: "الثلاجة", en: "Refrigerator" },
   washing_machine: { ar: "الغسالة", en: "Washing machine" },
@@ -91,8 +91,8 @@ export function groupLegs(legs: LegOut[]): LegGroup[] {
           : "ok";
     return {
       key: cat,
-      label_ar: GROUP_LABELS[cat]?.ar ?? ls[0].label_ar,
-      label_en: GROUP_LABELS[cat]?.en ?? ls[0].label_en,
+      label_ar: GROUP_LABELS_PUBLIC[cat]?.ar ?? ls[0].label_ar,
+      label_en: GROUP_LABELS_PUBLIC[cat]?.en ?? ls[0].label_en,
       legs: ls,
       decided: decidedLegs.length,
       subtotal: decidedLegs.length ? subtotal : null,

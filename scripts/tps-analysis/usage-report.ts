@@ -17,7 +17,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { writeFileSync } from "fs";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
-import { buildFunnel as buildFunnelShared, type UsageEventRow, type OutboundClickRow } from "../../src/lib/admin/command-center-queries";
+import { buildFunnel as buildFunnelShared, buildHomeMissionStats, type UsageEventRow, type OutboundClickRow } from "../../src/lib/admin/command-center-queries";
 
 // ── Launch-readiness KPI thresholds (transparent + editable). A "public-launch signal"
 //    requires a minimum real sample AND every quality KPI to pass. ─────────────────────
@@ -237,6 +237,19 @@ type Funnel = {
   w(`MEASURED EXITS (outbound_clicks — /go-routed only; storefront exits appear as go_click events above):`);
   if (!oc.length) w(`  (none yet)`);
   for (const r of oc) w(`  [${r.is_test ? "TEST" : "REAL"}] clicks=${r.n} distinct_products=${r.products} monetized=${r.monetized}`);
+  w("");
+
+  // ── TAWVEERI HOME (ADR-257 §8): same pure builder as /admin/command-center — one
+  //    computation, two renderers. CLICK ≠ RETURN ≠ SELF-MARKED ≠ verified conversion.
+  const hmStats = buildHomeMissionStats(rawEventRows.filter((r) => !r.is_test));
+  w(`TAWVEERI HOME (REAL — item completion is SELF-reported, never a verified sale):`);
+  w(`  sessions=${hmStats.sessions} starts=${hmStats.starts} plans=${hmStats.plans} refines=${hmStats.refines}`);
+  w(`  purchase_plan_opens=${hmStats.purchasePlanOpens} retailer_exit_clicks=${hmStats.retailerExitClicks} returns=${hmStats.returnsFromRetailer}`);
+  w(`  items_self_marked=${hmStats.itemsSelfMarked} retailers_completed=${hmStats.retailersCompleted} missions_completed=${hmStats.missionsCompleted}`);
+  w(`  shares_created=${hmStats.sharesCreated} share_opens=${hmStats.shareOpens} share_feedback=${hmStats.shareFeedback} entry_card_clicks=${hmStats.entryCardClicks}`);
+  if (hmStats.unsupportedRequests.length) {
+    w(`  unsupported-category demand (honest refusals): ${hmStats.unsupportedRequests.map((u) => `${u.term}×${u.count}`).join(" · ")}`);
+  }
   w("");
 
   w(`LAUNCH-READINESS GATE:`);

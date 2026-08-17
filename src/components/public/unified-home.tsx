@@ -7,13 +7,14 @@
 // Tawveeri identity kept (brand green, evidence/trust language). Never fabricates an offer — the
 // deals row is real data (best-effort) and hides if empty.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
 import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
+import { track } from '@/lib/analytics/track';
 
 const T = {
   ar: {
@@ -43,6 +44,12 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
   const t = T[isAr ? 'ar' : 'en'];
   const router = useRouter();
   const [q, setQ] = useState('');
+  // Soft-surface entry visibility (ADR-257): dismiss persists; SSR renders hidden and
+  // the flag resolves on mount so there is no hydration mismatch.
+  const [homeEntryVisible, setHomeEntryVisible] = useState(false);
+  useEffect(() => {
+    try { setHomeEntryVisible(localStorage.getItem('tw_home_entry_dismissed') !== '1'); } catch { setHomeEntryVisible(true); }
+  }, []);
   // Categories DERIVED LIVE (ADR-150) — the six with the most comparable products. The
   // hardcoded `T.cats` list this replaces would drift from production exactly the way the
   // hardcoded homepage figures did. Six keeps the first screen calm; /categories shows all.
@@ -98,6 +105,34 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
           example QUERIES, not generated output. The disclosure renders at/before the first
           advisor answer on /search, as its first child with no prop to suppress it (ADR-152).
           Forcing it onto a page with nothing to disclose would dilute it where it matters. */}
+
+      {/* SOFT-SURFACE ENTRY for Tawveeri Home (ADR-257): one dismissible card, «تجريبي»
+          badge, stable URL — the researched middle stage (Rufus/AI-Mode pattern: visible
+          but gated, never a nav item until instrumentation gates pass). The core compare
+          journey above stays untouched. */}
+      {homeEntryVisible && (
+        <section style={{ marginTop: 22 }}>
+          <div style={{ position: 'relative', background: 'var(--brand-bg-green, #eaf6f1)', border: '1px solid var(--brand-green)', borderRadius: 18, padding: '16px 16px 14px' }}>
+            <button aria-label={isAr ? 'إخفاء' : 'Dismiss'}
+              onClick={() => { setHomeEntryVisible(false); try { localStorage.setItem('tw_home_entry_dismissed', '1'); } catch { /* noop */ } track('home_mission', { meta: { step: 'entry_card_dismissed' } }); }}
+              style={{ position: 'absolute', top: 8, insetInlineEnd: 10, background: 'none', border: 'none', fontSize: 16, color: 'var(--color-on-surface-variant)', cursor: 'pointer', minWidth: 32, minHeight: 32 }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--color-on-surface)' }}>{isAr ? 'جهّز بيتك بذكاء' : 'Equip your home intelligently'}</span>
+              <span style={{ fontSize: 10, fontWeight: 800, background: 'var(--brand-green)', color: '#fff', borderRadius: 8, padding: '2px 8px' }}>{isAr ? 'تجريبي' : 'Beta'}</span>
+            </div>
+            <p style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--color-on-surface-variant)', margin: '0 0 10px' }}>
+              {isAr
+                ? 'صف بيتك وميزانيتك بكلامك، ونحوّلها إلى خطة أجهزة بأدلة أسعار حقيقية — والأسعار قد تتغير.'
+                : 'Describe your home and budget in your own words — we turn it into an appliance plan built on real price evidence. Prices may change.'}
+            </p>
+            <Link href={`/${locale}/home-mission`}
+              onClick={() => track('home_mission', { meta: { step: 'entry_card_click' } })}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, background: 'var(--brand-green)', color: '#fff', borderRadius: 12, padding: '10px 20px', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
+              {isAr ? 'ابدأ خطة بيتك' : 'Start your home plan'}
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* 2 — MAIN CATEGORIES (large comfortable cards, equal size, generous spacing).
           Hidden entirely when nothing clears the rule — never an empty or stale grid. */}

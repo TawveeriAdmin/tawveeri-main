@@ -69,7 +69,7 @@ export default async function CommandCenterPage({
   const data = await getCommandCenterData(period, sp.start, sp.end, includeHistorical);
   const {
     real, test, prevReal, kpis, gate, surfaces, topDemand, unmetDemand, outboundReal, outboundTest,
-    quality, campaignAttribution, confidence, commercial, baseline,
+    quality, campaignAttribution, confidence, commercial, baseline, homeMission,
   } = data;
 
   const periodLabel = (p: Period) => ({
@@ -257,6 +257,55 @@ export default async function CommandCenterPage({
           </div>
         </Card>
       </div>
+
+      {/* ── TAWVEERI HOME (ADR-257 §8) — the pilot as a measured product surface.
+          Semantics never conflated: exit CLICK ≠ RETURN ≠ SELF-MARKED ≠ verified sale. ── */}
+      <Card>
+        <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">
+          {isRTL ? 'توفيري هوم — «جهّز بيتك بذكاء»' : 'Tawveeri Home'}
+        </h2>
+        <p className="mt-1 text-xs text-on-surface-variant dark:text-white/50">
+          {isRTL
+            ? 'إتمام العناصر إشارة ذاتية من المستخدم — ليست تحويلاً تجاريًا مؤكدًا.'
+            : 'Item completion is self-reported by the user — never a verified commercial conversion.'}
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-3">
+          {([
+            [isRTL ? 'جلسات' : 'Sessions', homeMission.sessions],
+            [isRTL ? 'بدايات مهمة' : 'Mission starts', homeMission.starts],
+            [isRTL ? 'خطط مولّدة' : 'Plans generated', homeMission.plans],
+            [isRTL ? 'تعديلات' : 'Refinements', homeMission.refines],
+            [isRTL ? 'فتح خطة الشراء' : 'Purchase-plan opens', homeMission.purchasePlanOpens],
+            [isRTL ? 'نقرات خروج للمتاجر' : 'Retailer exit clicks', homeMission.retailerExitClicks],
+            [isRTL ? 'عودة من متجر' : 'Returns from retailer', homeMission.returnsFromRetailer],
+            [isRTL ? 'عناصر معلّمة «تم»' : 'Items self-marked', homeMission.itemsSelfMarked],
+            [isRTL ? 'متاجر مكتملة' : 'Retailers completed', homeMission.retailersCompleted],
+            [isRTL ? 'مهمات مكتملة' : 'Missions completed', homeMission.missionsCompleted],
+            [isRTL ? 'مشاركات منشأة' : 'Shares created', homeMission.sharesCreated],
+            [isRTL ? 'فتحات رابط المشاركة' : 'Share opens', homeMission.shareOpens],
+            [isRTL ? 'آراء مستلمة' : 'Share feedback', homeMission.shareFeedback],
+            [isRTL ? 'نقرات بطاقة الرئيسية' : 'Entry-card clicks', homeMission.entryCardClicks],
+          ] as Array<[string, number]>).map(([label, value]) => (
+            <div key={label} className="flex items-center justify-between gap-2">
+              <span className="truncate text-on-surface-variant dark:text-white/60">{label}</span>
+              <span className="shrink-0 font-bold tabular-nums text-on-surface dark:text-white">{value}</span>
+            </div>
+          ))}
+        </div>
+        {homeMission.unsupportedRequests.length > 0 && (
+          <div className="mt-3">
+            <p className="text-xs font-bold text-on-surface dark:text-white">{isRTL ? 'طلبات فئات غير مدعومة (رفض صادق — ماذا نبني بعده؟)' : 'Unsupported-category requests (honest refusals — what to build next)'}</p>
+            <div className="mt-1.5 space-y-1 text-sm">
+              {homeMission.unsupportedRequests.map((u) => (
+                <div key={u.term} className="flex items-center justify-between gap-3">
+                  <span className="truncate text-on-surface-variant dark:text-white/60">{u.term}</span>
+                  <span className="shrink-0 font-bold tabular-nums text-on-surface dark:text-white">{u.count}×</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
 
       {unmetDemand.length > 0 && (
         <Card>

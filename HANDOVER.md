@@ -1,4 +1,33 @@
-# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #88 · ADR-256 PURCHASE PLAN ADOPTED (HANDOFF CLOSED) · RETAILER = COMPLETION UNIT ═══
+# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #89 · ADR-257 PILOT→MEASURED PRODUCT · SHARING LIVE · SOFT-SURFACED ═══
+
+## A. FOUNDER ACCEPTANCE (settled)
+Real-iPhone purchase-plan journey FOUNDER-ACCEPTED (multi-retailer handoff, return,
+confirmation, persistence, completion). ADR-256 baseline confirmed; architecture stays
+CLOSED. This checkpoint = the ADR-257 finishing mission.
+
+## B. ADR-257 SHIPPED
+- COMPLETED STATE: «اكتمل تجهيز منزلك» calm card (MSA register, no gamification, no
+  savings/verified-purchase claims); actions شارك الخطة + ابدأ خطة جديدة; «عدّل» demoted
+  to header. Bottom bar in completed plan = [شارك الخطة][خطة مشترياتك].
+- SHARING (Phase 1): snapshot capability-URL `/{locale}/plan/{token}` (128-bit token,
+  30d expiry, anonymous view, noindex). TRUST BOUNDARY: client sends STRUCTURE only;
+  server re-derives every fact from projection + newest obs (tampering can't fabricate;
+  unknown canonicals dropped). Free-typed mission text + owner identity NEVER in the
+  snapshot. Feedback: per-item مناسب/اقترح تغييره + note + name, no account, capped +
+  scrubbed; owner reads via owner_key (returned once, client-stored). Feedback never
+  mutates the plan. Tables migration 35 — RLS on, zero policies, anon/authenticated
+  REVOKED (verified in prod). Deferred: proposals accept/reject, live links, revocation
+  UI, price-delta on view.
+- MEASUREMENT: `buildHomeMissionStats` (command-center-queries) → /admin/command-center
+  card + tps:usage section. New event `home_share`. Unsupported-category demand tracked
+  (meta.unsupported on reviewed). CLICK ≠ RETURN ≠ SELF-MARKED ≠ verified conversion.
+- SOFT-SURFACE: dismissible homepage card «جهّز بيتك بذكاء | تجريبي» (NOT nav) + 3
+  example-mission chips on intake. Page stays noindex. Promotion gates = Home stats
+  healthy + ADR-249 freshness green.
+- MARKETING: no campaign. Smallest test = founder WhatsApp ~5 real users (share link IS
+  the loop) → then ONE organic TikTok clip via /admin/growth. LAUNCH_VOCABULARY bounds.
+
+# ═══ 2026-08-17 CHECKPOINT #88 · ADR-256 PURCHASE PLAN ADOPTED (HANDOFF CLOSED) · RETAILER = COMPLETION UNIT ═══
 
 ## A. FOUNDER DECISION (settled — do NOT reopen)
 Purchase Plan model ADOPTED as governed baseline. Principle (verbatim): **«ONE HOME

@@ -22,6 +22,8 @@ export const USAGE_EVENT_TYPES = [
   "go_click",                            // Outbound Click (measured exit intent, client-side)
   "home_mission",                        // «جهّز بيتك بذكاء» pilot funnel — step in meta.step
                                          // (started | plan | partial | refined | rejected | clarified)
+  "home_share",                          // shared-plan lifecycle (ADR-257) — meta.step:
+                                         // created | opened | feedback (owner + recipient surfaces)
   "no_answer", "error",                  // off-funnel signals
 ] as const;
 
