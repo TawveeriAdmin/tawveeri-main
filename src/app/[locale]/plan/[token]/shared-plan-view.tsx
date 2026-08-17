@@ -36,6 +36,7 @@ const T = (isAr: boolean) => ({
   notePh: isAr ? "ملاحظة قصيرة (اختياري)…" : "A short note (optional)…",
   send: isAr ? "أرسل رأيك" : "Send",
   sent: isAr ? "وصل رأيك لصاحب الخطة ✓" : "Your opinion was sent ✓",
+  sendFailed: isAr ? "تعذر إرسال رأيك — جرّب مرة ثانية." : "Sending failed — try again.",
   pickOne: isAr ? "اختر رأيك على جهاز واحد على الأقل" : "React to at least one item",
 });
 
@@ -47,6 +48,7 @@ export function SharedPlanView({ locale, token, snapshot }: { locale: "ar" | "en
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(false);
 
   useEffect(() => {
     if (snapshot) track("home_share", { meta: { step: "opened", legs: snapshot.legs.length } });
@@ -71,16 +73,23 @@ export function SharedPlanView({ locale, token, snapshot }: { locale: "ar" | "en
     const entries = Object.entries(reactions);
     if (!entries.length || sending) return;
     setSending(true);
+    setSendError(false);
     try {
+      // ADR-258 (incident): «وصل رأيك ✓» used to render without checking the server's
+      // answer — a rejected write looked identical to a delivered one. Success is now
+      // claimed only when EVERY row was accepted.
+      let allOk = true;
       for (const [legId, reaction] of entries) {
-        await fetch(`/api/v1/agent/home-mission/share/${token}/feedback`, {
+        const res = await fetch(`/api/v1/agent/home-mission/share/${token}/feedback`, {
           method: "POST", headers: { "content-type": "application/json" },
           body: JSON.stringify({ leg_id: legId, reaction, note: note || null, reviewer_name: name || null }),
         });
+        if (!res.ok) allOk = false;
       }
+      if (!allOk) { setSendError(true); return; }
       track("home_share", { meta: { step: "feedback", reactions: entries.length, has_note: !!note } });
       setSent(true);
-    } catch { /* best effort */ } finally { setSending(false); }
+    } catch { setSendError(true); } finally { setSending(false); }
   };
 
   return (
@@ -156,6 +165,9 @@ export function SharedPlanView({ locale, token, snapshot }: { locale: "ar" | "en
                 className="mt-2 min-h-[44px] w-full rounded-xl border border-outline-variant bg-white px-3 text-sm dark:bg-gray-900" />
               <textarea value={note} onChange={(e) => setNote(e.target.value.slice(0, 140))} placeholder={t.notePh} rows={2}
                 className="mt-2 w-full resize-none rounded-xl border border-outline-variant bg-white p-3 text-sm dark:bg-gray-900" />
+              {sendError && (
+                <p className="mt-2 rounded-lg bg-error-50 p-2 text-center text-[12px] font-semibold text-error-700 dark:bg-error-950 dark:text-error-300">{t.sendFailed}</p>
+              )}
               <button onClick={submit} disabled={sending || Object.keys(reactions).length === 0}
                 className="mt-2 min-h-[44px] w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
                 {Object.keys(reactions).length === 0 ? t.pickOne : t.send}

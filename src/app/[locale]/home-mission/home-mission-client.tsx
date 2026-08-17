@@ -391,9 +391,11 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const [exitMarker, setExitMarker] = useState<{ store: string; ts: number } | null>(null);
   const [refreshedNote, setRefreshedNote] = useState(false);
   const [planTs, setPlanTs] = useState<number>(0);                               // when current prices were fetched
-  // ── Sharing (ADR-257): latest share for THIS plan (token + owner_key stored only
-  //    client-side — the owner is anonymous; the key gates feedback readback). ──
-  const [myShare, setMyShare] = useState<{ token: string; owner_key: string; ts: number } | null>(null);
+  // ── Sharing (ADR-257/258): ALL shares of THIS plan (token + owner_key stored only
+  //    client-side — the owner is anonymous; the key gates feedback readback). The
+  //    two-device incident proved real usage creates SEVERAL shares (share-sheet
+  //    cancel → retry); the owner must hear feedback on every link actually sent. ──
+  const [myShares, setMyShares] = useState<Array<{ token: string; owner_key: string; ts: number }>>([]);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [familyFeedback, setFamilyFeedback] = useState<Array<{ leg_id: string; reaction: string; note: string | null; reviewer_name: string | null }>>([]);
   const startedTracked = useRef(false);
@@ -415,12 +417,14 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         plan: PlanResponse; excludedIds: string[]; pinnedIds: Record<string, string>;
         purchased?: Record<string, true>; purchaseMode?: boolean;
         exitMarker?: { store: string; ts: number } | null;
+        myShares?: Array<{ token: string; owner_key: string; ts: number }>;
         myShare?: { token: string; owner_key: string; ts: number } | null; ts: number;
       };
       if (Date.now() - saved.ts < STATE_TTL_MS && saved.plan?.understood) {
         setPlan(saved.plan); setExcludedIds(saved.excludedIds ?? []); setPinnedIds(saved.pinnedIds ?? {});
         setPurchased(saved.purchased ?? {}); setPurchaseMode(saved.purchaseMode ?? false);
-        setMyShare(saved.myShare ?? null);
+        // Backward-compat: pre-incident state stored a single myShare object.
+        setMyShares(saved.myShares ?? (saved.myShare ? [saved.myShare] : []));
         setPlanTs(saved.ts);
         track("home_mission", { meta: { step: "resumed", age_min: Math.round((Date.now() - saved.ts) / 60000) } });
         if (saved.exitMarker?.store && Date.now() - saved.exitMarker.ts < RETURN_PROMPT_MS) {
@@ -438,10 +442,10 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   useEffect(() => {
     if (!restoredRef.current) return;
     try {
-      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShare, ts: Date.now() }));
+      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShares, ts: Date.now() }));
       else localStorage.removeItem(STORAGE_KEY);
     } catch { /* noop */ }
-  }, [plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShare]);
+  }, [plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShares]);
 
   // ── Welcome-back moment: iOS restores the page via bfcache (pageshow persisted) or a
   //    cold reload (handled by the restore above). Either way, a recent /go exit that
@@ -517,7 +521,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const generate = useCallback((m: Mission) => {
     setExcludedIds([]); setPinnedIds({}); setOpenWhy(null); setDraft(null);
     setPurchased({}); setPurchaseMode(false); setExitMarker(null);
-    setMyShare(null); setFamilyFeedback([]);
+    setMyShares([]); setFamilyFeedback([]);
     completedStoresRef.current = new Set(); missionCompleteRef.current = false;
     void call({ mission: m, excluded_ids: [], pinned_ids: {} }, "plan");
   }, [call]);
@@ -570,19 +574,31 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       }));
     if (!legs.length) return;
     try {
-      const res = await fetch("/api/v1/agent/home-mission/share", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          locale, legs,
-          budget_total: plan.allocation?.budget_total ?? mission.budget_total,
-          household_size: mission.household_size, property_type: mission.property_type,
-        }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const data = (await res.json()) as { token: string; owner_key: string; url: string };
-      setMyShare({ token: data.token, owner_key: data.owner_key, ts: Date.now() });
-      track("home_share", { meta: { step: "created", legs: legs.length } });
-      const msg = t.shareMsg(data.url);
+      // ADR-258 (incident): repeated share taps used to mint a NEW token every time —
+      // the founder's real flow created 4 tokens in 4 minutes and the owner listened
+      // to only the last. REUSE the latest share while the plan is unchanged since it
+      // was created (the snapshot is immutable, so an unchanged plan needs no new one).
+      const latest = myShares[myShares.length - 1];
+      const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      let url: string;
+      if (latest && planTs <= latest.ts) {
+        url = `${base}/${locale}/plan/${latest.token}`;
+      } else {
+        const res = await fetch("/api/v1/agent/home-mission/share", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            locale, legs,
+            budget_total: plan.allocation?.budget_total ?? mission.budget_total,
+            household_size: mission.household_size, property_type: mission.property_type,
+          }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as { token: string; owner_key: string; url: string };
+        setMyShares((s) => [...s, { token: data.token, owner_key: data.owner_key, ts: Date.now() }].slice(-5));
+        track("home_share", { meta: { step: "created", legs: legs.length } });
+        url = data.url;
+      }
+      const msg = t.shareMsg(url);
       if (typeof navigator !== "undefined" && navigator.share) {
         try { await navigator.share({ text: msg }); return; } catch { /* user cancelled → fall through to copy */ }
       }
@@ -593,22 +609,39 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       setShareToast(t.shareFailed);
       setTimeout(() => setShareToast(null), 4000);
     }
-  }, [plan, mission, purchased, locale, t]);
+  }, [plan, mission, purchased, locale, t, myShares, planTs]);
 
-  // ── Family-opinion inbox: the owner (holding owner_key) reads feedback on its own
-  //    latest share. One fetch per mount/share — no polling loop. ──
+  // ── Family-opinion inbox (ADR-258 incident fix): feedback arrives while the owner
+  //    is away at WhatsApp — a single mount-time fetch missed it (the proven defect).
+  //    Refresh across ALL of this plan's shares, and re-fire on every return signal:
+  //    bfcache restore (pageshow), tab becoming visible, and a slow safety interval. ──
+  const refreshFeedback = useCallback(async () => {
+    if (!myShares.length) return;
+    try {
+      const all = await Promise.all(myShares.map(async (s) => {
+        const r = await fetch(`/api/v1/agent/home-mission/share/${s.token}/feedback?owner_key=${s.owner_key}`);
+        if (!r.ok) return [];
+        const d = (await r.json()) as { feedback?: Array<{ leg_id: string; reaction: string; note: string | null; reviewer_name: string | null; created_at?: string }> };
+        return d.feedback ?? [];
+      }));
+      const merged = all.flat().sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")));
+      setFamilyFeedback(merged);
+    } catch { /* best effort */ }
+  }, [myShares]);
   useEffect(() => {
-    if (!myShare || !plan) return;
-    let cancelled = false;
-    void fetch(`/api/v1/agent/home-mission/share/${myShare.token}/feedback?owner_key=${myShare.owner_key}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { feedback?: typeof familyFeedback } | null) => {
-        if (!cancelled && d?.feedback) setFamilyFeedback(d.feedback);
-      })
-      .catch(() => { /* best effort */ });
-    return () => { cancelled = true; };
+    if (!plan || !myShares.length) return;
+    void refreshFeedback();
+    const onReturn = () => { if (document.visibilityState === "visible") void refreshFeedback(); };
+    window.addEventListener("pageshow", onReturn);
+    document.addEventListener("visibilitychange", onReturn);
+    const iv = setInterval(onReturn, 90_000);
+    return () => {
+      window.removeEventListener("pageshow", onReturn);
+      document.removeEventListener("visibilitychange", onReturn);
+      clearInterval(iv);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myShare?.token]);
+  }, [refreshFeedback, plan == null]);
 
   const applyFollowup = useCallback(() => {
     if (!mission || !followup.trim()) return;
@@ -953,7 +986,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                 {t.sharePlan}
               </button>
               <button disabled={loading}
-                onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setMyShare(null); setFamilyFeedback([]); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
+                onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setMyShares([]); setFamilyFeedback([]); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
                 className="min-h-[44px] rounded-xl border border-success-300 px-4 py-2.5 text-sm font-semibold text-success-800 dark:border-success-700 dark:text-success-200">
                 {t.newPlan}
               </button>
@@ -1318,7 +1351,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{t.editPlan}</p>
                 <button disabled={loading}
-                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setMyShare(null); setFamilyFeedback([]); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
+                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setMyShares([]); setFamilyFeedback([]); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
                   className="min-h-[36px] rounded-full border border-outline-variant px-3 py-1.5 text-[11px] font-semibold text-error-700 dark:text-error-300">
                   {t.newMission}
                 </button>
