@@ -363,6 +363,9 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   //    A restore past the 45-min price-trust window re-asks the server with the SAME
   //    mission (checklist marks + pins survive; prices are never silently stale). ──
   useEffect(() => {
+    // Arm the writer FIRST: the early no-saved-state return must never leave the save
+    // effect disarmed (a fresh visitor's first plan has to persist).
+    restoredRef.current = true;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
@@ -383,7 +386,6 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         }
       }
     } catch { /* noop */ }
-    restoredRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
