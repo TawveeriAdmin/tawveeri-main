@@ -1,4 +1,35 @@
-# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #89 (amended) · ADR-257 SHARING LIVE + ADR-258 FEEDBACK-INBOX INCIDENT FIXED ═══
+# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #90 (FOUNDER FINAL CLOSE) · TAWVEERI HOME BUILD PHASE = CLOSED ═══
+
+## FINAL STATUS (founder-set, 2026-08-17 — do NOT reopen without new evidence)
+- TAWVEERI HOME BUILD PHASE: **CLOSED**
+- PURCHASE PLAN (ADR-256): **ACCEPTED** (founder real-iPhone)
+- SHARED PLAN PHASE 1 (ADR-257): **ACCEPTED**
+- CROSS-DEVICE FEEDBACK (ADR-258): **ACCEPTED** (founder real two-device PASS)
+- CONSUMER SURFACE: **LIVE** — homepage card «جهّز بيتك بذكاء» (consumer «تجريبي» label
+  REMOVED at close; internal status stays MEASURED PRODUCT / CONTROLLED DISTRIBUTION)
+- STATUS: **PRODUCTION / MEASURED DISTRIBUTION** · NEW FEATURE WORK: **STOPPED**
+- Final polish at close: feedback inbox grouped per SUBMISSION (person once, note once,
+  item opinions under — `groupFeedback` in home-mission-view, tested; different people /
+  far-apart submissions never merged).
+
+## WHAT TOMORROW'S SESSION MUST KNOW
+- Governing ADRs: 249/250 (pilot+workspace) · 252 (forward-only ingestion, SEV-1) ·
+  253 (structured intake) · 254 (cooker identity, gates UNMET: gas 19 / electric 7 /
+  mixed 1 vs ≥40 — re-measure as feeds land) · 255/256 (purchase handoff CLOSED) ·
+  257 (sharing + measurement + soft-surface) · 258 (feedback incident).
+- Measurement: /admin/command-center «توفيري هوم» card + `npm run tps:usage` (one
+  builder: buildHomeMissionStats). Unsupported-category demand is tracked — let real
+  demand pick the next category.
+- DELIBERATE DEFERRALS (recorded, not forgotten): Phase-2 proposals accept/reject ·
+  live share links + revocation UI · per-share price-delta · «الأوفر vs الأسهل» basket
+  tradeoff (needs basket ranking rule + telemetry evidence) · Amazon.sa multi-ASIN
+  cart-add verification · server-persisted plan URLs beyond 30d · pass^k transcript
+  eval suite (§65) · marketing test (founder WhatsApp n≈5 → one organic TikTok via
+  /admin/growth — founder-published, not started).
+- Cooker/unsupported honesty gate: intact, founder-accepted, MEASURED. Never loosen
+  eligibility to look complete.
+
+# ═══ 2026-08-17 CHECKPOINT #89 (amended) · ADR-257 SHARING LIVE + ADR-258 FEEDBACK-INBOX INCIDENT FIXED ═══
 
 ## ADR-258 (post-#89 incident, founder two-device test — FIXED, `e8be932`)
 Feedback writes were healthy; the OWNER's client was the defect: one mount-time fetch
