@@ -15,8 +15,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
 import {
-  groupLegs, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
-  type LegOut, type RecOut, type Mission, type Chip, type LegGroup,
+  groupLegs, groupByStore, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
+  type LegOut, type RecOut, type Mission, type Chip, type LegGroup, type StoreGroup,
 } from "@/lib/agent/home-mission-view";
 // ONE BRAIN (ADR-253): the card prefills through the SAME pure parser the server runs —
 // the mission card and the API can never drift apart on what a sentence means.
@@ -38,8 +38,15 @@ interface PlanResponse {
 const EXAMPLE_AR =
   "انتقلت لشقة جديدة. أسرتنا 4 أشخاص. غرفة النوم 16 متر، غرفة الأطفال 14 متر، الصالة 28 متر. ميزانيتي للأجهزة 20 ألف. أهم شيء المكيفات وما أبي أصرف على مواصفات ما أحتاجها.";
 
-const STORAGE_KEY = "tw_home_mission_v2";
-const STATE_TTL_MS = 45 * 60_000; // same TTL discipline as DecisionState
+// ADR-255: an appliance mission is a multi-day purchase journey. localStorage with a
+// 7-day TTL (the iOS ITP script-storage ceiling — longer would silently lie) replaces
+// sessionStorage; a restore older than the price-trust window re-asks the server with
+// the SAME mission so prices are never silently stale. Server-persisted shareable plan
+// URLs are the named future boundary, not faked here.
+const STORAGE_KEY = "tw_home_mission_v3";
+const STATE_TTL_MS = 7 * 24 * 60 * 60_000;
+const PRICE_FRESH_MS = 45 * 60_000; // same trust window as DecisionState
+const RETURN_PROMPT_MS = 30 * 60_000; // welcome-back window after a /go exit
 
 const CATEGORY_LABELS: Record<string, { ar: string; en: string }> = {
   air_conditioner: { ar: "التكييف", en: "AC" },
@@ -101,7 +108,24 @@ const T = (locale: Locale) => ({
   swap: locale === "ar" ? "غيّره" : "Swap",
   chooseThis: locale === "ar" ? "اختر هذا بدلًا" : "Choose this instead",
   chosen: locale === "ar" ? "اخترته أنت" : "your choice",
-  go: (store?: string) => (locale === "ar" ? `شوف العرض${store ? ` عند ${store}` : ""}` : `See the offer${store ? ` at ${store}` : ""}`),
+  // ADR-255 CTA research: fixed short verb label; the retailer is NAMED adjacent to the
+  // button (meta line / group header), never inside it — variable-width Arabic labels
+  // with store names were the horizontal-overflow class the founder hit on iPhone.
+  go: locale === "ar" ? "شوف العرض" : "See the offer",
+  at: (store: string) => (locale === "ar" ? `عند ${store}` : `at ${store}`),
+  startBuying: locale === "ar" ? "ابدأ الشراء" : "Start buying",
+  backToPlan: locale === "ar" ? "رجوع للخطة" : "Back to plan",
+  buyTitle: locale === "ar" ? "قائمة الشراء — متجرًا بمتجر" : "Purchase list — store by store",
+  buySub: locale === "ar"
+    ? "كل متجر له سلة مستقلة عنده — افتح العرض، أكمل الشراء هناك، وارجع لنا وعلّم «تم»."
+    : "Each store has its own checkout — open the offer, buy there, come back and mark done.",
+  bought: locale === "ar" ? "تم" : "Done",
+  boughtChip: locale === "ar" ? "تم الشراء ✓" : "Purchased ✓",
+  boughtProgress: (n: number, m: number) => (locale === "ar" ? `اشتريت ${n} من ${m}` : `bought ${n} of ${m}`),
+  storeItems: (n: number) => (locale === "ar" ? (n === 1 ? "جهاز واحد" : n === 2 ? "جهازان" : `${n} أجهزة`) : `${n} item${n === 1 ? "" : "s"}`),
+  welcomeBack: (store: string) => (locale === "ar" ? `رجعت من ${store} — تم الشراء؟` : `Back from ${store} — did you buy it?`),
+  notYet: locale === "ar" ? "ليس بعد" : "Not yet",
+  refreshedNote: locale === "ar" ? "حدّثنا الأسعار — خطتك محفوظة." : "Prices refreshed — your plan is saved.",
   allEvidence: (n: number) => (locale === "ar" ? `كل الأدلة (${n})` : `All evidence (${n})`),
   saveDown: (x: number) => (locale === "ar" ? `وفّر ${fmt(x)} ر.س — الأرخص المؤهل` : `Save ${fmt(x)} SAR — cheapest eligible`),
   payUp: (x: number) => (locale === "ar" ? `‏+${fmt(x)} ر.س — وش يتحسن؟` : `+${fmt(x)} SAR — what improves?`),
@@ -248,7 +272,7 @@ function MissionCard({ m, onChange, onSubmit, submitLabel, t, isAr, loading }: {
             {m.spaces.map((s, i) => (
               <div key={s.key} className="flex items-center justify-between gap-2">
                 <p className="min-w-0 flex-1 truncate text-xs font-semibold text-on-surface">{isAr ? s.label_ar : s.label_en}</p>
-                <div className="flex items-center gap-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-1">
                   {AREA_CHIPS.map((a) => (
                     <button key={a} type="button"
                       onClick={() => onChange({ ...m, spaces: m.spaces.map((x, j) => (j === i ? { ...x, area_m2: a } : x)) })}
@@ -327,28 +351,64 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const [altsFor, setAltsFor] = useState<string | null>(null);      // bottom sheet: leg_id
   const [refineOpen, setRefineOpen] = useState(false);
   const [deltaDismissed, setDeltaDismissed] = useState(false);
+  // ── Purchase handoff (ADR-255) ──
+  const [purchaseMode, setPurchaseMode] = useState(false);
+  const [purchased, setPurchased] = useState<Record<string, true>>({});          // leg_id → done
+  const [exitMarker, setExitMarker] = useState<{ leg_id: string; store: string; ts: number } | null>(null);
+  const [refreshedNote, setRefreshedNote] = useState(false);
   const startedTracked = useRef(false);
+  const restoredRef = useRef(false);
 
-  // ── Session persistence: refreshing the page must not lose the mission (45-min TTL,
-  //    same discipline as DecisionState; sessionStorage — no account, no dossier). ──
+  // ── Persistence (ADR-255): a purchase journey spans days — localStorage, 7-day TTL.
+  //    A restore past the 45-min price-trust window re-asks the server with the SAME
+  //    mission (checklist marks + pins survive; prices are never silently stale). ──
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
-      const saved = JSON.parse(raw) as { plan: PlanResponse; excludedIds: string[]; pinnedIds: Record<string, string>; ts: number };
+      const saved = JSON.parse(raw) as {
+        plan: PlanResponse; excludedIds: string[]; pinnedIds: Record<string, string>;
+        purchased?: Record<string, true>; purchaseMode?: boolean;
+        exitMarker?: { leg_id: string; store: string; ts: number } | null; ts: number;
+      };
       if (Date.now() - saved.ts < STATE_TTL_MS && saved.plan?.understood) {
         setPlan(saved.plan); setExcludedIds(saved.excludedIds ?? []); setPinnedIds(saved.pinnedIds ?? {});
+        setPurchased(saved.purchased ?? {}); setPurchaseMode(saved.purchaseMode ?? false);
+        if (saved.exitMarker && Date.now() - saved.exitMarker.ts < RETURN_PROMPT_MS && !saved.purchased?.[saved.exitMarker.leg_id]) {
+          setExitMarker(saved.exitMarker);
+        }
+        if (Date.now() - saved.ts > PRICE_FRESH_MS) {
+          setRefreshedNote(true);
+          void call({ mission: saved.plan.understood, excluded_ids: saved.excludedIds ?? [], pinned_ids: saved.pinnedIds ?? {} }, "resume_refresh");
+        }
       }
     } catch { /* noop */ }
+    restoredRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
+    if (!restoredRef.current) return;
     try {
-      if (plan) sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, ts: Date.now() }));
+      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, ts: Date.now() }));
+      else localStorage.removeItem(STORAGE_KEY);
     } catch { /* noop */ }
-  }, [plan, excludedIds, pinnedIds]);
+  }, [plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker]);
+
+  // ── Welcome-back moment: iOS restores the page via bfcache (pageshow persisted) or a
+  //    cold reload (handled by the restore above). Either way, a recent /go exit that
+  //    was not marked done resurfaces as a question, never an assumption. ──
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      setExitMarker((m) => (m && Date.now() - m.ts < RETURN_PROMPT_MS ? { ...m } : null));
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   const call = useCallback(async (body: Record<string, unknown>, step: string) => {
     setLoading(true); setError(false); setDeltaDismissed(false);
+    if (step !== "resume_refresh") setRefreshedNote(false);
     try {
       const res = await fetch("/api/v1/agent/home-mission", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
@@ -393,8 +453,29 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
 
   const generate = useCallback((m: Mission) => {
     setExcludedIds([]); setPinnedIds({}); setOpenWhy(null); setDraft(null);
+    setPurchased({}); setPurchaseMode(false); setExitMarker(null);
     void call({ mission: m, excluded_ids: [], pinned_ids: {} }, "plan");
   }, [call]);
+
+  // ── ADR-255: marking a leg purchased PINS its exact product (existing narrow pinned_ids
+  //    capability — allocation treats it as fixed cost), so later refreshes can never
+  //    swap a device the customer already bought. Unmarking releases the pin. ──
+  const markPurchased = useCallback((legId: string, canonicalId: string, done: boolean) => {
+    if (!mission) return;
+    setPurchased((p) => { const n = { ...p }; if (done) n[legId] = true; else delete n[legId]; return n; });
+    setExitMarker((m) => (m?.leg_id === legId ? null : m));
+    track("home_mission", { canonical_id: canonicalId, meta: { step: done ? "purchased" : "unpurchased", leg: legId } });
+    if (done && pinnedIds[legId] !== canonicalId) {
+      const nextPinned = { ...pinnedIds, [legId]: canonicalId };
+      setPinnedIds(nextPinned);
+      rePlan(mission, "purchased_pin", { pinned: nextPinned });
+    }
+  }, [mission, pinnedIds, rePlan]);
+
+  const onGoExit = useCallback((leg: LegOut, r: RecOut, source: string) => {
+    setExitMarker({ leg_id: leg.leg_id, store: r.stores[0] ?? "—", ts: Date.now() });
+    track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source });
+  }, []);
 
   const applyFollowup = useCallback(() => {
     if (!mission || !followup.trim()) return;
@@ -429,6 +510,11 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const groups: LegGroup[] = useMemo(() => (plan?.legs ? groupLegs(plan.legs) : []), [plan?.legs]);
   const okLegs = plan?.legs?.filter((l) => l.state === "ok") ?? [];
   const bar = budgetBar(plan?.allocation?.budget_total ?? null, plan?.allocation?.total_allocated ?? null);
+  // ADR-255 purchase checklist: the same picks regrouped by exit retailer (no new claims).
+  const storeGroups: StoreGroup[] = useMemo(() => (plan?.legs ? groupByStore(plan.legs) : []), [plan?.legs]);
+  const buyableCount = storeGroups.reduce((n, g) => n + g.legs.length, 0);
+  const boughtCount = storeGroups.reduce((n, g) => n + g.legs.filter((l) => purchased[l.leg_id]).length, 0);
+  const markerLeg = exitMarker ? plan?.legs?.find((l) => l.leg_id === exitMarker.leg_id) : null;
 
   // Decision Delta (client-side diff of two guarded server plans — no new claims).
   const delta = useMemo(() => {
@@ -497,30 +583,36 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                 {leg.space.area_m2 != null && ` · ${leg.space.area_m2}م²`}
               </p>
             )}
-            <p className="line-clamp-2 text-[13px] font-semibold leading-5 text-on-surface"><bdi dir="auto">{recName(r)}</bdi></p>
+            <p className="line-clamp-2 min-w-0 text-[13px] font-semibold leading-5 text-on-surface [overflow-wrap:anywhere]"><bdi dir="auto">{recName(r)}</bdi></p>
             <p className="mt-0.5 text-base font-bold tabular-nums text-on-surface">
               {r.unit_price != null ? <>{fmt(r.unit_price)} <span className="text-xs font-semibold">{t.sar}</span></> : "—"}
-              {leg.pinned && <span className="ms-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-950 dark:text-primary-300">{t.chosen}</span>}
+              {leg.pinned && !purchased[leg.leg_id] && <span className="ms-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-950 dark:text-primary-300">{t.chosen}</span>}
+              {purchased[leg.leg_id] && <span className="ms-2 rounded-full bg-success-50 px-2 py-0.5 text-[10px] font-semibold text-success-800 dark:bg-success-950 dark:text-success-300">{t.boughtChip}</span>}
             </p>
             <div className="mt-1 flex flex-wrap gap-1">{chips.slice(0, 3).map((c, i) => <ChipEl key={i} chip={c} />)}</div>
-            {age && <p className="mt-1 text-[11px] text-on-surface-variant">{age}</p>}
+            {/* The retailer is NAMED here, adjacent to the fixed-label CTA (ADR-255) */}
+            {(r.stores[0] || age) && (
+              <p className="mt-1 min-w-0 truncate text-[11px] text-on-surface-variant">
+                {[r.stores[0] ? t.at(r.stores[0]) : null, age].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="mt-2 flex items-center gap-2">
           {r.go_url && (
-            <a href={r.go_url} target="_blank" rel="noopener nofollow"
-              onClick={() => track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source: "home_mission" })}
-              className="min-h-[44px] flex-1 rounded-lg bg-primary-600 px-3 py-2.5 text-center text-[13px] font-bold text-white">
-              {t.go(r.stores[0])}
+            <a href={r.go_url} rel="noopener nofollow"
+              onClick={() => onGoExit(leg, r, "home_mission")}
+              className="min-h-[44px] min-w-0 flex-1 rounded-lg bg-primary-600 px-3 py-2.5 text-center text-[13px] font-bold text-white">
+              {t.go}
             </a>
           )}
           <button aria-expanded={whyOpen} onClick={() => setOpenWhy(whyOpen ? null : leg.leg_id)}
-            className="min-h-[44px] rounded-lg border border-outline-variant px-3 py-2.5 text-xs font-semibold text-on-surface-variant">
+            className="min-h-[44px] shrink-0 rounded-lg border border-outline-variant px-3 py-2.5 text-xs font-semibold text-on-surface-variant">
             {t.why}
           </button>
           <button onClick={() => { setAltsFor(leg.leg_id); track("home_mission", { meta: { step: "alts_open", leg: leg.leg_id } }); }}
-            className="min-h-[44px] rounded-lg border border-outline-variant px-3 py-2.5 text-xs font-semibold text-on-surface-variant"
+            className="min-h-[44px] shrink-0 rounded-lg border border-outline-variant px-3 py-2.5 text-xs font-semibold text-on-surface-variant"
             disabled={!leg.alternatives?.length}>
             {t.alts}
           </button>
@@ -592,7 +684,9 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const altsLeg = altsFor ? plan?.legs?.find((l) => l.leg_id === altsFor) : null;
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-surface-container-lowest text-on-surface">
+    // overflow-x-clip: iOS Safari lets users rubber-band INTO sub-pixel horizontal
+    // overflow (RTL spills LEFT); clip on the page wrapper removes the class entirely.
+    <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen overflow-x-clip bg-surface-container-lowest text-on-surface">
 
       {/* ── MISSION HEADER — compact, sticky, mission-mode (no global nav) ── */}
       <header className="sticky top-0 z-40 border-b border-outline-variant bg-white/95 backdrop-blur dark:bg-gray-950/95">
@@ -618,8 +712,8 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
             </button>
           )}
         </div>
-        {/* ── Category anchor chips (sticky with header) ── */}
-        {groups.length > 1 && (
+        {/* ── Category anchor chips (sticky with header; hidden in purchase mode) ── */}
+        {!purchaseMode && groups.length > 1 && (
           <nav aria-label={isAr ? "أقسام الخطة" : "Plan sections"} className="mx-auto max-w-2xl overflow-x-auto px-3 pb-2">
             <div className="flex w-max gap-2">
               {groups.map((g) => (
@@ -635,7 +729,29 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         )}
       </header>
 
-      <main className="mx-auto max-w-2xl px-3 pb-28 pt-3">
+      <main className="mx-auto max-w-2xl px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-3">
+
+        {/* ── WELCOME BACK (ADR-255): a recent /go exit resurfaces as a QUESTION on return —
+            purchased is never assumed, and «تم» pins the exact bought product. ── */}
+        {markerLeg && markerLeg.state === "ok" && markerLeg.picked && !purchased[markerLeg.leg_id] && (
+          <div className="mt-2 rounded-xl border border-success-200 bg-success-50 p-3 dark:border-success-800 dark:bg-success-950">
+            <p className="text-[13px] font-bold text-success-900 dark:text-success-100">{t.welcomeBack(exitMarker!.store)}</p>
+            <p className="mt-0.5 line-clamp-1 text-[11px] text-success-800 dark:text-success-200"><bdi dir="auto">{recName(markerLeg.picked)}</bdi></p>
+            <div className="mt-2 flex gap-2">
+              <button onClick={() => markPurchased(markerLeg.leg_id, markerLeg.picked!.canonical_id, true)}
+                className="min-h-[40px] rounded-lg bg-success-600 px-4 py-2 text-xs font-bold text-white">
+                {t.bought} ✓
+              </button>
+              <button onClick={() => setExitMarker(null)}
+                className="min-h-[40px] rounded-lg border border-success-300 px-4 py-2 text-xs font-semibold text-success-800 dark:border-success-700 dark:text-success-200">
+                {t.notYet}
+              </button>
+            </div>
+          </div>
+        )}
+        {refreshedNote && plan && (
+          <p className="mt-2 rounded-lg bg-primary-50 p-2 text-center text-[11px] text-primary-800 dark:bg-primary-950 dark:text-primary-200">{t.refreshedNote}</p>
+        )}
 
         {/* ── COMPOSER (pre-plan first viewport is 100% mission) — ADR-253 intake:
             NL → same-parser prefill → editable mission card → ONE generate gate ── */}
@@ -688,7 +804,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         )}
 
         {/* ── PLAN OVERVIEW — the whole plan in seconds ── */}
-        {plan && plan.state !== "need_categories" && plan.allocation && (
+        {!purchaseMode && plan && plan.state !== "need_categories" && plan.allocation && (
           <section className="mt-1 rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-[13px] font-bold">
@@ -734,7 +850,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         )}
 
         {/* ── DECISION DELTA ── */}
-        {delta && !deltaDismissed && (
+        {!purchaseMode && delta && !deltaDismissed && (
           <div className="mt-3 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-950">
             <div className="flex items-center justify-between">
               <p className="text-[13px] font-bold text-primary-900 dark:text-primary-100">{t.delta}</p>
@@ -746,8 +862,79 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
           </div>
         )}
 
+        {/* ── PURCHASE CHECKLIST (ADR-255): the SAME picks regrouped by exit retailer —
+            one checkout per merchant is the journey's real granularity. Every exit goes
+            through /go (same tab; re-entries re-route through /go so attribution lands
+            as late as possible). No cart capability is faked: one product link per item. ── */}
+        {purchaseMode && plan && (
+          <section className="mt-1">
+            <div className="rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
+              <p className="text-[13px] font-bold">{t.buyTitle}</p>
+              <p className="mt-0.5 text-[11px] leading-5 text-on-surface-variant">{t.buySub}</p>
+              <p className="mt-1 text-[12px] font-semibold tabular-nums text-on-surface">{t.boughtProgress(boughtCount, buyableCount)}</p>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-container" aria-hidden>
+                <div className="h-full rounded-full bg-success-500" style={{ width: `${buyableCount ? Math.round((boughtCount / buyableCount) * 100) : 0}%` }} />
+              </div>
+            </div>
+            {storeGroups.map((g) => {
+              const done = g.legs.filter((l) => purchased[l.leg_id]).length;
+              return (
+                <div key={g.store} className="mt-3 rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="min-w-0 flex-1 truncate text-sm font-bold">
+                      {g.store}
+                      <span className="ms-2 text-[11px] font-semibold text-on-surface-variant">{t.storeItems(g.legs.length)}</span>
+                    </p>
+                    <p className="shrink-0 text-[12px] font-semibold tabular-nums text-on-surface-variant">
+                      {done === g.legs.length ? "✓ " : ""}{g.subtotal != null && <>{fmt(g.subtotal)} {t.sar}</>}
+                    </p>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    {g.legs.map((leg) => {
+                      const r = leg.picked!;
+                      const isDone = !!purchased[leg.leg_id];
+                      return (
+                        <div key={leg.leg_id} className={`flex items-center gap-2 rounded-xl border border-outline-variant p-2 ${isDone ? "opacity-60" : ""}`}>
+                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-surface-container-lowest">
+                            {r.image_url && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={r.image_url} alt="" loading="lazy" className="h-full w-full object-contain" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-1 text-[12px] font-semibold leading-5 [overflow-wrap:anywhere]"><bdi dir="auto">{recName(r)}</bdi></p>
+                            <p className="text-[13px] font-bold tabular-nums">{r.unit_price != null ? `${fmt(r.unit_price)} ${t.sar}` : "—"}</p>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                              <ChipEl chip={evidenceChip(r, locale)} />
+                              {ageLabel(r.data_age_hours, locale) && <span className="text-[10px] text-on-surface-variant">{ageLabel(r.data_age_hours, locale)}</span>}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-stretch gap-1">
+                            {r.go_url && !isDone && (
+                              <a href={r.go_url} rel="noopener nofollow"
+                                onClick={() => onGoExit(leg, r, "home_mission_checklist")}
+                                className="min-h-[40px] rounded-lg bg-primary-600 px-3 py-2 text-center text-[12px] font-bold text-white">
+                                {t.go}
+                              </a>
+                            )}
+                            <button aria-pressed={isDone}
+                              onClick={() => markPurchased(leg.leg_id, r.canonical_id, !isDone)} disabled={loading}
+                              className={`min-h-[40px] rounded-lg px-3 py-2 text-[12px] font-semibold ${isDone ? "bg-success-50 text-success-800 dark:bg-success-950 dark:text-success-300" : "border border-outline-variant text-on-surface-variant"}`}>
+                              {isDone ? t.boughtChip : `${t.bought} ✓`}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
         {/* ── CATEGORY GROUPS ── */}
-        {groups.map((g) => (
+        {!purchaseMode && groups.map((g) => (
           <section key={g.key} id={`grp-${g.key}`} className="mt-4 scroll-mt-28">
             <div className="mb-2 flex items-baseline justify-between px-1">
               <h2 className="text-sm font-bold">
@@ -775,18 +962,35 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         ))}
       </main>
 
-      {/* ── STICKY BOTTOM REFINE BAR ── */}
+      {/* ── STICKY BOTTOM BAR (ADR-255): plan-level actions, not a persistent open text
+          field (the open composer + keyboard was the research-flagged harmful case; the
+          free-text refine lives at the top of the «عدّل» sheet, one tap away). ── */}
       {plan && plan.state !== "need_categories" && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-white/95 p-3 backdrop-blur dark:bg-gray-950/95">
-          <div className="mx-auto flex max-w-2xl gap-2">
-            <input value={followup} onChange={(e) => setFollowup(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") applyFollowup(); }}
-              placeholder={t.followup} aria-label={t.editPlan}
-              className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-outline-variant bg-white px-3 text-sm dark:bg-gray-900" />
-            <button onClick={followup.trim() ? applyFollowup : () => setRefineOpen(true)} disabled={loading}
-              className="min-h-[44px] rounded-xl bg-primary-600 px-4 text-sm font-bold text-white disabled:opacity-50">
-              {followup.trim() ? t.send : t.editPlan}
-            </button>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur dark:bg-gray-950/95">
+          <div className="mx-auto flex max-w-2xl items-center gap-2">
+            {purchaseMode ? (
+              <>
+                <p className="min-w-0 flex-1 truncate text-[13px] font-bold tabular-nums">{t.boughtProgress(boughtCount, buyableCount)}</p>
+                <button onClick={() => setPurchaseMode(false)}
+                  className="min-h-[44px] shrink-0 rounded-xl border border-outline-variant px-4 text-sm font-semibold text-on-surface">
+                  {t.backToPlan}
+                </button>
+              </>
+            ) : (
+              <>
+                {buyableCount > 0 && (
+                  <button
+                    onClick={() => { setPurchaseMode(true); window.scrollTo({ top: 0 }); track("home_mission", { meta: { step: "purchase_mode_open", stores: storeGroups.length, items: buyableCount } }); }}
+                    className="min-h-[44px] min-w-0 flex-1 rounded-xl bg-primary-600 px-4 text-sm font-bold text-white">
+                    {t.startBuying}{boughtCount > 0 ? ` (${boughtCount}/${buyableCount})` : ""}
+                  </button>
+                )}
+                <button onClick={() => setRefineOpen(true)} disabled={loading}
+                  className={`min-h-[44px] shrink-0 rounded-xl px-4 text-sm font-semibold disabled:opacity-50 ${buyableCount > 0 ? "border border-outline-variant text-on-surface" : "flex-1 bg-primary-600 font-bold text-white"}`}>
+                  {t.editPlan}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -839,9 +1043,21 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{t.editPlan}</p>
                 <button disabled={loading}
-                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
+                  onClick={() => { setPlan(null); setPrevPlan(null); setExcludedIds([]); setPinnedIds({}); setPurchased({}); setPurchaseMode(false); setExitMarker(null); setRefineOpen(false); setRefineDraft(null); setDraft(null); try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ } }}
                   className="min-h-[36px] rounded-full border border-outline-variant px-3 py-1.5 text-[11px] font-semibold text-error-700 dark:text-error-300">
                   {t.newMission}
+                </button>
+              </div>
+              {/* Free-text refine (the ADR-253 delta brain) — one tap inside the sheet,
+                  never a persistent open field competing with the plan (ADR-255). */}
+              <div className="mt-3 flex gap-2">
+                <input value={followup} onChange={(e) => setFollowup(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") applyFollowup(); }}
+                  placeholder={t.followup} aria-label={t.editPlan}
+                  className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-outline-variant bg-white px-3 text-sm dark:bg-gray-900" />
+                <button onClick={applyFollowup} disabled={loading || !followup.trim()}
+                  className="min-h-[44px] shrink-0 rounded-xl bg-primary-600 px-4 text-sm font-bold text-white disabled:opacity-50">
+                  {t.send}
                 </button>
               </div>
               <MissionCard m={refineDraft ?? mission} onChange={setRefineDraft}

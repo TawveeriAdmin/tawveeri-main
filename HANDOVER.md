@@ -1,4 +1,53 @@
-# ═══ RESUME HERE — 2026-08-16 CHECKPOINT #86 (NIGHT CLOSE) · ADR-254 SETTLED · AWAIT COOKER MATERIALIZATION · HOME = iPHONE PASS ═══
+# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #87 · FOUNDER iPHONE PASS RECORDED · ADR-255 PURCHASE CHECKLIST LIVE · COOKER GATES UNMET ═══
+
+## A. FOUNDER REAL-iPHONE EVIDENCE (2026-08-16/17 — settled, do NOT re-test these)
+- Mission understanding / posture change / AC-economic refinement / plan recomputation:
+  ALL OBSERVED WORKING on the founder's real iPhone (DecisionState mutation confirmed on device).
+- **UNSUPPORTED CATEGORY HONESTY GATE: REAL IPHONE PASS** («ابي بوتاجاز» → honest
+  unsupported note, no fabricated cooker). Cooker stays gated regardless of inventory
+  materialization until the per-fuel ADR-253 gates pass.
+- Mobile presentation was the defect (horizontal cropping/left clipping RTL, wide dense
+  cards, persistent composer competing) → fixed by ADR-255 (see B).
+- Multi-retailer completion journey was the named open question → decided by ADR-255.
+
+## B. ADR-255 (2026-08-17) — PURCHASE HANDOFF + MOBILE FIX, WHAT SHIPPED
+Research-verified whitespace: NO comparison/agentic product ships plan→multi-retailer
+handoff (two agent reports; idealo/PriceRunner/Kanbkam = per-product click-out; agentic
+players integrate merchants instead). Shipped (client + pure view only, server untouched):
+- «ابدأ الشراء» → the SAME picks regrouped by exit retailer (`groupByStore`; stores[0]
+  IS the /go exit store) with per-item «شوف العرض» + «تم ✓», progress «اشتريت X من Y».
+- Mark-purchased PINS the bought canonical (existing pinned_ids) — refreshes can never
+  swap an already-bought device. Same-tab /go exits (target=_blank removed); every
+  re-entry re-routes through /go (last-click attribution, cross-merchant safe).
+- Welcome-back: /go exit writes a marker; return ≤30min asks «رجعت من X — تم الشراء؟»
+  (never assumes purchase). bfcache via pageshow.persisted + cold-reload restore.
+- Persistence: localStorage 7-day TTL (ITP ceiling); restore >45min re-plans the SAME
+  mission (marks+pins survive; prices never silently stale). Server-persisted shareable
+  plan URL = NAMED future boundary. Storage key now tw_home_mission_v3.
+- Overflow class removed: fixed CTA «شوف العرض» + retailer on the meta line («عند X ·
+  آخر رصد…»), min-w-0/shrink-0 discipline, overflow-wrap:anywhere titles,
+  overflow-x-clip wrapper, safe-area bottom padding, AC chips wrap. Composer removed —
+  free-text refine (delta brain) moved INTO the «عدّل» sheet. Suite 1,941 green.
+- Rejected (recorded): fewest-stores optimizer (no basket ranking rule — would fabricate),
+  cart prefill (Amazon.sa multi-ASIN cart URL documented-but-UNVERIFIED for .sa —
+  env-gated future), tab-spray, retailer-in-CTA.
+
+## C. COOKER (2026-08-17 morning measurement — governed feeds, no forcing)
+30 canonicals materialized naturally (projection has all 30). Per-fuel vs ADR-253 gates
+(≥40 fresh-72h keys + spec ≥90%): gas 19 keys/5 stores (3 more NA-burner keys → spec
+86%) · electric 7 keys/4 stores (2 comparison-grade pairs already) · mixed 1 key. ALL
+NOT READY — Home unchanged. Watch: brand script-splits (ستار واي/starway, midea/مايديا)
+will dilute corroboration; oven-leak CLOSED (15 pre-deploy cooker-shaped oven offers,
+ZERO after deploy, age out ≤Aug 19-23); appliance active = 0; fridge/washer/dishwasher
+projection 412/390/74 unharmed.
+
+## D. NEXT
+1. Founder iPhone re-test of the NEW flow (plan → «ابدأ الشراء» → exit → return →
+   welcome-back → «تم» → reload resume). 2. Re-measure cooker per-fuel gates as feeds
+   land. 3. Deferred: pattern-F tradeoff view awaits a Basket-Intent ranking rule;
+   Amazon.sa cart-add verification; server-persisted plan URLs.
+
+# ═══ 2026-08-16 CHECKPOINT #86 (NIGHT CLOSE) · ADR-254 SETTLED · AWAIT COOKER MATERIALIZATION · HOME = iPHONE PASS ═══
 
 ## TOMORROW, IN ORDER (founder instruction — do not restart research/architecture):
 1. Read this checkpoint. 2. Check whether cooker canonicals materialized naturally

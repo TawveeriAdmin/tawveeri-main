@@ -2,7 +2,7 @@
 // Pure display derivation — grouping, budget bar, chips, diff framing, delta parser.
 import { setQuantity } from "@/lib/agent/home-mission-view";
 import {
-  groupLegs, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
+  groupLegs, groupByStore, budgetBar, fitChip, evidenceChip, energyChip, diffLabel, parseDelta,
   type LegOut, type RecOut, type Mission,
 } from "@/lib/agent/home-mission-view";
 
@@ -43,6 +43,33 @@ describe("groupLegs — the 3 ACs are ONE mission section", () => {
     expect(groupLegs([fresh])[0].worst).toBe("ok");
     const stale = okLeg({ picked: rec({ claim_kind: "compared", store_count: 2, data_age_hours: 100 }) });
     expect(groupLegs([stale])[0].worst).toBe("stale_or_single");
+  });
+});
+
+describe("groupByStore — purchase checklist regroups the SAME picks by exit retailer (ADR-255)", () => {
+  it("groups ok legs by stores[0], sums shown prices, orders most-items-first", () => {
+    const gs = groupByStore([
+      okLeg({ leg_id: "ac_1", category: "air_conditioner", picked: rec({ unit_price: 1800, stores: ["نجم الأجهزة", "اكسترا"] }) }),
+      okLeg({ leg_id: "ac_2", category: "air_conditioner", picked: rec({ unit_price: 1900, stores: ["نجم الأجهزة"] }) }),
+      okLeg({ leg_id: "fridge", category: "refrigerator", picked: rec({ unit_price: 2599, stores: ["نون"] }) }),
+      okLeg({ leg_id: "tv", category: "tv", picked: rec({ unit_price: 1500, stores: ["جرير"] }) }),
+    ]);
+    expect(gs.length).toBe(3);
+    expect(gs[0].store).toBe("نجم الأجهزة");     // 2 items sorts first
+    expect(gs[0].legs.map((l) => l.leg_id)).toEqual(["ac_1", "ac_2"]);
+    expect(gs[0].subtotal).toBe(3700);           // sum of the SAME shown prices — no new figure
+    expect(gs.slice(1).map((g) => g.legs.length)).toEqual([1, 1]);
+  });
+  it("excludes non-ok legs and legs without a /go exit; unpriced pick nulls the subtotal", () => {
+    const gs = groupByStore([
+      okLeg({ leg_id: "a", picked: rec({ stores: ["نون"], unit_price: 100 }) }),
+      okLeg({ leg_id: "b", picked: rec({ stores: ["نون"], unit_price: null }) }),
+      okLeg({ leg_id: "no_exit", picked: rec({ stores: ["نون"], go_url: null }) }),
+      { leg_id: "needs", category: "tv", label_ar: "ت", label_en: "t", emphasis: "normal", state: "needs_area" },
+    ]);
+    expect(gs.length).toBe(1);
+    expect(gs[0].legs.map((l) => l.leg_id)).toEqual(["a", "b"]); // exit-less leg excluded
+    expect(gs[0].subtotal).toBeNull();                            // never invent a partial sum
   });
 });
 

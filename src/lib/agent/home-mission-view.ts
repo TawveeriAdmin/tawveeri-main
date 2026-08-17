@@ -101,6 +101,38 @@ export function groupLegs(legs: LegOut[]): LegGroup[] {
   });
 }
 
+// ── Purchase handoff (ADR-255): the plan regrouped by EXIT RETAILER. One checkout per
+//    merchant is the purchase's real granularity — «اكسترا: جهازان · 4,398» beats six
+//    scattered exits. stores[0] IS the /go exit store (both derive from the newest
+//    observation in the route), so this grouping introduces no new claim: it re-arranges
+//    picks the plan already shows, and subtotals are sums of the same shown prices. ──
+export interface StoreGroup {
+  store: string;               // display name of the exit retailer (stores[0])
+  legs: LegOut[];              // ok legs whose picked exit goes to this store
+  subtotal: number | null;     // null if any leg's pick is unpriced
+}
+
+export function groupByStore(legs: LegOut[]): StoreGroup[] {
+  const byStore = new Map<string, LegOut[]>();
+  for (const l of legs) {
+    if (l.state !== "ok" || !l.picked?.go_url) continue;
+    const store = l.picked.stores[0] ?? "—";
+    const arr = byStore.get(store) ?? [];
+    arr.push(l);
+    byStore.set(store, arr);
+  }
+  const groups = [...byStore.entries()].map(([store, ls]) => {
+    let subtotal: number | null = 0;
+    for (const l of ls) {
+      if (l.picked!.unit_price == null) { subtotal = null; break; }
+      subtotal += l.picked!.unit_price;
+    }
+    return { store, legs: ls, subtotal };
+  });
+  // Most-items first (fewest handoffs completed soonest); stable name tie-break.
+  return groups.sort((a, b) => b.legs.length - a.legs.length || a.store.localeCompare(b.store, "ar"));
+}
+
 // ── Budget bar: fraction spent + tone. RTL mirroring is the layout's job (the bar
 //    fills from the inline-start automatically); numerals stay Latin (never mirrored). ──
 export function budgetBar(budget: number | null, allocated: number | null): { pct: number; tone: "ok" | "tight" | "over" } | null {
