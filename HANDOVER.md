@@ -1,4 +1,15 @@
-# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #89 · ADR-257 PILOT→MEASURED PRODUCT · SHARING LIVE · SOFT-SURFACED ═══
+# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #89 (amended) · ADR-257 SHARING LIVE + ADR-258 FEEDBACK-INBOX INCIDENT FIXED ═══
+
+## ADR-258 (post-#89 incident, founder two-device test — FIXED, `e8be932`)
+Feedback writes were healthy; the OWNER's client was the defect: one mount-time fetch
+(missed feedback arriving while away at WhatsApp — bfcache return ≠ remount), only the
+LAST share token polled (real usage minted 4 tokens in 4 min via share-sheet retries),
+and the viewer claimed «وصل رأيك ✓» without res.ok. Fixed: inbox refresh across ALL
+plan shares on pageshow/visibility/90s; share-tap REUSES the token while the plan is
+unchanged; honest send state. Verified: two-isolated-context production E2E — owner
+sees «آراء وصلتك (2)» WITHOUT reload and after reload; reuse confirmed; 28/28 evals;
+purchase flow unchanged. LESSON: one-shot same-context E2E is not acceptance for a
+cross-device time-separated path.
 
 ## A. FOUNDER ACCEPTANCE (settled)
 Real-iPhone purchase-plan journey FOUNDER-ACCEPTED (multi-retailer handoff, return,
