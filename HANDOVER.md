@@ -1,4 +1,30 @@
-# ═══ RESUME HERE — 2026-08-18 CHECKPOINT #92 · SEARCH TRUTH GATE PASSED (ADR-260) ═══
+# ═══ SESSION CLOSED — 2026-08-18 · ALL GATES PASS · NEXT PHASE = CONTROLLED DISTRIBUTION ═══
+
+**Read this block first. These are verified FACTS — do not re-audit them.**
+
+| Gate | Status |
+|---|---|
+| PRODUCTION SAFETY GATE (ADR-259) | **PASS** |
+| SECURITY | **PASS** |
+| TECHNICAL RELIABILITY | **PASS** |
+| DATA / FRESHNESS | **PASS** |
+| SEARCH TRUTH GATE (ADR-260) | **PASS** |
+| PRICE TRUTH | **PASS** |
+| MERCHANT LINKS | **PASS** |
+| Measurement corrections | **DEPLOYED** |
+
+- **The compound-search alarm was a MEASUREMENT/CLASSIFICATION ERROR, not a systemic Search
+  failure.** Verified 11/11 consumer queries return results. Do not re-open this.
+- **Narrow relevance observations (the 55-inch Smart Pick case; «غسالة 8 كيلو» soundbar) are
+  DEFERRED and are NOT launch blockers.**
+- **Controlled real-user distribution is the APPROVED next phase.**
+- **No new engineering mission is currently authorized.**
+- Founder-only action outstanding: **confirm GitHub Actions failure notifications actually
+  reach the founder** (the health watch alerts by failing a job). Not performed by the agent.
+- Final deployed commit: `6113deb` · mission rollback point: `7fa8d61` · 7 commits, 0 unpushed.
+- Suite 123 files / 1,987 tests green · build clean · deep health green at close.
+
+# ═══ 2026-08-18 CHECKPOINT #92 · SEARCH TRUTH GATE PASSED (ADR-260) ═══
 
 ## HEADLINE — THE PREVIOUS "SEARCH IS BROKEN" FINDING IS RETRACTED
 The founder's iPhone was right. The unified surface runs TWO routes for one action: the
