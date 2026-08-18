@@ -147,6 +147,18 @@ const CLUSTERED_TYPES = new Set(['search', 'advisor_query', 'results', 'advisor_
 // same text (gap > the window) still counts as its own action.
 const ACTION_WINDOW_MS = 3_000;
 
+/**
+ * ANSWERED-ELSEWHERE WINDOW (ADR-260) — see `wasAnsweredElsewhere` below for the full
+ * finding. Short version: `no_answer` means "the storefront grid returned nothing", but
+ * the unified surface also runs the advisor for the same action, and for need-shaped
+ * sentences the advisor is what answers. 77 of 127 REAL no_answer events on production
+ * were contradicted by a `results`/`advisor_result` for the same session+query seconds
+ * later. Chosen from the measured gap distribution (69 ≤3s, 77 ≤10s, then a day-scale tail
+ * of unrelated repeat visits) — wider than ACTION_WINDOW_MS because the advisor is a slower
+ * asynchronous call, not the synchronous double-fire that window exists to collapse.
+ */
+const ANSWERED_ELSEWHERE_WINDOW_MS = 10_000;
+
 interface DedupedCounts { search: number; results: number; noAnswer: number; errors: number }
 
 function dedupeFunnelActions(events: UsageEventRow[]): DedupedCounts {
@@ -169,7 +181,16 @@ function dedupeFunnelActions(events: UsageEventRow[]): DedupedCounts {
       const cluster = arr.slice(clusterStart, i);
       const hasSearch = cluster.some((x) => SEARCH_TYPES.has(x.type));
       const hasResults = cluster.some((x) => RESULTS_TYPES.has(x.type));
-      const hasNoAnswer = cluster.some((x) => x.type === 'no_answer');
+      // ADR-260: the advisor can answer AFTER this 3s cluster closes (measured: 69 of 77
+      // same-action answers land ≤3s, the remaining 8 between 3s and 10s). Those 8 were
+      // counted as dead ends although the shopper saw results. Look for the contradicting
+      // answer across cluster boundaries, in the same group (session+query), before calling
+      // any action a no-answer. Search/results counting is untouched — only this verdict.
+      const hasNoAnswer = cluster.some(
+        (x) =>
+          x.type === 'no_answer' &&
+          !arr.some((y) => RESULTS_TYPES.has(y.type) && Math.abs(y.ts - x.ts) <= ANSWERED_ELSEWHERE_WINDOW_MS),
+      );
       const hasError = cluster.some((x) => x.type === 'error');
       if (hasSearch) search++;
       if (hasResults) results++;
@@ -484,10 +505,54 @@ function topDemand(events: UsageEventRow[], limit = 12): Array<{ category: strin
   return Array.from(map.entries()).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
+/**
+ * ANSWERED-ELSEWHERE CORRECTION (ADR-260).
+ *
+ * `no_answer` means "the STOREFRONT grid returned nothing" — it is fired from
+ * search-client.tsx the moment `/api/search` comes back with total 0. But the unified
+ * search surface runs TWO routes for one user action: the storefront grid AND the advisor
+ * (`/api/v1/agent/decide`), and for a need-shaped sentence the advisor is the surface that
+ * answers. The storefront deliberately returns an honest zero there rather than junk
+ * (`categoryEnforcedZero`, "zero beats wrong"), the advisor renders six real
+ * recommendations below it, and the shopper sees results.
+ *
+ * So a raw `no_answer` count answers "did the grid have anything", not "did the customer
+ * get an answer" — and the founder's UNMET DEMAND list was reading it as the latter.
+ * MEASURED on production 2026-08-18: 77 of 127 REAL no_answer events (61%) had a
+ * `results`/`advisor_result` for the SAME session and query text seconds later. The #1
+ * entry on "prioritize these", «مكيف لغرفة 30 متر هادئ تحت 4000» at 22 occurrences, was
+ * answered 22 times out of 22 — a 100% false unmet-demand signal at the top of the list the
+ * founder uses to decide what to build next.
+ *
+ * WINDOW, chosen from the measured distribution rather than guessed: gaps cluster at
+ * ≤3s (69) and ≤10s (77), then jump to a day-scale tail (93 total, avg 21,169s) which is a
+ * different visit, not the same action. Nothing new appears between 10s and 20s. 10s it is
+ * — wider than ACTION_WINDOW_MS because the advisor is a slower asynchronous call, not the
+ * synchronous double-fire that window exists to collapse.
+ */
+/**
+ * True when this `no_answer` was contradicted by a real answer for the same session and
+ * query moments later — i.e. the customer DID see results and this event describes only
+ * one of the two routes.
+ */
+export function wasAnsweredElsewhere(e: UsageEventRow, events: UsageEventRow[]): boolean {
+  if (!e.query_text || !e.session_id) return false;
+  const t = new Date(e.created_at).getTime();
+  return events.some(
+    (a) =>
+      RESULTS_TYPES.has(a.event_type) &&
+      a.session_id === e.session_id &&
+      a.query_text === e.query_text &&
+      Math.abs(new Date(a.created_at).getTime() - t) <= ANSWERED_ELSEWHERE_WINDOW_MS,
+  );
+}
+
 function unmetDemand(events: UsageEventRow[], limit = 10): Array<{ query: string; count: number }> {
   const map = new Map<string, number>();
   for (const e of events) {
     if (e.event_type !== 'no_answer' || !e.query_text) continue;
+    // Genuine unmet demand only: a query the customer asked and nothing answered.
+    if (wasAnsweredElsewhere(e, events)) continue;
     map.set(e.query_text, (map.get(e.query_text) || 0) + 1);
   }
   return Array.from(map.entries()).map(([query, count]) => ({ query, count })).sort((a, b) => b.count - a.count).slice(0, limit);

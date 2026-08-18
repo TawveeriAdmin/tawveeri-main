@@ -14,6 +14,9 @@ import {
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
 import { ConstraintLedger } from '@/components/agent/constraint-ledger';
+// ADR-260: the SAME observation-age phrasing Tawveeri Home renders, imported rather than
+// re-written, so the two surfaces cannot describe the same observation differently.
+import { ageLabel } from '@/lib/agent/home-mission-view';
 import { track } from '@/lib/analytics/track';
 
 /**
@@ -387,6 +390,36 @@ function ExitButtons({ rec, loc, t, Arrow, source, id }: { rec: AdvisorRecommend
 }
 
 /**
+ * WHEN WE ACTUALLY SAW THIS PRICE (ADR-260).
+ *
+ * The comment on `TrustSummary` below says the evidence shown is "how many retailers
+ * corroborate the price AND how recently we observed it". Only the first half was ever
+ * rendered. `data_age_hours` arrived on every recommendation and was dropped on the floor,
+ * which made the search advisor the ONE consumer surface that recommends a product at a
+ * price without saying when that price was seen — Tawveeri Home («آخر رصد قبل …»), the
+ * compare page («آخر تحقق») and the category page («أحدث رصد») all disclose it.
+ *
+ * MEASURED on production 2026-08-18: a live recommendation for «مكيف لغرفة 30 متر هادئ تحت
+ * 4000» quoted 1,267 SAR with a two-retailer corroboration badge on an observation that was
+ * **639 hours (26 days) old**, with nothing on screen saying so. The price was not
+ * fabricated — it matches the projection exactly, 6/6 — but a 26-day-old price presented
+ * with no age beside it invites the reader to assume it is current, and «لم نرصده» is never
+ * «غير صحيح». Freshness is a fact we hold; withholding it is the dishonest part.
+ *
+ * Uses the SAME `ageLabel` helper Home renders, so the two surfaces cannot drift into
+ * describing the same observation differently.
+ */
+function ObservationAge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
+  const label = ageLabel(rec.data_age_hours ?? null, loc);
+  if (!label) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-xs text-on-surface-variant">
+      <Clock className="h-3.5 w-3.5" aria-hidden />{label}
+    </span>
+  );
+}
+
+/**
  * WHAT THE SCORE MEANT, SAID IN CUSTOMER LANGUAGE (ADR-163).
  *
  * This was «درجة الثقة الإجمالية: 75/100». A shopper cannot act on 75, cannot tell it from 71,
@@ -535,6 +568,7 @@ function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation;
           <Sparkles className="h-3.5 w-3.5" aria-hidden />{t('agent.smartPickLabel')}
         </span>
         <TrustSummary rec={rec} t={t} />
+        <ObservationAge rec={rec} loc={loc} />
         <PriceVerdictBadge rec={rec} loc={loc} />
         <DiscountTruthBadge rec={rec} loc={loc} />
         <TrustBadge rec={rec} loc={loc} />
@@ -574,6 +608,7 @@ function OptionCard({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-on-surface">{recTitle(rec, loc)}</h3>
             <TrustSummary rec={rec} t={t} />
+            <ObservationAge rec={rec} loc={loc} />
             <PriceVerdictBadge rec={rec} loc={loc} />
             <DiscountTruthBadge rec={rec} loc={loc} />
             <TrustBadge rec={rec} loc={loc} />

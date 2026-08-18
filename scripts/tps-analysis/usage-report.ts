@@ -153,7 +153,44 @@ type Funnel = {
     .map(([category, v]) => ({ category, n: v.recorded + v.derived, recorded: v.recorded, derived: v.derived }))
     .sort((a, b) => b.n - a.n)
     .slice(0, 12);
-  const na = await rows(`select query_text, count(*) n from usage_events where is_test=false and event_type='no_answer' and query_text is not null group by 1 order by 2 desc limit 10`);
+  // ADR-260: GENUINE unmet demand only. A `no_answer` fires when the storefront grid is
+  // empty, but the unified surface also runs the advisor for the same action and, for a
+  // need-shaped sentence, the advisor is what answers — the shopper sees six real
+  // recommendations. Measured: 77 of 127 REAL no_answer events were contradicted by a
+  // results/advisor_result for the same session+query within 10s, and the #1 entry on this
+  // very list («مكيف لغرفة 30 متر هادئ تحت 4000», 22×) was answered 22/22. The correlation
+  // mirrors `wasAnsweredElsewhere` in command-center-queries.ts so the CLI and the
+  // dashboard cannot disagree — one definition, computed one way.
+  const na = await rows(`
+    with na as (
+      select session_id, query_text, created_at from usage_events
+       where is_test=false and event_type='no_answer' and query_text is not null
+    ), ans as (
+      select session_id, query_text, created_at from usage_events
+       where is_test=false and event_type in ('results','advisor_result')
+    )
+    select na.query_text, count(*) n
+      from na
+     where not exists (
+       select 1 from ans a
+        where a.session_id = na.session_id and a.query_text = na.query_text
+          and abs(extract(epoch from (a.created_at - na.created_at))) <= 10
+     )
+     group by 1 order by 2 desc limit 10`);
+  // How much of the raw signal was the storefront-only artefact — reported, never hidden.
+  const naSplit = (await rows(`
+    with na as (
+      select session_id, query_text, created_at from usage_events
+       where is_test=false and event_type='no_answer' and query_text is not null
+    ), ans as (
+      select session_id, query_text, created_at from usage_events
+       where is_test=false and event_type in ('results','advisor_result')
+    )
+    select count(*)::int raw,
+           count(*) filter (where exists (
+             select 1 from ans a where a.session_id=na.session_id and a.query_text=na.query_text
+               and abs(extract(epoch from (a.created_at - na.created_at))) <= 10))::int answered_elsewhere
+      from na`))[0] as { raw: number; answered_elsewhere: number };
   const oc = await rows(`select is_test, count(*) n, count(distinct canonical_product_id) products, count(*) filter (where affiliate_program is not null and affiliate_program<>'direct') monetized from outbound_clicks group by is_test order by is_test`);
   const ocReal = oc.find((r) => !r.is_test);
 
@@ -292,7 +329,10 @@ type Funnel = {
   w(`  ${"(uncategorized)".padEnd(18)} ${String(uncategorized).padStart(5)}   — no category recorded AND the parser could not name one`);
   w("");
 
-  w(`UNMET DEMAND — no-answer queries (REAL, prioritize these):`);
+  w(`UNMET DEMAND — genuinely unanswered queries (REAL, prioritize these):`);
+  w(`  ${naSplit.answered_elsewhere} of ${naSplit.raw} raw no_answer events were ANSWERED by the advisor`);
+  w(`  for the same session+query within 10s and are excluded — a no_answer means "the`);
+  w(`  storefront grid was empty", not "the customer saw nothing" (ADR-260).`);
   if (!na.length) w(`  (none yet)`);
   na.forEach((r) => w(`  ${r.n}×  ${String(r.query_text).slice(0, 60)}`));
   w("");

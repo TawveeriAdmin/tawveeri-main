@@ -85,3 +85,16 @@ jobs:
             echo "::error title=Tawveeri DEGRADED::$degraded (site is serving, data path is not)"
             exit 1
           fi
+
+          # FRESHNESS, at an OPERATIONAL threshold rather than the endpoint's consumer one.
+          # /api/health/deep only calls data stale at 48h (STALE_HOURS) because it must fail
+          # open for shoppers — refusing a customer over a slow pipeline is the wrong trade.
+          # But ingestion runs on a ~6h cadence (measured 2026-08-18: batches at 00/06/15,
+          # largest observed gap 5h), so 48h means a COMPLETE feed stop stays invisible for
+          # two days on a product whose entire promise is price freshness. 12h is 2x the
+          # cadence with headroom: a real stall alerts within half a day, normal jitter does
+          # not. Threshold lives here, in the monitor, so consumer semantics are untouched.
+          if [ "$age" != "null" ] && [ "$age" -gt 12 ] 2>/dev/null; then
+            echo "::error title=Ingestion stalled::freshest observation is ${age}h old (cadence is ~6h; alert threshold 12h)"
+            exit 1
+          fi
