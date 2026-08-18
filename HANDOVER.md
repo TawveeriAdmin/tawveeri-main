@@ -1,4 +1,69 @@
-# ═══ RESUME HERE — 2026-08-17 CHECKPOINT #90 (FOUNDER FINAL CLOSE) · TAWVEERI HOME BUILD PHASE = CLOSED ═══
+# ═══ RESUME HERE — 2026-08-18 CHECKPOINT #91 · PRODUCTION SAFETY GATE PASSED (ADR-259) ═══
+
+## STATUS AT CLOSE
+- **PRODUCTION SAFETY GATE: PASS.** Deployed and verified live (`9602662` on `main`).
+- Recommendation to founder: **A — SAFE TO START CONTROLLED REAL-USER DISTRIBUTION.**
+- Rollback point for the whole mission: `7fa8d61`. Four commits: `7f43204` (security),
+  `48944eb` (exits), `23873da` (measurement), `9602662` (ops).
+
+## WHAT CHANGED (all verified on production — see ADR-259 for full reasoning)
+1. **P0 — self-promotion to admin CLOSED.** Migration 36: column grants on `public.users`
+   reduced to the 7 self-editable profile columns + a SECURITY INVOKER trigger making
+   `role` immutable to non-`service_role`. Admin role assignment moved to the service-role
+   client. Proven by simulating a real authenticated JWT in rolled-back transactions:
+   self-promote / promote-another / self-activate / self-verify all REFUSED; profile edits
+   and the admin path still work.
+2. **P0 — `write_mobile_batch` was PUBLIC-executable.** Migration 37: revoked from
+   PUBLIC/anon/authenticated, granted to `service_role` (now matches `write_ac_batch`).
+   Anon RPC returns 404. It was the only client-reachable writer of 159 public functions.
+3. **P1 — TRUNCATE on 47 tables** (incl. `raw_observations`, 1.7M rows) revoked from client
+   roles; RLS does not gate TRUNCATE. `ALTER DEFAULT PRIVILEGES` stops recurrence.
+   Root cause was `02-rls-policies.sql`'s `GRANT ALL ON ALL TABLES ... TO authenticated`.
+4. **Merchant dev-host exits FIXED.** 49,918 observations pointed at `m.dev-almanea.com`
+   (already 404 on 2 of 8 sampled). `/go` now rewrites to the canonical Almanea shape and
+   REFUSES any remaining non-production host. Amazon control unchanged (tag + ascsubtag).
+5. **Measurement corrected.** Session-level funnel; `Comparison→Exit 2003.6% → 40.0%`,
+   `Search→Exit 69.9% → 3.5%`; gate flips GREEN → "IMPROVE BEFORE PUBLIC LAUNCH".
+   Demand uncategorized 90% → 15% (air_conditioner = 1,047, top demand). Share ledger
+   read from `shared_home_plans` (11) because owner-side events are is_test-skewed.
+6. **Detection now exists outside Railway.** `.github/workflows/health-watch.yml` polls
+   `/api/health/deep` every 15 min and fails on `degraded` (stricter than the endpoint,
+   which fails open for shoppers). `railway.toml` gains `healthcheckPath=/api/health`.
+
+## ⚠ FOUNDER ACTIONS — only these three
+1. **Verify GitHub Actions failure notifications reach you** (GitHub → Settings →
+   Notifications → Actions). The health watch alerts by failing a job; if notifications are
+   off, the alarm rings in an empty room. This is the one thing that cannot be verified from code.
+2. **Confirm Supabase PITR retention** in the dashboard. WAL archiving is measurably healthy
+   (`archive_mode=on`, 1,994 archived, 0 failures) but whether PITR is enabled and how far
+   back it reaches is not readable from SQL. Paid change → not made unilaterally.
+3. **Decide the cohort** (size / channel / kill criteria) — see the founder report.
+
+## NEXT MISSION (do NOT start without founder approval)
+**SEARCH — compound need-sentence zero-results.** Class A, current, reproducible today:
+  «مكيف تحت 4000» → 48   ·  «مكيف لغرفة 30 متر تحت 4000» → 0
+  «مكيف لغرفة 30 متر تحت 15000» → 0   (so it is NOT an honest constraint result)
+  «لابتوب للجامعة تحت 4000» → 48  ·  «أبي لابتوب للجامعة والبرمجة تحت 4000» → 0
+`parseShoppingTask` returns IDENTICAL output for the working/failing laptop pair, so the
+defect is downstream in relevance-token construction (`categoryEnforcedZero` fires with
+`totalStores:0`, `searchTime:0.16s` — retrieval never runs). NOT fixed in ADR-259 because
+validating it needs the search-quality harness and risks the 54/54 North-Star baseline.
+Arabic-Indic numerals are FINE («ايفون ١٦» = «ايفون 16» = 22 results) — that class is closed.
+
+## DEFERRED WITH EXPLICIT TRIGGERS
+- **Scheduler/web separation — deferred.** Mandatory when ANY of: DB > 6 GB · any Supabase
+  disk-IO warning · deep health `degraded` recurring during scheduler passes · sustained
+  >500 real sessions/day.
+- **DB growth watch.** 3,631 MB now, +473 MB/week from `raw_observations` (~2 GB/month →
+  8 GB in ~9 weeks). Not urgent; do not delete history without a founder decision.
+- `/api/v1/tps/discount-integrity` took **25.5s** in the post-deploy sweep — public endpoint,
+  worth profiling before it is put in front of traffic or cited publicly.
+- Admin command-center Home card still uses the event-based share count (the CLI report was
+  fixed); parity is a small follow-up.
+- CSP still report-only. npm criticals (`tar` via expo, `protobufjs` via @xenova) are
+  build-only — verified absent from `.next/standalone/node_modules`.
+
+# ═══ 2026-08-17 CHECKPOINT #90 (FOUNDER FINAL CLOSE) · TAWVEERI HOME BUILD PHASE = CLOSED ═══
 
 ## FINAL STATUS (founder-set, 2026-08-17 — do NOT reopen without new evidence)
 - TAWVEERI HOME BUILD PHASE: **CLOSED**
