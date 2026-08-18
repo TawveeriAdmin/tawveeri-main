@@ -203,6 +203,121 @@ export function buildFunnel(events: UsageEventRow[], outboundRows?: OutboundClic
   return { search, results, productView, comparisonView, evidenceView, outbound, noAnswer, errors, sessions: sessions.size };
 }
 
+/**
+ * SESSION-LEVEL FUNNEL — the only correct basis for a conversion RATE (ADR-259).
+ *
+ * THE DEFECT THIS REPLACES (measured 2026-08-18): the launch-readiness gate reported
+ * "Comparison → Exit (CTR) 2003.6% PASS". A bounded conversion rate cannot exceed 100%,
+ * and this one did because the ratio mixed three different units at once:
+ *   numerator   `outbound` = rows in the outbound_clicks TABLE (a different dataset,
+ *                            all-time, 561 rows)
+ *   denominator `comparisonView` = raw comparison_view EVENT rows from usage_events
+ * Two tables, two time scopes, one meaningless percentage — which then read as PASS on a
+ * gate the founder was using to decide whether to send real users.
+ *
+ * A conversion rate answers "of the people who reached stage A, how many went on to B".
+ * That requires the numerator to be a SUBSET of the denominator, so both must be counted
+ * in the same unit (sessions) over the same window, and B must be counted only inside
+ * sessions that reached A. Then 100% is a ceiling by construction, not by luck.
+ *
+ * Event COUNTS remain available on `Funnel` and are still worth reporting — they are
+ * volume, not conversion. The rule is only that a count never becomes a rate's numerator
+ * over a different unit's denominator.
+ *
+ * `search` and `results` reuse the same action-clustering the event funnel uses (an
+ * `advisor_query` echo of a `search` is one intent), applied per session.
+ */
+export interface SessionFunnel {
+  /** Sessions that produced any event at all in the window. */
+  sessions: number;
+  /** Sessions reaching each stage at least once. Each is a session COUNT, never events. */
+  searched: number;
+  gotResults: number;
+  viewedProduct: number;
+  viewedComparison: number;
+  viewedEvidence: number;
+  exited: number;
+  /** Sessions where a search action ended without results (dead ends). */
+  noAnswer: number;
+  /** Stage intersections — the numerators a conversion rate is allowed to use. */
+  searchedAndGotResults: number;
+  searchedAndViewedProduct: number;
+  viewedProductAndComparison: number;
+  viewedComparisonAndExited: number;
+  searchedAndExited: number;
+}
+
+const PRODUCT_VIEW_TYPES = new Set(['product_view']);
+const COMPARISON_TYPES = new Set(['comparison_view']);
+const EVIDENCE_TYPES = new Set(['evidence_view']);
+const EXIT_TYPES = new Set(['go_click']);
+
+/**
+ * Build the session-level funnel. `go_click` is the exit signal here — deliberately, and
+ * not the outbound_clicks table: only the usage_events stream carries a session_id, and
+ * a rate needs both sides counted per session. The outbound_clicks ledger stays the
+ * authority for exit VOLUME and affiliate attribution (it is the richer record); the two
+ * answer different questions and must not be divided by each other.
+ */
+export function buildSessionFunnel(events: UsageEventRow[]): SessionFunnel {
+  type Stages = {
+    searched: boolean; gotResults: boolean; noAnswer: boolean;
+    product: boolean; comparison: boolean; evidence: boolean; exited: boolean;
+  };
+  const bySession = new Map<string, Stages>();
+  const get = (id: string): Stages => {
+    let s = bySession.get(id);
+    if (!s) {
+      s = { searched: false, gotResults: false, noAnswer: false, product: false, comparison: false, evidence: false, exited: false };
+      bySession.set(id, s);
+    }
+    return s;
+  };
+
+  for (const e of events) {
+    if (!e.session_id) continue;
+    const s = get(e.session_id);
+    if (SEARCH_TYPES.has(e.event_type)) s.searched = true;
+    else if (RESULTS_TYPES.has(e.event_type)) s.gotResults = true;
+    else if (e.event_type === 'no_answer') s.noAnswer = true;
+    else if (PRODUCT_VIEW_TYPES.has(e.event_type)) s.product = true;
+    else if (COMPARISON_TYPES.has(e.event_type)) s.comparison = true;
+    else if (EVIDENCE_TYPES.has(e.event_type)) s.evidence = true;
+    else if (EXIT_TYPES.has(e.event_type)) s.exited = true;
+  }
+
+  const f: SessionFunnel = {
+    sessions: bySession.size,
+    searched: 0, gotResults: 0, viewedProduct: 0, viewedComparison: 0, viewedEvidence: 0,
+    exited: 0, noAnswer: 0,
+    searchedAndGotResults: 0, searchedAndViewedProduct: 0, viewedProductAndComparison: 0,
+    viewedComparisonAndExited: 0, searchedAndExited: 0,
+  };
+
+  for (const s of bySession.values()) {
+    if (s.searched) f.searched++;
+    if (s.gotResults) f.gotResults++;
+    if (s.product) f.viewedProduct++;
+    if (s.comparison) f.viewedComparison++;
+    if (s.evidence) f.viewedEvidence++;
+    if (s.exited) f.exited++;
+    // A session is a dead end only if it searched and NEVER reached results — the same
+    // "only a dead end if the action never reached results" rule the event funnel uses.
+    if (s.searched && s.noAnswer && !s.gotResults) f.noAnswer++;
+    if (s.searched && s.gotResults) f.searchedAndGotResults++;
+    if (s.searched && s.product) f.searchedAndViewedProduct++;
+    if (s.product && s.comparison) f.viewedProductAndComparison++;
+    if (s.comparison && s.exited) f.viewedComparisonAndExited++;
+    if (s.searched && s.exited) f.searchedAndExited++;
+  }
+  return f;
+}
+
+/** Safe ratio for session-level rates. Returns 0 on an empty denominator, never NaN. */
+export function sessionRate(numerator: number, denominator: number): number {
+  return denominator > 0 ? numerator / denominator : 0;
+}
+
 // Transparency signal (Data Quality Contract Rule 7/8): what share of REAL search actions came
 // from the single most active session. High concentration means aggregate rates are dominated by
 // one actor (heavy genuine user OR unflagged internal/founder browsing) — we don't guess which;

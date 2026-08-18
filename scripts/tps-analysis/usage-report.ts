@@ -17,7 +17,8 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { writeFileSync } from "fs";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
-import { buildFunnel as buildFunnelShared, buildHomeMissionStats, type UsageEventRow, type OutboundClickRow } from "../../src/lib/admin/command-center-queries";
+import { parseShoppingTask } from "../../src/lib/agent/task-parser";
+import { buildFunnel as buildFunnelShared, buildSessionFunnel, sessionRate, buildHomeMissionStats, type UsageEventRow, type OutboundClickRow } from "../../src/lib/admin/command-center-queries";
 
 // ── Launch-readiness KPI thresholds (transparent + editable). A "public-launch signal"
 //    requires a minimum real sample AND every quality KPI to pass. ─────────────────────
@@ -118,18 +119,65 @@ type Funnel = {
   const ARMS = ["advisor", "search"] as const;
 
   // Demand + unmet demand + measured economics.
-  const cats = await rows(`select coalesce(category,'(unparsed)') category, count(*) n from usage_events where is_test=false and event_type in ('search','advisor_query','results','advisor_result') group by 1 order by 2 desc limit 12`);
+  // ── DEMAND BY CATEGORY (ADR-259) ──────────────────────────────────────────────────
+  // MEASURED 2026-08-18: 2,340 of ~2,600 category-bearing events grouped under
+  // "(unparsed)" — roughly 90% — so the demand table the founder uses to pick the next
+  // category was effectively blind. The cause is not a parse failure: `usage_events.category`
+  // is only populated when the client had a category to send (a sidebar filter, or an
+  // advisor route that resolved one). A free-typed «ابي مكيف» carries no category column
+  // at all, which the old label misreported as "unparsed".
+  //
+  // Fixed read-side, without touching the immutable event rows: where the column is null we
+  // DERIVE the category from query_text using `parseShoppingTask` — the same deterministic
+  // parser the search route and the decision engine already use, so the report cannot
+  // disagree with the product about what a sentence means. Derived counts are reported in
+  // their own column and never silently merged into recorded ones; a sentence the parser
+  // cannot categorize stays honestly uncategorized.
+  const catRows = await rows(`select category, query_text, count(*) n from usage_events
+      where is_test=false and event_type in ('search','advisor_query','results','advisor_result')
+      group by 1,2`) as Array<{ category: string | null; query_text: string | null; n: number }>;
+  const catAgg = new Map<string, { recorded: number; derived: number }>();
+  let uncategorized = 0;
+  for (const r of catRows) {
+    const n = Number(r.n);
+    const bump = (key: string, kind: 'recorded' | 'derived') => {
+      const cur = catAgg.get(key) ?? { recorded: 0, derived: 0 };
+      cur[kind] += n;
+      catAgg.set(key, cur);
+    };
+    if (r.category) { bump(r.category, 'recorded'); continue; }
+    const derived = r.query_text ? parseShoppingTask(r.query_text)?.category : null;
+    if (derived) bump(derived, 'derived'); else uncategorized += n;
+  }
+  const cats = [...catAgg.entries()]
+    .map(([category, v]) => ({ category, n: v.recorded + v.derived, recorded: v.recorded, derived: v.derived }))
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 12);
   const na = await rows(`select query_text, count(*) n from usage_events where is_test=false and event_type='no_answer' and query_text is not null group by 1 order by 2 desc limit 10`);
   const oc = await rows(`select is_test, count(*) n, count(distinct canonical_product_id) products, count(*) filter (where affiliate_program is not null and affiliate_program<>'direct') monetized from outbound_clicks group by is_test order by is_test`);
   const ocReal = oc.find((r) => !r.is_test);
 
   // ── Derived KPIs (REAL) ────────────────────────────────────────────────────
-  const answerRate = pct(real.results, real.search);
-  const noAnswerRate = pct(real.no_answer, real.search);
-  const searchToProduct = pct(real.product_view, real.search);
-  const productToCompare = pct(real.comparison_view, real.product_view);
-  const compareToExit = pct(real.outbound, real.comparison_view);
-  const searchToExit = pct(real.outbound, real.search);
+  //
+  // UNITS (ADR-259). Every CONVERSION rate below is sessions-over-sessions, with the
+  // numerator counted only inside sessions that reached the denominator's stage, so 100%
+  // is a ceiling by construction. Before this, `compareToExit` divided rows of the
+  // outbound_clicks TABLE by comparison_view EVENT rows and reported 2003.6% — as a PASS,
+  // on the gate the founder uses to decide whether to send real users.
+  //
+  // Two rates keep an ACTION denominator on purpose: answer/no-answer describe individual
+  // queries, not sessions ("did this search return anything"), and both sides come from
+  // the same deduped action stream, so they stay bounded and meaningful.
+  const realSess = buildSessionFunnel(rawEventRows.filter((r) => !r.is_test));
+  const testSess = buildSessionFunnel(rawEventRows.filter((r) => Boolean(r.is_test)));
+  void testSess;
+
+  const answerRate = pct(real.results, real.search);        // actions / actions
+  const noAnswerRate = pct(real.no_answer, real.search);    // actions / actions
+  const searchToProduct = sessionRate(realSess.searchedAndViewedProduct, realSess.searched);
+  const productToCompare = sessionRate(realSess.viewedProductAndComparison, realSess.viewedProduct);
+  const compareToExit = sessionRate(realSess.viewedComparisonAndExited, realSess.viewedComparison);
+  const searchToExit = sessionRate(realSess.searchedAndExited, realSess.searched);
   const eventsPerSession = pct(
     real.search + real.results + real.product_view + real.comparison_view + real.evidence_view + real.outbound,
     real.sessions);
@@ -173,20 +221,32 @@ type Funnel = {
   step("5 Evidence", real.evidence_view, real.comparison_view);
   step("6 Outbound", real.outbound, real.comparison_view);
   w(`  ── off-funnel: no_answer=${real.no_answer}  errors=${real.errors}`);
-  w(`  Overall Search→Outbound: ${fpct(searchToExit)}`);
+  w(`  NOTE: the six numbers above are EVENT/ACTION VOLUME, not a conversion funnel.`);
+  w(`        Step 6 counts outbound_clicks LEDGER rows; steps 3-5 count usage_events.`);
+  w(`        "% of prev" therefore compares unlike units and can exceed 100% — it is a`);
+  w(`        volume ratio, never a conversion rate. Conversion lives in the KPI block.`);
   w(`  [TEST traffic, excluded]  sessions=${test.sessions} search=${test.search} results=${test.results} outbound=${test.outbound}\n`);
 
   w(`KPIs vs launch thresholds (REAL):`);
+  w(`  Units — conversion rates are SESSIONS/SESSIONS, numerator counted only within`);
+  w(`  sessions that reached the prior stage (so 100% is a ceiling). Answer/no-answer`);
+  w(`  are ACTIONS/ACTIONS: they describe a query, not a session. (ADR-259)`);
   const kpiRow = (name: string, val: string, ok: boolean | null) =>
-    w(`  ${name.padEnd(26)} ${val.padStart(8)}   ${ok === null ? "" : pass(ok)}`);
-  kpiRow("Answer rate", fpct(answerRate), answerRate >= KPI.ANSWER_RATE_MIN);
-  kpiRow("No-answer rate", fpct(noAnswerRate), noAnswerRate <= KPI.NOANSWER_RATE_MAX);
-  kpiRow("Search→Product View", fpct(searchToProduct), null);
-  kpiRow("Product→Comparison", fpct(productToCompare), null);
-  kpiRow("Comparison→Exit (CTR)", fpct(compareToExit), compareToExit >= KPI.COMPARE_TO_EXIT_MIN);
-  kpiRow("Search→Exit (overall)", fpct(searchToExit), searchToExit >= KPI.SEARCH_TO_EXIT_MIN);
-  kpiRow("Events / session", eventsPerSession.toFixed(1), null);
-  w(`  Sessions: searched=${Number(sess.searched)} results=${Number(sess.got_results)} compared=${Number(sess.compared)} exited=${Number(sess.exited)}\n`);
+    w(`  ${name.padEnd(30)} ${val.padStart(8)}   ${ok === null ? "" : pass(ok)}`);
+  kpiRow("Answer rate [actions]", fpct(answerRate), answerRate >= KPI.ANSWER_RATE_MIN);
+  kpiRow("No-answer rate [actions]", fpct(noAnswerRate), noAnswerRate <= KPI.NOANSWER_RATE_MAX);
+  kpiRow("Search→Product View [sessions]", fpct(searchToProduct), null);
+  kpiRow("Product→Comparison [sessions]", fpct(productToCompare), null);
+  kpiRow("Comparison→Exit [sessions]", fpct(compareToExit), compareToExit >= KPI.COMPARE_TO_EXIT_MIN);
+  kpiRow("Search→Exit [sessions]", fpct(searchToExit), searchToExit >= KPI.SEARCH_TO_EXIT_MIN);
+  kpiRow("Events / session [volume]", eventsPerSession.toFixed(1), null);
+  w(`  Session denominators: total=${realSess.sessions} searched=${realSess.searched} ` +
+    `results=${realSess.gotResults} product=${realSess.viewedProduct} ` +
+    `compared=${realSess.viewedComparison} exited=${realSess.exited}`);
+  w(`  Stage intersections:  searched&product=${realSess.searchedAndViewedProduct} ` +
+    `compared&exited=${realSess.viewedComparisonAndExited} searched&exited=${realSess.searchedAndExited}`);
+  w(`  Exit LEDGER (outbound_clicks, all-time REAL): ${real.outbound} rows — exit VOLUME,`);
+  w(`  deliberately NOT divided by any session count. Only go_click carries a session id.\n`);
 
   w(`BY SURFACE (REAL):`);
   if (!surfaces.length) w(`  (none yet)`);
@@ -225,8 +285,11 @@ type Funnel = {
   w(`  → ${armVerdict}\n`);
 
   w(`TOP DEMAND — categories asked (REAL):`);
+  w(`  recorded = the event carried a category · derived = parsed from the query text with`);
+  w(`  the same parser the product uses (ADR-259). Never merged silently.`);
   if (!cats.length) w(`  (none yet)`);
-  cats.forEach((r) => w(`  ${String(r.category).padEnd(18)} ${r.n}`));
+  cats.forEach((r) => w(`  ${String(r.category).padEnd(18)} ${String(r.n).padStart(5)}   (recorded ${r.recorded} · derived ${r.derived})`));
+  w(`  ${"(uncategorized)".padEnd(18)} ${String(uncategorized).padStart(5)}   — no category recorded AND the parser could not name one`);
   w("");
 
   w(`UNMET DEMAND — no-answer queries (REAL, prioritize these):`);
@@ -242,11 +305,34 @@ type Funnel = {
   // ── TAWVEERI HOME (ADR-257 §8): same pure builder as /admin/command-center — one
   //    computation, two renderers. CLICK ≠ RETURN ≠ SELF-MARKED ≠ verified conversion.
   const hmStats = buildHomeMissionStats(rawEventRows.filter((r) => !r.is_test));
+  // The share LEDGER, read server-side. See the note below the counters for why the
+  // owner-side event is not trustworthy for creations.
+  const sharePlansRow = (await c.query(
+    `select count(*)::int total, count(*) filter (where is_test)::int test from shared_home_plans`
+  )).rows[0] as { total: number; test: number };
+  const sharePlans = { total: sharePlansRow?.total ?? 0, test: sharePlansRow?.test ?? 0 };
+
   w(`TAWVEERI HOME (REAL — item completion is SELF-reported, never a verified sale):`);
   w(`  sessions=${hmStats.sessions} starts=${hmStats.starts} plans=${hmStats.plans} refines=${hmStats.refines}`);
   w(`  purchase_plan_opens=${hmStats.purchasePlanOpens} retailer_exit_clicks=${hmStats.retailerExitClicks} returns=${hmStats.returnsFromRetailer}`);
   w(`  items_self_marked=${hmStats.itemsSelfMarked} retailers_completed=${hmStats.retailersCompleted} missions_completed=${hmStats.missionsCompleted}`);
   w(`  shares_created=${hmStats.sharesCreated} share_opens=${hmStats.shareOpens} share_feedback=${hmStats.shareFeedback} entry_card_clicks=${hmStats.entryCardClicks}`);
+  // ── SHARE LEDGER vs SHARE EVENTS (ADR-259) ────────────────────────────────────────
+  // MEASURED 2026-08-18: the REAL funnel showed shares_created=0 alongside share_opens=7
+  // and share_feedback=5 — opens without creations, which cannot happen. Cause: sharing is
+  // a CROSS-DEVICE flow and the two ends are classified differently. The owner creates the
+  // share in a browser carrying tw_admin/tw_test (so `created` is flagged TEST), while the
+  // recipient opens the link on another device with neither cookie (so `opened` is REAL).
+  // All 8 `created` events are is_test=true; all 7 `opened` and 5 `feedback` are is_test=false.
+  // The plans table itself is the authority — it is written server-side, once, per share.
+  // This matters for the first real cohort: the share link IS the growth loop, and a
+  // founder-seeded share would otherwise read as "nobody is sharing".
+  w(`  ── share ledger (shared_home_plans — server-side, the authority):`);
+  w(`     plans_created=${sharePlans.total} (test-flagged=${sharePlans.test})`);
+  w(`     Owner-side "created" EVENTS are is_test-skewed because the owner's browser carries`);
+  w(`     tw_admin/tw_test and the recipient's does not. Trust the ledger for creations and`);
+  w(`     the events for opens/feedback until the cohort provides owner sessions without`);
+  w(`     those cookies. Do NOT read shares_created=0 as "no shares".`);
   if (hmStats.unsupportedRequests.length) {
     w(`  unsupported-category demand (honest refusals): ${hmStats.unsupportedRequests.map((u) => `${u.term}×${u.count}`).join(" · ")}`);
   }
@@ -313,7 +399,7 @@ type Funnel = {
     `_Champion is config-reversible via \`NEXT_PUBLIC_BETA_ADVISOR_SPLIT\` — flipping it needs no redesign._`,
     ``,
     `## Top demand (REAL)`,
-    ...(cats.length ? cats.map((r) => `- ${r.category}: ${r.n}`) : [`- (none yet)`]),
+    ...(cats.length ? cats.map((r) => `- ${r.category}: ${r.n} (recorded ${r.recorded}, derived ${r.derived})`) : [`- (none yet)`]),
     ``,
     `## Unmet demand — no-answer queries (REAL)`,
     ...(na.length ? na.map((r) => `- ${r.n}× ${String(r.query_text).slice(0, 60)}`) : [`- (none yet)`]),
