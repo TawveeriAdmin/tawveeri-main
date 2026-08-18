@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { buildOfferExitLink, getProviderByStoreId } from "@/lib/providers";
+import { normalizeExitUrl, isNonProductionExitUrl } from "@/lib/retailers/exit-url";
 import { getBaseUrl } from "@/lib/seo/metadata";
 
 // A measured exit is per-request and must never be cached (each hit records an
@@ -118,8 +119,31 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   const rawSource = req.nextUrl.searchParams.get("source") || "product_page";
   const source = /^[a-z_]{1,32}$/.test(rawSource) ? rawSource : "product_page";
 
+  // ADR-259 — MERCHANT-DESTINATION TRUTH, enforced at the single exit boundary.
+  //
+  // Every consumer exit (storefront card, Home purchase checklist, retailer CTA, agent)
+  // passes through this route, so repairing the destination here covers every surface at
+  // once and cannot be forgotten by a new one. Measured 2026-08-18: 49,918 normalized
+  // observations carried Almanea's DEV host `m.dev-almanea.com` — the table this route
+  // resolves from — and on an 8-URL production sample that host already 404'd twice while
+  // the canonical shape resolved 8/8. Read-side only: the observation keeps its evidence,
+  // the consumer gets a destination that works.
+  const locale = req.cookies.get("NEXT_LOCALE")?.value === "en" ? "en" : "ar";
+  const exitUrl = normalizeExitUrl(resolved.rawUrl, locale) ?? resolved.rawUrl;
+
+  // A destination we could not repair to a production host is refused, never guessed.
+  // Sending a Saudi shopper to a merchant's development environment is not an exit we are
+  // willing to make, and inventing a URL would be worse. Unknown beats incorrect.
+  if (isNonProductionExitUrl(exitUrl)) {
+    console.error("go: refused non-production merchant destination", {
+      storeId: resolved.storeId,
+      host: (() => { try { return new URL(exitUrl).host; } catch { return "unparseable"; } })(),
+    });
+    return home();
+  }
+
   const provider = getProviderByStoreId(resolved.storeId);
-  const link = buildOfferExitLink(provider, resolved.rawUrl, String(resolved.storeId ?? ""), { clickId: subId, source });
+  const link = buildOfferExitLink(provider, exitUrl, String(resolved.storeId ?? ""), { clickId: subId, source });
 
   // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
   if (!/^https?:\/\//i.test(link.url)) return home();
