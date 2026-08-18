@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/server';
 import { createClient } from '@/lib/auth/server';
+import { createServerClient as createAdminClient } from '@/lib/database';
 import { createAuditLog } from '@/lib/auth/audit';
 import { createNotification, sendRoleChangedEmail } from '@/lib/auth/notifications';
 import type { UserRole } from '@/lib/database/types';
@@ -46,8 +47,16 @@ export async function PUT(
       );
     }
 
-    // Update user role
-    const { error: updateError } = await supabase
+    // Update user role.
+    //
+    // ADR-259: this write runs with the SERVICE-ROLE client, not the caller's session.
+    // Migration 36 revoked UPDATE on users.role from `authenticated` and added a trigger
+    // that rejects any role change whose JWT role is not `service_role` — the same pair
+    // of barriers that stops a normal user promoting themselves. Assigning a role is a
+    // privileged server operation, so it is performed as one; authorization for it is
+    // requireAdmin() above, never the database's opinion of the caller's own row.
+    const admin = createAdminClient();
+    const { error: updateError } = await admin
       .from('users')
       .update({ role })
       .eq('id', id);
