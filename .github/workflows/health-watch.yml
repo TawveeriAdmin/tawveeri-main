@@ -1,0 +1,87 @@
+# Health Watch — the external eye (ADR-259)
+#
+# WHY THIS EXISTS
+# The SEV-1 (ADR-252) took the consumer surface down for ~1.5–2h while UptimeRobot stayed
+# GREEN, because liveness ("the process answers") is not health ("the product can answer").
+# `/api/health/deep` was built as the answer to that, but nothing was calling it on a
+# schedule — the instrument was built and left unplugged. The 2026-08-18 readiness audit
+# could not find any continuous caller, and `railway.toml` had no healthcheckPath at all.
+#
+# WHY GITHUB ACTIONS
+# It runs OUTSIDE Railway, so it still fires when the app is the thing that is broken —
+# which an in-process watchdog structurally cannot do. It needs no new vendor, no new
+# account and no payment: this repo already drives production from Actions
+# (tps-heartbeat.yml) with the same secret store. A failing job emails the repo owner
+# through GitHub's own notification path.
+#
+# WHAT IT ASSERTS — deliberately STRICTER than the endpoint itself.
+# `/api/health/deep` fails OPEN on `degraded` (200 + healthy:true) because a consumer
+# request should never be refused over a slow query. A MONITOR must not inherit that
+# leniency: a stale ingestion pipeline is precisely the SEV-1 signature, so `degraded`
+# being non-empty fails this job even though the endpoint calls itself healthy.
+#
+# HONEST LIMITS (do not mistake this for a full observability stack):
+#   - GitHub cron can be delayed by minutes under load; treat the cadence as ~15 min, not exact.
+#   - If GitHub itself is down, no alert fires.
+#   - It notifies on FAILURE only, and only if the repo owner has Actions notifications on.
+#     That last one is a founder-side setting this file cannot verify.
+
+name: Health Watch
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+# A queued run is worthless once a newer one exists — always check the CURRENT state.
+concurrency:
+  group: health-watch
+  cancel-in-progress: true
+
+jobs:
+  deep-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consumer surface responds
+        run: |
+          set -uo pipefail
+          # Checked first and separately from the API: if the homepage is down, that is the
+          # outage, and a deep-health failure below would only be a symptom of it.
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://tawveeri.com/ar)
+          echo "homepage: HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error title=Consumer surface down::https://tawveeri.com/ar returned HTTP $code"
+            exit 1
+          fi
+
+      - name: Deep health — data path, not just liveness
+        run: |
+          set -uo pipefail
+          body=$(curl -s --max-time 45 https://tawveeri.com/api/health/deep)
+          echo "$body"
+
+          if [ -z "$body" ]; then
+            echo "::error title=Deep health unreachable::empty response from /api/health/deep"
+            exit 1
+          fi
+
+          healthy=$(echo "$body"   | jq -r '.healthy // false')
+          degraded=$(echo "$body"  | jq -r '.degraded // [] | join(", ")')
+          failed=$(echo "$body"    | jq -r '.failed   // [] | join(", ")')
+          age=$(echo "$body"       | jq -r '.freshest_observation_age_hours // "null"')
+          latency=$(echo "$body"   | jq -r '.db_latency_ms // "null"')
+
+          echo "healthy=$healthy age_hours=$age db_latency_ms=$latency"
+
+          if [ "$healthy" != "true" ]; then
+            echo "::error title=Tawveeri UNHEALTHY::failed=[$failed] degraded=[$degraded]"
+            exit 1
+          fi
+
+          # STRICTER THAN THE ENDPOINT, on purpose — see the header. A stale pipeline is the
+          # exact shape of the SEV-1 and must never be silent, even while the site serves.
+          if [ -n "$degraded" ]; then
+            echo "::error title=Tawveeri DEGRADED::$degraded (site is serving, data path is not)"
+            exit 1
+          fi

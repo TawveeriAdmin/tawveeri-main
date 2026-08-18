@@ -5,3 +5,10 @@ buildCommand = "npm install --legacy-peer-deps && npm run build"
 [deploy]
 startCommand = "npm run start"
 restartPolicyType = "ON_FAILURE"
+# ADR-259: there was no healthcheck at all — a deploy that booted but could not serve was
+# promoted anyway. This is deliberately the LIVENESS endpoint, not /api/health/deep: a
+# deploy gate must answer "can this build serve traffic", and gating promotion on the data
+# path would block a rollback during exactly the incident you are trying to roll back from.
+# Continuous DATA health is watched from outside Railway instead (.github/workflows/health-watch.yml).
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30

@@ -937,9 +937,20 @@ export default function SearchClient() {
             ? 'الطلبات كثيرة الآن. أعد المحاولة بعد لحظات — النتائج موجودة، الخدمة مشغولة فقط.'
             : 'Too many requests right now. Try again in a moment — the results exist, the service is just busy.';
         } else if (response.status === 403) {
-          errorMessage = 'Scraping service is not accessible. Please ensure Flask is running (npm run flask:start)';
+          // ADR-259: this said "Please ensure Flask is running (npm run flask:start)" — a
+          // developer instruction for a Python service this app has not used in months,
+          // shown to Saudi shoppers in English on a 403. Consumer-facing errors never name
+          // internal services or tell a customer to run a command.
+          errorMessage = locale === 'ar'
+            ? 'تعذّر تحميل النتائج الآن. جرّب مرة أخرى بعد قليل.'
+            : 'We could not load results just now. Please try again in a moment.';
         } else if (response.status === 503) {
-          errorMessage = errorData.error || 'Scraping service is not available. Please start Flask.';
+          // Same reasoning as the 403 above. `errorData.error` is deliberately NOT surfaced
+          // here — a 503 body can carry upstream/internal detail, and an error string is not
+          // something to relay verbatim to a shopper.
+          errorMessage = locale === 'ar'
+            ? 'الخدمة مشغولة الآن. جرّب مرة أخرى بعد قليل.'
+            : 'The service is busy right now. Please try again in a moment.';
         }
 
         console.error('[Search] Scraping error:', { status: response.status, error: errorData });
