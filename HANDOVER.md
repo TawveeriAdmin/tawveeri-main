@@ -1,4 +1,57 @@
-# ═══ RESUME HERE — 2026-08-18 CHECKPOINT #91 · PRODUCTION SAFETY GATE PASSED (ADR-259) ═══
+# ═══ RESUME HERE — 2026-08-18 CHECKPOINT #92 · SEARCH TRUTH GATE PASSED (ADR-260) ═══
+
+## HEADLINE — THE PREVIOUS "SEARCH IS BROKEN" FINDING IS RETRACTED
+The founder's iPhone was right. The unified surface runs TWO routes for one action: the
+storefront grid AND the advisor. For need-shaped sentences the grid returns an honest zero
+(`categoryEnforcedZero`, "zero beats wrong") and the ADVISOR answers. Checkpoint #91's
+audit probed `/api/search` alone and called that "the consumer path" — a method error.
+Re-verified on production, 11-query matrix: **11/11 return results to a consumer.**
+«مكيف لغرفة 30 متر هادئ تحت 4000» → `supported:true, count:6`, corroborated.
+«ايفون ١٦» ≡ «ايفون 16» (22 results, same top product). NO ranking code was changed.
+
+## WHAT CHANGED (ADR-260, deployed `7fd7239`)
+1. **Unmet-demand list was 61% false.** `no_answer` fires off the storefront alone, so it
+   means "the grid was empty", not "the customer got nothing". 77 of 127 REAL no_answer
+   events had a results/advisor_result for the same session+query seconds later; the #1
+   entry (the Golden Query, 22×) was answered 22/22. Fixed via `wasAnsweredElsewhere` in
+   the SHARED builder (dashboard + CLI cannot disagree), 10s window chosen from the
+   measured gap distribution. No-answer rate 7.8% → 6.1%. **Zero genuine unmet-demand
+   events in the last 7 days**; the remainder are Arabic-Indic iPhone phrasings, all
+   pre-2026-08-10 and already working today.
+2. **Advisor now shows observation age.** `data_age_hours` reached the client and was
+   dropped — the search advisor was the ONE surface quoting a price without saying when it
+   was seen (Home/compare/category all disclose). Measured: a 1,267 SAR pick with a
+   2-retailer badge on a **639h (26-day)** observation, silently. Prices themselves are
+   faithful (6/6 match projection, store counts 6/6). Now rendered via Home's `ageLabel`.
+3. **Feed-stop blind spot closed.** deep-health calls data stale only at 48h (correct — it
+   fails open for shoppers) but ingestion runs ~6h, so a total stop was invisible for two
+   days. Health watch now alerts at 12h; consumer semantics untouched.
+
+## VERIFIED GREEN THIS GATE
+Security: every ADR-259 invariant re-checked live + fresh sweep for new paths — all clean.
+Result relevance: 24 samples / 6 categories, ZERO accessory pollution, size honoured 7/8.
+Price truth: advisor == projection 6/6; 955/1,168 comparables (82%) fresh ≤72h.
+Merchant links: product_stores non-prod = 0; /go rewrites or refuses; Amazon tag intact.
+Reliability: 11 stores, offer ages 2–29h, scheduler continuous, 0 failed runs/12h.
+
+## ⚠ NEXT SEARCH MISSION — TWO NARROW DEFECTS (do NOT start without approval)
+Both reproduced on current production; both in the ranking layer the founder told this gate
+not to touch; both need the search-quality harness (54/54 North-Star baseline at risk).
+1. **«شاشة سامسونج 55 بوصة» → a 75-inch TV as SMART PICK, n=1.** The serious one: a
+   confident wrong size presented as *the* pick. Brand+size narrows to 1, size not enforced.
+2. **«غسالة اتوماتيك 8 كيلو» → TV soundbar ranked first** (title contains «8 أوم» — a
+   number-token collision). Correct washers sit at positions 2–3.
+
+## RECORDED, NOT FIXED
+- **Exit session attribution**: 533 of 561 REAL exits carry no `session_id` (15/27 attached
+  on 08-17, 0/2 on 08-18) — current, spans 2026-07-25→today, and PREDATES the ADR-259 /go
+  change (not a regression). Revenue attribution unaffected (`sub_id`/`ascsubtag` are
+  per-click; amazon 47 / noon 108 / direct 406). Only journey-joining is lost. The funnel
+  already uses go_click for rates and the ledger for volume — the correct split.
+- `/api/v1/tps/discount-integrity` took 25.5s in the post-deploy sweep.
+- Everything in checkpoint #91's deferred list still stands.
+
+# ═══ 2026-08-18 CHECKPOINT #91 · PRODUCTION SAFETY GATE PASSED (ADR-259) ═══
 
 ## STATUS AT CLOSE
 - **PRODUCTION SAFETY GATE: PASS.** Deployed and verified live (`9602662` on `main`).
