@@ -316,6 +316,25 @@ const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holde
   // carrying goods that keyword-match the device they carry
   'bag', 'sleeve', 'backpack', 'briefcase', 'messenger', 'pouch'];
 
+// MEASURED DEFECT (2026-08-20, founder taxonomy audit continued — «طباخ كهربائي» coverage
+// gap): `ACCESSORY_HINTS_EN` was matched with a bare `.includes(h)` substring check at every
+// call site. "stand" is one of its hints (catching phone/tripod/laptop stands) — but the
+// standard English appliance term "Free-Standing" (the correct, catalog-standard opposite of
+// "built-in": Arrow's, Indesit's, Ugine's and Starway's genuine electric cookers/ranges are all
+// titled "... Free-Standing Electric Oven/Cooker ...") contains "stand" as a bare substring, so
+// EVERY genuine free-standing appliance was flagged as an accessory and excluded before the
+// cooker/oven signal check ever ran — the SAME class of bug this file has already paid for
+// elsewhere (GENERIC word-set, `\b` vs Arabic letters, "ac" inside "jacket"/"macbook"): a short
+// hint word colliding with an unrelated word that merely CONTAINS it. Fixed the general
+// mechanism, not just this one hint — every EN accessory hint now matches only as a whole word
+// (or whole phrase, for multi-word hints like "spare part").
+const ACCESSORY_HINTS_EN_RE = ACCESSORY_HINTS_EN.map(
+  (h) => new RegExp(`\\b${h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+);
+function hasEnglishAccessoryHint(en: string): boolean {
+  return ACCESSORY_HINTS_EN_RE.some((re) => re.test(en));
+}
+
 // Compatibility phrasing is a strong accessory signal: an item described as
 // "compatible with" or "for" a phone IS an accessory for that phone, not the
 // phone itself. These patterns caught real trust failures in production
@@ -501,7 +520,7 @@ export function detectCanonicalCategories(raw: string): string[] | null {
   const norm = normalizeArabic(raw).toLowerCase();
   if (
     ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
-    ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
+    hasEnglishAccessoryHint(norm) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
   ) return null;
 
@@ -556,7 +575,7 @@ function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const en = (nameEn || '').toLowerCase();
   const isCompat = ACCESSORY_COMPAT_AR.test(ar) || ACCESSORY_COMPAT_EN.test(en);
   const hasHint = ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
-    ACCESSORY_HINTS_EN.some((h) => en.includes(h)) ||
+    hasEnglishAccessoryHint(en) ||
     isCompat;
   if (!hasHint) return false;
   // Device override: a title with a full-device connectivity signal that is NOT a "for/compatible"
@@ -580,7 +599,7 @@ export function isAccessoryShapedQuery(raw: string): boolean {
   const norm = normalizeArabic(raw).toLowerCase();
   return (
     ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
-    ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
+    hasEnglishAccessoryHint(norm) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
   );
 }
@@ -645,6 +664,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   needShapedWithCategory = false,
   isOvenQuery = false,
   isCookerQuery = false,
+  queryFuelType?: 'gas' | 'electric',
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -725,6 +745,23 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isCookerQuery) {
     const cookerFiltered = result.filter((p) => hasStrongCookerSignal(p.name_ar || '', p.name_en || ''));
     result = cookerFiltered.length > 0 ? cookerFiltered : (needShapedWithCategory ? [] : result);
+
+    // Founder taxonomy audit (2026-08-20): "Do NOT admit gas ranges, mixed-fuel ranges when
+    // explicit electric is requested." Only excludes on a POSITIVE conflicting-fuel signal in
+    // the title (never a bare-fuel-unstated candidate — unknown is not the same as wrong,
+    // matching every other strong-signal gate in this file). An explicit gas query leaves a
+    // genuine mixed-fuel range in (it does have gas burners); an explicit electric query does
+    // not, since the shopper asked for no gas dependency at all.
+    if (queryFuelType === 'electric') {
+      const fuelFiltered = result.filter((p) => {
+        const fuel = productFuelType(p.name_ar || '', p.name_en || '');
+        return fuel !== 'gas' && fuel !== 'mixed';
+      });
+      result = fuelFiltered.length > 0 ? fuelFiltered : (needShapedWithCategory ? [] : result);
+    } else if (queryFuelType === 'gas') {
+      const fuelFiltered = result.filter((p) => productFuelType(p.name_ar || '', p.name_en || '') !== 'electric');
+      result = fuelFiltered.length > 0 ? fuelFiltered : (needShapedWithCategory ? [] : result);
+    }
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -939,6 +976,24 @@ export function hasStrongCookerSignal(nameAr: string, nameEn: string): boolean {
   if (SMALL_COOKER_EXCLUSION_AR.test(ar)) return false;
   if (/طباخ|بوتاجاز/.test(ar)) return true;
   return /gas\s*cooker|electric\s*cooker|cooking\s*range|gas\s*range|electric\s*range|freestanding\s*range/.test(en);
+}
+
+// Founder taxonomy audit (2026-08-20): "Do NOT admit gas ranges, mixed-fuel ranges when
+// explicit electric is requested." `hasStrongCookerSignal` verifies PRODUCT IDENTITY only —
+// fuel is an independent, orthogonal fact stated in the title itself (a genuine mixed-fuel
+// range legitimately exists as a design — gas burners + electric oven — e.g. "طباخ غاز
+// كهربائي … غاز تكنا 2 لوح تسخين كهربائي": both fuel words appear because the product
+// genuinely has both). Mirrors the fuel_type hard gate ADR-261 already applies at the advisor
+// layer (`decideAppliance`) — this is the same rule for the storefront grid.
+export function productFuelType(nameAr: string, nameEn: string): 'gas' | 'electric' | 'mixed' | undefined {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  const hasGas = /غاز/.test(ar) || /\bgas\b/.test(en);
+  const hasElectric = /كهربائي/.test(ar) || /\belectric\b/.test(en);
+  if (hasGas && hasElectric) return 'mixed';
+  if (hasGas) return 'gas';
+  if (hasElectric) return 'electric';
+  return undefined;
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
@@ -2028,6 +2083,7 @@ export async function POST(request: NextRequest) {
   const isDishwasherQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('dishwasher');
   const isOvenQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('oven');
   const isCookerQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('cooker');
+  const queryFuelType = isCookerQuery ? constraintTask?.fuel_type : undefined;
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
@@ -2095,7 +2151,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery, queryFuelType);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }

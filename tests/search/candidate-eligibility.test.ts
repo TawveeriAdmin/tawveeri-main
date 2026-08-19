@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal, lookupArToEn } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal, productFuelType, lookupArToEn } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -769,5 +769,112 @@ describe("excludeIneligibleCandidates — isCookerQuery gate keeps ranges/cooker
   it("does NOT apply either gate for an unrelated query (defaults false)", () => {
     const result = excludeIneligibleCandidates([...bareOvens, ...genuineCookers]);
     expect(result).toHaveLength(bareOvens.length + genuineCookers.length);
+  });
+});
+
+/**
+ * FOUNDER COVERAGE ROOT-CAUSE AUDIT (2026-08-20) — the founder's own explicit re-test found
+ * «فرن كامل مع سطح طبخ» still returned only 5 results even AFTER the «فرن»/«طباخ» synonym fix.
+ * Traced to the real production data (Supabase + a direct Algolia query replicating the exact
+ * server-constructed query/optionalWords): Arrow (RO-50LEFK), Indesit, Ugine and Starway are all
+ * genuine, active, in-stock, correctly-priced electric full ranges that Algolia itself DOES
+ * return (confirmed present, ranked, in the raw hit set) — they were being dropped by our OWN
+ * eligibility filter, not by retrieval. `hasAccessoryHint`'s `ACCESSORY_HINTS_EN` list contains
+ * the bare word "stand" (to catch phone/tripod/laptop stands) and was matched with a plain
+ * `.includes(h)` substring check — which also matches inside "Free-Standing", the correct,
+ * catalog-standard English term for a self-contained (non-built-in) oven/cooker. Every genuine
+ * free-standing range was therefore flagged as an accessory and excluded before the cooker
+ * signal check ever ran. Reproduced directly against `excludeIneligibleCandidates` with the real
+ * catalog titles below (isCookerQuery=false — this collision hits EVERY query, not just cooker
+ * ones, since `hasAccessoryHint` is the very first filter in the chain).
+ */
+describe("hasEnglishAccessoryHint / hasAccessoryHint — word-boundary fix for the 'stand' vs 'Free-Standing' collision (root cause, 2026-08-20)", () => {
+  const arrow = {
+    name_ar: "فرن كهربائي قائم بذاته مقاس 50×60 مع 4 شعلات، باب زجاجي مزدوج، تحكم في الترموستات وأرجل قابلة للتعديل - أبيض | الموديل: RO-50LEFK",
+    name_en: "50x60 Free-Standing Electric Oven with 4 Hotplates, Double Glass Door, Thermostat Control & Adjustable Legs - White | Model: RO-50LEFK",
+    best_price: 1029,
+  };
+  const indesit = {
+    name_ar: "فرن انديست الكهربائي قائم بذاته – 4 شعلات مع شواية",
+    name_en: "Indesit Free-Standing Electric Cooker - 4 Hotplates with Grill",
+    best_price: 852.15,
+  };
+  const realPhoneStand = {
+    name_ar: "حامل هاتف قابل للتعديل",
+    name_en: "Adjustable Phone Stand",
+    best_price: 25,
+  };
+
+  it("a genuine 'Free-Standing' oven/cooker is NOT excluded as an accessory (MEASURED DEFECT before this fix)", () => {
+    const result = excludeIneligibleCandidates([arrow, indesit, realPhoneStand]);
+    const names = result.map((r) => r.name_en);
+    expect(names).toContain(arrow.name_en);
+    expect(names).toContain(indesit.name_en);
+  });
+
+  it("a genuine accessory (real 'Phone Stand') is still correctly excluded — the fix is word-boundary, not a removal of the 'stand' hint", () => {
+    const result = excludeIneligibleCandidates([arrow, indesit, realPhoneStand]);
+    const names = result.map((r) => r.name_en);
+    expect(names).not.toContain(realPhoneStand.name_en);
+  });
+
+  it("survives the full cooker-clarify pipeline (isCookerQuery=true) alongside the previously-surfaced 5", () => {
+    const result = excludeIneligibleCandidates([arrow, indesit, realPhoneStand], false, false, false, false, false, false, true);
+    const names = result.map((r) => r.name_en);
+    expect(names).toContain(arrow.name_en);
+    expect(names).toContain(indesit.name_en);
+    expect(names).not.toContain(realPhoneStand.name_en);
+  });
+});
+
+/**
+ * FOUNDER TAXONOMY AUDIT (2026-08-20) — explicit constraint: "Do NOT admit gas ranges, mixed-fuel
+ * ranges when explicit electric is requested." `hasStrongCookerSignal` verifies product IDENTITY
+ * only; fuel is an independent, orthogonal fact stated in the title (mirrors the fuel_type hard
+ * gate ADR-261 already applies at the advisor layer via `decideAppliance`). A genuine mixed-fuel
+ * range (gas burners + electric oven) legitimately exists — e.g. the real Simfer/Tecna listing
+ * below — and must be excluded from an explicit-electric query, but kept for an explicit-gas one
+ * (it does have gas burners).
+ */
+describe("productFuelType / excludeIneligibleCandidates queryFuelType — mixed-fuel exclusion (2026-08-20)", () => {
+  const pureElectric = { name_ar: "طباخ كهربائي lg 5 شعلات 75 سم", name_en: "", best_price: 4599 };
+  const mixedFuel = {
+    name_ar: "طباخ غاز كهربائي 90×60 4 شعلات غاز تكنا 2 لوح تسخين كهربائي SS بجوانب فضية",
+    name_en: "",
+    best_price: 1999,
+  };
+  const pureGas = { name_ar: "طباخ غاز 90 سم 5 شعلات", name_en: "Gas Cooking Range 90cm 5 Burners", best_price: 1200 };
+
+  it("productFuelType correctly classifies each real catalog title", () => {
+    expect(productFuelType(pureElectric.name_ar, pureElectric.name_en)).toBe("electric");
+    expect(productFuelType(mixedFuel.name_ar, mixedFuel.name_en)).toBe("mixed");
+    expect(productFuelType(pureGas.name_ar, pureGas.name_en)).toBe("gas");
+  });
+
+  it("an explicit electric cooker query excludes both pure-gas AND mixed-fuel ranges", () => {
+    const result = excludeIneligibleCandidates(
+      [pureElectric, mixedFuel, pureGas], false, false, false, false, false, false, true, "electric",
+    );
+    const names = result.map((r) => r.name_ar);
+    expect(names).toContain(pureElectric.name_ar);
+    expect(names).not.toContain(mixedFuel.name_ar);
+    expect(names).not.toContain(pureGas.name_ar);
+  });
+
+  it("an explicit gas cooker query keeps the mixed-fuel range (it has real gas burners) and excludes pure electric", () => {
+    const result = excludeIneligibleCandidates(
+      [pureElectric, mixedFuel, pureGas], false, false, false, false, false, false, true, "gas",
+    );
+    const names = result.map((r) => r.name_ar);
+    expect(names).not.toContain(pureElectric.name_ar);
+    expect(names).toContain(mixedFuel.name_ar);
+    expect(names).toContain(pureGas.name_ar);
+  });
+
+  it("no fuel gate applied when queryFuelType is undefined (unqualified «طباخ» query) — no regression", () => {
+    const result = excludeIneligibleCandidates(
+      [pureElectric, mixedFuel, pureGas], false, false, false, false, false, false, true,
+    );
+    expect(result).toHaveLength(3);
   });
 });
