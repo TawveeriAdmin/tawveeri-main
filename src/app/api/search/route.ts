@@ -1938,7 +1938,22 @@ export async function POST(request: NextRequest) {
       // the product's own identity.
       const descriptorWords = subjectWords.filter((w) => isPriorityDescriptorWord(w));
       const optionalWords = [...new Set([...aqWords, ...expansions, ...descriptorWords])];
-      console.log('[Algolia] query:', JSON.stringify(algoliaQuery), '| optionalWords:', JSON.stringify(optionalWords), '| category:', constraintTask?.category);
+      // MEASURED DEFECT (2026-08-20, founder taxonomy audit — «طباخ كهربائي» coverage gap,
+      // continued): with every query word listed as OPTIONAL, ANY product merely mentioning
+      // one of them enters the candidate pool (823 hits for "كهربائي" alone — most of them
+      // unrelated electric appliances). Once genuine matches tie on every TEXT-relevance
+      // criterion (words/typos/proximity/exact — confirmed via `getRankingInfo`), Algolia's own
+      // custom-ranking tie-breaker, not product relevance, decides who survives inside a small
+      // `hitsPerPage` window. Direct Algolia query replication found Indesit, Ugine and Starway —
+      // genuine, active, in-stock, correctly-priced electric ranges, identical text-match quality
+      // to the ones that DID surface — ranked at position 124-246 of 823, purely because of that
+      // tie-breaker. They were never wrong, misclassified, or ineligible; only out of too narrow a
+      // retrieval window. A confidently resolved category means OUR OWN strong-signal eligibility
+      // filters (`hasStrongXSignal` etc.), not Algolia's ranking, are the real precision
+      // mechanism — so it is safe, and generic (not cooker-specific), to retrieve deeper before
+      // they run whenever `parseShoppingTask` already resolved a category.
+      const categoryConfidentHitsPerPage = constraintTask?.category ? 300 : 100;
+      console.log('[Algolia] query:', JSON.stringify(algoliaQuery), '| optionalWords:', JSON.stringify(optionalWords), '| category:', constraintTask?.category, '| hitsPerPage:', categoryConfidentHitsPerPage);
       const algoliaRes = await searchAlgolia({
         query: algoliaQuery,
         optionalWords: optionalWords.length ? optionalWords : undefined,
@@ -1948,7 +1963,7 @@ export async function POST(request: NextRequest) {
         maxPrice: body.max_price,
         inStockOnly: body.in_stock_only,
         dealsOnly: body.deals_only,
-        hitsPerPage: 100,
+        hitsPerPage: categoryConfidentHitsPerPage,
       });
       console.log('[Algolia] hits count:', algoliaRes?.hits?.length ?? 'null');
       if (algoliaRes?.hits?.length) {
