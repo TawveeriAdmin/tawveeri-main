@@ -1,4 +1,4 @@
-# ═══ SESSION CLOSED — 2026-08-19 · ALL GATES PASS · ONE POST-GATE FIX DEPLOYED (ADR-261) ═══
+# ═══ SESSION CLOSED — 2026-08-19 · ALL GATES PASS · TWO POST-GATE FIXES DEPLOYED (ADR-261, ADR-262) ═══
 
 **Read this block first. These are verified FACTS — do not re-audit them.**
 
@@ -13,6 +13,7 @@
 | MERCHANT LINKS | **PASS** |
 | Measurement corrections | **DEPLOYED** |
 | Oven fuel-type honesty (ADR-261) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
+| Oven taxonomy — microwave-named-Oven leak (ADR-262) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
 
 - **The compound-search alarm was a MEASUREMENT/CLASSIFICATION ERROR, not a systemic Search
   failure.** Verified 11/11 consumer queries return results. Do not re-open this.
@@ -23,12 +24,72 @@
   answer). The real defect found was narrower: gas ovens silently recommended for an explicit
   electric-oven request. Fixed, tested, deployed, live-verified same day — see checkpoint #93 /
   ADR-261. Do not re-open this as a "search is broken" finding.**
+- **Founder follow-up (same day) reframed this as a taxonomy/eligibility defect — "microwaves
+  surface for oven queries regardless of sort." Investigated exhaustively; did NOT reproduce on
+  today's exact catalog+queries (zero contamination, all pages, both sorts). The underlying
+  MECHANISM was real and proven, though (20+ catalog microwaves named "…Oven" in English) —
+  closed as precautionary hardening, same class already fixed for AC/monitor/watch/dishwasher.
+  See checkpoint #94 / ADR-262. Do not re-open expecting a different mechanism than the one
+  documented there.**
 - **Controlled real-user distribution is the APPROVED next phase.**
-- **No new engineering mission is currently authorized** beyond the scoped ADR-261 fix above.
+- **No new engineering mission is currently authorized** beyond the two scoped fixes above.
 - Founder-only action outstanding: **confirm GitHub Actions failure notifications actually
   reach the founder** (the health watch alerts by failing a job). Not performed by the agent.
-- Final deployed commit: `d63f196` · prior session close: `6113deb` · mission rollback point: `7fa8d61`.
-- Suite 123 files / 1,998 tests green (11 new, zero regressions) · build clean.
+- Final deployed commit: `59ad910` · prior session close: `6113deb` · mission rollback point: `7fa8d61`.
+- Suite 123 files / 2,007 tests green (20 new across both fixes, zero regressions) · build clean.
+
+# ═══ 2026-08-19 CHECKPOINT #94 · TAXONOMY AUDIT — MICROWAVE-NAMED-OVEN LEAK CLOSED (ADR-262) ═══
+
+**Trigger.** Founder follow-up to checkpoint #93, reframing the oven report as a taxonomy/
+eligibility defect: "sorting high→low still surfaces microwaves... therefore the problem is
+upstream of sorting." Required: inspect real catalog, establish defensible taxonomy, fix root
+cause generically (no hardcoded phrase/product), 8 named regression cases, mobile UI + raw API
+verification, stop-and-report if a product-design judgment call was needed.
+
+**Investigation: the reported symptom did not reproduce.** Exhaustive live testing against
+`/api/search` (confirmed via code read to be the SAME endpoint web and mobile both call) — 3
+electric-oven query variants × 2 sort directions × every page — found zero microwave/blender/
+kettle/toaster contamination. No stop-and-report was needed: the taxonomy this task asked for
+already exists and is already correct, one layer up (see below) — no product-design judgment
+call was required, just mirroring an existing decision into a second layer.
+
+**What WAS real, found via direct catalog inspection (not guessed).** `ARABIC_TO_ENGLISH['فرن']
+= ['oven']` (route.ts) injects bare "oven" as an optional Algolia term — same mechanism already
+fixed for AC/monitor/router/vacuum/washer/iron. The catalog carries 20+ genuine microwaves,
+including grill/convection models, whose `name_en` literally reads "Microwave Oven" (the
+standard English name for a microwave, not a hybrid — real titles: "SANFORD MICROWAVE OVEN 30.0
+LT WITH CONVECTION", "Elba Built In Microwave Oven"). A live, latent contamination vector, not
+currently tripped by today's exact catalog+query interaction — closed pre-emptively rather than
+waited on.
+
+**The authoritative taxonomy, already established — not invented here.** Queried
+`canonical_products` directly: it never categorizes any microwave (grill/convection included)
+as `oven` — a clean, total split. This IS the "defensible taxonomy for Saudi consumer intent"
+the founder asked for; ADR-262 mirrors it into the text-search layer via `hasStrongOvenSignal`
+rather than inventing a second, competing rule.
+
+**Fix (ADR-262 — full detail there).** `hasStrongOvenSignal()`: excludes any microwave-worded
+title outright (even one that also says "فرن"/"oven"); accepts bare «فرن» (unambiguous in
+Arabic) or English "oven"; keeps genuine, honestly self-labeled air-fryer↔oven hybrids (a real
+dual-function category — TPS's own `air_fryer` rows are sometimes branded "…oven…" in the model
+name). Wired into `excludeIneligibleCandidates` via `isOvenQuery`, identical wiring to its four
+siblings. Two dependencies closed in the same pass: `detectCanonicalCategories` gained the
+`oven` entry it was missing (ADR-261 fixed this for the general-search path; this closes the
+storefront-grid path too), and both classifiers gained «بلت ان» (colloquial "built-in") — one
+of the 8 required regression cases only resolved via an LLM call pre-fix.
+
+**Verified.** 9 new regression tests, REAL production titles (not synthetic). Full suite
+2,007/2,007 green, `tsc`/`next build` clean. Deployed `59ad910`, confirmed live via a definitive
+signal (the built-in query now resolves deterministically — no `semantic_confidence` field, no
+LLM round-trip). Post-deploy exhaustive sweep: zero contamination (matching pre-deploy — proven-
+safe hardening, no visible behavior change to today's results); gas/electric distinction from
+ADR-261 re-verified intact; Smart Pick price/link unchanged; rendered `/ar/search` UI checked
+directly (screenshot + page text) — the one genuine air-fryer↔oven hybrid (PRIMO PLUS) still
+shown, honestly labeled, no microwaves anywhere in the 81-result set.
+
+**Disclosed, not fixed.** `قلاية هوائية` (air fryer) has the identical missing-`detectCanonicalCategories`-entry gap oven had — named, not silently left, but out of THIS pass's scope (the founder's report was about oven).
+
+---
 
 # ═══ 2026-08-19 CHECKPOINT #93 · REAL-USER REPORT INVESTIGATED, FUEL-TYPE HONESTY FIX SHIPPED (ADR-261) ═══
 
