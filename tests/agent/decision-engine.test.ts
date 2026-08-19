@@ -369,6 +369,30 @@ describe("Generic appliance decider (deterministic, ranking-blind, single-store 
     expect(recs[0].comparison_available).toBe(false);
     expect(recs[0].reasons_ar.join(" ")).toMatch(/متجر واحد/);
   });
+
+  describe("fuel-type HARD gate (2026-08-19, real-user report — «افضل فرن كهربائي» recommended gas ovens)", () => {
+    const gasOven = appl({ cat: "oven", brand: "ariston", type: "built_in", cap: 90, price: 4269, stores: 3, id: "gas", flags: { gas: true } });
+    const electricOven = appl({ cat: "oven", brand: "simfer", type: "built_in", cap: 90, price: 1799, stores: 2, id: "electric" });
+    it("fuel_type: electric excludes gas-flagged rows", () => {
+      const recs = decideAppliance({ category: "oven", fuel_type: "electric" } as ShoppingTask, [gasOven, electricOven]);
+      expect(recs.map((r) => r.canonical_id)).toEqual(["electric"]);
+    });
+    it("fuel_type: gas excludes non-gas rows", () => {
+      const recs = decideAppliance({ category: "oven", fuel_type: "gas" } as ShoppingTask, [gasOven, electricOven]);
+      expect(recs.map((r) => r.canonical_id)).toEqual(["gas"]);
+    });
+    it("no stated fuel_type — both stay eligible (no behavior change for an unstated attribute)", () => {
+      const recs = decideAppliance({ category: "oven" } as ShoppingTask, [gasOven, electricOven]);
+      expect(recs.map((r) => r.canonical_id).sort()).toEqual(["electric", "gas"]);
+    });
+    it("a category with no gas/electric distinction (vacuum) ignores fuel_type — generic, not oven-specific", () => {
+      const recs = decideAppliance({ category: "vacuum", fuel_type: "electric" } as ShoppingTask, [
+        appl({ cat: "vacuum", brand: "dyson", type: null, cap: null, price: 900, stores: 2, id: "v1" }),
+      ]);
+      expect(recs).toHaveLength(1);
+    });
+  });
+
   it("respects budget as suitability, not commission (over-budget penalized)", () => {
     const task = { category: "microwave", budget_total: 500 } as ShoppingTask;
     const recs = decideAppliance(task, [

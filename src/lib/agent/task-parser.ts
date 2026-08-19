@@ -86,6 +86,21 @@ function parseCategory(x: string): string | null {
   return null;
 }
 
+/**
+ * Fuel/power type, stated explicitly ("فرن غاز", "فرن كهربائي", "gas oven", "electric
+ * oven"). Generic across any category — not oven-specific: any config-factory appliance
+ * whose `APPLIANCE_META` declares a `gas` feature flag reads this the same way. A HARD
+ * constraint (the shopper named the type), unlike `priorities` — see decideAppliance's
+ * fuel-type gate in decision-engine.ts: PRICE/PRIORITIES MAY RANK eligible candidates,
+ * a STATED fuel type MUST exclude a non-matching one, the same rule `applyBudgetGate`
+ * already enforces for a stated budget.
+ */
+function parseFuelType(x: string): "gas" | "electric" | undefined {
+  if (/غاز|\bgas\b/.test(x)) return "gas";
+  if (/كهربائي|كهربائية|\belectric\b/.test(x)) return "electric";
+  return undefined;
+}
+
 function parseRoomSize(x: string): number | undefined {
   const ok = (n: number) => (n >= 5 && n <= 200 ? n : undefined);
   // "30 متر", "30م²", "30 m2", "30 sqm", "30 square". Digits are already ASCII by `norm`.
@@ -294,7 +309,15 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «ما يصرف كهرب كثير»): the everyday colloquial short form (dropping the formal «-اء»
   // ending) matched nothing — only the full «كهرباء» did. Same ة/ه-class spelling-register
   // gap this codebase keeps finding one word at a time (CHECKPOINT #17, «جامعة»/«جامعه»).
-  ["low_electricity", /موفر|توفير|كهرباء|كهرب|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/],
+  //
+  // MEASURED DEFECT (2026-08-19, real-user production report — «افضل فرن كهربائي»): bare
+  // «كهرب» is also a substring of «كهربائي»/«كهربائية» ("electric", a fuel/power-TYPE
+  // adjective — "غلاية كهربائية", "فرن كهربائي") — a completely different axis from "wants to
+  // save on the electricity bill". Every appliance described as "electric" was silently
+  // scored as if the shopper had asked for energy-saving. `(?!ائ)` excludes exactly the
+  // adjective's own continuation («كهرباء», the noun, is unaffected — it continues «اء», not
+  // «ائ»); fuel/power type itself is now parsed separately, see `parseFuelType` below.
+  ["low_electricity", /موفر|توفير|كهرباء|كهرب(?!ائ)|فاتورة|اقتصادي|low ?electric|energy ?saving|efficient/],
   ["heating", /تدفئة|دفء|حار وبارد|heating|warm|hot ?and ?cold/],
   ["gaming", /ألعاب|العاب|قيمنق|gaming|games/],
   ["movies", /أفلام|افلام|سينما|movies|cinema|netflix/],
@@ -501,6 +524,7 @@ export function isPriorityDescriptorWord(word: string): boolean {
 export function parseShoppingTask(text: string): ParsedTask {
   const x = norm(text);
   const category = parseCategory(x);
+  const fuel_type = parseFuelType(x);
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
   const quantity = parseQuantity(x, category);
@@ -522,6 +546,7 @@ export function parseShoppingTask(text: string): ParsedTask {
 
   const task: ParsedTask = {
     category: category ?? "",
+    fuel_type,
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
     quantity,

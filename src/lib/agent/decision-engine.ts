@@ -31,6 +31,15 @@ export interface ShoppingTask {
    *  single-authority (suitability + trust + cost) and this can never make an ineligible
    *  product eligible or promote an unverified claim to the same status as a verified one. */
   wants_discount?: boolean;
+  /**
+   * Fuel/power type, stated explicitly ("فرن غاز" / "فرن كهربائي"), parsed by
+   * `task-parser.ts`'s `parseFuelType`. A HARD constraint, not a ranking preference — see
+   * `decideAppliance`'s fuel-type gate: the same "a stated attribute must exclude a
+   * non-matching candidate, never just rank it" rule `applyBudgetGate` already enforces for
+   * price. Only meaningful for appliance categories whose `APPLIANCE_META` config declares a
+   * `gas` feature flag (oven today); categories without a gas/electric distinction ignore it.
+   */
+  fuel_type?: "gas" | "electric";
 }
 
 export interface CanonicalRow {
@@ -564,11 +573,23 @@ export const APPLIANCE_META: Record<string, ApplianceMeta> = {
 };
 export function decideAppliance(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const meta = APPLIANCE_META[task.category];
+  // Fuel-type HARD gate (2026-08-19, real-user report — «افضل فرن كهربائي» silently
+  // recommended gas ovens). Generic, not oven-specific: applies to any config-factory
+  // category whose own feature vocabulary distinguishes gas from electric (`"gas" in
+  // meta.features`) — categories with no such distinction (vacuum, blender, …) are
+  // untouched. Excludes rather than ranks, same as `applyBudgetGate`: a stated attribute
+  // must never let an ineligible candidate through just because nothing better survived.
+  const rowsForFuel = task.fuel_type && "gas" in meta.features
+    ? rows.filter((row) => {
+        const isGas = (row.attributes ?? {}).gas === true;
+        return task.fuel_type === "gas" ? isGas : !isGas;
+      })
+    : rows;
   const pr = task.priorities ?? [];
   const text = (task as { parsed_from_text?: string }).parsed_from_text ?? "";
   const wantLarge = pr.includes("large") || /كبير|كبيرة|عائلة|عائلية|family|large/.test(text);
   const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
-  const scored = rows.map((row) => {
+  const scored = rowsForFuel.map((row) => {
     const a = row.attributes ?? {}; const reasons = new ReasonLedger();
     let score = 0.5;
     const type = (a.appliance_type as string | null) ?? null;

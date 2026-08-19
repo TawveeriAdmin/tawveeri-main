@@ -425,6 +425,16 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   { cats: ['printer'], terms: ['طابعه', 'طابعات', 'printer'] },
   { cats: ['vacuum'], terms: ['مكنسه', 'vacuum'] },
   { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'مايكرويف', 'microwave'] },
+  // MEASURED DEFECT (2026-08-19, real-user production report — «افضل فرن كهربائي»): 'oven'
+  // has real, populated TPS canonical data (built-in ovens) but no entry here, so every oven
+  // query fell through to the generic "unrecognised → mobile" default below — the storefront
+  // grid's own comparison-card lookup silently searched for a MOBILE PHONE canonical instead
+  // of an oven one. Same class of "second classifier missing a category the first one knows"
+  // gap this file's own comments already document for laptop/AC. Terms deliberately mirror
+  // `task-parser.ts`'s own oven phrases (never bare «فرن») — a bare 3-letter substring match
+  // would hit «فرنسي»/«فرنسا» ("French"/"France"), the exact "short token must match as a
+  // WHOLE WORD" collision `AC_QUERY_WORDS` above already exists to avoid.
+  { cats: ['oven'], terms: ['فرن كهربائي', 'فرن غاز', 'فرن مدمج', 'built in oven', 'electric oven', 'gas oven'] },
   { cats: ['camera'], terms: ['كاميرا', 'camera'] },
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];

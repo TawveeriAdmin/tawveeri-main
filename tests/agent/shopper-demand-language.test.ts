@@ -87,6 +87,41 @@ describe("cross-category regression guards — possessive-morpheme camera, collo
   });
 });
 
+describe("fuel-type vs. energy-saving disambiguation (2026-08-19, real-user report — «افضل فرن كهربائي»)", () => {
+  // MEASURED DEFECT: bare «كهرب» (the low_electricity keyword above) is a substring of
+  // «كهربائي»/«كهربائية» ("electric", a fuel/power-type adjective) — every oven query stating
+  // the fuel type was silently scored as an energy-saving request instead, and nothing
+  // captured the actual stated fuel type, so gas ovens were recommended for an explicit
+  // electric request. Covers the exact reported query and its natural variants.
+  it.each([
+    "فرن كهربائي",
+    "افضل فرن كهربائي",
+    "ابي فرن كهربائي",
+    "فرن كهربائي ممتاز",
+  ])("%s: resolves oven + fuel_type electric, WITHOUT a false low_electricity priority", (q) => {
+    const t = parseShoppingTask(q);
+    expect(t.category).toBe("oven");
+    expect(t.fuel_type).toBe("electric");
+    expect(t.priorities ?? []).not.toContain("low_electricity");
+  });
+
+  it("«فرن غاز» resolves oven + fuel_type gas", () => {
+    const t = parseShoppingTask("فرن غاز");
+    expect(t.category).toBe("oven");
+    expect(t.fuel_type).toBe("gas");
+  });
+
+  it("a genuine energy-saving oven request («فرن موفر للكهرباء») still resolves low_electricity", () => {
+    expect(parseShoppingTask("فرن موفر للكهرباء").priorities).toContain("low_electricity");
+  });
+
+  it("an unrelated «كهربائي» word (kettle) gets the same fix, proving it is not oven-specific", () => {
+    const t = parseShoppingTask("غلاية كهربائية");
+    expect(t.fuel_type).toBe("electric");
+    expect(t.priorities ?? []).not.toContain("low_electricity");
+  });
+});
+
 describe("bare-superlative recommendation marker — «افضل X» without a leading «وش» or trailing «لي»", () => {
   it("resolves wants_recommendation for a leading bare superlative", () => {
     expect(parseShoppingTask("افضل ثلاجه كبيره للعائله").wants_recommendation).toBe(true);
