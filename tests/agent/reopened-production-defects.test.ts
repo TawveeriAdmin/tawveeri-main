@@ -42,6 +42,22 @@ describe("Case 3 root cause #1b — the TPS/comparison category scoper must also
   });
 });
 
+describe("Founder taxonomy audit (2026-08-19) — the storefront grid's TPS scoper must recognize 'oven', same class as laptop above", () => {
+  it("«فرن كهربائي»/«فرن غاز»/«فرن مدمج» resolve to oven, not the generic 'mobile' default (was the root of the taxonomy gap)", () => {
+    expect(detectCanonicalCategories("افضل فرن كهربائي")).toEqual(["oven"]);
+    expect(detectCanonicalCategories("ابي فرن كهربائي")).toEqual(["oven"]);
+    expect(detectCanonicalCategories("فرن غاز")).toEqual(["oven"]);
+  });
+  it("«بلت ان» (colloquial 'built-in') resolves the same as formal «مدمج», same ة/ه-class spelling gap this codebase repeatedly finds", () => {
+    expect(parseShoppingTask("فرن بلت ان كهربائي").category).toBe("oven");
+    expect(detectCanonicalCategories("فرن بلت ان كهربائي")).toEqual(["oven"]);
+  });
+  it("existing categories are unaffected (no regression)", () => {
+    expect(detectCanonicalCategories("ميكروويف")).toEqual(["microwave"]);
+    expect(detectCanonicalCategories("قلاية هوائية")).toEqual(["mobile"]); // air_fryer has no TPS-comparison entry; unchanged pre-existing behavior, out of this fix's scope
+  });
+});
+
 describe("Case 3 root cause #3 — a query's context/need words must never be REQUIRED in retrieval", () => {
   it("a priority-descriptor word (need/context, not product identity) is recognized as such", () => {
     expect(isPriorityDescriptorWord("جامعه")).toBe(true);

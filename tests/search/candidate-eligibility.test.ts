@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -555,6 +555,71 @@ describe("excludeIneligibleCandidates — isDishwasherQuery gate removes dishwas
   it("does NOT apply the dishwasher-signal filter for a non-dishwasher query (default isDishwasherQuery=false)", () => {
     const result = excludeIneligibleCandidates([...falsePositives, ...genuineDishwashers]);
     expect(result).toHaveLength(genuineDishwashers.length + falsePositives.length);
+  });
+});
+
+/**
+ * MEASURED STRUCTURAL RISK (2026-08-19, founder taxonomy audit — «ابي فرن كهربائي»). Same class
+ * as شاشة/ساعة/غسالة صحون above: `ARABIC_TO_ENGLISH['فرن'] = ['oven']` injects bare "oven" as an
+ * optional Algolia term, and the production catalog carries 20+ genuine microwaves — including
+ * grill/convection variants — whose name_en literally reads "Microwave Oven" (the standard
+ * international name for a microwave, not a hybrid category; e.g. real production titles below).
+ * Fixtures are REAL production titles (2026-08-19), not invented ones, for the same reason the
+ * dishwasher fixtures above insist on it — a truncated/synthetic fixture can hide the exact
+ * substring the false positive actually hinges on.
+ */
+describe("hasStrongOvenSignal — a microwave named \"Oven\" (the standard English name) is not an oven", () => {
+  it("rejects genuine microwaves, including grill/convection variants, whose name_en says 'Oven'", () => {
+    expect(hasStrongOvenSignal(
+      "فرن ميكروويف سانفورد سعة 30 لترًا مع خاصية الحمل الحراري",
+      "SANFORD MICROWAVE OVEN 30.0 LT WITH CONVECTION 30 L 2200 W SF5633MO BS Silver",
+    )).toBe(false);
+    expect(hasStrongOvenSignal(
+      "ميكروويف رويال 25 لتر",
+      "Membrane Digital Microwave Oven, 10 Power Leves, 99.99 min Timer, Child Safety-Lock, Cooking End Signal, Easy Pull Chrome Handle, Grey, RA-25XDG 25 L 800 W RA-25XDG Black",
+    )).toBe(false);
+    expect(hasStrongOvenSignal(
+      "ميديا فرن ميكروويف قائم بذاته بسعة 42 لتر مع شواية | رقم الموديل EG142AWIW مع ضمان لمدة عامين",
+      "42 Liter Freestanding Microwave Oven with Grill| Model No EG142AWIW with 2 Years Warranty",
+    )).toBe(false);
+    expect(hasStrongOvenSignal("Elba Built In Microwave Oven DARK23", "Elba Built In Microwave Oven DARK23")).toBe(false);
+  });
+  it("accepts genuine ovens (built-in, freestanding, gas) — real production titles", () => {
+    expect(hasStrongOvenSignal("فرن كهربائي مدمج 90 سم بشاشة لمسية رقمية ومروحتين سوداء", "Simfer built in built-in oven 90 cm")).toBe(true);
+    expect(hasStrongOvenSignal("فرن كهربائي ماستر غاز 60 سم مع أسياخ شواء | الموديل O66E6MT مع ضمان لمدة عامين", "")).toBe(true);
+    expect(hasStrongOvenSignal("Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW", "Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW")).toBe(true);
+  });
+  it("accepts a genuine, honestly self-labeled air-fryer↔oven hybrid (unlike \"Microwave Oven\", a real dual-function unit)", () => {
+    expect(hasStrongOvenSignal(
+      "مقلاة هوائية بسعة كبيرة 12 لتر مع نافذة كبيرة مرئية وشاشة لمس ذكية 1350 واط، فرن كهربائي متعدد الوظائف , قلاية هوائية بدون زيت",
+      "PRIMO PLUS",
+    )).toBe(true);
+  });
+  it("rejects a plain air fryer that never claims to be an oven", () => {
+    expect(hasStrongOvenSignal("قلاية هوائية، 9 لتر", "")).toBe(false);
+  });
+});
+
+describe("excludeIneligibleCandidates — isOvenQuery gate removes microwave-named-Oven false positives", () => {
+  const genuineOvens = [
+    { name_ar: "فرن كهربائي مدمج 90 سم بشاشة لمسية رقمية ومروحتين سوداء", name_en: "Simfer built in built-in oven 90 cm", best_price: 1799 },
+    { name_ar: "فرن أريستون built in 60 سم", name_en: null, best_price: 1599 },
+  ];
+  const falsePositives = [
+    { name_ar: "فرن ميكروويف سانفورد سعة 30 لترًا مع خاصية الحمل الحراري", name_en: "SANFORD MICROWAVE OVEN 30.0 LT WITH CONVECTION 30 L 2200 W SF5633MO BS Silver", best_price: 450 },
+    { name_ar: "ميكروويف رويال 25 لتر", name_en: "Membrane Digital Microwave Oven, 10 Power Leves, 99.99 min Timer, RA-25XDG 25 L 800 W RA-25XDG Black", best_price: 320 },
+  ];
+
+  it("removes both microwaves-named-Oven when isOvenQuery is true", () => {
+    const result = excludeIneligibleCandidates([...falsePositives, ...genuineOvens], false, false, false, false, false, true);
+    const names = result.map((r) => r.name_ar);
+    for (const fp of falsePositives) expect(names).not.toContain(fp.name_ar);
+    for (const g of genuineOvens) expect(names).toContain(g.name_ar);
+  });
+
+  it("does NOT apply the oven-signal filter for a non-oven query (default isOvenQuery=false)", () => {
+    const result = excludeIneligibleCandidates([...falsePositives, ...genuineOvens]);
+    expect(result).toHaveLength(genuineOvens.length + falsePositives.length);
   });
 });
 

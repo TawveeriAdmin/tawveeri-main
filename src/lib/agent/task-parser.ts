@@ -80,7 +80,11 @@ function parseCategory(x: string): string | null {
   if (/غلاية|غلايه|electric kettle|\bkettle\b/.test(x)) return "kettle";
   if (/محمصة|محمصه|toaster/.test(x)) return "toaster";
   if (/خلاط|blender/.test(x)) return "blender";
-  if (/فرن كهربائي|فرن غاز|فرن مدمج|built-?in oven|electric oven|gas oven/.test(x)) return "oven";
+  // «بلت ان» (2026-08-19, founder taxonomy audit — «فرن بلت ان كهربائي»): the everyday
+  // transliterated-English colloquial spelling of "built-in" — «فرن مدمج» is the formal MSA
+  // form already listed; the deterministic parser silently missed the colloquial one (this
+  // query only resolved via the LLM semantic fallback, one call it should not have needed).
+  if (/فرن كهربائي|فرن غاز|فرن مدمج|فرن بلت ?ان|built-?in oven|electric oven|gas oven/.test(x)) return "oven";
   if (/ثلاج|refrigerator|fridge|freezer/.test(x)) return "refrigerator";
   if (/غسال|washing machine|washer|نشاف|dryer/.test(x)) return "washing_machine";
   return null;

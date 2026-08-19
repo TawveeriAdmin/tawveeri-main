@@ -434,7 +434,7 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   // `task-parser.ts`'s own oven phrases (never bare «فرن») — a bare 3-letter substring match
   // would hit «فرنسي»/«فرنسا» ("French"/"France"), the exact "short token must match as a
   // WHOLE WORD" collision `AC_QUERY_WORDS` above already exists to avoid.
-  { cats: ['oven'], terms: ['فرن كهربائي', 'فرن غاز', 'فرن مدمج', 'built in oven', 'electric oven', 'gas oven'] },
+  { cats: ['oven'], terms: ['فرن كهربائي', 'فرن غاز', 'فرن مدمج', 'فرن بلت ان', 'built in oven', 'electric oven', 'gas oven'] },
   { cats: ['camera'], terms: ['كاميرا', 'camera'] },
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];
@@ -614,6 +614,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   isWatchQuery = false,
   isDishwasherQuery = false,
   needShapedWithCategory = false,
+  isOvenQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -670,6 +671,21 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isDishwasherQuery) {
     const dishwasherFiltered = result.filter((p) => hasStrongDishwasherSignal(p.name_ar || '', p.name_en || ''));
     result = dishwasherFiltered.length > 0 ? dishwasherFiltered : (needShapedWithCategory ? [] : result);
+  }
+
+  // MEASURED STRUCTURAL RISK (2026-08-19, founder taxonomy audit — «ابي فرن كهربائي»): same
+  // class of leak, found before it visibly reproduced on a live query. `ARABIC_TO_ENGLISH['فرن']
+  // = ['oven']` injects bare "oven" as an optional Algolia term (same mechanism already fixed
+  // for air/display/wifi/cleaner/washer/machine/iron/steamer above). The catalog carries 20+
+  // genuine MICROWAVES — including grill/convection models — whose ENGLISH name literally
+  // contains "Oven" ("SANFORD MICROWAVE OVEN", "Royal 20L Digital Microwave Oven"): the
+  // standard international name for a microwave, not a second category. Confirmed against the
+  // TPS canonical layer (the authoritative existing split, 2026-08-19): `canonical_products`
+  // NEVER categorizes any microwave — grill/convection variants included — as `oven`; this
+  // mirrors that same, already-correct distinction in the text-search layer.
+  if (isOvenQuery) {
+    const ovenFiltered = result.filter((p) => hasStrongOvenSignal(p.name_ar || '', p.name_en || ''));
+    result = ovenFiltered.length > 0 ? ovenFiltered : (needShapedWithCategory ? [] : result);
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -813,6 +829,35 @@ export function hasStrongDishwasherSignal(nameAr: string, nameEn: string): boole
     return /\d+\s*مكان/.test(ar) || /built\s*in/.test(hay) || DISHWASHER_WORD.test(hay);
   }
   return /غسال[ةه]\s*صحون|جلاي[ةه]/.test(ar) || DISHWASHER_WORD.test(hay);
+}
+
+// MEASURED STRUCTURAL RISK (2026-08-19, founder taxonomy audit — «ابي فرن كهربائي»). Same class
+// of leak as شاشة/ساعة/غسالة صحون above, found and closed before it visibly reproduced on a live
+// query: `ARABIC_TO_ENGLISH['فرن'] = ['oven']` injects bare "oven" as an optional Algolia term,
+// and 20+ genuine microwaves in the catalog — including grill/convection variants — carry the
+// ENGLISH name "Microwave Oven" (the standard international name for a microwave, not a second
+// category; e.g. "SANFORD MICROWAVE OVEN", "Royal 20L Digital Microwave Oven"). A microwave named
+// this way could satisfy the optional "oven" term on English text alone.
+//
+// Arabic has no equivalent ambiguity: a genuine oven is always «فرن», a genuine microwave is
+// always «ميكروويف»/«مايكروويف»/«مايكرويف», never «فرن» — the SAME reasoning
+// `hasStrongMonitorSignal` already applies to bare «شاشة». The one honest exception, MEASURED
+// against the TPS canonical layer's own already-correct split (2026-08-19): `canonical_products`
+// keeps EVERY microwave — grill/convection included — under category `microwave`, never `oven`,
+// even when a retailer's own title reads «فرن ميكروويف»/"Microwave Oven" — that phrase is a NAME
+// for a microwave, not a hybrid. A microwave-worded title is excluded outright, mirroring that
+// same existing split, rather than trusting the word «فرن»/"oven" appearing next to it. Genuine
+// oven↔air-fryer hybrids (self-described «فرن مقلاة هوائية», air-fryer-oven combo units — a real,
+// honestly-labeled dual-function category, unlike "Microwave Oven") are unaffected: they carry no
+// microwave word and pass on «فرن»/"oven" alone, same as any other genuine oven listing.
+const MICROWAVE_WORD = /ميكروويف|مايكروويف|مايكرويف|\bmicrowave\b/;
+
+export function hasStrongOvenSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  if (MICROWAVE_WORD.test(ar) || MICROWAVE_WORD.test(en)) return false;
+  if (/(^|\s)فرن/.test(ar)) return true;
+  return /\boven\b/.test(en);
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
@@ -1900,6 +1945,7 @@ export async function POST(request: NextRequest) {
   const isMonitorQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('monitor');
   const isWatchQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('smartwatch');
   const isDishwasherQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('dishwasher');
+  const isOvenQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('oven');
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
@@ -1967,7 +2013,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }
