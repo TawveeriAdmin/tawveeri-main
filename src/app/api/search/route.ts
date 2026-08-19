@@ -158,9 +158,22 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'مايكروويف': ['microwave', 'مايكرويف'],
   'ميكروويف': ['microwave', 'مايكرويف'],
   'مايكرويف': ['microwave'],
-  'فرن': ['oven'],
-  'طباخ': ['cooker'],
-  'بوتاجاز': ['cooker', 'range'],
+  // MEASURED (2026-08-19, founder coverage audit — «فرن كامل مع سطح طبخ» chip returned only 5
+  // results): a genuine full-size freestanding range is titled EITHER «فرن ...» (Samsung
+  // «سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون», Indesit «فرن انديست الكهربائي قائم
+  // بذاته...») OR «طباخ ...» (LG «طباخ كهربائي lg 5 شعلات 75 سم») for the IDENTICAL physical
+  // product — the same market-naming ambiguity ADR-263 already established, now hitting
+  // retrieval, not just eligibility. Algolia's own relevance AND-gate (`relevanceGroups`, this
+  // file) requires the query's own word to match SOMETHING in a candidate's title — no single
+  // query rewrite (replace OR append «فرن»/«طباخ») can retrieve BOTH title conventions under
+  // that gate, since each candidate only ever uses ONE of the two words. Made mutual synonyms
+  // instead: retrieval WIDENS (this list only ever adds optional match terms, never requires
+  // them), and the existing `hasStrongOvenSignal`/`hasStrongCookerSignal` eligibility gates —
+  // unchanged — still correctly separate a bare oven cavity from a genuine range downstream, so
+  // precision is unaffected either direction.
+  'فرن': ['oven', 'طباخ'],
+  'طباخ': ['cooker', 'فرن'],
+  'بوتاجاز': ['cooker', 'range', 'فرن'],
   'طابعة': ['printer'],
   'راوتر': ['router', 'wifi', 'network'],
   'كاميرا': ['camera'],
@@ -256,7 +269,7 @@ const ARABIC_TO_ENGLISH_NORM: Record<string, string[]> = Object.fromEntries(
 // cooking-appliance contamination once ranked by price alone.
 export const GENERIC_EXPANSION_STOPWORDS = new Set(['air', 'display', 'wifi', 'network', 'cleaner', 'washer', 'machine', 'iron', 'steamer']);
 
-function lookupArToEn(word: string): string[] | undefined {
+export function lookupArToEn(word: string): string[] | undefined {
   // `.toLowerCase()` matters for the LATIN keys (conditioner/conditioners): a typed
   // "Conditioners" otherwise misses its expansion — the same case trap that let an
   // uppercase "SAR" through the stopword filters (2026-08-04).

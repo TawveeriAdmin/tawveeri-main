@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal, lookupArToEn } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -719,6 +719,27 @@ describe("hasStrongOvenSignal / hasStrongCookerSignal — a freestanding range i
       "جهاز الطهي بالتفريغ INKBIRD ISV-200W مع تقنية Wi-Fi – طباخ دقيق من الفولاذ المقاوم للصدأ بقوة 1000 واط مع التحكم عبر الهاتف الذكي ومؤقت دقيق لنتائج طهي مثالية",
       "",
     )).toBe(false);
+  });
+});
+
+/**
+ * FOUNDER COVERAGE AUDIT (2026-08-19) — «فرن كامل مع سطح طبخ» (the cooker-disambiguation chip)
+ * returned only 5 results, despite genuine full-size ranges existing in Tawveeri's own catalog
+ * under BOTH naming conventions for the identical physical product class: «فرن ...» (Samsung
+ * "سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون", Indesit "فرن انديست الكهربائي قائم بذاته")
+ * and «طباخ ...» (LG "طباخ كهربائي lg 5 شعلات 75 سم"). No single query rewrite can retrieve both
+ * under Algolia's own AND-gate (`relevanceGroups`) since each candidate only ever uses ONE of
+ * the two words — so «فرن»/«طباخ» were made mutual synonyms in the SAME expansion mechanism
+ * already used for ثلاجة↔refrigerator etc. (widens retrieval only; the eligibility gates above
+ * remain the actual precision mechanism, unchanged).
+ */
+describe("ARABIC_TO_ENGLISH — «فرن»/«طباخ» are mutual retrieval synonyms (coverage audit, 2026-08-19)", () => {
+  it("«فرن» expands to include «طباخ», and «طباخ» expands to include «فرن»", () => {
+    expect(lookupArToEn("فرن")).toEqual(expect.arrayContaining(["طباخ"]));
+    expect(lookupArToEn("طباخ")).toEqual(expect.arrayContaining(["فرن"]));
+  });
+  it("«بوتاجاز» also expands to include «فرن» (freestanding gas cookers are often titled «فرن غاز»)", () => {
+    expect(lookupArToEn("بوتاجاز")).toEqual(expect.arrayContaining(["فرن"]));
   });
 });
 
