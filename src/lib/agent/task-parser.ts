@@ -34,6 +34,12 @@ const norm = (t: string) => asciiDigits((t || "").toLowerCase()).replace(/٬/g, 
 // signal with zero counterexamples across a multi-retailer taxonomy audit (2026-08-19, Noon/
 // Amazon.sa/Almanea/Shaker/LG). See `parseCategory`'s own cooker branch for the full reasoning.
 const COOKER_BURNER_SIGNAL = /\d+\s*(?:عي(?:و|ي)ن|شعل[ةه]?ات?)|\d+[\s-]?burners?\b/i;
+// MEASURED LIVE (production, 2026-08-19, same session): bare «طباخ» is ALSO the head noun of
+// small single-pot/hotplate appliances in Tawveeri's own catalog ("طباخ كهربائي مزدوج الوعاء",
+// "طباخ الأشعة تحت الحمراء المحمولة") — a query naming one of these should not be routed to the
+// `cooker` TPS category, which is exclusively full-size freestanding ranges. Mirrors
+// `route.ts`'s own `hasStrongCookerSignal` exclusion.
+const SMALL_COOKER_EXCLUSION = /متنقل|محمول|قدر|طنجر[ةه]|وعاء|الاشع[ةه] تحت الحمراء/;
 
 function parseCategory(x: string): string | null {
   if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
@@ -97,8 +103,8 @@ function parseCategory(x: string): string | null {
   // category (ADR-254) — this is the query-routing half that was missing (it was previously
   // 100% unreachable: not in this parser, not in `CATEGORY_KEYS`, so even the LLM semantic
   // fallback could never return it).
-  if (/طباخ|بوتاجاز|\bcooker\b|cooking range|gas range|electric range|freestanding range/.test(x)
-    || ((/فرن|\boven\b/.test(x)) && COOKER_BURNER_SIGNAL.test(x))) return "cooker";
+  if (COOKER_BURNER_SIGNAL.test(x) && (/فرن|طباخ|بوتاجاز|\boven\b|\bcooker\b/.test(x))) return "cooker";
+  if (!SMALL_COOKER_EXCLUSION.test(x) && /طباخ|بوتاجاز|\bcooker\b|cooking range|gas range|electric range|freestanding range/.test(x)) return "cooker";
   // «بلت ان» (2026-08-19, founder taxonomy audit — «فرن بلت ان كهربائي»): the everyday
   // transliterated-English colloquial spelling of "built-in" — «فرن مدمج» is the formal MSA
   // form already listed; the deterministic parser silently missed the colloquial one (this

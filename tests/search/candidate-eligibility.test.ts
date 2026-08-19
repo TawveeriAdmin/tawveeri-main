@@ -706,6 +706,14 @@ describe("hasStrongOvenSignal / hasStrongCookerSignal — a freestanding range i
     expect(hasStrongCookerSignal("", "CROCKPOT Slow Cooker, 6 Quart")).toBe(false);
     expect(hasStrongCookerSignal("", "Multi-Cooker Pressure Cooker 8-in-1")).toBe(false);
   });
+  it("MEASURED LIVE (production, 2026-08-19, caught re-verifying the deployed fix): bare «طباخ» is ALSO the head noun of small single-pot/hotplate appliances in Tawveeri's own catalog", () => {
+    expect(hasStrongCookerSignal("طباخ كهربائي مزدوج الوعاء سعة 1 لتر + 1 لتر، جهاز مطبخ ذكي متعدد الوظائف مع مؤقت", "")).toBe(false);
+    expect(hasStrongCookerSignal("طباخ الأشعة تحت الحمراء المحمولة ، 3500 واط موقد كهربائي واحد الموقد", "")).toBe(false);
+    expect(hasStrongCookerSignal("قدر كهربائي ساخن، مقلاة كهربائية محمولة KAWU سعة 1.6 لتر", "")).toBe(false);
+  });
+  it("a burner count still wins even alongside a small-appliance word (defensive — no real catalog example found, but the positive signal must never be silently defeated)", () => {
+    expect(hasStrongCookerSignal("طباخ محمول 4 شعلات", "")).toBe(true);
+  });
 });
 
 describe("excludeIneligibleCandidates — isCookerQuery gate keeps ranges/cookers separate from bare ovens", () => {

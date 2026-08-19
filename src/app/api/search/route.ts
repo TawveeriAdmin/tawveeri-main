@@ -899,19 +899,30 @@ export function hasStrongOvenSignal(nameAr: string, nameEn: string): boolean {
 }
 
 // MEASURED (2026-08-19, founder taxonomy audit): bare English "cooker" is NOT accepted alone —
-// unlike «طباخ»/«بوتاجاز» (unambiguous in Arabic within this domain), "cooker" is also the head
-// noun of "Rice Cooker"/"Slow Cooker"/"Pressure Cooker" — small appliances Tawveeri does not
-// treat as the same category. Requires a fuel-qualified compound ("gas/electric cooker/range")
-// or the burner-count signal instead, mirroring every catalog example actually found
-// ("lg electric cooker 75 cm", "haam gas cooker 5-burner 90 cm").
+// it is also the head noun of "Rice Cooker"/"Slow Cooker"/"Pressure Cooker", small appliances
+// Tawveeri does not treat as the same category. Requires a fuel-qualified compound ("gas/
+// electric cooker/range") or the burner-count signal instead, mirroring every catalog example
+// actually found ("lg electric cooker 75 cm", "haam gas cooker 5-burner 90 cm").
 const RICE_SLOW_PRESSURE_COOKER = /\brice\s*cooker\b|\bslow\s*cooker\b|\bpressure\s*cooker\b|\bmulti[\s-]?cooker\b/i;
+
+// MEASURED LIVE (production, 2026-08-19, same session, caught by re-verifying the deployed
+// fix rather than assuming the research held): bare «طباخ» is ALSO the head noun of small
+// single-pot/hotplate appliances in Tawveeri's own catalog — "طباخ كهربائي مزدوج الوعاء سعة 1
+// لتر + 1 لتر" (a dual-pot mini cooker), "طباخ الأشعة تحت الحمراء المحمولة" (a portable
+// infrared hotplate) — the exact same class of ambiguity as English "Rice Cooker", just not
+// caught by the retailer research (which studied Noon/Amazon.sa/Almanea/Shaker/LG listings,
+// none of which happened to include this small-appliance class under the same word). A genuine
+// freestanding range never describes itself as "متنقل"/"محمول" (portable) or a "وعاء"/"قدر"
+// (pot/vessel) — those words override bare «طباخ»/«بوتاجاز», mirroring the English exclusion.
+const SMALL_COOKER_EXCLUSION_AR = /متنقل|محمول|قدر|طنجر[ةه]|وعاء|الاشع[ةه] تحت الحمراء/;
 
 export function hasStrongCookerSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr || '');
   const en = (nameEn || '').toLowerCase();
   if (RICE_SLOW_PRESSURE_COOKER.test(en)) return false;
-  if (/طباخ|بوتاجاز/.test(ar)) return true;
   if (COOKER_BURNER_SIGNAL.test(ar) || COOKER_BURNER_SIGNAL.test(en)) return true;
+  if (SMALL_COOKER_EXCLUSION_AR.test(ar)) return false;
+  if (/طباخ|بوتاجاز/.test(ar)) return true;
   return /gas\s*cooker|electric\s*cooker|cooking\s*range|gas\s*range|electric\s*range|freestanding\s*range/.test(en);
 }
 

@@ -77,6 +77,11 @@ describe("Founder taxonomy audit, Track 1 (2026-08-19) — 'cooker' registered: 
   it("«4 عيون» does not get misread as a quantity (\"4 ovens\") — it modifies the noun, not a count of units", () => {
     expect(parseShoppingTask("فرن كهربائي 4 عيون").quantity).toBeUndefined();
   });
+  it("MEASURED LIVE (2026-08-19, caught re-verifying the deployed fix): bare «طباخ» is also the head noun of small single-pot/hotplate appliances — must not route to the full-range 'cooker' category", () => {
+    expect(parseShoppingTask("طباخ كهربائي مزدوج الوعاء سعة 1 لتر").category).not.toBe("cooker");
+    expect(parseShoppingTask("طباخ الأشعة تحت الحمراء المحمولة").category).not.toBe("cooker");
+    expect(parseShoppingTask("قدر كهربائي متنقل").category).not.toBe("cooker");
+  });
 });
 
 describe("Founder taxonomy audit, Track 2 (2026-08-19) — isAmbiguousBareOvenQuery, the clarify-chip trigger", () => {
