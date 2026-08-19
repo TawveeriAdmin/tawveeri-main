@@ -1,4 +1,4 @@
-# ═══ SESSION CLOSED — 2026-08-18 · ALL GATES PASS · NEXT PHASE = CONTROLLED DISTRIBUTION ═══
+# ═══ SESSION CLOSED — 2026-08-19 · ALL GATES PASS · ONE POST-GATE FIX DEPLOYED (ADR-261) ═══
 
 **Read this block first. These are verified FACTS — do not re-audit them.**
 
@@ -12,17 +12,67 @@
 | PRICE TRUTH | **PASS** |
 | MERCHANT LINKS | **PASS** |
 | Measurement corrections | **DEPLOYED** |
+| Oven fuel-type honesty (ADR-261) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
 
 - **The compound-search alarm was a MEASUREMENT/CLASSIFICATION ERROR, not a systemic Search
   failure.** Verified 11/11 consumer queries return results. Do not re-open this.
 - **Narrow relevance observations (the 55-inch Smart Pick case; «غسالة 8 كيلو» soundbar) are
   DEFERRED and are NOT launch blockers.**
+- **New real-user report (2026-08-19, «افضل فرن كهربائي») investigated read-only first — "search
+  returns nothing" did NOT hold (no `no_answer` telemetry, live reproduction returned a full
+  answer). The real defect found was narrower: gas ovens silently recommended for an explicit
+  electric-oven request. Fixed, tested, deployed, live-verified same day — see checkpoint #93 /
+  ADR-261. Do not re-open this as a "search is broken" finding.**
 - **Controlled real-user distribution is the APPROVED next phase.**
-- **No new engineering mission is currently authorized.**
+- **No new engineering mission is currently authorized** beyond the scoped ADR-261 fix above.
 - Founder-only action outstanding: **confirm GitHub Actions failure notifications actually
   reach the founder** (the health watch alerts by failing a job). Not performed by the agent.
-- Final deployed commit: `6113deb` · mission rollback point: `7fa8d61` · 7 commits, 0 unpushed.
-- Suite 123 files / 1,987 tests green · build clean · deep health green at close.
+- Final deployed commit: `d63f196` · prior session close: `6113deb` · mission rollback point: `7fa8d61`.
+- Suite 123 files / 1,998 tests green (11 new, zero regressions) · build clean.
+
+# ═══ 2026-08-19 CHECKPOINT #93 · REAL-USER REPORT INVESTIGATED, FUEL-TYPE HONESTY FIX SHIPPED (ADR-261) ═══
+
+**Trigger.** Founder passed on new real-user production evidence, post-Search-Truth-Gate:
+«افضل فرن كهربائي» reportedly "did not return useful results". Instructed READ-ONLY
+investigation first — no code changes until root cause was found and evidence-based.
+
+**Investigation (read-only): "returns nothing" did not hold.** `usage_events` had zero
+`no_answer`/`error` rows for any «فرن» query back to 2026-07-26; a real organic session that
+same day (before this investigation started) searched «فرن كهرب»→«Oven», got `count:86` both
+times, and completed a `go_click` exit. Live reproduction (raw API + rendered `/search` page)
+returned a full, confident, evidence-cited answer every time. **The previous "search is
+broken" retraction (ADR-260) still holds — this is a different, narrower finding.**
+
+**What WAS real and confirmed:** 2 of 6 advisor recommendations for an explicit "electric
+oven" request were GAS ovens (tagged «غاز» in their own reasons, no disclosure) — a genuine
+precision defect, not a functional failure. Root cause: `task-parser.ts`'s `low_electricity`
+regex matched bare «كهرب», a substring of «كهربائي» ("electric" — a fuel-type adjective,
+unrelated to "wants to save on the bill"); nothing captured the actual stated fuel type; the
+appliance engine had no mechanism to exclude a non-matching fuel type once stated.
+
+**Fix shipped (ADR-261 — full detail there).** Generic, not oven-specific: (1) the regex
+collision closed with a negative lookahead; (2) a new `parseFuelType()` + `ShoppingTask.fuel_type`
+HARD-gates `decideAppliance` for any category with a real gas/electric distinction; (3) the
+storefront grid's own independent category classifier gained the `oven` entry it was missing
+(same "second classifier drifted from the first" class this codebase's comments already
+document elsewhere). 11 new regression tests; full suite 1,998/1,998 green; `tsc`/`next build`
+clean.
+
+**Deployed and live-verified same session.** `d63f196` pushed → Railway deploy confirmed live
+(~3.5 min) → all 4 required queries («فرن كهربائي», «افضل فرن كهربائي», «ابي فرن كهربائي»,
+«فرن غاز») re-tested directly against production `/api/v1/agent/decide` AND the rendered
+`/ar/search` page: electric queries now show 0 gas-tagged recommendations (was 2 of 6); «فرن
+غاز» returns gas ovens only; the Smart Pick's price (1,799 SAR) and `go_url` are unchanged from
+before the fix (only the candidate set changed — no price/link data was touched); the 81-result
+storefront grid is unaffected.
+
+**Not touched / not needed.** No new mission opened. No ranking-weight change, no LLM
+introduced. The separate, pre-existing (ADR-253) disclosure gap — general search silently
+substitutes a built-in oven for a bare «فرن» when the shopper likely means a countertop one —
+is a REAL, different, lower-severity gap, named in the prior investigation, and deliberately
+NOT touched here (out of this fix's bound; would need its own scoped pass).
+
+---
 
 # ═══ 2026-08-18 CHECKPOINT #92 · SEARCH TRUTH GATE PASSED (ADR-260) ═══
 

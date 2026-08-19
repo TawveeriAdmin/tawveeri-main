@@ -6,6 +6,25 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-261 — Fuel-type honesty: «افضل فرن كهربائي» recommended gas ovens — the priority parser conflated "electric" with "energy-saving"; a generic fuel-type hard gate closes it · Accepted (2026-08-19)
+**Context.** New real-user production evidence, post-Search-Truth-Gate (ADR-260): a real Saudi shopper searched «افضل فرن كهربائي» and reported unusable results. Investigated read-only first (production telemetry, live reproduction, catalog queries) before touching anything — see the investigation notes below; this ADR covers the fix that followed.
+
+**What the investigation found (NOT what was first suspected).** No `no_answer`/`error` telemetry existed for any «فرن» query, and a live reproduction returned a full, confident answer — so "search returns nothing" did not hold. The real, confirmed defect was narrower and more dangerous precisely because it was silent: 2 of 6 advisor recommendations for an EXPLICIT "electric oven" request were gas ovens, tagged «غاز» in their own reasons, with no disclosure. Root cause, traced to two compounding gaps:
+1. `task-parser.ts`'s `low_electricity` priority regex matched bare `كهرب` — a substring of `كهربائي`/`كهربائية` ("electric", a fuel/power-TYPE adjective completely unrelated to "wants to save on the electricity bill"). Every appliance described as "electric" was silently scored as an energy-saving want instead.
+2. `decision-engine.ts`'s `oven` entry in `APPLIANCE_META` had `featureWants: {}` — even had "electric" been captured, nothing could turn it into an exclusion. `گاز`/electric was a descriptive label only, never an eligibility filter.
+A third, related but lower-severity gap: `src/app/api/search/route.ts`'s own **independent** category classifier (`CATEGORY_QUERY_TERMS`, used only for the storefront grid's TPS-comparison card) had no `oven` entry at all — every oven query silently fell through to its "unrecognised → mobile" default, the same "second classifier missing a category the first one already knows" defect class this file's own comments already document for laptop/AC.
+
+**Decision — generic fixes, none of them oven-specific.**
+1. `low_electricity`'s regex gains a negative lookahead (`كهرب(?!ائ)`) that excludes exactly the adjective's own continuation; `كهرباء` (the noun, continues `اء` not `ائ`) is unaffected, and the fix applies to ANY appliance described as "electric" (verified live on kettle too, not just oven).
+2. A new, generic `parseFuelType()` (`gas | electric`) is added to `task-parser.ts`, landing on a new `ShoppingTask.fuel_type` field — explicitly a HARD constraint (excludes), not a soft priority (ranks), matching the same rule `applyBudgetGate` already enforces for a stated budget. `decideAppliance` hard-excludes non-matching rows, gated on `"gas" in meta.features` — so it activates for oven today and for any future config-factory category with the same gas/electric distinction, and is a no-op for categories that don't have one (vacuum, blender, …).
+3. `oven` added to `CATEGORY_QUERY_TERMS`, using the SAME safe multi-word phrases `task-parser.ts` already recognizes (never bare `فرن` — a substring of `فرنسي`/`فرنسا`, "French"/"France").
+
+**Verification.** 11 new regression tests (exact reported query + 3 variants + the counter-case «فرن غاز» + a genuine energy-saving oven request staying correctly classified + the cross-category kettle proof it isn't oven-specific + the fuel-type hard-gate itself, both directions, plus a no-op check on a gas-less category). Full suite 1,998/1,998 green (11 new, zero regressions), `tsc` baseline unchanged, `next build` clean. Deployed (`d63f196`), live-verified on production post-deploy: all 4 required queries re-tested directly against `/api/v1/agent/decide` and in the rendered `/search` page — electric queries now show 0 gas-tagged recommendations (was 2), «فرن غاز» returns gas ovens only, the Smart Pick's price (1,799 SAR) and `go_url` are byte-identical to the pre-fix response (only the candidate SET changed, not the underlying price/link data), and the 81-result storefront grid is unaffected.
+
+**Consequences.** Precision fix only — no ranking-weight change, no LLM introduced (ADR-002 untouched), no schema/data change. Scope: appliance-category advisor answers that state a fuel type explicitly; everything else (budget gate, quiet/large/etc. priorities, all other categories) is untouched, confirmed by the full regression suite.
+
+---
+
 ### ADR-260 — Search Truth Gate: search was never broken — `no_answer` was measuring the wrong route; the advisor now discloses when it saw the price · Accepted (2026-08-18)
 
 **Context.** Founder flagged conflicting evidence: ADR-259's audit reported «مكيف لغرفة 30 متر هادئ تحت 4000» as a zero-result failure, but the same query works on the founder's real iPhone. The founder was right and the audit was wrong. This gate reproduces the consumer path end-to-end and corrects both the finding and the instrument that produced it.
