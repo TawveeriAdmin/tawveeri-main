@@ -1,4 +1,4 @@
-# ═══ SESSION CLOSED — 2026-08-19 · ALL GATES PASS · THREE POST-GATE FIXES DEPLOYED (ADR-261/262/263) ═══
+# ═══ SESSION CLOSED — 2026-08-20 · ALL GATES PASS · FOUR POST-GATE FIXES DEPLOYED (ADR-261/262/263/264) ═══
 
 **Read this block first. These are verified FACTS — do not re-audit them.**
 
@@ -15,6 +15,7 @@
 | Oven fuel-type honesty (ADR-261) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
 | Oven taxonomy — microwave-named-Oven leak (ADR-262) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
 | Product identity — cooker/range registered + clarify UX (ADR-263) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
+| Coverage root-cause audit — accessory-hint collision + fuel gate + retrieval-window fix (ADR-264) | **DEPLOYED, LIVE-VERIFIED (2026-08-20)** |
 
 - **The compound-search alarm was a MEASUREMENT/CLASSIFICATION ERROR, not a systemic Search
   failure.** Verified 11/11 consumer queries return results. Do not re-open this.
@@ -41,12 +42,83 @@
   appliances, a sous-vide cooker, both also using the word «طباخ») closed in the same session.
   See checkpoint #95 / ADR-263. This is now reusable product-identity infrastructure, not an
   oven-specific patch — do not re-derive from scratch for a future category.**
+- **Founder re-tested the ADR-263 clarify chip live and found it still returned only 5 results.**
+  Root-caused as THREE independent, stackable defects — none of them taxonomy, none of them a
+  reason to loosen the category: (1) `ACCESSORY_HINTS_EN`'s bare `"stand"` hint matched via plain
+  substring, colliding with "Free-Standing" (the correct English term for a non-built-in range),
+  wrongly excluding Arrow/Indesit/Ugine/Starway as accessories before the cooker check ever ran;
+  (2) no fuel-type gate existed on the storefront grid (only the advisor layer, ADR-261), so a
+  genuine mixed-fuel range (Simfer/Tecna) leaked into explicit-electric results; (3) even after
+  fixing 1+2, three genuine ranges still ranked below Algolia's `hitsPerPage:100` cutoff purely on
+  an unrelated custom-ranking tie-breaker — confirmed via direct Algolia API replication with
+  `getRankingInfo`, not guessed. Fixed all three generically (word-boundary accessory matching,
+  a `productFuelType` gate wired to `parseShoppingTask.fuel_type`, `hitsPerPage` raised to 300 for
+  any category-confident query). See checkpoint #96 / ADR-264. «طباخ كهربائي» is now 10 results,
+  not the originally-suspected 8 — do not re-derive this count without re-querying production.**
 - **Controlled real-user distribution is the APPROVED next phase.**
-- **No new engineering mission is currently authorized** beyond the three scoped fixes above.
+- **No new engineering mission is currently authorized** beyond the fixes above.
 - Founder-only action outstanding: **confirm GitHub Actions failure notifications actually
   reach the founder** (the health watch alerts by failing a job). Not performed by the agent.
-- Final deployed commit: `dd36465` · prior session close: `6113deb` · mission rollback point: `7fa8d61`.
-- Suite 123 files / 2,028 tests green (41 new across three fixes, zero regressions) · build clean.
+- Final deployed commit: `75ba679` · prior session close: `dd36465` · mission rollback point: `7fa8d61`.
+- Suite 123 files / 2,037 tests green (10 new in this pass, zero regressions) · build clean.
+
+# ═══ 2026-08-20 CHECKPOINT #96 · COVERAGE ROOT-CAUSE AUDIT — THREE STACKED DEFECTS CLOSED, NONE TAXONOMY (ADR-264) ═══
+
+**Trigger.** Founder re-verification of ADR-263's shipped clarify chip: «فرن كامل مع سطح طبخ»
+still returned only 5 results in production. Explicit mandate: research live Saudi market
+inventory first, cross-reference against Tawveeri's raw/canonical layers, and for every genuine
+full-size electric range pinpoint EXACTLY where in the pipeline it is lost (taxonomy / fuel /
+product-form / dedupe / freshness / eligibility / retrieval) — never loosen the category to
+inflate a count, never admit gas or mixed-fuel ranges into an explicit-electric result.
+
+**Method.** Real production rows pulled directly from Supabase for the founder's named examples
+(Indesit, Ugine, Arrow RO-50LEFK, Starway — all confirmed `is_active`/`in_stock`/valid price);
+the server's own exact Algolia query/`optionalWords` replayed directly against the Algolia REST
+API with `getRankingInfo:true`; the real filter functions (`hasStrongCookerSignal`,
+`excludeIneligibleCandidates`, the inline `relevanceGroups` gate) executed live via `tsx` against
+real catalog titles rather than assumed from reading source. This live-execution discipline is
+what surfaced defects invisible to static code review.
+
+**Three defects found, stacked (fixing one revealed the next):**
+1. **Accessory-hint substring collision (dominant cause).** `ACCESSORY_HINTS_EN`'s `"stand"`
+   hint (for phone/tripod stands) matched via bare `.includes()`, colliding with "Free-Standing"
+   — the catalog-standard English term for a non-built-in oven/cooker, i.e. the OPPOSITE of an
+   accessory. Arrow/Indesit/Ugine/Starway are all titled "... Free-Standing Electric
+   Oven/Cooker ...", so all four were flagged as accessories and dropped before the cooker
+   signal check ever ran. Fixed generically: `hasEnglishAccessoryHint()` now matches every EN
+   hint as a whole word/phrase, at all 3 call sites, not special-cased to "stand".
+2. **No fuel-type gate on the storefront grid.** ADR-261's fuel gate only covers the advisor
+   layer. A genuine mixed-fuel range (Simfer/Tecna — real gas burners + electric oven) was
+   surfacing for an explicit-electric query. Fixed: `productFuelType()` + a `queryFuelType`
+   parameter on `excludeIneligibleCandidates`, wired from `parseShoppingTask.fuel_type`.
+3. **Retrieval-window truncation.** Even after fixes 1+2, three ranges remained missing — found
+   via direct Algolia replication with `hitsPerPage:1000` to be present, correctly signaled, and
+   text-match-IDENTICAL to the ones that surfaced (`nbExactWords:2`, `nbTypos:0`, comparable
+   proximity) but ranked position 124-246 of 823 purely on an unrelated custom-ranking
+   tie-breaker (`userScore`). Root cause: every query word is `optionalWords` by design (for
+   recall), so 823 mostly-unrelated products enter the pool and text-relevance ties are common —
+   a 100-item cutoff becomes an arbitrary business-metric filter, not a relevance one. Fixed
+   generically (not cooker-specific): `hitsPerPage` raises 100→300 whenever `parseShoppingTask`
+   already resolved a category, since our own eligibility filters — not Algolia's ranking — are
+   the real precision mechanism at that confidence level.
+
+**Verification.** 10 new regression tests (real catalog titles) + full suite 2,037/2,037 green
+across both commits, `tsc` baseline unchanged, `next build` clean both times. Deployed
+`cde1a86` (fixes 1+2) then `75ba679` (fix 3), each live-verified on production before the next.
+
+**Final production state, live-verified 2026-08-20.** «طباخ كهربائي»: **10 results** — LG,
+Indesit, Arrow (RO-50LEFK), Starway, Samsung (178.4L), Ugine, Bombane×2, plus two previously-
+unseen genuine Elba-branded electric ranges the deepened window also surfaced (more than the 8
+originally suspected). Simfer/Tecna mixed-fuel confirmed excluded. «طباخ غاز» cross-checked: 20
+results, Simfer/Tecna correctly present (real gas burners), zero pure-electric leakage.
+
+**Not done, deliberately.** `ACCESSORY_HINTS_AR` left untouched (no measured collision found —
+touching without evidence would be scope creep). `hitsPerPage` widening's downstream effect on
+categories other than cooker/oven was not individually re-audited (full suite + spot checks
+showed nothing, but this is a structural change worth a dedicated sweep if ever indicated).
+
+Commits: `cde1a86` (accessory-hint word-boundary fix + mixed-fuel gate),
+`75ba679` (hitsPerPage retrieval-window fix). Full detail: ADR-264.
 
 # ═══ 2026-08-19 CHECKPOINT #95 · PRODUCT IDENTITY INFRASTRUCTURE — COOKER REGISTERED, CLARIFY UX SHIPPED (ADR-263) ═══
 
