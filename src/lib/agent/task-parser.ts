@@ -30,6 +30,11 @@ const asciiDigits = (t: string) =>
 // copy-pasted prices; strip the grouping mark so «٤٬٠٠٠» reads as 4000, not 4.
 const norm = (t: string) => asciiDigits((t || "").toLowerCase()).replace(/٬/g, "");
 
+// A stated burner/zone count — «4 عيون», «5 شعلات», "5 burners" — held as a reliable cooker/range
+// signal with zero counterexamples across a multi-retailer taxonomy audit (2026-08-19, Noon/
+// Amazon.sa/Almanea/Shaker/LG). See `parseCategory`'s own cooker branch for the full reasoning.
+const COOKER_BURNER_SIGNAL = /\d+\s*(?:عي(?:و|ي)ن|شعل[ةه]?ات?)|\d+[\s-]?burners?\b/i;
+
 function parseCategory(x: string): string | null {
   if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
   // Plural/ه-spelling stems (measured 2026-08-04): «شاشات», «ثلاجات», «غسالات» classified
@@ -80,6 +85,20 @@ function parseCategory(x: string): string | null {
   if (/غلاية|غلايه|electric kettle|\bkettle\b/.test(x)) return "kettle";
   if (/محمصة|محمصه|toaster/.test(x)) return "toaster";
   if (/خلاط|blender/.test(x)) return "blender";
+  // COOKER, checked BEFORE oven (2026-08-19, founder taxonomy audit, multi-retailer research —
+  // Noon/Amazon.sa/Almanea/Shaker/LG all confirmed): a full-size freestanding cooker/range
+  // (cooktop + oven cavity in one floor-standing unit) is a PHYSICALLY DIFFERENT product from a
+  // built-in or countertop oven — but the market, including LG's own official Arabic product
+  // title («فرن كهربائي | 178 لتر | 5 شعلات»), routinely calls a full range «فرن» too. Explicit
+  // «طباخ»/«بوتاجاز»/"cooker"/"range" is unambiguous cooker intent on its own. A stated burner
+  // count («4 عيون», «5 شعلات», "5 burners") alongside «فرن»/"oven" is the one signal that held
+  // with zero counterexamples across every retailer studied — a bare oven cavity never has a
+  // burner count; a cooker/range always does. `cooker` was already a real, populated TPS
+  // category (ADR-254) — this is the query-routing half that was missing (it was previously
+  // 100% unreachable: not in this parser, not in `CATEGORY_KEYS`, so even the LLM semantic
+  // fallback could never return it).
+  if (/طباخ|بوتاجاز|\bcooker\b|cooking range|gas range|electric range|freestanding range/.test(x)
+    || ((/فرن|\boven\b/.test(x)) && COOKER_BURNER_SIGNAL.test(x))) return "cooker";
   // «بلت ان» (2026-08-19, founder taxonomy audit — «فرن بلت ان كهربائي»): the everyday
   // transliterated-English colloquial spelling of "built-in" — «فرن مدمج» is the formal MSA
   // form already listed; the deterministic parser silently missed the colloquial one (this
@@ -88,6 +107,28 @@ function parseCategory(x: string): string | null {
   if (/ثلاج|refrigerator|fridge|freezer/.test(x)) return "refrigerator";
   if (/غسال|washing machine|washer|نشاف|dryer/.test(x)) return "washing_machine";
   return null;
+}
+
+/**
+ * True when the text resolves to `oven` via a BARE, unqualified phrasing («فرن كهربائي»/«فرن
+ * غاز» — no burner count, no built-in qualifier). Multi-retailer taxonomy audit (2026-08-19:
+ * Noon, Amazon.sa, Almanea, Shaker, LG's own official site) found this exact bare phrasing is
+ * genuinely ambiguous in the SOURCE data, not just in Tawveeri's own parsing — LG's own
+ * official Arabic product title for a full 5-burner, 178L freestanding range reads «فرن
+ * كهربائي», identically to how a built-in oven is named. A stated burner count already resolves
+ * to `cooker` (see the cooker branch above) and «بلت ان»/«مدمج» is already explicit — both
+ * return false here; only the genuinely undecided phrasing returns true. Used by the search UI
+ * to offer a one-tap disambiguation instead of silently guessing (founder decision,
+ * 2026-08-19) — never wired into `decide()`/`shouldAsk()`, which only fire for advisory-routed
+ * queries; a bare category browse like this never reaches that mechanism.
+ */
+export function isAmbiguousBareOvenQuery(text: string): boolean {
+  const x = norm(text);
+  if (parseCategory(x) !== "oven") return false;
+  // The built-in qualifier does not have to sit immediately next to «فرن» ("فرن كهربائي مدمج"
+  // is exactly as explicit as "فرن مدمج") — checked anywhere in the sentence, not as a fixed
+  // adjacent phrase.
+  return !/مدمج|بلت ?ان|built-?in/.test(x);
 }
 
 /**
@@ -504,7 +545,7 @@ export interface ParsedTask extends ShoppingTask {
 export const CATEGORY_KEYS = [
   'air_conditioner', 'tv', 'tablet', 'laptop', 'audio', 'camera', 'mobile',
   'dishwasher', 'microwave', 'air_fryer', 'air_purifier', 'vacuum', 'coffee_maker',
-  'kettle', 'toaster', 'blender', 'oven', 'refrigerator', 'washing_machine',
+  'kettle', 'toaster', 'blender', 'oven', 'cooker', 'refrigerator', 'washing_machine',
 ] as const;
 
 /** The CLOSED priority vocabulary the decision engine actually scores against

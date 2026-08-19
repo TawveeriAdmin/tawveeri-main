@@ -5,7 +5,7 @@
  * examples, per the founder's explicit instruction not to patch phrases.
  */
 import { isMainProductTypeQuery, detectCanonicalCategories, anchorSubjectToCategory } from "@/app/api/search/route";
-import { parseShoppingTask, isPriorityDescriptorWord } from "@/lib/agent/task-parser";
+import { parseShoppingTask, isPriorityDescriptorWord, isAmbiguousBareOvenQuery } from "@/lib/agent/task-parser";
 import { routeQuery } from "@/lib/agent/route-query";
 import { decideLaptop } from "@/lib/agent/decision-engine";
 import type { CanonicalRow } from "@/lib/agent/decision-engine";
@@ -55,6 +55,47 @@ describe("Founder taxonomy audit (2026-08-19) — the storefront grid's TPS scop
   it("existing categories are unaffected (no regression)", () => {
     expect(detectCanonicalCategories("ميكروويف")).toEqual(["microwave"]);
     expect(detectCanonicalCategories("قلاية هوائية")).toEqual(["mobile"]); // air_fryer has no TPS-comparison entry; unchanged pre-existing behavior, out of this fix's scope
+  });
+});
+
+describe("Founder taxonomy audit, Track 1 (2026-08-19) — 'cooker' registered: a freestanding range must not be swallowed by 'oven'", () => {
+  it("explicit «طباخ»/«بوتاجاز» resolve to cooker, not oven or the generic 'mobile' default", () => {
+    expect(parseShoppingTask("طباخ كهربائي").category).toBe("cooker");
+    expect(parseShoppingTask("بوتاجاز كهربائي").category).toBe("cooker");
+    expect(detectCanonicalCategories("طباخ كهربائي")).toEqual(["cooker"]);
+    expect(detectCanonicalCategories("بوتاجاز كهربائي")).toEqual(["cooker"]);
+  });
+  it("a stated burner count alongside «فرن» resolves cooker, not oven — the exact reported ambiguity", () => {
+    expect(parseShoppingTask("فرن كهربائي 4 عيون").category).toBe("cooker");
+    expect(parseShoppingTask("فرن كهربائي 5 شعلات").category).toBe("cooker");
+    expect(detectCanonicalCategories("فرن كهربائي 4 عيون")).toEqual(["cooker"]);
+  });
+  it("bare «فرن غاز»/«فرن كهربائي» (no burner count) still resolves oven — unaffected (no regression)", () => {
+    expect(parseShoppingTask("فرن غاز").category).toBe("oven");
+    expect(parseShoppingTask("فرن كهربائي").category).toBe("oven");
+  });
+  it("«4 عيون» does not get misread as a quantity (\"4 ovens\") — it modifies the noun, not a count of units", () => {
+    expect(parseShoppingTask("فرن كهربائي 4 عيون").quantity).toBeUndefined();
+  });
+});
+
+describe("Founder taxonomy audit, Track 2 (2026-08-19) — isAmbiguousBareOvenQuery, the clarify-chip trigger", () => {
+  it("bare «فرن كهربائي»/«فرن غاز» (no burner count, no built-in qualifier) is ambiguous", () => {
+    expect(isAmbiguousBareOvenQuery("فرن كهربائي")).toBe(true);
+    expect(isAmbiguousBareOvenQuery("ابي فرن كهربائي")).toBe(true);
+    expect(isAmbiguousBareOvenQuery("افضل فرن كهربائي")).toBe(true);
+    expect(isAmbiguousBareOvenQuery("فرن غاز")).toBe(true);
+  });
+  it("«بلت ان»/«مدمج» is already explicit — not ambiguous", () => {
+    expect(isAmbiguousBareOvenQuery("فرن بلت ان كهربائي")).toBe(false);
+    expect(isAmbiguousBareOvenQuery("فرن كهربائي مدمج")).toBe(false);
+  });
+  it("a stated burner count resolves to cooker, not oven — not ambiguous (it already routed correctly)", () => {
+    expect(isAmbiguousBareOvenQuery("فرن كهربائي 4 عيون")).toBe(false);
+  });
+  it("an unrelated category is never flagged", () => {
+    expect(isAmbiguousBareOvenQuery("ميكروويف")).toBe(false);
+    expect(isAmbiguousBareOvenQuery("لابتوب")).toBe(false);
   });
 });
 

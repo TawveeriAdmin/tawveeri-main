@@ -15,6 +15,7 @@ import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
+import { isAmbiguousBareOvenQuery } from '@/lib/agent/task-parser';
 import {
   readDecisionState, clearDecisionState, createDecisionState, applyParsedTask,
   applyDecisionResult, saveDecisionState, decisionStateToAdvisorBody, removeConstraint,
@@ -447,6 +448,16 @@ export default function SearchClient() {
     if (filters.shipping) count += filters.shipping.length;
     return count;
   }, [filters]);
+
+  // Founder taxonomy audit (2026-08-19): a bare «فرن كهربائي»/«فرن غاز» is genuinely ambiguous
+  // in the SOURCE market data (LG's own official product title for a full 5-burner range reads
+  // «فرن كهربائي», identically to a built-in oven's own title) — never silently guessed. This
+  // never touches decide()/shouldAsk(): a bare category browse like this has no need signal and
+  // never reaches the advisor's own clarify mechanism at all.
+  const showOvenClarify = useMemo(
+    () => (debouncedQuery ? isAmbiguousBareOvenQuery(debouncedQuery) : false),
+    [debouncedQuery],
+  );
 
   // Remove a single filter (also resets to page 1 so the user doesn't
   // land on a page that doesn't exist in the smaller result set).
@@ -1780,6 +1791,33 @@ export default function SearchClient() {
                     </div>
                   )}
                 </div>
+
+                {/* «فرن كهربائي» is genuinely ambiguous between three different products
+                    (founder taxonomy audit, 2026-08-19 — confirmed against Noon/Amazon.sa/
+                    Almanea/Shaker/LG's own naming, not guessed). One-tap disambiguation,
+                    non-blocking: results below already show, this only offers to refine. */}
+                {showOvenClarify && !loading && (
+                  <div className="mb-4 rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] p-3">
+                    <p className="mb-2 t-small font-medium text-on-surface-variant">
+                      {locale === 'ar' ? 'أي نوع تقصد؟' : 'Which type did you mean?'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { ar: 'فرن كامل مع سطح طبخ', en: 'Full cooker/range (with hob)', refine: (q: string) => (/فرن/.test(q) ? q.replace(/فرن/g, 'طباخ') : `${q} طباخ`) },
+                        { ar: 'فرن بلت إن', en: 'Built-in oven', refine: (q: string) => `${q} بلت ان` },
+                        { ar: 'فرن صغير/طاولة', en: 'Small/countertop oven', refine: (q: string) => `${q} صغير` },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.ar}
+                          onClick={() => handleQuickCategory(opt.refine(debouncedQuery))}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)] px-3 py-1.5 t-small font-medium text-on-surface transition-all hover:border-[var(--brand-green)] hover:bg-[var(--brand-bg-green)] hover:text-[var(--brand-green-dark)]"
+                        >
+                          {locale === 'ar' ? opt.ar : opt.en}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Loading State — skeleton grid only, no progress banner */}
                 {loading && <ResultsSkeleton count={8} />}

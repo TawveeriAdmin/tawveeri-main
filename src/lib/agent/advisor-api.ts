@@ -305,6 +305,7 @@ const CATEGORY_LABELS: Record<string, [string, string]> = {
   microwave: ["مايكرويف", "Microwave"], vacuum: ["مكنسة", "Vacuum"], air_purifier: ["منقي هواء", "Air purifier"],
   coffee_maker: ["صانعة قهوة", "Coffee maker"], kettle: ["غلاية", "Kettle"], air_fryer: ["قلاية هوائية", "Air fryer"],
   toaster: ["محمصة", "Toaster"], blender: ["خلاط", "Blender"], oven: ["فرن", "Oven"],
+  cooker: ["طباخ", "Cooker"],
   audio: ["سماعات", "Audio"], camera: ["كاميرا", "Camera"],
 };
 const PRIORITY_LABELS: Record<string, [string, string]> = {

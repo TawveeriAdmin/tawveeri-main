@@ -159,6 +159,8 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'ميكروويف': ['microwave', 'مايكرويف'],
   'مايكرويف': ['microwave'],
   'فرن': ['oven'],
+  'طباخ': ['cooker'],
+  'بوتاجاز': ['cooker', 'range'],
   'طابعة': ['printer'],
   'راوتر': ['router', 'wifi', 'network'],
   'كاميرا': ['camera'],
@@ -314,7 +316,7 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   'لابتوب', 'حاسوب', 'كمبيوتر',
   'تلفزيون', 'شاشه', 'شاشات',
   'ثلاجه', 'ثلاجات', 'فريزر', 'غساله', 'غسالات', 'نشافه', 'مكنسه', 'لابتوبات',
-  'مايكروويف', 'ميكروويف', 'فرن', 'طابعه', 'راوتر', 'كاميرا', 'ساعه', 'تابلت',
+  'مايكروويف', 'ميكروويف', 'فرن', 'طباخ', 'بوتاجاز', 'طابعه', 'راوتر', 'كاميرا', 'ساعه', 'تابلت',
   'ايباد', 'واتش', 'تاب', 'جالكسي',
   'سماعه', 'سماعات',
   // BILINGUAL ASYMMETRY (measured 2026-07-31): 'جالكسي' was here but 'galaxy' was not, so
@@ -330,7 +332,7 @@ const MAIN_PRODUCT_TYPES = new Set<string>([
   'conditioner', 'conditioners',
   'phone', 'iphone', 'smartphone', 'mobile', 'laptop', 'tv', 'television',
   'refrigerator', 'fridge', 'freezer', 'washer', 'dryer', 'vacuum',
-  'microwave', 'oven', 'printer', 'router', 'camera', 'tablet', 'headphones',
+  'microwave', 'oven', 'cooker', 'printer', 'router', 'camera', 'tablet', 'headphones',
 ]);
 
 /**
@@ -435,6 +437,12 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   // would hit «فرنسي»/«فرنسا» ("French"/"France"), the exact "short token must match as a
   // WHOLE WORD" collision `AC_QUERY_WORDS` above already exists to avoid.
   { cats: ['oven'], terms: ['فرن كهربائي', 'فرن غاز', 'فرن مدمج', 'فرن بلت ان', 'built in oven', 'electric oven', 'gas oven'] },
+  // MEASURED (2026-08-19, founder taxonomy audit, multi-retailer research): `cooker` was a
+  // real, populated TPS category (ADR-254) with zero entry here — same "second classifier
+  // missing a category the first one knows" gap the `oven` entry above already documents.
+  // Bare «طباخ» is unambiguous in Arabic (see `hasStrongCookerSignal`'s own comment for why
+  // bare English "cooker" is deliberately excluded from these terms).
+  { cats: ['cooker'], terms: ['طباخ', 'بوتاجاز', 'gas cooker', 'electric cooker', 'cooking range', 'gas range', 'electric range', 'freestanding range'] },
   { cats: ['camera'], terms: ['كاميرا', 'camera'] },
   { cats: ['mobile'], terms: ['جوال', 'جوالات', 'هاتف', 'هواتف', 'ايفون', 'iphone', 'phone', 'smartphone', 'mobile', 'جالكسي', 'galaxy', 'بكسل', 'pixel'] },
 ];
@@ -489,6 +497,14 @@ export function detectCanonicalCategories(raw: string): string[] | null {
   // `gree ac` regressing to mobile when this was first written as a substring match.)
   const words = norm.split(/\s+/).filter(Boolean);
   if (words.some((w) => AC_QUERY_WORDS.has(w))) return ['air_conditioner'];
+
+  // Cooker's disambiguating signal is a NUMBER ("4 عيون", "5 burners") — not expressible as a
+  // literal substring term the generic loop below matches — so, like AC_QUERY_WORDS above, it
+  // is checked first. Otherwise "فرن كهربائي 4 عيون" would match oven's own broader "فرن
+  // كهربائي" term before this more specific signal is ever reached (2026-08-19, founder
+  // taxonomy audit — same reasoning as `task-parser.ts`'s own cooker branch, checked first
+  // there for the identical reason).
+  if (parseShoppingTask(raw).category === 'cooker') return ['cooker'];
 
   for (const entry of CATEGORY_QUERY_TERMS) {
     if (entry.terms.some((t) => norm.includes(normalizeArabic(t)))) return entry.cats;
@@ -615,6 +631,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   isDishwasherQuery = false,
   needShapedWithCategory = false,
   isOvenQuery = false,
+  isCookerQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -686,6 +703,15 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isOvenQuery) {
     const ovenFiltered = result.filter((p) => hasStrongOvenSignal(p.name_ar || '', p.name_en || ''));
     result = ovenFiltered.length > 0 ? ovenFiltered : (needShapedWithCategory ? [] : result);
+  }
+
+  // Founder taxonomy audit (2026-08-19): the mirror of the oven gate above — a cooker/range
+  // query must not be satisfied by a genuine bare oven cavity (built-in or countertop), and vice
+  // versa (enforced by `hasStrongOvenSignal`'s own burner-signal exclusion). See
+  // `hasStrongCookerSignal`'s own comment for the full multi-retailer evidence.
+  if (isCookerQuery) {
+    const cookerFiltered = result.filter((p) => hasStrongCookerSignal(p.name_ar || '', p.name_en || ''));
+    result = cookerFiltered.length > 0 ? cookerFiltered : (needShapedWithCategory ? [] : result);
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -852,12 +878,41 @@ export function hasStrongDishwasherSignal(nameAr: string, nameEn: string): boole
 // microwave word and pass on «فرن»/"oven" alone, same as any other genuine oven listing.
 const MICROWAVE_WORD = /ميكروويف|مايكروويف|مايكرويف|\bmicrowave\b/;
 
+// A stated burner/zone count — the same signal `task-parser.ts`'s `COOKER_BURNER_SIGNAL`
+// resolves category on — held as a reliable cooker/range identifier with zero counterexamples
+// across a multi-retailer taxonomy audit (2026-08-19, Noon/Amazon.sa/Almanea/Shaker/LG). A
+// bare oven cavity (built-in or countertop) never has a burner count; a freestanding
+// cooker/range always does — even when its OWN title, including LG's own official Arabic
+// product name, calls it «فرن»/"Oven" too («فرن كهربائي | 178 لتر | 5 شعلات»).
+const COOKER_BURNER_SIGNAL = /\d+\s*(?:عي(?:و|ي)ن|شعل[ةه]?ات?)|\d+[\s-]?burners?\b/i;
+
 export function hasStrongOvenSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr || '');
   const en = (nameEn || '').toLowerCase();
   if (MICROWAVE_WORD.test(ar) || MICROWAVE_WORD.test(en)) return false;
+  // A cooker/range naming itself «فرن»/"oven" is real (see comment above) but is a DIFFERENT
+  // product identity, not a bare-oven false positive of the same kind as a microwave — routed
+  // to `hasStrongCookerSignal` instead via `isCookerQuery`, never silently dropped here.
+  if (COOKER_BURNER_SIGNAL.test(ar) || COOKER_BURNER_SIGNAL.test(en)) return false;
   if (/(^|\s)فرن/.test(ar)) return true;
   return /\boven\b/.test(en);
+}
+
+// MEASURED (2026-08-19, founder taxonomy audit): bare English "cooker" is NOT accepted alone —
+// unlike «طباخ»/«بوتاجاز» (unambiguous in Arabic within this domain), "cooker" is also the head
+// noun of "Rice Cooker"/"Slow Cooker"/"Pressure Cooker" — small appliances Tawveeri does not
+// treat as the same category. Requires a fuel-qualified compound ("gas/electric cooker/range")
+// or the burner-count signal instead, mirroring every catalog example actually found
+// ("lg electric cooker 75 cm", "haam gas cooker 5-burner 90 cm").
+const RICE_SLOW_PRESSURE_COOKER = /\brice\s*cooker\b|\bslow\s*cooker\b|\bpressure\s*cooker\b|\bmulti[\s-]?cooker\b/i;
+
+export function hasStrongCookerSignal(nameAr: string, nameEn: string): boolean {
+  const ar = normalizeArabic(nameAr || '');
+  const en = (nameEn || '').toLowerCase();
+  if (RICE_SLOW_PRESSURE_COOKER.test(en)) return false;
+  if (/طباخ|بوتاجاز/.test(ar)) return true;
+  if (COOKER_BURNER_SIGNAL.test(ar) || COOKER_BURNER_SIGNAL.test(en)) return true;
+  return /gas\s*cooker|electric\s*cooker|cooking\s*range|gas\s*range|electric\s*range|freestanding\s*range/.test(en);
 }
 
 // Budget-phrase wrapper tokens (NORMALIZED forms — ة→ه, since they are matched against
@@ -1946,6 +2001,7 @@ export async function POST(request: NextRequest) {
   const isWatchQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('smartwatch');
   const isDishwasherQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('dishwasher');
   const isOvenQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('oven');
+  const isCookerQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('cooker');
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
@@ -2013,7 +2069,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }

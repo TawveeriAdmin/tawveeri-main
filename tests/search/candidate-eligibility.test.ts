@@ -9,7 +9,7 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal } from "@/app/api/search/route";
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {
@@ -587,7 +587,10 @@ describe("hasStrongOvenSignal — a microwave named \"Oven\" (the standard Engli
   it("accepts genuine ovens (built-in, freestanding, gas) — real production titles", () => {
     expect(hasStrongOvenSignal("فرن كهربائي مدمج 90 سم بشاشة لمسية رقمية ومروحتين سوداء", "Simfer built in built-in oven 90 cm")).toBe(true);
     expect(hasStrongOvenSignal("فرن كهربائي ماستر غاز 60 سم مع أسياخ شواء | الموديل O66E6MT مع ضمان لمدة عامين", "")).toBe(true);
-    expect(hasStrongOvenSignal("Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW", "Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW")).toBe(true);
+  });
+  it("MEASURED CORRECTION (2026-08-19, founder taxonomy audit): \"Electric Oven ... 4 Burners\" is a genuine RANGE, not a bare oven — an earlier fixture had this mislabeled, exactly the class of product this fix exists to catch", () => {
+    expect(hasStrongOvenSignal("Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW", "Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW")).toBe(false);
+    expect(hasStrongCookerSignal("Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW", "Electric Oven 60x60 cm,4 Burners, White - FW6043MXZW")).toBe(true);
   });
   it("accepts a genuine, honestly self-labeled air-fryer↔oven hybrid (unlike \"Microwave Oven\", a real dual-function unit)", () => {
     expect(hasStrongOvenSignal(
@@ -661,5 +664,75 @@ describe("excludeIneligibleCandidates — needShapedWithCategory turns a 100%-ju
     const result = excludeIneligibleCandidates(withOneRealAc, true, false, false, false, true);
     expect(result).toHaveLength(1);
     expect(result[0].name_ar).toContain("مكيف زاميل");
+  });
+});
+
+/**
+ * FOUNDER TAXONOMY AUDIT, TRACK 1 (2026-08-19) — a freestanding cooker/range («فرن» + a burner
+ * count, e.g. «5 عيون»/«5 شعلات») is a PHYSICALLY DIFFERENT product from a bare oven cavity
+ * (built-in or countertop), confirmed with zero counterexamples across a 5-source retailer study
+ * (Noon, Amazon.sa, Almanea, Shaker, LG's own official site — LG's own Arabic product title for
+ * its 178L 5-burner freestanding range literally reads «فرن كهربائي | 178 لتر | 5 شعلات»).
+ * Fixtures are REAL production titles found in Tawveeri's own storefront catalog.
+ */
+describe("hasStrongOvenSignal / hasStrongCookerSignal — a freestanding range is not a bare oven, and vice versa", () => {
+  it("hasStrongOvenSignal rejects a range/cooker (has a burner count) even though it says «فرن»/\"Oven\" too", () => {
+    expect(hasStrongOvenSignal(
+      "سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون – اسود – NE63C6317SG/ZA",
+      "سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون – اسود – NE63C6317SG/ZA",
+    )).toBe(false);
+    expect(hasStrongOvenSignal(
+      "بومباني فرن غاز و كهربائي ستانلس ستيل – 119 لتر – 4 شعلات و 2 عيون حجرية – فضي – ESSENTIAL90GG42IX",
+      "بومباني فرن غاز و كهربائي ستانلس ستيل – 119 لتر – 4 شعلات و 2 عيون حجرية – فضي – ESSENTIAL90GG42IX",
+    )).toBe(false);
+    expect(hasStrongOvenSignal("", "LG Electric Oven, 6.3 Cubic Feet (178 Liters), 5 Burners, EasyClean")).toBe(false);
+  });
+  it("hasStrongOvenSignal still accepts a genuine bare-cavity oven, no burner count (no regression)", () => {
+    expect(hasStrongOvenSignal("فرن كهربائي مدمج 90 سم بشاشة لمسية رقمية ومروحتين سوداء", "Simfer built in built-in oven 90 cm")).toBe(true);
+  });
+  it("hasStrongCookerSignal accepts genuine freestanding ranges/cookers — real Tawveeri catalog titles", () => {
+    expect(hasStrongCookerSignal("طباخ كهربائي lg 5 شعلات 75 سم", "lg electric cooker 5-burner 75 cm")).toBe(true);
+    expect(hasStrongCookerSignal("طباخ غاز haam 5 شعلات 90 سم", "haam gas cooker 5-burner 90 cm")).toBe(true);
+    expect(hasStrongCookerSignal(
+      "سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون – اسود – NE63C6317SG/ZA",
+      "سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون – اسود – NE63C6317SG/ZA",
+    )).toBe(true);
+  });
+  it("hasStrongCookerSignal rejects a bare built-in oven (no burner count, no طباخ/بوتاجاز word)", () => {
+    expect(hasStrongCookerSignal("فرن كهربائي مدمج 90 سم بشاشة لمسية رقمية ومروحتين سوداء", "Simfer built in built-in oven 90 cm")).toBe(false);
+  });
+  it("hasStrongCookerSignal rejects Rice/Slow/Pressure Cooker — bare English \"cooker\" is not a range", () => {
+    expect(hasStrongCookerSignal("", "INSTANT POT Rice Cooker 6-in-1, 5.7L")).toBe(false);
+    expect(hasStrongCookerSignal("", "CROCKPOT Slow Cooker, 6 Quart")).toBe(false);
+    expect(hasStrongCookerSignal("", "Multi-Cooker Pressure Cooker 8-in-1")).toBe(false);
+  });
+});
+
+describe("excludeIneligibleCandidates — isCookerQuery gate keeps ranges/cookers separate from bare ovens", () => {
+  const genuineCookers = [
+    { name_ar: "طباخ كهربائي lg 5 شعلات 75 سم", name_en: "lg electric cooker 5-burner 75 cm", best_price: 3200 },
+    { name_ar: "سامسونج فرن كهربائي سيراميك – 178.4 لتر – 5 عيون – اسود – NE63C6317SG/ZA", name_en: null, best_price: 4500 },
+  ];
+  const bareOvens = [
+    { name_ar: "فرن كهربائي مدمج 90 سم بشاشة لمسية رقمية ومروحتين سوداء", name_en: "Simfer built in built-in oven 90 cm", best_price: 1799 },
+  ];
+
+  it("isCookerQuery keeps only range/cooker-shaped candidates, excluding a bare built-in oven", () => {
+    const result = excludeIneligibleCandidates([...bareOvens, ...genuineCookers], false, false, false, false, false, false, true);
+    const names = result.map((r) => r.name_ar);
+    for (const o of bareOvens) expect(names).not.toContain(o.name_ar);
+    for (const c of genuineCookers) expect(names).toContain(c.name_ar);
+  });
+
+  it("isOvenQuery, symmetrically, excludes the range/cooker candidates (mirrors the gate above)", () => {
+    const result = excludeIneligibleCandidates([...bareOvens, ...genuineCookers], false, false, false, false, false, true, false);
+    const names = result.map((r) => r.name_ar);
+    for (const c of genuineCookers) expect(names).not.toContain(c.name_ar);
+    for (const o of bareOvens) expect(names).toContain(o.name_ar);
+  });
+
+  it("does NOT apply either gate for an unrelated query (defaults false)", () => {
+    const result = excludeIneligibleCandidates([...bareOvens, ...genuineCookers]);
+    expect(result).toHaveLength(bareOvens.length + genuineCookers.length);
   });
 });
