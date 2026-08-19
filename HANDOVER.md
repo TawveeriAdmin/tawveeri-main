@@ -1,4 +1,4 @@
-# ═══ SESSION CLOSED — 2026-08-19 · ALL GATES PASS · TWO POST-GATE FIXES DEPLOYED (ADR-261, ADR-262) ═══
+# ═══ SESSION CLOSED — 2026-08-19 · ALL GATES PASS · THREE POST-GATE FIXES DEPLOYED (ADR-261/262/263) ═══
 
 **Read this block first. These are verified FACTS — do not re-audit them.**
 
@@ -14,6 +14,7 @@
 | Measurement corrections | **DEPLOYED** |
 | Oven fuel-type honesty (ADR-261) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
 | Oven taxonomy — microwave-named-Oven leak (ADR-262) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
+| Product identity — cooker/range registered + clarify UX (ADR-263) | **DEPLOYED, LIVE-VERIFIED (2026-08-19)** |
 
 - **The compound-search alarm was a MEASUREMENT/CLASSIFICATION ERROR, not a systemic Search
   failure.** Verified 11/11 consumer queries return results. Do not re-open this.
@@ -31,12 +32,76 @@
   closed as precautionary hardening, same class already fixed for AC/monitor/watch/dishwasher.
   See checkpoint #94 / ADR-262. Do not re-open expecting a different mechanism than the one
   documented there.**
+- **Second founder correction (same day, deeper): «فرن»/"Oven" is used market-wide (confirmed
+  against Noon/Amazon.sa/Almanea/Shaker/LG's own official site) for 3 physically different
+  products — full-size freestanding cooker/range, built-in oven, countertop oven. Tawveeri's
+  `cooker` TPS category already existed (ADR-254) but was 100% unreachable by any query.
+  Registered it (unambiguous fix) + shipped a founder-chosen one-tap clarify UX for the one
+  genuinely ambiguous case (bare «فرن كهربائي»). Two further live-caught refinements (small-pot
+  appliances, a sous-vide cooker, both also using the word «طباخ») closed in the same session.
+  See checkpoint #95 / ADR-263. This is now reusable product-identity infrastructure, not an
+  oven-specific patch — do not re-derive from scratch for a future category.**
 - **Controlled real-user distribution is the APPROVED next phase.**
-- **No new engineering mission is currently authorized** beyond the two scoped fixes above.
+- **No new engineering mission is currently authorized** beyond the three scoped fixes above.
 - Founder-only action outstanding: **confirm GitHub Actions failure notifications actually
   reach the founder** (the health watch alerts by failing a job). Not performed by the agent.
-- Final deployed commit: `59ad910` · prior session close: `6113deb` · mission rollback point: `7fa8d61`.
-- Suite 123 files / 2,007 tests green (20 new across both fixes, zero regressions) · build clean.
+- Final deployed commit: `dd36465` · prior session close: `6113deb` · mission rollback point: `7fa8d61`.
+- Suite 123 files / 2,028 tests green (41 new across three fixes, zero regressions) · build clean.
+
+# ═══ 2026-08-19 CHECKPOINT #95 · PRODUCT IDENTITY INFRASTRUCTURE — COOKER REGISTERED, CLARIFY UX SHIPPED (ADR-263) ═══
+
+**Trigger.** Founder correction to checkpoint #94: not a keyword bug — a product-IDENTITY
+problem. Mandated deep research (5 real retailers + Tawveeri catalog audit) before any code,
+with an explicit instruction to STOP and ask if a genuine product-design ambiguity was found.
+
+**Research (parallelized: Noon, Amazon.sa, Almanea+Shaker, LG's own site — 4 independent
+agents, ~20 min).** Every source separates freestanding-range from built-in-oven at the
+CATEGORY level, but individual product TITLES constantly cross that line — including LG's OWN
+official Arabic title for its 178L 5-burner range: «فرن كهربائي | 178 لتر | 5 شعلات», identical
+phrasing to a built-in oven. The one zero-counterexample signal across all five sources: a
+stated burner/zone count means a cooktop is present.
+
+**Tawveeri audit (read-only, direct production queries).** `canonical_products.category=
+'cooker'` already existed (ADR-254, 30 rows, includes an LG 75cm 5-burner electric cooker) —
+cleanly separated from `oven` (confirmed zero cross-contamination). But `cooker` was **100%
+unreachable**: absent from every parser regex and from `CATEGORY_KEYS` (the LLM semantic
+fallback's closed vocabulary — it validates against this list and nulls anything else). Live-
+confirmed: `"فرن كهربائي 4 عيون"` still resolved `oven`; `"طباخ كهربائي"` resolved to nothing.
+
+**Decision.** Track 1 (unambiguous, implemented without asking): register `cooker` —
+`task-parser.ts` cooker branch (checked before oven) + `CATEGORY_KEYS`; `route.ts`
+`hasStrongCookerSignal` (6th sibling of the AC/monitor/watch/dishwasher/oven pattern) +
+`isCookerQuery` gate; `hasStrongOvenSignal` now excludes burner-bearing titles (the mirror);
+`detectCanonicalCategories` gains a `cooker` entry, checked via the shared classifier first
+(numeric signal, not a literal substring). Track 2 (the one real product-design call — asked
+via `AskUserQuestion`, founder chose "one-tap clarify" over "default to built-in" or "combine +
+label"): `isAmbiguousBareOvenQuery()` detects a bare, unqualified «فرن كهربائي»/«فرن غاز»;
+`search-client.tsx` renders 3 non-blocking chips above the already-showing results, refining
+via the existing `handleQuickCategory()` path — no new API surface, never touches
+`decide()`/`shouldAsk()` (a bare category browse has no need signal, never reaches it).
+
+**Two more real defects caught live, by re-verifying the deployed fix instead of trusting the
+research.** Bare «طباخ» is ALSO the head noun of small single-pot/hotplate appliances
+(`"طباخ كهربائي مزدوج الوعاء"`) and, separately, a sous-vide immersion cooker
+(`"...طباخ دقيق..."`) — neither caught by the 5-retailer study, both found by literally
+searching "طباخ كهربائي" on the just-deployed production site and reading the results. Closed
+with a small, symmetric exclusion list in both files; a stated burner count still wins
+unconditionally so the positive signal is never silently defeated.
+
+**Verified, three deploys, each confirmed live before the next.** 23 new regression tests
+(real production titles throughout). Full suite 2,028/2,028 green, `tsc`/`next build` clean
+every time. Final state: all 8 founder-required regression queries resolve correctly; Smart
+Pick for `"طباخ كهربائي"` is the LG 5-burner range (4,599 SAR — the founder's own example);
+the cooker grid is 100% genuine ranges/cooktops (exhaustively checked, zero contamination);
+gas/electric distinction (ADR-261) intact; clarify chips render and correctly refine the
+search (verified via live browser click-through, not just API).
+
+**Not done, deliberately.** No new TPS split for "countertop oven" specifically (the founder's
+chip UX doesn't require a hard backend category for that one option — a disclosed soft
+relevance nudge is enough). `قلاية هوائية` has the identical missing-classifier-entry gap
+`oven` had before ADR-261 — named, not fixed, out of this pass's bound.
+
+---
 
 # ═══ 2026-08-19 CHECKPOINT #94 · TAXONOMY AUDIT — MICROWAVE-NAMED-OVEN LEAK CLOSED (ADR-262) ═══
 
