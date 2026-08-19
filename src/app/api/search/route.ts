@@ -914,7 +914,9 @@ const RICE_SLOW_PRESSURE_COOKER = /\brice\s*cooker\b|\bslow\s*cooker\b|\bpressur
 // none of which happened to include this small-appliance class under the same word). A genuine
 // freestanding range never describes itself as "متنقل"/"محمول" (portable) or a "وعاء"/"قدر"
 // (pot/vessel) — those words override bare «طباخ»/«بوتاجاز», mirroring the English exclusion.
-const SMALL_COOKER_EXCLUSION_AR = /متنقل|محمول|قدر|طنجر[ةه]|وعاء|الاشع[ةه] تحت الحمراء/;
+// "بالتفريغ"/"sous vide" added the same pass, same session — a precision immersion cooker
+// ("INKBIRD... طباخ دقيق من الفولاذ المقاوم للصدأ") is a third, unrelated device, not a range.
+const SMALL_COOKER_EXCLUSION_AR = /متنقل|محمول|قدر|طنجر[ةه]|وعاء|الاشع[ةه] تحت الحمراء|بالتفريغ|sous.?vide/i;
 
 export function hasStrongCookerSignal(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr || '');

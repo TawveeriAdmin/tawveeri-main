@@ -714,6 +714,12 @@ describe("hasStrongOvenSignal / hasStrongCookerSignal — a freestanding range i
   it("a burner count still wins even alongside a small-appliance word (defensive — no real catalog example found, but the positive signal must never be silently defeated)", () => {
     expect(hasStrongCookerSignal("طباخ محمول 4 شعلات", "")).toBe(true);
   });
+  it("MEASURED LIVE (production, 2026-08-19, same session): a sous-vide precision immersion cooker is a third, unrelated device, not a range", () => {
+    expect(hasStrongCookerSignal(
+      "جهاز الطهي بالتفريغ INKBIRD ISV-200W مع تقنية Wi-Fi – طباخ دقيق من الفولاذ المقاوم للصدأ بقوة 1000 واط مع التحكم عبر الهاتف الذكي ومؤقت دقيق لنتائج طهي مثالية",
+      "",
+    )).toBe(false);
+  });
 });
 
 describe("excludeIneligibleCandidates — isCookerQuery gate keeps ranges/cookers separate from bare ovens", () => {

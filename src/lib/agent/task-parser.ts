@@ -39,7 +39,7 @@ const COOKER_BURNER_SIGNAL = /\d+\s*(?:عي(?:و|ي)ن|شعل[ةه]?ات?)|\d+[\
 // "طباخ الأشعة تحت الحمراء المحمولة") — a query naming one of these should not be routed to the
 // `cooker` TPS category, which is exclusively full-size freestanding ranges. Mirrors
 // `route.ts`'s own `hasStrongCookerSignal` exclusion.
-const SMALL_COOKER_EXCLUSION = /متنقل|محمول|قدر|طنجر[ةه]|وعاء|الاشع[ةه] تحت الحمراء/;
+const SMALL_COOKER_EXCLUSION = /متنقل|محمول|قدر|طنجر[ةه]|وعاء|الاشع[ةه] تحت الحمراء|بالتفريغ|sous.?vide/i;
 
 function parseCategory(x: string): string | null {
   if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
