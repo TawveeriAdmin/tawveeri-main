@@ -26,6 +26,42 @@ describe('TV detection (accessory + monitor hard-reject)', () => {
     expect(tvPlugin.detect('', 'Samsung 27" Gaming Monitor 4K')).toBe(false);
     expect(tvPlugin.detect('ريموت تلفزيون', '')).toBe(false);
   });
+
+  /**
+   * MEASURED DEFECT (2026-08-20, Waffar TV P0 — production reproduction). Bare "tv"
+   * was an unconditional TV_SIGNALS entry, matched by substring. This is not a
+   * substring-collision bug (word-boundary matching does not fix it) — "TV" is a
+   * genuine standalone word in Funko's own "Pop! TV" product-line branding ("this
+   * figure is themed from a TV show"), a real, different meaning than "television".
+   * Reproduced live: 8 Funko Pop figures + 3 Oraimo smartwatches were written to
+   * canonical_products as category='tv'. A second, independent bug compounded the
+   * Oraimo case: the size regex read the "93" in "1.93 بوصة" (a smartwatch's
+   * 1.93-inch screen) as a 93-inch TV. Titles below are the REAL raw scraped source
+   * text (raw_observations.payload.nameAr/nameEn), not the mislabeled canonical
+   * display name the bug went on to produce.
+   */
+  it('does not mistake Funko "Pop! TV" collectible-line branding for a television', () => {
+    expect(tvPlugin.detect(
+      'فانكو، بوب! تي في، لعبة الحبار، مجسم الاعب 456 سيونغ جي-هون',
+      'FUNKO, Pop! TV, Squid Game, Player 456 Seong Gi-hun Figure',
+    )).toBe(false);
+  });
+  it('does not mistake a smartwatch\'s decimal screen size for a TV size ("1.93 بوصة" → 93")', () => {
+    expect(tvPlugin.detect(
+      'أورايمو Nova 2N ساعة ذكية، شاشة بحجم 1.93 بوصة، وضع الاستعداد حتى 33 يومًا – كروم - OSW-815N-CHROME',
+      'Oraimo Nova 2N Smart Watch, OSW-815N-Black, 1.93" AMOLED, 33-Day Standby, Chrome - OSW-815N-CHROME',
+    )).toBe(false);
+  });
+  it('a bare "tv" mention still detects a genuine TV once a real size + tech cue is present', () => {
+    expect(tvPlugin.detect('', 'Generic 55 inch TV 4K Smart')).toBe(true);
+  });
+  it('a genuine size elsewhere in a decimal-bearing title still detects, through the weak-signal fallback path (regression guard on the decimal fix)', () => {
+    // No "smart tv"/"television" phrase present, so this only detects via the
+    // WEAK_TV_SIGNALS ("tv") + hasSize + hasTvCue path — exactly what the decimal
+    // bug broke for Oraimo. The "4.5" firmware-version-style number must not stop
+    // the genuine "55 inch" size from matching.
+    expect(tvPlugin.detect('', 'Generic 55 inch TV 4K, firmware 4.5')).toBe(true);
+  });
 });
 
 describe('TV brand canonicalization (bilingual)', () => {

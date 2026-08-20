@@ -24,6 +24,8 @@ import type { CanonicalRow } from "./decision-engine";
 import { requiredBtuForRoom } from "./decision-engine";
 import { parseShoppingTask } from "./task-parser";
 import { PICK_FRESHNESS_MAX_HOURS, STALE_CAVEAT_HOURS } from "@/lib/intelligence/evidence-engine";
+import { tvSizeOf } from "./product-eligibility";
+export { tvSizeOf } from "./product-eligibility";
 
 // ── Digits: Arabic-Indic → ASCII (same defect class as task-parser's CHECKPOINT #17;
 //    kept local so this module stays dependency-light and task-parser stays untouched). ──
@@ -416,18 +418,9 @@ export function buildLegs(parse: HomeMissionParse): MissionLeg[] {
 }
 
 // ── Hard eligibility (audit §19 items 1/5/6/7 + §52) ────────────────────────────
-
-/** TV size from structured attrs or, failing that, the title text (91% recoverable —
- *  AUDIT_REPORT_HOME §11). Returns null when no size is evidenced → NOT eligible:
- *  we never recommend a "TV" we cannot size. */
-export function tvSizeOf(row: CanonicalRow): number | null {
-  const a = (row.attributes ?? {}) as Record<string, unknown>;
-  const structured = Number(a.screen_size);
-  if (Number.isFinite(structured) && structured >= 24 && structured <= 120) return structured;
-  const text = `${row.display_name_ar ?? ""} ${row.display_name_en ?? ""}`;
-  const m = norm(text).match(/(?:^|[^0-9])(32|40|43|48|50|55|58|60|65|70|75|77|85|98|100)\s*(?:بوص[ةه]|انش|إنش|inch|"|-inch)?(?:[^0-9]|$)/);
-  return m ? Number(m[1]) : null;
-}
+// `tvSizeOf` moved to `./product-eligibility` (2026-08-20, Waffar TV P0) — same
+// implementation, now shared with `decideTv()` so it protects every caller, not
+// only Home Mission. Re-exported above so existing importers are unaffected.
 
 export interface EligibilityResult {
   rows: CanonicalRow[];

@@ -8,6 +8,7 @@
 // electricity. v1 category: air_conditioner (the flagship journey); the shape is
 // category-generic so tv/tablet/etc. plug in later.
 import { productTrust, type TrustAssessment } from "@/lib/intelligence/evidence-engine";
+import { tvSizeOf } from "./product-eligibility";
 
 export interface ShoppingTask {
   category: string;
@@ -313,9 +314,18 @@ export function deriveTvDna(row: CanonicalRow): Record<string, unknown> {
     movie_quality: a.panel ? (PANEL_QUALITY[String(a.panel)] ?? 0.5) >= 0.8 : null };
 }
 export function decideTv(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
+  // MEASURED DEFECT (2026-08-20, Waffar TV P0): this decider scored every row handed
+  // to it with no eligibility gate of its own — a mislabeled canonical (category='tv'
+  // but not actually a television, e.g. a collectible figure whose product-line name
+  // happens to contain "TV") could reach `smart_pick` on trust/price alone. Eligibility
+  // is a GATE, never a ranking signal (per this file's own §"Ranking-blind" contract):
+  // a row this engine cannot size as a real television never reaches scoring at all,
+  // regardless of price or trust score. Shared with Home Mission's own eligibility
+  // filter — see product-eligibility.ts's own doc comment for the live reproduction.
+  const eligible = rows.filter((row) => tvSizeOf(row) != null);
   const pr = task.priorities ?? [];
   const wantGaming = pr.includes("gaming"), wantMovies = pr.includes("movies"), wantSports = pr.includes("sports"), wantBright = pr.includes("bright_room");
-  const scored = rows.map((row) => {
+  const scored = eligible.map((row) => {
     const a = row.attributes ?? {}; const dna = deriveTvDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const rr = typeof a.refresh_rate === "number" ? a.refresh_rate : null;

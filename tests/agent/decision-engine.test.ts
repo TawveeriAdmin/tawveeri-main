@@ -139,6 +139,42 @@ describe("TV decision — use-fit (deterministic, ranking-blind)", () => {
     ]);
     expect(recs[0].canonical_id).toBe("oled");
   });
+
+  /**
+   * MEASURED DEFECT (2026-08-20, Waffar TV P0 — production reproduction, live-tested
+   * on POST /api/v1/agent/decide before this fix): decideTv() scored every row it was
+   * handed with no eligibility gate of its own. A mislabeled canonical_products row
+   * (category='tv' but genuinely not a television — the real production case was a
+   * Funko Pop figure, category='tv' only because its own "Pop! TV" product-line
+   * branding tripped an ingestion-side bug, since fixed separately in
+   * tps-plugins/tv/detector.ts) had no screen_size and no recognizable size in its
+   * title, yet still reached scoring, and — being cheap and single-store — became
+   * `is_smart_pick: true` for a budget-constrained request. Real production response
+   * body (2026-08-20): {"title_ar":"تلفزيون funko FU67457","unit_price":79,
+   * "is_smart_pick":true,"reasons_ar":["متوفر في متجر واحد","ضمن ميزانيتك (79 ريال)"],
+   * "go_url":"/go/40aee335-...","trust":{"score":30,"tier":"low"}} — trust correctly
+   * flagged it as low-confidence, but nothing gated on that; it still won. This test
+   * reproduces the exact shape: a size-less, cheap, single-store, in-budget "tv" row
+   * competing against a genuine TV, and asserts the size-less one is now dropped
+   * before scoring rather than merely out-ranked.
+   */
+  it("a mislabeled row with no recoverable screen size never reaches scoring — eligibility is a gate, not a ranking signal", () => {
+    const genuineButExpensive = tv({ size: 55, res: "4k", panel: "qled", hz: 60, price: 2000, stores: 2, id: "genuine-tv" });
+    const mislabeledCollectible: CanonicalRow = {
+      canonical_id: "funko-not-a-tv", tps_identity_key: "funko|MODEL:FU67457",
+      display_name_ar: "فانكو، بوب! تي في، لعبة الحبار، مجسم الاعب 456 سيونغ جي-هون",
+      display_name_en: "FUNKO, Pop! TV, Squid Game, Player 456 Seong Gi-hun Figure",
+      brand: "funko", category: "tv", image_url: null,
+      lowest_price: 79, store_count: 1, has_comparison: false, identity_confidence: 26,
+      attributes: {}, // no screen_size — because it is not a TV
+    };
+    const recs = decideTv({ category: "tv", budget_total: 250 }, [mislabeledCollectible, genuineButExpensive]);
+    expect(recs.map((r) => r.canonical_id)).not.toContain("funko-not-a-tv");
+    // The genuine 2000 SAR TV is over budget too, but stays ELIGIBLE (it has a real
+    // size) — this test is about the eligibility gate, not the budget gate, so it
+    // must still appear in the ranked list even though it won't be picked as cheapest.
+    expect(recs.map((r) => r.canonical_id)).toContain("genuine-tv");
+  });
 });
 
 describe("Tablet decision — connectivity/storage fit (deterministic)", () => {

@@ -77,3 +77,6 @@ scratchpad/
 
 # growth creative render workspace (intermediate frames/captures)
 .growth-render/
+
+# pre-migration safety exports (raw production table dumps — never versioned)
+/backups/
