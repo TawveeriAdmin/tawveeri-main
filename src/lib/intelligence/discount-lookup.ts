@@ -11,6 +11,17 @@ export interface CanonicalDiscountIntel {
   real_saving_pct: number | null;
   advertised_saving_pct: number | null;
   text: { ar: string; en: string };
+  // MEASURED DEFECT (2026-08-20, Waffar TV budget-alternatives follow-up): `text_ar`/`text_en`
+  // narrate a real observed price in prose (e.g. "السعر مستقر عند ~6499") that the customer
+  // reads as the item's price, but until now nothing else on the Recommendation carried that
+  // number structurally — a caller checking `unit_price` alone (null when
+  // `tps_product_projection.lowest_price` is unpopulated) could show an item as a "suitable
+  // option" while its OWN displayed text states a price far outside a stated budget. The
+  // column already existed in `tps_listing_price_facts` (`current_price`) and was simply never
+  // selected. Exposed here so callers can gate on the SAME number the text discloses, instead
+  // of regex-parsing a rendered sentence (which is not a stable contract across verdict
+  // templates).
+  current_price: number | null;
 }
 
 const PRIORITY: Record<string, number> = { verified_drop: 3, inflated_reference: 2, stable: 1, insufficient_history: 0 };
@@ -45,11 +56,11 @@ export async function getCanonicalDiscountIntegrity(
   }
   if (!allUrls.size) return out;
 
-  type Fact = { verdict: string; last_seen: string | null; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null };
+  type Fact = { verdict: string; last_seen: string | null; real_saving_pct: number | null; advertised_saving_pct: number | null; text_ar: string | null; text_en: string | null; current_price: number | null };
   const factByUrl = new Map<string, Fact>();
   const urls = [...allUrls];
   for (let i = 0; i < urls.length; i += 500) {
-    const { data: facts } = await sb.from("tps_listing_price_facts").select("url, verdict, last_seen, real_saving_pct, advertised_saving_pct, text_ar, text_en").in("url", urls.slice(i, i + 500));
+    const { data: facts } = await sb.from("tps_listing_price_facts").select("url, verdict, last_seen, real_saving_pct, advertised_saving_pct, text_ar, text_en, current_price").in("url", urls.slice(i, i + 500));
     for (const f of facts ?? []) factByUrl.set(f.url as string, f as never);
   }
 
@@ -60,7 +71,7 @@ export async function getCanonicalDiscountIntegrity(
       if (!best || isMoreAuthoritative(f, best)) best = f;
     }
     if (best && best.verdict !== "insufficient_history" && PRIORITY[best.verdict] > 0) {
-      out.set(cid, { verdict: best.verdict as CanonicalDiscountIntel["verdict"], real_saving_pct: best.real_saving_pct, advertised_saving_pct: best.advertised_saving_pct, text: { ar: best.text_ar ?? "", en: best.text_en ?? "" } });
+      out.set(cid, { verdict: best.verdict as CanonicalDiscountIntel["verdict"], real_saving_pct: best.real_saving_pct, advertised_saving_pct: best.advertised_saving_pct, text: { ar: best.text_ar ?? "", en: best.text_en ?? "" }, current_price: best.current_price ?? null });
     }
   }
   return out;

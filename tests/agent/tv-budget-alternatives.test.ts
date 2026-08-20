@@ -64,3 +64,63 @@ describe('filterOverBudgetTvAlternatives', () => {
     expect(out.map((r) => r.canonical_id)).toEqual(['tv-1', 'tv-unpriced']);
   });
 });
+
+/**
+ * SAME-DAY FOLLOW-UP (2026-08-20): the fix above shipped and was live-verified, but the
+ * EXACT reported symptom still reproduced — «تلفزيون سامسونج QA85QN70FAUXSA» kept showing
+ * under "خيارات أخرى مناسبة" because `unit_price` was null (`tps_product_projection.lowest_price`
+ * unpopulated for these rows — a separate, undiagnosed data gap), so the filter above correctly
+ * had nothing to compare and let it through ("unknown beats incorrect"). But the card's OWN
+ * `discount_intel` text visibly read «السعر مستقر عند ~6499...» — a real, evidenced price the
+ * customer reads as the item's price. `filterOverBudgetTvAlternatives` now accepts a `priceOf`
+ * resolver (`api/v1/agent/decide/route.ts` calls it a second time, post-enrichment, with
+ * `unit_price ?? discount_intel.current_price`) so a "suitable option" is judged on the price
+ * it ACTUALLY shows, whichever field that price came from.
+ */
+describe('filterOverBudgetTvAlternatives — effective-price resolver (discount_intel fallback)', () => {
+  const withDiscount = (canonical_id: string, unit_price: number | null, current_price: number | null) => ({
+    ...rec(canonical_id, unit_price),
+    discount_intel: current_price == null ? null : {
+      verdict: 'inflated_reference' as const, real_saving_pct: 0, advertised_saving_pct: null,
+      text: { ar: `السعر مستقر عند ~${current_price}`, en: `Price steady at ~${current_price}` },
+      current_price,
+    },
+  });
+  const effectivePrice = (r: { unit_price: number | null; discount_intel?: { current_price: number | null } | null }) =>
+    r.unit_price ?? r.discount_intel?.current_price ?? null;
+
+  it('drops an alternative whose unit_price is null but discount_intel discloses a real over-budget price (production defect)', () => {
+    const recs = [
+      withDiscount('google-tv-50', null, null),          // smart pick — no confirmable price at all
+      withDiscount('samsung-qa85qn70', null, 6499),       // unit_price null, discount_intel says ~6499
+      withDiscount('samsung-qa85qn990', null, 27699),     // unit_price null, discount_intel says ~27699
+    ];
+    const out = filterOverBudgetTvAlternatives('tv', 250, recs, effectivePrice);
+    expect(out.map((r) => r.canonical_id)).toEqual(['google-tv-50']);
+  });
+
+  it('keeps an alternative whose discount_intel price is within budget', () => {
+    const recs = [
+      withDiscount('smart-pick', 900, null),
+      withDiscount('cheap-via-discount-intel', null, 220),
+      withDiscount('expensive-via-discount-intel', null, 6499),
+    ];
+    const out = filterOverBudgetTvAlternatives('tv', 250, recs, effectivePrice);
+    expect(out.map((r) => r.canonical_id)).toEqual(['smart-pick', 'cheap-via-discount-intel']);
+  });
+
+  it('prefers unit_price over discount_intel.current_price when both are present', () => {
+    const recs = [
+      withDiscount('smart-pick', 900, null),
+      withDiscount('unit-price-wins', 200, 9999), // unit_price (verified) says in-budget; discount_intel is ignored
+    ];
+    const out = filterOverBudgetTvAlternatives('tv', 250, recs, effectivePrice);
+    expect(out.map((r) => r.canonical_id)).toEqual(['smart-pick', 'unit-price-wins']);
+  });
+
+  it('defaults to unit_price only when no resolver is passed (pre-enrichment call site, backward compatible)', () => {
+    const recs = [rec('tv-1', 900), rec('tv-2', 6499)];
+    const out = filterOverBudgetTvAlternatives('tv', 250, recs);
+    expect(out.map((r) => r.canonical_id)).toEqual(['tv-1']);
+  });
+});

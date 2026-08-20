@@ -42,15 +42,32 @@ const CAT_TTL_MS = 5 * 60_000;
  * dropped rather than presented as if it were a suitable alternative ("Unknown beats
  * incorrect" — same principle `categoryEnforcedZero`/search-client.tsx already applies).
  *
+ * FOLLOW-UP (2026-08-20, same day): `unit_price` alone was not enough. Live re-verification
+ * found the exact reported symptom PERSISTED after the fix above shipped — «تلفزيون سامسونج
+ * QA85QN70FAUXSA» still showed under "خيارات أخرى مناسبة" with `unit_price: null` (so this
+ * filter correctly had nothing to compare and let it through, per "unknown beats incorrect")
+ * — yet the card's OWN text visibly read «السعر مستقر عند ~6499؛ لم نرصده يومًا بسعر «قبل»
+ * المعلن (13999)», a real, evidenced price the customer reads as the item's price. Root cause:
+ * `tps_product_projection.lowest_price` (→ `unit_price`) is unpopulated for most live TV rows
+ * right now (separate, undiagnosed data-layer gap — NOT fixed here, see the founder-scoped
+ * diagnosis-only task), while `discount_intel` independently narrates a real observed price
+ * from `tps_listing_price_facts.current_price` in prose. Founder direction: any "suitable
+ * option" card must be budget-checked against whatever price it actually SHOWS the customer,
+ * regardless of which field that price came from. `priceOf` defaults to `unit_price` (used for
+ * the pre-enrichment pass below, before `discount_intel` exists yet) and is overridden with an
+ * effective-price resolver (`unit_price ?? discount_intel.current_price`) for the second pass
+ * run after enrichment, in `POST` below.
+ *
  * A pure function (no I/O) so it is unit-testable without mocking the route's Supabase reads.
  */
-export function filterOverBudgetTvAlternatives(
+export function filterOverBudgetTvAlternatives<T extends { unit_price: number | null }>(
   category: string,
   budgetTotal: number | null,
-  recommendations: Recommendation[],
-): Recommendation[] {
+  recommendations: T[],
+  priceOf: (r: T) => number | null = (r) => r.unit_price,
+): T[] {
   if (category !== "tv" || !budgetTotal || budgetTotal <= 0) return recommendations;
-  return recommendations.filter((r, i) => i === 0 || r.unit_price == null || r.unit_price <= budgetTotal);
+  return recommendations.filter((r, i) => i === 0 || priceOf(r) == null || priceOf(r)! <= budgetTotal);
 }
 
 /**
@@ -275,6 +292,16 @@ export async function POST(req: NextRequest) {
     }
     return { ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, stores: storeNames(r.canonical_id), data_age_hours, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
   });
+  // SECOND PASS (2026-08-20 follow-up to the `filterOverBudgetTvAlternatives` fix above):
+  // `discount_intel` only exists from this point on, so the SAME TV-only rule runs again here
+  // using the EFFECTIVE displayed price (`unit_price`, or — when that is unpopulated —
+  // `discount_intel.current_price`, the real observed price its own text already discloses).
+  // No-op for every non-TV category (same guard clause) and a no-op when neither price source
+  // exceeds budget, so this is safe to thread through every downstream use of `out` below.
+  const outFiltered = filterOverBudgetTvAlternatives(
+    engineTask.category, engineTask.budget_total ?? null, out,
+    (r) => r.unit_price ?? r.discount_intel?.current_price ?? null,
+  );
   // Never silently relax a hard budget (brief §10/§24): when the gate found NO in-budget
   // candidate, say so explicitly and name the closest (cheapest) option instead of quietly
   // presenting a suitability-sorted over-budget item as if it satisfied the request. Uses
@@ -283,8 +310,13 @@ export async function POST(req: NextRequest) {
   // this note and `anyWithinBudget` can never disagree about what "closest" means.
   const budgetNote = (() => {
     if (anyWithinBudget || !engineTask.budget_total) return null;
+    // Reads the FULL (unfiltered) `out`, not `outFiltered` — this note searches for the
+    // best available answer to "what's the closest thing that exists", which should not be
+    // narrowed by the TV display filter above. Effective price (2026-08-20 follow-up): the
+    // same `unit_price ?? discount_intel.current_price` basis the filter itself uses, so this
+    // note and what the cards actually show can never quote two different "closest" prices.
     const cheapest = out.reduce<{ cost: number; title_ar: string | null; title_en: string | null } | null>((min, r) => {
-      const cost = r.unit_price;
+      const cost = r.unit_price ?? r.discount_intel?.current_price ?? null;
       if (cost == null) return min;
       return !min || cost < min.cost ? { cost, title_ar: r.title_ar, title_en: r.title_en } : min;
     }, null);
@@ -303,7 +335,7 @@ export async function POST(req: NextRequest) {
   // request or reusing an `inflated_reference`/unverified "خصم" claim just to answer "yes".
   const dealNote = (() => {
     if (!engineTask.wants_discount) return null;
-    const verified = out.find((r) => r.discount_intel?.verdict === "verified_drop");
+    const verified = outFiltered.find((r) => r.discount_intel?.verdict === "verified_drop");
     if (verified && verified.discount_intel) {
       const title = verified.title_ar ?? verified.title_en;
       return { ar: `وجدت خصمًا موثقًا على "${title}": ${verified.discount_intel.text.ar}`.trim(),
@@ -316,9 +348,9 @@ export async function POST(req: NextRequest) {
   })();
 
   // Reasoned comparison (§5.5): explain why the smart pick beats the runner-up.
-  const smartIdx = out.findIndex((r) => r.is_smart_pick);
-  const smart = smartIdx >= 0 ? out[smartIdx] : null;
-  const runnerUp = out.find((r, i) => i !== smartIdx);
+  const smartIdx = outFiltered.findIndex((r) => r.is_smart_pick);
+  const smart = smartIdx >= 0 ? outFiltered[smartIdx] : null;
+  const runnerUp = outFiltered.find((r, i) => i !== smartIdx);
   const smartWithChoice = smart ? { ...smart, chosen_over: explainChoice(smart, runnerUp) } : null;
 
   // AC SMART PICK AUDIT (2026-08-09, founder direction): the per-item reason text already
@@ -364,7 +396,7 @@ export async function POST(req: NextRequest) {
   // declared with its provenance, so a consumer can verify any number WITHOUT knowing how the
   // engine works and without inferring anything from field names. Built from the same objects the
   // answer is rendered from, so it cannot describe a different answer than the one returned.
-  const evidence = buildPublishedEvidence({ recommendations: out, smart_pick: smartWithChoice });
+  const evidence = buildPublishedEvidence({ recommendations: outFiltered, smart_pick: smartWithChoice });
 
   // P2-5 · F7 ON EVERY CUSTOMER-VISIBLE SENTENCE (ADR-163). The engine is deterministic, but its
   // sentences are COMPOSED at runtime from data — and a repository search cannot catch what a
@@ -372,7 +404,7 @@ export async function POST(req: NextRequest) {
   // sentence is WITHHELD, never rewritten. Measured to fire zero times on real production output;
   // that is the difference between "we checked" and "we believe".
   const guarded = guardAdvisorPayload(
-    { smart_pick: smartWithChoice, recommendations: out },
+    { smart_pick: smartWithChoice, recommendations: outFiltered },
     evidence,
     { query: typeof task.text === "string" ? task.text : task.category, surface: "agent/decide", timestamp: new Date().toISOString() },
   );
@@ -384,7 +416,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     version: "v1", task, parsed: parsed ?? undefined, supported, basket,
     engine: "deterministic", neutrality: "ranking-blind (suitability+trust+total-cost; no commission)",
-    count: out.length, smart_pick: guarded.payload.smart_pick, recommendations: guarded.payload.recommendations, evidence,
+    count: outFiltered.length, smart_pick: guarded.payload.smart_pick, recommendations: guarded.payload.recommendations, evidence,
     // true unless a budget was stated AND no candidate satisfies it (never silent — see
     // `budget_note` below). Absent/true when no budget was stated at all.
     budget_satisfied: anyWithinBudget,
