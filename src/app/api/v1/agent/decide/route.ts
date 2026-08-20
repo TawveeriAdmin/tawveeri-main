@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
-import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type ShoppingTask, type CanonicalRow } from "@/lib/agent/decision-engine";
+import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type ShoppingTask, type CanonicalRow, type Recommendation } from "@/lib/agent/decision-engine";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { parseShoppingTask } from "@/lib/agent/task-parser";
@@ -25,6 +25,33 @@ type ProjRaw = { canonical_id: string; lowest_price: number | null; store_count:
 // (identical data). Bounded (one entry per category). Miss (cold/expired) still fetches fresh.
 const CAT_CACHE = new Map<string, { canon: CanonRaw[]; proj: ProjRaw[]; expires: number }>();
 const CAT_TTL_MS = 5 * 60_000;
+
+/**
+ * MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): `applyBudgetGate`
+ * (decision-engine.ts, shared across every category) deliberately keeps suitability-ranked
+ * over-budget candidates visible as "closest options" when nothing satisfies the stated
+ * budget — a considered cross-category tradeoff, pinned by
+ * tests/agent/decision-engine.test.ts ("never emptied — the closest options still show").
+ * Founder direction (2026-08-20): leave that shared behavior untouched for every OTHER
+ * category; scope this fix to `tv` only. `decideTv`'s suitability score (screen size /
+ * resolution / brand fit) is not price-correlated, so "closest by suitability" can land
+ * arbitrarily far from budget — MEASURED on production: Samsung TVs at
+ * 59,999 / 27,699 / 6,499 SAR surfaced as "خيارات أخرى مناسبة" beside an honest "nothing
+ * fits under 250 SAR" note. The top pick (index 0 — `budgetNote` below already names it
+ * honestly when nobody qualifies) is kept either way; every OTHER over-budget item is
+ * dropped rather than presented as if it were a suitable alternative ("Unknown beats
+ * incorrect" — same principle `categoryEnforcedZero`/search-client.tsx already applies).
+ *
+ * A pure function (no I/O) so it is unit-testable without mocking the route's Supabase reads.
+ */
+export function filterOverBudgetTvAlternatives(
+  category: string,
+  budgetTotal: number | null,
+  recommendations: Recommendation[],
+): Recommendation[] {
+  if (category !== "tv" || !budgetTotal || budgetTotal <= 0) return recommendations;
+  return recommendations.filter((r, i) => i === 0 || r.unit_price == null || r.unit_price <= budgetTotal);
+}
 
 /**
  * POST /api/v1/agent/decide  — E15.5 Stage-1 Decision Agent (deterministic).
@@ -147,6 +174,7 @@ export async function POST(req: NextRequest) {
     });
 
   const { supported, recommendations, anyWithinBudget } = decide(engineTask, rows);
+  const scopedRecommendations = filterOverBudgetTvAlternatives(engineTask.category, engineTask.budget_total ?? null, recommendations);
 
   // P2-8 · "Ambiguous requests may ask ONE clarification question" — and the Constitution's
   // condition on it: *every clarification question must change the recommendation; questions
@@ -160,7 +188,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ version: "v1", task, supported, count: 0, recommendations: [], basket,
       note: "no canonical products with offers for this category yet" });
   }
-  const recs = recommendations.slice(0, Math.min(10, Number(new URL(req.url).searchParams.get("limit")) || 6));
+  const recs = scopedRecommendations.slice(0, Math.min(10, Number(new URL(req.url).searchParams.get("limit")) || 6));
 
   // Attach a measured-exit go_url per recommendation (cheapest offer of that canonical),
   // and collect WHICH stores corroborate it (the named evidence behind "N stores").

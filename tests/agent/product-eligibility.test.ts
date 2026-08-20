@@ -70,3 +70,35 @@ describe("tvSizeOf — evidence-based size whitelist (2026-08-20 follow-up)", ()
     expect(genuineTv).toBe(32);
   });
 });
+
+/**
+ * MEASURED DEFECT (2026-08-20, «أبي تليفزيون سعره زين»): Samsung VG-SCFF85WTBZN — a
+ * "Customizable Frame" magnetic bezel ACCESSORY for an existing Samsung The Frame TV, not a
+ * television — was Waffar's #1 "smart pick" at 299 SAR. Its own production title is exactly
+ * "Samsung VG-SCFF85WTBZN TV" / "تلفزيون سامسونج VG-SCFF85WTBZN" — no unit-bearing screen-size
+ * phrase at all, structurally identical to hundreds of genuine TVs whose titles are just
+ * "Brand MODELCODE TV" (e.g. "Samsung QA85QN70FAUXSA TV", a real 85" TV). Live production audit
+ * (2026-08-20) confirmed requiring an explicit unit suffix before accepting ANY bare digit would
+ * have rejected 641 of 1,029 genuine `category='tv'` rows (62% of the catalog, none with a
+ * `screen_size` fallback) — and would NOT even have caught this accessory, since its title
+ * carries no unit either. Scoped fix instead: exclude Samsung's own "VG-SCFF" accessory-SKU
+ * prefix by name — confirmed (2026-08-20) as ALL SIX rows carrying it in production, none a
+ * television. Deliberately narrow; do not widen without new evidence.
+ */
+describe('tvSizeOf — Samsung "VG-SCFF" Frame-TV accessory exclusion (2026-08-20)', () => {
+  it("rejects all six confirmed Samsung Frame-TV accessory SKUs (65/75/85, black/white)", () => {
+    const skus = [
+      "VG-SCFF65WTBZN", "VG-SCFF75WTBZN", "VG-SCFF85WTBZN",
+      "VG-SCFF65BWBZN", "VG-SCFF75BWBZN", "VG-SCFF85BWBZN",
+    ];
+    for (const sku of skus) {
+      expect(tvSizeOf({ display_name_ar: `تلفزيون سامسونج ${sku}`, display_name_en: `Samsung ${sku} TV`, attributes: {} })).toBeNull();
+    }
+  });
+
+  it("a real 85-inch TV with a structurally identical bare-model-code title still passes", () => {
+    // Same shape as the excluded accessory ("Brand MODELCODE TV", no unit) — the exclusion
+    // must be scoped to the specific SKU prefix, not to "bare model code with no unit".
+    expect(tvSizeOf({ display_name_ar: "", display_name_en: "Samsung QA85QN70FAUXSA TV", attributes: {} })).toBe(85);
+  });
+});

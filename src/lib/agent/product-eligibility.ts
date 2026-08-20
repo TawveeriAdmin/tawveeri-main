@@ -58,6 +58,27 @@ const norm = (t: string) => asciiDigits((t || "").toLowerCase()).replace(/٬/g, 
 // the monitor sizes this dataset proves collide with real TV sizes.
 const TV_SIZES = [32, 40, 42, 43, 48, 50, 55, 58, 60, 65, 70, 75, 77, 83, 85, 86, 97, 98, 100, 115];
 
+// MEASURED DEFECT (2026-08-20, Waffar TV budget-alternatives mission — "أبي تليفزيون سعره
+// زين" crowned a 299 SAR item as the top pick within budget: Samsung VG-SCFF85WTBZN, a
+// "Customizable Frame" magnetic bezel accessory for an existing Samsung The Frame TV, not a
+// television). VERIFIED against the live production row (`canonical_products`): its OWN title
+// is exactly "Samsung VG-SCFF85WTBZN TV" / "تلفزيون سامسونج VG-SCFF85WTBZN" — no unit-bearing
+// screen-size phrase at all, structurally IDENTICAL to hundreds of genuine TVs whose titles are
+// just "Brand MODELCODE TV" with the real size embedded in the manufacturer's own model-number
+// convention (e.g. "Samsung QA85QN70FAUXSA" really is an 85" TV). Confirmed live on production:
+// requiring an explicit unit suffix (بوصة/inch) before accepting any bare digit would have
+// rejected 641 of 1,029 genuine `category='tv'` rows (62% of the catalog) with NO fallback
+// (`attributes.screen_size` unset on all of them) — it would ALSO not even have caught this
+// accessory, since its title carries no unit either. The real defect is category
+// MISCLASSIFICATION — the SAME class already fixed once for Funko Pop/Oraimo rows (this
+// file's own header) — not a sizing regex gap. Scoped, evidence-based fix pending a
+// category-classifier correction upstream
+// (tps-plugins/tv/detector.ts, out of this mission's file scope): exclude Samsung's own
+// "VG-SCFF" accessory-SKU prefix by name — confirmed as ALL SIX rows carrying it in production
+// (65/75/85, black/white variants), none a television. Deliberately narrow (one confirmed SKU
+// family, not a guessed pattern) — do not widen without new evidence.
+const KNOWN_TV_ACCESSORY_SKU_PATTERNS = [/VG-SCFF\d{2,3}/i];
+
 /** A row is a genuine TV only if it carries a real screen size — either a structured
  *  `attributes.screen_size` or a recognized size token (the real, evidenced TV-size
  *  set above) in its own title. Returns null (ineligible) for anything else,
@@ -68,6 +89,7 @@ export function tvSizeOf(row: EligibilityRow): number | null {
   const structured = Number(a.screen_size);
   if (Number.isFinite(structured) && structured >= 24 && structured <= 120) return structured;
   const text = `${row.display_name_ar ?? ""} ${row.display_name_en ?? ""}`;
+  if (KNOWN_TV_ACCESSORY_SKU_PATTERNS.some((p) => p.test(text))) return null;
   const re = new RegExp(`(?:^|[^0-9])(${TV_SIZES.join("|")})\\s*(?:بوص[ةه]|انش|إنش|inch|"|-inch)?(?:[^0-9]|$)`);
   const m = norm(text).match(re);
   return m ? Number(m[1]) : null;

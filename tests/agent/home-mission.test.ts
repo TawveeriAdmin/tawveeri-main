@@ -209,11 +209,18 @@ describe("capacity bands (manufacturer-published — audit §12)", () => {
 });
 
 describe("tvSizeOf + accessory floor (the audit's Frame-bezel trap)", () => {
-  it("reads structured size, then title text; the 299-SAR bezel is priced out by the floor", () => {
+  // MEASURED FOLLOW-UP (2026-08-20, Waffar «أبي تليفزيون سعره زين» P0): this test used to
+  // pin that the price floor (not tvSizeOf) was what stopped the VG-SCFF Frame-bezel — true
+  // at the time, but ONLY protected Home Mission; `/api/v1/agent/decide` (Waffar) has no
+  // equivalent price floor and crowned the same bezel a 299-SAR "smart pick" TV. Root-caused
+  // and fixed at the shared source (`tvSizeOf`, product-eligibility.ts): the "VG-SCFF"
+  // accessory-SKU prefix is now excluded by name (evidence-based, all six confirmed Samsung
+  // Frame-TV accessory rows in production). The bezel is now caught EARLIER, by `tvSizeOf`
+  // itself (`dropped.unsized_tv`), and never reaches the price-floor check at all — the floor
+  // remains as defense-in-depth for any future accessory this SKU list does not yet name.
+  it("tvSizeOf itself now excludes the bezel by its known accessory SKU (VG-SCFF…), never reaching the price floor", () => {
     expect(tvSizeOf(row({ attributes: { screen_size: 55 } }))).toBe(55);
     expect(tvSizeOf(row({ display_name_en: "Samsung 65 Inch OLED S90H" }))).toBe(65);
-    // The bezel: title carries "65" (model code VG-SCFF65…), so SIZE alone cannot exclude
-    // it — the price floor is what stops it (500-SAR TV minimum + 15% of median).
     const bezel = row({ canonical_id: "bezel", display_name_ar: "تلفزيون سامسونج VG-SCFF65WTBZN", lowest_price: 299 });
     const tvs = [
       bezel,
@@ -225,7 +232,8 @@ describe("tvSizeOf + accessory floor (the audit's Frame-bezel trap)", () => {
     const leg = buildLegs(parseHomeMission("ابي تلفزيون"))[0];
     const elig = eligibleRows(leg, tvs, () => 24);
     expect(elig.rows.map((r) => r.canonical_id)).not.toContain("bezel");
-    expect(elig.dropped.floor).toBe(1);
+    expect(elig.dropped.unsized_tv).toBe(1);
+    expect(elig.dropped.floor).toBe(0);
   });
 });
 
