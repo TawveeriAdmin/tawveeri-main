@@ -186,6 +186,18 @@ function setSearchCache(query: string, category: string, products: Product[], to
   } catch { /* quota exceeded — ignore */ }
 }
 
+// MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): the empty-search state fell through
+// to a "Trending products" rail — an unfiltered last-8-inserted-products query with no relation
+// to the search or its budget. When the API's `categoryEnforcedZero` honestly zeroed out a query
+// that named an explicit budget (`appliedBudget`), this rail silently replaced a true "nothing
+// in your budget" with whatever was last added to the catalog (which happened to be TVs), making
+// a stated budget look ignored. Suppression must be conditioned on BOTH signals together — a
+// plain no-budget empty search (categoryEnforcedZero without a budget, or a budget without an
+// enforced zero) must keep the trending fallback, which is deliberate and useful there.
+export function shouldSuppressTrendingRail(categoryEnforcedZero: boolean, appliedBudget: number | null): boolean {
+  return categoryEnforcedZero && appliedBudget !== null;
+}
+
 export default function SearchClient() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -232,6 +244,14 @@ export default function SearchClient() {
   // disclosed to the customer, never silent, so the grid isn't quietly narrower than what
   // the header count implies without the shopper knowing why.
   const [appliedBudget, setAppliedBudget] = useState<number | null>(null);
+  // MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): the API's `categoryEnforcedZero`
+  // ("zero beats wrong" — no product matched the explicit category+budget, so retrieval
+  // honestly returned nothing) was never captured client-side. The empty state below fell
+  // through to the "Trending products" rail, which is an unfiltered last-8-inserted query
+  // with no relation to the search or its budget — so a luxury TV could appear as if it were
+  // an answer to a 250 SAR ask. This flag lets the empty-state render suppress that rail
+  // ONLY when the zero was budget-caused, never for a plain no-budget empty search.
+  const [categoryEnforcedZero, setCategoryEnforcedZero] = useState(false);
   // P2-8 (UNIFIED SEARCH). One entry point; the system decides internally which capability
   // the query needs. `routeQuery` makes that decision deterministically and this holds the
   // reasoning engine's answer when it does. Fetched ALONGSIDE the results, never before
@@ -818,6 +838,7 @@ export default function SearchClient() {
     setSmartPick(null); // cleared per search; only a fresh trustworthy pick is shown
     setCompareRoute(null); // a stale comparison claim must never outlive its query
     setAppliedBudget(null); // a stale inferred-budget disclosure must never outlive its query
+    setCategoryEnforcedZero(false); // a stale honest-zero flag must never outlive its query
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
 
@@ -995,6 +1016,7 @@ export default function SearchClient() {
       // query), so we render it verbatim without re-judging.
       setSmartPick(((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null);
       setAppliedBudget(((data as unknown) as { inferredMaxPrice?: number | null }).inferredMaxPrice ?? null);
+      setCategoryEnforcedZero(!!((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});
@@ -1871,26 +1893,45 @@ export default function SearchClient() {
                         );
                       })}
                     </div>
-                    {/* Trending products rail — fallback when user query yields no hits */}
-                    {trendingProducts.length > 0 && (
-                      <div className="space-y-3 pt-4">
-                        <h3 className="text-headline-sm text-on-surface">
-                          {locale === 'ar' ? 'منتجات رائجة' : 'Trending products'}
-                        </h3>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                          {trendingProducts.slice(0, 8).map((p) => (
-                            <ProductCard
-                              key={`trending-${p.id}`}
-                              product={p}
-                              locale={locale}
-                              onCompare={handleAddToCompare}
-                              onSave={handleSaveToWishlist}
-                              isSaved={savedProductNames.has(p.name_en)}
-                              isInCompare={compareIds.has(p.id)}
-                            />
-                          ))}
-                        </div>
+                    {/* Trending products rail — fallback when user query yields no hits.
+                        MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): this rail is an
+                        unfiltered last-8-inserted-products query with no relation to the search
+                        or its budget. When the API honestly zeroed out a query that named an
+                        explicit budget (`categoryEnforcedZero` + `appliedBudget`), showing this
+                        rail silently replaced a true "nothing in your budget" with whatever was
+                        last added to the catalog — which can be a luxury item that looks like a
+                        contradicted budget. Suppressed ONLY in that specific case; a plain
+                        no-budget empty search still gets the trending fallback as before. */}
+                    {appliedBudget !== null && shouldSuppressTrendingRail(categoryEnforcedZero, appliedBudget) ? (
+                      <div
+                        data-testid="budget-zero-message"
+                        className="rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] px-4 py-6 text-center t-body text-on-surface-variant"
+                      >
+                        {locale === 'ar'
+                          ? `لا يوجد منتج ضمن ميزانيتك (${appliedBudget.toLocaleString('ar')} ريال أو أقل) حالياً.`
+                          : `Nothing available within your budget (${appliedBudget.toLocaleString('en')} SAR or less) right now.`}
                       </div>
+                    ) : (
+                      trendingProducts.length > 0 && (
+                        <div className="space-y-3 pt-4">
+                          <h3 className="text-headline-sm text-on-surface">
+                            {locale === 'ar' ? 'منتجات رائجة' : 'Trending products'}
+                          </h3>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                            {trendingProducts.slice(0, 8).map((p) => (
+                              <ProductCard
+                                key={`trending-${p.id}`}
+                                product={p}
+                                locale={locale}
+                                onCompare={handleAddToCompare}
+                                onSave={handleSaveToWishlist}
+                                isSaved={savedProductNames.has(p.name_en)}
+                                isInCompare={compareIds.has(p.id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )
                     )}
                   </div>
                 )}
