@@ -320,6 +320,19 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     else { if (storeIds.size < 2) { R.singleStore++; continue; } R.corroborated++; }
 
     const existing = existingByKey.get(key);
+    // MEASURED DEFECT (2026-08-20, "أبي تليفزيون ب 250ريال" follow-up): `tps_current_offers`
+    // records a (key, store)'s state the moment it is FIRST OBSERVED — independent of, and
+    // often well before, the key ever qualifies to become a `canonical_products` row (layer
+    // thresholds, requireValidTier, etc.). If the price never changes between that first
+    // observation and canonicalization — routine for stable-priced listings — the change-only
+    // gate below finds `prevPrice === o.price` on the canonical's OWN founding sweep and
+    // never emits a price_history row AT ALL: `build-tps-projection.ts` (which reads only
+    // `price_history`) then permanently shows `lowest_price: null` / `store_count: 0` for a
+    // product whose real, correct price sits right there in `tps_current_offers`. MEASURED on
+    // production: 72/839 (8.6%) of live `tv` rows, up to 88.2% for `cooker` — chronic, not a
+    // one-time incident (`canonical_products.created_at` spread across 5+ days). `isNewCanonical`
+    // is this sweep's ONLY explicit signal that a founding price event is still owed.
+    const isNewCanonical = !existing;
     const canonicalId = existing?.id ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
     const rep = offers[0].payload || {};
     const { nameAr, nameEn } = def.names(key, rep);
@@ -374,8 +387,14 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       // A (key, store) never seen in the current state appends its first event once;
       // change-only from then on. This sweep's row IS the store's current offer, so
       // selectCurrentOffer over history is no longer needed here.
+      //
+      // `isNewCanonical` bypasses the comparison entirely (2026-08-20 follow-up, see the
+      // doc comment on `isNewCanonical` above): the canonical's FOUNDING sweep must always
+      // emit a price event for its new offers, even when `tps_current_offers` already held
+      // this exact price from before the key qualified — otherwise this is precisely the
+      // first-and-only chance a price_history row would ever have existed for it.
       const prevPrice = prevByKeyStore.get(`${key}|${sid}`)?.price ?? null;
-      const changed = o.price != null && !(prevPrice != null && Number(prevPrice) === Number(o.price));
+      const changed = o.price != null && (isNewCanonical || !(prevPrice != null && Number(prevPrice) === Number(o.price)));
       if (changed) {
         priceRows.push({ canonical_product_id: canonicalId, store_name: TPS_STORES.find((s) => s.id === sid)?.name ?? String(sid), store_id: sid, price: o.price, tps_observation_id: normById.get(o.raw_obs_id), observed_at: o.observed_at ?? now });
       }

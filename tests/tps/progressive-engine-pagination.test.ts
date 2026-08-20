@@ -90,29 +90,84 @@ describe("ADR-252 — the hot path never reads history", () => {
 });
 
 describe("ADR-252 — price events are change-only against the current state", () => {
-  const run = async (prevPrice: number | null, newPrice: number) => {
+  // `existingCanonical` controls whether `canonical_products` already carries a row for
+  // key "k" — i.e. whether this sweep is the key's FOUNDING sweep or a later touch of an
+  // already-canonicalized product. Defaults to true (existing) so these tests isolate the
+  // ORIGINAL change-only rule; the founding-sweep bypass has its own describe block below.
+  const run = async (prevPrice: number | null, newPrice: number, existingCanonical = true) => {
     const log = newLog();
     const rpcCalls: Record<string, unknown>[][] = [];
     const prev = prevPrice != null ? [offerRow(10, 4, "k", prevPrice)] : [];
-    const sb = fakeSupabase({ current_offers: prev, canonical_products: [] }, rpcCalls, log) as never;
+    const canonical_products = existingCanonical ? [{ id: "canon-k", tps_identity_key: "k", image_url: null }] : [];
+    const sb = fakeSupabase({ current_offers: prev, canonical_products }, rpcCalls, log) as never;
     const R = await corroboratePass(sb, def, ["k"], { sweepRows: [offerRow(20, 4, "k", newPrice, { observed_at: new Date(2026, 7, 15).toISOString() })], singleStore: true });
     const prices = rpcCalls.flatMap((c) => ((c[0] as Record<string, unknown>).p_prices as Record<string, unknown>[]));
     return { R, prices, log };
   };
-  it("unchanged price → NO event appended (no fabricated changes)", async () => {
-    const { R, prices } = await run(999, 999);
+  it("unchanged price on an ALREADY-canonicalized product → NO event appended (no fabricated changes)", async () => {
+    const { R, prices } = await run(999, 999, true);
     expect(R.prices).toBe(0);
     expect(prices.length).toBe(0);
   });
   it("changed price → exactly one event with the observation's own timestamp", async () => {
-    const { R, prices } = await run(999, 899);
+    const { R, prices } = await run(999, 899, true);
     expect(R.prices).toBe(1);
     expect(prices.length).toBe(1);
     expect(prices[0].price).toBe(899);
   });
   it("first-ever offer for a (key, store) → one initial event", async () => {
-    const { R } = await run(null, 1234);
+    const { R } = await run(null, 1234, false);
     expect(R.prices).toBe(1);
+  });
+});
+
+/**
+ * MEASURED DEFECT (2026-08-20, "أبي تليفزيون ب 250ريال" follow-up — root-caused via live
+ * production diagnosis, not a hypothesis): `tps_current_offers` records a (key, store) the
+ * moment it is first observed, independent of when that key qualifies to become a
+ * `canonical_products` row. A stable-priced listing (routine — most prices don't move
+ * hour-to-hour) that sat in `tps_current_offers` BEFORE finally qualifying as a canonical
+ * would find `prevPrice === o.price` on its own FOUNDING sweep and never get a
+ * `price_history` row AT ALL — `build-tps-projection.ts` (the only reader of `price_history`)
+ * then permanently shows `lowest_price: null` for a product whose correct price sits right
+ * there in `tps_current_offers`. Confirmed on production: 72/839 (8.6%) of live `tv` rows,
+ * up to 88.2% for `cooker`, chronic over 5+ days — not a one-time incident. Fix: a canonical's
+ * founding sweep (`isNewCanonical`, i.e. no matching `canonical_products` row yet) always
+ * emits a price event for its priced new offers, bypassing the change-only comparison.
+ */
+describe("ADR-252 follow-up (2026-08-20) — a canonical's founding sweep always gets its first price event", () => {
+  it("new canonical, price identical to what tps_current_offers already held → price event IS written (the production defect)", async () => {
+    const log = newLog();
+    const rpcCalls: Record<string, unknown>[][] = [];
+    // tps_current_offers already has this exact price from BEFORE the key qualified as a
+    // canonical (e.g. it sat single-store for a while) — canonical_products has NO row yet.
+    const prev = [offerRow(10, 4, "k", 6499)];
+    const sb = fakeSupabase({ current_offers: prev, canonical_products: [] }, rpcCalls, log) as never;
+    const R = await corroboratePass(sb, def, ["k"], {
+      sweepRows: [offerRow(20, 4, "k", 6499, { observed_at: new Date(2026, 7, 15).toISOString() })],
+      singleStore: true,
+    });
+    const prices = rpcCalls.flatMap((c) => ((c[0] as Record<string, unknown>).p_prices as Record<string, unknown>[]));
+    expect(R.prices).toBe(1);
+    expect(prices.length).toBe(1);
+    expect(prices[0].price).toBe(6499);
+    // The canonical itself must also actually be written this sweep (sanity check that
+    // this really is the founding sweep, not an unrelated no-op).
+    const canonicals = rpcCalls.flatMap((c) => ((c[0] as Record<string, unknown>).p_canonical as Record<string, unknown>[]));
+    expect(canonicals.map((c) => c.tps_identity_key)).toContain("k");
+  });
+
+  it("an ALREADY-existing canonical with an identical price is untouched by the bypass (regression guard)", async () => {
+    const log = newLog();
+    const rpcCalls: Record<string, unknown>[][] = [];
+    const prev = [offerRow(10, 4, "k", 6499)];
+    const canonical_products = [{ id: "canon-k", tps_identity_key: "k", image_url: null }];
+    const sb = fakeSupabase({ current_offers: prev, canonical_products }, rpcCalls, log) as never;
+    const R = await corroboratePass(sb, def, ["k"], {
+      sweepRows: [offerRow(20, 4, "k", 6499, { observed_at: new Date(2026, 7, 15).toISOString() })],
+      singleStore: true,
+    });
+    expect(R.prices).toBe(0);
   });
 });
 
