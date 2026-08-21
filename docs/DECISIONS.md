@@ -6,6 +6,27 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-265 — Laptop TPS closeout: the 2 unconfirmed accessory suspects resolved from raw evidence, deactivated, and live-verified gone from tawveeri.com · Accepted (2026-08-21)
+**Context.** ADR-264's sibling mission (`3c0a4f6`, same day) fixed `laptop/detector.ts`'s evidenced accessory gaps but left 2 of the 8 measured-defect rows unconfirmed: `"Lenovo GX41K08218 Laptop"` (active) and `"2b LF-01-6 Laptop"` (already `is_active=false`) — both named by a bare model code with no title word indicating accessory or genuine laptop, so the prior sweep could not rule on them from the display name alone.
+
+**Investigation.** Pulled every `raw_observations` row for both canonicals live from production (`vyceqrzttspyycdpojtn`) via `tps_identity_staging → raw_observations`, read-only. Both resolved unambiguously:
+- `lenovo|MODEL:GX41K08218` — all 6 observations (single store, Extra) carry the identical raw title `"LENOVO Laptop Toploader T215, 15.6 Inch, Black"` — a carrying bag. Payload category `"Computers Accessories"`; listing URL literally `.../computers-accessories/laptop-bags/...`; price 75 SAR (was 99) — a bag price. **Confirmed accessory.**
+- `2b|MODEL:LF-01-6` — all 12 observations (single store, Extra) carry `"2B Gaming Laptop Cooling, 5 Fans With Led Metal Fan, Black"` — a cooling pad. Payload category `"Computers Accessories"`; URL `.../computers-accessories/pc-care/...`; price 99 SAR (was 159). **Confirmed accessory**, already inactive.
+
+**Decision.** Founder-approved deactivation of the active row; the already-inactive row required no write, only documentation.
+
+**Backups (pre-write, full-table snapshot per the established backup→dry-run→write→scoped-recompute→live-verify methodology, ADR-264's ledger):** `backups/latest_pre-laptop-suspects-fix_canonical_products_FULL.json`, `backups/latest_pre-laptop-suspects-fix_tps_product_projection_FULL.json` (both gitignored by `/backups/`, taken via `scripts/_tmp-backup-laptop-suspects.js`).
+
+**Actions, in order:**
+1. `canonical_products.is_active` flipped `true → false` for `800d664c-26d9-4aed-b115-d84d0d608596` (Lenovo GX41K08218), guarded `eq('is_active', true)` — idempotent, 1 row affected.
+2. `scripts/_tmp-recompute-projection.js --category=laptop` (dry, then applied) — category-scoped `tps_product_projection` recompute, never a full unscoped rebuild (851 active laptop canonicals read, 1 row pruned — exactly the deactivated one).
+3. **Unplanned finding, caught only because it was checked rather than assumed:** the deactivated canonical was live in the Algolia `tawveeri_tps_products` index (`objectID` = its canonical UUID) despite `store_count=1`/`has_comparison=false` — `scripts/tps-algolia-sync.ts`'s cron does an unfiltered `replaceAllObjects` over the whole projection, not just comparable rows. Confirmed present via direct `getObject`, then removed with a scoped `deleteObjects` on that one `objectID` only — never `replaceAllObjects`. Confirmed gone via `getObject` → 404.
+4. **Live verification against production tawveeri.com**, not inferred: `POST /api/search {query:"لابتوب"}` returned 634 results, zero matching the bag (checked by title substring); `POST /api/search {query:"GX41K08218"}` returned 0 results. No-regression spot check: top 8 "لابتوب" results are genuine laptops with real specs and `store_count` 2-3, unaffected.
+
+**Consequence.** Laptop TPS category-mismatch mission (ADR-264's ledger table) is now fully closed — all 8 originally-measured defect rows accounted for, 0 remaining unconfirmed.
+
+---
+
 ### ADR-264 — Coverage root-cause audit: «طباخ كهربائي» stayed stuck at 5 results after ADR-263 — three independent, stackable defects (accessory-hint substring collision, missing fuel-type gate, retrieval-window truncation), none of them taxonomy · Accepted (2026-08-20)
 **Context.** Founder re-tested ADR-263's clarify chip live: «فرن كامل مع سطح طبخ» still returned only 5 results. Explicit mandate: research live Saudi inventory (Noon, Amazon.sa, Almanea, Shaker, LG, eXtra) first, cross-reference against Tawveeri's own raw/canonical layers, and for every genuine full-size electric range identify EXACTLY where in the pipeline it is lost — taxonomy, fuel classification, product-form classification, canonical dedupe, freshness, eligibility, or retrieval — never loosening the category merely to inflate a count, and never admitting gas or mixed-fuel ranges into an explicit-electric result.
 
