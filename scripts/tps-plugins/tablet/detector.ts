@@ -17,6 +17,14 @@ const HARD_ACCESSORY = [
   "screen protector", "واقي شاشة", "tempered glass", "protector", "زجاج",
   "wall mount", "mount", "stand for", "bag", "backpack", "حقيب", "شنطة", "sleeve",
   "شاحن", "charger", "cable", "كابل", "كيبل", "adapter", "محول", "power bank",
+  // MEASURED DEFECT (2026-08-22): 2 production canonical_products rows were tablet
+  // accessories — an Arabic "compatible with" phrasing the English "compatible with"
+  // above never covers ("حافظة ستاند متوافقة مع آيباد إير"), and a screen-protector
+  // STICKER product whose Arabic word never matched "واقي شاشة"/"protector"
+  // ("لاصقة حماية الشاشة كريستال لـ iPad Pro"). "لاصقة" (sticker) is a standalone
+  // accessory-only word — a genuine tablet's own title never describes itself as a
+  // sticker — so it is safe as a hard, unconditional reject like the rest of this list.
+  "متوافقة مع", "لاصقة",
 ];
 const SOFT_ACCESSORY = [
   "case", "كفر", "cover", "غطاء", "جراب", "folio", "keyboard", "كيبورد",

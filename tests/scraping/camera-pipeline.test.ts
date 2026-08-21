@@ -22,6 +22,14 @@ describe('Camera detection (accessory hard-reject)', () => {
     expect(cameraPlugin.detect('', 'Tripod Stand for Camera')).toBe(false);
     expect(cameraPlugin.detect('', 'Security Camera IP Wi-Fi')).toBe(false);
   });
+  // MEASURED DEFECT (2026-08-22): a production canonical_products row in category
+  // 'camera' was a third-party clip-on attachment lens, live-reachable via
+  // decide()/Waffar/search under the exact model name of the camera it fits.
+  it('rejects a standalone attachment lens (2026-08-22 audit) while keeping bundled kit lenses real', () => {
+    expect(cameraPlugin.detect('', 'Altura Photo 49MM 0.43x Professional HD Wide Angle Lens (w/Macro Portion) for Canon EOS M50 M M2 M3 M5 M6 Mark II M10 M100 M200 R50 R100 Mirrorless Cameras')).toBe(false);
+    // no regression: a genuine camera bundled with its own kit lens is still a camera
+    expect(cameraPlugin.detect('', 'Canon EOS R100 Mirrorless Camera with RF-S 18-45mm')).toBe(true);
+  });
 });
 
 describe('Camera identity (precision guards)', () => {

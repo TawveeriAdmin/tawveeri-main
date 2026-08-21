@@ -195,13 +195,63 @@ function containsKeyword(text: string, keywords: string[]): boolean {
 }
 
 /**
+ * Bare English "speaker" — deliberately NOT in `CATEGORY_KEYWORDS.audio`'s general
+ * full-title list, unlike "bluetooth speaker"/"soundbar"/every other audio keyword there
+ * (and unlike Arabic "سبيكر", already present and full-title — English was the measured gap).
+ *
+ * MEASURED (2026-08-21, live production audit): a plain full-title match would correctly
+ * catch genuine standalone speakers (`"Jbl Portable Speaker Go Essential Black"`, `"Sony
+ * Wireless Party Speaker…"`, `"Xiaomi Sound Pocket Mini Speaker…"` — all miscategorized under
+ * `accessories` today) — but it would ALSO catch a REAL gaming console (`"ROG Ally X XBOX
+ * Gaming Console … Dolby Speaker TYPE C …"`) and a mini projector, both of which only mention
+ * a built-in speaker as a feature deep in their spec list. Monitor/laptop/tv/tablet titles
+ * have the exact same "Built-in Speakers" feature-mention pattern but are already safe: their
+ * OWN device-noun keyword is checked earlier in `CATEGORY_DETECTION_ORDER` and wins first.
+ * `gaming`/`camera`/`kitchen`/`appliance` are checked AFTER `audio`, so they have no such
+ * protection — a bare full-title "speaker" would silently reclassify a real gaming console
+ * as `audio`.
+ *
+ * A genuine speaker PRODUCT names itself in the title HEAD (`"Jbl Portable Speaker Go…"`,
+ * index 13); a device that merely HAS a speaker mentions it deep in the spec list (`"…Dolby
+ * Speaker TYPE C…"`, index 172). Live-measured across every confirmed case: every genuine
+ * speaker's "speaker" sits at index ≤ 48; both false-positive risks sit at index ≥ 90 — a
+ * 42-character gap. Head-anchored to 55, same "a listing names itself in the head" principle
+ * `isAccessoryTitleHead` already uses.
+ */
+const BARE_SPEAKER_HEAD_LEN = 55;
+function isBareSpeakerTitleHead(title: string): boolean {
+  const idx = title.toLowerCase().indexOf('speaker');
+  return idx !== -1 && idx <= BARE_SPEAKER_HEAD_LEN;
+}
+
+/**
  * تصنيف من العنوان — يرجع دائماً قيمة.
  * الافتراضي: accessories
+ *
+ * MEASURED DEFECT (2026-08-21): 'smartphone' and 'audio' matched on the DEVICE NAME
+ * embedded inside an accessory title — "غطاء ايفون 16 برو" ("iPhone 16 Pro case")
+ * contains "ايفون"; "حافظة سماعات الأذن" ("earphone case") contains "سماعات" — so a
+ * phone case or earbuds case was classified as the device itself. Live-measured: 65 of
+ * 568 (11.4%) `products.category='smartphone'` and 14 of 923 (1.5%) `category='audio'`
+ * were accessories, not the device. `classifyFromTitle` already guarded against this
+ * (`looksLikeAccessory` before its loop); `determineCategory` — the function the
+ * scrapers actually call to WRITE `products.category` — never did.
+ *
+ * Head-anchored (`isAccessoryTitleHead`, ADR-243 precedent) rather than full-title: an
+ * ACCESSORY LISTING names itself in the title head ("غطاء ايفون…" at position 0), while
+ * a genuine device merely SHIPPING WITH one mentions it later ("Apple Watch Ultra …
+ * Titanium Case"). Head-only keeps the veto for real accessory listings without
+ * regressing devices that ship with an accessory. Scoped to smartphone/audio only —
+ * the two categories measured affected; not a blanket veto over every category.
  */
 export function determineCategory(title: string): ProductCategory {
   const t = title.toLowerCase();
   for (const category of CATEGORY_DETECTION_ORDER) {
-    if (containsKeyword(t, CATEGORY_KEYWORDS[category] ?? [])) {
+    const matchesAudioByBareSpeaker = category === 'audio' && isBareSpeakerTitleHead(title);
+    if (containsKeyword(t, CATEGORY_KEYWORDS[category] ?? []) || matchesAudioByBareSpeaker) {
+      if ((category === 'smartphone' || category === 'audio') && isAccessoryTitleHead(title)) {
+        continue;
+      }
       return category as ProductCategory;
     }
   }

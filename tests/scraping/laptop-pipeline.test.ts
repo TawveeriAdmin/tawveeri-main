@@ -26,6 +26,29 @@ describe('Laptop detection (accessory hard-reject)', () => {
     expect(laptopPlugin.detect('حقيبة لابتوب', '')).toBe(false);
     expect(laptopPlugin.detect('', 'Laptop Docking Station USB-C')).toBe(false);
   });
+  // MEASURED DEFECT (2026-08-22): 8 production canonical_products rows in category
+  // 'laptop' were accessories reachable live via decide()/Waffar/search (same failure
+  // class as the earlier TV Funko/mobile-case defects) — none matched the accessory
+  // list above, since each carries a plain accessory word this list never covered.
+  it('rejects the 6 measured production accessory titles (2026-08-22 audit)', () => {
+    expect(laptopPlugin.detect('', '2B Gaming Laptop Cooling, 5 Fans With Led Metal Fan, Black')).toBe(false);
+    expect(laptopPlugin.detect('', 'BASEUS Papery Notebook Holder, Dark gray')).toBe(false);
+    expect(laptopPlugin.detect('', 'Golden Wheat Foldable Laptop Table 60x40x26 Cm Beech')).toBe(false);
+    expect(laptopPlugin.detect('', 'Golden Wheat Foldable Laptop Table 40x60x28 Cm Blue')).toBe(false);
+    expect(laptopPlugin.detect('', 'PingCool, Password Type Laptop Lock Anti-theft Desk Fixed Lock, 1.8m')).toBe(false);
+    // Note: "لينوفو GX41K08218" and "2b LF-01-6" (the other 2 of the original 8) had
+    // no raw title distinct from the two cases above at audit time (same store
+    // batch); this pins the 6 verified DISTINCT accessory titles found.
+  });
+  // 2 of the original 8 flagged rows are Chromebooks with a broken model_number
+  // extraction (identity-key bug: "DDR3"/"SSD/256MB" text from a RAM/storage spec
+  // was captured as the model number), NOT accessories — they are genuine laptops
+  // and must keep detecting as laptops. A different bug class, deliberately not
+  // touched by this fix.
+  it('does NOT regress genuine (if oddly-keyed) Chromebook laptops', () => {
+    expect(laptopPlugin.detect('', 'Dell Chromebook 3180 Renewed Business Laptop | Intel Celeron N3060 Dual Core CPU | 4GB DDR3 RAM | 16GB SATA HDD |11.6 inch Display | CHROME OS | 15 Days of IT-Sizer Golden Warranty (Renewed)')).toBe(true);
+    expect(laptopPlugin.detect('', 'HP Refurbished - Chromebook G4 (2015) Laptop With 14-Inch Display, Intel Celeron Processor/2nd Gen/4GB RAM/16GB SSD/256MB Intel HD Graphics English Black (Renewed)')).toBe(true);
+  });
 });
 
 describe('Laptop brand canonicalization (bilingual)', () => {

@@ -32,7 +32,16 @@ export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
   {
     category: "vacuum", version: "vacuum-v1", nounAr: "مكنسة", nounEn: "vacuum cleaner", metricAr: "واط", metricEn: "W",
     signals: "vacuum cleaner|vacuum|مكنسة|مكنسه|hoover",
-    rejectAccessory: "\\bbag[s]?\\b|dust bag|filter\\b|فلتر|كيس|brush\\b|فرشاة|hose\\b|خرطوم|battery|بطارية|charger|شاحن|belt|mop pad|replacement|spare|nozzle|فوهة|accessory kit",
+    // MEASURED DEFECT (2026-08-22): "kyvol|robot|NA" and "philips|robot|NA" each merged
+    // several GENUINE robot vacuum models with their own mopping-cloth/kit accessory
+    // listings into one canonical (identity has no model discriminator for "robot" type),
+    // so the canonical's lowest price was the 7-9 SAR accessory, not any real vacuum.
+    // Root cause: the existing accessory list already targets "mop pad"/"accessory kit"
+    // but production titles use different word forms — plural "Accessories Kit" (not
+    // singular "accessory kit") and "Mopping Cloth"/"Mopping Pads" (not "mop pad").
+    // `accessor(?:y|ies) kit` and `mop(?:ping)? (?:pad|cloth)s?` cover both forms without
+    // matching a genuine "...Vacuum & Mop..." device title (no pad/cloth follows "Mop").
+    rejectAccessory: "\\bbag[s]?\\b|dust bag|filter\\b|فلتر|كيس|brush\\b|فرشاة|hose\\b|خرطوم|battery|بطارية|charger|شاحن|belt|mop(?:ping)? (?:pad|cloth)s?|replacement|spare|nozzle|فوهة|accessor(?:y|ies) kit",
     rejectWrong: "refrigerator|ثلاجة|fridge|freezer|beverage|cooler|مبرد|air ?condition|مكيف|washer|غسالة|blender|خلاط",
     brandGuess: "samsung|سامسون|\\blg\\b|dyson|دايسون|xiaomi|شاومي|ezviz|philips|فيليبس|black[+ ]?decker|بلاك|hitachi|هيتاشي|panasonic|باناسونيك|bissell|kärcher|karcher|كارشر|nikai|نيكاي|midea|ميديا|eufy|roborock|deerma|toshiba|توشيبا",
     types: [["robot", "robot|روبوت|روبوتيك|robotic"], ["upright", "upright|عمودية|قائمة"], ["cylinder", "cylinder|canister|أسطوانية|اسطوانية"], ["handheld", "handheld|hand-?held|يدوية|يدويه|portable|car vacuum|مكنسة سيارة"], ["wet_dry", "wet.?dry|wet & dry|wet and dry|رطب.*جاف|water filtration"], ["stick", "stick|cordless stick|عصا"]],

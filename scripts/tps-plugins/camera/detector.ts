@@ -14,6 +14,13 @@ const ACCESSORY_SIGNALS = [
   "cable", "كابل", "filter", "فلتر", "sd card", "بطاقة ذاكرة", "memory card",
   "cleaning kit", "flash only", "microphone", "ميكروفون", "gimbal", "قاعدة", "remote",
   "screen protector", "واقي", "mount adapter", "vlogging kit", "lens hood",
+  // MEASURED DEFECT (2026-08-22): a third-party attachment lens ("Altura Photo 49MM
+  // 0.43x Professional HD Wide Angle Lens ... for Canon EOS M50") slipped through —
+  // it is not "lens only"/"lens kit only" (those phrases target a bundled kit-lens
+  // description), it is a standalone clip-on attachment lens sold as its own product.
+  // Narrow, evidenced phrase only — bare "lens" is deliberately NOT added, per this
+  // file's own doctrine that "camera with 18-55mm lens" bundles are genuine cameras.
+  "wide angle lens", "fisheye lens", "telephoto lens", "macro lens attachment",
 ];
 const WRONG_DEVICE = ["smartphone", "laptop", "webcam", "كاميرا مراقبة", "security camera", "ip camera", "dash cam", "doorbell"];
 

@@ -25,6 +25,15 @@ describe('Tablet detection (accessory nuance + wrong-device reject)', () => {
     expect(tabletPlugin.detect('', 'Samsung Galaxy Tab S9 Keyboard Cover')).toBe(false);
     expect(tabletPlugin.detect('', 'Samsung Galaxy S24 Smartphone 256GB')).toBe(false);
   });
+  // MEASURED DEFECT (2026-08-22): 2 production canonical_products rows in category
+  // 'tablet' were accessories, live-reachable via decide()/Waffar/search — an Arabic
+  // "compatible with" case/stand, and a screen-protector sticker, neither matching
+  // any existing accessory phrase.
+  it('rejects the 2 measured production accessory titles (2026-08-22 audit)', () => {
+    expect(tabletPlugin.detect('حافظة ستاند متوافقة مع آيباد إير 10.9 (2022)  ازرق', '')).toBe(false);
+    expect(tabletPlugin.detect('لاصقة حماية الشاشة كريستال ل iPad Pro 3 / 4 قياس 11 بوصة', '')).toBe(false);
+    expect(tabletPlugin.detect('لاصقة حماية ايباد 9/8/7 كريستال ليفيلو', '')).toBe(false);
+  });
 });
 
 describe('Tablet brand canonicalization', () => {

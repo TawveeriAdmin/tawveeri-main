@@ -28,6 +28,26 @@ describe("appliance identity — capacity is required to corroborate", () => {
   });
 });
 
+// MEASURED DEFECT (2026-08-22): "kyvol|robot|NA" and "philips|robot|NA" each merged several
+// genuine robot vacuum models with their own mopping-cloth/accessory-kit listings into one
+// canonical (low_confidence_candidate per the guard above, but still corroborated on price —
+// the identity guard stops a false MULTI-STORE comparison, not a false price floor from a
+// mixed-evidence single canonical). The canonical's displayed lowest price (7-9 SAR) was the
+// accessory's price, not any real vacuum's. Root cause: rejectAccessory already targeted
+// "mop pad"/"accessory kit" but production titles use different word forms.
+describe("vacuum detection — accessory word-form gap (2026-08-22 audit)", () => {
+  it("rejects the measured production accessory titles", () => {
+    expect(vacuum.detect("", "Kyvol, Accessories Kit Mopping Cloth (X3) For Robot Vacuum Cleaner D10")).toBe(false);
+    expect(vacuum.detect("", "Kyvol, Washable Mopping Cloth (X3) For Robot Vacuum Cleaner E31")).toBe(false);
+    expect(vacuum.detect("", "Philips Homerun Mopping Pads (X4) For Homerun Robot Vacuum & Mop XU3000/3100/3110")).toBe(false);
+  });
+  it("does NOT regress genuine robot vacuums that merely mention Mop/Mopping", () => {
+    expect(vacuum.detect("", "Kyvol, Cybovac D10 Robot Vacuum Cleaner, 1500Pa Suction, 2-in-1 Vacuum & Mop, Black")).toBe(true);
+    expect(vacuum.detect("", "Kyvol, Cybovac L20S Laser Robot Vacuum Cleaner, Sweeping & Mopping, Black")).toBe(true);
+    expect(vacuum.detect("", "Philips Homerun 3000 Series Aqua Robot Vacuum Mop, Beluga")).toBe(true);
+  });
+});
+
 // ── ADR-254: cooker/oven partition — every fixture is a REAL production raw name ──
 const cooker = APPLIANCE_BUNDLES["cooker"].plugin;
 const oven = APPLIANCE_BUNDLES["oven"].plugin;
