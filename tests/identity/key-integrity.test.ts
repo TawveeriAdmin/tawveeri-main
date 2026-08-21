@@ -141,6 +141,47 @@ describe("tokens that are not a single model number", () => {
 });
 
 /**
+ * P4 (2026-08-21) — DUAL_MODEL_SLASH only rejects a slash pair when BOTH sides are
+ * >=3 chars, so a RAM/Storage spec with a short bare-number side escaped it and was
+ * live as a `MODEL:` identity (e.g. `asus|MODEL:DDR5/512GB`'s sibling defects). Every
+ * value below is a real shape measured in production.
+ */
+describe("RAM/Storage slash specs and multi-slash phrases are not models (P4)", () => {
+  it.each([
+    ["16/256GB", "bare 2-digit RAM / capacity-with-unit"],
+    ["8/512GB", "bare 1-digit RAM / capacity-with-unit"],
+    ["4/64GB", "bare 1-digit RAM / capacity-with-unit"],
+    ["256GB/16", "order-agnostic: capacity-with-unit / bare RAM"],
+    ["512GB/8", "order-agnostic"],
+  ])("rejects RAM/Storage slash pair %s — %s", (value) => {
+    expect(extractManufacturerModel({ model: value })).toBeNull();
+  });
+
+  it.each([
+    ["GEN/10-CORE/16GB", "multi-slash spec string"],
+    ["DDR5/16GB/512GB", "multi-slash spec string"],
+  ])("rejects multi-slash phrase %s — %s", (value) => {
+    expect(extractManufacturerModel({ model: value })).toBeNull();
+  });
+
+  it("still rejects the already-guarded DDR5/DDR4 lead-slash forms (no regression)", () => {
+    expect(extractManufacturerModel({ model: "DDR5/512GB" })).toBeNull();
+    expect(extractManufacturerModel({ model: "DDR4/512GB" })).toBeNull();
+  });
+
+  it("does not regress a genuine single-slash MPN", () => {
+    expect(extractManufacturerModel({ model: "MDHH4AB/A" })).toBe("MDHH4AB/A");
+    expect(extractManufacturerModel({ model: "MG1G4AH/A" })).toBe("MG1G4AH/A");
+  });
+
+  it("does not regress real slash-free laptop/TV/AC MPNs", () => {
+    for (const m of ["X1504VA-BQ575W", "SM-S938BZKIMEA", "QA75QN70FAUXSA", "83K100EPAD", "27GS60QC", "KSGA18NE1", "BRV-TB-T3PRO-CYN"]) {
+      expect(extractManufacturerModel({ model: m })).toBe(m);
+    }
+  });
+});
+
+/**
  * ADR-177 — short models are admitted by naming CONVENTION, never by lowering the
  * global minimum. Every string here is production data from the prefix audit.
  */

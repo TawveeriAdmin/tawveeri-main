@@ -102,13 +102,39 @@ const SPEC_LEAD_SLASH = /^(DDR\d|LPDDR\d|PROCESSOR|CPU|GPU|RAM|SSD|HDD|EMMC|NVME
 const MEMORY_STANDARD_TOKEN = /^(LP)?DDR\d[A-Z]?$/i;
 const SIZE_PREFIXED_MODEL = /^(\d{2,3})([A-Z][A-Z0-9]{1,3})$/;
 
+/**
+ * P4 (2026-08-21): `DUAL_MODEL_SLASH` only rejects a slash pair when BOTH sides are
+ * >=3 characters, so a RAM/Storage spec whose bare-number side is short escapes it —
+ * `16/256GB` (left side "16", 2 chars), `8/512GB` (left side "8", 1 char) were both live
+ * as `MODEL:` identities. Order-agnostic (the bare number can be on either side) and
+ * length-agnostic by construction: it asks what each side IS, not how long it is, so a
+ * longer bare number (`128/256GB`) that DUAL_MODEL_SLASH already happens to catch is
+ * caught here too, redundantly but harmlessly.
+ */
+const BARE_NUMBER = /^\d+(\.\d+)?$/;
+const NUMBER_WITH_UNIT = SPEC_ONLY_PATTERNS[0];
+
+function isRamStorageSlashPair(left: string, right: string): boolean {
+  return (BARE_NUMBER.test(left) && NUMBER_WITH_UNIT.test(right)) ||
+         (BARE_NUMBER.test(right) && NUMBER_WITH_UNIT.test(left));
+}
 
 /** True when a token is a spec compound or a slash-joined pair rather than one MPN. */
 function isNotASingleModel(value: string): boolean {
   const v = value.trim();
   if (SPEC_COMPOUND_TOKEN.test(v) || DUAL_MODEL_SLASH.test(v)) return true;
   if (MEMORY_STANDARD_TOKEN.test(v)) return true;
-  return v.includes("/") && SPEC_LEAD_SLASH.test(v);
+  if (v.includes("/") && SPEC_LEAD_SLASH.test(v)) return true;
+
+  const slashParts = v.split("/");
+  // P4: a retailer stringing multiple specs together with slashes (`GEN/10-CORE/16GB`)
+  // is never a single MPN — `DUAL_MODEL_SLASH` is anchored for exactly one slash and
+  // its character class excludes "/", so a second slash makes the whole regex miss
+  // entirely rather than partially match. No genuine MPN observed anywhere in this
+  // module's evidence carries more than one slash (Apple's own form has exactly one).
+  if (slashParts.length > 2) return true;
+  if (slashParts.length === 2 && isRamStorageSlashPair(slashParts[0], slashParts[1])) return true;
+  return false;
 }
 
 /**
