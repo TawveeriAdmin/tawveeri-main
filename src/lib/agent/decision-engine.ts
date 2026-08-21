@@ -52,6 +52,44 @@ export interface ShoppingTask {
    * meaningful for `air_conditioner`; other categories ignore it.
    */
   ac_type?: string;
+  /**
+   * Fridge configuration, stated explicitly ("باب واحد"/"جنب لجنب"/"فرنسي" or English
+   * equivalents), parsed by `task-parser.ts`'s `parseFridgeType` into the SAME vocabulary
+   * `scripts/tps-plugins/refrigerator/parser.ts` writes to `attributes.fridge_type`
+   * (single_door | top_mount | bottom_mount | side_by_side | french_door). Same HARD-constraint
+   * rule as `ac_type` — see `decideRefrigerator`'s type gate. Only meaningful for
+   * `refrigerator`.
+   */
+  fridge_type?: string;
+  /**
+   * Washer loading configuration, stated explicitly ("أمامية"/"علوية" or English
+   * equivalents), parsed by `task-parser.ts`'s `parseWasherType` into the SAME vocabulary
+   * `scripts/tps-plugins/washing_machine/parser.ts` writes to `attributes.washer_type`
+   * (front_load | top_load). Same HARD-constraint rule as `ac_type` — see
+   * `decideWashingMachine`'s type gate. Only meaningful for `washing_machine`.
+   */
+  washer_type?: string;
+  /**
+   * TV panel technology, stated explicitly ("OLED"/"QLED"/"Mini LED" etc.), parsed by
+   * `task-parser.ts`'s `parseTvPanel` into the SAME vocabulary
+   * `scripts/tps-plugins/tv/parser.ts`'s `extractPanel` writes to `attributes.panel`
+   * (neo_qled | oled | qned | nanocell | mini_led | uled | qled | crystal | lcd | led). Same
+   * HARD-constraint rule as `ac_type` — see `decideTv`'s panel gate. Only meaningful for `tv`.
+   */
+  tv_panel?: string;
+  /**
+   * AC compressor technology, stated explicitly ("انفرتر" / "غير انفرتر"/"non-inverter"),
+   * parsed by `task-parser.ts`'s `parseAcInverterPref`. Distinct from the soft
+   * `low_electricity` priority ("موفر للكهرباء" biases toward inverter but never excludes a
+   * non-inverter unit) — this is the shopper naming the COMPRESSOR TECH itself as a hard
+   * constraint, same rule as `ac_type`. Deliberately narrow on the "false" (non-inverter) side:
+   * mirrors ONLY the explicit vocabulary `scripts/tps-plugins/ac/parser.ts`'s own Patch 1 uses
+   * for `technology = "Standard"` ("غير انفرتر"/"non-inverter"/"on/off") — bare «عادي»
+   * ("regular") is deliberately NOT read as non-inverter, because the ingest parser itself does
+   * not commit to that reading (too ambiguous outside AC context to trust as a hard exclusion).
+   * Only meaningful for `air_conditioner`.
+   */
+  wants_inverter?: boolean;
 }
 
 export interface CanonicalRow {
@@ -196,6 +234,19 @@ function estimateTotalCost(unit: number | null, dna: ProductDNA): Recommendation
   return { unit, installation, annual_electricity, total: Math.round(unit + installation + annual_electricity) };
 }
 
+/**
+ * SHARED "STATED ATTRIBUTE RESTRICTS, NEVER SILENTLY SWAPS" GATE (Waffar sub-type audit,
+ * 2026-08-21) — used by every decider with a closed, explicit sub-type/tech vocabulary the
+ * shopper can name (AC type, AC inverter tech, fridge configuration, washer loading, TV
+ * panel). Restricts the candidate set to matches whenever any exist; otherwise returns the
+ * FULL set unfiltered so the caller never presents a confident empty answer — "Unknown beats
+ * incorrect", the same rule `applyBudgetGate` already enforces for price.
+ */
+function restrictToRequested<T>(rows: T[], matches: (row: T) => boolean): T[] {
+  const matched = rows.filter(matches);
+  return matched.length > 0 ? matched : rows;
+}
+
 // ── Deterministic AC decision. Returns ranked recommendations. RANKING-BLIND. ──
 // Shared with the decide route (2026-08-09, founder AC Smart Pick audit): the SAME bar
 // decideAc's own reason text uses for "مناسب/تطابق المطلوب" vs "⚠️ أقل من المطلوب" must be
@@ -230,8 +281,19 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
   // the FULL set is kept (never a confident empty answer) — but restricted to matches whenever
   // any exist, so the requested type is never silently displaced by a "better-fitting" different
   // type. Either branch, every scored item gets an honest caption below (never a silent swap).
-  const typeMatches = task.ac_type ? rows.filter((row) => deriveAcDna(row).ac_type === task.ac_type) : null;
-  const scoringRows = typeMatches && typeMatches.length > 0 ? typeMatches : rows;
+  const typeFiltered = task.ac_type
+    ? restrictToRequested(rows, (row) => deriveAcDna(row).ac_type === task.ac_type)
+    : rows;
+  // AC TECH GATE — the shopper named the compressor tech itself ("مكيف انفرتر"/"غير انفرتر"),
+  // parsed by `parseAcInverterPref` into `task.wants_inverter`. Distinct from the soft
+  // `low_electricity` priority below (which biases toward inverter but never excludes a
+  // non-inverter unit) — MEASURED DEFECT this fixes: "مكيف انفرتر رخيص" previously produced an
+  // IDENTICAL ranking to "مكيف رخيص" with no type/tech word at all; the word "انفرتر" was not
+  // even recognized as a priority, let alone a constraint. Same restrict-or-honest-fallback
+  // gate as `ac_type` above, chained on its output so "شباك انفرتر" composes correctly.
+  const scoringRows = task.wants_inverter != null
+    ? restrictToRequested(typeFiltered, (row) => deriveAcDna(row).inverter === task.wants_inverter)
+    : typeFiltered;
 
   const scored = scoringRows.map((row) => {
     const dna = deriveAcDna(row);
@@ -247,6 +309,19 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
       } else {
         score -= 0.3;
         reasons.caution(`⚠️ لا يتوفر مكيف ${acTypeLabel(task.ac_type)} ضمن النتائج الحالية — هذا ${dna.ac_type ? `مكيف ${acTypeLabel(dna.ac_type)}` : "مكيف من نوع غير محدد"}`);
+      }
+    }
+    // 0b. Explicit inverter/non-inverter TECH match/mismatch — same hard-constraint treatment,
+    //     distinct from the soft `low_electricity` priority scored below.
+    if (task.wants_inverter != null) {
+      if (dna.inverter === task.wants_inverter) {
+        score += 0.2;
+        reasons.fit(task.wants_inverter ? "تقنية إنفرتر — يطابق ما طلبته" : "تقنية عادية (غير إنفرتر) — يطابق ما طلبته");
+      } else {
+        score -= 0.25;
+        reasons.caution(task.wants_inverter
+          ? "⚠️ لا يتوفر مكيف بتقنية إنفرتر ضمن النتائج الحالية — هذا بتقنية عادية (غير إنفرتر)"
+          : "⚠️ لا يتوفر مكيف بتقنية عادية (غير إنفرتر) ضمن النتائج الحالية — هذا بتقنية إنفرتر");
       }
     }
     // 1. BTU fit (the dominant suitability signal for AC)
@@ -351,6 +426,13 @@ function assemble(scored: { row: CanonicalRow; dna: Record<string, unknown>; sco
 // ── TV: derive DNA + decide. Suitability = use-fit (gaming→refresh, movies→panel,
 //    sports→refresh+size) + size + trust + budget. Ranking-blind. ──
 const PANEL_QUALITY: Record<string, number> = { oled: 1.0, neo_qled: 0.9, qled: 0.8, qned: 0.75, nanocell: 0.7, mini_led: 0.85, crystal: 0.6, led: 0.5 };
+/** Display labels for the closed `panel` vocabulary (mirrors `scripts/tps-plugins/tv/parser.ts`'s
+ *  own `extractPanel` set) — used only to phrase `decideTv`'s panel-gate reasons. */
+const TV_PANEL_LABELS: Record<string, string> = {
+  neo_qled: "Neo QLED", oled: "OLED", qned: "QNED", nanocell: "NanoCell",
+  mini_led: "Mini LED", uled: "ULED", qled: "QLED", crystal: "Crystal", lcd: "LCD", led: "LED",
+};
+const tvPanelLabel = (t: string) => TV_PANEL_LABELS[t] ?? t.toUpperCase();
 export function deriveTvDna(row: CanonicalRow): Record<string, unknown> {
   const a = row.attributes ?? {};
   return { brand: row.brand, screen_size: a.screen_size ?? null, resolution: a.resolution ?? null,
@@ -370,11 +452,25 @@ export function decideTv(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
   const eligible = rows.filter((row) => tvSizeOf(row) != null);
   const pr = task.priorities ?? [];
   const wantGaming = pr.includes("gaming"), wantMovies = pr.includes("movies"), wantSports = pr.includes("sports"), wantBright = pr.includes("bright_room");
-  const scored = eligible.map((row) => {
+  // TV PANEL GATE — the shopper named a specific panel tech ("تلفزيون OLED رخيص"), parsed by
+  // `task-parser.ts`'s `parseTvPanel` into `task.tv_panel`. Same restrict-or-honest-fallback
+  // rule as `ac_type` in `decideAc` — MEASURED DEFECT this fixes: "OLED" vs "QLED" previously
+  // produced an IDENTICAL ranking (Mini LED → QLED → QLED → OLED regardless of which was
+  // asked for) — the panel word never reached scoring, only the quality-proxy use in
+  // `wantMovies`/`wantBright` below, which is a soft preference, not the shopper's own stated
+  // identity constraint.
+  const panelFiltered = task.tv_panel
+    ? restrictToRequested(eligible, (row) => (row.attributes ?? {}).panel === task.tv_panel)
+    : eligible;
+  const scored = panelFiltered.map((row) => {
     const a = row.attributes ?? {}; const dna = deriveTvDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const rr = typeof a.refresh_rate === "number" ? a.refresh_rate : null;
     const pq = a.panel ? (PANEL_QUALITY[String(a.panel)] ?? 0.5) : null;
+    if (task.tv_panel) {
+      if (a.panel === task.tv_panel) { score += 0.25; reasons.fit(`لوحة ${tvPanelLabel(task.tv_panel)} — يطابق ما طلبته`); }
+      else { score -= 0.25; reasons.caution(`⚠️ لا يتوفر تلفزيون بلوحة ${tvPanelLabel(task.tv_panel)} ضمن النتائج الحالية — هذا بلوحة ${a.panel ? tvPanelLabel(String(a.panel)) : "غير محددة"}`); }
+    }
     if ((wantGaming || wantSports) && rr != null) { if (rr >= 120) { score += 0.18; reasons.fit(`معدل تحديث ${rr}Hz — ممتاز للألعاب/الرياضة`); } else { score -= 0.05; reasons.caution(`معدل تحديث ${rr}Hz — منخفض للألعاب`); } }
     if (wantMovies && pq != null) { score += (pq - 0.5) * 0.4; if (pq >= 0.8) reasons.fit(`شاشة ${a.panel} — جودة عالية للأفلام`); else reasons.caution(`شاشة ${a.panel} — جودة متوسطة`); }
     if (wantBright && pq != null && pq >= 0.8) { score += 0.06; reasons.fit(`لوحة ${a.panel} — سطوع جيد للغرف المضيئة`); }
@@ -536,14 +632,35 @@ function fridgeAnnualElectricity(liters: number | null, inverter: boolean | null
   const kwh = 200 + (liters ?? 350) * 0.4; // heuristic kWh/yr
   return Math.round(kwh * 0.18 * (inverter ? 0.7 : 1)); // 0.18 SAR/kWh
 }
+/** Arabic display labels for the closed `fridge_type` vocabulary (mirrors
+ *  `scripts/tps-plugins/refrigerator/parser.ts`'s own set) — used only to phrase
+ *  `decideRefrigerator`'s type-gate reasons. */
+const FRIDGE_TYPE_LABELS_AR: Record<string, string> = {
+  single_door: "باب واحد", top_mount: "فريزر علوي", bottom_mount: "فريزر سفلي",
+  side_by_side: "جنب لجنب", french_door: "فرنسي (أربعة أبواب)",
+};
+const fridgeTypeLabel = (t: string) => FRIDGE_TYPE_LABELS_AR[t] ?? t;
+
 export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const pr = task.priorities ?? [];
   const wantLowElec = pr.includes("low_electricity"), wantLarge = pr.includes("large") || /كبير|عائلة|large|family/.test((task as { parsed_from_text?: string }).parsed_from_text ?? "");
-  const scored = rows.map((row) => {
+  // FRIDGE TYPE GATE — the shopper named a specific configuration ("ثلاجة باب واحد رخيصة"),
+  // parsed by `task-parser.ts`'s `parseFridgeType` into `task.fridge_type`. Same
+  // restrict-or-honest-fallback rule as `ac_type` in `decideAc` — MEASURED DEFECT this fixes:
+  // "باب واحد" vs "جنب لجنب" previously produced an IDENTICAL top-4, the stated configuration
+  // was read only to help confirm the CATEGORY (refrigerator) and never reached scoring.
+  const scoringRows = task.fridge_type
+    ? restrictToRequested(rows, (row) => (row.attributes ?? {}).fridge_type === task.fridge_type)
+    : rows;
+  const scored = scoringRows.map((row) => {
     const a = row.attributes ?? {}; const dna = deriveRefrigeratorDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const liters = a.capacity_liters != null ? Number(a.capacity_liters) : null;
     const inverter = a.inverter === true; const type = (a.fridge_type as string) ?? null;
+    if (task.fridge_type) {
+      if (type === task.fridge_type) { score += 0.25; reasons.fit(`ثلاجة ${fridgeTypeLabel(task.fridge_type)} — يطابق ما طلبته`); }
+      else { score -= 0.25; reasons.caution(`⚠️ لا تتوفر ثلاجة ${fridgeTypeLabel(task.fridge_type)} ضمن النتائج الحالية — هذه ${type ? `ثلاجة ${fridgeTypeLabel(type)}` : "ثلاجة من نوع غير محدد"}`); }
+    }
     if (liters != null) { reasons.identity(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${liters} لتر`.replace(/\s+/g, " ").trim()); if (wantLarge) { if (liters >= 500) { score += 0.12; reasons.fit(`سعة ${liters} لتر — واسعة للعائلات`); } else reasons.caution(`سعة ${liters} لتر — متوسطة`); } }
     if (inverter) { score += wantLowElec ? 0.15 : 0.05; if (wantLowElec) reasons.fit("إنفرتر — أوفر في الكهرباء (يعمل ٢٤ ساعة)"); else reasons.spec("إنفرتر — كفاءة أعلى"); }
     else if (wantLowElec) { score -= 0.08; reasons.caution("عادي (غير إنفرتر) — استهلاك أعلى على مدار الساعة"); }
@@ -566,6 +683,12 @@ export function deriveWashingMachineDna(row: CanonicalRow): Record<string, unkno
     capacity_kg: a.capacity_kg != null ? Number(a.capacity_kg) : null,
     has_dryer: a.has_dryer === true, inverter: a.inverter === true ? true : a.inverter === false ? false : null };
 }
+/** Arabic display labels for the closed `washer_type` vocabulary (mirrors
+ *  `scripts/tps-plugins/washing_machine/parser.ts`'s own set) — used only to phrase
+ *  `decideWashingMachine`'s type-gate reasons. */
+const WASHER_TYPE_LABELS_AR: Record<string, string> = { front_load: "تحميل أمامي", top_load: "تحميل علوي" };
+const washerTypeLabel = (t: string) => WASHER_TYPE_LABELS_AR[t] ?? t;
+
 export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const pr = task.priorities ?? []; const text = (task as { parsed_from_text?: string }).parsed_from_text ?? "";
   const wantLowElec = pr.includes("low_electricity"), wantQuiet = pr.includes("quiet");
@@ -579,12 +702,24 @@ export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): 
   // primary path anymore).
   const wantLarge = pr.includes("large") || /كبير|عائلة|large|family/.test(text);
   const wantDryer = pr.includes("dryer_combo") || /نشاف|نشافة|dryer|تجفيف/.test(text);
-  const scored = rows.map((row) => {
+  // WASHER TYPE GATE — the shopper named a loading configuration ("غسالة أمامية"/"غسالة
+  // علوية"), parsed by `task-parser.ts`'s `parseWasherType` into `task.washer_type`. Same
+  // restrict-or-honest-fallback rule as `ac_type` in `decideAc` — MEASURED DEFECT this fixes:
+  // "أمامية" vs "علوية" previously produced an IDENTICAL top-4 (always front_load), the stated
+  // configuration never reached scoring at all.
+  const scoringRows = task.washer_type
+    ? restrictToRequested(rows, (row) => (row.attributes ?? {}).washer_type === task.washer_type)
+    : rows;
+  const scored = scoringRows.map((row) => {
     const a = row.attributes ?? {}; const dna = deriveWashingMachineDna(row); const reasons = new ReasonLedger();
     let score = 0.5;
     const kg = a.capacity_kg != null ? Number(a.capacity_kg) : null; const type = (a.washer_type as string) ?? null;
     const inverter = a.inverter === true; const combo = a.has_dryer === true;
     reasons.identity(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${kg != null ? kg + " كجم" : ""}`.replace(/\s+/g, " ").trim());
+    if (task.washer_type) {
+      if (type === task.washer_type) { score += 0.25; reasons.fit(`غسالة ${washerTypeLabel(task.washer_type)} — يطابق ما طلبته`); }
+      else { score -= 0.25; reasons.caution(`⚠️ لا تتوفر غسالة ${washerTypeLabel(task.washer_type)} ضمن النتائج الحالية — هذه ${type ? `غسالة ${washerTypeLabel(type)}` : "غسالة من نوع غير محدد"}`); }
+    }
     if (kg != null && wantLarge) { if (kg >= 10) { score += 0.1; reasons.fit(`سعة ${kg} كجم — مناسبة للعائلات`); } else reasons.caution(`سعة ${kg} كجم — متوسطة`); }
     if (type === "front_load") { score += 0.06; reasons.spec("تحميل أمامي — غسيل أعمق وأوفر ماءً"); }
     if (inverter) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("محرك إنفرتر — أهدأ وأوفر (أولويتك)"); else reasons.spec("محرك إنفرتر — كفاءة أعلى"); }

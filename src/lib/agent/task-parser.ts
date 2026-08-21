@@ -179,6 +179,92 @@ function parseAcType(x: string): string | undefined {
   return undefined;
 }
 
+/**
+ * AC compressor tech, stated explicitly ("انفرتر" vs "غير انفرتر"/"non-inverter"/"on/off").
+ * MEASURED DEFECT this fixes (same Waffar sub-type audit as `parseAcType`): the word "انفرتر"
+ * did not exist ANYWHERE in this file before this fix — not even as a `low_electricity`
+ * priority keyword — so "مكيف انفرتر رخيص" produced an IDENTICAL ranking to a bare "مكيف رخيص".
+ *
+ * The "false" (non-inverter) branch is checked FIRST and deliberately narrow: it mirrors ONLY
+ * the explicit vocabulary `scripts/tps-plugins/ac/parser.ts`'s own Patch 1 uses for
+ * `technology = "Standard"` ("غير انفرتر"/"non-inverter"/"on/off") — bare «عادي» ("regular") is
+ * NOT read as non-inverter, because the ingest parser itself does not commit to that reading
+ * (too ambiguous outside AC context to trust as a hard exclusion — «عادي» is one of the most
+ * generic adjectives in Arabic). Checking "false" first also matters mechanically: "انفرتر" is
+ * a literal substring of "غير انفرتر", so the "true" branch would otherwise fire on a negated
+ * mention too.
+ */
+function parseAcInverterPref(x: string): boolean | undefined {
+  if (/on\s*\/?\s*off|أون\s*\/?\s*أوف|غير\s*انفرتر|غير\s*إنفرتر|non[\s-]?inverter/.test(x)) return false;
+  if (/انفرتر|إنفرتر|inverter/.test(x)) return true;
+  return undefined;
+}
+
+/**
+ * Fridge configuration, stated explicitly ("باب واحد"/"جنب لجنب"/"فرنسي" or English
+ * equivalents). SAME canonical vocabulary `scripts/tps-plugins/refrigerator/parser.ts`'s own
+ * `extractType` writes to `attributes.fridge_type` — reused here rather than a second list.
+ * Deliberately DROPS that function's own "mini|compact|صغيرة|ميني" branch for `single_door`:
+ * those words are a fine *display* label on the ingest side, but as a HARD request-side
+ * restriction they would wrongly narrow an honest size preference ("ثلاجة صغيرة" — "a small
+ * fridge") down to only literally single-door-labelled rows, excluding perfectly good compact
+ * top_mount fridges that were never asked to be single-door specifically. `single_door` here
+ * only fires on the unambiguous phrasing.
+ */
+const FRIDGE_TYPE_PATTERNS: [string, RegExp][] = [
+  ["french_door", /french\s*door|فرنش|أربعة أبواب|4\s*door|quad/],
+  ["side_by_side", /side\s*by\s*side|جنباً|جنبا|باب لباب/],
+  ["bottom_mount", /bottom\s*mount|bottom\s*freezer|فريزر سفلي|مجمد سفلي/],
+  ["top_mount", /top\s*mount|top\s*freezer|فريزر علوي|مجمد علوي|بابين|2\s*door|double door/],
+  ["single_door", /single\s*door|باب واحد|باب مفرد/],
+];
+
+function parseFridgeType(x: string): string | undefined {
+  for (const [type, re] of FRIDGE_TYPE_PATTERNS) if (re.test(x)) return type;
+  return undefined;
+}
+
+/**
+ * Washer loading configuration, stated explicitly ("أمامية"/"علوية" or English equivalents).
+ * SAME canonical vocabulary `scripts/tps-plugins/washing_machine/parser.ts`'s own
+ * `extractType` writes to `attributes.washer_type`.
+ */
+const WASHER_TYPE_PATTERNS: [string, RegExp][] = [
+  ["front_load", /front\s*load|أمامي|تحميل أمامي|فرونت/],
+  ["top_load", /top\s*load|علوي|تحميل علوي|توب/],
+];
+
+function parseWasherType(x: string): string | undefined {
+  for (const [type, re] of WASHER_TYPE_PATTERNS) if (re.test(x)) return type;
+  return undefined;
+}
+
+/**
+ * TV panel technology, stated explicitly ("OLED"/"QLED"/"Mini LED" etc.). SAME canonical
+ * vocabulary and ORDER (most specific first) as `scripts/tps-plugins/tv/parser.ts`'s own
+ * `extractPanel` writes to `attributes.panel`. The Arabic transliteration branches are matched
+ * directly against `x` (already lowercased, ASCII-digit-normalized by `norm()`) rather than
+ * through that file's separate `normalizeArabic` helper — this module has no such import, and
+ * a typed shopping query is short and rarely carries the diacritics that helper strips.
+ */
+const TV_PANEL_PATTERNS: [string, RegExp][] = [
+  ["neo_qled", /neo[\s-]*qled|نيو\s*كيو\s*ليد/],
+  ["oled", /qd[\s-]*oled|\boled\b|او\s*ال\s*اي\s*دي|او\s*ليد|اوليد/],
+  ["qned", /\bqned\b/],
+  ["nanocell", /nano[\s-]*cell|nanocell|نانو\s*سيل/],
+  ["mini_led", /(?:qd[\s-]*)?mini[\s-]*led|ميني\s*ليد/],
+  ["uled", /\buled\b/],
+  ["qled", /\bqled\b|كيو\s*ال\s*اي\s*دي|كيو\s*ليد/],
+  ["crystal", /crystal|كريستال/],
+  ["lcd", /\blcd\b/],
+  ["led", /\bled\b|ال\s*اي\s*دي|ليد/],
+];
+
+function parseTvPanel(x: string): string | undefined {
+  for (const [type, re] of TV_PANEL_PATTERNS) if (re.test(x)) return type;
+  return undefined;
+}
+
 function parseRoomSize(x: string): number | undefined {
   const ok = (n: number) => (n >= 5 && n <= 200 ? n : undefined);
   // "30 متر", "30م²", "30 m2", "30 sqm", "30 square". Digits are already ASCII by `norm`.
@@ -609,6 +695,13 @@ export function parseShoppingTask(text: string): ParsedTask {
   // would silently drop the type on exactly that phrasing. Harmless when the category turns
   // out not to be `air_conditioner`: `ac_type` is read nowhere except `decideAc`.
   const ac_type = parseAcType(x);
+  // Same "not gated on category" reasoning as `ac_type` immediately above — each is read
+  // nowhere except its own category's decider, so a stray value on an unrelated category is
+  // inert, not a leak.
+  const wants_inverter = parseAcInverterPref(x);
+  const fridge_type = parseFridgeType(x);
+  const washer_type = parseWasherType(x);
+  const tv_panel = parseTvPanel(x);
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
   const quantity = parseQuantity(x, category);
@@ -630,7 +723,7 @@ export function parseShoppingTask(text: string): ParsedTask {
 
   const task: ParsedTask = {
     category: category ?? "",
-    fuel_type, ac_type,
+    fuel_type, ac_type, wants_inverter, fridge_type, washer_type, tv_panel,
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
     quantity,

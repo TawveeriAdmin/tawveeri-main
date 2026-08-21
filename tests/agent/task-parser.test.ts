@@ -370,3 +370,66 @@ describe("Task parser — AC type regression", () => {
     expect(t.ac_type).toBe("window");
   });
 });
+
+// MEASURED DEFECT (Waffar sub-type audit, 2026-08-21): the same "explicit sub-type mentioned,
+// completely ignored" pattern found in AC also existed in refrigerator/washing_machine/tv/AC-
+// tech — none of these fields had a task-parser entry at all before this fix.
+describe("Task parser — AC compressor tech regression (انفرتر/غير انفرتر)", () => {
+  it("extracts wants_inverter=true for explicit inverter requests", () => {
+    expect(parseShoppingTask("مكيف انفرتر رخيص").wants_inverter).toBe(true);
+    expect(parseShoppingTask("مكيف إنفرتر").wants_inverter).toBe(true);
+    expect(parseShoppingTask("inverter ac cheap").wants_inverter).toBe(true);
+  });
+  it("extracts wants_inverter=false ONLY for the explicit non-inverter vocabulary, never bare «عادي»", () => {
+    expect(parseShoppingTask("مكيف غير انفرتر").wants_inverter).toBe(false);
+    expect(parseShoppingTask("non-inverter ac").wants_inverter).toBe(false);
+    expect(parseShoppingTask("مكيف أون أوف").wants_inverter).toBe(false);
+    // «عادي» alone is deliberately NOT read as non-inverter (too ambiguous — mirrors the
+    // ingest parser's own restraint, see parseAcInverterPref's doc comment).
+    expect(parseShoppingTask("مكيف عادي رخيص").wants_inverter).toBeUndefined();
+  });
+  it("leaves wants_inverter undefined with no tech word stated (no regression)", () => {
+    expect(parseShoppingTask("مكيف رخيص لغرفة 30 متر").wants_inverter).toBeUndefined();
+  });
+});
+
+describe("Task parser — refrigerator type regression", () => {
+  it("extracts fridge_type for every stated Arabic/English configuration", () => {
+    expect(parseShoppingTask("ثلاجة باب واحد رخيصة").fridge_type).toBe("single_door");
+    expect(parseShoppingTask("ثلاجة side by side رخيصة").fridge_type).toBe("side_by_side");
+    expect(parseShoppingTask("ثلاجة فرنش رخيصة").fridge_type).toBe("french_door");
+    expect(parseShoppingTask("ثلاجة فريزر علوي رخيصة").fridge_type).toBe("top_mount");
+    expect(parseShoppingTask("ثلاجة فريزر سفلي رخيصة").fridge_type).toBe("bottom_mount");
+  });
+  it("leaves fridge_type undefined with no configuration stated (no regression)", () => {
+    expect(parseShoppingTask("ثلاجة رخيصة كبيرة").fridge_type).toBeUndefined();
+  });
+  it("does NOT read a bare size preference («ثلاجة صغيرة») as single_door", () => {
+    expect(parseShoppingTask("ثلاجة صغيرة رخيصة").fridge_type).toBeUndefined();
+  });
+});
+
+describe("Task parser — washing machine type regression", () => {
+  it("extracts washer_type for front/top load, Arabic and English", () => {
+    expect(parseShoppingTask("غسالة أمامية رخيصة").washer_type).toBe("front_load");
+    expect(parseShoppingTask("غسالة علوية رخيصة").washer_type).toBe("top_load");
+    expect(parseShoppingTask("front load washer").washer_type).toBe("front_load");
+    expect(parseShoppingTask("top load washer").washer_type).toBe("top_load");
+  });
+  it("leaves washer_type undefined with no configuration stated (no regression)", () => {
+    expect(parseShoppingTask("غسالة رخيصة كبيرة").washer_type).toBeUndefined();
+  });
+});
+
+describe("Task parser — TV panel regression", () => {
+  it("extracts tv_panel for the stated panel tech, most-specific first", () => {
+    expect(parseShoppingTask("تلفزيون OLED رخيص").tv_panel).toBe("oled");
+    expect(parseShoppingTask("تلفزيون QLED رخيص").tv_panel).toBe("qled");
+    expect(parseShoppingTask("تلفزيون Neo QLED رخيص").tv_panel).toBe("neo_qled");
+    expect(parseShoppingTask("تلفزيون Mini LED رخيص").tv_panel).toBe("mini_led");
+    expect(parseShoppingTask("تلفزيون LED رخيص").tv_panel).toBe("led");
+  });
+  it("leaves tv_panel undefined with no panel tech stated (no regression)", () => {
+    expect(parseShoppingTask("تلفزيون 65 بوصة رخيص").tv_panel).toBeUndefined();
+  });
+});

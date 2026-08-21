@@ -504,3 +504,146 @@ describe("AC type gate — explicit sub-type must restrict, never be silently ig
     expect(recs[0].canonical_id).toBe("ducted-1");
   });
 });
+
+// MEASURED DEFECT (Waffar sub-type audit, 2026-08-21): the AC type gate above did not cover
+// the shopper naming the COMPRESSOR TECH itself ("مكيف انفرتر رخيص") — "انفرتر" was not even a
+// recognized priority keyword, so this request produced an IDENTICAL ranking to no constraint
+// at all. Distinct from the soft `low_electricity` priority (which biases but never excludes).
+describe("AC inverter-tech gate — explicit compressor tech must restrict, never be silently ignored (regression)", () => {
+  const rows = [
+    ac({ btu: 18000, tech: "Inverter", price: 2200, stores: 2, canonical_id: "inv-1" }),
+    ac({ btu: 18000, tech: "Standard", price: 1400, stores: 2, canonical_id: "std-1" }),
+  ];
+
+  it("wants_inverter=true restricts to inverter units", () => {
+    const task: ShoppingTask = { category: "air_conditioner", wants_inverter: true };
+    const recs = decideAc(task, rows);
+    expect(recs[0].canonical_id).toBe("inv-1");
+    expect(recs.every((r) => (r.dna as { inverter?: boolean }).inverter === true)).toBe(true);
+  });
+
+  it("wants_inverter=false restricts to non-inverter units, distinct from the inverter answer", () => {
+    const task: ShoppingTask = { category: "air_conditioner", wants_inverter: false };
+    const recs = decideAc(task, rows);
+    expect(recs[0].canonical_id).toBe("std-1");
+    expect(recs.every((r) => (r.dna as { inverter?: boolean }).inverter === false)).toBe(true);
+  });
+
+  it("never fabricates — requesting non-inverter when only inverter units exist keeps the full set with an honest caution", () => {
+    const onlyInverter = [ac({ btu: 18000, tech: "Inverter", price: 2200, stores: 2, canonical_id: "inv-only" })];
+    const task: ShoppingTask = { category: "air_conditioner", wants_inverter: false };
+    const recs = decideAc(task, onlyInverter);
+    expect(recs.length).toBe(1);
+    expect(recs[0].reasons_ar.some((t) => t.includes("لا يتوفر مكيف بتقنية عادية"))).toBe(true);
+  });
+
+  it("composes with ac_type: «شباك انفرتر» restricts on BOTH dimensions at once", () => {
+    const mixed = [
+      ac({ btu: 18000, tech: "Inverter", price: 2200, stores: 2, canonical_id: "window-inv", ac_type: "window" }),
+      ac({ btu: 18000, tech: "Standard", price: 1400, stores: 2, canonical_id: "window-std", ac_type: "window" }),
+      ac({ btu: 18000, tech: "Inverter", price: 2600, stores: 2, canonical_id: "split-inv", ac_type: "split" }),
+    ];
+    const task: ShoppingTask = { category: "air_conditioner", ac_type: "window", wants_inverter: true };
+    const recs = decideAc(task, mixed);
+    expect(recs.length).toBe(1);
+    expect(recs[0].canonical_id).toBe("window-inv");
+  });
+});
+
+// MEASURED DEFECT (Waffar sub-type audit, 2026-08-21): the exact same "explicit sub-type
+// mentioned, completely ignored" pattern as AC's ac_type — confirmed live via
+// /api/v1/agent/decide before this fix ("باب واحد" vs "جنب لجنب" returned an identical top-4).
+describe("Refrigerator type gate — explicit configuration must restrict, never be silently ignored (regression)", () => {
+  const rows = [
+    fridge({ type: "single_door", liters: 250, inverter: true, price: 1200, stores: 2, id: "single-1" }),
+    fridge({ type: "top_mount", liters: 450, inverter: true, price: 1800, stores: 2, id: "top-1" }),
+    fridge({ type: "side_by_side", liters: 600, inverter: true, price: 4500, stores: 2, id: "sbs-1" }),
+    fridge({ type: "french_door", liters: 700, inverter: true, price: 6000, stores: 1, id: "french-1" }),
+  ];
+
+  it("«باب واحد» (single_door) restricts the result to single_door units", () => {
+    const task: ShoppingTask = { category: "refrigerator", fridge_type: "single_door" };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs[0].canonical_id).toBe("single-1");
+    expect(recs.every((r) => (r.dna as { fridge_type?: string }).fridge_type === "single_door")).toBe(true);
+  });
+
+  it("«جنب لجنب» (side_by_side) restricts distinctly from single_door", () => {
+    const task: ShoppingTask = { category: "refrigerator", fridge_type: "side_by_side" };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs[0].canonical_id).toBe("sbs-1");
+  });
+
+  it("never fabricates — an unavailable configuration returns the full set with an honest caution", () => {
+    const task: ShoppingTask = { category: "refrigerator", fridge_type: "bottom_mount" };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs.length).toBe(rows.length);
+    expect(recs.every((r) => r.reasons_ar.some((t) => t.includes("لا تتوفر ثلاجة فريزر سفلي")))).toBe(true);
+  });
+
+  it("no regression: no stated configuration leaves the full set", () => {
+    const task: ShoppingTask = { category: "refrigerator" };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs.length).toBe(rows.length);
+  });
+});
+
+describe("Washing machine type gate — explicit loading configuration must restrict, never be silently ignored (regression)", () => {
+  const rows = [
+    washer({ type: "front_load", kg: 8, inverter: true, dryer: false, price: 1500, stores: 2, id: "front-1" }),
+    washer({ type: "top_load", kg: 10, inverter: true, dryer: false, price: 1400, stores: 2, id: "top-1" }),
+  ];
+
+  it("«أمامية» (front_load) restricts the result to front_load units", () => {
+    const task: ShoppingTask = { category: "washing_machine", washer_type: "front_load" };
+    const recs = decideWashingMachine(task, rows);
+    expect(recs[0].canonical_id).toBe("front-1");
+    expect(recs.every((r) => (r.dna as { washer_type?: string }).washer_type === "front_load")).toBe(true);
+  });
+
+  it("«علوية» (top_load) restricts distinctly from front_load", () => {
+    const task: ShoppingTask = { category: "washing_machine", washer_type: "top_load" };
+    const recs = decideWashingMachine(task, rows);
+    expect(recs[0].canonical_id).toBe("top-1");
+  });
+
+  it("no regression: no stated configuration leaves the full set", () => {
+    const task: ShoppingTask = { category: "washing_machine" };
+    const recs = decideWashingMachine(task, rows);
+    expect(recs.length).toBe(rows.length);
+  });
+});
+
+describe("TV panel gate — explicit panel tech must restrict, never be silently ignored (regression)", () => {
+  const rows = [
+    tv({ size: 55, res: "4k", panel: "led", hz: 60, price: 1500, stores: 2, id: "led-1" }),
+    tv({ size: 65, res: "4k", panel: "qled", hz: 120, price: 3500, stores: 2, id: "qled-1" }),
+    tv({ size: 65, res: "4k", panel: "oled", hz: 120, price: 6500, stores: 1, id: "oled-1" }),
+  ];
+
+  it("«OLED» restricts the result to oled units", () => {
+    const task: ShoppingTask = { category: "tv", tv_panel: "oled" };
+    const recs = decideTv(task, rows);
+    expect(recs[0].canonical_id).toBe("oled-1");
+    expect(recs.every((r) => (r.dna as { panel?: string }).panel === "oled")).toBe(true);
+  });
+
+  it("«QLED» restricts distinctly from OLED", () => {
+    const task: ShoppingTask = { category: "tv", tv_panel: "qled" };
+    const recs = decideTv(task, rows);
+    expect(recs[0].canonical_id).toBe("qled-1");
+  });
+
+  it("never fabricates — an unavailable panel returns the full eligible set with an honest caution", () => {
+    const task: ShoppingTask = { category: "tv", tv_panel: "neo_qled" };
+    const recs = decideTv(task, rows);
+    expect(recs.length).toBe(rows.length);
+    expect(recs.every((r) => r.reasons_ar.some((t) => t.includes("لا يتوفر تلفزيون بلوحة Neo QLED")))).toBe(true);
+  });
+
+  it("no regression: no stated panel leaves the full eligible set", () => {
+    const task: ShoppingTask = { category: "tv" };
+    const recs = decideTv(task, rows);
+    expect(recs.length).toBe(rows.length);
+  });
+});
