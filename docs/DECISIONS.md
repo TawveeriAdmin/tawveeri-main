@@ -6,6 +6,31 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-269 — MODEL: identity promoted live for dishwasher/coffee_maker/blender/vacuum; appliance brand-alias gap closed; a live price-safety near-miss caught before write · Accepted (2026-08-21)
+**Context.** ADR-267 shipped a payload-only `MODEL:` identity tier for the 11-category appliance factory but did not execute it anywhere. A read-only impact survey (Task E, zero writes) then scored all 11 categories for affected-count and customer-visibility; dishwasher, coffee_maker, blender and vacuum scored "✅ نعم" (worth a full fix). Founder authorized execution for exactly these 4.
+
+**Discovery made during execution, not before it.** Re-deriving identity from raw evidence surfaced the exact same real product split into two separate canonicals purely because one store wrote the brand in Arabic and another in Latin script — e.g. `أريستون|MODEL:ARDF658DI3XSA` and `ariston|MODEL:ARDF658DI3XSA` are one real dishwasher, not two, and `سامسونج|…` vs `samsung|…` the same pattern. `scripts/tps-core/brand-map.ts` had **zero appliance-brand entries** before this session (`canonicalizeBrand()` is a flat lowercase lookup, no fuzzy/cross-script matching). Added ~20 Arabic⇄Latin alias pairs (samsung/بانسونك/mایديا/فليبس/bosch/kenwood/tefal/dyson/shark/hitachi/hoover/ariston/beko/braun/moulinex/delonghi/krups/bissell/fisher/black+decker/koolen) so these pairs collapse into one canonical instead of two. This is a real, previously-undiscovered correctness gap, not something anticipated going in.
+
+**Execution pipeline (repeated per category):** backup full `canonical_products`+`tps_product_projection` rows → dry-run re-derivation via the fixed factory/brand-map → collision-aware promote-in-place-or-create (checks `(category, brand, model_number)` before INSERT to avoid the `canonical_products_brand_model_number_idx` unique-constraint collision a naive insert-only pass hit on the first dishwasher attempt) → stale-metadata sweep (nulls leftover `model_number` metadata on OTHER canonicals not caught by the same-group dedup, e.g. `سامسونج|NA|14` still echoing a model now owned by the promoted canonical) → `tps_product_projection` rebuilt scoped to the category → Algolia `tawveeri_tps_products` scoped `saveObjects`/`deleteObjects` → live verification via `/api/v1/tps/search`.
+
+**Results:**
+| category | new canonicals | promoted in-place | deactivated (redundant dup) |
+|---|---|---|---|
+| dishwasher | 36 | 38 | 2 |
+| coffee_maker | 18 | 15 | 1 |
+| blender | 49 | 18 | 0 |
+| vacuum | 81 | 83 | 10 |
+
+**Critical price-safety near-miss caught before write (vacuum).** The naive "cheapest available observation wins" winner-selection would have resurfaced `fisher|MODEL:BSC-1300` at **29 SAR** — the exact price already quarantined in `tps_price_implausibility_signals` by ADR-267 point [4] — under a nicer model-based display name, silently undoing that earlier fix. Caught on manual dry-run price-range review before executing (not user-flagged). Fixed by excluding any `(store, price)` pair already present in `tps_price_implausibility_signals` from winner-selection; re-verified live: `fisher|MODEL:BSC-1300` now correctly shows **102 SAR**.
+
+**Post-execution safety re-scan.** Re-ran `price-plausibility-scan.ts --category=vacuum --apply` after the full promotion: 8 signals self-healed (auto-removed — confirms the mechanism works both directions), 8 new signals written for pre-existing generic canonicals untouched by this promotion (toshiba×3, hitachi, sencor×2, princess, denx). **Known limitation surfaced, not fixed:** the scan's same-type cohort check treats every `MODEL:`-keyed canonical as a singleton cohort (n=1), too small to statistically flag — it cannot catch a *future* implausible price on a newly promoted canonical the way it catches one on a generic `brand|type|capacity` canonical.
+
+**Deliberately not re-decided: the Black+Decker vacuum price question.** 3 new Black+Decker model splits (25/34/45 SAR) surfaced by this promotion were not caught by the above exclusion (they were never in the original 8-item quarantine list). `backups/progress-ledger-2026-08-22-category-mismatch.md` already records a founder ruling on this exact SKU family: proceed with the identity split (it resolves a real false-merge — 6 distinct genuine SKUs previously blended into one `handheld|NA` row) but do not unilaterally revisit the price question, which the founder already closed. Flagged here for founder awareness, not re-litigated.
+
+**Verification.** 526/526 tests pass (`tests/identity`, `tests/scraping`), `tsc --noEmit` clean. Live spot-checks on tawveeri.com (`/api/v1/tps/search`) confirmed for all 4 categories: `ariston|MODEL:ARDF658DI3XSA` (3 stores, 2199 SAR), `samsung|MODEL:DW60BG830FSLYL` (2 stores, 2499 SAR) — Arabic/Latin merge holds; `delonghi|MODEL:DLECAM290.81.TB`, `bosch|MODEL:TIG20301` — coffee_maker splits correct; `fisher|MODEL:BSC-1300/1500/2300` — vacuum price-safety fix holds (102/114/329 SAR, not the old bad prices).
+
+---
+
 ### ADR-268 — Tablet accessory closeout: the "2 already fixed" premise was wrong — all 3 pattern-matching rows were still live; deactivated, live-verified · Accepted (2026-08-21)
 **Context.** Founder believed 2 of 3 tablet-category accessory rows (from the "متوافقة مع"/"لاصقة" defect the tablet detector.ts code guard already covers) had already been deactivated, and asked for the "third, still-live" row to be identified precisely.
 

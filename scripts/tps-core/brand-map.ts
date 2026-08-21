@@ -158,6 +158,35 @@ const BRAND_ALIASES: Record<string, string> = {
   "dansat": "dansat", "دان سات": "dansat", "دانسات": "dansat",
   "skyworth": "skyworth", "سكاي ورث": "skyworth",
   "vision": "vision", "فيجن": "vision",
+
+  // ── Appliance brands (P10, 2026-08-21). Measured live: re-deriving vacuum/
+  // blender/coffee_maker/dishwasher identity from raw evidence found the exact
+  // SAME real product (same manufacturer model number) split into two separate
+  // canonicals purely because one store wrote the brand in Arabic and another in
+  // Latin — e.g. `أريستون|MODEL:ARDF658DI3XSA` and `ariston|MODEL:ARDF658DI3XSA`
+  // are one real dishwasher, not two. Appliance brands had NO entries in this map
+  // at all before this pass; only the pairs actually observed live are added here
+  // (existing samsung/midea/panasonic/philips/lg entries above already cover
+  // their own standard spellings — these add the DIFFERENT transliterations this
+  // pass measured in appliance titles specifically).
+  "سامسون": "samsung", "بانسونك": "panasonic", "مايديا": "midea", "فليبس": "philips",
+  "bosch": "bosch", "بوش": "bosch",
+  "kenwood": "kenwood", "كينوود": "kenwood",
+  "tefal": "tefal", "تيفال": "tefal",
+  "dyson": "dyson", "دايسون": "dyson",
+  "shark": "shark", "شارك": "shark",
+  "hitachi": "hitachi", "هيتاشي": "hitachi", "هيتاشى": "hitachi",
+  "hoover": "hoover", "هوفر": "hoover",
+  "ariston": "ariston", "أريستون": "ariston", "اريستون": "ariston",
+  "beko": "beko", "بيكو": "beko",
+  "braun": "braun", "براون": "braun",
+  "moulinex": "moulinex", "moullinex": "moulinex", "مولينكس": "moulinex",
+  "delonghi": "delonghi", "ديلونجي": "delonghi",
+  "krups": "krups", "كروبس": "krups",
+  "bissell": "bissell", "بيسيل": "bissell",
+  "fisher": "fisher", "فيشر": "fisher",
+  "black+decker": "black+decker", "بلاك اند ديكر": "black+decker", "بلاك": "black+decker",
+  "koolen": "koolen", "كولين": "koolen",
 };
 
 /**
