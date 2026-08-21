@@ -6,6 +6,32 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-268 — Tablet accessory closeout: the "2 already fixed" premise was wrong — all 3 pattern-matching rows were still live; deactivated, live-verified · Accepted (2026-08-21)
+**Context.** Founder believed 2 of 3 tablet-category accessory rows (from the "متوافقة مع"/"لاصقة" defect the tablet detector.ts code guard already covers) had already been deactivated, and asked for the "third, still-live" row to be identified precisely.
+
+**Finding — the premise didn't hold.** Queried every tablet-category row (active AND inactive together) matching these two exact patterns: **exactly 3 total, and all 3 are currently active.** Zero are deactivated. The code guard landed, but no corresponding row-level write ever happened for any of the three:
+- `حافظة ستاند متوافقة مع آيباد إير 10.9 (2022) ازرق` — 169 SAR
+- `لاصقة حماية الشاشة كريستال ل iPad Pro 3/4 قياس 11 بوصة` — 95 SAR
+- `لاصقة حماية ايباد 9/8/7 كريستال ليفيلو` — 95 SAR
+
+**Why these bypassed the normal detector entirely.** All 3 have `tps_identity_key = null` and zero `normalized_product_observations`/`product_matches` rows — they were never processed through the raw_observations → normalize → `detect()` pipeline at all; they were inserted directly into `canonical_products` by a separate catalog-import path, each backed only by a direct `price_history` row. This is why the code fix (which only gates the identity pipeline) never touched them.
+
+**Evidence.** Self-describing names (each literally states it's a case/screen-protector, not a device) plus price: all three (95/95/169 SAR) sit below **the cheapest genuine tablet anywhere in the catalog (179 SAR)** — no overlap with a real tablet's price range.
+
+**Verdict: confirmed accessory, all 3.**
+
+**Execution.** Backup (`backups/latest_pre-tablet-3rd-accessory-fix_*_FULL.json`) → all 3 deactivated → `tps_product_projection` rebuilt scoped to `category=tablet` (426 rows, 0 pruned — expected, since a null-`tps_identity_key` row was never in that table to begin with) → Algolia `tawveeri_tps_products` checked directly: none of the 3 were ever present (consistent with never having a `tps_identity_key`) → live-verified on production tawveeri.com: `"لاصقة حماية ايباد"` no longer surfaces the fake tablet-labeled row (a *different*, correctly-categorized accessory product from the storefront `products` table shows instead); a general `"تابلت"` sweep (20 results) shows zero accessory-shaped names — no regression.
+
+**Noise ruled out during verification.** `"حافظة ستاند ايباد اير"` still returns a same-named hit — traced to a **completely different `product_id`** in the storefront `products` table with `category=""` (not `"tablet"`), unrelated to the `canonical_products` row just deactivated. Confirmed out of scope, left untouched.
+
+**Bonus findings, NOT executed (outside the exact "متوافقة مع"/"لاصقة" pattern this task was scoped to, per the founder's own framing) — documented only:**
+- `JETech Screen Protector for iPad Air 11-Inch...Tempered Glass...` (51.99 SAR, Amazon) — matches the ALREADY-pre-existing "screen protector"/"tempered glass" entries in `HARD_ACCESSORY`, meaning this defect predates even ADR's "متوافقة مع"/"لاصقة" fix; same catalog-import bypass as the 3 above.
+- `حامل تابلت Recci أبيض` (99 SAR, Almanea) — bare "حامل" (stand/holder) is not covered by any current Arabic accessory pattern in `tablet/detector.ts` — a genuinely new, unaddressed gap.
+
+Same catalog-import root cause as the 3 fixed rows; same disposition recommended, but withheld pending founder confirmation since they fall outside the explicit "same previously-discovered patterns" scope of this task.
+
+---
+
 ### ADR-267 — Xeon-as-model closed, Snapdragon/unit-format extraction gaps closed, appliance-factory gains a real MODEL: tier (11 categories), vacuum price-plausibility gate shipped · Accepted (2026-08-21)
 **Context.** Founder authorized full execution (no per-point approval gate) of four items surfaced by ADR-266's closeout: (1) a CPU part number (Xeon W-10885M) being mistaken for a laptop's own model number; (2) Snapdragon/unit-format extraction gaps that were the ROOT CAUSE letting 38 of ADR-266's 40 real laptops fall to a bad slash-spec identity in the first place; (3) whether any of the 11 "appliance factory" categories (vacuum, air_fryer, dishwasher, kettle, toaster, air_purifier, microwave, blender, coffee_maker, oven, cooker) has evidence-backed real model numbers worth adding; (4) 8 named vacuum canonicals (Fisher×3, Princess, Sencor×2, ClassPro, Panasonic) with correct category/title but implausible prices.
 
