@@ -152,6 +152,33 @@ function parseFuelType(x: string): "gas" | "electric" | undefined {
   return undefined;
 }
 
+/**
+ * AC type, stated explicitly ("شباك"/"سبليت"/"مخفي"/"كاسيت"/"دولابي" or their English
+ * equivalents). MEASURED DEFECT this fixes (Waffar decision-engine audit): `decideAc()` had
+ * NO field to read a stated AC type from at all — a shopper naming "شباك" only confirmed the
+ * CATEGORY (air_conditioner) via `parseCategory` above, and the word's own meaning vanished;
+ * every AC sub-type produced an identical ranking.
+ *
+ * SAME canonical vocabulary `scripts/tps-plugins/ac/parser.ts` extracts into
+ * `canonical_products.attributes.ac_type` (which `deriveAcDna` in decision-engine.ts reads
+ * back) — reusing it here, rather than inventing a second list, is what lets a stated request
+ * line up with the stored value with no translation layer to drift out of sync.
+ */
+const AC_TYPE_PATTERNS: [string, RegExp][] = [
+  ["window", /شباك|window/],
+  ["portable", /نقال|portable/],
+  ["evaporative", /صحراوي|evaporative|air cooler/],
+  ["cabinet", /دولابي|cabinet|floor standing/],
+  ["cassette", /كاسيت|cassette/],
+  ["ducted", /مخفي|ducted|ceiling/],
+  ["split", /سبليت|جداري|split/],
+];
+
+function parseAcType(x: string): string | undefined {
+  for (const [type, re] of AC_TYPE_PATTERNS) if (re.test(x)) return type;
+  return undefined;
+}
+
 function parseRoomSize(x: string): number | undefined {
   const ok = (n: number) => (n >= 5 && n <= 200 ? n : undefined);
   // "30 متر", "30م²", "30 m2", "30 sqm", "30 square". Digits are already ASCII by `norm`.
@@ -576,6 +603,12 @@ export function parseShoppingTask(text: string): ParsedTask {
   const x = norm(text);
   const category = parseCategory(x);
   const fuel_type = parseFuelType(x);
+  // NOT gated on `category === "air_conditioner"` (unlike the AC-only structured fields
+  // below): a bare type word ("شباك رخيص", no "مكيف") can resolve category via the semantic
+  // fallback AFTER this deterministic pass runs (see `/api/v1/agent/decide`) — gating here
+  // would silently drop the type on exactly that phrasing. Harmless when the category turns
+  // out not to be `air_conditioner`: `ac_type` is read nowhere except `decideAc`.
+  const ac_type = parseAcType(x);
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
   const quantity = parseQuantity(x, category);
@@ -597,7 +630,7 @@ export function parseShoppingTask(text: string): ParsedTask {
 
   const task: ParsedTask = {
     category: category ?? "",
-    fuel_type,
+    fuel_type, ac_type,
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
     quantity,

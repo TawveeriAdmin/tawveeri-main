@@ -332,3 +332,41 @@ describe("Task parser — comparative-form priority regression (2026-08-10)", ()
     expect(parseShoppingTask("مكيف اهدا شوي").priorities).toEqual(expect.arrayContaining(["quiet"]));
   });
 });
+
+// MEASURED DEFECT (Waffar decision-engine audit): «شباك رخيص»/«سبليت»/«مخفي»/«كاسيت»/«دولابي»
+// all resolved category=air_conditioner but the sub-type word itself vanished — `decideAc()`
+// had no field to read it from. This regression pins the parser half of the fix: the type must
+// land on `ac_type`, using the SAME canonical vocabulary `scripts/tps-plugins/ac/parser.ts`
+// writes to `attributes.ac_type` (window/split/ducted/cassette/cabinet).
+describe("Task parser — AC type regression", () => {
+  it("extracts ac_type for every stated Arabic sub-type", () => {
+    expect(parseShoppingTask("شباك رخيص").ac_type).toBe("window");
+    expect(parseShoppingTask("مكيف سبليت").ac_type).toBe("split");
+    expect(parseShoppingTask("مكيف مخفي").ac_type).toBe("ducted");
+    expect(parseShoppingTask("مكيف كاسيت").ac_type).toBe("cassette");
+    expect(parseShoppingTask("مكيف دولابي").ac_type).toBe("cabinet");
+  });
+  it("extracts ac_type for the English equivalents", () => {
+    expect(parseShoppingTask("cheap window ac").ac_type).toBe("window");
+    expect(parseShoppingTask("split ac unit").ac_type).toBe("split");
+    expect(parseShoppingTask("ducted ac system").ac_type).toBe("ducted");
+    expect(parseShoppingTask("cassette ac").ac_type).toBe("cassette");
+  });
+  it("leaves ac_type undefined when no type is stated (no regression)", () => {
+    expect(parseShoppingTask("مكيف رخيص لغرفة 30 متر").ac_type).toBeUndefined();
+    expect(parseShoppingTask("مكيف تحت 4000").ac_type).toBeUndefined();
+  });
+  // Deliberately NOT gated on `category === "air_conditioner"` (see the doc comment on
+  // `ac_type` in `parseShoppingTask`): "شباك رخيص" alone resolves no category at all
+  // deterministically (`parseCategory` requires "مكيف"/"تكييف" — a bare type word is
+  // genuinely ambiguous, e.g. «شباك التذاكر» "ticket window", and is correctly left for the
+  // route's semantic fallback to classify from full sentence context, same as any other
+  // uncategorized text). `ac_type` still needs to survive that gap because it is read
+  // nowhere except `decideAc`, which never runs unless category resolves to
+  // `air_conditioner` — so a stray `ac_type` on an unrelated category is inert, not a leak.
+  it("still extracts ac_type when the bare type word leaves category unresolved (no gating regression)", () => {
+    const t = parseShoppingTask("شباك رخيص");
+    expect(t.category).toBe("");
+    expect(t.ac_type).toBe("window");
+  });
+});

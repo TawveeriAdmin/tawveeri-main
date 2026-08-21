@@ -43,12 +43,12 @@ const tab = (o: { line: string; storage: number; conn: string; size: number; pri
   attributes: { line: o.line, storage: o.storage, connectivity: o.conn, screen_size: o.size },
 });
 
-const ac = (over: Partial<CanonicalRow> & { btu: number; tech: string; cool?: string; price: number; stores: number }): CanonicalRow => ({
+const ac = (over: Partial<CanonicalRow> & { btu: number; tech: string; cool?: string; price: number; stores: number; ac_type?: string }): CanonicalRow => ({
   canonical_id: over.canonical_id ?? `c-${over.btu}-${over.tech}-${over.price}`,
   tps_identity_key: "k", display_name_ar: over.display_name_ar ?? `مكيف ${over.btu}`, display_name_en: "AC",
   brand: over.brand ?? "gree", category: "air_conditioner", image_url: null,
   lowest_price: over.price, store_count: over.stores, has_comparison: over.stores >= 2, identity_confidence: 80,
-  attributes: { capacity_btu: over.btu, technology: over.tech, cooling_mode: over.cool ?? "cool_only", ac_type: "split" },
+  attributes: { capacity_btu: over.btu, technology: over.tech, cooling_mode: over.cool ?? "cool_only", ac_type: over.ac_type ?? "split" },
 });
 
 describe("KSA-hot BTU sizing (never undersize)", () => {
@@ -448,5 +448,59 @@ describe("Trust: corroboration contributes to suitability", () => {
     ]);
     expect(recs[0].canonical_id).toBe("corrob");
     expect(recs[0].comparison_available).toBe(true);
+  });
+});
+
+// MEASURED DEFECT (Waffar decision-engine audit): «شباك رخيص»/«سبليت»/«مخفي» previously
+// produced an IDENTICAL ranking regardless of which AC sub-type was named — `decideAc` scored
+// only BTU/room-size/budget/electricity-efficiency/store-trust, with zero gate on `ac_type`.
+// Pins the engine half of the fix: a stated `ac_type` must restrict the candidate set (never
+// silently swap a different type in as "the best fit"), and — Unknown beats incorrect — an
+// honest caption when the requested type genuinely is not present, never a confident empty
+// answer and never a silent substitution.
+describe("AC type gate — explicit sub-type must restrict, never be silently ignored (regression)", () => {
+  const rows = [
+    ac({ btu: 18000, tech: "Standard", price: 1200, stores: 2, canonical_id: "window-1", ac_type: "window" }),
+    ac({ btu: 18000, tech: "Inverter", price: 2400, stores: 2, canonical_id: "split-1", ac_type: "split" }),
+    ac({ btu: 24000, tech: "Inverter", price: 4200, stores: 2, canonical_id: "ducted-1", ac_type: "ducted" }),
+    ac({ btu: 24000, tech: "Standard", price: 3600, stores: 1, canonical_id: "cassette-1", ac_type: "cassette" }),
+  ];
+
+  it("«شباك» (window) restricts the result to window units — split/ducted/cassette never rank first", () => {
+    const task: ShoppingTask = { category: "air_conditioner", ac_type: "window" };
+    const recs = decideAc(task, rows);
+    expect(recs[0].canonical_id).toBe("window-1");
+    expect(recs.every((r) => (r.dna as { ac_type?: string }).ac_type === "window")).toBe(true);
+  });
+
+  it("«سبليت» (split) restricts the result to split units, distinct from the window answer", () => {
+    const task: ShoppingTask = { category: "air_conditioner", ac_type: "split" };
+    const recs = decideAc(task, rows);
+    expect(recs[0].canonical_id).toBe("split-1");
+    expect(recs.every((r) => (r.dna as { ac_type?: string }).ac_type === "split")).toBe(true);
+  });
+
+  it("«مخفي» (ducted) restricts the result to ducted units, distinct from window/split", () => {
+    const task: ShoppingTask = { category: "air_conditioner", ac_type: "ducted" };
+    const recs = decideAc(task, rows);
+    expect(recs[0].canonical_id).toBe("ducted-1");
+    expect(recs.every((r) => (r.dna as { ac_type?: string }).ac_type === "ducted")).toBe(true);
+  });
+
+  it("never fabricates a match — an unavailable type returns the full set with an honest caution, not a confident empty/wrong answer", () => {
+    const task: ShoppingTask = { category: "air_conditioner", ac_type: "evaporative" };
+    const recs = decideAc(task, rows);
+    expect(recs.length).toBe(rows.length); // never emptied — "unknown beats incorrect", not "hide everything"
+    expect(recs.every((r) => (r.dna as { ac_type?: string }).ac_type !== "evaporative")).toBe(true);
+    expect(recs.every((r) => r.reasons_ar.some((t) => t.includes("لا يتوفر مكيف صحراوي")))).toBe(true);
+  });
+
+  it("no regression: no stated type leaves ranking exactly as before (BTU/electricity/trust only)", () => {
+    const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30, priorities: ["low_electricity"] };
+    const recs = decideAc(task, rows);
+    expect(recs.length).toBe(rows.length);
+    // BTU fit for a 30m² room (requiredBtu=24000) + inverter preference should favor the
+    // 24000 BTU inverter unit — unrelated to any ac_type field.
+    expect(recs[0].canonical_id).toBe("ducted-1");
   });
 });

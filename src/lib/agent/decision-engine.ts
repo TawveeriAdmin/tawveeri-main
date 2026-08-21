@@ -41,6 +41,17 @@ export interface ShoppingTask {
    * `gas` feature flag (oven today); categories without a gas/electric distinction ignore it.
    */
   fuel_type?: "gas" | "electric";
+  /**
+   * AC type, stated explicitly ("شباك"/"سبليت"/"مخفي"/"كاسيت"/"دولابي" or their English
+   * equivalents), parsed by `task-parser.ts`'s `parseAcType` into the SAME canonical
+   * vocabulary `scripts/tps-plugins/ac/parser.ts` writes to `attributes.ac_type` (window |
+   * split | ducted | cassette | cabinet | portable | evaporative) — one vocabulary, not a
+   * second copy of it. A HARD constraint, not a ranking preference — see `decideAc`'s type
+   * gate: the same "a stated attribute must restrict the candidate set, never just soft-rank
+   * it" rule `applyBudgetGate`/`decideAppliance`'s fuel-type gate already enforce. Only
+   * meaningful for `air_conditioner`; other categories ignore it.
+   */
+  ac_type?: string;
 }
 
 export interface CanonicalRow {
@@ -193,17 +204,51 @@ function estimateTotalCost(unit: number | null, dna: ProductDNA): Recommendation
 // reason text on the very same candidate, which is worse than not having the disclosure.
 export const AC_BTU_FIT_TOLERANCE = 0.12;
 
+/** Arabic display labels for the closed `ac_type` vocabulary (mirrors `scripts/tps-plugins/
+ *  ac/parser.ts`'s own set) — used only to phrase `decideAc`'s type-gate reasons. */
+const AC_TYPE_LABELS_AR: Record<string, string> = {
+  window: "شباك", split: "سبليت", ducted: "مخفي (دكت)", cassette: "كاسيت",
+  cabinet: "دولابي", portable: "نقال", evaporative: "صحراوي",
+};
+const acTypeLabel = (t: string) => AC_TYPE_LABELS_AR[t] ?? t;
+
 export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const wantsQuiet = (task.priorities ?? []).includes("quiet");
   const wantsLowElec = (task.priorities ?? []).includes("low_electricity");
   const wantsHeating = (task.priorities ?? []).includes("heating");
   const requiredBtu = task.room_size_m2 ? requiredBtuForRoom(task.room_size_m2) : null;
 
-  const scored = rows.map((row) => {
+  // AC TYPE GATE — the shopper named a specific type ("شباك رخيص"/"سبليت"/"مخفي"), parsed by
+  // `task-parser.ts`'s `parseAcType` into `task.ac_type`. A HARD constraint, not a ranking
+  // preference — same "a stated attribute must restrict the candidate set, never just soft-rank
+  // it" rule `applyBudgetGate`/`decideAppliance`'s fuel-type gate already enforce. MEASURED
+  // DEFECT this fixes: "شباك رخيص"/"سبليت"/"مخفي" previously produced an IDENTICAL ranking
+  // regardless of which type word was said — the word was read only to confirm the CATEGORY
+  // (air_conditioner) here and its own type never reached this function at all.
+  //
+  // Unknown beats incorrect: when NO candidate of the requested type exists in this result set,
+  // the FULL set is kept (never a confident empty answer) — but restricted to matches whenever
+  // any exist, so the requested type is never silently displaced by a "better-fitting" different
+  // type. Either branch, every scored item gets an honest caption below (never a silent swap).
+  const typeMatches = task.ac_type ? rows.filter((row) => deriveAcDna(row).ac_type === task.ac_type) : null;
+  const scoringRows = typeMatches && typeMatches.length > 0 ? typeMatches : rows;
+
+  const scored = scoringRows.map((row) => {
     const dna = deriveAcDna(row);
     const reasons = new ReasonLedger();
     let score = 0.5; // neutral base
 
+    // 0. Explicit type match/mismatch — checked first, ahead of BTU/priorities/cost below,
+    //    since it is the shopper's own stated identity constraint, not a soft preference.
+    if (task.ac_type) {
+      if (dna.ac_type === task.ac_type) {
+        score += 0.3;
+        reasons.fit(`مكيف ${acTypeLabel(task.ac_type)} — يطابق النوع الذي طلبته`);
+      } else {
+        score -= 0.3;
+        reasons.caution(`⚠️ لا يتوفر مكيف ${acTypeLabel(task.ac_type)} ضمن النتائج الحالية — هذا ${dna.ac_type ? `مكيف ${acTypeLabel(dna.ac_type)}` : "مكيف من نوع غير محدد"}`);
+      }
+    }
     // 1. BTU fit (the dominant suitability signal for AC)
     if (requiredBtu && dna.capacity_btu) {
       const rel = Math.abs(dna.capacity_btu - requiredBtu) / requiredBtu;
