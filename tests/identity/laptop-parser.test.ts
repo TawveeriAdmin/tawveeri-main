@@ -97,6 +97,63 @@ describe("zero churn — a v1-identified laptop is untouched by the fill pass", 
   });
 });
 
+/**
+ * P4 (2026-08-21) — closing the gaps that let bad slash-spec strings become
+ * `MODEL:` identities in the first place: Snapdragon was not recognized as a CPU
+ * at all (so the spec triple was incomplete and the parser fell to the model-
+ * number name-rescue), and several stores write RAM/storage with no unit and
+ * screen size with a space instead of a decimal point. Every title here is a
+ * real raw_observations row from one of the 33 measured-bad laptop canonicals.
+ */
+describe("P4 — Snapdragon CPU recognition", () => {
+  it.each([
+    ["Vivobook 14 Laptop With 14 Inch WUXGA (1920 x 1200) Display 60Hz, Qualcomm Snapdragon X Processor /16GB RAM DDR5/512GB SSD/Windows 11 Home/ English/Arabic Quiet Blue", "sdx"],
+    ["Vivobook Laptop With 14 Inch (1920x1200) Display, Snapdragon X1 26 100 Processor/512GB SSD/16GB RAM DDR5/Windows 11/Qualcomm Adreno GPU Graphics English/Arabic Quiet Blue", "sdx"],
+    ["Surface Laptop With 12 Inch LCD Touchscreen Display, Snapdragon X Plus Processor/16GB RAM DDR5/512GB SSD/Qualcomm Adreno Graphics/Windows 11 Home/ English/Arabic Ocean", "sdxplus"],
+    ["Surface Laptop With 15 Inch (2496x1664) Display 120Hz, Snapdragon X Elite Processor/16GB RAM DDR5/512GB SSD/Windows 11 Pro/Qualcomm Adreno Graphics/ English/Arabic Graphite Black", "sdxelite"],
+    ["ProArt Slate Laptop With 14 Inch Display, Snapdragon X2 Elite Processor/16GB RAM DDR5/512GB SSD/Windows 11 Home/ Nano Black", "sdx2elite"],
+  ])("recognizes %s -> %s", (text, expectedCpu) => {
+    expect(build("", text, null).p.cpu).toBe(expectedCpu);
+  });
+  it("X2 Elite is never collapsed into bare X or X Elite (distinct real chips)", () => {
+    const x = build("", "Laptop Snapdragon X Processor 16GB RAM 512GB SSD", null).p.cpu;
+    const xElite = build("", "Laptop Snapdragon X Elite Processor 16GB RAM 512GB SSD", null).p.cpu;
+    const x2Elite = build("", "Laptop Snapdragon X2 Elite Processor 16GB RAM 512GB SSD", null).p.cpu;
+    expect(new Set([x, xElite, x2Elite]).size).toBe(3);
+  });
+});
+
+describe("P4 — unit-less RAM/storage and spaced screen decimal", () => {
+  it("storage with no GB unit ('512 ssd')", () => {
+    const r = build("", "Aspire a15 laptop with 15 6 inch full hd 1920x1080 display core i9- 13900h processor/16 ram ddr5/512 ssd/intel iris xe graphics/ upgraded windows 11 pro / english/arabic steel gray", "acer");
+    expect(r.p.storage).toBe(512);
+    expect(r.p.screen).toBe(15.6);
+    expect(identified(r)).toBe(true);
+  });
+  it("storage with no space and no GB unit ('512SSD')", () => {
+    expect(build("", "TUF Gaming Laptop With 15.6 Inch Full HD (1920x1080) Display, Ryzen 7-7445HS Processor/8GB RAM DDR5/512SSD/Windows 11 Home/4GB Nvidia Geforce RTX 3050 Graphics/ English/Arabic Graphite Black", "asus").p.storage).toBe(512);
+  });
+  it("RAM stated before a DDR generation token, no unit ('8 ddr4 ram')", () => {
+    const r = build("", "250r g10 laptop with 15 6 inch full hd 1920x1080 display core 5-120u processor/8 ddr4 ram/512 ssd/upgraded windows 11 pro english/arabic silver", "hp");
+    expect(r.p.ram).toBe(8); // not 4 (the DDR generation digit)
+  });
+  it("screen decimal rendered as a space ('15 6 inch' = 15.6)", () => {
+    expect(build("", "Laptop with 15 6 inch full hd display", "acer").p.screen).toBe(15.6);
+  });
+  it("a plain two-digit screen size is not mistaken for the spaced-decimal form", () => {
+    expect(build("", "Pro 16 laptop with 16 inch full hd 1920x1080 display intel core ultra 5-235u vpro processor/16 ram ddr5/512 ssd/upgraded windows 11 pro/ english/arabic silver", "dell").p.screen).toBe(16);
+  });
+  it("192GB RAM (workstation-class) is a valid tier, not discarded", () => {
+    expect(build("", "Helios 18AI Laptop With 18 Inch WQUXGA (3840x2400) Display, Core Ultra 9 275HX Processor/192GB RAM DDR5/3TB SSD/Windows 11 Pro/24GB Nvidia GeForce RTX 5090 Graphics/ English/Arabic Abyssal Black", "acer").p.ram).toBe(192);
+  });
+  it.each([
+    ["Renewed - MateBook D 16 Laptop With 16-Inch Eye Comfort FullView Display, Core i5-12450H Processor/12th Gen/Octa Core/8GB RAM/512GB SSD/Intel UHD Graphics/Windows 11 Home English Mystic Silver", 16],
+    ["15-fd0018nx (Upgraded Version) Laptop With 15.6-inch Full HD (1920x1080) Display, Intel Core i7-1355U Processor/16GB RAM/512GB SSD/Windows 11/Intel Iris Xe Graphics/ English/Arabic Silver", 15.6],
+  ])("screen size with a hyphen instead of a space before the unit (%s)", (text, expected) => {
+    expect(build("", text, "huawei").p.screen).toBe(expected);
+  });
+});
+
 describe("detector still hard-rejects accessories", () => {
   it.each([
     ["", "HP MPP 1.51 Pen Laptop Stylus, for HP Spectre/ENVY/Pavilion, Grey"],

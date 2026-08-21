@@ -37,8 +37,8 @@ export interface CategoryPlugin {
   /** هل هذا النص ينتمي لهذه الفئة؟ */
   detect: (nameAr: string, nameEn: string) => boolean;
 
-  /** استخراج الصفات المنظّمة من النص الخام */
-  normalize: (nameAr: string, nameEn: string, rawBrand: string | null) => NormalizeResult;
+  /** استخراج الصفات المنظّمة من النص الخام (rawPayload اختياري — يُستخدم لاستخراج model_number من حقل المتجر البنيوي) */
+  normalize: (nameAr: string, nameEn: string, rawBrand: string | null, rawPayload?: Record<string, unknown>) => NormalizeResult;
 
   /** بناء identity_key من الصفات المستخرجة */
   buildIdentityKey: (

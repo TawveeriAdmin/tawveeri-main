@@ -11,6 +11,7 @@
 // is INVALID — we never over-merge a whole brand into one identity.
 import type { CategoryPlugin, NormalizeResult, IdentityResult, ConfidenceResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
+import { extractManufacturerModel } from "../../../src/lib/identity/store-identifiers";
 
 export interface CapacitySpec {
   regex: string;            // must capture the number in group 1
@@ -92,7 +93,7 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
     if (n < cfg.capacity.min || n > cfg.capacity.max) return null;
     return n;
   }
-  function normalize(nameAr: string, nameEn: string, rawBrand: string | null): NormalizeResult {
+  function normalize(nameAr: string, nameEn: string, rawBrand: string | null, rawPayload?: Record<string, unknown>): NormalizeResult {
     const full = `${nameAr} ${nameEn}`; const t = full.toLowerCase();
     let brand = canonicalizeBrand(rawBrand);
     if (brand === "unknown" || brand === "other") { const g = t.match(brandRx); if (g) brand = canonicalizeBrand(g[0].trim()); }
@@ -104,11 +105,26 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
     for (const [f, re] of techs) payload[f] = re.test(t);
     const flags: string[] = [];
     if (type == null && capacity == null) flags.push("no_discriminator");
-    return { model_number: null, color: null, payload, ignored_terms: [], ambiguity_flags: flags };
+    // P4/P6 (2026-08-21): the retailer's OWN structured model/modelNumber payload
+    // field, via the SAME key-integrity authority laptop/TV/AC use — PAYLOAD ONLY,
+    // deliberately never the title name-rescue path. Survey evidence (11 appliance
+    // categories, 400-observation samples each) found the name-rescue path produces
+    // false positives on appliance-specific spec phrasing (a toaster titled
+    // "Stainless Steel-1050W-" extracted THAT as if it were the model, burying the
+    // real "ET244-B5" in the same title) that the payload field never exhibited
+    // across any category (zero false-positive collisions measured). A clean model
+    // number is the strongest single signal and becomes the PRIMARY identity,
+    // exactly like the laptop plugin; its absence is the common case and falls
+    // through to the existing brand|type|capacity scheme unchanged — zero churn for
+    // every appliance already identified that way.
+    const model_number = rawPayload ? extractManufacturerModel(rawPayload) : null;
+    return { model_number, color: null, payload, ignored_terms: [], ambiguity_flags: flags };
   }
-  function buildIdentityKey(brand: string | null, p: Record<string, unknown>): IdentityResult {
+  function buildIdentityKey(brand: string | null, p: Record<string, unknown>, normalizeMeta?: Record<string, unknown>): IdentityResult {
     const cb = (typeof p.brand === "string" && p.brand) ? String(p.brand) : canonicalizeBrand(brand);
     if (!cb || cb === "unknown") return { key: null, status: "invalid", reason: "brand missing" };
+    const model = normalizeMeta?.model_number ? String(normalizeMeta.model_number) : null;
+    if (model) return { key: `${cb}|MODEL:${model}`, status: "valid", reason: "primary: model_number" };
     const type = (p.type as string | null) ?? null;
     const cap = p.capacity as number | null;
     if (type == null && cap == null) return { key: null, status: "invalid", reason: "no discriminator (type/capacity)" };
@@ -123,17 +139,26 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
       reason: full ? "brand+type+capacity" : "capacity missing — brand+type too coarse to corroborate",
     };
   }
-  function scoreConfidence(brand: string | null, p: Record<string, unknown>, _m: string | null, flags: string[]): ConfidenceResult {
+  function scoreConfidence(brand: string | null, p: Record<string, unknown>, m: string | null, flags: string[]): ConfidenceResult {
     const missing: string[] = [];
     if (!brand && !p.brand) missing.push("brand");
     if (p.type == null && p.capacity == null) missing.push("discriminator");
     let conf = Math.round(((2 - missing.length) / 2) * 100);
+    if (m) conf = Math.min(100, conf + 10);
     if (flags.length) conf = Math.max(0, conf - 5);
     return { confidence: conf, missing_critical: missing, needs_llm: missing.length > 0 };
   }
 
   const typeLabel = (label: string) => label.replace(/_/g, " ");
   function names(key: string): { nameAr: string; nameEn: string } {
+    const modelMatch = key.match(/^([^|]+)\|MODEL:(.+)$/);
+    if (modelMatch) {
+      const [, b, model] = modelMatch;
+      return {
+        nameAr: `${cfg.nounAr} ${b} ${model}`.replace(/\s+/g, " ").trim(),
+        nameEn: `${b} ${model} ${cfg.nounEn}`.replace(/\s+/g, " ").trim(),
+      };
+    }
     const [b, ty, cap] = key.split("|");
     const tyS = ty !== "NA" ? typeLabel(ty) : "";
     const capAr = cap !== "NA" ? `${cap}${cfg.metricAr ? " " + cfg.metricAr : ""}` : "";
@@ -144,12 +169,13 @@ export function makeAppliancePlugin(cfg: ApplianceCfg): AppliancePluginBundle {
     };
   }
   function attrs(key: string, rep?: Record<string, unknown>): Record<string, unknown> {
-    const [, ty, cap] = key.split("|");
-    const a: Record<string, unknown> = {
-      appliance_type: ty === "NA" ? null : ty,
-      capacity: cap === "NA" ? null : Number(cap),
-      capacity_unit: cfg.metricEn ?? null,
-    };
+    const modelMatch = key.match(/^([^|]+)\|MODEL:(.+)$/);
+    const a: Record<string, unknown> = modelMatch
+      ? { appliance_type: null, capacity: null, capacity_unit: cfg.metricEn ?? null, model_number: modelMatch[2] }
+      : (() => {
+          const [, ty, cap] = key.split("|");
+          return { appliance_type: ty === "NA" ? null : ty, capacity: cap === "NA" ? null : Number(cap), capacity_unit: cfg.metricEn ?? null };
+        })();
     for (const [f] of techs) if (rep && f in rep) a[f] = rep[f];
     return a;
   }

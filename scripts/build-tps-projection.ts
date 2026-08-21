@@ -180,6 +180,16 @@ async function main() {
           where d.canonical_product_id = ph.canonical_product_id
             and d.store_display_name = ${STORE_NAME_CASE}
         )
+        -- P7: a price that is a statistical outlier for what a product of its own
+        -- kind actually costs (never a hardcoded SAR figure — see
+        -- scripts/tps-analysis/price-plausibility-scan.ts) must not win best-price
+        -- or count as a comparison store either. Self-heals the same way as the
+        -- delist signal above the moment a later observation falls back in line.
+        and not exists (
+          select 1 from tps_price_implausibility_signals i
+          where i.canonical_product_id = ph.canonical_product_id
+            and i.store_display_name = ${STORE_NAME_CASE}
+        )
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),
     agg as (

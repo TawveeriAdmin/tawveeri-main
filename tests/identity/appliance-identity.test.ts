@@ -28,6 +28,70 @@ describe("appliance identity — capacity is required to corroborate", () => {
   });
 });
 
+/**
+ * P6 (2026-08-21) — the appliance factory previously hardcoded `model_number: null`
+ * always, so every appliance canonical was identified by brand|type|capacity, never
+ * a real manufacturer model number, even when the retailer's own structured payload
+ * field carried one. Survey evidence (11 categories, 400-observation samples each,
+ * payload-field-only extraction) found this safe and valuable across every category
+ * tested (zero false-positive model collisions). Deliberately PAYLOAD-ONLY — the
+ * title name-rescue path was measured producing false positives on appliance-specific
+ * spec phrasing (a toaster titled "...Stainless Steel-1050W-..." extracted that
+ * fragment over the real "ET244-B5" in the same title) and is NOT wired in here.
+ */
+describe("appliance identity — real model_number as PRIMARY tier (P6)", () => {
+  const coffeeMaker = APPLIANCE_BUNDLES["coffee_maker"].plugin;
+  const toaster = APPLIANCE_BUNDLES["toaster"].plugin;
+  const dishwasher = APPLIANCE_BUNDLES["dishwasher"].plugin;
+
+  it("a genuine payload model number becomes the PRIMARY identity (vacuum)", () => {
+    const norm = vacuum.normalize("", "Hitachi Duck Vacuum Cleaner 5L 1800W Silver, CV-W1800SI", "Hitachi", { model: "CV-W1800SI", brand: "Hitachi" });
+    expect(norm.model_number).toBe("CV-W1800SI");
+    const id = vacuum.buildIdentityKey("Hitachi", norm.payload, { model_number: norm.model_number });
+    expect(id.key).toBe("hitachi|MODEL:CV-W1800SI");
+    expect(id.status).toBe("valid");
+  });
+
+  it("real DeLonghi coffee-maker MPN (dot-segmented form)", () => {
+    const norm = coffeeMaker.normalize("", "DeLonghi Coffee Maker, 1.8L, 15Bar, Titanium, DLECAM380.95.TB", "DeLonghi", { model: "DLECAM380.95.TB", brand: "DeLonghi" });
+    expect(norm.model_number).toBe("DLECAM380.95.TB");
+  });
+
+  it("real Toshiba dishwasher MPN from the payload field", () => {
+    const norm = dishwasher.normalize("", "توشيبا غسالة صحون 14 مكان 8 برامج ستانلس ستيل", "Toshiba", { model: "DW-14F7ME", brand: "Toshiba" });
+    expect(norm.model_number).toBe("DW-14F7ME");
+  });
+
+  it("zero churn: no payload model number falls through to brand|type|capacity unchanged", () => {
+    const norm = vacuum.normalize("", "Xiaomi Robot Vacuum Cleaner, 550ml", "Xiaomi", { brand: "Xiaomi" });
+    expect(norm.model_number).toBeNull();
+    const id = vacuum.buildIdentityKey("Xiaomi", norm.payload, { model_number: norm.model_number });
+    expect(id.key).toBe("xiaomi|robot|NA");
+    expect(id.status).toBe("low_confidence_candidate");
+  });
+
+  it("does NOT use the title name-rescue path — a spec fragment never becomes the model", () => {
+    // No `model`/`modelNumber` payload field at all — model_number must stay null,
+    // never fall back to scanning the title for a shape-passing token.
+    const norm = toaster.normalize("", "BLACK+DECKER Toaster- Stainless Steel-1050W- Silver – ET244-B5", "BLACK+DECKER", {});
+    expect(norm.model_number).toBeNull();
+  });
+
+  it("confidence is boosted when a real model number is present", () => {
+    const withModel = coffeeMaker.scoreConfidence("delonghi", { brand: "delonghi", type: null, capacity: null }, "DLECAM380.95.TB", []);
+    const withoutModel = coffeeMaker.scoreConfidence("delonghi", { brand: "delonghi", type: null, capacity: null }, null, []);
+    expect(withModel.confidence).toBeGreaterThan(withoutModel.confidence);
+  });
+
+  it("names() renders a MODEL:-keyed appliance as 'Brand Model Noun'", () => {
+    expect(vacuum.buildIdentityKey).toBeDefined();
+    expect(APPLIANCE_BUNDLES["vacuum"].names("hitachi|MODEL:CV-W1800SI")).toEqual({
+      nameAr: "مكنسة hitachi CV-W1800SI",
+      nameEn: "hitachi CV-W1800SI vacuum cleaner",
+    });
+  });
+});
+
 // MEASURED DEFECT (2026-08-22): "kyvol|robot|NA" and "philips|robot|NA" each merged several
 // genuine robot vacuum models with their own mopping-cloth/accessory-kit listings into one
 // canonical (low_confidence_candidate per the guard above, but still corroborated on price —

@@ -111,6 +111,11 @@ function deriveProjection(r) {
           where d.canonical_product_id = ph.canonical_product_id
             and d.store_display_name = ${STORE_NAME_CASE}
         )
+        and not exists (
+          select 1 from tps_price_implausibility_signals i
+          where i.canonical_product_id = ph.canonical_product_id
+            and i.store_display_name = ${STORE_NAME_CASE}
+        )
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),
     agg as (

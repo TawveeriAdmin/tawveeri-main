@@ -182,6 +182,21 @@ describe("RAM/Storage slash specs and multi-slash phrases are not models (P4)", 
 });
 
 /**
+ * P4 (2026-08-21) — a CPU's own part number must never stand in for the DEVICE's
+ * model number. Measured live: a ZBook Fury 17 G7 listing named "Intel Xeon
+ * W-10885M Processor" in its title, and the name-rescue path (which scans every
+ * token in a title when the payload has no model) picked "W-10885M" as if it
+ * were the laptop's own MPN.
+ */
+describe("Xeon CPU part number is never mistaken for the device's own model (P4)", () => {
+  it("rejects a bare Xeon W-series token from the name-rescue path", () => {
+    expect(
+      extractManufacturerModelFromName("ZBook Fury 17 G7 Laptop With 17.3 Inch Full HD (19201x1080) IPS Display,Intel Xeon W-10885M Processor/32GB RAM DDR4/512GB SSD/Windows 10 Pro English/Arabic Grey")
+    ).not.toBe("W-10885M");
+  });
+});
+
+/**
  * ADR-177 — short models are admitted by naming CONVENTION, never by lowering the
  * global minimum. Every string here is production data from the prefix audit.
  */

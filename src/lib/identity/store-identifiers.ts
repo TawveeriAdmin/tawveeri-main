@@ -365,6 +365,11 @@ const NAME_MODEL_CPU_PATTERNS: RegExp[] = [
   /^[A-Z]\d-\d{2}-\d{2,3}$/i,            // X1-26-100 (Snapdragon)
   /^\d{4,5}[A-Z]{1,2}$/i,                // 7430U, 13620H
   /^(DDR\d|LPDDR\d|PCIE\d|USB\d|WIFI\d|BT\d)$/i,
+  // P4 (2026-08-21): Intel Xeon workstation CPUs use a compact `W-<digits><letter>`
+  // part number — "Intel Xeon W-10885M Processor" in a ZBook Fury title passed every
+  // other guard and was extracted as the LAPTOP's own model number. Measured live:
+  // `hp|MODEL:W-10885M` — a CPU part number standing in for a device identity.
+  /^W-\d{4,5}[A-Z]{0,2}$/i,              // W-10885M, W-11855M (Xeon W-series)
 ];
 
 /**

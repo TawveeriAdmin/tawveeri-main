@@ -75,11 +75,36 @@ function intelGen(digits: string): string {
   return d;
 }
 
+// Qualcomm Snapdragon ARM laptop chips (Surface, ASUS Vivobook/ProArt/Zenbook, HP
+// OmniBook, Lenovo, ...). P4 (2026-08-21): entirely unrecognized before this — every
+// Snapdragon-CPU laptop failed the spec triple and fell through to the model-number
+// name-rescue, which is how bad slash-spec strings got minted as `MODEL:` identities
+// in the first place. Order matters: the X2 tiers are checked before the bare "X" so
+// "Snapdragon X2 Elite" is never collapsed into generic "X" — they are different real
+// chips and must stay distinct identities.
+function extractSnapdragonCpu(t: string): string | null {
+  if (!/snapdragon/.test(t)) return null;
+  if (/snapdragon\s*x\s*2\s*elite/.test(t)) return "sdx2elite";
+  if (/snapdragon\s*x\s*2\s*plus/.test(t)) return "sdx2plus";
+  if (/snapdragon\s*x\s*elite/.test(t)) return "sdxelite";
+  if (/snapdragon\s*x\s*plus/.test(t)) return "sdxplus";
+  if (/snapdragon\s*8cx/.test(t)) return "sd8cx";
+  const m = t.match(/snapdragon\s*m\s*(10|12)\b/);
+  if (m) return `sdm${m[1]}`;
+  // Bare "Snapdragon X" and the older SKU-suffixed form ("X1 26 100" / "X1-26-100")
+  // name the SAME base tier across different retailers — collapsing them is correct,
+  // not a loss of precision.
+  if (/snapdragon\s*x\b/.test(t) || /snapdragon\s*x1\b/.test(t)) return "sdx";
+  return null;
+}
+
 function extractCpu(text: string): string | null {
   const t = text.toLowerCase();
   // Apple silicon (also Arabic "معالج M5")
   const apple = t.match(/\bm([1-5])\s*(pro|max|ultra)?\b/);
   if (apple && /macbook|ماك\s*بوك|apple|ابل/.test(t)) return `m${apple[1]}${apple[2] ? apple[2] : ""}`;
+  const snapdragon = extractSnapdragonCpu(t);
+  if (snapdragon) return snapdragon;
   // Intel Core Ultra
   const ultra = t.match(/core\s*ultra\s*([3579])/);
   if (ultra) return `ultra${ultra[1]}`;
@@ -95,8 +120,11 @@ function extractCpu(text: string): string | null {
   return null;
 }
 
+// P4 (2026-08-21): 192GB is a real, if rare, workstation-class laptop RAM configuration
+// (measured: Acer Helios 18AI, 4x48GB) — was outside both the tier whitelist and the
+// <=128 range cap, so a stated, unit-correct "192GB RAM" was silently discarded.
 function extractRam(text: string, payloadRam: unknown): number | null {
-  const valid = (n: number) => n >= 2 && n <= 128 && [2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128].includes(n);
+  const valid = (n: number) => n >= 2 && n <= 192 && [2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128, 192].includes(n);
   const pr = Number(String(payloadRam ?? "").replace(/\D/g, ""));
   if (valid(pr)) return pr;
   const t = text.toLowerCase();
@@ -120,7 +148,15 @@ function extractStorage(text: string, payloadStorage: unknown): number | null {
 }
 
 function extractScreen(text: string): number | null {
-  const m = text.match(/\b(1[0-8](?:\.\d)?)\s*(?:inch|["”″]|بوصة|انش|إنش)/i) || text.match(/\b(1[0-8](?:\.\d)?)["”]/);
+  // P4 (2026-08-21): a decimal point is sometimes scraped as a plain space
+  // ("15.6\"" -> "15 6 inch"), silently losing the screen size. Checked BEFORE the
+  // plain-integer form so "15 6 inch" is read as 15.6, not a bare "15" (which would
+  // also be wrong — 15 alone is not the stated size).
+  const spaced = text.match(/\b(1[0-8])\s(\d)\s*(?:inch|["”″]|بوصة|انش|إنش)/i);
+  if (spaced) { const n = parseFloat(`${spaced[1]}.${spaced[2]}`); if (n >= 10 && n <= 18) return n; }
+  // P4: a hyphen instead of a space before the unit word ("15.6-Inch", "16-Inch") —
+  // measured across several stores' titles. `[\s-]*` also covers the plain-space form.
+  const m = text.match(/\b(1[0-8](?:\.\d)?)[\s-]*(?:inch|["”″]|بوصة|انش|إنش)/i) || text.match(/\b(1[0-8](?:\.\d)?)["”]/);
   if (m) { const n = parseFloat(m[1]); if (n >= 10 && n <= 18) return n; }
   return null;
 }
@@ -143,7 +179,7 @@ function extractGpu(text: string): { gpu: string; discrete: boolean } {
 // an already-identified laptop (its trio was non-null): strictly additive, zero
 // churn. All operate on `normalizeArabic`-folded text so one pattern matches
 // every spelling and Arabic-Indic digits (٥١٢) are read.
-const RAM_TIERS_LAPTOP = new Set([2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128]);
+const RAM_TIERS_LAPTOP = new Set([2, 3, 4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128, 192]);
 const STORAGE_TIERS_LAPTOP = [128, 256, 320, 500, 512, 1000, 1024, 2000, 2048];
 
 function enhCpu(nt: string): string | null {
@@ -177,7 +213,15 @@ function enhCpu(nt: string): string | null {
 const RAM_PATTERNS = [
   /(\d{1,3})\s*(?:gb|جيجا\S*)(?:\s+\S+){0,2}?\s*(?:ram|memory|ddr|lpddr|رام)/g,
   /(?:الرامات|رام|ram|memory|ذاكره وصول عشوايي)(?:\s+\S+){0,2}?\s*(\d{1,3})\s*(?:gb|جيجا)/g,
-  /(\d{1,3})\s*ram(?![a-z])/g,
+  // P4 (2026-08-21): the RAM figure with NO unit, stated before a DDR-generation
+  // token — "8 ddr4 ram" (= 8GB DDR4 RAM). Checked before the loose digit+ram
+  // pattern below so the DDR generation digit is never mistaken for the RAM figure.
+  /(\d{1,3})\s*(?:ddr\d|lpddr\d)\s*ram\b/g,
+  // A number directly followed by "ram" with no unit at all. Excludes a number
+  // immediately preceded by "ddr"/"lpddr" (a generation digit, e.g. the "4" in
+  // "ddr4 ram") — measured live: this pattern read `ddr4 ram` as RAM=4 while the
+  // listing's real, stated RAM figure (8) sat one token earlier and unmatched.
+  /(?<!ddr)(?<!lpddr)(\d{1,3})\s*ram(?![a-z])/g,
 ];
 function enhRam(nt: string): number | null {
   for (const re of RAM_PATTERNS) for (const m of nt.matchAll(re)) { const n = Number(m[1]); if (RAM_TIERS_LAPTOP.has(n)) return n; }
@@ -192,6 +236,10 @@ function enhStorage(nt: string): number | null {
   for (const m of nt.matchAll(/(\d{3,4})\s*(?:gb|جيجا\S*)/g)) consider(m[1]);
   for (const m of nt.matchAll(/(?:جيجا\S*|gb)\s*(\d{3,4})/g)) consider(m[1]);
   for (const m of nt.matchAll(/(?:تخزين|سعه|ssd|hdd|nvme|emmc|storage)\s*(\d{3,4})/g)) consider(m[1]);
+  // P4 (2026-08-21): the storage figure with NO unit at all — "512 ssd" (Extra's
+  // scraped format drops "GB" outright). Tier-validated like every other candidate
+  // here, so a stray 3-4 digit number can't be mistaken for a capacity.
+  for (const m of nt.matchAll(/(\d{3,4})\s*(?:ssd|hdd|nvme|emmc)\b/g)) consider(m[1]);
   return best;
 }
 
