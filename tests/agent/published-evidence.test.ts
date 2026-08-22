@@ -82,6 +82,39 @@ describe('AC4 — the saving is published on the branch that renders it', () => 
   });
 });
 
+describe('Decision Card v1 (§C) — the alternative price/delta are published unconditionally', () => {
+  const pick = rec({ total_cost_estimate: 3816 }) as never;
+  // store_count differs so `explainChoice` finds a reason ("more suitable" is not asserted;
+  // the pick's cheaper total cost alone is enough for `ar.length > 0`).
+  const runnerUp = rec({ canonical_id: 'c2', total_cost_estimate: 3996, store_count: 1 }) as never;
+
+  it('publishes alternative_unit_price from the runner-up, independent of the reasons cap', () => {
+    const ch = explainChoice(pick, runnerUp)!;
+    // The base fixture's unit_price (4499) is unchanged on the runner-up above — this is the
+    // alternative's OWN displayed price, not the total-cost basis the delta below uses.
+    expect(ch.alternative_unit_price).toBe(4499);
+  });
+
+  it('publishes a signed price_delta computed on the same basis explainChoice compared', () => {
+    const ch = explainChoice(pick, runnerUp)!;
+    expect(ch.price_delta).toBe(180); // runnerUp(3996) - pick(3816), matching total_cost_delta here
+  });
+
+  it('reaches the evidence bundle even when total_cost_delta itself would be null', () => {
+    // Construct a case where the pick wins on suitability, not cost, so `total_cost_delta`
+    // (gated on the "أوفر بـ" sentence surviving the 3-reason cap) is null — the structured
+    // price/delta must NOT be gated the same way.
+    const suitPick = rec({ total_cost_estimate: 4000, suitability_score: 0.9 }) as never;
+    const suitRunnerUp = rec({ canonical_id: 'c3', total_cost_estimate: 3800, suitability_score: 0.5, store_count: 1 }) as never;
+    const ch = explainChoice(suitPick, suitRunnerUp)!;
+    expect(ch.total_cost_delta).toBeNull(); // the pick is NOT cheaper — no saving sentence
+    expect(ch.price_delta).toBe(-200); // still published: 3800 - 4000
+    const ev = buildPublishedEvidence({ recommendations: [], smart_pick: { ...(suitPick as object), chosen_over: ch } as never });
+    expect(ev.figures).toContainEqual({ value: -200, kind: 'price', derivedFrom: 'computed', label: 'chosen_over.price_delta' });
+    expect(ev.figures).toContainEqual({ value: 4499, kind: 'price', derivedFrom: 'live-query', label: 'chosen_over.alternative_unit_price' });
+  });
+});
+
 describe('AC2 — completeness: a rendered figure with no provenance is an ENGINE defect', () => {
   it('finds a figure rendered but not published', () => {
     const payload = { recommendations: [rec()], smart_pick: null, note: 'أفضل سعر 999 ريال' };

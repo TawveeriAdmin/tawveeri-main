@@ -5,6 +5,7 @@
 // LLM — pure keyword/number extraction, so it is reproducible and testable. Unknown
 // beats incorrect: fields it cannot extract stay undefined (never guessed).
 import type { ShoppingTask } from "./decision-engine";
+import { extractSpecsFromTitle } from "@/lib/scraping/config/spec-configs";
 
 /**
  * Arabic-Indic (٠-٩) and Eastern-Arabic/Persian (۰-۹) digits → ASCII.
@@ -743,6 +744,15 @@ export function parseShoppingTask(text: string): ParsedTask {
     if (priorities.length) task.use = priorities;
   }
   if (category === "tv" && priorities.length) task.priorities = priorities;
+  // Decision Card v1, ruling B1 (2026-08-22): a requested screen size («تلفزيون 75 بوصة»),
+  // DISCLOSURE ONLY — never read by decideTv()'s ranking/eligibility, only compared to the
+  // winning pick's dna.screen_size downstream (decide/route.ts) to caption an honest
+  // mismatch. Reuses `extractSpecsFromTitle`'s existing inch regex — the SAME extraction a
+  // product title goes through — rather than a second, possibly-diverging regex.
+  if (category === "tv") {
+    const requestedSize = extractSpecsFromTitle(text).screen_size;
+    if (requestedSize) task.screen_size_requested = Number(requestedSize);
+  }
   if (category === "mobile" && storage_min) task.storage_min = storage_min;
   if (category === "laptop") {
     if (storage_min) task.storage_min = storage_min;

@@ -138,11 +138,21 @@ export function assessTrust(e: EvidenceInput): TrustAssessment {
     const known = e.identity_confidence != null;
     // A price-determining spec left unstated caps identity trust (e.g. NO_STORAGE).
     const value = e.specs_incomplete ? Math.min(idc, 0.55) : idc;
+    // ADR-163 (ruling, Decision Card v1): no raw confidence number may reach a customer —
+    // this factor's evidence_ar/en used to render `دقة الهوية ${pct}%`, which is exactly the
+    // bare score ADR-163 forbids, just one layer down (the EvidencePanel facts group renders
+    // this string verbatim). Banded, worded phrasing only — same discipline as
+    // `suitabilityPhrase` uses for the suitability score.
+    const identityPhrase = e.specs_incomplete
+      ? { ar: "مواصفة مؤثرة غير محددة (مثل السعة)", en: "a price-determining spec is unspecified" }
+      : idc >= 0.85 ? { ar: "هوية المنتج محددة بدقة عالية", en: "Product identity is precisely confirmed" }
+      : idc >= 0.55 ? { ar: "هوية المنتج محددة بشكل جيد", en: "Product identity is well identified" }
+      : { ar: "تحديد هوية المنتج بحاجة لتأكيد إضافي", en: "Product identity needs further confirmation" };
     factors.push({
       key: "identity", label_ar: "دقة تحديد المنتج", label_en: "Identity precision",
       weight: 0.22, value, contribution: Math.round(0.22 * value * 100), status: statusFor(value, known),
-      evidence_ar: e.specs_incomplete ? "مواصفة مؤثرة غير محددة (مثل السعة)" : `دقة الهوية ${Math.round(idc * 100)}%`,
-      evidence_en: e.specs_incomplete ? "a price-determining spec is unspecified" : `identity confidence ${Math.round(idc * 100)}%`,
+      evidence_ar: identityPhrase.ar,
+      evidence_en: identityPhrase.en,
     });
     if (e.specs_incomplete) { caveats_ar.push("مواصفة مؤثرة على السعر غير محددة"); caveats_en.push("A price-determining spec is unspecified"); }
   }

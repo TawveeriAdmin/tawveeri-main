@@ -215,6 +215,10 @@ export async function POST(req: NextRequest) {
   // discount integrity, and knowledge-graph alternatives. All fail-soft.
   const goByCanon = new Map<string, string>();
   const storesByCanon = new Map<string, Set<string>>();
+  // Decision Card v1 (§C): the store BEHIND unit_price — the compact card's "merchant name"
+  // line. Zero new queries: the first (most-recent, `observed_at desc`) observation row per
+  // canonical is the SAME row `goByCanon` already keys off of for `go_url`.
+  const bestOfferStoreRawByCanon = new Map<string, string>();
   type ObsRaw = { id: string; canonical_product_id: string; observed_at: string; store_id: unknown };
   const [obsRes, verdicts, discounts, alternatives] = await Promise.all([
     ids.length
@@ -234,6 +238,7 @@ export async function POST(req: NextRequest) {
     if (raw) {
       const set = storesByCanon.get(o.canonical_product_id) ?? new Set<string>();
       set.add(raw); storesByCanon.set(o.canonical_product_id, set);
+      if (!bestOfferStoreRawByCanon.has(o.canonical_product_id)) bestOfferStoreRawByCanon.set(o.canonical_product_id, raw);
     }
   }
   // Resolve each store identity to an Arabic display name. Named stores make the
@@ -248,6 +253,10 @@ export async function POST(req: NextRequest) {
   // Dedupe AFTER mapping — the same store can appear as both a numeric id ("4") and its
   // Arabic name ("اكسترا") in the raw store_id; both resolve to one display name.
   const storeNames = (cid: string): string[] => [...new Set([...(storesByCanon.get(cid) ?? [])].map(storeDisplay))];
+  const bestOfferStore = (cid: string): string | null => {
+    const raw = bestOfferStoreRawByCanon.get(cid);
+    return raw ? storeDisplay(raw) : null;
+  };
 
   // verdicts / discounts / alternatives were fetched in parallel above (buy-timing intelligence,
   // honest discount integrity, and knowledge-graph alternatives — all fail-soft).
@@ -290,8 +299,39 @@ export async function POST(req: NextRequest) {
     if (r.is_smart_pick && !is_smart_pick) {
       console.warn(`[smart-pick-freshness] advisor label withheld: age=${Math.round(data_age_hours!)}h > ${PICK_FRESHNESS_MAX_HOURS}h · canonical=${r.canonical_id}`);
     }
-    return { ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null, stores: storeNames(r.canonical_id), data_age_hours, price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null };
+    return {
+      ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null,
+      stores: storeNames(r.canonical_id), best_offer_store_ar: bestOfferStore(r.canonical_id), data_age_hours,
+      price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null,
+      size_mismatch: null as { requested: number; actual: number } | null,
+    };
   });
+  // TV SIZE-MISMATCH DISCLOSURE (Decision Card v1, ruling B1, 2026-08-22). MEASURED on
+  // production 2026-08-22: «أبي تلفزيون 75 بوصة، ميزانيتي 3000 ريال» crowned a 65" TV as
+  // «اختيار توفيري» with zero disclosure — decideTv() never compares a requested screen size
+  // at all (it isn't even parsed), so the mismatch was silently invisible to the shopper. This
+  // is DISCLOSURE ONLY: it never re-ranks, never changes which item is index 0 — it only
+  // decides whether that item may keep the "اختيار توفيري" label, exactly as the freshness
+  // gate above already does for stale evidence. Scoped to the item(s) already carrying
+  // `is_smart_pick` — "more options" cards are unaffected.
+  if (engineTask.category === "tv" && engineTask.screen_size_requested) {
+    const requested = engineTask.screen_size_requested;
+    for (const r of out) {
+      if (!r.is_smart_pick) continue;
+      const actual = (r.dna as { screen_size?: unknown })?.screen_size;
+      const actualNum = typeof actual === "number" ? actual : Number(actual);
+      if (actual == null || !Number.isFinite(actualNum)) {
+        // Fail closed (B1's own rule): we cannot verify the size at all — never crown a
+        // pick whose fit against a STATED size constraint is unknown. Ranking order (which
+        // item is `out[0]`) is untouched; only the "smart pick" label is withheld, same
+        // mechanism the freshness gate uses two blocks above.
+        r.is_smart_pick = false;
+        console.warn(`[tv-size-mismatch] label withheld: screen_size unknown for canonical=${r.canonical_id}, requested=${requested}"`);
+      } else if (actualNum !== requested) {
+        r.size_mismatch = { requested, actual: actualNum };
+      }
+    }
+  }
   // SECOND PASS (2026-08-20 follow-up to the `filterOverBudgetTvAlternatives` fix above):
   // `discount_intel` only exists from this point on, so the SAME TV-only rule runs again here
   // using the EFFECTIVE displayed price (`unit_price`, or — when that is unpopulated —

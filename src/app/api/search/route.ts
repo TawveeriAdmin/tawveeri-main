@@ -108,6 +108,11 @@ type DecisionLayer = {
     // untouched — this only makes the WINNING pick's trust claim shared/citable rather
     // than implicit. See buildDecisionLayer().
     trust: TrustAssessment;
+    // Decision Card v1, ruling B1 (2026-08-22) — "apply the same patch to the currently-live
+    // card". TV only, disclosure-only: present when a requested screen size (parsed from the
+    // raw query) doesn't match this pick's own screen size (parsed from its title). Never
+    // changes which product is `best` — see buildDecisionLayer().
+    size_mismatch?: { requested: number; actual: number } | null;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -1346,6 +1351,7 @@ function buildDecisionLayer(
   queryIsMainProduct: boolean,
   relevanceGroups: string[][] = [],
   isAcQuery = false,
+  rawQuery = "",
 ): DecisionLayer {
   const prices = products.map((p) => p.best_price).filter((n) => n > 0);
   const priceMin = prices.length ? Math.min(...prices) : 0;
@@ -1395,7 +1401,26 @@ function buildDecisionLayer(
     console.warn(`[smart-pick-freshness] label withheld: age=${Math.round(pickAgeHours)}h > ${PICK_FRESHNESS_MAX_HOURS}h · "${(best.name_ar || best.name_en || '').slice(0, 60)}"`);
   }
 
-  const decisionCard = trustworthyPick && best && !pickTooStale
+  // TV SIZE-MISMATCH DISCLOSURE (Decision Card v1, ruling B1, 2026-08-22) — the same patch
+  // applied to the Path-1 advisor card, applied here to the currently-live SmartPickCard.
+  // Disclosure only: never reorders `products`, never changes which item is `best`. Gated
+  // purely on the query itself naming a screen size — reusing `extractSpecsFromTitle`'s
+  // existing inch regex (the SAME one every product title is already parsed with) is why
+  // this only ever fires for a size-shaped query, with no separate "is this a TV" check.
+  let sizeMismatch: { requested: number; actual: number } | null = null;
+  let sizeUnverifiable = false;
+  if (best) {
+    const requestedSizeRaw = extractSpecsFromTitle(rawQuery).screen_size;
+    const requestedSize = requestedSizeRaw ? Number(requestedSizeRaw) : null;
+    if (requestedSize) {
+      const actualSizeRaw = extractSpecsFromTitle(`${best.name_ar || ''} ${best.name_en || ''}`).screen_size;
+      const actualSize = actualSizeRaw ? Number(actualSizeRaw) : null;
+      if (actualSize == null) sizeUnverifiable = true; // fail closed — see B1
+      else if (actualSize !== requestedSize) sizeMismatch = { requested: requestedSize, actual: actualSize };
+    }
+  }
+
+  const decisionCard = trustworthyPick && best && !pickTooStale && !sizeUnverifiable
     ? {
         title: best.name_ar,
         best_price: best.best_price,
@@ -1414,8 +1439,12 @@ function buildDecisionLayer(
           tps_identity_key: best.tps_identity_key ?? null,
           last_observed_at: pickObservedAt,
         }),
+        size_mismatch: sizeMismatch,
       }
     : null;
+  if (sizeUnverifiable && best) {
+    console.warn(`[tv-size-mismatch] Path-2 card withheld: screen_size unverifiable for "${(best.name_ar || best.name_en || '').slice(0, 60)}"`);
+  }
   const topMatches: DecisionTopMatch[] = top3.map((p) => ({
     product_id: p.product_id || '',
     name_ar: p.name_ar,
@@ -2197,7 +2226,7 @@ export async function POST(request: NextRequest) {
     products.sort(compareBySort(body.sort || 'relevance'));
   }
 
-  const decision = buildDecisionLayer(products, queryIsMainProduct, relevanceGroups, isAcQuery);
+  const decision = buildDecisionLayer(products, queryIsMainProduct, relevanceGroups, isAcQuery, rawQuery);
 
   // ✅ تم تصحيح حساب total بعد دمج TPS
   const total = rawQuery

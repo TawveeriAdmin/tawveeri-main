@@ -48,6 +48,13 @@ export interface AdvisorRecommendation {
   chosen_over?: ChoiceExplanation | null;
   discount_intel?: DiscountIntel | null;
   alternatives?: ProductAlternative[] | null;
+  /** Decision Card v1 (§C) — the store behind `unit_price`, the compact card's merchant-name
+   *  line. Null when no observation resolved a store (the card omits the line, never a blank). */
+  best_offer_store_ar?: string | null;
+  /** Decision Card v1, ruling B1 — TV only. Present when a requested screen size doesn't match
+   *  this pick's `dna.screen_size`. Disclosure only; never affects ranking or which item is
+   *  first in `recommendations`. */
+  size_mismatch?: { requested: number; actual: number } | null;
 }
 
 // ── Trust Engine breakdown (ADR-087) surfaced to the customer ────────────────
@@ -168,6 +175,11 @@ export interface ChoiceExplanation {
   alternative_title_en: string | null;
   reasons_ar: string[];
   reasons_en: string[];
+  total_cost_delta?: number | null;
+  /** Decision Card v1 (§C) — the alternative's own price and the signed delta vs. the pick,
+   *  published independently of whether a cost-delta sentence survived `reasons_ar`'s cap. */
+  alternative_unit_price?: number | null;
+  price_delta?: number | null;
 }
 
 /** Localized comparison ("chosen over X because …"); null when not clearly better. */
@@ -178,6 +190,64 @@ export function choiceReasons(rec: AdvisorRecommendation, locale: Locale): { alt
   if (!reasons?.length) return null;
   const alt = (locale === "ar" ? c.alternative_title_ar : c.alternative_title_en) || c.alternative_title_ar || c.alternative_title_en || "";
   return { alt, reasons };
+}
+
+/**
+ * Decision Card v1 (§B/C) — "ONE alternative: name, price, price delta". `choiceReasons()`
+ * above only ever surfaced the alternative's name and prose reasons; the alternative's own
+ * price was never a structured, renderable value (only ever mentioned inside a sentence like
+ * «أوفر بـ180 ريال», which does not exist when the pick won on a non-price axis). Null when
+ * the engine did not publish a price for the alternative — omitted, never fabricated.
+ */
+export function alternativePriceLine(rec: AdvisorRecommendation, locale: Locale): string | null {
+  const c = rec.chosen_over;
+  if (!c || c.alternative_unit_price == null) return null;
+  const price = Math.round(c.alternative_unit_price).toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
+  const unit = locale === "ar" ? "ريال" : "SAR";
+  if (c.price_delta == null || c.price_delta === 0) return `${price} ${unit}`;
+  const deltaAbs = Math.abs(Math.round(c.price_delta)).toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
+  const sign = c.price_delta > 0 ? "+" : "−";
+  return `${price} ${unit} (${sign}${deltaAbs})`;
+}
+
+/**
+ * TV SIZE-MISMATCH COPY (Decision Card v1, ruling B1, 2026-08-22; combined-banner fix,
+ * founder review, 2026-08-22). A pick that doesn't match a stated screen size is never
+ * labelled «اختيار توفيري» ("Tawveeri's pick") — that label asserts a confirmed match, which
+ * this explicitly is not.
+ *
+ * ONE BANNER, ONE VOICE. Before this fix, a pick that ALSO exceeded budget rendered two
+ * separate red banners saying overlapping things in two different verbs («لم أجد» from the
+ * response-level `budget_note`, «لم نجد» here) — the same miss, stated twice, inconsistently.
+ * `budget.pickPrice`/`budget.total` let this function state BOTH misses (size and price) in
+ * one sentence, always in «نجد» voice; the caller (`AdvisorAnswer`) suppresses the separate
+ * `budget_note` block whenever a `size_mismatch` is present, so only this banner renders.
+ * `budget.stated` alone (no total/price) preserves the narrower size-only sentence — asserting
+ * a budget context the shopper never gave would itself be a fabrication.
+ */
+export function sizeMismatchCopy(
+  mismatch: { requested: number; actual: number },
+  locale: Locale,
+  budget: { stated: boolean; total?: number | null; pickPrice?: number | null },
+): { label: string; lead: string; compactLine: string } {
+  const ar = locale === "ar";
+  const label = ar ? "أقرب بديل متاح" : "Closest available match";
+  const alsoOverBudget = budget.stated && budget.total != null && budget.pickPrice != null && budget.pickPrice > budget.total;
+  const lead = ar
+    ? (alsoOverBudget
+        ? `لم نجد اختيارًا مؤكدًا يطابق ${mismatch.requested} بوصة ضمن ميزانية ${budget.total} ريال — أقرب خيار متاح بسعر ${budget.pickPrice} ريال.`
+        : budget.stated
+        ? `لم نجد اختيارًا مؤكدًا يطابق ${mismatch.requested} بوصة ضمن الميزانية.`
+        : `لم نجد اختيارًا مؤكدًا يطابق ${mismatch.requested} بوصة.`)
+    : (alsoOverBudget
+        ? `We couldn't find a confirmed match for ${mismatch.requested}" within a ${budget.total} SAR budget — the closest available option is ${budget.pickPrice} SAR.`
+        : budget.stated
+        ? `We couldn't find a confirmed match for ${mismatch.requested}" within your budget.`
+        : `We couldn't find a confirmed match for ${mismatch.requested}".`);
+  const compactLine = ar
+    ? `طلبت ${mismatch.requested} بوصة — هذا المنتج ${mismatch.actual} بوصة`
+    : `You asked for ${mismatch.requested}" — this is a ${mismatch.actual}" TV`;
+  return { label, lead, compactLine };
 }
 
 export interface PriceIntel {

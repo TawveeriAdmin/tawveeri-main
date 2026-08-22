@@ -72,10 +72,12 @@ describe("every reason declares what kind of claim it is", () => {
   });
 });
 
-describe("the card leads with at most two sentences", () => {
-  it.each(CATEGORY_FIXTURES)("$category — never more than two", ({ category, attrs, task }) => {
+describe("the card leads with one to three sentences (B3, Decision Card v1) — cautions never dropped", () => {
+  it.each(CATEGORY_FIXTURES)("$category — typically no more than three", ({ category, attrs, task }) => {
     const [rec] = run(category, attrs, task);
-    expect(rec.headline_reasons.length).toBeLessThanOrEqual(2);
+    // A soft target, not a hard cap — see the next describe block for the case where
+    // multiple cautions legitimately push the count past three.
+    expect(rec.headline_reasons.length).toBeLessThanOrEqual(3);
   });
 
   it("never leads with a sentence the card already states elsewhere", () => {
@@ -99,6 +101,28 @@ describe("the card leads with at most two sentences", () => {
     expect(pickHeadlineReasons(["identity", "spec", "evidence"])).toEqual([1]);
     expect(pickHeadlineReasons(["identity", "evidence"])).toEqual([]);
     expect(pickHeadlineReasons(["estimate", "evidence"])).toEqual([0]);
+  });
+
+  it("B3: never drops a caution to stay under three — honesty outranks the target length", () => {
+    // Two constraint mismatches (both cautions) plus a fit reason: all three MUST show, even
+    // though that is not "3 or fewer" in the strictest sense — dropping either caution would
+    // silently hide an unmet request, exactly what B3 forbids.
+    const kinds: ReasonKind[] = ["caution", "fit", "caution", "spec"];
+    const result = pickHeadlineReasons(kinds);
+    expect(result).toContain(0); // first caution
+    expect(result).toContain(2); // second caution
+    expect(result).toContain(1); // the one fit reason
+  });
+
+  it("B3: includes at least one fit reason when one exists, even alongside a caution", () => {
+    const kinds: ReasonKind[] = ["caution", "spec", "fit"];
+    const result = pickHeadlineReasons(kinds);
+    expect(result).toContain(2); // the fit reason must not be crowded out by caution+spec
+  });
+
+  it("B3: never pads past what genuinely exists", () => {
+    expect(pickHeadlineReasons(["fit"])).toEqual([0]);
+    expect(pickHeadlineReasons([])).toEqual([]);
   });
 
   it("returns indices that actually address the reasons array", () => {

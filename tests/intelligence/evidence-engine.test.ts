@@ -20,6 +20,18 @@ describe("assessTrust — evidence-grounded, deterministic, honest", () => {
     expect(corro.evidence_en).toMatch(/single store/i);
   });
 
+  it("ADR-163 (Decision Card v1 ruling): identity evidence is worded, never a raw percentage", () => {
+    // MEASURED (2026-08-22): this factor used to emit `دقة الهوية 75%` / `identity confidence
+    // 75%` verbatim — a bare confidence number leaking into the customer-visible EvidencePanel
+    // facts group through a channel ADR-163's original fix (the top-level score) never covered.
+    for (const idc of [10, 40, 60, 90]) {
+      const t = assessTrust({ store_count: 2, identity_confidence: idc });
+      const identity = t.factors.find((f) => f.key === "identity")!;
+      expect(identity.evidence_ar).not.toMatch(/\d/);
+      expect(identity.evidence_en).not.toMatch(/\d/);
+    }
+  });
+
   it("an unspecified price-determining spec caps identity trust + surfaces a caveat", () => {
     const full = assessTrust({ store_count: 2, identity_confidence: 90 });
     const partial = assessTrust({ store_count: 2, identity_confidence: 90, specs_incomplete: true });

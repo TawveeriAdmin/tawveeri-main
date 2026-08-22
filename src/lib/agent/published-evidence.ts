@@ -28,7 +28,9 @@ interface RecommendationLike {
 
 interface DecidePayloadLike {
   recommendations?: RecommendationLike[] | null;
-  smart_pick?: (RecommendationLike & { chosen_over?: { total_cost_delta?: number | null } | null }) | null;
+  smart_pick?: (RecommendationLike & {
+    chosen_over?: { total_cost_delta?: number | null; alternative_unit_price?: number | null; price_delta?: number | null } | null;
+  }) | null;
 }
 
 /**
@@ -107,6 +109,11 @@ export function buildPublishedEvidence(payload: DecidePayloadLike): PublishedEvi
 
   // The saving `chosen_over` RENDERS. Published by the engine on the same branch that renders it.
   push(figures, payload.smart_pick?.chosen_over?.total_cost_delta, 'price', 'computed', 'chosen_over.total_cost_delta');
+  // Decision Card v1 (§C): the alternative's own displayed price and the signed delta between
+  // it and the pick — published unconditionally (not gated on whether a cost-delta SENTENCE
+  // survived `explainChoice()`'s 3-reason cap), same discipline as every other figure here.
+  push(figures, payload.smart_pick?.chosen_over?.alternative_unit_price, 'price', 'live-query', 'chosen_over.alternative_unit_price');
+  push(figures, payload.smart_pick?.chosen_over?.price_delta, 'price', 'computed', 'chosen_over.price_delta');
 
   return { figures, retailers: [...retailers] };
 }

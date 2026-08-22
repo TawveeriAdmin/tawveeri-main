@@ -15,6 +15,12 @@ export const USAGE_EVENT_TYPES = [
   "advisor_clarified",                   // shopper answered the ONE clarification question (asked-vs-answered)
   "advisor_share",                       // Decision Receipt shared/copied (growth-loop signal)
   "advisor_constraint_removed",          // shopper removed a parsed constraint («فهمنا منك»)
+  // Decision Card v1 (2026-08-22, §D) — trust-companion behavior signals on the advisor's
+  // own crowned pick, distinct from the surface-wide events above/below:
+  "recommendation_accept",               // shopper clicked the SMART PICK's own primary CTA
+  "alternative_view",                    // "موثوقية المعلومات" expand opened AND an alternative rendered
+  "evidence_expand",                     // "موثوقية المعلومات" expand opened (fires on the toggle, not on mount)
+  "return_to_decision",                  // SmartPick re-mounted for a canonical_id already seen this journey
   "search", "results",                   // storefront surface: Search / Results
   "product_view",                        // Product View (both surfaces)
   "comparison_view",                     // Comparison seen (≥2 stores)

@@ -90,6 +90,15 @@ export interface ShoppingTask {
    * Only meaningful for `air_conditioner`.
    */
   wants_inverter?: boolean;
+  /**
+   * Decision Card v1, ruling B1 (2026-08-22): a requested TV screen size, e.g. «تلفزيون 75
+   * بوصة», parsed by `task-parser.ts` via `extractSpecsFromTitle()` (the SAME regex product
+   * titles are parsed with — one implementation, not a second copy). DISCLOSURE ONLY — never
+   * read by `decideTv()` or any ranking/eligibility path; `decide/route.ts` compares it to the
+   * winning candidate's `dna.screen_size` purely to caption an honest mismatch. Only
+   * meaningful for `tv`.
+   */
+  screen_size_requested?: number | null;
 }
 
 export interface CanonicalRow {
@@ -170,10 +179,25 @@ export class ReasonLedger {
  * A caution outranks a positive: if something works against what the shopper asked for, that is
  * the sentence they need, not the best thing we can say.
  */
+/**
+ * B3 (Decision Card v1 ruling, 2026-08-22): compact card shows 1–3 reasons — a target, not a
+ * fixed count. Cautions are NEVER dropped for space (every constraint mismatch or unmet
+ * request stays visible), at least one fit reason is included when one exists, and the
+ * selection is never padded past what genuinely exists. When more than one caution fires,
+ * the total can legitimately exceed 3 — honesty about a mismatch outranks the target length.
+ */
 export function pickHeadlineReasons(kinds: ReasonKind[]): number[] {
   const of = (k: ReasonKind) => kinds.map((x, i) => (x === k ? i : -1)).filter((i) => i >= 0);
-  const ordered = [...of("caution"), ...of("fit"), ...of("spec"), ...of("estimate")];
-  return ordered.slice(0, 2);
+  const cautions = of("caution");
+  const fits = of("fit");
+  const rest = [...of("spec"), ...of("estimate")];
+  const selected = [...cautions];
+  if (fits.length) selected.push(fits[0]);
+  for (const i of rest) {
+    if (selected.length >= 3) break;
+    selected.push(i);
+  }
+  return selected;
 }
 
 export interface Recommendation {
@@ -354,9 +378,25 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
     const cost = estimateTotalCost(row.lowest_price, dna);
     // 5. Total cost within budget (suitability, not commission). ESTIMATE, not a measurement:
     //    installation and annual electricity are modelled from KSA heuristics (ADR-187).
+    // SCORE IS UNCHANGED (founder review, 2026-08-22, disclosure-only fix): the -0.12 penalty
+    // still applies whenever cost.total exceeds budget, exactly as before — only the WORDING
+    // changes. MEASURED: a device priced 1,199 SAR (within a 2,000 SAR budget) was captioned
+    // "أعلى من ميزانيتك" ("over your budget") solely because the estimated total (device +
+    // install + modelled annual electricity, 2,908) exceeded it — asserting the DEVICE itself
+    // is unaffordable when it is not. "Over budget" is only true when the device's own
+    // verified price exceeds budget; a total-cost overage is a different, milder fact.
     if (task.budget_total && cost.total) {
       if (cost.total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
-      else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
+      else if (cost.unit != null && cost.unit <= task.budget_total) {
+        // `caution`, not `estimate` (2026-08-22 follow-up): the score impact is identical to
+        // the true-over-budget branch below (-0.12), and `pickHeadlineReasons` (§B3) only
+        // guarantees a compact-card slot to cautions — classifying this as `estimate` demoted
+        // it below the 3-slot fill cap and made it silently vanish from the compact card on
+        // exactly the query that motivated this fix. The wording is corrected; the visibility
+        // tier matching the real score impact is not.
+        score -= 0.12;
+        reasons.caution(`سعر الجهاز ${cost.unit} ضمن ميزانيتك — التكلفة الإجمالية التقديرية (شاملة التركيب والكهرباء) ~${cost.total} ريال`);
+      } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
     } else if (cost.total) {
       reasons.estimate(`التكلفة الإجمالية التقديرية ~${cost.total} ريال (الجهاز ${cost.unit} + تركيب ${cost.installation} + كهرباء سنوية ~${cost.annual_electricity})`);
     }
@@ -668,7 +708,17 @@ export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Re
     if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     const unit = row.lowest_price; const annual = fridgeAnnualElectricity(liters, inverter);
     const total = unit != null ? Math.round(unit + annual) : null;
-    if (task.budget_total && total) { if (total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`); } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة ~${total} ريال`); } }
+    // Same disclosure-only fix as decideAc above (founder review, 2026-08-22): score unchanged,
+    // wording corrected so a device priced within budget is never captioned "over budget" just
+    // because the modelled annual-electricity total pushes past it.
+    if (task.budget_total && total) {
+      if (total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`); }
+      else if (unit != null && unit <= task.budget_total) {
+        // caution, not estimate — same reasoning as decideAc's identical fix above.
+        score -= 0.12;
+        reasons.caution(`سعر الجهاز ${unit} ضمن ميزانيتك — التكلفة الإجمالية التقديرية (شاملة الكهرباء) ~${total} ريال`);
+      } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة ~${total} ريال`); }
+    }
     else if (total) reasons.estimate(`التكلفة التقديرية ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`);
     return { row, dna, score, reasons, total, breakdown: { unit: unit ?? null, installation: null, annual_electricity: annual } };
   });
@@ -833,6 +883,19 @@ export interface ChoiceExplanation {
    * two are set together, a few lines below, so they cannot drift apart.
    */
   total_cost_delta: number | null;
+  /**
+   * Decision Card v1 (§C): the alternative's OWN displayed price, so the card can show "Model Y
+   * — 3,199 SAR" as a structured value rather than only ever mentioning it inside prose. Unlike
+   * `total_cost_delta` above, this is published whenever the runner-up has a price, independent
+   * of whether a cost-delta SENTENCE survived the 3-reason cap below — the card's alternative
+   * line needs the number even when the reason it ranked lower was something else entirely
+   * (e.g. lower suitability, not price).
+   */
+  alternative_unit_price: number | null;
+  /** Signed (`alternative − pick`, same total-cost-or-unit basis the engine itself compared).
+   *  Positive = the alternative costs more. Always computed alongside `alternative_unit_price`
+   *  when both prices are known — never gated on `reasons_ar`'s 3-item cap. */
+  price_delta: number | null;
 }
 export function explainChoice(pick: Recommendation, runnerUp: Recommendation | undefined): ChoiceExplanation | null {
   if (!runnerUp || runnerUp.canonical_id === pick.canonical_id) return null;
@@ -863,6 +926,10 @@ export function explainChoice(pick: Recommendation, runnerUp: Recommendation | u
     // `slice(0,3)` can drop the saving sentence; publish the delta only if it SURVIVED into the
     // rendered list. Publishing a figure we did not render would be the mirror of the defect.
     total_cost_delta: ar.slice(0, 3).some((r) => r.includes("أوفر بـ")) ? totalCostDelta : null,
+    // Structured price/delta for the card's alternative line — independent of the 3-reason
+    // cap above (see the field doc comments on ChoiceExplanation).
+    alternative_unit_price: runnerUp.unit_price ?? null,
+    price_delta: pc != null && rc != null ? Math.round(rc - pc) : null,
   };
 }
 

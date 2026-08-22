@@ -6,6 +6,7 @@
 import {
   categoryLabel, priorityLabel, recTitle, comparisonBadge, costLines,
   hasTotalBeyondUnit, parsedSummary, parsedConstraintChips, exitHref, verdictTone, verdictText, choiceReasons, discountLine,
+  alternativePriceLine, sizeMismatchCopy,
   type AdvisorRecommendation, type PriceIntel,
 } from "../../src/lib/agent/advisor-api";
 
@@ -15,6 +16,60 @@ const rec = (over: Partial<AdvisorRecommendation> = {}): AdvisorRecommendation =
   cost_breakdown: { unit: 2000, installation: 350, annual_electricity: 360 },
   store_count: 3, comparison_available: true, suitability_score: 0.8, confidence: 88,
   is_smart_pick: true, reasons_ar: ["إنفرتر — أوفر"], dna: {}, go_offer_hint: "c1", go_url: "/go/abc", ...over,
+});
+
+describe("alternativePriceLine — Decision Card v1 (§C): the alternative's own price + delta", () => {
+  // NOTE: `toLocaleString('ar-SA')` renders Eastern Arabic-Indic digits (same convention
+  // `CostBlock` in advisor-answer.tsx already uses) — asserted on the EN side, which is
+  // locale-independent, to avoid pinning ICU digit-rendering behavior in two places.
+  it("renders price and a signed delta when both are known", () => {
+    const r = rec({ chosen_over: { alternative_title_ar: "بديل", alternative_title_en: "Alt", reasons_ar: [], reasons_en: [], total_cost_delta: null, alternative_unit_price: 3199, price_delta: 180 } });
+    expect(alternativePriceLine(r, "en")).toBe("3,199 SAR (+180)");
+    expect(alternativePriceLine(r, "ar")).toContain("ريال");
+  });
+  it("renders a negative delta with a minus sign", () => {
+    const r = rec({ chosen_over: { alternative_title_ar: "بديل", alternative_title_en: "Alt", reasons_ar: [], reasons_en: [], total_cost_delta: null, alternative_unit_price: 1500, price_delta: -50 } });
+    expect(alternativePriceLine(r, "en")).toContain("(−50)");
+  });
+  it("renders price alone when no delta is known", () => {
+    const r = rec({ chosen_over: { alternative_title_ar: "بديل", alternative_title_en: "Alt", reasons_ar: [], reasons_en: [], total_cost_delta: null, alternative_unit_price: 2000, price_delta: null } });
+    expect(alternativePriceLine(r, "en")).toBe("2,000 SAR");
+  });
+  it("is null when no alternative price was published — never fabricated", () => {
+    expect(alternativePriceLine(rec({ chosen_over: null }), "ar")).toBeNull();
+    const r = rec({ chosen_over: { alternative_title_ar: "بديل", alternative_title_en: "Alt", reasons_ar: [], reasons_en: [] } });
+    expect(alternativePriceLine(r, "ar")).toBeNull();
+  });
+});
+
+describe("sizeMismatchCopy — TV size disclosure (ruling B1 + combined-banner fix)", () => {
+  it("never claims a budget context that wasn't stated", () => {
+    const c = sizeMismatchCopy({ requested: 75, actual: 65 }, "ar", { stated: false });
+    expect(c.lead).toBe("لم نجد اختيارًا مؤكدًا يطابق 75 بوصة.");
+    expect(c.lead).not.toContain("الميزانية");
+  });
+  it("includes the budget clause only when a budget was actually stated", () => {
+    const c = sizeMismatchCopy({ requested: 75, actual: 65 }, "ar", { stated: true });
+    expect(c.lead).toBe("لم نجد اختيارًا مؤكدًا يطابق 75 بوصة ضمن الميزانية.");
+  });
+  it("relabels away from the confirmed-pick label", () => {
+    expect(sizeMismatchCopy({ requested: 75, actual: 65 }, "ar", { stated: true }).label).toBe("أقرب بديل متاح");
+    expect(sizeMismatchCopy({ requested: 75, actual: 65 }, "ar", { stated: true }).label).not.toBe("اختيار توفيري");
+  });
+  it("compact line states both the requested and actual size, exact mandated wording", () => {
+    const c = sizeMismatchCopy({ requested: 75, actual: 65 }, "ar", { stated: true });
+    expect(c.compactLine).toBe("طلبت 75 بوصة — هذا المنتج 65 بوصة");
+  });
+  it("ONE banner, ONE voice: states both size and budget misses in a single 'نجد' sentence when the pick is also over budget", () => {
+    const c = sizeMismatchCopy({ requested: 55, actual: 65 }, "ar", { stated: true, total: 4000, pickPrice: 4699 });
+    expect(c.lead).toBe("لم نجد اختيارًا مؤكدًا يطابق 55 بوصة ضمن ميزانية 4000 ريال — أقرب خيار متاح بسعر 4699 ريال.");
+    expect(c.lead).not.toContain("لم أجد"); // never the other verb — one voice only
+    expect((c.lead.match(/لم نجد/g) ?? []).length).toBe(1); // one sentence, not two banners' worth
+  });
+  it("falls back to the size-only sentence when the pick is within budget", () => {
+    const c = sizeMismatchCopy({ requested: 75, actual: 65 }, "ar", { stated: true, total: 3000, pickPrice: 2399 });
+    expect(c.lead).toBe("لم نجد اختيارًا مؤكدًا يطابق 75 بوصة ضمن الميزانية.");
+  });
 });
 
 describe("Advisor labels (bilingual, deterministic)", () => {

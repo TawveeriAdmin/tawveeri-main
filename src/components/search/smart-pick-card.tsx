@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3, Clock } from 'lucide-react';
+import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3, Clock, CircleAlert } from 'lucide-react';
 import { Price } from '@/components/ui/price';
 import { hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 
@@ -46,12 +46,18 @@ export interface SmartPick {
    * without a considered design pass.
    */
   trust?: { score: number; tier: 'high' | 'medium' | 'low' | string } | null;
+  /** Decision Card v1, ruling B1 (2026-08-22) — TV only. Present when a requested screen size
+   *  doesn't match this pick's own. Disclosure only; never changes which product this is. */
+  size_mismatch?: { requested: number; actual: number } | null;
 }
 
 export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: string }) {
   const isRTL = locale === 'ar';
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
-  const label = isRTL ? 'اختيار توفيري' : 'Tawveeri Smart Pick';
+  const mismatch = pick.size_mismatch ?? null;
+  // Decision Card v1, ruling B1 — a pick that doesn't match a requested screen size is never
+  // labelled "اختيار توفيري" ("Tawveeri's pick"), which asserts a confirmed match.
+  const label = mismatch ? (isRTL ? 'أقرب بديل متاح' : 'Closest available match') : (isRTL ? 'اختيار توفيري' : 'Tawveeri Smart Pick');
   const cta = isRTL ? 'اعرض العرض' : 'View offer';
   const compareUrl = pick.compare_url || null;
   // The claim and the surface that backs it are one decision, made here once.
@@ -90,6 +96,14 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
           <h3 className="truncate text-base font-semibold text-on-surface sm:text-lg">
             {pick.title}
           </h3>
+          {mismatch && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-warning-700 dark:text-warning-400" data-testid="size-mismatch-line">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {isRTL
+                ? `طلبت ${mismatch.requested} بوصة — هذا المنتج ${mismatch.actual} بوصة`
+                : `You asked for ${mismatch.requested}" — this is a ${mismatch.actual}" TV`}
+            </p>
+          )}
           <p className="mt-0.5 text-sm text-on-surface-variant">{pick.reason_ar}</p>
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-on-surface-variant">
             <Store className="h-3.5 w-3.5" aria-hidden />

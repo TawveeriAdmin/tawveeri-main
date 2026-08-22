@@ -11,6 +11,7 @@ import { Price } from '@/components/ui/price';
 import {
   comparisonBadge, costLines, exitHref, hasTotalBeyondUnit, recTitle,
   verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel, evidenceGroups,
+  alternativePriceLine, sizeMismatchCopy,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
 } from '@/lib/agent/advisor-api';
 import { ConstraintLedger } from '@/components/agent/constraint-ledger';
@@ -18,6 +19,7 @@ import { ConstraintLedger } from '@/components/agent/constraint-ledger';
 // re-written, so the two surfaces cannot describe the same observation differently.
 import { ageLabel } from '@/lib/agent/home-mission-view';
 import { track } from '@/lib/analytics/track';
+import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
 
 /**
  * AdvisorAnswer — the وفّر decision engine's answer, rendered.
@@ -317,10 +319,13 @@ function Alternatives({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale })
 function ChoiceComparison({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
   const c = choiceReasons(rec, loc);
   if (!c) return null;
+  // Decision Card v1 (§B): "ONE alternative: name, price, price delta, reason it ranked
+  // lower." Name + reason already existed; the price/delta line is new (advisor-api.ts).
+  const priceLine = alternativePriceLine(rec, loc);
   return (
     <div className="mt-3 rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2 dark:border-primary-900/50 dark:bg-primary-950/20">
       <p className="text-xs font-semibold text-primary-700 dark:text-primary-300">
-        {t('agent.vsAlternative')}{c.alt ? ` «${c.alt}»` : ''}:
+        {t('agent.vsAlternative')}{c.alt ? ` «${c.alt}»` : ''}{priceLine ? ` — ${priceLine}` : ''}:
       </p>
       <p className="mt-0.5 text-xs text-on-surface-variant">{c.reasons.join(' · ')}</p>
     </div>
@@ -356,7 +361,7 @@ function CostBlock({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t
   );
 }
 
-function ExitButtons({ rec, loc, t, Arrow, source, id }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string; id?: string }) {
+function ExitButtons({ rec, loc, t, Arrow, source, id, onAccept }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string; id?: string; onAccept?: () => void }) {
   const href = exitHref(rec, loc);
   const external = !!rec.go_url;
   return (
@@ -365,7 +370,10 @@ function ExitButtons({ rec, loc, t, Arrow, source, id }: { rec: AdvisorRecommend
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noopener noreferrer' : undefined}
-        onClick={() => track('go_click', { canonical_id: rec.canonical_id, store: rec.stores?.[0] ?? null, category: (rec.dna?.category as string) ?? null, source, meta: { measured: external } })}
+        onClick={() => {
+          track('go_click', { canonical_id: rec.canonical_id, store: rec.stores?.[0] ?? null, category: (rec.dna?.category as string) ?? null, source, meta: { measured: external } });
+          onAccept?.();
+        }}
         className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary-600 px-4 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-700"
       >
         {t('agent.viewOffer')}<Arrow className="h-4 w-4" aria-hidden />
@@ -558,45 +566,173 @@ function EvidencePanel({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Local
   );
 }
 
-function SmartPick({ rec, loc, t, Arrow, source }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string }) {
-  // The smart pick shows its evidence panel by default → count it as an evidence view.
-  useEffect(() => { track('evidence_view', { canonical_id: rec.canonical_id, meta: { trust_score: rec.trust?.score ?? null, smart_pick: true } }); }, [rec.canonical_id, rec.trust?.score]);
+/**
+ * MERCHANT NAME LINE (Decision Card v1, §B) — "اختيار توفيري: product, price, merchant name."
+ * `rec.best_offer_store_ar` is the store behind `unit_price` (decide/route.ts, zero new
+ * queries). Renders nothing when unresolved — omit the line, never a blank one.
+ */
+function MerchantLine({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
+  if (!rec.best_offer_store_ar) return null;
+  return (
+    <p className="mt-1 inline-flex items-center gap-1 text-xs text-on-surface-variant">
+      <Store className="h-3.5 w-3.5" aria-hidden />
+      {t('agent.bestPriceAt').replace('{store}', rec.best_offer_store_ar)}
+    </p>
+  );
+}
+
+/**
+ * COMPACT REASONS (Decision Card v1, §B3) — the engine's own `headline_reasons` selection
+ * (1–3, cautions never dropped — see `pickHeadlineReasons`). Deliberately NOT the shared
+ * `Reasons` component: that component owns its own "show all" `<details>`, which would nest a
+ * second toggle inside this card's single outer "موثوقية المعلومات" expand below.
+ */
+/**
+ * Founder review (2026-08-22): when `size_mismatch` is present, `decideTv()`'s own neutral
+ * spec line — `"${actual} بوصة"` — states the SAME size the mismatch banner just called out
+ * as wrong, but renders as a green ✓ check, reading as if the wrong size were being
+ * confirmed as a positive fit. View-layer only: the reason still exists in `reasons_ar` (the
+ * engine and its evidence are untouched), it is simply not rendered here.
+ */
+function isRedundantSizeSpec(rec: AdvisorRecommendation, text: string): boolean {
+  const mismatch = rec.size_mismatch;
+  return !!mismatch && text.trim() === `${mismatch.actual} بوصة`;
+}
+
+function CompactReasons({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
+  const all = rec.reasons_ar ?? [];
+  const kinds = rec.reason_kinds ?? [];
+  const headline = rec.headline_reasons ?? null;
+  const shown = (headline ?? all.map((_, i) => i).slice(0, 3))
+    .filter((i) => all[i]?.trim() && !isRedundantSizeSpec(rec, all[i]));
+  if (!shown.length) return null;
+  return (
+    <ul className="mt-3 space-y-1.5">
+      {shown.map((i) => <ReasonLine key={i} text={all[i]} kind={kinds[i]} t={t} />)}
+    </ul>
+  );
+}
+
+/**
+ * TV SIZE-MISMATCH BANNER (Decision Card v1, ruling B1) — a pick whose screen size does not
+ * match what was asked is never presented as a confirmed "اختيار توفيري". This leads the card
+ * (per B1: "lead with…") rather than sitting inside the expand, because withholding it would
+ * be exactly the silent substitution the founder's own production example exposed.
+ */
+function SizeMismatchBanner({ copy }: { copy: { lead: string } }) {
+  return (
+    <div className="mb-3 flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm leading-relaxed text-on-surface dark:border-warning-900/50 dark:bg-warning-950/30" data-testid="size-mismatch-banner">
+      <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning-600" aria-hidden />
+      <span>{copy.lead}</span>
+    </div>
+  );
+}
+
+function SmartPick({ rec, loc, t, Arrow, source, budgetTotal }: { rec: AdvisorRecommendation; loc: Locale; t: TFn; Arrow: typeof ArrowRight; source: string; budgetTotal: number | null }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const mismatch = rec.size_mismatch ?? null;
+  // ONE BANNER, ONE VOICE (founder review, 2026-08-22): when the pick is ALSO over budget on
+  // its own price, this single sentence states both misses — the caller suppresses the
+  // separate `budget_note` block below whenever `mismatch` is present, so there is exactly
+  // one red banner, never two saying the same thing in two verbs.
+  const mismatchCopy = mismatch
+    ? sizeMismatchCopy(mismatch, loc, { stated: budgetTotal != null, total: budgetTotal, pickPrice: rec.unit_price })
+    : null;
+  const hasAlternative = !!rec.chosen_over;
+
+  // return_to_decision (§D) — has this shopper already seen THIS exact pick this session?
+  // Independent of DecisionState by design (kept untouched — see decision-state.ts's own ADR).
+  useEffect(() => {
+    if (hasSeenDecisionCard(rec.canonical_id)) {
+      track('return_to_decision', { canonical_id: rec.canonical_id });
+    } else {
+      markDecisionCardSeen(rec.canonical_id);
+    }
+  }, [rec.canonical_id]);
+
+  const onToggleDetails = (open: boolean) => {
+    setDetailsOpen(open);
+    if (!open) return;
+    // evidence_expand always fires on open; alternative_view only when an alternative is
+    // actually rendered inside — never fabricate a view of something that wasn't shown.
+    track('evidence_expand', { canonical_id: rec.canonical_id, meta: { trust_score: rec.trust?.score ?? null } });
+    if (hasAlternative) track('alternative_view', { canonical_id: rec.canonical_id, meta: { price_delta: rec.chosen_over?.price_delta ?? null } });
+  };
+
   return (
     <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-surface-container-lowest p-5 dark:border-primary-800 dark:from-primary-950/40 dark:to-surface-container-lowest">
+      {mismatchCopy && <SizeMismatchBanner copy={mismatchCopy} />}
+      {/* Max 3 evidence chips on a mismatch card (founder review, 2026-08-22) — the
+          price-history detail (PriceVerdictBadge/DiscountTruthBadge) moves into the expand
+          below instead of crowding the compact row alongside the mismatch banner. A healthy
+          (non-mismatch) card is unaffected and keeps its full badge row. */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-2.5 py-1 text-xs font-semibold text-on-primary">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />{t('agent.smartPickLabel')}
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />{mismatchCopy ? mismatchCopy.label : t('agent.smartPickLabel')}
         </span>
         <TrustSummary rec={rec} t={t} />
         <ObservationAge rec={rec} loc={loc} />
-        <PriceVerdictBadge rec={rec} loc={loc} />
-        <DiscountTruthBadge rec={rec} loc={loc} />
+        {!mismatch && <PriceVerdictBadge rec={rec} loc={loc} />}
+        {!mismatch && <DiscountTruthBadge rec={rec} loc={loc} />}
         <TrustBadge rec={rec} loc={loc} />
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3 className="text-lg font-bold text-on-surface">{recTitle(rec, loc)}</h3>
-          {rec.reasons_ar?.length > 0 && (
-            // id + scroll-mt: target for the "ليش هذا أفضل؟" follow-up chip (search-client.tsx's
-            // MutationOutcome 'noop' handler) — a "why" question, with an active mission, is
-            // answered by THIS reasoning already on screen (ADR-per mutation-turn.ts's own
-            // comment), so the chip must not be a silent no-op with zero visible reaction; it
-            // scrolls to and briefly highlights the answer that was already here.
-            <p id="advisor-why-reasons" className="mt-2 scroll-mt-24 text-xs font-semibold text-on-surface-variant">{t('agent.evidenceRecommendation')}</p>
+          <MerchantLine rec={rec} t={t} />
+          {mismatchCopy && (
+            <p className="mt-1 flex items-center gap-1 text-xs font-medium text-warning-700 dark:text-warning-400" data-testid="size-mismatch-line">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />{mismatchCopy.compactLine}
+            </p>
           )}
-          <Reasons rec={rec} t={t} />
-          <ChoiceComparison rec={rec} loc={loc} t={t} />
-          <Alternatives rec={rec} loc={loc} />
+          <CompactReasons rec={rec} t={t} />
         </div>
         <div className="shrink-0"><CostBlock rec={rec} loc={loc} t={t} /></div>
       </div>
-      <EvidencePanel rec={rec} loc={loc} t={t} />
+      {/* ONE expand for reasons-beyond-headline + evidence + the alternative — consolidated
+          per Decision Card v1 §B (previously three independently-shown/toggled elements). */}
+      <details className="group mt-3" onToggle={(e) => onToggleDetails((e.currentTarget as HTMLDetailsElement).open)}>
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-primary-700 dark:text-primary-300">
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+          <span className="group-open:hidden">{t('agent.detailsToggle')}</span>
+          <span className="hidden group-open:inline">{t('agent.hideAllReasons')}</span>
+        </summary>
+        {mismatch && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <PriceVerdictBadge rec={rec} loc={loc} />
+            <DiscountTruthBadge rec={rec} loc={loc} />
+          </div>
+        )}
+        {detailsOpen && <RestReasons rec={rec} t={t} />}
+        <ChoiceComparison rec={rec} loc={loc} t={t} />
+        <Alternatives rec={rec} loc={loc} />
+        <EvidencePanel rec={rec} loc={loc} t={t} />
+      </details>
       {/* id + scroll-mt: target for the "وين أشتريه؟" follow-up chip (search-client.tsx's
           MutationOutcome 'noop' handler, reason:'where') — the store/CTA info is already
           right here, so the chip scrolls to and highlights it instead of firing a redundant
           re-fetch that would return the identical recommendation. */}
-      <ExitButtons rec={rec} loc={loc} t={t} Arrow={Arrow} source={source} id="advisor-exit-buttons" />
+      <ExitButtons
+        rec={rec} loc={loc} t={t} Arrow={Arrow} source={source} id="advisor-exit-buttons"
+        onAccept={() => track('recommendation_accept', { canonical_id: rec.canonical_id, meta: { trust_score: rec.trust?.score ?? null, trust_tier: rec.trust?.tier ?? null } })}
+      />
     </div>
+  );
+}
+
+/** The reasons NOT already shown compact (identity/evidence excluded by construction, plus
+ *  any spec/estimate/caution beyond `headline_reasons`) — lives inside the expand only. */
+function RestReasons({ rec, t }: { rec: AdvisorRecommendation; t: TFn }) {
+  const all = rec.reasons_ar ?? [];
+  const kinds = rec.reason_kinds ?? [];
+  const shown = new Set(rec.headline_reasons ?? []);
+  const rest = all.map((text, i) => ({ text, i }))
+    .filter(({ text, i }) => text?.trim() && !shown.has(i) && !isRedundantSizeSpec(rec, text));
+  if (!rest.length) return null;
+  return (
+    <ul className="mt-2 space-y-1.5">
+      {rest.map(({ text, i }) => <ReasonLine key={i} text={text} kind={kinds[i]} t={t} />)}
+    </ul>
   );
 }
 
@@ -742,8 +878,11 @@ export function AdvisorAnswer({
       {/* Never present a partial match as an unqualified winner (2026-08-09, founder AC
           Smart Pick audit). Both notes are computed server-side from the SAME data the
           card below renders — nothing re-derived or invented here — but were previously
-          silently dropped: present on the API response with no UI ever reading them. */}
-      {result.budget_note && (
+          silently dropped: present on the API response with no UI ever reading them.
+          Suppressed when the smart pick also carries a `size_mismatch` (founder review,
+          2026-08-22) — `SizeMismatchBanner` states the budget miss too in that case, in one
+          sentence and one voice; rendering both was two banners saying the same thing twice. */}
+      {result.budget_note && !smart?.size_mismatch && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm leading-relaxed text-on-surface dark:border-warning-900/50 dark:bg-warning-950/30" data-testid="advisor-budget-note">
           <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning-600" aria-hidden />
           <span>{loc === 'ar' ? result.budget_note.ar : result.budget_note.en}</span>
@@ -780,7 +919,16 @@ export function AdvisorAnswer({
       )}
 
       {/* Smart Pick */}
-      {smart && <SmartPick rec={smart} loc={loc} t={t} Arrow={Arrow} source={source} />}
+      {smart && (
+        <SmartPick
+          rec={smart} loc={loc} t={t} Arrow={Arrow} source={source}
+          budgetTotal={
+            typeof result.parsed?.budget_total === 'number' ? result.parsed.budget_total
+            : typeof (result.task as { budget_total?: unknown })?.budget_total === 'number' ? (result.task as { budget_total: number }).budget_total
+            : null
+          }
+        />
+      )}
       {smart && (
         <div className="mt-2 flex justify-end">
           <ShareDecisionButton rec={smart} loc={loc} t={t} source={source} />
