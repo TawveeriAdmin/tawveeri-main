@@ -1326,6 +1326,48 @@ function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: numbe
   return relevanceScore + inStockBoost + storeBoost + dealBoost + ratingBoost + acBoost + tpsBonus - pricePenalty - accessoryPenalty;
 }
 
+export type ClosestOption = {
+  product_id: string; name_ar: string; name_en: string; best_price: number;
+  store_name: string; product_url: string; miss_reason_ar: string; miss_reason_en: string;
+};
+
+/**
+ * ZERO-STATE "CLOSEST OPTIONS" — pure selection (ADR-270, Decision Card v1 follow-up,
+ * 2026-08-22). Given candidates ALREADY fetched without a price ceiling, picks the 1-3
+ * cheapest that still match the query's relevance groups and are over the effective budget,
+ * each captioned with exactly how far over. Never re-ranks or filters `products` itself —
+ * this only decides what a caller may show in an otherwise-empty result. A pure function
+ * (no I/O) so the selection/sort/caption logic is unit-testable without mocking Algolia.
+ */
+export function selectClosestOptions(
+  candidates: GroupedSearchProduct[],
+  effectiveMaxPrice: number,
+  relevanceGroups: string[][] = [],
+): ClosestOption[] {
+  const relevant = relevanceGroups.length
+    ? candidates.filter((p) => {
+        const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+        return relevanceGroups.every((g) => g.some((t) => hay.includes(t)));
+      })
+    : candidates;
+  const overBudget = relevant
+    .filter((p) => p.best_price > effectiveMaxPrice)
+    .sort((a, b) => a.best_price - b.best_price);
+  return overBudget.slice(0, 3).map((p) => {
+    const delta = Math.round(p.best_price - effectiveMaxPrice);
+    const bestStore = p.stores.find((s) => s.current_price === p.best_price) ?? p.stores[0] ?? null;
+    return {
+      product_id: p.product_id || '',
+      name_ar: p.name_ar || '', name_en: p.name_en || '',
+      best_price: p.best_price,
+      store_name: bestStore?.store_name || '',
+      product_url: bestStore?.product_url || '',
+      miss_reason_ar: `أعلى من ميزانيتك بـ ${delta} ريال`,
+      miss_reason_en: `${delta} SAR above your budget`,
+    };
+  });
+}
+
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
   if (isCheapest) parts.push('أرخص سعر');
@@ -2251,6 +2293,36 @@ export async function POST(request: NextRequest) {
   const enrichedProducts = await enrichWithTPS(pageProducts, supabase);
 
   const prices = enrichedProducts.map((p) => p.best_price).filter((n) => n > 0);
+
+  // ZERO-STATE "CLOSEST OPTIONS" (ADR-270, Decision Card v1 follow-up, 2026-08-22). Tawveeri
+  // never shows a bare empty result: when a stated/inferred budget is the reason nothing
+  // qualified — never for `categoryEnforcedZero` (a wrong-category/no-such-product zero,
+  // where "closest by price" would be a confidently wrong answer, not a helpful one) — show
+  // the 1-3 cheapest candidates that still match the query's own relevance groups, each
+  // captioned with why it missed. DISCLOSURE ONLY: a second, unfiltered-by-price retrieval
+  // call; never re-ranks or relaxes the main `products` result above, and these never render
+  // as "اختيار توفيري" (that label asserts a confirmed match to the stated need, which an
+  // over-budget item is not — see `ClosestOptions` on the client).
+  //
+  // SCOPED, NOT COMPREHENSIVE (stated here rather than silently incomplete): Algolia-configured
+  // path only — the Supabase-only fallback (when Algolia is unavailable) does not get this
+  // treatment yet. Budget-miss reason only — a freshness-based miss reason ("آخر رصد قبل N
+  // يوم") was in the original brief but Path 2's grouped products carry no per-listing
+  // observation age comparable to Path 1's `data_age_hours` without an extra join; deferred.
+  let closestOptions: ClosestOption[] = [];
+  const effectiveMaxPrice = typeof body.max_price === 'number' ? body.max_price : inferredMaxPrice;
+  if (total === 0 && !categoryEnforcedZero && rawQuery && effectiveMaxPrice != null && isAlgoliaConfigured()) {
+    try {
+      const fallbackRes = await searchAlgolia({ query: rawQuery, hitsPerPage: 50 });
+      const mapped = (fallbackRes?.hits ?? [])
+        .map(algoliaHitToGrouped)
+        .filter((p): p is GroupedSearchProduct => p !== null);
+      closestOptions = selectClosestOptions(mapped, effectiveMaxPrice, relevanceGroups);
+    } catch (e) {
+      console.error('[closest-options] fallback query failed:', e);
+    }
+  }
+
   const result: ScrapedSearchResult & {
     total: number;
     page: number;
@@ -2261,11 +2333,13 @@ export async function POST(request: NextRequest) {
     categoryEnforcedZero: boolean;
     inferredMaxPrice: number | null;
     cheapestIntentApplied: boolean;
+    closestOptions: ClosestOption[];
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
     total,
     relaxed:           relaxedResults,
+    closestOptions,
     // Observability for the honest-zero path (never silent): true when an explicit-category
     // need query matched nothing and unrelated results were withheld rather than shown.
     categoryEnforcedZero,

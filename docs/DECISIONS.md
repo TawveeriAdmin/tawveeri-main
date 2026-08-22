@@ -6,6 +6,19 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-271 — Zero-state "closest options" (Path 2, plain search): Tawveeri never shows a bare empty result when a budget is the cause · Accepted (2026-08-22)
+**Context.** ADR-270's founder review (point 4) approved this as scoped (~2h) but explicitly deferred it out of that deploy: the iPhone 128GB/3500 golden-set screenshot hit the plain search grid's true zero-result path (Path 2, `count:0`, hard `max_price` filter from a stated/inferred budget) — a bare "لا يوجد منتج ضمن ميزانيتك… حالياً" with nothing else. This is the immediate next task, its own commit, built after that deploy shipped and was verified on production.
+
+**Decision.** When retrieval returns zero AND the cause is a budget ceiling (`body.max_price` or the sentence-inferred `inferredMaxPrice`) — never for `categoryEnforcedZero` (a wrong-category/no-such-product zero, where "closest by price" would be a confidently wrong answer) — a second, unfiltered-by-price Algolia query runs, and up to 3 cheapest still-relevant candidates are named under "أقرب خيارات متاحة" with an explicit miss reason ("أعلى من ميزانيتك بـ X ريال"). Never labelled or styled as "اختيار توفيري" — a new `ClosestOptions` component (`src/components/search/closest-options.tsx`), not the SmartPickCard, renders them.
+
+**Pure selection extracted for testability.** `selectClosestOptions(candidates, effectiveMaxPrice, relevanceGroups)` (`src/app/api/search/route.ts`) is a pure function — no I/O — mirroring the existing `filterOverBudgetTvAlternatives` pattern (decide/route.ts): relevance-gates candidates against the query's own `relevanceGroups` (a laptop never appears as the "closest" answer to a phone query just because it's cheaper), keeps only those over budget, sorts by smallest overage, caps at 3, captions each. 5 new unit tests (`tests/search/closest-options.test.ts`).
+
+**Scoped, not comprehensive — stated here rather than silently incomplete.** Algolia-configured path only; the Supabase-only fallback (when Algolia is unavailable) does not get this treatment yet. Budget-miss reason only — a freshness-based miss reason ("آخر رصد قبل N يوم") was in the original brief but Path 2's grouped products carry no per-listing observation age comparable to Path 1's `data_age_hours` without an extra join; deferred alongside the Supabase-path gap.
+
+**Verification.** 2168/2168 tests pass (full suite). No production write in this session; not yet deployed — commit is separate from ADR-270's deploy per the founder's own instruction, awaiting explicit push/deploy approval.
+
+---
+
 ### ADR-270 — Decision Card v1 (Path 1, general search): explanations derived from the per-recommendation evidence object, not DecisionState; TV size-mismatch disclosure closed; three category gaps filed, not fixed · Accepted (2026-08-22)
 **Context.** The advisory decision card (`askAdvisor` → `decide()` → `AdvisorAnswer`/`SmartPick`, rendered on `/search` for needs-shaped queries) already implemented most of a trust-first, evidence-cited card across ADR-087/136/163/187/193/230/235/260. This mission specified and shipped Decision Card v1 on top of that foundation: a compact-by-default / single-expand information hierarchy, a merchant-name line, a structured alternative price/delta, and closed one real, production-verified trust gap.
 
@@ -32,6 +45,8 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 2. **Washer capacity (kg) parsing** — unlike TV screen size, there is no existing regex to reuse: `extractSpecsFromTitle()` has zero capacity_kg extraction, even for product titles. A stated capacity («غسالة 12 كيلو») is silently dropped; only a boolean "large" priority exists today.
 3. **Refrigerator capacity (liters) parsing** — same gap and same cause as #2 (no existing extractor to reuse); a stated capacity in liters is silently dropped.
 4. **Zero-state "closest options" fallback** (see founder review point 4 above) — approved, scoped (~2h), explicitly deferred to a separate commit after this deploy.
+5. **AC budget-info line icon** — the corrected "سعر الجهاز {unit} ضمن ميزانيتك — التكلفة الإجمالية التقديرية..." line (founder review point 2 above) is a `caution`-kind reason, which renders with the same red/warning icon as a true violation. The line is reassuring-with-a-caveat, not a warning — an info icon would read more honestly than the shared caution styling. Filed as a copy/icon follow-up, not fixed: changing the icon requires either a new `ReasonKind` (e.g. `note`) or a per-reason icon override, either of which is a small `REASON_MARK`/`ReasonKind` surface change worth its own pass rather than bundling into this deploy.
+6. **Fridge card shows two different prices for the same product** — observed on the side-by-side fridge golden query: the compact card's own displayed price (`unit_price`, 2,285 SAR) and the discount-integrity narration (`discount_intel.text`, "السعر مستقر عند ~2599") disagree by ~314 SAR on the SAME listing. This matches a previously-diagnosed, unresolved class of issue noted in `decide/route.ts`'s own comments (`tps_product_projection.lowest_price` and `tps_listing_price_facts.current_price` can diverge for the same canonical) — not introduced by this mission, but re-surfaced by it. Filed as a data-layer follow-up (unify the two price sources, or caption which one is which) — needs a data-layer read before scoping a fix, not a copy change.
 
 AC (room size → BTU), mobile/tablet/laptop storage, and laptop RAM were audited and found to already have parsed-requested-value + disclosed-mismatch coverage — no gap.
 

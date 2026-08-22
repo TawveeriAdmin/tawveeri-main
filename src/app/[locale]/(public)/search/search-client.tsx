@@ -11,6 +11,7 @@ import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { initCampaignFromUrl } from '@/lib/analytics/campaign';
 import { ProductCard } from '@/components/products/product-card';
 import { SmartPickCard, type SmartPick } from '@/components/search/smart-pick-card';
+import { ClosestOptions, type ClosestOption } from '@/components/search/closest-options';
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
 import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
@@ -252,6 +253,10 @@ export default function SearchClient() {
   // an answer to a 250 SAR ask. This flag lets the empty-state render suppress that rail
   // ONLY when the zero was budget-caused, never for a plain no-budget empty search.
   const [categoryEnforcedZero, setCategoryEnforcedZero] = useState(false);
+  // ADR-270 Fix 4 (2026-08-22) — "Tawveeri never shows an empty result": when a stated/
+  // inferred budget zeroed retrieval, the API's `closestOptions` names the 1-3 cheapest
+  // still-relevant candidates with why each missed. Never rendered as "اختيار توفيري".
+  const [closestOptions, setClosestOptions] = useState<ClosestOption[]>([]);
   // P2-8 (UNIFIED SEARCH). One entry point; the system decides internally which capability
   // the query needs. `routeQuery` makes that decision deterministically and this holds the
   // reasoning engine's answer when it does. Fetched ALONGSIDE the results, never before
@@ -1017,6 +1022,7 @@ export default function SearchClient() {
       setSmartPick(((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null);
       setAppliedBudget(((data as unknown) as { inferredMaxPrice?: number | null }).inferredMaxPrice ?? null);
       setCategoryEnforcedZero(!!((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero);
+      setClosestOptions(((data as unknown) as { closestOptions?: ClosestOption[] }).closestOptions ?? []);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});
@@ -1903,13 +1909,18 @@ export default function SearchClient() {
                         contradicted budget. Suppressed ONLY in that specific case; a plain
                         no-budget empty search still gets the trending fallback as before. */}
                     {appliedBudget !== null && shouldSuppressTrendingRail(categoryEnforcedZero, appliedBudget) ? (
-                      <div
-                        data-testid="budget-zero-message"
-                        className="rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] px-4 py-6 text-center t-body text-on-surface-variant"
-                      >
-                        {locale === 'ar'
-                          ? `لا يوجد منتج ضمن ميزانيتك (${appliedBudget.toLocaleString('ar')} ريال أو أقل) حالياً.`
-                          : `Nothing available within your budget (${appliedBudget.toLocaleString('en')} SAR or less) right now.`}
+                      <div className="space-y-4">
+                        <div
+                          data-testid="budget-zero-message"
+                          className="rounded-xl border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] px-4 py-6 text-center t-body text-on-surface-variant"
+                        >
+                          {locale === 'ar'
+                            ? `لا يوجد منتج ضمن ميزانيتك (${appliedBudget.toLocaleString('ar')} ريال أو أقل) حالياً.`
+                            : `Nothing available within your budget (${appliedBudget.toLocaleString('en')} SAR or less) right now.`}
+                        </div>
+                        {/* ADR-270 Fix 4 — never a bare empty result when the miss was budget:
+                            name the closest still-relevant options and why each missed. */}
+                        <ClosestOptions options={closestOptions} locale={locale} />
                       </div>
                     ) : (
                       trendingProducts.length > 0 && (
