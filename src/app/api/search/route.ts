@@ -2294,15 +2294,26 @@ export async function POST(request: NextRequest) {
 
   const prices = enrichedProducts.map((p) => p.best_price).filter((n) => n > 0);
 
-  // ZERO-STATE "CLOSEST OPTIONS" (ADR-270, Decision Card v1 follow-up, 2026-08-22). Tawveeri
+  // ZERO-STATE "CLOSEST OPTIONS" (ADR-270/271, Decision Card v1 follow-up, 2026-08-22). Tawveeri
   // never shows a bare empty result: when a stated/inferred budget is the reason nothing
-  // qualified — never for `categoryEnforcedZero` (a wrong-category/no-such-product zero,
-  // where "closest by price" would be a confidently wrong answer, not a helpful one) — show
-  // the 1-3 cheapest candidates that still match the query's own relevance groups, each
-  // captioned with why it missed. DISCLOSURE ONLY: a second, unfiltered-by-price retrieval
-  // call; never re-ranks or relaxes the main `products` result above, and these never render
-  // as "اختيار توفيري" (that label asserts a confirmed match to the stated need, which an
-  // over-budget item is not — see `ClosestOptions` on the client).
+  // qualified, show the 1-3 cheapest candidates that still match the query's own relevance
+  // groups, each captioned with why it missed. DISCLOSURE ONLY: a second, unfiltered-by-price
+  // retrieval call; never re-ranks or relaxes the main `products` result above, and these
+  // never render as "اختيار توفيري" (that label asserts a confirmed match to the stated need,
+  // which an over-budget item is not — see `ClosestOptions` on the client).
+  //
+  // MEASURED DEFECT, caught in production verification immediately after first deploy
+  // (2026-08-22): the original condition also excluded `categoryEnforcedZero`, reasoning that
+  // it only fires for a genuine wrong-category/no-such-product zero. Two live budget-only
+  // queries («جوال ايفون 128 قيغا تحت 3500», «ايفون 15 برو ماكس تحت 500 ريال») proved that
+  // premise wrong: `max_price` is applied at the SOURCE query (Algolia/Supabase), so a
+  // budget that zeroes everything empties `products` BEFORE the relevance gate runs — the
+  // now-empty array trivially fails `gated.length === 0`, and `categoryEnforcedZero` fires
+  // for a pure budget zero exactly as often as for a true relevance zero. The exclusion was
+  // therefore blocking the primary case this feature exists for. Removed — `selectClosestOptions`
+  // below already relevance-gates its own candidates against `relevanceGroups`, so a genuine
+  // wrong-category zero still correctly yields an empty `closestOptions`, without a second,
+  // now-proven-wrong flag doing the same job less precisely.
   //
   // SCOPED, NOT COMPREHENSIVE (stated here rather than silently incomplete): Algolia-configured
   // path only — the Supabase-only fallback (when Algolia is unavailable) does not get this
@@ -2311,7 +2322,7 @@ export async function POST(request: NextRequest) {
   // observation age comparable to Path 1's `data_age_hours` without an extra join; deferred.
   let closestOptions: ClosestOption[] = [];
   const effectiveMaxPrice = typeof body.max_price === 'number' ? body.max_price : inferredMaxPrice;
-  if (total === 0 && !categoryEnforcedZero && rawQuery && effectiveMaxPrice != null && isAlgoliaConfigured()) {
+  if (total === 0 && rawQuery && effectiveMaxPrice != null && isAlgoliaConfigured()) {
     try {
       const fallbackRes = await searchAlgolia({ query: rawQuery, hitsPerPage: 50 });
       const mapped = (fallbackRes?.hits ?? [])
