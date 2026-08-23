@@ -213,6 +213,15 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'الترا': ['ultra'],
   'ميني': ['mini'],
   'اير': ['air'],
+  // Intent Router follow-up #2 (ADR-270 consolidated list, ADR-271's own storage-matching
+  // gap, 2026-08-23): «قيقا»/«قيغا» is the everyday-typed dialect spelling of «جيجا» for
+  // storage capacity — real catalog titles spell it «128 جيجابايت» or «128GB», never «قيغا»,
+  // so this word's relevance group could never match ANY product title, independent of
+  // price. «جيجا» itself needs no entry — it is already a literal substring of «جيجابايت»,
+  // which is why the properly-spelled form worked without one.
+  'قيقا': ['جيجا', 'gb'],
+  'قيغا': ['جيجا', 'gb'],
+  'كيقا': ['جيجا', 'gb'],
 };
 
 // BUG FIX (Founder product-first audit 2026-07-27): the map keys keep ة/ى (ثلاجة, غسالة, نشافة, مكنسة,

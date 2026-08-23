@@ -743,6 +743,21 @@ describe("ARABIC_TO_ENGLISH — «فرن»/«طباخ» are mutual retrieval syn
   });
 });
 
+/**
+ * Intent Router follow-up #2 (ADR-270 consolidated list, ADR-271's own MEASURED gap,
+ * 2026-08-23): «قيقا»/«قيغا» is the everyday-typed dialect spelling of «جيجا» for storage
+ * capacity. Real catalog titles spell it «128 جيجابايت»/«128GB», never «قيغا» — so before this
+ * fix, the relevance-gate's own word-matching (`hay.includes(t)`) could never satisfy that
+ * word's group against any real product title, independent of price. «جيجا» needed no entry
+ * because it is already a literal substring of «جيجابايت».
+ */
+describe("ARABIC_TO_ENGLISH — «قيقا»/«قيغا» expand to «جيجا»/gb (ADR-271 catalog-match gap)", () => {
+  it("«قيغا» and «قيقا» both expand to include «جيجا» and «gb»", () => {
+    expect(lookupArToEn("قيغا")).toEqual(expect.arrayContaining(["جيجا", "gb"]));
+    expect(lookupArToEn("قيقا")).toEqual(expect.arrayContaining(["جيجا", "gb"]));
+  });
+});
+
 describe("excludeIneligibleCandidates — isCookerQuery gate keeps ranges/cookers separate from bare ovens", () => {
   const genuineCookers = [
     { name_ar: "طباخ كهربائي lg 5 شعلات 75 سم", name_en: "lg electric cooker 5-burner 75 cm", best_price: 3200 },

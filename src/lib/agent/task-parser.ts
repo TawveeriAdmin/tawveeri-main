@@ -602,8 +602,13 @@ function parseCity(x: string): string | undefined {
   return undefined;
 }
 
+// «قيقا»/«قيغا» (2026-08-23, Intent Router follow-up #2, ADR-270 consolidated list): the
+// everyday-typed dialect spelling of «جيجا» — MEASURED on production («جوال ايفون 128 قيغا
+// تحت 3500» returned zero closest-options candidates, ADR-271) — matched neither this regex
+// nor the relevance-gate's own word-matching (see the ARABIC_TO_ENGLISH synonym fix in
+// src/app/api/search/route.ts for that second half of the same gap).
 function parseStorageMin(x: string): number | undefined {
-  const m = x.match(/(\d{2,4})\s*(?:جيجا|gb)\s*(?:على الأقل|أو أكثر|فأكثر|min|or more)?/);
+  const m = x.match(/(\d{2,4})\s*(?:جيجا|قيقا|قيغا|كيقا|gb)\s*(?:على الأقل|أو أكثر|فأكثر|min|or more)?/);
   if (m) { const n = Number(m[1]); if ([32, 64, 128, 256, 512, 1024].includes(n)) return n; }
   return undefined;
 }

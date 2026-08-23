@@ -85,6 +85,23 @@ describe("Task parser — English + other categories", () => {
   });
 });
 
+// Intent Router follow-up #2 (ADR-270 consolidated list, ADR-271's own MEASURED gap,
+// 2026-08-23): «قيقا»/«قيغا» is the everyday-typed dialect spelling of «جيجا» — previously
+// unrecognized by parseStorageMin, so a mobile/tablet/laptop query using it carried NO
+// storage_min signal at all («جوال ايفون 128 قيغا» parsed storage_min: undefined).
+describe("Task parser — storage dialect spelling (قيقا/قيغا)", () => {
+  it("«قيغا» parses the same as «جيجا»", () => {
+    expect(parseShoppingTask("جوال 128 قيغا").storage_min).toBe(128);
+  });
+  it("«قيقا» parses the same as «جيجا»", () => {
+    expect(parseShoppingTask("جوال 128 قيقا تحت 3500").storage_min).toBe(128);
+  });
+  it("does not regress the existing جيجا/gb spellings", () => {
+    expect(parseShoppingTask("جوال 128 جيجا").storage_min).toBe(128);
+    expect(parseShoppingTask("phone 128gb").storage_min).toBe(128);
+  });
+});
+
 describe("Task parser — fail-loud on unresolvable input", () => {
   it("undetectable category → empty category + unresolved flag", () => {
     const t = parseShoppingTask("أبغى شيء حلو");
