@@ -181,6 +181,54 @@ describe('namesASpecificModel', () => {
   });
 });
 
+// Intent Router follow-up #1 (ADR-270 consolidated list, 2026-08-23): a stated TV screen
+// size is a describable constraint exactly like storage_min/ram_min — `needSignals` was
+// simply never wired to read `screen_size_requested`, even though task-parser.ts has parsed
+// it since ADR-270 §5 for the (unrelated) size-mismatch disclosure.
+describe('routeQuery — a stated TV screen size routes to advisory (Intent Router follow-up #1)', () => {
+  it('«تلفزيون 43 بوصة للمطبخ» — the exact query that motivated this fix — now routes to advisory', () => {
+    const route = routeQuery('تلفزيون 43 بوصة للمطبخ');
+    expect(route.mode).toBe('advisory');
+    if (route.mode === 'advisory') {
+      expect(route.task.category).toBe('tv');
+      expect(route.task.screen_size_requested).toBe(43);
+      expect(route.reason).toMatch(/screen_size_requested/);
+    }
+  });
+
+  it('size stated together with a budget still routes advisory (both signals present)', () => {
+    const route = routeQuery('تلفزيون 55 بوصة تحت 3000 ريال');
+    expect(route.mode).toBe('advisory');
+  });
+
+  it('a bare size+brand TV query (no other signal) now routes to advisory too — intentional: any stated size is a real constraint', () => {
+    const route = routeQuery('تلفزيون سامسونج 50 بوصة');
+    expect(route.mode).toBe('advisory');
+    if (route.mode === 'advisory') expect(route.task.screen_size_requested).toBe(50);
+  });
+
+  it('a bare TV browse with no size still stays a browse', () => {
+    const route = routeQuery('تلفزيون سوني');
+    expect(route.mode).toBe('retrieval');
+  });
+});
+
+// Bare-keyword control group — must NEVER over-route to advisory, before or after any of the
+// Intent Router follow-up fixes. A brand name alone (no size/budget/priority/use-case) is
+// browsing, not a described need.
+describe('routeQuery — bare brand/model queries never over-route to advisory', () => {
+  const bareKeyword: Array<[string, string]> = [
+    ['سامسونج 65', 'brand + bare number, no unit/category word — no category resolves at all'],
+    ['ايفون 15', 'named model — claimed by the model rule before need-signals ever run'],
+    ['غسالة LG', 'category + bare brand, no need word'],
+    ['ثلاجة سامسونج', 'category + bare brand, no need word'],
+    ['مكنسة شارك', 'category + bare brand, no need word'],
+  ];
+  it.each(bareKeyword)('%s → retrieval (%s)', (query) => {
+    expect(routeQuery(query).mode).toBe('retrieval');
+  });
+});
+
 // Regression (2026-08-04, docs/baselines/2026-08-04-ac-basket-query): the exact failing
 // production query routed to RETRIEVAL because the budget parser missed «بميزانيتي … ريال»,
 // so the advisor was silently never called (Waffar state: not-routed) while the identical

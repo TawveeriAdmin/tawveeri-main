@@ -77,6 +77,13 @@ function needSignals(task: ParsedTask): string[] {
   if (task.wants_recommendation) signals.push('wants_recommendation');
   if (task.budget_referenced) signals.push('budget_referenced');
   if (task.use_case_referenced) signals.push('use_case_referenced');
+  // Intent Router follow-up #1 (ADR-270 consolidated list, 2026-08-23): «تلفزيون 43 بوصة
+  // للمطبخ» stayed on plain retrieval despite `screen_size_requested` already being parsed
+  // (ADR-270 §5/B1) — the field existed only for the size-mismatch DISCLOSURE downstream and
+  // was never read here. A stated size is exactly the same kind of describable constraint as
+  // storage_min/ram_min above; withholding it from routing while every other structured field
+  // counts was an oversight, not a deliberate exclusion.
+  if (typeof task.screen_size_requested === 'number') signals.push('screen_size_requested');
   return signals;
 }
 
