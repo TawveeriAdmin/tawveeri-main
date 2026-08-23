@@ -451,8 +451,11 @@ export function extractSpecsFromTitle(title: string): Record<string, string> {
   if (/\bssd\b/i.test(t)) specs.storage_type = 'ssd';
   else if (/\bhdd\b/i.test(t)) specs.storage_type = 'hdd';
 
-  // Screen size: "14-inch", "55\"", "15.6 inch", "14 بوصة"
-  const screenMatch = t.match(/(\d+(?:\.\d+)?)\s*[-"]?\s*(?:inch|"|بوصة|in\b)/i) ||
+  // Screen size: "14-inch", "55\"", "15.6 inch", "14 بوصة", "55 انش" (dialect spelling —
+  // Intent Router follow-up #1, ADR-270 consolidated list item — «تلفزيون 55 انش» parsed no
+  // size at all before this fix, since "انش"/"إنش" is the everyday-typed form of "بوصة" and
+  // was never in this regex).
+  const screenMatch = t.match(/(\d+(?:\.\d+)?)\s*[-"]?\s*(?:inch|"|بوصة|انش|إنش|in\b)/i) ||
                       t.match(/(\d+(?:\.\d+)?)\s*-\s*inch/i);
   if (screenMatch) {
     specs.screen_size = String(Math.round(parseFloat(screenMatch[1])));
