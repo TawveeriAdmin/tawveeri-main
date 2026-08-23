@@ -686,6 +686,36 @@ export function sizeSatisfiesComparator(actual: number, comparator: SizeComparat
 }
 
 /**
+ * CAPACITY PARSING — washer (kg), fridge (liters), dishwasher (place settings). Intent Router
+ * item 5 (ADR-270 consolidated list #4/#5, 2026-08-23): a stated capacity is exactly as
+ * describable a constraint as a screen size, but previously had NO field to land in at all —
+ * «غسالة 12 كيلو» silently dropped its own stated capacity. DISCLOSURE/ROUTING ONLY, same rule
+ * as `screen_size_requested` — never read by `decideWashingMachine`/`decideRefrigerator`/
+ * `decideAppliance`'s ranking/eligibility, only compared to the winning pick's own
+ * `dna.capacity_kg`/`capacity_liters`/`capacity` downstream (decide/route.ts) to caption an
+ * honest mismatch, mirroring the existing TV size mechanism.
+ *
+ * `\b` placed ONLY after the Latin alternative in each group (kg/l/settings) — never after an
+ * Arabic word — per this file's own documented rule: JS `\b` does not match beside Arabic
+ * letters (see `parseBudget`'s doc comment above for the CHECKPOINT #17 history of this trap).
+ */
+function parseCapacityKg(x: string): number | undefined {
+  const m = x.match(/(\d{1,2}(?:\.\d)?)\s*(?:كيلو|كجم|كغ|kg\b)/i);
+  if (m) { const n = Number(m[1]); if (n >= 3 && n <= 20) return n; }
+  return undefined;
+}
+function parseCapacityLiters(x: string): number | undefined {
+  const m = x.match(/(\d{2,4})\s*(?:لتر|liters?\b|l\b)/i);
+  if (m) { const n = Number(m[1]); if (n >= 50 && n <= 1000) return n; }
+  return undefined;
+}
+function parseCapacitySettings(x: string): number | undefined {
+  const m = x.match(/(\d{1,2})\s*(?:طقم|أطقم|مكان|اماكن|أماكن|place settings?\b|settings?\b)/i);
+  if (m) { const n = Number(m[1]); if (n >= 6 && n <= 20) return n; }
+  return undefined;
+}
+
+/**
  * Budget FLOOR — «فوق 2000»/«أكثر من 2000 ريال» ("more than 2000"), the mirror case
  * `parseBudget` above never covers: that function is CEILING-only by construction (تحت/أقل
  * من/ميزانية/... phrasings all state a MAX). Kept on a SEPARATE field, never folded into
@@ -710,6 +740,11 @@ export interface ParsedTask extends ShoppingTask {
   /** Budget FLOOR («فوق 2000»/«أكثر من 2000 ريال») — see `parseBudgetMin`'s own doc comment.
    *  Disclosure/routing only; never read by any ranking or eligibility gate. */
   budget_min?: number;
+  /** Capacity, category-gated — see `parseCapacityKg`/`parseCapacityLiters`/
+   *  `parseCapacitySettings`'s shared doc comment. Disclosure/routing only. */
+  capacity_kg_requested?: number;
+  capacity_liters_requested?: number;
+  capacity_settings_requested?: number;
   parsed_from_text: string;
   unresolved?: string[]; // fields the parser could not extract (fail-loud transparency)
   /** Section 7 (2026-08-09): stated but explicitly de-prioritized ("ما يهمني X") — never
@@ -851,6 +886,19 @@ export function parseShoppingTask(text: string): ParsedTask {
     const rm = x.match(/(\d{1,2})\s*(?:(?:جيجا|gb)\s*)?رام|رام\s*(?:(?:من|قدرها)\s*)?(\d{1,2})/);
     const r = rm ? Number(rm[1] || rm[2]) : null;
     if (r && [4, 8, 16, 32, 64].includes(r)) (task as ParsedTask & { ram_min?: number }).ram_min = r;
+  }
+  // Capacity, category-gated — see the shared doc comment on `parseCapacityKg` above.
+  if (category === "washing_machine") {
+    const kg = parseCapacityKg(x);
+    if (kg) task.capacity_kg_requested = kg;
+  }
+  if (category === "refrigerator") {
+    const liters = parseCapacityLiters(x);
+    if (liters) task.capacity_liters_requested = liters;
+  }
+  if (category === "dishwasher") {
+    const settings = parseCapacitySettings(x);
+    if (settings) task.capacity_settings_requested = settings;
   }
   return task;
 }

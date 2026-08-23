@@ -89,6 +89,11 @@ function needSignals(task: ParsedTask): string[] {
   // see `budget_min`'s own doc comment (task-parser.ts) for why it stays separate from
   // `budget_total` and untouched by any ranking/eligibility path.
   if (typeof task.budget_min === 'number') signals.push('budget_min');
+  // Intent Router item 5 (2026-08-23): a stated washer/fridge/dishwasher capacity is exactly
+  // as describable a constraint as storage_min/ram_min/screen_size_requested above.
+  if (typeof task.capacity_kg_requested === 'number') signals.push('capacity_kg_requested');
+  if (typeof task.capacity_liters_requested === 'number') signals.push('capacity_liters_requested');
+  if (typeof task.capacity_settings_requested === 'number') signals.push('capacity_settings_requested');
   return signals;
 }
 

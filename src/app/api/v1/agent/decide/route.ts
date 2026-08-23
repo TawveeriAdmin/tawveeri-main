@@ -304,6 +304,7 @@ export async function POST(req: NextRequest) {
       stores: storeNames(r.canonical_id), best_offer_store_ar: bestOfferStore(r.canonical_id), data_age_hours,
       price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null,
       size_mismatch: null as { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null,
+      capacity_mismatch: null as { requested: number; actual: number; unit: "kg" | "liters" | "settings" } | null,
     };
   });
   // TV SIZE-MISMATCH DISCLOSURE (Decision Card v1, ruling B1, 2026-08-22). MEASURED on
@@ -335,6 +336,33 @@ export async function POST(req: NextRequest) {
         console.warn(`[tv-size-mismatch] label withheld: screen_size unknown for canonical=${r.canonical_id}, requested=${requested}"`);
       } else if (!sizeSatisfiesComparator(actualNum, comparator, requested)) {
         r.size_mismatch = { requested, actual: actualNum, comparator };
+      }
+    }
+  }
+  // CAPACITY-MISMATCH DISCLOSURE (Intent Router item 5, ADR-270 consolidated list #4/#5,
+  // 2026-08-23) — the SAME mechanism as the TV size-mismatch block above, one category-gated
+  // pass per capacity kind. Equality-only (no comparator support here — out of this item's
+  // scope, unlike screen size). DISCLOSURE ONLY: never re-ranks, never changes which item is
+  // index 0, only whether it may keep the "اختيار توفيري" label.
+  const capacityChecks: Array<{ requested: number | null | undefined; dnaKey: string; unit: "kg" | "liters" | "settings" }> = [
+    { requested: engineTask.capacity_kg_requested, dnaKey: "capacity_kg", unit: "kg" },
+    { requested: engineTask.capacity_liters_requested, dnaKey: "capacity_liters", unit: "liters" },
+    { requested: engineTask.capacity_settings_requested, dnaKey: "capacity", unit: "settings" },
+  ];
+  for (const check of capacityChecks) {
+    if (typeof check.requested !== "number") continue;
+    const requested = check.requested;
+    for (const r of out) {
+      if (!r.is_smart_pick) continue;
+      const actual = (r.dna as Record<string, unknown>)?.[check.dnaKey];
+      const actualNum = typeof actual === "number" ? actual : Number(actual);
+      if (actual == null || !Number.isFinite(actualNum)) {
+        // Fail closed, same rule as the TV size gate above — never crown a pick whose fit
+        // against a STATED capacity is unknown.
+        r.is_smart_pick = false;
+        console.warn(`[capacity-mismatch] label withheld: ${check.dnaKey} unknown for canonical=${r.canonical_id}, requested=${requested}`);
+      } else if (actualNum !== requested) {
+        r.capacity_mismatch = { requested, actual: actualNum, unit: check.unit };
       }
     }
   }

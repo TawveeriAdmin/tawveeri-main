@@ -117,6 +117,19 @@ export interface ShoppingTask {
    * it yet.
    */
   budget_min?: number | null;
+  /**
+   * Intent Router item 5 (ADR-270 consolidated list #4/#5, 2026-08-23) — a stated capacity,
+   * parsed by `task-parser.ts`'s `parseCapacityKg`/`parseCapacityLiters`/
+   * `parseCapacitySettings`. DISCLOSURE ONLY, same rule as `screen_size_requested` — never
+   * read by `decideWashingMachine()`/`decideRefrigerator()`/`decideAppliance()`'s
+   * ranking/eligibility, only compared to the winning candidate's own
+   * `dna.capacity_kg`/`capacity_liters`/`capacity` downstream (decide/route.ts) to caption an
+   * honest mismatch. Only meaningful for `washing_machine`/`refrigerator`/`dishwasher`
+   * respectively.
+   */
+  capacity_kg_requested?: number | null;
+  capacity_liters_requested?: number | null;
+  capacity_settings_requested?: number | null;
 }
 
 export interface CanonicalRow {

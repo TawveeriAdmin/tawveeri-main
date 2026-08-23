@@ -167,6 +167,38 @@ describe("Task parser — budget floor (budget_min)", () => {
   });
 });
 
+// Intent Router item 5 (ADR-270 consolidated list #4/#5, 2026-08-23): «غسالة 12 كيلو» /
+// «ثلاجة 450 لتر» / «غسالة صحون 14 طقم» previously carried NO capacity field at all — this
+// closes the exact gap ADR-270's own follow-up list named for washer kg and fridge liters,
+// plus the same-class dishwasher place-setting gap.
+describe("Task parser — capacity (washer kg / fridge liters / dishwasher place settings)", () => {
+  it("washer: «غسالة 12 كيلو» parses capacity_kg_requested", () => {
+    expect(parseShoppingTask("غسالة 12 كيلو").capacity_kg_requested).toBe(12);
+    expect(parseShoppingTask("غسالة 8 كجم للعائلة").capacity_kg_requested).toBe(8);
+  });
+  it("fridge: «ثلاجة 450 لتر» parses capacity_liters_requested", () => {
+    expect(parseShoppingTask("ثلاجة 450 لتر").capacity_liters_requested).toBe(450);
+  });
+  it("dishwasher: «غسالة صحون 14 طقم» parses capacity_settings_requested", () => {
+    expect(parseShoppingTask("غسالة صحون 14 طقم").capacity_settings_requested).toBe(14);
+    expect(parseShoppingTask("غسالة صحون 12 مكان").capacity_settings_requested).toBe(12);
+  });
+  it("fields are category-gated — a capacity phrase on the WRONG category is never set", () => {
+    // "12 كيلو" said about a laptop (nonsensical, but must not leak into the washer field)
+    expect(parseShoppingTask("لابتوب 12 كيلو").capacity_kg_requested).toBeUndefined();
+    expect(parseShoppingTask("تلفزيون 450 لتر").capacity_liters_requested).toBeUndefined();
+  });
+  it("a bare category with no capacity stated leaves the field unset", () => {
+    expect(parseShoppingTask("غسالة رخيصة").capacity_kg_requested).toBeUndefined();
+    expect(parseShoppingTask("ثلاجة كبيرة").capacity_liters_requested).toBeUndefined();
+    expect(parseShoppingTask("غسالة صحون هادئة").capacity_settings_requested).toBeUndefined();
+  });
+  it("out-of-plausible-range values are rejected, not silently accepted", () => {
+    expect(parseShoppingTask("غسالة 99 كيلو").capacity_kg_requested).toBeUndefined();
+    expect(parseShoppingTask("ثلاجة 5 لتر").capacity_liters_requested).toBeUndefined();
+  });
+});
+
 describe("Task parser — fail-loud on unresolvable input", () => {
   it("undetectable category → empty category + unresolved flag", () => {
     const t = parseShoppingTask("أبغى شيء حلو");

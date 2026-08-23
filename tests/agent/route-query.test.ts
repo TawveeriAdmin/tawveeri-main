@@ -225,6 +225,31 @@ describe('routeQuery — a stated budget floor ("فوق"/"أكثر من") routes
   });
 });
 
+// Intent Router item 5 (2026-08-23): a stated washer/fridge/dishwasher capacity routes to
+// advisory the same way a stated screen size or budget does.
+describe('routeQuery — a stated capacity routes to advisory', () => {
+  it('«غسالة 12 كيلو» → advisory on capacity_kg_requested', () => {
+    const route = routeQuery('غسالة 12 كيلو');
+    expect(route.mode).toBe('advisory');
+    if (route.mode === 'advisory') {
+      expect(route.task.capacity_kg_requested).toBe(12);
+      expect(route.reason).toMatch(/capacity_kg_requested/);
+    }
+  });
+  it('«ثلاجة 450 لتر» → advisory on capacity_liters_requested', () => {
+    const route = routeQuery('ثلاجة 450 لتر');
+    expect(route.mode).toBe('advisory');
+  });
+  it('«غسالة صحون 14 طقم» → advisory on capacity_settings_requested', () => {
+    const route = routeQuery('غسالة صحون 14 طقم');
+    expect(route.mode).toBe('advisory');
+  });
+  it('a bare washer/fridge/dishwasher browse with no capacity still stays retrieval', () => {
+    expect(routeQuery('غسالة LG').mode).toBe('retrieval');
+    expect(routeQuery('ثلاجة سامسونج').mode).toBe('retrieval');
+  });
+});
+
 // Bare-keyword control group — must NEVER over-route to advisory, before or after any of the
 // Intent Router follow-up fixes. A brand name alone (no size/budget/priority/use-case) is
 // browsing, not a described need.
